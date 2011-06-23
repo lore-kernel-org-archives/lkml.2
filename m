@@ -1,119 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932574Ab1FWN5T (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:57:19 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:52275 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932196Ab1FWN5S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:57:18 -0400
-Date: Thu, 23 Jun 2011 15:57:13 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-Message-ID: <20110623135713.GB1479@thinkpad>
-References: <1308779480-4950-1-git-send-email-andrea@betterlinux.com>
- <4E03200D.60704@draigBrady.com>
+	id S932541Ab1FWN5E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:57:04 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:52927 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932196Ab1FWN5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 09:57:01 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: [PATCH] PM / Runtime: Update documentation of interactions with system sleep
+Date: Thu, 23 Jun 2011 15:57:43 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+References: <201106112223.04972.rjw@sisk.pl> <871uyljys6.fsf@ti.com> <201106230022.56462.rjw@sisk.pl>
+In-Reply-To: <201106230022.56462.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E03200D.60704@draigBrady.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106231557.43653.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 12:14:21PM +0100, Pádraig Brady wrote:
-> On 22/06/11 22:51, Andrea Righi wrote:
-> > There were some reported problems in the past about trashing page cache
-> > when a backup software (i.e., rsync) touches a huge amount of pages (see
-> > for example [1]).
-> > 
-> > This problem has been almost fixed by the Minchan Kim's patch [2] and a
-> > proper use of fadvise() in the backup software. For example this patch
-> > set [3] has been proposed for inclusion in rsync.
-> > 
-> > However, there can be still other similar trashing problems: when the
-> > backup software reads all the source files, some of them may be part of
-> > the actual working set of the system. When a
-> > posix_fadvise(POSIX_FADV_DONTNEED) is performed _all_ pages are evicted
-> > from pagecache, both the working set and the use-once pages touched only
-> > by the backup software.
-> > 
-> > With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
-> > called for an active page instead of removing it from the page cache it
-> > is added to the tail of the inactive list. Otherwise, if it's already in
-> > the inactive list the page is removed from the page cache.
-> > 
-> > In this way if the backup was the only user of a page, that page will
-> > be immediately removed from the page cache by calling
-> > posix_fadvise(POSIX_FADV_DONTNEED). If the page was also touched by
-> > other processes it'll be moved to the inactive list, having another
-> > chance of being re-added to the working set, or simply reclaimed when
-> > memory is needed.
-> > 
-> > Testcase:
-> > 
-> >   - create a 1GB file called "zero"
-> >   - run md5sum zero to read all the pages in page cache (this is to
-> >     simulate the user activity on this file)
-> >   - run "rsync zero zero_copy" (rsync is patched with [3])
-> >   - re-run md5sum zero (user activity on the working set) and measure
-> >     the time to complete this command
-> > 
-> > The test has been performed using 3.0.0-rc4 vanilla and with this patch
-> > applied (3.0.0-rc4-fadvise).
-> > 
-> > Results:
-> >                   avg elapsed time      block:block_bio_queue
-> >  3.0.0-rc4                  4.127s                      8,214
-> >  3.0.0-rc4-fadvise          2.146s                          0
-> > 
-> > In the first case the file is evicted from page cache completely and we
-> > must re-read it from the disk. In the second case the file is still in
-> > page cache (in the inactive list) and we don't need any other additional
-> > I/O operation.
-> > 
-> > [1] http://marc.info/?l=rsync&m=128885034930933&w=2
-> > [2] https://lkml.org/lkml/2011/2/20/57
-> > [3] http://lists.samba.org/archive/rsync/2010-November/025827.html
-> > 
-> > Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-> 
-> Hmm, What if you do want to evict it from the cache for testing purposes?
-> Perhaps this functionality should be associated with POSIX_FADV_NOREUSE?
-> dd has been recently modified to support invalidating the cache for a file,
-> and it uses POSIX_FADV_DONTNEED for that.
-> http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=5f311553
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-I don't have any objection to associate POSIX_FADV_NOREUSE to this
-functionality. Actually maintaining a specific functionality to drop
-file cache pages can be useful, indeed.
+The documents describing the interactions between runtime PM and
+system sleep generally refer to the model in which the system sleep
+state is entered through a global firmware or hardware operation.
+As a result, some recommendations given in there are not entirely
+suitable for systems in which this is not the case.  Update the
+documentation take the existence of those systems into accout.
 
-However, I'm not sure if POSIX_FADV_NOREUSE or POSIX_FADV_DONTNEED
-either are suitable.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ Documentation/power/devices.txt    |    6 +++---
+ Documentation/power/runtime_pm.txt |   25 +++++++++++++++++--------
+ 2 files changed, 20 insertions(+), 11 deletions(-)
 
-According to the standard:
-
- POSIX_FADV_NOREUSE = data will be accessed only once
- POSIX_FADV_DONTNEED = data will not be accessed in the near future
-
-So, associating the "drop the page cache" semantic sounds like an
-implementation detail and applications shouldn't implicitly rely on this
-behaviour.
-
-Let's wait a bit to see also other opinions.
-
--Andrea
+Index: linux-2.6/Documentation/power/runtime_pm.txt
+===================================================================
+--- linux-2.6.orig/Documentation/power/runtime_pm.txt
++++ linux-2.6/Documentation/power/runtime_pm.txt
+@@ -537,9 +537,9 @@ suspend routine).  It may be necessary t
+ in order to do so.  The same is true if the driver uses different power levels
+ or other settings for run-time suspend and system sleep.
+ 
+-During system resume, devices generally should be brought back to full power,
+-even if they were suspended before the system sleep began.  There are several
+-reasons for this, including:
++During system resume, the simplest approach is to bring all devices back to full
++power, even if they were suspended before the system sleep began.  There are
++several reasons for this, including:
+ 
+   * The device might need to switch power levels, wake-up settings, etc.
+ 
+@@ -556,16 +556,25 @@ reasons for this, including:
+   * Even though the device was suspended, if its usage counter was > 0 then most
+     likely it would need a run-time resume in the near future anyway.
+ 
+-  * Always going back to full power is simplest.
+-
+-If the device was suspended before the sleep began, then its run-time PM status
+-will have to be updated to reflect the actual post-system sleep status.  The way
+-to do this is:
++If the device had been suspended before the sleep began and it's brought back to
++full power during resume, then its run-time PM status will have to be updated to
++reflect the actual post-system sleep status.  The way to do this is:
+ 
+ 	pm_runtime_disable(dev);
+ 	pm_runtime_set_active(dev);
+ 	pm_runtime_enable(dev);
+ 
++On some systems, however, system sleep is not entered through a global firmware
++or hardware operation.  Instead, all hardware components are put into low-power
++states directly by the kernel in a coordinated way.  Then, the system sleep
++state effectively follows from the states the hardware components end up in
++and the system is woken up from that state by a hardware interrupt or a similar
++mechanism entirely under the kernel's control.  As a result, the kernel never
++gives control away and the states of all devices during resume are precisely
++known to it.  If that is the case and none of the situations listed above takes
++place, it may be more efficient to leave the devices that had been suspended
++before the system sleep began in the suspended state.
++
+ 7. Generic subsystem callbacks
+ 
+ Subsystems may wish to conserve code space by using the set of generic power
+Index: linux-2.6/Documentation/power/devices.txt
+===================================================================
+--- linux-2.6.orig/Documentation/power/devices.txt
++++ linux-2.6/Documentation/power/devices.txt
+@@ -604,7 +604,7 @@ state temporarily, for example so that i
+ disabled.  This all depends on the hardware and the design of the subsystem and
+ device driver in question.
+ 
+-During system-wide resume from a sleep state it's best to put devices into the
+-full-power state, as explained in Documentation/power/runtime_pm.txt.  Refer to
+-that document for more information regarding this particular issue as well as
++During system-wide resume from a sleep state it's easiest to put devices into
++the full-power state, as explained in Documentation/power/runtime_pm.txt.  Refer
++to that document for more information regarding this particular issue as well as
+ for information on the device runtime power management framework in general.
