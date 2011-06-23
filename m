@@ -1,211 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964901Ab1FWXNQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 19:13:16 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:59193 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933959Ab1FWXNM (ORCPT
+	id S964921Ab1FWXPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 19:15:05 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:46990 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S964897Ab1FWXPB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 19:13:12 -0400
-Date: Fri, 24 Jun 2011 01:13:05 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-Message-ID: <20110623231305.GA1312@thinkpad>
-References: <1308810981-5286-1-git-send-email-andrea@betterlinux.com>
- <BANLkTim8zXQYmEqJbxy0oSxVb3Lsi2f7Tg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTim8zXQYmEqJbxy0oSxVb3Lsi2f7Tg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Jun 2011 19:15:01 -0400
+Subject: Re: [Stable-review] [34-longterm 224/247] fs/partitions/ldm.c: fix
+ oops caused by corrupted partition table
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Paul Gortmaker <paul.gortmaker@windriver.com>
+Cc: stable@kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        stable-review@kernel.org, Timo Warns <warns@pre-sense.de>
+In-Reply-To: <1308850515-15242-165-git-send-email-paul.gortmaker@windriver.com>
+References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
+	 <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
+	 <1308850515-15242-165-git-send-email-paul.gortmaker@windriver.com>
+Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-w3T5zxSG4BxLR8Um/3Jy"
+Date: Fri, 24 Jun 2011 00:14:54 +0100
+Message-ID: <1308870894.3093.1011.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 07:06:42AM +0900, Minchan Kim wrote:
-> Hi Andrea,
-> Sorry for late response.
-> These day, I have no time to see the LKML.
-> 
-> On Thu, Jun 23, 2011 at 3:36 PM, Andrea Righi <andrea@betterlinux.com> wrote:
-> > There were some reported problems in the past about trashing page cache
-> > when a backup software (i.e., rsync) touches a huge amount of pages (see
-> > for example [1]).
-> >
-> > This problem has been almost fixed by the Minchan Kim's patch [2] and a
-> > proper use of fadvise() in the backup software. For example this patch
-> > set [3] has been proposed for inclusion in rsync.
-> >
-> > However, there can be still other similar trashing problems: when the
-> > backup software reads all the source files, some of them may be part of
-> > the actual working set of the system. When a
-> > posix_fadvise(POSIX_FADV_DONTNEED) is performed _all_ pages are evicted
-> > from pagecache, both the working set and the use-once pages touched only
-> > by the backup software.
-> 
-> Agreed. It's rather aggressive.
-> 
-> >
-> > With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
-> > called for an active page instead of removing it from the page cache it
-> > is added to the tail of the inactive list. Otherwise, if it's already in
-> > the inactive list the page is removed from the page cache.
-> >
-> > In this way if the backup was the only user of a page, that page will
-> > be immediately removed from the page cache by calling
-> > posix_fadvise(POSIX_FADV_DONTNEED). If the page was also touched by
-> > other processes it'll be moved to the inactive list, having another
-> > chance of being re-added to the working set, or simply reclaimed when
-> > memory is needed.
-> >
-> > Testcase:
-> >
-> >  - create a 1GB file called "zero"
-> >  - run md5sum zero to read all the pages in page cache (this is to
-> >    simulate the user activity on this file)
-> >  - run "rsync zero zero_copy" (rsync is patched with [3])
-> >  - re-run md5sum zero (user activity on the working set) and measure
-> >    the time to complete this command
-> >
-> > The test has been performed using 3.0.0-rc4 vanilla and with this patch
-> > applied (3.0.0-rc4-fadvise).
-> >
-> > Results:
-> >                  avg elapsed time      block:block_bio_queue
-> >  3.0.0-rc4                  4.127s                      8,214
-> >  3.0.0-rc4-fadvise          2.146s                          0
-> >
-> 
-> Great!
-> 
-> > In the first case the file is evicted from page cache completely and we
-> > must re-read it from the disk. In the second case the file is still in
-> > page cache (in the inactive list) and we don't need any other additional
-> > I/O operation.
-> >
-> > [1] http://marc.info/?l=rsync&m=128885034930933&w=2
-> > [2] https://lkml.org/lkml/2011/2/20/57
-> > [3] http://lists.samba.org/archive/rsync/2010-November/025827.html
-> >
-> > ChangeLog v1 -> v2:
-> >  - fix comment in invalidate_mapping_pages()
-> >
-> > Acked-by: Rik van Riel <riel@redhat.com>
-> > Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-> > ---
-> >  mm/swap.c     |    9 +++++----
-> >  mm/truncate.c |   10 +++++++---
-> >  2 files changed, 12 insertions(+), 7 deletions(-)
-> >
-> > diff --git a/mm/swap.c b/mm/swap.c
-> > index 3a442f1..fc8bb76 100644
-> > --- a/mm/swap.c
-> > +++ b/mm/swap.c
-> > @@ -411,10 +411,11 @@ void add_page_to_unevictable_list(struct page *page)
-> >  *
-> >  * 1. active, mapped page -> none
-> >  * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
-> > - * 3. inactive, mapped page -> none
-> > - * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-> > - * 5. inactive, clean -> inactive, tail
-> > - * 6. Others -> none
-> > + * 3. active, clean -> inactive, tail
-> > + * 4. inactive, mapped page -> none
-> > + * 5. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-> > + * 6. inactive, clean -> inactive, tail
-> > + * 7. Others -> none
-> 
-> Nitpick.
-> I would like to put together them by on line as rather than adding another line.
-> 5, [in]active, clean-> inactive, tail.
-> I guess it's more easy to understand.
 
-Agreed.
+--=-w3T5zxSG4BxLR8Um/3Jy
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> If you want to put it in another line, please change below comment, too.
-> "In 5, why it moves inactive's head.."
+On Thu, 2011-06-23 at 13:34 -0400, Paul Gortmaker wrote:
+> From: Timo Warns <Warns@pre-sense.de>
+>=20
+>                    -------------------
+>     This is a commit scheduled for the next v2.6.34 longterm release.
+>     If you see a problem with using this for longterm, please comment.
+>                    -------------------
+>=20
+> commit c340b1d640001c8c9ecff74f68fd90422ae2448a upstream.
+>=20
+> The kernel automatically evaluates partition tables of storage devices.
+> The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
+> a bug that causes a kernel oops on certain corrupted LDM partitions.
+> A kernel subsystem seems to crash, because, after the oops, the kernel no
+> longer recognizes newly connected storage devices.
+>=20
+> The patch validates the value of vblk_size.
+[...]
 
-Oh right. I'd put both on a single line anyway, as you suggested.
+This doesn't completely fix the possibility of a buffer overflow.  You
+also need commit cae13fe4cc3f24820ffb990c09110626837e85d4.
 
-> 
-> >  *
-> >  * In 4, why it moves inactive's head, the VM expects the page would
-> >  * be write it out by flusher threads as this is much more effective
-> > diff --git a/mm/truncate.c b/mm/truncate.c
-> > index 3a29a61..a36af48 100644
-> > --- a/mm/truncate.c
-> > +++ b/mm/truncate.c
-> > @@ -357,11 +357,15 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
-> >                        if (lock_failed)
-> >                                continue;
-> >
-> > -                       ret = invalidate_inode_page(page);
-> 
-> I would like to add comment.
-> "Invalidation of active page is rather aggressive as we can't make
-> sure it's not a working set of other processes.
-> deactivate_page would move it into inactive's tail so the page will
-> have a chance to activate again if other processes
-> touch it. otherwise, it would be reclaimed simply".
+Ben.
 
-OK.
+--=20
+Ben Hutchings
+The two most common things in the universe are hydrogen and stupidity.
 
-> 
-> > +                       if (PageActive(page))
-> > +                               ret = 0;
-> > +                       else
-> > +                               ret = invalidate_inode_page(page);
-> 
-> 
-> You have to change description of invalidate_mapping_pages.
-> 
->  * invalidate_mapping_pages() will not block on IO activity. It will not
->  * invalidate pages which are dirty, locked, under writeback, mapped into
->  * pagetables or on active lru.
+--=-w3T5zxSG4BxLR8Um/3Jy
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-Correct.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> 
-> >                        unlock_page(page);
-> >                        /*
-> > -                        * Invalidation is a hint that the page is no longer
-> > -                        * of interest and try to speed up its reclaim.
-> > +                        * Invalidation of an inactive page is a hint that the
-> > +                        * page is no longer of interest and try to speed up
-> > +                        * its reclaim.
-> >                         */
-> >                        if (!ret)
-> >                                deactivate_page(page);
-> > --
-> > 1.7.4.1
-> >
-> >
-> 
-> Otherwise, Looks good to me.
-> 
-> Acked-by: Minchan Kim <minchan.kim@gmail.com>
-> 
-> -- 
-> Kind regards,
-> Minchan Kim
+iQIVAwUATgPI5+e/yOyVhhEJAQobPg/9Ev0O7bvDc79gmdeVeqPrzcj4Ts73aOJ9
+Ghzp9PAVTtGZAcBt/EDVZVYwqlPrQzqelF4IZbiW+0aaHmCT8qmZvAoFYuFfHnLl
+ptAawWv96rCgauuhjdzKn2zbvJR5Wg3rJbc26Ux8HuXDs7PN6RFfXNqoiQekZCVr
+9D/R7y8jwZncW/gkHm2JpvSTO5r1pjPxvcMDn4MlkZvl8GsmZ1onH6LicV2h494Z
+t+XTtmVyqtB1V18RgtFP+JvM15dmP5nYiw1awTYWC26+6UCMVxC/BoTSRxsrxCre
+3CM/ZaQrTER7ctCH4MmiarRzVJAGD3ZkVT+wxQjb1oL5Xb9Rrk9bJpZOhoSb+xZi
+E1Q+wvG3m2UGYIWq5yBxbyiVfTaV3c1DrmiUIlARca5HvQSRLBsr4+R5MVQnxIKP
+X2unUB8OXrgt4bs5mGXlqZp2h1gu5s1+KUvuVH470gwGtp3lTLB26ghMfEByDywi
+ECbGNH228P5g8RH/wScq+wiEx990LpTEahLJnRqUnBYtZPbp1oM/PMjnF9iOyRWv
+Rdm//sgCsy1HTG3zPHI2x52bXHRyGePG2qyVyA+/X8FCJS3c1Urd5jwUaCcpMQkO
+rsg5w1laf8RnJFggl01Lb417tkEMROIQseVAb+oyK56Z8dbHs22T8QIZD/Tuyau3
+zq4+QuPIW3M=
+=h7CK
+-----END PGP SIGNATURE-----
 
-Thanks for the review.
-
-I'll add all your comments and post a new version.
-
--Andrea
+--=-w3T5zxSG4BxLR8Um/3Jy--
