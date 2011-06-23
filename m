@@ -1,107 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932541Ab1FWN5E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:57:04 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:52927 "EHLO ogre.sisk.pl"
+	id S1759246Ab1FWOGd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 10:06:33 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:59760 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932196Ab1FWN5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:57:01 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: [PATCH] PM / Runtime: Update documentation of interactions with system sleep
-Date: Thu, 23 Jun 2011 15:57:43 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
-References: <201106112223.04972.rjw@sisk.pl> <871uyljys6.fsf@ti.com> <201106230022.56462.rjw@sisk.pl>
-In-Reply-To: <201106230022.56462.rjw@sisk.pl>
+	id S1753547Ab1FWOGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 10:06:31 -0400
+Date: Thu, 23 Jun 2011 18:05:39 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-uvc-devel@lists.berlios.de, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC, PATCH] USB: EHCI: Allow users to override 80% max
+	periodic bandwidth
+Message-ID: <20110623140539.GA4403@tugrik.mns.mnsspb.ru>
+References: <1308758567-8205-1-git-send-email-kirr@mns.spb.ru> <Pine.LNX.4.44L0.1106221514350.1977-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106231557.43653.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1106221514350.1977-100000@iolanthe.rowland.org>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Wed, Jun 22, 2011 at 03:22:28PM -0400, Alan Stern wrote:
+> On Wed, 22 Jun 2011, Kirill Smelkov wrote:
+> 
+> > There are cases, when 80% max isochronous bandwidth is too limiting.
+> > 
+> > For example I have two USB video capture cards which stream uncompressed
+> > video, and to stream full NTSC + PAL videos we'd need
+> > 
+> >     NTSC 640x480 YUV422 @30fps      ~17.6 MB/s
+> >     PAL  720x576 YUV422 @25fps      ~19.7 MB/s
+> > 
+> > isoc bandwidth.
+> > 
+> > Now, due to limited alt settings in capture devices NTSC one ends up
+> > streaming with max_pkt_size=2688  and  PAL with max_pkt_size=2892, both
+> > with interval=1. In terms of microframe time allocation this gives
+> > 
+> >     NTSC    ~53us
+> >     PAL     ~57us
+> > 
+> > and together
+> > 
+> >     ~110us  >  100us == 80% of 125us uframe time.
+> > 
+> > So those two devices can't work together simultaneously because the'd
+> > over allocate isochronous bandwidth.
+> > 
+> > 80% seemed a bit arbitrary to me, and I've tried to raise it to 90% and
+> > both devices started to work together, so I though sometimes it would be
+> > a good idea for users to override hardcoded default of max 80% isoc
+> > bandwidth.
+> > 
+> > After all, isn't it a user who should decide how to load the bus? If I
+> > can live with 10% or even 5% bulk bandwidth that should be ok. I'm a USB
+> > newcomer, but that 80% seems to be chosen pretty arbitrary to me, just
+> > to serve as a reasonable default.
+> 
+> This seems like the sort of feature somebody might reasonably want to 
+> use -- if they know exactly what they're doing.
 
-The documents describing the interactions between runtime PM and
-system sleep generally refer to the model in which the system sleep
-state is entered through a global firmware or hardware operation.
-As a result, some recommendations given in there are not entirely
-suitable for systems in which this is not the case.  Update the
-documentation take the existence of those systems into accout.
+Yes, thanks, exactly my case. Now I know the idea won't be rejected it
+can be polished.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- Documentation/power/devices.txt    |    6 +++---
- Documentation/power/runtime_pm.txt |   25 +++++++++++++++++--------
- 2 files changed, 20 insertions(+), 11 deletions(-)
 
-Index: linux-2.6/Documentation/power/runtime_pm.txt
-===================================================================
---- linux-2.6.orig/Documentation/power/runtime_pm.txt
-+++ linux-2.6/Documentation/power/runtime_pm.txt
-@@ -537,9 +537,9 @@ suspend routine).  It may be necessary t
- in order to do so.  The same is true if the driver uses different power levels
- or other settings for run-time suspend and system sleep.
- 
--During system resume, devices generally should be brought back to full power,
--even if they were suspended before the system sleep began.  There are several
--reasons for this, including:
-+During system resume, the simplest approach is to bring all devices back to full
-+power, even if they were suspended before the system sleep began.  There are
-+several reasons for this, including:
- 
-   * The device might need to switch power levels, wake-up settings, etc.
- 
-@@ -556,16 +556,25 @@ reasons for this, including:
-   * Even though the device was suspended, if its usage counter was > 0 then most
-     likely it would need a run-time resume in the near future anyway.
- 
--  * Always going back to full power is simplest.
--
--If the device was suspended before the sleep began, then its run-time PM status
--will have to be updated to reflect the actual post-system sleep status.  The way
--to do this is:
-+If the device had been suspended before the sleep began and it's brought back to
-+full power during resume, then its run-time PM status will have to be updated to
-+reflect the actual post-system sleep status.  The way to do this is:
- 
- 	pm_runtime_disable(dev);
- 	pm_runtime_set_active(dev);
- 	pm_runtime_enable(dev);
- 
-+On some systems, however, system sleep is not entered through a global firmware
-+or hardware operation.  Instead, all hardware components are put into low-power
-+states directly by the kernel in a coordinated way.  Then, the system sleep
-+state effectively follows from the states the hardware components end up in
-+and the system is woken up from that state by a hardware interrupt or a similar
-+mechanism entirely under the kernel's control.  As a result, the kernel never
-+gives control away and the states of all devices during resume are precisely
-+known to it.  If that is the case and none of the situations listed above takes
-+place, it may be more efficient to leave the devices that had been suspended
-+before the system sleep began in the suspended state.
-+
- 7. Generic subsystem callbacks
- 
- Subsystems may wish to conserve code space by using the set of generic power
-Index: linux-2.6/Documentation/power/devices.txt
-===================================================================
---- linux-2.6.orig/Documentation/power/devices.txt
-+++ linux-2.6/Documentation/power/devices.txt
-@@ -604,7 +604,7 @@ state temporarily, for example so that i
- disabled.  This all depends on the hardware and the design of the subsystem and
- device driver in question.
- 
--During system-wide resume from a sleep state it's best to put devices into the
--full-power state, as explained in Documentation/power/runtime_pm.txt.  Refer to
--that document for more information regarding this particular issue as well as
-+During system-wide resume from a sleep state it's easiest to put devices into
-+the full-power state, as explained in Documentation/power/runtime_pm.txt.  Refer
-+to that document for more information regarding this particular issue as well as
- for information on the device runtime power management framework in general.
+> > NOTE: for two streams with max_pkt_size=3072 (worst case) both time
+> > allocation would be 60us+60us=120us which is 96% periodic bandwidth
+> > leaving 4% for bulk and control. I think this should work too.
+> 
+> At 480 Mb/s, each microframe holds 7500 bytes (less if you count 
+> bit-stuffing).  4% of that is 300 bytes, which is not enough for a 
+> 512-byte bulk packet.  I think you'd run into trouble trying to do any 
+> serious bulk transfers on such a tight schedule.
+
+Yes, you seem to be right.
+
+I still think 4% is maybe enough for control traffic.
+
+
+> > Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+> > Cc: Alan Stern <stern@rowland.harvard.edu>
+> > ---
+> >  drivers/usb/host/ehci-hcd.c   |   16 ++++++++++++++++
+> >  drivers/usb/host/ehci-sched.c |   17 +++++++----------
+> >  2 files changed, 23 insertions(+), 10 deletions(-)
+> > 
+> > diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+> > index c606b02..1d36e72 100644
+> > --- a/drivers/usb/host/ehci-hcd.c
+> > +++ b/drivers/usb/host/ehci-hcd.c
+> > @@ -112,6 +112,14 @@ static unsigned int hird;
+> >  module_param(hird, int, S_IRUGO);
+> >  MODULE_PARM_DESC(hird, "host initiated resume duration, +1 for each 75us\n");
+> >  
+> > +/*
+> > + * max periodic time per microframe
+> > + * (be careful, USB 2.0 requires it to be 100us = 80% of 125us)
+> > + */
+> > +static unsigned int uframe_periodic_max = 100;
+> > +module_param(uframe_periodic_max, uint, S_IRUGO);
+> > +MODULE_PARM_DESC(uframe_periodic_max, "maximum allowed periodic part of a microframe, us");
+> > +
+> 
+> This probably should be a sysfs attribute rather than a module 
+> parameter, so that it can be applied to individual buses separately.
+
+Agree
+
+
+> >  #define	INTR_MASK (STS_IAA | STS_FATAL | STS_PCD | STS_ERR | STS_INT)
+> >  
+> >  /*-------------------------------------------------------------------------*/
+> > @@ -571,6 +579,14 @@ static int ehci_init(struct usb_hcd *hcd)
+> >  	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
+> >  
+> >  	/*
+> > +	 * tell user, if using non-standard (80% == 100 usec/uframe) bandwidth
+> > +	 */
+> > +	if (uframe_periodic_max != 100)
+> > +		ehci_info(ehci, "using non-standard max periodic bandwith "
+> > +				"(%u%% == %u usec/uframe)",
+> > +				100*uframe_periodic_max/125, uframe_periodic_max);
+> > +
+> > +	/*
+> 
+> Check for invalid values.  This should never be less than 100 or 
+> greater than 125.
+
+Ok. By the way, why should we limit it to be not less than 100?
+Likewise, a user who knows exactly what he/she is doing could limit
+periodic bandwidth to be less than 80% required by USB specification.
+
+
+> >  	 * hw default: 1K periodic list heads, one per frame.
+> >  	 * periodic_size can shrink by USBCMD update if hcc_params allows.
+> >  	 */
+> > diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
+> > index d12426f..fb374f2 100644
+> > --- a/drivers/usb/host/ehci-sched.c
+> > +++ b/drivers/usb/host/ehci-sched.c
+> > @@ -172,7 +172,7 @@ periodic_usecs (struct ehci_hcd *ehci, unsigned frame, unsigned uframe)
+> >  		}
+> >  	}
+> >  #ifdef	DEBUG
+> > -	if (usecs > 100)
+> > +	if (usecs > uframe_periodic_max)
+> 
+> These changes all seem right.
+
+Thanks. I'll try to prepare updated patch.
+
+
+Kirill
