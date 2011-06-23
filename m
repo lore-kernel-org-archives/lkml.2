@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab1FWKo3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 06:44:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53245 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759157Ab1FWKo2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 06:44:28 -0400
-Date: Thu, 23 Jun 2011 11:44:26 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Jonathan Cameron <jic23@cam.ac.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>, Samuel Oritz <sameo@linux.intel.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH 0/8] Generic I2C and SPI register map library
-Message-ID: <20110623104425.GE21932@opensource.wolfsonmicro.com>
-References: <20110622184407.GC13847@sirena.org.uk>
- <20110622224828.GA2342@siel.b>
- <20110623012544.GE20949@opensource.wolfsonmicro.com>
- <4E02FF41.1060000@cam.ac.uk>
+	id S1759257Ab1FWKpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 06:45:11 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:55648 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759157Ab1FWKpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 06:45:09 -0400
+Date: Thu, 23 Jun 2011 12:44:55 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
+Message-ID: <20110623104455.GA9274@elte.hu>
+References: <20110622174659.496793734@linutronix.de>
+ <20110622174919.135236139@linutronix.de>
+ <20110623083722.GF30101@htj.dyndns.org>
+ <alpine.LFD.2.02.1106231139270.11814@ionos>
+ <20110623101541.GL30101@htj.dyndns.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E02FF41.1060000@cam.ac.uk>
-X-Cookie: You are always busy.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110623101541.GL30101@htj.dyndns.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 09:54:25AM +0100, Jonathan Cameron wrote:
-> On 06/23/11 02:25, Mark Brown wrote:
 
-> > If you're only using SMBus then the I2C interface includes SMBus based
-> > register support which should do what you want.  With the regmap API it
-> > ought to work as a device with 8 bit registers and 8 bit values.
+* Tejun Heo <tj@kernel.org> wrote:
 
-> The kicker here is that quite a few hosts only support the smbus subset.
-> How should that be handled here?
+> The patch description is simply untrue.  It does affect how wq 
+> behaves under heavy CPU load.  The effect might be perfectly okay 
+> but more likely it will result in subtle suboptimal behaviors under 
+> certain load situations which would be difficult to characterize 
+> and track down.  Again, the trade off (mostly killing of 
+> ttwu_local) could be okay but you can't get away with just claiming 
+> "there's no harm".
 
-For 8x8 registers we *should* end up only using the SMBus subset so it
-should just work.
+Well, either it can be measured or not. If you can suggest a specific 
+testing method to Thomas, please do.
+
+Thanks,
+
+	Ingo
