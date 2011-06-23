@@ -1,57 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934461Ab1FWUny (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 16:43:54 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:31349 "EHLO
+	id S934479Ab1FWUr0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 16:47:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:6999 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933925Ab1FWUnx (ORCPT
+	with ESMTP id S933925Ab1FWUrY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 16:43:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=E7AQM4qZZ10copJ08uhWVXJJDG+zXKC5G8hkE+u1Ywp6wC2RlklKw2xBYdeV0YpR8U
-         eqHJZw53j3Xg2lOXatRw==
-MIME-Version: 1.0
-In-Reply-To: <62229.1308859172@turing-police.cc.vt.edu>
-References: <1308854160-16022-1-git-send-email-sergiu@chromium.org>
-	<62229.1308859172@turing-police.cc.vt.edu>
-Date: Thu, 23 Jun 2011 13:43:49 -0700
-X-Google-Sender-Auth: 0eg4JIZUCKLnQ1lrqN7d_Ry6wF0
-Message-ID: <BANLkTiko9PvSDHEnbjCAvcAReLytWwg7qSoZGv778xuj3tqW=g@mail.gmail.com>
-Subject: Re: [PATCH] char drivers: Ram oops kernel configuration parameters
-From: Sergiu Iordache <sergiu@chromium.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samo Pogacnik <samo_pogacnik@t-2.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Thu, 23 Jun 2011 16:47:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=Ew4aGI3joe090ssklNaSsP51VO8GJmnyLKZ1xpvprODK0f5dOayVhxFmUcC6jcgla
+	eW6JSc789l0sHxQqXYmDQ==
+From: Zhengyu He <zhengyuh@google.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        Stephane Eranian <eranian@google.com>,
+        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
+        Zhengyu He <zhengyuh@google.com>
+Subject: [PATCH] perf: stat: add noise output for csv mode
+Date: Thu, 23 Jun 2011 13:45:42 -0700
+Message-Id: <1308861942-4945-1-git-send-email-zhengyuh@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 12:59 PM, <Valdis.Kletnieks@vt.edu> wrote:
-> On Thu, 23 Jun 2011 11:36:00 PDT, Sergiu Iordache said:
-> > Ramoops currently has module parameters for setting the configuration
-> > variables (ram start, ram size and dump oopses). This makes it difficult to
-> > configure when the module is compiled as a builtin.
->
-> Can't you add 'ramoops.ram_start=128M ramoops.ram_size=64M' or similar
-> to your kernel cmdline?
+Previously, when you want perf-stat to output the statistics in csv
+mode, no information of the noise will be printed out.
 
-You can but the problem is that when you're using the module as a
-builtin managing the command line is harder than managing Kconfig
-files. Instead of having different platform dependent config files
-(which already exist in most of the cases) under source control you
-would have to have different scripts which run the kernel with
-different parameters.
+For example,
 
-Sergiu
+./perf stat -r3 -x, sleep 1
+1.164789,task-clock
+8,context-switches
+0,CPU-migrations
+219,page-faults
+3337800,cycles
+
+With this patch, the output will be appended with an additional entry of
+the noise value:
+
+./perf stat -r3 -x, sleep 1
+1.164789,task-clock,3.75%
+8,context-switches,75.00%
+0,CPU-migrations,100.00%
+219,page-faults,0.00%
+3337800,cycles,3.36%
+
+Signed-off-by: Zhengyu He <zhengyuh@google.com>
+---
+ tools/perf/builtin-stat.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a9f0671..3ca1caa 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -513,7 +513,10 @@ static void print_noise_pct(double total, double avg)
+ 	if (avg)
+ 		pct = 100.0*total/avg;
+ 
+-	fprintf(stderr, "  ( +-%6.2f%% )", pct);
++        if (csv_output)
++	        fprintf(stderr, "%s%.2f%%", csv_sep, pct);
++        else
++	        fprintf(stderr, "  ( +-%6.2f%% )", pct);
+ }
+ 
+ static void print_noise(struct perf_evsel *evsel, double avg)
+@@ -878,13 +881,13 @@ static void print_counter_aggr(struct perf_evsel *counter)
+ 	else
+ 		abs_printout(-1, counter, avg);
+ 
++	print_noise(counter, avg);
++
+ 	if (csv_output) {
+ 		fputc('\n', stderr);
+ 		return;
+ 	}
+ 
+-	print_noise(counter, avg);
+-
+ 	if (scaled) {
+ 		double avg_enabled, avg_running;
+ 
+-- 
+1.7.3.1
+
