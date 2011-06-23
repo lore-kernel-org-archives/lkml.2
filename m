@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759817Ab1FWRV4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:21:56 -0400
-Received: from mail.windriver.com ([147.11.1.11]:62668 "EHLO
+	id S934344Ab1FWScd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:32:33 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62741 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759757Ab1FWRVv (ORCPT
+	with ESMTP id S1759850Ab1FWRWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:21:51 -0400
+	Thu, 23 Jun 2011 13:22:02 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Alex He <alex.he@amd.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 002/247] USB: EHCI: ASPM quirk of ISOC on AMD SB800
-Date: Thu, 23 Jun 2011 13:17:25 -0400
-Message-Id: <1308849690-14530-3-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 003/247] rt2x00: add device id for windy31 usb device
+Date: Thu, 23 Jun 2011 13:17:26 -0400
+Message-Id: <1308849690-14530-4-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,242 +22,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alex He <alex.he@amd.com>
+From: Greg Kroah-Hartman <gregkh@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 05570297ecbe834b1756b522412b68eaffb9ab11 upstream.
+commit 9c4cf6d94fb362c27a24df5223ed6e327eb7279a upstream.
 
-When ASPM PM Feature is enabled on UMI link, devices that use ISOC stream of
-data transfer may be exposed to longer latency causing less than optimal per-
-formance of the device. The longer latencies are normal and are due to link
-wake time coming out of low power state which happens frequently to save
-power when the link is not active.
-The following code will make exception for certain features of ASPM to be by
-passed and keep the logic normal state only when the ISOC device is connected
-and active. This change will allow the device to run at optimal performance
-yet minimize the impact on overall power savings.
+This patch adds the device id for the windy31 USB device to the rt73usb
+driver.
 
-Signed-off-by: Alex He <alex.he@amd.com>
-Acked-by: David Brownell <dbrownell@users.sourceforge.net>
+Thanks to Ralf Flaxa for reporting this and providing testing and a
+sample device.
+
+Reported-by: Ralf Flaxa <rf@suse.de>
+Tested-by: Ralf Flaxa <rf@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/host/ehci-hcd.c   |    8 ++++
- drivers/usb/host/ehci-pci.c   |   32 ++++++++++++++++
- drivers/usb/host/ehci-sched.c |   79 +++++++++++++++++++++++++++++++++++++++++
- drivers/usb/host/ehci.h       |    1 +
- 4 files changed, 120 insertions(+), 0 deletions(-)
+ drivers/net/wireless/rt2x00/rt73usb.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index d2dd6e1..8b6b270 100644
---- a/drivers/usb/host/ehci-hcd.c
-+++ b/drivers/usb/host/ehci-hcd.c
-@@ -103,6 +103,9 @@ MODULE_PARM_DESC (ignore_oc, "ignore bogus hardware overcurrent indications");
- 
- #define	INTR_MASK (STS_IAA | STS_FATAL | STS_PCD | STS_ERR | STS_INT)
- 
-+/* for ASPM quirk of ISOC on AMD SB800 */
-+static struct pci_dev *amd_nb_dev;
-+
- /*-------------------------------------------------------------------------*/
- 
- #include "ehci.h"
-@@ -502,6 +505,11 @@ static void ehci_stop (struct usb_hcd *hcd)
- 	spin_unlock_irq (&ehci->lock);
- 	ehci_mem_cleanup (ehci);
- 
-+	if (amd_nb_dev) {
-+		pci_dev_put(amd_nb_dev);
-+		amd_nb_dev = NULL;
-+	}
-+
- #ifdef	EHCI_STATS
- 	ehci_dbg (ehci, "irq normal %ld err %ld reclaim %ld (lost %ld)\n",
- 		ehci->stats.normal, ehci->stats.error, ehci->stats.reclaim,
-diff --git a/drivers/usb/host/ehci-pci.c b/drivers/usb/host/ehci-pci.c
-index e4ad275..0bda4c5 100644
---- a/drivers/usb/host/ehci-pci.c
-+++ b/drivers/usb/host/ehci-pci.c
-@@ -41,6 +41,35 @@ static int ehci_pci_reinit(struct ehci_hcd *ehci, struct pci_dev *pdev)
- 	return 0;
- }
- 
-+static int ehci_quirk_amd_SB800(struct ehci_hcd *ehci)
-+{
-+	struct pci_dev *amd_smbus_dev;
-+	u8 rev = 0;
-+
-+	amd_smbus_dev = pci_get_device(PCI_VENDOR_ID_ATI, 0x4385, NULL);
-+	if (!amd_smbus_dev)
-+		return 0;
-+
-+	pci_read_config_byte(amd_smbus_dev, PCI_REVISION_ID, &rev);
-+	if (rev < 0x40) {
-+		pci_dev_put(amd_smbus_dev);
-+		amd_smbus_dev = NULL;
-+		return 0;
-+	}
-+
-+	if (!amd_nb_dev)
-+		amd_nb_dev = pci_get_device(PCI_VENDOR_ID_AMD, 0x1510, NULL);
-+	if (!amd_nb_dev)
-+		ehci_err(ehci, "QUIRK: unable to get AMD NB device\n");
-+
-+	ehci_info(ehci, "QUIRK: Enable AMD SB800 L1 fix\n");
-+
-+	pci_dev_put(amd_smbus_dev);
-+	amd_smbus_dev = NULL;
-+
-+	return 1;
-+}
-+
- /* called during probe() after chip reset completes */
- static int ehci_pci_setup(struct usb_hcd *hcd)
- {
-@@ -99,6 +128,9 @@ static int ehci_pci_setup(struct usb_hcd *hcd)
- 	/* cache this readonly data; minimize chip reads */
- 	ehci->hcs_params = ehci_readl(ehci, &ehci->caps->hcs_params);
- 
-+	if (ehci_quirk_amd_SB800(ehci))
-+		ehci->amd_l1_fix = 1;
-+
- 	retval = ehci_halt(ehci);
- 	if (retval)
- 		return retval;
-diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
-index 93f58e5..a530856 100644
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -1586,6 +1586,63 @@ itd_link (struct ehci_hcd *ehci, unsigned frame, struct ehci_itd *itd)
- 	*hw_p = cpu_to_hc32(ehci, itd->itd_dma | Q_TYPE_ITD);
- }
- 
-+#define AB_REG_BAR_LOW 0xe0
-+#define AB_REG_BAR_HIGH 0xe1
-+#define AB_INDX(addr) ((addr) + 0x00)
-+#define AB_DATA(addr) ((addr) + 0x04)
-+#define NB_PCIE_INDX_ADDR 0xe0
-+#define NB_PCIE_INDX_DATA 0xe4
-+#define NB_PIF0_PWRDOWN_0 0x01100012
-+#define NB_PIF0_PWRDOWN_1 0x01100013
-+
-+static void ehci_quirk_amd_L1(struct ehci_hcd *ehci, int disable)
-+{
-+	u32 addr, addr_low, addr_high, val;
-+
-+	outb_p(AB_REG_BAR_LOW, 0xcd6);
-+	addr_low = inb_p(0xcd7);
-+	outb_p(AB_REG_BAR_HIGH, 0xcd6);
-+	addr_high = inb_p(0xcd7);
-+	addr = addr_high << 8 | addr_low;
-+	outl_p(0x30, AB_INDX(addr));
-+	outl_p(0x40, AB_DATA(addr));
-+	outl_p(0x34, AB_INDX(addr));
-+	val = inl_p(AB_DATA(addr));
-+
-+	if (disable) {
-+		val &= ~0x8;
-+		val |= (1 << 4) | (1 << 9);
-+	} else {
-+		val |= 0x8;
-+		val &= ~((1 << 4) | (1 << 9));
-+	}
-+	outl_p(val, AB_DATA(addr));
-+
-+	if (amd_nb_dev) {
-+		addr = NB_PIF0_PWRDOWN_0;
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_ADDR, addr);
-+		pci_read_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, &val);
-+		if (disable)
-+			val &= ~(0x3f << 7);
-+		else
-+			val |= 0x3f << 7;
-+
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, val);
-+
-+		addr = NB_PIF0_PWRDOWN_1;
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_ADDR, addr);
-+		pci_read_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, &val);
-+		if (disable)
-+			val &= ~(0x3f << 7);
-+		else
-+			val |= 0x3f << 7;
-+
-+		pci_write_config_dword(amd_nb_dev, NB_PCIE_INDX_DATA, val);
-+	}
-+
-+	return;
-+}
-+
- /* fit urb's itds into the selected schedule slot; activate as needed */
- static int
- itd_link_urb (
-@@ -1613,6 +1670,12 @@ itd_link_urb (
- 			next_uframe >> 3, next_uframe & 0x7);
- 		stream->start = jiffies;
- 	}
-+
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 1);
-+	}
-+
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs++;
- 
- 	/* fill iTDs uframe by uframe */
-@@ -1739,6 +1802,11 @@ itd_complete (
- 	(void) disable_periodic(ehci);
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs--;
- 
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 0);
-+	}
-+
- 	if (unlikely(list_is_singular(&stream->td_list))) {
- 		ehci_to_hcd(ehci)->self.bandwidth_allocated
- 				-= stream->bandwidth;
-@@ -2026,6 +2094,12 @@ sitd_link_urb (
- 			stream->interval, hc32_to_cpu(ehci, stream->splits));
- 		stream->start = jiffies;
- 	}
-+
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 1);
-+	}
-+
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs++;
- 
- 	/* fill sITDs frame by frame */
-@@ -2128,6 +2202,11 @@ sitd_complete (
- 	(void) disable_periodic(ehci);
- 	ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs--;
- 
-+	if (ehci_to_hcd(ehci)->self.bandwidth_isoc_reqs == 0) {
-+		if (ehci->amd_l1_fix == 1)
-+			ehci_quirk_amd_L1(ehci, 0);
-+	}
-+
- 	if (list_is_singular(&stream->td_list)) {
- 		ehci_to_hcd(ehci)->self.bandwidth_allocated
- 				-= stream->bandwidth;
-diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
-index 3c7cf87..20b5e16 100644
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -130,6 +130,7 @@ struct ehci_hcd {			/* one per controller */
- 	unsigned		has_amcc_usb23:1;
- 	unsigned		need_io_watchdog:1;
- 	unsigned		broken_periodic:1;
-+	unsigned		amd_l1_fix:1;
- 	unsigned		fs_i_thresh:1;	/* Intel iso scheduling */
- 
- 	/* required for usb32 quirk */
+diff --git a/drivers/net/wireless/rt2x00/rt73usb.c b/drivers/net/wireless/rt2x00/rt73usb.c
+index bb58d79..cecca1c 100644
+--- a/drivers/net/wireless/rt2x00/rt73usb.c
++++ b/drivers/net/wireless/rt2x00/rt73usb.c
+@@ -2399,6 +2399,7 @@ static struct usb_device_id rt73usb_device_table[] = {
+ 	{ USB_DEVICE(0x04bb, 0x093d), USB_DEVICE_DATA(&rt73usb_ops) },
+ 	{ USB_DEVICE(0x148f, 0x2573), USB_DEVICE_DATA(&rt73usb_ops) },
+ 	{ USB_DEVICE(0x148f, 0x2671), USB_DEVICE_DATA(&rt73usb_ops) },
++	{ USB_DEVICE(0x0812, 0x3101), USB_DEVICE_DATA(&rt73usb_ops) },
+ 	/* Qcom */
+ 	{ USB_DEVICE(0x18e8, 0x6196), USB_DEVICE_DATA(&rt73usb_ops) },
+ 	{ USB_DEVICE(0x18e8, 0x6229), USB_DEVICE_DATA(&rt73usb_ops) },
 -- 
 1.7.4.4
 
