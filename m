@@ -1,78 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759572Ab1FWPPd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 11:15:33 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:39116 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758839Ab1FWPPc (ORCPT
+	id S1759596Ab1FWPVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 11:21:44 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40224 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758206Ab1FWPVm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 11:15:32 -0400
-X-IronPort-AV: E=Sophos;i="4.65,413,1304294400"; 
-   d="scan'208";a="6450958"
-Date: Thu, 23 Jun 2011 16:19:32 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: =?UTF-8?Q?Penttil=C3=A4_Mika?= <mika.penttila@ixonos.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86_64: do not assume head_64.S used 4KB pages when
- !use_pse
-In-Reply-To: <1A61D8EA6755AF458F06EA669A4EC8182F05B0C6@JKLMAIL02.ixonos.local>
-Message-ID: <alpine.DEB.2.00.1106231604070.12963@kaball-desktop>
-References: <1A61D8EA6755AF458F06EA669A4EC8182F05B07E@JKLMAIL02.ixonos.local> <alpine.DEB.2.00.1106231354350.12963@kaball-desktop> <1A61D8EA6755AF458F06EA669A4EC8182F05B0C6@JKLMAIL02.ixonos.local>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 23 Jun 2011 11:21:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=Aqxykhl7MV8TtzJYxSmjRSi4pq+UG2o07A0iT8qV2iZE7VbaY5K/wau9kmfinplBMm
+         K1rixLJQV/wfbjTnOb0nYMf9ZJnU/HZi1HLi1XE5PwrWTjqyK2pjS1USxedX0YsB+69s
+         xuTWj2cCKPWpP4UJY9lVqe1XWwceCA09vZWiU=
+Date: Thu, 23 Jun 2011 19:21:37 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH v2] kernel: escape non-ASCII and control characters in
+ printk()
+Message-ID: <20110623152137.GA2536@albatros>
 MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="8323329-559770896-1308841709=:12963"
-Content-ID: <alpine.DEB.2.00.1106231610240.12963@kaball-desktop>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---8323329-559770896-1308841709=:12963
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.DEB.2.00.1106231610241.12963@kaball-desktop>
+This patch escapes control characters fed to printk() except '\n' and '\t'.
 
-On Thu, 23 Jun 2011, Penttilä Mika wrote:
-> > > And arch/x86/mm/init.c also has:
-> > >
-> > > #if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
-> > >         /*
-> > >          * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use
-> > small pages.
-> > >          * This will simplify cpa(), which otherwise needs to support
-> > splitting
-> > >          * large pages into small in interrupt context, etc.
-> > >          */
-> > >         use_pse = use_gbpages = 0;
-> > > #else
-> > >         use_pse = cpu_has_pse;
-> > >         use_gbpages = direct_gbpages;
-> > > #endif
-> > >
-> > >
-> > > So big pages are also not used for DEBUG_PAGEALLOC and KMEMCHECK
-> > configs even if head_32.S did.
-> > 
-> > Right, but that is not a problem because head_32.S always uses 4KB
-> > pages.
-> 
-> We use large pages FOR PAE kernels on x86-32 there
-> 
+There are numerous printk() instances with user supplied input as "%s"
+data, and unprivileged user may craft log messages with substrings
+containing control characters via these printk()s.  Control characters
+might fool root viewing the logs via tty, e.g. using ^[1A to suppress
+the previous log line.
+
+On the testing Samsung Q310 laptop there are no users of chars outside
+of the restricted charset. 
+
+v2 - Allow chars with code >127.  Allow tabs.
+
+Reported-by: Solar Designer <solar@openwall.com>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ kernel/printk.c |   17 ++++++++++++++++-
+ 1 files changed, 16 insertions(+), 1 deletions(-)
+
+---
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 3518539..727ff7d 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -41,6 +41,7 @@
+ #include <linux/cpu.h>
+ #include <linux/notifier.h>
+ #include <linux/rculist.h>
++#include <linux/ctype.h>
  
-Do you mean we use large pages for PAE kernels on x86_32 in
-arch/x86/mm/init.c:init_memory_mapping?
-That wouldn't be a problem for this patch.
-
-The problem I am trying to solve occurs when head_64.S doesn't allocate
-any pte pages because it is using 2MB pages, while init_memory_mapping
-wants to use 4KB pages (for example because the user set
-CONFIG_DEBUG_PAGEALLOC).
-
-So on x86_32 is not going to be an issue because head_32.S doesn't use
-2MB or 4MB pages as far as I can tell, even if the hardware supports
-them.
-Please correct me if I am wrong but I don't see any _PAGE_PSE in
-head_32.S.
---8323329-559770896-1308841709=:12963--
+ #include <asm/uaccess.h>
+ 
+@@ -671,6 +672,20 @@ static void emit_log_char(char c)
+ 		logged_chars++;
+ }
+ 
++static void emit_log_char_escaped(char c)
++{
++	char buffer[8];
++	int i, len;
++
++	if (!iscntrl(c) || (c == '\n') || (c == '\t'))
++		emit_log_char(c);
++	else {
++		len = sprintf(buffer, "#x%02x", c);
++		for (i = 0; i < len; i++)
++			emit_log_char(buffer[i]);
++	}
++}
++
+ /*
+  * Zap console related locks when oopsing. Only zap at most once
+  * every 10 seconds, to leave time for slow consoles to print a
+@@ -938,7 +953,7 @@ asmlinkage int vprintk(const char *fmt, va_list args)
+ 				break;
+ 		}
+ 
+-		emit_log_char(*p);
++		emit_log_char_escaped(*p);
+ 		if (*p == '\n')
+ 			new_text_line = 1;
+ 	}
+---
