@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934107Ab1FWSEJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:04:09 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34807 "EHLO
+	id S933912Ab1FWR6D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:58:03 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35138 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933497Ab1FWRhJ (ORCPT
+	with ESMTP id S933608Ab1FWRhl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:09 -0400
+	Thu, 23 Jun 2011 13:37:41 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Pavel Shilovsky <piastryyy@gmail.com>,
-        Steve French <sfrench@us.ibm.com>,
+Cc: stable-review@kernel.org, Li Zefan <lizf@cn.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 149/247] CIFS: Fix oplock break handling (try #2)
-Date: Thu, 23 Jun 2011 13:33:37 -0400
-Message-Id: <1308850515-15242-90-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 150/247] cpuset: add a missing unlock in cpuset_write_resmask()
+Date: Thu, 23 Jun 2011 13:33:38 -0400
+Message-Id: <1308850515-15242-91-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,139 +24,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Shilovsky <piastryyy@gmail.com>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 12fed00de963433128b5366a21a55808fab2f756 upstream.
+commit b75f38d659e6fc747eda64cb72f3920e29dd44a4 upstream.
 
-When we get oplock break notification we should set the appropriate
-value of OplockLevel field in oplock break acknowledge according to
-the oplock level held by the client in this time. As we only can have
-level II oplock or no oplock in the case of oplock break, we should be
-aware only about clientCanCacheRead field in cifsInodeInfo structure.
+Don't forget to release cgroup_mutex if alloc_trial_cpuset() fails.
 
-Also fix bug connected with wrong interpretation of OplockLevel field
-during oplock break notification processing.
-
-[PG: above OplockLevel bug only exists via. e66673e39a which didn't
-appear until v2.6.37-rc2, so cifs/misc.c hunk dropped.]
-
-Signed-off-by: Pavel Shilovsky <piastryyy@gmail.com>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+[akpm@linux-foundation.org: avoid multiple return points]
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Paul Menage <menage@google.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Cc: Miao Xie <miaox@cn.fujitsu.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/cifs/cifsproto.h |    2 +-
- fs/cifs/cifssmb.c   |    4 +++-
- fs/cifs/file.c      |   21 +++++++++++----------
- 3 files changed, 15 insertions(+), 12 deletions(-)
+ kernel/cpuset.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/fs/cifs/cifsproto.h b/fs/cifs/cifsproto.h
-index a6db615..ef0db18 100644
---- a/fs/cifs/cifsproto.h
-+++ b/fs/cifs/cifsproto.h
-@@ -329,7 +329,7 @@ extern int CIFSSMBLock(const int xid, struct cifsTconInfo *tcon,
- 			const __u16 netfid, const __u64 len,
- 			const __u64 offset, const __u32 numUnlock,
- 			const __u32 numLock, const __u8 lockType,
--			const bool waitFlag);
-+			const bool waitFlag, const __u8 oplock_level);
- extern int CIFSSMBPosixLock(const int xid, struct cifsTconInfo *tcon,
- 			const __u16 smb_file_id, const int get_flag,
- 			const __u64 len, struct file_lock *,
-diff --git a/fs/cifs/cifssmb.c b/fs/cifs/cifssmb.c
-index 5d3f29f..62e49ab 100644
---- a/fs/cifs/cifssmb.c
-+++ b/fs/cifs/cifssmb.c
-@@ -1642,7 +1642,8 @@ int
- CIFSSMBLock(const int xid, struct cifsTconInfo *tcon,
- 	    const __u16 smb_file_id, const __u64 len,
- 	    const __u64 offset, const __u32 numUnlock,
--	    const __u32 numLock, const __u8 lockType, const bool waitFlag)
-+	    const __u32 numLock, const __u8 lockType,
-+	    const bool waitFlag, const __u8 oplock_level)
- {
- 	int rc = 0;
- 	LOCK_REQ *pSMB = NULL;
-@@ -1670,6 +1671,7 @@ CIFSSMBLock(const int xid, struct cifsTconInfo *tcon,
- 	pSMB->NumberOfLocks = cpu_to_le16(numLock);
- 	pSMB->NumberOfUnlocks = cpu_to_le16(numUnlock);
- 	pSMB->LockType = lockType;
-+	pSMB->OplockLevel = oplock_level;
- 	pSMB->AndXCommand = 0xFF;	/* none */
- 	pSMB->Fid = smb_file_id; /* netfid stays le */
+diff --git a/kernel/cpuset.c b/kernel/cpuset.c
+index 9a50c5f..8f024fa 100644
+--- a/kernel/cpuset.c
++++ b/kernel/cpuset.c
+@@ -1534,8 +1534,10 @@ static int cpuset_write_resmask(struct cgroup *cgrp, struct cftype *cft,
+ 		return -ENODEV;
  
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 4cbdb20..1ab7670 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -828,12 +828,12 @@ int cifs_lock(struct file *file, int cmd, struct file_lock *pfLock)
+ 	trialcs = alloc_trial_cpuset(cs);
+-	if (!trialcs)
+-		return -ENOMEM;
++	if (!trialcs) {
++		retval = -ENOMEM;
++		goto out;
++	}
  
- 		/* BB we could chain these into one lock request BB */
- 		rc = CIFSSMBLock(xid, tcon, netfid, length, pfLock->fl_start,
--				 0, 1, lockType, 0 /* wait flag */ );
-+				 0, 1, lockType, 0 /* wait flag */, 0);
- 		if (rc == 0) {
- 			rc = CIFSSMBLock(xid, tcon, netfid, length,
- 					 pfLock->fl_start, 1 /* numUnlock */ ,
- 					 0 /* numLock */ , lockType,
--					 0 /* wait flag */ );
-+					 0 /* wait flag */, 0);
- 			pfLock->fl_type = F_UNLCK;
- 			if (rc != 0)
- 				cERROR(1, ("Error unlocking previously locked "
-@@ -850,13 +850,13 @@ int cifs_lock(struct file *file, int cmd, struct file_lock *pfLock)
- 				rc = CIFSSMBLock(xid, tcon, netfid, length,
- 					pfLock->fl_start, 0, 1,
- 					lockType | LOCKING_ANDX_SHARED_LOCK,
--					0 /* wait flag */);
-+					0 /* wait flag */, 0);
- 				if (rc == 0) {
- 					rc = CIFSSMBLock(xid, tcon, netfid,
- 						length, pfLock->fl_start, 1, 0,
- 						lockType |
- 						LOCKING_ANDX_SHARED_LOCK,
--						0 /* wait flag */);
-+						0 /* wait flag */, 0);
- 					pfLock->fl_type = F_RDLCK;
- 					if (rc != 0)
- 						cERROR(1, ("Error unlocking "
-@@ -900,8 +900,8 @@ int cifs_lock(struct file *file, int cmd, struct file_lock *pfLock)
- 
- 		if (numLock) {
- 			rc = CIFSSMBLock(xid, tcon, netfid, length,
--					pfLock->fl_start,
--					0, numLock, lockType, wait_flag);
-+					 pfLock->fl_start, 0, numLock, lockType,
-+					 wait_flag, 0);
- 
- 			if (rc == 0) {
- 				/* For Windows locks we must store them. */
-@@ -921,9 +921,9 @@ int cifs_lock(struct file *file, int cmd, struct file_lock *pfLock)
- 						(pfLock->fl_start + length) >=
- 						(li->offset + li->length)) {
- 					stored_rc = CIFSSMBLock(xid, tcon,
--							netfid,
--							li->length, li->offset,
--							1, 0, li->type, false);
-+							netfid, li->length,
-+							li->offset, 1, 0,
-+							li->type, false, 0);
- 					if (stored_rc)
- 						rc = stored_rc;
- 
-@@ -2340,7 +2340,8 @@ cifs_oplock_break(struct slow_work *work)
- 	 */
- 	if (!cfile->closePend && !cfile->oplock_break_cancelled) {
- 		rc = CIFSSMBLock(0, cifs_sb->tcon, cfile->netfid, 0, 0, 0, 0,
--				 LOCKING_ANDX_OPLOCK_RELEASE, false);
-+				 LOCKING_ANDX_OPLOCK_RELEASE, false,
-+				 cinode->clientCanCacheRead ? 1 : 0);
- 		cFYI(1, ("Oplock release rc = %d", rc));
+ 	switch (cft->private) {
+ 	case FILE_CPULIST:
+@@ -1550,6 +1552,7 @@ static int cpuset_write_resmask(struct cgroup *cgrp, struct cftype *cft,
  	}
+ 
+ 	free_trial_cpuset(trialcs);
++out:
+ 	cgroup_unlock();
+ 	return retval;
  }
 -- 
 1.7.4.4
