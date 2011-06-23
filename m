@@ -1,72 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934231Ab1FWSOy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:14:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59857 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933379Ab1FWSOt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:14:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=MVwEQOeIGhb+ock9+4qbo2M2RPzeiM+xZTPsX6ILxwqA2JAhbTILuI1WiX6opGE8BX
-         BIuC5q1QhQZQWa6bQ023sbfOThLNIJMWLyEo5w2Izgg+kcatA4+zatzDLr36JQXoYSfk
-         5gbgmTTsbz4PDDGL9x1OQU2rv/ZMRJ0h7Rg9I=
-MIME-Version: 1.0
-In-Reply-To: <20110623175725.GA21283@aepfle.de>
-References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
-	<1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
-	<1308850515-15242-151-git-send-email-paul.gortmaker@windriver.com>
-	<20110623175725.GA21283@aepfle.de>
-Date: Thu, 23 Jun 2011 14:14:48 -0400
-X-Google-Sender-Auth: a32cpeByPgPJBH2Ued5l3HQ-ipU
-Message-ID: <BANLkTi=5nCHt370=6ZWg4ePLi1qh0w51cg@mail.gmail.com>
-Subject: Re: [34-longterm 210/247] Input: xen-kbdfront - advertise either
- absolute or relative coordinates
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: Olaf Hering <olaf@aepfle.de>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S964850Ab1FWSQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:16:43 -0400
+Received: from mga09.intel.com ([134.134.136.24]:26359 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933292Ab1FWSQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 14:16:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,414,1304319600"; 
+   d="scan'208";a="18912465"
+Subject: Re: [patch 1/4] x86, mtrr: lock stop machine during MTRR
+ rendezvous sequence
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, "mingo@elte.hu" <mingo@elte.hu>,
+        "hpa@zytor.com" <hpa@zytor.com>, "trenn@novell.com" <trenn@novell.com>,
+        "prarit@redhat.com" <prarit@redhat.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Song, Youquan" <youquan.song@intel.com>,
+        "stable@kernel.org" <stable@kernel.org>
+In-Reply-To: <alpine.LFD.2.02.1106231131300.11814@ionos>
+References: <20110622222021.904952469@sbsiddha-MOBL3.sc.intel.com>
+	 <20110622222043.862589370@sbsiddha-MOBL3.sc.intel.com>
+	 <1308819905.1022.70.camel@twins>
+	 <alpine.LFD.2.02.1106231131300.11814@ionos>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Thu, 23 Jun 2011 11:16:40 -0700
+Message-Id: <1308853000.15847.87.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 1:57 PM, Olaf Hering <olaf@aepfle.de> wrote:
-> On Thu, Jun 23, Paul Gortmaker wrote:
->
->> From: Olaf Hering <olaf@aepfle.de>
->>
->>                    -------------------
->>     This is a commit scheduled for the next v2.6.34 longterm release.
->>     If you see a problem with using this for longterm, please comment.
->>                    -------------------
->>
->> commit 8c3c283e6bf463ab498d6e7823aff6c4762314b6 upstream.
->
-> This one will introduce a regression, which will be fixed by upstream
-> commit c36b58e8a9112017c2bcc322cc98e71241814303
->
->    Input: xen-kbdfront - fix mouse getting stuck after save/restore
->
-> Olaf
+On Thu, 2011-06-23 at 02:33 -0700, Thomas Gleixner wrote:
+> On Thu, 23 Jun 2011, Peter Zijlstra wrote:
+> 
+> > On Wed, 2011-06-22 at 15:20 -0700, Suresh Siddha wrote:
+> > > +#ifdef CONFIG_SMP
+> > > +       /*
+> > > +        * If we are not yet online, then there can be no stop_machine() in
+> > > +        * parallel. Stop machine ensures this by using get_online_cpus().
+> > > +        *
+> > > +        * If we are online, then we need to prevent a stop_machine() happening
+> > > +        * in parallel by taking the stop cpus mutex.
+> > > +        */
+> > > +       if (cpu_online(raw_smp_processor_id()))
+> > > +               mutex_lock(&stop_cpus_mutex);
+> > > +#endif 
+> > 
+> > This reads like an optimization, is it really worth-while to not take
+> > the mutex in the rare offline case?
+>  
+> You cannot block on a mutex when you are not online, in fact you
+> cannot block on it when not active, so the check is wrong anyway.
+> 
 
-Thanks Olaf,  it will appear here shortly.
+Ok. Thanks for educating me on that.
 
-http://git.kernel.org/?p=linux/kernel/git/longterm/longterm-queue-2.6.34.git;a=summary
+Here we are neither online nor active. So we should be ok. But to be
+safe, I changed the online checks to active checks and updated the above
+comment also in the new revision.
 
-[PS: Dmitry - the mail.ru address you've been using in SOB lines always bounces]
+thanks,
+suresh
 
-Paul.
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
