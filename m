@@ -1,75 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759475Ab1FWOM2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 10:12:28 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:48003 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758132Ab1FWOM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 10:12:27 -0400
-Date: Thu, 23 Jun 2011 18:11:37 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: matt mooney <mfm@muteddisk.com>
-Cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-uvc-devel@lists.berlios.de, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [RFC, PATCH] USB: EHCI: Allow users to override 80% max
-	periodic bandwidth
-Message-ID: <20110623141137.GB4403@tugrik.mns.mnsspb.ru>
-References: <1308758567-8205-1-git-send-email-kirr@mns.spb.ru> <20110622173045.GC56479@haskell.muteddisk.com> <20110622173544.GD56479@haskell.muteddisk.com>
+	id S1759487Ab1FWOMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 10:12:41 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:51785 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758132Ab1FWOMj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 10:12:39 -0400
+Date: Thu, 23 Jun 2011 15:12:22 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Stefan Assmann <sassmann@kpanic.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tony.luck@intel.com, andi@firstfloor.org,
+        mingo@elte.hu, hpa@zytor.com, rick@vanrein.org, rdunlap@xenotime.net
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+Message-ID: <20110623141222.GA30003@srcf.ucam.org>
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
+ <20110623133950.GB28333@srcf.ucam.org>
+ <4E0348E0.7050808@kpanic.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110622173544.GD56479@haskell.muteddisk.com>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E0348E0.7050808@kpanic.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 10:35:44AM -0700, matt mooney wrote:
-> On 10:30 Wed 22 Jun     , matt mooney wrote:
-> > On 20:02 Wed 22 Jun     , Kirill Smelkov wrote:
-> > > There are cases, when 80% max isochronous bandwidth is too limiting.
-> > > 
-> > > For example I have two USB video capture cards which stream uncompressed
-> > > video, and to stream full NTSC + PAL videos we'd need
-> > > 
-> > >     NTSC 640x480 YUV422 @30fps      ~17.6 MB/s
-> > >     PAL  720x576 YUV422 @25fps      ~19.7 MB/s
-> > > 
-> > > isoc bandwidth.
-> > > 
-> > > Now, due to limited alt settings in capture devices NTSC one ends up
-> > > streaming with max_pkt_size=2688  and  PAL with max_pkt_size=2892, both
-> > > with interval=1. In terms of microframe time allocation this gives
-> > > 
-> > >     NTSC    ~53us
-> > >     PAL     ~57us
-> > > 
-> > > and together
-> > > 
-> > >     ~110us  >  100us == 80% of 125us uframe time.
-> > > 
-> > > So those two devices can't work together simultaneously because the'd
-> > > over allocate isochronous bandwidth.
-> > > 
-> > > 80% seemed a bit arbitrary to me, and I've tried to raise it to 90% and
-> > > both devices started to work together, so I though sometimes it would be
-> > > a good idea for users to override hardcoded default of max 80% isoc
-> > > bandwidth.
-> > 
-> > There is nothing arbitrary about 80%. The USB 2.0 Specification constrains
-> > periodic transfers for high-speed endpoints to 80% of the microframe. See
-> > section 5.6.4.
-> > 
+On Thu, Jun 23, 2011 at 04:08:32PM +0200, Stefan Assmann wrote:
+> On 23.06.2011 15:39, Matthew Garrett wrote:
+> > Would it be more reasonable to do this in the bootloader? You'd ideally 
+> > want this to be done as early as possible in order to avoid awkward 
+> > situations like your ramdisk ending up in the bad RAM area.
 > 
-> Looking at the patch, I see that you probably already knew that.
-> 
-> So I digress and defer to the USB experts ;)
+> Not sure what exactly you are suggesting here. The kernel somehow needs
+> to know what memory areas to avoid so we supply this information via
+> kernel command line.
+> What the bootloader could do is to allow the kernel/initrd to be loaded
+> at an alternative address. That's briefly mentioned in the BadRAM
+> Documentation as well. Is that what you mean or am I missing something?
 
-Yes, it was meant as 80% being arbitrary chosen by USB 2.0
-specification. Notes taken - I'll clarify patch description.
+For EFI booting we just hand an e820 map to the kernel. It ought to be 
+easy enough to add support for that to the 16-bit entry point as well. 
+Then the bootloader just needs to construct an e820 map of its own. I 
+think grub2 actually already has some support for this. The advantage of 
+this approach is that the knowledge of bad memory only has to exist in 
+one place (ie, the bootloader) - the kernel can remain blisfully 
+unaware.
 
-
-Thanks for commenting,
-Kirill
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
