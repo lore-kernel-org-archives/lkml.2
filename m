@@ -1,90 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934479Ab1FWUr0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 16:47:26 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:6999 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933925Ab1FWUrY (ORCPT
+	id S934466Ab1FWUrJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 16:47:09 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:49754 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933925Ab1FWUrF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 16:47:24 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=Ew4aGI3joe090ssklNaSsP51VO8GJmnyLKZ1xpvprODK0f5dOayVhxFmUcC6jcgla
-	eW6JSc789l0sHxQqXYmDQ==
-From: Zhengyu He <zhengyuh@google.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@google.com>,
-        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
-        Zhengyu He <zhengyuh@google.com>
-Subject: [PATCH] perf: stat: add noise output for csv mode
-Date: Thu, 23 Jun 2011 13:45:42 -0700
-Message-Id: <1308861942-4945-1-git-send-email-zhengyuh@google.com>
-X-Mailer: git-send-email 1.7.3.1
+	Thu, 23 Jun 2011 16:47:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=JE3y962puSHutnUJ4UZIP5xo+fr92jd4IyM4Iz2tGgOyLPrRiwmB5eU14UWt73WNgx
+         iy38l0v4xzIpFtEQObvcdYOFoPYjGPcxV9QJ6T/Lc4hqzfvVV32mg7ivBuZZCI2lddGT
+         u+f/hPpi+4jPd6XsfqoUAVsnNVQ5/mouzq0+Q=
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: ti@lists.linaro.org, linux-omap@vger.kernel.org, lrg@ti.com,
+        broonie@opensource.wolfsonmicro.com, sameo@linux.intel.com,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Subject: [PATCH] regulator: twl: Add 'fixed' set_voltage callback
+Date: Fri, 24 Jun 2011 02:16:54 +0530
+Message-Id: <1308862014-11212-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Previously, when you want perf-stat to output the statistics in csv
-mode, no information of the noise will be printed out.
+Define dummy set_voltage callback for fixed lines,
+without which voltage constraints fail to apply.
 
-For example,
-
-./perf stat -r3 -x, sleep 1
-1.164789,task-clock
-8,context-switches
-0,CPU-migrations
-219,page-faults
-3337800,cycles
-
-With this patch, the output will be appended with an additional entry of
-the noise value:
-
-./perf stat -r3 -x, sleep 1
-1.164789,task-clock,3.75%
-8,context-switches,75.00%
-0,CPU-migrations,100.00%
-219,page-faults,0.00%
-3337800,cycles,3.36%
-
-Signed-off-by: Zhengyu He <zhengyuh@google.com>
+Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
 ---
- tools/perf/builtin-stat.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+ drivers/regulator/twl-regulator.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index a9f0671..3ca1caa 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -513,7 +513,10 @@ static void print_noise_pct(double total, double avg)
- 	if (avg)
- 		pct = 100.0*total/avg;
- 
--	fprintf(stderr, "  ( +-%6.2f%% )", pct);
-+        if (csv_output)
-+	        fprintf(stderr, "%s%.2f%%", csv_sep, pct);
-+        else
-+	        fprintf(stderr, "  ( +-%6.2f%% )", pct);
+diff --git a/drivers/regulator/twl-regulator.c b/drivers/regulator/twl-regulator.c
+index 87fe0f7..8223e49 100644
+--- a/drivers/regulator/twl-regulator.c
++++ b/drivers/regulator/twl-regulator.c
+@@ -591,10 +591,18 @@ static int twlfixed_get_voltage(struct regulator_dev *rdev)
+ 	return info->min_mV * 1000;
  }
  
- static void print_noise(struct perf_evsel *evsel, double avg)
-@@ -878,13 +881,13 @@ static void print_counter_aggr(struct perf_evsel *counter)
- 	else
- 		abs_printout(-1, counter, avg);
- 
-+	print_noise(counter, avg);
++static int twlfixed_set_voltage(struct regulator_dev *rdev,
++	int min_uV, int max_uV, unsigned *selector)
++{
++	*selector = min_uV / 1000;
++	return 0;
++}
 +
- 	if (csv_output) {
- 		fputc('\n', stderr);
- 		return;
- 	}
+ static struct regulator_ops twl4030fixed_ops = {
+ 	.list_voltage	= twlfixed_list_voltage,
  
--	print_noise(counter, avg);
--
- 	if (scaled) {
- 		double avg_enabled, avg_running;
+ 	.get_voltage	= twlfixed_get_voltage,
++	.set_voltage	= twlfixed_set_voltage,
  
+ 	.enable		= twl4030reg_enable,
+ 	.disable	= twl4030reg_disable,
+@@ -609,6 +617,7 @@ static struct regulator_ops twl6030fixed_ops = {
+ 	.list_voltage	= twlfixed_list_voltage,
+ 
+ 	.get_voltage	= twlfixed_get_voltage,
++	.set_voltage	= twlfixed_set_voltage,
+ 
+ 	.enable		= twl6030reg_enable,
+ 	.disable	= twl6030reg_disable,
 -- 
-1.7.3.1
+1.7.4.1
 
