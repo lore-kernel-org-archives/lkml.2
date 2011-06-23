@@ -1,79 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753184Ab1FWF32 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 01:29:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35204 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab1FWF31 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 01:29:27 -0400
-Date: Thu, 23 Jun 2011 15:29:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: linux-next: build failure after merge of the final tree (net tree
- related)
-Message-Id: <20110623152920.31b28b00.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__23_Jun_2011_15_29_20_+1000_7hk2pSyZxG2640eb"
+	id S1753736Ab1FWFhD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 01:37:03 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:43973 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750996Ab1FWFhB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 01:37:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
+         :references:user-agent:mime-version:content-type;
+        b=X/Jimt2hPkt1t/FNF281UCJOZzHkSNMchMVN5JOu/GwVazId9ncAtQwKP01xA3Y/3a
+         vxTqevEvmPMlvW/FxwKg==
+Date: Wed, 22 Jun 2011 22:32:30 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Ravikiran Thirumalai <kiran@scalex86.org>,
+        William Irwin <wli@holomorphy.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [Patch] hugetlb: remove user_shm_lock() check from
+ hugetlb_file_setup()
+In-Reply-To: <BANLkTi=7O2hW37Mt2NCvxDQq6Ldsa6XhXw@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1106222230460.2981@chino.kir.corp.google.com>
+References: <20110618071308.GA24743@cr0> <alpine.DEB.2.00.1106181630480.3431@chino.kir.corp.google.com> <BANLkTi=7O2hW37Mt2NCvxDQq6Ldsa6XhXw@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="397155492-1010654852-1308807151=:2981"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__23_Jun_2011_15_29_20_+1000_7hk2pSyZxG2640eb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Hi all,
+--397155492-1010654852-1308807151=:2981
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+On Thu, 23 Jun 2011, Américo Wang wrote:
 
-drivers/net/ll_temac_main.c: In function 'temac_dma_bd_release':
-drivers/net/ll_temac_main.c:209:4: error: implicit declaration of function =
-'dma_unmap_single'
-drivers/net/ll_temac_main.c:215:3: error: implicit declaration of function =
-'dma_free_coherent'
-drivers/net/ll_temac_main.c: In function 'temac_dma_bd_init':
-drivers/net/ll_temac_main.c:243:2: error: implicit declaration of function =
-'dma_alloc_coherent'
-drivers/net/ll_temac_main.c:243:14: warning: assignment makes pointer from =
-integer without a cast
-drivers/net/ll_temac_main.c:251:14: warning: assignment makes pointer from =
-integer without a cast
-drivers/net/ll_temac_main.c:280:3: error: implicit declaration of function =
-'dma_map_single'
-drivers/net/ll_temac_main.c: In function 'temac_start_xmit_done':
-drivers/net/ll_temac_main.c:628:22: warning: cast to pointer from integer o=
-f different size
+> > I know this is scheduled for removal and it is quite past due, but I think
+> > we need to do some due diligence before just yanking the whole thing out.
+> > A printk_once() about some mysterious application using SHM_HUGETLB
+> > doesn't seem very helpful in migrating users to start using
+> > /proc/sys/vm/hugetlb_shm_group, and suddenly returning -EPERM when
+> > attempting it doesn't seem very responsible, despite what
+> > Documentation/feature-removal-schedule.txt may say.
+> >
+> > For context, we just ran into this internally where this warning at one
+> > point appeared to be WARN_ON_ONCE().  That seems more attention grabbing
+> > because it at least allows users to start understanding what the issue is
+> > and who needs to be fixed.
+> 
+> Well, we put printk_once with KERN_WARNING level, this is already an enough
+> warning, the only difference with WARN_ON_ONCE() is this has no backtrace
+> which is not important for this case.
+> 
 
-I suspect that this was caused by commit b7f080cfe223 ("net: remove mm.h
-inclusion from netdevice.h").
+NACK.
 
-I have left the build broken for now since it is also broken for other
-reasons.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+As explained above, using printk_once() to identify that some unidentified 
+application is using SHM_HUGETLB to charge against the mlock rlimit 
+through mmap() isn't sufficient notice and _will_ result in userspace 
+breakage.  Please convert this to a WARN_ON_ONCE() so the application is 
+identified, wait 6-12 months, convert it to a WARN_ON(), wait 6-12 months, 
+then remove it.
 
---Signature=_Thu__23_Jun_2011_15_29_20_+1000_7hk2pSyZxG2640eb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOAs8wAAoJEDMEi1NhKgbs99wH/Rb4znjuvFlSqnV26JJhGrMF
-qh2AiutkLzs3EnDvbiEx9XHSrvziM27yOc7AiiwR0yx7tFcqteGm/sd9loSD8RCb
-TvQQ0XY6/To5vScGwcLty1a+NXZBQLpjZyVvZ97z27eJ5PC10o0R8j5SR2adCQgO
-evliMP623M9l5eaH6/V6jnaW4uI5M6UIoOB6EdtiI/T66ha1PLXemFgbtTnHt9On
-Uq2mte2tzMTeOJmavjCX2F1FmvgH70ihA1NcR5/HH70mJNzPwcDcspplL6tzFBNv
-asLVqsHSRHHAl+51JKhUp5eYD/H2Wd7t+5Hk+Y/Tf6H+5eK0/EopVxqX5zUqDQ4=
-=wIRf
------END PGP SIGNATURE-----
-
---Signature=_Thu__23_Jun_2011_15_29_20_+1000_7hk2pSyZxG2640eb--
+Thanks.
+--397155492-1010654852-1308807151=:2981--
