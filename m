@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758799Ab1FWIpf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 04:45:35 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:29032 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab1FWIpe (ORCPT
+	id S1758986Ab1FWIqx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 04:46:53 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:22485 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758942Ab1FWIqv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 04:45:34 -0400
-Date: Thu, 23 Jun 2011 10:45:25 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Ankur Patel <bkankur@gmail.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] HWMON: TMP102 - Added support for 12 bit data
-Message-ID: <20110623104525.30718cd7@endymion.delvare>
-In-Reply-To: <BANLkTikLSmXKG67NroavRb+FjzVE5ie21Q@mail.gmail.com>
-References: <1308709299-24539-1-git-send-email-bkankur@gmail.com>
-	<20110623100616.4573741f@endymion.delvare>
-	<BANLkTikLSmXKG67NroavRb+FjzVE5ie21Q@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 23 Jun 2011 04:46:51 -0400
+Message-ID: <4E02FD74.8020503@dsn.okisemi.com>
+Date: Thu, 23 Jun 2011 17:46:44 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>,
+        Wolfram Sang <w.sang@pengutronix.de>, Qi Wang <qi.wang@intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yong.y.wang@intel.com, joel.clark@intel.com, kok.howg.ewe@intel.com,
+        toshiharu-linux@dsn.okisemi.com
+Subject: Re: [PATCH] i2c-eg20t : Fix the issue of Combined R/W transfer mode
+References: <1308813430-2697-1-git-send-email-tomoya-linux@dsn.okisemi.com> <201106230952.09286.alexander.stein@systec-electronic.com>
+In-Reply-To: <201106230952.09286.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jun 2011 13:56:53 +0530, Ankur Patel wrote:
-> On Thu, Jun 23, 2011 at 1:36 PM, Jean Delvare <khali@linux-fr.org> wrote:
-> 
-> > On Wed, 22 Jun 2011 07:51:39 +0530, Ankur Patel wrote:
-> > > From: Ankur Patel <ankur.patel@quipment.in>
-> > >
-> > > In the tmp102.ko driver support for 12 bit data is added. Also, the
-> > > sysfs names are replaced with the actual chip supported fuctionality
-> > > names.
-> >
-> > Nack. These attribute names are standard, see
-> > Documentation/hwmon/sysfs-interface. You don't get to change them.
-> >
-> >
-> > What problem were you trying to solve? libsensors expects the attribute
-> > names which are in use today.
-> >
-> > Agree, But using temp1_max_hyst as an attribute for presenting low level
-> threshold, will it not more feasible to use temp1_low instead?.
+(2011/06/23 16:52), Alexander Stein wrote:
+>
+> Do you have any other local pending patches which are not in git yet? I can't
+> find this for loop in current master.
+>
 
-No. This isn't a min temperature limit. Please read the TMP102
-datasheet and in particular Figure 10 "Output Transfer Function
-Diagrams" and the description of the AL configuration bit.
+I sent a patch for i2c-eg20t in 9-June which haven't been reviewed yet 
+by i2c maintainer.
 
 -- 
-Jean Delvare
+tomoya
+OKI SEMICONDUCTOR CO., LTD.
