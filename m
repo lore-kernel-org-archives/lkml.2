@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759249Ab1FWOzK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 10:55:10 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:34182 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754899Ab1FWOzJ (ORCPT
+	id S1759225Ab1FWPCM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 11:02:12 -0400
+Received: from ud10.udmedia.de ([194.117.254.50]:43891 "EHLO
+	mail.ud10.udmedia.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754264Ab1FWPCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 10:55:09 -0400
-X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzAuK6Yfw==
-X-RZG-CLASS-ID: mo00
-Message-ID: <4E0353CA.7000708@hartkopp.net>
-Date: Thu, 23 Jun 2011 16:55:06 +0200
-From: Oliver Hartkopp <socketcan@hartkopp.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110606 Icedove/3.1.10
+	Thu, 23 Jun 2011 11:02:11 -0400
+Date: Thu, 23 Jun 2011 17:02:09 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Nick Bowler <nbowler@elliptictech.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Mike Frysinger <vapier@gentoo.org>, Sam Ravnborg <sam@ravnborg.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Subject: Re: __packed vs. __attribute__((packed)) in kernel headers
+Message-ID: <20110623150209.GA12413@x4.trippels.de>
+References: <20110622063441.GA1740@x4.trippels.de>
+ <20110623134209.GA10813@elliptictech.com>
 MIME-Version: 1.0
-To: Ram Pai <linuxram@us.ibm.com>
-CC: yinghai@kernel.org, jbarnes@virtuousgeek.org,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] PCI: fix cardbus and sriov regressions
-References: <1308561849-3223-1-git-send-email-linuxram@us.ibm.com> <4DFFB6B0.6090307@hartkopp.net> <4DFFB945.5090203@hartkopp.net> <20110620214127.GA22917@ram-laptop> <4DFFC2FC.5050502@hartkopp.net>
-In-Reply-To: <4DFFC2FC.5050502@hartkopp.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110623134209.GA10813@elliptictech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello RP,
-
-unfortunately i noticed the discussion on linux-kernel ML a bit late, as i did
-not subscribe it due to the traffic.
-
-Did you get further with the unusual alignment?
-
-Even if i did not see any problems (i did not test the CardBus slot but only
-the sdhci_pci), i wonder if the register layout of some adapters would get
-into problems with this alignment shown below?!?
-
-Regards,
-Oliver
-
-ps. pls put me in CC in the next patch servies. tnx
-
-On 21.06.2011 00:00, Oliver Hartkopp wrote:
-
->>>
->>> When comparing the logs with mgdiff, i found
->>>
->>> in revered:
->>>
->>> pci_bus 0000:04: resource 0 [io  0x2000-0x20ff]
->>> pci_bus 0000:04: resource 1 [io  0x2400-0x24ff]
->>>
->>> in the fixed version (4 patches)
->>>
->>> pci_bus 0000:04: resource 0 [io  0x2400-0x24ff]
->>> pci_bus 0000:04: resource 1 [io  0x2001-0x2100]
->>>
->>> Don't you think that the ressource 0x2001-0x2100 looks a bit weird?
->>>
->>> off-by-one problem?
->>
->> The resource location has slid by 1. That is because a reassign of
->> resource unfortunately does not let me realign it at the same location.
->>
->> ALIGN() macro is causing that weirdness.
->>
->> However is that slide by 1 causing you any problem?
+On 2011.06.23 at 09:42 -0400, Nick Bowler wrote:
+> On 2011-06-22 08:34 +0200, Markus Trippelsdorf wrote:
+> > One possible solution would be to let the "scripts/headers_install.pl"
+> > script automatically substitute __packed with __attribute__((packed)):
+> > 
+> > diff --git a/scripts/headers_install.pl b/scripts/headers_install.pl
+> > index efb3be1..e0dc065 100644
+> > --- a/scripts/headers_install.pl
+> > +++ b/scripts/headers_install.pl
+> > @@ -35,6 +35,7 @@ foreach my $file (@files) {
+> >  		$line =~ s/([\s(])__iomem\s/$1/g;
+> >  		$line =~ s/\s__attribute_const__\s/ /g;
+> >  		$line =~ s/\s__attribute_const__$//g;
+> > +		$line =~ s/\s__packed/__attribute__((packed))/g;
+> >  		$line =~ s/^#include <linux\/compiler.h>//;
+> >  		$line =~ s/(^|\s)(inline)\b/$1__$2__/g;
+> >  		$line =~ s/(^|\s)(asm)\b(\s|[(]|$)/$1__$2__$3/g;
+> > 
+> > Any thoughts?
 > 
-> No. I don't have a PCMCIA card here to test but the SD-Card is working
-> properly. I just wondered about the unusual alignment ...
+> Without any comment on the approach itself, the above change will eat a
+> space character before __packed, which may break the header by merging a
+> preceding token into the __attribute__.  It may also change instances of
+> __packed that occur as a prefix of a longer token.
+> 
+> Note that the __attribute_const__ lines above it take some care to avoid
+> both of these situations.
 
+Yes, you're right. But the patch was meant as a rough proof of concept
+and not as the final implementation. 
+
+I'm not an expert of Perl regular expressions, but maybe this:
+ $line =~ s/\s__packed;$/ __attribute__((packed));/g
+is a little bit closer to the intention?
+
+-- 
+Markus
