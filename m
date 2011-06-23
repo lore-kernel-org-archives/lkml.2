@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932567Ab1FWCCC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 22:02:02 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35252 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758877Ab1FWCAy (ORCPT
+	id S932544Ab1FWCBs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 22:01:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58820 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758896Ab1FWCAz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 22:00:54 -0400
+	Wed, 22 Jun 2011 22:00:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=DTpZnCIXNx5SBGdb458MWj1IOQ9lW9ReLAnR6jnx7vzP9srEiVvlur43Gy+3Q6aLrt
-         dCO/LNQVEMTI74+v4s8B4ktyisRi7FRd5xTEB7SgtYECPyTn8nrCfv8+TnlEoZDmBBrk
-         pihQV5oMkIrkS6EHb9f9WauJBjLm/BNybwLeg=
+        b=EcMukR1NmtNtdzYn/B4+17HL1GZo7y1NpgAMb6mP14E/HEqTVerJfOJHjElTrke9dq
+         T+TqNxiIpiKOPl1/Xq4moKlp1rcKBFmcbeSnx0eKuiRu3tksNOE7veSh3wPaueNDiVqb
+         yFUSlQl0k6XKarhG6dwBLwx+n/HHAMe+YM/Ck=
 From: dirk.brandewie@gmail.com
 To: linux-kernel@vger.kernel.org, spi-devel-general@lists.sourceforge.net
 Cc: Dirk Brandewie <dirk.brandewie@gmail.com>
-Subject: [PATCH 08/11] spi-dw: Ensure fifo lenght is set.
-Date: Wed, 22 Jun 2011 19:00:10 -0700
-Message-Id: <1308794413-11069-9-git-send-email-dirk.brandewie@gmail.com>
+Subject: [PATCH 09/11] spi-dw: Fix condition in spi_dw_{writer/reader}
+Date: Wed, 22 Jun 2011 19:00:11 -0700
+Message-Id: <1308794413-11069-10-git-send-email-dirk.brandewie@gmail.com>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1308794413-11069-1-git-send-email-dirk.brandewie@gmail.com>
 References: <1308794413-11069-1-git-send-email-dirk.brandewie@gmail.com>
@@ -28,49 +28,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dirk Brandewie <dirk.brandewie@gmail.com>
 
-Bug on fifo_len not being set.  The fifo sizing routine does not work
-since the txfltr register can not be written while the controller is
-enabled. The max value of txfltr can be larger than the fifo.  The
-register allows values upto 0x3f (63) the fifo depth on the Intel
-SOC's if 40
+Fix the condition based on whether the current transfer has a tx/rx
+buffer.
 
 Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
 ---
- drivers/spi/spi-dw.c |   18 ++----------------
- 1 files changed, 2 insertions(+), 16 deletions(-)
+ drivers/spi/spi-dw.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
 diff --git a/drivers/spi/spi-dw.c b/drivers/spi/spi-dw.c
-index ad92826..cc38aa0 100644
+index cc38aa0..35b952b 100644
 --- a/drivers/spi/spi-dw.c
 +++ b/drivers/spi/spi-dw.c
-@@ -776,25 +776,11 @@ static int destroy_queue(struct spi_dw *dws)
- /* Restart the controller, disable all interrupts, clean rx fifo */
- static void spi_dw_hw_init(struct spi_dw *dws)
- {
-+	BUG_ON(!dws->fifo_len);
-+
- 	spi_dw_disable(dws);
- 	spi_dw_mask_intr(dws, 0xff);
- 	spi_dw_enable(dws);
--
--	/*
--	 * Try to detect the FIFO depth if not set by interface driver,
--	 * the depth could be from 2 to 256 from HW spec
--	 */
--	if (!dws->fifo_len) {
--		u32 fifo;
--		for (fifo = 2; fifo <= 257; fifo++) {
--			dw_writew(dws, txfltr, fifo);
--			if (fifo != dw_readw(dws, txfltr))
--				break;
--		}
--
--		dws->fifo_len = (fifo == 257) ? 0 : fifo;
--		dw_writew(dws, txfltr, 0);
--	}
- }
+@@ -193,8 +193,8 @@ static void spi_dw_writer(struct spi_dw *dws)
+ 	u16 txw = 0;
  
- int __devinit spi_dw_add_host(struct spi_dw *dws)
+ 	while (max--) {
+-		/* Set the tx word if the transfer's original "tx" is not null */
+-		if (dws->tx_end - dws->len) {
++		/* Set the tx word if the transfer's "tx" is not null */
++		if (dws->tx) {
+ 			if (dws->n_bytes == 1)
+ 				txw = *(u8 *)(dws->tx);
+ 			else
+@@ -213,7 +213,7 @@ static void spi_dw_reader(struct spi_dw *dws)
+ 	while (max--) {
+ 		rxw = dw_readw(dws, dr);
+ 		/* Care rx only if the transfer's original "rx" is not null */
+-		if (dws->rx_end - dws->len) {
++		if (dws->rx) {
+ 			if (dws->n_bytes == 1)
+ 				*(u8 *)(dws->rx) = rxw;
+ 			else
 -- 
 1.7.3.4
 
