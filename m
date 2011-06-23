@@ -1,187 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759930Ab1FWS66 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:58:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40444 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754264Ab1FWS64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:58:56 -0400
-Date: Thu, 23 Jun 2011 14:58:48 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Helge Hafting <helge.hafting@hist.no>
-Cc: Suresh Jayaraman <sjayaraman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>
-Subject: Re: [2.6.39] CIFS write failures where 2.6.38 works
-Message-ID: <20110623145848.7840f339@tlielax.poochiereds.net>
-In-Reply-To: <4E0322B0.8030102@hist.no>
-References: <4DE6103E.6010100@hist.no>
-	<4DE8B449.2000008@suse.de>
-	<4DE8F989.50208@hist.no>
-	<20110609182845.1ebfc678@tlielax.poochiereds.net>
-	<20110622163612.45744bc2@tlielax.poochiereds.net>
-	<4E0322B0.8030102@hist.no>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759916Ab1FWTC7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 15:02:59 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:52414 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759663Ab1FWTC5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 15:02:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-operating-system
+         :user-agent;
+        b=aejB6HFl6SxCV3wgT9eafkJcOUudOcJ2U3wao+XbyPXvOfWNORQYKgS6Der/8vjtwH
+         xDktQarXb2Dnb5OxpcIQ==
+Date: Thu, 23 Jun 2011 12:02:27 -0700
+From: Mandeep Singh Baines <msb@google.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: [PATCH v3] crypto: sha1: use SHA1_BLOCK_SIZE
+Message-ID: <20110623190227.GH13916@google.com>
+References: <1306379477-24552-1-git-send-email-msb@chromium.org>
+ <20110525.233411.1372538972166578285.davem@davemloft.net>
+ <20110526232058.GQ11023@google.com>
+ <20110531052245.GA17068@gondor.apana.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110531052245.GA17068@gondor.apana.org.au>
+X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jun 2011 13:25:36 +0200
-Helge Hafting <helge.hafting@hist.no> wrote:
+Modify sha1_update to use SHA1_BLOCK_SIZE.
 
-> >
-> > I think that this is probably due to the change that added the
-> > page_mkwrite function to cifs.ko. Prior to that, cifs did single-page
-> > writes on signed connections. Now we do multi-page writes and windows
-> > servers apparently reject large write calls on signed connections.
-> >
-> > One way to test this theory would be to set the wsize to something
-> > smaller when you mount. For instance:
-> >
-> >      wsize=16384
-> >
-> > ...assuming that doesn't go over the server's MaxBufferSize, then thatFrom 
-> > should act as a workaround. Can you try that and let me know if it
-> > helps?
-> 
-> 
-> Yes, that seemed to fix it. I added wsize=16384 and mounted using 
-> debians 2.6.39-1-amd64 kernel.
-> 
-> I tried a recursive copy of 26MB from one directory tree to another on 
-> that mount. It completed in 24s with no error messages. 1MB/s is not 
-> much, but there may be 40 other users.
-> 
-> The server runs windows 2008r2, 64-bit.
-> 
-
-Great, thanks for testing that. Would you be able to test this patch on
-2.6.39 kernel? It should apply cleanly there, but let me know if it
-doesn't.
-
-Also, I'm planning to send this off to stable@kernel.org if there are no
-objections, so if anyone has any, let me know ASAP.
-
---------------------[snip]-----------------------
-
-cifs: fix wsize negotiation for 2.6.39 stable
-
-Prior to 2.6.39, when signing was enabled on a socket the client only
-sent single-page writes. This changed with commit ca83ce3d5b, which
-made signed and unsigned connections use the same codepaths for write
-calls.
-
-This caused a regression when working with windows servers. Windows
-machines will reject writes larger than the MaxBufferSize when signing
-is active, but does not clear the CAP_LARGE_WRITE_X flag in the
-negotiation.
-
-This patch backports 2 patches that fix this problem in 3.0 kernels,
-and changes a couple of the constants to values appropriate for the
-writeback code in 2.6.39.
-
-Cc: stable@kernel.org
-Reported-by: Helge Hafting <helge.hafting@hist.no>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 ---
- fs/cifs/connect.c |   64 ++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 44 insertions(+), 20 deletions(-)
+ crypto/sha1_generic.c |   11 ++++++-----
+ 1 files changed, 6 insertions(+), 5 deletions(-)
 
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 29fac128..2a9d9c1 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2571,23 +2571,6 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
- 	else /* default */
- 		cifs_sb->rsize = CIFSMaxBufSize;
+diff --git a/crypto/sha1_generic.c b/crypto/sha1_generic.c
+index 0416091..00ae60e 100644
+--- a/crypto/sha1_generic.c
++++ b/crypto/sha1_generic.c
+@@ -43,25 +43,26 @@ static int sha1_update(struct shash_desc *desc, const u8 *data,
+ 	unsigned int partial, done;
+ 	const u8 *src;
  
--	if (pvolume_info->wsize > PAGEVEC_SIZE * PAGE_CACHE_SIZE) {
--		cERROR(1, "wsize %d too large, using 4096 instead",
--			  pvolume_info->wsize);
--		cifs_sb->wsize = 4096;
--	} else if (pvolume_info->wsize)
--		cifs_sb->wsize = pvolume_info->wsize;
--	else
--		cifs_sb->wsize = min_t(const int,
--					PAGEVEC_SIZE * PAGE_CACHE_SIZE,
--					127*1024);
--		/* old default of CIFSMaxBufSize was too small now
--		   that SMB Write2 can send multiple pages in kvec.
--		   RFC1001 does not describe what happens when frame
--		   bigger than 128K is sent so use that as max in
--		   conjunction with 52K kvec constraint on arch with 4K
--		   page size  */
--
- 	if (cifs_sb->rsize < 2048) {
- 		cifs_sb->rsize = 2048;
- 		/* Windows ME may prefer this */
-@@ -2665,6 +2648,48 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
- 			   "mount option supported");
- }
+-	partial = sctx->count & 0x3f;
++	partial = sctx->count % SHA1_BLOCK_SIZE;
+ 	sctx->count += len;
+ 	done = 0;
+ 	src = data;
  
-+/* Prior to 3.0, cifs couldn't handle writes larger than this */
-+#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
-+
-+/*
-+ * When the server doesn't allow large posix writes, only allow a wsize of
-+ * 128k minus the size of the WRITE_AND_X header. That allows for a write up
-+ * to the maximum size described by RFC1002.
-+ */
-+#define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
-+
-+/* Make the default the same as the max */
-+#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
-+
-+static unsigned int
-+cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
-+{
-+	__u64 unix_cap = le64_to_cpu(tcon->fsUnixInfo.Capability);
-+	struct TCP_Server_Info *server = tcon->ses->server;
-+	unsigned int wsize = pvolume_info->wsize ? pvolume_info->wsize :
-+				CIFS_DEFAULT_WSIZE;
-+
-+	/* can server support 24-bit write sizes? (via UNIX extensions) */
-+	if (!tcon->unix_ext || !(unix_cap & CIFS_UNIX_LARGE_WRITE_CAP))
-+		wsize = min_t(unsigned int, wsize, CIFS_MAX_RFC1002_WSIZE);
-+
-+	/*
-+	 * no CAP_LARGE_WRITE_X or is signing enabled without CAP_UNIX set?
-+	 * Limit it to max buffer offered by the server, minus the size of the
-+	 * WRITEX header, not including the 4 byte RFC1001 length.
-+	 */
-+	if (!(server->capabilities & CAP_LARGE_WRITE_X) ||
-+	    (!(server->capabilities & CAP_UNIX) &&
-+	     (server->sec_mode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
-+		wsize = min_t(unsigned int, wsize,
-+				server->maxBuf - sizeof(WRITE_REQ) + 4);
-+
-+	/* hard limit of CIFS_MAX_WSIZE */
-+	wsize = min_t(unsigned int, wsize, CIFS_MAX_WSIZE);
-+
-+	return wsize;
-+}
-+
- static int
- is_path_accessible(int xid, struct cifsTconInfo *tcon,
- 		   struct cifs_sb_info *cifs_sb, const char *full_path)
-@@ -2866,13 +2891,12 @@ try_mount_again:
- 		cifs_sb->rsize = 1024 * 127;
- 		cFYI(DBG2, "no very large read support, rsize now 127K");
- 	}
--	if (!(tcon->ses->capabilities & CAP_LARGE_WRITE_X))
--		cifs_sb->wsize = min(cifs_sb->wsize,
--			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
- 	if (!(tcon->ses->capabilities & CAP_LARGE_READ_X))
- 		cifs_sb->rsize = min(cifs_sb->rsize,
- 			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
+-	if ((partial + len) > 63) {
++	if ((partial + len) >= SHA1_BLOCK_SIZE) {
+ 		u32 temp[SHA_WORKSPACE_WORDS];
  
-+	cifs_sb->wsize = cifs_negotiate_wsize(tcon, volume_info);
-+
- remote_path_check:
- 	/* check if a whole path (including prepath) is not remote */
- 	if (!rc && tcon) {
+ 		if (partial) {
+ 			done = -partial;
+-			memcpy(sctx->buffer + partial, data, done + 64);
++			memcpy(sctx->buffer + partial, data,
++			       done + SHA1_BLOCK_SIZE);
+ 			src = sctx->buffer;
+ 		}
+ 
+ 		do {
+ 			sha_transform(sctx->state, src, temp);
+-			done += 64;
++			done += SHA1_BLOCK_SIZE;
+ 			src = data + done;
+-		} while (done + 63 < len);
++		} while (done + SHA1_BLOCK_SIZE <= len);
+ 
+ 		memset(temp, 0, sizeof(temp));
+ 		partial = 0;
 -- 
-1.7.5.4
+1.7.3.1
 
