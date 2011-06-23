@@ -1,99 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759696Ab1FWQ0I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 12:26:08 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:21761
-	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758983Ab1FWQ0G (ORCPT
+	id S1759716Ab1FWQ12 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 12:27:28 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:54064 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755555Ab1FWQ11 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 12:26:06 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz1432N98dKzz1202hzz8275dhz2fh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:80.242.17.33;KIP:(null);UIP:(null);IPVD:NLI;H:JKLMAIL02.ixonos.local;RD:po02.ixonos.com;EFVD:NLI
-From: =?utf-8?B?UGVudHRpbMOkIE1pa2E=?= <mika.penttila@ixonos.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH] x86_64: do not assume head_64.S used 4KB pages when
- !use_pse
-Thread-Topic: [PATCH] x86_64: do not assume head_64.S used 4KB pages when
- !use_pse
-Thread-Index: AQHMMaRwWxboH6O3MkmoW91VS58sVpTLBkGQ///WEwCAAERZ8A==
-Date: Thu, 23 Jun 2011 16:25:34 +0000
-Message-ID: <1A61D8EA6755AF458F06EA669A4EC8182F05B0F8@JKLMAIL02.ixonos.local>
-References: <1A61D8EA6755AF458F06EA669A4EC8182F05B07E@JKLMAIL02.ixonos.local>
- <alpine.DEB.2.00.1106231354350.12963@kaball-desktop>
- <1A61D8EA6755AF458F06EA669A4EC8182F05B0C6@JKLMAIL02.ixonos.local>
- <alpine.DEB.2.00.1106231604070.12963@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1106231604070.12963@kaball-desktop>
-Accept-Language: en-US, fi-FI
+	Thu, 23 Jun 2011 12:27:27 -0400
+From: "Grosen, Mark" <mgrosen@ti.com>
+To: Michael Williamson <michael.williamson@criticallink.com>,
+        Ohad Ben-Cohen <ohad@wizery.com>
+CC: davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [RFC 0/8] Introducing a generic AMP/IPC framework
+Thread-Topic: [RFC 0/8] Introducing a generic AMP/IPC framework
+Thread-Index: AQHML+QkyBZcsabgrUapQCsRzbK3+pTLNMCA///qS/A=
+Date: Thu, 23 Jun 2011 16:27:10 +0000
+Message-ID: <FFF198FBBF957F4393BA834040FEFFA202CA6E@DFLE35.ent.ti.com>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+ <4E033041.9090606@criticallink.com>
+In-Reply-To: <4E033041.9090606@criticallink.com>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-x-originating-ip: [192.168.16.31]
-Content-Type: text/plain; charset="utf-8"
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-OriginatorOrg: ixonos.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5NGQJ2Y028338
 
-> From: Stefano Stabellini [mailto:stefano.stabellini@eu.citrix.com]
-> Sent: 23. kesÃ¤kuuta 2011 18:20
-> To: PenttilÃ¤ Mika
-> Cc: Stefano Stabellini; linux-kernel@vger.kernel.org
-> Subject: RE: [PATCH] x86_64: do not assume head_64.S used 4KB pages
-> when !use_pse
-> 
-> On Thu, 23 Jun 2011, PenttilÃ¤ Mika wrote:
-> > > > And arch/x86/mm/init.c also has:
-> > > >
-> > > > #if defined(CONFIG_DEBUG_PAGEALLOC) || defined(CONFIG_KMEMCHECK)
-> > > >         /*
-> > > >          * For CONFIG_DEBUG_PAGEALLOC, identity mapping will use
-> > > small pages.
-> > > >          * This will simplify cpa(), which otherwise needs to
-> support
-> > > splitting
-> > > >          * large pages into small in interrupt context, etc.
-> > > >          */
-> > > >         use_pse = use_gbpages = 0;
-> > > > #else
-> > > >         use_pse = cpu_has_pse;
-> > > >         use_gbpages = direct_gbpages;
-> > > > #endif
-> > > >
-> > > >
-> > > > So big pages are also not used for DEBUG_PAGEALLOC and KMEMCHECK
-> > > configs even if head_32.S did.
-> > >
-> > > Right, but that is not a problem because head_32.S always uses 4KB
-> > > pages.
-> >
-> > We use large pages FOR PAE kernels on x86-32 there
-> >
-> 
-> Do you mean we use large pages for PAE kernels on x86_32 in
-> arch/x86/mm/init.c:init_memory_mapping?
-> That wouldn't be a problem for this patch.
-> 
-> The problem I am trying to solve occurs when head_64.S doesn't allocate
-> any pte pages because it is using 2MB pages, while init_memory_mapping
-> wants to use 4KB pages (for example because the user set
-> CONFIG_DEBUG_PAGEALLOC).
-> 
-> So on x86_32 is not going to be an issue because head_32.S doesn't use
-> 2MB or 4MB pages as far as I can tell, even if the hardware supports
-> them.
-> Please correct me if I am wrong but I don't see any _PAGE_PSE in
-> head_32.S.
+> From: Michael Williamson
+> Sent: Thursday, June 23, 2011 5:23 AM
+...
+> I'd like to kick the tires on this with a da850 based platform (MityDSP-L138).
+> Any chance you might be able to share the stuff you did on the remote side
+> (DSP/BIOS adaptations for rpmsg,  utils for ELF or COFF conversion to
+> firmware format, etc.) for the DSP side of your tests done with the
+> hawkboard?
 
+We have only implemented the remoteproc (load, start, stop) part for
+OMAPL138 so far, i.e., not the rpmsg part (communications). I am not sure
+when we will get to the rpmsg part.
 
-Yes you're right head_32.S doesn't do large pages, I remembered it would..
+We will be publishing a Git tree soon with the "remote processor" code under
+a BSD license. This code works with our TI RTOS, SYS/BIOS (also BSD), on
+both M3 and DSP CPUs. This will include the utility to generate the RPRC
+firmware format from an ELF file. Note that the Linux side does not have any
+explicit binding or dependency on the runtime environment on the remote
+processor, so alternate RTOS or bare-metal implementations could also be
+done. We will post a follow-up to the list with a URL soon.
 
---Mika
+> It looks like, at least for the da850, this subsumes or obsoletes
+> DSPLINK in order to drive a more general purpose architecture
+> (which looks great, so far, BTW).
+> Is that the intent?
 
+First, we are not abandoning DSPLINK. We have many users of this, even
+though it is out-of-tree, and we will continue to support it. That said, we
+do intend to make this new design the basis for DSPLINK-like
+functionality. It's designed to be done "the right way" for Linux (and we
+are looking for feedback to make it better).  It is also designed to be more
+scalable and extensible in userspace. With a solid kernel foundation, we can
+provide lots of functionality in userspace, or users can implement their own
+custom solutions. One of the key things to do is map our existing DSPLINK
+APIs, like MessageQ, to the new rpmsg transport.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Mark
