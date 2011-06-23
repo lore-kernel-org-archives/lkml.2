@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933783Ab1FWRs2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:48:28 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35475 "EHLO
+	id S933268Ab1FWRia (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:38:30 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35499 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932767Ab1FWRiX (ORCPT
+	with ESMTP id S933778Ab1FWRi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:38:23 -0400
+	Thu, 23 Jun 2011 13:38:27 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Mi Jinlong <mijinlong@cn.fujitsu.com>,
-        "J. Bruce Fields" <bfields@redhat.com>,
+Cc: stable-review@kernel.org, Henry Nestler <henry.nestler@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 217/247] nfsd41: modify the members value of nfsd4_op_flags
-Date: Thu, 23 Jun 2011 13:34:45 -0400
-Message-Id: <1308850515-15242-158-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 218/247] fbcon: Bugfix soft cursor detection in Tile Blitting
+Date: Thu, 23 Jun 2011 13:34:46 -0400
+Message-Id: <1308850515-15242-159-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,47 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mi Jinlong <mijinlong@cn.fujitsu.com>
+From: Henry Nestler <henry.nestler@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 5ece3cafbd88d4da5c734e1810c4a2e6474b57b2 upstream.
+commit d6244bc0ed0c52a795e6f4dcab3886daf3e74fac upstream.
 
-The members of nfsd4_op_flags, (ALLOWED_WITHOUT_FH | ALLOWED_ON_ABSENT_FS)
-equals to  ALLOWED_AS_FIRST_OP, maybe that's not what we want.
+Use mask 0x10 for "soft cursor" detection on in function tile_cursor.
+(Tile Blitting Operation in framebuffer console).
 
-OP_PUTROOTFH with op_flags = ALLOWED_WITHOUT_FH | ALLOWED_ON_ABSENT_FS,
-can't appears as the first operation with out SEQUENCE ops.
+The old mask 0x01 for vc_cursor_type detects CUR_NONE, CUR_LOWER_THIRD
+and every second mode value as "software cursor". This hides the cursor
+for these modes (cursor.mode = 0). But, only CUR_NONE or "software cursor"
+should hide the cursor.
+See also 0x10 in functions add_softcursor, bit_cursor and cw_cursor.
 
-This patch modify the wrong value of ALLOWED_WITHOUT_FH etc which
-was introduced by f9bb94c4.
-
-Reviewed-by: Benny Halevy <bhalevy@panasas.com>
-Signed-off-by: Mi Jinlong <mijinlong@cn.fujitsu.com>
-Signed-off-by: J. Bruce Fields <bfields@redhat.com>
+Signed-off-by: Henry Nestler <henry.nestler@gmail.com>
+Signed-off-by: Paul Mundt <lethal@linux-sh.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/nfsd/nfs4proc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/video/console/tileblit.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/nfsd/nfs4proc.c b/fs/nfsd/nfs4proc.c
-index 2ab9e85..5046e8b 100644
---- a/fs/nfsd/nfs4proc.c
-+++ b/fs/nfsd/nfs4proc.c
-@@ -954,8 +954,8 @@ typedef __be32(*nfsd4op_func)(struct svc_rqst *, struct nfsd4_compound_state *,
- 			      void *);
- enum nfsd4_op_flags {
- 	ALLOWED_WITHOUT_FH = 1 << 0,	/* No current filehandle required */
--	ALLOWED_ON_ABSENT_FS = 2 << 0,	/* ops processed on absent fs */
--	ALLOWED_AS_FIRST_OP = 3 << 0,	/* ops reqired first in compound */
-+	ALLOWED_ON_ABSENT_FS = 1 << 1,	/* ops processed on absent fs */
-+	ALLOWED_AS_FIRST_OP = 1 << 2,	/* ops reqired first in compound */
- };
+diff --git a/drivers/video/console/tileblit.c b/drivers/video/console/tileblit.c
+index 0056a41..15e8e1a 100644
+--- a/drivers/video/console/tileblit.c
++++ b/drivers/video/console/tileblit.c
+@@ -83,7 +83,7 @@ static void tile_cursor(struct vc_data *vc, struct fb_info *info, int mode,
+ 			int softback_lines, int fg, int bg)
+ {
+ 	struct fb_tilecursor cursor;
+-	int use_sw = (vc->vc_cursor_type & 0x01);
++	int use_sw = (vc->vc_cursor_type & 0x10);
  
- struct nfsd4_operation {
+ 	cursor.sx = vc->vc_x;
+ 	cursor.sy = vc->vc_y;
 -- 
 1.7.4.4
 
