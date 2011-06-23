@@ -1,69 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932421Ab1FWKPq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 06:15:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60495 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759194Ab1FWKPp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 06:15:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TEwyA88kA0U0TuYGqsjlAV58cBbyb1ziWnk+xgkpP7ide82X/WqT6oq3yfXZcWqnHC
-         jBEL9xvm6elzBKq6C/zFpq2TFHPck/S9XfOV28NHFU36zAoPFSMcIaIazbUHJavoTzFw
-         /k2g2Q8E0XYXT5IyQbN2tGPR9YIDpzDM5cIUA=
-Date: Thu, 23 Jun 2011 12:15:41 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
-Message-ID: <20110623101541.GL30101@htj.dyndns.org>
-References: <20110622174659.496793734@linutronix.de>
- <20110622174919.135236139@linutronix.de>
- <20110623083722.GF30101@htj.dyndns.org>
- <alpine.LFD.2.02.1106231139270.11814@ionos>
+	id S1759170Ab1FWKdY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 06:33:24 -0400
+Received: from openfortress.nl ([213.189.19.244]:48444 "EHLO fame.vanrein.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758860Ab1FWKdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 06:33:23 -0400
+X-Greylist: delayed 1352 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Jun 2011 06:33:22 EDT
+Date: Thu, 23 Jun 2011 10:33:20 +0000
+From: Rick van Rein <rick@vanrein.org>
+To: "H. Peter Anvin" <hpa@zytor.com>, Stefan Assmann <sassmann@kpanic.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tony.luck@intel.com, andi@firstfloor.org,
+        mingo@elte.hu, rick@vanrein.org, rdunlap@xenotime.net,
+        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+Message-ID: <20110623103320.GB2910@phantom.vanrein.org>
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <4E023142.1080605@zytor.com> <4E0250F2.2010607@kpanic.de> <4E0251AB.8090702@zytor.com> <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110622110034.89ee399c.akpm@linux-foundation.org> <4E024E31.50901@kpanic.de> <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <4E023142.1080605@zytor.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.02.1106231139270.11814@ionos>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E0251AB.8090702@zytor.com> <4E024E31.50901@kpanic.de> <4E023142.1080605@zytor.com>
+X-My-Coolest-Hack: http://rick.vanrein.org/linux/badram -> Exploit broken RAM
+Fcc: =ofo
+User-Agent: Mutt/1.5.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hello,
 
-On Thu, Jun 23, 2011 at 11:58:12AM +0200, Thomas Gleixner wrote:
-> > Well, not exactly.  If CPU is being thrashed, we don't want to try to
-> > fire up new workers or calling in rescuers.  If nr_running is bumped
-> > up from ttwu(), a woken up but not yet running worker already counts
-> > as running.  With the suggested change, when we hit such heavy CPU
-> > thrashing, workqueue code will add things on top of it.
-> 
-> That's the whole problem with that self forking workqueue stuff and
-> I'm not accepting that ttwu() is the only solution to that. Following
-> that logic would just invite more abusers of callbacks into ttwu() and
-> if you think it through then the logical consequence is to have an
-> upcall hook into userspace so a threading/forking server knows how
-> many instances are on the fly to avoid creating new ones under
-> pressure.
+> We already support the equivalent functionality with
+> memmap=<address>$<length> for those with only a few ranges...
 
-Extrapolating to extremes doesn't really help anything.  You can make
-any argument with logics like that.  The thing isn't being exported to
-userland, not even close.
+This is not a realistic option for people whose memory failed.
+Google is quite right when they say they hit thousands of erroneous
+pages.  If you have, say, a static discharge damaging the buffers
+from the cell array to the outside world, then the entire row or
+column behind that buffer will fail.  I've seen many such examples.
 
-The patch description is simply untrue.  It does affect how wq behaves
-under heavy CPU load.  The effect might be perfectly okay but more
-likely it will result in subtle suboptimal behaviors under certain
-load situations which would be difficult to characterize and track
-down.  Again, the trade off (mostly killing of ttwu_local) could be
-okay but you can't get away with just claiming "there's no harm".
+> For those with a lot of ranges,
+> like Google, the command line is insufficient.
 
-Thanks.
+Not if you recognise that there is a pattern :-)
 
--- 
-tejun
+Google does not seem to have realised that, and is simply listing
+the pages that are defected.  IMHO, but being the BadRAM author I
+can hardly be called objective, this is the added value of BadRAM,
+that it understands the nature of the problem and solves it with
+an elegant concept at the right level of abstraction.
+
+> So far the use case I had in mind wasn't "thousands of entries". However
+> expanding the e820 table is probably an issue that could be dealt with
+> separately ?
+
+This could help with other approaches as well -- as mentioned,
+there have been attempts to get BadRAM into GRUB, so that the
+kernel needn't be aware of it.  But adding BadRAM or expanding
+the e820 table are both cases of changing the kernel, and in that
+case I thought it'd be best to actually solve the problem and
+not upgrade the messenger.
+
+> Well if too much low memory is bad, you're screwed anyway, not? :)
+
+If the kernel is always loaded in a fixed location, yes.  That
+is one assumption that the kernel makes (made?) that will only
+work if all your memory is good.
+
+> At the moment I don't see any arguments why this patchset couldn't play
+> along nicely or get enhanced to support what Google needs, but I don't
+> know Googles patches yet.
+
+Changes to e820 should not interfere with setting flags (and
+living by them) for failing memory pages.  One property of BadRAM,
+namely that it does not slow down your system (you have less
+pages on hand, but that's all) may or may not apply to an e820-based
+approach.  I don't know if e820 is ever consulted after boot?
+
+> How common are nontrivial patterns on real hardware?  This would be
+> interesting to hear from Google or another large user.
+
+Yes.  And "non-trivial" would mean that the patterns waste more space
+than fair, *because of* the generalisation to patterns.
+
+If you plug 10 DIMMs into your machine, and each has a faulty row
+somewhere, then you will get into trouble if you stick to 5 patterns.
+But if you happen to run into a faulty DIMM from time to time, the
+patterns should be your way out.
+
+> I have to say I think Google's point that truncating the list is
+> unacceptable...
+
+Of course, that is true.  This is why memmap=... does not work.
+It has nothing to do with BadRAM however, there will never be more
+than 5 patterns.
+
+> that would mean running in a known-bad configuration,
+> and even a hard crash would be better.
+
+...which is so sensible that it was of course taken into account in
+the BadRAM design!
+
+
+Cheers,
+ -Rick
