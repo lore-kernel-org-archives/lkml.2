@@ -1,93 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759100Ab1FWJR2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 05:17:28 -0400
-Received: from smtp.nokia.com ([147.243.1.48]:56975 "EHLO mgw-sa02.nokia.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759007Ab1FWJR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 05:17:26 -0400
-Subject: Re: [RFC PATCHv5 4/7] HSI: hsi_char: Add HSI char device driver
-From: Carlos Chinea <carlos.chinea@nokia.com>
-To: ext Sjur =?ISO-8859-1?Q?Br=E6ndeland?= 
-	<sjur.brandeland@stericsson.com>
-Cc: sjurbren@gmail.com, Andras Domokos <andras.domokos@nokia.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@linaro.org>
-In-Reply-To: <1308771464-15980-1-git-send-email-sjur.brandeland@stericsson.com>
-References: <1307713124-3946-5-git-send-email-carlos.chinea@nokia.com>
-	 <1308771464-15980-1-git-send-email-sjur.brandeland@stericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Jun 2011 12:12:58 +0300
-Message-ID: <1308820378.27256.2773.camel@groo>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 8bit
-X-Nokia-AV: Clean
+	id S1759107Ab1FWJOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 05:14:08 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:53826 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758983Ab1FWJOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 05:14:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=EkwjsRR1NmrApOWTnuQlNeJfu5r5+nsly61MjuRiwyk8AXmw3Yg+nd651VIOsaoimm
+         58c4uGne3eGnh3cthXs6u//VFVQSRnYPlclyVeRBD7Sw0rXL3XCyPO+BD2ww9kG3F4Uz
+         m/buyVE8HfYMez5+CXJ2FQOv43AeuMTOmaz+8=
+Date: Thu, 23 Jun 2011 11:14:00 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        torvalds@linux-foundation.org, hch@infradead.org,
+        John Johansen <john.johansen@canonical.com>,
+        Stephen Smalley <sds@tycho.nsa.gov>
+Subject: Re: [PATCH 7/7] ptrace: s/tracehook_tracer_task()/ptrace_parent()/
+Message-ID: <20110623091400.GH30101@htj.dyndns.org>
+References: <1308322240-8247-1-git-send-email-tj@kernel.org>
+ <1308322240-8247-8-git-send-email-tj@kernel.org>
+ <20110620201603.GA17157@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110620201603.GA17157@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On Wed, 2011-06-22 at 21:37 +0200, ext Sjur Brændeland wrote:
-> Hi Carlos,
+On Mon, Jun 20, 2011 at 10:16:03PM +0200, Oleg Nesterov wrote:
+> On 06/17, Tejun Heo wrote:
+> >
+> > tracehook.h is on the way out.  Rename tracehook_tracer_task() to
+> > ptrace_parent() and move it from tracehook.h to ptrace.h.
 > 
-> ...
-> >+static ssize_t hsc_read(struct file *file, char __user *buf, size_t len,
-> >+						loff_t *ppos __maybe_unused)
-> >+{
-> ...
-> >+	ret = hsi_async_read(channel->cl, msg);
-> >+
-> >+	ret = wait_event_interruptible(channel->rx_wait,
-> >+					!list_empty(&channel->rx_msgs_queue));
-> ...
+> I am a bit surpised you decided to keep this helper. Can't we simply
+> kill it?
+
+I was being a bit lazy.  If it can be killed, it would be great.
+
+> OK, we will see. I guess this change is mostly needed to remove yet
+> another function from tracehook.h.
 > 
-> >+}
-> >+
-> >+static ssize_t hsc_write(struct file *file, const char __user *buf, size_t len,
-> >+						loff_t *ppos __maybe_unused)
-> >+{
-> >+	ret = hsi_async_write(channel->cl, msg);
-> >+	if (ret < 0)
-> >+		goto out;
-> >+
-> >+	ret = wait_event_interruptible(channel->tx_wait,
-> >+					!list_empty(&channel->tx_msgs_queue));
+> > @@ -216,7 +216,7 @@ static struct mm_struct *__check_mem_permission(struct task_struct *task)
+> >  	if (task_is_stopped_or_traced(task)) {
+> >  		int match;
+> >  		rcu_read_lock();
+> > -		match = (tracehook_tracer_task(task) == current);
+> > +		match = (ptrace_parent(task) == current);
+> >  		rcu_read_unlock();
+> >  		if (match && ptrace_may_access(task, PTRACE_MODE_ATTACH))
 > 
-> I would really like to see support for non-blocking read/write operation here.
+> All we need
 > 
-
-Non-blocking support will not be supported in hsi_char.
-
-> ...
-> >+
-> >+static const struct file_operations hsc_fops = {
-> >+	.owner		= THIS_MODULE,
-> >+	.read		= hsc_read,
-> >+	.write		= hsc_write,
-> >+	.unlocked_ioctl	= hsc_ioctl,
-> >+	.open		= hsc_open,
-> >+	.release	= hsc_release,
-> >+};
+> 	if (task_is_traced(task) && task->parent == current) {
+> 		if (ptrace_may_access()
+> 			return mm;
+> 	}
 > 
-> No poll?
+> Of course I do not blame this patch, my only point is that this helper
+> only adds more confusion imho.
 
-We did have some "kind" of support for poll in previous versions, but we
-did not honor properly the poll expected behavior, as we always need to
-"block" waiting for the complete callback to be called. At least for
-reads this was an issue.
+Yeah, it didn't seem like all the users actually required rcu
+dereferencing and both the tracehook and ptrace function names are
+confusing and not consistent in their use.  We can convert the ones
+which don't require rcu dereferencing to use ->parent directly and if
+the left ones are few enough, maybe kill the helper altogether.
 
-However to compensate this, we are planning to add AIO support in the
-future, which maps a lot better into the hsi behavior.
+Thanks.
 
-> Currently we do bulk read/write operations upon modem-crash or firmware upload,
-> and would perfeer to be able do asynchronous IO (select/poll) in order to
-> receive other system events or timeouts during HSI bulk transfers.
-> 
-
-
-Br,
 -- 
-Carlos Chinea <carlos.chinea@nokia.com>
-
+tejun
