@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934265Ab1FWSSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:18:50 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34291 "EHLO
+	id S934268Ab1FWSUV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:20:21 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34278 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933254Ab1FWRgG (ORCPT
+	with ESMTP id S933217Ab1FWRgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:06 -0400
+	Thu, 23 Jun 2011 13:36:05 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 088/247] sched: Fix wake_affine() vs RT tasks
-Date: Thu, 23 Jun 2011 13:32:36 -0400
-Message-Id: <1308850515-15242-29-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 089/247] bonding/vlan: Avoid mangled NAs on slaves without VLAN tag insertion
+Date: Thu, 23 Jun 2011 13:32:37 -0400
+Message-Id: <1308850515-15242-30-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,147 +23,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+From: Ben Hutchings <bhutchings@solarflare.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit e51fd5e22e12b39f49b1bb60b37b300b17378a43 upstream.
+This is related to commit f88a4a9b65a6f3422b81be995535d0e69df11bb8
+upstream, but the bug cannot be properly fixed without the other
+changes to VLAN tagging in 2.6.37.
 
-Mike reports that since e9e9250b (sched: Scale down cpu_power due to RT
-tasks), wake_affine() goes funny on RT tasks due to them still having a
-!0 weight and wake_affine() still subtracts that from the rq weight.
+bond_na_send() attempts to insert a VLAN tag in between building and
+sending packets of the respective formats.  If the slave does not
+implement hardware VLAN tag insertion then vlan_put_tag() will mangle
+the network-layer header because the Ethernet header is not present at
+this point (unlike in bond_arp_send()).
 
-Since nobody should be using se->weight for RT tasks, set the value to
-zero. Also, since we now use ->cpu_power to normalize rq weights to
-account for RT cpu usage, add that factor into the imbalance computation.
-
-Reported-by: Mike Galbraith <efault@gmx.de>
-Tested-by: Mike Galbraith <efault@gmx.de>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1275316109.27810.22969.camel@twins>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
+Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/sched.c      |   24 ++++++------------------
- kernel/sched_fair.c |   23 +++++++++++++++++------
- 2 files changed, 23 insertions(+), 24 deletions(-)
+ drivers/net/bonding/bond_ipv6.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 39456fc..7e728cf 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -541,6 +541,8 @@ struct rq {
- 	struct root_domain *rd;
- 	struct sched_domain *sd;
+diff --git a/drivers/net/bonding/bond_ipv6.c b/drivers/net/bonding/bond_ipv6.c
+index 6dd64cf..a131d6f 100644
+--- a/drivers/net/bonding/bond_ipv6.c
++++ b/drivers/net/bonding/bond_ipv6.c
+@@ -69,6 +69,13 @@ static void bond_na_send(struct net_device *slave_dev,
+ 	};
+ 	struct sk_buff *skb;
  
-+	unsigned long cpu_power;
++	/* The Ethernet header is built in ndisc_send_skb(), not
++	 * ndisc_build_skb(), so we cannot insert a VLAN tag.  Only an
++	 * out-of-line tag inserted by the hardware will work.
++	 */
++	if (vlan_id && !(slave_dev->features & NETIF_F_HW_VLAN_TX))
++		return;
 +
- 	unsigned char idle_at_tick;
- 	/* For active balancing */
- 	int post_schedule;
-@@ -1496,24 +1498,9 @@ static unsigned long target_load(int cpu, int type)
- 	return max(rq->cpu_load[type-1], total);
- }
- 
--static struct sched_group *group_of(int cpu)
--{
--	struct sched_domain *sd = rcu_dereference_sched(cpu_rq(cpu)->sd);
--
--	if (!sd)
--		return NULL;
--
--	return sd->groups;
--}
--
- static unsigned long power_of(int cpu)
- {
--	struct sched_group *group = group_of(cpu);
--
--	if (!group)
--		return SCHED_LOAD_SCALE;
--
--	return group->cpu_power;
-+	return cpu_rq(cpu)->cpu_power;
- }
- 
- static int task_hot(struct task_struct *p, u64 now, struct sched_domain *sd);
-@@ -1850,8 +1837,8 @@ static void dec_nr_running(struct rq *rq)
- static void set_load_weight(struct task_struct *p)
- {
- 	if (task_has_rt_policy(p)) {
--		p->se.load.weight = prio_to_weight[0] * 2;
--		p->se.load.inv_weight = prio_to_wmult[0] >> 1;
-+		p->se.load.weight = 0;
-+		p->se.load.inv_weight = WMULT_CONST;
- 		return;
+ 	icmp6h.icmp6_router = router;
+ 	icmp6h.icmp6_solicited = 0;
+ 	icmp6h.icmp6_override = 1;
+@@ -87,7 +94,7 @@ static void bond_na_send(struct net_device *slave_dev,
  	}
  
-@@ -7793,6 +7780,7 @@ void __init sched_init(void)
- #ifdef CONFIG_SMP
- 		rq->sd = NULL;
- 		rq->rd = NULL;
-+		rq->cpu_power = SCHED_LOAD_SCALE;
- 		rq->post_schedule = 0;
- 		rq->active_balance = 0;
- 		rq->next_balance = jiffies;
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index f060583..85d9dd0 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1244,7 +1244,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	unsigned long this_load, load;
- 	int idx, this_cpu, prev_cpu;
- 	unsigned long tl_per_task;
--	unsigned int imbalance;
- 	struct task_group *tg;
- 	unsigned long weight;
- 	int balanced;
-@@ -1284,8 +1283,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	tg = task_group(p);
- 	weight = p->se.load.weight;
- 
--	imbalance = 100 + (sd->imbalance_pct - 100) / 2;
--
- 	/*
- 	 * In low-load situations, where prev_cpu is idle and this_cpu is idle
- 	 * due to the sync cause above having dropped this_load to 0, we'll
-@@ -1295,9 +1292,22 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	 * Otherwise check if either cpus are near enough in load to allow this
- 	 * task to be woken on this_cpu.
- 	 */
--	balanced = !this_load ||
--		100*(this_load + effective_load(tg, this_cpu, weight, weight)) <=
--		imbalance*(load + effective_load(tg, prev_cpu, 0, weight));
-+	if (this_load) {
-+		unsigned long this_eff_load, prev_eff_load;
-+
-+		this_eff_load = 100;
-+		this_eff_load *= power_of(prev_cpu);
-+		this_eff_load *= this_load +
-+			effective_load(tg, this_cpu, weight, weight);
-+
-+		prev_eff_load = 100 + (sd->imbalance_pct - 100) / 2;
-+		prev_eff_load *= power_of(this_cpu);
-+		prev_eff_load *= load + effective_load(tg, prev_cpu, 0, weight);
-+
-+		balanced = this_eff_load <= prev_eff_load;
-+	} else
-+		balanced = true;
-+
- 	rcu_read_unlock();
- 
- 	/*
-@@ -2376,6 +2386,7 @@ static void update_cpu_power(struct sched_domain *sd, int cpu)
- 	if (!power)
- 		power = 1;
- 
-+	cpu_rq(cpu)->cpu_power = power;
- 	sdg->cpu_power = power;
- }
- 
+ 	if (vlan_id) {
+-		skb = vlan_put_tag(skb, vlan_id);
++		skb = __vlan_hwaccel_put_tag(skb, vlan_id);
+ 		if (!skb) {
+ 			pr_err("failed to insert VLAN tag\n");
+ 			return;
 -- 
 1.7.4.4
 
