@@ -1,125 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933211Ab1FWS10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:27:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:63071 "EHLO
+	id S932808Ab1FWRWj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:22:39 -0400
+Received: from mail.windriver.com ([147.11.1.11]:63146 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932724Ab1FWRWZ (ORCPT
+	with ESMTP id S932760Ab1FWRWb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:22:25 -0400
+	Thu, 23 Jun 2011 13:22:31 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
+Cc: stable-review@kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 036/247] radio-aimslab.c: Fix gcc 4.5+ bug
-Date: Thu, 23 Jun 2011 13:17:59 -0400
-Message-Id: <1308849690-14530-37-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 037/247] radio-aimslab.c needs #include <linux/delay.h>
+Date: Thu, 23 Jun 2011 13:18:00 -0400
+Message-Id: <1308849690-14530-38-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
+From: Geert Uytterhoeven <geert@linux-m68k.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit e3c92215198cb6aa00ad38db2780faa6b72e0a3f upstream.
+commit 2400982a2e8a8e4e95f0a0e1517bbe63cc88038f upstream.
 
-gcc 4.5+ doesn't properly evaluate some inlined expressions.
-A previous patch were proposed by Andrew Morton using noinline.
-However, the entire inlined function is bogus, so let's just
-remove it and be happy.
+Commit e3c92215198cb6aa00ad38db2780faa6b72e0a3f ("[media] radio-aimslab.c: Fix
+gcc 4.5+ bug") removed the include, but introduced new callers of msleep():
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
+| drivers/media/radio/radio-aimslab.c: In function ‘rt_decvol’:
+| drivers/media/radio/radio-aimslab.c:76: error: implicit declaration of function ‘msleep’
+
+Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/media/radio/radio-aimslab.c |   23 ++++++-----------------
- 1 files changed, 6 insertions(+), 17 deletions(-)
+ drivers/media/radio/radio-aimslab.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/media/radio/radio-aimslab.c b/drivers/media/radio/radio-aimslab.c
-index 5bf4985..1944814 100644
+index 1944814..a91642c 100644
 --- a/drivers/media/radio/radio-aimslab.c
 +++ b/drivers/media/radio/radio-aimslab.c
-@@ -31,7 +31,6 @@
+@@ -31,6 +31,7 @@
  #include <linux/module.h>	/* Modules 			*/
  #include <linux/init.h>		/* Initdata			*/
  #include <linux/ioport.h>	/* request_region		*/
--#include <linux/delay.h>	/* udelay			*/
++#include <linux/delay.h>	/* msleep			*/
  #include <linux/videodev2.h>	/* kernel radio structs		*/
  #include <linux/version.h>	/* for KERNEL_VERSION MACRO	*/
  #include <linux/io.h>		/* outb, outb_p			*/
-@@ -71,27 +70,17 @@ static struct rtrack rtrack_card;
- 
- /* local things */
- 
--static void sleep_delay(long n)
--{
--	/* Sleep nicely for 'n' uS */
--	int d = n / msecs_to_jiffies(1000);
--	if (!d)
--		udelay(n);
--	else
--		msleep(jiffies_to_msecs(d));
--}
--
- static void rt_decvol(struct rtrack *rt)
- {
- 	outb(0x58, rt->io);		/* volume down + sigstr + on	*/
--	sleep_delay(100000);
-+	msleep(100);
- 	outb(0xd8, rt->io);		/* volume steady + sigstr + on	*/
- }
- 
- static void rt_incvol(struct rtrack *rt)
- {
- 	outb(0x98, rt->io);		/* volume up + sigstr + on	*/
--	sleep_delay(100000);
-+	msleep(100);
- 	outb(0xd8, rt->io);		/* volume steady + sigstr + on	*/
- }
- 
-@@ -120,7 +109,7 @@ static int rt_setvol(struct rtrack *rt, int vol)
- 
- 	if (vol == 0) {			/* volume = 0 means mute the card */
- 		outb(0x48, rt->io);	/* volume down but still "on"	*/
--		sleep_delay(2000000);	/* make sure it's totally down	*/
-+		msleep(2000);	/* make sure it's totally down	*/
- 		outb(0xd0, rt->io);	/* volume steady, off		*/
- 		rt->curvol = 0;		/* track the volume state!	*/
- 		mutex_unlock(&rt->lock);
-@@ -155,7 +144,7 @@ static void send_0_byte(struct rtrack *rt)
- 		outb_p(128+64+16+8+  1, rt->io);  /* on + wr-enable + data low */
- 		outb_p(128+64+16+8+2+1, rt->io);  /* clock */
- 	}
--	sleep_delay(1000);
-+	msleep(1);
- }
- 
- static void send_1_byte(struct rtrack *rt)
-@@ -169,7 +158,7 @@ static void send_1_byte(struct rtrack *rt)
- 		outb_p(128+64+16+8+4+2+1, rt->io); /* clock */
- 	}
- 
--	sleep_delay(1000);
-+	msleep(1);
- }
- 
- static int rt_setfreq(struct rtrack *rt, unsigned long freq)
-@@ -427,7 +416,7 @@ static int __init rtrack_init(void)
- 
- 	/* this ensures that the volume is all the way down  */
- 	outb(0x48, rt->io);		/* volume down but still "on"	*/
--	sleep_delay(2000000);	/* make sure it's totally down	*/
-+	msleep(2000);	/* make sure it's totally down	*/
- 	outb(0xc0, rt->io);		/* steady volume, mute card	*/
- 
- 	return 0;
 -- 
 1.7.4.4
 
