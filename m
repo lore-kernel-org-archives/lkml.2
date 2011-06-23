@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933838Ab1FWRrO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:47:14 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35516 "EHLO
+	id S933930Ab1FWRmW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:42:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35790 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933787Ab1FWRi3 (ORCPT
+	with ESMTP id S933900Ab1FWRi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:38:29 -0400
+	Thu, 23 Jun 2011 13:38:59 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Rosenberg <drosenberg@vsecurity.com>,
-        James Bottomley <James.Bottomley@suse.de>,
+Cc: stable-review@kernel.org, Timo Warns <Warns@pre-sense.de>,
+        Timo Warns <warns@pre-sense.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 223/247] mpt2sas: prevent heap overflows and unchecked reads
-Date: Thu, 23 Jun 2011 13:34:51 -0400
-Message-Id: <1308850515-15242-164-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 224/247] fs/partitions/ldm.c: fix oops caused by corrupted partition table
+Date: Thu, 23 Jun 2011 13:34:52 -0400
+Message-Id: <1308850515-15242-165-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,93 +25,76 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Rosenberg <drosenberg@vsecurity.com>
+From: Timo Warns <Warns@pre-sense.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit a1f74ae82d133ebb2aabb19d181944b4e83e9960 upstream.
+commit c340b1d640001c8c9ecff74f68fd90422ae2448a upstream.
 
-At two points in handling device ioctls via /dev/mpt2ctl, user-supplied
-length values are used to copy data from userspace into heap buffers
-without bounds checking, allowing controllable heap corruption and
-subsequently privilege escalation.
+The kernel automatically evaluates partition tables of storage devices.
+The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
+a bug that causes a kernel oops on certain corrupted LDM partitions.
+A kernel subsystem seems to crash, because, after the oops, the kernel no
+longer recognizes newly connected storage devices.
 
-Additionally, user-supplied values are used to determine the size of a
-copy_to_user() as well as the offset into the buffer to be read, with no
-bounds checking, allowing users to read arbitrary kernel memory.
+The patch validates the value of vblk_size.
 
-Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-Acked-by: Eric Moore <eric.moore@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+[akpm@linux-foundation.org: coding-style fixes]
+Signed-off-by: Timo Warns <warns@pre-sense.de>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Cc: Harvey Harrison <harvey.harrison@gmail.com>
+Cc: Richard Russon <rich@flatcap.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/scsi/mpt2sas/mpt2sas_ctl.c |   23 +++++++++++++++++++++--
- 1 files changed, 21 insertions(+), 2 deletions(-)
+ fs/partitions/ldm.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_ctl.c b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-index fa9bf83..3742ac9 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_ctl.c
-@@ -636,6 +636,13 @@ _ctl_do_mpt_command(struct MPT2SAS_ADAPTER *ioc,
- 	data_out_sz = karg.data_out_size;
- 	data_in_sz = karg.data_in_size;
+diff --git a/fs/partitions/ldm.c b/fs/partitions/ldm.c
+index 2cd9e43..a2a14cd 100644
+--- a/fs/partitions/ldm.c
++++ b/fs/partitions/ldm.c
+@@ -1299,6 +1299,11 @@ static bool ldm_frag_add (const u8 *data, int size, struct list_head *frags)
  
-+	/* Check for overflow and wraparound */
-+	if (karg.data_sge_offset * 4 > ioc->request_sz ||
-+	    karg.data_sge_offset > (UINT_MAX / 4)) {
-+		ret = -EINVAL;
-+		goto out;
+ 	BUG_ON (!data || !frags);
+ 
++	if (size < 2 * VBLK_SIZE_HEAD) {
++		ldm_error("Value of size is to small.");
++		return false;
 +	}
 +
- 	/* copy in request message frame from user */
- 	if (copy_from_user(mpi_request, mf, karg.data_sge_offset*4)) {
- 		printk(KERN_ERR "failure at %s:%d/%s()!\n", __FILE__, __LINE__,
-@@ -1877,7 +1884,7 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
- 	Mpi2DiagBufferPostReply_t *mpi_reply;
- 	int rc, i;
- 	u8 buffer_type;
--	unsigned long timeleft;
-+	unsigned long timeleft, request_size, copy_size;
- 	u16 smid;
- 	u16 ioc_status;
- 	u8 issue_reset = 0;
-@@ -1913,6 +1920,8 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
- 		return -ENOMEM;
+ 	group = get_unaligned_be32(data + 0x08);
+ 	rec   = get_unaligned_be16(data + 0x0C);
+ 	num   = get_unaligned_be16(data + 0x0E);
+@@ -1306,6 +1311,10 @@ static bool ldm_frag_add (const u8 *data, int size, struct list_head *frags)
+ 		ldm_error ("A VBLK claims to have %d parts.", num);
+ 		return false;
  	}
++	if (rec >= num) {
++		ldm_error("REC value (%d) exceeds NUM value (%d)", rec, num);
++		return false;
++	}
  
-+	request_size = ioc->diag_buffer_sz[buffer_type];
-+
- 	if ((karg.starting_offset % 4) || (karg.bytes_to_read % 4)) {
- 		printk(MPT2SAS_ERR_FMT "%s: either the starting_offset "
- 		    "or bytes_to_read are not 4 byte aligned\n", ioc->name,
-@@ -1920,13 +1929,23 @@ _ctl_diag_read_buffer(void __user *arg, enum block_state state)
- 		return -EINVAL;
- 	}
+ 	list_for_each (item, frags) {
+ 		f = list_entry (item, struct frag, list);
+@@ -1334,10 +1343,9 @@ found:
  
-+	if (karg.starting_offset > request_size)
-+		return -EINVAL;
-+
- 	diag_data = (void *)(request_data + karg.starting_offset);
- 	dctlprintk(ioc, printk(MPT2SAS_DEBUG_FMT "%s: diag_buffer(%p), "
- 	    "offset(%d), sz(%d)\n", ioc->name, __func__,
- 	    diag_data, karg.starting_offset, karg.bytes_to_read));
+ 	f->map |= (1 << rec);
  
-+	/* Truncate data on requests that are too large */
-+	if ((diag_data + karg.bytes_to_read < diag_data) ||
-+	    (diag_data + karg.bytes_to_read > request_data + request_size))
-+		copy_size = request_size - karg.starting_offset;
-+	else
-+		copy_size = karg.bytes_to_read;
+-	if (num > 0) {
+-		data += VBLK_SIZE_HEAD;
+-		size -= VBLK_SIZE_HEAD;
+-	}
++	data += VBLK_SIZE_HEAD;
++	size -= VBLK_SIZE_HEAD;
 +
- 	if (copy_to_user((void __user *)uarg->diagnostic_data,
--	    diag_data, karg.bytes_to_read)) {
-+	    diag_data, copy_size)) {
- 		printk(MPT2SAS_ERR_FMT "%s: Unable to write "
- 		    "mpt_diag_read_buffer_t data @ %p\n", ioc->name,
- 		    __func__, diag_data);
+ 	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
+ 
+ 	return true;
 -- 
 1.7.4.4
 
