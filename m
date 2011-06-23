@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934147Ab1FWSB7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:01:59 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34917 "EHLO
+	id S933569Ab1FWRhb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:37:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34894 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933543Ab1FWRhY (ORCPT
+	with ESMTP id S933478Ab1FWRhW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:24 -0400
+	Thu, 23 Jun 2011 13:37:22 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
 Cc: stable-review@kernel.org, Michael Neuling <mikey@neuling.org>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 158/247] powerpc/pseries: Add hcall to read 4 ptes at a time in real mode
-Date: Thu, 23 Jun 2011 13:33:46 -0400
-Message-Id: <1308850515-15242-99-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 159/247] powerpc/kexec: Speedup kexec hash PTE tear down
+Date: Thu, 23 Jun 2011 13:33:47 -0400
+Message-Id: <1308850515-15242-100-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -30,111 +30,73 @@ From: Michael Neuling <mikey@neuling.org>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f90ece28c1f5b3ec13fe481406857fe92f4bc7d1 upstream.
+commit d504bed676caad29a3dba3d3727298c560628f5c upstream.
 
-This adds plpar_pte_read_4_raw() which can be used read 4 PTEs from
-PHYP at a time, while in real mode.
+Currently for kexec the PTE tear down on 1TB segment systems normally
+requires 3 hcalls for each PTE removal. On a machine with 32GB of
+memory it can take around a minute to remove all the PTEs.
 
-It also creates a new hcall9 which can be used in real mode.  It's the
-same as plpar_hcall9 but minus the tracing hcall statistics which may
-require variables outside the RMO.
+This optimises the path so that we only remove PTEs that are valid.
+It also uses the read 4 PTEs at once HCALL.  For the common case where
+a PTEs is invalid in a 1TB segment, this turns the 3 HCALLs per PTE
+down to 1 HCALL per 4 PTEs.
+
+This gives an > 10x speedup in kexec times on PHYP, taking a 32GB
+machine from around 1 minute down to a few seconds.
 
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/powerpc/include/asm/hvcall.h               |    1 +
- arch/powerpc/platforms/pseries/hvCall.S         |   38 +++++++++++++++++++++++
- arch/powerpc/platforms/pseries/plpar_wrappers.h |   18 +++++++++++
- 3 files changed, 57 insertions(+), 0 deletions(-)
+ arch/powerpc/platforms/pseries/lpar.c |   35 +++++++++++++++++++-------------
+ 1 files changed, 21 insertions(+), 14 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/hvcall.h b/arch/powerpc/include/asm/hvcall.h
-index f027581..f0d067c 100644
---- a/arch/powerpc/include/asm/hvcall.h
-+++ b/arch/powerpc/include/asm/hvcall.h
-@@ -281,6 +281,7 @@ long plpar_hcall_raw(unsigned long opcode, unsigned long *retbuf, ...);
-  */
- #define PLPAR_HCALL9_BUFSIZE 9
- long plpar_hcall9(unsigned long opcode, unsigned long *retbuf, ...);
-+long plpar_hcall9_raw(unsigned long opcode, unsigned long *retbuf, ...);
- 
- /* For hcall instrumentation.  One structure per-hcall, per-CPU */
- struct hcall_stats {
-diff --git a/arch/powerpc/platforms/pseries/hvCall.S b/arch/powerpc/platforms/pseries/hvCall.S
-index 383a5d0..48d2057 100644
---- a/arch/powerpc/platforms/pseries/hvCall.S
-+++ b/arch/powerpc/platforms/pseries/hvCall.S
-@@ -228,3 +228,41 @@ _GLOBAL(plpar_hcall9)
- 	mtcrf	0xff,r0
- 
- 	blr				/* return r3 = status */
-+
-+/* See plpar_hcall_raw to see why this is needed */
-+_GLOBAL(plpar_hcall9_raw)
-+	HMT_MEDIUM
-+
-+	mfcr	r0
-+	stw	r0,8(r1)
-+
-+	std     r4,STK_PARM(r4)(r1)     /* Save ret buffer */
-+
-+	mr	r4,r5
-+	mr	r5,r6
-+	mr	r6,r7
-+	mr	r7,r8
-+	mr	r8,r9
-+	mr	r9,r10
-+	ld	r10,STK_PARM(r11)(r1)	 /* put arg7 in R10 */
-+	ld	r11,STK_PARM(r12)(r1)	 /* put arg8 in R11 */
-+	ld	r12,STK_PARM(r13)(r1)    /* put arg9 in R12 */
-+
-+	HVSC				/* invoke the hypervisor */
-+
-+	mr	r0,r12
-+	ld	r12,STK_PARM(r4)(r1)
-+	std	r4,  0(r12)
-+	std	r5,  8(r12)
-+	std	r6, 16(r12)
-+	std	r7, 24(r12)
-+	std	r8, 32(r12)
-+	std	r9, 40(r12)
-+	std	r10,48(r12)
-+	std	r11,56(r12)
-+	std	r0, 64(r12)
-+
-+	lwz	r0,8(r1)
-+	mtcrf	0xff,r0
-+
-+	blr				/* return r3 = status */
-diff --git a/arch/powerpc/platforms/pseries/plpar_wrappers.h b/arch/powerpc/platforms/pseries/plpar_wrappers.h
-index 6c4fd2c..d980111 100644
---- a/arch/powerpc/platforms/pseries/plpar_wrappers.h
-+++ b/arch/powerpc/platforms/pseries/plpar_wrappers.h
-@@ -191,6 +191,24 @@ static inline long plpar_pte_read_raw(unsigned long flags, unsigned long ptex,
- 	return rc;
- }
- 
-+/*
-+ * plpar_pte_read_4_raw can be called in real mode.
-+ * ptes must be 8*sizeof(unsigned long)
-+ */
-+static inline long plpar_pte_read_4_raw(unsigned long flags, unsigned long ptex,
-+					unsigned long *ptes)
-+
-+{
-+	long rc;
-+	unsigned long retbuf[PLPAR_HCALL9_BUFSIZE];
-+
-+	rc = plpar_hcall9_raw(H_READ, retbuf, flags | H_READ_4, ptex);
-+
-+	memcpy(ptes, retbuf, 8*sizeof(unsigned long));
-+
-+	return rc;
-+}
-+
- static inline long plpar_pte_protect(unsigned long flags, unsigned long ptex,
- 		unsigned long avpn)
+diff --git a/arch/powerpc/platforms/pseries/lpar.c b/arch/powerpc/platforms/pseries/lpar.c
+index 0707653..cf79b46 100644
+--- a/arch/powerpc/platforms/pseries/lpar.c
++++ b/arch/powerpc/platforms/pseries/lpar.c
+@@ -367,21 +367,28 @@ static void pSeries_lpar_hptab_clear(void)
  {
+ 	unsigned long size_bytes = 1UL << ppc64_pft_size;
+ 	unsigned long hpte_count = size_bytes >> 4;
+-	unsigned long dummy1, dummy2, dword0;
++	struct {
++		unsigned long pteh;
++		unsigned long ptel;
++	} ptes[4];
+ 	long lpar_rc;
+-	int i;
++	int i, j;
+ 
+-	/* TODO: Use bulk call */
+-	for (i = 0; i < hpte_count; i++) {
+-		/* dont remove HPTEs with VRMA mappings */
+-		lpar_rc = plpar_pte_remove_raw(H_ANDCOND, i, HPTE_V_1TB_SEG,
+-						&dummy1, &dummy2);
+-		if (lpar_rc == H_NOT_FOUND) {
+-			lpar_rc = plpar_pte_read_raw(0, i, &dword0, &dummy1);
+-			if (!lpar_rc && ((dword0 & HPTE_V_VRMA_MASK)
+-				!= HPTE_V_VRMA_MASK))
+-				/* Can be hpte for 1TB Seg. So remove it */
+-				plpar_pte_remove_raw(0, i, 0, &dummy1, &dummy2);
++	/* Read in batches of 4,
++	 * invalidate only valid entries not in the VRMA
++	 * hpte_count will be a multiple of 4
++         */
++	for (i = 0; i < hpte_count; i += 4) {
++		lpar_rc = plpar_pte_read_4_raw(0, i, (void *)ptes);
++		if (lpar_rc != H_SUCCESS)
++			continue;
++		for (j = 0; j < 4; j++){
++			if ((ptes[j].pteh & HPTE_V_VRMA_MASK) ==
++				HPTE_V_VRMA_MASK)
++				continue;
++			if (ptes[j].pteh & HPTE_V_VALID)
++				plpar_pte_remove_raw(0, i + j, 0,
++					&(ptes[j].pteh), &(ptes[j].ptel));
+ 		}
+ 	}
+ }
 -- 
 1.7.4.4
 
