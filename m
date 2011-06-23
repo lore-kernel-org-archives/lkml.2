@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759463Ab1FWOTQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 10:19:16 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:49408 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758132Ab1FWOTP (ORCPT
+	id S1759502Ab1FWOUC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 10:20:02 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:43220 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758901Ab1FWOT7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 10:19:15 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 1/3] mfd: Add Makefile and Kconfig Entries for tps65911 comparator
-In-Reply-To: Your message of "Thu, 23 Jun 2011 10:15:51 +0800."
-             <1308795351.15248.2.camel@phoenix>
-From: Valdis.Kletnieks@vt.edu
-References: <1308795351.15248.2.camel@phoenix>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1308838745_4530P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 23 Jun 2011 10:19:05 -0400
-Message-ID: <43010.1308838745@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Info: (0) 
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A010207.4E034B5D.004C,ss=1,fgs=0,
-	ip=24.127.43.116,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Thu, 23 Jun 2011 10:19:59 -0400
+Date: Thu, 23 Jun 2011 10:19:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Kevin Hilman <khilman@ti.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, <linux-sh@vger.kernel.org>
+Subject: Re: [Update][PATCH 7/8] PM / Domains: System-wide transitions support
+ for generic domains (v3)
+In-Reply-To: <201106230016.46704.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1106231016580.2033-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1308838745_4530P
-Content-Type: text/plain; charset=us-ascii
+On Thu, 23 Jun 2011, Rafael J. Wysocki wrote:
 
-On Thu, 23 Jun 2011 10:15:51 +0800, Axel Lin said:
-> Base on Mark's comment [1], I make the Kconfig entry invisible to users.
+> Well, let's say this part of the documentation is slightly outdated.
+> 
+> It basically refers to the model in which system suspend is a separate global
+> hardware or firmware operation, so the state of devices may be changed by the
+> BIOS or whatever takes over control in the meantime.  In that case the kernel
+> has to ensure that the states of devices are consistent with what it thinks
+> about them and the simplest way to achieve that is to put the devices to
+> full power during resume (and back to low power if that's desirable).
+> 
+> However, in the case of the systems this patchset is intended for system
+> suspend is achieved by putting various hardware components into low-power
+> states directly in a coordinated way and the system sleep state effectively
+> follows from the low-power states the hardware components end up in.  The
+> system is woken up from this state by an interrupt or another mechanism under
+> the kernel's control.  As a result, the kernel never gives control away, so
+> the state of devices after the resume is precisely known to it.
+> In consequence, it need not ensure that the state of devices is consistent with
+> its view, because it knows that this is the case. :-)
 
-> +config TPS65911_COMPARATOR
-> +	tristate
-> +
+That's true for system suspend, but it's probably not true for
+hibernation, even in embedded systems.  Of course, many embedded
+systems don't use hibernation at all -- but those that do should be
+aware of this issue.
 
-This can't possibly be right by itself- how would it ever get enabled, without
-a SELECT pointing at it or a user selecting it?
+> So the documentation should be updated to say what hardware model it is
+> referring to.
 
-Is there a follow-on patch that adds a user?
+It might be worthwhile to include a little warning about the difference 
+between suspend and hibernate.
 
-
-
---==_Exmh_1308838745_4530P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOA0tZcC3lWbTT17ARAoesAJ9FkR4F855yTsqyYvydxuDy7cmpewCgoaEZ
-YyLwKUz5Ge4+lDF9evuCRJM=
-=LA29
------END PGP SIGNATURE-----
-
---==_Exmh_1308838745_4530P--
+Alan Stern
 
