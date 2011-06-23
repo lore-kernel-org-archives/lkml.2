@@ -1,86 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758897Ab1FWIbs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 04:31:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41714 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754863Ab1FWIbq (ORCPT
+	id S1756333Ab1FWIh2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 04:37:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39153 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab1FWIh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 04:31:46 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E02F9E5.6040200@jp.fujitsu.com>
-Date: Thu, 23 Jun 2011 17:31:33 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	Thu, 23 Jun 2011 04:37:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=oHGlfrioeyYZC29FNcQKvw5+LW/Zz+o47v7svFjqON3LTUyT1It8pfBU1tj5zZX49h
+         ohzYZFxGdJIDw9Yvk3pzqDdqqIaG8cL6hh3yoyuyNIyT1D6zGvte7qOny7B8bvav757I
+         afxoLFly4U8soUs4NeOFkndyusGIZiwC5K+2Q=
+Date: Thu, 23 Jun 2011 10:37:22 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
+Message-ID: <20110623083722.GF30101@htj.dyndns.org>
+References: <20110622174659.496793734@linutronix.de>
+ <20110622174919.135236139@linutronix.de>
 MIME-Version: 1.0
-To: kosaki.motohiro@jp.fujitsu.com
-CC: catalin.marinas@arm.com, linux@arm.linux.org.uk,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] arm: replace old cpumask functions with new one.
-References: <4E02F92C.7070203@jp.fujitsu.com> <4E02F9A2.4040204@jp.fujitsu.com>
-In-Reply-To: <4E02F9A2.4040204@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110622174919.135236139@linutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now cpus_xx() cpumask functions are marked as deprecated. This
-patch replace them with modern one.
+Hello, Thomas.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org
----
- arch/arm/common/gic.c     |    2 +-
- arch/arm/kernel/kprobes.c |    2 +-
- arch/arm/kernel/smp.c     |    5 +++--
- 3 files changed, 5 insertions(+), 4 deletions(-)
+The hooking place doesn't have anything to do with rq->lock.  The
+problem with Peter's patch was preemption, not the lock.
 
-diff --git a/arch/arm/common/gic.c b/arch/arm/common/gic.c
-index 4ddd0a6..ebd6b3b 100644
---- a/arch/arm/common/gic.c
-+++ b/arch/arm/common/gic.c
-@@ -389,7 +389,7 @@ void __cpuinit gic_enable_ppi(unsigned int irq)
- #ifdef CONFIG_SMP
- void gic_raise_softirq(const struct cpumask *mask, unsigned int irq)
- {
--	unsigned long map = *cpus_addr(*mask);
-+	unsigned long map = *cpumask_bits(mask);
+> There is also no harm from updating nr_running when the task returns
+> from scheduling instead of accounting it in the wakeup code.
 
- 	/*
- 	 * Ensure that stores to Normal memory are visible to the
-diff --git a/arch/arm/kernel/kprobes.c b/arch/arm/kernel/kprobes.c
-index 1656c87..4ecc5ce 100644
---- a/arch/arm/kernel/kprobes.c
-+++ b/arch/arm/kernel/kprobes.c
-@@ -102,7 +102,7 @@ int __kprobes __arch_disarm_kprobe(void *p)
+Well, not exactly.  If CPU is being thrashed, we don't want to try to
+fire up new workers or calling in rescuers.  If nr_running is bumped
+up from ttwu(), a woken up but not yet running worker already counts
+as running.  With the suggested change, when we hit such heavy CPU
+thrashing, workqueue code will add things on top of it.
 
- void __kprobes arch_disarm_kprobe(struct kprobe *p)
- {
--	stop_machine(__arch_disarm_kprobe, p, &cpu_online_map);
-+	stop_machine(__arch_disarm_kprobe, p, cpu_online_mask);
- }
+Thanks.
 
- void __kprobes arch_remove_kprobe(struct kprobe *p)
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index 344e52b..98a48ab 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -601,8 +601,9 @@ void smp_send_stop(void)
- 	unsigned long timeout;
-
- 	if (num_online_cpus() > 1) {
--		cpumask_t mask = cpu_online_map;
--		cpu_clear(smp_processor_id(), mask);
-+		cpumask_t mask;
-+		cpumask_copy(&mask, cpu_online_mask);
-+		cpumask_clear_cpu(smp_processor_id(), &mask);
-
- 		smp_cross_call(&mask, IPI_CPU_STOP);
- 	}
 -- 
-1.7.3.1
-
-
-
+tejun
