@@ -1,98 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758675Ab1FWApT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 20:45:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33611 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758622Ab1FWApR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 20:45:17 -0400
-Date: Thu, 23 Jun 2011 10:45:07 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2011-06-22-13-05 uploaded
-Message-Id: <20110623104507.2e36aff3.sfr@canb.auug.org.au>
-In-Reply-To: <201106222042.p5MKgiEe025352@imap1.linux-foundation.org>
-References: <201106222042.p5MKgiEe025352@imap1.linux-foundation.org>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__23_Jun_2011_10_45_07_+1000_F.rCzXwPR3mmD=X+"
+	id S1758472Ab1FWAwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 20:52:07 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:47114 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758008Ab1FWAwE convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 20:52:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xEv7bQkxi1/SG165BfIBXwu7StXEJG4IByvez0J0KkTKWHx2ruPVWsyBMPS3TgYiMy
+         o5GUb8sJek4l7JhG9gBlJQnGtbSsgEC60z26P8Z8pejy5iHFTG/jHS+ObuiwHUu/cpl+
+         opudPrxJ1xybL2FcLfAWelrWnrW/M4ojFv5CI=
+MIME-Version: 1.0
+In-Reply-To: <4E027A96.3040905@redhat.com>
+References: <201106212055.25400.nai.xia@gmail.com>
+	<201106212132.39311.nai.xia@gmail.com>
+	<4E01C752.10405@redhat.com>
+	<4E01CC77.10607@ravellosystems.com>
+	<4E01CDAD.3070202@redhat.com>
+	<4E01CFD2.6000404@ravellosystems.com>
+	<4E020CBC.7070604@redhat.com>
+	<BANLkTikidXPzyxySbmrXK=EUXOzqMtm-0g@mail.gmail.com>
+	<4E027A96.3040905@redhat.com>
+Date: Thu, 23 Jun 2011 08:52:03 +0800
+Message-ID: <BANLkTimB7JBdV3=jDKA=t8Rc=8C0onYM7Q@mail.gmail.com>
+Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
+ and mmu notifier to help KSM dirty bit tracking
+From: Nai Xia <nai.xia@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Izik Eidus <izik.eidus@ravellosystems.com>, Avi Kivity <avi@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
+        linux-mm <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__23_Jun_2011_10_45_07_+1000_F.rCzXwPR3mmD=X+
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Andrew,
-
-On Wed, 22 Jun 2011 13:05:19 -0700 akpm@linux-foundation.org wrote:
+On Thu, Jun 23, 2011 at 7:28 AM, Rik van Riel <riel@redhat.com> wrote:
+> On 06/22/2011 07:13 PM, Nai Xia wrote:
+>>
+>> On Wed, Jun 22, 2011 at 11:39 PM, Rik van Riel<riel@redhat.com>  wrote:
+>>>
+>>> On 06/22/2011 07:19 AM, Izik Eidus wrote:
+>>>
+>>>> So what we say here is: it is better to have little junk in the unstable
+>>>> tree that get flushed eventualy anyway, instead of make the guest
+>>>> slower....
+>>>> this race is something that does not reflect accurate of ksm anyway due
+>>>> to the full memcmp that we will eventualy perform...
+>>>
+>>> With 2MB pages, I am not convinced they will get "flushed eventually",
+>>> because there is a good chance at least one of the 4kB pages inside
+>>> a 2MB page is in active use at all times.
+>>>
+>>> I worry that the proposed changes may end up effectively preventing
+>>> KSM from scanning inside 2MB pages, when even one 4kB page inside
+>>> is in active use.  This could mean increased swapping on systems
+>>> that run low on memory, which can be a much larger performance penalty
+>>> than ksmd CPU use.
+>>>
+>>> We need to scan inside 2MB pages when memory runs low, regardless
+>>> of the accessed or dirty bits.
+>>
+>> I agree on this point. Dirty bit , young bit, is by no means accurate.
+>> Even
+>> on 4kB pages, there is always a chance that the pte are dirty but the
+>> contents
+>> are actually the same. Yeah, the whole optimization contains trade-offs
+>> and
+>> trades-offs always have the possibilities to annoy  someone.  Just like
+>> page-bit-relying LRU approximations none of them is perfect too. But I
+>> think
+>> it can benefit some people. So maybe we could just provide a generic
+>> balanced
+>> solution but provide fine tuning interfaces to make sure tha when it
+>> really gets
+>> in the way of someone, he has a way to walk around.
+>> Do you agree on my argument? :-)
 >
-> The mm-of-the-moment snapshot 2011-06-22-13-05 has been uploaded to
->=20
->    http://userweb.kernel.org/~akpm/mmotm/
-> It contains the following patches against 3.0-rc4:
->=20
-> memcg-fix-node_start-end_pfn-definition-for-mm-page_cgroupc.patch
-> mm-move-vmtruncate_range-to-truncatec.patch
-> mm-move-shmem-prototypes-to-shmem_fsh.patch
-> tmpfs-take-control-of-its-truncate_range.patch
-> tmpfs-add-shmem_read_mapping_page_gfp.patch
-> drivers-rtc-rtc-ds1307c-add-support-for-rtc-device-pt7c4338.patch
-> um-add-asm-percpuh.patch
-> romfs-fix-romfs_get_unmapped_area-param-check.patch
-> include-linux-compath-declare-compat_sys_sendmmsg.patch
-> drivers-misc-lkdtmc-fix-race-when-crashpoint-is-hit-multiple-times-before=
--checking-count.patch
-> mm-memory-failurec-fix-spinlock-vs-mutex-order.patch
-> mm-fix-assertion-mapping-nrpages-=3D=3D-0-in-end_writeback.patch
-> taskstats-dont-allow-duplicate-entries-in-listener-mode.patch
-> drm-ttm-use-shmem_read_mapping_page.patch
-> drm-i915-use-shmem_read_mapping_page.patch
-> drm-i915-use-shmem_truncate_range.patch
-> drm-i915-more-struct_mutex-locking.patch
-> drm-i915-more-struct_mutex-locking-fix.patch
-> mm-cleanup-descriptions-of-filler-arg.patch
-> mm-truncate-functions-are-in-truncatec.patch
-> mm-tidy-vmtruncate_range-and-related-functions.patch
-> mm-consistent-truncate-and-invalidate-loops.patch
-> mm-pincer-in-truncate_inode_pages_range.patch
-> tmpfs-no-need-to-use-i_lock.patch
-> mm-nommuc-fix-remap_pfn_range.patch
+> That's not an argument.
+>
+> That is a "if I wave my hands vigorously enough, maybe people
+> will let my patch in without thinking about what I wrote"
+> style argument.
 
-As an experiment, I have applied all the above patches (everything
-between origin.patch and linux-next.patch exclusive) to my "fixes" tree
-so that they will be in linux-next immediately after Linus' tree and
-before anything else.   I am assuming that these patches are going to be
-sent to Linus shortly (if you haven't already).   I will point the
-akpm-start branch of linux-next to be just after the above patches (so
-akpm-start..akpm-end will contain everything else in linux-next).
+Oh, NO, this is not what I meant.
+Really sorry if I made myself look so evil...
+I actually mean: "Skip or not, we agree on a point that will not
+harm most people, and provide another interface to let someon
+who _really_ want to take another way."
 
-If this is a problem, let me know and I will drop them again.  Otherwise,
-they will disappear from my tree when Linus' takes tham from you.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I am by no means pushing the idea of "skipping" huge pages.
+I am just not sure about it and want to get a precise idea from
+you. And now I get it.
 
---Signature=_Thu__23_Jun_2011_10_45_07_+1000_F.rCzXwPR3mmD=X+
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+>
+> I believe your optimization makes sense for 4kB pages, but
+> is going to be counter-productive for 2MB pages.
+>
+> Your approach of "make ksmd skip over more pages, so it uses
+> less CPU" is likely to reduce the effectiveness of ksm by not
+> sharing some pages.
+>
+> For 4kB pages that is fine, because you'll get around to them
+> eventually.
+>
+> However, the internal use of a 2MB page is likely to be quite
+> different.  Chances are most 2MB pages will have actively used,
+> barely used and free pages inside.
+>
+> You absolutely want ksm to get at the barely used and free
+> sub-pages.  Having just one actively used 4kB sub-page prevent
+> ksm from merging any of the other 511 sub-pages is a problem.
 
-iQEcBAEBAgAGBQJOAoyTAAoJEDMEi1NhKgbsXwkH/i1LRBuijfkhvDt8nd/nn8kW
-fOit5iPolvf9uQQBmoCVUm3rNVKwJWUAN+/MvSkzkkRJzZBLNe8VIYtIRQ7F9zyg
-idQE5UdeLDKRrRZHaD5FWLIcnNbjs4XDmZTioI/pGSb1j6f4wRSRy7/elmCzzaK9
-CBj6rDf8qMYtvBxlovnpzfgnwX7cW6It3aAGnIiN+mefq6xUximKkAHWIMAYooh8
-lOuKqkLtpa2VZOB9qLJFi8Gu0PMRYP9ulUJynSsMpkTa0zOgA5v62qk3evt71Fi4
-SGQzd8+XtkWj+xwfmlcp1TFG75T+A3vsZTl+WPZIB95mgV2crycmjjtg1JLMHVk=
-=6m6T
------END PGP SIGNATURE-----
+No, no,  I was just not sure about it. I meant we cannot satisfy
+all people but I was not sure which one is good for most of them.
 
---Signature=_Thu__23_Jun_2011_10_45_07_+1000_F.rCzXwPR3mmD=X+--
+Sorry, again, if I didn't make it clear.
+
+
+Nai
+
+>
+> --
+> All rights reversed
+>
