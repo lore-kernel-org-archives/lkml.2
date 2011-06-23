@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933641Ab1FWR5b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:57:31 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35154 "EHLO
+	id S933726Ab1FWRyQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:54:16 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35263 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933622Ab1FWRhn (ORCPT
+	with ESMTP id S933666Ab1FWRh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:43 -0400
+	Thu, 23 Jun 2011 13:37:57 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+Cc: stable-review@kernel.org, Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>,
+        Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 183/247] xhci: Fix cycle bit calculation during stall handling.
-Date: Thu, 23 Jun 2011 13:34:11 -0400
-Message-Id: <1308850515-15242-124-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 184/247] ALSA: hda - fix digital mic selection in mixer on 92HD8X codecs
+Date: Thu, 23 Jun 2011 13:34:12 -0400
+Message-Id: <1308850515-15242-125-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,67 +23,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+From: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 01a1fdb9a7afa5e3c14c9316d6f380732750b4e4 upstream.
+commit 094a42452abd5564429045e210281c6d22e67fca upstream.
 
-When an endpoint stalls, we need to update the xHCI host's internal
-dequeue pointer to move it past the stalled transfer.  This includes
-updating the cycle bit (TRB ownership bit) if we have moved the dequeue
-pointer past a link TRB with the toggle cycle bit set.
+When the mux for digital mic is different from the mux for other mics,
+the current auto-parser doesn't handle them in a right way but provides
+only one mic.  This patch fixes the issue.
 
-When we're trying to find the new dequeue segment, find_trb_seg() is
-supposed to keep track of whether we've passed any link TRBs with the
-toggle cycle bit set.  However, this while loop's body
-
-	while (cur_seg->trbs > trb ||
-			&cur_seg->trbs[TRBS_PER_SEGMENT - 1] < trb) {
-
-Will never get executed if the ring only contains one segment.
-find_trb_seg() will return immediately, without updating the new cycle
-bit.  Since find_trb_seg() has no idea where in the segment the TD that
-stalled was, make the caller, xhci_find_new_dequeue_state(), check for
-this special case and update the cycle bit accordingly.
-
-This patch should be queued to kernels all the way back to 2.6.31.
-
-Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Tested-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/host/xhci-ring.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+ sound/pci/hda/patch_sigmatel.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
-index 34ce5d4..3aa5c29 100644
---- a/drivers/usb/host/xhci-ring.c
-+++ b/drivers/usb/host/xhci-ring.c
-@@ -418,6 +418,20 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
- 		state->new_cycle_state = ~(state->new_cycle_state) & 0x1;
- 	next_trb(xhci, ep_ring, &state->new_deq_seg, &state->new_deq_ptr);
+diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
+index 6cf2dd4..02b813ef6 100644
+--- a/sound/pci/hda/patch_sigmatel.c
++++ b/sound/pci/hda/patch_sigmatel.c
+@@ -735,7 +735,7 @@ static int stac92xx_mux_enum_put(struct snd_kcontrol *kcontrol, struct snd_ctl_e
+ 	struct sigmatel_spec *spec = codec->spec;
+ 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
+ 	const struct hda_input_mux *imux = spec->input_mux;
+-	unsigned int idx, prev_idx;
++	unsigned int idx, prev_idx, didx;
  
-+	/*
-+	 * If there is only one segment in a ring, find_trb_seg()'s while loop
-+	 * will not run, and it will return before it has a chance to see if it
-+	 * needs to toggle the cycle bit.  It can't tell if the stalled transfer
-+	 * ended just before the link TRB on a one-segment ring, or if the TD
-+	 * wrapped around the top of the ring, because it doesn't have the TD in
-+	 * question.  Look for the one-segment case where stalled TRB's address
-+	 * is greater than the new dequeue pointer address.
-+	 */
-+	if (ep_ring->first_seg == ep_ring->first_seg->next &&
-+			state->new_deq_ptr < dev->eps[ep_index].stopped_trb)
-+		state->new_cycle_state ^= 0x1;
-+	xhci_dbg(xhci, "Cycle state = 0x%x\n", state->new_cycle_state);
-+
- 	/* Don't update the ring cycle state for the producer (us). */
- 	xhci_dbg(xhci, "New dequeue segment = %p (virtual)\n",
- 			state->new_deq_seg);
+ 	idx = ucontrol->value.enumerated.item[0];
+ 	if (idx >= imux->num_items)
+@@ -747,7 +747,8 @@ static int stac92xx_mux_enum_put(struct snd_kcontrol *kcontrol, struct snd_ctl_e
+ 		snd_hda_codec_write_cache(codec, spec->mux_nids[adc_idx], 0,
+ 					  AC_VERB_SET_CONNECT_SEL,
+ 					  imux->items[idx].index);
+-		if (prev_idx >= spec->num_analog_muxes) {
++		if (prev_idx >= spec->num_analog_muxes &&
++		    spec->mux_nids[adc_idx] != spec->dmux_nids[adc_idx]) {
+ 			imux = spec->dinput_mux;
+ 			/* 0 = analog */
+ 			snd_hda_codec_write_cache(codec,
+@@ -757,9 +758,13 @@ static int stac92xx_mux_enum_put(struct snd_kcontrol *kcontrol, struct snd_ctl_e
+ 		}
+ 	} else {
+ 		imux = spec->dinput_mux;
++		/* first dimux item is hardcoded to select analog imux,
++		 * so lets skip it
++		 */
++		didx = idx - spec->num_analog_muxes + 1;
+ 		snd_hda_codec_write_cache(codec, spec->dmux_nids[adc_idx], 0,
+ 					  AC_VERB_SET_CONNECT_SEL,
+-					  imux->items[idx - 1].index);
++					  imux->items[didx].index);
+ 	}
+ 	spec->cur_mux[adc_idx] = idx;
+ 	return 1;
 -- 
 1.7.4.4
 
