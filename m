@@ -1,36 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758849Ab1FWDXb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 23:23:31 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:32985 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758427Ab1FWDXa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 23:23:30 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E02B1A1.4030907@jp.fujitsu.com>
-Date: Thu, 23 Jun 2011 12:23:13 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	id S1758863Ab1FWDSk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 23:18:40 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12389 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758406Ab1FWDSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 23:18:39 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,410,1304319600"; 
+   d="scan'208";a="17217291"
+Date: Thu, 23 Jun 2011 11:25:52 +0800
+From: Feng Tang <feng.tang@intel.com>
+To: Dirk Brandewie <dirk.brandewie@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "spi-devel-general@lists.sourceforge.net" 
+	<spi-devel-general@lists.sourceforge.net>
+Subject: Re: [PATCH 09/11] spi-dw: Fix condition in spi_dw_{writer/reader}
+Message-ID: <20110623112552.6f22c3de@feng-i7>
+In-Reply-To: <4E02AE6E.5010307@gmail.com>
+References: <1308794413-11069-1-git-send-email-dirk.brandewie@gmail.com>
+	<1308794413-11069-10-git-send-email-dirk.brandewie@gmail.com>
+	<20110623104506.3cfd55ce@feng-i7>
+	<4E02AE6E.5010307@gmail.com>
+Organization: intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
 MIME-Version: 1.0
-To: dvhart@linux.intel.com
-CC: sbohrer@rgmadvisors.com, peterz@infradead.org, eric.dumazet@gmail.com,
-        david@rgmadvisors.com, linux-kernel@vger.kernel.org,
-        zvonler@rgmadvisors.com, hughd@google.com, tglx@linutronix.de,
-        mingo@elte.hu
-Subject: Re: Change in functionality of futex() system call.
-References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com> <1307373819.3098.40.camel@edumazet-laptop> <1307376672.2322.167.camel@twins> <1307376989.2322.171.camel@twins> <4DF2099B.7030600@jp.fujitsu.com> <20110615185047.GA2171@BohrerMBP.rgmadvisors.com> <4DF8FFF6.4060000@linux.intel.com>
-In-Reply-To: <4DF8FFF6.4060000@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Kosaki, do you have updated futextest patches or should I look at the
-> ones you send previously?
+On Thu, 23 Jun 2011 11:09:34 +0800
+Dirk Brandewie <dirk.brandewie@gmail.com> wrote:
 
-I'm sorry. I missed your mail. I don't have any update. Please look at
-privious one.
+> On 06/22/2011 07:45 PM, Feng Tang wrote:
+> > On Thu, 23 Jun 2011 10:00:11 +0800
+> > "dirk.brandewie@gmail.com"<dirk.brandewie@gmail.com>  wrote:
+> >
+> >> From: Dirk Brandewie<dirk.brandewie@gmail.com>
+> >>
+> >> Fix the condition based on whether the current transfer has a tx/rx
+> >> buffer.
+> >>
+> >> Signed-off-by: Dirk Brandewie<dirk.brandewie@gmail.com>
+> >> ---
+> >>   drivers/spi/spi-dw.c |    6 +++---
+> >>   1 files changed, 3 insertions(+), 3 deletions(-)
+> >>
+> >> diff --git a/drivers/spi/spi-dw.c b/drivers/spi/spi-dw.c
+> >> index cc38aa0..35b952b 100644
+> >> --- a/drivers/spi/spi-dw.c
+> >> +++ b/drivers/spi/spi-dw.c
+> >> @@ -193,8 +193,8 @@ static void spi_dw_writer(struct spi_dw *dws)
+> >>   	u16 txw = 0;
+> >>
+> >>   	while (max--) {
+> >> -		/* Set the tx word if the transfer's original "tx"
+> >> is not null */
+> >> -		if (dws->tx_end - dws->len) {
+> >> +		/* Set the tx word if the transfer's "tx" is not
+> >> null */
+> >> +		if (dws->tx) {
+> >
+> > No, in current mainstream code, the dws->tx is changing, see code:
+> > 	dws->tx += dws->n_bytes;
+> > so we have to use if (dws->tx_end - dws->len) for now, maybe
+> > we can use some bit to indicate whether the original tx is null
+> 
+> If dws->tx is non-null then it points to a valid buffer, it is
+> unconditionally set with dws->tx = (void *)transfer->tx_buf when the
+> transfer is setup.  if the original transfer->tx_buf is non-null then
+> this change works.
 
+dws->tx is changing as I said, non-null doesn't mean the value is valid,
+when the original tx is null, we don't access it at all, it's just a
+indicator of whether the dws->len of zeor has been filled to FIFO.
 
+This logic may looks confusing, but it's correct after years of test.
+
+> 
+> >
+> >>   			if (dws->n_bytes == 1)
+> >>   				txw = *(u8 *)(dws->tx);
+> >>   			else
+> >> @@ -213,7 +213,7 @@ static void spi_dw_reader(struct spi_dw *dws)
+> >>   	while (max--) {
+> >>   		rxw = dw_readw(dws, dr);
+> >>   		/* Care rx only if the transfer's original "rx"
+> >> is not null */
+> >> -		if (dws->rx_end - dws->len) {
+> >> +		if (dws->rx) {
+> >>   			if (dws->n_bytes == 1)
+> >>   				*(u8 *)(dws->rx) = rxw;
+> >>   			else
+> 
