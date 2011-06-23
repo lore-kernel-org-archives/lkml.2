@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933329Ab1FWRg0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:36:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34457 "EHLO
+	id S934237Ab1FWSQe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:16:34 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34405 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933261Ab1FWRgY (ORCPT
+	with ESMTP id S933292Ab1FWRgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:24 -0400
+	Thu, 23 Jun 2011 13:36:17 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+Cc: stable-review@kernel.org, NeilBrown <neilb@suse.de>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 101/247] isdn: hisax: Replace the bogus access to irq stats
-Date: Thu, 23 Jun 2011 13:32:49 -0400
-Message-Id: <1308850515-15242-42-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 102/247] nfsd: correctly handle return value from nfsd_map_name_to_*
+Date: Thu, 23 Jun 2011 13:32:50 -0400
+Message-Id: <1308850515-15242-43-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,86 +23,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
+From: NeilBrown <neilb@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 40f08a724fcc21285cf3a75aec957aef908605c6 upstream.
+commit 47c85291d3dd1a51501555000b90f8e281a0458e upstream.
 
-Abusing irq stats in a driver for counting interrupts is a horrible
-idea and not safe with shared interrupts. Replace it by a local
-interrupt counter.
+These functions return an nfs status, not a host_err.  So don't
+try to convert  before returning.
 
-Noticed by the attempt to remove the irq stats export.
+This is a regression introduced by
+3c726023402a2f3b28f49b9d90ebf9e71151157d; I fixed up two of the callers,
+but missed these two.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Reviewed-by: Ingo Molnar <mingo@elte.hu>
+Reported-by: Herbert Poetzl <herbert@13thfloor.at>
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/isdn/hisax/config.c |   18 ++++++++++++++----
- drivers/isdn/hisax/hisax.h  |    1 +
- 2 files changed, 15 insertions(+), 4 deletions(-)
+ fs/nfsd/nfs4xdr.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/isdn/hisax/config.c b/drivers/isdn/hisax/config.c
-index 544cf4b..0a347a8 100644
---- a/drivers/isdn/hisax/config.c
-+++ b/drivers/isdn/hisax/config.c
-@@ -801,6 +801,16 @@ static void closecard(int cardnr)
- 	ll_unload(csta);
- }
- 
-+static irqreturn_t card_irq(int intno, void *dev_id)
-+{
-+	struct IsdnCardState *cs = dev_id;
-+	irqreturn_t ret = cs->irq_func(intno, cs);
-+
-+	if (ret == IRQ_HANDLED)
-+		cs->irq_cnt++;
-+	return ret;
-+}
-+
- static int init_card(struct IsdnCardState *cs)
- {
- 	int 	irq_cnt, cnt = 3, ret;
-@@ -809,10 +819,10 @@ static int init_card(struct IsdnCardState *cs)
- 		ret = cs->cardmsg(cs, CARD_INIT, NULL);
- 		return(ret);
+diff --git a/fs/nfsd/nfs4xdr.c b/fs/nfsd/nfs4xdr.c
+index 34ccf81..cb0a5fe 100644
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -316,8 +316,8 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
+ 		READ_BUF(dummy32);
+ 		len += (XDR_QUADLEN(dummy32) << 2);
+ 		READMEM(buf, dummy32);
+-		if ((host_err = nfsd_map_name_to_uid(argp->rqstp, buf, dummy32, &iattr->ia_uid)))
+-			goto out_nfserr;
++		if ((status = nfsd_map_name_to_uid(argp->rqstp, buf, dummy32, &iattr->ia_uid)))
++			return status;
+ 		iattr->ia_valid |= ATTR_UID;
  	}
--	irq_cnt = kstat_irqs(cs->irq);
-+	irq_cnt = cs->irq_cnt = 0;
- 	printk(KERN_INFO "%s: IRQ %d count %d\n", CardType[cs->typ],
- 	       cs->irq, irq_cnt);
--	if (request_irq(cs->irq, cs->irq_func, cs->irq_flags, "HiSax", cs)) {
-+	if (request_irq(cs->irq, card_irq, cs->irq_flags, "HiSax", cs)) {
- 		printk(KERN_WARNING "HiSax: couldn't get interrupt %d\n",
- 		       cs->irq);
- 		return 1;
-@@ -822,8 +832,8 @@ static int init_card(struct IsdnCardState *cs)
- 		/* Timeout 10ms */
- 		msleep(10);
- 		printk(KERN_INFO "%s: IRQ %d count %d\n",
--		       CardType[cs->typ], cs->irq, kstat_irqs(cs->irq));
--		if (kstat_irqs(cs->irq) == irq_cnt) {
-+		       CardType[cs->typ], cs->irq, cs->irq_cnt);
-+		if (cs->irq_cnt == irq_cnt) {
- 			printk(KERN_WARNING
- 			       "%s: IRQ(%d) getting no interrupts during init %d\n",
- 			       CardType[cs->typ], cs->irq, 4 - cnt);
-diff --git a/drivers/isdn/hisax/hisax.h b/drivers/isdn/hisax/hisax.h
-index 832a878..32ab392 100644
---- a/drivers/isdn/hisax/hisax.h
-+++ b/drivers/isdn/hisax/hisax.h
-@@ -959,6 +959,7 @@ struct IsdnCardState {
- 	u_long		event;
- 	struct work_struct tqueue;
- 	struct timer_list dbusytimer;
-+	unsigned int	irq_cnt;
- #ifdef ERROR_STATISTIC
- 	int		err_crc;
- 	int		err_tx;
+ 	if (bmval[1] & FATTR4_WORD1_OWNER_GROUP) {
+@@ -327,8 +327,8 @@ nfsd4_decode_fattr(struct nfsd4_compoundargs *argp, u32 *bmval,
+ 		READ_BUF(dummy32);
+ 		len += (XDR_QUADLEN(dummy32) << 2);
+ 		READMEM(buf, dummy32);
+-		if ((host_err = nfsd_map_name_to_gid(argp->rqstp, buf, dummy32, &iattr->ia_gid)))
+-			goto out_nfserr;
++		if ((status = nfsd_map_name_to_gid(argp->rqstp, buf, dummy32, &iattr->ia_gid)))
++			return status;
+ 		iattr->ia_valid |= ATTR_GID;
+ 	}
+ 	if (bmval[1] & FATTR4_WORD1_TIME_ACCESS_SET) {
 -- 
 1.7.4.4
 
