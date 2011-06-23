@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934203Ab1FWSJy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:09:54 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34606 "EHLO
+	id S933415Ab1FWSMP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:12:15 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34572 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933416Ab1FWRgp (ORCPT
+	with ESMTP id S933372Ab1FWRgk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:45 -0400
+	Thu, 23 Jun 2011 13:36:40 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
 Cc: stable-review@kernel.org, Maciej Szmigiero <mhej@o2.pl>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 121/247] USB: Add Samsung SGH-I500/Android modem ID switch to visor driver
-Date: Thu, 23 Jun 2011 13:33:09 -0400
-Message-Id: <1308850515-15242-62-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 122/247] USB: Add quirk for Samsung Android phone modem
+Date: Thu, 23 Jun 2011 13:33:10 -0400
+Message-Id: <1308850515-15242-63-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -30,60 +30,38 @@ From: Maciej Szmigiero <mhej@o2.pl>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit acb52cb1613e1d3c8a8c650717cc51965c60d7d4 upstream.
+commit 72a012ce0a02c6c616676a24b40ff81d1aaeafda upstream.
 
-[USB]Add Samsung SGH-I500/Android modem ID switch to visor driver
+My Galaxy Spica needs this quirk when in modem mode, otherwise
+it causes endless USB bus resets and is unusable in this mode.
 
-Samsung decided to reuse USB ID of its old CDMA phone SGH-I500 for the
-modem part of some of their Android phones. At least Galaxy Spica
-is affected.
-
-This modem needs ACM driver and does not work with visor driver which
-binds the conflicting ID for SGH-I500.
-Because SGH-I500 is pretty an old hardware its best to add switch to
-visor
-driver in cause somebody still wants to use that phone with Linux.
-
-Note that this is needed only when using the Android phone as modem,
-not in USB storage or ADB mode.
+Unfortunately Samsung decided to reuse ID of its old CDMA phone SGH-I500
+for the modem part.
+That's why in addition to this patch the visor driver must be prevented
+from binding to SPH-I500 ID, so ACM driver can do that.
 
 Signed-off-by: Maciej Szmigiero <mhej@o2.pl>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/visor.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+ drivers/usb/core/quirks.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/serial/visor.c b/drivers/usb/serial/visor.c
-index fb7fc40..81fa4f9 100644
---- a/drivers/usb/serial/visor.c
-+++ b/drivers/usb/serial/visor.c
-@@ -27,6 +27,7 @@
- #include <linux/uaccess.h>
- #include <linux/usb.h>
- #include <linux/usb/serial.h>
-+#include <linux/usb/cdc.h>
- #include "visor.h"
+diff --git a/drivers/usb/core/quirks.c b/drivers/usb/core/quirks.c
+index 0ac3810..99f2d61 100644
+--- a/drivers/usb/core/quirks.c
++++ b/drivers/usb/core/quirks.c
+@@ -45,6 +45,10 @@ static const struct usb_device_id usb_quirk_list[] = {
+ 	{ USB_DEVICE(0x04b4, 0x0526), .driver_info =
+ 			USB_QUIRK_CONFIG_INTF_STRINGS },
  
- /*
-@@ -754,6 +755,17 @@ static int visor_probe(struct usb_serial *serial,
- 
- 	dbg("%s", __func__);
- 
-+	/*
-+	 * some Samsung Android phones in modem mode have the same ID
-+	 * as SPH-I500, but they are ACM devices, so dont bind to them
-+	 */
-+	if (id->idVendor == SAMSUNG_VENDOR_ID &&
-+		id->idProduct == SAMSUNG_SPH_I500_ID &&
-+		serial->dev->descriptor.bDeviceClass == USB_CLASS_COMM &&
-+		serial->dev->descriptor.bDeviceSubClass ==
-+			USB_CDC_SUBCLASS_ACM)
-+		return -ENODEV;
++	/* Samsung Android phone modem - ID conflict with SPH-I500 */
++	{ USB_DEVICE(0x04e8, 0x6601), .driver_info =
++			USB_QUIRK_CONFIG_INTF_STRINGS },
 +
- 	if (serial->dev->actconfig->desc.bConfigurationValue != 1) {
- 		dev_err(&serial->dev->dev, "active config #%d != 1 ??\n",
- 			serial->dev->actconfig->desc.bConfigurationValue);
+ 	/* Roland SC-8820 */
+ 	{ USB_DEVICE(0x0582, 0x0007), .driver_info = USB_QUIRK_RESET_RESUME },
+ 
 -- 
 1.7.4.4
 
