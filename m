@@ -1,77 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758289Ab1FWNXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:23:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46820 "EHLO mx1.redhat.com"
+	id S1758100Ab1FWNXQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:23:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36048 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758138Ab1FWNXX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:23:23 -0400
-Date: Thu, 23 Jun 2011 15:21:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hch@infradead.org
-Subject: Re: [PATCH 2/8] kill tracehook_notify_death()
-Message-ID: <20110623132126.GA10410@redhat.com>
-References: <1308322240-8247-1-git-send-email-tj@kernel.org> <1308322240-8247-7-git-send-email-tj@kernel.org> <20110622210757.GA20549@redhat.com> <20110622210834.GC20549@redhat.com> <20110623122253.GM30101@htj.dyndns.org>
+	id S1756160Ab1FWNXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 09:23:15 -0400
+Date: Thu, 23 Jun 2011 15:23:12 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Lutz Vieweg <lvml@5t9.de>
+Subject: Re: [PATCH] mm: preallocate page before lock_page at filemap COW.
+ (WasRe: [PATCH V2] mm: Do not keep page locked during page fault while
+ charging it for memcg
+Message-ID: <20110623132312.GI31593@tiehlicka.suse.cz>
+References: <20110622120635.GB14343@tiehlicka.suse.cz>
+ <20110622121516.GA28359@infradead.org>
+ <20110622123204.GC14343@tiehlicka.suse.cz>
+ <20110623150842.d13492cd.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110623074133.GA31593@tiehlicka.suse.cz>
+ <20110623170811.16f4435f.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110623090204.GE31593@tiehlicka.suse.cz>
+ <20110623190157.1bc8cbb9.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110623115855.GF31593@tiehlicka.suse.cz>
+ <BANLkTimshUCY5Yq5g9dnY0gi2TRneGscug@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110623122253.GM30101@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <BANLkTimshUCY5Yq5g9dnY0gi2TRneGscug@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
-
-On 06/23, Tejun Heo wrote:
->
-> Hello, Oleg.
->
-> On Wed, Jun 22, 2011 at 11:08:34PM +0200, Oleg Nesterov wrote:
-> > Kill tracehook_notify_death(), reimplement the logic in its caller,
-> > exit_notify().
+On Thu 23-06-11 22:01:40, Hiroyuki Kamezawa wrote:
+> 2011/6/23 Michal Hocko <mhocko@suse.cz>:
+> > On Thu 23-06-11 19:01:57, KAMEZAWA Hiroyuki wrote:
+> >> On Thu, 23 Jun 2011 11:02:04 +0200
+> >> Michal Hocko <mhocko@suse.cz> wrote:
+> >>
+> >> > On Thu 23-06-11 17:08:11, KAMEZAWA Hiroyuki wrote:
+> >> > > On Thu, 23 Jun 2011 09:41:33 +0200
+> >> > > Michal Hocko <mhocko@suse.cz> wrote:
+> >> > [...]
+> >> > > > Other than that:
+> >> > > > Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> >> > > >
+> >> > >
+> >> > > I found the page is added to LRU before charging. (In this case,
+> >> > > memcg's LRU is ignored.) I'll post a new version with a fix.
+> >> >
+> >> > Yes, you are right. I have missed that.
+> >> > This means that we might race with reclaim which could evict the COWed
+> >> > page wich in turn would uncharge that page even though we haven't
+> >> > charged it yet.
+> >> >
+> >> > Can we postpone page_add_new_anon_rmap to the charging path or it would
+> >> > just race somewhere else?
+> >> >
+> >>
+> >> I got a different idea. How about this ?
+> >> I think this will have benefit for non-memcg users under OOM, too.
 > >
-> > This also fixes a minor bug, if the exiting task is the group_leader
-> > and it is traced by its real_parent, tracehook_notify_death() returns
-> > task->exit_signal or SIGCHLD depending on thread_group_empty(), this
-> > looks strange.
->
-> Maybe we should do the above in a separate patch?
+> > Could you be more specific? I do not see how preallocation which might
+> > turn out to be pointless could help under OOM.
+> >
+> 
+> We'll have no page allocation under lock_page() held in this path.
+> I think it is good.
 
-Do you think this makes sense? OK, I can do this...
+But it can also cause that the page, we are about to fault in, is evicted
+due to allocation so we would have to do a major fault... This is
+probably not that serious, though.
 
->
-> > -	if (tsk->exit_signal != SIGCHLD && !task_detached(tsk) &&
-> > +	if (thread_group_leader(tsk) && tsk->exit_signal != SIGCHLD &&
->
-> Hmmm... it probably depends on POV but wouldn't (exit_signal != -1 &&
-> exit_signal != SIGCHLD) be easier?
-
-I disagree.
-
-> The logic here is about demoting
-> specials sigs to SIGCHLD under certain circumstances
-
-Yes. And what is ->exit_signal? It is in fact per-process, lives in the
-group_leader's task_struct. We could move it to signal_struct.
-
-> and the check is
-> there to prevent promoting -1 to SIGCHLD.
-
-Yes, because we should never change ->exit_signal for sub-threads.
-
-And it doesn't make sense to check exec ids (this is again per-process,
-should be cleanuped) unless the task is the group leader.
-
-> thread_group_leader() seems
-> unnecessarily indirect.
-
-This is what I disagree with. Contrary, I think thread_group_leader() exactly
-explains what do we want to check. (but once again, exec_id logic should be
-cleanuped, not only in this function).
-
-Oleg.
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
