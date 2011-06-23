@@ -1,195 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab1FWGej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 02:34:39 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36549 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753653Ab1FWGeh (ORCPT
+	id S1754869Ab1FWGaB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 02:30:01 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:44207 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754079Ab1FWGaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 02:34:37 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 23 Jun 2011 15:27:34 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH 4/7] memcg: update numa information based on event
- counter
-Message-Id: <20110623152734.3a4f867a.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110622155309.GH14343@tiehlicka.suse.cz>
-References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110616125400.1145a4e2.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110622155309.GH14343@tiehlicka.suse.cz>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Jun 2011 02:30:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=M/YaYS+Tt1H1hDJlnJpqT+rDOvdVG2qeMKMKhR9n02H37Ahkw8dE6wgSBeQTNGxYF0
+         GuJVRTnCpbyg4CUoMLtmeGsh01cEezLVHsbGcOA854JFi7TBSY87OkkffFfhe4U6fW6e
+         yQN9baR303Mlw6Q8LfC6ni0ACEgDIRDYzBgc0=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 1/3]Fix typo interrupt(s) to interrupt(s) 
+Date: Wed, 22 Jun 2011 23:29:18 -0700
+Message-Id: <1308810560-23742-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011 17:53:09 +0200
-Michal Hocko <mhocko@suse.cz> wrote:
+From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-> On Thu 16-06-11 12:54:00, KAMEZAWA Hiroyuki wrote:
-> > From 88090fe10e225ad8769ba0ea01692b7314e8b973 Mon Sep 17 00:00:00 2001
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Date: Wed, 15 Jun 2011 16:19:46 +0900
-> > Subject: [PATCH 4/7] memcg: update numa information based on event counter
-> > 
-> > commit 889976 adds an numa node round-robin for memcg. But the information
-> > is updated once per 10sec.
-> > 
-> > This patch changes the update trigger from jiffies to memcg's event count.
-> > After this patch, numa scan information will be updated when
-> > 
-> >   - the number of pagein/out events is larger than 3% of limit
-> >   or
-> >   - the number of pagein/out events is larger than 16k
-> >     (==64MB pagein/pageout if pagesize==4k.)
-> > 
-> > The counter of mem->numascan_update the sum of percpu events counter.
-> > When a task hits limit, it checks mem->numascan_update. If it's over
-> > min(3% of limit, 16k), numa information will be updated.
-> 
-> Yes, I like the event based approach more than the origin (time) based
-> one.
-> 
-> > 
-> > This patch also adds mutex for updating information. This will allow us
-> > to avoid unnecessary scan.
-> > 
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > ---
-> >  mm/memcontrol.c |   51 +++++++++++++++++++++++++++++++++++++++++++++------
-> >  1 file changed, 45 insertions(+), 6 deletions(-)
-> > 
-> > Index: mmotm-0615/mm/memcontrol.c
-> > ===================================================================
-> > --- mmotm-0615.orig/mm/memcontrol.c
-> > +++ mmotm-0615/mm/memcontrol.c
-> > @@ -108,10 +108,12 @@ enum mem_cgroup_events_index {
-> >  enum mem_cgroup_events_target {
-> >  	MEM_CGROUP_TARGET_THRESH,
-> >  	MEM_CGROUP_TARGET_SOFTLIMIT,
-> > +	MEM_CGROUP_TARGET_NUMASCAN,
-> 
-> Shouldn't it be defined only for MAX_NUMNODES > 1
-> 
+The patch below fixes some typos interrrupt to interrupt.
+Note I sent something similar a few months ago, either this was the same or
+newly created typos have been created. 
 
-Hmm, yes. But I want to reduce #ifdefs..
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
+---
+ arch/arm/mach-omap2/smartreflex.c                |    2 +-
+ arch/powerpc/platforms/embedded6xx/storcenter.c  |    2 +-
+ drivers/net/arm/ks8695net.c                      |    2 +-
+ drivers/net/atlx/atl1.c                          |    2 +-
+ drivers/net/sky2.c                               |    2 +-
+ drivers/net/wireless/rtlwifi/pci.c               |    2 +-
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c |    4 ++--
+ drivers/staging/ft1000/ft1000-usb/ft1000_hw.c    |    2 +-
+ drivers/tty/serial/mrst_max3110.c                |    2 +-
+ drivers/usb/gadget/langwell_udc.c                |    2 +-
+ drivers/usb/musb/musb_gadget.c                   |    2 +-
+ 11 files changed, 12 insertions(+), 12 deletions(-)
 
-> >  	MEM_CGROUP_NTARGETS,
-> >  };
-> >  #define THRESHOLDS_EVENTS_TARGET (128)
-> >  #define SOFTLIMIT_EVENTS_TARGET (1024)
-> > +#define NUMASCAN_EVENTS_TARGET  (1024)
-> >  
-> >  struct mem_cgroup_stat_cpu {
-> >  	long count[MEM_CGROUP_STAT_NSTATS];
-> > @@ -288,8 +290,9 @@ struct mem_cgroup {
-> >  	int last_scanned_node;
-> >  #if MAX_NUMNODES > 1
-> >  	nodemask_t	scan_nodes;
-> > -	unsigned long   next_scan_node_update;
-> > +	struct mutex	numascan_mutex;
-> >  #endif
-> > +	atomic_t	numascan_update;
-> 
-> Why it is out of ifdef?
-> 
-
-This was for avoiding #ifdef in mem_cgroup_create()...but it's not used now.
-I'll fix this.
-
-
-
-> >  	/*
-> >  	 * Should the accounting and control be hierarchical, per subtree?
-> >  	 */
-> > @@ -741,6 +744,9 @@ static void __mem_cgroup_target_update(s
-> >  	case MEM_CGROUP_TARGET_SOFTLIMIT:
-> >  		next = val + SOFTLIMIT_EVENTS_TARGET;
-> >  		break;
-> > +	case MEM_CGROUP_TARGET_NUMASCAN:
-> > +		next = val + NUMASCAN_EVENTS_TARGET;
-> > +		break;
-> 
-> MAX_NUMNODES > 1
-> 
-> >  	default:
-> >  		return;
-> >  	}
-> > @@ -764,6 +770,13 @@ static void memcg_check_events(struct me
-> >  			__mem_cgroup_target_update(mem,
-> >  				MEM_CGROUP_TARGET_SOFTLIMIT);
-> >  		}
-> > +		if (unlikely(__memcg_event_check(mem,
-> > +			MEM_CGROUP_TARGET_NUMASCAN))) {
-> > +			atomic_add(MEM_CGROUP_TARGET_NUMASCAN,
-> > +				&mem->numascan_update);
-> > +			__mem_cgroup_target_update(mem,
-> > +				MEM_CGROUP_TARGET_NUMASCAN);
-> > +		}
-> >  	}
-> 
-> again MAX_NUMNODES > 1
-> 
-
-Hmm, ok, I will add #ifdef only here.
-
-
-
-> >  }
-> >  
-> > @@ -1616,17 +1629,32 @@ mem_cgroup_select_victim(struct mem_cgro
-> >  /*
-> >   * Always updating the nodemask is not very good - even if we have an empty
-> >   * list or the wrong list here, we can start from some node and traverse all
-> > - * nodes based on the zonelist. So update the list loosely once per 10 secs.
-> > + * nodes based on the zonelist.
-> >   *
-> > + * The counter of mem->numascan_update is updated once per
-> > + * NUMASCAN_EVENTS_TARGET. We update the numa information when we see
-> > + * the number of event is larger than 3% of limit or  64MB pagein/pageout.
-> >   */
-> > +#define NUMASCAN_UPDATE_RATIO	(3)
-> > +#define NUMASCAN_UPDATE_THRESH	(16384UL) /* 16k events of pagein/pageout */
-> >  static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
-> >  {
-> >  	int nid;
-> > -
-> > -	if (time_after(mem->next_scan_node_update, jiffies))
-> > +	unsigned long long limit;
-> > +	/* if no limit, we never reach here */
-> > +	limit = res_counter_read_u64(&mem->res, RES_LIMIT);
-> > +	limit /= PAGE_SIZE;
-> > +	/* 3% of limit */
-> > +	limit = (limit * NUMASCAN_UPDATE_RATIO/100UL);
-> > +	limit = min_t(unsigned long long, limit, NUMASCAN_UPDATE_THRESH);
-> > +	/*
-> > +	 * If the number of pagein/out event is larger than 3% of limit or
-> > +	 * 64MB pagein/out, refresh numa information.
-> > +	 */
-> > +	if (atomic_read(&mem->numascan_update) < limit ||
-> > +	    !mutex_trylock(&mem->numascan_mutex))
-> >  		return;
-> 
-> I am not sure whether a mutex is not overkill here. What about using an
-> atomic operation instead?
-> 
-
-I think mutex is informative than atomic counter for code readers.
-If influence of overhead is not big, I'd like to use mutex.
-
-Thanks,
--Kame
-
+diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
+index fb7dc52..8b6da75 100644
+--- a/arch/arm/mach-omap2/smartreflex.c
++++ b/arch/arm/mach-omap2/smartreflex.c
+@@ -247,7 +247,7 @@ static void sr_stop_vddautocomp(struct omap_sr *sr)
+  * driver register and sr device intializtion API's. Only one call
+  * will ultimately succeed.
+  *
+- * Currently this function registers interrrupt handler for a particular SR
++ * Currently this function registers interrupt handler for a particular SR
+  * if smartreflex class driver is already registered and has
+  * requested for interrupts and the SR interrupt line in present.
+  */
+diff --git a/arch/powerpc/platforms/embedded6xx/storcenter.c b/arch/powerpc/platforms/embedded6xx/storcenter.c
+index 613070e..f1eebca 100644
+--- a/arch/powerpc/platforms/embedded6xx/storcenter.c
++++ b/arch/powerpc/platforms/embedded6xx/storcenter.c
+@@ -77,7 +77,7 @@ static void __init storcenter_setup_arch(void)
+ }
+ 
+ /*
+- * Interrupt setup and service.  Interrrupts on the turbostation come
++ * Interrupt setup and service.  Interrupts on the turbostation come
+  * from the four PCI slots plus onboard 8241 devices: I2C, DUART.
+  */
+ static void __init storcenter_init_IRQ(void)
+diff --git a/drivers/net/arm/ks8695net.c b/drivers/net/arm/ks8695net.c
+index a7b0caa..47e7be6 100644
+--- a/drivers/net/arm/ks8695net.c
++++ b/drivers/net/arm/ks8695net.c
+@@ -412,7 +412,7 @@ ks8695_tx_irq(int irq, void *dev_id)
+  *    Interrupt Status Register (Offset 0xF208)
+  *        Bit29: WAN MAC Receive Status
+  *        Bit16: LAN MAC Receive Status
+- *    So, this Rx interrrupt enable/status bit number is equal
++ *    So, this Rx interrupt enable/status bit number is equal
+  *    as Rx IRQ number.
+  */
+ static inline u32 ks8695_get_rx_enable_bit(struct ks8695_priv *ksp)
+diff --git a/drivers/net/atlx/atl1.c b/drivers/net/atlx/atl1.c
+index cd5789f..ab1d8a4 100644
+--- a/drivers/net/atlx/atl1.c
++++ b/drivers/net/atlx/atl1.c
+@@ -858,7 +858,7 @@ static s32 atl1_init_hw(struct atl1_hw *hw)
+ 	atl1_init_flash_opcode(hw);
+ 
+ 	if (!hw->phy_configured) {
+-		/* enable GPHY LinkChange Interrrupt */
++		/* enable GPHY LinkChange Interrupt */
+ 		ret_val = atl1_write_phy_reg(hw, 18, 0xC00);
+ 		if (ret_val)
+ 			return ret_val;
+diff --git a/drivers/net/sky2.c b/drivers/net/sky2.c
+index 3ee41da..a04c56e 100644
+--- a/drivers/net/sky2.c
++++ b/drivers/net/sky2.c
+@@ -1973,7 +1973,7 @@ static void sky2_hw_down(struct sky2_port *sky2)
+ 
+ 	sky2_write8(hw, SK_REG(port, RX_GMF_CTRL_T), GMF_RST_SET);
+ 
+-	/* Force any delayed status interrrupt and NAPI */
++	/* Force any delayed status interrupt and NAPI */
+ 	sky2_write32(hw, STAT_LEV_TIMER_CNT, 0);
+ 	sky2_write32(hw, STAT_TX_TIMER_CNT, 0);
+ 	sky2_write32(hw, STAT_ISR_TIMER_CNT, 0);
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 9f8ccae..52cd981 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1573,7 +1573,7 @@ static void rtl_pci_stop(struct ieee80211_hw *hw)
+ 	u8 RFInProgressTimeOut = 0;
+ 
+ 	/*
+-	 *should before disable interrrupt&adapter
++	 *should before disable interrupt&adapter
+ 	 *and will do it immediately.
+ 	 */
+ 	set_hal_stop(rtlhal);
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index 830822f..f7ce399 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -390,10 +390,10 @@ static void ft1000_reset_asic(struct net_device *dev)
+ 	}
+ 	mdelay(1);
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+-		// set watermark to -1 in order to not generate an interrrupt
++		// set watermark to -1 in order to not generate an interrupt
+ 		ft1000_write_reg(dev, FT1000_REG_WATERMARK, 0xffff);
+ 	} else {
+-		// set watermark to -1 in order to not generate an interrrupt
++		// set watermark to -1 in order to not generate an interrupt
+ 		ft1000_write_reg(dev, FT1000_REG_MAG_WATERMARK, 0xffff);
+ 	}
+ 	// clear interrupts
+diff --git a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+index b0a4211..d3642a2 100644
+--- a/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-usb/ft1000_hw.c
+@@ -601,7 +601,7 @@ static void ft1000_reset_asic(struct net_device *dev)
+ 
+ 	mdelay(1);
+ 
+-	/* set watermark to -1 in order to not generate an interrrupt */
++	/* set watermark to -1 in order to not generate an interrupt */
+ 	ft1000_write_register(ft1000dev, 0xffff, FT1000_REG_MAG_WATERMARK);
+ 
+ 	/* clear interrupts */
+diff --git a/drivers/tty/serial/mrst_max3110.c b/drivers/tty/serial/mrst_max3110.c
+index 1bd2845..e829ac2 100644
+--- a/drivers/tty/serial/mrst_max3110.c
++++ b/drivers/tty/serial/mrst_max3110.c
+@@ -23,7 +23,7 @@
+  *    1 word. If SPI master controller doesn't support sclk frequency change,
+  *    then the char need be sent out one by one with some delay
+  *
+- * 2. Currently only RX available interrrupt is used, no need for waiting TXE
++ * 2. Currently only RX available interrupt is used, no need for waiting TXE
+  *    interrupt for a low speed UART device
+  */
+ 
+diff --git a/drivers/usb/gadget/langwell_udc.c b/drivers/usb/gadget/langwell_udc.c
+index 9cee88a..8d6ca5e 100644
+--- a/drivers/usb/gadget/langwell_udc.c
++++ b/drivers/usb/gadget/langwell_udc.c
+@@ -2968,7 +2968,7 @@ static irqreturn_t langwell_irq(int irq, void *_dev)
+ 		handle_port_change(dev);
+ 	}
+ 
+-	/* suspend interrrupt */
++	/* suspend interrupt */
+ 	if (irq_sts & STS_SLI) {
+ 		dev_vdbg(&dev->pdev->dev, "suspend interrupt\n");
+ 		handle_bus_suspend(dev);
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index 0a50a35..e30d56d 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -704,7 +704,7 @@ static void rxstate(struct musb *musb, struct musb_request *req)
+ 	 * most these gadgets, end of is signified either by a short packet,
+ 	 * or filling the last byte of the buffer.  (Sending extra data in
+ 	 * that last pckate should trigger an overflow fault.)  But in mode 1,
+-	 * we don't get DMA completion interrrupt for short packets.
++	 * we don't get DMA completion interrupt for short packets.
+ 	 *
+ 	 * Theoretically, we could enable DMAReq irq (MUSB_RXCSR_DMAMODE = 1),
+ 	 * to get endpoint interrupt on every DMA req, but that didn't seem
+-- 
+1.7.5.4
 
