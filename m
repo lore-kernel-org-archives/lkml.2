@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933079Ab1FWS0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:26:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:63147 "EHLO
+	id S932782Ab1FWRWe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:22:34 -0400
+Received: from mail.windriver.com ([147.11.1.11]:63145 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932761Ab1FWRWb (ORCPT
+	with ESMTP id S932759Ab1FWRWa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:22:31 -0400
+	Thu, 23 Jun 2011 13:22:30 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org,
-        David Henningsson <david.henningsson@canonical.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: stable-review@kernel.org, Takashi Iwai <tiwai@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 040/247] ALSA: HDA: Fix dmesg output of HDMI supported bits
-Date: Thu, 23 Jun 2011 13:18:03 -0400
-Message-Id: <1308849690-14530-41-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 041/247] ALSA: hda - Fix memory leaks in conexant jack arrays
+Date: Thu, 23 Jun 2011 13:18:04 -0400
+Message-Id: <1308849690-14530-42-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,38 +21,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Henningsson <david.henningsson@canonical.com>
+From: Takashi Iwai <tiwai@suse.de>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d757534ed15387202e322854cd72dc58bbb975de upstream.
+commit 70f7db11c45a313b23922cacf248c613c3b2144c upstream.
 
-This typo caused the dmesg output of the supported bits of HDMI
-to be cut off early.
+The Conexant codec driver adds the jack arrays in init callback which
+may be called also in each PM resume.  This results in the addition of
+new jack element at each time.
 
-Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+The fix is to check whether the requested jack is already present in
+the array.
+
+Reference: Novell bug 668929
+	https://bugzilla.novell.com/show_bug.cgi?id=668929
+
 Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/pci/hda/hda_eld.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ sound/pci/hda/patch_conexant.c |    8 +++++++-
+ 1 files changed, 7 insertions(+), 1 deletions(-)
 
-diff --git a/sound/pci/hda/hda_eld.c b/sound/pci/hda/hda_eld.c
-index d8da18a..f585200 100644
---- a/sound/pci/hda/hda_eld.c
-+++ b/sound/pci/hda/hda_eld.c
-@@ -381,7 +381,7 @@ static void hdmi_show_short_audio_desc(struct cea_sad *a)
- 	snd_print_pcm_rates(a->rates, buf, sizeof(buf));
+diff --git a/sound/pci/hda/patch_conexant.c b/sound/pci/hda/patch_conexant.c
+index 405492d..fb5752d 100644
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -389,10 +389,16 @@ static int conexant_add_jack(struct hda_codec *codec,
+ 	struct conexant_spec *spec;
+ 	struct conexant_jack *jack;
+ 	const char *name;
+-	int err;
++	int i, err;
  
- 	if (a->format == AUDIO_CODING_TYPE_LPCM)
--		snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2 - 8));
-+		snd_print_pcm_bits(a->sample_bits, buf2 + 8, sizeof(buf2) - 8);
- 	else if (a->max_bitrate)
- 		snprintf(buf2, sizeof(buf2),
- 				", max bitrate = %d", a->max_bitrate);
+ 	spec = codec->spec;
+ 	snd_array_init(&spec->jacks, sizeof(*jack), 32);
++
++	jack = spec->jacks.list;
++	for (i = 0; i < spec->jacks.used; i++, jack++)
++		if (jack->nid == nid)
++			return 0 ; /* already present */
++
+ 	jack = snd_array_new(&spec->jacks);
+ 	name = (type == SND_JACK_HEADPHONE) ? "Headphone" : "Mic" ;
+ 
 -- 
 1.7.4.4
 
