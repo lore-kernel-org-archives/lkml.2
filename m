@@ -1,118 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759437Ab1FWNva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:51:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37381 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758239Ab1FWNv3 (ORCPT
+	id S1759409Ab1FWNyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:54:54 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64568 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028Ab1FWNyx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:51:29 -0400
+	Thu, 23 Jun 2011 09:54:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=yHGK3s111XOl8FSGon7W1qrHnCAUJDPAEA6ITSxi8cFXYd17wJooL9ax9a7o12nePk
-         wWO4HtqN0w0AHz+WE4B/oqI4bkgasYEuKpLjq6u0jpwPafODMSNuQ0UW6VL6QSFifZ59
-         xVM+iKqpvHpp87anNf6Cj7dVhRT1IMKteWsa0=
+         :cc:content-type:content-transfer-encoding;
+        b=K67PM2lRuGMWE39X4fJSGcn9IB9MTCw6IcEX3qejJzsgUSBL1L9CvhzcusLO0izplN
+         jeKFHBlMstU2d0UPJ0Buf+PnTtIpmq+VXjTZRuI9I6s49d4xUDNZdEybzqLCBPqMriAF
+         pRUNEPUgzQItEerc9PIwx/bZXu4B/uMwK4QYU=
 MIME-Version: 1.0
-In-Reply-To: <20110623132312.GI31593@tiehlicka.suse.cz>
-References: <20110622120635.GB14343@tiehlicka.suse.cz>
-	<20110622121516.GA28359@infradead.org>
-	<20110622123204.GC14343@tiehlicka.suse.cz>
-	<20110623150842.d13492cd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110623074133.GA31593@tiehlicka.suse.cz>
-	<20110623170811.16f4435f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110623090204.GE31593@tiehlicka.suse.cz>
-	<20110623190157.1bc8cbb9.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110623115855.GF31593@tiehlicka.suse.cz>
-	<BANLkTimshUCY5Yq5g9dnY0gi2TRneGscug@mail.gmail.com>
-	<20110623132312.GI31593@tiehlicka.suse.cz>
-Date: Thu, 23 Jun 2011 22:51:28 +0900
-Message-ID: <BANLkTikykkd_xBoFxx5Xw+FddWGzZcYeLA@mail.gmail.com>
-Subject: Re: [PATCH] mm: preallocate page before lock_page at filemap COW.
- (WasRe: [PATCH V2] mm: Do not keep page locked during page fault while
- charging it for memcg
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Lutz Vieweg <lvml@5t9.de>
+In-Reply-To: <BANLkTinOb-4Xm_W2fmzivk6jBJwjeHYKVA@mail.gmail.com>
+References: <BANLkTi=y1roManmZGMLBXSFbBVqK_KqDZg@mail.gmail.com>
+	<20110623153116.404f2a63.taeuber@bbaw.de>
+	<BANLkTinOb-4Xm_W2fmzivk6jBJwjeHYKVA@mail.gmail.com>
+Date: Thu, 23 Jun 2011 15:54:52 +0200
+Message-ID: <BANLkTimXH8K91cZ69oPRu=wbYt9JgBadfA@mail.gmail.com>
+Subject: Re: extra slash in current path
+From: richard -rw- weinberger <richard.weinberger@gmail.com>
+To: yuyichao-mit <yuyichao@mit.edu>
+Cc: =?ISO-8859-1?Q?Lars_T=E4uber?= <taeuber@bbaw.de>,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/23 Michal Hocko <mhocko@suse.cz>:
-> On Thu 23-06-11 22:01:40, Hiroyuki Kamezawa wrote:
->> 2011/6/23 Michal Hocko <mhocko@suse.cz>:
->> > On Thu 23-06-11 19:01:57, KAMEZAWA Hiroyuki wrote:
->> >> On Thu, 23 Jun 2011 11:02:04 +0200
->> >> Michal Hocko <mhocko@suse.cz> wrote:
->> >>
->> >> > On Thu 23-06-11 17:08:11, KAMEZAWA Hiroyuki wrote:
->> >> > > On Thu, 23 Jun 2011 09:41:33 +0200
->> >> > > Michal Hocko <mhocko@suse.cz> wrote:
->> >> > [...]
->> >> > > > Other than that:
->> >> > > > Reviewed-by: Michal Hocko <mhocko@suse.cz>
->> >> > > >
->> >> > >
->> >> > > I found the page is added to LRU before charging. (In this case,
->> >> > > memcg's LRU is ignored.) I'll post a new version with a fix.
->> >> >
->> >> > Yes, you are right. I have missed that.
->> >> > This means that we might race with reclaim which could evict the COWed
->> >> > page wich in turn would uncharge that page even though we haven't
->> >> > charged it yet.
->> >> >
->> >> > Can we postpone page_add_new_anon_rmap to the charging path or it would
->> >> > just race somewhere else?
->> >> >
->> >>
->> >> I got a different idea. How about this ?
->> >> I think this will have benefit for non-memcg users under OOM, too.
->> >
->> > Could you be more specific? I do not see how preallocation which might
->> > turn out to be pointless could help under OOM.
->> >
+On Thu, Jun 23, 2011 at 3:32 PM, yuyichao-mit <yuyichao@mit.edu> wrote:
+> On Thu, Jun 23, 2011 at 9:31 AM, Lars Täuber <taeuber@bbaw.de> wrote:
+>> Hi,
 >>
->> We'll have no page allocation under lock_page() held in this path.
->> I think it is good.
+>> Am Thu, 23 Jun 2011 09:14:18 -0400
+>> yuyichao-mit <yuyichao@mit.edu> schrieb:
+>>> The problem is like this:
+>>>
+>>> $ cd /
+>>> $ pwd
+>>> /
+>>>
+>>> $ cd /
+>>> $ pwd
+>>> //
+>>
+>> didn't you mean?:
+>> $ cd //
+>> $ pwd
+>> //
 >
-> But it can also cause that the page, we are about to fault in, is evicted
-> due to allocation so we would have to do a major fault... This is
-> probably not that serious, though.
+> yes, exactly.
+>
+> Sorry for the typo (copy-paste~~~)
+>
 
-For other purpose, I have(had) other patch to prevent it (and planned
-to post it.)
+Is this really a kernel issue?
+rw@raccoon:~> cd //
+rw@raccoon://> pwd
+//
+rw@raccoon://> ls -l /proc/self/cwd
+lrwxrwxrwx 1 rw users 0 23. Jun 15:53 /proc/self/cwd -> /
 
-The basic logic is...
-
-1. add a new member variable to vm_area_struct as
-
-  vma->vm_faulting_to
-
-2. at __do_fault(), set vm_faulting_to as
-
-  vma->vm_faulting_to = pgoff.
-
-
-3. chec vma->vm_faulting_to at page_referenced_file() as
-
-  if (pgoff (Was page->index) == vma->vm_faulting_to)
-        referenced++
-
-Then, the page which someone is waiting for page-fault will be marked as
-referenced  and go KEEP_LOCKED.
-
-(vm_faulting_to can be cleared after we got lock_page()).
-
-In corner case, several threads which shares vma may fault into a vma.
-But this will help typical case and have no overheads, I think.
-
+-- 
 Thanks,
--Kame
+//richard
