@@ -1,71 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759209Ab1FWJyr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 05:54:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51636 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759186Ab1FWJyo (ORCPT
+	id S1759099Ab1FWJ6Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 05:58:16 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47025 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758245Ab1FWJ6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 05:54:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=F1n/4MLkpAZUNmPsP1ofUJczS/T0M+sDVusmP/i3Ua6lw8C75ktPiH2wv0PLjRq1kN
-         p8WnID2MZzGvEW0aX/1+SCIFPpk9ugkQERP+LKYvMEmpF3To+aUU5ycnGCB5lN1Q7wXD
-         UvM6PsuhUa1QK0fgy0YHs3PZ84LOEiZnZp7pU=
-Date: Thu, 23 Jun 2011 13:54:40 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vweaver1@eecs.utk.edu>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC -tip] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event v2
-Message-ID: <20110623095439.GC10238@sun>
-References: <BANLkTink5nOTqvqQYr4kx0fnBoOpoq7CiQ@mail.gmail.com>
- <20110621172319.GE21641@sun>
- <BANLkTikBsfcFfnmgdVQem15P9f2ooQBzeA@mail.gmail.com>
- <20110621175421.GF21641@sun>
- <BANLkTim8OdhTdaayHZAKSXWhmN0anEhieQ@mail.gmail.com>
- <20110621183227.GG21641@sun>
- <20110622082756.GK21641@sun>
- <20110622092134.GO21641@sun>
- <20110623064835.GB10238@sun>
- <BANLkTikVaOz5DYjKSU-jxVBw_Lw9ihV7BQ@mail.gmail.com>
+	Thu, 23 Jun 2011 05:58:15 -0400
+Date: Thu, 23 Jun 2011 11:58:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Tejun Heo <tj@kernel.org>
+cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
+In-Reply-To: <20110623083722.GF30101@htj.dyndns.org>
+Message-ID: <alpine.LFD.2.02.1106231139270.11814@ionos>
+References: <20110622174659.496793734@linutronix.de> <20110622174919.135236139@linutronix.de> <20110623083722.GF30101@htj.dyndns.org>
+User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikVaOz5DYjKSU-jxVBw_Lw9ihV7BQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 11:40:39AM +0200, Stephane Eranian wrote:
-> On Thu, Jun 23, 2011 at 8:48 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > On Wed, Jun 22, 2011 at 01:21:34PM +0400, Cyrill Gorcunov wrote:
-> > ...
-> >> Note that I've not tested it but rather need approval/rejecting
-> >> on idea in general.
-> >
-> > The final version is below. Stephane, note that it's almost the
-> > same idea as you proposed except it uses explicit namings to
-> > mark out that watchdog cycles are special.
-> >
-> This looks okay.
-> 
-> The only alternative I see (This is wha I had in mind at the
-> beginning) that would
-> not require this new hidden generic event would be to have watchdog.c invoke an
-> arch-specific callback to fill out the attr.type, attr->config fields directly:
-> 
-...
-> 
-> No new hidden event, just a x86_pmu + a per-arch callbacks.
+On Thu, 23 Jun 2011, Tejun Heo wrote:
 
-Looks quite good for me, Don? (i'll cook some draft patch for review meanwhile).
+> Hello, Thomas.
+> 
+> The hooking place doesn't have anything to do with rq->lock.  The
+> problem with Peter's patch was preemption, not the lock.
 
-	Cyrill
+And we can do it w/o preemption disabled as I have shown.
+ 
+> > There is also no harm from updating nr_running when the task returns
+> > from scheduling instead of accounting it in the wakeup code.
+> 
+> Well, not exactly.  If CPU is being thrashed, we don't want to try to
+> fire up new workers or calling in rescuers.  If nr_running is bumped
+> up from ttwu(), a woken up but not yet running worker already counts
+> as running.  With the suggested change, when we hit such heavy CPU
+> thrashing, workqueue code will add things on top of it.
+
+That's the whole problem with that self forking workqueue stuff and
+I'm not accepting that ttwu() is the only solution to that. Following
+that logic would just invite more abusers of callbacks into ttwu() and
+if you think it through then the logical consequence is to have an
+upcall hook into userspace so a threading/forking server knows how
+many instances are on the fly to avoid creating new ones under
+pressure.
+
+Thanks,
+
+	tglx
