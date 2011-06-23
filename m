@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759255Ab1FWKul (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 06:50:41 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:32918 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759159Ab1FWKuk (ORCPT
+	id S1759269Ab1FWLCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 07:02:36 -0400
+Received: from mx3.schottelius.org ([77.109.138.221]:36564 "EHLO
+	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759224Ab1FWLCf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 06:50:40 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Jean Delvare <khali@linux-fr.org>
-Subject: Re: [PATCH] hwmon: LM95245 driver
-Date: Thu, 23 Jun 2011 12:50:37 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
-Cc: guenter.roeck@ericsson.com,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <1308649953-2774-1-git-send-email-alexander.stein@systec-electronic.com> <201106231114.52841.alexander.stein@systec-electronic.com> <20110623113316.6ab5a84e@endymion.delvare>
-In-Reply-To: <20110623113316.6ab5a84e@endymion.delvare>
+	Thu, 23 Jun 2011 07:02:35 -0400
+X-Greylist: delayed 533 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Jun 2011 07:02:35 EDT
+Date: Thu, 23 Jun 2011 12:53:37 +0200
+From: Nico Schottelius <nico-lkml-20110623@schottelius.org>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Mis-Design of Btrfs?
+Message-ID: <20110623105337.GD3753@ethz.ch>
+Mail-Followup-To: Nico Schottelius <nico-lkml-20110623@schottelius.org>,
+	LKML <linux-kernel@vger.kernel.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106231250.38266.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
+X-Netzseite: http://www.nico.schottelius.org/
+X-System-Info: kr (Linux 2.6.39-ARCH x86_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 23 June 2011 11:33:16 Jean Delvare wrote:
-> On Thu, 23 Jun 2011 11:14:52 +0200, Alexander Stein wrote:
-> > Well, I noticed that. But I went the way lm95241 does. I'm also unsure
-> > which interval to choose, if user specify a unsupported interval. Choose
-> > the next small or the next greater one? Maybe you can give me a hint
-> > here.
-> 
-> BTW, is the LM95245 so incompatible that support couldn't be added to
-> the lm95241 driver? If both devices are compatible to a reasonable
-> degree, a single driver would be preferred.
+Good morning devs,
 
-Well, the register mapping is completly different. Also some configuration 
-bits are merged and moved into other registers than in lm95241. I doubt there 
-is much more compatibility than i2c transfers and temperature format (despite 
-unsigned/unsigned).
+I'm wondering whether the raid- and volume-management-builtin of btrfs is
+actually a sane idea or not.
+Currently we do have md/device-mapper support for raid
+already, btrfs lacks raid5 support and re-implements stuff that
+has already been done.
 
-Regards,
-Alexander
+I'm aware of the fact that it is very useful to know on which devices
+we are in a filesystem. But I'm wondering, whether it wouldn't be
+smarter to generalise the information exposure through the VFS layer
+instead of replicating functionality:
+
+Physical:   USB-HD   SSD   USB-Flash          | Exposes information to
+Raid:       Raid1, Raid5, Raid10, etc.        | higher levels
+Crypto:     Luks                              |
+LVM:        Groups/Volumes                    |
+FS:         xfs/jfs/reiser/ext3               v
+
+Thus a filesystem like ext3 could be aware that it is running
+on a USB HD, enable -o sync be default or have the filesystem
+to rewrite blocks when running on crypto or optimise for an SSD, ...
+
+Cheers,
+
+Nico
+
+-- 
+PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
