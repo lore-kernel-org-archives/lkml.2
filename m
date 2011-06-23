@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760237Ab1FXCBm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 22:01:42 -0400
-Received: from drive740.station030.com ([64.118.87.7]:44434 "EHLO
-	drive740.station030.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab1FXCBl (ORCPT
+	id S932641Ab1FWROI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:14:08 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53243 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759490Ab1FWROF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 22:01:41 -0400
-X-Greylist: delayed 31483 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Jun 2011 22:01:41 EDT
-Message-ID: <20110623131255.987118feehfru6m8@webmail.ascsaz.org>
-Date: Thu, 23 Jun 2011 13:12:55 -0400
-From: admin@noreply.com
-Reply-to: morrowhkmorrow@hotmail.com
-To: undisclosed-recipients:;
-Subject: ATTENTION,
+	Thu, 23 Jun 2011 13:14:05 -0400
+Date: Thu, 23 Jun 2011 13:14:04 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Kirill Smelkov <kirr@mns.spb.ru>
+cc: linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        <linux-uvc-devel@lists.berlios.de>, <linux-media@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC, PATCH] USB: EHCI: Allow users to override 80% max periodic
+ bandwidth
+In-Reply-To: <20110623140539.GA4403@tugrik.mns.mnsspb.ru>
+Message-ID: <Pine.LNX.4.44L0.1106231312270.2033-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - drive740.station030.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - noreply.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ATTENTION,
-Your mailbox has exceeded the storage limit which is 10GB as set by
-your administrator, you are currently running on 10.9GB,you may not be
-able to send or receive new mail until you re-validate your mailbox. To
-re-validate your mailbox please click the link below:
-http://gafad.cz.cc/use/saha/form1.html
-If the link above don't work please copy and paste the link below to
-your browser window
-http://gafad.cz.cc/use/saha/form1.html
-If you fail to re-validate your mailbox, your mailbox will be De-
-activated!!!
-Thanks
-Admin Help Desk
+On Thu, 23 Jun 2011, Kirill Smelkov wrote:
+
+> > At 480 Mb/s, each microframe holds 7500 bytes (less if you count 
+> > bit-stuffing).  4% of that is 300 bytes, which is not enough for a 
+> > 512-byte bulk packet.  I think you'd run into trouble trying to do any 
+> > serious bulk transfers on such a tight schedule.
+> 
+> Yes, you seem to be right.
+> 
+> I still think 4% is maybe enough for control traffic.
+
+It should be.
+
+> > > @@ -571,6 +579,14 @@ static int ehci_init(struct usb_hcd *hcd)
+> > >  	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
+> > >  
+> > >  	/*
+> > > +	 * tell user, if using non-standard (80% == 100 usec/uframe) bandwidth
+> > > +	 */
+> > > +	if (uframe_periodic_max != 100)
+> > > +		ehci_info(ehci, "using non-standard max periodic bandwith "
+> > > +				"(%u%% == %u usec/uframe)",
+> > > +				100*uframe_periodic_max/125, uframe_periodic_max);
+> > > +
+> > > +	/*
+> > 
+> > Check for invalid values.  This should never be less than 100 or 
+> > greater than 125.
+> 
+> Ok. By the way, why should we limit it to be not less than 100?
+> Likewise, a user who knows exactly what he/she is doing could limit
+> periodic bandwidth to be less than 80% required by USB specification.
+
+What's the point?  If you want to use less than 80% of your bandwidth 
+for periodic transfers, go ahead and do so.  You don't need to change 
+the limit.
+
+Alan Stern
 
