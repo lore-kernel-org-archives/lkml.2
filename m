@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758787Ab1FWDaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 23:30:07 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:60023 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757061Ab1FWDaG (ORCPT
+	id S1758820Ab1FWDfl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 23:35:41 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:62780 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757061Ab1FWDfk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 23:30:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=HgQuvyNNE5FB8ZpFz63/R24F2jyHIX6nBjdqzidT3Wp7V7D1q4IT7u9j1CJz+MHme5
-         yYz954ouVow7IBvi8wutH0rkWiofztikXdUjKU4oCA0dq0PBjxLnzroijWRdjUk6efBD
-         An0ggos1o28D/ZnGXmQCrVQ8lCxKz7O/skI44=
-Message-ID: <4E02B33A.3060805@gmail.com>
-Date: Wed, 22 Jun 2011 20:30:02 -0700
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Thunderbird/3.1.10
+	Wed, 22 Jun 2011 23:35:40 -0400
 MIME-Version: 1.0
-To: Feng Tang <feng.tang@intel.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: Re: [PATCH 09/11] spi-dw: Fix condition in spi_dw_{writer/reader}
-References: <1308794413-11069-1-git-send-email-dirk.brandewie@gmail.com>	<1308794413-11069-10-git-send-email-dirk.brandewie@gmail.com>	<20110623104506.3cfd55ce@feng-i7>	<4E02AE6E.5010307@gmail.com> <20110623112552.6f22c3de@feng-i7>
-In-Reply-To: <20110623112552.6f22c3de@feng-i7>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110623001234.GB25799@S2100-06.ap.freescale.net>
+References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
+ <1308410354-21387-2-git-send-email-shawn.guo@linaro.org> <20110618161934.GH8195@ponder.secretlab.ca>
+ <20110619073000.GA23171@S2100-06.ap.freescale.net> <20110621135558.GB9228@S2101-09.ap.freescale.net>
+ <BANLkTim4vunTm1176MRw3pqRZnunu4=9jg@mail.gmail.com> <20110622153353.GA25799@S2100-06.ap.freescale.net>
+ <BANLkTimsk2eWKPi2hnHbaAn-vSMKmdYsGQ@mail.gmail.com> <20110623001234.GB25799@S2100-06.ap.freescale.net>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 22 Jun 2011 21:35:19 -0600
+X-Google-Sender-Auth: bnUU2jwBYp7ASC3KeHUsCsejtEI
+Message-ID: <BANLkTimgqmJDsAc+6aboszK33aBO2XiC6Q@mail.gmail.com>
+Subject: Re: [PATCH 1/3] serial/imx: add device tree support
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: patches@linaro.org, netdev@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org, Jason Liu <jason.hui@linaro.org>,
+        linux-kernel@vger.kernel.org, Jeremy Kerr <jeremy.kerr@canonical.com>,
+        Sascha Hauer <s.hauer@pengutronix.de>,
+        linux-arm-kernel@lists.infradead.org,
+        David Gibson <david@gibson.dropbear.id.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch should have been:
+On Wed, Jun 22, 2011 at 6:12 PM, Shawn Guo <shawn.guo@freescale.com> wrote:
+> On Wed, Jun 22, 2011 at 09:52:11AM -0600, Grant Likely wrote:
+> [...]
+>>
+>> >> > -       line = of_get_property(node, "id", NULL);
+>> >> > -       if (!line)
+>> >> > +       line = of_get_device_index(node, "serial");
+>> >> > +       if (IS_ERR_VALUE(line))
+>> >> >                return -ENODEV;
+>> >>
+>> >> Personally, it an alias isn't present, then I'd dynamically assign a port id.
+>> >>
+>> > We probably can not.  The driver works with being told the correct
+>> > port id which is defined by soc.  Instead of dynamically assigning
+>> > a port id, we have to tell the driver the exact hardware port id of
+>> > the device that is being probed.
+>>
+>> Are you sure?  It doesn't look like the driver behaviour uses id for
+>> anything other than an index into the statically allocated serial port
+>> instance table.  I don't see any change of behaviour based on the port
+>> number anywhere.
+>>
+> Sorry, I did not make this clear.  In serial_imx_probe(), the port
+> gets created and then saved as below.
+>
+>        imx_ports[sport->port.line] = sport;
+>
+> While in imx_console_setup(), it addresses the port as following.
+>
+>        sport = imx_ports[co->index];
+>
+> When users specify their console as ttymxc0, they mean they are
+> using the first i.mx uart hardware port, in turn ttymxc1 for the
+> second port ...
+>
+> That said, imx_port[0] has to be the first hardware port, imx_port[1]
+> has to be the second one ...  That's why port id sport->port.line
+> can not be dynamically assigned, otherwise console may not work.
 
-spi-dw: Fix condition in spi_dw_{writer/reader}
+My point still stands.  If there is no number specifically assigned to
+a device, then numbering should be dynamic.  That's standard behaviour
+for Linux device drivers, and I get nervous every time I see a driver
+that make an assumption to the contrary, especially when there is no
+good reason for it.  Besides, you still can ensure the console is
+reliable by having an alias for the console device.
 
-From: Dirk Brandewie <dirk.brandewie@gmail.com>
-
-Fix the condition based on whether the current transfer has a tx/rx
-buffer.
-
-Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
----
-  drivers/spi/spi-dw.c |   10 +++++-----
-  1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/spi/spi-dw.c b/drivers/spi/spi-dw.c
-index 96ae4a7..0a848bc 100644
---- a/drivers/spi/spi-dw.c
-+++ b/drivers/spi/spi-dw.c
-@@ -193,15 +193,15 @@ static void spi_dw_writer(struct spi_dw *dws)
-         u16 txw = 0;
-
-         while (max--) {
--               /* Set the tx word if the transfer's original "tx" is not null */
--               if (dws->tx_end - dws->len) {
-+               /* Set the tx word if the transfer's "tx" is not null */
-+               if (dws->tx) {
-                         if (dws->n_bytes == 1)
-                                 txw = *(u8 *)(dws->tx);
-                         else
-                                 txw = *(u16 *)(dws->tx);
-+                       dws->tx += dws->n_bytes;
-                 }
-                 dw_writew(dws, dr, txw);
--               dws->tx += dws->n_bytes;
-         }
-  }
-
-@@ -213,13 +213,13 @@ static void spi_dw_reader(struct spi_dw *dws)
-         while (max--) {
-                 rxw = dw_readw(dws, dr);
-                 /* Care rx only if the transfer's original "rx" is not null */
--               if (dws->rx_end - dws->len) {
-+               if (dws->rx) {
-                         if (dws->n_bytes == 1)
-                                 *(u8 *)(dws->rx) = rxw;
-                         else
-                                 *(u16 *)(dws->rx) = rxw;
-+                       dws->rx += dws->n_bytes;
-                 }
--               dws->rx += dws->n_bytes;
-         }
-  }
-
+g.
