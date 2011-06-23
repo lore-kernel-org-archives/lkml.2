@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759325Ab1FWMnn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 08:43:43 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:45218 "EHLO mx3.mail.elte.hu"
+	id S1759304Ab1FWMpc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 08:45:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62175 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753011Ab1FWMnm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 08:43:42 -0400
-Date: Thu, 23 Jun 2011 14:43:10 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [patch 00/16] CFS Bandwidth Control v7
-Message-ID: <20110623124310.GA15430@elte.hu>
-References: <20110621071649.862846205@google.com>
- <4E01BE6B.2090701@jp.fujitsu.com>
- <1308830816.1022.112.camel@twins>
+	id S1753011Ab1FWMpb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 08:45:31 -0400
+Message-ID: <4E033557.3030007@redhat.com>
+Date: Thu, 23 Jun 2011 15:45:11 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308830816.1022.112.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Jason Baron <jbaron@redhat.com>, Jiri Olsa <jolsa@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] jump_label: fix jump_label update
+References: <4E00038B.2060404@cn.fujitsu.com> <4E033004.90008@redhat.com>
+In-Reply-To: <4E033004.90008@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-
-> On Wed, 2011-06-22 at 19:05 +0900, Hidetoshi Seto wrote:
+On 06/23/2011 03:22 PM, Avi Kivity wrote:
+> On 06/21/2011 05:35 AM, Xiao Guangrong wrote:
+>> The key of module is out of __stop___jump_table, it causes the events
+>> of modules does not work
+>>
 >
-> > I'll continue my test/benchmark on this v7 for a while. Though I 
-> > believe no more bug is there, I'll let you know if there is 
-> > something.
-> 
-> Would that testing include performance of a kernel without these 
-> patches vs one with these patches in a configuration where the new 
-> feature is compiled in but not used?
-> 
-> It does add a number of if (!cfs_rq->runtime_enabled) return 
-> branches all over the place, some possibly inside a function call 
-> (depending on what the auto-inliner does). So while the impact 
-> should be minimal, it would be very good to test it is indeed so.
+> What's the status of this patch? 
 
-Yeah, doing such performance tests is absolutely required. Branches 
-and instructions impact should be measured as well, beyond the cycles 
-impact.
+Oh, it's just two days out.  Didn't mean to sound impatient.
 
-The changelog of this recent commit:
+> I'm affected by this as well (I'm guessing the same module is 
+> involved).  I'm near the end of a bisect, but there's probably no 
+> point given this patch.
+>
 
-  c8b281161dfa: sched: Increase SCHED_LOAD_SCALE resolution
+I can confirm it fixes my issue.
 
-gives an example of how to do such measurements.
+Tested-by: Avi Kivity <avi@redhat.com>
 
-Thanks,
+-- 
+error compiling committee.c: too many arguments to function
 
-	Ingo
