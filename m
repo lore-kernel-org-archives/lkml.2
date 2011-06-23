@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933726Ab1FWRyQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:54:16 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35263 "EHLO
+	id S933712Ab1FWR4a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:56:30 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35175 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933666Ab1FWRh5 (ORCPT
+	with ESMTP id S933636Ab1FWRhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:57 -0400
+	Thu, 23 Jun 2011 13:37:46 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: stable-review@kernel.org, "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 184/247] ALSA: hda - fix digital mic selection in mixer on 92HD8X codecs
-Date: Thu, 23 Jun 2011 13:34:12 -0400
-Message-Id: <1308850515-15242-125-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 185/247] PCI: remove quirk for pre-production systems
+Date: Thu, 23 Jun 2011 13:34:13 -0400
+Message-Id: <1308850515-15242-126-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,64 +23,107 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
+From: Brandeburg, Jesse <jesse.brandeburg@intel.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 094a42452abd5564429045e210281c6d22e67fca upstream.
+commit b99af4b002e4908d1a5cdaf424529bdf1dc69768 upstream.
 
-When the mux for digital mic is different from the mux for other mics,
-the current auto-parser doesn't handle them in a right way but provides
-only one mic.  This patch fixes the issue.
+Revert commit 7eb93b175d4de9438a4b0af3a94a112cb5266944
+Author: Yu Zhao <yu.zhao@intel.com>
+Date:   Fri Apr 3 15:18:11 2009 +0800
 
-Signed-off-by: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+    PCI: SR-IOV quirk for Intel 82576 NIC
+
+    If BIOS doesn't allocate resources for the SR-IOV BARs, zero the Flash
+    BAR and program the SR-IOV BARs to use the old Flash Memory Space.
+
+    Please refer to Intel 82576 Gigabit Ethernet Controller Datasheet
+    section 7.9.2.14.2 for details.
+    http://download.intel.com/design/network/datashts/82576_Datasheet.pdf
+
+    Signed-off-by: Yu Zhao <yu.zhao@intel.com>
+    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+
+This quirk was added before SR-IOV was in production and now all machines that
+originally had this issue alreayd have bios updates to correct the issue. The
+quirk itself is no longer needed and in fact causes bugs if run.  Remove it.
+
+Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+CC: Yu Zhao <yu.zhao@intel.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/pci/hda/patch_sigmatel.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ drivers/pci/quirks.c |   52 --------------------------------------------------
+ 1 files changed, 0 insertions(+), 52 deletions(-)
 
-diff --git a/sound/pci/hda/patch_sigmatel.c b/sound/pci/hda/patch_sigmatel.c
-index 6cf2dd4..02b813ef6 100644
---- a/sound/pci/hda/patch_sigmatel.c
-+++ b/sound/pci/hda/patch_sigmatel.c
-@@ -735,7 +735,7 @@ static int stac92xx_mux_enum_put(struct snd_kcontrol *kcontrol, struct snd_ctl_e
- 	struct sigmatel_spec *spec = codec->spec;
- 	unsigned int adc_idx = snd_ctl_get_ioffidx(kcontrol, &ucontrol->id);
- 	const struct hda_input_mux *imux = spec->input_mux;
--	unsigned int idx, prev_idx;
-+	unsigned int idx, prev_idx, didx;
+diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
+index ccc2683..c5f5f44 100644
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2529,58 +2529,6 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
  
- 	idx = ucontrol->value.enumerated.item[0];
- 	if (idx >= imux->num_items)
-@@ -747,7 +747,8 @@ static int stac92xx_mux_enum_put(struct snd_kcontrol *kcontrol, struct snd_ctl_e
- 		snd_hda_codec_write_cache(codec, spec->mux_nids[adc_idx], 0,
- 					  AC_VERB_SET_CONNECT_SEL,
- 					  imux->items[idx].index);
--		if (prev_idx >= spec->num_analog_muxes) {
-+		if (prev_idx >= spec->num_analog_muxes &&
-+		    spec->mux_nids[adc_idx] != spec->dmux_nids[adc_idx]) {
- 			imux = spec->dinput_mux;
- 			/* 0 = analog */
- 			snd_hda_codec_write_cache(codec,
-@@ -757,9 +758,13 @@ static int stac92xx_mux_enum_put(struct snd_kcontrol *kcontrol, struct snd_ctl_e
- 		}
- 	} else {
- 		imux = spec->dinput_mux;
-+		/* first dimux item is hardcoded to select analog imux,
-+		 * so lets skip it
-+		 */
-+		didx = idx - spec->num_analog_muxes + 1;
- 		snd_hda_codec_write_cache(codec, spec->dmux_nids[adc_idx], 0,
- 					  AC_VERB_SET_CONNECT_SEL,
--					  imux->items[idx - 1].index);
-+					  imux->items[didx].index);
- 	}
- 	spec->cur_mux[adc_idx] = idx;
- 	return 1;
+ #endif /* CONFIG_PCI_MSI */
+ 
+-#ifdef CONFIG_PCI_IOV
+-
+-/*
+- * For Intel 82576 SR-IOV NIC, if BIOS doesn't allocate resources for the
+- * SR-IOV BARs, zero the Flash BAR and program the SR-IOV BARs to use the
+- * old Flash Memory Space.
+- */
+-static void __devinit quirk_i82576_sriov(struct pci_dev *dev)
+-{
+-	int pos, flags;
+-	u32 bar, start, size;
+-
+-	if (PAGE_SIZE > 0x10000)
+-		return;
+-
+-	flags = pci_resource_flags(dev, 0);
+-	if ((flags & PCI_BASE_ADDRESS_SPACE) !=
+-			PCI_BASE_ADDRESS_SPACE_MEMORY ||
+-	    (flags & PCI_BASE_ADDRESS_MEM_TYPE_MASK) !=
+-			PCI_BASE_ADDRESS_MEM_TYPE_32)
+-		return;
+-
+-	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_SRIOV);
+-	if (!pos)
+-		return;
+-
+-	pci_read_config_dword(dev, pos + PCI_SRIOV_BAR, &bar);
+-	if (bar & PCI_BASE_ADDRESS_MEM_MASK)
+-		return;
+-
+-	start = pci_resource_start(dev, 1);
+-	size = pci_resource_len(dev, 1);
+-	if (!start || size != 0x400000 || start & (size - 1))
+-		return;
+-
+-	pci_resource_flags(dev, 1) = 0;
+-	pci_write_config_dword(dev, PCI_BASE_ADDRESS_1, 0);
+-	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR, start);
+-	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR + 12, start + size / 2);
+-
+-	dev_info(&dev->dev, "use Flash Memory Space for SR-IOV BARs\n");
+-}
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10c9, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e6, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e7, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e8, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150a, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150d, quirk_i82576_sriov);
+-DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1518, quirk_i82576_sriov);
+-
+-#endif	/* CONFIG_PCI_IOV */
+-
+ /*
+  * This is a quirk for the Ricoh MMC controller found as a part of
+  * some mulifunction chips.
 -- 
 1.7.4.4
 
