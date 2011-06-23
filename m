@@ -1,100 +1,291 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760091Ab1FWWZW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 18:25:22 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55742 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760026Ab1FWWZU convert rfc822-to-8bit (ORCPT
+	id S1760109Ab1FWWaJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 18:30:09 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:24299 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752867Ab1FWWaG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 18:25:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=I7iyoy/7LSPq3Im693zK+SNM6z6hLGUaw4gjZ/N8u8j4knCY5qevG9AVYqZrOGWPmu
-         BAzmAtqmlVt5+Wy8PfOMaPKu0UqwpxqQr/IjoArlYtfBskzmwsLvEkzfNRgRFx0TkBTy
-         W5pouwoTUndu/AURbmhXQKTzgq+aqkLCnhKXo=
+	Thu, 23 Jun 2011 18:30:06 -0400
+Date: Fri, 24 Jun 2011 00:21:10 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: LKML <linux-kernel@vger.kernel.org>
+cc: trivial@kernel.org, linux-wireless@vger.kernel.org,
+        linux-usb@vger.kernel.org, socketcan-core@lists.berlios.de,
+        netdev@vger.kernel.org, Sathya Perla <sathya.perla@emulex.com>,
+        Subbu Seetharaman <subbu.seetharaman@emulex.com>,
+        Ajit Khaparde <ajit.khaparde@emulex.com>,
+        Rasesh Mody <rmody@brocade.com>, Debashis Dutt <ddutt@brocade.com>,
+        Sjur Braendeland <sjur.brandeland@stericsson.com>,
+        Wolfgang Grandegger <wg@grandegger.com>,
+        Casey Leedom <leedom@chelsio.com>, Dmitry Kozlov <xeb@mail.ru>,
+        Solarflare linux maintainers <linux-net-drivers@solarflare.com>,
+        Steve Hodgson <shodgson@solarflare.com>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Oliver Neukum <oliver@neukum.name>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Larry Finger <Larry.Finger@lwfinger.net>,
+        Chaoming Li <chaoming_li@realsil.com.cn>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: [PATCH 13/37] Remove unneeded version.h includes from drivers/net/
+In-Reply-To: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1106240017510.17688@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110623143005.GL31593@tiehlicka.suse.cz>
-References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110616125741.c3d6a802.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110623134850.GK31593@tiehlicka.suse.cz>
-	<BANLkTin0zMftnK2a+ex07JNdbwvEMCjXXQ@mail.gmail.com>
-	<20110623143005.GL31593@tiehlicka.suse.cz>
-Date: Fri, 24 Jun 2011 07:20:39 +0900
-Message-ID: <BANLkTi=thFyBAKkX33ghzio392_cNkAoQg@mail.gmail.com>
-Subject: Re: [PATCH 7/7] memcg: proportional fair vicitm node selection
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/23 Michal Hocko <mhocko@suse.cz>:
-> On Thu 23-06-11 23:10:11, Hiroyuki Kamezawa wrote:
->> 2011/6/23 Michal Hocko <mhocko@suse.cz>:
->> > On Thu 16-06-11 12:57:41, KAMEZAWA Hiroyuki wrote:
->> >> From 4fbd49697456c227c86f1d5b46f2cd2169bf1c5b Mon Sep 17 00:00:00 2001
->> >> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> >> Date: Thu, 16 Jun 2011 11:25:23 +0900
->> >> Subject: [PATCH 7/7] memcg: proportional fair node vicitm selection
->> >>
->> >> commit 889976 implements a round-robin scan of numa nodes for
->> >> LRU scanning of memcg at hitting limit.
->> >> But, round-robin is not very good.
->> >>
->> >> This patch implements a proportionally fair victim selection of nodes
->> >> rather than round-robin. The logic is fair against each node's weight.
->> >>
->> >> Each node's weight is calculated periodically and we build an node's
->> >> scheduling entity as
->> >>
->> >>      total_ticket = 0;
->> >>      for_each_node(node)
->> >>       node->ticket_start =  total_ticket;
->> >>         node->ticket_end   =  total_ticket + this_node's_weight()
->> >>         total_ticket = node->ticket_end;
->> >>
->> >> Then, each nodes has some amounts of tickets in proportion to its own weight.
->> >>
->> >> At selecting victim, a random number is selected and the node which contains
->> >> the random number in [ticket_start, ticket_end) is selected as vicitm.
->> >> This is a lottery scheduling algorithm.
->> >>
->> >> For quick search of victim, this patch uses bsearch().
->> >>
->> >> Test result:
->> >>   on 8cpu box with 2 nodes.
->> >>   limit memory to be 300MB and run httpd for 4096files/600MB working set.
->> >>   do (normalized) random access by apache-bench and see scan_stat.
->> >>   The test makes 40960 request. and see scan_stat.
->> >>   (Because a httpd thread just use 10% cpu, the number of threads will
->> >>    not be balanced between nodes. Then, file caches will not be balanced
->> >>    between nodes.)
->> >
->> > Have you also tried to test with balanced nodes? I mean, is there any
->> > measurable overhead?
->> >
->>
->> Not enough yet. I checked OOM trouble this week :).
->>
->> I may need to make another fake_numa setup + cpuset
->> to measurements.
->
-> What if you just use NUMA rotor for page cache?
->
+It was pointed out by 'make versioncheck' that some includes of
+linux/version.h are not needed in drivers/net/.
+This patch removes them.
 
-Ok, I'll do try in the next week. Thank you for suggestion.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/net/atl1c/atl1c.h              |    1 -
+ drivers/net/atl1e/atl1e.h              |    1 -
+ drivers/net/benet/be.h                 |    1 -
+ drivers/net/bna/cna.h                  |    1 -
+ drivers/net/caif/caif_serial.c         |    1 -
+ drivers/net/caif/caif_shm_u5500.c      |    1 -
+ drivers/net/caif/caif_spi.c            |    1 -
+ drivers/net/caif/caif_spi_slave.c      |    1 -
+ drivers/net/can/c_can/c_can.c          |    1 -
+ drivers/net/can/c_can/c_can_platform.c |    1 -
+ drivers/net/can/softing/softing_main.c |    1 -
+ drivers/net/cxgb4vf/cxgb4vf_main.c     |    1 -
+ drivers/net/cxgb4vf/t4vf_hw.c          |    1 -
+ drivers/net/davinci_emac.c             |    1 -
+ drivers/net/pptp.c                     |    1 -
+ drivers/net/sfc/net_driver.h           |    1 -
+ drivers/net/usb/cdc_ncm.c              |    1 -
+ drivers/net/wireless/rtlwifi/wifi.h    |    1 -
+ 18 files changed, 0 insertions(+), 18 deletions(-)
 
-Thanks,
--Kame
+diff --git a/drivers/net/atl1c/atl1c.h b/drivers/net/atl1c/atl1c.h
+index 925929d..695398c 100644
+--- a/drivers/net/atl1c/atl1c.h
++++ b/drivers/net/atl1c/atl1c.h
+@@ -22,7 +22,6 @@
+ #ifndef _ATL1C_H_
+ #define _ATL1C_H_
+ 
+-#include <linux/version.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
+ #include <linux/errno.h>
+diff --git a/drivers/net/atl1e/atl1e.h b/drivers/net/atl1e/atl1e.h
+index 490d3b3..3861949 100644
+--- a/drivers/net/atl1e/atl1e.h
++++ b/drivers/net/atl1e/atl1e.h
+@@ -23,7 +23,6 @@
+ #ifndef _ATL1E_H_
+ #define _ATL1E_H_
+ 
+-#include <linux/version.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
+ #include <linux/errno.h>
+diff --git a/drivers/net/benet/be.h b/drivers/net/benet/be.h
+index a7db870..66ae5b5 100644
+--- a/drivers/net/benet/be.h
++++ b/drivers/net/benet/be.h
+@@ -20,7 +20,6 @@
+ 
+ #include <linux/pci.h>
+ #include <linux/etherdevice.h>
+-#include <linux/version.h>
+ #include <linux/delay.h>
+ #include <net/tcp.h>
+ #include <net/ip.h>
+diff --git a/drivers/net/bna/cna.h b/drivers/net/bna/cna.h
+index bbd39dc..8ee9e38 100644
+--- a/drivers/net/bna/cna.h
++++ b/drivers/net/bna/cna.h
+@@ -19,7 +19,6 @@
+ #ifndef __CNA_H__
+ #define __CNA_H__
+ 
+-#include <linux/version.h>
+ #include <linux/kernel.h>
+ #include <linux/types.h>
+ #include <linux/pci.h>
+diff --git a/drivers/net/caif/caif_serial.c b/drivers/net/caif/caif_serial.c
+index 3df0c0f..175e134 100644
+--- a/drivers/net/caif/caif_serial.c
++++ b/drivers/net/caif/caif_serial.c
+@@ -5,7 +5,6 @@
+  */
+ 
+ #include <linux/init.h>
+-#include <linux/version.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
+ #include <linux/types.h>
+diff --git a/drivers/net/caif/caif_shm_u5500.c b/drivers/net/caif/caif_shm_u5500.c
+index 5f771ab..89d76b7 100644
+--- a/drivers/net/caif/caif_shm_u5500.c
++++ b/drivers/net/caif/caif_shm_u5500.c
+@@ -7,7 +7,6 @@
+ 
+ #define pr_fmt(fmt) KBUILD_MODNAME ":" fmt
+ 
+-#include <linux/version.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/netdevice.h>
+diff --git a/drivers/net/caif/caif_spi.c b/drivers/net/caif/caif_spi.c
+index 57e6393..0f8defc 100644
+--- a/drivers/net/caif/caif_spi.c
++++ b/drivers/net/caif/caif_spi.c
+@@ -5,7 +5,6 @@
+  * License terms: GNU General Public License (GPL) version 2.
+  */
+ 
+-#include <linux/version.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
+diff --git a/drivers/net/caif/caif_spi_slave.c b/drivers/net/caif/caif_spi_slave.c
+index b009e03..e139e13 100644
+--- a/drivers/net/caif/caif_spi_slave.c
++++ b/drivers/net/caif/caif_spi_slave.c
+@@ -4,7 +4,6 @@
+  * Author:  Daniel Martensson / Daniel.Martensson@stericsson.com
+  * License terms: GNU General Public License (GPL) version 2.
+  */
+-#include <linux/version.h>
+ #include <linux/init.h>
+ #include <linux/module.h>
+ #include <linux/device.h>
+diff --git a/drivers/net/can/c_can/c_can.c b/drivers/net/can/c_can/c_can.c
+index 7e5cc0b..80adc83 100644
+--- a/drivers/net/can/c_can/c_can.c
++++ b/drivers/net/can/c_can/c_can.c
+@@ -26,7 +26,6 @@
+  */
+ 
+ #include <linux/kernel.h>
+-#include <linux/version.h>
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+ #include <linux/delay.h>
+diff --git a/drivers/net/can/c_can/c_can_platform.c b/drivers/net/can/c_can/c_can_platform.c
+index cc90824..0e300cf 100644
+--- a/drivers/net/can/c_can/c_can_platform.c
++++ b/drivers/net/can/c_can/c_can_platform.c
+@@ -20,7 +20,6 @@
+  */
+ 
+ #include <linux/kernel.h>
+-#include <linux/version.h>
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
+ #include <linux/delay.h>
+diff --git a/drivers/net/can/softing/softing_main.c b/drivers/net/can/softing/softing_main.c
+index 60a49e5..849e4a0 100644
+--- a/drivers/net/can/softing/softing_main.c
++++ b/drivers/net/can/softing/softing_main.c
+@@ -17,7 +17,6 @@
+  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+  */
+ 
+-#include <linux/version.h>
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/net/cxgb4vf/cxgb4vf_main.c b/drivers/net/cxgb4vf/cxgb4vf_main.c
+index e71c08e..8a6f891 100644
+--- a/drivers/net/cxgb4vf/cxgb4vf_main.c
++++ b/drivers/net/cxgb4vf/cxgb4vf_main.c
+@@ -33,7 +33,6 @@
+  * SOFTWARE.
+  */
+ 
+-#include <linux/version.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+ #include <linux/init.h>
+diff --git a/drivers/net/cxgb4vf/t4vf_hw.c b/drivers/net/cxgb4vf/t4vf_hw.c
+index 192db22..fe3fd3d 100644
+--- a/drivers/net/cxgb4vf/t4vf_hw.c
++++ b/drivers/net/cxgb4vf/t4vf_hw.c
+@@ -33,7 +33,6 @@
+  * SOFTWARE.
+  */
+ 
+-#include <linux/version.h>
+ #include <linux/pci.h>
+ 
+ #include "t4vf_common.h"
+diff --git a/drivers/net/davinci_emac.c b/drivers/net/davinci_emac.c
+index dcc4a17..a8adf0c 100644
+--- a/drivers/net/davinci_emac.c
++++ b/drivers/net/davinci_emac.c
+@@ -48,7 +48,6 @@
+ #include <linux/highmem.h>
+ #include <linux/proc_fs.h>
+ #include <linux/ctype.h>
+-#include <linux/version.h>
+ #include <linux/spinlock.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/clk.h>
+diff --git a/drivers/net/pptp.c b/drivers/net/pptp.c
+index 1286fe2..eae542a 100644
+--- a/drivers/net/pptp.c
++++ b/drivers/net/pptp.c
+@@ -30,7 +30,6 @@
+ #include <linux/ip.h>
+ #include <linux/netfilter.h>
+ #include <linux/netfilter_ipv4.h>
+-#include <linux/version.h>
+ #include <linux/rcupdate.h>
+ #include <linux/spinlock.h>
+ 
+diff --git a/drivers/net/sfc/net_driver.h b/drivers/net/sfc/net_driver.h
+index e8d5f03..1affbf4 100644
+--- a/drivers/net/sfc/net_driver.h
++++ b/drivers/net/sfc/net_driver.h
+@@ -17,7 +17,6 @@
+ #define DEBUG
+ #endif
+ 
+-#include <linux/version.h>
+ #include <linux/netdevice.h>
+ #include <linux/etherdevice.h>
+ #include <linux/ethtool.h>
+diff --git a/drivers/net/usb/cdc_ncm.c b/drivers/net/usb/cdc_ncm.c
+index f33ca6a..fd622a6 100644
+--- a/drivers/net/usb/cdc_ncm.c
++++ b/drivers/net/usb/cdc_ncm.c
+@@ -47,7 +47,6 @@
+ #include <linux/mii.h>
+ #include <linux/crc32.h>
+ #include <linux/usb.h>
+-#include <linux/version.h>
+ #include <linux/timer.h>
+ #include <linux/spinlock.h>
+ #include <linux/atomic.h>
+diff --git a/drivers/net/wireless/rtlwifi/wifi.h b/drivers/net/wireless/rtlwifi/wifi.h
+index 693395e..dd85110 100644
+--- a/drivers/net/wireless/rtlwifi/wifi.h
++++ b/drivers/net/wireless/rtlwifi/wifi.h
+@@ -32,7 +32,6 @@
+ 
+ #include <linux/sched.h>
+ #include <linux/firmware.h>
+-#include <linux/version.h>
+ #include <linux/etherdevice.h>
+ #include <linux/vmalloc.h>
+ #include <linux/usb.h>
+-- 
+1.7.5.2
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
