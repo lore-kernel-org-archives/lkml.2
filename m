@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933362Ab1FWSQd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:16:33 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34408 "EHLO
+	id S934225Ab1FWSPs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:15:48 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34415 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933293Ab1FWRgR (ORCPT
+	with ESMTP id S932765Ab1FWRgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:17 -0400
+	Thu, 23 Jun 2011 13:36:18 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
 Cc: stable-review@kernel.org, Dave Chinner <dchinner@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 104/247] xfs: validate untrusted inode numbers during lookup
-Date: Thu, 23 Jun 2011 13:32:52 -0400
-Message-Id: <1308850515-15242-45-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 105/247] xfs: rename XFS_IGET_BULKSTAT to XFS_IGET_UNTRUSTED
+Date: Thu, 23 Jun 2011 13:32:53 -0400
+Message-Id: <1308850515-15242-46-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -29,199 +29,121 @@ From: Dave Chinner <dchinner@redhat.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 7124fe0a5b619d65b739477b3b55a20bf805b06d upstream.
+commit 1920779e67cbf5ea8afef317777c5bf2b8096188 upstream.
 
-When we decode a handle or do a bulkstat lookup, we are using an
-inode number we cannot trust to be valid. If we are deleting inode
-chunks from disk (default noikeep mode), then we cannot trust the on
-disk inode buffer for any given inode number to correctly reflect
-whether the inode has been unlinked as the di_mode nor the
-generation number may have been updated on disk.
-
-This is due to the fact that when we delete an inode chunk, we do
-not write the clusters back to disk when they are removed - instead
-we mark them stale to avoid them being written back potentially over
-the top of something that has been subsequently allocated at that
-location. The result is that we can have locations of disk that look
-like they contain valid inodes but in reality do not. Hence we
-cannot simply convert the inode number to a block number and read
-the location from disk to determine if the inode is valid or not.
-
-As a result, and XFS_IGET_BULKSTAT lookup needs to actually look the
-inode up in the inode allocation btree to determine if the inode
-number is valid or not.
-
-It should be noted even on ikeep filesystems, there is the
-possibility that blocks on disk may look like valid inode clusters.
-e.g. if there are filesystem images hosted on the filesystem. Hence
-even for ikeep filesystems we really need to validate that the inode
-number is valid before issuing the inode buffer read.
+Inode numbers may come from somewhere external to the filesystem
+(e.g. file handles, bulkstat information) and so are inherently
+untrusted. Rename the flag we use for these lookups to make it
+obvious we are doing a lookup of an untrusted inode number and need
+to verify it completely before trying to read it from disk.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/xfs/xfs_ialloc.c |  121 +++++++++++++++++++++++++++++++++------------------
- 1 files changed, 78 insertions(+), 43 deletions(-)
+ fs/xfs/linux-2.6/xfs_export.c |    9 ++++-----
+ fs/xfs/xfs_ialloc.c           |   11 +++++++----
+ fs/xfs/xfs_inode.c            |    2 +-
+ fs/xfs/xfs_inode.h            |    2 +-
+ fs/xfs/xfs_itable.c           |    2 +-
+ 5 files changed, 14 insertions(+), 12 deletions(-)
 
+diff --git a/fs/xfs/linux-2.6/xfs_export.c b/fs/xfs/linux-2.6/xfs_export.c
+index 846b75a..92c84a1 100644
+--- a/fs/xfs/linux-2.6/xfs_export.c
++++ b/fs/xfs/linux-2.6/xfs_export.c
+@@ -128,12 +128,11 @@ xfs_nfs_get_inode(
+ 		return ERR_PTR(-ESTALE);
+ 
+ 	/*
+-	 * The XFS_IGET_BULKSTAT means that an invalid inode number is just
+-	 * fine and not an indication of a corrupted filesystem.  Because
+-	 * clients can send any kind of invalid file handle, e.g. after
+-	 * a restore on the server we have to deal with this case gracefully.
++	 * The XFS_IGET_UNTRUSTED means that an invalid inode number is just
++	 * fine and not an indication of a corrupted filesystem as clients can
++	 * send invalid file handles and we have to handle it gracefully..
+ 	 */
+-	error = xfs_iget(mp, NULL, ino, XFS_IGET_BULKSTAT,
++	error = xfs_iget(mp, NULL, ino, XFS_IGET_UNTRUSTED,
+ 			 XFS_ILOCK_SHARED, &ip, 0);
+ 	if (error) {
+ 		/*
 diff --git a/fs/xfs/xfs_ialloc.c b/fs/xfs/xfs_ialloc.c
-index 9d884c1..0c946c8 100644
+index 0c946c8..d8fd366 100644
 --- a/fs/xfs/xfs_ialloc.c
 +++ b/fs/xfs/xfs_ialloc.c
-@@ -1203,6 +1203,63 @@ error0:
- 	return error;
- }
+@@ -1251,7 +1251,7 @@ xfs_imap_lookup(
+ 		return error;
  
-+STATIC int
-+xfs_imap_lookup(
-+	struct xfs_mount	*mp,
-+	struct xfs_trans	*tp,
-+	xfs_agnumber_t		agno,
-+	xfs_agino_t		agino,
-+	xfs_agblock_t		agbno,
-+	xfs_agblock_t		*chunk_agbno,
-+	xfs_agblock_t		*offset_agbno,
-+	int			flags)
-+{
-+	struct xfs_inobt_rec_incore rec;
-+	struct xfs_btree_cur	*cur;
-+	struct xfs_buf		*agbp;
-+	xfs_agino_t		startino;
-+	int			error;
-+	int			i;
-+
-+	error = xfs_ialloc_read_agi(mp, tp, agno, &agbp);
-+	if (error) {
-+		xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
-+				"xfs_ialloc_read_agi() returned "
-+				"error %d, agno %d",
-+				error, agno);
-+		return error;
-+	}
-+
-+	/*
-+	 * derive and lookup the exact inode record for the given agino. If the
-+	 * record cannot be found, then it's an invalid inode number and we
-+	 * should abort.
-+	 */
-+	cur = xfs_inobt_init_cursor(mp, tp, agbp, agno);
-+	startino = agino & ~(XFS_IALLOC_INODES(mp) - 1);
-+	error = xfs_inobt_lookup(cur, startino, XFS_LOOKUP_EQ, &i);
-+	if (!error) {
-+		if (i)
-+			error = xfs_inobt_get_rec(cur, &rec, &i);
-+		if (!error && i == 0)
-+			error = EINVAL;
-+	}
-+
-+	xfs_trans_brelse(tp, agbp);
-+	xfs_btree_del_cursor(cur, XFS_BTREE_NOERROR);
-+	if (error)
-+		return error;
-+
-+	/* for untrusted inodes check it is allocated first */
-+	if ((flags & XFS_IGET_BULKSTAT) &&
-+	    (rec.ir_free & XFS_INOBT_MASK(agino - rec.ir_startino)))
-+		return EINVAL;
-+
-+	*chunk_agbno = XFS_AGINO_TO_AGBNO(mp, rec.ir_startino);
-+	*offset_agbno = agbno - *chunk_agbno;
-+	return 0;
-+}
-+
- /*
-  * Return the location of the inode in imap, for mapping it into a buffer.
-  */
-@@ -1263,6 +1320,23 @@ xfs_imap(
- 		return XFS_ERROR(EINVAL);
- 	}
+ 	/* for untrusted inodes check it is allocated first */
+-	if ((flags & XFS_IGET_BULKSTAT) &&
++	if ((flags & XFS_IGET_UNTRUSTED) &&
+ 	    (rec.ir_free & XFS_INOBT_MASK(agino - rec.ir_startino)))
+ 		return EINVAL;
  
-+	blks_per_cluster = XFS_INODE_CLUSTER_SIZE(mp) >> mp->m_sb.sb_blocklog;
-+
-+	/*
-+	 * For bulkstat and handle lookups, we have an untrusted inode number
-+	 * that we have to verify is valid. We cannot do this just by reading
-+	 * the inode buffer as it may have been unlinked and removed leaving
-+	 * inodes in stale state on disk. Hence we have to do a btree lookup
-+	 * in all cases where an untrusted inode number is passed.
-+	 */
-+	if (flags & XFS_IGET_BULKSTAT) {
-+		error = xfs_imap_lookup(mp, tp, agno, agino, agbno,
-+					&chunk_agbno, &offset_agbno, flags);
-+		if (error)
-+			return error;
-+		goto out_map;
-+	}
-+
- 	/*
- 	 * If the inode cluster size is the same as the blocksize or
- 	 * smaller we get to the buffer by simple arithmetics.
-@@ -1277,10 +1351,8 @@ xfs_imap(
- 		return 0;
- 	}
- 
--	blks_per_cluster = XFS_INODE_CLUSTER_SIZE(mp) >> mp->m_sb.sb_blocklog;
--
- 	/*
--	 * If we get a block number passed from bulkstat we can use it to
-+	 * If we get a block number passed we can use it to
- 	 * find the buffer easily.
+@@ -1292,8 +1292,11 @@ xfs_imap(
+ 	if (agno >= mp->m_sb.sb_agcount || agbno >= mp->m_sb.sb_agblocks ||
+ 	    ino != XFS_AGINO_TO_INO(mp, agno, agino)) {
+ #ifdef DEBUG
+-		/* no diagnostics for bulkstat, ino comes from userspace */
+-		if (flags & XFS_IGET_BULKSTAT)
++		/*
++		 * Don't output diagnostic information for untrusted inodes
++		 * as they can be invalid without implying corruption.
++		 */
++		if (flags & XFS_IGET_UNTRUSTED)
+ 			return XFS_ERROR(EINVAL);
+ 		if (agno >= mp->m_sb.sb_agcount) {
+ 			xfs_fs_cmn_err(CE_ALERT, mp,
+@@ -1329,7 +1332,7 @@ xfs_imap(
+ 	 * inodes in stale state on disk. Hence we have to do a btree lookup
+ 	 * in all cases where an untrusted inode number is passed.
  	 */
- 	if (imap->im_blkno) {
-@@ -1304,50 +1376,13 @@ xfs_imap(
- 		offset_agbno = agbno & mp->m_inoalign_mask;
- 		chunk_agbno = agbno - offset_agbno;
- 	} else {
--		xfs_btree_cur_t	*cur;	/* inode btree cursor */
--		xfs_inobt_rec_incore_t chunk_rec;
--		xfs_buf_t	*agbp;	/* agi buffer */
--		int		i;	/* temp state */
--
--		error = xfs_ialloc_read_agi(mp, tp, agno, &agbp);
--		if (error) {
--			xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
--					"xfs_ialloc_read_agi() returned "
--					"error %d, agno %d",
--					error, agno);
--			return error;
--		}
--
--		cur = xfs_inobt_init_cursor(mp, tp, agbp, agno);
--		error = xfs_inobt_lookup(cur, agino, XFS_LOOKUP_LE, &i);
--		if (error) {
--			xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
--					"xfs_inobt_lookup() failed");
--			goto error0;
--		}
--
--		error = xfs_inobt_get_rec(cur, &chunk_rec, &i);
--		if (error) {
--			xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
--					"xfs_inobt_get_rec() failed");
--			goto error0;
--		}
--		if (i == 0) {
--#ifdef DEBUG
--			xfs_fs_cmn_err(CE_ALERT, mp, "xfs_imap: "
--					"xfs_inobt_get_rec() failed");
--#endif /* DEBUG */
--			error = XFS_ERROR(EINVAL);
--		}
-- error0:
--		xfs_trans_brelse(tp, agbp);
--		xfs_btree_del_cursor(cur, XFS_BTREE_NOERROR);
-+		error = xfs_imap_lookup(mp, tp, agno, agino, agbno,
-+					&chunk_agbno, &offset_agbno, flags);
+-	if (flags & XFS_IGET_BULKSTAT) {
++	if (flags & XFS_IGET_UNTRUSTED) {
+ 		error = xfs_imap_lookup(mp, tp, agno, agino, agbno,
+ 					&chunk_agbno, &offset_agbno, flags);
  		if (error)
- 			return error;
--		chunk_agbno = XFS_AGINO_TO_AGBNO(mp, chunk_rec.ir_startino);
--		offset_agbno = agbno - chunk_agbno;
- 	}
+diff --git a/fs/xfs/xfs_inode.c b/fs/xfs/xfs_inode.c
+index 0ffd564..078811f 100644
+--- a/fs/xfs/xfs_inode.c
++++ b/fs/xfs/xfs_inode.c
+@@ -177,7 +177,7 @@ xfs_imap_to_bp(
+ 		if (unlikely(XFS_TEST_ERROR(!di_ok, mp,
+ 						XFS_ERRTAG_ITOBP_INOTOBP,
+ 						XFS_RANDOM_ITOBP_INOTOBP))) {
+-			if (iget_flags & XFS_IGET_BULKSTAT) {
++			if (iget_flags & XFS_IGET_UNTRUSTED) {
+ 				xfs_trans_brelse(tp, bp);
+ 				return XFS_ERROR(EINVAL);
+ 			}
+diff --git a/fs/xfs/xfs_inode.h b/fs/xfs/xfs_inode.h
+index 9965e40..6b31b38 100644
+--- a/fs/xfs/xfs_inode.h
++++ b/fs/xfs/xfs_inode.h
+@@ -500,7 +500,7 @@ do { \
+  * Flags for xfs_iget()
+  */
+ #define XFS_IGET_CREATE		0x1
+-#define XFS_IGET_BULKSTAT	0x2
++#define XFS_IGET_UNTRUSTED	0x2
  
-+out_map:
- 	ASSERT(agbno >= chunk_agbno);
- 	cluster_agbno = chunk_agbno +
- 		((offset_agbno / blks_per_cluster) * blks_per_cluster);
+ int		xfs_inotobp(struct xfs_mount *, struct xfs_trans *,
+ 			    xfs_ino_t, struct xfs_dinode **,
+diff --git a/fs/xfs/xfs_itable.c b/fs/xfs/xfs_itable.c
+index 83d7827..2acd12f 100644
+--- a/fs/xfs/xfs_itable.c
++++ b/fs/xfs/xfs_itable.c
+@@ -80,7 +80,7 @@ xfs_bulkstat_one_int(
+ 		return XFS_ERROR(ENOMEM);
+ 
+ 	error = xfs_iget(mp, NULL, ino,
+-			 XFS_IGET_BULKSTAT, XFS_ILOCK_SHARED, &ip, bno);
++			 XFS_IGET_UNTRUSTED, XFS_ILOCK_SHARED, &ip, bno);
+ 	if (error) {
+ 		*stat = BULKSTAT_RV_NOTHING;
+ 		goto out_free;
 -- 
 1.7.4.4
 
