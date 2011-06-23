@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933459Ab1FWSIB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:08:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34686 "EHLO
+	id S933477Ab1FWRhB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:37:01 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34727 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932764Ab1FWRgx (ORCPT
+	with ESMTP id S933453Ab1FWRg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:53 -0400
+	Thu, 23 Jun 2011 13:36:58 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Stanislaw Gruszka <stf_xl@pop3.wp.pl>,
+        Stanislaw Gruszka <stf_xl@wp.pl>, "Rafael J. Wysocki" <rjw@sisk.pl>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 108/247] s390: remove task_show_regs
-Date: Thu, 23 Jun 2011 13:32:56 -0400
-Message-Id: <1308850515-15242-49-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 109/247] PM / Hibernate: Return error code when alloc_image_page() fails
+Date: Thu, 23 Jun 2011 13:32:57 -0400
+Message-Id: <1308850515-15242-50-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,108 +23,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+From: Stanislaw Gruszka <stf_xl@pop3.wp.pl>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 261cd298a8c363d7985e3482946edb4bfedacf98 upstream.
+commit 2e725a065b0153f0c449318da1923a120477633d upstream.
 
-task_show_regs used to be a debugging aid in the early bringup days
-of Linux on s390. /proc/<pid>/status is a world readable file, it
-is not a good idea to show the registers of a process. The only
-correct fix is to remove task_show_regs.
+Currently we return 0 in swsusp_alloc() when alloc_image_page() fails.
+Fix that.  Also remove unneeded "error" variable since the only
+useful value of error is -ENOMEM.
 
-Reported-by: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+[rjw: Fixed up the changelog and changed subject.]
+
+Signed-off-by: Stanislaw Gruszka <stf_xl@wp.pl>
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/s390/include/asm/processor.h |    5 -----
- arch/s390/kernel/traps.c          |   37 -------------------------------------
- fs/proc/array.c                   |    3 ---
- 3 files changed, 0 insertions(+), 45 deletions(-)
+ kernel/power/snapshot.c |    7 ++-----
+ 1 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/arch/s390/include/asm/processor.h b/arch/s390/include/asm/processor.h
-index 73e2598..f73b50a 100644
---- a/arch/s390/include/asm/processor.h
-+++ b/arch/s390/include/asm/processor.h
-@@ -150,11 +150,6 @@ extern int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags);
-  */
- extern unsigned long thread_saved_pc(struct task_struct *t);
- 
--/*
-- * Print register of task into buffer. Used in fs/proc/array.c.
-- */
--extern void task_show_regs(struct seq_file *m, struct task_struct *task);
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index be861c2..0652dcc 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1467,11 +1467,8 @@ static int
+ swsusp_alloc(struct memory_bitmap *orig_bm, struct memory_bitmap *copy_bm,
+ 		unsigned int nr_pages, unsigned int nr_highmem)
+ {
+-	int error = 0;
 -
- extern void show_code(struct pt_regs *regs);
+ 	if (nr_highmem > 0) {
+-		error = get_highmem_buffer(PG_ANY);
+-		if (error)
++		if (get_highmem_buffer(PG_ANY))
+ 			goto err_out;
+ 		if (nr_highmem > alloc_highmem) {
+ 			nr_highmem -= alloc_highmem;
+@@ -1494,7 +1491,7 @@ swsusp_alloc(struct memory_bitmap *orig_bm, struct memory_bitmap *copy_bm,
  
- unsigned long get_wchan(struct task_struct *p);
-diff --git a/arch/s390/kernel/traps.c b/arch/s390/kernel/traps.c
-index 6e7ad63..7dd1ca6 100644
---- a/arch/s390/kernel/traps.c
-+++ b/arch/s390/kernel/traps.c
-@@ -243,43 +243,6 @@ void show_regs(struct pt_regs *regs)
- 	show_last_breaking_event(regs);
+  err_out:
+ 	swsusp_free();
+-	return error;
++	return -ENOMEM;
  }
  
--/* This is called from fs/proc/array.c */
--void task_show_regs(struct seq_file *m, struct task_struct *task)
--{
--	struct pt_regs *regs;
--
--	regs = task_pt_regs(task);
--	seq_printf(m, "task: %p, ksp: %p\n",
--		       task, (void *)task->thread.ksp);
--	seq_printf(m, "User PSW : %p %p\n",
--		       (void *) regs->psw.mask, (void *)regs->psw.addr);
--
--	seq_printf(m, "User GPRS: " FOURLONG,
--			  regs->gprs[0], regs->gprs[1],
--			  regs->gprs[2], regs->gprs[3]);
--	seq_printf(m, "           " FOURLONG,
--			  regs->gprs[4], regs->gprs[5],
--			  regs->gprs[6], regs->gprs[7]);
--	seq_printf(m, "           " FOURLONG,
--			  regs->gprs[8], regs->gprs[9],
--			  regs->gprs[10], regs->gprs[11]);
--	seq_printf(m, "           " FOURLONG,
--			  regs->gprs[12], regs->gprs[13],
--			  regs->gprs[14], regs->gprs[15]);
--	seq_printf(m, "User ACRS: %08x %08x %08x %08x\n",
--			  task->thread.acrs[0], task->thread.acrs[1],
--			  task->thread.acrs[2], task->thread.acrs[3]);
--	seq_printf(m, "           %08x %08x %08x %08x\n",
--			  task->thread.acrs[4], task->thread.acrs[5],
--			  task->thread.acrs[6], task->thread.acrs[7]);
--	seq_printf(m, "           %08x %08x %08x %08x\n",
--			  task->thread.acrs[8], task->thread.acrs[9],
--			  task->thread.acrs[10], task->thread.acrs[11]);
--	seq_printf(m, "           %08x %08x %08x %08x\n",
--			  task->thread.acrs[12], task->thread.acrs[13],
--			  task->thread.acrs[14], task->thread.acrs[15]);
--}
--
- static DEFINE_SPINLOCK(die_lock);
- 
- void die(const char * str, struct pt_regs * regs, long err)
-diff --git a/fs/proc/array.c b/fs/proc/array.c
-index e9f7d54..ed2afa6 100644
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -353,9 +353,6 @@ int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
- 	task_cap(m, task);
- 	task_cpus_allowed(m, task);
- 	cpuset_task_status_allowed(m, task);
--#if defined(CONFIG_S390)
--	task_show_regs(m, task);
--#endif
- 	task_context_switch_counts(m, task);
- 	return 0;
- }
+ asmlinkage int swsusp_save(void)
 -- 
 1.7.4.4
 
