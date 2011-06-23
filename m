@@ -1,70 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759250Ab1FWLK3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 07:10:29 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:46728 "EHLO SMTP.CITRIX.COM"
+	id S1759239Ab1FWLVf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 07:21:35 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:49951 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754214Ab1FWLK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 07:10:28 -0400
-X-IronPort-AV: E=Sophos;i="4.65,412,1304308800"; 
-   d="scan'208";a="14760562"
-From: <stefano.stabellini@eu.citrix.com>
-To: hpa@zytor.com
-CC: hpa@linux.intel.com, konrad.wilk@oracle.com, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-        Stefano.Stabellini@eu.citrix.com, yinghai@kernel.org,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH] x86_64: do not assume head_64.S used 4KB pages when !use_pse
-Date: Thu, 23 Jun 2011 12:14:25 +0100
-Message-ID: <1308827665-28890-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1756339Ab1FWLVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 07:21:33 -0400
+Message-ID: <4E0321AD.2080308@linux.vnet.ibm.com>
+Date: Thu, 23 Jun 2011 19:21:17 +0800
+From: Cheng Xu <chengxu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH] sched: skip autogroup when looking for all rt sched groups
+References: <BANLkTikKRnQb_T5x1BA=WopbBA_weLNFoQ@mail.gmail.com>
+In-Reply-To: <BANLkTikKRnQb_T5x1BA=WopbBA_weLNFoQ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+On 06/22/2011 01:22 PM, Yong Zhang wrote:
+> From: Yong Zhang <yong.zhang0@gmail.com>
+> Subject: [PATCH] sched: skip autogroup when looking for all rt sched groups
+> 
+> Since [commit ec514c48: sched: Fix rt_rq runtime leakage bug],
+> 'cat /proc/sched_debug' will print data of root_task_group.rt_rq
+> multi times, this is due to autogroup has no its own rt group,
+> instead rt group of autogroup is linked to root_task_group.
+> 
+> So skip it when we are looking for all rt sched groups, and it
+> will also save some noop operation against root_task_group when
+> __disable_runtime()/__enable_runtime().
+> 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> ---
+> 
+> Since webmail may mangle the patch, attach it too.
+> 
+>  kernel/sched_autogroup.h |    1 +
+>  kernel/sched_rt.c        |   29 ++++++++++++++++++++++++-----
+>  2 files changed, 25 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/sched_autogroup.h b/kernel/sched_autogroup.h
+> index 0557705..c2f0e72 100644
+> --- a/kernel/sched_autogroup.h
+> +++ b/kernel/sched_autogroup.h
+> @@ -13,6 +13,7 @@ struct autogroup {
+>  	int			nice;
+>  };
+> 
+> +static inline bool task_group_is_autogroup(struct task_group *tg);
+>  static inline struct task_group *
+>  autogroup_task_group(struct task_struct *p, struct task_group *tg);
+> 
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index 10d0182..8edf487 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -185,11 +185,30 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
+> 
+>  typedef struct task_group *rt_rq_iter_t;
+> 
+> -#define for_each_rt_rq(rt_rq, iter, rq) \
+> -	for (iter = list_entry_rcu(task_groups.next, typeof(*iter), list); \
+> -	     (&iter->list != &task_groups) && \
+> -	     (rt_rq = iter->rt_rq[cpu_of(rq)]); \
+> -	     iter = list_entry_rcu(iter->list.next, typeof(*iter), list))
+> +/* autogroup is not related to rt group, skip it */
+> +#define find_first_valid_task_group(iter)				\
+> +	({								\
+> +		list_for_each_entry_rcu(iter, &task_groups, list)	\
+> +			if (!task_group_is_autogroup(iter))		\
+> +				break;					\
+> +		iter;							\
+> +	})
+> +
+> +#define find_next_valid_task_group(iter)				\
+> +	({								\
+> +		do {							\
+> +			iter = list_entry_rcu(iter->list.next,		\
+> +					typeof(*iter),	list);		\
+> +		} while (&iter->list != &task_groups &&			\
+> +			task_group_is_autogroup(iter));			\
+> +		iter;							\
+> +	})
+> +
+> +#define for_each_rt_rq(rt_rq, iter, rq)					\
+> +	for (find_first_valid_task_group(iter);				\
+> +	     (&iter->list != &task_groups) &&				\
+> +	     (rt_rq = iter->rt_rq[cpu_of(rq)]);				\
+> +	     find_next_valid_task_group(iter))
+> 
+>  static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
+>  {
 
-head_64.S, which sets up the initial page table on x86_64, is not aware
-of PSE being enabled or disabled and it always allocates the initial
-mapping using 2MB pages.
+This looks like it works, but seems we might be able to do that with less code... 
 
-Therefore on x86_64 find_early_table_space shouldn't update the amount
-of pages needed for pte pages depending on the size of the initial
-mapping, because we know for sure that no pte pages have been allocated
-yet.
+static inline struct task_group *next_task_group(struct task_group *tg)
+{
+	do {
+		tg = list_entry_rcu(tg->list.next,
+		                    typeof(struct task_group), list);
+	} while ((&tg->list != &task_groups) && (task_group_is_autogroup(tg)));
+	if (&tg->list == &task_groups)
+		tg = NULL;
+	return tg;
+}
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Reported-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/mm/init.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+#define for_each_rt_rq(rt_rq, iter, rq) \
+	for (iter = container_of(&task_groups, typeof(*iter), list); \
+	     (iter = next_task_group(iter)) && \
+	     (rt_rq = iter->rt_rq[cpu_of(rq)]);)
 
-diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
-index 36bacfe..1e3098b 100644
---- a/arch/x86/mm/init.c
-+++ b/arch/x86/mm/init.c
-@@ -42,12 +42,19 @@ static void __init find_early_table_space(unsigned long start,
- 			(PMD_SIZE * PTRS_PER_PMD));
- 	pmd_mapped *= (PMD_SIZE * PTRS_PER_PMD);
- 
-+	/* 
-+	 * On x86_64 do not limit the size we need to cover with 4KB pages
-+	 * depending on the initial allocation because head_64.S always uses
-+	 * 2MB pages.
-+	 */
-+#ifdef CONFIG_X86_32
- 	if (start < PFN_PHYS(max_pfn_mapped)) {
- 		if (PFN_PHYS(max_pfn_mapped) < end)
- 			size -= PFN_PHYS(max_pfn_mapped) - start;
- 		else
- 			size = 0;
- 	}
-+#endif
- 
- #ifndef __PAGETABLE_PUD_FOLDED
- 	if (end > pud_mapped) {
--- 
-1.7.2.3
 
+Thanks,
+Cheng
