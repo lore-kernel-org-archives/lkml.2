@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933712Ab1FWR4a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:56:30 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35175 "EHLO
+	id S934069Ab1FWRwx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:52:53 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35338 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933636Ab1FWRhq (ORCPT
+	with ESMTP id S933653Ab1FWRiH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:46 -0400
+	Thu, 23 Jun 2011 13:38:07 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, "Brandeburg, Jesse" <jesse.brandeburg@intel.com>,
+Cc: stable-review@kernel.org, Jiri Slaby <jslaby@suse.cz>,
         Jesse Barnes <jbarnes@virtuousgeek.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 185/247] PCI: remove quirk for pre-production systems
-Date: Thu, 23 Jun 2011 13:34:13 -0400
-Message-Id: <1308850515-15242-126-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 186/247] PCI: add more checking to ICH region quirks
+Date: Thu, 23 Jun 2011 13:34:14 -0400
+Message-Id: <1308850515-15242-127-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,107 +23,105 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Brandeburg, Jesse <jesse.brandeburg@intel.com>
+From: Jiri Slaby <jslaby@suse.cz>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b99af4b002e4908d1a5cdaf424529bdf1dc69768 upstream.
+commit cdb9755849fbaf2bb9c0a009ba5baa817a0f152d upstream.
 
-Revert commit 7eb93b175d4de9438a4b0af3a94a112cb5266944
-Author: Yu Zhao <yu.zhao@intel.com>
-Date:   Fri Apr 3 15:18:11 2009 +0800
+Per ICH4 and ICH6 specs, ACPI and GPIO regions are valid iff ACPI_EN
+and GPIO_EN bits are set to 1. Add checks for these bits into the
+quirks prior to the region creation.
 
-    PCI: SR-IOV quirk for Intel 82576 NIC
+While at it, name the constants by macros.
 
-    If BIOS doesn't allocate resources for the SR-IOV BARs, zero the Flash
-    BAR and program the SR-IOV BARs to use the old Flash Memory Space.
-
-    Please refer to Intel 82576 Gigabit Ethernet Controller Datasheet
-    section 7.9.2.14.2 for details.
-    http://download.intel.com/design/network/datashts/82576_Datasheet.pdf
-
-    Signed-off-by: Yu Zhao <yu.zhao@intel.com>
-    Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-
-This quirk was added before SR-IOV was in production and now all machines that
-originally had this issue alreayd have bios updates to correct the issue. The
-quirk itself is no longer needed and in fact causes bugs if run.  Remove it.
-
-Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-CC: Yu Zhao <yu.zhao@intel.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: Thomas Renninger <trenn@suse.de>
 Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/pci/quirks.c |   52 --------------------------------------------------
- 1 files changed, 0 insertions(+), 52 deletions(-)
+ drivers/pci/quirks.c |   45 +++++++++++++++++++++++++++++++++++++--------
+ 1 files changed, 37 insertions(+), 8 deletions(-)
 
 diff --git a/drivers/pci/quirks.c b/drivers/pci/quirks.c
-index ccc2683..c5f5f44 100644
+index c5f5f44..48b13bb 100644
 --- a/drivers/pci/quirks.c
 +++ b/drivers/pci/quirks.c
-@@ -2529,58 +2529,6 @@ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x4375,
+@@ -519,6 +519,17 @@ static void __devinit quirk_piix4_acpi(struct pci_dev *dev)
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82371AB_3,	quirk_piix4_acpi);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82443MX_3,	quirk_piix4_acpi);
  
- #endif /* CONFIG_PCI_MSI */
- 
--#ifdef CONFIG_PCI_IOV
--
--/*
-- * For Intel 82576 SR-IOV NIC, if BIOS doesn't allocate resources for the
-- * SR-IOV BARs, zero the Flash BAR and program the SR-IOV BARs to use the
-- * old Flash Memory Space.
-- */
--static void __devinit quirk_i82576_sriov(struct pci_dev *dev)
--{
--	int pos, flags;
--	u32 bar, start, size;
--
--	if (PAGE_SIZE > 0x10000)
--		return;
--
--	flags = pci_resource_flags(dev, 0);
--	if ((flags & PCI_BASE_ADDRESS_SPACE) !=
--			PCI_BASE_ADDRESS_SPACE_MEMORY ||
--	    (flags & PCI_BASE_ADDRESS_MEM_TYPE_MASK) !=
--			PCI_BASE_ADDRESS_MEM_TYPE_32)
--		return;
--
--	pos = pci_find_ext_capability(dev, PCI_EXT_CAP_ID_SRIOV);
--	if (!pos)
--		return;
--
--	pci_read_config_dword(dev, pos + PCI_SRIOV_BAR, &bar);
--	if (bar & PCI_BASE_ADDRESS_MEM_MASK)
--		return;
--
--	start = pci_resource_start(dev, 1);
--	size = pci_resource_len(dev, 1);
--	if (!start || size != 0x400000 || start & (size - 1))
--		return;
--
--	pci_resource_flags(dev, 1) = 0;
--	pci_write_config_dword(dev, PCI_BASE_ADDRESS_1, 0);
--	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR, start);
--	pci_write_config_dword(dev, pos + PCI_SRIOV_BAR + 12, start + size / 2);
--
--	dev_info(&dev->dev, "use Flash Memory Space for SR-IOV BARs\n");
--}
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10c9, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e6, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e7, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x10e8, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150a, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x150d, quirk_i82576_sriov);
--DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL, 0x1518, quirk_i82576_sriov);
--
--#endif	/* CONFIG_PCI_IOV */
--
++#define ICH_PMBASE	0x40
++#define ICH_ACPI_CNTL	0x44
++#define  ICH4_ACPI_EN	0x10
++#define  ICH6_ACPI_EN	0x80
++#define ICH4_GPIOBASE	0x58
++#define ICH4_GPIO_CNTL	0x5c
++#define  ICH4_GPIO_EN	0x10
++#define ICH6_GPIOBASE	0x48
++#define ICH6_GPIO_CNTL	0x4c
++#define  ICH6_GPIO_EN	0x10
++
  /*
-  * This is a quirk for the Ricoh MMC controller found as a part of
-  * some mulifunction chips.
+  * ICH4, ICH4-M, ICH5, ICH5-M ACPI: Three IO regions pointed to by longwords at
+  *	0x40 (128 bytes of ACPI, GPIO & TCO registers)
+@@ -527,12 +538,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,	PCI_DEVICE_ID_INTEL_82443MX_3,	qui
+ static void __devinit quirk_ich4_lpc_acpi(struct pci_dev *dev)
+ {
+ 	u32 region;
++	u8 enable;
+ 
+-	pci_read_config_dword(dev, 0x40, &region);
+-	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH4 ACPI/GPIO/TCO");
++	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
++	if (enable & ICH4_ACPI_EN) {
++		pci_read_config_dword(dev, ICH_PMBASE, &region);
++		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++				"ICH4 ACPI/GPIO/TCO");
++	}
+ 
+-	pci_read_config_dword(dev, 0x58, &region);
+-	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH4 GPIO");
++	pci_read_config_byte(dev, ICH4_GPIO_CNTL, &enable);
++	if (enable & ICH4_GPIO_EN) {
++		pci_read_config_dword(dev, ICH4_GPIOBASE, &region);
++		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
++				"ICH4 GPIO");
++	}
+ }
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AA_0,		quirk_ich4_lpc_acpi);
+ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_82801AB_0,		quirk_ich4_lpc_acpi);
+@@ -548,12 +568,21 @@ DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_INTEL,    PCI_DEVICE_ID_INTEL_ESB_1,		qui
+ static void __devinit ich6_lpc_acpi_gpio(struct pci_dev *dev)
+ {
+ 	u32 region;
++	u8 enable;
+ 
+-	pci_read_config_dword(dev, 0x40, &region);
+-	quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES, "ICH6 ACPI/GPIO/TCO");
++	pci_read_config_byte(dev, ICH_ACPI_CNTL, &enable);
++	if (enable & ICH6_ACPI_EN) {
++		pci_read_config_dword(dev, ICH_PMBASE, &region);
++		quirk_io_region(dev, region, 128, PCI_BRIDGE_RESOURCES,
++				"ICH6 ACPI/GPIO/TCO");
++	}
+ 
+-	pci_read_config_dword(dev, 0x48, &region);
+-	quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES+1, "ICH6 GPIO");
++	pci_read_config_byte(dev, ICH6_GPIO_CNTL, &enable);
++	if (enable & ICH4_GPIO_EN) {
++		pci_read_config_dword(dev, ICH6_GPIOBASE, &region);
++		quirk_io_region(dev, region, 64, PCI_BRIDGE_RESOURCES + 1,
++				"ICH6 GPIO");
++	}
+ }
+ 
+ static void __devinit ich6_lpc_generic_decode(struct pci_dev *dev, unsigned reg, const char *name, int dynsize)
 -- 
 1.7.4.4
 
