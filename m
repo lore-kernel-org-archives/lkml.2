@@ -1,22 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933930Ab1FWRmW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:42:22 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35790 "EHLO
+	id S933955Ab1FWRmq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:42:46 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35740 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933900Ab1FWRi7 (ORCPT
+	with ESMTP id S933876Ab1FWRix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:38:59 -0400
+	Thu, 23 Jun 2011 13:38:53 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Timo Warns <Warns@pre-sense.de>,
-        Timo Warns <warns@pre-sense.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Vasiliy Kulikov <segoon@openwall.com>,
+        Dave Airlie <airlied@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 224/247] fs/partitions/ldm.c: fix oops caused by corrupted partition table
-Date: Thu, 23 Jun 2011 13:34:52 -0400
-Message-Id: <1308850515-15242-165-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 225/247] agp: fix arbitrary kernel memory writes
+Date: Thu, 23 Jun 2011 13:34:53 -0400
+Message-Id: <1308850515-15242-166-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -25,76 +23,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Timo Warns <Warns@pre-sense.de>
+From: Vasiliy Kulikov <segoon@openwall.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit c340b1d640001c8c9ecff74f68fd90422ae2448a upstream.
+commit 194b3da873fd334ef183806db751473512af29ce upstream.
 
-The kernel automatically evaluates partition tables of storage devices.
-The code for evaluating LDM partitions (in fs/partitions/ldm.c) contains
-a bug that causes a kernel oops on certain corrupted LDM partitions.
-A kernel subsystem seems to crash, because, after the oops, the kernel no
-longer recognizes newly connected storage devices.
+pg_start is copied from userspace on AGPIOC_BIND and AGPIOC_UNBIND ioctl
+cmds of agp_ioctl() and passed to agpioc_bind_wrap().  As said in the
+comment, (pg_start + mem->page_count) may wrap in case of AGPIOC_BIND,
+and it is not checked at all in case of AGPIOC_UNBIND.  As a result, user
+with sufficient privileges (usually "video" group) may generate either
+local DoS or privilege escalation.
 
-The patch validates the value of vblk_size.
-
-[akpm@linux-foundation.org: coding-style fixes]
-Signed-off-by: Timo Warns <warns@pre-sense.de>
-Cc: Eugene Teo <eugeneteo@kernel.sg>
-Cc: Harvey Harrison <harvey.harrison@gmail.com>
-Cc: Richard Russon <rich@flatcap.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/partitions/ldm.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/char/agp/generic.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/fs/partitions/ldm.c b/fs/partitions/ldm.c
-index 2cd9e43..a2a14cd 100644
---- a/fs/partitions/ldm.c
-+++ b/fs/partitions/ldm.c
-@@ -1299,6 +1299,11 @@ static bool ldm_frag_add (const u8 *data, int size, struct list_head *frags)
- 
- 	BUG_ON (!data || !frags);
- 
-+	if (size < 2 * VBLK_SIZE_HEAD) {
-+		ldm_error("Value of size is to small.");
-+		return false;
-+	}
-+
- 	group = get_unaligned_be32(data + 0x08);
- 	rec   = get_unaligned_be16(data + 0x0C);
- 	num   = get_unaligned_be16(data + 0x0E);
-@@ -1306,6 +1311,10 @@ static bool ldm_frag_add (const u8 *data, int size, struct list_head *frags)
- 		ldm_error ("A VBLK claims to have %d parts.", num);
- 		return false;
+diff --git a/drivers/char/agp/generic.c b/drivers/char/agp/generic.c
+index fb86708..13a3446 100644
+--- a/drivers/char/agp/generic.c
++++ b/drivers/char/agp/generic.c
+@@ -1124,8 +1124,8 @@ int agp_generic_insert_memory(struct agp_memory * mem, off_t pg_start, int type)
+ 		return -EINVAL;
  	}
-+	if (rec >= num) {
-+		ldm_error("REC value (%d) exceeds NUM value (%d)", rec, num);
-+		return false;
-+	}
  
- 	list_for_each (item, frags) {
- 		f = list_entry (item, struct frag, list);
-@@ -1334,10 +1343,9 @@ found:
+-	/* AK: could wrap */
+-	if ((pg_start + mem->page_count) > num_entries)
++	if (((pg_start + mem->page_count) > num_entries) ||
++	    ((pg_start + mem->page_count) < pg_start))
+ 		return -EINVAL;
  
- 	f->map |= (1 << rec);
+ 	j = pg_start;
+@@ -1159,7 +1159,7 @@ int agp_generic_remove_memory(struct agp_memory *mem, off_t pg_start, int type)
+ {
+ 	size_t i;
+ 	struct agp_bridge_data *bridge;
+-	int mask_type;
++	int mask_type, num_entries;
  
--	if (num > 0) {
--		data += VBLK_SIZE_HEAD;
--		size -= VBLK_SIZE_HEAD;
--	}
-+	data += VBLK_SIZE_HEAD;
-+	size -= VBLK_SIZE_HEAD;
+ 	bridge = mem->bridge;
+ 	if (!bridge)
+@@ -1171,6 +1171,11 @@ int agp_generic_remove_memory(struct agp_memory *mem, off_t pg_start, int type)
+ 	if (type != mem->type)
+ 		return -EINVAL;
+ 
++	num_entries = agp_num_entries();
++	if (((pg_start + mem->page_count) > num_entries) ||
++	    ((pg_start + mem->page_count) < pg_start))
++		return -EINVAL;
 +
- 	memcpy (f->data+rec*(size-VBLK_SIZE_HEAD)+VBLK_SIZE_HEAD, data, size);
- 
- 	return true;
+ 	mask_type = bridge->driver->agp_type_to_mask_type(bridge, type);
+ 	if (mask_type != 0) {
+ 		/* The generic routines know nothing of memory types */
 -- 
 1.7.4.4
 
