@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934142Ab1FWSES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:04:18 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60270 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933497Ab1FWSEO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:04:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=pjqGDiGrpI1CgxHa2HUZ33dneXDZP4VHf9FndkvAyUtOqsE8EiEKKeRCXZcbFlHcdh
-         1yg2/cx0BAcLBTJGtU7NblV4xxwL8/lZoTkDQEu+95FNGrcyaFLUnYVtKURxXg2lC13H
-         Axj5aFDVUwbvvqirZNJzWttuF70Neb5XaLCSc=
+	id S933469Ab1FWSJI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:09:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9460 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932886Ab1FWSJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 14:09:03 -0400
+Date: Thu, 23 Jun 2011 14:08:54 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cfq-iosched: allow groups preemption for sync-noidle
+ workloads
+Message-ID: <20110623180854.GE20763@redhat.com>
+References: <20110623162159.3192.87699.stgit@localhost6>
 MIME-Version: 1.0
-In-Reply-To: <cover.1308810463.git.joe@perches.com>
-References: <cover.1308810463.git.joe@perches.com>
-Date: Thu, 23 Jun 2011 20:04:13 +0200
-X-Google-Sender-Auth: esCGVpoVWiWDrAmPZJBILua863E
-Message-ID: <BANLkTinBoGpGEFmfDQ-JXAjFn-aRBSVEUw@mail.gmail.com>
-Subject: Re: [PATCH 0/8] 8390: Neatening
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110623162159.3192.87699.stgit@localhost6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 08:38, Joe Perches <joe@perches.com> wrote:
-> Some updates requested by Geert Uytterhoeven
->
-> Joe Perches (8):
->  ariadne: Update style, neaten, restructure to eliminate prototypes
->  a2065: Use pr_fmt, pr_<level> and netdev_<level>
->  lib8390: Use pr_<level> and netdev_<level>
->  lib8390: Indent braces appropriately
->  lib8390: Normalize source code spacing
->  lib8390: Convert include <asm to include <linux
->  lib8390: Remove unnecessary extern
->  zorro8390: Restructure and eliminate prototypes
+On Thu, Jun 23, 2011 at 08:21:59PM +0400, Konstantin Khlebnikov wrote:
+> commit v2.6.32-102-g8682e1f "blkio: Provide some isolation between groups" break
+> fast switching between task and journal-thread for very common write-fsync workload.
+> cfq wait idle slice at each cfqq switch, if this task is from non-root blkio cgroup.
+> 
+> This patch move idling sync-noidle preempting check little bit upwards and update
+> new service_tree->count check for case with two different groups.
+> I do not quite understand what means these check for new_cfqq, but now it even works.
+> 
+> Without patch I got 49 iops and with this patch 798, for this trivial fio script:
 
-Looks good. I had to make some minor adjustments to make it apply to my
-current tree, though.
+Which filesystem you are using for these tests?
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
-
-Thanks!
-
-Gr{oetje,eeting}s,
-
-                        Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+Vivek
