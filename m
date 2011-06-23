@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933469Ab1FWSJI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:09:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9460 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932886Ab1FWSJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:09:03 -0400
-Date: Thu, 23 Jun 2011 14:08:54 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cfq-iosched: allow groups preemption for sync-noidle
- workloads
-Message-ID: <20110623180854.GE20763@redhat.com>
-References: <20110623162159.3192.87699.stgit@localhost6>
+	id S934198Ab1FWSLt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:11:49 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62763 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933235Ab1FWSLr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 14:11:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ptlaA8tQGHgJHUxgD/cJOWDSguxqwyRgOMpoRiZWW6hJrrl8P13iTtMIfkx/A2cCzC
+         rFFBDjrg/RXQKcZV4ClWaYkhOHGZIp4YTZGKdc6deqtdRsErZrC7uyFoz7NOVDmn0mX9
+         cVF3bHXa/4Jk7ji36K4gl3a74j7ZlLeFHb/5s=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110623162159.3192.87699.stgit@localhost6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110622190739.GB14351@albatros>
+References: <20110622095341.GA3353@albatros>
+	<1308760683.10423.16.camel@Joe-Laptop>
+	<20110622191022.66135615@lxorguk.ukuu.org.uk>
+	<20110622190739.GB14351@albatros>
+Date: Thu, 23 Jun 2011 20:11:46 +0200
+X-Google-Sender-Auth: poHhVI2ComExMTPD5-rAbvWz2sA
+Message-ID: <BANLkTimQxzqstxLnO-_dDMoRbWbGPQJrvA@mail.gmail.com>
+Subject: Re: [PATCH] kernel: escape non-ASCII and control characters in printk()
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Joe Perches <joe@perches.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        security@kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 08:21:59PM +0400, Konstantin Khlebnikov wrote:
-> commit v2.6.32-102-g8682e1f "blkio: Provide some isolation between groups" break
-> fast switching between task and journal-thread for very common write-fsync workload.
-> cfq wait idle slice at each cfqq switch, if this task is from non-root blkio cgroup.
-> 
-> This patch move idling sync-noidle preempting check little bit upwards and update
-> new service_tree->count check for case with two different groups.
-> I do not quite understand what means these check for new_cfqq, but now it even works.
-> 
-> Without patch I got 49 iops and with this patch 798, for this trivial fio script:
+On Wed, Jun 22, 2011 at 21:07, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> On Wed, Jun 22, 2011 at 19:10 +0100, Alan Cox wrote:
+>> If that is set you shouldn't be filtering out unicode, just control codes.
+>
+> OK.
+>
+>> Minor other nit is that you might want to allow BEL through and you
+>> certainly want to allow tab through.
+>
+> In what situation do you think BEL makes sense in kernel log?  I cannot
+> image the situation.  Alarms should use KERN_EMERG/KERN_ALERT log level.
 
-Which filesystem you are using for these tests?
+Does BEL work? Last time I tried fancy things (e.g. color output
+depending on the
+message level), it didn't work. I only got strange characters.
 
-Vivek
+Gr{oetje,eeting}s,
+
+                        Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
