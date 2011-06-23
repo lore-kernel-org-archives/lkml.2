@@ -1,78 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933754Ab1FWRtm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:49:42 -0400
-Received: from mx1.vsecurity.com ([209.67.252.12]:62939 "EHLO
-	mx1.vsecurity.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932651Ab1FWRtk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:49:40 -0400
-Subject: Re: [34-longterm 238/247] xfs: prevent leaking uninitialized stack
- memory in FSGEOMETRY_V1
-From: Dan Rosenberg <drosenberg@vsecurity.com>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Alex Elder <aelder@sgi.com>
-In-Reply-To: <1308850515-15242-179-git-send-email-paul.gortmaker@windriver.com>
-References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
-	 <1308850515-15242-179-git-send-email-paul.gortmaker@windriver.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Jun 2011 13:49:26 -0400
-Message-ID: <1308851366.5295.1.camel@dan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S964788Ab1FWRv1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:51:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933718Ab1FWRvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 13:51:22 -0400
+Date: Thu, 23 Jun 2011 13:51:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cfq-iosched: queue groups more gracefully
+Message-ID: <20110623175118.GD20763@redhat.com>
+References: <20110623162206.3222.3312.stgit@localhost6>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110623162206.3222.3312.stgit@localhost6>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-23 at 13:35 -0400, Paul Gortmaker wrote:
-> From: Dan Rosenberg <drosenberg@vsecurity.com>
+On Thu, Jun 23, 2011 at 08:22:06PM +0400, Konstantin Khlebnikov wrote:
+> This patch queue awakened cfq-groups according its current vdisktime,
+> it try to save upto one group timeslice from unused virtual disk time.
+> Thus group does not loses everything, if it was not continuously backlogged.
 > 
->                    -------------------
->     This is a commit scheduled for the next v2.6.34 longterm release.
->     If you see a problem with using this for longterm, please comment.
->                    -------------------
-> 
-> commit 3a3675b7f23f83ca8c67c9c2b6edf707fd28d1ba upstream.
-> 
-> The FSGEOMETRY_V1 ioctl (and its compat equivalent) calls out to
-> xfs_fs_geometry() with a version number of 3.  This code path does not
-> fill in the logsunit member of the passed xfs_fsop_geom_t, leading to
-> the leaking of four bytes of uninitialized stack data to potentially
-> unprivileged callers.
-> 
-> v2 switches to memset() to avoid future issues if structure members
-> change, on suggestion of Dave Chinner.
-> 
-> Signed-off-by: Dan Rosenberg <drosenberg@vsecurity.com>
-> Reviewed-by: Eugene Teo <eugeneteo@kernel.org>
-> Signed-off-by: Alex Elder <aelder@sgi.com>
-> Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+
+I think this patch is not required till we start preemption across
+groups? Any more details of actual use will help.
+
 > ---
->  fs/xfs/xfs_fsops.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+>  block/cfq-iosched.c |   36 ++++++++++++++++++++++++++++++------
+>  1 files changed, 30 insertions(+), 6 deletions(-)
 > 
-> diff --git a/fs/xfs/xfs_fsops.c b/fs/xfs/xfs_fsops.c
-> index 37a6f62..4e7f02b 100644
-> --- a/fs/xfs/xfs_fsops.c
-> +++ b/fs/xfs/xfs_fsops.c
-> @@ -57,6 +57,9 @@ xfs_fs_geometry(
->  	xfs_fsop_geom_t		*geo,
->  	int			new_version)
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index c71533e..d5c7c79 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -592,6 +592,26 @@ cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  	return cfq_target_latency * cfqg->weight / st->total_weight;
+>  }
+>  
+> +static inline u64
+> +cfq_group_vslice(struct cfq_data *cfqd, struct cfq_group *cfqg)
+> +{
+> +	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+> +	u64 vslice;
+> +
+> +	/* There no group slices in iops mode */
+> +	if (iops_mode(cfqd))
+> +		return 0;
+> +
+> +	/*
+> +	 * Equal to cfq_scale_slice(cfq_group_slice(cfqd, cfqg), cfqg).
+> +	 * Add group weight beacuse it currently not in service tree.
+> +	 */
+> +	vslice = (u64)cfq_target_latency << CFQ_SERVICE_SHIFT;
+> +	vslice *= BLKIO_WEIGHT_DEFAULT;
+> +	do_div(vslice, st->total_weight + cfqg->weight);
+
+Above is not equivalent to cfq_scale_slice(cfq_group_slice(cfqd, cfqg),
+cfqg) as comment says.
+
+you are not calculating cfq_group_slice(). Instead using cfq_target_latency.
+
+Also it does not make sense. A higher weight group gets lower vslice
+and in turn gets put further away on the tree. This is reverse of what
+you want.
+
+> +	return vslice;
+> +}
+> +
+>  static inline unsigned
+>  cfq_scaled_cfqq_slice(struct cfq_data *cfqd, struct cfq_queue *cfqq)
 >  {
+> @@ -884,16 +904,20 @@ cfq_group_notify_queue_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  		return;
+>  
+>  	/*
+> -	 * Currently put the group at the end. Later implement something
+> -	 * so that groups get lesser vtime based on their weights, so that
+> -	 * if group does not loose all if it was not continuously backlogged.
+> +	 * Bump vdisktime to be greater or equal min_vdisktime.
+> +	 */
+> +	cfqg->vdisktime = max_vdisktime(cfqg->vdisktime, st->min_vdisktime);
 > +
-> +	memset(geo, 0, sizeof(*geo));
-> +
->  	geo->blocksize = mp->m_sb.sb_blocksize;
->  	geo->rtextsize = mp->m_sb.sb_rextsize;
->  	geo->agblocks = mp->m_sb.sb_agblocks;
-> -- 
-> 1.7.4.4
 
-This introduced a regression which was fixed by commit
-af24ee9ea8d532e16883251a6684dfa1be8eec29.
+why do we need to do this?
 
--Dan
+> +	/*
+> +	 * Put the group at the end, but save one slice from unused time.
+>  	 */
+>  	n = rb_last(&st->rb);
+>  	if (n) {
+>  		__cfqg = rb_entry_cfqg(n);
+> -		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
+> -	} else
+> -		cfqg->vdisktime = st->min_vdisktime;
+> +		cfqg->vdisktime = max_vdisktime(cfqg->vdisktime,
+						 ^^^^^^^
+I think you meant st->min_vdisktime here?
+> +				__cfqg->vdisktime -
+> +					cfq_group_vslice(cfqd, cfqg));
+> +	}
+>  	cfq_group_service_tree_add(st, cfqg);
+>  }
+> 
 
+Thanks
+Vivek 
