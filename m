@@ -1,141 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753149Ab1FWFDP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 01:03:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51290 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab1FWFDO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 01:03:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=GSJMpNhnyBT1tbjU4DFroZ3sbMdzwM8vGobzy6CzvT+wCrSsHECtlgayveBQgGo+SS
-         HTPmsuUmVsSH8hf/Wx02qs9Dky61gB0i9c7C7Iy5w8zqEM+0LAMiTpCEiLgcBx8wW2E0
-         2SeO/w6QQd4kbauPD/JV4+YtZ1qEWbdEFjF6M=
+	id S1753375Ab1FWFE6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 01:04:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61152 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751733Ab1FWFE4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 01:04:56 -0400
+Message-ID: <4E02C93A.7010601@redhat.com>
+Date: Thu, 23 Jun 2011 13:03:54 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110622164502.b5b19e6d.rdunlap@xenotime.net>
-References: <BANLkTi=H17HC29bCTncSbXXm+RjwOCP49g@mail.gmail.com>
-	<BANLkTikyjzQ-VZMn2_ZobEmHMLRafki9YQ@mail.gmail.com>
-	<20110622132114.GA8656@dumpdata.com>
-	<BANLkTi=v7i04JhXRaf18_=nXKSgwHMDJjg@mail.gmail.com>
-	<BANLkTi=DagQzcXQnHsVWjR0SeDDPnizVfQ@mail.gmail.com>
-	<20110622164502.b5b19e6d.rdunlap@xenotime.net>
-Date: Wed, 22 Jun 2011 22:03:12 -0700
-Message-ID: <BANLkTimHCQYE+YGKZzQbOMF__FN+7a_PFQ@mail.gmail.com>
-Subject: Re: code sections beyond .text skipped from alternatives_smp_module_add
-From: Deep Debroy <ddebroy@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        linux-kernel@vger.kernel.org, kraxel@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        netdev@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Ohad Ben-Cohen <ohad@wizery.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Philip Rakity <prakity@marvell.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Josh Triplett <josh@joshtriplett.org>, linux-mmc@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH 4/5] pm: move pm notifiers into suspend.h
+References: <1308724522-32461-1-git-send-email-amwang@redhat.com> <1308724522-32461-5-git-send-email-amwang@redhat.com> <201106222149.28252.rjw@sisk.pl>
+In-Reply-To: <201106222149.28252.rjw@sisk.pl>
+Content-Type: multipart/mixed;
+ boundary="------------040106060502030605060003"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 4:45 PM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Wed, 22 Jun 2011 14:58:12 -0700 Deep Debroy wrote:
->
->> On Wed, Jun 22, 2011 at 10:27 AM, Deep Debroy <ddebroy@gmail.com> wrote:
->> > On Wed, Jun 22, 2011 at 6:21 AM, Konrad Rzeszutek Wilk
->> > <konrad.wilk@oracle.com> wrote:
->> >>> > Looking at the code, in module_finalize for x86, only .text seems to
->> >>> > be getting picked for the patching of lock prefixes while other
->> >>> > sections such as .exit.text or .init.text are not. Is there a reason
->> >>> > we skip the other *.text code sections from the lock patches? Would
->> >>> + Gerd Hoffmann who introduced the SMP patching code below back in Jan
->> >>> 2006 as part of 2.6.15.
->> >>
->> >> Whoa, long time ago.
->> >>
->> >>>
->> >>> Any comments on why patching of smp_lock prefixes should be restricted
->> >>> to .text and not other *.text code sections?
->> >>
->> >> It could be that at that time the .exit.text or .init.text did not exist.
->> >>
->> >> As in, the patching code just hasn't kept up. One way of checking that
->> >> is just finding the ancient 2.6.15 code and seeing if there is any
->> >> mention of those extra segments.
->> >>
->> >
->> > Thanks Konrad. One slight correction: after rechecking the kernel
->> > sources, it appears the smp lock prefix code first made it's
->> > appearance in the official trees during 2.6.18. In any case, going
->> > back even to 2.6.16 sources, layout_sections in module.c specially
->> > handled .init prefixed sections from the rest i.e. core sections.
->> > Further, the module struct in include/module/linux.h seems to have had
->> > members such as init_text_size which suggests atleast .init.text did
->> > exit back then as well. While I didn't find any crumbs in the code
->> > that point to the existence of a .exit.text (besides a function
->> > pointer called exit which most likely ended up in the .exit.text), the
->> > ELF headers for Centos 5.6 kernel objects (which uses the 2.6.18
->> > kernel) typically have a .exit.text.
->> >
->> >> Do you have a patch to fix this?
->> >>
->> >
->> > I can work on that. Just wanted to first make sure that there wasn't
->> > any specific reason to avoid patching non .text sections.
->> >
->> > Thanks,
->> > Deep
->> >
->>
->> Some further digging through messages revealed a patch from Randy
->> Dunlap in June 2006: "[PATCH] ignore smp_locks section warnings from
->> init/exit code." Given this patch came in after the smp locking
->> hotpatching mechanism was introduced, there may have been an
->> assumption that instructions that results in entries in smp_locks
->> relocations in the object file should not exist in the init/exit.text
->> sections.
->
-> I don't quite see how this patch (below) would affect your problem
-> description...
+This is a multi-part message in MIME format.
+--------------040106060502030605060003
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+
+äºŽ 2011å¹´06æœˆ23æ—¥ 03:49, Rafael J. Wysocki å†™é“:
+>> +#ifdef CONFIG_PM
+>> >  +#include<linux/suspend.h>
+>> >  +#endif
+> I don't think the #ifdef in necessary.  Any dependencies on CONFIG_PM
+> (or CONFIG_SUSPEND etc.) should be taken care of inside of suspend.h.
+> This file should be fixed if they aren't.
 >
 
-I didn't fully understand what the patch addressed. Initially I
-thought if a ko had lock prefixed instructions in .init/.exit, it
-would lead to entries in .smp_locks section but modpost would report
-warnings in that situation. Since there would be these warnings, I
-thought a module author would avoid lock prefixed instructions in
-.init/.exit prior to the below patch. Sounds like that is not the
-case?
+Ok, please check the updated version below.
 
->
-> commit 35899c57516be6eaa42cc27151767c52d75b2979
-> Author: Randy Dunlap <rdunlap@xenotime.net>
-> Date:   Wed Jun 7 16:23:26 2006 -0700
->
->    kbuild: ignore smp_locks section warnings from init/exit code
->
->    Add ".smp_locks" section to whitelist as being safe from
->    init and exit sections.
->
-> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-> index d0f86ed..94047bc 100644
-> --- a/scripts/mod/modpost.c
-> +++ b/scripts/mod/modpost.c
-> @@ -821,6 +821,7 @@ static int init_section_ref_ok(const char *name)
->                ".pci_fixup_final",
->                ".pdr",
->                "__param",
-> +               ".smp_locks",
->                NULL
->        };
->        /* Start of section names */
-> @@ -892,6 +893,7 @@ static int exit_section_ref_ok(const char *name)
->                ".exitcall.exit",
->                ".eh_frame",
->                ".stab",
-> +               ".smp_locks",
->                NULL
->        };
->        /* Start of section names */
->
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
+Thanks.
+
+
+--------------040106060502030605060003
+Content-Type: text/plain;
+ name="pm-move-pm-notifiers-into-suspend.h.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="pm-move-pm-notifiers-into-suspend.h.patch"
+
+QXV0aG9yOiBBbWVyaWdvIFdhbmcgPGFtd2FuZ0ByZWRoYXQuY29tPgoKICAgIHBtOiBtb3Zl
+IHBtIG5vdGlmaWVycyBpbnRvIHN1c3BlbmQuaAoKU2lnbmVkLW9mZi1ieTogV0FORyBDb25n
+IDxhbXdhbmdAcmVkaGF0LmNvbT4KCi0tLQpkaWZmIC0tZ2l0IGEvZHJpdmVycy9tbWMvY29y
+ZS9jb3JlLmMgYi9kcml2ZXJzL21tYy9jb3JlL2NvcmUuYwppbmRleCA2ODA5MWRkLi41MDNk
+YmM5IDEwMDY0NAotLS0gYS9kcml2ZXJzL21tYy9jb3JlL2NvcmUuYworKysgYi9kcml2ZXJz
+L21tYy9jb3JlL2NvcmUuYwpAQCAtMjMsNiArMjMsNyBAQAogI2luY2x1ZGUgPGxpbnV4L2xv
+ZzIuaD4KICNpbmNsdWRlIDxsaW51eC9yZWd1bGF0b3IvY29uc3VtZXIuaD4KICNpbmNsdWRl
+IDxsaW51eC9wbV9ydW50aW1lLmg+CisjaW5jbHVkZSA8bGludXgvc3VzcGVuZC5oPgogCiAj
+aW5jbHVkZSA8bGludXgvbW1jL2NhcmQuaD4KICNpbmNsdWRlIDxsaW51eC9tbWMvaG9zdC5o
+PgpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC9ub3RpZmllci5oIGIvaW5jbHVkZS9saW51
+eC9ub3RpZmllci5oCmluZGV4IDE0NWM0MzYuLmFlOGY3ZDkgMTAwNjQ0Ci0tLSBhL2luY2x1
+ZGUvbGludXgvbm90aWZpZXIuaAorKysgYi9pbmNsdWRlL2xpbnV4L25vdGlmaWVyLmgKQEAg
+LTE5MSwxNSArMTkxLDkgQEAgc3RhdGljIGlubGluZSBpbnQgbm90aWZpZXJfdG9fZXJybm8o
+aW50IHJldCkKIAogLyogcmVib290IG5vdGlmaWVycyBhcmUgZGVmaW5lZCBpbiBpbmNsdWRl
+L2xpbnV4L3JlYm9vdC5oLiAqLwogCi0jZGVmaW5lIE5FVExJTktfVVJFTEVBU0UJMHgwMDAx
+CS8qIFVuaWNhc3QgbmV0bGluayBzb2NrZXQgcmVsZWFzZWQgKi8KKy8qIEhpYmVybmF0aW9u
+IGFuZCBzdXNwZW5kIGV2ZW50cyBhcmUgZGVmaW5lZCBpbiBpbmNsdWRlL2xpbnV4L3N1c3Bl
+bmQuaC4gKi8KIAotLyogSGliZXJuYXRpb24gYW5kIHN1c3BlbmQgZXZlbnRzICovCi0jZGVm
+aW5lIFBNX0hJQkVSTkFUSU9OX1BSRVBBUkUJMHgwMDAxIC8qIEdvaW5nIHRvIGhpYmVybmF0
+ZSAqLwotI2RlZmluZSBQTV9QT1NUX0hJQkVSTkFUSU9OCTB4MDAwMiAvKiBIaWJlcm5hdGlv
+biBmaW5pc2hlZCAqLwotI2RlZmluZSBQTV9TVVNQRU5EX1BSRVBBUkUJMHgwMDAzIC8qIEdv
+aW5nIHRvIHN1c3BlbmQgdGhlIHN5c3RlbSAqLwotI2RlZmluZSBQTV9QT1NUX1NVU1BFTkQJ
+CTB4MDAwNCAvKiBTdXNwZW5kIGZpbmlzaGVkICovCi0jZGVmaW5lIFBNX1JFU1RPUkVfUFJF
+UEFSRQkweDAwMDUgLyogR29pbmcgdG8gcmVzdG9yZSBhIHNhdmVkIGltYWdlICovCi0jZGVm
+aW5lIFBNX1BPU1RfUkVTVE9SRQkJMHgwMDA2IC8qIFJlc3RvcmUgZmFpbGVkICovCisjZGVm
+aW5lIE5FVExJTktfVVJFTEVBU0UJMHgwMDAxCS8qIFVuaWNhc3QgbmV0bGluayBzb2NrZXQg
+cmVsZWFzZWQgKi8KIAogLyogQ29uc29sZSBrZXlib2FyZCBldmVudHMuCiAgKiBOb3RlOiBL
+QkRfS0VZQ09ERSBpcyBhbHdheXMgc2VudCBiZWZvcmUgS0JEX1VOQk9VTkRfS0VZQ09ERSwg
+S0JEX1VOSUNPREUgYW5kCmRpZmYgLS1naXQgYS9pbmNsdWRlL2xpbnV4L3N1c3BlbmQuaCBi
+L2luY2x1ZGUvbGludXgvc3VzcGVuZC5oCmluZGV4IDA4M2ZmZWEuLjk1YmM4MWMgMTAwNjQ0
+Ci0tLSBhL2luY2x1ZGUvbGludXgvc3VzcGVuZC5oCisrKyBiL2luY2x1ZGUvbGludXgvc3Vz
+cGVuZC5oCkBAIC0yNjAsNiArMjYwLDE0IEBAIHN0YXRpYyBpbmxpbmUgaW50IGhpYmVybmF0
+ZSh2b2lkKSB7IHJldHVybiAtRU5PU1lTOyB9CiBzdGF0aWMgaW5saW5lIGJvb2wgc3lzdGVt
+X2VudGVyaW5nX2hpYmVybmF0aW9uKHZvaWQpIHsgcmV0dXJuIGZhbHNlOyB9CiAjZW5kaWYg
+LyogQ09ORklHX0hJQkVSTkFUSU9OICovCiAKKy8qIEhpYmVybmF0aW9uIGFuZCBzdXNwZW5k
+IGV2ZW50cyAqLworI2RlZmluZSBQTV9ISUJFUk5BVElPTl9QUkVQQVJFCTB4MDAwMSAvKiBH
+b2luZyB0byBoaWJlcm5hdGUgKi8KKyNkZWZpbmUgUE1fUE9TVF9ISUJFUk5BVElPTgkweDAw
+MDIgLyogSGliZXJuYXRpb24gZmluaXNoZWQgKi8KKyNkZWZpbmUgUE1fU1VTUEVORF9QUkVQ
+QVJFCTB4MDAwMyAvKiBHb2luZyB0byBzdXNwZW5kIHRoZSBzeXN0ZW0gKi8KKyNkZWZpbmUg
+UE1fUE9TVF9TVVNQRU5ECQkweDAwMDQgLyogU3VzcGVuZCBmaW5pc2hlZCAqLworI2RlZmlu
+ZSBQTV9SRVNUT1JFX1BSRVBBUkUJMHgwMDA1IC8qIEdvaW5nIHRvIHJlc3RvcmUgYSBzYXZl
+ZCBpbWFnZSAqLworI2RlZmluZSBQTV9QT1NUX1JFU1RPUkUJCTB4MDAwNiAvKiBSZXN0b3Jl
+IGZhaWxlZCAqLworCiAjaWZkZWYgQ09ORklHX1BNX1NMRUVQCiB2b2lkIHNhdmVfcHJvY2Vz
+c29yX3N0YXRlKHZvaWQpOwogdm9pZCByZXN0b3JlX3Byb2Nlc3Nvcl9zdGF0ZSh2b2lkKTsK
+
+--------------040106060502030605060003--
