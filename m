@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759217Ab1FWNdA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:33:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37152 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755367Ab1FWNc7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:32:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=x9mU0TFaaoUTB5jhSX9Wiyr2N8TKQzWdnuo9NowtGLwMn/ACAdzvb607is+rN7Vaew
-         uFdcfh4oB+iyUKMzmT/wcpZx1YJQ9RBR4U7p+a0/1mWujmSUK7BA5PCIvvFOv8YExNQX
-         LcK4m4cDZmkMm7+Ih2i40F1JByBdYhvn5hNAw=
+	id S1759254Ab1FWNf1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:35:27 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36439 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756339Ab1FWNf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 09:35:26 -0400
+Date: Thu, 23 Jun 2011 15:35:24 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Ying Han <yinghan@google.com>,
+        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+Subject: Re: [PATCH 6/7] memcg: calc NUMA node's weight for scan.
+Message-ID: <20110623133524.GJ31593@tiehlicka.suse.cz>
+References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110616125633.9b9fa703.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20110623153116.404f2a63.taeuber@bbaw.de>
-References: <BANLkTi=y1roManmZGMLBXSFbBVqK_KqDZg@mail.gmail.com> <20110623153116.404f2a63.taeuber@bbaw.de>
-From: yuyichao-mit <yuyichao@mit.edu>
-Date: Thu, 23 Jun 2011 09:32:38 -0400
-X-Google-Sender-Auth: _xM4WnUwp5q8qyHucj3lHnh5mMw
-Message-ID: <BANLkTinOb-4Xm_W2fmzivk6jBJwjeHYKVA@mail.gmail.com>
-Subject: Re: extra slash in current path
-To: =?ISO-8859-1?Q?Lars_T=E4uber?= <taeuber@bbaw.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110616125633.9b9fa703.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 9:31 AM, Lars Täuber <taeuber@bbaw.de> wrote:
-> Hi,
->
-> Am Thu, 23 Jun 2011 09:14:18 -0400
-> yuyichao-mit <yuyichao@mit.edu> schrieb:
->> The problem is like this:
->>
->> $ cd /
->> $ pwd
->> /
->>
->> $ cd /
->> $ pwd
->> //
->
-> didn't you mean?:
-> $ cd //
-> $ pwd
-> //
+On Thu 16-06-11 12:56:33, KAMEZAWA Hiroyuki wrote:
+> From fb8aaa2c5f7fd99dfcb5d2ecb3c1226a58caafea Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Thu, 16 Jun 2011 10:05:46 +0900
+> Subject: [PATCH 6/7] memcg: calc NUMA node's weight for scan.
+> 
+> Now, by commit 889976, numa node scan of memcg is in round-robin.
+> As commit log says, "a better algorithm is needed".
+> 
+> for implementing some good scheduling, one of required things is
+> defining importance of each node at LRU scanning.
+> 
+> This patch defines each node's weight for scan as
+> 
+> swappiness = (memcg's swappiness)? memcg's swappiness : 1
+> FILE = inactive_file + (inactive_file_is_low)? active_file : 0
+> ANON = inactive_anon + (inactive_anon_is_low)? active_anon : 0
+> 
+> weight = (FILE * (200-swappiness) + ANON * swappiness)/200.
 
-yes, exactly.
+Shouldn't we consider the node size?
+If we have a node which is almost full with file cache and then other
+node wich is much bigger and it is mostly occupied by anonymous memory
+than the other node might end up with higher weight.
 
-Sorry for the typo (copy-paste~~~)
-
->
->
-> Regards
-> Lars
->
->>
->> $ cd ///
->> $ pwd
->> /
->>
->> Why can there be a extra slash (and exactly one) in current path? Is
->> this designed on purpose?
->> This is not really a big deal but I think it can confuse some program.
->>
->> Thanks.
->>
->> Yichao
->
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
