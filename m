@@ -1,255 +1,516 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932940Ab1FWRXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:23:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47605 "EHLO mx1.redhat.com"
+	id S932947Ab1FWRXx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:23:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3481 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932714Ab1FWRXo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:23:44 -0400
-Date: Thu, 23 Jun 2011 13:23:43 -0400
+	id S932714Ab1FWRXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 13:23:50 -0400
+Date: Thu, 23 Jun 2011 13:23:49 -0400
 From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, rpurdie@rpsys.net
+To: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
 Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20110623172343.27685.12487.sendpatchset@prarit.bos.redhat.com>
+Message-Id: <20110623172349.27691.96969.sendpatchset@prarit.bos.redhat.com>
 Content-Type: text/plain; charset=us-ascii
-Subject: [PATCH 15/35] drivers/leds changes for SMBIOS and System Firmware
+Subject: [PATCH 16/35] drivers/media changes for SMBIOS and System Firmware
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/leds changes for SMBIOS and System Firmware
+drivers/media changes for SMBIOS and System Firmware
 
 As part of the new SMBIOS and System Firmware code:
 
 - Replace old dmi* structures and functions with new sysfw* and smbios*
 structures and functions in individual drivers
 - cleanup sysfw_id lookup tables
+- cleanup of includes for dmi.h and mod_devicetable.h which were included in
+some files that did not need them
 
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- drivers/leds/leds-clevo-mail.c |   78 ++++++++++++++++++----------------------
- drivers/leds/leds-ss4200.c     |   23 +++++-------
- 2 files changed, 44 insertions(+), 57 deletions(-)
+ drivers/media/dvb/firewire/firedtv-fw.c        |    1 -
+ drivers/media/dvb/firewire/firedtv.h           |    1 -
+ drivers/media/video/cafe_ccic.c                |   14 ++--
+ drivers/media/video/gspca/m5602/m5602_ov9650.c |   46 ++++++------
+ drivers/media/video/gspca/m5602/m5602_ov9650.h |    2 +-
+ drivers/media/video/gspca/m5602/m5602_s5k4aa.c |  102 ++++++++++++++----------
+ drivers/media/video/gspca/m5602/m5602_s5k4aa.h |    2 +-
+ drivers/media/video/gspca/sn9c20x.c            |   30 ++++---
+ drivers/media/video/pvrusb2/pvrusb2-devattr.h  |    1 -
+ 9 files changed, 107 insertions(+), 92 deletions(-)
 
-diff --git a/drivers/leds/leds-clevo-mail.c b/drivers/leds/leds-clevo-mail.c
-index a498135..63047de 100644
---- a/drivers/leds/leds-clevo-mail.c
-+++ b/drivers/leds/leds-clevo-mail.c
-@@ -1,14 +1,10 @@
--
--#include <linux/module.h>
--
--#include <linux/platform_device.h>
- #include <linux/err.h>
--#include <linux/leds.h>
--
--#include <linux/io.h>
+diff --git a/drivers/media/dvb/firewire/firedtv-fw.c b/drivers/media/dvb/firewire/firedtv-fw.c
+index 864b627..5f808c1 100644
+--- a/drivers/media/dvb/firewire/firedtv-fw.c
++++ b/drivers/media/dvb/firewire/firedtv-fw.c
+@@ -9,7 +9,6 @@
+ #include <linux/kernel.h>
+ #include <linux/list.h>
+ #include <linux/mm.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <linux/slab.h>
+diff --git a/drivers/media/dvb/firewire/firedtv.h b/drivers/media/dvb/firewire/firedtv.h
+index bd00b04..409b892 100644
+--- a/drivers/media/dvb/firewire/firedtv.h
++++ b/drivers/media/dvb/firewire/firedtv.h
+@@ -16,7 +16,6 @@
+ #include <linux/dvb/dmx.h>
+ #include <linux/dvb/frontend.h>
+ #include <linux/list.h>
+-#include <linux/mod_devicetable.h>
+ #include <linux/mutex.h>
+ #include <linux/spinlock_types.h>
+ #include <linux/types.h>
+diff --git a/drivers/media/video/cafe_ccic.c b/drivers/media/video/cafe_ccic.c
+index 6647033..831d11d 100644
+--- a/drivers/media/video/cafe_ccic.c
++++ b/drivers/media/video/cafe_ccic.c
+@@ -25,7 +25,7 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/fs.h>
 -#include <linux/dmi.h>
--
- #include <linux/i8042.h>
-+#include <linux/io.h>
-+#include <linux/leds.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
 +#include <linux/sysfw.h>
- 
- #define CLEVO_MAIL_LED_OFF		0x0084
- #define CLEVO_MAIL_LED_BLINK_1HZ	0x008A
-@@ -20,11 +16,12 @@ MODULE_LICENSE("GPL");
- 
- static unsigned int __initdata nodetect;
- module_param_named(nodetect, nodetect, bool, 0);
--MODULE_PARM_DESC(nodetect, "Skip DMI hardware detection");
-+MODULE_PARM_DESC(nodetect, "Skip SMBIOS hardware detection");
- 
- static struct platform_device *pdev;
- 
--static int __init clevo_mail_led_dmi_callback(const struct dmi_system_id *id)
-+static int __init
-+clevo_mail_led_smbios_callback(const struct sysfw_id *id)
- {
- 	printk(KERN_INFO KBUILD_MODNAME ": '%s' found\n", id->ident);
- 	return 1;
-@@ -39,55 +36,55 @@ static int __init clevo_mail_led_dmi_callback(const struct dmi_system_id *id)
-  * detected as working, but in reality it is not) as low as
-  * possible.
+ #include <linux/mm.h>
+ #include <linux/pci.h>
+ #include <linux/i2c.h>
+@@ -1974,15 +1974,15 @@ static irqreturn_t cafe_irq(int irq, void *data)
+  * PCI interface stuff.
   */
--static struct dmi_system_id __initdata mail_led_whitelist[] = {
-+static struct sysfw_id __initdata mail_led_whitelist[] = {
+ 
+-static const struct dmi_system_id olpc_xo1_dmi[] = {
++static const struct sysfw_id olpc_xo1_id[] = {
  	{
--		.callback = clevo_mail_led_dmi_callback,
-+		.callback = clevo_mail_led_smbios_callback,
- 		.ident = "Clevo D410J",
  		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "VIA"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "K8N800"),
--			DMI_MATCH(DMI_PRODUCT_VERSION, "VT8204B")
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "VIA"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "K8N800"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "VT8204B")
+-			DMI_MATCH(DMI_SYS_VENDOR, "OLPC"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "XO"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "1"),
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "OLPC"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "XO"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "1"),
+ 		},
+ 	},
+-	{ }
++	{}
+ };
+ 
+ static int cafe_pci_probe(struct pci_dev *pdev,
+@@ -2064,7 +2064,7 @@ static int cafe_pci_probe(struct pci_dev *pdev,
+ 		goto out_freeirq;
+ 
+ 	/* Apply XO-1 clock speed */
+-	if (dmi_check_system(olpc_xo1_dmi))
++	if (sysfw_callback(olpc_xo1_id))
+ 		sensor_cfg.clock_speed = 45;
+ 
+ 	cam->sensor_addr = ov7670_info.addr;
+diff --git a/drivers/media/video/gspca/m5602/m5602_ov9650.c b/drivers/media/video/gspca/m5602/m5602_ov9650.c
+index 703d486..d73eed0 100644
+--- a/drivers/media/video/gspca/m5602/m5602_ov9650.c
++++ b/drivers/media/video/gspca/m5602/m5602_ov9650.c
+@@ -43,69 +43,69 @@ static int ov9650_set_auto_exposure(struct gspca_dev *gspca_dev, __s32 val);
+    where the sensor is mounted upside down */
+ static
+     const
+-	struct dmi_system_id ov9650_flip_dmi_table[] = {
++	struct sysfw_id ov9650_flip_id_table[] = {
+ 	{
+ 		.ident = "ASUS A6Ja",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "A6J")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "A6J")
  		}
  	},
  	{
--		.callback = clevo_mail_led_dmi_callback,
-+		.callback = clevo_mail_led_smbios_callback,
- 		.ident = "Clevo M5x0N",
+ 		.ident = "ASUS A6JC",
  		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "CLEVO Co."),
--			DMI_MATCH(DMI_PRODUCT_NAME, "M5x0N")
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "CLEVO Co."),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "M5x0N")
+-			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "A6JC")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "A6JC")
  		}
  	},
  	{
--		.callback = clevo_mail_led_dmi_callback,
-+		.callback = clevo_mail_led_smbios_callback,
- 		.ident = "Positivo Mobile",
+ 		.ident = "ASUS A6K",
  		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "CLEVO Co. "),
--			DMI_MATCH(DMI_BOARD_NAME, "M5X0V "),
--			DMI_MATCH(DMI_PRODUCT_NAME, "Positivo Mobile"),
--			DMI_MATCH(DMI_PRODUCT_VERSION, "VT6198")
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "CLEVO Co. "),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "M5X0V "),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Positivo Mobile"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "VT6198")
+-			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "A6K")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "A6K")
  		}
  	},
  	{
--		.callback = clevo_mail_led_dmi_callback,
-+		.callback = clevo_mail_led_smbios_callback,
- 		.ident = "Clevo D400P",
+ 		.ident = "ASUS A6Kt",
  		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "Clevo"),
--			DMI_MATCH(DMI_BOARD_NAME, "D400P"),
--			DMI_MATCH(DMI_BOARD_VERSION, "Rev.A"),
--			DMI_MATCH(DMI_PRODUCT_VERSION, "0106")
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Clevo"),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "D400P"),
-+			SYSFW_MATCH(SYSFW_BOARD_VERSION, "Rev.A"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "0106")
+-			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "A6Kt")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "A6Kt")
  		}
  	},
  	{
--		.callback = clevo_mail_led_dmi_callback,
-+		.callback = clevo_mail_led_smbios_callback,
- 		.ident = "Clevo D410V",
+ 		.ident = "ASUS A6VA",
  		.matches = {
--			DMI_MATCH(DMI_BOARD_VENDOR, "Clevo, Co."),
--			DMI_MATCH(DMI_BOARD_NAME, "D400V/D470V"),
--			DMI_MATCH(DMI_BOARD_VERSION, "SS78B"),
--			DMI_MATCH(DMI_PRODUCT_VERSION, "Rev. A1")
-+			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "Clevo, Co."),
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "D400V/D470V"),
-+			SYSFW_MATCH(SYSFW_BOARD_VERSION, "SS78B"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "Rev. A1")
+-			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "A6VA")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "A6VA")
+ 		}
+ 	},
+ 	{
+ 
+ 		.ident = "ASUS A6VC",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "A6VC")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "A6VC")
+ 		}
+ 	},
+ 	{
+ 		.ident = "ASUS A6VM",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "A6VM")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "A6VM")
+ 		}
+ 	},
+ 	{
+ 		.ident = "ASUS A7V",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "A7V")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "A7V")
+ 		}
+ 	},
+ 	{
+ 		.ident = "Alienware Aurora m9700",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "alienware"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Aurora m9700")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "alienware"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Aurora m9700")
+ 		}
+ 	},
+ 	{}
+@@ -424,9 +424,9 @@ int ov9650_start(struct sd *sd)
+ 	int ver_offs = cam->cam_mode[sd->gspca_dev.curr_mode].priv;
+ 	int hor_offs = OV9650_LEFT_OFFSET;
+ 
+-	if ((!dmi_check_system(ov9650_flip_dmi_table) &&
++	if ((!sysfw_callback(ov9650_flip_id_table) &&
+ 		sensor_settings[VFLIP_IDX]) ||
+-		(dmi_check_system(ov9650_flip_dmi_table) &&
++		(sysfw_callback(ov9650_flip_id_table) &&
+ 		!sensor_settings[VFLIP_IDX]))
+ 		ver_offs--;
+ 
+@@ -709,7 +709,7 @@ static int ov9650_set_hflip(struct gspca_dev *gspca_dev, __s32 val)
+ 
+ 	sensor_settings[HFLIP_IDX] = val;
+ 
+-	if (!dmi_check_system(ov9650_flip_dmi_table))
++	if (!sysfw_callback(ov9650_flip_id_table))
+ 		i2c_data = ((val & 0x01) << 5) |
+ 				(sensor_settings[VFLIP_IDX] << 4);
+ 	else
+@@ -742,7 +742,7 @@ static int ov9650_set_vflip(struct gspca_dev *gspca_dev, __s32 val)
+ 	PDEBUG(D_V4L2, "Set vertical flip to %d", val);
+ 	sensor_settings[VFLIP_IDX] = val;
+ 
+-	if (dmi_check_system(ov9650_flip_dmi_table))
++	if (sysfw_callback(ov9650_flip_id_table))
+ 		val = !val;
+ 
+ 	i2c_data = ((val & 0x01) << 4) | (sensor_settings[VFLIP_IDX] << 5);
+diff --git a/drivers/media/video/gspca/m5602/m5602_ov9650.h b/drivers/media/video/gspca/m5602/m5602_ov9650.h
+index da9a129..394042f 100644
+--- a/drivers/media/video/gspca/m5602/m5602_ov9650.h
++++ b/drivers/media/video/gspca/m5602/m5602_ov9650.h
+@@ -19,7 +19,7 @@
+ #ifndef M5602_OV9650_H_
+ #define M5602_OV9650_H_
+ 
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include "m5602_sensor.h"
+ 
+ /*****************************************************************************/
+diff --git a/drivers/media/video/gspca/m5602/m5602_s5k4aa.c b/drivers/media/video/gspca/m5602/m5602_s5k4aa.c
+index d27280b..c6860e9 100644
+--- a/drivers/media/video/gspca/m5602/m5602_s5k4aa.c
++++ b/drivers/media/video/gspca/m5602/m5602_s5k4aa.c
+@@ -33,85 +33,101 @@ static int s5k4aa_set_brightness(struct gspca_dev *gspca_dev, __s32 val);
+ 
+ static
+     const
+-	struct dmi_system_id s5k4aa_vflip_dmi_table[] = {
++	struct sysfw_id s5k4aa_vflip_id_table[] = {
+ 	{
+ 		.ident = "BRUNEINIT",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "BRUNENIT"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "BRUNENIT"),
+-			DMI_MATCH(DMI_BOARD_VERSION, "00030D0000000001")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "BRUNENIT"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "BRUNENIT"),
++			SYSFW_MATCH(SYSFW_BOARD_VERSION, "00030D0000000001")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "Fujitsu-Siemens Amilo Xa 2528",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "AMILO Xa 2528")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "FUJITSU SIEMENS"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "AMILO Xa 2528")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "Fujitsu-Siemens Amilo Xi 2428",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "AMILO Xi 2428")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "FUJITSU SIEMENS"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "AMILO Xi 2428")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "Fujitsu-Siemens Amilo Xi 2528",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "AMILO Xi 2528")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "FUJITSU SIEMENS"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "AMILO Xi 2528")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "Fujitsu-Siemens Amilo Xi 2550",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "AMILO Xi 2550")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "FUJITSU SIEMENS"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "AMILO Xi 2550")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "Fujitsu-Siemens Amilo Pa 2548",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "FUJITSU SIEMENS"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "AMILO Pa 2548")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "FUJITSU SIEMENS"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "AMILO Pa 2548")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "MSI GX700",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
+-			DMI_MATCH(DMI_BIOS_DATE, "12/02/2008")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Micro-Star International"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "GX700"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "12/02/2008")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "MSI GX700",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
+-			DMI_MATCH(DMI_BIOS_DATE, "07/26/2007")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Micro-Star International"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "GX700"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "07/26/2007")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "MSI GX700",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "GX700"),
+-			DMI_MATCH(DMI_BIOS_DATE, "07/19/2007")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Micro-Star International"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "GX700"),
++			SYSFW_MATCH(SYSFW_BIOS_DATE, "07/19/2007")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "MSI GX700/GX705/EX700",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "GX700/GX705/EX700")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Micro-Star International"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "GX700/GX705/EX700")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "MSI L735",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "Micro-Star International"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "MS-1717X")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "Micro-Star International"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MS-1717X")
+ 		}
+-	}, {
++	},
++	{
+ 		.ident = "Lenovo Y300",
+ 		.matches = {
+-			DMI_MATCH(DMI_SYS_VENDOR, "L3000 Y300"),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "Y300")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR, "L3000 Y300"),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "Y300")
  		}
  	},
 -	{ }
 +	{}
  };
  
- static void clevo_mail_led_set(struct led_classdev *led_cdev,
-@@ -176,21 +173,16 @@ static struct platform_driver clevo_mail_led_driver = {
- static int __init clevo_mail_led_init(void)
- {
- 	int error = 0;
--	int count = 0;
+ static struct v4l2_pix_format s5k4aa_modes[] = {
+@@ -520,7 +536,7 @@ static int s5k4aa_set_vflip(struct gspca_dev *gspca_dev, __s32 val)
+ 	if (err < 0)
+ 		return err;
  
- 	/* Check with the help of DMI if we are running on supported hardware */
--	if (!nodetect) {
--		count = dmi_check_system(mail_led_whitelist);
--	} else {
--		count = 1;
-+	if (nodetect) {
- 		printk(KERN_ERR KBUILD_MODNAME ": Skipping DMI detection. "
- 		       "If the driver works on your hardware please "
- 		       "report model and the output of dmidecode in tracker "
- 		       "at http://sourceforge.net/projects/clevo-mailled/\n");
--	}
--
--	if (!count)
-+	} else if (!sysfw_callback(mail_led_whitelist)) {
- 		return -ENODEV;
-+	}
+-	if (dmi_check_system(s5k4aa_vflip_dmi_table))
++	if (sysfw_callback(s5k4aa_vflip_id_table))
+ 		val = !val;
  
- 	pdev = platform_device_register_simple(KBUILD_MODNAME, -1, NULL, 0);
- 	if (!IS_ERR(pdev)) {
-diff --git a/drivers/leds/leds-ss4200.c b/drivers/leds/leds-ss4200.c
-index 614ebeb..0b6b6fa 100644
---- a/drivers/leds/leds-ss4200.c
-+++ b/drivers/leds/leds-ss4200.c
-@@ -21,13 +21,13 @@
+ 	data = ((data & ~S5K4AA_RM_V_FLIP) | ((val & 0x01) << 7));
+@@ -568,7 +584,7 @@ static int s5k4aa_set_hflip(struct gspca_dev *gspca_dev, __s32 val)
+ 	if (err < 0)
+ 		return err;
  
- #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-	if (dmi_check_system(s5k4aa_vflip_dmi_table))
++	if (sysfw_callback(s5k4aa_vflip_id_table))
+ 		val = !val;
+ 
+ 	data = ((data & ~S5K4AA_RM_H_FLIP) | ((val & 0x01) << 6));
+diff --git a/drivers/media/video/gspca/m5602/m5602_s5k4aa.h b/drivers/media/video/gspca/m5602/m5602_s5k4aa.h
+index 8cc7a3f..d6d1338 100644
+--- a/drivers/media/video/gspca/m5602/m5602_s5k4aa.h
++++ b/drivers/media/video/gspca/m5602/m5602_s5k4aa.h
+@@ -19,7 +19,7 @@
+ #ifndef M5602_S5K4AA_H_
+ #define M5602_S5K4AA_H_
  
 -#include <linux/dmi.h>
- #include <linux/init.h>
- #include <linux/ioport.h>
- #include <linux/kernel.h>
- #include <linux/leds.h>
- #include <linux/module.h>
- #include <linux/pci.h>
 +#include <linux/sysfw.h>
- #include <linux/types.h>
- #include <linux/uaccess.h>
  
-@@ -73,7 +73,7 @@ static const struct pci_device_id ich7_lpc_pci_id[] =
+ #include "m5602_sensor.h"
  
- MODULE_DEVICE_TABLE(pci, ich7_lpc_pci_id);
+diff --git a/drivers/media/video/gspca/sn9c20x.c b/drivers/media/video/gspca/sn9c20x.c
+index c431900..90f919a 100644
+--- a/drivers/media/video/gspca/sn9c20x.c
++++ b/drivers/media/video/gspca/sn9c20x.c
+@@ -24,7 +24,7 @@
+ #include "jpeg.h"
  
--static int __init ss4200_led_dmi_callback(const struct dmi_system_id *id)
-+static int __init ss4200_led_smbios_callback(const struct sysfw_id *id)
- {
- 	pr_info("detected '%s'\n", id->ident);
- 	return 1;
-@@ -81,7 +81,7 @@ static int __init ss4200_led_dmi_callback(const struct dmi_system_id *id)
+ #include <media/v4l2-chip-ident.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
  
- static unsigned int __initdata nodetect;
- module_param_named(nodetect, nodetect, bool, 0);
--MODULE_PARM_DESC(nodetect, "Skip DMI-based hardware detection");
-+MODULE_PARM_DESC(nodetect, "Skip SMBIOS-based hardware detection");
+ MODULE_AUTHOR("Brian Johnson <brijohn@gmail.com>, "
+ 		"microdia project <microdia@googlegroups.com>");
+@@ -135,41 +135,43 @@ static int sd_getexposure(struct gspca_dev *gspca_dev, s32 *val);
+ static int sd_setautoexposure(struct gspca_dev *gspca_dev, s32 val);
+ static int sd_getautoexposure(struct gspca_dev *gspca_dev, s32 *val);
  
- /*
-  * struct nas_led_whitelist - List of known good models
-@@ -92,14 +92,14 @@ MODULE_PARM_DESC(nodetect, "Skip DMI-based hardware detection");
-  * detected as working, but in reality it is not) as low as
-  * possible.
-  */
--static struct dmi_system_id __initdata nas_led_whitelist[] = {
-+static struct sysfw_id __initdata nas_led_whitelist[] = {
+-static const struct dmi_system_id flip_dmi_table[] = {
++static const struct sysfw_id flip_id_table[] = {
  	{
--		.callback = ss4200_led_dmi_callback,
-+		.callback = ss4200_led_smbios_callback,
- 		.ident = "Intel SS4200-E",
+ 		.ident = "MSI MS-1034",
  		.matches = {
--			DMI_MATCH(DMI_SYS_VENDOR, "Intel"),
--			DMI_MATCH(DMI_PRODUCT_NAME, "SS4200-E"),
--			DMI_MATCH(DMI_PRODUCT_VERSION, "1.00.00")
-+			SYSFW_MATCH(SYSFW_SYS_VENDOR, "Intel"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "SS4200-E"),
-+			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "1.00.00")
+-			DMI_MATCH(DMI_SYS_VENDOR, "MICRO-STAR INT'L CO.,LTD."),
+-			DMI_MATCH(DMI_PRODUCT_NAME, "MS-1034"),
+-			DMI_MATCH(DMI_PRODUCT_VERSION, "0341")
++			SYSFW_MATCH(SYSFW_SYS_VENDOR,
++				    "MICRO-STAR INT'L CO.,LTD."),
++			SYSFW_MATCH(SYSFW_PRODUCT_NAME, "MS-1034"),
++			SYSFW_MATCH(SYSFW_PRODUCT_VERSION, "0341")
+ 		}
+ 	},
+ 	{
+ 		.ident = "MSI MS-1632",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "MSI"),
+-			DMI_MATCH(DMI_BOARD_NAME, "MS-1632")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "MSI"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "MS-1632")
+ 		}
+ 	},
+ 	{
+ 		.ident = "MSI MS-1633X",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "MSI"),
+-			DMI_MATCH(DMI_BOARD_NAME, "MS-1633X")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "MSI"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "MS-1633X")
+ 		}
+ 	},
+ 	{
+ 		.ident = "MSI MS-1635X",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "MSI"),
+-			DMI_MATCH(DMI_BOARD_NAME, "MS-1635X")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR, "MSI"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "MS-1635X")
+ 		}
+ 	},
+ 	{
+ 		.ident = "ASUSTeK W7J",
+ 		.matches = {
+-			DMI_MATCH(DMI_BOARD_VENDOR, "ASUSTeK Computer Inc."),
+-			DMI_MATCH(DMI_BOARD_NAME, "W7J       ")
++			SYSFW_MATCH(SYSFW_BOARD_VENDOR,
++				    "ASUSTeK Computer Inc."),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "W7J       ")
  		}
  	},
  	{}
-@@ -504,16 +504,11 @@ static int __init nas_gpio_init(void)
- {
- 	int i;
- 	int ret = 0;
--	int nr_devices = 0;
+@@ -1607,7 +1609,7 @@ static int set_hvflip(struct gspca_dev *gspca_dev)
+ 	u16 value2;
+ 	struct sd *sd = (struct sd *) gspca_dev;
  
--	nr_devices = dmi_check_system(nas_led_whitelist);
- 	if (nodetect) {
- 		pr_info("skipping hardware autodetection\n");
- 		pr_info("Please send 'dmidecode' output to dave@sr71.net\n");
--		nr_devices++;
--	}
--
--	if (nr_devices <= 0) {
-+	} else if (!sysfw_callback(nas_led_whitelist)) {
- 		pr_info("no LED devices found\n");
- 		return -ENODEV;
- 	}
+-	if ((sd->flags & FLIP_DETECT) && dmi_check_system(flip_dmi_table)) {
++	if ((sd->flags & FLIP_DETECT) && sysfw_callback(flip_id_table)) {
+ 		hflip = !sd->hflip;
+ 		vflip = !sd->vflip;
+ 	} else {
+diff --git a/drivers/media/video/pvrusb2/pvrusb2-devattr.h b/drivers/media/video/pvrusb2/pvrusb2-devattr.h
+index 273c8d4..68b8073 100644
+--- a/drivers/media/video/pvrusb2/pvrusb2-devattr.h
++++ b/drivers/media/video/pvrusb2/pvrusb2-devattr.h
+@@ -20,7 +20,6 @@
+ #ifndef __PVRUSB2_DEVATTR_H
+ #define __PVRUSB2_DEVATTR_H
+ 
+-#include <linux/mod_devicetable.h>
+ #include <linux/videodev2.h>
+ #ifdef CONFIG_VIDEO_PVRUSB2_DVB
+ #include "pvrusb2-dvb.h"
 -- 
 1.7.5.4
 
