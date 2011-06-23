@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934458Ab1FWUlt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 16:41:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54235 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933908Ab1FWUlr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 16:41:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH 4/4] PCI: make cardbus-bridge resources nice-to-have
-Date: Thu, 23 Jun 2011 22:42:29 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Ram Pai <linuxram@us.ibm.com>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        svenkatr@ti.com, yinghai@kernel.org, cjb@laptop.org,
-        linux-pci@vger.kernel.org, linux-net-drivers@solarflare.com,
-        bhutchings@solarflare.com, Bjorn Helgaas <bhelgaas@google.com>
-References: <1308610037-6261-1-git-send-email-linuxram@us.ibm.com> <20110622004816.GC22917@ram-laptop> <20110623133137.03c74ea4@jbarnes-desktop>
-In-Reply-To: <20110623133137.03c74ea4@jbarnes-desktop>
+	id S934461Ab1FWUny (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 16:43:54 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:31349 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933925Ab1FWUnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 16:43:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=E7AQM4qZZ10copJ08uhWVXJJDG+zXKC5G8hkE+u1Ywp6wC2RlklKw2xBYdeV0YpR8U
+         eqHJZw53j3Xg2lOXatRw==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106232242.29753.rjw@sisk.pl>
+In-Reply-To: <62229.1308859172@turing-police.cc.vt.edu>
+References: <1308854160-16022-1-git-send-email-sergiu@chromium.org>
+	<62229.1308859172@turing-police.cc.vt.edu>
+Date: Thu, 23 Jun 2011 13:43:49 -0700
+X-Google-Sender-Auth: 0eg4JIZUCKLnQ1lrqN7d_Ry6wF0
+Message-ID: <BANLkTiko9PvSDHEnbjCAvcAReLytWwg7qSoZGv778xuj3tqW=g@mail.gmail.com>
+Subject: Re: [PATCH] char drivers: Ram oops kernel configuration parameters
+From: Sergiu Iordache <sergiu@chromium.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Samo Pogacnik <samo_pogacnik@t-2.net>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        Seiji Aguchi <seiji.aguchi@hds.com>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 23, 2011, Jesse Barnes wrote:
-> On Tue, 21 Jun 2011 17:48:16 -0700
-> Ram Pai <linuxram@us.ibm.com> wrote:
-> > I assume majority of the platforms will have enough resources to satisfy all
-> > the resource requests, and their BIOS would have done a decent job.
-> > 
-> > Even if the BIOS has not done a decent job, and there are enough resources
-> > available we should not see a regression.
-> > 
-> > The only platforms that would expose a regression is when resources are under
-> > contention and the BIOS has assigned enough resource to the cardbus bridge but
-> > not to some other device. It will be hard to find such a platform, but I am
-> > sure there is one out somewhere there.
-> > 
-> > I am sure we will see; some day, reports of regression because that platform
-> > would have the exact right characteristics to expose the issue. But then that
-> > platform is a highly constrained platform in the first place. Its debatable if
-> > that should be characterised as a regression, or a platform that was riding on
-> > good luck till now.
-> > 
-> > Even Oliver's platform is a highly constrained platform, and we probably can
-> > treat his platform as 'riding on good luck till now'.
-> > 
-> > We won't be able to satisfy all the platforms with resource constraints.  I
-> > think our probable choice is to select a solution that breaks least number of
-> > platforms and special case those broken platforms through kernel command line
-> > parameters.
-> 
-> Another option is to hide the new allocation behavior behind a kernel
-> parameter.  I know Bjorn has opposed this in the past because really
-> this sort of thing should "just work".  But so far it hasn't, and we've
-> had to revert both Bjorn's resource tracking changes as well as the
-> re-allocation code.
-> 
-> Hiding it behind a boot option would at least let us improve things
-> over time and potentially switch over to new resource code in the
-> future...
-> 
-> Thoughts?
+On Thu, Jun 23, 2011 at 12:59 PM, <Valdis.Kletnieks@vt.edu> wrote:
+> On Thu, 23 Jun 2011 11:36:00 PDT, Sergiu Iordache said:
+> > Ramoops currently has module parameters for setting the configuration
+> > variables (ram start, ram size and dump oopses). This makes it difficult to
+> > configure when the module is compiled as a builtin.
+>
+> Can't you add 'ramoops.ram_start=128M ramoops.ram_size=64M' or similar
+> to your kernel cmdline?
 
-Do I understand correctly that at the moment we have two set of systems,
-one of which works with the new code and doesn't work with the old code
-and the other one conversely?
+You can but the problem is that when you're using the module as a
+builtin managing the command line is harder than managing Kconfig
+files. Instead of having different platform dependent config files
+(which already exist in most of the cases) under source control you
+would have to have different scripts which run the kernel with
+different parameters.
 
-Rafael
+Sergiu
