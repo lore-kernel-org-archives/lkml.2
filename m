@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934129Ab1FWR7l (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:59:41 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35057 "EHLO
+	id S934103Ab1FWR6W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:58:22 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35128 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933584Ab1FWRhe (ORCPT
+	with ESMTP id S933604Ab1FWRhk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:34 -0400
+	Thu, 23 Jun 2011 13:37:40 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Steven Rostedt <srostedt@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
+Cc: stable-review@kernel.org, Kamal Mostafa <kamal@canonical.com>,
+        Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 171/247] ftrace: Fix memory leak with function graph and cpu hotplug
-Date: Thu, 23 Jun 2011 13:33:59 -0400
-Message-Id: <1308850515-15242-112-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 172/247] x86: Fix panic when handling "mem={invalid}" param
+Date: Thu, 23 Jun 2011 13:34:00 -0400
+Message-Id: <1308850515-15242-113-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,162 +23,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+From: Kamal Mostafa <kamal@canonical.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 868baf07b1a259f5f3803c1dc2777b6c358f83cf upstream.
+commit 77eed821accf5dd962b1f13bed0680e217e49112 upstream.
 
-When the fuction graph tracer starts, it needs to make a special
-stack for each task to save the real return values of the tasks.
-All running tasks have this stack created, as well as any new
-tasks.
+Avoid removing all of memory and panicing when "mem={invalid}"
+is specified, e.g. mem=blahblah, mem=0, or mem=nopentium (on
+platforms other than x86_32).
 
-On CPU hot plug, the new idle task will allocate a stack as well
-when init_idle() is called. The problem is that cpu hotplug does
-not create a new idle_task. Instead it uses the idle task that
-existed when the cpu went down.
-
-ftrace_graph_init_task() will add a new ret_stack to the task
-that is given to it. Because a clone will make the task
-have a stack of its parent it does not check if the task's
-ret_stack is already NULL or not. When the CPU hotplug code
-starts a CPU up again, it will allocate a new stack even
-though one already existed for it.
-
-The solution is to treat the idle_task specially. In fact, the
-function_graph code already does, just not at init_idle().
-Instead of using the ftrace_graph_init_task() for the idle task,
-which that function expects the task to be a clone, have a
-separate ftrace_graph_init_idle_task(). Also, we will create a
-per_cpu ret_stack that is used by the idle task. When we call
-ftrace_graph_init_idle_task() it will check if the idle task's
-ret_stack is NULL, if it is, then it will assign it the per_cpu
-ret_stack.
-
-Reported-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Kamal Mostafa <kamal@canonical.com>
+BugLink: http://bugs.launchpad.net/bugs/553464
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+LKML-Reference: <1296783486-23033-1-git-send-email-kamal@canonical.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- include/linux/ftrace.h |    2 +
- kernel/sched.c         |    2 +-
- kernel/trace/ftrace.c  |   52 +++++++++++++++++++++++++++++++++++++++++------
- 3 files changed, 48 insertions(+), 8 deletions(-)
+ arch/x86/kernel/e820.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
-index 01e6ade..95d9122 100644
---- a/include/linux/ftrace.h
-+++ b/include/linux/ftrace.h
-@@ -417,6 +417,7 @@ extern void unregister_ftrace_graph(void);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index 7bca3c6..4267f42 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -989,6 +989,9 @@ static int __init parse_memopt(char *p)
  
- extern void ftrace_graph_init_task(struct task_struct *t);
- extern void ftrace_graph_exit_task(struct task_struct *t);
-+extern void ftrace_graph_init_idle_task(struct task_struct *t, int cpu);
+ 	userdef = 1;
+ 	mem_size = memparse(p, &p);
++	/* don't remove all of memory when handling "mem={invalid}" param */
++	if (mem_size == 0)
++		return -EINVAL;
+ 	e820_remove_range(mem_size, ULLONG_MAX - mem_size, E820_RAM, 1);
  
- static inline int task_curr_ret_stack(struct task_struct *t)
- {
-@@ -440,6 +441,7 @@ static inline void unpause_graph_tracing(void)
- 
- static inline void ftrace_graph_init_task(struct task_struct *t) { }
- static inline void ftrace_graph_exit_task(struct task_struct *t) { }
-+static inline void ftrace_graph_init_idle_task(struct task_struct *t, int cpu) { }
- 
- static inline int task_curr_ret_stack(struct task_struct *tsk)
- {
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 7e728cf..245458e 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -5252,7 +5252,7 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
- 	 * The idle tasks have their own, simple scheduling class:
- 	 */
- 	idle->sched_class = &idle_sched_class;
--	ftrace_graph_init_task(idle);
-+	ftrace_graph_init_idle_task(idle, cpu);
- }
- 
- /*
-diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
-index 73dedb3..e28af02 100644
---- a/kernel/trace/ftrace.c
-+++ b/kernel/trace/ftrace.c
-@@ -3268,7 +3268,7 @@ static int start_graph_tracing(void)
- 	/* The cpu_boot init_task->ret_stack will never be freed */
- 	for_each_online_cpu(cpu) {
- 		if (!idle_task(cpu)->ret_stack)
--			ftrace_graph_init_task(idle_task(cpu));
-+			ftrace_graph_init_idle_task(idle_task(cpu), cpu);
- 	}
- 
- 	do {
-@@ -3358,6 +3358,49 @@ void unregister_ftrace_graph(void)
- 	mutex_unlock(&ftrace_lock);
- }
- 
-+static DEFINE_PER_CPU(struct ftrace_ret_stack *, idle_ret_stack);
-+
-+static void
-+graph_init_task(struct task_struct *t, struct ftrace_ret_stack *ret_stack)
-+{
-+	atomic_set(&t->tracing_graph_pause, 0);
-+	atomic_set(&t->trace_overrun, 0);
-+	t->ftrace_timestamp = 0;
-+	/* make curr_ret_stack visable before we add the ret_stack */
-+	smp_wmb();
-+	t->ret_stack = ret_stack;
-+}
-+
-+/*
-+ * Allocate a return stack for the idle task. May be the first
-+ * time through, or it may be done by CPU hotplug online.
-+ */
-+void ftrace_graph_init_idle_task(struct task_struct *t, int cpu)
-+{
-+	t->curr_ret_stack = -1;
-+	/*
-+	 * The idle task has no parent, it either has its own
-+	 * stack or no stack at all.
-+	 */
-+	if (t->ret_stack)
-+		WARN_ON(t->ret_stack != per_cpu(idle_ret_stack, cpu));
-+
-+	if (ftrace_graph_active) {
-+		struct ftrace_ret_stack *ret_stack;
-+
-+		ret_stack = per_cpu(idle_ret_stack, cpu);
-+		if (!ret_stack) {
-+			ret_stack = kmalloc(FTRACE_RETFUNC_DEPTH
-+					    * sizeof(struct ftrace_ret_stack),
-+					    GFP_KERNEL);
-+			if (!ret_stack)
-+				return;
-+			per_cpu(idle_ret_stack, cpu) = ret_stack;
-+		}
-+		graph_init_task(t, ret_stack);
-+	}
-+}
-+
- /* Allocate a return stack for newly created task */
- void ftrace_graph_init_task(struct task_struct *t)
- {
-@@ -3373,12 +3416,7 @@ void ftrace_graph_init_task(struct task_struct *t)
- 				GFP_KERNEL);
- 		if (!ret_stack)
- 			return;
--		atomic_set(&t->tracing_graph_pause, 0);
--		atomic_set(&t->trace_overrun, 0);
--		t->ftrace_timestamp = 0;
--		/* make curr_ret_stack visable before we add the ret_stack */
--		smp_wmb();
--		t->ret_stack = ret_stack;
-+		graph_init_task(t, ret_stack);
- 	}
- }
- 
+ 	return 0;
 -- 
 1.7.4.4
 
