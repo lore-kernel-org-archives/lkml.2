@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab1FWRgB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:36:01 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34239 "EHLO
+	id S933243Ab1FWRgE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:36:04 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34234 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933218Ab1FWRf6 (ORCPT
+	with ESMTP id S933217Ab1FWRf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jun 2011 13:35:58 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Knut Petersen <knut_petersen@t-online.de>,
-        Chris Wilson <chris@chris-wilson.co.uk>,
+Cc: stable-review@kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 078/247] drm/i915/lvds: Add AOpen i915GMm-HFS to the list of false-positive LVDS
-Date: Thu, 23 Jun 2011 13:32:26 -0400
-Message-Id: <1308850515-15242-19-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 079/247] drm/i915: Add dependency on CONFIG_TMPFS
+Date: Thu, 23 Jun 2011 13:32:27 -0400
+Message-Id: <1308850515-15242-20-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,41 +22,64 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Knut Petersen <knut_petersen@t-online.de>
+From: Chris Wilson <chris@chris-wilson.co.uk>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 22ab70d3262ddb6e69b3c246a34e2967ba5eb1e8 upstream.
+commit f7ab9b407b3bc83161c2aa74c992ba4782e87c9c upstream.
 
-Signed-off-by: Knut Petersen <knut_petersen@t-online.de>
+Without tmpfs, shmem_readpage() is not compiled in causing an OOPS as
+soon as we try to allocate some swappable pages for GEM.
+
+Jan 19 22:52:26 harlie kernel: Modules linked in: i915(+) drm_kms_helper cfbcopyarea video backlight cfbimgblt cfbfillrect
+Jan 19 22:52:26 harlie kernel:
+Jan 19 22:52:26 harlie kernel: Pid: 1125, comm: modprobe Not tainted 2.6.37Harlie #10 To be filled by O.E.M./To be filled by O.E.M.
+Jan 19 22:52:26 harlie kernel: EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 3
+Jan 19 22:52:26 harlie kernel: EIP is at 0x0
+Jan 19 22:52:26 harlie kernel: EAX: 00000000 EBX: f7b7d000 ECX: f3383100 EDX: f7b7d000
+Jan 19 22:52:26 harlie kernel: ESI: f1456118 EDI: 00000000 EBP: f2303c98 ESP: f2303c7c
+Jan 19 22:52:26 harlie kernel:  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+Jan 19 22:52:26 harlie kernel: Process modprobe (pid: 1125, ti=f2302000 task=f259cd80 task.ti=f2302000)
+Jan 19 22:52:26 harlie kernel: Stack:
+Jan 19 22:52:26 harlie udevd-work[1072]: '/sbin/modprobe -b pci:v00008086d00000046sv00000000sd00000000bc03sc00i00' unexpected exit with status 0x0009
+Jan 19 22:52:26 harlie kernel:  c1074061 000000d0 f2f42b80 00000000 000a13d2 f2d5dcc0 00000001 f2303cac
+Jan 19 22:52:26 harlie kernel:  c107416f 00000000 000a13d2 00000000 f2303cd4 f8d620ed f2cee620 00001000
+Jan 19 22:52:26 harlie kernel:  00000000 000a13d2 f1456118 f2d5dcc0 f1a40000 00001000 f2303d04 f8d637ab
+Jan 19 22:52:26 harlie kernel: Call Trace:
+Jan 19 22:52:26 harlie kernel:  [<c1074061>] ? do_read_cache_page+0x71/0x160
+Jan 19 22:52:26 harlie kernel:  [<c107416f>] ? read_cache_page_gfp+0x1f/0x30
+Jan 19 22:52:26 harlie kernel:  [<f8d620ed>] ? i915_gem_object_get_pages+0xad/0x1d0 [i915]
+Jan 19 22:52:26 harlie kernel:  [<f8d637ab>] ? i915_gem_object_bind_to_gtt+0xeb/0x2d0 [i915]
+Jan 19 22:52:26 harlie kernel:  [<f8d65961>] ? i915_gem_object_pin+0x151/0x190 [i915]
+Jan 19 22:52:26 harlie kernel:  [<c11e16ed>] ? drm_gem_object_init+0x3d/0x60
+Jan 19 22:52:26 harlie kernel:  [<f8d65aa5>] ? i915_gem_init_ringbuffer+0x105/0x1e0 [i915]
+Jan 19 22:52:26 harlie kernel:  [<f8d571b7>] ? i915_driver_load+0x667/0x1160 [i915]
+
+Reported-by: John J. Stimson-III <john@idsfa.net>
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpu/drm/i915/intel_lvds.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/Kconfig |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/intel_lvds.c b/drivers/gpu/drm/i915/intel_lvds.c
-index b66806a..4072b0d 100644
---- a/drivers/gpu/drm/i915/intel_lvds.c
-+++ b/drivers/gpu/drm/i915/intel_lvds.c
-@@ -855,6 +855,14 @@ static const struct dmi_system_id intel_no_lvds[] = {
- 	},
- 	{
- 		.callback = intel_no_lvds_dmi_callback,
-+		.ident = "AOpen i915GMm-HFS",
-+		.matches = {
-+			DMI_MATCH(DMI_BOARD_VENDOR, "AOpen"),
-+			DMI_MATCH(DMI_BOARD_NAME, "i915GMm-HFS"),
-+		},
-+	},
-+	{
-+		.callback = intel_no_lvds_dmi_callback,
- 		.ident = "Aopen i945GTt-VFA",
- 		.matches = {
- 			DMI_MATCH(DMI_PRODUCT_VERSION, "AO00001JW"),
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index 305c590..7bb111b 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -94,7 +94,10 @@ config DRM_I830
+ config DRM_I915
+ 	tristate "i915 driver"
+ 	depends on AGP_INTEL
++	# we need shmfs for the swappable backing store, and in particular
++	# the shmem_readpage() which depends upon tmpfs
+ 	select SHMEM
++	select TMPFS
+ 	select DRM_KMS_HELPER
+ 	select FB_CFB_FILLRECT
+ 	select FB_CFB_COPYAREA
 -- 
 1.7.4.4
 
