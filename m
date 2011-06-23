@@ -1,21 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab1FWIG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 04:06:29 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:15706 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750913Ab1FWIG2 (ORCPT
+	id S1758238Ab1FWIPi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 04:15:38 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34403 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753667Ab1FWIPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 04:06:28 -0400
-Date: Thu, 23 Jun 2011 10:06:16 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Ankur Patel <bkankur@gmail.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] HWMON: TMP102 - Added support for 12 bit data
-Message-ID: <20110623100616.4573741f@endymion.delvare>
-In-Reply-To: <1308709299-24539-1-git-send-email-bkankur@gmail.com>
-References: <1308709299-24539-1-git-send-email-bkankur@gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+	Thu, 23 Jun 2011 04:15:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 23 Jun 2011 17:08:11 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
+        Lutz Vieweg <lvml@5t9.de>
+Subject: Re: [PATCH] memcg: unlock page before charging it. (WasRe: [PATCH
+ V2] mm: Do not keep page locked during page fault while charging it for
+ memcg
+Message-Id: <20110623170811.16f4435f.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110623074133.GA31593@tiehlicka.suse.cz>
+References: <20110622120635.GB14343@tiehlicka.suse.cz>
+	<20110622121516.GA28359@infradead.org>
+	<20110622123204.GC14343@tiehlicka.suse.cz>
+	<20110623150842.d13492cd.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110623074133.GA31593@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -23,115 +36,169 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011 07:51:39 +0530, Ankur Patel wrote:
-> From: Ankur Patel <ankur.patel@quipment.in>
+On Thu, 23 Jun 2011 09:41:33 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
+
+> On Thu 23-06-11 15:08:42, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 22 Jun 2011 14:32:04 +0200
+> > Michal Hocko <mhocko@suse.cz> wrote:
+> > 
+> > > On Wed 22-06-11 08:15:16, Christoph Hellwig wrote:
+> > > > > +
+> > > > > +			/* We have to drop the page lock here because memcg
+> > > > > +			 * charging might block for unbound time if memcg oom
+> > > > > +			 * killer is disabled.
+> > > > > +			 */
+> > > > > +			unlock_page(vmf.page);
+> > > > > +			ret = mem_cgroup_newpage_charge(page, mm, GFP_KERNEL);
+> > > > > +			lock_page(vmf.page);
+> > > > 
+> > > > This introduces a completely poinless unlock/lock cycle for non-memcg
+> > > > pagefaults.  Please make sure it only happens when actually needed.
+> > > 
+> > > Fair point. Thanks!
+> > > What about the following?
+> > > I realize that pushing more memcg logic into mm/memory.c is not nice but
+> > > I found it better than pushing the old page into mem_cgroup_newpage_charge.
+> > > We could also check whether the old page is in the root cgroup because
+> > > memcg oom killer is not active there but that would add more code into
+> > > this hot path so I guess it is not worth it.
+> > > 
+> > > Changes since v1
+> > > - do not unlock page when memory controller is disabled.
+> > > 
+> > 
+> > Great work. Then I confirmed Lutz' problem is fixed.
+> > 
+> > But I like following style rather than additional lock/unlock.
+> > How do you think ?
 > 
-> In the tmp102.ko driver support for 12 bit data is added. Also, the
-> sysfs names are replaced with the actual chip supported fuctionality
-> names.
-
-Nack. These attribute names are standard, see
-Documentation/hwmon/sysfs-interface. You don't get to change them.
-
-What problem were you trying to solve? libsensors expects the attribute
-names which are in use today.
-
+> Yes, I like it much more than the hairy way I did it. See comments bellow.
 > 
-> Signed-off-by: Ankur Patel <ankur.patel@quipment.in>
-> ---
->  drivers/hwmon/tmp102.c |   40 ++++++++++++++++++++++++++--------------
->  1 files changed, 26 insertions(+), 14 deletions(-)
+> > I tested this on the latest git tree and confirmed
+> > the Lutz's livelock problem is fixed. And I think this should go stable tree.
+> > 
+> > 
+> > ==
+> > From 7e9250da9ff529958d4c1ff511458dbdac8e4b81 Mon Sep 17 00:00:00 2001
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Date: Thu, 23 Jun 2011 15:05:57 +0900
+> > Subject: [PATCH] memcg: unlock page before charging it.
+> > 
+> > Currently we are keeping faulted page locked throughout whole __do_fault
+> > call (except for page_mkwrite code path). If we do early COW we allocate a
+> > new page which has to be charged for a memcg (mem_cgroup_newpage_charge).
+> > 
+> > This function, however, might block for unbounded amount of time if memcg
+> > oom killer is disabled or fork-bomb is running because the only way out of
+> > the OOM situation is either an external event or OOM-situation fix.
+> > 
+> > processes from faulting it in which is not good at all because we are
 > 
-> diff --git a/drivers/hwmon/tmp102.c b/drivers/hwmon/tmp102.c
-> index 5bd1949..a13b572 100644
-> --- a/drivers/hwmon/tmp102.c
-> +++ b/drivers/hwmon/tmp102.c
-> @@ -47,6 +47,9 @@
->  #define	TMP102_TLOW_REG			0x02
->  #define	TMP102_THIGH_REG		0x03
->  
-> +#define TMP102_CONFIG  (TMP102_CONF_TM | TMP102_CONF_EM | TMP102_CONF_CR1)
-> +#define TMP102_CONFIG_RD_ONLY (TMP102_CONF_R0 | TMP102_CONF_R1 | TMP102_CONF_AL)
-> +
->  struct tmp102 {
->  	struct device *hwmon_dev;
->  	struct mutex lock;
-> @@ -68,16 +71,26 @@ static inline int tmp102_write_reg(struct i2c_client *client, u8 reg, u16 val)
->  	return i2c_smbus_write_word_data(client, reg, swab16(val));
->  }
->  
-> -/* convert left adjusted 13-bit TMP102 register value to milliCelsius */
-> +/* convert left adjusted TMP102 register value to milliCelsius for 13 bit &
-> + * 12 bit by dividing with 128 & 256 respectively*/
->  static inline int tmp102_reg_to_mC(s16 val)
->  {
-> -	return ((val & ~0x01) * 1000) / 128;
-> +	#if TMP102_CONFIG & TMP102_CONF_EM
-> +		return ((val & ~0x01) * 1000) / 128;
-> +	#else
-> +		return ((val & ~0x01) * 1000) / 256;
-> +	#endif
->  }
->  
-> -/* convert milliCelsius to left adjusted 13-bit TMP102 register value */
-> +/* convert milliCelsius to left adjusted TMP102 register value for 13 bit &
-> + * 12 bit by multiplying with 128 & 256 respectivley*/
->  static inline u16 tmp102_mC_to_reg(int val)
->  {
-> -	return (val * 128) / 1000;
-> +	#if TMP102_CONFIG & TMP102_CONF_EM
-> +		return (val * 128) / 1000;
-> +	#else
-> +		return (val * 256) / 1000;
-> +	#endif
->  }
->  
->  static const u8 tmp102_reg[] = {
-> @@ -126,7 +139,9 @@ static ssize_t tmp102_set_temp(struct device *dev,
->  
->  	if (strict_strtol(buf, 10, &val) < 0)
->  		return -EINVAL;
-> -	val = SENSORS_LIMIT(val, -256000, 255000);
-> +	/* It will limit the Input temperature range to -55 Deg. Cel to
-> +	 * 150 Deg. Cel */
-> +	val = val = SENSORS_LIMIT(val, -55000, 150000);
->  
->  	mutex_lock(&tmp102->lock);
->  	tmp102->temp[sda->index] = val;
-> @@ -138,16 +153,16 @@ static ssize_t tmp102_set_temp(struct device *dev,
->  
->  static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, tmp102_show_temp, NULL , 0);
->  
-> -static SENSOR_DEVICE_ATTR(temp1_max_hyst, S_IWUSR | S_IRUGO, tmp102_show_temp,
-> -			  tmp102_set_temp, 1);
-> +static SENSOR_DEVICE_ATTR(temp1_low_thresold, S_IWUSR | S_IRUGO,
-> +					tmp102_show_temp, tmp102_set_temp, 1);
->  
-> -static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, tmp102_show_temp,
-> -			  tmp102_set_temp, 2);
-> +static SENSOR_DEVICE_ATTR(temp1_max_thresold, S_IWUSR | S_IRUGO,
-> +\					tmp102_show_temp, tmp102_set_temp, 2);
->  
->  static struct attribute *tmp102_attributes[] = {
->  	&sensor_dev_attr_temp1_input.dev_attr.attr,
-> -	&sensor_dev_attr_temp1_max_hyst.dev_attr.attr,
-> -	&sensor_dev_attr_temp1_max.dev_attr.attr,
-> +	&sensor_dev_attr_temp1_low_thresold.dev_attr.attr,
-> +	&sensor_dev_attr_temp1_max_thresold.dev_attr.attr,
->  	NULL
->  };
->  
-> @@ -155,9 +170,6 @@ static const struct attribute_group tmp102_attr_group = {
->  	.attrs = tmp102_attributes,
->  };
->  
-> -#define TMP102_CONFIG  (TMP102_CONF_TM | TMP102_CONF_EM | TMP102_CONF_CR1)
-> -#define TMP102_CONFIG_RD_ONLY (TMP102_CONF_R0 | TMP102_CONF_R1 | TMP102_CONF_AL)
-> -
->  static int __devinit tmp102_probe(struct i2c_client *client,
->  				  const struct i2c_device_id *id)
->  {
+> Missing the beginning of the sentence?
+> 
+
+Ah, yes...
+
+> > basically punishing potentially an unrelated process for OOM condition
+> > in a different group (I have seen stuck system because of ld-2.11.1.so being
+> > locked).
+> > 
+> > We can do test easily.
+> >  % cgcreate -g memory:A
+> >  % cgset -r memory.limit_in_bytes=64M A
+> >  % cgset -r memory.memsw.limit_in_bytes=64M A
+> >  % cd kernel_dir; cgexec -g memory:A make -j
+> > 
+> > Then, the whole system will live-locked until you kill 'make -j'
+> > by hands (or push reboot...) This is because some important
+> > page in a shared library are locked and never released bcause of fork-bomb.
+> > 
+> > This patch delays "charge" until unlock_page() called. There is
+> > no problem as far as we keep reference on a page.
+> > (memcg doesn't require page_lock()).
+> > 
+> > Then, above livelock disappears.
+> > 
+> > Reported-by: Lutz Vieweg <lvml@5t9.de>
+> > Original-idea-by: Michal Hocko <mhocko@suse.cz>
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > ---
+> >  mm/memory.c |   28 +++++++++++++++++++---------
+> >  1 files changed, 19 insertions(+), 9 deletions(-)
+> > 
+> > diff --git a/mm/memory.c b/mm/memory.c
+> > index 87d9353..66442da 100644
+> > --- a/mm/memory.c
+> > +++ b/mm/memory.c
+> > @@ -3129,7 +3129,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  	struct page *page;
+> >  	pte_t entry;
+> >  	int anon = 0;
+> > -	int charged = 0;
+> > +	struct page *need_charge = NULL;
+> >  	struct page *dirty_page = NULL;
+> >  	struct vm_fault vmf;
+> >  	int ret;
+> > @@ -3177,12 +3177,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  				ret = VM_FAULT_OOM;
+> >  				goto out;
+> >  			}
+> > -			if (mem_cgroup_newpage_charge(page, mm, GFP_KERNEL)) {
+> > -				ret = VM_FAULT_OOM;
+> > -				page_cache_release(page);
+> > -				goto out;
+> > -			}
+> > -			charged = 1;
+> > +			need_charge = page;
+> >  			copy_user_highpage(page, vmf.page, address, vma);
+> >  			__SetPageUptodate(page);
+> >  		} else {
+> > @@ -3251,12 +3246,11 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  		/* no need to invalidate: a not-present page won't be cached */
+> >  		update_mmu_cache(vma, address, page_table);
+> >  	} else {
+> > -		if (charged)
+> > -			mem_cgroup_uncharge_page(page);
+> >  		if (anon)
+> >  			page_cache_release(page);
+> >  		else
+> >  			anon = 1; /* no anon but release faulted_page */
+> > +		need_charge = NULL;
+> >  	}
+> >  
+> >  	pte_unmap_unlock(page_table, ptl);
+> > @@ -3268,6 +3262,17 @@ out:
+> >  		if (set_page_dirty(dirty_page))
+> >  			page_mkwrite = 1;
+> >  		unlock_page(dirty_page);
+> > +		if (need_charge) {
+> > +			/*
+> > +			 * charge this page before we drop refcnt.
+> > +			 * memory cgroup returns OOM condition when
+> > +			 * this task is killed. So, it's not necesasry
+> > +			 * to undo.
+> > +			 */
+> > +			if (mem_cgroup_newpage_charge(need_charge,
+> > +					mm, GFP_KERNEL))
+> > +				ret = VM_FAULT_OOM;
+> > +		}
+> 
+> We do not need this hunk, don't we? dirty_page is set only if !anon so
+> we never get to this path from COW.
+> 
+You're right. (And Nishimura pointed out this, too)
+
+> Other than that:
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> 
+
+I found the page is added to LRU before charging. (In this case,
+memcg's LRU is ignored.) I'll post a new version with a fix.
+
+Thanks,
+-Kame
 
 
--- 
-Jean Delvare
+
+
