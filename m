@@ -1,81 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759113Ab1FWJcg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 05:32:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35113 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758872Ab1FWJcf convert rfc822-to-8bit (ORCPT
+	id S1759149Ab1FWJdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 05:33:25 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:48377 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758942Ab1FWJdY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 05:32:35 -0400
-Subject: Re: [patch 3/4] stop_machine: implement
- stop_machine_from_offline_cpu()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Tejun Heo <tj@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, mingo@elte.hu,
-        tglx@linutronix.de, hpa@zytor.com, trenn@novell.com, prarit@redhat.com,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        youquan.song@intel.com
-In-Reply-To: <20110623092845.GJ30101@htj.dyndns.org>
-References: <20110622222021.904952469@sbsiddha-MOBL3.sc.intel.com>
-	 <20110622222044.038298780@sbsiddha-MOBL3.sc.intel.com>
-	 <1308821119.1022.84.camel@twins>  <20110623092845.GJ30101@htj.dyndns.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Jun 2011 11:31:44 +0200
-Message-ID: <1308821504.1022.86.camel@twins>
+	Thu, 23 Jun 2011 05:33:24 -0400
+Date: Thu, 23 Jun 2011 11:33:16 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+Cc: guenter.roeck@ericsson.com,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] hwmon: LM95245 driver
+Message-ID: <20110623113316.6ab5a84e@endymion.delvare>
+In-Reply-To: <201106231114.52841.alexander.stein@systec-electronic.com>
+References: <1308649953-2774-1-git-send-email-alexander.stein@systec-electronic.com>
+	<1308770149.8271.600.camel@groeck-laptop>
+	<201106231114.52841.alexander.stein@systec-electronic.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-23 at 11:28 +0200, Tejun Heo wrote:
-> Hello, Peter.
-> 
-> On Thu, Jun 23, 2011 at 11:25:19AM +0200, Peter Zijlstra wrote:
-> > On Wed, 2011-06-22 at 15:20 -0700, Suresh Siddha wrote:
-> > > +int stop_machine_from_offline_cpu(int (*fn)(void *), void *data,
-> > > +                                 const struct cpumask *cpus)
-> > > +{
-> > > +       struct stop_machine_data smdata = { .fn = fn, .data = data,
-> > > +                                           .active_cpus = cpus };
-> > > +       struct cpu_stop_done done;
-> > > +       int ret;
-> > > +
-> > > +       /* Local CPU must be offline and CPU hotplug in progress. */
-> > > +       BUG_ON(cpu_online(raw_smp_processor_id()));
-> > > +       smdata.num_threads = num_online_cpus() + 1;     /* +1 for local */
-> > > +
-> > > +       /* No proper task established and can't sleep - busy wait for lock. */
-> > > +       while (!mutex_trylock(&stop_cpus_mutex))
-> > > +               cpu_relax();
-> > > +
-> > > +       /* Schedule work on other CPUs and execute directly for local CPU */
-> > > +       set_state(&smdata, STOPMACHINE_PREPARE);
-> > > +       cpu_stop_init_done(&done, num_online_cpus());
-> > > +       queue_stop_cpus_work(cpu_online_mask, stop_machine_cpu_stop, &smdata,
-> > > +                            &done);
-> > > +       ret = stop_machine_cpu_stop(&smdata);
-> > > +
-> > > +       /* Busy wait for completion. */
-> > > +       while (!completion_done(&done.completion))
-> > > +               cpu_relax();
-> > > +
-> > > +       mutex_unlock(&stop_cpus_mutex);
-> > > +       return ret ?: done.ret;
-> > > +} 
-> > 
-> > Damn thats ugly, I sure hope you're going to make those hardware folks
-> > pay for this :-)
-> 
-> Oh, I agree it's fugly.  It's trying to orchestrate stop_machine from
-> a CPU which doesn't have proper scheduler/task set up.  At least it's
-> contained in a single relatively short function.
+On Thu, 23 Jun 2011 11:14:52 +0200, Alexander Stein wrote:
+> Well, I noticed that. But I went the way lm95241 does. I'm also unsure which 
+> interval to choose, if user specify a unsupported interval. Choose the next 
+> small or the next greater one? Maybe you can give me a hint here.
 
-Yeah, no complaints on that grounds, its just sad we need to actually do
-it, but given its a hardware constraint we're working with we don't have
-much choice.
+BTW, is the LM95245 so incompatible that support couldn't be added to
+the lm95241 driver? If both devices are compatible to a reasonable
+degree, a single driver would be preferred.
 
-Just wanted to make sure Suresh (and possibly others) are going to tell
-the hardware folks that such constraints are not cool.
+-- 
+Jean Delvare
