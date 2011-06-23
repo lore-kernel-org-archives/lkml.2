@@ -1,125 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759239Ab1FWLVf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 07:21:35 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:49951 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756339Ab1FWLVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 07:21:33 -0400
-Message-ID: <4E0321AD.2080308@linux.vnet.ibm.com>
-Date: Thu, 23 Jun 2011 19:21:17 +0800
-From: Cheng Xu <chengxu@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	id S1759271Ab1FWLY2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 07:24:28 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:35807 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756339Ab1FWLY1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 07:24:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=P9Zl5j+tjZUU1mi/bQ9NpruNhmd7X8aQMNNRDx0JX0euCItWhH5NRkKmYxWbEC7QBJ
+         OmWMwZUfFYfFYGItZvFz0aq1WPRgONJQMPXe+SjPwGl8t6gZYNkPniRTYasYcC7ouEQz
+         dzUYGmRfPCyeUKHfkJ3h5sYg8IQOkG4r6C9iI=
 MIME-Version: 1.0
-To: Yong Zhang <yong.zhang0@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH] sched: skip autogroup when looking for all rt sched groups
-References: <BANLkTikKRnQb_T5x1BA=WopbBA_weLNFoQ@mail.gmail.com>
-In-Reply-To: <BANLkTikKRnQb_T5x1BA=WopbBA_weLNFoQ@mail.gmail.com>
+In-Reply-To: <87fwn18k9h.fsf@rustcorp.com.au>
+References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au>
+ <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com> <87boxshrwe.fsf@rustcorp.com.au>
+ <BANLkTinL4r3RfNuA5x6=UK4DCSSJNeZw7w@mail.gmail.com> <87r56m8w2b.fsf@rustcorp.com.au>
+ <BANLkTimNpDdp+JBXt0wUjuc0awypJSvXRg@mail.gmail.com> <87fwn18k9h.fsf@rustcorp.com.au>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 23 Jun 2011 13:24:06 +0200
+Message-ID: <BANLkTi=v-axftYKJCJ33+9UnfF9NJDAykQ@mail.gmail.com>
+Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 01:22 PM, Yong Zhang wrote:
-> From: Yong Zhang <yong.zhang0@gmail.com>
-> Subject: [PATCH] sched: skip autogroup when looking for all rt sched groups
-> 
-> Since [commit ec514c48: sched: Fix rt_rq runtime leakage bug],
-> 'cat /proc/sched_debug' will print data of root_task_group.rt_rq
-> multi times, this is due to autogroup has no its own rt group,
-> instead rt group of autogroup is linked to root_task_group.
-> 
-> So skip it when we are looking for all rt sched groups, and it
-> will also save some noop operation against root_task_group when
-> __disable_runtime()/__enable_runtime().
-> 
-> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Mike Galbraith <efault@gmx.de>
-> ---
-> 
-> Since webmail may mangle the patch, attach it too.
-> 
->  kernel/sched_autogroup.h |    1 +
->  kernel/sched_rt.c        |   29 ++++++++++++++++++++++++-----
->  2 files changed, 25 insertions(+), 5 deletions(-)
-> 
-> diff --git a/kernel/sched_autogroup.h b/kernel/sched_autogroup.h
-> index 0557705..c2f0e72 100644
-> --- a/kernel/sched_autogroup.h
-> +++ b/kernel/sched_autogroup.h
-> @@ -13,6 +13,7 @@ struct autogroup {
->  	int			nice;
->  };
-> 
-> +static inline bool task_group_is_autogroup(struct task_group *tg);
->  static inline struct task_group *
->  autogroup_task_group(struct task_struct *p, struct task_group *tg);
-> 
-> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> index 10d0182..8edf487 100644
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -185,11 +185,30 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
-> 
->  typedef struct task_group *rt_rq_iter_t;
-> 
-> -#define for_each_rt_rq(rt_rq, iter, rq) \
-> -	for (iter = list_entry_rcu(task_groups.next, typeof(*iter), list); \
-> -	     (&iter->list != &task_groups) && \
-> -	     (rt_rq = iter->rt_rq[cpu_of(rq)]); \
-> -	     iter = list_entry_rcu(iter->list.next, typeof(*iter), list))
-> +/* autogroup is not related to rt group, skip it */
-> +#define find_first_valid_task_group(iter)				\
-> +	({								\
-> +		list_for_each_entry_rcu(iter, &task_groups, list)	\
-> +			if (!task_group_is_autogroup(iter))		\
-> +				break;					\
-> +		iter;							\
-> +	})
-> +
-> +#define find_next_valid_task_group(iter)				\
-> +	({								\
-> +		do {							\
-> +			iter = list_entry_rcu(iter->list.next,		\
-> +					typeof(*iter),	list);		\
-> +		} while (&iter->list != &task_groups &&			\
-> +			task_group_is_autogroup(iter));			\
-> +		iter;							\
-> +	})
-> +
-> +#define for_each_rt_rq(rt_rq, iter, rq)					\
-> +	for (find_first_valid_task_group(iter);				\
-> +	     (&iter->list != &task_groups) &&				\
-> +	     (rt_rq = iter->rt_rq[cpu_of(rq)]);				\
-> +	     find_next_valid_task_group(iter))
-> 
->  static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
->  {
+On Thu, Jun 23, 2011 at 02:27, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> On Wed, 22 Jun 2011 12:17:49 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>> On Wed, Jun 22, 2011 at 04:00, Rusty Russell <rusty@rustcorp.com.au> wrote:
 
-This looks like it works, but seems we might be able to do that with less code... 
+>> > Now we've got that sorted, is there a reason why you changed all the
+>> > signatures rather than just using mod->mkobj in store_uevent()?
+>>
+>> Because we should be able to use the same 'struct module_attribute'
+>> for built-in modules and for loaded modules at the same time. The
+>> current 'struct module_attribute' has 'struct module' references, but
+>> 'struct module' will never exist for built-in modules.
+>>
+>> 'Struct module_kobject' has nice back-pointer to 'struct module', so
+>> this was the simplest to do, and looks still fine, I thought.
+>
+> Yes, it's weird.  The only reason it currently works is because we don't
+> use the mod parameter in param_attr_show and param_attr_store; it's NULL
+> for built-in modules.
+>
+> I'd prefer that patch first, I think: it's a sensible cleanup.
 
-static inline struct task_group *next_task_group(struct task_group *tg)
-{
-	do {
-		tg = list_entry_rcu(tg->list.next,
-		                    typeof(struct task_group), list);
-	} while ((&tg->list != &task_groups) && (task_group_is_autogroup(tg)));
-	if (&tg->list == &task_groups)
-		tg = NULL;
-	return tg;
-}
-
-#define for_each_rt_rq(rt_rq, iter, rq) \
-	for (iter = container_of(&task_groups, typeof(*iter), list); \
-	     (iter = next_task_group(iter)) && \
-	     (rt_rq = iter->rt_rq[cpu_of(rq)]);)
-
+You want the patch split up in two? You want to remove the mod
+parameter somehow?
 
 Thanks,
-Cheng
+Kay
