@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759421Ab1FWNnk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:43:40 -0400
-Received: from mtagate1.uk.ibm.com ([194.196.100.161]:42599 "EHLO
-	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759358Ab1FWNni (ORCPT
+	id S932495Ab1FWNnV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:43:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65490 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649Ab1FWNnU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:43:38 -0400
-Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was
- Vpid:)
-From: Greg Kurz <gkurz@fr.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Bryan Donlan <bdonlan@gmail.com>, akpm@linux-foundation.org,
-        containers@lists.osdl.org, linux-kernel@vger.kernel.org,
-        serge@hallyn.com, daniel.lezcano@free.fr, oleg@redhat.com,
-        xemul@openvz.org, Cedric Le Goater <clg@vnet.ibm.com>
-In-Reply-To: <m1oc1pl6t1.fsf@fess.ebiederm.org>
-References: <20110615145527.4016.70157.stgit@bahia.local>
-	 <BANLkTimSC_OSrbekhM=wd2Gie4np3Q4F5A@mail.gmail.com>
-	 <1308570316.8230.140.camel@bahia.local>
-	 <BANLkTiknqo0iKry7mjq+mc4iOWj_A_mrrw@mail.gmail.com>
-	 <m1ei2o9l7a.fsf@fess.ebiederm.org>	<1308756565.2959.65.camel@bahia.local>
-	 <m1oc1pl6t1.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 23 Jun 2011 15:43:05 +0200
-Message-ID: <1308836585.2959.89.camel@bahia.local>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Jun 2011 09:43:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=ihsKRbNCp6xMSGdF/fAAHzKfdGJP5fMLNXuWEK0n4oLaTUek0ZVoQuzw8QK8uJN8nh
+         18heSyLI7kVO1/MKWYtCeTxqABuhFG4knlKEmM6bk3SIwlj8XEWuMeganirSaujGswAz
+         51SBNyl81SgD3IQJdpjs/oVF8J4NAySGqScC4=
+MIME-Version: 1.0
+Date: Thu, 23 Jun 2011 21:43:19 +0800
+Message-ID: <BANLkTin8EF5ZpWmXKGwbZqTf5+GZBBFhfQ@mail.gmail.com>
+Subject: [RFC] sched: update rto_mask for RT runqueue
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-22 at 17:39 -0700, Eric W. Biederman wrote:
-> I was suggesting implement rt_sigqueueinfo_fd as a proc file instead.
-> 
-> Getting a file descriptor api one way or another for delivering signals
-> sounds nice in principle.  I don't know if it is useful enough to
-> justify the cost of implementing and supporting it.
-> 
+Hi Steven
 
-That's my concern: it will take some time to work it out and push it. In
-comparison, ActivePid: has no support overhead and is enough for
-userland code to relate pids betwen parent and child namespaces.
-Mitigating the race with pids is cool but it is another topic IMHO.
+Since {de, en}queue_pushable_task() is not always accompanied with
+{dec, inc}_rt_migration(), when the last pushable RT task on RQ is picked in
+pick_next_task_rt(), we have to update rto_mask for the RQ in question, which
+helps puller that is guided by rto_mask.
 
-Thanks.
+Thanks,
 
--- 
-Gregory Kurz                                     gkurz@fr.ibm.com
-Software Engineer @ IBM/Meiosys                  http://www.ibm.com
-Tel +33 (0)534 638 479                           Fax +33 (0)561 400 420
+Hillf
+---
+ kernel/sched_rt.c |   21 ++++++++++++++++++---
+ 1 files changed, 18 insertions(+), 3 deletions(-)
 
-"Anarchy is about taking complete responsibility for yourself."
-        Alan Moore.
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index b03cd89..4daf0ae 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -96,6 +96,15 @@ static void update_rt_migration(struct rt_rq *rt_rq)
+ 	}
+ }
 
++static void update_rt_migratory(struct rt_rq *rt_rq, int inc)
++{
++	if (inc)
++		rt_rq->rt_nr_migratory++;
++	else
++		rt_rq->rt_nr_migratory--;
++	update_rt_migration(rt_rq);
++}
++
+ static void inc_rt_migration(struct sched_rt_entity *rt_se, struct
+rt_rq *rt_rq)
+ {
+ 	if (!rt_entity_is_task(rt_se))
+@@ -1148,11 +1157,13 @@ static struct task_struct
+*pick_next_task_rt(struct rq *rq)
+ {
+ 	struct task_struct *p = _pick_next_task_rt(rq);
+
++#ifdef CONFIG_SMP
+ 	/* The running task is never eligible for pushing */
+-	if (p)
++	if (p && p->rt.nr_cpus_allowed > 1) {
+ 		dequeue_pushable_task(rq, p);
++		update_rt_migratory(&rq->rt, 0);
++	}
+
+-#ifdef CONFIG_SMP
+ 	/*
+ 	 * We detect this state here so that we can avoid taking the RQ
+ 	 * lock again later if there is no need to push
+@@ -1168,12 +1179,16 @@ static void put_prev_task_rt(struct rq *rq,
+struct task_struct *p)
+ 	update_curr_rt(rq);
+ 	p->se.exec_start = 0;
+
++#ifdef CONFIG_SMP
+ 	/*
+ 	 * The previous task needs to be made eligible for pushing
+ 	 * if it is still active
+ 	 */
+-	if (on_rt_rq(&p->rt) && p->rt.nr_cpus_allowed > 1)
++	if (on_rt_rq(&p->rt) && p->rt.nr_cpus_allowed > 1) {
+ 		enqueue_pushable_task(rq, p);
++		update_rt_migratory(&rq->rt, 1);
++	}
++#endif
+ }
+
+ #ifdef CONFIG_SMP
