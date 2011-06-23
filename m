@@ -1,99 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934439Ab1FWUzo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 16:55:44 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45053 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932755Ab1FWUzm (ORCPT
+	id S1759957Ab1FWVBr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 17:01:47 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:50781 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759822Ab1FWVBq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 16:55:42 -0400
+	Thu, 23 Jun 2011 17:01:46 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MzssSZRVPSiAspFIhvf1GnR4kaRE38tSXeiNbbNpZaEt1ICFpU7nhFBxFRuxicZj5E
-         KFjVBdVMe9jW3aBTkxDXSUYiYVbVscPAw3nNNos6OIqqDpTM9OwRvXLNptZY7aw/aXfz
-         E9R1fozOgkZ6Ch6SbO7G1xWB4XdwpzH8XbRi0=
-Date: Thu, 23 Jun 2011 13:55:33 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Eric Andersson <eric.andersson@unixphere.com>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, zhengguang.guo@bosch-sensortec.com,
-        stefan.nilsson@unixphere.com,
-        Albert Zhang <xu.zhang@bosch-sensortec.com>
-Subject: Re: [PATCH v2 1/1] input: add driver for Bosch Sensortec's BMA150
- accelerometer
-Message-ID: <20110623205532.GE14950@core.coreip.homeip.net>
-References: <1308840027-10724-1-git-send-email-eric.andersson@unixphere.com>
- <1308840027-10724-2-git-send-email-eric.andersson@unixphere.com>
- <20110623163631.2c43671e@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110623163631.2c43671e@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=fQtYO9P+ZCuiKl3Gb4bof748m4xPgXViwtWYrJ1sYBDmAiilT5wSRmtCpVBbT65ZlA
+         MYsU6O2dFYa1OqwWXNH7J3SlbHIpIPnVLHRwt+uTXSUwXuhYH+8fpE/KUhN/5zBeKSm+
+         gS4XTkDReFfmIQA/tBWf2SYMIPj8y4W3jdEZ8=
+From: Jassi Brar <jassisinghbrar@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: ti@lists.linaro.org, Keshava_mgowda@ti.com, parthab@india.ti.com,
+        sameo@linux.intel.com, gadiyar@ti.com, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Subject: [PATCH] mfd: omap: Restore TLL initialization
+Date: Fri, 24 Jun 2011 02:31:34 +0530
+Message-Id: <1308862894-13802-1-git-send-email-jaswinder.singh@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 04:36:31PM +0100, Alan Cox wrote:
-> > +
-> > +
-> > +What:		/sys/bus/i2c/devices/<busnum>-<devaddr>/value
-> > +Date:		May 2011
-> > +Contact:	Eric Andersson <eric.andersson@unixphere.com>
-> > +Description:	This is used to get the current acceleration values for each
-> > +		axis. The values are represented as (x,y,z), where each axis can
-> > +		hold a value between -512 and 511.
-> > +
-> > +		Reading: returns the current acceleration values.
-> 
-> This was nacked in the bma023 driver by the IIO folks - and Dmitry
-> pointed out you can do this without a sysfs hack. The trick is to do an
-> initial poll in input_open at which point the ioctl query for the
-> position will have data that is current and open/ioctl/close works and
-> providing we go nail that into other drivers that need that kind of use
-> the API is generic and input event based.
-> 
+The commit
+  7e6502d577106fb5b202bbaac64c5f1b065 'mfd: Add omap-usbhs runtime PM support'
+besides moving to RPM, removes necessary TLL initialization as well.
 
-Right, I think the patch below will do what is needed for all polled
-devices.
+Restore the TLL initialization, without which device detection fails.
 
-Thanks.
-
--- 
-Dmitry
-
-
-Input: polldev - immediately poll device upon opening
-
-To allow open/ioctl(EVIOCGABS)/close use pattern for polled devices read
-the device in context of open() call instead of offloading the first read
-to a workqueue. This will ensure that once call to open() returns device
-would have cached reasonably recent axis values that can be retrieved via
-appropriate ioctl.
-
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
 ---
+ drivers/mfd/omap-usb-host.c |   42 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 42 insertions(+), 0 deletions(-)
 
- drivers/input/input-polldev.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-
-diff --git a/drivers/input/input-polldev.c b/drivers/input/input-polldev.c
-index b1aabde..b253973 100644
---- a/drivers/input/input-polldev.c
-+++ b/drivers/input/input-polldev.c
-@@ -49,8 +49,10 @@ static int input_open_polled_device(struct input_dev *input)
- 		dev->open(dev);
+diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+index 8552195..12ca77b 100644
+--- a/drivers/mfd/omap-usb-host.c
++++ b/drivers/mfd/omap-usb-host.c
+@@ -640,6 +640,7 @@ static int usbhs_enable(struct device *dev)
+ 	struct usbhs_omap_platform_data	*pdata = &omap->platdata;
+ 	unsigned long			flags = 0;
+ 	int				ret = 0;
++	unsigned long			timeout;
+ 	unsigned			reg;
  
- 	/* Only start polling if polling is enabled */
--	if (dev->poll_interval > 0)
--		queue_delayed_work(system_freezable_wq, &dev->work, 0);
-+	if (dev->poll_interval > 0) {
-+		dev->poll(dev);
-+		input_polldev_queue_work(dev);
+ 	dev_dbg(dev, "starting TI HSUSB Controller\n");
+@@ -676,6 +677,47 @@ static int usbhs_enable(struct device *dev)
+ 	omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
+ 	dev_dbg(dev, "OMAP UHH_REVISION 0x%x\n", omap->usbhs_rev);
+ 
++	/* perform TLL soft reset, and wait until reset is complete */
++	usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG,
++			OMAP_USBTLL_SYSCONFIG_SOFTRESET);
++
++	/* Wait for TLL reset to complete */
++	timeout = jiffies + msecs_to_jiffies(1000);
++	while (!(usbhs_read(omap->tll_base, OMAP_USBTLL_SYSSTATUS)
++			& OMAP_USBTLL_SYSSTATUS_RESETDONE)) {
++		cpu_relax();
++
++		if (time_after(jiffies, timeout)) {
++			dev_dbg(dev, "operation timed out\n");
++			ret = -EINVAL;
++			goto err_tll;
++		}
 +	}
- 
- 	return 0;
- }
++	dev_dbg(dev, "TLL RESET DONE\n");
++
++	/* (1<<3) = no idle mode only for initial debugging */
++	usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG,
++			OMAP_USBTLL_SYSCONFIG_ENAWAKEUP |
++			OMAP_USBTLL_SYSCONFIG_SIDLEMODE |
++			OMAP_USBTLL_SYSCONFIG_AUTOIDLE);
++
++	/* Put UHH in NoIdle/NoStandby mode */
++	reg = usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG);
++	if (is_omap_usbhs_rev1(omap)) {
++		reg |= (OMAP_UHH_SYSCONFIG_ENAWAKEUP
++				| OMAP_UHH_SYSCONFIG_SIDLEMODE
++				| OMAP_UHH_SYSCONFIG_CACTIVITY
++				| OMAP_UHH_SYSCONFIG_MIDLEMODE);
++		reg &= ~OMAP_UHH_SYSCONFIG_AUTOIDLE;
++	} else if (is_omap_usbhs_rev2(omap)) {
++		reg &= ~OMAP4_UHH_SYSCONFIG_IDLEMODE_CLEAR;
++		reg |= OMAP4_UHH_SYSCONFIG_NOIDLE;
++		reg &= ~OMAP4_UHH_SYSCONFIG_STDBYMODE_CLEAR;
++		reg |= OMAP4_UHH_SYSCONFIG_NOSTDBY;
++	}
++
++	usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG, reg);
++
+ 	reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
+ 	/* setup ULPI bypass and burst configurations */
+ 	reg |= (OMAP_UHH_HOSTCONFIG_INCR4_BURST_EN
+-- 
+1.7.4.1
+
