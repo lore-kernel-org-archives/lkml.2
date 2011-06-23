@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759118Ab1FWJmY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 05:42:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55646 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755076Ab1FWJmX convert rfc822-to-8bit (ORCPT
+	id S1759090Ab1FWJro (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 05:47:44 -0400
+Received: from h1446028.stratoserver.net ([85.214.92.142]:48273 "EHLO
+	mail.ahsoftware.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758942Ab1FWJrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 05:42:23 -0400
-Subject: Re: [patch 1/4] x86, mtrr: lock stop machine during MTRR
- rendezvous sequence
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, mingo@elte.hu, hpa@zytor.com,
-        trenn@novell.com, prarit@redhat.com, tj@kernel.org,
-        rusty@rustcorp.com.au, akpm@linux-foundation.org,
-        torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        youquan.song@intel.com, stable@kernel.org
-In-Reply-To: <alpine.LFD.2.02.1106231131300.11814@ionos>
-References: <20110622222021.904952469@sbsiddha-MOBL3.sc.intel.com>
-	 <20110622222043.862589370@sbsiddha-MOBL3.sc.intel.com>
-	 <1308819905.1022.70.camel@twins>
-	 <alpine.LFD.2.02.1106231131300.11814@ionos>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Jun 2011 11:41:23 +0200
-Message-ID: <1308822083.1022.93.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Thu, 23 Jun 2011 05:47:42 -0400
+Message-ID: <4E030BA6.8060407@ahsoftware.de>
+Date: Thu, 23 Jun 2011 11:47:18 +0200
+From: Alexander Holler <holler@ahsoftware.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: gregkh@suse.de, Nicolas Pitre <nico@fluxnic.net>,
+        linux-usb@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        Rabin Vincent <rabin@rab.in>, Alan Stern <stern@rowland.harvard.edu>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] USB: ehci: use packed,	aligned(4) instead of removing
+ the packed attribute
+References: <Pine.LNX.4.44L0.1106201240240.2113-100000@iolanthe.rowland.org>	<alpine.LFD.2.00.1106201306210.2142@xanadu.home>	<4DFF85D6.1090104@ahsoftware.de> <201106202207.23104.arnd@arndb.de>
+In-Reply-To: <201106202207.23104.arnd@arndb.de>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-23 at 11:33 +0200, Thomas Gleixner wrote:
-> On Thu, 23 Jun 2011, Peter Zijlstra wrote:
-> 
-> > On Wed, 2011-06-22 at 15:20 -0700, Suresh Siddha wrote:
-> > > +#ifdef CONFIG_SMP
-> > > +       /*
-> > > +        * If we are not yet online, then there can be no stop_machine() in
-> > > +        * parallel. Stop machine ensures this by using get_online_cpus().
-> > > +        *
-> > > +        * If we are online, then we need to prevent a stop_machine() happening
-> > > +        * in parallel by taking the stop cpus mutex.
-> > > +        */
-> > > +       if (cpu_online(raw_smp_processor_id()))
-> > > +               mutex_lock(&stop_cpus_mutex);
-> > > +#endif 
-> > 
-> > This reads like an optimization, is it really worth-while to not take
-> > the mutex in the rare offline case?
->  
-> You cannot block on a mutex when you are not online, in fact you
-> cannot block on it when not active, so the check is wrong anyway.
+Am 20.06.2011 22:07, schrieb Arnd Bergmann:
+> On Monday 20 June 2011 19:39:34 Alexander Holler wrote:
+>> That packed without an additional aligned() caused errors on ARM with
+>> gcc 4.6 is another problem which got (currently) fixed by removing packed.
+>
+> Packed caused errors because it is *wrong*. The code as it was used undefined
+> behavior in the language.
 
-Duh, yeah. Comment totally mislead me.
+I don't see why using just packed was wrong. The problem occured because 
+the latest gcc now uses or inforces aligned(1) for a packed struct 
+without any aligned and because of that the assignment in readl() is 
+done byte by byte. I'm missing the required arm knowledge and experience 
+to discuss this further, I don't have a reason to look further into that 
+and never wanted to make any judgement about the cause.
 
-On that whole active thing, so cpu_active() is brought into life to sort
-an cpu-down problem, where we want the lb to stop using a cpu before we
-can re-build the sched_domains.
+>> But this introduces imho doubts and uncertainty about if padding bytes
+>> could be between the members, therefore I would prefer to use packed
+>> with aligned instead of removing the packed.
+>
+> Packing was never an issue here, please stop talking about it.
 
-But now we're having trouble because of that on the cpu-up part, where
-we update the sched_domains too late (CPU_ONLINE) and hence also set
-cpu_active() too late (again CPU_ONLINE).
+Sorry, I never wanted to talk about the issue itself (I've already said 
+that), I just wanted to bring in some additional clarity for people 
+looking at the code.
 
-Couldn't we update the sched_domain tree on CPU_PREPARE_UP to include
-the new cpu and then set cpu_active() right along with cpu_online()?
+I think if there is a packed,aligned(4) most people reading that are 
+able to imaging how the struct looks like, whereas nothing (without 
+packed) might leave doubts which than requires to read compiler docs or 
+the generated code, if one searches a problem in that area.
 
-That would also sort your other wait for active while bringup issue..
+Maybe my english is that bad that nobody understood that.
 
-Note, I'll now go and have my morning juice, so the above might be total
-crap.
+But it's ok. For me, that discussion was long over, two people already 
+said that they prefer the struct without any packed.
+
+About the background:
+I've posted that patch, because I though I might have been the source of 
+the removal of packed instead of using packed along with aligned, 
+because I first posted such (removing the packed) at the mailing list 
+for u-boot and only later on thought that using what was hinted to me 
+over a third person (packed, aligned(4), which means the one who 
+originally found and fixed the problem used packed, aligned(4) too) 
+might be better (what I than posted there too).
+
+Sorry for becoming that verbose, I normally don't gabble that much and I 
+would like it if I never would have posted that silly patch.
+
+Regards,
+
+Alexander
