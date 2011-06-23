@@ -1,48 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933421Ab1FWSNb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:13:31 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:34188
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933337Ab1FWSN0 (ORCPT
+	id S934228Ab1FWSOD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:14:03 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:52819 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932777Ab1FWSOA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:13:26 -0400
-Date: Thu, 23 Jun 2011 14:13:17 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andi Kleen <andi@firstfloor.org>,
-        Maarten Lankhorst <m.b.lankhorst@gmail.com>,
-        Alex Elder <aelder@sgi.com>, xfs-masters@oss.sgi.com,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH v2] xfs: Silence bounds checking compiler warning
-Message-ID: <20110623181317.GA26945@infradead.org>
-References: <4E037001.8090306__42924.0493024283$1308849791$gmane$org@gmail.com>
- <m2boxocvb5.fsf@firstfloor.org>
- <20110623175533.GK11521@ZenIV.linux.org.uk>
+	Thu, 23 Jun 2011 14:14:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=aeysFW6eOAuVUE5II4ZlHh0APzDPLlZtuCeRFyfypa/wVOEsH5auQTekogDyn5vKg9
+         maPMA4SRJWXN9f77JIAqxECHM4W7+VbzPrJvBPgjYzALQP+mj+aQqfL76CTMzx1Gmjoj
+         HuOr/WQBq+VQpXRNsuOR7lkwFZL04TDGBGjUQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110623175533.GK11521@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20110623091429.2d51b0f0.randy.dunlap@oracle.com>
+References: <20110623155431.6bfe3b40.sfr@canb.auug.org.au> <20110623091429.2d51b0f0.randy.dunlap@oracle.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 23 Jun 2011 14:13:38 -0400
+Message-ID: <BANLkTinTZzjALrTEgofbFEG_pMSQw6uGWg@mail.gmail.com>
+Subject: Re: linux-next: Tree for June 23 (net)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 06:55:33PM +0100, Al Viro wrote:
-> ... and even better is to write in real C and have u8 name[]; in the
-> end of your structure.  That's the standard C99 for this kind of thing
-> (see 6.7.2.1p2, p16).  Zero-sized array is a gccism predating standard
-> flexible array members and since the standard syntax is accepted by
-> any gcc version that might be recent enough to build the kernel...
+On Thu, Jun 23, 2011 at 12:14, Randy Dunlap wrote:
+> On Thu, 23 Jun 2011 15:54:31 +1000 Stephen Rothwell wrote:
+>> Hi all,
+>>
+>> Changes since 20110622:
+>>
+>> The powerpc allyesconfig (and probably others) is still broken because we
+>> now build the staging drivers and because of a commit in the net tree.
+>> The breakage in Linus' tree is fixed by one of Andrew's patches above.
+>>
+>> The net tree gained 2 build failures that I have left (see above).
+>
+>
+> When CONFIG_INET is not enabled:
+>
+> net/core/dev.c:2535: error: implicit declaration of function 'ip_is_fragment'
 
-The situation is even more nasty - the one sized fake flex-array
-actually is in the middle of the structure.  Besides sizeof-expressions
-taking the one member array into account only members before the
-variable sized array are used.  I've started a series cleaning up the
-few structures that were done that way (for whatever reason), but it's
-pretty intrusive.  I don't think papering over these warnings at this
-point is a good idea.
-
+i see this on two Blackfin defconfigs like CM-BF533
+-mike
