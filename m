@@ -1,77 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932472Ab1FWQBu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 12:01:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:40562 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759395Ab1FWQBs convert rfc822-to-8bit (ORCPT
+	id S1759645Ab1FWQJt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 12:09:49 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43470 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753858Ab1FWQJr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 12:01:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=hYh0G40mMYk5Yb7SqYktKrOavGNtZF4owaAmMnuMccaaNK+IWz5bVTtjxEyiwEFehE
-         1dqPwpukw0jQq6txEBmZMxoy+sXIZMFfEfo5jnA0jyU7mey561gmdzEEVIpXA+h8+VaB
-         M/m+6TqqPbKbQB5JDTdQqsA8bAi2E6fj7ZTVw=
-MIME-Version: 1.0
-In-Reply-To: <20110623114536.GA14011@linux-mips.org>
-References: <20110623114536.GA14011@linux-mips.org>
-Date: Thu, 23 Jun 2011 18:01:47 +0200
-X-Google-Sender-Auth: kcLn_n0i-1kAVj79QiMBhOsQu4k
-Message-ID: <BANLkTimR98qo5fjMRf-kZahcA=hE-E3+Hg@mail.gmail.com>
-Subject: Re: [PATCH] STAGING: Comedi: Build only on arches providing PAGE_KERNEL_NOCACHE
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        linux-am33-list@redhat.com, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 23 Jun 2011 12:09:47 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
+        stable@kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Jeff Garzik <jgarzik@pobox.com>,
+        IngIngo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
+        linux-ide@vger.kernel.org
+Subject: Re: mmotm 2011-06-22 - inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+In-Reply-To: Your message of "Thu, 23 Jun 2011 17:38:36 +0200."
+             <1308843516.1022.139.camel@twins>
+From: Valdis.Kletnieks@vt.edu
+References: <201106222042.p5MKgiEe025352@imap1.linux-foundation.org> <6189.1308794391@turing-police.cc.vt.edu>
+            <1308843516.1022.139.camel@twins>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1308844931_4530P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Thu, 23 Jun 2011 12:02:11 -0400
+Message-ID: <47718.1308844931@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Info: (0) 
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4E036389.00BA,ss=1,fgs=0,
+	ip=24.127.43.116,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 13:45, Ralf Baechle <ralf@linux-mips.org> wrote:
-> On architectures that don't define PAGE_KERNEL_NOCACHE, the Comedi driver turns
-> into tragedy:
->
->  CC [M]  drivers/staging/comedi/drivers.o
-> drivers/staging/comedi/drivers.c: In function ‘comedi_buf_alloc’:
-> drivers/staging/comedi/drivers.c:505:41: error: ‘PAGE_KERNEL_NOCACHE’ undeclared (first use in this function)
-> drivers/staging/comedi/drivers.c:505:41: note: each undeclared identifier is rep orted only once for each function it appears in
-> make[3]: *** [drivers/staging/comedi/drivers.o] Error 1
->
-> Restrict the driver to only those architectures that define PAGE_KERNEL_NOCACHE.
->
-> PAGE_KERNEL_NOCACHE is a kludge - some system architectures such as SGI IP27
-> are even uable to offer uncached operation - at least in the way an unwitting
-> driver might assume.  I haven't looked in details how the driver is using
-> the area vmaped with PAGE_KERNEL_NOCACHE but maybe doing it XFS-style using
-> cached memory and the flush_kernel_vmap_range / invalidate_kernel_vmap_range
-> APIs in conjunction with the DMA API is a practical alternative.
->
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+--==_Exmh_1308844931_4530P
+Content-Type: text/plain; charset=us-ascii
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+On Thu, 23 Jun 2011 17:38:36 +0200, Peter Zijlstra said:
+> On Wed, 2011-06-22 at 21:59 -0400, Valdis.Kletnieks@vt.edu wrote:
+> > [   20.254275] {SOFTIRQ-ON-W} state was registered at:
+> > [   20.254275]   [<ffffffff8106973b>] mark_irqflags+0xf2/0x13e
+> > [   20.254275]   [<ffffffff810699b2>] __lock_acquire+0x22b/0x3e2
+> > [   20.254275]   [<ffffffff8106a09f>] lock_acquire+0x103/0x153
+> > [   20.254275]   [<ffffffff8157bb01>] _raw_spin_lock+0x36/0x45
+> > [   20.254275]   [<ffffffff8110ddf8>] end_writeback+0x33/0x103
+> > [   20.254275]   [<ffffffff81125425>] bdev_evict_inode+0x3e/0xbe
+> > [   20.254275]   [<ffffffff8110df78>] evict+0xb0/0x173
+> > [   20.254275]   [<ffffffff8110e1ea>] iput_final+0x171/0x17a
+> > [   20.254275]   [<ffffffff8110e241>] iput+0x4e/0x53
+> > [   20.254275]   [<ffffffff81125cad>] __blkdev_put+0x1c0/0x1eb
+> > [   20.254275]   [<ffffffff81125ebe>] blkdev_put+0x1e6/0x1f5
+> > [   20.254275]   [<ffffffff8121d143>] register_disk+0xea/0x13c
+> > [   20.254275]   [<ffffffff8121d2c4>] add_disk+0x12f/0x1a4
+> > [   20.254275]   [<ffffffff812ef339>] sd_probe_async+0x115/0x1b5
+> > [   20.254275]   [<ffffffff8105ce2f>] async_run_entry_fn+0x99/0x12a
+> > [   20.254275]   [<ffffffff810505e8>] process_one_work+0x25d/0x467
+> > [   20.254275]   [<ffffffff81051ddb>] worker_thread+0x152/0x206
+> > [   20.254275]   [<ffffffff810561fa>] kthread+0x7f/0x87
+> > [   20.254275]   [<ffffffff815835d4>] kernel_thread_helper+0x4/0x10=20
+> 
+> That looks broken. Not having -mm, is there a git tree some place?, I
+> cannot quite see how end_writeback() is taking mapping->tree_lock as my
+> version looks like:
+> 
+> void end_writeback(struct inode *inode)
+> {
+> 	might_sleep();
+> 	BUG_ON(inode->i_data.nrpages);
+> 	BUG_ON(!list_empty(&inode->i_data.private_list));
 
-If only to get m68k/allmodconfig going again (hmm, there's another
-staging driver
-preventing a green light).
+mm-fix-assertion-mapping-nrpages-==-0-in-end_writeback.patch does this:
 
-Gr{oetje,eeting}s,
+diff -puN fs/inode.c~mm-fix-assertion-mapping-nrpages-==-0-in-end_writeback fs/inode.c
+--- a/fs/inode.c~mm-fix-assertion-mapping-nrpages-==-0-in-end_writeback
++++ a/fs/inode.c
+@@ -423,7 +423,14 @@ EXPORT_SYMBOL(remove_inode_hash);
+ void end_writeback(struct inode *inode)
+ {
+        might_sleep();
++       /*
++        * We have to cycle tree_lock here because reclaim can be still in the
++        * process of removing the last page (in __delete_from_page_cache())
++        * and we must not free mapping under it.
++        */
++       spin_lock(&inode->i_data.tree_lock);
+        BUG_ON(inode->i_data.nrpages);
++       spin_unlock(&inode->i_data.tree_lock);
+        BUG_ON(!list_empty(&inode->i_data.private_list));
+        BUG_ON(!(inode->i_state & I_FREEING));
+        BUG_ON(inode->i_state & I_CLEAR);
 
-                        Geert
+Adding Jan Kara to the list, and stable@kernel.org because the patch was cc'ed to there...
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+--==_Exmh_1308844931_4530P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOA2ODcC3lWbTT17ARArNGAJoCGWCf5FztlYZwlY1/X1a1ix6dFwCfe0Tc
+TuL0/wzrpQkHW/hfmivGH3U=
+=4a9D
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1308844931_4530P--
+
