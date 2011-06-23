@@ -1,109 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565Ab1FWAfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 20:35:16 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54389 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757992Ab1FWAfO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 20:35:14 -0400
-Date: Thu, 23 Jun 2011 10:35:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: brudley@broadcom.com, henryp@broadcom.com, rvossen@broadcom.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (staging related)
-Message-Id: <20110623103503.cd9e7e70.sfr@canb.auug.org.au>
-In-Reply-To: <20110616191448.GA10255@kroah.com>
-References: <20110609172745.dfd3a298.sfr@canb.auug.org.au>
-	<20110609184127.GA2760@kroah.com>
-	<20110609192243.GA3980@kroah.com>
-	<20110610160548.529797c7.sfr@canb.auug.org.au>
-	<20110610160938.cd01c408.sfr@canb.auug.org.au>
-	<20110610223423.GB15868@kroah.com>
-	<20110615142155.bd538b73.sfr@canb.auug.org.au>
-	<20110616191448.GA10255@kroah.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__23_Jun_2011_10_35_03_+1000_=5_xb5u0CzgSqBxL"
+	id S1758408Ab1FWAjv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 20:39:51 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:51291 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757878Ab1FWAju (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 20:39:50 -0400
+From: ebiederm@xmission.com (Eric W. Biederman)
+To: Greg Kurz <gkurz@fr.ibm.com>
+Cc: Bryan Donlan <bdonlan@gmail.com>, akpm@linux-foundation.org,
+        containers@lists.osdl.org, linux-kernel@vger.kernel.org,
+        serge@hallyn.com, daniel.lezcano@free.fr, oleg@redhat.com,
+        xemul@openvz.org, Cedric Le Goater <clg@vnet.ibm.com>
+References: <20110615145527.4016.70157.stgit@bahia.local>
+	<BANLkTimSC_OSrbekhM=wd2Gie4np3Q4F5A@mail.gmail.com>
+	<1308570316.8230.140.camel@bahia.local>
+	<BANLkTiknqo0iKry7mjq+mc4iOWj_A_mrrw@mail.gmail.com>
+	<m1ei2o9l7a.fsf@fess.ebiederm.org>
+	<1308756565.2959.65.camel@bahia.local>
+Date: Wed, 22 Jun 2011 17:39:38 -0700
+In-Reply-To: <1308756565.2959.65.camel@bahia.local> (Greg Kurz's message of
+	"Wed, 22 Jun 2011 17:29:25 +0200")
+Message-ID: <m1oc1pl6t1.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=98.207.153.68;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-XM-AID: U2FsdGVkX1+Jfr8kSssROpG8cZ65zk06Ebmis+ILNno=
+X-SA-Exim-Connect-IP: 98.207.153.68
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 T_TooManySym_03 6+ unique symbols in subject
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: XMission; sa06 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Greg Kurz <gkurz@fr.ibm.com>
+X-Spam-Relay-Country: 
+Subject: Re: [PATCH] Introduce ActivePid: in /proc/self/status (v2, was Vpid:)
+X-Spam-Flag: No
+X-SA-Exim-Version: 4.2.1 (built Fri, 06 Aug 2010 16:31:04 -0600)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__23_Jun_2011_10_35_03_+1000_=5_xb5u0CzgSqBxL
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Greg Kurz <gkurz@fr.ibm.com> writes:
 
-Hi Greg,
-
-On Thu, 16 Jun 2011 12:14:48 -0700 Greg KH <greg@kroah.com> wrote:
+> On Mon, 2011-06-20 at 15:44 -0700, Eric W. Biederman wrote:
+>> fd = open("/proc/self/", O_DIRECTORY);
+>> ?
+>> 
+>> Doing something based on proc files seems like a reasonable direction to
+>> head if we are working on a race free api.
+>> 
+>> I suspect all we need is a sigqueue file.
+>> 
 >
-> On Wed, Jun 15, 2011 at 02:21:55PM +1000, Stephen Rothwell wrote:
-> >=20
-> > On Fri, 10 Jun 2011 15:34:23 -0700 Greg KH <greg@kroah.com> wrote:
-> > >
-> > > On Fri, Jun 10, 2011 at 04:09:38PM +1000, Stephen Rothwell wrote:
-> > > >=20
-> > > > On Fri, 10 Jun 2011 16:05:48 +1000 Stephen Rothwell <sfr@canb.auug.=
-org.au> wrote:
-> > > > >
-> > > > > No, I still get these:
-> > > > >=20
-> > > > > In file included from drivers/staging/comedi/drivers/addi_apci_03=
-5.c:7:0:
-> > > > > drivers/staging/comedi/drivers/addi-data/addi_common.c: In functi=
-on 'i_ADDI_Attach':
-> > > > > drivers/staging/comedi/drivers/addi-data/addi_common.c:2765:7: er=
-ror: implicit declaration of function 'virt_to_bus'
-> > > > >=20
-> > > > > virt_to_bus is only defined for 32 bit powerpc (not 64 bit) (and =
-maybe
-> > > > > not at all on some architectures e.g. sparc).
-> > > > >=20
-> > > > > From Documentation/DMA-API-HOWTO.txt:
-> > > > > "All drivers should be using these interfaces with no exceptions.=
-  It
-> > > > > is planned to completely remove virt_to_bus() and bus_to_virt() as
-> > > > > they are entirely deprecated.  Some ports already do not provide =
-these
-> > > > > as it is impossible to correctly support them."
-> > > >=20
-> > > > Drivers that use virt_to_bus should Kconfig depend on VIRT_TO_BUS.
-> > >=20
-> > > Ah, I missed that, sorry.  I'll go make that change as well.
-> >=20
-> > Ping?
->=20
-> Sorry, been swamped with other work, I'll get to this soon...
+> Are you referring to Bryan's rt_sigqueueinfo_fd() syscall or to a
+> new /proc/self/sigqueue file ?
 
-ping?
+I was suggesting implement rt_sigqueueinfo_fd as a proc file instead.
 
-> With a very relative value of soon.
+Getting a file descriptor api one way or another for delivering signals
+sounds nice in principle.  I don't know if it is useful enough to
+justify the cost of implementing and supporting it.
 
-Yeah, I understand busy ... but this is a simple patch, rigth?
+Eric
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__23_Jun_2011_10_35_03_+1000_=5_xb5u0CzgSqBxL
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOAoo3AAoJEDMEi1NhKgbsZp4H/RgMLXOM+unmWA/M2q7sjWHr
-wFO0GGHcbXadgOV2TwehmnPJaoDNJI4Hn0SfZznGoewgWHcl+weBEq4gXoNhAbdv
-puqZJd3IVFaSVHn/u3nlVn7jTa25k0v1lAPNs8FiAOFYbDCYCy7TXkMwbR3LCxHG
-pi0tjia59wlvojJfrOEZ1rBuc0gcW1EfYQfTA6ZuHgcRflRER+aUJoCLEDgZNZ5Y
-HKg9N1ALjODvkMXP0/MeykViG13YytftiXvMUbplCCUcB6AVeFmJWLqEHkLdZxsP
-VkSWWPlhCLwhnd0Rsw3Yv8uOPVOxgtDoq1mJZZDe76Q5f/ZBx703QFKMA55hoYM=
-=+uPo
------END PGP SIGNATURE-----
-
---Signature=_Thu__23_Jun_2011_10_35_03_+1000_=5_xb5u0CzgSqBxL--
