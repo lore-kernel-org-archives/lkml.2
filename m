@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759254Ab1FWNf1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:35:27 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36439 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756339Ab1FWNf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:35:26 -0400
-Date: Thu, 23 Jun 2011 15:35:24 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Ying Han <yinghan@google.com>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
-Subject: Re: [PATCH 6/7] memcg: calc NUMA node's weight for scan.
-Message-ID: <20110623133524.GJ31593@tiehlicka.suse.cz>
-References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
- <20110616125633.9b9fa703.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1759335Ab1FWNg2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:36:28 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:48503 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754028Ab1FWNg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 09:36:27 -0400
+Date: Thu, 23 Jun 2011 14:36:05 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Ingo Molnar <mingo@elte.hu>,
+        Namhyung Kim <namhyung@gmail.com>, kernel-hardening@lists.openwall.com,
+        linux-kernel@vger.kernel.org, security@kernel.org
+Subject: Re: [PATCH] kernel: escape non-ASCII and control characters in
+ printk()
+Message-ID: <20110623133605.GA28333@srcf.ucam.org>
+References: <20110622095341.GA3353@albatros>
+ <20110622153742.GA18983@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110616125633.9b9fa703.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110622153742.GA18983@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 16-06-11 12:56:33, KAMEZAWA Hiroyuki wrote:
-> From fb8aaa2c5f7fd99dfcb5d2ecb3c1226a58caafea Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Thu, 16 Jun 2011 10:05:46 +0900
-> Subject: [PATCH 6/7] memcg: calc NUMA node's weight for scan.
+On Wed, Jun 22, 2011 at 08:37:42AM -0700, Greg KH wrote:
+> On Wed, Jun 22, 2011 at 01:53:41PM +0400, Vasiliy Kulikov wrote:
+> > This patch escapes all characters outside of allowed '\n' plus 0x20-0x7E
+> > charset passed to printk().
+> > 
+> > There are numerous printk() instances with user supplied input as "%s"
+> > data, and unprivileged user may craft log messages with substrings
+> > containing control characters via these printk()s.  Control characters
+> > might fool root viewing the logs via tty.
 > 
-> Now, by commit 889976, numa node scan of memcg is in round-robin.
-> As commit log says, "a better algorithm is needed".
-> 
-> for implementing some good scheduling, one of required things is
-> defining importance of each node at LRU scanning.
-> 
-> This patch defines each node's weight for scan as
-> 
-> swappiness = (memcg's swappiness)? memcg's swappiness : 1
-> FILE = inactive_file + (inactive_file_is_low)? active_file : 0
-> ANON = inactive_anon + (inactive_anon_is_low)? active_anon : 0
-> 
-> weight = (FILE * (200-swappiness) + ANON * swappiness)/200.
+> There are "numerous" places this could happen?
 
-Shouldn't we consider the node size?
-If we have a node which is almost full with file cache and then other
-node wich is much bigger and it is mostly occupied by anonymous memory
-than the other node might end up with higher weight.
+USB product identifiers?
 
 -- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
+Matthew Garrett | mjg59@srcf.ucam.org
