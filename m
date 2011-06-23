@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933689Ab1FWRiE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:38:04 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35280 "EHLO
+	id S934042Ab1FWRrQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:47:16 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35514 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933653Ab1FWRh7 (ORCPT
+	with ESMTP id S933784Ab1FWRi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:59 -0400
+	Thu, 23 Jun 2011 13:38:29 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+Cc: stable-review@kernel.org, Anton Blanchard <anton@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 192/247] SUNRPC: Ensure we always run the tk_callback before tk_action
-Date: Thu, 23 Jun 2011 13:34:20 -0400
-Message-Id: <1308850515-15242-133-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 193/247] perf, powerpc: Handle events that raise an exception without overflowing
+Date: Thu, 23 Jun 2011 13:34:21 -0400
+Message-Id: <1308850515-15242-134-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,51 +23,85 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
+From: Anton Blanchard <anton@samba.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit e020c6800c9621a77223bf2c1ff68180e41e8ebf upstream.
+commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 upstream.
 
-This fixes a race in which the task->tk_callback() puts the rpc_task
-to sleep, setting a new callback. Under certain circumstances, the current
-code may end up executing the task->tk_action before it gets round to the
-callback.
+Events on POWER7 can roll back if a speculative event doesn't
+eventually complete. Unfortunately in some rare cases they will
+raise a performance monitor exception. We need to catch this to
+ensure we reset the PMC. In all cases the PMC will be 256 or less
+cycles from overflow.
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20110309143842.6c22845e@kryten>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- net/sunrpc/sched.c |   14 ++++++--------
- 1 files changed, 6 insertions(+), 8 deletions(-)
+ arch/powerpc/include/asm/reg.h   |    1 +
+ arch/powerpc/kernel/perf_event.c |   24 +++++++++++++++++++++++-
+ 2 files changed, 24 insertions(+), 1 deletions(-)
 
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index aae6907..03a5c9e 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -642,14 +642,12 @@ static void __rpc_execute(struct rpc_task *task)
- 			save_callback = task->tk_callback;
- 			task->tk_callback = NULL;
- 			save_callback(task);
--		}
--
--		/*
--		 * Perform the next FSM step.
--		 * tk_action may be NULL when the task has been killed
--		 * by someone else.
--		 */
--		if (!RPC_IS_QUEUED(task)) {
-+		} else {
-+			/*
-+			 * Perform the next FSM step.
-+			 * tk_action may be NULL when the task has been killed
-+			 * by someone else.
-+			 */
- 			if (task->tk_action == NULL)
- 				break;
- 			task->tk_action(task);
+diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
+index 5572e86..f2ac5a6 100644
+--- a/arch/powerpc/include/asm/reg.h
++++ b/arch/powerpc/include/asm/reg.h
+@@ -864,6 +864,7 @@
+ #define PV_970		0x0039
+ #define PV_POWER5	0x003A
+ #define PV_POWER5p	0x003B
++#define PV_POWER7	0x003F
+ #define PV_970FX	0x003C
+ #define PV_630		0x0040
+ #define PV_630p	0x0041
+diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+index 08460a2..7a3b2d2 100644
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -1220,6 +1220,28 @@ unsigned long perf_instruction_pointer(struct pt_regs *regs)
+ 	return ip;
+ }
+ 
++static bool pmc_overflow(unsigned long val)
++{
++	if ((int)val < 0)
++		return true;
++
++	/*
++	 * Events on POWER7 can roll back if a speculative event doesn't
++	 * eventually complete. Unfortunately in some rare cases they will
++	 * raise a performance monitor exception. We need to catch this to
++	 * ensure we reset the PMC. In all cases the PMC will be 256 or less
++	 * cycles from overflow.
++	 *
++	 * We only do this if the first pass fails to find any overflowing
++	 * PMCs because a user might set a period of less than 256 and we
++	 * don't want to mistakenly reset them.
++	 */
++	if (__is_processor(PV_POWER7) && ((0x80000000 - val) <= 256))
++		return true;
++
++	return false;
++}
++
+ /*
+  * Performance monitor interrupt stuff
+  */
+@@ -1267,7 +1289,7 @@ static void perf_event_interrupt(struct pt_regs *regs)
+ 			if (is_limited_pmc(i + 1))
+ 				continue;
+ 			val = read_pmc(i + 1);
+-			if ((int)val < 0)
++			if (pmc_overflow(val))
+ 				write_pmc(i + 1, 0);
+ 		}
+ 	}
 -- 
 1.7.4.4
 
