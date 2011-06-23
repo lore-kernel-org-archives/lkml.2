@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933989Ab1FWRkn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:40:43 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35846 "EHLO
+	id S964814Ab1FWR6Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:58:24 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35085 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933684Ab1FWRjL (ORCPT
+	with ESMTP id S933600Ab1FWRhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:39:11 -0400
+	Thu, 23 Jun 2011 13:37:37 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Tejun Heo <tj@kernel.org>,
-        Jeff Garzik <jgarzik@redhat.com>,
+Cc: stable-review@kernel.org, Florian Fainelli <florian@openwrt.org>,
+        Ralf Baechle <ralf@linux-mips.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 168/247] libata: no special completion processing for EH commands
-Date: Thu, 23 Jun 2011 13:33:56 -0400
-Message-Id: <1308850515-15242-109-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 169/247] MIPS: MTX-1: Make au1000_eth probe all PHY addresses
+Date: Thu, 23 Jun 2011 13:33:57 -0400
+Message-Id: <1308850515-15242-110-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,81 +23,61 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tejun Heo <tj@kernel.org>
+From: Florian Fainelli <florian@openwrt.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f08dc1ac6b15c681f4643d8da1700e06c3855608 upstream.
+commit bf3a1eb85967dcbaae42f4fcb53c2392cec32677 upstream.
 
-ata_qc_complete() contains special handling for certain commands.  For
-example, it schedules EH for device revalidation after certain
-configurations are changed.  These shouldn't be applied to EH
-commands but they were.
+When au1000_eth probes the MII bus for PHY address, if we do not set
+au1000_eth platform data's phy_search_highest_address, the MII probing
+logic will exit early and will assume a valid PHY is found at address 0.
+For MTX-1, the PHY is at address 31, and without this patch, the link
+detection/speed/duplex would not work correctly.
 
-In most cases, it doesn't cause an actual problem because EH doesn't
-issue any command which would trigger special handling; however, ACPI
-can issue such commands via _GTF which can cause weird interactions.
-
-Restructure ata_qc_complete() such that EH commands are always passed
-on to __ata_qc_complete().
-
-stable: Please apply to -stable only after 2.6.38 is released.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Reported-by: Kyle McMartin <kyle@mcmartin.ca>
-Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+To: linux-mips@linux-mips.org
+Patchwork: https://patchwork.linux-mips.org/patch/2111/
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/ata/libata-core.c |   24 +++++++++++++++---------
- 1 files changed, 15 insertions(+), 9 deletions(-)
+ arch/mips/alchemy/mtx-1/platform.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 5405b36..6e4b795 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -5038,9 +5038,6 @@ static void ata_verify_xfer(struct ata_queued_cmd *qc)
+diff --git a/arch/mips/alchemy/mtx-1/platform.c b/arch/mips/alchemy/mtx-1/platform.c
+index e30e42a..956f946 100644
+--- a/arch/mips/alchemy/mtx-1/platform.c
++++ b/arch/mips/alchemy/mtx-1/platform.c
+@@ -28,6 +28,8 @@
+ #include <linux/mtd/physmap.h>
+ #include <mtd/mtd-abi.h>
+ 
++#include <asm/mach-au1x00/au1xxx_eth.h>
++
+ static struct gpio_keys_button mtx1_gpio_button[] = {
+ 	{
+ 		.gpio = 207,
+@@ -140,10 +142,17 @@ static struct __initdata platform_device * mtx1_devs[] = {
+ 	&mtx1_mtd,
+ };
+ 
++static struct au1000_eth_platform_data mtx1_au1000_eth0_pdata = {
++	.phy_search_highest_addr	= 1,
++	.phy1_search_mac0 		= 1,
++};
++
+ static int __init mtx1_register_devices(void)
  {
- 	struct ata_device *dev = qc->dev;
+ 	int rc;
  
--	if (ata_tag_internal(qc->tag))
--		return;
--
- 	if (ata_is_nodata(qc->tf.protocol))
- 		return;
- 
-@@ -5084,14 +5081,23 @@ void ata_qc_complete(struct ata_queued_cmd *qc)
- 		if (unlikely(qc->err_mask))
- 			qc->flags |= ATA_QCFLAG_FAILED;
- 
--		if (unlikely(qc->flags & ATA_QCFLAG_FAILED)) {
--			/* always fill result TF for failed qc */
-+		/*
-+		 * Finish internal commands without any further processing
-+		 * and always with the result TF filled.
-+		 */
-+		if (unlikely(ata_tag_internal(qc->tag))) {
- 			fill_result_tf(qc);
-+			__ata_qc_complete(qc);
-+			return;
-+		}
- 
--			if (!ata_tag_internal(qc->tag))
--				ata_qc_schedule_eh(qc);
--			else
--				__ata_qc_complete(qc);
-+		/*
-+		 * Non-internal qc has failed.  Fill the result TF and
-+		 * summon EH.
-+		 */
-+		if (unlikely(qc->flags & ATA_QCFLAG_FAILED)) {
-+			fill_result_tf(qc);
-+			ata_qc_schedule_eh(qc);
- 			return;
- 		}
- 
++	au1xxx_override_eth_cfg(0, &mtx1_au1000_eth0_pdata);
++
+ 	rc = gpio_request(mtx1_gpio_button[0].gpio,
+ 					mtx1_gpio_button[0].desc);
+ 	if (rc < 0) {
 -- 
 1.7.4.4
 
