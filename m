@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759351Ab1FWMM3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 08:12:29 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:52533 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757947Ab1FWMM2 (ORCPT
+	id S1759392Ab1FWMMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 08:12:45 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:50243 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757947Ab1FWMMl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 08:12:28 -0400
+	Thu, 23 Jun 2011 08:12:41 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
         <linux-arm-kernel@lists.infradead.org>
 Cc: Lee Jones <lee.jones@linaro.org>,
-        Fredrik Svensson <fredrik.xk.svensson@stericsson.com>,
-        Daniel Willerud <daniel.willerud@stericsson.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>,
         Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 2/4] gpio/nomadik: remove pull-pinconfig and add SPI2
-Date: Thu, 23 Jun 2011 14:12:12 +0200
-Message-ID: <1308831132-10539-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 3/4] gpio/nomadik: disable clocks when unused
+Date: Thu, 23 Jun 2011 14:12:19 +0200
+Message-ID: <1308831139-10653-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,445 +23,393 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Fredrik Svensson <fredrik.xk.svensson@stericsson.com>
+From: Rabin Vincent <rabin.vincent@stericsson.com>
 
-Remove PIN_CFG_PULL in pincfg.h for plat-nomadik, PIN_CFG_INPUT
-already takes care of this. Added support for SPI2.
+The GPIO clock is required for register access and interrupt detection.
+When interrupt detection is not required on any of the pin in a block,
+the block's clock can be disabled when the registers are not being
+accessed.
 
-Signed-off-by: Fredrik Svensson <fredrik.xk.svensson@stericsson.com>
-Signed-off-by: Daniel Willerud <daniel.willerud@stericsson.com>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Reviewed-by: Rickard Andersson <rickard.andersson@stericsson.com>
+Reviewed-by: Jonas Aberg <jonas.aberg@stericsson.com>
+[Adjust for new IRQ chip core code, use only local functions]
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- arch/arm/mach-ux500/pins-db8500.h           |  142 ++++++++++++++-------------
- arch/arm/plat-nomadik/include/plat/pincfg.h |    5 -
- 2 files changed, 73 insertions(+), 74 deletions(-)
+ drivers/gpio/gpio-nomadik.c  |  120 +++++++++++++++++++++++++++++++++++++++---
+ include/linux/gpio/nomadik.h |    3 +
+ 2 files changed, 116 insertions(+), 7 deletions(-)
 
-diff --git a/arch/arm/mach-ux500/pins-db8500.h b/arch/arm/mach-ux500/pins-db8500.h
-index f923764..8b1d1a7 100644
---- a/arch/arm/mach-ux500/pins-db8500.h
-+++ b/arch/arm/mach-ux500/pins-db8500.h
-@@ -35,40 +35,40 @@
- 
- #define GPIO4_GPIO		PIN_CFG(4, GPIO)
- #define GPIO4_U1_RXD		PIN_CFG(4, ALT_A)
--#define GPIO4_I2C4_SCL		PIN_CFG_PULL(4, ALT_B, UP)
-+#define GPIO4_I2C4_SCL		PIN_CFG_INPUT(4, ALT_B, PULLUP)
- #define GPIO4_IP_TRSTn		PIN_CFG(4, ALT_C)
- 
- #define GPIO5_GPIO		PIN_CFG(5, GPIO)
- #define GPIO5_U1_TXD		PIN_CFG(5, ALT_A)
--#define GPIO5_I2C4_SDA		PIN_CFG_PULL(5, ALT_B, UP)
-+#define GPIO5_I2C4_SDA		PIN_CFG_INPUT(5, ALT_B, PULLUP)
- #define GPIO5_IP_GPIO6		PIN_CFG(5, ALT_C)
- 
- #define GPIO6_GPIO		PIN_CFG(6, GPIO)
- #define GPIO6_U1_CTSn		PIN_CFG(6, ALT_A)
--#define GPIO6_I2C1_SCL		PIN_CFG_PULL(6, ALT_B, UP)
-+#define GPIO6_I2C1_SCL		PIN_CFG_INPUT(6, ALT_B, PULLUP)
- #define GPIO6_IP_GPIO0		PIN_CFG(6, ALT_C)
- 
- #define GPIO7_GPIO		PIN_CFG(7, GPIO)
- #define GPIO7_U1_RTSn		PIN_CFG(7, ALT_A)
--#define GPIO7_I2C1_SDA		PIN_CFG_PULL(7, ALT_B, UP)
-+#define GPIO7_I2C1_SDA		PIN_CFG_INPUT(7, ALT_B, PULLUP)
- #define GPIO7_IP_GPIO1		PIN_CFG(7, ALT_C)
- 
- #define GPIO8_GPIO		PIN_CFG(8, GPIO)
--#define GPIO8_IPI2C_SDA		PIN_CFG_PULL(8, ALT_A, UP)
--#define GPIO8_I2C2_SDA		PIN_CFG_PULL(8, ALT_B, UP)
-+#define GPIO8_IPI2C_SDA		PIN_CFG_INPUT(8, ALT_A, PULLUP)
-+#define GPIO8_I2C2_SDA		PIN_CFG_INPUT(8, ALT_B, PULLUP)
- 
- #define GPIO9_GPIO		PIN_CFG(9, GPIO)
--#define GPIO9_IPI2C_SCL		PIN_CFG_PULL(9, ALT_A, UP)
--#define GPIO9_I2C2_SCL		PIN_CFG_PULL(9, ALT_B, UP)
-+#define GPIO9_IPI2C_SCL		PIN_CFG_INPUT(9, ALT_A, PULLUP)
-+#define GPIO9_I2C2_SCL		PIN_CFG_INPUT(9, ALT_B, PULLUP)
- 
- #define GPIO10_GPIO		PIN_CFG(10, GPIO)
--#define GPIO10_IPI2C_SDA	PIN_CFG_PULL(10, ALT_A, UP)
--#define GPIO10_I2C2_SDA		PIN_CFG_PULL(10, ALT_B, UP)
-+#define GPIO10_IPI2C_SDA	PIN_CFG_INPUT(10, ALT_A, PULLUP)
-+#define GPIO10_I2C2_SDA		PIN_CFG_INPUT(10, ALT_B, PULLUP)
- #define GPIO10_IP_GPIO3		PIN_CFG(10, ALT_C)
- 
- #define GPIO11_GPIO		PIN_CFG(11, GPIO)
--#define GPIO11_IPI2C_SCL	PIN_CFG_PULL(11, ALT_A, UP)
--#define GPIO11_I2C2_SCL		PIN_CFG_PULL(11, ALT_B, UP)
-+#define GPIO11_IPI2C_SCL	PIN_CFG_INPUT(11, ALT_A, PULLUP)
-+#define GPIO11_I2C2_SCL		PIN_CFG_INPUT(11, ALT_B, PULLUP)
- #define GPIO11_IP_GPIO2		PIN_CFG(11, ALT_C)
- 
- #define GPIO12_GPIO		PIN_CFG(12, GPIO)
-@@ -87,66 +87,66 @@
- 
- #define GPIO16_GPIO		PIN_CFG(16, GPIO)
- #define GPIO16_MSP0_RFS		PIN_CFG(16, ALT_A)
--#define GPIO16_I2C1_SCL		PIN_CFG_PULL(16, ALT_B, UP)
-+#define GPIO16_I2C1_SCL		PIN_CFG_INPUT(16, ALT_B, PULLUP)
- #define GPIO16_SLIM0_DAT	PIN_CFG(16, ALT_C)
- 
- #define GPIO17_GPIO		PIN_CFG(17, GPIO)
- #define GPIO17_MSP0_RCK		PIN_CFG(17, ALT_A)
--#define GPIO17_I2C1_SDA		PIN_CFG_PULL(17, ALT_B, UP)
-+#define GPIO17_I2C1_SDA		PIN_CFG_INPUT(17, ALT_B, PULLUP)
- #define GPIO17_SLIM0_CLK	PIN_CFG(17, ALT_C)
- 
- #define GPIO18_GPIO		PIN_CFG(18, GPIO)
--#define GPIO18_MC0_CMDDIR	PIN_CFG_PULL(18, ALT_A, UP)
-+#define GPIO18_MC0_CMDDIR	PIN_CFG_INPUT(18, ALT_A, PULLUP)
- #define GPIO18_U2_RXD		PIN_CFG(18, ALT_B)
- #define GPIO18_MS_IEP		PIN_CFG(18, ALT_C)
- 
- #define GPIO19_GPIO		PIN_CFG(19, GPIO)
--#define GPIO19_MC0_DAT0DIR	PIN_CFG_PULL(19, ALT_A, UP)
-+#define GPIO19_MC0_DAT0DIR	PIN_CFG_INPUT(19, ALT_A, PULLUP)
- #define GPIO19_U2_TXD		PIN_CFG(19, ALT_B)
- #define GPIO19_MS_DAT0DIR	PIN_CFG(19, ALT_C)
- 
- #define GPIO20_GPIO		PIN_CFG(20, GPIO)
--#define GPIO20_MC0_DAT2DIR	PIN_CFG_PULL(20, ALT_A, UP)
-+#define GPIO20_MC0_DAT2DIR	PIN_CFG_INPUT(20, ALT_A, PULLUP)
- #define GPIO20_UARTMOD_TXD	PIN_CFG(20, ALT_B)
- #define GPIO20_IP_TRIGOUT	PIN_CFG(20, ALT_C)
- 
- #define GPIO21_GPIO		PIN_CFG(21, GPIO)
--#define GPIO21_MC0_DAT31DIR	PIN_CFG_PULL(21, ALT_A, UP)
-+#define GPIO21_MC0_DAT31DIR	PIN_CFG_INPUT(21, ALT_A, PULLUP)
- #define GPIO21_MSP0_SCK		PIN_CFG(21, ALT_B)
- #define GPIO21_MS_DAT31DIR	PIN_CFG(21, ALT_C)
- 
- #define GPIO22_GPIO		PIN_CFG(22, GPIO)
--#define GPIO22_MC0_FBCLK	PIN_CFG_PULL(22, ALT_A, UP)
-+#define GPIO22_MC0_FBCLK	PIN_CFG_INPUT(22, ALT_A, PULLUP)
- #define GPIO22_UARTMOD_RXD	PIN_CFG(22, ALT_B)
- #define GPIO22_MS_FBCLK		PIN_CFG(22, ALT_C)
- 
- #define GPIO23_GPIO		PIN_CFG(23, GPIO)
--#define GPIO23_MC0_CLK		PIN_CFG_PULL(23, ALT_A, UP)
-+#define GPIO23_MC0_CLK		PIN_CFG_INPUT(23, ALT_A, PULLUP)
- #define GPIO23_STMMOD_CLK	PIN_CFG(23, ALT_B)
- #define GPIO23_MS_CLK		PIN_CFG(23, ALT_C)
- 
- #define GPIO24_GPIO		PIN_CFG(24, GPIO)
--#define GPIO24_MC0_CMD		PIN_CFG_PULL(24, ALT_A, UP)
-+#define GPIO24_MC0_CMD		PIN_CFG_INPUT(24, ALT_A, PULLUP)
- #define GPIO24_UARTMOD_RXD	PIN_CFG(24, ALT_B)
- #define GPIO24_MS_BS		PIN_CFG(24, ALT_C)
- 
- #define GPIO25_GPIO		PIN_CFG(25, GPIO)
--#define GPIO25_MC0_DAT0		PIN_CFG_PULL(25, ALT_A, UP)
-+#define GPIO25_MC0_DAT0		PIN_CFG_INPUT(25, ALT_A, PULLUP)
- #define GPIO25_STMMOD_DAT0	PIN_CFG(25, ALT_B)
- #define GPIO25_MS_DAT0		PIN_CFG(25, ALT_C)
- 
- #define GPIO26_GPIO		PIN_CFG(26, GPIO)
--#define GPIO26_MC0_DAT1		PIN_CFG_PULL(26, ALT_A, UP)
-+#define GPIO26_MC0_DAT1		PIN_CFG_INPUT(26, ALT_A, PULLUP)
- #define GPIO26_STMMOD_DAT1	PIN_CFG(26, ALT_B)
- #define GPIO26_MS_DAT1		PIN_CFG(26, ALT_C)
- 
- #define GPIO27_GPIO		PIN_CFG(27, GPIO)
--#define GPIO27_MC0_DAT2		PIN_CFG_PULL(27, ALT_A, UP)
-+#define GPIO27_MC0_DAT2		PIN_CFG_INPUT(27, ALT_A, PULLUP)
- #define GPIO27_STMMOD_DAT2	PIN_CFG(27, ALT_B)
- #define GPIO27_MS_DAT2		PIN_CFG(27, ALT_C)
- 
- #define GPIO28_GPIO		PIN_CFG(28, GPIO)
--#define GPIO28_MC0_DAT3		PIN_CFG_PULL(28, ALT_A, UP)
-+#define GPIO28_MC0_DAT3		PIN_CFG_INPUT(28, ALT_A, PULLUP)
- #define GPIO28_STMMOD_DAT3	PIN_CFG(28, ALT_B)
- #define GPIO28_MS_DAT3		PIN_CFG(28, ALT_C)
- 
-@@ -357,48 +357,48 @@
- #define GPIO97_MC5_DAT7		PIN_CFG(97, ALT_C)
- 
- #define GPIO128_GPIO		PIN_CFG(128, GPIO)
--#define GPIO128_MC2_CLK		PIN_CFG_PULL(128, ALT_A, UP)
-+#define GPIO128_MC2_CLK		PIN_CFG_INPUT(128, ALT_A, PULLUP)
- #define GPIO128_SM_CKO		PIN_CFG(128, ALT_B)
- 
- #define GPIO129_GPIO		PIN_CFG(129, GPIO)
--#define GPIO129_MC2_CMD		PIN_CFG_PULL(129, ALT_A, UP)
-+#define GPIO129_MC2_CMD		PIN_CFG_INPUT(129, ALT_A, PULLUP)
- #define GPIO129_SM_WAIT0n	PIN_CFG(129, ALT_B)
- 
- #define GPIO130_GPIO		PIN_CFG(130, GPIO)
--#define GPIO130_MC2_FBCLK	PIN_CFG_PULL(130, ALT_A, UP)
-+#define GPIO130_MC2_FBCLK	PIN_CFG_INPUT(130, ALT_A, PULLUP)
- #define GPIO130_SM_FBCLK	PIN_CFG(130, ALT_B)
- #define GPIO130_MC2_RSTN	PIN_CFG(130, ALT_C)
- 
- #define GPIO131_GPIO		PIN_CFG(131, GPIO)
--#define GPIO131_MC2_DAT0	PIN_CFG_PULL(131, ALT_A, UP)
-+#define GPIO131_MC2_DAT0	PIN_CFG_INPUT(131, ALT_A, PULLUP)
- #define GPIO131_SM_ADQ8		PIN_CFG(131, ALT_B)
- 
- #define GPIO132_GPIO		PIN_CFG(132, GPIO)
--#define GPIO132_MC2_DAT1	PIN_CFG_PULL(132, ALT_A, UP)
-+#define GPIO132_MC2_DAT1	PIN_CFG_INPUT(132, ALT_A, PULLUP)
- #define GPIO132_SM_ADQ9		PIN_CFG(132, ALT_B)
- 
- #define GPIO133_GPIO		PIN_CFG(133, GPIO)
--#define GPIO133_MC2_DAT2	PIN_CFG_PULL(133, ALT_A, UP)
-+#define GPIO133_MC2_DAT2	PIN_CFG_INPUT(133, ALT_A, PULLUP)
- #define GPIO133_SM_ADQ10	PIN_CFG(133, ALT_B)
- 
- #define GPIO134_GPIO		PIN_CFG(134, GPIO)
--#define GPIO134_MC2_DAT3	PIN_CFG_PULL(134, ALT_A, UP)
-+#define GPIO134_MC2_DAT3	PIN_CFG_INPUT(134, ALT_A, PULLUP)
- #define GPIO134_SM_ADQ11	PIN_CFG(134, ALT_B)
- 
- #define GPIO135_GPIO		PIN_CFG(135, GPIO)
--#define GPIO135_MC2_DAT4	PIN_CFG_PULL(135, ALT_A, UP)
-+#define GPIO135_MC2_DAT4	PIN_CFG_INPUT(135, ALT_A, PULLUP)
- #define GPIO135_SM_ADQ12	PIN_CFG(135, ALT_B)
- 
- #define GPIO136_GPIO		PIN_CFG(136, GPIO)
--#define GPIO136_MC2_DAT5	PIN_CFG_PULL(136, ALT_A, UP)
-+#define GPIO136_MC2_DAT5	PIN_CFG_INPUT(136, ALT_A, PULLUP)
- #define GPIO136_SM_ADQ13	PIN_CFG(136, ALT_B)
- 
- #define GPIO137_GPIO		PIN_CFG(137, GPIO)
--#define GPIO137_MC2_DAT6	PIN_CFG_PULL(137, ALT_A, UP)
-+#define GPIO137_MC2_DAT6	PIN_CFG_INPUT(137, ALT_A, PULLUP)
- #define GPIO137_SM_ADQ14	PIN_CFG(137, ALT_B)
- 
- #define GPIO138_GPIO		PIN_CFG(138, GPIO)
--#define GPIO138_MC2_DAT7	PIN_CFG_PULL(138, ALT_A, UP)
-+#define GPIO138_MC2_DAT7	PIN_CFG_INPUT(138, ALT_A, PULLUP)
- #define GPIO138_SM_ADQ15	PIN_CFG(138, ALT_B)
- 
- #define GPIO139_GPIO		PIN_CFG(139, GPIO)
-@@ -434,10 +434,10 @@
- #define GPIO146_SSP0_TXD	PIN_CFG(146, ALT_A)
- 
- #define GPIO147_GPIO		PIN_CFG(147, GPIO)
--#define GPIO147_I2C0_SCL	PIN_CFG_PULL(147, ALT_A, UP)
-+#define GPIO147_I2C0_SCL	PIN_CFG_INPUT(147, ALT_A, PULLUP)
- 
- #define GPIO148_GPIO		PIN_CFG(148, GPIO)
--#define GPIO148_I2C0_SDA	PIN_CFG_PULL(148, ALT_A, UP)
-+#define GPIO148_I2C0_SDA	PIN_CFG_INPUT(148, ALT_A, PULLUP)
- 
- #define GPIO149_GPIO		PIN_CFG(149, GPIO)
- #define GPIO149_IP_GPIO0	PIN_CFG(149, ALT_A)
-@@ -459,82 +459,82 @@
- #define GPIO152_KP_O9		PIN_CFG(152, ALT_C)
- 
- #define GPIO153_GPIO		PIN_CFG(153, GPIO)
--#define GPIO153_KP_I7		PIN_CFG_PULL(153, ALT_A, DOWN)
-+#define GPIO153_KP_I7		PIN_CFG_INPUT(153, ALT_A, PULLDOWN)
- #define GPIO153_LCD_D24		PIN_CFG(153, ALT_B)
- #define GPIO153_U2_RXD		PIN_CFG(153, ALT_C)
- 
- #define GPIO154_GPIO		PIN_CFG(154, GPIO)
--#define GPIO154_KP_I6		PIN_CFG_PULL(154, ALT_A, DOWN)
-+#define GPIO154_KP_I6		PIN_CFG_INPUT(154, ALT_A, PULLDOWN)
- #define GPIO154_LCD_D25		PIN_CFG(154, ALT_B)
- #define GPIO154_U2_TXD		PIN_CFG(154, ALT_C)
- 
- #define GPIO155_GPIO		PIN_CFG(155, GPIO)
--#define GPIO155_KP_I5		PIN_CFG_PULL(155, ALT_A, DOWN)
-+#define GPIO155_KP_I5		PIN_CFG_INPUT(155, ALT_A, PULLDOWN)
- #define GPIO155_LCD_D26		PIN_CFG(155, ALT_B)
- #define GPIO155_STMAPE_CLK	PIN_CFG(155, ALT_C)
- 
- #define GPIO156_GPIO		PIN_CFG(156, GPIO)
--#define GPIO156_KP_I4		PIN_CFG_PULL(156, ALT_A, DOWN)
-+#define GPIO156_KP_I4		PIN_CFG_INPUT(156, ALT_A, PULLDOWN)
- #define GPIO156_LCD_D27		PIN_CFG(156, ALT_B)
- #define GPIO156_STMAPE_DAT3	PIN_CFG(156, ALT_C)
- 
- #define GPIO157_GPIO		PIN_CFG(157, GPIO)
--#define GPIO157_KP_O7		PIN_CFG_PULL(157, ALT_A, UP)
-+#define GPIO157_KP_O7		PIN_CFG_INPUT(157, ALT_A, PULLUP)
- #define GPIO157_LCD_D28		PIN_CFG(157, ALT_B)
- #define GPIO157_STMAPE_DAT2	PIN_CFG(157, ALT_C)
- 
- #define GPIO158_GPIO		PIN_CFG(158, GPIO)
--#define GPIO158_KP_O6		PIN_CFG_PULL(158, ALT_A, UP)
-+#define GPIO158_KP_O6		PIN_CFG_INPUT(158, ALT_A, PULLUP)
- #define GPIO158_LCD_D29		PIN_CFG(158, ALT_B)
- #define GPIO158_STMAPE_DAT1	PIN_CFG(158, ALT_C)
- 
- #define GPIO159_GPIO		PIN_CFG(159, GPIO)
--#define GPIO159_KP_O5		PIN_CFG_PULL(159, ALT_A, UP)
-+#define GPIO159_KP_O5		PIN_CFG_INPUT(159, ALT_A, PULLUP)
- #define GPIO159_LCD_D30		PIN_CFG(159, ALT_B)
- #define GPIO159_STMAPE_DAT0	PIN_CFG(159, ALT_C)
- 
- #define GPIO160_GPIO		PIN_CFG(160, GPIO)
--#define GPIO160_KP_O4		PIN_CFG_PULL(160, ALT_A, UP)
-+#define GPIO160_KP_O4		PIN_CFG_INPUT(160, ALT_A, PULLUP)
- #define GPIO160_LCD_D31		PIN_CFG(160, ALT_B)
- #define GPIO160_NONE		PIN_CFG(160, ALT_C)
- 
- #define GPIO161_GPIO		PIN_CFG(161, GPIO)
--#define GPIO161_KP_I3		PIN_CFG_PULL(161, ALT_A, DOWN)
-+#define GPIO161_KP_I3		PIN_CFG_INPUT(161, ALT_A, PULLDOWN)
- #define GPIO161_LCD_D32		PIN_CFG(161, ALT_B)
- #define GPIO161_UARTMOD_RXD	PIN_CFG(161, ALT_C)
- 
- #define GPIO162_GPIO		PIN_CFG(162, GPIO)
--#define GPIO162_KP_I2		PIN_CFG_PULL(162, ALT_A, DOWN)
-+#define GPIO162_KP_I2		PIN_CFG_INPUT(162, ALT_A, PULLDOWN)
- #define GPIO162_LCD_D33		PIN_CFG(162, ALT_B)
- #define GPIO162_UARTMOD_TXD	PIN_CFG(162, ALT_C)
- 
- #define GPIO163_GPIO		PIN_CFG(163, GPIO)
--#define GPIO163_KP_I1		PIN_CFG_PULL(163, ALT_A, DOWN)
-+#define GPIO163_KP_I1		PIN_CFG_INPUT(163, ALT_A, PULLDOWN)
- #define GPIO163_LCD_D34		PIN_CFG(163, ALT_B)
- #define GPIO163_STMMOD_CLK	PIN_CFG(163, ALT_C)
- 
- #define GPIO164_GPIO		PIN_CFG(164, GPIO)
--#define GPIO164_KP_I0		PIN_CFG_PULL(164, ALT_A, UP)
-+#define GPIO164_KP_I0		PIN_CFG_INPUT(164, ALT_A, PULLUP)
- #define GPIO164_LCD_D35		PIN_CFG(164, ALT_B)
- #define GPIO164_STMMOD_DAT3	PIN_CFG(164, ALT_C)
- 
- #define GPIO165_GPIO		PIN_CFG(165, GPIO)
--#define GPIO165_KP_O3		PIN_CFG_PULL(165, ALT_A, UP)
-+#define GPIO165_KP_O3		PIN_CFG_INPUT(165, ALT_A, PULLUP)
- #define GPIO165_LCD_D36		PIN_CFG(165, ALT_B)
- #define GPIO165_STMMOD_DAT2	PIN_CFG(165, ALT_C)
- 
- #define GPIO166_GPIO		PIN_CFG(166, GPIO)
--#define GPIO166_KP_O2		PIN_CFG_PULL(166, ALT_A, UP)
-+#define GPIO166_KP_O2		PIN_CFG_INPUT(166, ALT_A, PULLUP)
- #define GPIO166_LCD_D37		PIN_CFG(166, ALT_B)
- #define GPIO166_STMMOD_DAT1	PIN_CFG(166, ALT_C)
- 
- #define GPIO167_GPIO		PIN_CFG(167, GPIO)
--#define GPIO167_KP_O1		PIN_CFG_PULL(167, ALT_A, UP)
-+#define GPIO167_KP_O1		PIN_CFG_INPUT(167, ALT_A, PULLUP)
- #define GPIO167_LCD_D38		PIN_CFG(167, ALT_B)
- #define GPIO167_STMMOD_DAT0	PIN_CFG(167, ALT_C)
- 
- #define GPIO168_GPIO		PIN_CFG(168, GPIO)
--#define GPIO168_KP_O0		PIN_CFG_PULL(168, ALT_A, UP)
-+#define GPIO168_KP_O0		PIN_CFG_INPUT(168, ALT_A, PULLUP)
- #define GPIO168_LCD_D39		PIN_CFG(168, ALT_B)
- #define GPIO168_NONE		PIN_CFG(168, ALT_C)
- 
-@@ -569,39 +569,39 @@
- #define GPIO196_MSP2_RXD	PIN_CFG(196, ALT_A)
- 
- #define GPIO197_GPIO		PIN_CFG(197, GPIO)
--#define GPIO197_MC4_DAT3	PIN_CFG_PULL(197, ALT_A, UP)
-+#define GPIO197_MC4_DAT3	PIN_CFG_INPUT(197, ALT_A, PULLUP)
- 
- #define GPIO198_GPIO		PIN_CFG(198, GPIO)
--#define GPIO198_MC4_DAT2	PIN_CFG_PULL(198, ALT_A, UP)
-+#define GPIO198_MC4_DAT2	PIN_CFG_INPUT(198, ALT_A, PULLUP)
- 
- #define GPIO199_GPIO		PIN_CFG(199, GPIO)
--#define GPIO199_MC4_DAT1	PIN_CFG_PULL(199, ALT_A, UP)
-+#define GPIO199_MC4_DAT1	PIN_CFG_INPUT(199, ALT_A, PULLUP)
- 
- #define GPIO200_GPIO		PIN_CFG(200, GPIO)
--#define GPIO200_MC4_DAT0	PIN_CFG_PULL(200, ALT_A, UP)
-+#define GPIO200_MC4_DAT0	PIN_CFG_INPUT(200, ALT_A, PULLUP)
- 
- #define GPIO201_GPIO		PIN_CFG(201, GPIO)
--#define GPIO201_MC4_CMD		PIN_CFG_PULL(201, ALT_A, UP)
-+#define GPIO201_MC4_CMD		PIN_CFG_INPUT(201, ALT_A, PULLUP)
- 
- #define GPIO202_GPIO		PIN_CFG(202, GPIO)
--#define GPIO202_MC4_FBCLK	PIN_CFG_PULL(202, ALT_A, UP)
-+#define GPIO202_MC4_FBCLK	PIN_CFG_INPUT(202, ALT_A, PULLUP)
- #define GPIO202_PWL		PIN_CFG(202, ALT_B)
- #define GPIO202_MC4_RSTN	PIN_CFG(202, ALT_C)
- 
- #define GPIO203_GPIO		PIN_CFG(203, GPIO)
--#define GPIO203_MC4_CLK		PIN_CFG_PULL(203, ALT_A, UP)
-+#define GPIO203_MC4_CLK		PIN_CFG_INPUT(203, ALT_A, PULLUP)
- 
- #define GPIO204_GPIO		PIN_CFG(204, GPIO)
--#define GPIO204_MC4_DAT7	PIN_CFG_PULL(204, ALT_A, UP)
-+#define GPIO204_MC4_DAT7	PIN_CFG_INPUT(204, ALT_A, PULLUP)
- 
- #define GPIO205_GPIO		PIN_CFG(205, GPIO)
--#define GPIO205_MC4_DAT6	PIN_CFG_PULL(205, ALT_A, UP)
-+#define GPIO205_MC4_DAT6	PIN_CFG_INPUT(205, ALT_A, PULLUP)
- 
- #define GPIO206_GPIO		PIN_CFG(206, GPIO)
--#define GPIO206_MC4_DAT5	PIN_CFG_PULL(206, ALT_A, UP)
-+#define GPIO206_MC4_DAT5	PIN_CFG_INPUT(206, ALT_A, PULLUP)
- 
- #define GPIO207_GPIO		PIN_CFG(207, GPIO)
--#define GPIO207_MC4_DAT4	PIN_CFG_PULL(207, ALT_A, UP)
-+#define GPIO207_MC4_DAT4	PIN_CFG_INPUT(207, ALT_A, PULLUP)
- 
- #define GPIO208_GPIO		PIN_CFG(208, GPIO)
- #define GPIO208_MC1_CLK		PIN_CFG(208, ALT_A)
-@@ -632,21 +632,25 @@
- #define GPIO215_MC1_CMDDIR	PIN_CFG(215, ALT_A)
- #define GPIO215_MC3_DAT2DIR	PIN_CFG(215, ALT_B)
- #define GPIO215_CLKOUT1		PIN_CFG(215, ALT_C)
-+#define GPIO215_SPI2_TXD	PIN_CFG(215, ALT_C)
- 
- #define GPIO216_GPIO		PIN_CFG(216, GPIO)
- #define GPIO216_MC1_DAT2DIR	PIN_CFG(216, ALT_A)
- #define GPIO216_MC3_CMDDIR	PIN_CFG(216, ALT_B)
--#define GPIO216_I2C3_SDA	PIN_CFG_PULL(216, ALT_C, UP)
-+#define GPIO216_I2C3_SDA	PIN_CFG_INPUT(216, ALT_C, PULLUP)
-+#define GPIO216_SPI2_FRM	PIN_CFG(216, ALT_C)
- 
- #define GPIO217_GPIO		PIN_CFG(217, GPIO)
- #define GPIO217_MC1_DAT0DIR	PIN_CFG(217, ALT_A)
- #define GPIO217_MC3_DAT31DIR	PIN_CFG(217, ALT_B)
- #define GPIO217_CLKOUT2		PIN_CFG(217, ALT_C)
-+#define GPIO217_SPI2_CLK	PIN_CFG(217, ALT_C)
- 
- #define GPIO218_GPIO		PIN_CFG(218, GPIO)
- #define GPIO218_MC1_DAT31DIR	PIN_CFG(218, ALT_A)
- #define GPIO218_MC3_DAT0DIR	PIN_CFG(218, ALT_B)
--#define GPIO218_I2C3_SCL	PIN_CFG_PULL(218, ALT_C, UP)
-+#define GPIO218_I2C3_SCL	PIN_CFG_INPUT(218, ALT_C, PULLUP)
-+#define GPIO218_SPI2_RXD	PIN_CFG(218, ALT_C)
- 
- #define GPIO219_GPIO		PIN_CFG(219, GPIO)
- #define GPIO219_HSIR_FLA0	PIN_CFG(219, ALT_A)
-@@ -694,12 +698,12 @@
- #define GPIO229_GPIO		PIN_CFG(229, GPIO)
- #define GPIO229_CLKOUT1		PIN_CFG(229, ALT_A)
- #define GPIO229_PWL		PIN_CFG(229, ALT_B)
--#define GPIO229_I2C3_SDA	PIN_CFG_PULL(229, ALT_C, UP)
-+#define GPIO229_I2C3_SDA	PIN_CFG_INPUT(229, ALT_C, PULLUP)
- 
- #define GPIO230_GPIO		PIN_CFG(230, GPIO)
- #define GPIO230_CLKOUT2		PIN_CFG(230, ALT_A)
- #define GPIO230_PWL		PIN_CFG(230, ALT_B)
--#define GPIO230_I2C3_SCL	PIN_CFG_PULL(230, ALT_C, UP)
-+#define GPIO230_I2C3_SCL	PIN_CFG_INPUT(230, ALT_C, PULLUP)
- 
- #define GPIO256_GPIO		PIN_CFG(256, GPIO)
- #define GPIO256_USB_NXT		PIN_CFG(256, ALT_A)
-diff --git a/arch/arm/plat-nomadik/include/plat/pincfg.h b/arch/arm/plat-nomadik/include/plat/pincfg.h
-index 05a3936..22cb97d 100644
---- a/arch/arm/plat-nomadik/include/plat/pincfg.h
-+++ b/arch/arm/plat-nomadik/include/plat/pincfg.h
-@@ -37,7 +37,6 @@
-  *		     SLPM value = same as normal
-  *
-  * PIN_CFG	   - default config with alternate function
-- * PIN_CFG_PULL	   - default config with alternate function and pull up/down
-  */
- 
- typedef unsigned long pin_cfg_t;
-@@ -133,10 +132,6 @@ typedef unsigned long pin_cfg_t;
- 	(PIN_CFG_DEFAULT |\
- 	 (PIN_NUM(num) | PIN_##alt | PIN_OUTPUT_##val))
- 
--#define PIN_CFG_PULL(num, alt, pull)	\
--	((PIN_CFG_DEFAULT & ~PIN_PULL_MASK) |\
--	 (PIN_NUM(num) | PIN_##alt | PIN_PULL_##pull))
+diff --git a/drivers/gpio/gpio-nomadik.c b/drivers/gpio/gpio-nomadik.c
+index efc7560..4300b9f 100644
+--- a/drivers/gpio/gpio-nomadik.c
++++ b/drivers/gpio/gpio-nomadik.c
+@@ -276,6 +276,8 @@ static void nmk_gpio_glitch_slpm_init(unsigned int *slpm)
+ 		if (!chip)
+ 			break;
+ 
++		clk_enable(chip->clk);
++
+ 		slpm[i] = readl(chip->addr + NMK_GPIO_SLPC);
+ 		writel(temp, chip->addr + NMK_GPIO_SLPC);
+ 	}
+@@ -292,6 +294,8 @@ static void nmk_gpio_glitch_slpm_restore(unsigned int *slpm)
+ 			break;
+ 
+ 		writel(slpm[i], chip->addr + NMK_GPIO_SLPC);
++
++		clk_disable(chip->clk);
+ 	}
+ }
+ 
+@@ -336,10 +340,12 @@ static int __nmk_config_pins(pin_cfg_t *cfgs, int num, bool sleep)
+ 			break;
+ 		}
+ 
++		clk_enable(nmk_chip->clk);
+ 		spin_lock(&nmk_chip->lock);
+ 		__nmk_config_pin(nmk_chip, pin - nmk_chip->chip.base,
+ 				 cfgs[i], sleep, glitch ? slpm : NULL);
+ 		spin_unlock(&nmk_chip->lock);
++		clk_disable(nmk_chip->clk);
+ 	}
+ 
+ 	if (glitch)
+@@ -424,6 +430,7 @@ int nmk_gpio_set_slpm(int gpio, enum nmk_gpio_slpm mode)
+ 	if (!nmk_chip)
+ 		return -EINVAL;
+ 
++	clk_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
+ 	spin_lock(&nmk_chip->lock);
+ 
+@@ -431,6 +438,7 @@ int nmk_gpio_set_slpm(int gpio, enum nmk_gpio_slpm mode)
+ 
+ 	spin_unlock(&nmk_chip->lock);
+ 	spin_unlock_irqrestore(&nmk_gpio_slpm_lock, flags);
++	clk_disable(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -457,9 +465,11 @@ int nmk_gpio_set_pull(int gpio, enum nmk_gpio_pull pull)
+ 	if (!nmk_chip)
+ 		return -EINVAL;
+ 
++	clk_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_chip->lock, flags);
+ 	__nmk_gpio_set_pull(nmk_chip, gpio - nmk_chip->chip.base, pull);
+ 	spin_unlock_irqrestore(&nmk_chip->lock, flags);
++	clk_disable(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -483,9 +493,11 @@ int nmk_gpio_set_mode(int gpio, int gpio_mode)
+ 	if (!nmk_chip)
+ 		return -EINVAL;
+ 
++	clk_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_chip->lock, flags);
+ 	__nmk_gpio_set_mode(nmk_chip, gpio - nmk_chip->chip.base, gpio_mode);
+ 	spin_unlock_irqrestore(&nmk_chip->lock, flags);
++	clk_disable(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -502,9 +514,13 @@ int nmk_gpio_get_mode(int gpio)
+ 
+ 	bit = 1 << (gpio - nmk_chip->chip.base);
+ 
++	clk_enable(nmk_chip->clk);
++
+ 	afunc = readl(nmk_chip->addr + NMK_GPIO_AFSLA) & bit;
+ 	bfunc = readl(nmk_chip->addr + NMK_GPIO_AFSLB) & bit;
+ 
++	clk_disable(nmk_chip->clk);
++
+ 	return (afunc ? NMK_GPIO_ALT_A : 0) | (bfunc ? NMK_GPIO_ALT_B : 0);
+ }
+ EXPORT_SYMBOL(nmk_gpio_get_mode);
+@@ -525,7 +541,10 @@ static void nmk_gpio_irq_ack(struct irq_data *d)
+ 	nmk_chip = irq_data_get_irq_chip_data(d);
+ 	if (!nmk_chip)
+ 		return;
++
++	clk_enable(nmk_chip->clk);
+ 	writel(nmk_gpio_get_bitmask(gpio), nmk_chip->addr + NMK_GPIO_IC);
++	clk_disable(nmk_chip->clk);
+ }
+ 
+ enum nmk_gpio_irq_type {
+@@ -591,6 +610,7 @@ static int nmk_gpio_irq_maskunmask(struct irq_data *d, bool enable)
+ 	else
+ 		nmk_chip->enabled &= ~bitmask;
+ 
++	clk_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
+ 	spin_lock(&nmk_chip->lock);
+ 
+@@ -601,6 +621,7 @@ static int nmk_gpio_irq_maskunmask(struct irq_data *d, bool enable)
+ 
+ 	spin_unlock(&nmk_chip->lock);
+ 	spin_unlock_irqrestore(&nmk_gpio_slpm_lock, flags);
++	clk_disable(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+@@ -628,6 +649,7 @@ static int nmk_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
+ 		return -EINVAL;
+ 	bitmask = nmk_gpio_get_bitmask(gpio);
+ 
++	clk_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_gpio_slpm_lock, flags);
+ 	spin_lock(&nmk_chip->lock);
+ 
+@@ -641,13 +663,15 @@ static int nmk_gpio_irq_set_wake(struct irq_data *d, unsigned int on)
+ 
+ 	spin_unlock(&nmk_chip->lock);
+ 	spin_unlock_irqrestore(&nmk_gpio_slpm_lock, flags);
++	clk_disable(nmk_chip->clk);
+ 
+ 	return 0;
+ }
+ 
+ static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ {
+-	bool enabled, wake = irqd_is_wakeup_set(d);
++	bool enabled;
++	bool wake = irqd_is_wakeup_set(d);
+ 	int gpio;
+ 	struct nmk_gpio_chip *nmk_chip;
+ 	unsigned long flags;
+@@ -664,10 +688,10 @@ static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ 	if (type & IRQ_TYPE_LEVEL_LOW)
+ 		return -EINVAL;
+ 
+-	enabled = nmk_chip->enabled & bitmask;
 -
- extern int nmk_config_pin(pin_cfg_t cfg, bool sleep);
- extern int nmk_config_pins(pin_cfg_t *cfgs, int num);
- extern int nmk_config_pins_sleep(pin_cfg_t *cfgs, int num);
++	clk_enable(nmk_chip->clk);
+ 	spin_lock_irqsave(&nmk_chip->lock, flags);
+ 
++	enabled = !!(nmk_chip->enabled & bitmask);
+ 	if (enabled)
+ 		__nmk_gpio_irq_modify(nmk_chip, gpio, NORMAL, false);
+ 
+@@ -689,10 +713,28 @@ static int nmk_gpio_irq_set_type(struct irq_data *d, unsigned int type)
+ 		__nmk_gpio_irq_modify(nmk_chip, gpio, WAKE, true);
+ 
+ 	spin_unlock_irqrestore(&nmk_chip->lock, flags);
++	clk_disable(nmk_chip->clk);
++
++	return 0;
++}
++
++static unsigned int nmk_gpio_irq_startup(struct irq_data *d)
++{
++	struct nmk_gpio_chip *nmk_chip = irq_data_get_irq_chip_data(d);
+ 
++	clk_enable(nmk_chip->clk);
++	nmk_gpio_irq_unmask(d);
+ 	return 0;
+ }
+ 
++static void nmk_gpio_irq_shutdown(struct irq_data *d)
++{
++	struct nmk_gpio_chip *nmk_chip = irq_data_get_irq_chip_data(d);
++
++	nmk_gpio_irq_mask(d);
++	clk_disable(nmk_chip->clk);
++}
++
+ static struct irq_chip nmk_gpio_irq_chip = {
+ 	.name		= "Nomadik-GPIO",
+ 	.irq_ack	= nmk_gpio_irq_ack,
+@@ -700,6 +742,8 @@ static struct irq_chip nmk_gpio_irq_chip = {
+ 	.irq_unmask	= nmk_gpio_irq_unmask,
+ 	.irq_set_type	= nmk_gpio_irq_set_type,
+ 	.irq_set_wake	= nmk_gpio_irq_set_wake,
++	.irq_startup	= nmk_gpio_irq_startup,
++	.irq_shutdown	= nmk_gpio_irq_shutdown,
+ };
+ 
+ static void __nmk_gpio_irq_handler(unsigned int irq, struct irq_desc *desc,
+@@ -726,7 +770,11 @@ static void __nmk_gpio_irq_handler(unsigned int irq, struct irq_desc *desc,
+ static void nmk_gpio_irq_handler(unsigned int irq, struct irq_desc *desc)
+ {
+ 	struct nmk_gpio_chip *nmk_chip = irq_get_handler_data(irq);
+-	u32 status = readl(nmk_chip->addr + NMK_GPIO_IS);
++	u32 status;
++
++	clk_enable(nmk_chip->clk);
++	status = readl(nmk_chip->addr + NMK_GPIO_IS);
++	clk_disable(nmk_chip->clk);
+ 
+ 	__nmk_gpio_irq_handler(irq, desc, status);
+ }
+@@ -772,7 +820,12 @@ static int nmk_gpio_make_input(struct gpio_chip *chip, unsigned offset)
+ 	struct nmk_gpio_chip *nmk_chip =
+ 		container_of(chip, struct nmk_gpio_chip, chip);
+ 
++	clk_enable(nmk_chip->clk);
++
+ 	writel(1 << offset, nmk_chip->addr + NMK_GPIO_DIRC);
++
++	clk_disable(nmk_chip->clk);
++
+ 	return 0;
+ }
+ 
+@@ -781,8 +834,15 @@ static int nmk_gpio_get_input(struct gpio_chip *chip, unsigned offset)
+ 	struct nmk_gpio_chip *nmk_chip =
+ 		container_of(chip, struct nmk_gpio_chip, chip);
+ 	u32 bit = 1 << offset;
++	int value;
++
++	clk_enable(nmk_chip->clk);
++
++	value = (readl(nmk_chip->addr + NMK_GPIO_DAT) & bit) != 0;
+ 
+-	return (readl(nmk_chip->addr + NMK_GPIO_DAT) & bit) != 0;
++	clk_disable(nmk_chip->clk);
++
++	return value;
+ }
+ 
+ static void nmk_gpio_set_output(struct gpio_chip *chip, unsigned offset,
+@@ -791,7 +851,11 @@ static void nmk_gpio_set_output(struct gpio_chip *chip, unsigned offset,
+ 	struct nmk_gpio_chip *nmk_chip =
+ 		container_of(chip, struct nmk_gpio_chip, chip);
+ 
++	clk_enable(nmk_chip->clk);
++
+ 	__nmk_gpio_set_output(nmk_chip, offset, val);
++
++	clk_disable(nmk_chip->clk);
+ }
+ 
+ static int nmk_gpio_make_output(struct gpio_chip *chip, unsigned offset,
+@@ -800,8 +864,12 @@ static int nmk_gpio_make_output(struct gpio_chip *chip, unsigned offset,
+ 	struct nmk_gpio_chip *nmk_chip =
+ 		container_of(chip, struct nmk_gpio_chip, chip);
+ 
++	clk_enable(nmk_chip->clk);
++
+ 	__nmk_gpio_make_output(nmk_chip, offset, val);
+ 
++	clk_disable(nmk_chip->clk);
++
+ 	return 0;
+ }
+ 
+@@ -832,6 +900,8 @@ static void nmk_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+ 		[NMK_GPIO_ALT_C]	= "altC",
+ 	};
+ 
++	clk_enable(nmk_chip->clk);
++
+ 	for (i = 0; i < chip->ngpio; i++, gpio++) {
+ 		const char *label = gpiochip_is_requested(chip, i);
+ 		bool pull;
+@@ -876,6 +946,8 @@ static void nmk_gpio_dbg_show(struct seq_file *s, struct gpio_chip *chip)
+ 
+ 		seq_printf(s, "\n");
+ 	}
++
++	clk_disable(nmk_chip->clk);
+ }
+ 
+ #else
+@@ -893,6 +965,34 @@ static struct gpio_chip nmk_gpio_template = {
+ 	.can_sleep		= 0,
+ };
+ 
++void nmk_gpio_clocks_enable(void)
++{
++	int i;
++
++	for (i = 0; i < NUM_BANKS; i++) {
++		struct nmk_gpio_chip *chip = nmk_gpio_chips[i];
++
++		if (!chip)
++			continue;
++
++		clk_enable(chip->clk);
++	}
++}
++
++void nmk_gpio_clocks_disable(void)
++{
++	int i;
++
++	for (i = 0; i < NUM_BANKS; i++) {
++		struct nmk_gpio_chip *chip = nmk_gpio_chips[i];
++
++		if (!chip)
++			continue;
++
++		clk_disable(chip->clk);
++	}
++}
++
+ /*
+  * Called from the suspend/resume path to only keep the real wakeup interrupts
+  * (those that have had set_irq_wake() called on them) as wakeup interrupts,
+@@ -912,6 +1012,8 @@ void nmk_gpio_wakeups_suspend(void)
+ 		if (!chip)
+ 			break;
+ 
++		clk_enable(chip->clk);
++
+ 		chip->rwimsc = readl(chip->addr + NMK_GPIO_RWIMSC);
+ 		chip->fwimsc = readl(chip->addr + NMK_GPIO_FWIMSC);
+ 
+@@ -926,6 +1028,8 @@ void nmk_gpio_wakeups_suspend(void)
+ 			/* 0 -> wakeup enable */
+ 			writel(~chip->real_wake, chip->addr + NMK_GPIO_SLPC);
+ 		}
++
++		clk_disable(chip->clk);
+ 	}
+ }
+ 
+@@ -939,11 +1043,15 @@ void nmk_gpio_wakeups_resume(void)
+ 		if (!chip)
+ 			break;
+ 
++		clk_enable(chip->clk);
++
+ 		writel(chip->rwimsc, chip->addr + NMK_GPIO_RWIMSC);
+ 		writel(chip->fwimsc, chip->addr + NMK_GPIO_FWIMSC);
+ 
+ 		if (chip->sleepmode)
+ 			writel(chip->slpm, chip->addr + NMK_GPIO_SLPC);
++
++		clk_disable(chip->clk);
+ 	}
+ }
+ 
+@@ -1010,8 +1118,6 @@ static int __devinit nmk_gpio_probe(struct platform_device *dev)
+ 		goto out_release;
+ 	}
+ 
+-	clk_enable(clk);
+-
+ 	nmk_chip = kzalloc(sizeof(*nmk_chip), GFP_KERNEL);
+ 	if (!nmk_chip) {
+ 		ret = -ENOMEM;
+diff --git a/include/linux/gpio/nomadik.h b/include/linux/gpio/nomadik.h
+index 0cfe96e..cc956d1 100644
+--- a/include/linux/gpio/nomadik.h
++++ b/include/linux/gpio/nomadik.h
+@@ -66,6 +66,9 @@ extern int nmk_gpio_get_mode(int gpio);
+ extern void nmk_gpio_wakeups_suspend(void);
+ extern void nmk_gpio_wakeups_resume(void);
+ 
++extern void nmk_gpio_clocks_enable(void);
++extern void nmk_gpio_clocks_disable(void);
++
+ extern void nmk_gpio_read_pull(int gpio_bank, u32 *pull_up);
+ 
+ /*
 -- 
 1.7.3.2
 
