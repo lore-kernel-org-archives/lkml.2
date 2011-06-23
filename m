@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933138Ab1FWR4G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:56:06 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35199 "EHLO
+	id S933674Ab1FWRh6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:37:58 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35209 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933575Ab1FWRht (ORCPT
+	with ESMTP id S933653Ab1FWRhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:49 -0400
+	Thu, 23 Jun 2011 13:37:50 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org,
+        Senthil Balasubramanian <senthilkumar@atheros.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 179/247] x86, quirk: Fix SB600 revision check
-Date: Thu, 23 Jun 2011 13:34:07 -0400
-Message-Id: <1308850515-15242-120-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 180/247] ath9k_hw: Fix incorrect macversion and macrev checks
+Date: Thu, 23 Jun 2011 13:34:08 -0400
+Message-Id: <1308850515-15242-121-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,56 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Senthil Balasubramanian <senthilkumar@atheros.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 1d3e09a304e6c4e004ca06356578b171e8735d3c upstream.
+commit ac45c12dfb3f727a5a7a3332ed9c11b4a5ab287e upstream.
 
-Commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12
-(x86 quirk: Fix polarity for IRQ0 pin2 override on SB800
-systems) introduced a regression. It removed some SB600 specific
-code to determine the revision ID without adapting a
-corresponding revision ID check for SB600.
+There are few places where we are checking for macversion and revsions
+before RTC is powered ON. However we are reading the macversion and
+revisions only after RTC is powered ON and so both macversion and
+revisions are actully zero and this leads to incorrect srev checks
 
-See this mail thread:
+Incorrect srev checks can cause registers to be configured wrongly and can
+cause unexpected behavior. Fixing this seems to address the ASPM issue that
+we have observed. The laptop becomes very slow and hangs mostly with ASPM L1
+enabled without this fix.
 
-  http://marc.info/?l=linux-kernel&m=129980296006380&w=2
+fix this by reading the macversion and revisisons even before we start
+using them. There is no reason why should we delay reading this info
+until RTC is powered on as this is just a register information.
 
-This patch adapts the corresponding check to cover all SB600
-revisions.
-
-Tested-by: Wang Lei <f3d27b@gmail.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <20110315143137.GD29499@alberich.amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Senthil Balasubramanian <senthilkumar@atheros.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/kernel/early-quirks.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ drivers/net/wireless/ath/ath9k/hw.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index ef01d3d..f67a33c7 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -161,7 +161,12 @@ static void __init ati_bugs_contd(int num, int slot, int func)
- 	if (rev >= 0x40)
- 		acpi_fix_pin2_polarity = 1;
+diff --git a/drivers/net/wireless/ath/ath9k/hw.c b/drivers/net/wireless/ath/ath9k/hw.c
+index 1774a59..28d3d51 100644
+--- a/drivers/net/wireless/ath/ath9k/hw.c
++++ b/drivers/net/wireless/ath/ath9k/hw.c
+@@ -850,6 +850,8 @@ int ath9k_hw_init(struct ath_hw *ah)
+ 	ath9k_hw_init_defaults(ah);
+ 	ath9k_hw_init_config(ah);
  
--	if (rev > 0x13)
-+	/*
-+	 * SB600: revisions 0x11, 0x12, 0x13, 0x14, ...
-+	 * SB700: revisions 0x39, 0x3a, ...
-+	 * SB800: revisions 0x40, 0x41, ...
-+	 */
-+	if (rev >= 0x39)
- 		return;
++	ath9k_hw_read_revisions(ah);
++
+ 	if (!ath9k_hw_set_reset_reg(ah, ATH9K_RESET_POWER_ON)) {
+ 		ath_print(common, ATH_DBG_FATAL,
+ 			  "Couldn't reset chip\n");
+@@ -1770,8 +1772,6 @@ static bool ath9k_hw_set_reset_power_on(struct ath_hw *ah)
+ 		return false;
+ 	}
  
- 	if (acpi_use_timer_override)
+-	ath9k_hw_read_revisions(ah);
+-
+ 	return ath9k_hw_set_reset(ah, ATH9K_RESET_WARM);
+ }
+ 
 -- 
 1.7.4.4
 
