@@ -1,60 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759349Ab1FWNjE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:39:04 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:59785 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab1FWNjC (ORCPT
+	id S1759375Ab1FWNjN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:39:13 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:39157 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759355Ab1FWNjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:39:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=EYkQo2VPoomf8QI/3vlMG0y2kvvGUPxv3OmyVpL0FFkLmaYcapdXad4iniKDuuIVic
-         KbuOgYvFtDOLZSH2M7s/ZeNhhIy7s/kblcmXu6L4eXhzvJYNkm4q9d+EwBhSo9PQMKyv
-         6t8YU6W5nkJ30x/5Y2PT7X+uECddksiStzc70=
-Date: Thu, 23 Jun 2011 15:38:58 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Paul Menage <menage@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+	Thu, 23 Jun 2011 09:39:08 -0400
+Date: Thu, 23 Jun 2011 15:39:04 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: Theodore Tso <tytso@MIT.EDU>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
         Johannes Weiner <hannes@cmpxchg.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [RFC PATCH 1/4] cgroups: Allow a cgroup subsys to reject a fork
-Message-ID: <20110623133855.GB8058@somewhere.redhat.com>
-References: <1308527474-20704-1-git-send-email-fweisbec@gmail.com>
- <1308527474-20704-2-git-send-email-fweisbec@gmail.com>
- <BANLkTikVLnMqtaTqjw94qughBvWPcu4yog@mail.gmail.com>
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] fadvise: move active pages to inactive list with
+ POSIX_FADV_DONTNEED
+Message-ID: <20110623133904.GA1479@thinkpad>
+References: <1308810981-5286-1-git-send-email-andrea@betterlinux.com>
+ <E03B7391-C7D0-4EBE-96FE-C7537F9E353B@mit.edu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTikVLnMqtaTqjw94qughBvWPcu4yog@mail.gmail.com>
+In-Reply-To: <E03B7391-C7D0-4EBE-96FE-C7537F9E353B@mit.edu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 10:39:04AM -0700, Paul Menage wrote:
-> On Sun, Jun 19, 2011 at 4:51 PM, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > Make the cgroup subsystem fork callback return a value
-> > so that subsystems are able to accept or reject a fork
-> > completion with a custom error value.
+On Thu, Jun 23, 2011 at 08:10:47AM -0400, Theodore Tso wrote:
 > 
-> This is unnecessary complexity in the cgroup subsystem (and seems to
-> miss cleanup for subsystems that have previously had their fork()
-> method return success).
+> On Jun 23, 2011, at 2:36 AM, Andrea Righi wrote:
+> 
+> > 
+> > With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
+> > called for an active page instead of removing it from the page cache it
+> > is added to the tail of the inactive list. Otherwise, if it's already in
+> > the inactive list the page is removed from the page cache.
+> 
+> 
+> Have you thought about this heuristic?   If the page is active, try to
+> remove it from the current process's page table.  If that drops the
+> use count of the page to zero, then drop it from the page cache;
+> otherwise, leave it alone.
+> 
+> That way, if the page is being used by anyone else, we don't touch
+> the page at all.   fadvise() should only affect the current process; if
+> it's available to non-root users, it shouldn't be affecting other
+> processes, and if it is being actively used by some other process,
+> removing it from their page tables so it can be put on the inactive
+> list counts as interference, doesn't it?
 
-No it seems only the freezer subsystem had this fork callback implemented.
-But indeed it adds complexity because if a subsystem can cancel a fork,
-then previous subsystems that called ->fork() would need to have a
-kind cancel_fork() callback to call.
+If the page is mapped in other process page tables we don't touch the
+page at all (see lru_deactivate_fn in mm/swap.c).
 
-I haven't looked very deep but the freezer doesn't seem to need any
-rollback. Future subsystems using the fork() callback may need it
-though.
+So the heuristic above it's already implemented. I should have said this
+explicitly in my description...
 
-> If you want a subsystem to be able to reject a fork, I think it's
-> better to have that subsystem be called explicitly from do_fork(), and
-> keep that logic out of cgroups.
-
-Ok I can do that.
+-Andrea
