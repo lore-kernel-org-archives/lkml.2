@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934369Ab1FWUey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 16:34:54 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:35602 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932831Ab1FWUew (ORCPT
+	id S934446Ab1FWUfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 16:35:38 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45000 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933914Ab1FWUex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 16:34:52 -0400
+	Thu, 23 Jun 2011 16:34:53 -0400
 From: Eric B Munson <emunson@mgebm.net>
 To: mingo@elte.hu
 Cc: a.p.zijlstra@chello.nl, borislav.petkov@amd.com, bblum@andrew.cmu.edu,
         linux-kernel@vger.kernel.org, mhack@us.ibm.com, eranian@google.com,
         Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH 2/3] events: Move lockless timer calculation into helper function
-Date: Thu, 23 Jun 2011 16:34:38 -0400
-Message-Id: <1308861279-15216-2-git-send-email-emunson@mgebm.net>
+Subject: [PATCH 3/3] events: Ensure that timers are updated without requiring read() call
+Date: Thu, 23 Jun 2011 16:34:39 -0400
+Message-Id: <1308861279-15216-3-git-send-email-emunson@mgebm.net>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308861279-15216-1-git-send-email-emunson@mgebm.net>
 References: <1308861279-15216-1-git-send-email-emunson@mgebm.net>
@@ -22,61 +22,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Take the timer calculation from perf_output_read and move it to a helper
-function for any place that needs timer values but cannot take the ctx->lock.
+The event tracing infrastructure exposes two timers which should be updated
+each time the value of the counter is updated.  Currently, these counters are
+only updated when userspace calls read() on the fd associated with an event.
+This means that counters which are read via the mmap'd page exclusively never
+have their timers updated.  This patch adds ensures that the timers are updated
+each time the values in the mmap'd page are updated.
 
 Signed-off-by: Eric B Munson <emunson@mgebm.net>
 ---
- kernel/events/core.c |   22 +++++++++++++++-------
- 1 files changed, 15 insertions(+), 7 deletions(-)
+ kernel/events/core.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/events/core.c b/kernel/events/core.c
-index a054964..9e9a7fa 100644
+index 9e9a7fa..e3be175 100644
 --- a/kernel/events/core.c
 +++ b/kernel/events/core.c
-@@ -3359,6 +3359,18 @@ static int perf_event_index(struct perf_event *event)
- 	return event->hw.idx + 1 - PERF_EVENT_INDEX_OFFSET;
- }
+@@ -3382,6 +3382,18 @@ void perf_event_update_userpage(struct perf_event *event)
+ 	struct perf_buffer *buffer;
  
-+static void calc_timer_values(struct perf_event *event,
-+				u64 *running,
-+				u64 *enabled)
-+{
-+	u64 now, ctx_time;
-+
-+	now = perf_clock();
-+	ctx_time = event->shadow_ctx_time + now;
-+	*enabled = ctx_time - event->tstamp_enabled;
-+	*running = ctx_time - event->tstamp_running;
-+}
-+
- /*
-  * Callers need to ensure there can be no nesting of this function, otherwise
-  * the seqlock logic goes bad. We can not serialize this because the arch
-@@ -4250,7 +4262,7 @@ static void perf_output_read_group(struct perf_output_handle *handle,
- static void perf_output_read(struct perf_output_handle *handle,
- 			     struct perf_event *event)
- {
--	u64 enabled = 0, running = 0, now, ctx_time;
-+	u64 enabled = 0, running = 0;
- 	u64 read_format = event->attr.read_format;
- 
- 	/*
-@@ -4262,12 +4274,8 @@ static void perf_output_read(struct perf_output_handle *handle,
- 	 * because of locking issue as we are called in
- 	 * NMI context
- 	 */
--	if (read_format & PERF_FORMAT_TOTAL_TIMES) {
--		now = perf_clock();
--		ctx_time = event->shadow_ctx_time + now;
--		enabled = ctx_time - event->tstamp_enabled;
--		running = ctx_time - event->tstamp_running;
--	}
-+	if (read_format & PERF_FORMAT_TOTAL_TIMES)
-+		calc_timer_values(event, &enabled, &running);
- 
- 	if (event->attr.read_format & PERF_FORMAT_GROUP)
- 		perf_output_read_group(handle, event, enabled, running);
+ 	rcu_read_lock();
++	/*
++	 * compute total_time_enabled, total_time_running
++	 * based on snapshot values taken when the event
++	 * was last scheduled in.
++	 *
++	 * we cannot simply called update_context_time()
++	 * because of locking issue as we are called in
++	 * NMI context
++	 */
++	calc_timer_values(event,
++				&event->total_time_enabled,
++				&event->total_time_running);
+ 	buffer = rcu_dereference(event->buffer);
+ 	if (!buffer)
+ 		goto unlock;
 -- 
 1.7.4.1
 
