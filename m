@@ -1,79 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754824Ab1FWHE7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 03:04:59 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47530 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751486Ab1FWHE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 03:04:58 -0400
-Date: Thu, 23 Jun 2011 09:04:48 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: ling.ma@intel.com, hpa@zytor.com, tglx@linutronix.de,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] [x86] Optimize copy-page by reducing impact from HW
- prefetch
-Message-ID: <20110623070448.GA25707@elte.hu>
-References: <1308351117-32452-1-git-send-email-ling.ma@intel.com>
- <m2fwn13a3u.fsf@firstfloor.org>
+	id S1754984Ab1FWHQn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 03:16:43 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.31.25]:49969 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753365Ab1FWHQm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 03:16:42 -0400
+Message-ID: <4E02E856.70007@ladisch.de>
+Date: Thu, 23 Jun 2011 09:16:38 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>,
+        Alan Cox <alan@linux.intel.com>, linux-serial@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] pch_uart: Add MSI support
+References: <4E02857C.1010304@dsn.okisemi.com> <1308812405-5245-1-git-send-email-alexander.stein@systec-electronic.com>
+In-Reply-To: <1308812405-5245-1-git-send-email-alexander.stein@systec-electronic.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m2fwn13a3u.fsf@firstfloor.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Alexander Stein wrote:
+> +++ b/drivers/tty/serial/pch_uart.c
+> @@ -1578,6 +1578,8 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
+>  
+> +	pci_enable_msi(pdev);
 
-* Andi Kleen <andi@firstfloor.org> wrote:
+Pretty much every driver that tries this eventually ends up with
+a blacklist of devices that don't implement MSI correctly.
+Did you test this with all the models that are supported by this driver?
 
-> ling.ma@intel.com writes:
->
-> > impact(DCU prefetcher), and simplify original code. The 
-> > performance is improved about 15% on core2, 36% on snb 
-> > respectively. (We use our micro-benchmark, and will do further 
-> > test according to your requirment)
-> 
-> This doesn't make a lot of sense because neither Core-2 nor SNB use 
-> the code path you patched. They all use the rep ; movs path
 
-Ling, mind double checking which one is the faster/better one on SNB, 
-in cold-cache and hot-cache situations, copy_page or copy_page_c?
-
-Also, while looking at this file please fix the countless pieces of 
-style excrements it has before modifying it:
-
- - non-Linux comment style (and needless two comments - it can 
-   be in one comment block):
-
-  /* Don't use streaming store because it's better when the target
-     ends up in cache. */
-            
-  /* Could vary the prefetch distance based on SMP/UP */
-
- - (there's other non-standard comment blocks in this file as well)
-
- - The copy_page/copy_page_c naming is needlessly obfuscated, it 
-   should be copy_page, copy_page_norep or so - the _c postfix has no
-   obvious meaning.
-
- - all #include's should be at the top
-
- - please standardize it on the 'instrn %x, %y' pattern that we 
-   generally use in arch/x86/, not 'instrn %x,%y' pattern.
-
-and do this cleanup patch first and the speedup on top of it, and 
-keep the two in two separate patches so that the modification to the 
-assembly code can be reviewed more easily.
-
-Thanks,
-
-	Ingo
+Regards,
+Clemens
