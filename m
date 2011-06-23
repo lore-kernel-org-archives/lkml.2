@@ -1,74 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934328Ab1FWS3i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:29:38 -0400
-Received: from mail.windriver.com ([147.11.1.11]:63006 "EHLO
+	id S932733Ab1FWSa3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:30:29 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62995 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932622Ab1FWRWQ (ORCPT
+	with ESMTP id S932562Ab1FWRWO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:22:16 -0400
+	Thu, 23 Jun 2011 13:22:14 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, =?UTF-8?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+Cc: stable-review@kernel.org, Ionut Nicu <ionut.nicu@gmail.com>,
+        Ionut Nicu <ionut.nicu@mindbit.ro>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 018/247] USB: io_edgeport: fix the reported firmware major and minor
-Date: Thu, 23 Jun 2011 13:17:41 -0400
-Message-Id: <1308849690-14530-19-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 019/247] USB: ti_usb: fix module removal
+Date: Thu, 23 Jun 2011 13:17:42 -0400
+Message-Id: <1308849690-14530-20-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bjørn Mork <bjorn@mork.no>
+From: Ionut Nicu <ionut.nicu@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 271c1150b4f8e1685e5a8cbf76e329ec894481da upstream.
+commit b14de3857227cd978f515247853fd15cc2425d3e upstream.
 
-The major and minor number saved in the product_info structure
-were copied from the address instead of the data, causing an
-inconsistency in the reported versions during firmware loading:
+If usb_deregister() is called after usb_serial_deregister() when
+the device is plugged in, the following Oops occurs:
 
- usb 4-1: firmware: requesting edgeport/down.fw
- /usr/src/linux/drivers/usb/serial/io_edgeport.c: downloading firmware version (930) 1.16.4
- [..]
- /usr/src/linux/drivers/usb/serial/io_edgeport.c: edge_startup - time 3 4328191260
- /usr/src/linux/drivers/usb/serial/io_edgeport.c:   FirmwareMajorVersion  0.0.4
+[   95.337377] BUG: unable to handle kernel NULL pointer dereference at 00000010
+[   95.338236] IP: [<c0776b2d>] klist_put+0x12/0x62
+[   95.338356] *pdpt = 000000003001a001 *pde = 0000000000000000
+[   95.338356] Oops: 0000 [#1] SMP
+[   95.340499] last sysfs file: /sys/devices/pci0000:00/0000:00:1d.2/usb8/idVendor
+[   95.340499] Modules linked in: ti_usb_3410_5052(-) usbserial cpufreq_ondemand acpi_cpufreq mperf iptable_nat nf_nat iptable_mangle ip6t_REJECT nf_conntrack_ipv6 nf_defrag_ipv6 ip6table_filter ip6_tables ipv6 uinput arc4 ecb iwlagn iwlcore mac80211 cfg80211 microcode pcspkr acer_wmi joydev wmi sky2 [last unloaded: scsi_wait_scan]
+[   95.341908]
+[   95.341908] Pid: 1532, comm: modprobe Not tainted 2.6.37-rc7+ #6 Eiger                          /Aspire 5930
+[   95.341908] EIP: 0060:[<c0776b2d>] EFLAGS: 00010246 CPU: 0
+[   95.341908] EIP is at klist_put+0x12/0x62
+[   95.341908] EAX: 00000000 EBX: eedc0c84 ECX: c09c21b4 EDX: 00000001
+[   95.341908] ESI: 00000000 EDI: efaa0c1c EBP: f214fe2c ESP: f214fe1c
+[   95.341908]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
+[   95.341908] Process modprobe (pid: 1532, ti=f214e000 task=efaaf080 task.ti=f214e000)
+[   95.341908] Stack:
+[   95.341908]  f214fe24 eedc0c84 efaaf080 efaa0c1c f214fe34 c0776ba8 f214fe5c c0776c76
+[   95.341908]  c09c21b4 c09c21b4 eedc0c84 efaaf080 00000000 c0634398 eafe2d1c f7b515f0
+[   95.341908]  f214fe6c c0631b5c eafe2d50 eafe2d1c f214fe7c c0631ba2 eafe2d1c eafe2c00
+[   95.341908] Call Trace:
+[   95.341908]  [<c0776ba8>] ? klist_del+0xd/0xf
+[   95.341908]  [<c0776c76>] ? klist_remove+0x48/0x74
+[   95.341908]  [<c0634398>] ? devres_release_all+0x49/0x51
+[   95.341908]  [<c0631b5c>] ? __device_release_driver+0x7b/0xa4
+[   95.341908]  [<c0631ba2>] ? device_release_driver+0x1d/0x28
+[   95.341908]  [<c06317c4>] ? bus_remove_device+0x92/0xa1
+[   95.341908]  [<c062f3d8>] ? device_del+0xf9/0x13e
+[   95.341908]  [<f7b06146>] ? usb_serial_disconnect+0xd9/0x116 [usbserial]
+[   95.341908]  [<c0681e3f>] ? usb_disable_interface+0x32/0x40
+[   95.341908]  [<c0683972>] ? usb_unbind_interface+0x48/0xfd
+[   95.341908]  [<c0631b43>] ? __device_release_driver+0x62/0xa4
+[   95.341908]  [<c06320b9>] ? driver_detach+0x62/0x81
+[   95.341908]  [<c0631a41>] ? bus_remove_driver+0x8f/0xae
+[   95.341908]  [<c063214c>] ? driver_unregister+0x50/0x57
+[   95.341908]  [<c0682f95>] ? usb_deregister+0x77/0x84
+[   95.341908]  [<f7b505b6>] ? ti_exit+0x26/0x28 [ti_usb_3410_5052]
+[   95.341908]  [<c046a307>] ? sys_delete_module+0x181/0x1de
+[   95.341908]  [<c04e2727>] ? path_put+0x1a/0x1d
+[   95.341908]  [<c047f4c5>] ? audit_syscall_entry+0x116/0x138
+[   95.341908]  [<c04094df>] ? sysenter_do_call+0x12/0x28
+[   95.341908] Code: 00 83 7d f0 00 74 09 85 f6 74 05 89 f0 ff 55 f0 8b 43 04 5a 5b 5e 5f 5d c3 55 89 e5 57 56 53 89 c3 83 ec 04 8b 30 83 e6 fe 89 f0 <8b> 7e 10 88 55 f0 e8 47 26 01 00 8a 55 f0 84 d2 74 17 f6 03 01
+[   95.341908] EIP: [<c0776b2d>] klist_put+0x12/0x62 SS:ESP 0068:f214fe1c
+[   95.341908] CR2: 0000000000000010
+[   95.342357] ---[ end trace 8124d00ad871ad18 ]---
 
-This can cause some confusion whether firmware loaded successfully
-or not.
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Signed-off-by: Ionut Nicu <ionut.nicu@mindbit.ro>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/io_edgeport.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/usb/serial/ti_usb_3410_5052.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/usb/serial/io_edgeport.c b/drivers/usb/serial/io_edgeport.c
-index 3ef8df0..ac3f4c3 100644
---- a/drivers/usb/serial/io_edgeport.c
-+++ b/drivers/usb/serial/io_edgeport.c
-@@ -2894,8 +2894,8 @@ static void load_application_firmware(struct edgeport_serial *edge_serial)
+diff --git a/drivers/usb/serial/ti_usb_3410_5052.c b/drivers/usb/serial/ti_usb_3410_5052.c
+index e1bfda3..72a3398 100644
+--- a/drivers/usb/serial/ti_usb_3410_5052.c
++++ b/drivers/usb/serial/ti_usb_3410_5052.c
+@@ -374,9 +374,9 @@ failed_1port:
  
- 	dbg("%s %d.%d.%d", fw_info, rec->data[0], rec->data[1], build);
+ static void __exit ti_exit(void)
+ {
++	usb_deregister(&ti_usb_driver);
+ 	usb_serial_deregister(&ti_1port_device);
+ 	usb_serial_deregister(&ti_2port_device);
+-	usb_deregister(&ti_usb_driver);
+ }
  
--	edge_serial->product_info.FirmwareMajorVersion = fw->data[0];
--	edge_serial->product_info.FirmwareMinorVersion = fw->data[1];
-+	edge_serial->product_info.FirmwareMajorVersion = rec->data[0];
-+	edge_serial->product_info.FirmwareMinorVersion = rec->data[1];
- 	edge_serial->product_info.FirmwareBuildNumber = cpu_to_le16(build);
  
- 	for (rec = ihex_next_binrec(rec); rec;
 -- 
 1.7.4.4
 
