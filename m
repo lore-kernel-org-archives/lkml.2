@@ -1,109 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759483Ab1FWPH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 11:07:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54918 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757947Ab1FWPHZ (ORCPT
+	id S1759498Ab1FWPI1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 11:08:27 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:52852 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757947Ab1FWPI0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 11:07:25 -0400
+	Thu, 23 Jun 2011 11:08:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=I+t95lPpgVRsJ75OiO7PXJIV97Dtq/ZCZ8qK4vpDjv5afhmJN8IVYWsP25bxBeJwVv
-         vcl7SiFcvOOHM3lQuZ5PNeOc8Ex7eYSV9lNBqw1CEL8Timbvm2/7HKREND2ckK8uDrSC
-         Yt8AXB3k8I9svEiJDwEvtPc1LF+LmpUqwEWFA=
-Date: Thu, 23 Jun 2011 17:07:20 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
-Message-ID: <20110623150720.GR30101@htj.dyndns.org>
-References: <20110622174659.496793734@linutronix.de>
- <20110622174919.135236139@linutronix.de>
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :content-type:content-transfer-encoding;
+        b=dDxNRMDbxvUJXHVMErSAc17B+BA7HZQVzJF7Yvh9LdjF6/by1Y0iIqdxn9tUCSnwSQ
+         ssVXWvAi1cfbJ8gGujRqPzC8hIhtHqufymJ4+TzSG15galUxRPj3gHQJKbYw3V9XNt05
+         EwXbww33M6SLfCceRkb5ionTLxOKYAaf7Xmds=
+Message-ID: <4E0356E6.30104@gmail.com>
+Date: Thu, 23 Jun 2011 17:08:22 +0200
+From: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110622174919.135236139@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alex Elder <aelder@sgi.com>
+CC: xfs-masters@oss.sgi.com, xfs@oss.sgi.com,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] xfs: Silence bounds checking compiler warning
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, again.
+gcc with -Warray-bounds generates a false positive on this
+since xfs defines the struct with u8 name[1]; to be able to
+add a tag at the end.
 
-So, let's get it correct first.
+Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
+---
+ fs/xfs/xfs_dir2_block.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Wed, Jun 22, 2011 at 05:52:15PM -0000, Thomas Gleixner wrote:
-> The worker accounting for cpu bound workers is plugged into the core
-> scheduler code and the wakeup code. This is not a hard requirement and
-> can be avoided by keeping track of the state in the workqueue code
-> itself.
-> 
-> Keep track of the sleeping state in the worker itself and call the
-> notifier before entering the core scheduler. There might be false
-> positives when the task is woken between that call and actually
-> scheduling, but that's not really different from scheduling and being
-> woken immediately after switching away. There is also no harm from
-> updating nr_running when the task returns from scheduling instead of
-> accounting it in the wakeup code.
-
-I think false positives on schedule() should be safe.  As said
-earlier, the gap between ttwu and actually running is a bit worrisome
-but it might be nothing, but please at least describe the behavior
-change.
-
-> Index: linux-2.6/kernel/workqueue.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/workqueue.c
-> +++ linux-2.6/kernel/workqueue.c
-> @@ -137,6 +137,7 @@ struct worker {
->  	unsigned int		flags;		/* X: flags */
->  	int			id;		/* I: worker id */
->  	struct work_struct	rebind_work;	/* L: rebind worker to cpu */
-> +	int			sleeping;	/* None */
-
-bool?
-
-> -struct task_struct *wq_worker_sleeping(struct task_struct *task,
-> -				       unsigned int cpu)
-> +void wq_worker_sleeping(struct task_struct *task)
->  {
-> -	struct worker *worker = kthread_data(task), *to_wakeup = NULL;
-> -	struct global_cwq *gcwq = get_gcwq(cpu);
-> -	atomic_t *nr_running = get_gcwq_nr_running(cpu);
-> +	struct worker *worker = kthread_data(task);
-> +	struct global_cwq *gcwq;
-> +	int cpu;
->  
->  	if (worker->flags & WORKER_NOT_RUNNING)
-> -		return NULL;
-> +		return;
-
-This doesn't look safe.  It can race with trustee_thread() setting
-WORKER_ROGUE.  Let's just grab gcwq->lock on entry to
-wq_worker_sleeping() for now; then, the schedule() trickery in
-trustee_thread() can go away too.  This also means we can remove the
-weird sync rules from ->flags and ->idle_list and just use simple
-gcwq->lock for those, which is pretty nice.
-
-> -	/* this can only happen on the local cpu */
-> -	BUG_ON(cpu != raw_smp_processor_id());
-> +	if (WARN_ON_ONCE(worker->sleeping))
-> +		return;
-
-Re-entrance is prevented by the scheduler hook being called only for
-non-premption schedule().  Maybe it's better to explain that in the
-function comment?
-
-Hmmm... Also, I think worker->sleeping should be cleared by
-trustee_thread() when WORKER_ROGUE is set for the worker; otherwise,
-it can get out of sync and the above WARN_ON_ONCE() will trigger.
-
-Thanks.
-
+diff --git a/fs/xfs/xfs_dir2_block.c b/fs/xfs/xfs_dir2_block.c
+index 580d99c..09b4aed 100644
+--- a/fs/xfs/xfs_dir2_block.c
++++ b/fs/xfs/xfs_dir2_block.c
+@@ -1148,7 +1148,7 @@ xfs_dir2_sf_to_block(
+ 		((char *)block + XFS_DIR2_DATA_DOTDOT_OFFSET);
+ 	dep->inumber = cpu_to_be64(xfs_dir2_sf_get_inumber(sfp, &sfp->hdr.parent));
+ 	dep->namelen = 2;
+-	dep->name[0] = dep->name[1] = '.';
++	dep->name[0] = ((__u8 *)dep->name)[1] = '.';
+ 	tagp = xfs_dir2_data_entry_tag_p(dep);
+ 	*tagp = cpu_to_be16((char *)dep - (char *)block);
+ 	xfs_dir2_data_log_entry(tp, bp, dep);
 -- 
-tejun
+1.7.5.4
+
+
+
