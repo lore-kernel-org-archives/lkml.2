@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759720Ab1FWQbR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 12:31:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33900 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758347Ab1FWQbQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 12:31:16 -0400
-Message-ID: <4E036A2D.1060402@zytor.com>
-Date: Thu, 23 Jun 2011 09:30:37 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1759747Ab1FWQb4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 12:31:56 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:57981 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758347Ab1FWQbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 12:31:53 -0400
+Date: Thu, 23 Jun 2011 17:31:06 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        linux-am33-list@redhat.com, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-arch@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
+        linux-kbuild@vger.kernel.org
+Subject: Re: [PATCH] STAGING: Comedi: Build only on arches providing
+ PAGE_KERNEL_NOCACHE
+Message-ID: <20110623163105.GC16892@linux-mips.org>
+References: <20110623114536.GA14011@linux-mips.org>
+ <BANLkTimR98qo5fjMRf-kZahcA=hE-E3+Hg@mail.gmail.com>
 MIME-Version: 1.0
-To: Stefan Assmann <sassmann@kpanic.de>
-CC: Matthew Garrett <mjg59@srcf.ucam.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        tony.luck@intel.com, andi@firstfloor.org, mingo@elte.hu,
-        rick@vanrein.org, rdunlap@xenotime.net
-Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
-References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110623133950.GB28333@srcf.ucam.org> <4E0348E0.7050808@kpanic.de> <20110623141222.GA30003@srcf.ucam.org> <4E035DD1.1030603@kpanic.de>
-In-Reply-To: <4E035DD1.1030603@kpanic.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimR98qo5fjMRf-kZahcA=hE-E3+Hg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2011 08:37 AM, Stefan Assmann wrote:
-> 
-> According to Rick's reply in this thread a damaged row in a DIMM can
-> easily cause a few thousand entries in the e820 table because it doesn't
-> handle patterns. So the question I'm asking is, is it acceptable to
-> have an e820 table with thousands maybe ten-thousands of entries?
-> I really have no idea of the implications, maybe somebody else can
-> comment on that.
-> 
+On Thu, Jun 23, 2011 at 06:01:47PM +0200, Geert Uytterhoeven wrote:
 
-Given that that is what actually ends up happening in the kernel at some
-point anyway, I don't see why it would matter.
+> If only to get m68k/allmodconfig going again (hmm, there's another
+> staging driver
+> preventing a green light).
 
-The bubble sort has to go, but quite frankly stress-testing the range
-handling isn't a bad thing.
-	
-	-hpa
+I ran into this doing an allyesconfig.  Allyesconfig has one disadvantage,
+for choice it will only select the first or default option which means
+that option gets exercised well and all the other options not at all.  On
+MIPS that'd be IP22, 32-bit, R4x00, big endian, 4K pages, no multithreading,
+250Hz.  Make randconfig disables lots of things so often misses the
+opportunity to trigger some issues.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+I'd really want an "make allrandconfig" which enables as many options as
+possible but picks a random one from choice statements, something like that.
 
+  Ralf
