@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933564Ab1FWSaA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:30:00 -0400
-Received: from mail.windriver.com ([147.11.1.11]:63003 "EHLO
+	id S934308Ab1FWSbG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:31:06 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62910 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609Ab1FWRWP (ORCPT
+	with ESMTP id S1759897Ab1FWRWL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:22:15 -0400
+	Thu, 23 Jun 2011 13:22:11 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
 Cc: stable-review@kernel.org,
-        Arvid Ephraim Picciani <arvid.picciani@nokia.com>,
+        Michael Williamson <michael.h.williamson@gmail.com>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 022/247] USB: cdc-acm: Adding second ACM channel support for Nokia N8
-Date: Thu, 23 Jun 2011 13:17:45 -0400
-Message-Id: <1308849690-14530-23-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 023/247] USB: ftdi_sio: Add VID=0x0647, PID=0x0100 for Acton Research spectrograph
+Date: Thu, 23 Jun 2011 13:17:46 -0400
+Message-Id: <1308849690-14530-24-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,40 +23,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arvid Ephraim Picciani <arvid.picciani@nokia.com>
+From: Michael Williamson <michael.h.williamson@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 721d92fc6373dee15846216f9d178ec240ec0fd7 upstream.
+commit 28fe2eb0162a1d23370dd99ff7d0e35632b1ee91 upstream.
 
-This adds the N8 to the list of devices in cdc-acm, in order to get the
-secondary ACM device exposed.
+Add the USB Vendor ID and Product ID for a Acton Research Corp.
+spectrograph device with a FTDI chip for serial I/O.
 
-In the spirit of:
-http://kerneltrap.org/mailarchive/linux-usb/2010/9/4/6264554
-
-Signed-off-by: Arvid Ephraim Picciani <arvid.picciani@nokia.com>
+Signed-off-by: Michael H Williamson <michael.h.williamson@gmail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/class/cdc-acm.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/usb/serial/ftdi_sio.c     |    1 +
+ drivers/usb/serial/ftdi_sio_ids.h |    6 ++++++
+ 2 files changed, 7 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index f1accc8..a45e6c4 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1613,6 +1613,7 @@ static const struct usb_device_id acm_ids[] = {
- 	{ NOKIA_PCSUITE_ACM_INFO(0x0154), }, /* Nokia 5800 XpressMusic */
- 	{ NOKIA_PCSUITE_ACM_INFO(0x04ce), }, /* Nokia E90 */
- 	{ NOKIA_PCSUITE_ACM_INFO(0x01d4), }, /* Nokia E55 */
-+	{ NOKIA_PCSUITE_ACM_INFO(0x0302), }, /* Nokia N8 */
- 	{ SAMSUNG_PCSUITE_ACM_INFO(0x6651), }, /* Samsung GTi8510 (INNOV8) */
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index f4b2527..05dcaa0 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -625,6 +625,7 @@ static struct usb_device_id id_table_combined [] = {
+ 	{ USB_DEVICE(FTDI_VID, FTDI_OCEANIC_PID) },
+ 	{ USB_DEVICE(TTI_VID, TTI_QL355P_PID) },
+ 	{ USB_DEVICE(FTDI_VID, FTDI_RM_CANVIEW_PID) },
++	{ USB_DEVICE(ACTON_VID, ACTON_SPECTRAPRO_PID) },
+ 	{ USB_DEVICE(CONTEC_VID, CONTEC_COM1USBH_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USOTL4_PID) },
+ 	{ USB_DEVICE(BANDB_VID, BANDB_USTL4_PID) },
+diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
+index 5f3f5da..73d8c79 100644
+--- a/drivers/usb/serial/ftdi_sio_ids.h
++++ b/drivers/usb/serial/ftdi_sio_ids.h
+@@ -518,6 +518,12 @@
+ #define RATOC_PRODUCT_ID_USB60F	0xb020
  
- 	/* NOTE: non-Nokia COMM/ACM/0xff is likely MSFT RNDIS... NOT a modem! */
+ /*
++ * Acton Research Corp.
++ */
++#define ACTON_VID		0x0647	/* Vendor ID */
++#define ACTON_SPECTRAPRO_PID	0x0100
++
++/*
+  * Contec products (http://www.contec.com)
+  * Submitted by Daniel Sangorrin
+  */
 -- 
 1.7.4.4
 
