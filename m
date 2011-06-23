@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756486Ab1FWNOk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:14:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58766 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754668Ab1FWNOj (ORCPT
+	id S1758049Ab1FWNR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:17:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:58351 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755646Ab1FWNRz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:14:39 -0400
+	Thu, 23 Jun 2011 09:17:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:from:date:x-google-sender-auth:message-id
-         :subject:to:content-type;
-        b=Jh+QeMJtVsYXRXugKWZ7QQtt0Ipd9YSaW1q2iNUhn/LQqNtrugOliTXbODyNf1a7ew
-         P9kcGcnv5f5XWiFk34Hxkg/b5+N6wVsox3t+VAxqDW8RNSVNaDPdRETnIW9mTc7oCP3M
-         xXPy16tr4DCL5oJIhRaOcqTVs5tXk2bpI3ZD8=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ImitLUehCErhz4cEDuJLsDdWllxA4PMKril4mTmM1d5U6eT74+H2Mg8PbVx7TnKgd7
+         gMlNg1pQfPLOYjsUTWsdZ59tB+epDTvQsIU1abHwLVegWPzo8819nROopFFtzk+xm8UN
+         vOqg685WlcdLTQbwKK9++lEi00zpBYofzX+3I=
 MIME-Version: 1.0
-From: yuyichao-mit <yuyichao@mit.edu>
-Date: Thu, 23 Jun 2011 09:14:18 -0400
-X-Google-Sender-Auth: skFeQ3fIyMxZFDVq1roF4fvj-14
-Message-ID: <BANLkTi=y1roManmZGMLBXSFbBVqK_KqDZg@mail.gmail.com>
-Subject: extra slash in current path
-To: linux-kernel@vger.kernel.org, linux-c-programming@vger.kernel.org
+In-Reply-To: <BANLkTi=y1roManmZGMLBXSFbBVqK_KqDZg@mail.gmail.com>
+References: <BANLkTi=y1roManmZGMLBXSFbBVqK_KqDZg@mail.gmail.com>
+Date: Thu, 23 Jun 2011 15:17:54 +0200
+Message-ID: <BANLkTinaPJM3LhEVwFxtEGKuVXOyVOzrzg@mail.gmail.com>
+Subject: Re: extra slash in current path
+From: Alessandro Suardi <alessandro.suardi@gmail.com>
+To: yuyichao-mit <yuyichao@mit.edu>
+Cc: linux-kernel@vger.kernel.org, linux-c-programming@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The problem is like this:
+On Thu, Jun 23, 2011 at 3:14 PM, yuyichao-mit <yuyichao@mit.edu> wrote:
+> The problem is like this:
+>
+> $ cd /
+> $ pwd
+> /
+>
+> $ cd /
+> $ pwd
+> //
+>
+> $ cd ///
+> $ pwd
+> /
+>
+> Why can there be a extra slash (and exactly one) in current path? Is
+> this designed on purpose?
+> This is not really a big deal but I think it can confuse some program.
 
-$ cd /
-$ pwd
-/
+Multiple consecutive slashes should not confuse any program.
 
-$ cd /
-$ pwd
-//
+http://pubs.opengroup.org/onlinepubs/009695399/basedefs/xbd_chap03.html#tag_03_266
 
-$ cd ///
-$ pwd
-/
+--alessandro
 
-Why can there be a extra slash (and exactly one) in current path? Is
-this designed on purpose?
-This is not really a big deal but I think it can confuse some program.
+ "There's always a siren singing you to shipwreck"
 
-Thanks.
-
-Yichao
+   (Radiohead, "There There")
