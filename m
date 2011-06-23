@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759144Ab1FWJwp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 05:52:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48003 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758872Ab1FWJwo (ORCPT
+	id S1759180Ab1FWJym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 05:54:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:64548 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758959Ab1FWJyk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 05:52:44 -0400
+	Thu, 23 Jun 2011 05:54:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Uf/+LANHlh124RMecyuHrTRNv6MKm/48S9V2g6LoDHbjcP3AnEE/9hlHvY3NORd7BF
-         vpAxk1cHYSZRodWTZMBWQQ56xjX0JqqPT330/jwOKtkiXjj1IXScqPDWVba5McLFliFl
-         yEa+TR7A/SMXYlC0pfmKAnQBYjx/e349OKGG8=
-Date: Thu, 23 Jun 2011 11:52:39 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hch@infradead.org
-Subject: Re: [PATCH 1/8] make do_notify_parent() return bool
-Message-ID: <20110623095239.GK30101@htj.dyndns.org>
-References: <1308322240-8247-1-git-send-email-tj@kernel.org>
- <1308322240-8247-7-git-send-email-tj@kernel.org>
- <20110622210757.GA20549@redhat.com>
- <20110622210818.GB20549@redhat.com>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=eezEuUUM5/kV1eLuVDBQHxhSbkcCY+0N3xqt5GrrOfMYUfcrfZVIsjfo3lMIHHIcAO
+         n+skezq1FxC3Zmqh4FvQq3XcieWJIjAiaTtZEBv1t5SXRIIGF4z+l9Qnwo4C56oKgI3S
+         j8+BJFg9y5XqCF14afA+Crt8PegzZKTs82tao=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110622210818.GB20549@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1308820255.2737.70443.camel@needafix>
+References: <1308483825-6023-1-git-send-email-jonas@southpole.se>
+ <4E025D39.80600@zytor.com> <1308820255.2737.70443.camel@needafix>
+From: Julius Baxter <juliusbaxter@gmail.com>
+Date: Thu, 23 Jun 2011 11:54:17 +0200
+Message-ID: <BANLkTi=7Qfc2BBQrqv08A1N6O4aB0gmKyQ@mail.gmail.com>
+Subject: Re: OpenRISC Architecture: Request for review
+To: Jonas Bonn <jonas@southpole.se>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+>> Do you also have any ready-made ports for any common FPGA boards that
+>> one can test it out on hardware with?
 
-On Wed, Jun 22, 2011 at 11:08:18PM +0200, Oleg Nesterov wrote:
-> - change do_notify_parent() to return a boolean, true if the task should
->   be reaped because its parent ignores SIGCHLD.
-> 
-> - update the only caller which checks the returned value, exit_notify().
-> 
-> This temporary uglifies exit_notify() even more, will be cleanuped by
-> the next change.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> ---
-> @@ -2161,7 +2161,7 @@ extern int kill_pid_info_as_uid(int, str
->  extern int kill_pgrp(struct pid *pid, int sig, int priv);
->  extern int kill_pid(struct pid *pid, int sig, int priv);
->  extern int kill_proc_info(int, struct siginfo *, pid_t);
-> -extern int do_notify_parent(struct task_struct *, int);
-> +extern bool do_notify_parent(struct task_struct *, int);
->  extern void __wake_up_parent(struct task_struct *p, struct task_struct *parent);
->  extern void force_sig(int, struct task_struct *);
->  extern int send_sig(int, struct task_struct *, int);
+Hi, thanks for the interest.
 
-While at it, would you mind adding the name of the parameters to the
-prototype?  I find prototypes w/o parameter names a bit irksome.
+At present, there's two main projects that have OpenRISC-based system
+builds for FPGA boards.
 
-Other than that,
+These builds typically contain, at least, the processor core, debug
+interface, memory controller and a UART. That should be enough to get
+you going. In terms of hardware, in addition to the board, you will
+need a debug cable, allowing you to control the processor and access
+the memory from gdb.
 
-Acked-by: Tejun Heo <tj@kernel.org>
+ORPSoC, or the OpenRISC Reference Platform System-on-Chip, is one
+project with ready-to-go builds. It currently supports a few boards,
+two Xilinx and one Actel. You can find details about them at the
+ORPSoC page:
 
-Thanks.
+http://opencores.org/or1k/ORPSoC
 
--- 
-tejun
+MinSoC is another project on OpenCores that supports more boards, but
+isn't something I've used myself. It looks well maintained, though.
+
+http://opencores.org/project,minsoc
+
+Their wiki is at:
+
+http://minsoc.wikaba.com/pm:start
+
+I believe MinSoC might have better step-by-step instructions for
+getting going on the board.
+
+The ORPSoC maintainers, though, are usually very easy to get hold of in IRC.
+
+Hope that's useful.
+
+    Julius
