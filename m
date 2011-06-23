@@ -1,160 +1,650 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933070Ab1FWTSd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 15:18:33 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:60603 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932600Ab1FWTSa (ORCPT
+	id S932872Ab1FWThi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 15:37:38 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:37651 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932650Ab1FWThh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 15:18:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=NsrJfFDzhS6Br6FHASZAdBF/+SFOVAdXp5za7gU/SsumozS2UAZ9jsOT+Vck8qkCD7
-         7IpO3a1PtPYY37qawxUHNJanst63/qRymK3t+9skTRKZa6RUU6tk+wr7PEkU3u1WHw+U
-         L3dNMQR1zinZcfsDR/FsomaX17hpVoHaKjixA=
+	Thu, 23 Jun 2011 15:37:37 -0400
+Subject: [PATCH 01/11] Remove custom defines for standard types.
+To: "Greg Kroah-Hartman" <greg@kroah.com>
+Cc: Marek Belisko <marek.belisko@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Thu, 23 Jun 2011 21:37:23 +0200
 MIME-Version: 1.0
-In-Reply-To: <20110623163105.GC16892@linux-mips.org>
-References: <20110623114536.GA14011@linux-mips.org>
-	<BANLkTimR98qo5fjMRf-kZahcA=hE-E3+Hg@mail.gmail.com>
-	<20110623163105.GC16892@linux-mips.org>
-Date: Thu, 23 Jun 2011 15:18:27 -0400
-Message-ID: <BANLkTin7vqGFZpCoLJY+NDfmNroZWWAOgg@mail.gmail.com>
-Subject: Re: [PATCH] STAGING: Comedi: Build only on arches providing PAGE_KERNEL_NOCACHE
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        linux-am33-list@redhat.com, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        linux-arch@vger.kernel.org, Michal Marek <mmarek@suse.cz>,
-        linux-kbuild@vger.kernel.org
-Content-Type: multipart/mixed; boundary=bcaec521627119bf0a04a665f307
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201106232137.26193.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---bcaec521627119bf0a04a665f307
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+Remove custom defines for standard types (u8, u16, u32...)
 
-Hi,
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+---
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000.h      |   13 --
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |  132 ++++++++++----------
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |   52 ++++----
+ 3 files changed, 92 insertions(+), 105 deletions(-)
 
-On Thu, Jun 23, 2011 at 12:31 PM, Ralf Baechle <ralf@linux-mips.org> wrote:
-> On Thu, Jun 23, 2011 at 06:01:47PM +0200, Geert Uytterhoeven wrote:
->
->> If only to get m68k/allmodconfig going again (hmm, there's another
->> staging driver
->> preventing a green light).
->
-> I ran into this doing an allyesconfig. =A0Allyesconfig has one disadvanta=
-ge,
-> for choice it will only select the first or default option which means
-> that option gets exercised well and all the other options not at all. =A0=
-On
-> MIPS that'd be IP22, 32-bit, R4x00, big endian, 4K pages, no multithreadi=
-ng,
-> 250Hz. =A0Make randconfig disables lots of things so often misses the
-> opportunity to trigger some issues.
->
-> I'd really want an "make allrandconfig" which enables as many options as
-> possible but picks a random one from choice statements, something like th=
-at.
->
-Something like the attached patch ? [sorry for the attachment, gmail
-is so much a PITA for that ...]
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+index 227fcbb..f4c8735 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+@@ -67,17 +67,6 @@ struct pseudo_hdr
+    unsigned short    checksum;      // pseudo header checksum
+ } __attribute__ ((packed));
+ 
+-// Definitions to maintain compatibility between other platforms
+-#define UCHAR                u8
+-#define USHORT               u16
+-#define ULONG                u32
+-#define BOOLEAN              u8
+-#define PULONG               u32 *
+-#define PUSHORT              u16 *
+-#define PUCHAR               u8 *
+-#define PCHAR                u8 *
+-#define UINT                 u32
+-
+ #define ELECTRABUZZ_ID       0          // ASIC ID for Electrabuzz
+ #define MAGNEMITE_ID         0x1a01     // ASIC ID for Magnemite
+ 
+@@ -278,8 +267,6 @@ struct pseudo_hdr
+ 
+ #define  SUCCESS                0x00
+ #define  FAILURE                0x01
+-#define  TRUE                   0x1
+-#define  FALSE                  0x0
+ 
+ #define MAXIMUM_ASIC_HB_CNT      15
+ 
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
+index 26437a6..c8b73c6 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
+@@ -86,12 +86,12 @@
+ #define  STATE_DONE_PROV         0x06
+ #define  STATE_DONE_FILE         0x07
+ 
+-USHORT get_handshake(struct net_device *dev, USHORT expected_value);
+-void put_handshake(struct net_device *dev, USHORT handshake_value);
+-USHORT get_request_type(struct net_device *dev);
++u16 get_handshake(struct net_device *dev, u16 expected_value);
++void put_handshake(struct net_device *dev, u16 handshake_value);
++u16 get_request_type(struct net_device *dev);
+ long get_request_value(struct net_device *dev);
+ void put_request_value(struct net_device *dev, long lvalue);
+-USHORT hdr_checksum(struct pseudo_hdr *pHdr);
++u16 hdr_checksum(struct pseudo_hdr *pHdr);
+ 
+ struct dsp_file_hdr {
+ 	u32  build_date;
+@@ -143,14 +143,14 @@ void card_bootload(struct net_device *dev)
+ {
+ 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
+ 	unsigned long flags;
+-	PULONG pdata;
+-	UINT size;
+-	UINT i;
+-	ULONG templong;
++	u32 *pdata;
++	u32 size;
++	u32 i;
++	u32 templong;
+ 
+ 	DEBUG(0, "card_bootload is called\n");
+ 
+-	pdata = (PULONG) bootimage;
++	pdata = (u32 *) bootimage;
+ 	size = sizeof(bootimage);
+ 
+ 	// check for odd word
+@@ -171,11 +171,11 @@ void card_bootload(struct net_device *dev)
+ 	spin_unlock_irqrestore(&info->dpram_lock, flags);
+ }
+ 
+-USHORT get_handshake(struct net_device *dev, USHORT expected_value)
++u16 get_handshake(struct net_device *dev, u16 expected_value)
+ {
+ 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
+-	USHORT handshake;
+-	ULONG tempx;
++	u16 handshake;
++	u32 tempx;
+ 	int loopcnt;
+ 
+ 	loopcnt = 0;
+@@ -189,7 +189,7 @@ USHORT get_handshake(struct net_device *dev, USHORT expected_value)
+ 			tempx =
+ 				ntohl(ft1000_read_dpram_mag_32
+ 				  (dev, DWNLD_MAG_HANDSHAKE_LOC));
+-			handshake = (USHORT) tempx;
++			handshake = (u16) tempx;
+ 		}
+ 
+ 		if ((handshake == expected_value)
+@@ -206,27 +206,27 @@ USHORT get_handshake(struct net_device *dev, USHORT expected_value)
+ 
+ }
+ 
+-void put_handshake(struct net_device *dev, USHORT handshake_value)
++void put_handshake(struct net_device *dev, u16 handshake_value)
+ {
+ 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
+-	ULONG tempx;
++	u32 tempx;
+ 
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+ 		ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR,
+ 				 DWNLD_HANDSHAKE_LOC);
+ 		ft1000_write_reg(dev, FT1000_REG_DPRAM_DATA, handshake_value);	/* Handshake */
+ 	} else {
+-		tempx = (ULONG) handshake_value;
++		tempx = (u32) handshake_value;
+ 		tempx = ntohl(tempx);
+ 		ft1000_write_dpram_mag_32(dev, DWNLD_MAG_HANDSHAKE_LOC, tempx);	/* Handshake */
+ 	}
+ }
+ 
+-USHORT get_request_type(struct net_device *dev)
++u16 get_request_type(struct net_device *dev)
+ {
+ 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
+-	USHORT request_type;
+-	ULONG tempx;
++	u16 request_type;
++	u32 tempx;
+ 
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+ 		ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR, DWNLD_TYPE_LOC);
+@@ -234,7 +234,7 @@ USHORT get_request_type(struct net_device *dev)
+ 	} else {
+ 		tempx = ft1000_read_dpram_mag_32(dev, DWNLD_MAG_TYPE_LOC);
+ 		tempx = ntohl(tempx);
+-		request_type = (USHORT) tempx;
++		request_type = (u16) tempx;
+ 	}
+ 
+ 	return request_type;
+@@ -245,7 +245,7 @@ long get_request_value(struct net_device *dev)
+ {
+ 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
+ 	long value;
+-	USHORT w_val;
++	u16 w_val;
+ 
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+ 		ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR,
+@@ -273,18 +273,18 @@ long get_request_value(struct net_device *dev)
+ void put_request_value(struct net_device *dev, long lvalue)
+ {
+ 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
+-	USHORT size;
+-	ULONG tempx;
++	u16 size;
++	u32 tempx;
+ 
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+-		size = (USHORT) (lvalue >> 16);
++		size = (u16) (lvalue >> 16);
+ 
+ 		ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR,
+ 				 DWNLD_SIZE_MSW_LOC);
+ 
+ 		ft1000_write_reg(dev, FT1000_REG_DPRAM_DATA, size);
+ 
+-		size = (USHORT) (lvalue);
++		size = (u16) (lvalue);
+ 
+ 		ft1000_write_reg(dev, FT1000_REG_DPRAM_ADDR,
+ 				 DWNLD_SIZE_LSW_LOC);
+@@ -297,10 +297,10 @@ void put_request_value(struct net_device *dev, long lvalue)
+ 
+ }
+ 
+-USHORT hdr_checksum(struct pseudo_hdr *pHdr)
++u16 hdr_checksum(struct pseudo_hdr *pHdr)
+ {
+-	USHORT *usPtr = (USHORT *) pHdr;
+-	USHORT chksum;
++	u16 *usPtr = (u16 *) pHdr;
++	u16 chksum;
+ 
+ 	chksum = ((((((usPtr[0] ^ usPtr[1]) ^ usPtr[2]) ^ usPtr[3]) ^
+ 			usPtr[4]) ^ usPtr[5]) ^ usPtr[6]);
+@@ -308,32 +308,32 @@ USHORT hdr_checksum(struct pseudo_hdr *pHdr)
+ 	return chksum;
+ }
+ 
+-int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
++int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
+ {
+ 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
+ 	int Status = SUCCESS;
+-	USHORT DspWordCnt = 0;
+-	UINT uiState;
+-	USHORT handshake;
++	u16 DspWordCnt = 0;
++	u32 uiState;
++	u16 handshake;
+ 	struct pseudo_hdr *pHdr;
+-	USHORT usHdrLength;
++	u16 usHdrLength;
+ 	struct dsp_file_hdr *pFileHdr;
+ 	long word_length;
+-	USHORT request;
+-	USHORT temp;
++	u16 request;
++	u16 temp;
+ 	struct prov_record *pprov_record;
+-	PUCHAR pbuffer;
++	u8 *pbuffer;
+ 	struct dsp_file_hdr_5 *pFileHdr5;
+ 	struct dsp_image_info *pDspImageInfo = NULL;
+ 	struct dsp_image_info_v6 *pDspImageInfoV6 = NULL;
+ 	long requested_version;
+-	BOOLEAN bGoodVersion = 0;
++	bool bGoodVersion = 0;
+ 	struct drv_msg *pMailBoxData;
+-	USHORT *pUsData = NULL;
+-	USHORT *pUsFile = NULL;
+-	UCHAR *pUcFile = NULL;
+-	UCHAR *pBootEnd = NULL;
+-	UCHAR *pCodeEnd = NULL;
++	u16 *pUsData = NULL;
++	u16 *pUsFile = NULL;
++	u8 *pUcFile = NULL;
++	u8 *pBootEnd = NULL;
++	u8 *pCodeEnd = NULL;
+ 	int imageN;
+ 	long file_version;
+ 	long loader_code_address = 0;
+@@ -358,16 +358,16 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 	case 5:
+ 	case 6:
+ 		pUsFile =
+-			(USHORT *) ((long)pFileStart + pFileHdr5->loader_offset);
++			(u16 *) ((long)pFileStart + pFileHdr5->loader_offset);
+ 		pUcFile =
+-			(UCHAR *) ((long)pFileStart + pFileHdr5->loader_offset);
++			(u8 *) ((long)pFileStart + pFileHdr5->loader_offset);
+ 
+ 		pBootEnd =
+-			(UCHAR *) ((long)pFileStart + pFileHdr5->loader_code_end);
++			(u8 *) ((long)pFileStart + pFileHdr5->loader_code_end);
+ 
+ 		loader_code_address = pFileHdr5->loader_code_address;
+ 		loader_code_size = pFileHdr5->loader_code_size;
+-		bGoodVersion = FALSE;
++		bGoodVersion = false;
+ 		break;
+ 
+ 	default:
+@@ -410,8 +410,8 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 					break;
+ 				case REQUEST_DONE_BL:
+ 					/* Reposition ptrs to beginning of code section */
+-					pUsFile = (USHORT *) ((long)pBootEnd);
+-					pUcFile = (UCHAR *) ((long)pBootEnd);
++					pUsFile = (u16 *) ((long)pBootEnd);
++					pUcFile = (u8 *) ((long)pBootEnd);
+ 					uiState = STATE_CODE_DWNLD;
+ 					break;
+ 				case REQUEST_CODE_SEGMENT:
+@@ -523,12 +523,12 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 					case 5:
+ 					case 6:
+ 						pUsFile =
+-							(USHORT *) ((long)pFileStart
++							(u16 *) ((long)pFileStart
+ 								+
+ 								pFileHdr5->
+ 								commands_offset);
+ 						pUcFile =
+-							(UCHAR *) ((long)pFileStart
++							(u8 *) ((long)pFileStart
+ 								   +
+ 								   pFileHdr5->
+ 								   commands_offset);
+@@ -607,7 +607,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 					pMailBoxData =
+ 						(struct drv_msg *) & info->DSPInfoBlk[0];
+ 					pUsData =
+-						(USHORT *) & pMailBoxData->data[0];
++						(u16 *) & pMailBoxData->data[0];
+ 					// Provide mutual exclusive access while reading ASIC registers.
+ 					spin_lock_irqsave(&info->dpram_lock,
+ 							  flags);
+@@ -657,7 +657,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 						pFileHdr5->version_data_size;
+ 					put_request_value(dev, word_length);
+ 					pUsFile =
+-						(USHORT *) ((long)pFileStart +
++						(u16 *) ((long)pFileStart +
+ 							pFileHdr5->
+ 							version_data_offset);
+ 					// Provide mutual exclusive access while reading ASIC registers.
+@@ -709,7 +709,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 					break;
+ 
+ 				case REQUEST_CODE_BY_VERSION:
+-					bGoodVersion = FALSE;
++					bGoodVersion = false;
+ 					requested_version =
+ 						get_request_value(dev);
+ 					if (file_version == 5) {
+@@ -727,23 +727,23 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 								version ==
+ 								requested_version) {
+ 								bGoodVersion =
+-									TRUE;
++									true;
+ 								pUsFile =
+-									(USHORT
++									(u16
+ 									 *) ((long)
+ 									 pFileStart
+ 									 +
+ 									 pDspImageInfo->
+ 									 begin_offset);
+ 								pUcFile =
+-									(UCHAR
++									(u8
+ 									 *) ((long)
+ 									 pFileStart
+ 									 +
+ 									 pDspImageInfo->
+ 									 begin_offset);
+ 								pCodeEnd =
+-									(UCHAR
++									(u8
+ 									 *) ((long)
+ 									 pFileStart
+ 									 +
+@@ -770,11 +770,11 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 							 imageN <
+ 							 pFileHdr5->nDspImages;
+ 							 imageN++) {
+-							temp = (USHORT)
++							temp = (u16)
+ 								(pDspImageInfoV6->
+ 								 version);
+ 							templong = temp;
+-							temp = (USHORT)
++							temp = (u16)
+ 								(pDspImageInfoV6->
+ 								 version >> 16);
+ 							templong |=
+@@ -782,23 +782,23 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 							if (templong ==
+ 								requested_version) {
+ 								bGoodVersion =
+-									TRUE;
++									true;
+ 								pUsFile =
+-									(USHORT
++									(u16
+ 									 *) ((long)
+ 									 pFileStart
+ 									 +
+ 									 pDspImageInfoV6->
+ 									 begin_offset);
+ 								pUcFile =
+-									(UCHAR
++									(u8
+ 									 *) ((long)
+ 									 pFileStart
+ 									 +
+ 									 pDspImageInfoV6->
+ 									 begin_offset);
+ 								pCodeEnd =
+-									(UCHAR
++									(u8
+ 									 *) ((long)
+ 									 pFileStart
+ 									 +
+@@ -811,7 +811,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 									pDspImageInfoV6->
+ 									image_size;
+ 								image_chksum =
+-									(ULONG)
++									(u32)
+ 									pDspImageInfoV6->
+ 									checksum;
+ 								DEBUG(0,
+@@ -886,7 +886,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 						GFP_ATOMIC);
+ 				if (pbuffer) {
+ 					memcpy(pbuffer, (void *)pUcFile,
+-						   (UINT) (usHdrLength +
++						   (u32) (usHdrLength +
+ 							   sizeof(struct pseudo_hdr)));
+ 					// link provisioning data
+ 					pprov_record =
+@@ -900,7 +900,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 								  &info->prov_list);
+ 						// Move to next entry if available
+ 						pUcFile =
+-							(UCHAR *) ((unsigned long) pUcFile +
++							(u8 *) ((unsigned long) pUcFile +
+ 								   (unsigned long) ((usHdrLength + 1) & 0xFFFFFFFE) + sizeof(struct pseudo_hdr));
+ 						if ((unsigned long) (pUcFile) -
+ 							(unsigned long) (pFileStart) >=
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index d8fa797..b3739b9 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -56,7 +56,7 @@
+ #include <linux/delay.h>
+ #include "ft1000.h"
+ 
+-int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength);
++int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength);
+ 
+ void ft1000InitProc(struct net_device *dev);
+ void ft1000CleanupProc(struct net_device *dev);
+@@ -405,8 +405,8 @@ static void ft1000_reset_asic(struct net_device *dev)
+ // Input:
+ //     dev    - device structure
+ // Output:
+-//     status - FALSE (card reset fail)
+-//              TRUE  (card reset successful)
++//     status - false (card reset fail)
++//              true  (card reset successful)
+ //
+ //---------------------------------------------------------------------------
+ static int ft1000_reset_card(struct net_device *dev)
+@@ -506,7 +506,7 @@ static int ft1000_reset_card(struct net_device *dev)
+ 		if (i == 50) {
+ 			DEBUG(0,
+ 				  "ft1000_hw:ft1000_reset_card:No FEFE detected from DSP\n");
+-			return FALSE;
++			return false;
+ 		}
+ 
+ 	} else {
+@@ -517,7 +517,7 @@ static int ft1000_reset_card(struct net_device *dev)
+ 
+ 	if (card_download(dev, fw_entry->data, fw_entry->size)) {
+ 		DEBUG(1, "card download unsuccessful\n");
+-		return FALSE;
++		return false;
+ 	} else {
+ 		DEBUG(1, "card download successful\n");
+ 	}
+@@ -553,7 +553,7 @@ static int ft1000_reset_card(struct net_device *dev)
+ //	poll_timer.data = (u_long)dev;
+ //	add_timer(&poll_timer);
+ 
+-	return TRUE;
++	return true;
+ 
+ }
+ 
+@@ -565,8 +565,8 @@ static int ft1000_reset_card(struct net_device *dev)
+ // Input:
+ //     dev    - device structure
+ // Output:
+-//     status - FALSE (device is not present)
+-//              TRUE  (device is present)
++//     status - false (device is not present)
++//              true  (device is present)
+ //
+ //---------------------------------------------------------------------------
+ static int ft1000_chkcard(struct net_device *dev)
+@@ -579,7 +579,7 @@ static int ft1000_chkcard(struct net_device *dev)
+ 	if (tempword == 0) {
+ 		DEBUG(1,
+ 			  "ft1000_hw:ft1000_chkcard: IMASK = 0 Card not detected\n");
+-		return FALSE;
++		return false;
+ 	}
+ 	// The system will return the value of 0xffff for the version register
+ 	// if the device is not present.
+@@ -587,9 +587,9 @@ static int ft1000_chkcard(struct net_device *dev)
+ 	if (tempword == 0xffff) {
+ 		DEBUG(1,
+ 			  "ft1000_hw:ft1000_chkcard: Version = 0xffff Card not detected\n");
+-		return FALSE;
++		return false;
+ 	}
+-	return TRUE;
++	return true;
+ }
+ 
+ 
+@@ -609,7 +609,7 @@ static void ft1000_hbchk(u_long data)
+ 	struct net_device *dev = (struct net_device *)data;
+ 
+ 	struct ft1000_info *info;
+-	USHORT tempword;
++	u16 tempword;
+ 
+ 	info = netdev_priv(dev);
+ 
+@@ -907,7 +907,7 @@ void ft1000_send_cmd (struct net_device *dev, u16 *ptempbuffer, int size, u16 qt
+ //          = 1 (successful)
+ //
+ //---------------------------------------------------------------------------
+-BOOLEAN ft1000_receive_cmd(struct net_device *dev, u16 * pbuffer, int maxsz, u16 *pnxtph)
++bool ft1000_receive_cmd(struct net_device *dev, u16 * pbuffer, int maxsz, u16 *pnxtph)
+ {
+ 	struct ft1000_info *info = netdev_priv(dev);
+ 	u16 size;
+@@ -928,7 +928,7 @@ BOOLEAN ft1000_receive_cmd(struct net_device *dev, u16 * pbuffer, int maxsz, u16
+ 		DEBUG(1,
+ 			  "FT1000:ft1000_receive_cmd:Invalid command length = %d\n",
+ 			  size);
+-		return FALSE;
++		return false;
+ 	} else {
+ 		ppseudohdr = (u16 *) pbuffer;
+ 		spin_lock_irqsave(&info->dpram_lock, flags);
+@@ -983,9 +983,9 @@ BOOLEAN ft1000_receive_cmd(struct net_device *dev, u16 * pbuffer, int maxsz, u16
+ 			DEBUG(1,
+ 				  "FT1000:ft1000_receive_cmd:Pseudo header checksum mismatch\n");
+ 			// Drop this message
+-			return FALSE;
++			return false;
+ 		}
+-		return TRUE;
++		return true;
+ 	}
+ }
+ 
+@@ -1012,7 +1012,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+ 	u16 i;
+ 	struct prov_record *ptr;
+ 	struct pseudo_hdr *ppseudo_hdr;
+-	PUSHORT pmsg;
++	u16 *pmsg;
+ 	struct timeval tv;
+ 	union {
+ 		u8 byte[2];
+@@ -1055,7 +1055,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+ 				len = *(u16 *) ptr->pprov_data;
+ 				len = htons(len);
+ 
+-				pmsg = (PUSHORT) ptr->pprov_data;
++				pmsg = (u16 *) ptr->pprov_data;
+ 				ppseudo_hdr = (struct pseudo_hdr *) pmsg;
+ 				// Insert slow queue sequence number
+ 				ppseudo_hdr->seq_num = info->squeseqnum++;
+@@ -1146,7 +1146,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+ 			tempword = ntohs(pdrvmsg->length);
+ 			info->DSPInfoBlklen = tempword;
+ 			if (tempword < (MAX_DSP_SESS_REC - 4)) {
+-				pmsg = (PUSHORT) & pdrvmsg->data[0];
++				pmsg = (u16 *) & pdrvmsg->data[0];
+ 				for (i = 0; i < ((tempword + 1) / 2); i++) {
+ 					DEBUG(1,
+ 						  "FT1000:drivermsg:dsp info data = 0x%x\n",
+@@ -1173,7 +1173,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+ 			if ((tempword & FT1000_DB_DPRAM_TX) == 0) {
+ 				// Put message into Slow Queue
+ 				// Form Pseudo header
+-				pmsg = (PUSHORT) info->DSPInfoBlk;
++				pmsg = (u16 *) info->DSPInfoBlk;
+ 				ppseudo_hdr = (struct pseudo_hdr *) pmsg;
+ 				ppseudo_hdr->length =
+ 					htons(info->DSPInfoBlklen + 4);
+@@ -1198,7 +1198,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+ 				info->DSPInfoBlk[8] = 0x7200;
+ 				info->DSPInfoBlk[9] =
+ 					htons(info->DSPInfoBlklen);
+-				ft1000_send_cmd (dev, (PUSHORT)info->DSPInfoBlk, (USHORT)(info->DSPInfoBlklen+4), 0);
++				ft1000_send_cmd (dev, (u16 *)info->DSPInfoBlk, (u16)(info->DSPInfoBlklen+4), 0);
+ 			}
+ 
+ 			break;
+@@ -1220,7 +1220,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+ 			if ((tempword & FT1000_DB_DPRAM_TX) == 0) {
+ 				// Put message into Slow Queue
+ 				// Form Pseudo header
+-				pmsg = (PUSHORT) & tempbuffer[0];
++				pmsg = (u16 *) & tempbuffer[0];
+ 				ppseudo_hdr = (struct pseudo_hdr *) pmsg;
+ 				ppseudo_hdr->length = htons(0x0012);
+ 				ppseudo_hdr->source = 0x10;
+@@ -1241,7 +1241,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+                 for (i=1; i<7; i++) {
+                     ppseudo_hdr->checksum ^= *pmsg++;
+                 }
+-				pmsg = (PUSHORT) & tempbuffer[16];
++				pmsg = (u16 *) & tempbuffer[16];
+ 				*pmsg++ = htons(RSP_DRV_ERR_RPT_MSG);
+ 				*pmsg++ = htons(0x000e);
+ 				*pmsg++ = htons(info->DSP_TIME[0]);
+@@ -1256,7 +1256,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+ 				*pmsg++ = convert.wrd;
+ 				*pmsg++ = htons(info->DrvErrNum);
+ 
+-				ft1000_send_cmd (dev, (PUSHORT)&tempbuffer[0], (USHORT)(0x0012), 0);
++				ft1000_send_cmd (dev, (u16 *)&tempbuffer[0], (u16)(0x0012), 0);
+ 				info->DrvErrNum = 0;
+ 			}
+ 
+@@ -1698,7 +1698,7 @@ int ft1000_copy_up_pkt(struct net_device *dev)
+ 			tempword = ft1000_read_reg(dev, FT1000_REG_DFIFO);
+ 			*pbuffer++ = (u8) (tempword >> 8);
+ 			*pbuffer++ = (u8) tempword;
+-			if (ft1000_chkcard(dev) == FALSE) {
++			if (ft1000_chkcard(dev) == false) {
+ 				kfree_skb(skb);
+ 				return FAILURE;
+ 			}
+@@ -2025,7 +2025,7 @@ static irqreturn_t ft1000_interrupt(int irq, void *dev_id)
+ 		return IRQ_HANDLED;
+ 	}
+ 
+-	if (ft1000_chkcard(dev) == FALSE) {
++	if (ft1000_chkcard(dev) == false) {
+ 		ft1000_disable_interrupts(dev);
+ 		return IRQ_HANDLED;
+ 	}
+-- 
+Ondrej Zary
 
- - Arnaud
-
-ps: the patch breaks all the others *config target.
-
-> =A0Ralf
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" i=
-n
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at =A0http://vger.kernel.org/majordomo-info.html
->
-
---bcaec521627119bf0a04a665f307
-Content-Type: text/x-patch; charset=US-ASCII; name="0001-allyesrandchoiceconfig.patch"
-Content-Disposition: attachment; 
-	filename="0001-allyesrandchoiceconfig.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gpa3fc6w0
-
-RnJvbSBmNGIxNWY4YWMyN2NlMDkxM2NiNGRjYTBiMGUyNmYxYWFmMzAwMjVlIE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBBcm5hdWQgTGFjb21iZSA8bGFjb21iYXJAZ21haWwuY29tPgpE
-YXRlOiBUaHUsIDIzIEp1biAyMDExIDE1OjExOjI0IC0wNDAwClN1YmplY3Q6IFtQQVRDSF0gYWxs
-eWVzcmFuZGNob2ljZWNvbmZpZwoKLS0tCiBzY3JpcHRzL2tjb25maWcvTWFrZWZpbGUgICB8ICAg
-IDIgKy0KIHNjcmlwdHMva2NvbmZpZy9jb25mLmMgICAgIHwgICAgNyArKysrKysrCiBzY3JpcHRz
-L2tjb25maWcvY29uZmRhdGEuYyB8ICAgMTQgKysrKysrKysrKystLS0KIHNjcmlwdHMva2NvbmZp
-Zy9sa2MuaCAgICAgIHwgICAgMSArCiA0IGZpbGVzIGNoYW5nZWQsIDIwIGluc2VydGlvbnMoKyks
-IDQgZGVsZXRpb25zKC0pCgpkaWZmIC0tZ2l0IGEvc2NyaXB0cy9rY29uZmlnL01ha2VmaWxlIGIv
-c2NyaXB0cy9rY29uZmlnL01ha2VmaWxlCmluZGV4IGZhYTlhNDcuLjRlYjllYWMgMTAwNjQ0Ci0t
-LSBhL3NjcmlwdHMva2NvbmZpZy9NYWtlZmlsZQorKysgYi9zY3JpcHRzL2tjb25maWcvTWFrZWZp
-bGUKQEAgLTk4LDcgKzk4LDcgQEAgdXBkYXRlLXBvLWNvbmZpZzogJChvYmopL2t4Z2V0dGV4dCAk
-KG9iaikvZ2NvbmYuZ2xhZGUuaAogCiBQSE9OWSArPSBhbGxub2NvbmZpZyBhbGx5ZXNjb25maWcg
-YWxsbW9kY29uZmlnIGFsbGRlZmNvbmZpZyByYW5kY29uZmlnCiAKLWFsbG5vY29uZmlnIGFsbHll
-c2NvbmZpZyBhbGxtb2Rjb25maWcgYWxsZGVmY29uZmlnIHJhbmRjb25maWc6ICQob2JqKS9jb25m
-CithbGxub2NvbmZpZyBhbGx5ZXNjb25maWcgYWxseWVzcmFuZGNob2ljZWNvbmZpZyBhbGxtb2Rj
-b25maWcgYWxsZGVmY29uZmlnIHJhbmRjb25maWc6ICQob2JqKS9jb25mCiAJJDwgLS0kQCAkKEtj
-b25maWcpCiAKIFBIT05ZICs9IGxpc3RuZXdjb25maWcgb2xkbm9jb25maWcgc2F2ZWRlZmNvbmZp
-ZyBkZWZjb25maWcKZGlmZiAtLWdpdCBhL3NjcmlwdHMva2NvbmZpZy9jb25mLmMgYi9zY3JpcHRz
-L2tjb25maWcvY29uZi5jCmluZGV4IDAwNmFkODEuLjliMWMzMjQgMTAwNjQ0Ci0tLSBhL3Njcmlw
-dHMva2NvbmZpZy9jb25mLmMKKysrIGIvc2NyaXB0cy9rY29uZmlnL2NvbmYuYwpAQCAtMzMsNiAr
-MzMsNyBAQCBlbnVtIGlucHV0X21vZGUgewogCXNhdmVkZWZjb25maWcsCiAJbGlzdG5ld2NvbmZp
-ZywKIAlvbGRub2NvbmZpZywKKwlhbGx5ZXNyYW5kY2hvaWNlY29uZmlnLAogfSBpbnB1dF9tb2Rl
-ID0gb2xkYXNrY29uZmlnOwogCiBjaGFyICpkZWZjb25maWdfZmlsZTsKQEAgLTQ1Myw2ICs0NTQs
-NyBAQCBzdGF0aWMgc3RydWN0IG9wdGlvbiBsb25nX29wdHNbXSA9IHsKIAl7InJhbmRjb25maWci
-LCAgICAgIG5vX2FyZ3VtZW50LCAgICAgICBOVUxMLCByYW5kY29uZmlnfSwKIAl7Imxpc3RuZXdj
-b25maWciLCAgIG5vX2FyZ3VtZW50LCAgICAgICBOVUxMLCBsaXN0bmV3Y29uZmlnfSwKIAl7Im9s
-ZG5vY29uZmlnIiwgICAgIG5vX2FyZ3VtZW50LCAgICAgICBOVUxMLCBvbGRub2NvbmZpZ30sCisJ
-eyJhbGx5ZXNyYW5kY2hvaWNlY29uZmlnIiwgbm9fYXJndW1lbnQsIE5VTEwsIGFsbHllc3JhbmRj
-aG9pY2Vjb25maWd9LAogCXtOVUxMLCAwLCBOVUxMLCAwfQogfTsKIApAQCAtNDc2LDYgKzQ3OCw3
-IEBAIGludCBtYWluKGludCBhYywgY2hhciAqKmF2KQogCQljYXNlIHNhdmVkZWZjb25maWc6CiAJ
-CQlkZWZjb25maWdfZmlsZSA9IG9wdGFyZzsKIAkJCWJyZWFrOworCQljYXNlIGFsbHllc3JhbmRj
-aG9pY2Vjb25maWc6CiAJCWNhc2UgcmFuZGNvbmZpZzoKIAkJewogCQkJc3RydWN0IHRpbWV2YWwg
-bm93OwpAQCAtNTc5LDYgKzU4MiwxMCBAQCBpbnQgbWFpbihpbnQgYWMsIGNoYXIgKiphdikKIAlj
-YXNlIGFsbG5vY29uZmlnOgogCQljb25mX3NldF9hbGxfbmV3X3N5bWJvbHMoZGVmX25vKTsKIAkJ
-YnJlYWs7CisJY2FzZSBhbGx5ZXNyYW5kY2hvaWNlY29uZmlnOgorCQljb25mX3NldF9hbGxfbmV3
-X3N5bWJvbHMoZGVmX3llcyk7CisJCWNvbmZfc2V0X2FsbF9uZXdfY2hvaWNlX3N5bWJvbHMoZGVm
-X3JhbmRvbSk7CisJCWJyZWFrOwogCWNhc2UgYWxseWVzY29uZmlnOgogCQljb25mX3NldF9hbGxf
-bmV3X3N5bWJvbHMoZGVmX3llcyk7CiAJCWJyZWFrOwpkaWZmIC0tZ2l0IGEvc2NyaXB0cy9rY29u
-ZmlnL2NvbmZkYXRhLmMgYi9zY3JpcHRzL2tjb25maWcvY29uZmRhdGEuYwppbmRleCAyYmFmZDlh
-Li5lOTZiOTVhIDEwMDY0NAotLS0gYS9zY3JpcHRzL2tjb25maWcvY29uZmRhdGEuYworKysgYi9z
-Y3JpcHRzL2tjb25maWcvY29uZmRhdGEuYwpAQCAtOTQ1LDYgKzk0NSw3IEBAIHN0YXRpYyB2b2lk
-IHJhbmRvbWl6ZV9jaG9pY2VfdmFsdWVzKHN0cnVjdCBzeW1ib2wgKmNzeW0pCiAKIAljbnQgPSAw
-OwogCWV4cHJfbGlzdF9mb3JfZWFjaF9zeW0ocHJvcC0+ZXhwciwgZSwgc3ltKSB7CisJCXByaW50
-ZigiJXMgJWQgJWRcbiIsIHN5bS0+bmFtZSwgZGVmLCBjbnQrMSk7CiAJCWlmIChkZWYgPT0gY250
-KyspIHsKIAkJCXN5bS0+ZGVmW1NfREVGX1VTRVJdLnRyaSA9IHllczsKIAkJCWNzeW0tPmRlZltT
-X0RFRl9VU0VSXS52YWwgPSBzeW07CkBAIC05ODAsMTIgKzk4MSwxNCBAQCBzdGF0aWMgdm9pZCBz
-ZXRfYWxsX2Nob2ljZV92YWx1ZXMoc3RydWN0IHN5bWJvbCAqY3N5bSkKIAogdm9pZCBjb25mX3Nl
-dF9hbGxfbmV3X3N5bWJvbHMoZW51bSBjb25mX2RlZl9tb2RlIG1vZGUpCiB7Ci0Jc3RydWN0IHN5
-bWJvbCAqc3ltLCAqY3N5bTsKKwlzdHJ1Y3Qgc3ltYm9sICpzeW07CiAJaW50IGksIGNudDsKIAog
-CWZvcl9hbGxfc3ltYm9scyhpLCBzeW0pIHsKIAkJaWYgKHN5bV9oYXNfdmFsdWUoc3ltKSkKIAkJ
-CWNvbnRpbnVlOworCQlpZiAoc3ltX2lzX2Nob2ljZShzeW0pKQorCQkJY29udGludWU7CiAJCXN3
-aXRjaCAoc3ltX2dldF90eXBlKHN5bSkpIHsKIAkJY2FzZSBTX0JPT0xFQU46CiAJCWNhc2UgU19U
-UklTVEFURToKQEAgLTEwMDYsMTQgKzEwMDksMTkgQEAgdm9pZCBjb25mX3NldF9hbGxfbmV3X3N5
-bWJvbHMoZW51bSBjb25mX2RlZl9tb2RlIG1vZGUpCiAJCQlkZWZhdWx0OgogCQkJCWNvbnRpbnVl
-OwogCQkJfQotCQkJaWYgKCEoc3ltX2lzX2Nob2ljZShzeW0pICYmIG1vZGUgPT0gZGVmX3JhbmRv
-bSkpCi0JCQkJc3ltLT5mbGFncyB8PSBTWU1CT0xfREVGX1VTRVI7CisJCQlzeW0tPmZsYWdzIHw9
-IFNZTUJPTF9ERUZfVVNFUjsKIAkJCWJyZWFrOwogCQlkZWZhdWx0OgogCQkJYnJlYWs7CiAJCX0K
-IAogCX0KK30KKwordm9pZCBjb25mX3NldF9hbGxfbmV3X2Nob2ljZV9zeW1ib2xzKGVudW0gY29u
-Zl9kZWZfbW9kZSBtb2RlKQoreworCXN0cnVjdCBzeW1ib2wgKmNzeW07CisJaW50IGk7CiAKIAlz
-eW1fY2xlYXJfYWxsX3ZhbGlkKCk7CiAKZGlmZiAtLWdpdCBhL3NjcmlwdHMva2NvbmZpZy9sa2Mu
-aCBiL3NjcmlwdHMva2NvbmZpZy9sa2MuaAppbmRleCBmZWJmMGM5Li42NzJjNzhmIDEwMDY0NAot
-LS0gYS9zY3JpcHRzL2tjb25maWcvbGtjLmgKKysrIGIvc2NyaXB0cy9rY29uZmlnL2xrYy5oCkBA
-IC05MSw2ICs5MSw3IEBAIGNoYXIgKmNvbmZfZ2V0X2RlZmF1bHRfY29uZm5hbWUodm9pZCk7CiB2
-b2lkIHN5bV9zZXRfY2hhbmdlX2NvdW50KGludCBjb3VudCk7CiB2b2lkIHN5bV9hZGRfY2hhbmdl
-X2NvdW50KGludCBjb3VudCk7CiB2b2lkIGNvbmZfc2V0X2FsbF9uZXdfc3ltYm9scyhlbnVtIGNv
-bmZfZGVmX21vZGUgbW9kZSk7Cit2b2lkIGNvbmZfc2V0X2FsbF9uZXdfY2hvaWNlX3N5bWJvbHMo
-ZW51bSBjb25mX2RlZl9tb2RlIG1vZGUpOwogCiAvKiBjb25mZGF0YS5jIGFuZCBleHByLmMgKi8K
-IHN0YXRpYyBpbmxpbmUgdm9pZCB4ZndyaXRlKGNvbnN0IHZvaWQgKnN0ciwgc2l6ZV90IGxlbiwg
-c2l6ZV90IGNvdW50LCBGSUxFICpvdXQpCi0tIAoxLjcuMy40LjU3NC5nNjA4Yi5kaXJ0eQoK
---bcaec521627119bf0a04a665f307--
