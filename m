@@ -1,102 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758637Ab1FWBOy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 21:14:54 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:54265 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753164Ab1FWBOx (ORCPT
+	id S1758628Ab1FWBVX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 21:21:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50061 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1758406Ab1FWBVW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 21:14:53 -0400
-X-AuditID: cbfee61b-b7b2dae000007af9-06-4e02938b2ee3
-Date: Thu, 23 Jun 2011 10:14:51 +0900
-From: Sangbeom Kim <sbkim73@samsung.com>
-Subject: RE: [PATCH 2/3] mfd: Add initial S5M8751 support
-In-reply-to: <20110622124820.GD23666@sirena.org.uk>
-To: "'Mark Brown'" <broonie@opensource.wolfsonmicro.com>
-Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
-Message-id: <016d01cc3142$f3ed4ec0$dbc7ec40$@com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=us-ascii
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: Acww2qxhyxAlED4sTm+rbSDO4648wgAXdYyw
-References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com>
- <1308722037-6966-3-git-send-email-sbkim73@samsung.com>
- <20110622124820.GD23666@sirena.org.uk>
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 22 Jun 2011 21:21:22 -0400
+Date: Thu, 23 Jun 2011 02:21:19 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Liam Girdwood <lrg@ti.com>, alsa-devel@alsa-project.org,
+        device-drivers-devel@blackfin.uclinux.org,
+        linux-kernel@vger.kernel.org, Mike Frysinger <vapier.adi@gmail.com>
+Subject: Re: [PATCH 1/4] ASoC: Add ADAV80x codec driver
+Message-ID: <20110623012119.GC20949@opensource.wolfsonmicro.com>
+References: <1308776997-12959-1-git-send-email-lars@metafoo.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308776997-12959-1-git-send-email-lars@metafoo.de>
+X-Cookie: Your present plans will be successful.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 09:48 PM +0900, Mark Brown wrote:
-> > The WM8994 is a advanced PMIC with AUdio DAC
-> > Since it includes regulators, Battery charger, audio dac,
-> > it is represented as a multi-function device,
-> > though the functionality will be provided by the each driver.
-> 
-> I think you may have cut'n'pasted bits of this changelog from somewhere
-> else without doing all the updates you meant to :)
-Sorry, These days I work with 2 board based on S5M8751 & WM8994.
-I little confused 8751 with 8994. I will modify it in new patch.
+On Wed, Jun 22, 2011 at 11:09:54PM +0200, Lars-Peter Clausen wrote:
 
-> > +	if (event1 & S5M8751_MASK_PWRKEY1B)
-> > +		s5m8751_irq_call_handler(s5m8751, S5M8751_IRQ_PWRKEY1B);
-> > +
-> > +	if (event1 & S5M8751_MASK_PWRKEY2B)
-> > +		s5m8751_irq_call_handler(s5m8751, S5M8751_IRQ_PWRKEY2B);
-> > +
-> > +	if (event1 & S5M8751_MASK_PWRKEY3)
-> > +		s5m8751_irq_call_handler(s5m8751, S5M8751_IRQ_PWRKEY3);
-> 
-> This looks like the IRQ handler code doesn't need to understand the
-> specific events, it can just loop over the registers and fire off
-> interrupts based on the bit numbers.
-> 
-> As I said for the first patch this should all be using genirq.
-OK I will modify it.
-> 
-> > +static irqreturn_t s5m8751_irq(int irq, void *data)
-> > +{
-> > +	struct s5m8751 *s5m8751 = data;
-> > +
-> > +	disable_irq_nosync(irq);
-> > +	schedule_work(&s5m8751->irq_work);
-> > +
-> > +	return IRQ_HANDLED;
-> > +}
-> 
-> Use a threaded IRQ handler.
-OK,
-> 
-> > +int s5m8751_device_init(struct s5m8751 *s5m8751, int irq,
-> > +			struct s5m8751_platform_data *pdata)
-> > +{
-> > +	int ret = -EINVAL;
-> > +	u8 chip_id;
-> > +
-> > +	if (pdata->init) {
-> > +		ret = pdata->init(s5m8751);
-> > +		if (ret != 0) {
-> > +			dev_err(s5m8751->dev,
-> > +			 "Platform init() failed: %d\n", ret);
-> > +			goto err;
-> > +		}
-> > +	}
-> > +
-> > +	s5m8751_reg_read(s5m8751, S5M8751_CHIP_ID, &chip_id);
-> > +	if (!chip_id)
-> > +		dev_info(s5m8751->dev, "Found S5M8751 device\n");
-> > +	else {
-> > +		dev_info(s5m8751->dev, "Didn't Find S5M8751 device\n");
-> > +		ret = -EINVAL;
-> > +		goto err;
-> > +	}
-> 
-> I'd really expect the init() callback to run after we've checked that
-> we can talk to the device.
-OK, I will check it.
+> diff --git a/sound/soc/codecs/adav80x.c b/sound/soc/codecs/adav80x.c
+> new file mode 100644
+> index 0000000..d2f3d08
 
-Thanks and regards,
-SB Kim
+This needs adding to MAINTAINERS.
 
+> +static const struct soc_enum adav80x_mux_enum[] = {
+> +	ADAV80X_MUX_ENUM(ADAV80X_DPATH_CTRL1, 0),
+> +	ADAV80X_MUX_ENUM(ADAV80X_DPATH_CTRL1, 3),
+> +	ADAV80X_MUX_ENUM(ADAV80X_DPATH_CTRL2, 3),
+> +};
+
+No, don't use arrays...
+
+> +static const struct snd_kcontrol_new adav80x_mux_ctrl[] = {
+> +	SOC_DAPM_VALUE_ENUM("Route", adav80x_mux_enum[0]),
+> +	SOC_DAPM_VALUE_ENUM("Route", adav80x_mux_enum[1]),
+> +	SOC_DAPM_VALUE_ENUM("Route", adav80x_mux_enum[2]),
+> +};
+
+...since referencing them is so error prone...
+
+> +#define ADAV80X_MUX(name, num) \
+> +	SND_SOC_DAPM_VALUE_MUX(name, SND_SOC_NOPM, 0, 0, &adav80x_mux_ctrl[num])
+
+...and illegible due to the magic numbers.
+
+> +	if (adav80x->deemph) {
+> +		switch (adav80x->rate) {
+> +		case 0:
+> +			val = ADAV80X_DAC_CTRL2_DEEMPH_NONE;
+> +			break;
+> +		case 32000:
+> +			val = ADAV80X_DAC_CTRL2_DEEMPH_32;
+> +			break;
+> +		case 44100:
+> +			val = ADAV80X_DAC_CTRL2_DEEMPH_44;
+> +			break;
+> +		case 48000:
+> +		default:
+> +			val = ADAV80X_DAC_CTRL2_DEEMPH_48;
+> +			break;
+
+Really?  I'd have expected a check for the closest matching rate (which
+would get 32k for most low rates) or a requirement for an exact match.
+
+> +	if (freq_out) {
+
+> +	} else	{
+> +		if (adav80x->clk_src == new_src)
+> +			return 0;
+> +
+> +		adav80x->clk_src = new_src;
+> +
+> +		if (new_src == ADAV80X_CLK_XIN) {
+> +			/* DAC, ADC, ICLK clock source - XIN */
+> +			snd_soc_write(codec, ADAV80X_ICLK_CTRL1, 0x00);
+> +			snd_soc_write(codec, ADAV80X_ICLK_CTRL2, 0x00);
+> +		} else {
+> +			/* DAC, ADC, ICLK clock source - MCLKI */
+> +			snd_soc_write(codec, ADAV80X_ICLK_CTRL1, 0x25);
+> +			snd_soc_write(codec, ADAV80X_ICLK_CTRL2, 0x01);
+> +		}
+> +
+> +		pll_ctrl1 |= ADAV80X_PLL_CTRL1_PLL1PD;
+> +		snd_soc_write(codec, ADAV80X_PLL_CTRL1, pll_ctrl1);
+
+What's this doing?  Setting the PLL output to zero means stop the PLL.
+
+> +/* Enforce the same sample rate on all audio interfaces */
+> +static int adav80x_dai_startup(struct snd_pcm_substream *substream,
+> +	struct snd_soc_dai *dai)
+> +{
+> +	struct snd_soc_codec *codec = dai->codec;
+> +	struct adav80x *adav80x = snd_soc_codec_get_drvdata(codec);
+> +
+> +	if (!codec->active || !adav80x->rate)
+> +		return 0;
+> +
+> +	return snd_pcm_hw_constraint_minmax(substream->runtime,
+> +			SNDRV_PCM_HW_PARAM_RATE, adav80x->rate, adav80x->rate);
+> +}
+
+This means playback and capture should always run at the same rate so...
+
+> +static struct snd_soc_dai_driver adav80x_dais[] = {
+> +	{
+
+...the DAI should flag symmetric_rates, even if only for completeness.
+
+> +static int adav80x_resume(struct snd_soc_codec *codec)
+> +{
+> +	return adav80x_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+> +}
+
+This doesn't appear to restore the register cache, nor does
+set_bias_level().
