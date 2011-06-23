@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759947Ab1FWSkg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:40:36 -0400
-Received: from mail.perches.com ([173.55.12.10]:3180 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759901Ab1FWSkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:40:25 -0400
-From: Joe Perches <joe@perches.com>
-To: devel@driverdev.osuosl.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] staging: transciever/transceiver spelling fixes
-Date: Thu, 23 Jun 2011 11:40:19 -0700
-Message-Id: <d083ca110e602280d33b355ba6884fa124f82a03.1308854062.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.rc1
-In-Reply-To: <3449aeaeff79540bbe60c1323a28c528e3083507.1308854062.git.joe@perches.com>
-References: <3449aeaeff79540bbe60c1323a28c528e3083507.1308854062.git.joe@perches.com>
+	id S933443Ab1FWSnR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:43:17 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:61632 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932668Ab1FWSnQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 14:43:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=iSTwwaMKKGhkAdAOtdMkTYM4sgFHgZSaTPLU1d6Dp9eIEoS9dUGUYfaqzlL6wiHEPF
+         fYJ7YY6vBKzzyW2k1X+PDk1knQG1YZjQgcgUUBDO+MNOX/4z5V4eo42NE7WXOPRa895u
+         VAQ2YsgOn+2ArPwLUpvfHgeN8a8JqF5Otd+Is=
+MIME-Version: 1.0
+Date: Thu, 23 Jun 2011 20:43:14 +0200
+Message-ID: <BANLkTim1=iKJTpcagPi+ZoomvBWgPeG63Q@mail.gmail.com>
+Subject: Reading MtRainier CD in plain CD unit?
+From: =?UTF-8?Q?David_Bala=C5=BEic?= <xerces9@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just tyops.
+Hi!
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/staging/et131x/et1310_phy.c     |    2 +-
- drivers/staging/et131x/et131x_adapter.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+(please CC me on answers)
 
-diff --git a/drivers/staging/et131x/et1310_phy.c b/drivers/staging/et131x/et1310_phy.c
-index 2798a2f..5b5344a 100644
---- a/drivers/staging/et131x/et1310_phy.c
-+++ b/drivers/staging/et131x/et1310_phy.c
-@@ -99,7 +99,7 @@ static void et131x_xcvr_init(struct et131x_adapter *etdev);
- /**
-  * PhyMiRead - Read from the PHY through the MII Interface on the MAC
-  * @etdev: pointer to our private adapter structure
-- * @xcvrAddr: the address of the transciever
-+ * @xcvrAddr: the address of the transceiver
-  * @xcvrReg: the register to read
-  * @value: pointer to a 16-bit value in which the value will be stored
-  *
-diff --git a/drivers/staging/et131x/et131x_adapter.h b/drivers/staging/et131x/et131x_adapter.h
-index c852f86..e6eafd2 100644
---- a/drivers/staging/et131x/et131x_adapter.h
-+++ b/drivers/staging/et131x/et131x_adapter.h
-@@ -118,7 +118,7 @@ typedef struct _ce_stats_t {
- 	u32 norcvbuf;	/* # Rx packets discarded */
- 	u32 noxmtbuf;	/* # Tx packets discarded */
- 
--	/* Transciever state informations. */
-+	/* Transceiver state informations. */
- 	u8 xcvr_addr;
- 	u32 xcvr_id;
- 
--- 
-1.7.6.rc1
+During cleanup I found a MtRainier (MRW) formatted CD-RW with an UDF
+1.02 filesystem on it.
 
+I tried to read it in aplin CD-ROM unit that has no special MRW
+support with a recent kernel (Ubuntu 11.04 distro) but it does not
+work. It sees only a dummy iso9660 volume that has a few readme files
+informing that special software is needed to read them (It suggests
+Nero EasyWrite or InCD, for Windows, as it was formatted with a Nero
+utility).
+
+As I remember from back then, this helper code is patent encumbered
+and that's why Linux does not have it.
+Has there been any change about this lately?
+
+Regards,
+David
