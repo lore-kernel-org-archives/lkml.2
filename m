@@ -1,120 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964892Ab1FWXFW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 19:05:22 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:25204 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933959Ab1FWXFV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 19:05:21 -0400
-Date: Fri, 24 Jun 2011 00:56:26 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: trivial@kernel.org, devel@driverdev.osuosl.org,
-        David Brown <davidb@codeaurora.org>, Ingo Molnar <mingo@elte.hu>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>, Torben Hohn <torbenh@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 29/37] Remove unneeded version.h includes from
- drivers/staging/msm/
-In-Reply-To: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1106240054540.17688@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1760192Ab1FXBIW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 21:08:22 -0400
+Received: from claw.goop.org ([74.207.240.146]:40503 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753097Ab1FXBIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 21:08:21 -0400
+Message-ID: <4E03C510.5050801@goop.org>
+Date: Thu, 23 Jun 2011 15:58:24 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 09/15] xen/trace: add tlb flush tracepoints
+References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>	 <4db3e32a6b21efdb4d82646816ddb1bb82ff2259.1308607697.git.jeremy.fitzhardinge@citrix.com>	 <20110621140705.GD28229@dumpdata.com>  <4E03996B.9050904@goop.org> <1308860628.531.42.camel@gandalf.stny.rr.com>
+In-Reply-To: <1308860628.531.42.camel@gandalf.stny.rr.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was pointed out by 'make versioncheck' that some includes of
-linux/version.h are not needed in drivers/staging/msm/.
-This patch removes them.
+On 06/23/2011 01:23 PM, Steven Rostedt wrote:
+> Ouch! I didn't notice this before. Do you really need this empty event?
+> Why not just use the function tracer for this? It should work.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/msm/ebi2_lcd.c     |    3 +--
- drivers/staging/msm/msm_fb.c       |    1 -
- drivers/staging/msm/msm_fb_bl.c    |    1 -
- drivers/staging/msm/msm_fb_def.h   |    1 -
- drivers/staging/msm/msm_fb_panel.c |    1 -
- 5 files changed, 1 insertions(+), 6 deletions(-)
+Yes, it should, but it would be nice to present something that's
+consistent with all the other tlb-related tracepoints.
 
-diff --git a/drivers/staging/msm/ebi2_lcd.c b/drivers/staging/msm/ebi2_lcd.c
-index b41e123..4834b7b 100644
---- a/drivers/staging/msm/ebi2_lcd.c
-+++ b/drivers/staging/msm/ebi2_lcd.c
-@@ -29,7 +29,6 @@
- #include <linux/uaccess.h>
- #include <linux/workqueue.h>
- #include <linux/string.h>
--#include <linux/version.h>
- #include <linux/proc_fs.h>
- #include <linux/vmalloc.h>
- #include <linux/debugfs.h>
-@@ -247,4 +246,4 @@ static int __init ebi2_lcd_driver_init(void)
- 	return ebi2_lcd_register_driver();
- }
- 
--module_init(ebi2_lcd_driver_init);
-\ No newline at end of file
-+module_init(ebi2_lcd_driver_init);
-diff --git a/drivers/staging/msm/msm_fb.c b/drivers/staging/msm/msm_fb.c
-index e7ef836..e60f8f9 100644
---- a/drivers/staging/msm/msm_fb.c
-+++ b/drivers/staging/msm/msm_fb.c
-@@ -32,7 +32,6 @@
- 
- #include <linux/workqueue.h>
- #include <linux/string.h>
--#include <linux/version.h>
- #include <linux/proc_fs.h>
- #include <linux/vmalloc.h>
- #include <linux/debugfs.h>
-diff --git a/drivers/staging/msm/msm_fb_bl.c b/drivers/staging/msm/msm_fb_bl.c
-index 2a80775..9c8cb88 100644
---- a/drivers/staging/msm/msm_fb_bl.c
-+++ b/drivers/staging/msm/msm_fb_bl.c
-@@ -21,7 +21,6 @@
- #include <linux/slab.h>
- #include <linux/fb.h>
- #include <linux/string.h>
--#include <linux/version.h>
- #include <linux/backlight.h>
- 
- #include "msm_fb.h"
-diff --git a/drivers/staging/msm/msm_fb_def.h b/drivers/staging/msm/msm_fb_def.h
-index bc7f256..8b4626f 100644
---- a/drivers/staging/msm/msm_fb_def.h
-+++ b/drivers/staging/msm/msm_fb_def.h
-@@ -28,7 +28,6 @@
- #include <linux/uaccess.h>
- #include <linux/workqueue.h>
- #include <linux/string.h>
--#include <linux/version.h>
- #include <linux/proc_fs.h>
- #include <linux/vmalloc.h>
- #include <linux/debugfs.h>
-diff --git a/drivers/staging/msm/msm_fb_panel.c b/drivers/staging/msm/msm_fb_panel.c
-index b17a239..651de16 100644
---- a/drivers/staging/msm/msm_fb_panel.c
-+++ b/drivers/staging/msm/msm_fb_panel.c
-@@ -29,7 +29,6 @@
- #include <linux/uaccess.h>
- #include <linux/workqueue.h>
- #include <linux/string.h>
--#include <linux/version.h>
- #include <linux/proc_fs.h>
- #include <linux/vmalloc.h>
- #include <linux/debugfs.h>
--- 
-1.7.5.2
+> If you really need something like this, maybe I'll add a
+> DEFINE_EVENT_NOARGS() that will not require arguments and can eliminate
+> a lot of code that TRACE_EVENT() adds.
 
+If you like, but only if you think its worth the effort.  The empty
+string thing is a bit of an ugly hack, but its not like it makes a mess
+everywhere.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+    J
