@@ -1,62 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933171Ab1FWRcN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:32:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46996 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932876Ab1FWRcK (ORCPT
+	id S933269Ab1FWSVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:21:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34193 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933197Ab1FWRfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:32:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=D2JoJ4ngIHXImTF366IBs69Uv/kE92Gh1EKyO5HfHdexpuSBB2gESd65Izzjb3kFZA
-         goh9gOsx3P9dNtseXbeeLIvn+gzQzkPqH3LPlzW0I5mbx1peX17V1z8G7mR7mzO8Z8hb
-         0eynXsBhm0srtyj02Ojvtx5qHW1XYouJnufcg=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Meelis Roos <mroos@ut.ee>
-Subject: Re: 3.0-rc3: No RTC device found
-Date: Thu, 23 Jun 2011 19:32:03 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.3; i686; ; )
-Cc: John Stultz <john.stultz@linaro.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-References: <alpine.SOC.1.00.1106081454240.8911@math.ut.ee> <alpine.SOC.1.00.1106141203350.11764@math.ut.ee>
-In-Reply-To: <alpine.SOC.1.00.1106141203350.11764@math.ut.ee>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106231932.04258.maciej.rutecki@gmail.com>
+	Thu, 23 Jun 2011 13:35:51 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+To: stable@kernel.org, linux-kernel@vger.kernel.org
+Cc: stable-review@kernel.org, Dario Lombardo <dario.lombardo@liberoo.it>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 060/247] drivers: update to pl2303 usb-serial to support Motorola cables
+Date: Thu, 23 Jun 2011 13:32:08 -0400
+Message-Id: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
+References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On wtorek, 14 czerwca 2011 o 11:06:49 Meelis Roos wrote:
-> This was my earlier report that I tought was sparc64 specific:
-> > Dmesg finds both OF RTC and PC RTC but later complains
-> > "No RTC device found, ALARM timers will not wake from suspend"
-> 
-> But today I noticed this while testing 3.0-rc3 on a PC:
-> 
-> [    0.313944] No RTC device found, ALARM timers will not wake from suspend
-> [    0.314275] drivers/rtc/hctosys.c: unable to open rtc device (rtc0)
-> 
-> Later it detects PC RTC:
-> 
-> [    3.610210] rtc_cmos 00:03: RTC can wake from S4
-> [    3.611554] rtc_cmos 00:03: rtc core: registered rtc_cmos as rtc0
-> [    3.611669] rtc0: alarms up to one year, y3k, 114 bytes nvram
-> 
-> Bisecting it on sparc64 got me nowhere. Have not tried bisecting it on
-> PC yet.
+From: Dario Lombardo <dario.lombardo@liberoo.it>
 
+                   -------------------
+    This is a commit scheduled for the next v2.6.34 longterm release.
+    If you see a problem with using this for longterm, please comment.
+                   -------------------
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=38092
-for your bug report, please add your address to the CC list in there, thanks!
+commit 96a3e79edff6f41b0f115a82f1a39d66218077a7 upstream.
 
+Added 0x0307 device id to support Motorola cables to the pl2303 usb
+serial driver. This cable has a modified chip that is a pl2303, but
+declares itself as 0307. Fixed by adding the right device id to the
+supported devices list, assigning it the code labeled
+PL2303_PRODUCT_ID_MOTOROLA.
+
+Signed-off-by: Dario Lombardo <dario.lombardo@liberoo.it>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
+---
+ drivers/usb/serial/pl2303.c |    1 +
+ drivers/usb/serial/pl2303.h |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/serial/pl2303.c b/drivers/usb/serial/pl2303.c
+index f6e4703..eb7d1ce 100644
+--- a/drivers/usb/serial/pl2303.c
++++ b/drivers/usb/serial/pl2303.c
+@@ -60,6 +60,7 @@ static const struct usb_device_id id_table[] = {
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MMX) },
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_GPRS) },
+ 	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_HCR331) },
++	{ USB_DEVICE(PL2303_VENDOR_ID, PL2303_PRODUCT_ID_MOTOROLA) },
+ 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID) },
+ 	{ USB_DEVICE(IODATA_VENDOR_ID, IODATA_PRODUCT_ID_RSAQ5) },
+ 	{ USB_DEVICE(ATEN_VENDOR_ID, ATEN_PRODUCT_ID) },
+diff --git a/drivers/usb/serial/pl2303.h b/drivers/usb/serial/pl2303.h
+index e8b7c5b..d67b480 100644
+--- a/drivers/usb/serial/pl2303.h
++++ b/drivers/usb/serial/pl2303.h
+@@ -21,6 +21,7 @@
+ #define PL2303_PRODUCT_ID_MMX		0x0612
+ #define PL2303_PRODUCT_ID_GPRS		0x0609
+ #define PL2303_PRODUCT_ID_HCR331	0x331a
++#define PL2303_PRODUCT_ID_MOTOROLA	0x0307
+ 
+ #define ATEN_VENDOR_ID		0x0557
+ #define ATEN_VENDOR_ID2		0x0547
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+1.7.4.4
+
