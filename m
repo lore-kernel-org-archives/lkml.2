@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934573Ab1FWXRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 19:17:01 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:25605 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933959Ab1FWXQ7 (ORCPT
+	id S934355Ab1FWXJ4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 19:09:56 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:45432 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932682Ab1FWXJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 19:16:59 -0400
-Date: Fri, 24 Jun 2011 01:08:05 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: trivial@kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Aaro Koskinen <aaro.koskinen@iki.fi>,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        "Prashant P. Shah" <pshah.mumbai@gmail.com>,
-        Randy Dunlap <randy.dunlap@oracle.com>, devel@driverdev.osuosl.org
-Subject: [PATCH 37/37] Remove unneeded version.h includes from drivers/staging/xgifb/
-In-Reply-To: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1106240106500.17688@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 23 Jun 2011 19:09:54 -0400
+Subject: Re: [PATCHv4] x86, mrst: share APB timer code with other platforms
+From: john stultz <johnstul@us.ibm.com>
+To: Jamie Iles <jamie@jamieiles.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jacob Pan <jacob.jun.pan@linux.intel.com>
+In-Reply-To: <20110621101439.GH2647@pulham.picochip.com>
+References: <1307360587-302-1-git-send-email-jamie@jamieiles.com>
+	 <20110621101439.GH2647@pulham.picochip.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 23 Jun 2011 16:09:48 -0700
+Message-ID: <1308870588.2872.124.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was pointed out by 'make versioncheck' that some includes of
-linux/version.h are not needed in drivers/staging/xgifb/.
-This patch removes them.
+On Tue, 2011-06-21 at 11:14 +0100, Jamie Iles wrote:
+> On Mon, Jun 06, 2011 at 12:43:07PM +0100, Jamie Iles wrote:
+> > The APB timers are an IP block from Synopsys (DesignWare APB timers)
+> > and are also found in other systems including ARM SoC's.  This patch
+> > adds functions for creating clock_event_devices and clocksources from
+> > APB timers but does not do the resource allocation.  This is handled
+> > in a higher layer to allow the timers to be created from multiple
+> > methods such as platform_devices.
+> > 
+> > Changes since v3:
+> > 	- Add dw_apb_clocksource_unregister()
+> > 	- Move kerneldoc to the implementation file
+> > Changes since v2:
+> > 	- Make eoi() for clock_event_device optional for x86 where eoi                                                                                                                                                                                                                                                         
+> > 	  is handled in firmware.
+> > Changes since v1:
+> > 	- Use the correct timer for clocksource on x86
+> > 	- Select the correct timer rating for x86
+> > 	- Restore freerunning timer behaviour for oneshot event devices
+> > 	- Reenable event irq correctly for hotplug
+> > 
+> > Cc: John Stultz <johnstul@us.ibm.com>
+> > Cc: Thomas Gleixner <tglx@linutronix.de>
+> > Cc: Ingo Molnar <mingo@redhat.com>
+> > Cc: "H. Peter Anvin" <hpa@zytor.com>
+> > Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> > Signed-off-by: Jamie Iles <jamie@jamieiles.com>
+> > ---
+> 
+> Ping?
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/xgifb/XGI_main_26.c |    1 -
- drivers/staging/xgifb/vb_ext.c      |    1 -
- drivers/staging/xgifb/vb_init.c     |    1 -
- drivers/staging/xgifb/vb_setmode.c  |    1 -
- 4 files changed, 0 insertions(+), 4 deletions(-)
+Sorry for being slow here. Looks ok to me, so I've queued this for 3.1.
 
-diff --git a/drivers/staging/xgifb/XGI_main_26.c b/drivers/staging/xgifb/XGI_main_26.c
-index cadec2a..4403e5f 100644
---- a/drivers/staging/xgifb/XGI_main_26.c
-+++ b/drivers/staging/xgifb/XGI_main_26.c
-@@ -5,7 +5,6 @@
-  */
- 
- /* #include <linux/config.h> */
--#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/moduleparam.h>
- #include <linux/kernel.h>
-diff --git a/drivers/staging/xgifb/vb_ext.c b/drivers/staging/xgifb/vb_ext.c
-index 7e1f76a..b1a2573 100644
---- a/drivers/staging/xgifb/vb_ext.c
-+++ b/drivers/staging/xgifb/vb_ext.c
-@@ -1,4 +1,3 @@
--#include <linux/version.h>
- #include <linux/io.h>
- #include <linux/types.h>
- #include "XGIfb.h"
-diff --git a/drivers/staging/xgifb/vb_init.c b/drivers/staging/xgifb/vb_init.c
-index 33c6876..493b532 100644
---- a/drivers/staging/xgifb/vb_init.c
-+++ b/drivers/staging/xgifb/vb_init.c
-@@ -1,6 +1,5 @@
- #include "vgatypes.h"
- 
--#include <linux/version.h>
- #include <linux/types.h>
- #include <linux/delay.h> /* udelay */
- #include "XGIfb.h"
-diff --git a/drivers/staging/xgifb/vb_setmode.c b/drivers/staging/xgifb/vb_setmode.c
-index 2669b1b..dc4d6e6 100644
---- a/drivers/staging/xgifb/vb_setmode.c
-+++ b/drivers/staging/xgifb/vb_setmode.c
-@@ -2,7 +2,6 @@
- #include <linux/io.h>
- #include <linux/delay.h>
- #include <linux/types.h>
--#include <linux/version.h>
- #include "XGIfb.h"
- 
- 
--- 
-1.7.5.2
+thanks
+-john
 
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
 
