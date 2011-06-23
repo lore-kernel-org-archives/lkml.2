@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932352Ab1FWCkh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 22:40:37 -0400
-Received: from mga03.intel.com ([143.182.124.21]:28735 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757061Ab1FWCkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 22:40:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,410,1304319600"; 
-   d="scan'208";a="17205884"
-Date: Thu, 23 Jun 2011 10:47:56 +0800
-From: Feng Tang <feng.tang@intel.com>
-To: "dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "spi-devel-general@lists.sourceforge.net" 
-	<spi-devel-general@lists.sourceforge.net>
-Subject: Re: [PATCH 11/11] spi-dw: remove noop else clause
-Message-ID: <20110623104756.1d1c8da4@feng-i7>
-In-Reply-To: <1308794413-11069-12-git-send-email-dirk.brandewie@gmail.com>
-References: <1308794413-11069-1-git-send-email-dirk.brandewie@gmail.com>
-	<1308794413-11069-12-git-send-email-dirk.brandewie@gmail.com>
-Organization: intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; i486-pc-linux-gnu)
+	id S1758608Ab1FWCwC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 22:52:02 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44520 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757061Ab1FWCwA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 22 Jun 2011 22:52:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E02AA40.30203@jp.fujitsu.com>
+Date: Thu, 23 Jun 2011 11:51:44 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: dvhart@linux.intel.com
+CC: sbohrer@rgmadvisors.com, peterz@infradead.org, eric.dumazet@gmail.com,
+        david@rgmadvisors.com, linux-kernel@vger.kernel.org,
+        zvonler@rgmadvisors.com, hughd@google.com, tglx@linutronix.de,
+        mingo@elte.hu
+Subject: Re: [PATCH RFC] futex: Fix regression with read only mappings
+References: <4DF8FFF6.4060000@linux.intel.com> <1308770340-21895-1-git-send-email-sbohrer@rgmadvisors.com> <4E024D2D.6070308@linux.intel.com>
+In-Reply-To: <4E024D2D.6070308@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jun 2011 10:00:13 +0800
-"dirk.brandewie@gmail.com" <dirk.brandewie@gmail.com> wrote:
-
-> From: Dirk Brandewie <dirk.brandewie@gmail.com>
+(2011/06/23 5:14), Darren Hart wrote:
+> Hi Shawn,
 > 
-> The value of spi->bits_per_word is checked on function entry to be 8
-> or 16.  The else clause has no meaning since it can never be reached.
+> Thanks for taking this up. Would you share your testcases as well?
 > 
-> Signed-off-by: Dirk Brandewie <dirk.brandewie@gmail.com>
-> ---
->  drivers/spi/spi-dw.c |    9 +++------
->  1 files changed, 3 insertions(+), 6 deletions(-)
+> On 06/22/2011 12:19 PM, Shawn Bohrer wrote:
+>> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+>> parameter from get_futex_key()) in 2.6.33 introduced a user-mode
+>> regression in that it additionally prevented futex operations on a
+>> region within a read only memory mapped file.  For example this breaks
+>> workloads that have one or more reader processes doing a FUTEX_WAIT on a
+>> futex within a read only shared mapping, and a writer processes that has
+>> a writable mapping issuing the FUTEX_WAKE.
+>>
+>> This fixes the regression for futex operations that should be valid on
+>> RO mappings by trying a RO get_user_pages_fast() when the RW
+>> get_user_pages_fast() fails so as not to slow down the common path of
+>> writable anonymous maps and bailing when we used the RO path on
+>> anonymous memory.
+>>
+>> Patch based on Peter Zijlstra's initial patch with modifications to only
+>> allow RO mappings for futex operations that need VERIFY_READ access.
+>>
+>> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+>> ---
+>>
+>> Interestingly this patch also allows doing a FUTEX_WAIT on a RO private
+>> mapping.
 > 
-> diff --git a/drivers/spi/spi-dw.c b/drivers/spi/spi-dw.c
-> index 7b3f607..5ddd45f 100644
-> --- a/drivers/spi/spi-dw.c
-> +++ b/drivers/spi/spi-dw.c
-> @@ -667,17 +667,14 @@ static int spi_dw_setup(struct spi_device *spi)
->  		chip->enable_dma = chip_info->enable_dma;
->  	}
->  
-> -	if (spi->bits_per_word <= 8) {
-> +	if (spi->bits_per_word == 8) {
->  		chip->n_bytes = 1;
->  		chip->dma_width = 1;
-> -	} else if (spi->bits_per_word <= 16) {
-> +	} else if (spi->bits_per_word == 16) {
->  		chip->n_bytes = 2;
->  		chip->dma_width = 2;
-> -	} else {
-> -		/* Never take >16b case for DW SPIC */
-> -		dev_err(&spi->dev, "invalid wordsize\n");
-> -		return -EINVAL;
->  	}
+> I don't see any harm in this.
 
-These "else" case is used to ban the slave spi devices which
-try to use 32 bits per word mode. This is like to tell those
-spi devices with 32 bpw capability "we don't support 32b, pls
-change"
+Hi
 
-> +
->  	chip->bits_per_word = spi->bits_per_word;
->  
->  	chip->speed_hz = spi->max_speed_hz;
+I have no objection. However I'd like to explain why I decided to
+prefer to refuse RO private mappings and used prefault.
+
+private mapping semantics is, to write access makes process private pages
+(ie PageAnon=1).
+
+So, this patch introduce following another corner case.
+
+Thread-A: call futex(FUTEX_WAIT, memory-region-A).
+          get_futex_key() return inode based key.
+          sleep on the key
+Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
+Thread-B: write memory-region-A.
+          COW happen. This process's memory-region-A become related
+          to new COWed private (ie PageAnon=1) page.
+Thread-B: call futex(FUETX_WAKE, memory-region-A).
+          get_futex_key() return mm based key.
+          IOW, we fail to wake up Thread-A.
+
+It's unclear real world issue or not. But I hope everybody realize it.
+So, Probably it would be great if you add some comments for this issue.
+
+2.6.18 had an another trick. It used vma walk for avoiding this issue.
+and, unfortunately, it's slow.
+
+
+> 
+>>  Where my tests on 2.6.18 show that this used to wait
+>> indefinitely.  Performing a FUTEX_WAIT on a RW private mapping waits
+>> indefinitely in 2.6.18, 3.0.0, and with this patch applied.  It is
+>> unclear to me if this is a good thing or a bug.
+>>
+>>  kernel/futex.c |   38 ++++++++++++++++++++++++++------------
+>>  1 files changed, 26 insertions(+), 12 deletions(-)
+
