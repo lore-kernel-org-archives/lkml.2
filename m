@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933100Ab1FWTjH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 15:39:07 -0400
-Received: from outmail008.snc4.facebook.com ([66.220.144.140]:64019 "EHLO
-	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932702Ab1FWTjF (ORCPT
+	id S933107Ab1FWTk2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 15:40:28 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:37939 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932771Ab1FWTk0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 15:39:05 -0400
-Message-ID: <4E03968A.5010008@fb.com>
-Date: Thu, 23 Jun 2011 12:39:54 -0700
-From: Arun Sharma <asharma@fb.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+	Thu, 23 Jun 2011 15:40:26 -0400
+Subject: [PATCH 05/11] Remove unused ft1000_asic_read and ft1000_asic_write functions
+To: "Greg Kroah-Hartman" <greg@kroah.com>
+Cc: Marek Belisko <marek.belisko@gmail.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+From: Ondrej Zary <linux@rainbow-software.org>
+Date: Thu, 23 Jun 2011 21:40:17 +0200
 MIME-Version: 1.0
-To: David Ahern <dsahern@gmail.com>
-CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Using a new perf tool against an older kernel
-References: <4E026123.4060208@fb.com> <4E034C2C.30509@gmail.com>
-In-Reply-To: <4E034C2C.30509@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201106232140.19334.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/23/11 7:22 AM, David Ahern wrote:
+Functions ft1000_asic_read() and ft1000_asic_write() are unused. Remove them.
 
-> I have not seen issues like this using newer perf userspace against
-> older kernels. For example, my laptop was running Fedora 14 (2.6.35) and
-> now Fedora 15 (2.6.38.8) and I typically use latest perf builds (e.g.,
-> testing patches).
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+---
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c |   34 ----------------------
+ 1 files changed, 0 insertions(+), 34 deletions(-)
 
-I narrowed it down to PERF_SAMPLE_RAW:
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index b3739b9..23854e0 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -88,40 +88,6 @@ MODULE_SUPPORTED_DEVICE("FT1000");
+ 
+ //---------------------------------------------------------------------------
+ //
+-// Function:   ft1000_asic_read
+-// Description: This function will retrieve the value of a specific ASIC
+-//             register.
+-// Input:
+-//    dev - network device structure
+-//    offset - ASIC register to read
+-// Output:
+-//    value - value of ASIC register
+-//
+-//---------------------------------------------------------------------------
+-inline u16 ft1000_asic_read(struct net_device *dev, u16 offset)
+-{
+-	return (ft1000_read_reg(dev, offset));
+-}
+-
+-//---------------------------------------------------------------------------
+-//
+-// Function:   ft1000_asic_write
+-// Description: This function will set the value of a specific ASIC
+-//             register.
+-// Input:
+-//    dev - network device structure
+-//    value - value to set ASIC register
+-// Output:
+-//    none
+-//
+-//---------------------------------------------------------------------------
+-inline void ft1000_asic_write(struct net_device *dev, u16 offset, u16 value)
+-{
+-	ft1000_write_reg(dev, offset, value);
+-}
+-
+-//---------------------------------------------------------------------------
+-//
+ // Function:   ft1000_read_fifo_len
+ // Description: This function will read the ASIC Uplink FIFO status register
+ //             which will return the number of bytes remaining in the Uplink FIFO.
+-- 
+Ondrej Zary
 
-perf record -ag -- sleep 1
-
-is fine, but:
-
-perf record -agR -- sleep 1
-
-fails for me most of the time. The reason I needed to use the -R in the 
-first place is that "perf script" fails on older kernels with:
-
-Samples do not contain timestamps.
-
-With the newer perf, I don't get errors, but the timestamp field is 
-invalid. So I need to use the -R flag to get valid timestamps + 
-stacktraces out of "perf script".
-
-  -Arun
