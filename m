@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934023Ab1FWRo6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:44:58 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35605 "EHLO
+	id S933718Ab1FWRwE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:52:04 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35391 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933825Ab1FWRij (ORCPT
+	with ESMTP id S933710Ab1FWRiN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:38:39 -0400
+	Thu, 23 Jun 2011 13:38:13 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Roman Fietze <roman.fietze@telemotive.de>,
-        Jean Delvare <khali@linux-fr.org>,
+Cc: stable-review@kernel.org,
+        Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 201/247] i2c: Fix typo in instantiating-devices document
-Date: Thu, 23 Jun 2011 13:34:29 -0400
-Message-Id: <1308850515-15242-142-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 202/247] mmc: sdio: remember new card RCA when redetecting card
+Date: Thu, 23 Jun 2011 13:34:30 -0400
+Message-Id: <1308850515-15242-143-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,38 +24,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Roman Fietze <roman.fietze@telemotive.de>
+From: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 6ced9e6b3901af4ab6ac0a11231402c888286ea6 upstream.
+commit 0aab3995485b8a994bf29a995a008c9ea4a28054 upstream.
 
-The struct i2c_board_info member holding the name is "type", not
-"name".
+During redetection of a SDIO card, a request for a new card RCA
+was submitted to the card, but was then overwritten by the old RCA.
+This caused the card to be deselected instead of selected when using
+the incorrect RCA.  This bug's been present since the "oldcard"
+handling was introduced in 2.6.32.
 
-Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Signed-off-by: Stefan Nilsson XK <stefan.xk.nilsson@stericsson.com>
+Reviewed-by: Ulf Hansson <ulf.hansson@stericsson.com>
+Reviewed-by: Pawel Wieczorkiewicz <pawel.wieczorkiewicz@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+Signed-off-by: Chris Ball <cjb@laptop.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- Documentation/i2c/instantiating-devices |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mmc/core/sdio.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/i2c/instantiating-devices b/Documentation/i2c/instantiating-devices
-index e894902..ed1779c 100644
---- a/Documentation/i2c/instantiating-devices
-+++ b/Documentation/i2c/instantiating-devices
-@@ -100,7 +100,7 @@ static int __devinit usb_hcd_pnx4008_probe(struct platform_device *pdev)
- 	(...)
- 	i2c_adap = i2c_get_adapter(2);
- 	memset(&i2c_info, 0, sizeof(struct i2c_board_info));
--	strlcpy(i2c_info.name, "isp1301_pnx", I2C_NAME_SIZE);
-+	strlcpy(i2c_info.type, "isp1301_pnx", I2C_NAME_SIZE);
- 	isp1301_i2c_client = i2c_new_probed_device(i2c_adap, &i2c_info,
- 						   normal_i2c);
- 	i2c_put_adapter(i2c_adap);
+diff --git a/drivers/mmc/core/sdio.c b/drivers/mmc/core/sdio.c
+index 2dd4cfe..ed7620b 100644
+--- a/drivers/mmc/core/sdio.c
++++ b/drivers/mmc/core/sdio.c
+@@ -303,6 +303,14 @@ static int mmc_sdio_init_card(struct mmc_host *host, u32 ocr,
+ 		if (err)
+ 			goto remove;
+ 
++		/*
++		 * Update oldcard with the new RCA received from the SDIO
++		 * device -- we're doing this so that it's updated in the
++		 * "card" struct when oldcard overwrites that later.
++		 */
++		if (oldcard)
++			oldcard->rca = card->rca;
++
+ 		mmc_set_bus_mode(host, MMC_BUSMODE_PUSHPULL);
+ 	}
+ 
 -- 
 1.7.4.4
 
