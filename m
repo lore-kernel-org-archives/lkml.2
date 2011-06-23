@@ -1,107 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934436Ab1FWUfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 16:35:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48438 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934413Ab1FWUfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 16:35:04 -0400
-Date: Thu, 23 Jun 2011 16:34:59 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cfq-iosched: allow groups preemption for sync-noidle
- workloads
-Message-ID: <20110623203459.GF20763@redhat.com>
-References: <20110623162159.3192.87699.stgit@localhost6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110623162159.3192.87699.stgit@localhost6>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S934431Ab1FWUhu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 16:37:50 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:45394 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933927Ab1FWUht convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 16:37:49 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=aqbhQqKVC1l2Zs+t4fKcY9+gB4rUlz5DGVLtcdSwfu8hDMQrXBXlGlYjzRb2dNjjKdmuAycNl37AydgFAKNRWwMXX1k3dKtH6qy9Q7CqDIOc3kr1JaaKLXmgsAPVaTPt;
+Date: Thu, 23 Jun 2011 13:37:40 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] PCI fixes
+Message-ID: <20110623133740.0cdaf204@jbarnes-desktop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 08:21:59PM +0400, Konstantin Khlebnikov wrote:
-> commit v2.6.32-102-g8682e1f "blkio: Provide some isolation between groups" break
-> fast switching between task and journal-thread for very common write-fsync workload.
-> cfq wait idle slice at each cfqq switch, if this task is from non-root blkio cgroup.
-> 
-> This patch move idling sync-noidle preempting check little bit upwards and update
-> new service_tree->count check for case with two different groups.
-> I do not quite understand what means these check for new_cfqq, but now it even works.
-> 
-> Without patch I got 49 iops and with this patch 798, for this trivial fio script:
-> 
-> [write-fsync]
-> cgroup=test
-> cgroup_weight=1000
-> rw=write
-> fsync=1
-> size=100m
-> runtime=10s
+The following changes since commit
+af0d6a0a3a30946f7df69c764791f1b0643f7cd6:
 
-What kind of storage and filesystem you are using? I tried this on a SATA
-disk and I really don't get good throughput. With deadline scheduler I
-get aggrb=103KB/s.
+  Merge branch 'x86-urgent-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2011-06-01 02:07:22 +0900)
 
-I think with fsync we are generating so many FLUSH requests that it 
-really slows down fsync.
+are available in the git repository at:
 
-Even if I use CFQ with and without cgroups, I get following.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 for-linus
 
-CFQ, without cgroup
-------------------
-aggrb=100KB/s
+Just a few minor fixes.  We have one open issue with the resource
+re-allocation code that was re-added.  Ram has a fix but I'm concerned
+it will introduce other regressions.  So at this point we have a few
+options:
+  - revert the bridge resource re-allocation code (again)
+  - hide the re-allocation code behind a new kernel option (and not
+    try=!), this would at least let us experiment with new strategies
+    and PNP resource tracking etc
+  - apply Ram's patch and revert it all later if things are still broken
 
-CFQ with cgroup
---------------
-aggrb=94KB/s
+The last option gets us the most coverage, but it's a bit late in the
+cycle to be experimenting like this...
 
-So with FLUSH requests, not much difference in throughput for this 
-workload.
+David S. Miller (1):
+      PCI: Fix warning in drivers/pci/probe.c on sparc64
 
-I guess you must be running with barriers off or something like that.
+Márton Németh (1):
+      x86/PCI/ACPI: fix type mismatch
 
-Thanks
-Vivek
+Randy Dunlap (1):
+      PCI: fix new kernel-doc warning
 
+ arch/x86/pci/acpi.c |    2 +-
+ drivers/pci/pci.c   |    2 +-
+ drivers/pci/probe.c |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-> 
-> Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
-> ---
->  block/cfq-iosched.c |   14 +++++++-------
->  1 files changed, 7 insertions(+), 7 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 3c7b537..c71533e 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -3318,19 +3318,19 @@ cfq_should_preempt(struct cfq_data *cfqd, struct cfq_queue *new_cfqq,
->  	if (rq_is_sync(rq) && !cfq_cfqq_sync(cfqq))
->  		return true;
->  
-> -	if (new_cfqq->cfqg != cfqq->cfqg)
-> -		return false;
-> -
-> -	if (cfq_slice_used(cfqq))
-> -		return true;
-> -
->  	/* Allow preemption only if we are idling on sync-noidle tree */
->  	if (cfqd->serving_type == SYNC_NOIDLE_WORKLOAD &&
->  	    cfqq_type(new_cfqq) == SYNC_NOIDLE_WORKLOAD &&
-> -	    new_cfqq->service_tree->count == 2 &&
-> +	    new_cfqq->service_tree->count == 1+(new_cfqq->cfqg == cfqq->cfqg) &&
->  	    RB_EMPTY_ROOT(&cfqq->sort_list))
->  		return true;
->  
-> +	if (new_cfqq->cfqg != cfqq->cfqg)
-> +		return false;
-> +
-> +	if (cfq_slice_used(cfqq))
-> +		return true;
-> +
->  	/*
->  	 * So both queues are sync. Let the new request get disk time if
->  	 * it's a metadata request and the current queue is doing regular IO.
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
