@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933601Ab1FWRhh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:37:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34994 "EHLO
+	id S933628Ab1FWSAu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:00:50 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35029 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933556Ab1FWRh2 (ORCPT
+	with ESMTP id S933478Ab1FWRhc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:28 -0400
+	Thu, 23 Jun 2011 13:37:32 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Hans de Goede <hdegoede@redhat.com>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
+Cc: stable-review@kernel.org, Axel Lin <axel.lin@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        David Woodhouse <David.Woodhouse@intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 166/247] hwmon/f71882fg: Set platform drvdata to NULL later
-Date: Thu, 23 Jun 2011 13:33:54 -0400
-Message-Id: <1308850515-15242-107-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 167/247] mtd: add "platform:" prefix for platform modalias
+Date: Thu, 23 Jun 2011 13:33:55 -0400
+Message-Id: <1308850515-15242-108-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,45 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hans de Goede <hdegoede@redhat.com>
+From: Axel Lin <axel.lin@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d9ebaa45472c92704f4814682eec21455edcfa1f upstream.
+commit c804c733846572ca85c2bba60c7fe6fa024dff18 upstream.
 
-This avoids a possible race leading to trying to dereference NULL.
+Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
+with "platform:"), the platform modalias is prefixed with "platform:".
 
-Signed-off-by: Hans de Goede <hdegoede@redhat.com>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/hwmon/f71882fg.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/mtd/nand/omap2.c      |    2 +-
+ drivers/mtd/onenand/generic.c |    2 +-
+ drivers/mtd/onenand/omap2.c   |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/hwmon/f71882fg.c b/drivers/hwmon/f71882fg.c
-index a95fa42..03f08b2 100644
---- a/drivers/hwmon/f71882fg.c
-+++ b/drivers/hwmon/f71882fg.c
-@@ -2031,7 +2031,6 @@ static int f71882fg_remove(struct platform_device *pdev)
- 	int nr_fans = (data->type == f71882fg) ? 4 : 3;
- 	u8 start_reg = f71882fg_read8(data, F71882FG_REG_START);
+diff --git a/drivers/mtd/nand/omap2.c b/drivers/mtd/nand/omap2.c
+index 7545568..ff4d802 100644
+--- a/drivers/mtd/nand/omap2.c
++++ b/drivers/mtd/nand/omap2.c
+@@ -1073,6 +1073,6 @@ static void __exit omap_nand_exit(void)
+ module_init(omap_nand_init);
+ module_exit(omap_nand_exit);
  
--	platform_set_drvdata(pdev, NULL);
- 	if (data->hwmon_dev)
- 		hwmon_device_unregister(data->hwmon_dev);
+-MODULE_ALIAS(DRIVER_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME);
+ MODULE_LICENSE("GPL");
+ MODULE_DESCRIPTION("Glue layer for NAND flash on TI OMAP boards");
+diff --git a/drivers/mtd/onenand/generic.c b/drivers/mtd/onenand/generic.c
+index e789149..ac08750 100644
+--- a/drivers/mtd/onenand/generic.c
++++ b/drivers/mtd/onenand/generic.c
+@@ -131,7 +131,7 @@ static struct platform_driver generic_onenand_driver = {
+ 	.remove		= __devexit_p(generic_onenand_remove),
+ };
  
-@@ -2098,6 +2097,7 @@ static int f71882fg_remove(struct platform_device *pdev)
- 		}
- 	}
+-MODULE_ALIAS(DRIVER_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME);
  
-+	platform_set_drvdata(pdev, NULL);
- 	kfree(data);
+ static int __init generic_onenand_init(void)
+ {
+diff --git a/drivers/mtd/onenand/omap2.c b/drivers/mtd/onenand/omap2.c
+index fd40634..5a9c4f6 100644
+--- a/drivers/mtd/onenand/omap2.c
++++ b/drivers/mtd/onenand/omap2.c
+@@ -815,7 +815,7 @@ static void __exit omap2_onenand_exit(void)
+ module_init(omap2_onenand_init);
+ module_exit(omap2_onenand_exit);
  
- 	return 0;
+-MODULE_ALIAS(DRIVER_NAME);
++MODULE_ALIAS("platform:" DRIVER_NAME);
+ MODULE_LICENSE("GPL");
+ MODULE_AUTHOR("Jarkko Lavinen <jarkko.lavinen@nokia.com>");
+ MODULE_DESCRIPTION("Glue layer for OneNAND flash on OMAP2 / OMAP3");
 -- 
 1.7.4.4
 
