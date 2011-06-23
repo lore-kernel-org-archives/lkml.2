@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933312Ab1FWSVA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:21:00 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34231 "EHLO
+	id S934258Ab1FWSSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:18:09 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34344 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932928Ab1FWRf5 (ORCPT
+	with ESMTP id S933266Ab1FWRgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:35:57 -0400
+	Thu, 23 Jun 2011 13:36:10 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dan Carpenter <error27@gmail.com>,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Li Zefan <lizf@cn.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 082/247] sched: Remove some dead code
-Date: Thu, 23 Jun 2011 13:32:30 -0400
-Message-Id: <1308850515-15242-23-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 083/247] sched: Remove remaining USER_SCHED code
+Date: Thu, 23 Jun 2011 13:32:31 -0400
+Message-Id: <1308850515-15242-24-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,41 +23,172 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <error27@gmail.com>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 6427462bfa50f50dc6c088c07037264fcc73eca1 upstream.
+commit 32bd7eb5a7f4596c8440dd9440322fe9e686634d upstream.
 
-This was left over from "7c9414385e sched: Remove USER_SCHED"
+This is left over from commit 7c9414385e ("sched: Remove USER_SCHED"")
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 Acked-by: Dhaval Giani <dhaval.giani@gmail.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-LKML-Reference: <20100315082148.GD18181@bicker>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: David Howells <dhowells@redhat.com>
+LKML-Reference: <4BA9A05F.7010407@cn.fujitsu.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/user.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+ init/Kconfig            |    3 +--
+ kernel/capability.c     |    1 -
+ kernel/cred-internals.h |   21 ---------------------
+ kernel/cred.c           |    3 ---
+ kernel/exit.c           |    1 -
+ kernel/sched_debug.c    |    5 -----
+ kernel/user.c           |   10 +---------
+ 7 files changed, 2 insertions(+), 42 deletions(-)
+ delete mode 100644 kernel/cred-internals.h
 
+diff --git a/init/Kconfig b/init/Kconfig
+index eb77e8c..5fe94b8 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -604,8 +604,7 @@ config RT_GROUP_SCHED
+ 	default n
+ 	help
+ 	  This feature lets you explicitly allocate real CPU bandwidth
+-	  to users or control groups (depending on the "Basis for grouping tasks"
+-	  setting below. If enabled, it will also make it impossible to
++	  to task groups. If enabled, it will also make it impossible to
+ 	  schedule realtime tasks for non-root users until you allocate
+ 	  realtime bandwidth for them.
+ 	  See Documentation/scheduler/sched-rt-group.txt for more information.
+diff --git a/kernel/capability.c b/kernel/capability.c
+index 9e4697e..2f05303 100644
+--- a/kernel/capability.c
++++ b/kernel/capability.c
+@@ -15,7 +15,6 @@
+ #include <linux/syscalls.h>
+ #include <linux/pid_namespace.h>
+ #include <asm/uaccess.h>
+-#include "cred-internals.h"
+ 
+ /*
+  * Leveraged for setting/resetting capabilities
+diff --git a/kernel/cred-internals.h b/kernel/cred-internals.h
+deleted file mode 100644
+index 2dc4fc2..0000000
+--- a/kernel/cred-internals.h
++++ /dev/null
+@@ -1,21 +0,0 @@
+-/* Internal credentials stuff
+- *
+- * Copyright (C) 2008 Red Hat, Inc. All Rights Reserved.
+- * Written by David Howells (dhowells@redhat.com)
+- *
+- * This program is free software; you can redistribute it and/or
+- * modify it under the terms of the GNU General Public Licence
+- * as published by the Free Software Foundation; either version
+- * 2 of the Licence, or (at your option) any later version.
+- */
+-
+-/*
+- * user.c
+- */
+-static inline void sched_switch_user(struct task_struct *p)
+-{
+-#ifdef CONFIG_USER_SCHED
+-	sched_move_task(p);
+-#endif	/* CONFIG_USER_SCHED */
+-}
+-
+diff --git a/kernel/cred.c b/kernel/cred.c
+index 62af181..8f3672a 100644
+--- a/kernel/cred.c
++++ b/kernel/cred.c
+@@ -17,7 +17,6 @@
+ #include <linux/init_task.h>
+ #include <linux/security.h>
+ #include <linux/cn_proc.h>
+-#include "cred-internals.h"
+ 
+ #if 0
+ #define kdebug(FMT, ...) \
+@@ -560,8 +559,6 @@ int commit_creds(struct cred *new)
+ 		atomic_dec(&old->user->processes);
+ 	alter_cred_subscribers(old, -2);
+ 
+-	sched_switch_user(task);
+-
+ 	/* send notifications */
+ 	if (new->uid   != old->uid  ||
+ 	    new->euid  != old->euid ||
+diff --git a/kernel/exit.c b/kernel/exit.c
+index a652c26..0dd27ca 100644
+--- a/kernel/exit.c
++++ b/kernel/exit.c
+@@ -55,7 +55,6 @@
+ #include <asm/unistd.h>
+ #include <asm/pgtable.h>
+ #include <asm/mmu_context.h>
+-#include "cred-internals.h"
+ 
+ static void exit_mm(struct task_struct * tsk);
+ 
+diff --git a/kernel/sched_debug.c b/kernel/sched_debug.c
+index 19be00b..db0f456 100644
+--- a/kernel/sched_debug.c
++++ b/kernel/sched_debug.c
+@@ -175,11 +175,6 @@ void print_cfs_rq(struct seq_file *m, int cpu, struct cfs_rq *cfs_rq)
+ 	task_group_path(tg, path, sizeof(path));
+ 
+ 	SEQ_printf(m, "\ncfs_rq[%d]:%s\n", cpu, path);
+-#elif defined(CONFIG_USER_SCHED) && defined(CONFIG_FAIR_GROUP_SCHED)
+-	{
+-		uid_t uid = cfs_rq->tg->uid;
+-		SEQ_printf(m, "\ncfs_rq[%d] for UID: %u\n", cpu, uid);
+-	}
+ #else
+ 	SEQ_printf(m, "\ncfs_rq[%d]:\n", cpu);
+ #endif
 diff --git a/kernel/user.c b/kernel/user.c
-index 766467b..ec3b222 100644
+index ec3b222..8e1c8c0 100644
 --- a/kernel/user.c
 +++ b/kernel/user.c
-@@ -178,8 +178,6 @@ struct user_struct *alloc_uid(struct user_namespace *ns, uid_t uid)
+@@ -16,7 +16,6 @@
+ #include <linux/interrupt.h>
+ #include <linux/module.h>
+ #include <linux/user_namespace.h>
+-#include "cred-internals.h"
  
- 	return up;
+ struct user_namespace init_user_ns = {
+ 	.kref = {
+@@ -137,9 +136,7 @@ struct user_struct *alloc_uid(struct user_namespace *ns, uid_t uid)
+ 	struct hlist_head *hashent = uidhashentry(ns, uid);
+ 	struct user_struct *up, *new;
  
--	put_user_ns(new->user_ns);
--	kmem_cache_free(uid_cachep, new);
- out_unlock:
- 	return NULL;
- }
+-	/* Make uid_hash_find() + uids_user_create() + uid_hash_insert()
+-	 * atomic.
+-	 */
++	/* Make uid_hash_find() + uid_hash_insert() atomic. */
+ 	spin_lock_irq(&uidhash_lock);
+ 	up = uid_hash_find(uid, hashent);
+ 	spin_unlock_irq(&uidhash_lock);
+@@ -161,11 +158,6 @@ struct user_struct *alloc_uid(struct user_namespace *ns, uid_t uid)
+ 		spin_lock_irq(&uidhash_lock);
+ 		up = uid_hash_find(uid, hashent);
+ 		if (up) {
+-			/* This case is not possible when CONFIG_USER_SCHED
+-			 * is defined, since we serialize alloc_uid() using
+-			 * uids_mutex. Hence no need to call
+-			 * sched_destroy_user() or remove_user_sysfs_dir().
+-			 */
+ 			key_put(new->uid_keyring);
+ 			key_put(new->session_keyring);
+ 			kmem_cache_free(uid_cachep, new);
 -- 
 1.7.4.4
 
