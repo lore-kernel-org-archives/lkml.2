@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257Ab1FWKpL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 06:45:11 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:55648 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759157Ab1FWKpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 06:45:09 -0400
-Date: Thu, 23 Jun 2011 12:44:55 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Tejun Heo <tj@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Jens Axboe <axboe@kernel.dk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
-Message-ID: <20110623104455.GA9274@elte.hu>
-References: <20110622174659.496793734@linutronix.de>
- <20110622174919.135236139@linutronix.de>
- <20110623083722.GF30101@htj.dyndns.org>
- <alpine.LFD.2.02.1106231139270.11814@ionos>
- <20110623101541.GL30101@htj.dyndns.org>
+	id S1759261Ab1FWKtJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 06:49:09 -0400
+Received: from openfortress.nl ([213.189.19.244]:35157 "EHLO fame.vanrein.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1759157Ab1FWKtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 06:49:07 -0400
+Date: Thu, 23 Jun 2011 10:49:03 +0000
+From: Rick van Rein <rick@vanrein.org>
+To: Rick van Rein <rick@vanrein.org>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Stefan Assmann <sassmann@kpanic.de>,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tony.luck@intel.com, andi@firstfloor.org,
+        mingo@elte.hu, rdunlap@xenotime.net, Nancy Yuen <yuenn@google.com>,
+        Michael Ditto <mditto@google.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+Message-ID: <20110623104903.GA14754@phantom.vanrein.org>
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <4E023142.1080605@zytor.com> <4E0250F2.2010607@kpanic.de> <4E0251AB.8090702@zytor.com> <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110622110034.89ee399c.akpm@linux-foundation.org> <4E024E31.50901@kpanic.de> <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <4E023142.1080605@zytor.com> <20110623103320.GB2910@phantom.vanrein.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110623101541.GL30101@htj.dyndns.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20110623103320.GB2910@phantom.vanrein.org>
+X-My-Coolest-Hack: http://rick.vanrein.org/linux/badram -> Exploit broken RAM
+User-Agent: Mutt/1.5.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Tejun Heo <tj@kernel.org> wrote:
+My last email may have assumed that you knew all about BadRAM; this
+is probably worth an expansion:
 
-> The patch description is simply untrue.  It does affect how wq 
-> behaves under heavy CPU load.  The effect might be perfectly okay 
-> but more likely it will result in subtle suboptimal behaviors under 
-> certain load situations which would be difficult to characterize 
-> and track down.  Again, the trade off (mostly killing of 
-> ttwu_local) could be okay but you can't get away with just claiming 
-> "there's no harm".
+> If you plug 10 DIMMs into your machine, and each has a faulty row
+> somewhere, then you will get into trouble if you stick to 5 patterns.
 
-Well, either it can be measured or not. If you can suggest a specific 
-testing method to Thomas, please do.
+With "trouble" I mean that a 6th pattern would be merged with the
+nearest of the already-found 5 patterns.  It may be that this leads
+to a pattern that covers more addresses than strictly needed.  This
+is how I can guarantee that there are never more than 5 patterns,
+and so never more than the cmdline can take.  No cut-offs are made.
 
-Thanks,
+> But if you happen to run into a faulty DIMM from time to time, the
+> patterns should be your way out.
 
-	Ingo
+...without needing to be more general than really required.  Of course,
+if all your PCs ran on 10 DIMMs, you could expand the number of
+patterns to a comfortably higher number, but what I've seen with the
+various cases I've supported, this has never been necessary.
+
+> > that would mean running in a known-bad configuration,
+> > and even a hard crash would be better.
+> 
+> ...which is so sensible that it was of course taken into account in
+> the BadRAM design!
+
+Meaning, that is why patterns are merged if the exceed the rather high
+number of 5 patterns.  Rather waste those extra pages than running
+into a known fault.
+
+This high number of patterns is not at all common, however, making it
+safe to assume that the figure is high enough, in spite of leaving
+space on even LILO's cmdline to support adding several other tweaks.
+
+
+-Rick
