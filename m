@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab1FWSOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:14:48 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34425 "EHLO
+	id S933459Ab1FWSIB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:08:01 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34686 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933304Ab1FWRgU (ORCPT
+	with ESMTP id S932764Ab1FWRgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:20 -0400
+	Thu, 23 Jun 2011 13:36:53 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Dave Chinner <dchinner@redhat.com>,
+Cc: stable-review@kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 107/247] xfs: fix untrusted inode number lookup
-Date: Thu, 23 Jun 2011 13:32:55 -0400
-Message-Id: <1308850515-15242-48-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 108/247] s390: remove task_show_regs
+Date: Thu, 23 Jun 2011 13:32:56 -0400
+Message-Id: <1308850515-15242-49-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,81 +23,108 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 4536f2ad8b330453d7ebec0746c4374eadd649b1 upstream.
+commit 261cd298a8c363d7985e3482946edb4bfedacf98 upstream.
 
-Commit 7124fe0a5b619d65b739477b3b55a20bf805b06d ("xfs: validate untrusted inode
-numbers during lookup") changes the inode lookup code to do btree lookups for
-untrusted inode numbers. This change made an invalid assumption about the
-alignment of inodes and hence incorrectly calculated the first inode in the
-cluster. As a result, some inode numbers were being incorrectly considered
-invalid when they were actually valid.
+task_show_regs used to be a debugging aid in the early bringup days
+of Linux on s390. /proc/<pid>/status is a world readable file, it
+is not a good idea to show the registers of a process. The only
+correct fix is to remove task_show_regs.
 
-The issue was not picked up by the xfstests suite because it always runs fsr
-and dump (the two utilities that utilise the bulkstat interface) on cache hot
-inodes and hence the lookup code in the cold cache path was not sufficiently
-exercised to uncover this intermittent problem.
-
-Fix the issue by relaxing the btree lookup criteria and then checking if the
-record returned contains the inode number we are lookup for. If it we get an
-incorrect record, then the inode number is invalid.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+Reported-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- fs/xfs/xfs_ialloc.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+ arch/s390/include/asm/processor.h |    5 -----
+ arch/s390/kernel/traps.c          |   37 -------------------------------------
+ fs/proc/array.c                   |    3 ---
+ 3 files changed, 0 insertions(+), 45 deletions(-)
 
-diff --git a/fs/xfs/xfs_ialloc.c b/fs/xfs/xfs_ialloc.c
-index c7142a0..eb779af 100644
---- a/fs/xfs/xfs_ialloc.c
-+++ b/fs/xfs/xfs_ialloc.c
-@@ -1217,7 +1217,6 @@ xfs_imap_lookup(
- 	struct xfs_inobt_rec_incore rec;
- 	struct xfs_btree_cur	*cur;
- 	struct xfs_buf		*agbp;
--	xfs_agino_t		startino;
- 	int			error;
- 	int			i;
+diff --git a/arch/s390/include/asm/processor.h b/arch/s390/include/asm/processor.h
+index 73e2598..f73b50a 100644
+--- a/arch/s390/include/asm/processor.h
++++ b/arch/s390/include/asm/processor.h
+@@ -150,11 +150,6 @@ extern int kernel_thread(int (*fn)(void *), void * arg, unsigned long flags);
+  */
+ extern unsigned long thread_saved_pc(struct task_struct *t);
  
-@@ -1231,13 +1230,13 @@ xfs_imap_lookup(
- 	}
+-/*
+- * Print register of task into buffer. Used in fs/proc/array.c.
+- */
+-extern void task_show_regs(struct seq_file *m, struct task_struct *task);
+-
+ extern void show_code(struct pt_regs *regs);
  
- 	/*
--	 * derive and lookup the exact inode record for the given agino. If the
--	 * record cannot be found, then it's an invalid inode number and we
--	 * should abort.
-+	 * Lookup the inode record for the given agino. If the record cannot be
-+	 * found, then it's an invalid inode number and we should abort. Once
-+	 * we have a record, we need to ensure it contains the inode number
-+	 * we are looking up.
- 	 */
- 	cur = xfs_inobt_init_cursor(mp, tp, agbp, agno);
--	startino = agino & ~(XFS_IALLOC_INODES(mp) - 1);
--	error = xfs_inobt_lookup(cur, startino, XFS_LOOKUP_EQ, &i);
-+	error = xfs_inobt_lookup(cur, agino, XFS_LOOKUP_LE, &i);
- 	if (!error) {
- 		if (i)
- 			error = xfs_inobt_get_rec(cur, &rec, &i);
-@@ -1250,6 +1249,11 @@ xfs_imap_lookup(
- 	if (error)
- 		return error;
+ unsigned long get_wchan(struct task_struct *p);
+diff --git a/arch/s390/kernel/traps.c b/arch/s390/kernel/traps.c
+index 6e7ad63..7dd1ca6 100644
+--- a/arch/s390/kernel/traps.c
++++ b/arch/s390/kernel/traps.c
+@@ -243,43 +243,6 @@ void show_regs(struct pt_regs *regs)
+ 	show_last_breaking_event(regs);
+ }
  
-+	/* check that the returned record contains the required inode */
-+	if (rec.ir_startino > agino ||
-+	    rec.ir_startino + XFS_IALLOC_INODES(mp) <= agino)
-+		return EINVAL;
-+
- 	/* for untrusted inodes check it is allocated first */
- 	if ((flags & XFS_IGET_UNTRUSTED) &&
- 	    (rec.ir_free & XFS_INOBT_MASK(agino - rec.ir_startino)))
+-/* This is called from fs/proc/array.c */
+-void task_show_regs(struct seq_file *m, struct task_struct *task)
+-{
+-	struct pt_regs *regs;
+-
+-	regs = task_pt_regs(task);
+-	seq_printf(m, "task: %p, ksp: %p\n",
+-		       task, (void *)task->thread.ksp);
+-	seq_printf(m, "User PSW : %p %p\n",
+-		       (void *) regs->psw.mask, (void *)regs->psw.addr);
+-
+-	seq_printf(m, "User GPRS: " FOURLONG,
+-			  regs->gprs[0], regs->gprs[1],
+-			  regs->gprs[2], regs->gprs[3]);
+-	seq_printf(m, "           " FOURLONG,
+-			  regs->gprs[4], regs->gprs[5],
+-			  regs->gprs[6], regs->gprs[7]);
+-	seq_printf(m, "           " FOURLONG,
+-			  regs->gprs[8], regs->gprs[9],
+-			  regs->gprs[10], regs->gprs[11]);
+-	seq_printf(m, "           " FOURLONG,
+-			  regs->gprs[12], regs->gprs[13],
+-			  regs->gprs[14], regs->gprs[15]);
+-	seq_printf(m, "User ACRS: %08x %08x %08x %08x\n",
+-			  task->thread.acrs[0], task->thread.acrs[1],
+-			  task->thread.acrs[2], task->thread.acrs[3]);
+-	seq_printf(m, "           %08x %08x %08x %08x\n",
+-			  task->thread.acrs[4], task->thread.acrs[5],
+-			  task->thread.acrs[6], task->thread.acrs[7]);
+-	seq_printf(m, "           %08x %08x %08x %08x\n",
+-			  task->thread.acrs[8], task->thread.acrs[9],
+-			  task->thread.acrs[10], task->thread.acrs[11]);
+-	seq_printf(m, "           %08x %08x %08x %08x\n",
+-			  task->thread.acrs[12], task->thread.acrs[13],
+-			  task->thread.acrs[14], task->thread.acrs[15]);
+-}
+-
+ static DEFINE_SPINLOCK(die_lock);
+ 
+ void die(const char * str, struct pt_regs * regs, long err)
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index e9f7d54..ed2afa6 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -353,9 +353,6 @@ int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
+ 	task_cap(m, task);
+ 	task_cpus_allowed(m, task);
+ 	cpuset_task_status_allowed(m, task);
+-#if defined(CONFIG_S390)
+-	task_show_regs(m, task);
+-#endif
+ 	task_context_switch_counts(m, task);
+ 	return 0;
+ }
 -- 
 1.7.4.4
 
