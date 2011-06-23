@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291Ab1FWLee (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 07:34:34 -0400
-Received: from gate.crashing.org ([63.228.1.57]:46440 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759161Ab1FWLeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 07:34:09 -0400
-From: Kumar Gala <galak@kernel.crashing.org>
-To: Greg KH <greg@kroah.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: [PATCH v3 3/3] powerpc: Dont require a dma_ops struct to set dma mask
-Date: Thu, 23 Jun 2011 06:33:59 -0500
-Message-Id: <1308828839-27349-3-git-send-email-galak@kernel.crashing.org>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1308828839-27349-2-git-send-email-galak@kernel.crashing.org>
-References: <1308744176-24491-1-git-send-email-galak@kernel.crashing.org>
- <1308828839-27349-1-git-send-email-galak@kernel.crashing.org>
- <1308828839-27349-2-git-send-email-galak@kernel.crashing.org>
+	id S1759283Ab1FWLfK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 07:35:10 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:47981 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753011Ab1FWLfI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 07:35:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=fSoocZSPvXe2f1WQrOULZgSiJ4vTnQijTC67DgBtli3wUvy3B73mv1xI+CGaJ20dUz
+         tbIsXcWej+bVYd0xnqeA3RUl5BiuIsMVjwNkBd310Yzl+MHzAsb1qEAkPrXykKKKCiKT
+         QCvVlTdq5k4YNtEDKCqcfxNKZdmm7tOtqGvFw=
+MIME-Version: 1.0
+In-Reply-To: <20110623104455.GA9274@elte.hu>
+References: <20110622174659.496793734@linutronix.de>
+	<20110622174919.135236139@linutronix.de>
+	<20110623083722.GF30101@htj.dyndns.org>
+	<alpine.LFD.2.02.1106231139270.11814@ionos>
+	<20110623101541.GL30101@htj.dyndns.org>
+	<20110623104455.GA9274@elte.hu>
+Date: Thu, 23 Jun 2011 13:35:07 +0200
+X-Google-Sender-Auth: wbuvTr6P6vq2NAd01L20LxdBi4Q
+Message-ID: <BANLkTi=SxzG_fonb008KQzbZk16tuxm7NA@mail.gmail.com>
+Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
+From: Tejun Heo <tj@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Jens Axboe <axboe@kernel.dk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The only reason to require a dma_ops struct is to see if it has
-implemented set_dma_mask.  If not we can fall back to setting the mask
-directly.
+Hello, Ingo.
 
-This resolves an issue with how to sequence the setting of a DMA mask
-for platform devices.  Before we had an issue in that we have no way of
-setting the DMA mask before the various low level bus notifiers get
-called that might check it (swiotlb).
+On Thu, Jun 23, 2011 at 12:44 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Tejun Heo <tj@kernel.org> wrote:
+>
+>> The patch description is simply untrue.  It does affect how wq
+>> behaves under heavy CPU load.  The effect might be perfectly okay
+>> but more likely it will result in subtle suboptimal behaviors under
+>> certain load situations which would be difficult to characterize
+>> and track down.  Again, the trade off (mostly killing of
+>> ttwu_local) could be okay but you can't get away with just claiming
+>> "there's no harm".
+>
+> Well, either it can be measured or not. If you can suggest a specific
+> testing method to Thomas, please do.
 
-So now we can do:
+Crafting a test case where the suggested change results in worse
+behavior isn't difficult (it ends up waking/creating workers which it
+doesn't have to between ttwu and actual execution); however, as with
+any micro benchmark, the problem is with assessing whether and how
+much it would matter in actual workloads (whatever that means) and
+workqueue is used throughout the kernel with widely varying patterns
+making drawing conclusion a bit tricky.  Given that, changing the
+behavior for the worse just for this cleanup doesn't sound like too
+sweet a deal.  Is there any other reason to change the behavior
+(latency, whatever) other than the ttuw_local ugliness?
 
-	pdev = platform_device_alloc("foobar", 0);
-	dma_set_mask(&pdev->dev, DMA_BIT_MASK(37));
-	platform_device_add(pdev);
+Thanks.
 
-And expect the right thing to happen with the bus notifiers get called
-via platform_device_add.
-
-Signed-off-by: Kumar Gala <galak@kernel.crashing.org>
----
-v3: Fixed commit comment to use platform_device_add()
- arch/powerpc/kernel/dma.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/arch/powerpc/kernel/dma.c b/arch/powerpc/kernel/dma.c
-index d238c08..4f0959f 100644
---- a/arch/powerpc/kernel/dma.c
-+++ b/arch/powerpc/kernel/dma.c
-@@ -161,9 +161,7 @@ int dma_set_mask(struct device *dev, u64 dma_mask)
- 
- 	if (ppc_md.dma_set_mask)
- 		return ppc_md.dma_set_mask(dev, dma_mask);
--	if (unlikely(dma_ops == NULL))
--		return -EIO;
--	if (dma_ops->set_dma_mask != NULL)
-+	if ((dma_ops != NULL) && (dma_ops->set_dma_mask != NULL))
- 		return dma_ops->set_dma_mask(dev, dma_mask);
- 	if (!dev->dma_mask || !dma_supported(dev, dma_mask))
- 		return -EIO;
 -- 
-1.7.3.4
-
+tejun
