@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181Ab1FWRck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:32:40 -0400
-Received: from mail.windriver.com ([147.11.1.11]:65252 "EHLO
+	id S933159Ab1FWRcE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:32:04 -0400
+Received: from mail.windriver.com ([147.11.1.11]:33139 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932975Ab1FWR3x (ORCPT
+	with ESMTP id S932876Ab1FWRcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:29:53 -0400
+	Thu, 23 Jun 2011 13:32:01 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Tejun Heo <tj@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 056/247] serial: unbreak billionton CF card
-Date: Thu, 23 Jun 2011 13:25:55 -0400
-Message-Id: <1308850146-15061-15-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 057/247] ptrace: use safer wake up on ptrace_detach()
+Date: Thu, 23 Jun 2011 13:25:56 -0400
+Message-Id: <1308850146-15061-16-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850146-15061-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,39 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pavel Machek <pavel@ucw.cz>
+From: Tejun Heo <tj@kernel.org>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d0694e2aeb815042aa0f3e5036728b3db4446f1d upstream.
+commit 01e05e9a90b8f4c3997ae0537e87720eb475e532 upstream.
 
-Unbreak Billionton CF bluetooth card. This actually fixes a regression
-on zaurus.
+The wake_up_process() call in ptrace_detach() is spurious and not
+interlocked with the tracee state.  IOW, the tracee could be running or
+sleeping in any place in the kernel by the time wake_up_process() is
+called.  This can lead to the tracee waking up unexpectedly which can be
+dangerous.
 
-Signed-off-by: Pavel Machek <pavel@ucw.cz>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+The wake_up is spurious and should be removed but for now reduce its
+toxicity by only waking up if the tracee is in TRACED or STOPPED state.
+
+This bug can possibly be used as an attack vector.  I don't think it
+will take too much effort to come up with an attack which triggers oops
+somewhere.  Most sleeps are wrapped in condition test loops and should
+be safe but we have quite a number of places where sleep and wakeup
+conditions are expected to be interlocked.  Although the window of
+opportunity is tiny, ptrace can be used by non-privileged users and with
+some loading the window can definitely be extended and exploited.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Acked-by: Roland McGrath <roland@redhat.com>
+Acked-by: Oleg Nesterov <oleg@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/serial/8250.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ kernel/ptrace.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/serial/8250.c b/drivers/serial/8250.c
-index 2b1ea3d..c1d79a2 100644
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -256,7 +256,8 @@ static const struct serial8250_config uart_config[] = {
- 		.fifo_size	= 128,
- 		.tx_loadsz	= 128,
- 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
--		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
-+		/* UART_CAP_EFR breaks billionon CF bluetooth card. */
-+		.flags		= UART_CAP_FIFO | UART_CAP_SLEEP,
- 	},
- 	[PORT_RSA] = {
- 		.name		= "RSA",
+diff --git a/kernel/ptrace.c b/kernel/ptrace.c
+index 42ad8ae..b7b491e 100644
+--- a/kernel/ptrace.c
++++ b/kernel/ptrace.c
+@@ -315,7 +315,7 @@ int ptrace_detach(struct task_struct *child, unsigned int data)
+ 		child->exit_code = data;
+ 		dead = __ptrace_detach(current, child);
+ 		if (!child->exit_state)
+-			wake_up_process(child);
++			wake_up_state(child, TASK_TRACED | TASK_STOPPED);
+ 	}
+ 	write_unlock_irq(&tasklist_lock);
+ 
 -- 
 1.7.4.4
 
