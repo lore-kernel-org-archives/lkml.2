@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933243Ab1FWRgE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:36:04 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34234 "EHLO
+	id S933314Ab1FWSPa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:15:30 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34419 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933217Ab1FWRf6 (ORCPT
+	with ESMTP id S933299Ab1FWRgT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:35:58 -0400
+	Thu, 23 Jun 2011 13:36:19 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+Cc: stable-review@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 079/247] drm/i915: Add dependency on CONFIG_TMPFS
-Date: Thu, 23 Jun 2011 13:32:27 -0400
-Message-Id: <1308850515-15242-20-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 080/247] x86, mm: avoid possible bogus tlb entries by clearing prev mm_cpumask after switching mm
+Date: Thu, 23 Jun 2011 13:32:28 -0400
+Message-Id: <1308850515-15242-21-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,64 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chris Wilson <chris@chris-wilson.co.uk>
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit f7ab9b407b3bc83161c2aa74c992ba4782e87c9c upstream.
+commit 831d52bc153971b70e64eccfbed2b232394f22f8 upstream.
 
-Without tmpfs, shmem_readpage() is not compiled in causing an OOPS as
-soon as we try to allocate some swappable pages for GEM.
+Clearing the cpu in prev's mm_cpumask early will avoid the flush tlb
+IPI's while the cr3 is still pointing to the prev mm.  And this window
+can lead to the possibility of bogus TLB fills resulting in strange
+failures.  One such problematic scenario is mentioned below.
 
-Jan 19 22:52:26 harlie kernel: Modules linked in: i915(+) drm_kms_helper cfbcopyarea video backlight cfbimgblt cfbfillrect
-Jan 19 22:52:26 harlie kernel:
-Jan 19 22:52:26 harlie kernel: Pid: 1125, comm: modprobe Not tainted 2.6.37Harlie #10 To be filled by O.E.M./To be filled by O.E.M.
-Jan 19 22:52:26 harlie kernel: EIP: 0060:[<00000000>] EFLAGS: 00010246 CPU: 3
-Jan 19 22:52:26 harlie kernel: EIP is at 0x0
-Jan 19 22:52:26 harlie kernel: EAX: 00000000 EBX: f7b7d000 ECX: f3383100 EDX: f7b7d000
-Jan 19 22:52:26 harlie kernel: ESI: f1456118 EDI: 00000000 EBP: f2303c98 ESP: f2303c7c
-Jan 19 22:52:26 harlie kernel:  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
-Jan 19 22:52:26 harlie kernel: Process modprobe (pid: 1125, ti=f2302000 task=f259cd80 task.ti=f2302000)
-Jan 19 22:52:26 harlie kernel: Stack:
-Jan 19 22:52:26 harlie udevd-work[1072]: '/sbin/modprobe -b pci:v00008086d00000046sv00000000sd00000000bc03sc00i00' unexpected exit with status 0x0009
-Jan 19 22:52:26 harlie kernel:  c1074061 000000d0 f2f42b80 00000000 000a13d2 f2d5dcc0 00000001 f2303cac
-Jan 19 22:52:26 harlie kernel:  c107416f 00000000 000a13d2 00000000 f2303cd4 f8d620ed f2cee620 00001000
-Jan 19 22:52:26 harlie kernel:  00000000 000a13d2 f1456118 f2d5dcc0 f1a40000 00001000 f2303d04 f8d637ab
-Jan 19 22:52:26 harlie kernel: Call Trace:
-Jan 19 22:52:26 harlie kernel:  [<c1074061>] ? do_read_cache_page+0x71/0x160
-Jan 19 22:52:26 harlie kernel:  [<c107416f>] ? read_cache_page_gfp+0x1f/0x30
-Jan 19 22:52:26 harlie kernel:  [<f8d620ed>] ? i915_gem_object_get_pages+0xad/0x1d0 [i915]
-Jan 19 22:52:26 harlie kernel:  [<f8d637ab>] ? i915_gem_object_bind_to_gtt+0xeb/0x2d0 [i915]
-Jan 19 22:52:26 harlie kernel:  [<f8d65961>] ? i915_gem_object_pin+0x151/0x190 [i915]
-Jan 19 22:52:26 harlie kernel:  [<c11e16ed>] ? drm_gem_object_init+0x3d/0x60
-Jan 19 22:52:26 harlie kernel:  [<f8d65aa5>] ? i915_gem_init_ringbuffer+0x105/0x1e0 [i915]
-Jan 19 22:52:26 harlie kernel:  [<f8d571b7>] ? i915_driver_load+0x667/0x1160 [i915]
+ T1. CPU-1 is context switching from mm1 to mm2 context and got a NMI
+     etc between the point of clearing the cpu from the mm_cpumask(mm1)
+     and before reloading the cr3 with the new mm2.
 
-Reported-by: John J. Stimson-III <john@idsfa.net>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+ T2. CPU-2 is tearing down a specific vma for mm1 and will proceed with
+     flushing the TLB for mm1.  It doesn't send the flush TLB to CPU-1
+     as it doesn't see that cpu listed in the mm_cpumask(mm1).
+
+ T3. After the TLB flush is complete, CPU-2 goes ahead and frees the
+     page-table pages associated with the removed vma mapping.
+
+ T4. CPU-2 now allocates those freed page-table pages for something
+     else.
+
+ T5. As the CR3 and TLB caches for mm1 is still active on CPU-1, CPU-1
+     can potentially speculate and walk through the page-table caches
+     and can insert new TLB entries.  As the page-table pages are
+     already freed and being used on CPU-2, this page walk can
+     potentially insert a bogus global TLB entry depending on the
+     (random) contents of the page that is being used on CPU-2.
+
+ T6. This bogus TLB entry being global will be active across future CR3
+     changes and can result in weird memory corruption etc.
+
+To avoid this issue, for the prev mm that is handing over the cpu to
+another mm, clear the cpu from the mm_cpumask(prev) after the cr3 is
+changed.
+
+Marking it for -stable, though we haven't seen any reported failure that
+can be attributed to this.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Acked-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/gpu/drm/Kconfig |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/mmu_context.h |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
-index 305c590..7bb111b 100644
---- a/drivers/gpu/drm/Kconfig
-+++ b/drivers/gpu/drm/Kconfig
-@@ -94,7 +94,10 @@ config DRM_I830
- config DRM_I915
- 	tristate "i915 driver"
- 	depends on AGP_INTEL
-+	# we need shmfs for the swappable backing store, and in particular
-+	# the shmem_readpage() which depends upon tmpfs
- 	select SHMEM
-+	select TMPFS
- 	select DRM_KMS_HELPER
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
+diff --git a/arch/x86/include/asm/mmu_context.h b/arch/x86/include/asm/mmu_context.h
+index 4a2d4e0..8b5393e 100644
+--- a/arch/x86/include/asm/mmu_context.h
++++ b/arch/x86/include/asm/mmu_context.h
+@@ -36,8 +36,6 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 	unsigned cpu = smp_processor_id();
+ 
+ 	if (likely(prev != next)) {
+-		/* stop flush ipis for the previous mm */
+-		cpumask_clear_cpu(cpu, mm_cpumask(prev));
+ #ifdef CONFIG_SMP
+ 		percpu_write(cpu_tlbstate.state, TLBSTATE_OK);
+ 		percpu_write(cpu_tlbstate.active_mm, next);
+@@ -47,6 +45,9 @@ static inline void switch_mm(struct mm_struct *prev, struct mm_struct *next,
+ 		/* Re-load page tables */
+ 		load_cr3(next->pgd);
+ 
++		/* stop flush ipis for the previous mm */
++		cpumask_clear_cpu(cpu, mm_cpumask(prev));
++
+ 		/*
+ 		 * load the LDT, if the LDT is different:
+ 		 */
 -- 
 1.7.4.4
 
