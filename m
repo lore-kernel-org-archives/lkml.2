@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759306Ab1FWLqZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 07:46:25 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:43597 "EHLO duck.linux-mips.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1759217Ab1FWLqW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 07:46:22 -0400
-Date: Thu, 23 Jun 2011 12:45:37 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
-        linux-am33-list@redhat.com, Paul Mundt <lethal@linux-sh.org>,
-        linux-sh@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Cc: linux-arch@vger.kernel.org
-Subject: [PATCH] STAGING: Comedi: Build only on arches providing
- PAGE_KERNEL_NOCACHE
-Message-ID: <20110623114536.GA14011@linux-mips.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1759267Ab1FWLuS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 07:50:18 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46973 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759034Ab1FWLuR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 07:50:17 -0400
+Subject: Re: [patch 12/16] sched: prevent interactions with throttled
+ entities
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+In-Reply-To: <20110621071700.879990875@google.com>
+References: <20110621071649.862846205@google.com>
+	 <20110621071700.879990875@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 23 Jun 2011 13:49:19 +0200
+Message-ID: <1308829759.1022.109.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On architectures that don't define PAGE_KERNEL_NOCACHE, the Comedi driver turns
-into tragedy:
+On Tue, 2011-06-21 at 00:17 -0700, Paul Turner wrote:
+> @@ -2635,8 +2704,10 @@ static int update_shares_cpu(struct task
+>  
+>         raw_spin_lock_irqsave(&rq->lock, flags);
+>  
+> -       update_rq_clock(rq);
+> -       update_cfs_load(cfs_rq, 1);
+> +       if (!throttled_hierarchy(cfs_rq)) {
+> +               update_rq_clock(rq);
+> +               update_cfs_load(cfs_rq, 1);
+> +       }
+>  
+>         /* 
 
-  CC [M]  drivers/staging/comedi/drivers.o
-drivers/staging/comedi/drivers.c: In function ‘comedi_buf_alloc’:
-drivers/staging/comedi/drivers.c:505:41: error: ‘PAGE_KERNEL_NOCACHE’ undeclared (first use in this function)
-drivers/staging/comedi/drivers.c:505:41: note: each undeclared identifier is rep orted only once for each function it appears in
-make[3]: *** [drivers/staging/comedi/drivers.o] Error 1
+OK, so we can't contribute to load since we're throttled, but
+tg->load_weight might have changed meanwhile?
 
-Restrict the driver to only those architectures that define PAGE_KERNEL_NOCACHE.
+Also, update_cfs_shares()->reweight_entity() can dequeue/enqueue the
+entity, doesn't that require an up-to-date rq->clock?
 
-PAGE_KERNEL_NOCACHE is a kludge - some system architectures such as SGI IP27
-are even uable to offer uncached operation - at least in the way an unwitting
-driver might assume.  I haven't looked in details how the driver is using
-the area vmaped with PAGE_KERNEL_NOCACHE but maybe doing it XFS-style using
-cached memory and the flush_kernel_vmap_range / invalidate_kernel_vmap_range
-APIs in conjunction with the DMA API is a practical alternative.
 
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-
- drivers/staging/comedi/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
-index 1502d80..bccdc12 100644
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -2,6 +2,7 @@ config COMEDI
- 	tristate "Data acquisition support (comedi)"
- 	default N
- 	depends on m
-+	depends on BROKEN || FRV || M32R || MN10300 || SUPERH || TILE || X86
- 	---help---
- 	  Enable support a wide range of data acquisition devices
- 	  for Linux.
