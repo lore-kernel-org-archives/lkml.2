@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759780Ab1FWQ60 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 12:58:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48539 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759613Ab1FWQ6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 12:58:25 -0400
-Subject: Autotest 0.13.0 released!
-From: Lucas Meneghel Rodrigues <lmr@redhat.com>
-To: Autotest mailing list <autotest@test.kernel.org>,
-        KVM mailing list <kvm@vger.kernel.org>,
-        Auto QA <autoqa-devel@lists.fedorahosted.org>,
-        Beaker Devel <beaker-devel@lists.fedorahosted.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Date: Thu, 23 Jun 2011 13:58:21 -0300
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-Message-ID: <1308848303.4175.9.camel@freedom>
-Mime-Version: 1.0
+	id S1759809Ab1FWQ6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 12:58:55 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64004 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759773Ab1FWQ6y convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 12:58:54 -0400
+MIME-Version: 1.0
+Message-ID: <6ff0f0d5-534e-4403-80f7-edd228618049@default>
+Date: Thu, 23 Jun 2011 09:58:35 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Konrad Wilk <konrad.wilk@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: RE: linux-next: manual merge of the tmem tree with the xen-two tree
+References: <20110622144611.a900a000.sfr@canb.auug.org.au
+ 20110622140642.GD5574@dumpdata.com>
+In-Reply-To: <20110622140642.GD5574@dumpdata.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
+ 12.0.6557.5001]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4E0370CA.0024:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After months of development, we are proud to announce a new release of
-autotest, 0.13.0.
+> From: Konrad Rzeszutek Wilk
+> Subject: Re: linux-next: manual merge of the tmem tree with the xen-two tree
+> 
+> On Wed, Jun 22, 2011 at 02:46:11PM +1000, Stephen Rothwell wrote:
+> > Hi Dan,
+> >
+> > Today's linux-next merge of the tmem tree got a conflict in
+> > drivers/xen/Kconfig drivers/xen/tmem.c between commit afec6e04922d ("xen:
+> > prepare tmem shim to handle frontswap") from the xen-two tree and commit
+> > ac33c46b42ba ("xen: enable frontswap for Xen tmem") from the tmem tree.
+> 
+> Dan, can you please rebase your #linux-next branch on my #linux-next branch
+> so that Stephen's awesome build engine can chug along for this?
+> 
+> Thanks!
+> > I just used the xen-two versions of these files (as they look newer).
+> 
+> OK, we will sort this out.
 
-What is autotest?
+Should hopefully all be fixed now.  (Konrad's version of the commit is
+indeed the newer version so I have removed the older version from the
+tmem tree.)
 
-Autotest is a framework for fully automated testing. It is designed
-primarily to test the Linux kernel, though it is useful for many other
-purposes such as qualifying new hardware, virtualization testing and
-general user space program testing under linux platforms. It's an
-open-source project under the GPL and is used and developed by a number
-of organizations, including Google, IBM, Red Hat, and many others. You
-can see results of kernel test runs on
-
-http://test.kernel.org/tko/
-
-Release repository:
-
-http://test.kernel.org/releases/0.13.0/
-
-Release notes:
-
-http://autotest.kernel.org/wiki/Release0.13.0
-
-Autotest project main page:
-
-http://autotest.kernel.org/
-
-Want to hack on autotest? Please refer to:
-
-http://autotest.kernel.org/wiki/DownloadSource
-
-http://test.kernel.org/cgi-bin/mailman/listinfo/autotest
-
-Please report any issues on our bug tracking system:
-
-http://autotest.kernel.org/newticket
-
-In order to be able to open tickets on our bug tracking system, refer
-to:
-
-http://autotest.kernel.org/wiki/SiteAminContact
-
-
-
+Thanks,
+Dan
