@@ -1,127 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759479Ab1FWOPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 10:15:09 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:14313 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758132Ab1FWOPI (ORCPT
+	id S1759482Ab1FWOPy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 10:15:54 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:59489 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753804Ab1FWOPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 10:15:08 -0400
-Message-ID: <4E034A61.2000300@draigBrady.com>
-Date: Thu, 23 Jun 2011 15:14:57 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Andrea Righi <andrea@betterlinux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-References: <1308779480-4950-1-git-send-email-andrea@betterlinux.com> <4E03200D.60704@draigBrady.com> <20110623135713.GB1479@thinkpad>
-In-Reply-To: <20110623135713.GB1479@thinkpad>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Thu, 23 Jun 2011 10:15:53 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: mingo@elte.hu
+Cc: a.p.zijlstra@chello.nl, borislav.petkov@amd.com, bblum@andrew.cmu.edu,
+        linux-kernel@vger.kernel.org, mhack@us.ibm.com,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH] events: Ensure that timers are updated without requiring read() call
+Date: Thu, 23 Jun 2011 10:15:37 -0400
+Message-Id: <1308838537-6682-1-git-send-email-emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23/06/11 14:57, Andrea Righi wrote:
-> On Thu, Jun 23, 2011 at 12:14:21PM +0100, Pádraig Brady wrote:
->> On 22/06/11 22:51, Andrea Righi wrote:
->>> There were some reported problems in the past about trashing page cache
->>> when a backup software (i.e., rsync) touches a huge amount of pages (see
->>> for example [1]).
->>>
->>> This problem has been almost fixed by the Minchan Kim's patch [2] and a
->>> proper use of fadvise() in the backup software. For example this patch
->>> set [3] has been proposed for inclusion in rsync.
->>>
->>> However, there can be still other similar trashing problems: when the
->>> backup software reads all the source files, some of them may be part of
->>> the actual working set of the system. When a
->>> posix_fadvise(POSIX_FADV_DONTNEED) is performed _all_ pages are evicted
->>> from pagecache, both the working set and the use-once pages touched only
->>> by the backup software.
->>>
->>> With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
->>> called for an active page instead of removing it from the page cache it
->>> is added to the tail of the inactive list. Otherwise, if it's already in
->>> the inactive list the page is removed from the page cache.
->>>
->>> In this way if the backup was the only user of a page, that page will
->>> be immediately removed from the page cache by calling
->>> posix_fadvise(POSIX_FADV_DONTNEED). If the page was also touched by
->>> other processes it'll be moved to the inactive list, having another
->>> chance of being re-added to the working set, or simply reclaimed when
->>> memory is needed.
->>>
->>> Testcase:
->>>
->>>   - create a 1GB file called "zero"
->>>   - run md5sum zero to read all the pages in page cache (this is to
->>>     simulate the user activity on this file)
->>>   - run "rsync zero zero_copy" (rsync is patched with [3])
->>>   - re-run md5sum zero (user activity on the working set) and measure
->>>     the time to complete this command
->>>
->>> The test has been performed using 3.0.0-rc4 vanilla and with this patch
->>> applied (3.0.0-rc4-fadvise).
->>>
->>> Results:
->>>                   avg elapsed time      block:block_bio_queue
->>>  3.0.0-rc4                  4.127s                      8,214
->>>  3.0.0-rc4-fadvise          2.146s                          0
->>>
->>> In the first case the file is evicted from page cache completely and we
->>> must re-read it from the disk. In the second case the file is still in
->>> page cache (in the inactive list) and we don't need any other additional
->>> I/O operation.
->>>
->>> [1] http://marc.info/?l=rsync&m=128885034930933&w=2
->>> [2] https://lkml.org/lkml/2011/2/20/57
->>> [3] http://lists.samba.org/archive/rsync/2010-November/025827.html
->>>
->>> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
->>
->> Hmm, What if you do want to evict it from the cache for testing purposes?
->> Perhaps this functionality should be associated with POSIX_FADV_NOREUSE?
->> dd has been recently modified to support invalidating the cache for a file,
->> and it uses POSIX_FADV_DONTNEED for that.
->> http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=5f311553
-> 
-> I don't have any objection to associate POSIX_FADV_NOREUSE to this
-> functionality. Actually maintaining a specific functionality to drop
-> file cache pages can be useful, indeed.
-> 
-> However, I'm not sure if POSIX_FADV_NOREUSE or POSIX_FADV_DONTNEED
-> either are suitable.
-> 
-> According to the standard:
-> 
->  POSIX_FADV_NOREUSE = data will be accessed only once
->  POSIX_FADV_DONTNEED = data will not be accessed in the near future
+The event tracing infrastructure exposes two timers which should be updated
+each time the value of the counter is updated.  Currently, these counters are
+only updated when userspace calls read() on the fd associated with an event.
+This means that counters which are read via the mmap'd page exclusively never
+have their timers updated.  This patch adds ensures that the timers are updated
+each time the values in the mmap'd page are updated.
 
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+---
+ kernel/events/core.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-> So, associating the "drop the page cache" semantic sounds like an
-> implementation detail and applications shouldn't implicitly rely on this
-> behaviour.
+diff --git a/kernel/events/core.c b/kernel/events/core.c
+index 9efe710..3dd4ebe 100644
+--- a/kernel/events/core.c
++++ b/kernel/events/core.c
+@@ -3369,6 +3369,7 @@ void perf_event_update_userpage(struct perf_event *event)
+ 	struct perf_buffer *buffer;
+ 
+ 	rcu_read_lock();
++	update_event_times(event);
+ 	buffer = rcu_dereference(event->buffer);
+ 	if (!buffer)
+ 		goto unlock;
+-- 
+1.7.4.1
 
-Well the "standard" really is what has been implemented up to now.
-POSIX_FADV_NOREUSE currently does nothing so, associating this
-new behavior with it seems less problematic for user space.
-Also the names fit pretty well I think.
-
-  POSIX_FADV_DONTNEED = drop if possible
-  POSIX_FADV_NOREUSE = current app won't reuse so reduce cache eligibility
-
-cheers,
-Pádraig.
