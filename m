@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934268Ab1FWSUV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:20:21 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34278 "EHLO
+	id S933486Ab1FWSJb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:09:31 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34661 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933217Ab1FWRgF (ORCPT
+	with ESMTP id S933428Ab1FWRgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:05 -0400
+	Thu, 23 Jun 2011 13:36:50 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ben Hutchings <bhutchings@solarflare.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
+Cc: stable-review@kernel.org, Konstantin Khorenko <khorenko@parallels.com>,
+        Konstantin Khorenko <khorenko@openvz.org>,
+        "J. Bruce Fields" <bfields@redhat.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 089/247] bonding/vlan: Avoid mangled NAs on slaves without VLAN tag insertion
-Date: Thu, 23 Jun 2011 13:32:37 -0400
-Message-Id: <1308850515-15242-30-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 090/247] NFSD: memory corruption due to writing beyond the stat array
+Date: Thu, 23 Jun 2011 13:32:38 -0400
+Message-Id: <1308850515-15242-31-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,58 +24,46 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
+From: Konstantin Khorenko <khorenko@parallels.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-This is related to commit f88a4a9b65a6f3422b81be995535d0e69df11bb8
-upstream, but the bug cannot be properly fixed without the other
-changes to VLAN tagging in 2.6.37.
+commit 3aa6e0aa8ab3e64bbfba092c64d42fd1d006b124 upstream.
 
-bond_na_send() attempts to insert a VLAN tag in between building and
-sending packets of the respective formats.  If the slave does not
-implement hardware VLAN tag insertion then vlan_put_tag() will mangle
-the network-layer header because the Ethernet header is not present at
-this point (unlike in bond_arp_send()).
+If nfsd fails to find an exported via NFS file in the readahead cache, it
+should increment corresponding nfsdstats counter (ra_depth[10]), but due to a
+bug it may instead write to ra_depth[11], corrupting the following field.
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+In a kernel with NFSDv4 compiled in the corruption takes the form of an
+increment of a counter of the number of NFSv4 operation 0's received; since
+there is no operation 0, this is harmless.
+
+In a kernel with NFSDv4 disabled it corrupts whatever happens to be in the
+memory beyond nfsdstats.
+
+Signed-off-by: Konstantin Khorenko <khorenko@openvz.org>
+Signed-off-by: J. Bruce Fields <bfields@redhat.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/bonding/bond_ipv6.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ fs/nfsd/vfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/bonding/bond_ipv6.c b/drivers/net/bonding/bond_ipv6.c
-index 6dd64cf..a131d6f 100644
---- a/drivers/net/bonding/bond_ipv6.c
-+++ b/drivers/net/bonding/bond_ipv6.c
-@@ -69,6 +69,13 @@ static void bond_na_send(struct net_device *slave_dev,
- 	};
- 	struct sk_buff *skb;
- 
-+	/* The Ethernet header is built in ndisc_send_skb(), not
-+	 * ndisc_build_skb(), so we cannot insert a VLAN tag.  Only an
-+	 * out-of-line tag inserted by the hardware will work.
-+	 */
-+	if (vlan_id && !(slave_dev->features & NETIF_F_HW_VLAN_TX))
-+		return;
-+
- 	icmp6h.icmp6_router = router;
- 	icmp6h.icmp6_solicited = 0;
- 	icmp6h.icmp6_override = 1;
-@@ -87,7 +94,7 @@ static void bond_na_send(struct net_device *slave_dev,
+diff --git a/fs/nfsd/vfs.c b/fs/nfsd/vfs.c
+index 4eb9baa..054b50b 100644
+--- a/fs/nfsd/vfs.c
++++ b/fs/nfsd/vfs.c
+@@ -819,7 +819,7 @@ nfsd_get_raparms(dev_t dev, ino_t ino)
+ 		if (ra->p_count == 0)
+ 			frap = rap;
  	}
- 
- 	if (vlan_id) {
--		skb = vlan_put_tag(skb, vlan_id);
-+		skb = __vlan_hwaccel_put_tag(skb, vlan_id);
- 		if (!skb) {
- 			pr_err("failed to insert VLAN tag\n");
- 			return;
+-	depth = nfsdstats.ra_size*11/10;
++	depth = nfsdstats.ra_size;
+ 	if (!frap) {	
+ 		spin_unlock(&rab->pb_lock);
+ 		return NULL;
 -- 
 1.7.4.4
 
