@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933268Ab1FWRia (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:38:30 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35499 "EHLO
+	id S933826Ab1FWRrq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:47:46 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35508 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933778Ab1FWRi1 (ORCPT
+	with ESMTP id S933779Ab1FWRi2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:38:27 -0400
+	Thu, 23 Jun 2011 13:38:28 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Henry Nestler <henry.nestler@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
+Cc: stable-review@kernel.org, Kees Cook <kees.cook@canonical.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 218/247] fbcon: Bugfix soft cursor detection in Tile Blitting
-Date: Thu, 23 Jun 2011 13:34:46 -0400
-Message-Id: <1308850515-15242-159-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 219/247] proc: protect mm start_code/end_code in /proc/pid/stat
+Date: Thu, 23 Jun 2011 13:34:47 -0400
+Message-Id: <1308850515-15242-160-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,44 +24,55 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Henry Nestler <henry.nestler@gmail.com>
+From: Kees Cook <kees.cook@canonical.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d6244bc0ed0c52a795e6f4dcab3886daf3e74fac upstream.
+commit 5883f57ca0008ffc93e09cbb9847a1928e50c6f3 upstream.
 
-Use mask 0x10 for "soft cursor" detection on in function tile_cursor.
-(Tile Blitting Operation in framebuffer console).
+While mm->start_stack was protected from cross-uid viewing (commit
+f83ce3e6b02d5 ("proc: avoid information leaks to non-privileged
+processes")), the start_code and end_code values were not.  This would
+allow the text location of a PIE binary to leak, defeating ASLR.
 
-The old mask 0x01 for vc_cursor_type detects CUR_NONE, CUR_LOWER_THIRD
-and every second mode value as "software cursor". This hides the cursor
-for these modes (cursor.mode = 0). But, only CUR_NONE or "software cursor"
-should hide the cursor.
-See also 0x10 in functions add_softcursor, bit_cursor and cw_cursor.
+Note that the value "1" is used instead of "0" for a protected value since
+"ps", "killall", and likely other readers of /proc/pid/stat, take
+start_code of "0" to mean a kernel thread and will misbehave.  Thanks to
+Brad Spengler for pointing this out.
 
-Signed-off-by: Henry Nestler <henry.nestler@gmail.com>
-Signed-off-by: Paul Mundt <lethal@linux-sh.org>
+Addresses CVE-2011-0726
+
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Cc: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: David Howells <dhowells@redhat.com>
+Cc: Eugene Teo <eugeneteo@kernel.sg>
+Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Cc: Brad Spengler <spender@grsecurity.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/video/console/tileblit.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ fs/proc/array.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/console/tileblit.c b/drivers/video/console/tileblit.c
-index 0056a41..15e8e1a 100644
---- a/drivers/video/console/tileblit.c
-+++ b/drivers/video/console/tileblit.c
-@@ -83,7 +83,7 @@ static void tile_cursor(struct vc_data *vc, struct fb_info *info, int mode,
- 			int softback_lines, int fg, int bg)
- {
- 	struct fb_tilecursor cursor;
--	int use_sw = (vc->vc_cursor_type & 0x01);
-+	int use_sw = (vc->vc_cursor_type & 0x10);
- 
- 	cursor.sx = vc->vc_x;
- 	cursor.sy = vc->vc_y;
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index ed2afa6..412e163 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -489,8 +489,8 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+ 		vsize,
+ 		mm ? get_mm_rss(mm) : 0,
+ 		rsslim,
+-		mm ? mm->start_code : 0,
+-		mm ? mm->end_code : 0,
++		mm ? (permitted ? mm->start_code : 1) : 0,
++		mm ? (permitted ? mm->end_code : 1) : 0,
+ 		(permitted && mm) ? mm->start_stack : 0,
+ 		esp,
+ 		eip,
 -- 
 1.7.4.4
 
