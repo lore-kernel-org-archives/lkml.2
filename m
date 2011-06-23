@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932902Ab1FWR3m (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:29:42 -0400
-Received: from mail.windriver.com ([147.11.1.11]:65182 "EHLO
+	id S932842Ab1FWR3j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:29:39 -0400
+Received: from mail.windriver.com ([147.11.1.11]:65168 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932872Ab1FWR3k (ORCPT
+	with ESMTP id S1759828Ab1FWR3i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:29:40 -0400
+	Thu, 23 Jun 2011 13:29:38 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Clemens Ladisch <clemens@ladisch.de>,
-        Takashi Iwai <tiwai@suse.de>,
+Cc: stable-review@kernel.org,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 044/247] ALSA: hrtimer: handle delayed timer interrupts
-Date: Thu, 23 Jun 2011 13:25:43 -0400
-Message-Id: <1308850146-15061-3-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 045/247] ASoC: WM8990: msleep() takes milliseconds not jiffies
+Date: Thu, 23 Jun 2011 13:25:44 -0400
+Message-Id: <1308850146-15061-4-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850146-15061-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,51 +24,66 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Clemens Ladisch <clemens@ladisch.de>
+From: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b1d4f7f4bdcf9915c41ff8cfc4425c84dabb1fde upstream.
+commit 7ebcf5d6021a696680ee77d9162a2edec2d671dd upstream.
 
-If a timer interrupt was delayed too much, hrtimer_forward_now() will
-forward the timer expiry more than once.  When this happens, the
-additional number of elapsed ALSA timer ticks must be passed to
-snd_timer_interrupt() to prevent the ALSA timer from falling behind.
-
-This mostly fixes MIDI slowdown problems on highly-loaded systems with
-badly behaved interrupt handlers.
-
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-Reported-and-tested-by: Arthur Marsh <arthur.marsh@internode.on.net>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- sound/core/hrtimer.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8990.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/sound/core/hrtimer.c b/sound/core/hrtimer.c
-index 7730575..07efa29 100644
---- a/sound/core/hrtimer.c
-+++ b/sound/core/hrtimer.c
-@@ -45,12 +45,13 @@ static enum hrtimer_restart snd_hrtimer_callback(struct hrtimer *hrt)
- {
- 	struct snd_hrtimer *stime = container_of(hrt, struct snd_hrtimer, hrt);
- 	struct snd_timer *t = stime->timer;
-+	unsigned long oruns;
+diff --git a/sound/soc/codecs/wm8990.c b/sound/soc/codecs/wm8990.c
+index 7c6b00e..5d1c4d0 100644
+--- a/sound/soc/codecs/wm8990.c
++++ b/sound/soc/codecs/wm8990.c
+@@ -1185,7 +1185,7 @@ static int wm8990_set_bias_level(struct snd_soc_codec *codec,
+ 				     WM8990_VMIDTOG);
  
- 	if (!atomic_read(&stime->running))
- 		return HRTIMER_NORESTART;
+ 			/* Delay to allow output caps to discharge */
+-			msleep(msecs_to_jiffies(300));
++			msleep(300);
  
--	hrtimer_forward_now(hrt, ns_to_ktime(t->sticks * resolution));
--	snd_timer_interrupt(stime->timer, t->sticks);
-+	oruns = hrtimer_forward_now(hrt, ns_to_ktime(t->sticks * resolution));
-+	snd_timer_interrupt(stime->timer, t->sticks * oruns);
+ 			/* Disable VMIDTOG */
+ 			snd_soc_write(codec, WM8990_ANTIPOP2, WM8990_SOFTST |
+@@ -1197,17 +1197,17 @@ static int wm8990_set_bias_level(struct snd_soc_codec *codec,
+ 			/* Enable outputs */
+ 			snd_soc_write(codec, WM8990_POWER_MANAGEMENT_1, 0x1b00);
  
- 	if (!atomic_read(&stime->running))
- 		return HRTIMER_NORESTART;
+-			msleep(msecs_to_jiffies(50));
++			msleep(50);
+ 
+ 			/* Enable VMID at 2x50k */
+ 			snd_soc_write(codec, WM8990_POWER_MANAGEMENT_1, 0x1f02);
+ 
+-			msleep(msecs_to_jiffies(100));
++			msleep(100);
+ 
+ 			/* Enable VREF */
+ 			snd_soc_write(codec, WM8990_POWER_MANAGEMENT_1, 0x1f03);
+ 
+-			msleep(msecs_to_jiffies(600));
++			msleep(600);
+ 
+ 			/* Enable BUFIOEN */
+ 			snd_soc_write(codec, WM8990_ANTIPOP2, WM8990_SOFTST |
+@@ -1252,7 +1252,7 @@ static int wm8990_set_bias_level(struct snd_soc_codec *codec,
+ 		/* Disable VMID */
+ 		snd_soc_write(codec, WM8990_POWER_MANAGEMENT_1, 0x1f01);
+ 
+-		msleep(msecs_to_jiffies(300));
++		msleep(300);
+ 
+ 		/* Enable all output discharge bits */
+ 		snd_soc_write(codec, WM8990_ANTIPOP1, WM8990_DIS_LLINE |
 -- 
 1.7.4.4
 
