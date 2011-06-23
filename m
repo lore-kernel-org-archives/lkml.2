@@ -1,179 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122Ab1FWTjo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 15:39:44 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45657 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932726Ab1FWTjm (ORCPT
+	id S933100Ab1FWTjH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 15:39:07 -0400
+Received: from outmail008.snc4.facebook.com ([66.220.144.140]:64019 "EHLO
+	mx-out.facebook.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932702Ab1FWTjF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 15:39:42 -0400
-Subject: [PATCH 04/11] Remove misleading and template comments from ft1000_cs.c
-To: "Greg Kroah-Hartman" <greg@kroah.com>
-Cc: Marek Belisko <marek.belisko@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-From: Ondrej Zary <linux@rainbow-software.org>
-Date: Thu, 23 Jun 2011 21:39:33 +0200
+	Thu, 23 Jun 2011 15:39:05 -0400
+Message-ID: <4E03968A.5010008@fb.com>
+Date: Thu, 23 Jun 2011 12:39:54 -0700
+From: Arun Sharma <asharma@fb.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
 MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+CC: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Using a new perf tool against an older kernel
+References: <4E026123.4060208@fb.com> <4E034C2C.30509@gmail.com>
+In-Reply-To: <4E034C2C.30509@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201106232139.36576.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove misleading, useless and template comments from ft1000_cs.c
+On 6/23/11 7:22 AM, David Ahern wrote:
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c |   78 ++--------------------
- 1 files changed, 5 insertions(+), 73 deletions(-)
+> I have not seen issues like this using newer perf userspace against
+> older kernels. For example, my laptop was running Fedora 14 (2.6.35) and
+> now Fedora 15 (2.6.38.8) and I typically use latest perf builds (e.g.,
+> testing patches).
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-index b99f07d..34fc21f 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-@@ -54,18 +54,6 @@ MODULE_AUTHOR("Wai Chan");
- MODULE_DESCRIPTION("FT1000 PCMCIA driver");
- MODULE_LICENSE("GPL");
- 
--/* Newer, simpler way of listing specific interrupts */
--
--/* The old way: bit map of interrupts to choose from */
--/* This means pick from 15, 14, 12, 11, 10, 9, 7, 5, 4, and 3 */
--
--/*
--   All the PCMCIA modules use PCMCIA_DEBUG to control debugging.  If
--   you do not define PCMCIA_DEBUG at all, all the debug code will be
--   left out.  If you compile with PCMCIA_DEBUG=0, the debug code will
--   be present but disabled.
--*/
--
- /*====================================================================*/
- 
- struct net_device *init_ft1000_card(struct pcmcia_device *link,
-@@ -74,13 +62,6 @@ void stop_ft1000_card(struct net_device *);
- 
- static int ft1000_config(struct pcmcia_device *link);
- static void ft1000_release(struct pcmcia_device *link);
--
--/*
--   The attach() and detach() entry points are used to create and destroy
--   "instances" of the driver, where each instance represents everything
--   needed to manage one actual PCMCIA card.
--*/
--
- static void ft1000_detach(struct pcmcia_device *link);
- static int  ft1000_attach(struct pcmcia_device *link);
- 
-@@ -91,11 +72,6 @@ static void ft1000_reset(struct pcmcia_device * link)
- 	pcmcia_reset_card(link->socket);
- }
- 
--/*======================================================================
--
--
--======================================================================*/
--
- static int ft1000_attach(struct pcmcia_device *link)
- {
- 	link->priv = NULL;
-@@ -103,16 +79,7 @@ static int ft1000_attach(struct pcmcia_device *link)
- 
- 	return ft1000_config(link);
- 
--}				/* ft1000_attach */
--
--/*======================================================================
--
--    This deletes a driver "instance".  The device is de-registered
--    with Card Services.  If it has been released, all local data
--    structures are freed.  Otherwise, the structures will be freed
--    when the device is released.
--
--======================================================================*/
-+}
- 
- static void ft1000_detach(struct pcmcia_device *link)
- {
-@@ -126,18 +93,12 @@ static void ft1000_detach(struct pcmcia_device *link)
- 
- 	free_netdev(dev);
- 
--}				/* ft1000_detach */
--
--/*======================================================================
--
--   Check if the io window is configured
-+}
- 
--======================================================================*/
- int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
- {
--
- 	return pcmcia_request_io(link);
--}				/* ft1000_confcheck */
-+}
- 
- /*======================================================================
- 
-@@ -180,7 +141,7 @@ failed:
- 	ft1000_release(link);
- 	return -ENODEV;
- 
--}				/* ft1000_config */
-+}
- 
- /*======================================================================
- 
-@@ -192,33 +153,8 @@ failed:
- 
- static void ft1000_release(struct pcmcia_device * link)
- {
--
--	/*
--	   If the device is currently in use, we won't release until it
--	   is actually closed, because until then, we can't be sure that
--	   no one will try to access the device or its data structures.
--	 */
--
--	/*
--	   In a normal driver, additional code may be needed to release
--	   other kernel data structures associated with this device.
--	 */
--	/* Don't bother checking to see if these succeed or not */
--
- 	 pcmcia_disable_device(link);
--}				/* ft1000_release */
--
--/*======================================================================
--
--    The card status event handler.  Mostly, this schedules other
--    stuff to run after an event is received.
--
--    When a CARD_REMOVAL event is received, we immediately set a
--    private flag to block future accesses to this device.  All the
--    functions that actually access the device should check this flag
--    to make sure the card is still present.
--
--======================================================================*/
-+}
- 
- static int ft1000_suspend(struct pcmcia_device *link)
- {
-@@ -231,13 +167,9 @@ static int ft1000_suspend(struct pcmcia_device *link)
- 
- static int ft1000_resume(struct pcmcia_device *link)
- {
--/*	struct net_device *dev = link->priv;
-- */
- 	return 0;
- }
- 
--
--
- /*====================================================================*/
- 
- static const struct pcmcia_device_id ft1000_ids[] = {
--- 
-Ondrej Zary
+I narrowed it down to PERF_SAMPLE_RAW:
 
+perf record -ag -- sleep 1
+
+is fine, but:
+
+perf record -agR -- sleep 1
+
+fails for me most of the time. The reason I needed to use the -R in the 
+first place is that "perf script" fails on older kernels with:
+
+Samples do not contain timestamps.
+
+With the newer perf, I don't get errors, but the timestamp field is 
+invalid. So I need to use the -R flag to get valid timestamps + 
+stacktraces out of "perf script".
+
+  -Arun
