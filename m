@@ -1,97 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760079Ab1FWWoO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 18:44:14 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24583 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933959Ab1FWWoM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 18:44:12 -0400
-Date: Fri, 24 Jun 2011 00:35:17 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: trivial@kernel.org, Michael Hennerich <michael.hennerich@analog.com>,
-        Richard Purdie <rpurdie@rpsys.net>, Paul Mundt <lethal@linux-sh.org>,
-        device-drivers-devel@blackfin.uclinux.org, linux-fbdev@vger.kernel.org
-Subject: [PATCH 18/37] Remove unneeded version.h includes from
- drivers/video/
-In-Reply-To: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1106240032560.17688@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933913Ab1FWWfY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 18:35:24 -0400
+Received: from mail.perches.com ([173.55.12.10]:3188 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753179Ab1FWWfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 18:35:21 -0400
+From: Joe Perches <joe@perches.com>
+To: Ivo van Doorn <IvDoorn@gmail.com>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] rt2x00: Fix unspeficied typo
+Date: Thu, 23 Jun 2011 15:35:18 -0700
+Message-Id: <6002eb70809bb1c87c84f32ab4a4f034d2d1ffb5.1308868289.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was pointed out by 'make versioncheck' that some includes of
-linux/version.h are not needed in drivers/video/.
-This patch removes them.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/video/backlight/adp8860_bl.c |    1 -
- drivers/video/backlight/adp8870_bl.c |    1 -
- drivers/video/pxa3xx-gcu.c           |    2 --
- drivers/video/xilinxfb.c             |    1 -
- 4 files changed, 0 insertions(+), 5 deletions(-)
+ drivers/net/wireless/rt2x00/rt2x00queue.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/backlight/adp8860_bl.c b/drivers/video/backlight/adp8860_bl.c
-index d2a96a4..24a6dfd 100644
---- a/drivers/video/backlight/adp8860_bl.c
-+++ b/drivers/video/backlight/adp8860_bl.c
-@@ -7,7 +7,6 @@
+diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.h b/drivers/net/wireless/rt2x00/rt2x00queue.h
+index 167d458..5900474 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00queue.h
++++ b/drivers/net/wireless/rt2x00/rt2x00queue.h
+@@ -54,7 +54,7 @@
+  * @QID_RX: RX queue
+  * @QID_OTHER: None of the above (don't use, only present for completeness)
+  * @QID_BEACON: Beacon queue (value unspecified, don't send it to device)
+- * @QID_ATIM: Atim queue (value unspeficied, don't send it to device)
++ * @QID_ATIM: Atim queue (value unspecified, don't send it to device)
   */
- 
- #include <linux/module.h>
--#include <linux/version.h>
- #include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/pm.h>
-diff --git a/drivers/video/backlight/adp8870_bl.c b/drivers/video/backlight/adp8870_bl.c
-index 05a8832..383c4c3 100644
---- a/drivers/video/backlight/adp8870_bl.c
-+++ b/drivers/video/backlight/adp8870_bl.c
-@@ -7,7 +7,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/version.h>
- #include <linux/init.h>
- #include <linux/errno.h>
- #include <linux/pm.h>
-diff --git a/drivers/video/pxa3xx-gcu.c b/drivers/video/pxa3xx-gcu.c
-index 0283c70..d8de557 100644
---- a/drivers/video/pxa3xx-gcu.c
-+++ b/drivers/video/pxa3xx-gcu.c
-@@ -31,8 +31,6 @@
-  */
- 
- #include <linux/module.h>
--#include <linux/version.h>
--
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
- #include <linux/miscdevice.h>
-diff --git a/drivers/video/xilinxfb.c b/drivers/video/xilinxfb.c
-index 77dea01..fcb6cd9 100644
---- a/drivers/video/xilinxfb.c
-+++ b/drivers/video/xilinxfb.c
-@@ -23,7 +23,6 @@
- #include <linux/device.h>
- #include <linux/module.h>
- #include <linux/kernel.h>
--#include <linux/version.h>
- #include <linux/errno.h>
- #include <linux/string.h>
- #include <linux/mm.h>
+ enum data_queue_qid {
+ 	QID_AC_VO = 0,
 -- 
-1.7.5.2
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+1.7.6.rc1
 
