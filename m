@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934396Ab1FWSsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:48:13 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57376 "HELO
+	id S934400Ab1FWStv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:49:51 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:57382 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932831Ab1FWSsM (ORCPT
+	with SMTP id S933155Ab1FWStu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 14:48:12 -0400
-Date: Thu, 23 Jun 2011 14:48:11 -0400 (EDT)
+	Thu, 23 Jun 2011 14:49:50 -0400
+Date: Thu, 23 Jun 2011 14:49:49 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
 To: Paul Gortmaker <paul.gortmaker@windriver.com>
 cc: stable@kernel.org, <linux-kernel@vger.kernel.org>,
         <stable-review@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [34-longterm 024/247] USB: prevent buggy hubs from crashing the
- USB stack
-In-Reply-To: <1308849690-14530-25-git-send-email-paul.gortmaker@windriver.com>
-Message-ID: <Pine.LNX.4.44L0.1106231438530.2033-100000@iolanthe.rowland.org>
+Subject: Re: [34-longterm 094/247] OHCI: work around for nVidia shutdown
+ problem
+In-Reply-To: <1308850515-15242-35-git-send-email-paul.gortmaker@windriver.com>
+Message-ID: <Pine.LNX.4.44L0.1106231448480.2033-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -32,20 +32,36 @@ On Thu, 23 Jun 2011, Paul Gortmaker wrote:
 >     If you see a problem with using this for longterm, please comment.
 >                    -------------------
 > 
-> commit d199c96d41d80a567493e12b8e96ea056a1350c1 upstream.
+> commit 3df7169e73fc1d71a39cffeacc969f6840cdf52b upstream.
 > 
-> If anyone comes across a high-speed hub that (by mistake or by design)
-> claims to have no Transaction Translators, plugging a full- or
-> low-speed device into it will cause the USB stack to crash.  This
-> patch (as1446) prevents the problem by ignoring such devices, since
-> the kernel has no way to communicate with them.
+> This patch (as1417) fixes a problem affecting some (or all) nVidia
+> chipsets.  When the computer is shut down, the OHCI controllers
+> continue to power the USB buses and evidently they drive a Reset
+> signal out all their ports.  This prevents attached devices from going
+> to low power.  Mouse LEDs stay on, for example, which is disconcerting
+> for users and a drain on laptop batteries.
+> 
+> The fix involves leaving each OHCI controller in the OPERATIONAL state
+> during system shutdown rather than putting it in the RESET state.
+> Although this nominally means the controller is running, in fact it's
+> not doing very much since all the schedules are all disabled.  However
+> there is ongoing DMA to the Host Controller Communications Area, so
+> the patch also disables the bus-master capability of all PCI USB
+> controllers after the shutdown routine runs.
+> 
+> The fix is applied only to nVidia-based PCI OHCI controllers, so it
+> shouldn't cause problems on systems using other hardware.  As an added
+> safety measure, in case the kernel encounters one of these running
+> controllers during boot, the patch changes quirk_usb_handoff_ohci()
+> (which runs early on during PCI discovery) to reset the controller
+> before anything bad can happen.
 
-This commit had some unexpected fallout.  It shouldn't be merged unless 
-the following upstream commits are also merged:
+This commit caused problems on systems using later NVIDIA hardware.  It 
+shouldn't be merged unless the upstream commit
 
-c5c69f3f0dcf9b569c8f3ad67f3af92cfcedac43
-cee6a262550f53a13acfefbc1e3e5ff35c96182c
-ec95d35a6bd0047f05fe8a21e6c52f8bb418da55
+2b7aaf503d56216b847c8265421d2a7d9b42df3e
+
+is merged also.
 
 Alan Stern
 
