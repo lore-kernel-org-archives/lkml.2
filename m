@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759700Ab1FWQqK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 12:46:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:54521 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759384Ab1FWQqI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 12:46:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=AIvlkddI7ZDV3lsCpsq5Ve3sPdC64nzbrYZdjxkA9eixW2TQpbkW750jpW/sQyi+Ag
-         I7azkeJ3YDUZJVRHoECo3RcL4APsDk4epKL9qBWQv1tBCp04/aHO36ME93q9xTz7Xypy
-         TGLGn1kLeyHxcuTtsFVe6m31TP9AJW1FhHl0Q=
-From: Namhyung Kim <namhyung@gmail.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] perf script: Rename old perf-trace to perf-script
-Date: Fri, 24 Jun 2011 01:46:02 +0900
-Message-Id: <1308847562-5100-1-git-send-email-namhyung@gmail.com>
-X-Mailer: git-send-email 1.7.5.2
+	id S1759738Ab1FWQwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 12:52:23 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:51436 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759069Ab1FWQwW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 12:52:22 -0400
+Date: Thu, 23 Jun 2011 18:52:12 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Keith Packard <keithp@keithp.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <dri-devel@lists.freedesktop.org>
+Subject: Re: Oops in i915 intel_init_clock_gating
+Message-ID: <20110623185212.4ec716b6@schatten.dmk.lab>
+In-Reply-To: <Pine.LNX.4.44L0.1106221504070.1977-100000@iolanthe.rowland.org>
+References: <yun4o3h68gs.fsf@aiko.keithp.com>
+	<Pine.LNX.4.44L0.1106221504070.1977-100000@iolanthe.rowland.org>
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the leftovers from commit 133dc4c39c57 ("perf: Rename
-'perf trace' to 'perf script'").
+On Wed, 22 Jun 2011 15:04:56 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-Signed-off-by: Namhyung Kim <namhyung@gmail.com>
----
- tools/perf/Documentation/perf-probe.txt            |    2 +-
- .../util/scripting-engines/trace-event-python.c    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> On Wed, 22 Jun 2011, Keith Packard wrote:
+> 
+> > On Wed, 15 Jun 2011 13:32:56 -0700, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> > 
+> > I haven't seen any comments as to whether this patch needs to be merged
+> > into the kernel. Has anyone tested this?
+> 
+> I have tested it, and it worked well on my system:
+> 
+> 	http://marc.info/?l=linux-kernel&m=130817292323254&w=2
+> 
+> Alan Stern
+> 
+Some clock-gating patch was also proposed here:
+https://bugzilla.kernel.org/show_bug.cgi?id=37252
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 02bafce4b341..41343d693f35 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -183,4 +183,4 @@ Delete all probes on schedule().
- 
- SEE ALSO
- --------
--linkperf:perf-trace[1], linkperf:perf-record[1]
-+linkperf:perf-script[1], linkperf:perf-record[1]
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 6ccf70e8d8f2..8173636c9817 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -465,7 +465,7 @@ static int python_generate_script(const char *outfile)
- 	fprintf(ofp, "# be retrieved using Python functions of the form "
- 		"common_*(context).\n");
- 
--	fprintf(ofp, "# See the perf-trace-python Documentation for the list "
-+	fprintf(ofp, "# See the perf-script-python Documentation for the list "
- 		"of available functions.\n\n");
- 
- 	fprintf(ofp, "import os\n");
--- 
-1.7.5.2
-
+Regards,
+Flo
