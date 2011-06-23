@@ -1,106 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759170Ab1FWKdY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 06:33:24 -0400
-Received: from openfortress.nl ([213.189.19.244]:48444 "EHLO fame.vanrein.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758860Ab1FWKdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 06:33:23 -0400
-X-Greylist: delayed 1352 seconds by postgrey-1.27 at vger.kernel.org; Thu, 23 Jun 2011 06:33:22 EDT
-Date: Thu, 23 Jun 2011 10:33:20 +0000
-From: Rick van Rein <rick@vanrein.org>
-To: "H. Peter Anvin" <hpa@zytor.com>, Stefan Assmann <sassmann@kpanic.de>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, tony.luck@intel.com, andi@firstfloor.org,
-        mingo@elte.hu, rick@vanrein.org, rdunlap@xenotime.net,
-        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
-Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
-Message-ID: <20110623103320.GB2910@phantom.vanrein.org>
-References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <4E023142.1080605@zytor.com> <4E0250F2.2010607@kpanic.de> <4E0251AB.8090702@zytor.com> <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110622110034.89ee399c.akpm@linux-foundation.org> <4E024E31.50901@kpanic.de> <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <4E023142.1080605@zytor.com>
+	id S1759216Ab1FWKfH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 06:35:07 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:48589 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759029Ab1FWKfF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 06:35:05 -0400
+Date: Thu, 23 Jun 2011 11:35:02 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sangbeom Kim <sbkim73@samsung.com>
+Cc: sameo@linux.intel.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mfd: Add I2C control support for S5M8751
+Message-ID: <20110623103502.GA21932@opensource.wolfsonmicro.com>
+References: <1308722037-6966-1-git-send-email-sbkim73@samsung.com>
+ <1308722037-6966-4-git-send-email-sbkim73@samsung.com>
+ <20110622125050.GE23666@sirena.org.uk>
+ <017201cc3144$74e343d0$5ea9cb70$@com>
+ <20110623012841.GF20949@opensource.wolfsonmicro.com>
+ <017301cc314c$37839eb0$a68adc10$@com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E0251AB.8090702@zytor.com> <4E024E31.50901@kpanic.de> <4E023142.1080605@zytor.com>
-X-My-Coolest-Hack: http://rick.vanrein.org/linux/badram -> Exploit broken RAM
-Fcc: =ofo
-User-Agent: Mutt/1.5.11
+In-Reply-To: <017301cc314c$37839eb0$a68adc10$@com>
+X-Cookie: You are always busy.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jun 23, 2011 at 11:21:10AM +0900, Sangbeom Kim wrote:
+> On Thu, Jun 23, 2011 at 10:29 AM +0900, Mark Brown wrote:
 
-> We already support the equivalent functionality with
-> memmap=<address>$<length> for those with only a few ranges...
+> > In that case you should definitely take a look at the regmap API I've
+> > been posting.  It factors all the device I/O stuff out so you should be
+> > able to just tell it that you have a device with n bit registers and n
+> > bit values and it'll provide all the I/O functions you need.  I just
+> > reposted it today, though it needs another round for some SPI stuff.
 
-This is not a realistic option for people whose memory failed.
-Google is quite right when they say they hit thousands of erroneous
-pages.  If you have, say, a static discharge damaging the buffers
-from the cell array to the outside world, then the entire row or
-column behind that buffer will fail.  I've seen many such examples.
+> OK, After reviewing your patch, I will apply  it.
 
-> For those with a lot of ranges,
-> like Google, the command line is insufficient.
+Note that it's not actually in mainline yet, it's still being reviewed.
 
-Not if you recognise that there is a pattern :-)
+> > > > > +	*val = (uint8_t)ret;
 
-Google does not seem to have realised that, and is simply listing
-the pages that are defected.  IMHO, but being the BadRAM author I
-can hardly be called objective, this is the added value of BadRAM,
-that it understands the nature of the problem and solves it with
-an elegant concept at the right level of abstraction.
+> > > > Why is this case required?
 
-> So far the use case I had in mind wasn't "thousands of entries". However
-> expanding the e820 table is probably an issue that could be dealt with
-> separately ?
+> > > I want pass the read value by val
 
-This could help with other approaches as well -- as mentioned,
-there have been attempts to get BadRAM into GRUB, so that the
-kernel needn't be aware of it.  But adding BadRAM or expanding
-the e820 table are both cases of changing the kernel, and in that
-case I thought it'd be best to actually solve the problem and
-not upgrade the messenger.
+> > Sorry, typo - why is this *cast* required?
 
-> Well if too much low memory is bad, you're screwed anyway, not? :)
+> Just want to make same type.
 
-If the kernel is always loaded in a fixed location, yes.  That
-is one assumption that the kernel makes (made?) that will only
-work if all your memory is good.
-
-> At the moment I don't see any arguments why this patchset couldn't play
-> along nicely or get enhanced to support what Google needs, but I don't
-> know Googles patches yet.
-
-Changes to e820 should not interfere with setting flags (and
-living by them) for failing memory pages.  One property of BadRAM,
-namely that it does not slow down your system (you have less
-pages on hand, but that's all) may or may not apply to an e820-based
-approach.  I don't know if e820 is ever consulted after boot?
-
-> How common are nontrivial patterns on real hardware?  This would be
-> interesting to hear from Google or another large user.
-
-Yes.  And "non-trivial" would mean that the patterns waste more space
-than fair, *because of* the generalisation to patterns.
-
-If you plug 10 DIMMs into your machine, and each has a faulty row
-somewhere, then you will get into trouble if you stick to 5 patterns.
-But if you happen to run into a faulty DIMM from time to time, the
-patterns should be your way out.
-
-> I have to say I think Google's point that truncating the list is
-> unacceptable...
-
-Of course, that is true.  This is why memmap=... does not work.
-It has nothing to do with BadRAM however, there will never be more
-than 5 patterns.
-
-> that would mean running in a known-bad configuration,
-> and even a hard crash would be better.
-
-...which is so sensible that it was of course taken into account in
-the BadRAM design!
-
-
-Cheers,
- -Rick
+Usually unless there's a reason to do a cast it's better to let the
+compiler figure things out as a cast can stop the toolchain identifying
+real issues for you.
