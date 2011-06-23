@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758845Ab1FWDjH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 23:39:07 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:52850 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758238Ab1FWDjF (ORCPT
+	id S1758892Ab1FWDun (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 23:50:43 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:42077 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758238Ab1FWDum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 23:39:05 -0400
-Message-ID: <4E02B550.3030208@canonical.com>
-Date: Thu, 23 Jun 2011 11:38:56 +0800
-From: Ike Panhc <ike.pan@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-        corentin.chary@gmail.com, Richard Purdie <rpurdie@rpsys.net>
-Subject: Re: [PATCH 3/3] ideapad: add backlight driver
-References: <1308729781-2590-1-git-send-email-ike.pan@canonical.com> <1308730058-2703-1-git-send-email-ike.pan@canonical.com> <20110622194049.GB8861@srcf.ucam.org>
-In-Reply-To: <20110622194049.GB8861@srcf.ucam.org>
-Content-Type: text/plain; charset=UTF-8
+	Wed, 22 Jun 2011 23:50:42 -0400
+Date: Wed, 22 Jun 2011 20:46:33 -0700 (PDT)
+Message-Id: <20110622.204633.1270632754342154052.davem@davemloft.net>
+To: sfr@canb.auug.org.au
+Cc: linville@tuxdriver.com, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, anderson.briglia@openbossa.org,
+        anderson.lizardo@openbossa.org, bruna.moreira@openbossa.org,
+        vinicius.gomes@openbossa.org, padovan@profusion.mobi,
+        adobriyan@gmail.com, netdev@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the wireless tree
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110623130317.b3a6085e.sfr@canb.auug.org.au>
+References: <20110623130317.b3a6085e.sfr@canb.auug.org.au>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 22 Jun 2011 20:47:29 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2011 03:40 AM, Matthew Garrett wrote:
->> +static int ideapad_backlight_get_brightness(struct backlight_device *blightdev)
->> +{
->> +	unsigned long now;
->> +
->> +	if (read_ec_data(ideapad_handle, 0x12, &now))
->> +		return -EAGAIN;
-> 
-> Description says you're using commands on the VPC2004 device, but it 
-> looks like you're just poking the embedded controller? Are you sure the 
-> EC offsets are stable?
-> 
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Thu, 23 Jun 2011 13:03:17 +1000
 
-Yes, they are stable, though on some machine, some functions are not fully implement.
-For example, on s10-3, the brightness control is no function but bl_power works fine.
-on B550, the brightness control works fine but only get acpi notify when bl_power
-turning on.
+> Caused by commit d22ef0bc83c5 ("Bluetooth: Add LE SMP Cryptoolbox
+> functions").  Missing include file, presumably.  This batch has been in
+> the bluetooth tree since June 14, so it may have been exposed by the
+> removal of linux/mm.h from netdevice.h ...
 
-function read_ec_data will access VPCW and VPCR methods that exist in every VPC2004
-devices. In this case, VPCW will write 0x12 to VCMD and then VPCR read the current
-brightness value from VDAT.
-
-So far as I have seen, there are two design for VDAT and VCMD. One way (eg, ideapad
-B550) is they are EC registers and embedded controller will do all things. The other
-way (eg, ideapad Y530) is they are variables in DSDT, and CPU/DSDT will correct 
-informations into VDAT.
-
-Both of the design are ok for ideapad-laptop because we only touch VPCW/VPCR methods
-and let DSDT or EC do the rest.
-
-I put DSDTs all I have at http://people.ubuntu.com/~ikepanhc/DSDTs  
+This is almost certainly the reason.
