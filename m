@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933912Ab1FWR6D (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:58:03 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35138 "EHLO
+	id S933537Ab1FWRhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:37:21 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34825 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933608Ab1FWRhl (ORCPT
+	with ESMTP id S933478Ab1FWRhM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:41 -0400
+	Thu, 23 Jun 2011 13:37:12 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Li Zefan <lizf@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
+Cc: stable-review@kernel.org, Dan Carpenter <error27@gmail.com>,
+        Martin Schwidefsky <schwidefsky@de.ibm.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 150/247] cpuset: add a missing unlock in cpuset_write_resmask()
-Date: Thu, 23 Jun 2011 13:33:38 -0400
-Message-Id: <1308850515-15242-91-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 151/247] keyboard: integer underflow bug
+Date: Thu, 23 Jun 2011 13:33:39 -0400
+Message-Id: <1308850515-15242-92-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -24,54 +23,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Li Zefan <lizf@cn.fujitsu.com>
+From: Dan Carpenter <error27@gmail.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit b75f38d659e6fc747eda64cb72f3920e29dd44a4 upstream.
+commit b652277b09d3d030cb074cc6a98ba80b34244c03 upstream.
 
-Don't forget to release cgroup_mutex if alloc_trial_cpuset() fails.
+The "ct" variable should be an unsigned int.  Both struct kbdiacrs
+->kb_cnt and struct kbd_data ->accent_table_size are unsigned ints.
 
-[akpm@linux-foundation.org: avoid multiple return points]
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Paul Menage <menage@google.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Cc: Miao Xie <miaox@cn.fujitsu.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Making it signed causes a problem in KBDIACRUC because the user could
+set the signed bit and cause a buffer overflow.
+
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- kernel/cpuset.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/s390/char/keyboard.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-index 9a50c5f..8f024fa 100644
---- a/kernel/cpuset.c
-+++ b/kernel/cpuset.c
-@@ -1534,8 +1534,10 @@ static int cpuset_write_resmask(struct cgroup *cgrp, struct cftype *cft,
- 		return -ENODEV;
+diff --git a/drivers/s390/char/keyboard.c b/drivers/s390/char/keyboard.c
+index cb6bffe..84d08f9 100644
+--- a/drivers/s390/char/keyboard.c
++++ b/drivers/s390/char/keyboard.c
+@@ -463,7 +463,8 @@ kbd_ioctl(struct kbd_data *kbd, struct file *file,
+ 	  unsigned int cmd, unsigned long arg)
+ {
+ 	void __user *argp;
+-	int ct, perm;
++	unsigned int ct;
++	int perm;
  
- 	trialcs = alloc_trial_cpuset(cs);
--	if (!trialcs)
--		return -ENOMEM;
-+	if (!trialcs) {
-+		retval = -ENOMEM;
-+		goto out;
-+	}
+ 	argp = (void __user *)arg;
  
- 	switch (cft->private) {
- 	case FILE_CPULIST:
-@@ -1550,6 +1552,7 @@ static int cpuset_write_resmask(struct cgroup *cgrp, struct cftype *cft,
- 	}
- 
- 	free_trial_cpuset(trialcs);
-+out:
- 	cgroup_unlock();
- 	return retval;
- }
 -- 
 1.7.4.4
 
