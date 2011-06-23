@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab1FWIh2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 04:37:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39153 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753667Ab1FWIh1 (ORCPT
+	id S1758799Ab1FWIpf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 04:45:35 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:29032 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab1FWIpe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 04:37:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oHGlfrioeyYZC29FNcQKvw5+LW/Zz+o47v7svFjqON3LTUyT1It8pfBU1tj5zZX49h
-         ohzYZFxGdJIDw9Yvk3pzqDdqqIaG8cL6hh3yoyuyNIyT1D6zGvte7qOny7B8bvav757I
-         afxoLFly4U8soUs4NeOFkndyusGIZiwC5K+2Q=
-Date: Thu, 23 Jun 2011 10:37:22 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Jens Axboe <axboe@kernel.dk>, Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [patch 4/4] sched: Distangle worker accounting from rq->lock
-Message-ID: <20110623083722.GF30101@htj.dyndns.org>
-References: <20110622174659.496793734@linutronix.de>
- <20110622174919.135236139@linutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110622174919.135236139@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 23 Jun 2011 04:45:34 -0400
+Date: Thu, 23 Jun 2011 10:45:25 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Ankur Patel <bkankur@gmail.com>
+Cc: Guenter Roeck <guenter.roeck@ericsson.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] HWMON: TMP102 - Added support for 12 bit data
+Message-ID: <20110623104525.30718cd7@endymion.delvare>
+In-Reply-To: <BANLkTikLSmXKG67NroavRb+FjzVE5ie21Q@mail.gmail.com>
+References: <1308709299-24539-1-git-send-email-bkankur@gmail.com>
+	<20110623100616.4573741f@endymion.delvare>
+	<BANLkTikLSmXKG67NroavRb+FjzVE5ie21Q@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Thomas.
+On Thu, 23 Jun 2011 13:56:53 +0530, Ankur Patel wrote:
+> On Thu, Jun 23, 2011 at 1:36 PM, Jean Delvare <khali@linux-fr.org> wrote:
+> 
+> > On Wed, 22 Jun 2011 07:51:39 +0530, Ankur Patel wrote:
+> > > From: Ankur Patel <ankur.patel@quipment.in>
+> > >
+> > > In the tmp102.ko driver support for 12 bit data is added. Also, the
+> > > sysfs names are replaced with the actual chip supported fuctionality
+> > > names.
+> >
+> > Nack. These attribute names are standard, see
+> > Documentation/hwmon/sysfs-interface. You don't get to change them.
+> >
+> >
+> > What problem were you trying to solve? libsensors expects the attribute
+> > names which are in use today.
+> >
+> > Agree, But using temp1_max_hyst as an attribute for presenting low level
+> threshold, will it not more feasible to use temp1_low instead?.
 
-The hooking place doesn't have anything to do with rq->lock.  The
-problem with Peter's patch was preemption, not the lock.
-
-> There is also no harm from updating nr_running when the task returns
-> from scheduling instead of accounting it in the wakeup code.
-
-Well, not exactly.  If CPU is being thrashed, we don't want to try to
-fire up new workers or calling in rescuers.  If nr_running is bumped
-up from ttwu(), a woken up but not yet running worker already counts
-as running.  With the suggested change, when we hit such heavy CPU
-thrashing, workqueue code will add things on top of it.
-
-Thanks.
+No. This isn't a min temperature limit. Please read the TMP102
+datasheet and in particular Figure 10 "Output Transfer Function
+Diagrams" and the description of the AL configuration bit.
 
 -- 
-tejun
+Jean Delvare
