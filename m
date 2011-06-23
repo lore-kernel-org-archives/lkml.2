@@ -1,82 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932916Ab1FWRZE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:25:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37643 "EHLO mx1.redhat.com"
+	id S933074Ab1FWRZJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:25:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24405 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932657Ab1FWRY7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:24:59 -0400
-Date: Thu, 23 Jun 2011 13:24:58 -0400
+	id S932657Ab1FWRZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 13:25:05 -0400
+Date: Thu, 23 Jun 2011 13:25:04 -0400
 From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, gregkh@suse.de
+To: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
 Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20110623172458.27750.97271.sendpatchset@prarit.bos.redhat.com>
+Message-Id: <20110623172504.27758.60054.sendpatchset@prarit.bos.redhat.com>
 Content-Type: text/plain; charset=us-ascii
-Subject: [PATCH 27/35] drivers/tty changes for SMBIOS and System Firmware
+Subject: [PATCH 28/35] drivers/usb changes for SMBIOS and System Firmware
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers/tty changes for SMBIOS and System Firmware
+drivers/usb changes for SMBIOS and System Firmware
 
 As part of the new SMBIOS and System Firmware code:
 
 - Replace old dmi* structures and functions with new sysfw* and smbios*
 structures and functions in individual drivers
+- cleanup sysfw_id lookup tables
+- add exactmatch functionality
 
 Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 ---
- drivers/tty/serial/pch_uart.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
+ drivers/usb/host/pci-quirks.c |   19 ++++++++++++++-----
+ drivers/usb/host/uhci-hcd.c   |    2 +-
+ drivers/usb/host/uhci-pci.c   |   15 +++++++++++----
+ 3 files changed, 26 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
-index 4652109..ab2e2af 100644
---- a/drivers/tty/serial/pch_uart.c
-+++ b/drivers/tty/serial/pch_uart.c
-@@ -21,7 +21,7 @@
- #include <linux/serial_core.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
+diff --git a/drivers/usb/host/pci-quirks.c b/drivers/usb/host/pci-quirks.c
+index fd93061..ae2a681 100644
+--- a/drivers/usb/host/pci-quirks.c
++++ b/drivers/usb/host/pci-quirks.c
+@@ -14,7 +14,7 @@
+ #include <linux/init.h>
+ #include <linux/delay.h>
+ #include <linux/acpi.h>
+-#include <linux/dmi.h>
++#include <linux/sysfw.h>
+ #include "pci-quirks.h"
+ #include "xhci-ext-caps.h"
+ 
+@@ -507,6 +507,18 @@ static void __devinit quirk_usb_handoff_ohci(struct pci_dev *pdev)
+ 	iounmap(base);
+ }
+ 
++static const struct sysfw_id __devinitdata ehci_bios_handoff_table[] = {
++	{
++		.ident = "Pegatron Lucid (ExoPC) Tablet",
++		.matches = {
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "EXOPG06411"),
++			SYSFW_MATCH(SYSFW_BIOS_VERSION, "Lucid-CE-133"),
++		},
++		.exactmatch = 1,
++	},
++	{}
++};
++
+ static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
+ 					void __iomem *op_reg_base,
+ 					u32 cap, u8 offset)
+@@ -517,10 +529,7 @@ static void __devinit ehci_bios_handoff(struct pci_dev *pdev,
+ 	 * seconds trying the handoff on its unused controller.  Skip
+ 	 * it. */
+ 	if (pdev->vendor == 0x8086 && pdev->device == 0x283a) {
+-		const char *dmi_bn = dmi_get_system_info(DMI_BOARD_NAME);
+-		const char *dmi_bv = dmi_get_system_info(DMI_BIOS_VERSION);
+-		if (dmi_bn && !strcmp(dmi_bn, "EXOPG06411") &&
+-		    dmi_bv && !strcmp(dmi_bv, "Lucid-CE-133"))
++		if (sysfw_callback(ehci_bios_handoff_table))
+ 			try_handoff = 0;
+ 	}
+ 
+diff --git a/drivers/usb/host/uhci-hcd.c b/drivers/usb/host/uhci-hcd.c
+index fba99b1..1b03b7a 100644
+--- a/drivers/usb/host/uhci-hcd.c
++++ b/drivers/usb/host/uhci-hcd.c
+@@ -40,7 +40,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/hcd.h>
+ #include <linux/bitops.h>
 -#include <linux/dmi.h>
 +#include <linux/sysfw.h>
  
- #include <linux/dmaengine.h>
- #include <linux/pch_dma.h>
-@@ -1386,6 +1386,16 @@ static struct uart_driver pch_uart_driver = {
- 	.nr = PCH_UART_NR,
- };
+ #include <asm/uaccess.h>
+ #include <asm/io.h>
+diff --git a/drivers/usb/host/uhci-pci.c b/drivers/usb/host/uhci-pci.c
+index c300bd2f7..ef3de10 100644
+--- a/drivers/usb/host/uhci-pci.c
++++ b/drivers/usb/host/uhci-pci.c
+@@ -88,18 +88,25 @@ static int uhci_pci_resume_detect_interrupts_are_broken(struct uhci_hcd *uhci)
+ 	return 0;
+ }
  
-+static const struct sysfw_id pcih_uart_quirk_id[] = {
++static const struct sysfw_id bad_Asus_board_id[] = {
 +	{
-+		.ident = "CM-iTC",
++		.ident = "A7V8X",
 +		.matches = {
-+			SYSFW_MATCH(SYSFW_BOARD_NAME, "CM-iTC"),
++			SYSFW_MATCH(SYSFW_BOARD_NAME, "A7V8X"),
 +		},
 +	},
 +	{}
 +};
 +
- static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 					     const struct pci_device_id *id)
+ static int uhci_pci_global_suspend_mode_is_broken(struct uhci_hcd *uhci)
  {
-@@ -1397,7 +1407,6 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	int fifosize, base_baud;
- 	int port_type;
- 	struct pch_uart_driver_data *board;
--	const char *board_name;
+ 	int port;
+-	const char *sys_info;
+-	static const char bad_Asus_board[] = "A7V8X";
  
- 	board = &drv_dat[id->driver_data];
- 	port_type = board->port_type;
-@@ -1413,8 +1422,7 @@ static struct eg20t_port *pch_uart_init_port(struct pci_dev *pdev,
- 	base_baud = 1843200; /* 1.8432MHz */
- 
- 	/* quirk for CM-iTC board */
--	board_name = dmi_get_system_info(DMI_BOARD_NAME);
--	if (board_name && strstr(board_name, "CM-iTC"))
-+	if (sysfw_callback(pcih_uart_quirk_id))
- 		base_baud = 192000000; /* 192.0MHz */
- 
- 	switch (port_type) {
+ 	/* One of Asus's motherboards has a bug which causes it to
+ 	 * wake up immediately from suspend-to-RAM if any of the ports
+ 	 * are connected.  In such cases we will not set EGSM.
+ 	 */
+-	sys_info = dmi_get_system_info(DMI_BOARD_NAME);
+-	if (sys_info && !strcmp(sys_info, bad_Asus_board)) {
++	if (sysfw_callback(bad_Asus_board_id)) {
+ 		for (port = 0; port < uhci->rh_numports; ++port) {
+ 			if (inw(uhci->io_addr + USBPORTSC1 + port * 2) &
+ 					USBPORTSC_CCS)
 -- 
 1.7.5.4
 
