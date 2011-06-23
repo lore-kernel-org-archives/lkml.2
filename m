@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442Ab1FWSKc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:10:32 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34598 "EHLO
+	id S934215Ab1FWSKf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:10:35 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34597 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933410Ab1FWRgo (ORCPT
+	with ESMTP id S933265Ab1FWRgo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jun 2011 13:36:44 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
@@ -12,9 +12,9 @@ To: stable@kernel.org, linux-kernel@vger.kernel.org
 Cc: stable-review@kernel.org, Max Vozeler <max@vozeler.com>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 125/247] staging: usbip: vhci: update reference count for usb_device
-Date: Thu, 23 Jun 2011 13:33:13 -0400
-Message-Id: <1308850515-15242-66-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 126/247] staging: usbip: vhci: give back URBs from in-flight unlink requests
+Date: Thu, 23 Jun 2011 13:33:14 -0400
+Message-Id: <1308850515-15242-67-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -30,96 +30,143 @@ From: Max Vozeler <max@vozeler.com>
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 7606ee8aa33287dd3e6eb44c78541b87a413a325 upstream.
+commit b92a5e23737172c52656a090977408a80d7f06d1 upstream.
 
-This fixes an oops observed when reading status during
-removal of a device:
+If we never received a RET_UNLINK because the TCP
+connection broke the pending URBs still need to be
+unlinked and given back.
 
-[ 1706.648285] general protection fault: 0000 [#1] SMP
-[ 1706.648294] last sysfs file: /sys/devices/platform/vhci_hcd/status
-[ 1706.648297] CPU 1
-[ 1706.648300] Modules linked in: binfmt_misc microcode fuse loop vhci_hcd(N) usbip(N) usbcore usbip_common_mod(N) rtc_core rtc_lib joydev dm_mirror dm_region_hash dm_log linear dm_snapshot xennet dm_mod ext3 mbcache jbd processor thermal_sys hwmon xenblk cdrom
-[ 1706.648324] Supported: Yes
-[ 1706.648327] Pid: 10422, comm: usbip Tainted: G          N  2.6.32.12-0.7-xen #1
-[ 1706.648330] RIP: e030:[<ffffffff801b10d5>]  [<ffffffff801b10d5>] strnlen+0x5/0x40
-[ 1706.648340] RSP: e02b:ffff8800a994dd30  EFLAGS: 00010286
-[ 1706.648343] RAX: ffffffff80481ec1 RBX: 0000000000000000 RCX: 0000000000000002
-[ 1706.648347] RDX: 00200d1d4f1c001c RSI: ffffffffffffffff RDI: 00200d1d4f1c001c
-[ 1706.648350] RBP: ffff880129a1c0aa R08: ffffffffa01901c4 R09: 0000000000000006
-[ 1706.648353] R10: 0000000000000000 R11: 0000000000000000 R12: ffff8800a9a1c0ab
-[ 1706.648357] R13: 00200d1d4f1c001c R14: 00000000ffffffff R15: ffff880129a1c0aa
-[ 1706.648363] FS:  00007f2f2e9ca700(0000) GS:ffff880001018000(0000) knlGS:0000000000000000
-[ 1706.648367] CS:  e033 DS: 0000 ES: 0000 CR0: 0000000080050033
-[ 1706.648370] CR2: 000000000071b048 CR3: 00000000b4b68000 CR4: 0000000000002660
-[ 1706.648374] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-[ 1706.648378] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-[ 1706.648381] Process usbip (pid: 10422, threadinfo ffff8800a994c000, task ffff88007b170200)
-[ 1706.648385] Stack:
-[ 1706.648387]  ffffffff801b28c9 0000000000000002 ffffffffa01901c4 ffff8800a9a1c0ab
-[ 1706.648391] <0> ffffffffa01901c6 ffff8800a994de08 ffffffff801b339b 0000000000000004
-[ 1706.648397] <0> 0000000affffffff ffffffffffffffff 00000000000067c0 0000000000000000
-[ 1706.648404] Call Trace:
-[ 1706.648413]  [<ffffffff801b28c9>] string+0x39/0xe0
-[ 1706.648419]  [<ffffffff801b339b>] vsnprintf+0x1eb/0x620
-[ 1706.648423]  [<ffffffff801b3813>] sprintf+0x43/0x50
-[ 1706.648429]  [<ffffffffa018d719>] show_status+0x1b9/0x220 [vhci_hcd]
-[ 1706.648438]  [<ffffffff8024a2b7>] dev_attr_show+0x27/0x60
-[ 1706.648445]  [<ffffffff80144821>] sysfs_read_file+0x101/0x1d0
-[ 1706.648451]  [<ffffffff800da4a7>] vfs_read+0xc7/0x130
-[ 1706.648457]  [<ffffffff800da613>] sys_read+0x53/0xa0
-[ 1706.648462]  [<ffffffff80007458>] system_call_fastpath+0x16/0x1b
-[ 1706.648468]  [<00007f2f2de40f30>] 0x7f2f2de40f30
-[ 1706.648470] Code: 66 0f 1f 44 00 00 48 83 c2 01 80 3a 00 75 f7 48 89 d0 48 29 f8 f3 c3 66 66 66 66 66 66 2e 0f 1f 84 00 00 00 00 00 48 85 f6 74 29 <80> 3f 00 74 24 48 8d 56 ff 48 89 f8 eb 0e 0f 1f 44 00 00 48 83
-[ 1706.648507] RIP  [<ffffffff801b10d5>] strnlen+0x5/0x40
-[ 1706.648511]  RSP <ffff8800a994dd30>
-[ 1706.649575] ---[ end trace b4eb72bf2e149593 ]---
+Previously processes would be stuck trying to kill
+the URB even after the device was detached.
 
 Signed-off-by: Max Vozeler <max@vozeler.com>
 Tested-by: Mark Wehby <MWehby@luxotticaRetail.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/staging/usbip/vhci_hcd.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+ drivers/staging/usbip/vhci.h     |    3 +++
+ drivers/staging/usbip/vhci_hcd.c |   24 +++++++++++++++++++++++-
+ drivers/staging/usbip/vhci_rx.c  |   15 +++++++++------
+ 3 files changed, 35 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/staging/usbip/vhci.h b/drivers/staging/usbip/vhci.h
+index 5e37517..ad3a19d 100644
+--- a/drivers/staging/usbip/vhci.h
++++ b/drivers/staging/usbip/vhci.h
+@@ -119,6 +119,9 @@ void rh_port_disconnect(int rhport);
+ void vhci_rx_loop(struct usbip_task *ut);
+ void vhci_tx_loop(struct usbip_task *ut);
+ 
++struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
++					    __u32 seqnum);
++
+ #define hardware		(&the_controller->pdev.dev)
+ 
+ static inline struct vhci_device *port_to_vdev(__u32 port)
 diff --git a/drivers/staging/usbip/vhci_hcd.c b/drivers/staging/usbip/vhci_hcd.c
-index 31317ff..b007205 100644
+index b007205..9878e5d 100644
 --- a/drivers/staging/usbip/vhci_hcd.c
 +++ b/drivers/staging/usbip/vhci_hcd.c
-@@ -607,7 +607,9 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
- 			dev_info(dev, "SetAddress Request (%d) to port %d\n",
- 				 ctrlreq->wValue, vdev->rhport);
+@@ -808,7 +808,6 @@ static int vhci_urb_dequeue(struct usb_hcd *hcd, struct urb *urb, int status)
+ 	return 0;
+ }
  
--			vdev->udev = urb->dev;
-+			if (vdev->udev)
-+				usb_put_dev(vdev->udev);
-+			vdev->udev = usb_get_dev(urb->dev);
+-
+ static void vhci_device_unlink_cleanup(struct vhci_device *vdev)
+ {
+ 	struct vhci_unlink *unlink, *tmp;
+@@ -816,11 +815,34 @@ static void vhci_device_unlink_cleanup(struct vhci_device *vdev)
+ 	spin_lock(&vdev->priv_lock);
  
- 			spin_lock(&vdev->ud.lock);
- 			vdev->ud.status = VDEV_ST_USED;
-@@ -627,8 +629,9 @@ static int vhci_urb_enqueue(struct usb_hcd *hcd, struct urb *urb,
- 						"Get_Descriptor to device 0 "
- 						"(get max pipe size)\n");
+ 	list_for_each_entry_safe(unlink, tmp, &vdev->unlink_tx, list) {
++		usbip_uinfo("unlink cleanup tx %lu\n", unlink->unlink_seqnum);
+ 		list_del(&unlink->list);
+ 		kfree(unlink);
+ 	}
  
--			/* FIXME: reference count? (usb_get_dev()) */
--			vdev->udev = urb->dev;
-+			if (vdev->udev)
-+				usb_put_dev(vdev->udev);
-+			vdev->udev = usb_get_dev(urb->dev);
- 			goto out;
- 
- 		default:
-@@ -887,6 +890,10 @@ static void vhci_device_reset(struct usbip_device *ud)
- 	vdev->speed  = 0;
- 	vdev->devid  = 0;
- 
-+	if (vdev->udev)
-+		usb_put_dev(vdev->udev);
-+	vdev->udev = NULL;
+ 	list_for_each_entry_safe(unlink, tmp, &vdev->unlink_rx, list) {
++		struct urb *urb;
 +
- 	ud->tcp_socket = NULL;
++		/* give back URB of unanswered unlink request */
++		usbip_uinfo("unlink cleanup rx %lu\n", unlink->unlink_seqnum);
++
++		urb = pickup_urb_and_free_priv(vdev, unlink->unlink_seqnum);
++		if (!urb) {
++			usbip_uinfo("the urb (seqnum %lu) was already given back\n",
++							unlink->unlink_seqnum);
++			list_del(&unlink->list);
++			kfree(unlink);
++			continue;
++		}
++
++		urb->status = -ENODEV;
++
++		spin_lock(&the_controller->lock);
++		usb_hcd_unlink_urb_from_ep(vhci_to_hcd(the_controller), urb);
++		spin_unlock(&the_controller->lock);
++
++		usb_hcd_giveback_urb(vhci_to_hcd(the_controller), urb, urb->status);
++
+ 		list_del(&unlink->list);
+ 		kfree(unlink);
+ 	}
+diff --git a/drivers/staging/usbip/vhci_rx.c b/drivers/staging/usbip/vhci_rx.c
+index 8147d72..bdbedd2 100644
+--- a/drivers/staging/usbip/vhci_rx.c
++++ b/drivers/staging/usbip/vhci_rx.c
+@@ -23,16 +23,14 @@
+ #include "vhci.h"
  
- 	ud->status = VDEV_ST_NULL;
+ 
+-/* get URB from transmitted urb queue */
+-static struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
++/* get URB from transmitted urb queue. caller must hold vdev->priv_lock */
++struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
+ 					    __u32 seqnum)
+ {
+ 	struct vhci_priv *priv, *tmp;
+ 	struct urb *urb = NULL;
+ 	int status;
+ 
+-	spin_lock(&vdev->priv_lock);
+-
+ 	list_for_each_entry_safe(priv, tmp, &vdev->priv_rx, list) {
+ 		if (priv->seqnum == seqnum) {
+ 			urb = priv->urb;
+@@ -63,8 +61,6 @@ static struct urb *pickup_urb_and_free_priv(struct vhci_device *vdev,
+ 		}
+ 	}
+ 
+-	spin_unlock(&vdev->priv_lock);
+-
+ 	return urb;
+ }
+ 
+@@ -74,9 +70,11 @@ static void vhci_recv_ret_submit(struct vhci_device *vdev,
+ 	struct usbip_device *ud = &vdev->ud;
+ 	struct urb *urb;
+ 
++	spin_lock(&vdev->priv_lock);
+ 
+ 	urb = pickup_urb_and_free_priv(vdev, pdu->base.seqnum);
+ 
++	spin_unlock(&vdev->priv_lock);
+ 
+ 	if (!urb) {
+ 		usbip_uerr("cannot find a urb of seqnum %u\n",
+@@ -161,7 +159,12 @@ static void vhci_recv_ret_unlink(struct vhci_device *vdev,
+ 		return;
+ 	}
+ 
++	spin_lock(&vdev->priv_lock);
++
+ 	urb = pickup_urb_and_free_priv(vdev, unlink->unlink_seqnum);
++
++	spin_unlock(&vdev->priv_lock);
++
+ 	if (!urb) {
+ 		/*
+ 		 * I get the result of a unlink request. But, it seems that I
 -- 
 1.7.4.4
 
