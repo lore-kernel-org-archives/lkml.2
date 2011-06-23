@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964798Ab1FWRzN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:55:13 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61592 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932967Ab1FWRzH (ORCPT
+	id S934000Ab1FWRzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:55:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:58736 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933082Ab1FWRzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jun 2011 13:55:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type;
-        b=onLh4qOHnUXjT4wTV9MRLCB9BHi3dbCHUhyHvnpYKLZMyX1TUoh3JTcu6n0rpqJf8O
-         fF+612Gf4gjF52D0iSVYDPwYF4JOlNUWSPOhxkuV41El06aMzEG465qIrdm79w7ZwUBJ
-         ikJ1Dejr/N6RQ6ynDQayEUiOFEixXUdTrVjEU=
-MIME-Version: 1.0
-In-Reply-To: <20110622063441.GA1740@x4.trippels.de>
-References: <20110622063441.GA1740@x4.trippels.de>
-From: Mike Frysinger <vapier@gentoo.org>
-Date: Thu, 23 Jun 2011 13:54:46 -0400
-X-Google-Sender-Auth: jCcW5_nUPTHG4082cC4bWG751RI
-Message-ID: <BANLkTimO1xvGUQyUbEPn3U230Hr4-M+RQg@mail.gmail.com>
-Subject: Re: __packed vs. __attribute__((packed)) in kernel headers
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Content-Type: text/plain; charset=UTF-8
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=A9OGg-uhPlIA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=b8DhMj-Jp-EtyGZUsooA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC] sched: update rto_mask for RT runqueue
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Hillf Danton <dhillf@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Gregory Haskins <ghaskins@novell.com>
+In-Reply-To: <BANLkTin8EF5ZpWmXKGwbZqTf5+GZBBFhfQ@mail.gmail.com>
+References: <BANLkTin8EF5ZpWmXKGwbZqTf5+GZBBFhfQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 23 Jun 2011 13:55:06 -0400
+Message-ID: <1308851706.531.35.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 02:34, Markus Trippelsdorf wrote:
-> One possible solution would be to let the "scripts/headers_install.pl"
-> script automatically substitute __packed with __attribute__((packed)):
+On Thu, 2011-06-23 at 21:43 +0800, Hillf Danton wrote:
+> Hi Steven
+> 
+> Since {de, en}queue_pushable_task() is not always accompanied with
+> {dec, inc}_rt_migration(), when the last pushable RT task on RQ is picked in
+> pick_next_task_rt(), we have to update rto_mask for the RQ in question, which
+> helps puller that is guided by rto_mask.
 
-until we install compiler.h and friends, this is probably the only way
--mike
+Hmm, I don't care much for this patch, but you did bring up something
+that is interesting. That there may be a disconnect between the rto_mask
+and the pushable tasks. A pushable task is the same as a pullable task.
+So I'm thinking about revamping this to merge the two and make the code
+simpler.
+
+This may take a lot of testing to make sure that we did not create any
+regressions.
+
+-- Steve
+
+
