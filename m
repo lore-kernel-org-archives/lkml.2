@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759638Ab1FWPcO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 11:32:14 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:33821
-	"EHLO CH1EHSOBE014.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758366Ab1FWPbp (ORCPT
+	id S1759620Ab1FWPbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 11:31:47 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:26561
+	"EHLO CH1EHSOBE018.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757484Ab1FWPbo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 11:31:45 -0400
+	Thu, 23 Jun 2011 11:31:44 -0400
 X-SpamScore: 1
-X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
+X-BigFish: VPS1(zzzz1202hzz8275bhz32i668h839h62h)
+X-Spam-TCS-SCL: 1:0
 X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LN91SQ-02-H67-02
+X-WSS-ID: 0LN91SP-02-H5Z-02
 X-M-MSG: 
 From: Joerg Roedel <joerg.roedel@amd.com>
 To: <iommu@lists.linux-foundation.org>
@@ -20,9 +20,9 @@ CC: <linux-kernel@vger.kernel.org>, David Woodhouse <dwmw2@infradead.org>,
         <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
         Alex Williamson <alex.williamson@redhat.com>,
         Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 1/2] iommu-api: Introduce iommu_comit function
-Date: Thu, 23 Jun 2011 17:31:22 +0200
-Message-ID: <1308843083-10442-2-git-send-email-joerg.roedel@amd.com>
+Subject: [PATCH 2/2] KVM: IOMMU: Use iommu_commit() in device-passthrough code
+Date: Thu, 23 Jun 2011 17:31:23 +0200
+Message-ID: <1308843083-10442-3-git-send-email-joerg.roedel@amd.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1308843083-10442-1-git-send-email-joerg.roedel@amd.com>
 References: <1308843083-10442-1-git-send-email-joerg.roedel@amd.com>
@@ -33,62 +33,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This function will be used to coalesce cache-flushes
-required after a domain was changed. This should
-significantly improve performance in some cases.
+Use the new iommu_commit() function in the KVM device
+passthrough code.
 
 Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
 ---
- drivers/iommu/iommu.c |    7 +++++++
- include/linux/iommu.h |    6 ++++++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+ virt/kvm/iommu.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/iommu/iommu.c b/drivers/iommu/iommu.c
-index 6e6b6a1..4099cc6 100644
---- a/drivers/iommu/iommu.c
-+++ b/drivers/iommu/iommu.c
-@@ -122,3 +122,10 @@ int iommu_unmap(struct iommu_domain *domain, unsigned long iova, int gfp_order)
- 	return iommu_ops->unmap(domain, iova, gfp_order);
- }
- EXPORT_SYMBOL_GPL(iommu_unmap);
+diff --git a/virt/kvm/iommu.c b/virt/kvm/iommu.c
+index 62a9caf..87ef85a 100644
+--- a/virt/kvm/iommu.c
++++ b/virt/kvm/iommu.c
+@@ -187,6 +187,8 @@ int kvm_assign_device(struct kvm *kvm,
+ 		PCI_SLOT(assigned_dev->host_devfn),
+ 		PCI_FUNC(assigned_dev->host_devfn));
+ 
++	iommu_commit(domain);
 +
-+void iommu_commit(struct iommu_domain *domain)
-+{
-+	if (iommu_ops->commit)
-+		iommu_ops->commit(domain);
-+}
-+EXPORT_SYMBOL_GPL(iommu_commit);
-diff --git a/include/linux/iommu.h b/include/linux/iommu.h
-index 9940319..dbb4324 100644
---- a/include/linux/iommu.h
-+++ b/include/linux/iommu.h
-@@ -47,6 +47,7 @@ struct iommu_ops {
- 				    unsigned long iova);
- 	int (*domain_has_cap)(struct iommu_domain *domain,
- 			      unsigned long cap);
-+	void (*commit)(struct iommu_domain *domain);
- };
+ 	return 0;
+ out_unmap:
+ 	kvm_iommu_unmap_memslots(kvm);
+@@ -215,6 +217,8 @@ int kvm_deassign_device(struct kvm *kvm,
+ 		PCI_SLOT(assigned_dev->host_devfn),
+ 		PCI_FUNC(assigned_dev->host_devfn));
  
- #ifdef CONFIG_IOMMU_API
-@@ -67,6 +68,7 @@ extern phys_addr_t iommu_iova_to_phys(struct iommu_domain *domain,
- 				      unsigned long iova);
- extern int iommu_domain_has_cap(struct iommu_domain *domain,
- 				unsigned long cap);
-+extern void iommu_commit(struct iommu_domain *domain);
- 
- #else /* CONFIG_IOMMU_API */
- 
-@@ -123,6 +125,10 @@ static inline int domain_has_cap(struct iommu_domain *domain,
++	iommu_commit(domain);
++
  	return 0;
  }
  
-+static inline void iommu_commit(struct iommu_domain *domain)
-+{
-+}
-+
- #endif /* CONFIG_IOMMU_API */
+@@ -235,6 +239,8 @@ int kvm_iommu_map_guest(struct kvm *kvm)
+ 	if (r)
+ 		goto out_unmap;
  
- #endif /* __LINUX_IOMMU_H */
++	iommu_commit(kvm->arch.iommu_domain);
++
+ 	return 0;
+ 
+ out_unmap:
+@@ -283,6 +289,8 @@ static void kvm_iommu_put_pages(struct kvm *kvm,
+ 
+ 		gfn += unmap_pages;
+ 	}
++
++	iommu_commit(domain);
+ }
+ 
+ static int kvm_iommu_unmap_memslots(struct kvm *kvm)
 -- 
 1.7.4.1
 
