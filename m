@@ -1,73 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934003Ab1FWRlN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:41:13 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35829 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933924Ab1FWRjI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:39:08 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Al Viro <viro@ftp.linux.org.uk>,
-        Al Viro <viro@zeniv.linux.org.uk>, Ralf Baechle <ralf@linux-mips.org>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 247/247] MIPS: secure_computing, syscall audit: syscall number should in r2, not r0.
-Date: Thu, 23 Jun 2011 13:35:15 -0400
-Message-Id: <1308850515-15242-188-git-send-email-paul.gortmaker@windriver.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
-References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
- <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
+	id S933974Ab1FWRkm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:40:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53517 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932583Ab1FWRkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 13:40:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [Update][PATCH 7/8] PM / Domains: System-wide transitions support for generic domains (v3)
+Date: Thu, 23 Jun 2011 19:41:09 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Kevin Hilman <khilman@ti.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org
+References: <Pine.LNX.4.44L0.1106231106250.2033-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106231106250.2033-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106231941.09429.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ftp.linux.org.uk>
+On Thursday, June 23, 2011, Alan Stern wrote:
+> On Thu, 23 Jun 2011, Rafael J. Wysocki wrote:
+> 
+> > > It might be worthwhile to include a little warning about the difference 
+> > > between suspend and hibernate.
+> > 
+> > Well, there already is one:
+> > 
+> > "* The driver's idea of the device state may not agree with the device's
+> >     physical state.  This can happen during resume from hibernation."
+> > 
+> > (in Documentation/power/runtime_pm.txt).  Also, the new text in the patch
+> > https://lkml.org/lkml/2011/6/23/200 I've just sent says literally:
+> > 
+> > "If that is the case and none of the situations listed above takes place, it
+> >  may be more efficient to leave the devices that had been suspended before
+> >  the system sleep began in the suspended state."
+> > 
+> > where the "situations listed above" include it.
+> > 
+> > Do you think that's not sufficient?
+> 
+> The preceding text in your new patch says:
+> 
+> +On some systems, however, system sleep is not entered through a global firmware
+> +or hardware operation.  Instead, all hardware components are put into low-power
+> +states directly by the kernel in a coordinated way.  Then, the system sleep
+> +state effectively follows from the states the hardware components end up in
+> +and the system is woken up from that state by a hardware interrupt or a similar
+> +mechanism entirely under the kernel's control.  As a result, the kernel never
+> +gives control away and the states of all devices during resume are precisely
+> +known to it.
+> 
+> It should say "system suspend" rather than "system sleep".
 
-                   -------------------
-    This is a commit scheduled for the next v2.6.34 longterm release.
-    If you see a problem with using this for longterm, please comment.
-                   -------------------
+It says "system sleep" to distinguish between the state of the system
+("system sleep") and the operation leading to that state ("system suspend").
+That terminology is used all over the document, so I don't think it's a good
+idea to change it just for this specific paragraph.
 
-commit e5b377a8fb7b05f27647698ac739a0504cb2bf80 upstream.
+I agree that "suspend" should be used where it talks about starting, stopping
+etc.
 
-As it is, audit_syscall_entry() and secure_computing() get the
-bogus value (0, in fact)
+> Then to drive the point home, the following sentence chould say 
+> something like this:
+> 
+> If that is the case and none of the situations listed above takes place
+> (in particular, if the system is waking up from suspend and not from
+> hibernation), it may be more efficient to leave the devices that had
+> been suspended before the system suspend began in the suspended state.
 
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Cc: linux-arch@vger.kernel.org
-Cc: linux-mips@linux-mips.org
-Patchwork: https://patchwork.linux-mips.org/patch/1697/
-Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
----
- arch/mips/kernel/ptrace.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+That's fine by me, except that I'd simply say "(in particular, if the system
+is not waking up from hibernation)".
 
-diff --git a/arch/mips/kernel/ptrace.c b/arch/mips/kernel/ptrace.c
-index c51b95f..c877733 100644
---- a/arch/mips/kernel/ptrace.c
-+++ b/arch/mips/kernel/ptrace.c
-@@ -536,7 +536,7 @@ asmlinkage void do_syscall_trace(struct pt_regs *regs, int entryexit)
- {
- 	/* do the secure computing check first */
- 	if (!entryexit)
--		secure_computing(regs->regs[0]);
-+		secure_computing(regs->regs[2]);
- 
- 	if (unlikely(current->audit_context) && entryexit)
- 		audit_syscall_exit(AUDITSC_RESULT(regs->regs[2]),
-@@ -565,7 +565,7 @@ asmlinkage void do_syscall_trace(struct pt_regs *regs, int entryexit)
- 
- out:
- 	if (unlikely(current->audit_context) && !entryexit)
--		audit_syscall_entry(audit_arch(), regs->regs[0],
-+		audit_syscall_entry(audit_arch(), regs->regs[2],
- 				    regs->regs[4], regs->regs[5],
- 				    regs->regs[6], regs->regs[7]);
- }
--- 
-1.7.4.4
-
+Thanks,
+Rafael
