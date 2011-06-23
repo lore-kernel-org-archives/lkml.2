@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932783Ab1FWS25 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:28:57 -0400
-Received: from mail.windriver.com ([147.11.1.11]:63022 "EHLO
+	id S932817Ab1FWS3N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:29:13 -0400
+Received: from mail.windriver.com ([147.11.1.11]:63019 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932675Ab1FWRWS (ORCPT
+	with ESMTP id S932671Ab1FWRWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:22:18 -0400
+	Thu, 23 Jun 2011 13:22:17 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Ian Abbott <abbotti@mev.co.uk>,
+Cc: stable-review@kernel.org, Ky Srinivasan <ksrinivasan@novell.com>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 026/247] staging: comedi: ni_labpc: Use shared IRQ for PCMCIA card
-Date: Thu, 23 Jun 2011 13:17:49 -0400
-Message-Id: <1308849690-14530-27-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 027/247] Staging: hv: fix sysfs symlink on hv block device
+Date: Thu, 23 Jun 2011 13:17:50 -0400
+Message-Id: <1308849690-14530-28-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,43 +22,40 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Abbott <abbotti@mev.co.uk>
+From: Ky Srinivasan <ksrinivasan@novell.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit d1ce318496f5943d2cc5e20171fc383a59a1421f upstream.
+commit 268eff909afaca93188d2d14554cbf824f6a0e41 upstream.
 
-The ni_labpc driver module only requests a shared IRQ for PCI devices,
-requesting a non-shared IRQ for non-PCI devices.
-As this module is also used by the ni_labpc_cs module for certain
-National Instruments PCMCIA cards, it also needs to request a shared IRQ
-for PCMCIA devices, otherwise you get a IRQ mismatch with the CardBus
-controller.
+The block device does not create the proper symlink in sysfs because we
+forgot to set up the gendisk structure properly.  This patch fixes the
+issue.
 
-Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
+Signed-off-by: K. Y. Srinivasan <ksrinivasan@novell.com>
+Cc: Hank Janssen <hjanssen@microsoft.com>
+Cc: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/staging/comedi/drivers/ni_labpc.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/staging/hv/blkvsc_drv.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/ni_labpc.c b/drivers/staging/comedi/drivers/ni_labpc.c
-index 558e525..3f4fbfe 100644
---- a/drivers/staging/comedi/drivers/ni_labpc.c
-+++ b/drivers/staging/comedi/drivers/ni_labpc.c
-@@ -572,7 +572,8 @@ int labpc_common_attach(struct comedi_device *dev, unsigned long iobase,
- 	/* grab our IRQ */
- 	if (irq) {
- 		isr_flags = 0;
--		if (thisboard->bustype == pci_bustype)
-+		if (thisboard->bustype == pci_bustype
-+		    || thisboard->bustype == pcmcia_bustype)
- 			isr_flags |= IRQF_SHARED;
- 		if (request_irq(irq, labpc_interrupt, isr_flags,
- 				driver_labpc.driver_name, dev)) {
+diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
+index 8f1fda3..e917a46 100644
+--- a/drivers/staging/hv/blkvsc_drv.c
++++ b/drivers/staging/hv/blkvsc_drv.c
+@@ -377,6 +377,7 @@ static int blkvsc_probe(struct device *device)
+ 		blkdev->gd->first_minor = 0;
+ 	blkdev->gd->fops = &block_ops;
+ 	blkdev->gd->private_data = blkdev;
++	blkdev->gd->driverfs_dev = &(blkdev->device_ctx->device);
+ 	sprintf(blkdev->gd->disk_name, "hd%c", 'a' + devnum);
+ 
+ 	blkvsc_do_inquiry(blkdev);
 -- 
 1.7.4.4
 
