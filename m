@@ -1,100 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932376Ab1FWLOf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 07:14:35 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:11139 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757947Ab1FWLOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 07:14:34 -0400
-Message-ID: <4E03200D.60704@draigBrady.com>
-Date: Thu, 23 Jun 2011 12:14:21 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1759250Ab1FWLK3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 07:10:29 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:46728 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754214Ab1FWLK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 07:10:28 -0400
+X-IronPort-AV: E=Sophos;i="4.65,412,1304308800"; 
+   d="scan'208";a="14760562"
+From: <stefano.stabellini@eu.citrix.com>
+To: hpa@zytor.com
+CC: hpa@linux.intel.com, konrad.wilk@oracle.com, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+        Stefano.Stabellini@eu.citrix.com, yinghai@kernel.org,
+        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH] x86_64: do not assume head_64.S used 4KB pages when !use_pse
+Date: Thu, 23 Jun 2011 12:14:25 +0100
+Message-ID: <1308827665-28890-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.7.0.4
 MIME-Version: 1.0
-To: Andrea Righi <andrea@betterlinux.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-References: <1308779480-4950-1-git-send-email-andrea@betterlinux.com>
-In-Reply-To: <1308779480-4950-1-git-send-email-andrea@betterlinux.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22/06/11 22:51, Andrea Righi wrote:
-> There were some reported problems in the past about trashing page cache
-> when a backup software (i.e., rsync) touches a huge amount of pages (see
-> for example [1]).
-> 
-> This problem has been almost fixed by the Minchan Kim's patch [2] and a
-> proper use of fadvise() in the backup software. For example this patch
-> set [3] has been proposed for inclusion in rsync.
-> 
-> However, there can be still other similar trashing problems: when the
-> backup software reads all the source files, some of them may be part of
-> the actual working set of the system. When a
-> posix_fadvise(POSIX_FADV_DONTNEED) is performed _all_ pages are evicted
-> from pagecache, both the working set and the use-once pages touched only
-> by the backup software.
-> 
-> With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
-> called for an active page instead of removing it from the page cache it
-> is added to the tail of the inactive list. Otherwise, if it's already in
-> the inactive list the page is removed from the page cache.
-> 
-> In this way if the backup was the only user of a page, that page will
-> be immediately removed from the page cache by calling
-> posix_fadvise(POSIX_FADV_DONTNEED). If the page was also touched by
-> other processes it'll be moved to the inactive list, having another
-> chance of being re-added to the working set, or simply reclaimed when
-> memory is needed.
-> 
-> Testcase:
-> 
->   - create a 1GB file called "zero"
->   - run md5sum zero to read all the pages in page cache (this is to
->     simulate the user activity on this file)
->   - run "rsync zero zero_copy" (rsync is patched with [3])
->   - re-run md5sum zero (user activity on the working set) and measure
->     the time to complete this command
-> 
-> The test has been performed using 3.0.0-rc4 vanilla and with this patch
-> applied (3.0.0-rc4-fadvise).
-> 
-> Results:
->                   avg elapsed time      block:block_bio_queue
->  3.0.0-rc4                  4.127s                      8,214
->  3.0.0-rc4-fadvise          2.146s                          0
-> 
-> In the first case the file is evicted from page cache completely and we
-> must re-read it from the disk. In the second case the file is still in
-> page cache (in the inactive list) and we don't need any other additional
-> I/O operation.
-> 
-> [1] http://marc.info/?l=rsync&m=128885034930933&w=2
-> [2] https://lkml.org/lkml/2011/2/20/57
-> [3] http://lists.samba.org/archive/rsync/2010-November/025827.html
-> 
-> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 
-Hmm, What if you do want to evict it from the cache for testing purposes?
-Perhaps this functionality should be associated with POSIX_FADV_NOREUSE?
-dd has been recently modified to support invalidating the cache for a file,
-and it uses POSIX_FADV_DONTNEED for that.
-http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=5f311553
+head_64.S, which sets up the initial page table on x86_64, is not aware
+of PSE being enabled or disabled and it always allocates the initial
+mapping using 2MB pages.
 
-cheers,
-Pádraig.
+Therefore on x86_64 find_early_table_space shouldn't update the amount
+of pages needed for pte pages depending on the size of the initial
+mapping, because we know for sure that no pte pages have been allocated
+yet.
+
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Reported-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/mm/init.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index 36bacfe..1e3098b 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -42,12 +42,19 @@ static void __init find_early_table_space(unsigned long start,
+ 			(PMD_SIZE * PTRS_PER_PMD));
+ 	pmd_mapped *= (PMD_SIZE * PTRS_PER_PMD);
+ 
++	/* 
++	 * On x86_64 do not limit the size we need to cover with 4KB pages
++	 * depending on the initial allocation because head_64.S always uses
++	 * 2MB pages.
++	 */
++#ifdef CONFIG_X86_32
+ 	if (start < PFN_PHYS(max_pfn_mapped)) {
+ 		if (PFN_PHYS(max_pfn_mapped) < end)
+ 			size -= PFN_PHYS(max_pfn_mapped) - start;
+ 		else
+ 			size = 0;
+ 	}
++#endif
+ 
+ #ifndef __PAGETABLE_PUD_FOLDED
+ 	if (end > pud_mapped) {
+-- 
+1.7.2.3
+
