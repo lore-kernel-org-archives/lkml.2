@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759375Ab1FWNjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 09:39:13 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:39157 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759355Ab1FWNjI (ORCPT
+	id S1759385Ab1FWNkJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 09:40:09 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:32913 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757326Ab1FWNkH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 09:39:08 -0400
-Date: Thu, 23 Jun 2011 15:39:04 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Theodore Tso <tytso@MIT.EDU>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-Message-ID: <20110623133904.GA1479@thinkpad>
-References: <1308810981-5286-1-git-send-email-andrea@betterlinux.com>
- <E03B7391-C7D0-4EBE-96FE-C7537F9E353B@mit.edu>
+	Thu, 23 Jun 2011 09:40:07 -0400
+Date: Thu, 23 Jun 2011 14:39:50 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Stefan Assmann <sassmann@kpanic.de>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, tony.luck@intel.com, andi@firstfloor.org,
+        mingo@elte.hu, hpa@zytor.com, rick@vanrein.org, rdunlap@xenotime.net
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+Message-ID: <20110623133950.GB28333@srcf.ucam.org>
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E03B7391-C7D0-4EBE-96FE-C7537F9E353B@mit.edu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 08:10:47AM -0400, Theodore Tso wrote:
-> 
-> On Jun 23, 2011, at 2:36 AM, Andrea Righi wrote:
-> 
-> > 
-> > With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
-> > called for an active page instead of removing it from the page cache it
-> > is added to the tail of the inactive list. Otherwise, if it's already in
-> > the inactive list the page is removed from the page cache.
-> 
-> 
-> Have you thought about this heuristic?   If the page is active, try to
-> remove it from the current process's page table.  If that drops the
-> use count of the page to zero, then drop it from the page cache;
-> otherwise, leave it alone.
-> 
-> That way, if the page is being used by anyone else, we don't touch
-> the page at all.   fadvise() should only affect the current process; if
-> it's available to non-root users, it shouldn't be affecting other
-> processes, and if it is being actively used by some other process,
-> removing it from their page tables so it can be put on the inactive
-> list counts as interference, doesn't it?
+On Wed, Jun 22, 2011 at 01:18:51PM +0200, Stefan Assmann wrote:
+> Following the RFC for the BadRAM feature here's the updated version with
+> spelling fixes, thanks go to Randy Dunlap. Also the code is now less verbose,
+> as requested by Andi Kleen.
+> v2 with even more spelling fixes suggested by Randy.
+> Patches are against vanilla 2.6.39.
+> Repost with LKML in Cc as suggested by Andrew Morton.
 
-If the page is mapped in other process page tables we don't touch the
-page at all (see lru_deactivate_fn in mm/swap.c).
+Would it be more reasonable to do this in the bootloader? You'd ideally 
+want this to be done as early as possible in order to avoid awkward 
+situations like your ramdisk ending up in the bad RAM area.
 
-So the heuristic above it's already implemented. I should have said this
-explicitly in my description...
-
--Andrea
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
