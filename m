@@ -1,115 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab1FWMAe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 08:00:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46360 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753011Ab1FWMAc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 08:00:32 -0400
-Date: Thu, 23 Jun 2011 08:00:24 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: Helge Hafting <helge.hafting@hist.no>
-Cc: Suresh Jayaraman <sjayaraman@suse.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-cifs <linux-cifs@vger.kernel.org>
-Subject: Re: [2.6.39] CIFS write failures where 2.6.38 works
-Message-ID: <20110623080024.7a1cab88@tlielax.poochiereds.net>
-In-Reply-To: <4E0322B0.8030102@hist.no>
-References: <4DE6103E.6010100@hist.no>
-	<4DE8B449.2000008@suse.de>
-	<4DE8F989.50208@hist.no>
-	<20110609182845.1ebfc678@tlielax.poochiereds.net>
-	<20110622163612.45744bc2@tlielax.poochiereds.net>
-	<4E0322B0.8030102@hist.no>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759356Ab1FWMDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 08:03:42 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:47721 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753011Ab1FWMDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 08:03:40 -0400
+Date: Thu, 23 Jun 2011 13:02:35 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+        linux-m32r@ml.linux-m32r.org, linux-m32r-ja@ml.linux-m32r.org,
+        linux-am33-list@redhat.com, Paul Mundt <lethal@linux-sh.org>,
+        linux-sh@vger.kernel.org, Chris Metcalf <cmetcalf@tilera.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH] STAGING: Comedi: Build only on arches providing
+ PAGE_KERNEL_NOCACHE
+Message-ID: <20110623120234.GA22524@linux-mips.org>
+References: <20110623114536.GA14011@linux-mips.org>
+ <4E032940.5010205@ge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E032940.5010205@ge.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jun 2011 13:25:36 +0200
-Helge Hafting <helge.hafting@hist.no> wrote:
+On Thu, Jun 23, 2011 at 12:53:36PM +0100, Martyn Welch wrote:
 
-> On 22. juni 2011 22:36, Jeff Layton wrote:
-> > On Thu, 9 Jun 2011 18:28:45 -0400
-> > Jeff Layton<jlayton@redhat.com>  wrote:
-> >
-> >> On Fri, 03 Jun 2011 17:11:05 +0200
-> >> Helge Hafting<helge.hafting@hist.no>  wrote:
-> >>
-> >>> On 03. juni 2011 12:15, Suresh Jayaraman wrote:
-> >>>> [Cc linux-cifs@vger.kernel.org]
-> >>>>
-> >>>> On 06/01/2011 03:41 PM, Helge Hafting wrote:
-> >>>>> At work I use cifs for accessing a windows server. This has worked fine
-> >>>>> for a long time, up to and including Debian's 2.6.38-2.
-> >>>>>
-> >>>>> I just installed Debians's 2.6.39-1, and had to give up on it.
-> >>>>> Mounting CIFS works, and I can see the files. But if I
-> >>>>> try to make a new file (with cp), I get a long delay.
-> >>>>
-> >>>> What is the security mechanism you are using? If you seeing the problem
-> >>>> with ntlm, could you try using ntlmv2 and see whether the problem is
-> >>>> reproducible?
-> >>>
-> >>> In the beginning, I did not specify the mechanism. So, whatever the
-> >>> default is.
-> >>>
-> >>> The fstab entry was like this:
-> >>> \\servername\resource /mountpoint cifs
-> >>> domain=MYDOMAIN,credentials=/etc/fstabcred,rw,noauto,iocharset=utf8,uid=username,gid=group,sockopt=TCP_NODELAY,users,file_mode=0640,dir_mode=0750,relatime
-> >>> 0 0
-> >>>
-> >>> I looked at cifs options, and tried to add "sign" and "sec=ntlmv2i". It
-> >>> made no difference. Still failure with 2.6.39, and mounting with these
-> >>> new options works fine with 2.6.38
-> >>>
-> >>
-> >> I think we need to understand what's happening on the wire. Are you
-> >> still able to reproduce this? If so, can you turn up debug logging and
-> >> reproduce this?. Instructions for how to do that are here:
-> >>
-> >>      http://wiki.samba.org/index.php/LinuxCIFS_troubleshooting#Enabling_Debugging
-> >>
-> >> Also, it looks like someone opened a bug at kernel.org too:
-> >>
-> >>      https://bugzilla.kernel.org/show_bug.cgi?id=36952
-> >>
-> >> ...so if you can attach the resulting log there, that would be great.
-> >>
-> >
-> > I think that this is probably due to the change that added the
-> > page_mkwrite function to cifs.ko. Prior to that, cifs did single-page
-> > writes on signed connections. Now we do multi-page writes and windows
-> > servers apparently reject large write calls on signed connections.
-> >
-> > One way to test this theory would be to set the wsize to something
-> > smaller when you mount. For instance:
-> >
-> >      wsize=16384
-> >
-> > ...assuming that doesn't go over the server's MaxBufferSize, then that
-> > should act as a workaround. Can you try that and let me know if it
-> > helps?
+> On 23/06/11 12:45, Ralf Baechle wrote:
+> > On architectures that don't define PAGE_KERNEL_NOCACHE, the Comedi driver turns
+> > into tragedy:
+> > 
+> >   CC [M]  drivers/staging/comedi/drivers.o
+> > drivers/staging/comedi/drivers.c: In function ‘comedi_buf_alloc’:
+> > drivers/staging/comedi/drivers.c:505:41: error: ‘PAGE_KERNEL_NOCACHE’ undeclared (first use in this function)
+> > drivers/staging/comedi/drivers.c:505:41: note: each undeclared identifier is rep orted only once for each function it appears in
+> > make[3]: *** [drivers/staging/comedi/drivers.o] Error 1
+> > 
+> > Restrict the driver to only those architectures that define PAGE_KERNEL_NOCACHE.
+> > 
+> > PAGE_KERNEL_NOCACHE is a kludge - some system architectures such as SGI IP27
+> > are even uable to offer uncached operation - at least in the way an unwitting
+> > driver might assume.  I haven't looked in details how the driver is using
+> > the area vmaped with PAGE_KERNEL_NOCACHE but maybe doing it XFS-style using
+> > cached memory and the flush_kernel_vmap_range / invalidate_kernel_vmap_range
+> > APIs in conjunction with the DMA API is a practical alternative.
+> > 
+> > Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> > 
+> >  drivers/staging/comedi/Kconfig |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+> > index 1502d80..bccdc12 100644
+> > --- a/drivers/staging/comedi/Kconfig
+> > +++ b/drivers/staging/comedi/Kconfig
+> > @@ -2,6 +2,7 @@ config COMEDI
+> >  	tristate "Data acquisition support (comedi)"
+> >  	default N
+> >  	depends on m
+> > +	depends on BROKEN || FRV || M32R || MN10300 || SUPERH || TILE || X86
 > 
-> 
-> Yes, that seemed to fix it. I added wsize=16384 and mounted using 
-> debians 2.6.39-1-amd64 kernel.
-> 
-> I tried a recursive copy of 26MB from one directory tree to another on 
-> that mount. It completed in 24s with no error messages. 1MB/s is not 
-> much, but there may be 40 other users.
-> 
-> The server runs windows 2008r2, 64-bit.
-> 
+> I'm sure I got comedi to compile on a 32-bit PPC board not that long ago. Has
+> something changed, or is this just not an exhaustive list?
 
-Great, thanks for testing that. I've already sent Steve French a patch
-that should fix this in 3.0, but we'll need to do something different
-for 2.6.39 stable. I'll roll up a patch for that soon.
+(Adding the PPC folks to cc.)
 
-BTW, 3.0 should have much improved write performance, even with signing
-enabled as that adds the capability to do async writes.
+A "git grep -w PAGE_KERNEL_NOCACHE arch/powerpc/" doesn't find anything so
+I don't think the driver will build there.  I don't have a PPC toolchain
+to verify that.
 
--- 
-Jeff Layton <jlayton@redhat.com>
+  Ralf
