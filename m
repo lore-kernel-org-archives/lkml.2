@@ -1,135 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758472Ab1FWAwH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 22 Jun 2011 20:52:07 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:47114 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758008Ab1FWAwE convert rfc822-to-8bit (ORCPT
+	id S1758577Ab1FWBCF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 22 Jun 2011 21:02:05 -0400
+Received: from mga01.intel.com ([192.55.52.88]:7742 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758222Ab1FWBCD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 22 Jun 2011 20:52:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xEv7bQkxi1/SG165BfIBXwu7StXEJG4IByvez0J0KkTKWHx2ruPVWsyBMPS3TgYiMy
-         o5GUb8sJek4l7JhG9gBlJQnGtbSsgEC60z26P8Z8pejy5iHFTG/jHS+ObuiwHUu/cpl+
-         opudPrxJ1xybL2FcLfAWelrWnrW/M4ojFv5CI=
-MIME-Version: 1.0
-In-Reply-To: <4E027A96.3040905@redhat.com>
-References: <201106212055.25400.nai.xia@gmail.com>
-	<201106212132.39311.nai.xia@gmail.com>
-	<4E01C752.10405@redhat.com>
-	<4E01CC77.10607@ravellosystems.com>
-	<4E01CDAD.3070202@redhat.com>
-	<4E01CFD2.6000404@ravellosystems.com>
-	<4E020CBC.7070604@redhat.com>
-	<BANLkTikidXPzyxySbmrXK=EUXOzqMtm-0g@mail.gmail.com>
-	<4E027A96.3040905@redhat.com>
-Date: Thu, 23 Jun 2011 08:52:03 +0800
-Message-ID: <BANLkTimB7JBdV3=jDKA=t8Rc=8C0onYM7Q@mail.gmail.com>
-Subject: Re: [PATCH] mmu_notifier, kvm: Introduce dirty bit tracking in spte
- and mmu notifier to help KSM dirty bit tracking
-From: Nai Xia <nai.xia@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Izik Eidus <izik.eidus@ravellosystems.com>, Avi Kivity <avi@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>, Chris Wright <chrisw@sous-sol.org>,
-        linux-mm <linux-mm@kvack.org>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>, kvm <kvm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 22 Jun 2011 21:02:03 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,409,1304319600"; 
+   d="scan'208";a="21692286"
+From: "Ma, Ling" <ling.ma@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+CC: "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Thu, 23 Jun 2011 09:01:19 +0800
+Subject: RE: [PATCH RFC] [x86] Optimize copy-page by reducing impact from HW
+ prefetch
+Thread-Topic: [PATCH RFC] [x86] Optimize copy-page by reducing impact from
+ HW prefetch
+Thread-Index: AcwxF/rYM0TRxMrxSvuA8d7AFo03jAAKKk7A
+Message-ID: <C10D3FB0CD45994C8A51FEC1227CE22F239E8E4106@shsmsx502.ccr.corp.intel.com>
+References: <1308351117-32452-1-git-send-email-ling.ma@intel.com>
+ <m2fwn13a3u.fsf@firstfloor.org>
+In-Reply-To: <m2fwn13a3u.fsf@firstfloor.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 7:28 AM, Rik van Riel <riel@redhat.com> wrote:
-> On 06/22/2011 07:13 PM, Nai Xia wrote:
->>
->> On Wed, Jun 22, 2011 at 11:39 PM, Rik van Riel<riel@redhat.com>  wrote:
->>>
->>> On 06/22/2011 07:19 AM, Izik Eidus wrote:
->>>
->>>> So what we say here is: it is better to have little junk in the unstable
->>>> tree that get flushed eventualy anyway, instead of make the guest
->>>> slower....
->>>> this race is something that does not reflect accurate of ksm anyway due
->>>> to the full memcmp that we will eventualy perform...
->>>
->>> With 2MB pages, I am not convinced they will get "flushed eventually",
->>> because there is a good chance at least one of the 4kB pages inside
->>> a 2MB page is in active use at all times.
->>>
->>> I worry that the proposed changes may end up effectively preventing
->>> KSM from scanning inside 2MB pages, when even one 4kB page inside
->>> is in active use.  This could mean increased swapping on systems
->>> that run low on memory, which can be a much larger performance penalty
->>> than ksmd CPU use.
->>>
->>> We need to scan inside 2MB pages when memory runs low, regardless
->>> of the accessed or dirty bits.
->>
->> I agree on this point. Dirty bit , young bit, is by no means accurate.
->> Even
->> on 4kB pages, there is always a chance that the pte are dirty but the
->> contents
->> are actually the same. Yeah, the whole optimization contains trade-offs
->> and
->> trades-offs always have the possibilities to annoy  someone.  Just like
->> page-bit-relying LRU approximations none of them is perfect too. But I
->> think
->> it can benefit some people. So maybe we could just provide a generic
->> balanced
->> solution but provide fine tuning interfaces to make sure tha when it
->> really gets
->> in the way of someone, he has a way to walk around.
->> Do you agree on my argument? :-)
->
-> That's not an argument.
->
-> That is a "if I wave my hands vigorously enough, maybe people
-> will let my patch in without thinking about what I wrote"
-> style argument.
+Yes, I also have tested 64bit atom, it got 11.6% improvement.
+Because older CPU almost all use prefetch-next-line mechanism, the patch should be useful to them.
 
-Oh, NO, this is not what I meant.
-Really sorry if I made myself look so evil...
-I actually mean: "Skip or not, we agree on a point that will not
-harm most people, and provide another interface to let someon
-who _really_ want to take another way."
+Thanks
+Ling
+> -----Original Message-----
+> From: Ma, Ling
+> Sent: Monday, June 20, 2011 11:43 AM
+> To: Ma, Ling; mingo@elte.hu
+> Cc: hpa@zytor.com; tglx@linutronix.de; linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH RFC V2] [x86] Optimize copy-page by reducing impact
+> from HW prefetch
+> 
+> New experiment shows, for 4096 bytes no improvement on snb,
+> 10~15% improvement on Core2, 11.6% improvement on 64bit atom.
+> 
+> Thanks
+> Ling
 
-I am by no means pushing the idea of "skipping" huge pages.
-I am just not sure about it and want to get a precise idea from
-you. And now I get it.
-
-
->
-> I believe your optimization makes sense for 4kB pages, but
-> is going to be counter-productive for 2MB pages.
->
-> Your approach of "make ksmd skip over more pages, so it uses
-> less CPU" is likely to reduce the effectiveness of ksm by not
-> sharing some pages.
->
-> For 4kB pages that is fine, because you'll get around to them
-> eventually.
->
-> However, the internal use of a 2MB page is likely to be quite
-> different.  Chances are most 2MB pages will have actively used,
-> barely used and free pages inside.
->
-> You absolutely want ksm to get at the barely used and free
-> sub-pages.  Having just one actively used 4kB sub-page prevent
-> ksm from merging any of the other 511 sub-pages is a problem.
-
-No, no,  I was just not sure about it. I meant we cannot satisfy
-all people but I was not sure which one is good for most of them.
-
-Sorry, again, if I didn't make it clear.
-
-
-Nai
-
->
+> -----Original Message-----
+> From: Andi Kleen [mailto:andi@firstfloor.org]
+> Sent: Thursday, June 23, 2011 4:06 AM
+> To: Ma, Ling
+> Cc: mingo@elte.hu; hpa@zytor.com; tglx@linutronix.de; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH RFC] [x86] Optimize copy-page by reducing impact
+> from HW prefetch
+> 
+> ling.ma@intel.com writes:
+> > impact(DCU prefetcher), and simplify original code.
+> > The performance is improved about 15% on core2, 36% on snb
+> respectively.
+> > (We use our micro-benchmark, and will do further test according to
+> your requirment)
+> 
+> This doesn't make a lot of sense because neither Core-2 nor SNB use the
+> code path you patched. They all use the rep ; movs path
+> 
+> -Andi
+> 
 > --
-> All rights reversed
->
+> ak@linux.intel.com -- Speaking for myself only
