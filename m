@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933491Ab1FWRhH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:37:07 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34760 "EHLO
+	id S933514Ab1FWSFk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:05:40 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34791 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933453Ab1FWRhD (ORCPT
+	with ESMTP id S933486Ab1FWRhG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:37:03 -0400
+	Thu, 23 Jun 2011 13:37:06 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Bruce Allan <bruce.w.allan@intel.com>,
-        Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
+Cc: stable-review@kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 145/247] e1000e: disable broken PHY wakeup for ICH10 LOMs, use MAC wakeup instead
-Date: Thu, 23 Jun 2011 13:33:33 -0400
-Message-Id: <1308850515-15242-86-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 146/247] r8169: disable ASPM
+Date: Thu, 23 Jun 2011 13:33:34 -0400
+Message-Id: <1308850515-15242-87-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,45 +23,57 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bruce Allan <bruce.w.allan@intel.com>
+From: Stanislaw Gruszka <sgruszka@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 4def99bbfd46e05c5e03b5b282cb4ee30e27ff19 upstream.
+commit ba04c7c93bbcb48ce880cf75b6e9dffcd79d4c7b upstream.
 
-When support for 82577/82578 was added[1] in 2.6.31, PHY wakeup was in-
-advertently enabled (even though it does not function properly) on ICH10
-LOMs.  This patch makes it so that the ICH10 LOMs use MAC wakeup instead
-as was done with the initial support for those devices (i.e. 82567LM-3,
-82567LF-3 and 82567V-4).
+For some time is known that ASPM is causing troubles on r8169, i.e. make
+device randomly stop working without any errors in dmesg.
 
-[1] commit a4f58f5455ba0efda36fb33c37074922d1527a10
+Currently Tomi Leppikangas reports that system with r8169 device hangs
+with MCE errors when ASPM is enabled:
+https://bugzilla.redhat.com/show_bug.cgi?id=642861#c4
 
-Reported-by: Aurelien Jarno <aurelien@aurel32.net>
-Signed-off-by: Bruce Allan <bruce.w.allan@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Lets disable ASPM for r8169 devices at all, to avoid problems with
+r8169 PCIe devices at least for some users.
+
+Reported-by: Tomi Leppikangas <tomi.leppikangas@gmail.com>
+Signed-off-by: Stanislaw Gruszka <sgruszka@redhat.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/net/e1000e/netdev.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ drivers/net/r8169.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/e1000e/netdev.c b/drivers/net/e1000e/netdev.c
-index 56c9e69..d82c361 100644
---- a/drivers/net/e1000e/netdev.c
-+++ b/drivers/net/e1000e/netdev.c
-@@ -5185,7 +5185,8 @@ static int __devinit e1000_probe(struct pci_dev *pdev,
- 		/* APME bit in EEPROM is mapped to WUC.APME */
- 		eeprom_data = er32(WUC);
- 		eeprom_apme_mask = E1000_WUC_APME;
--		if (eeprom_data & E1000_WUC_PHY_WAKE)
-+		if ((hw->mac.type > e1000_ich10lan) &&
-+		    (eeprom_data & E1000_WUC_PHY_WAKE))
- 			adapter->flags2 |= FLAG2_HAS_PHY_WAKEUP;
- 	} else if (adapter->flags & FLAG_APME_IN_CTRL3) {
- 		if (adapter->flags & FLAG_APME_CHECK_PORT_B &&
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index 0fa0598..812d102 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -23,6 +23,7 @@
+ #include <linux/tcp.h>
+ #include <linux/init.h>
+ #include <linux/dma-mapping.h>
++#include <linux/pci-aspm.h>
+ 
+ #include <asm/system.h>
+ #include <asm/io.h>
+@@ -3024,6 +3025,11 @@ rtl8169_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	mii->reg_num_mask = 0x1f;
+ 	mii->supports_gmii = !!(cfg->features & RTL_FEATURE_GMII);
+ 
++	/* disable ASPM completely as that cause random device stop working
++	 * problems as well as full system hangs for some PCIe devices users */
++	pci_disable_link_state(pdev, PCIE_LINK_STATE_L0S | PCIE_LINK_STATE_L1 |
++				     PCIE_LINK_STATE_CLKPM);
++
+ 	/* enable device (incl. PCI PM wakeup and hotplug setup) */
+ 	rc = pci_enable_device(pdev);
+ 	if (rc < 0) {
 -- 
 1.7.4.4
 
