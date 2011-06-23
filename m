@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932467Ab1FWMK6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 08:10:58 -0400
-Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:52169 "EHLO
-	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757947Ab1FWMK5 (ORCPT
+	id S1759415Ab1FWMNN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 08:13:13 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:43170 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757947Ab1FWMNJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 08:10:57 -0400
-X-AuditID: 1209190d-b7bdeae0000004f8-99-4e032d043fa9
-Subject: Re: [PATCH v2] fadvise: move active pages to inactive list with POSIX_FADV_DONTNEED
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <1308810981-5286-1-git-send-email-andrea@betterlinux.com>
-Date: Thu, 23 Jun 2011 08:10:47 -0400
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 7bit
-Message-Id: <E03B7391-C7D0-4EBE-96FE-C7537F9E353B@mit.edu>
-References: <1308810981-5286-1-git-send-email-andrea@betterlinux.com>
-To: Andrea Righi <andrea@betterlinux.com>
-X-Mailer: Apple Mail (2.1084)
-X-Brightmail-Tracker: H4sIAAAAAAAAA+NgFnrMKsWRmVeSWpSXmKPExsUixG6nosuiy+xn8O2GpsWC9UvZLeasX8Nm
-	8XxWI5PF6k2+Fk8/9bFY/L57jMli5uzZTBZtx/6xWFzeNYfN4t6a/6wWE54uYLS4OPkgi0Xf
-	jO1MFsd7DzBZ/L2ynsWB3+P33BVsHk3fO5k9Dr95z+yxc9Zddo8Fm0o9Nq/Q8jjx5BKbx6ZP
-	k9g9Tsz4zeLxft9VNo/Pm+QCuKO4bFJSczLLUov07RK4MjYv6GIuuM5eMenKFbYGxja2LkZO
-	DgkBE4nl/5uhbDGJC/fWA9lcHEIC+xglDj08CeVsYJT4efwdE4Rzmkni+5EmZpAWYYEYieU7
-	z7KD2LwChhJLN7WD2cwCWhI3/r1kArHZBJQk7nzazwJicwq4SXy+9RnMZhFQldi8dzoryFBm
-	gT8sErMW/2aGaJaX2P52DjPEUCuJbUdPgzUICbhK/Jt7gxHEFhHQlLh/+DjQeRxAd8tKNC3L
-	mMAoOAvJGbOQnDELydQFjMyrGGVTcqt0cxMzc4pTk3WLkxPz8lKLdI30cjNL9FJTSjcxguKS
-	U5J3B+O7g0qHGAU4GJV4eE94MvkJsSaWFVfmHmKU5GBSEuXN02H2E+JLyk+pzEgszogvKs1J
-	LT7EKMHBrCTCy/IDqJw3JbGyKrUoHyYlzcGiJM6r5v3fV0ggPbEkNTs1tSC1CCYrw8GhJMFb
-	AjJUsCg1PbUiLTOnBCHNxMEJMpwHaHghSA1vcUFibnFmOkT+FKOilDhvDEhCACSRUZoH1wtL
-	m68YxYFeEeYtAqniAaZcuO5XQIOZgAbzPgW5urgkESEl1cBoZfikzfs2c8XOvPpl31RV17g1
-	buoPSLRM8whLSAuf6HXnl7y32kqt22KSM7akH3XMM+iKuPhS2ajqZwN/1ySGBoarprnxaut1
-	A+MZN1mqTrXJz7wUs6Vs3hm5td11nV172Ja0PL61T1oxuT0lk+W60MlSjbPctw0eNGp9aLuU
-	o3Pc4cz1M0osxRmJhlrMRcWJAB9GHvJ2AwAA
+	Thu, 23 Jun 2011 08:13:09 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Grant Likely <grant.likely@secretlab.ca>, <linux-kernel@vger.kernel.org>,
+        <linux-arm-kernel@lists.infradead.org>
+Cc: Lee Jones <lee.jones@linaro.org>, Linus Walleij <linus.walleij@linaro.org>,
+        Fredrik Svensson <fredrik.xk.svensson@stericsson.com>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: [PATCH 0/4] Nomadik GPIO patches for 3.1, round 1
+Date: Thu, 23 Jun 2011 14:11:52 +0200
+Message-ID: <1308831112-10250-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Linus Walleij <linus.walleij@linaro.org>
 
-On Jun 23, 2011, at 2:36 AM, Andrea Righi wrote:
+This is the pending Nomadik GPIO patches up until I start to muck
+around with the generic configuration mechanism, it'd be nice to
+get this into the GPIO tree as a base.
 
-> 
-> With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
-> called for an active page instead of removing it from the page cache it
-> is added to the tail of the inactive list. Otherwise, if it's already in
-> the inactive list the page is removed from the page cache.
+[1/4] moves the header file out of <plat/*> and into
+<linux/gpio/nomadik.h> which is necessary for single kernel
+support across multiple platforms, I don't know how many plats
+would collide in <plat/gpio.h> if we don't do this. It's
+the first of its kind and create this namespace so I
+hope you like it.
 
+[2/4] mainly mess with GPIO-related pinconfig, and need to
+go through the GPIO or ux500 tree until we have a pinmux
+subsystem. If you don't like it, I can take it into
+the ux500 tree. (The rest apply cleanly anyway.)
 
-Have you thought about this heuristic?   If the page is active, try to
-remove it from the current process's page table.  If that drops the
-use count of the page to zero, then drop it from the page cache;
-otherwise, leave it alone.
+[3/4] and [4/4] are straightforward improvements.
 
-That way, if the page is being used by anyone else, we don't touch
-the page at all.   fadvise() should only affect the current process; if
-it's available to non-root users, it shouldn't be affecting other
-processes, and if it is being actively used by some other process,
-removing it from their page tables so it can be put on the inactive
-list counts as interference, doesn't it?
+I expect to send another patch set for the generic config
+mechanism once we have decided on a solution for that.
 
--- Ted
+Fredrik Svensson (1):
+  gpio/nomadik: remove pull-pinconfig and add SPI2
+
+Linus Walleij (2):
+  gpio/nomadik: move the Nomadik GPIO header
+  gpio/nomadik: use genirq core to track enablement
+
+Rabin Vincent (1):
+  gpio/nomadik: disable clocks when unused
+
+ arch/arm/mach-nomadik/board-nhk8815.c       |    1 +
+ arch/arm/mach-nomadik/cpu-8815.c            |    1 +
+ arch/arm/mach-nomadik/i2c-8815nhk.c         |    2 +-
+ arch/arm/mach-nomadik/include/mach/gpio.h   |    8 ++-
+ arch/arm/mach-ux500/board-mop500-pins.c     |    2 +-
+ arch/arm/mach-ux500/board-mop500-sdi.c      |    1 +
+ arch/arm/mach-ux500/board-u5500-sdi.c       |    2 +-
+ arch/arm/mach-ux500/cpu-db5500.c            |    3 +-
+ arch/arm/mach-ux500/cpu-db8500.c            |    5 +-
+ arch/arm/mach-ux500/devices-common.c        |    3 +-
+ arch/arm/mach-ux500/include/mach/gpio.h     |    8 ++-
+ arch/arm/mach-ux500/pins-db8500.h           |  142 ++++++++++++++-------------
+ arch/arm/plat-nomadik/include/plat/gpio.h   |   96 ------------------
+ arch/arm/plat-nomadik/include/plat/pincfg.h |    5 -
+ drivers/gpio/gpio-nomadik.c                 |  129 +++++++++++++++++++++---
+ include/linux/gpio/nomadik.h                |   87 ++++++++++++++++
+ 16 files changed, 300 insertions(+), 195 deletions(-)
+ delete mode 100644 arch/arm/plat-nomadik/include/plat/gpio.h
+ create mode 100644 include/linux/gpio/nomadik.h
+
+-- 
+1.7.3.2
 
