@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759589Ab1FWQJJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 12:09:09 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:37362 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758901Ab1FWQJH convert rfc822-to-8bit (ORCPT
+	id S932532Ab1FWQOq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 12:14:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27292 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758276Ab1FWQOo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 12:09:07 -0400
-Subject: Re: mmotm 2011-06-22 - inconsistent {SOFTIRQ-ON-W} ->
- {IN-SOFTIRQ-W} usage.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Jan Kara <jack@suse.cz>, stable@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Gleixner <tglx@linutronix.de>, Jeff Garzik <jgarzik@pobox.com>,
-        IngIngo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org,
-        linux-ide@vger.kernel.org
-In-Reply-To: <47718.1308844931@turing-police.cc.vt.edu>
-References: <201106222042.p5MKgiEe025352@imap1.linux-foundation.org>
-	 <6189.1308794391@turing-police.cc.vt.edu> <1308843516.1022.139.camel@twins>
-	 <47718.1308844931@turing-police.cc.vt.edu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 23 Jun 2011 18:08:05 +0200
-Message-ID: <1308845285.1022.143.camel@twins>
+	Thu, 23 Jun 2011 12:14:44 -0400
+Date: Thu, 23 Jun 2011 09:14:29 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for June 23 (net)
+Message-Id: <20110623091429.2d51b0f0.randy.dunlap@oracle.com>
+In-Reply-To: <20110623155431.6bfe3b40.sfr@canb.auug.org.au>
+References: <20110623155431.6bfe3b40.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4E03666F.0118:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-23 at 12:02 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 23 Jun 2011 17:38:36 +0200, Peter Zijlstra said:
-> > On Wed, 2011-06-22 at 21:59 -0400, Valdis.Kletnieks@vt.edu wrote:
-> > > [   20.254275] {SOFTIRQ-ON-W} state was registered at:
-> > > [   20.254275]   [<ffffffff8106973b>] mark_irqflags+0xf2/0x13e
-> > > [   20.254275]   [<ffffffff810699b2>] __lock_acquire+0x22b/0x3e2
-> > > [   20.254275]   [<ffffffff8106a09f>] lock_acquire+0x103/0x153
-> > > [   20.254275]   [<ffffffff8157bb01>] _raw_spin_lock+0x36/0x45
-> > > [   20.254275]   [<ffffffff8110ddf8>] end_writeback+0x33/0x103
-> > > [   20.254275]   [<ffffffff81125425>] bdev_evict_inode+0x3e/0xbe
-> > > [   20.254275]   [<ffffffff8110df78>] evict+0xb0/0x173
-> > > [   20.254275]   [<ffffffff8110e1ea>] iput_final+0x171/0x17a
-> > > [   20.254275]   [<ffffffff8110e241>] iput+0x4e/0x53
-> > > [   20.254275]   [<ffffffff81125cad>] __blkdev_put+0x1c0/0x1eb
-> > > [   20.254275]   [<ffffffff81125ebe>] blkdev_put+0x1e6/0x1f5
-> > > [   20.254275]   [<ffffffff8121d143>] register_disk+0xea/0x13c
-> > > [   20.254275]   [<ffffffff8121d2c4>] add_disk+0x12f/0x1a4
-> > > [   20.254275]   [<ffffffff812ef339>] sd_probe_async+0x115/0x1b5
-> > > [   20.254275]   [<ffffffff8105ce2f>] async_run_entry_fn+0x99/0x12a
-> > > [   20.254275]   [<ffffffff810505e8>] process_one_work+0x25d/0x467
-> > > [   20.254275]   [<ffffffff81051ddb>] worker_thread+0x152/0x206
-> > > [   20.254275]   [<ffffffff810561fa>] kthread+0x7f/0x87
-> > > [   20.254275]   [<ffffffff815835d4>] kernel_thread_helper+0x4/0x10=20
-> > 
-> > That looks broken. Not having -mm, is there a git tree some place?, I
-> > cannot quite see how end_writeback() is taking mapping->tree_lock as my
-> > version looks like:
-> > 
-> > void end_writeback(struct inode *inode)
-> > {
-> > 	might_sleep();
-> > 	BUG_ON(inode->i_data.nrpages);
-> > 	BUG_ON(!list_empty(&inode->i_data.private_list));
-> 
-> mm-fix-assertion-mapping-nrpages-==-0-in-end_writeback.patch does this:
-> 
-> diff -puN fs/inode.c~mm-fix-assertion-mapping-nrpages-==-0-in-end_writeback fs/inode.c
-> --- a/fs/inode.c~mm-fix-assertion-mapping-nrpages-==-0-in-end_writeback
-> +++ a/fs/inode.c
-> @@ -423,7 +423,14 @@ EXPORT_SYMBOL(remove_inode_hash);
->  void end_writeback(struct inode *inode)
->  {
->         might_sleep();
-> +       /*
-> +        * We have to cycle tree_lock here because reclaim can be still in the
-> +        * process of removing the last page (in __delete_from_page_cache())
-> +        * and we must not free mapping under it.
-> +        */
-> +       spin_lock(&inode->i_data.tree_lock);
->         BUG_ON(inode->i_data.nrpages);
-> +       spin_unlock(&inode->i_data.tree_lock);
->         BUG_ON(!list_empty(&inode->i_data.private_list));
->         BUG_ON(!(inode->i_state & I_FREEING));
->         BUG_ON(inode->i_state & I_CLEAR);
-> 
-> Adding Jan Kara to the list, and stable@kernel.org because the patch was cc'ed to there...
+On Thu, 23 Jun 2011 15:54:31 +1000 Stephen Rothwell wrote:
 
-Yep, that very much wants to be spin_{un,}lock_irq().
+> Hi all,
+> 
+> Changes since 20110622:
+> 
+> The powerpc allyesconfig (and probably others) is still broken because we
+> now build the staging drivers and because of a commit in the net tree.
+> The breakage in Linus' tree is fixed by one of Andrew's patches above.
+> 
+> The net tree gained 2 build failures that I have left (see above).
+
+
+When CONFIG_INET is not enabled:
+
+net/core/dev.c:2535: error: implicit declaration of function 'ip_is_fragment'
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
