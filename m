@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934042Ab1FWRrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:47:16 -0400
-Received: from mail.windriver.com ([147.11.1.11]:35514 "EHLO
+	id S933740Ab1FWRum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 13:50:42 -0400
+Received: from mail.windriver.com ([147.11.1.11]:35427 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933784Ab1FWRi3 (ORCPT
+	with ESMTP id S933727Ab1FWRiR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:38:29 -0400
+	Thu, 23 Jun 2011 13:38:17 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Anton Blanchard <anton@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 193/247] perf, powerpc: Handle events that raise an exception without overflowing
-Date: Thu, 23 Jun 2011 13:34:21 -0400
-Message-Id: <1308850515-15242-134-git-send-email-paul.gortmaker@windriver.com>
+Cc: stable-review@kernel.org, Eric Sandeen <sandeen@redhat.com>,
+        Jan Kara <jack@suse.cz>, Paul Gortmaker <paul.gortmaker@windriver.com>
+Subject: [34-longterm 194/247] ext3: Always set dx_node's fake_dirent explicitly.
+Date: Thu, 23 Jun 2011 13:34:22 -0400
+Message-Id: <1308850515-15242-135-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,85 +22,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anton Blanchard <anton@samba.org>
+From: Eric Sandeen <sandeen@redhat.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 0837e3242c73566fc1c0196b4ec61779c25ffc93 upstream.
+commit d7433142b63d727b5a217c37b1a1468b116a9771 upstream.
 
-Events on POWER7 can roll back if a speculative event doesn't
-eventually complete. Unfortunately in some rare cases they will
-raise a performance monitor exception. We need to catch this to
-ensure we reset the PMC. In all cases the PMC will be 256 or less
-cycles from overflow.
+(crossport of 1f7bebb9e911d870fa8f997ddff838e82b5715ea
+by Andreas Schlick <schlick@lavabit.com>)
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20110309143842.6c22845e@kryten>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+When ext3_dx_add_entry() has to split an index node, it has to ensure that
+name_len of dx_node's fake_dirent is also zero, because otherwise e2fsck
+won't recognise it as an intermediate htree node and consider the htree to
+be corrupted.
+
+Signed-off-by: Eric Sandeen <sandeen@redhat.com>
+Signed-off-by: Jan Kara <jack@suse.cz>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/powerpc/include/asm/reg.h   |    1 +
- arch/powerpc/kernel/perf_event.c |   24 +++++++++++++++++++++++-
- 2 files changed, 24 insertions(+), 1 deletions(-)
+ fs/ext3/namei.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/reg.h b/arch/powerpc/include/asm/reg.h
-index 5572e86..f2ac5a6 100644
---- a/arch/powerpc/include/asm/reg.h
-+++ b/arch/powerpc/include/asm/reg.h
-@@ -864,6 +864,7 @@
- #define PV_970		0x0039
- #define PV_POWER5	0x003A
- #define PV_POWER5p	0x003B
-+#define PV_POWER7	0x003F
- #define PV_970FX	0x003C
- #define PV_630		0x0040
- #define PV_630p	0x0041
-diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
-index 08460a2..7a3b2d2 100644
---- a/arch/powerpc/kernel/perf_event.c
-+++ b/arch/powerpc/kernel/perf_event.c
-@@ -1220,6 +1220,28 @@ unsigned long perf_instruction_pointer(struct pt_regs *regs)
- 	return ip;
- }
- 
-+static bool pmc_overflow(unsigned long val)
-+{
-+	if ((int)val < 0)
-+		return true;
-+
-+	/*
-+	 * Events on POWER7 can roll back if a speculative event doesn't
-+	 * eventually complete. Unfortunately in some rare cases they will
-+	 * raise a performance monitor exception. We need to catch this to
-+	 * ensure we reset the PMC. In all cases the PMC will be 256 or less
-+	 * cycles from overflow.
-+	 *
-+	 * We only do this if the first pass fails to find any overflowing
-+	 * PMCs because a user might set a period of less than 256 and we
-+	 * don't want to mistakenly reset them.
-+	 */
-+	if (__is_processor(PV_POWER7) && ((0x80000000 - val) <= 256))
-+		return true;
-+
-+	return false;
-+}
-+
- /*
-  * Performance monitor interrupt stuff
-  */
-@@ -1267,7 +1289,7 @@ static void perf_event_interrupt(struct pt_regs *regs)
- 			if (is_limited_pmc(i + 1))
- 				continue;
- 			val = read_pmc(i + 1);
--			if ((int)val < 0)
-+			if (pmc_overflow(val))
- 				write_pmc(i + 1, 0);
- 		}
- 	}
+diff --git a/fs/ext3/namei.c b/fs/ext3/namei.c
+index ee18408..827b573 100644
+--- a/fs/ext3/namei.c
++++ b/fs/ext3/namei.c
+@@ -1550,8 +1550,8 @@ static int ext3_dx_add_entry(handle_t *handle, struct dentry *dentry,
+ 			goto cleanup;
+ 		node2 = (struct dx_node *)(bh2->b_data);
+ 		entries2 = node2->entries;
++		memset(&node2->fake, 0, sizeof(struct fake_dirent));
+ 		node2->fake.rec_len = ext3_rec_len_to_disk(sb->s_blocksize);
+-		node2->fake.inode = 0;
+ 		BUFFER_TRACE(frame->bh, "get_write_access");
+ 		err = ext3_journal_get_write_access(handle, frame->bh);
+ 		if (err)
 -- 
 1.7.4.4
 
