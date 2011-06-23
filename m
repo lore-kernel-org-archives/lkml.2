@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759867Ab1FWRWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 13:22:04 -0400
-Received: from mail.windriver.com ([147.11.1.11]:62714 "EHLO
+	id S934362Ab1FWSce (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:32:34 -0400
+Received: from mail.windriver.com ([147.11.1.11]:62738 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759762Ab1FWRV7 (ORCPT
+	with ESMTP id S1759846Ab1FWRWC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:21:59 -0400
+	Thu, 23 Jun 2011 13:22:02 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Pieter Maes <maescool@gmail.com>,
+Cc: stable-review@kernel.org,
+        Nicolaus Colberg <nicolaus.colberg@cinterion.com>,
         Greg Kroah-Hartman <gregkh@suse.de>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 013/247] USB: serial: Updated support for ICOM devices
-Date: Thu, 23 Jun 2011 13:17:36 -0400
-Message-Id: <1308849690-14530-14-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 014/247] USB: adding USB support for Cinterion's HC2x, EU3 and PH8 products
+Date: Thu, 23 Jun 2011 13:17:37 -0400
+Message-Id: <1308849690-14530-15-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -22,84 +23,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Pieter Maes <maescool@gmail.com>
+From: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit a9d61bc49188e32d2ae9cf0f683cde3e1744feef upstream.
+commit aa52b3a92918039b273fc9d1994bd34227c40269 upstream.
 
-I found the original patch on the db0fhn repeater wiki (couldn't find the email
-of the origial author) I guess it was never commited.
-I updated and added some Icom HAM-radio devices to the ftdi driver.
-Added extra comments to make clear what devices it are.
+/drivers/usb/serial/option.c: Adding support for Cinterion's HC25, HC28,
+HC28J, EU3-E, EU3-P and PH8 by correcting/adding Cinterion's and
+Siemens' Vendor IDs as well as Product IDs and USB_DEVICE tuples
 
-Signed-off-by: Pieter Maes <maescool@gmail.com>
+Signed-off-by: Nicolaus Colberg <nicolaus.colberg@cinterion.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- drivers/usb/serial/ftdi_sio.c     |   12 +++++++++++-
- drivers/usb/serial/ftdi_sio_ids.h |   22 +++++++++++++++++-----
- 2 files changed, 28 insertions(+), 6 deletions(-)
+ drivers/usb/serial/option.c |   23 +++++++++++++++++++++--
+ 1 files changed, 21 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
-index 93da959..c2900fc 100644
---- a/drivers/usb/serial/ftdi_sio.c
-+++ b/drivers/usb/serial/ftdi_sio.c
-@@ -681,7 +681,17 @@ static struct usb_device_id id_table_combined [] = {
- 	{ USB_DEVICE(FTDI_VID, FTDI_PCDJ_DAC2_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_RRCIRKITS_LOCOBUFFER_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ASK_RDR400_PID) },
--	{ USB_DEVICE(ICOM_ID1_VID, ICOM_ID1_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_1_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_OPC_U_UC_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2C1_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2C2_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2D_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2VT_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2VR_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP4KVT_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP4KVR_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2KVT_PID) },
-+	{ USB_DEVICE(ICOM_VID, ICOM_ID_RP2KVR_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_ACG_HFDUAL_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_YEI_SERVOCENTER31_PID) },
- 	{ USB_DEVICE(FTDI_VID, FTDI_THORLABS_PID) },
-diff --git a/drivers/usb/serial/ftdi_sio_ids.h b/drivers/usb/serial/ftdi_sio_ids.h
-index 315b3b8..e3b6807 100644
---- a/drivers/usb/serial/ftdi_sio_ids.h
-+++ b/drivers/usb/serial/ftdi_sio_ids.h
-@@ -576,11 +576,23 @@
- #define OCT_US101_PID		0x0421	/* OCT US101 USB to RS-232 */
+diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+index 58100d9..e8323de 100644
+--- a/drivers/usb/serial/option.c
++++ b/drivers/usb/serial/option.c
+@@ -383,7 +383,16 @@ static int  option_resume(struct usb_serial *serial);
+ #define HAIER_VENDOR_ID				0x201e
+ #define HAIER_PRODUCT_CE100			0x2009
  
- /*
-- * Icom ID-1 digital transceiver
-- */
--
--#define ICOM_ID1_VID            0x0C26
--#define ICOM_ID1_PID            0x0004
-+ * Definitions for Icom Inc. devices
-+ */
-+#define ICOM_VID		0x0C26 /* Icom vendor ID */
-+/* Note: ID-1 is a communications tranceiver for HAM-radio operators */
-+#define ICOM_ID_1_PID		0x0004 /* ID-1 USB to RS-232 */
-+/* Note: OPC is an Optional cable to connect an Icom Tranceiver */
-+#define ICOM_OPC_U_UC_PID	0x0018 /* OPC-478UC, OPC-1122U cloning cable */
-+/* Note: ID-RP* devices are Icom Repeater Devices for HAM-radio */
-+#define ICOM_ID_RP2C1_PID	0x0009 /* ID-RP2C Asset 1 to RS-232 */
-+#define ICOM_ID_RP2C2_PID	0x000A /* ID-RP2C Asset 2 to RS-232 */
-+#define ICOM_ID_RP2D_PID	0x000B /* ID-RP2D configuration port*/
-+#define ICOM_ID_RP2VT_PID	0x000C /* ID-RP2V Transmit config port */
-+#define ICOM_ID_RP2VR_PID	0x000D /* ID-RP2V Receive config port */
-+#define ICOM_ID_RP4KVT_PID	0x0010 /* ID-RP4000V Transmit config port */
-+#define ICOM_ID_RP4KVR_PID	0x0011 /* ID-RP4000V Receive config port */
-+#define ICOM_ID_RP2KVT_PID	0x0012 /* ID-RP2000V Transmit config port */
-+#define ICOM_ID_RP2KVR_PID	0x0013 /* ID-RP2000V Receive config port */
+-#define CINTERION_VENDOR_ID			0x0681
++/* Cinterion (formerly Siemens) products */
++#define SIEMENS_VENDOR_ID				0x0681
++#define CINTERION_VENDOR_ID				0x1e2d
++#define CINTERION_PRODUCT_HC25_MDM		0x0047
++#define CINTERION_PRODUCT_HC25_MDMNET	0x0040
++#define CINTERION_PRODUCT_HC28_MDM		0x004C
++#define CINTERION_PRODUCT_HC28_MDMNET	0x004A /* same for HC28J */
++#define CINTERION_PRODUCT_EU3_E			0x0051
++#define CINTERION_PRODUCT_EU3_P			0x0052
++#define CINTERION_PRODUCT_PH8			0x0053
  
- /*
-  * GN Otometrics (http://www.otometrics.com)
+ /* Olivetti products */
+ #define OLIVETTI_VENDOR_ID			0x0b3c
+@@ -933,7 +942,17 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_100F) },
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1011)},
+ 	{ USB_DEVICE(PIRELLI_VENDOR_ID, PIRELLI_PRODUCT_1012)},
+-	{ USB_DEVICE(CINTERION_VENDOR_ID, 0x0047) },
++	/* Cinterion */
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_E) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_EU3_P) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_PH8) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) },
++	{ USB_DEVICE(CINTERION_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDM) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC25_MDMNET) },
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDM) }, /* HC28 enumerates with Siemens or Cinterion VID depending on FW revision */
++	{ USB_DEVICE(SIEMENS_VENDOR_ID, CINTERION_PRODUCT_HC28_MDMNET) },
++
+ 	{ USB_DEVICE(OLIVETTI_VENDOR_ID, OLIVETTI_PRODUCT_OLICARD100) },
+ 	{ USB_DEVICE(CELOT_VENDOR_ID, CELOT_PRODUCT_CT680M) }, /* CT-650 CDMA 450 1xEVDO modem */
+ 	{ } /* Terminating entry */
 -- 
 1.7.4.4
 
