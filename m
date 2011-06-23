@@ -1,122 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759263Ab1FWLHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 07:07:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:48580 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759161Ab1FWLHK (ORCPT
+	id S932376Ab1FWLOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 07:14:35 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:11139 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757947Ab1FWLOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 07:07:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TsQLNlX5SMrZYuMnBYtFnOKFL4VRgCMWBhROZHWnX8iDn3DYXaP7KBxyB2DehmJz2P
-         KeUyFEb8NN0DJ27ZnmVOMHmSCRNRL2hBfQ8W/Kcj3oPXm9lQcKPaEUDmC9D9OYEi8ns/
-         UEHYcN3G5fPlke8tscew3LFpNr478LY7R7EDk=
-Date: Thu, 23 Jun 2011 15:07:06 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Don Zickus <dzickus@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Vince Weaver <vweaver1@eecs.utk.edu>,
-        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC -tip] perf, x86: Add PERF_COUNT_HW_NMI_WATCHDOG event v2
-Message-ID: <20110623110706.GE10238@sun>
-References: <20110621172319.GE21641@sun>
- <BANLkTikBsfcFfnmgdVQem15P9f2ooQBzeA@mail.gmail.com>
- <20110621175421.GF21641@sun>
- <BANLkTim8OdhTdaayHZAKSXWhmN0anEhieQ@mail.gmail.com>
- <20110621183227.GG21641@sun>
- <20110622082756.GK21641@sun>
- <20110622092134.GO21641@sun>
- <20110623064835.GB10238@sun>
- <BANLkTikVaOz5DYjKSU-jxVBw_Lw9ihV7BQ@mail.gmail.com>
- <20110623095439.GC10238@sun>
+	Thu, 23 Jun 2011 07:14:34 -0400
+Message-ID: <4E03200D.60704@draigBrady.com>
+Date: Thu, 23 Jun 2011 12:14:21 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110623095439.GC10238@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Andrea Righi <andrea@betterlinux.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC] fadvise: move active pages to inactive list with
+ POSIX_FADV_DONTNEED
+References: <1308779480-4950-1-git-send-email-andrea@betterlinux.com>
+In-Reply-To: <1308779480-4950-1-git-send-email-andrea@betterlinux.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 01:54:39PM +0400, Cyrill Gorcunov wrote:
-...
-> > 
-> > No new hidden event, just a x86_pmu + a per-arch callbacks.
+On 22/06/11 22:51, Andrea Righi wrote:
+> There were some reported problems in the past about trashing page cache
+> when a backup software (i.e., rsync) touches a huge amount of pages (see
+> for example [1]).
 > 
-> Looks quite good for me, Don? (i'll cook some draft patch for review meanwhile).
+> This problem has been almost fixed by the Minchan Kim's patch [2] and a
+> proper use of fadvise() in the backup software. For example this patch
+> set [3] has been proposed for inclusion in rsync.
 > 
-> 	Cyrill
+> However, there can be still other similar trashing problems: when the
+> backup software reads all the source files, some of them may be part of
+> the actual working set of the system. When a
+> posix_fadvise(POSIX_FADV_DONTNEED) is performed _all_ pages are evicted
+> from pagecache, both the working set and the use-once pages touched only
+> by the backup software.
+> 
+> With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
+> called for an active page instead of removing it from the page cache it
+> is added to the tail of the inactive list. Otherwise, if it's already in
+> the inactive list the page is removed from the page cache.
+> 
+> In this way if the backup was the only user of a page, that page will
+> be immediately removed from the page cache by calling
+> posix_fadvise(POSIX_FADV_DONTNEED). If the page was also touched by
+> other processes it'll be moved to the inactive list, having another
+> chance of being re-added to the working set, or simply reclaimed when
+> memory is needed.
+> 
+> Testcase:
+> 
+>   - create a 1GB file called "zero"
+>   - run md5sum zero to read all the pages in page cache (this is to
+>     simulate the user activity on this file)
+>   - run "rsync zero zero_copy" (rsync is patched with [3])
+>   - re-run md5sum zero (user activity on the working set) and measure
+>     the time to complete this command
+> 
+> The test has been performed using 3.0.0-rc4 vanilla and with this patch
+> applied (3.0.0-rc4-fadvise).
+> 
+> Results:
+>                   avg elapsed time      block:block_bio_queue
+>  3.0.0-rc4                  4.127s                      8,214
+>  3.0.0-rc4-fadvise          2.146s                          0
+> 
+> In the first case the file is evicted from page cache completely and we
+> must re-read it from the disk. In the second case the file is still in
+> page cache (in the inactive list) and we don't need any other additional
+> I/O operation.
+> 
+> [1] http://marc.info/?l=rsync&m=128885034930933&w=2
+> [2] https://lkml.org/lkml/2011/2/20/57
+> [3] http://lists.samba.org/archive/rsync/2010-November/025827.html
+> 
+> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
 
-Since we are going to make __weak linking anyway maybe something like below
-fit even beter? (untested)
+Hmm, What if you do want to evict it from the cache for testing purposes?
+Perhaps this functionality should be associated with POSIX_FADV_NOREUSE?
+dd has been recently modified to support invalidating the cache for a file,
+and it uses POSIX_FADV_DONTNEED for that.
+http://git.sv.gnu.org/gitweb/?p=coreutils.git;a=commitdiff;h=5f311553
 
-	Cyrill
----
- arch/x86/kernel/cpu/perf_event_p4.c |   26 ++++++++++++++++++++++++++
- kernel/watchdog.c                   |    3 +++
- 2 files changed, 29 insertions(+)
-
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-===================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -705,6 +705,32 @@ static int p4_validate_raw_event(struct 
- 	return 0;
- }
- 
-+void hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr)
-+{
-+	/*
-+	 * Watchdog ticks are special on Netburst, we use
-+	 * that named "non-sleeping" ticks as recommended
-+	 * by Intel SDM Vol3b.
-+	 */
-+	if (wd_attr->type	!= PERF_TYPE_HARDWARE ||
-+	   wd_attr->attr.config	!= PERF_COUNT_HW_CPU_CYCLES)
-+		return;
-+
-+	wd_attr->type	= PERF_TYPE_RAW;
-+	wd_attr->config	=
-+		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS2)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS3)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS0)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS1)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS2)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS3))		|
-+		p4_config_pack_cccr(P4_CCCR_THRESHOLD(15) | P4_CCCR_COMPLEMENT		|
-+			P4_CCCR_COMPARE);
-+}
-+
- static int p4_hw_config(struct perf_event *event)
- {
- 	int cpu = get_cpu();
-Index: linux-2.6.git/kernel/watchdog.c
-===================================================================
---- linux-2.6.git.orig/kernel/watchdog.c
-+++ linux-2.6.git/kernel/watchdog.c
-@@ -355,6 +355,8 @@ static int watchdog(void *unused)
- 
- 
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
-+void __weak hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr) { }
-+
- static int watchdog_nmi_enable(int cpu)
- {
- 	struct perf_event_attr *wd_attr;
-@@ -371,6 +373,7 @@ static int watchdog_nmi_enable(int cpu)
- 	/* Try to register using hardware perf events */
- 	wd_attr = &wd_hw_attr;
- 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
-+	hw_nmi_watchdog_set_attr(wd_attr);
- 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
- 	if (!IS_ERR(event)) {
- 		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
+cheers,
+Pádraig.
