@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934156Ab1FWSID (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 14:08:03 -0400
-Received: from mail.windriver.com ([147.11.1.11]:34683 "EHLO
+	id S934182Ab1FWSIh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 14:08:37 -0400
+Received: from mail.windriver.com ([147.11.1.11]:34665 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933441Ab1FWRgx (ORCPT
+	with ESMTP id S933366Ab1FWRgw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 13:36:53 -0400
+	Thu, 23 Jun 2011 13:36:52 -0400
 From: Paul Gortmaker <paul.gortmaker@windriver.com>
 To: stable@kernel.org, linux-kernel@vger.kernel.org
-Cc: stable-review@kernel.org, Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Ingo Molnar <mingo@elte.hu>,
+Cc: stable-review@kernel.org, Paul Zimmerman <Paul.Zimmerman@synopsys.com>,
+        Paul Zimmerman <paulz@synopsys.com>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         Paul Gortmaker <paul.gortmaker@windriver.com>
-Subject: [34-longterm 132/247] x86 quirk: Fix polarity for IRQ0 pin2 override on SB800 systems
-Date: Thu, 23 Jun 2011 13:33:20 -0400
-Message-Id: <1308850515-15242-73-git-send-email-paul.gortmaker@windriver.com>
+Subject: [34-longterm 133/247] xhci: Avoid BUG() in interrupt context
+Date: Thu, 23 Jun 2011 13:33:21 -0400
+Message-Id: <1308850515-15242-74-git-send-email-paul.gortmaker@windriver.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>
 References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>
@@ -23,123 +24,58 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Andreas Herrmann <andreas.herrmann3@amd.com>
+From: Paul Zimmerman <Paul.Zimmerman@synopsys.com>
 
                    -------------------
     This is a commit scheduled for the next v2.6.34 longterm release.
     If you see a problem with using this for longterm, please comment.
                    -------------------
 
-commit 7f74f8f28a2bd9db9404f7d364e2097a0c42cc12 upstream.
+commit 68e41c5d032668e2905404afbef75bc58be179d6 upstream.
 
-On some SB800 systems polarity for IOAPIC pin2 is wrongly
-specified as low active by BIOS. This caused system hangs after
-resume from S3 when HPET was used in one-shot mode on such
-systems because a timer interrupt was missed (HPET signal is
-high active).
+Change the BUGs in xhci_find_new_dequeue_state() to WARN_ONs, to avoid
+bringing down the box if one of them is hit
 
-For more details see:
+This patch should be queued for stable kernels back to 2.6.31.
 
-  http://marc.info/?l=linux-kernel&m=129623757413868
-
-Tested-by: Manoj Iyer <manoj.iyer@canonical.com>
-Tested-by: Andre Przywara <andre.przywara@amd.com>
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <20110224145346.GD3658@alberich.amd.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Paul Zimmerman <paulz@synopsys.com>
+Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Paul Gortmaker <paul.gortmaker@windriver.com>
 ---
- arch/x86/include/asm/acpi.h    |    1 +
- arch/x86/kernel/acpi/boot.c    |   14 ++++++++++----
- arch/x86/kernel/early-quirks.c |   16 +++++++---------
- 3 files changed, 18 insertions(+), 13 deletions(-)
+ drivers/usb/host/xhci-ring.c |   13 +++++++++----
+ 1 files changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
-index 56f462c..60a8959 100644
---- a/arch/x86/include/asm/acpi.h
-+++ b/arch/x86/include/asm/acpi.h
-@@ -89,6 +89,7 @@ extern int acpi_ht;
- extern int acpi_pci_disabled;
- extern int acpi_skip_timer_override;
- extern int acpi_use_timer_override;
-+extern int acpi_fix_pin2_polarity;
- 
- extern u8 acpi_sci_flags;
- extern int acpi_sci_override_gsi;
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index cd40aba..37311ba 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -73,6 +73,7 @@ u8 acpi_sci_flags __initdata;
- int acpi_sci_override_gsi __initdata;
- int acpi_skip_timer_override __initdata;
- int acpi_use_timer_override __initdata;
-+int acpi_fix_pin2_polarity __initdata;
- 
- #ifdef CONFIG_X86_LOCAL_APIC
- static u64 acpi_lapic_addr __initdata = APIC_DEFAULT_PHYS_BASE;
-@@ -363,10 +364,15 @@ acpi_parse_int_src_ovr(struct acpi_subtable_header * header,
- 		return 0;
- 	}
- 
--	if (acpi_skip_timer_override &&
--	    intsrc->source_irq == 0 && intsrc->global_irq == 2) {
--		printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
--		return 0;
-+	if (intsrc->source_irq == 0 && intsrc->global_irq == 2) {
-+		if (acpi_skip_timer_override) {
-+			printk(PREFIX "BIOS IRQ0 pin2 override ignored.\n");
-+			return 0;
-+		}
-+		if (acpi_fix_pin2_polarity && (intsrc->inti_flags & ACPI_MADT_POLARITY_MASK)) {
-+			intsrc->inti_flags &= ~ACPI_MADT_POLARITY_MASK;
-+			printk(PREFIX "BIOS IRQ0 pin2 override: forcing polarity to high active.\n");
-+		}
- 	}
- 
- 	mp_override_legacy_irq(intsrc->source_irq,
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index ebdb85c..ef01d3d 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -145,15 +145,10 @@ static void __init ati_bugs(int num, int slot, int func)
- 
- static u32 __init ati_sbx00_rev(int num, int slot, int func)
- {
--	u32 old, d;
-+	u32 d;
- 
--	d = read_pci_config(num, slot, func, 0x70);
--	old = d;
--	d &= ~(1<<8);
--	write_pci_config(num, slot, func, 0x70, d);
- 	d = read_pci_config(num, slot, func, 0x8);
- 	d &= 0xff;
--	write_pci_config(num, slot, func, 0x70, old);
- 
- 	return d;
- }
-@@ -162,13 +157,16 @@ static void __init ati_bugs_contd(int num, int slot, int func)
- {
- 	u32 d, rev;
- 
--	if (acpi_use_timer_override)
--		return;
--
- 	rev = ati_sbx00_rev(num, slot, func);
-+	if (rev >= 0x40)
-+		acpi_fix_pin2_polarity = 1;
-+
- 	if (rev > 0x13)
- 		return;
- 
-+	if (acpi_use_timer_override)
+diff --git a/drivers/usb/host/xhci-ring.c b/drivers/usb/host/xhci-ring.c
+index 632a7b6..6ead609 100644
+--- a/drivers/usb/host/xhci-ring.c
++++ b/drivers/usb/host/xhci-ring.c
+@@ -392,8 +392,11 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
+ 	state->new_deq_seg = find_trb_seg(cur_td->start_seg,
+ 			dev->eps[ep_index].stopped_trb,
+ 			&state->new_cycle_state);
+-	if (!state->new_deq_seg)
+-		BUG();
++	if (!state->new_deq_seg) {
++		WARN_ON(1);
 +		return;
++	}
 +
- 	/* check for IRQ0 interrupt swap */
- 	d = read_pci_config(num, slot, func, 0x64);
- 	if (!(d & (1<<14)))
+ 	/* Dig out the cycle state saved by the xHC during the stop ep cmd */
+ 	xhci_dbg(xhci, "Finding endpoint context\n");
+ 	ep_ctx = xhci_get_ep_ctx(xhci, dev->out_ctx, ep_index);
+@@ -404,8 +407,10 @@ void xhci_find_new_dequeue_state(struct xhci_hcd *xhci,
+ 	state->new_deq_seg = find_trb_seg(state->new_deq_seg,
+ 			state->new_deq_ptr,
+ 			&state->new_cycle_state);
+-	if (!state->new_deq_seg)
+-		BUG();
++	if (!state->new_deq_seg) {
++		WARN_ON(1);
++		return;
++	}
+ 
+ 	trb = &state->new_deq_ptr->generic;
+ 	if ((trb->field[3] & TRB_TYPE_BITMASK) == TRB_TYPE(TRB_LINK) &&
 -- 
 1.7.4.4
 
