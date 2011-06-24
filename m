@@ -1,54 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab1FXVrl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 17:47:41 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64114 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab1FXVri convert rfc822-to-8bit (ORCPT
+	id S1755101Ab1FXVud (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 17:50:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46748 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752785Ab1FXVu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 17:47:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=h0v5bn/wDExCpgG/iAhP1xF+i1IlkXY070blengxHmVXw74jH170JvjqAeP5XDXBmZ
-         Ie9jKdt7Chh4ZlmP1qUYgnZcNfGdl+jOn4HI6GiiIXFpo9aMRy6oCS6AkJH9B6ZKA4F9
-         TIDrQNIKwDlnIP+9JHV1ie3dE0E4hku8Oz3UA=
+	Fri, 24 Jun 2011 17:50:29 -0400
+Message-ID: <4E050684.8010003@infradead.org>
+Date: Fri, 24 Jun 2011 18:49:56 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1301491283-14128-2-git-send-email-samuel.gabrielsson@gmail.com>
-References: <1301491283-14128-1-git-send-email-samuel.gabrielsson@gmail.com>
-	<1301491283-14128-2-git-send-email-samuel.gabrielsson@gmail.com>
-Date: Fri, 24 Jun 2011 14:47:37 -0700
-X-Google-Sender-Auth: 5q87eYfT8ov6ZnV9pqwrkiWU9cc
-Message-ID: <BANLkTikyp-p8ymJvEmk2+=zsOZ1+JYYGMA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] i7core_edac: Add scrubbing support
-From: Tony Luck <tony.luck@intel.com>
-To: Samuel Gabrielsson <samuel.gabrielsson@gmail.com>
-Cc: mchehab@redhat.com, linux-edac@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+To: Devin Heitmueller <dheitmueller@kernellabs.com>
+CC: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+        Andy Walls <awalls@md.metrocast.net>,
+        Hans Verkuil <hverkuil@xs4all.nl>, Jesper Juhl <jj@chaosbits.net>,
+        LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
+        linux-media@vger.kernel.org, ceph-devel@vger.kernel.org,
+        Sage Weil <sage@newdream.net>
+Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver
+ version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from
+ include/
+References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>	<4E04912A.4090305@infradead.org>	<BANLkTim9cBiiK_GsZaspxpPJQDBvAcKCWg@mail.gmail.com>	<201106241554.10751.hverkuil@xs4all.nl>	<4E04A122.2080002@infradead.org>	<20110624203404.7a3f6f6a@stein>	<BANLkTimj-oEDvWxMao6zJ_sudUntEVjO1w@mail.gmail.com>	<1308949448.2093.20.camel@morgan.silverblock.net>	<20110624232048.66f1f98c@stein> <BANLkTinZoax2fcSxvyQgfsT-bmsF+BofyQ@mail.gmail.com>
+In-Reply-To: <BANLkTinZoax2fcSxvyQgfsT-bmsF+BofyQ@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Mar 30, 2011 at 6:21 AM, Samuel Gabrielsson
-<samuel.gabrielsson@gmail.com> wrote:
-> +       const u32 cache_line_size = 64;
-> +       const u32 freq_dclk = 800*1000000;
+Em 24-06-2011 18:22, Devin Heitmueller escreveu:
+> On Fri, Jun 24, 2011 at 5:20 PM, Stefan Richter
+> <stefanr@s5r6.in-berlin.de> wrote:
+>> Easier:
+>>  "I run Ubuntu 10.4".
+>>  "I run kernel 2.6.32."
+>> One of these is usually already included in the first post or IRC message
+>> from the user.
+>>
+>> Separate driver versions are only needed on platforms where drivers are
+>> not distributed by the operating system distributor, or driver source code
+>> is not released within kernel source code.
+> 
+> Unfortunately, this doesn't work as all too often the user has "Ubuntu
+> 10.1 but I installed the latest media_build tree a few months ago".
 
-Is dclk always 800 MHz?  If so, a #define might me nice - you use it again in
-get_sdram_scrub_rate(). If not, then getting the actual frequency from some
-place would be good.
+> Hence they are not necessarily on a particular binary release from a
+> distro but rather have a mix of a distro's binary release and a
+> v4l-dvb tree compiled from source.
 
-> +               dw_scrub = 0x00ffffff & (cache_line_size * freq_dclk / new_bw);
 
-Does this give the right answer? It looks like you overflow the "u32" size
-of these calculations when you do 64*800000000 = 51200000000.
+# modprobe vivi
+# dmesg
+WARNING: You are using an experimental version of the media stack.
+	As the driver is backported to an older kernel, it doesn't offer
+	enough quality for its usage in production.
+	Use it with care.
+Latest git patches (needed if you report a bug to linux-media@vger.kernel.org):
+	d3302689d697a99d565ea37c8fb9a19a1a5d0f06 [media] rc-core: fix winbond-cir issues
+	6337ae50f81c99efbf9fa924c9d1b8b51efbcef2 [media] rc/redrat3: dereferencing null pointer
+	ad0fc4c9ac8bf871b7bf874b2cd34b6b65f099c7 [media] rc: double unlock in rc_register_device()
+vivi-000: V4L2 device registered as video0
+Video Technology Magazine Virtual Video Capture Board ver 0.8.0 successfully loaded.
 
-> +       return 0xffffffff & (cache_line_size * freq_dclk / (u64) scrubval);
+The git changeset is a way better than a version number.
 
-Ditto on the overflow question here.
-
--Tony
+Mauro.
