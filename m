@@ -1,665 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab1FXVkt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 17:40:49 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:20848 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab1FXVks convert rfc822-to-8bit (ORCPT
+	id S1754746Ab1FXVpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 17:45:14 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33962 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab1FXVpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 17:40:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=r/2/5MP7XhETLFE6ydv/JgcLA7tA97zpMFEDh/DStxQjyLOSZyEJxcMEZeZOvLkL43
-         374mPpAXNiaJ6XsBulBw==
+	Fri, 24 Jun 2011 17:45:11 -0400
+Message-ID: <4E050559.8000604@infradead.org>
+Date: Fri, 24 Jun 2011 18:44:57 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110622092031.e4be1846.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110616124730.d6960b8b.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110616125314.4f78b1e0.kamezawa.hiroyu@jp.fujitsu.com>
-	<BANLkTim-r6ejJK601rWq7smY37FC9um7mg@mail.gmail.com>
-	<20110622092031.e4be1846.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 24 Jun 2011 14:40:42 -0700
-Message-ID: <BANLkTimBPo6PyMKB4_ASL2nP2xiajExFK7ZWwvCUkdaqssnHiQ@mail.gmail.com>
-Subject: Re: [PATCH 3/7] memcg: add memory.scan_stat
-From: Ying Han <yinghan@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>,
-        "hannes@cmpxchg.org" <hannes@cmpxchg.org>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: Hans Verkuil <hverkuil@xs4all.nl>,
+        Devin Heitmueller <dheitmueller@kernellabs.com>,
+        Jesper Juhl <jj@chaosbits.net>, LKML <linux-kernel@vger.kernel.org>,
+        trivial@kernel.org, linux-media@vger.kernel.org,
+        ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>
+Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver
+ version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from
+ include/
+References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>	<4E04912A.4090305@infradead.org>	<BANLkTim9cBiiK_GsZaspxpPJQDBvAcKCWg@mail.gmail.com>	<201106241554.10751.hverkuil@xs4all.nl>	<4E04A122.2080002@infradead.org> <20110624203404.7a3f6f6a@stein>
+In-Reply-To: <20110624203404.7a3f6f6a@stein>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 5:20 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Mon, 20 Jun 2011 23:49:54 -0700
-> Ying Han <yinghan@google.com> wrote:
->
->> On Wed, Jun 15, 2011 at 8:53 PM, KAMEZAWA Hiroyuki <
->> kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Em 24-06-2011 15:34, Stefan Richter escreveu:
+> On Jun 24 Mauro Carvalho Chehab wrote:
+>> Em 24-06-2011 10:54, Hans Verkuil escreveu:
+>>> On Friday, June 24, 2011 15:45:59 Devin Heitmueller wrote:
+>>>> The versions are increased at the discretion of the driver maintainer,
+>>>> usually when there is some userland visible change in driver behavior.
+>>>>  I assure you the application developers don't *want* to rely on such
+>>>> a mechanism, but there have definitely been cases in the past where
+>>>> there was no easy way to detect the behavior of the driver from
+>>>> userland.
+>>>>
+>>>> It lets application developers work around things like violations of
+>>>> the V4L2 standard which get fixed in newer revisions of the driver.
+>>>> It provides them the ability to put a hack in their code that says "if
+>>>> (version < X) then this driver feature is broken and I shouldn't use
+>>>> it."
+>>>
+>>> Indeed. Ideally we shouldn't need it. But reality is different.
+>>>
+>>> What we have right now works and I see no compelling reason to change the
+>>> behavior.
 >>
->> > From e08990dd9ada13cf236bec1ef44b207436434b8e Mon Sep 17 00:00:00 2001
->> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> > Date: Wed, 15 Jun 2011 14:11:01 +0900
->> > Subject: [PATCH 3/7] memcg: add memory.scan_stat
->> >
->> > commit log of commit 0ae5e89 " memcg: count the soft_limit reclaim in..."
->> > says it adds scanning stats to memory.stat file. But it doesn't because
->> > we considered we needed to make a concensus for such new APIs.
->> >
->> > This patch is a trial to add memory.scan_stat. This shows
->> >  - the number of scanned pages
->> >  - the number of recleimed pages
->> >  - the number of elaplsed time (including sleep/pause time)
->> >  for both of direct/soft reclaim and shrinking caused by changing limit
->> >  or force_empty.
->> >
->> > The biggest difference with oringinal Ying's one is that this file
->> > can be reset by some write, as
->> >
->> >  # echo 0 ...../memory.scan_stat
->> >
->> > [kamezawa@bluextal ~]$ cat /cgroup/memory/A/memory.scan_stat
->> > scanned_pages_by_limit 358470
->> > freed_pages_by_limit 180795
->> > elapsed_ns_by_limit 21629927
->> > scanned_pages_by_system 0
->> > freed_pages_by_system 0
->> > elapsed_ns_by_system 0
->> > scanned_pages_by_shrink 76646
->> > freed_pages_by_shrink 38355
->> > elappsed_ns_by_shrink 31990670
->> >
+>> A per-driver version only works if the user is running a vanilla kernel without 
+>> any stable patches applied. 
 >>
->> elapsed?
+>> I doubt that this covers the large amount of the users: they'll either use an 
+>> stable patched kernel or a distribution-specific one. On both cases, the driver
+>> version is not associated with a bug fix, as the driver maintainers just take
+>> care of increasing the driver version once per each new kernel version (when
+>> they care enough).
 >>
->
-> you'r right.
->
->>
->> > total_scanned_pages_by_limit 358470
->> > total_freed_pages_by_limit 180795
->> > total_elapsed_ns_by_hierarchical 216299275
->> > total_scanned_pages_by_system 0
->> > total_freed_pages_by_system 0
->> > total_elapsed_ns_by_system 0
->> > total_scanned_pages_by_shrink 76646
->> > total_freed_pages_by_shrink 38355
->> > total_elapsed_ns_by_shrink 31990670
->> >
->> > total_xxxx is for hierarchy management.
->> >
->>
->> For some reason, i feel the opposite where the local stat (like
->> "scanned_pages_by_limit") are reclaimed under hierarchical reclaim. The
->> total_xxx stats are only incremented for root_mem which is the cgroup
->> triggers the hierarchical reclaim. So:
->>
->> total_scanned_pages_by_limit: number of pages being scanned while the memcg
->> hits its limit
->> scanned_pages_by_limit: number of pages being scanned while one of the
->> memcg's ancestor hits its limit
->>
->> am i missing something?
->>
->
-> scanned_pages_by_limit: one of ancestors and itself's limit.
+>> Also, a git blame for the V4L2 drivers shows that only a few drivers have their
+>> version increased as changes are applied there. So, relying on cap->version 
+>> has a minimal chance of working only with a few drivers, with vanilla *.0 kernels.
+> 
+> If the "driver version" is in fact an ABI version, then the driver author
+> should really increase it only when ABI behavior is changed (and only if
+> the behavior change can only be communicated by version number --- e.g.
+> addition of an ioctl is not among such reasons).  And the author should
+> commit behavior changing implementation and version number change in a
+> single changeset.
 
-yes, and that is what I understood.
->
->
->
->
->>
->> >
->> > This will be useful for further memcg developments and need to be
->> > developped before we do some complicated rework on LRU/softlimit
->> > management.
->> >
->> > Now, scan/free/elapsed_by_system is incomplete but future works of
->> > Johannes at el. will fill remaining information and then, we can
->> > look into problems of isolation between memcgs.
->> >
->> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->> > ---
->> >  Documentation/cgroups/memory.txt |   33 +++++++++
->> >  include/linux/memcontrol.h       |   16 ++++
->> >  include/linux/swap.h             |    6 -
->> >  mm/memcontrol.c                  |  135
->> > +++++++++++++++++++++++++++++++++++++--
->> >  mm/vmscan.c                      |   27 ++++++-
->> >  5 files changed, 199 insertions(+), 18 deletions(-)
->> >
->> > Index: mmotm-0615/Documentation/cgroups/memory.txt
->> > ===================================================================
->> > --- mmotm-0615.orig/Documentation/cgroups/memory.txt
->> > +++ mmotm-0615/Documentation/cgroups/memory.txt
->> > @@ -380,7 +380,7 @@ will be charged as a new owner of it.
->> >
->> >  5.2 stat file
->> >
->> > -memory.stat file includes following statistics
->> > +5.2.1 memory.stat file includes following statistics
->> >
->> >  # per-memory cgroup local status
->> >  cache          - # of bytes of page cache memory.
->> > @@ -438,6 +438,37 @@ Note:
->> >         file_mapped is accounted only when the memory cgroup is owner of
->> > page
->> >         cache.)
->> >
->> > +5.2.2 memory.scan_stat
->> > +
->> > +memory.scan_stat includes statistics information for memory scanning and
->> > +freeing, reclaiming. The statistics shows memory scanning information
->> > since
->> > +memory cgroup creation and can be reset to 0 by writing 0 as
->> > +
->> > + #echo 0 > ../memory.scan_stat
->> > +
->> > +This file contains following statistics.
->> > +
->> > +scanned_pages_by_limit - # of scanned pages at hitting limit.
->> > +freed_pages_by_limit   - # of freed pages at hitting limit.
->> > +elapsed_ns_by_limit    - nano sec of elappsed time at LRU scan at
->> > +                                  hitting limit.(this includes sleep
->> > time.)
->> >
->> elapsed?
->>
->> > +
->> > +scanned_pages_by_system        - # of scanned pages by the kernel.
->> > +                         (Now, this value means global memory reclaim
->> > +                           caused by system memory shortage with a hint
->> > +                          of softlimit. "No soft limit" case will be
->> > +                          supported in future.)
->> > +freed_pages_by_system  - # of freed pages by the kernel.
->> > +elapsed_ns_by_system   - nano sec of elappsed time by kernel.
->> > +
->> > +scanned_pages_by_shrink        - # of scanned pages by shrinking.
->> > +                                 (i.e. changes of limit, force_empty,
->> > etc.)
->> > +freed_pages_by_shrink  - # of freed pages by shirkining.
->> > +elappsed_ns_by_shrink  - nano sec of elappsed time at shrinking.
->> >
->> elapsed?
->>
->> > +
->> > +total_xxx includes the statistics of children scanning caused by the
->> > cgroup.
->> >
->>
->> based on the code inspection, the total_xxx also includes the cgroup's scan
->> stat as well.
->>
->
-> yes.
->
->
->> +
->> > +
->> >  5.3 swappiness
->> >
->> >  Similar to /proc/sys/vm/swappiness, but affecting a hierarchy of groups
->> > only.
->> > Index: mmotm-0615/include/linux/memcontrol.h
->> > ===================================================================
->> > --- mmotm-0615.orig/include/linux/memcontrol.h
->> > +++ mmotm-0615/include/linux/memcontrol.h
->> > @@ -120,6 +120,22 @@ struct zone_reclaim_stat*
->> >  mem_cgroup_get_reclaim_stat_from_page(struct page *page);
->> >  extern void mem_cgroup_print_oom_info(struct mem_cgroup *memcg,
->> >                                        struct task_struct *p);
->> > +struct memcg_scanrecord {
->> > +       struct mem_cgroup *mem; /* scanend memory cgroup */
->> > +       struct mem_cgroup *root; /* scan target hierarchy root */
->> > +       int context;            /* scanning context (see memcontrol.c) */
->> > +       unsigned long nr_scanned; /* the number of scanned pages */
->> > +       unsigned long nr_freed; /* the number of freed pages */
->> > +       unsigned long elappsed; /* nsec of time elapsed while scanning */
->> >
->> elapsed?
->>
->> > +};
->> > +
->> > +extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
->> > +                                                 gfp_t gfp_mask, bool
->> > noswap,
->> > +                                                 struct memcg_scanrecord
->> > *rec);
->> > +extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->> > +                                               gfp_t gfp_mask, bool
->> > noswap,
->> > +                                               struct zone *zone,
->> > +                                               struct memcg_scanrecord
->> > *rec);
->> >
->> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
->> >  extern int do_swap_account;
->> > Index: mmotm-0615/include/linux/swap.h
->> > ===================================================================
->> > --- mmotm-0615.orig/include/linux/swap.h
->> > +++ mmotm-0615/include/linux/swap.h
->> > @@ -253,12 +253,6 @@ static inline void lru_cache_add_file(st
->> >  /* linux/mm/vmscan.c */
->> >  extern unsigned long try_to_free_pages(struct zonelist *zonelist, int
->> > order,
->> >                                        gfp_t gfp_mask, nodemask_t *mask);
->> > -extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
->> > -                                                 gfp_t gfp_mask, bool
->> > noswap);
->> > -extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->> > -                                               gfp_t gfp_mask, bool
->> > noswap,
->> > -                                               struct zone *zone,
->> > -                                               unsigned long *nr_scanned);
->> >  extern int __isolate_lru_page(struct page *page, int mode, int file);
->> >  extern unsigned long shrink_all_memory(unsigned long nr_pages);
->> >  extern int vm_swappiness;
->> > Index: mmotm-0615/mm/memcontrol.c
->> > ===================================================================
->> > --- mmotm-0615.orig/mm/memcontrol.c
->> > +++ mmotm-0615/mm/memcontrol.c
->> > @@ -203,6 +203,57 @@ struct mem_cgroup_eventfd_list {
->> >  static void mem_cgroup_threshold(struct mem_cgroup *mem);
->> >  static void mem_cgroup_oom_notify(struct mem_cgroup *mem);
->> >
->> > +enum {
->> > +       SCAN_BY_LIMIT,
->> > +       FREED_BY_LIMIT,
->> > +       ELAPSED_BY_LIMIT,
->> > +
->> > +       SCAN_BY_SYSTEM,
->> > +       FREED_BY_SYSTEM,
->> > +       ELAPSED_BY_SYSTEM,
->> > +
->> > +       SCAN_BY_SHRINK,
->> > +       FREED_BY_SHRINK,
->> > +       ELAPSED_BY_SHRINK,
->> > +       NR_SCANSTATS,
->> > +};
->> > +#define __FREED                (1)
->> > +#define        __ELAPSED       (2)
->> >
->>
->> /tab/space/
->>
->>
->> > +
->> > +struct scanstat {
->> > +       spinlock_t      lock;
->> > +       unsigned long   stats[NR_SCANSTATS];    /* local statistics */
->> > +       unsigned long   totalstats[NR_SCANSTATS];   /* hierarchical */
->> > +};
+Yes, but "driver version" were never used as such. Several drivers got lots of
+updates, ABI change behavior (like the removal of V4L1 API), etc without having
+a single "driver version" increment. Other drivers increase it even on minor
+changes.
 
-I wonder why not extending the mem_cgroup_stat_cpu struct, and then we
-can use the per-cpu counters like others.
+IMO, it makes no sense on keeping it, but removing this field would break 
+userspace, as a few programs seem to use it.
 
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b7d2d79..5b8bbe9 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -138,6 +138,7 @@ struct mem_cgroup_stat_cpu {
-        long count[MEM_CGROUP_STAT_NSTATS];
-        unsigned long events[MEM_CGROUP_EVENTS_NSTATS];
-        unsigned long targets[MEM_CGROUP_NTARGETS];
-+       unsigned long reclaim_stats[MEMCG_RECLAIM_NSTATS];
- };
+> And anybody who backmerges such an ABI behavior change into another kernel
+> branch (stable, longterm, distro...) must backmerge the associated version
+> number change too.
 
- /*
-@@ -557,6 +558,101 @@ static void __mem_cgroup_target_update(struct
-mem_cgroup *mem, int target)
-        this_cpu_write(mem->stat->targets[target], next);
- }
+Yes, but, again, this doesn't happen. In general, the drivers that use it either
+increment the version number on a separate patch, or integrate it with one of
+the patches.
 
-+void mem_cgroup_update_reclaim_stat(struct mem_cgroup *mem,
-+                                   enum mem_cgroup_reclaim_stat_index idx,
-+                                   unsigned long num)
-+{
-+       this_cpu_add(mem->stat->reclaim_stats[idx], num);
-+}
+It is easy to take a look at ivtv, as it has a separate file with the version
+number:
+
+$ git log --oneline drivers/media/video/ivtv/ivtv-version.h
+4359e5b V4L/DVB: ivtv: Increment driver version due to firmware loading changes
+c019f90 V4L/DVB (10965): ivtv: bump version
+c58dc0b V4L/DVB (8633): ivtv: update ivtv version number
+be303e1 V4L/DVB (7930): ivtv: bump version to 1.3.0.
+fcbbf6f V4L/DVB (7759): ivtv: increase version number to 1.2.1
+0170a48 V4L/DVB (6762): ivtv: update version number to 1.2
+612570f V4L/DVB (6091): ivtv: header cleanup
+f38a798 V4L/DVB (5909): ivtv: update version to 1.1 to mark ivtv-fb support
+1a0adaf V4L/DVB (5345): ivtv driver for Conexant cx23416/cx23415 MPEG encoder/decoder
+
+Looking at the details of the above commits, on several cases there's no explanation
+why the version was incremented, or why an userspace application should bother to have
+any special treatment for that version or for the previous one.
+
+The date of the commits also don't help much:
+
+Date:   Sat Jun 12 13:55:33 2010 -0300
+Date:   Wed Mar 11 18:50:04 2009 -0300
+Date:   Wed Sep 3 16:46:58 2008 -0300
+Date:   Sat May 24 12:43:43 2008 -0300
+Date:   Sat Apr 26 09:43:22 2008 -0300
+Date:   Fri Dec 7 20:31:17 2007 -0300
+Date:   Thu Aug 23 05:42:59 2007 -0300
+Date:   Sun Jul 22 08:39:43 2007 -0300
+Date:   Fri Apr 27 12:31:25 2007 -0300
+
+Even when there seems to have a good reason for version bump, like on this example
+(from cx18 driver):
+
+commit 9982be8
+Author: Andy Walls <awalls@radix.net>
+Date:   Wed Apr 15 20:49:19 2009 -0300
+
+    V4L/DVB (11620): cx18: Increment version due to significant buffer handling changes
+    
+    Version bump from 1.1.0 to 1.2.0
+    
+    Signed-off-by: Andy Walls <awalls@radix.net>
+    Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+The commit message doesn't help to tell the application developer how version 1.1.0 is
+different than version 1.2.0.
+
+Also, as this is on a separate commit, if the buffer changes were backported into a
+stable or distro kernel, the application will have no way to detect the differences.
+
+On several cases, the version upgrade is simply due to the addition of a new type of
+support, like this one:
+
+commit 437b775
+Author: Andy Walls <awalls@md.metrocast.net>
+Date:   Sun Mar 27 00:43:30 2011 -0300
+
+    [media] cx18: Bump driver version, since a new class of HVR-1600 is properly supported
+    
+    Make a user visible driver version change, for the inevitable user support
+    questions about why newer model HVR-1600's do not work with (older
+    versions of) the cx18 driver.
+
+For things like that, it would be enough to simply increment MODULE_VERSION().
+
+> Of course sometimes people realize this only after the fact.  Or driver
+> authors don't have a clear understanding of ABI versioning to begin with.
+> I am saying so because I had to learn it too; I certainly wasn't born
+> with an instinct knowledge how to do it properly.
+> 
+> (Disclaimer:  I have no stake in drivers/media/ ABIs.  But I am involved
+> in maintaining a userspace ABI elsewhere in drivers/firewire/, and one of
+> the userspace libraries that use this ABI.)
 
 
->> > +
->> > +const char *scanstat_string[NR_SCANSTATS] = {
->> > +       "scanned_pages_by_limit",
->> > +       "freed_pages_by_limit",
->> > +       "elapsed_ns_by_limit",
->> > +
->> > +       "scanned_pages_by_system",
->> > +       "freed_pages_by_system",
->> > +       "elapsed_ns_by_system",
->> > +
->> > +       "scanned_pages_by_shrink",
->> > +       "freed_pages_by_shrink",
->> > +       "elappsed_ns_by_shrink",
->> >
->> elapsed?
->>
->> > +};
->> > +
->> > +const char *total_scanstat_string[NR_SCANSTATS] = {
->> > +       "total_scanned_pages_by_limit",
->> > +       "total_freed_pages_by_limit",
->> > +       "total_elapsed_ns_by_hierarchical",
->> >
->>
->> typo?
->>
->>
->> > +
->> > +       "total_scanned_pages_by_system",
->> > +       "total_freed_pages_by_system",
->> > +       "total_elapsed_ns_by_system",
->> > +
->> > +       "total_scanned_pages_by_shrink",
->> > +       "total_freed_pages_by_shrink",
->> > +       "total_elapsed_ns_by_shrink",
->> > +};
->> > +
->> >  /*
->> >  * The memory controller data structure. The memory controller controls
->> > both
->> >  * page cache and RSS per cgroup. We would eventually like to provide
->> > @@ -264,7 +315,8 @@ struct mem_cgroup {
->> >
->> >        /* For oom notifier event fd */
->> >        struct list_head oom_notify;
->> > -
->> > +       /* For recording LRU-scan statistics */
->> > +       struct scanstat scanstat;
+Em 24-06-2011 15:48, Devin Heitmueller escreveu:
+> To be clear, I don't think anyone is actually proposing that the
+> driver version number really be used as any form of formal "ABI
+> versioning" scheme.  In almost all cases, it's so the application can
+> know to *not* do something is the driver is older than X.
 
-Can we add this to mem_cgroup_stat_cpu ?
+As I've explained before, even that is wrong, as the version increment
+patch may not have been backported.
 
->> >        /*
->> >         * Should we move charges of a task when a task is moved into this
->> >         * mem_cgroup ? And what type of charges should we move ?
->> > @@ -1634,6 +1686,28 @@ int mem_cgroup_select_victim_node(struct
->> >  }
->> >  #endif
->> >
->> > +
->> > +
->> > +static void mem_cgroup_record_scanstat(struct memcg_scanrecord *rec)
->> > +{
->> > +       struct mem_cgroup *mem;
->> > +       int context = rec->context;
->> > +
->> > +       mem = rec->mem;
->> > +       spin_lock(&mem->scanstat.lock);
->> > +       mem->scanstat.stats[context] += rec->nr_scanned;
->> > +       mem->scanstat.stats[context + __FREED] += rec->nr_freed;
->> > +       mem->scanstat.stats[context + __ELAPSED] += rec->elappsed;
->> >
->> elapsed?
->>
->>
->> +       spin_unlock(&mem->scanstat.lock);
->> > +
->> > +       mem = rec->root;
->> > +       spin_lock(&mem->scanstat.lock);
->> > +       mem->scanstat.totalstats[context] += rec->nr_scanned;
->> > +       mem->scanstat.totalstats[context + __FREED] += rec->nr_freed;
->> > +       mem->scanstat.totalstats[context + __ELAPSED] += rec->elappsed;
->> >
->>
->> elapsed?
->>
->> > +       spin_unlock(&mem->scanstat.lock);
->> > +}
->> > +
->> >  /*
->> >  * Scan the hierarchy if needed to reclaim memory. We remember the last
->> > child
->> >  * we reclaimed from, so that we don't end up penalizing one child
->> > extensively
->> > @@ -1659,8 +1733,8 @@ static int mem_cgroup_hierarchical_recla
->> >        bool shrink = reclaim_options & MEM_CGROUP_RECLAIM_SHRINK;
->> >        bool check_soft = reclaim_options & MEM_CGROUP_RECLAIM_SOFT;
->> >        unsigned long excess;
->> > -       unsigned long nr_scanned;
->> >        int visit;
->> > +       struct memcg_scanrecord rec;
->> >
->> >        excess = res_counter_soft_limit_excess(&root_mem->res) >>
->> > PAGE_SHIFT;
->> >
->> > @@ -1668,6 +1742,15 @@ static int mem_cgroup_hierarchical_recla
->> >        if (!check_soft && root_mem->memsw_is_minimum)
->> >                noswap = true;
->> >
->> > +       if (shrink)
->> > +               rec.context = SCAN_BY_SHRINK;
->> > +       else if (check_soft)
->> > +               rec.context = SCAN_BY_SYSTEM;
->> > +       else
->> > +               rec.context = SCAN_BY_LIMIT;
->> > +
->> > +       rec.root = root_mem;
->> >
->>
->>
->>
->> > +
->> >  again:
->> >        if (!shrink) {
->> >                visit = 0;
->> > @@ -1695,14 +1778,19 @@ again:
->> >                        css_put(&victim->css);
->> >                        continue;
->> >                }
->> > +               rec.mem = victim;
->> > +               rec.nr_scanned = 0;
->> > +               rec.nr_freed = 0;
->> > +               rec.elappsed = 0;
->> >
->> elapsed?
->>
->> >                /* we use swappiness of local cgroup */
->> >                if (check_soft) {
->> >                        ret = mem_cgroup_shrink_node_zone(victim, gfp_mask,
->> > -                               noswap, zone, &nr_scanned);
->> > -                       *total_scanned += nr_scanned;
->> > +                               noswap, zone, &rec);
->> > +                       *total_scanned += rec.nr_scanned;
->> >                } else
->> >                        ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
->> > -                                               noswap);
->> > +                                               noswap, &rec);
->> > +               mem_cgroup_record_scanstat(&rec);
->> >                css_put(&victim->css);
->> >
->> >                total += ret;
->> > @@ -3757,7 +3845,8 @@ try_to_free:
->> >                        ret = -EINTR;
->> >                        goto out;
->> >                }
->> > -               progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
->> > false);
->> > +               progress = try_to_free_mem_cgroup_pages(mem,
->> > +                               GFP_KERNEL, false, NULL);
->> >
->>
->> So we don't record the stat for force_empty case?
->>
->
-> yes, now. force_empty is used only for rmdir(). I don't think log is
-> necessary for cgroup disappearing.
+> Given all the cases I've seen, it doesn't really hurt anything if the
+> driver contains a fix from newer than X, aside from the fact that the
+> application won't take advantage of whatever feature/functionality the
+> fix made work.  In other words, I think from a backport standpoint, it
+> usually doesn't *hurt* anything if a fix is backported without the
+> version being incremented, aside from applications not knowing that
+> the feature/fix is present.
 
-we might need to add that case later, since force_empty can also being
-used as adding external pressure to the memcg.
->
->
->>
->> >                if (!progress) {
->> >                        nr_retries--;
->> >                        /* maybe some writeback is necessary */
->> > @@ -4599,6 +4688,34 @@ static int mem_control_numa_stat_open(st
->> >  }
->> >  #endif /* CONFIG_NUMA */
->> >
->> > +static int mem_cgroup_scan_stat_read(struct cgroup *cgrp,
->> > +                               struct cftype *cft,
->> > +                               struct cgroup_map_cb *cb)
->> > +{
->> > +       struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
->> > +       int i;
->> > +
->> > +       for (i = 0; i < NR_SCANSTATS; i++)
->> > +               cb->fill(cb, scanstat_string[i], mem->scanstat.stats[i]);
->> > +       for (i = 0; i < NR_SCANSTATS; i++)
->> > +               cb->fill(cb, total_scanstat_string[i],
->> > +                       mem->scanstat.totalstats[i]);
->> > +       return 0;
->> > +}
->> > +
->> > +static int mem_cgroup_reset_scan_stat(struct cgroup *cgrp,
->> > +                               unsigned int event)
->> > +{
->> > +       struct mem_cgroup *mem = mem_cgroup_from_cont(cgrp);
->> > +
->> > +       spin_lock(&mem->scanstat.lock);
->> > +       memset(&mem->scanstat.stats, 0, sizeof(mem->scanstat.stats));
->> > +       memset(&mem->scanstat.totalstats, 0,
->> > sizeof(mem->scanstat.totalstats));
->> > +       spin_unlock(&mem->scanstat.lock);
->> > +       return 0;
->> > +}
->> > +
->> > +
->> >  static struct cftype mem_cgroup_files[] = {
->> >        {
->> >                .name = "usage_in_bytes",
->> > @@ -4669,6 +4786,11 @@ static struct cftype mem_cgroup_files[]
->> >                .mode = S_IRUGO,
->> >        },
->> >  #endif
->> > +       {
->> > +               .name = "scan_stat",
->> > +               .read_map = mem_cgroup_scan_stat_read,
->> > +               .trigger = mem_cgroup_reset_scan_stat,
->> > +       },
->> >  };
->> >
->> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
->> > @@ -4932,6 +5054,7 @@ mem_cgroup_create(struct cgroup_subsys *
->> >        atomic_set(&mem->refcnt, 1);
->> >        mem->move_charge_at_immigrate = 0;
->> >        mutex_init(&mem->thresholds_lock);
->> > +       spin_lock_init(&mem->scanstat.lock);
->> >        return &mem->css;
->> >  free_out:
->> >        __mem_cgroup_free(mem);
->> > Index: mmotm-0615/mm/vmscan.c
->> > ===================================================================
->> > --- mmotm-0615.orig/mm/vmscan.c
->> > +++ mmotm-0615/mm/vmscan.c
->> > @@ -2199,9 +2199,9 @@ unsigned long try_to_free_pages(struct z
->> >  #ifdef CONFIG_CGROUP_MEM_RES_CTLR
->> >
->> >  unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->> > -                                               gfp_t gfp_mask, bool
->> > noswap,
->> > -                                               struct zone *zone,
->> > -                                               unsigned long *nr_scanned)
->> > +                                       gfp_t gfp_mask, bool noswap,
->> > +                                       struct zone *zone,
->> > +                                       struct memcg_scanrecord *rec)
->> >  {
->> >        struct scan_control sc = {
->> >                .nr_scanned = 0,
->> > @@ -2213,6 +2213,7 @@ unsigned long mem_cgroup_shrink_node_zon
->> >                .order = 0,
->> >                .mem_cgroup = mem,
->> >        };
->> > +       unsigned long start, end;
->> >
->> >        sc.gfp_mask = (gfp_mask & GFP_RECLAIM_MASK) |
->> >                        (GFP_HIGHUSER_MOVABLE & ~GFP_RECLAIM_MASK);
->> > @@ -2221,6 +2222,7 @@ unsigned long mem_cgroup_shrink_node_zon
->> >                                                      sc.may_writepage,
->> >                                                      sc.gfp_mask);
->> >
->> > +       start = sched_clock();
->> >        /*
->> >         * NOTE: Although we can get the priority field, using it
->> >         * here is not a good idea, since it limits the pages we can scan.
->> > @@ -2229,19 +2231,27 @@ unsigned long mem_cgroup_shrink_node_zon
->> >         * the priority and make it zero.
->> >         */
->> >        shrink_zone(0, zone, &sc);
->> > +       end = sched_clock();
->> > +
->> > +       if (rec) {
->> > +               rec->nr_scanned += sc.nr_scanned;
->> >
->>
->>
->>
->> > +               rec->nr_freed += sc.nr_reclaimed;
->> > +               rec->elappsed += end - start;
->> >
->> elapsed?
->>
->> > +       }
->> >
->> >        trace_mm_vmscan_memcg_softlimit_reclaim_end(sc.nr_reclaimed);
->> >
->> > -       *nr_scanned = sc.nr_scanned;
->> >        return sc.nr_reclaimed;
->> >  }
->> >
->> >  unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
->> >                                           gfp_t gfp_mask,
->> > -                                          bool noswap)
->> > +                                          bool noswap,
->> > +                                          struct memcg_scanrecord *rec)
->> >  {
->> >        struct zonelist *zonelist;
->> >        unsigned long nr_reclaimed;
->> > +       unsigned long start, end;
->> >        int nid;
->> >        struct scan_control sc = {
->> >                .may_writepage = !laptop_mode,
->> > @@ -2259,6 +2269,7 @@ unsigned long try_to_free_mem_cgroup_pag
->> >                .gfp_mask = sc.gfp_mask,
->> >        };
->> >
->> > +       start = sched_clock();
->> >        /*
->> >         * Unlike direct reclaim via alloc_pages(), memcg's reclaim doesn't
->> >         * take care of from where we get pages. So the node where we start
->> > the
->> > @@ -2273,6 +2284,12 @@ unsigned long try_to_free_mem_cgroup_pag
->> >                                            sc.gfp_mask);
->> >
->> >        nr_reclaimed = do_try_to_free_pages(zonelist, &sc, &shrink);
->> > +       end = sched_clock();
->> > +       if (rec) {
->> > +               rec->nr_scanned += sc.nr_scanned;
->> >
->>
->> sc.nr_scanned only contains the nr_scanned of last
->> priority do_try_to_free_pages(). we need to reset it to total_scanned before
->> return. I am looking at v3.0-rc3 .
->>
->
-> Hm. ok, then, total_reclaimed in softlimit is buggy, too.
-> I'll check.
+New features could also be backported without version increment. This happens
+from time to time at the enterprise distros, and on long duration stable
+releases.
 
-Thanks
+> Really, this is all about applications being able to jam a hack into
+> their code that translates to "don't call this ioctl() with some
+> particular argument if it's driver W less than version X, because the
+> driver had a bug that is likely to panic the guy's PC".  Sure, it's a
+> crummy solution, but at this point it's the best that we have got.
 
---Ying
->
-> Thanks,
-> -Kame
->
->
+Version number is not enough for that. When there are such panic/OOPS bugs,
+they are backported to -stable and to the distro kernels.
+
+An application doing that will be removing a feature that is probably already
+fixed.
+
+Mauro.
