@@ -1,88 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab1FXRGp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 13:06:45 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:9240 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751045Ab1FXRGo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 13:06:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:x-operating-system
-         :user-agent;
-        b=atQA1XTYFV/ZfhD5fvq6dGFeA3POdqniO9558Tz8gjzY0LkUdbadsaCOWxhBjmFF/z
-         DIzYrI+aERXau2v3lPEw==
-Date: Fri, 24 Jun 2011 10:06:22 -0700
-From: Mandeep Singh Baines <msb@chromium.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Mandeep Singh Baines <msb@chromium.org>, Greg KH <gregkh@suse.de>,
-        Sergiu Iordache <sergiu@chromium.org>, Valdis.Kletnieks@vt.edu,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Samo Pogacnik <samo_pogacnik@t-2.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] char drivers: Ram oops kernel configuration parameters
-Message-ID: <20110624170621.GK13916@google.com>
-References: <1308854160-16022-1-git-send-email-sergiu@chromium.org>
- <62229.1308859172@turing-police.cc.vt.edu>
- <BANLkTiko9PvSDHEnbjCAvcAReLytWwg7qSoZGv778xuj3tqW=g@mail.gmail.com>
- <20110623213315.GB4347@suse.de>
- <BANLkTin_ioBy-C15c6GkA4eirCAVEN-PHvuV3gOq0Ls3n5YTBw@mail.gmail.com>
- <BANLkTi=avK-_SWwS938=oPuKRMq_5Ai3bw@mail.gmail.com>
+	id S1753121Ab1FXRPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 13:15:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60574 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751995Ab1FXRPJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 13:15:09 -0400
+Message-ID: <4E04C5EC.2090602@zytor.com>
+Date: Fri, 24 Jun 2011 10:14:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=avK-_SWwS938=oPuKRMq_5Ai3bw@mail.gmail.com>
-X-Operating-System: Linux/2.6.32-gg426-generic (x86_64)
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-System-Of-Record: true
+To: Rick van Rein <rick@vanrein.org>
+CC: "Luck, Tony" <tony.luck@intel.com>, Craig Bergstrom <craigb@google.com>,
+        Andi Kleen <andi@firstfloor.org>, Stefan Assmann <sassmann@kpanic.de>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+References: <20110623133950.GB28333@srcf.ucam.org> <4E0348E0.7050808@kpanic.de> <20110623141222.GA30003@srcf.ucam.org> <4E035DD1.1030603@kpanic.de> <20110623170014.GN3263@one.firstfloor.org> <987664A83D2D224EAE907B061CE93D5301E938F2FD@orsmsx505.amr.corp.intel.com> <BANLkTikTTCU3eKkCtrbLbtpLJtksehyEMg@mail.gmail.com> <20110624080535.GA19966@phantom.vanrein.org> <4E04B848.6000908@zytor.com> <987664A83D2D224EAE907B061CE93D5301E942ED99@orsmsx505.amr.corp.intel.com> <20110624165612.GC31887@phantom.vanrein.org>
+In-Reply-To: <20110624165612.GC31887@phantom.vanrein.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marco Stornelli (marco.stornelli@gmail.com) wrote:
-> 2011/6/24 Mandeep Singh Baines <msb@chromium.org>:
-> > On Thu, Jun 23, 2011 at 2:33 PM, Greg KH <gregkh@suse.de> wrote:
-> >> On Thu, Jun 23, 2011 at 01:43:49PM -0700, Sergiu Iordache wrote:
-> >>> On Thu, Jun 23, 2011 at 12:59 PM, <Valdis.Kletnieks@vt.edu> wrote:
-> >>> > On Thu, 23 Jun 2011 11:36:00 PDT, Sergiu Iordache said:
-> >>> > > Ramoops currently has module parameters for setting the configuration
-> >>> > > variables (ram start, ram size and dump oopses). This makes it difficult to
-> >>> > > configure when the module is compiled as a builtin.
-> >>> >
-> >>> > Can't you add 'ramoops.ram_start=128M ramoops.ram_size=64M' or similar
-> >>> > to your kernel cmdline?
-> >>>
-> >>> You can but the problem is that when you're using the module as a
-> >>> builtin managing the command line is harder than managing Kconfig
-> >>> files. Instead of having different platform dependent config files
-> >>> (which already exist in most of the cases) under source control you
-> >>> would have to have different scripts which run the kernel with
-> >>> different parameters.
-> >>
-> >> Then why not make the sysfs files writable?
-> >>
-> >
-> > We do use sysctl and sysfs for most of our tuning stuff.
-> >
-> > But in this case, you wouldn't be able to write the sysfs file until
-> > late in boot
-> > so an early crashed would be lost.
-> >
-> > Our command-line is pretty generic across targets. Even across archs.
-> >
+On 06/24/2011 09:56 AM, Rick van Rein wrote:
+> Hello,
 > 
-> Maybe using platform data? With archs with device tree support can be easy.
+>> Does it scale? [...] Perhaps we may end up with a composite solution. 
+> 
+> If I had my way, there would be an extension to the e820 format to allow
+> the BadRAM patterns to be specified.  Since the extension with bad page
+> information is specific to boot loader interaction, this would work in
+> exactly those cases that are covered by the current situation.
 > 
 
-FDT is a good idea. Thanks.
+Yes, a different table might be worthwhile.
 
-I guess for x86, we could add a file to drivers/platform/x86 to register
-a device.
+Another question, however, is what does this look like at runtime.  In
+particular, if I'm not mistaken hwpoison will create struct pages for
+these non-memory pages, which seems undesirable...
 
-> Marco
+	-hpa
+
