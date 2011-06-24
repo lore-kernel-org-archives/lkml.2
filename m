@@ -1,65 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753194Ab1FXHiL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 03:38:11 -0400
-Received: from natsu.mindrot.org ([116.66.166.108]:27812 "EHLO
-	natsu.mindrot.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab1FXHiJ (ORCPT
+	id S1753254Ab1FXHe1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 03:34:27 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:45480 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751778Ab1FXHeX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 03:38:09 -0400
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jun 2011 03:38:08 EDT
-Date: Fri, 24 Jun 2011 17:30:46 +1000 (EST)
-From: Damien Miller <djm@mindrot.org>
-To: Will Drewry <wad@chromium.org>
-cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        segoon@openwall.com, kees.cook@canonical.com, mingo@elte.hu,
-        rostedt@goodmis.org, jmorris@namei.org, fweisbec@gmail.com,
-        tglx@linutronix.de, scarybeasts@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Michal Marek <mmarek@suse.cz>, Mike Galbraith <efault@gmx.de>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Jiri Slaby <jslaby@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v9 03/13] seccomp_filter: new mode with configurable
- syscall filters
-In-Reply-To: <1308875813-20122-3-git-send-email-wad@chromium.org>
-Message-ID: <alpine.BSO.2.00.1106241723350.15663@natsu.mindrot.org>
-References: <1308875813-20122-1-git-send-email-wad@chromium.org> <1308875813-20122-3-git-send-email-wad@chromium.org>
-User-Agent: Alpine 2.00 (BSO 1167 2008-08-23)
+	Fri, 24 Jun 2011 03:34:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TBxhHEfCZV2QHMWo7Q1MRjTYJvx4Wjyk2X6vRPzyT8tQTNbzoDylFB2qTZFtcWfIdh
+         5Ra/HUADSYH7kf9pRlVsnqkaTqKaTA1zZsMunpW1+yzUOKO44LkTLU4EPfhYDdlzUnTs
+         puc6+gO6wbXculZf9Ym3snK+OlQajWXztGZKA=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <6002eb70809bb1c87c84f32ab4a4f034d2d1ffb5.1308868289.git.joe@perches.com>
+References: <6002eb70809bb1c87c84f32ab4a4f034d2d1ffb5.1308868289.git.joe@perches.com>
+Date: Fri, 24 Jun 2011 09:34:21 +0200
+Message-ID: <BANLkTinrzbuM6TvEJkMmQKkwdf=RTSCxuw@mail.gmail.com>
+Subject: Re: [PATCH 1/2] rt2x00: Fix unspeficied typo
+From: Ivo Van Doorn <ivdoorn@gmail.com>
+To: Joe Perches <joe@perches.com>
+Cc: Gertjan van Wingerde <gwingerde@gmail.com>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 23 Jun 2011, Will Drewry wrote:
+On Fri, Jun 24, 2011 at 12:35 AM, Joe Perches <joe@perches.com> wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-> This change adds a new seccomp mode which specifies the allowed system
-> calls dynamically.  When in the new mode (2), all system calls are
-> checked against process-defined filters - first by system call number,
-> then by a filter string.  If an entry exists for a given system call and
-> all filter predicates evaluate to true, then the task may proceed.
-> Otherwise, the task is killed.
+Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
 
-This would be a great help for OpenSSH to improve pre-authentication
-privilege separation. We use a separate process that is chroot()ed and
-switched to a dedicated UID to limit the effects of compromise in the
-complex network-facing code, but a vulnerability in this process
-still allows an attacker to open new network sockets (e.g. to proxy
-attacks through your firewall) or attempt to exploit local kernel bugs.
-
-If we are able to restrict the syscalls the unprivileged process can make
-then it becomes very difficult for an attacker to do anything useful -
-they won't be able to open new sockets and a narrow set of available
-syscalls makes exploitable kernel bugs much harder to find or reach.
-
-The current SECCOMP sandbox is too restrictive, because we need to
-poll/select() on sockets and mmap() to allocate new memory. Allowing
-application developers to specify which syscalls are allowed is a
-good, low-cost way to make the SECCOMP sandbox much more useful.
-
--d
+> ---
+>  drivers/net/wireless/rt2x00/rt2x00queue.h |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.h b/drivers/net/wireless/rt2x00/rt2x00queue.h
+> index 167d458..5900474 100644
+> --- a/drivers/net/wireless/rt2x00/rt2x00queue.h
+> +++ b/drivers/net/wireless/rt2x00/rt2x00queue.h
+> @@ -54,7 +54,7 @@
+>  * @QID_RX: RX queue
+>  * @QID_OTHER: None of the above (don't use, only present for completeness)
+>  * @QID_BEACON: Beacon queue (value unspecified, don't send it to device)
+> - * @QID_ATIM: Atim queue (value unspeficied, don't send it to device)
+> + * @QID_ATIM: Atim queue (value unspecified, don't send it to device)
+>  */
+>  enum data_queue_qid {
+>        QID_AC_VO = 0,
+> --
+> 1.7.6.rc1
+>
+>
