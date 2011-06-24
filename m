@@ -1,56 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756949Ab1FXO0p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 10:26:45 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39425 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753859Ab1FXO0o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 10:26:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=vRJC4qMYCf3yjk3XYB7nEqdZCEJ6Vj2SXMXpxWTj5X6nRs9zi9X3E9Odkny2zwKxe5
-         DSN8ERrBmz/bk20rofINYCr7PJidze56hd61rGfJJ3dTgVrme8XVOKNu6t1hru7CVeXG
-         jutsG5KneOEmvXB8T4o1NC1wFg/9Qf60BJ6SA=
-Subject: [PATCH] power_supply: max8903_charger: add "platform:" prefix for
- platform modalias
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Anton Vorontsov <cbouatmailru@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Jun 2011 22:26:36 +0800
-Message-ID: <1308925596.2628.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1758481Ab1FXObH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 10:31:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57911 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755639Ab1FXObE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 10:31:04 -0400
+Date: Fri, 24 Jun 2011 14:28:20 GMT
+From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
+Message-ID: <tip-9f9119424bbc4e1c4c8690ea418fa6129dc9fa04@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
+        mingo@redhat.com, ralf@linux-mips.org, linux@arm.linux.org.uk,
+        tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, john.stultz@linaro.org,
+        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
+        ralf@linux-mips.org, tglx@linutronix.de
+In-Reply-To: <20110609130621.921710458@linutronix.de>
+References: <20110609130621.921710458@linutronix.de>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:timers/cleanup] i8253: Create common clockevent implementation
+Git-Commit-ID: 9f9119424bbc4e1c4c8690ea418fa6129dc9fa04
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 24 Jun 2011 14:29:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since 43cc71eed1250755986da4c0f9898f9a635cb3bf (platform: prefix MODALIAS
-with "platform:"), the platform modalias is prefixed with "platform:".
+Commit-ID:  9f9119424bbc4e1c4c8690ea418fa6129dc9fa04
+Gitweb:     http://git.kernel.org/tip/9f9119424bbc4e1c4c8690ea418fa6129dc9fa04
+Author:     Thomas Gleixner <tglx@linutronix.de>
+AuthorDate: Thu, 9 Jun 2011 13:08:25 +0000
+Committer:  Thomas Gleixner <tglx@linutronix.de>
+CommitDate: Fri, 24 Jun 2011 16:22:54 +0200
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+i8253: Create common clockevent implementation
+
+arm, mips and x86 implement i8253 based clockevents. All the same code
+copied. Create a common implementation in drivers/clocksource/i8253.c.
+
+About time to rename drivers/clocksource/ to something else.
+
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: Russell King <linux@arm.linux.org.uk>
+Cc: Ralf Baechle <ralf@linux-mips.org>
+Cc: John Stultz <john.stultz@linaro.org>
+Link: http://lkml.kernel.org/r/20110609130621.921710458@linutronix.de
+
 ---
- drivers/power/max8903_charger.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/clocksource/Kconfig |    5 ++-
+ drivers/clocksource/i8253.c |  101 ++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 98 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/power/max8903_charger.c b/drivers/power/max8903_charger.c
-index 33ff0e3..a3c97ea 100644
---- a/drivers/power/max8903_charger.c
-+++ b/drivers/power/max8903_charger.c
-@@ -388,4 +388,4 @@ module_exit(max8903_exit);
- MODULE_LICENSE("GPL");
- MODULE_DESCRIPTION("MAX8903 Charger Driver");
- MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
--MODULE_ALIAS("max8903-charger");
-+MODULE_ALIAS("platform:max8903-charger");
--- 
-1.7.4.1
-
-
-
+diff --git a/drivers/clocksource/Kconfig b/drivers/clocksource/Kconfig
+index 330343b..d8d3e02 100644
+--- a/drivers/clocksource/Kconfig
++++ b/drivers/clocksource/Kconfig
+@@ -1,11 +1,14 @@
+ config CLKSRC_I8253
+ 	bool
+ 
++config CLKEVT_I8253
++	bool
++
+ config I8253_LOCK
+ 	bool
+ 
+ config CLKBLD_I8253
+-	def_bool y if CLKSRC_I8253 || I8253_LOCK
++	def_bool y if CLKSRC_I8253 || CLKEVT_I8253 || I8253_LOCK
+ 
+ config CLKSRC_MMIO
+ 	bool
+diff --git a/drivers/clocksource/i8253.c b/drivers/clocksource/i8253.c
+index e594f52..27c49e6 100644
+--- a/drivers/clocksource/i8253.c
++++ b/drivers/clocksource/i8253.c
+@@ -1,13 +1,14 @@
+ /*
+  * i8253 PIT clocksource
+  */
+-#include <linux/clocksource.h>
++#include <linux/clockchips.h>
+ #include <linux/init.h>
+ #include <linux/io.h>
+ #include <linux/spinlock.h>
+ #include <linux/timex.h>
+ #include <linux/module.h>
+ #include <linux/i8253.h>
++#include <linux/smp.h>
+ 
+ /*
+  * Protects access to I/O ports
+@@ -47,15 +48,15 @@ static cycle_t i8253_read(struct clocksource *cs)
+ 	 * count), it cannot be newer.
+ 	 */
+ 	jifs = jiffies;
+-	outb_pit(0x00, PIT_MODE);	/* latch the count ASAP */
+-	count = inb_pit(PIT_CH0);	/* read the latched count */
+-	count |= inb_pit(PIT_CH0) << 8;
++	outb_p(0x00, PIT_MODE);	/* latch the count ASAP */
++	count = inb_p(PIT_CH0);	/* read the latched count */
++	count |= inb_p(PIT_CH0) << 8;
+ 
+ 	/* VIA686a test code... reset the latch if count > max + 1 */
+ 	if (count > LATCH) {
+-		outb_pit(0x34, PIT_MODE);
+-		outb_pit(PIT_LATCH & 0xff, PIT_CH0);
+-		outb_pit(PIT_LATCH >> 8, PIT_CH0);
++		outb_p(0x34, PIT_MODE);
++		outb_p(PIT_LATCH & 0xff, PIT_CH0);
++		outb_p(PIT_LATCH >> 8, PIT_CH0);
+ 		count = PIT_LATCH - 1;
+ 	}
+ 
+@@ -97,3 +98,89 @@ int __init clocksource_i8253_init(void)
+ 	return clocksource_register_hz(&i8253_cs, PIT_TICK_RATE);
+ }
+ #endif
++
++#ifdef CONFIG_CLKEVT_I8253
++/*
++ * Initialize the PIT timer.
++ *
++ * This is also called after resume to bring the PIT into operation again.
++ */
++static void init_pit_timer(enum clock_event_mode mode,
++			   struct clock_event_device *evt)
++{
++	raw_spin_lock(&i8253_lock);
++
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++		/* binary, mode 2, LSB/MSB, ch 0 */
++		outb_p(0x34, PIT_MODE);
++		outb_p(LATCH & 0xff , PIT_CH0);	/* LSB */
++		outb_p(LATCH >> 8 , PIT_CH0);		/* MSB */
++		break;
++
++	case CLOCK_EVT_MODE_SHUTDOWN:
++	case CLOCK_EVT_MODE_UNUSED:
++		if (evt->mode == CLOCK_EVT_MODE_PERIODIC ||
++		    evt->mode == CLOCK_EVT_MODE_ONESHOT) {
++			outb_p(0x30, PIT_MODE);
++			outb_p(0, PIT_CH0);
++			outb_p(0, PIT_CH0);
++		}
++		break;
++
++	case CLOCK_EVT_MODE_ONESHOT:
++		/* One shot setup */
++		outb_p(0x38, PIT_MODE);
++		break;
++
++	case CLOCK_EVT_MODE_RESUME:
++		/* Nothing to do here */
++		break;
++	}
++	raw_spin_unlock(&i8253_lock);
++}
++
++/*
++ * Program the next event in oneshot mode
++ *
++ * Delta is given in PIT ticks
++ */
++static int pit_next_event(unsigned long delta, struct clock_event_device *evt)
++{
++	raw_spin_lock(&i8253_lock);
++	outb_p(delta & 0xff , PIT_CH0);	/* LSB */
++	outb_p(delta >> 8 , PIT_CH0);		/* MSB */
++	raw_spin_unlock(&i8253_lock);
++
++	return 0;
++}
++
++/*
++ * On UP the PIT can serve all of the possible timer functions. On SMP systems
++ * it can be solely used for the global tick.
++ */
++struct clock_event_device i8253_clockevent = {
++	.name		= "pit",
++	.features	= CLOCK_EVT_FEAT_PERIODIC,
++	.set_mode	= init_pit_timer,
++	.set_next_event = pit_next_event,
++};
++
++/*
++ * Initialize the conversion factor and the min/max deltas of the clock event
++ * structure and register the clock event source with the framework.
++ */
++void __init clockevent_i8253_init(bool oneshot)
++{
++	if (oneshot)
++		i8253_clockevent.features |= CLOCK_EVT_FEAT_ONESHOT;
++	/*
++	 * Start pit with the boot cpu mask. x86 might make it global
++	 * when it is used as broadcast device later.
++	 */
++	i8253_clockevent.cpumask = cpumask_of(smp_processor_id());
++
++	clockevents_config_and_register(&i8253_clockevent, PIT_TICK_RATE,
++					0xF, 0x7FFF);
++}
++#endif
