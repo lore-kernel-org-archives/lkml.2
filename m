@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760144Ab1FXAAQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 20:00:16 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58728 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759805Ab1FXAAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 20:00:13 -0400
-Date: Fri, 24 Jun 2011 10:00:05 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: brudley@broadcom.com, henryp@broadcom.com, rvossen@broadcom.com,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree
- (staging related)
-Message-Id: <20110624100005.f9f59ddf.sfr@canb.auug.org.au>
-In-Reply-To: <20110623215115.GB10969@kroah.com>
-References: <20110609172745.dfd3a298.sfr@canb.auug.org.au>
-	<20110609184127.GA2760@kroah.com>
-	<20110609192243.GA3980@kroah.com>
-	<20110610160548.529797c7.sfr@canb.auug.org.au>
-	<20110610160938.cd01c408.sfr@canb.auug.org.au>
-	<20110610223423.GB15868@kroah.com>
-	<20110615142155.bd538b73.sfr@canb.auug.org.au>
-	<20110616191448.GA10255@kroah.com>
-	<20110623103503.cd9e7e70.sfr@canb.auug.org.au>
-	<20110623215115.GB10969@kroah.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__24_Jun_2011_10_00_05_+1000_QqSli_p7ukvpyCel"
+	id S1760046Ab1FXALK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 20:11:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43981 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759835Ab1FXALI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 20:11:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vLkudeVsiQAAPM66mb8ntN8G8YKCafcFLocU/Pd+6bKHsGaaTlZ+HBCPAWC07l/Fin
+         bAbuoR8prPDZ/0OjLybngNz2N+9SO6WN4UkaUBJTdZ5Z1DNBW2uFrdqF7cpNe6ZJS7nz
+         4E5PLsLOe1sRk/2it0z14+CqKvVQeOOBwwg54=
+Date: Fri, 24 Jun 2011 02:11:03 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arun Sharma <asharma@fb.com>
+Cc: David Ahern <dsahern@gmail.com>, linux-perf-users@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Using a new perf tool against an older kernel
+Message-ID: <20110624001100.GD8058@somewhere.redhat.com>
+References: <4E026123.4060208@fb.com>
+ <4E034C2C.30509@gmail.com>
+ <4E03968A.5010008@fb.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E03968A.5010008@fb.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__24_Jun_2011_10_00_05_+1000_QqSli_p7ukvpyCel
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jun 23, 2011 at 12:39:54PM -0700, Arun Sharma wrote:
+> On 6/23/11 7:22 AM, David Ahern wrote:
+> 
+> >I have not seen issues like this using newer perf userspace against
+> >older kernels. For example, my laptop was running Fedora 14 (2.6.35) and
+> >now Fedora 15 (2.6.38.8) and I typically use latest perf builds (e.g.,
+> >testing patches).
+> 
+> I narrowed it down to PERF_SAMPLE_RAW:
+> 
+> perf record -ag -- sleep 1
+> 
+> is fine, but:
+> 
+> perf record -agR -- sleep 1
+> 
+> fails for me most of the time. The reason I needed to use the -R in
+> the first place is that "perf script" fails on older kernels with:
+> 
+> Samples do not contain timestamps.
+> 
+> With the newer perf, I don't get errors, but the timestamp field is
+> invalid. So I need to use the -R flag to get valid timestamps +
+> stacktraces out of "perf script".
 
-Hi Greg,
+I'm confused, you first said it happens with new tools on older kernel.
 
-On Thu, 23 Jun 2011 14:51:15 -0700 Greg KH <greg@kroah.com> wrote:
->
-> Sorry, I'm away from home, with a very spotty internet connection, on
-> vacation, so it's hard to get this done at the moment.  I'll get to it
-> on the 27th when I return.
+Can you tell us which combination of kernel/user raises the error? and
+which error.
 
-I can understand vacation as well :-)
-
-Thanks.  I will use Ralf's (arch restricting) patch until you come up
-with something better.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__24_Jun_2011_10_00_05_+1000_QqSli_p7ukvpyCel
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOA9OFAAoJEDMEi1NhKgbsknkH/0gSZt7xZPUaIRXYO32rencT
-qkGguDIVhlKLGQEN3ahFN0kr3N/ZPi5OmuGhmg2ExtnlDU2sV1x+/VVE9v6fZsrj
-0qTMDYCE+B9CxZw6fgWcNKJu8noDK6LEQ3Txlo/sbjWaxRhYqEyxmrJmTvkCEpDS
-mR3/9UbaDLpVSnKPzRUHqrzJdwjT2H5I/Oo49N2oQLqG4IPB7D8DxPzscCQfIOYY
-EHWb7wGPN/jyETR6EEtWo/HrFBZRzuo6tqNr22XSR3ryq6E2jEtAurnh4GteSWQI
-kuqR2WiQTDGufEfg4gjz7SmsadzWhhdEefomt1AqNVEA1iLWm5b35rFx6inXSc8=
-=MarY
------END PGP SIGNATURE-----
-
---Signature=_Fri__24_Jun_2011_10_00_05_+1000_QqSli_p7ukvpyCel--
+Thanks!
