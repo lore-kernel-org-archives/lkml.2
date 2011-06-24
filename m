@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab1FXEI5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 00:08:57 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:31217 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750752Ab1FXEIy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 00:08:54 -0400
-X-SpamScore: -29
-X-BigFish: VS-29(zz9371M1447R542M1432N98dKzz1202hzz8275ch8275bh8275dhz2dh2a8h668h839h8e2h8e3h)
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Bhushan Bharat-R65777 <R65777@freescale.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "vapier@gentoo.org" <vapier@gentoo.org>,
-        "mst@redhat.com" <mst@redhat.com>,
-        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: RE: [PATCH 02/02] virtio: Add virtio platform driver
-Thread-Topic: [PATCH 02/02] virtio: Add virtio platform driver
-Thread-Index: AQHML/z3U3/sunchvki5pw3DM4x2pJTKpWhggAFmdQD//9xgIA==
-Date: Fri, 24 Jun 2011 04:08:50 +0000
-Message-ID: <B8D6CA50DACE9E4AAADE9A4D56FBAAE6166FD3@039-SN1MPN1-004.039d.mgd.msft.net>
-References: <20110621102605.1382.90232.sendpatchset@t400s>
-	<20110621102623.1382.71841.sendpatchset@t400s>
-	<B8D6CA50DACE9E4AAADE9A4D56FBAAE6166661@039-SN1MPN1-004.039d.mgd.msft.net>
- <BANLkTi=QhwBAv5GtrTpitVhx+yDZPnRN+g@mail.gmail.com>
-In-Reply-To: <BANLkTi=QhwBAv5GtrTpitVhx+yDZPnRN+g@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [10.232.14.18]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+	id S1752042Ab1FXEXc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 00:23:32 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:34457 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750968Ab1FXEXb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 00:23:31 -0400
+Date: Thu, 23 Jun 2011 21:21:20 -0700 (PDT)
+Message-Id: <20110623.212120.2043173528294538748.davem@davemloft.net>
+To: randy.dunlap@oracle.com
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: Tree for June 23 (net)
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20110623091429.2d51b0f0.randy.dunlap@oracle.com>
+References: <20110623155431.6bfe3b40.sfr@canb.auug.org.au>
+	<20110623091429.2d51b0f0.randy.dunlap@oracle.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 23 Jun 2011 21:21:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the explanation. I also thought of same purpose for this patch but I got confused by function names and data structure names in the patch. They still have lguest in it.
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Thu, 23 Jun 2011 09:14:29 -0700
 
-Thanks
--Bharat
+> On Thu, 23 Jun 2011 15:54:31 +1000 Stephen Rothwell wrote:
+> 
+>> Hi all,
+>> 
+>> Changes since 20110622:
+>> 
+>> The powerpc allyesconfig (and probably others) is still broken because we
+>> now build the staging drivers and because of a commit in the net tree.
+>> The breakage in Linus' tree is fixed by one of Andrew's patches above.
+>> 
+>> The net tree gained 2 build failures that I have left (see above).
+> 
+> 
+> When CONFIG_INET is not enabled:
+> 
+> net/core/dev.c:2535: error: implicit declaration of function 'ip_is_fragment'
 
-> -----Original Message-----
-> From: Magnus Damm [mailto:magnus.damm@gmail.com]
-> Sent: Friday, June 24, 2011 6:44 AM
-> To: Bhushan Bharat-R65777
-> Cc: linux-kernel@vger.kernel.org; vapier@gentoo.org; mst@redhat.com;
-> linux-sh@vger.kernel.org; virtualization@lists.linux-foundation.org
-> Subject: Re: [PATCH 02/02] virtio: Add virtio platform driver
-> 
-> Hi Bhushan Bharat,
-> 
-> On Thu, Jun 23, 2011 at 5:54 PM, Bhushan Bharat-R65777
-> <R65777@freescale.com> wrote:
-> > What purpose this virtio platform driver serves? Are you trying to make
-> driver layers here and each virtio device driver can hook up into this
-> platform driver. Is that correct ?
-> 
-> The idea behind the virto platform driver is to have a reusable layer
-> that handles common virtio and vring functionality. Regular virtio
-> drivers for console, network and disk and interfacing to the virtio
-> platform driver, so these paravirtualized drivers can with this virtio
-> platform driver easily be reused by embedded platforms.
-> 
-> Vendor specific code is abstracted away from the virtio platform driver
-> and interfaced to using regular interrupts and SoC-specific callbacks. So
-> with this patch virtio can be interfaced as any regular platform driver.
-> This version of the driver is simply reusing the configuration method
-> from lguest.
-> 
-> If you want to see all code involved (including extremely experimental
-> backing drivers) then have a look at:
-> http://www.spinics.net/lists/linux-sh/msg07188.html
-> 
-> Cheers,
-> 
-> / magnus
+I'll fix this like so:
 
-
+diff --git a/include/net/ip.h b/include/net/ip.h
+index d603cd3..9fa9416 100644
+--- a/include/net/ip.h
++++ b/include/net/ip.h
+@@ -236,6 +236,11 @@ extern void ipfrag_init(void);
+ 
+ extern void ip_static_sysctl_init(void);
+ 
++static inline bool ip_is_fragment(const struct iphdr *iph)
++{
++	return (iph->frag_off & htons(IP_MF | IP_OFFSET)) != 0;
++}
++
+ #ifdef CONFIG_INET
+ #include <net/dst.h>
+ 
+@@ -250,11 +255,6 @@ int ip_decrease_ttl(struct iphdr *iph)
+ 	return --iph->ttl;
+ }
+ 
+-static inline bool ip_is_fragment(const struct iphdr *iph)
+-{
+-	return (iph->frag_off & htons(IP_MF | IP_OFFSET)) != 0;
+-}
+-
+ static inline
+ int ip_dont_fragment(struct sock *sk, struct dst_entry *dst)
+ {
