@@ -1,82 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754131Ab1FXSsG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 14:48:06 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34493 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753729Ab1FXSsD convert rfc822-to-8bit (ORCPT
+	id S1754773Ab1FXTBj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 15:01:39 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:53384 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170Ab1FXTBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 14:48:03 -0400
+	Fri, 24 Jun 2011 15:01:37 -0400
+Date: Fri, 24 Jun 2011 14:49:49 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: davem@davemloft.net
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: pull request: wireless-2.6 2011-06-24
+Message-ID: <20110624184949.GC4793@tuxdriver.com>
 MIME-Version: 1.0
-In-Reply-To: <20110624203404.7a3f6f6a@stein>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-	<4E04912A.4090305@infradead.org>
-	<BANLkTim9cBiiK_GsZaspxpPJQDBvAcKCWg@mail.gmail.com>
-	<201106241554.10751.hverkuil@xs4all.nl>
-	<4E04A122.2080002@infradead.org>
-	<20110624203404.7a3f6f6a@stein>
-Date: Fri, 24 Jun 2011 14:48:00 -0400
-Message-ID: <BANLkTimj-oEDvWxMao6zJ_sudUntEVjO1w@mail.gmail.com>
-Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver
- version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from include/
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Jesper Juhl <jj@chaosbits.net>,
-        LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        linux-media@vger.kernel.org, ceph-devel@vger.kernel.org,
-        Sage Weil <sage@newdream.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 2:34 PM, Stefan Richter
-<stefanr@s5r6.in-berlin.de> wrote:
-> If the "driver version" is in fact an ABI version, then the driver author
-> should really increase it only when ABI behavior is changed (and only if
-> the behavior change can only be communicated by version number --- e.g.
-> addition of an ioctl is not among such reasons).  And the author should
-> commit behavior changing implementation and version number change in a
-> single changeset.
->
-> And anybody who backmerges such an ABI behavior change into another kernel
-> branch (stable, longterm, distro...) must backmerge the associated version
-> number change too.
->
-> Of course sometimes people realize this only after the fact.  Or driver
-> authors don't have a clear understanding of ABI versioning to begin with.
-> I am saying so because I had to learn it too; I certainly wasn't born
-> with an instinct knowledge how to do it properly.
->
-> (Disclaimer:  I have no stake in drivers/media/ ABIs.  But I am involved
-> in maintaining a userspace ABI elsewhere in drivers/firewire/, and one of
-> the userspace libraries that use this ABI.)
+Dave,
 
-Hi Stefan,
+Here is another batch of fixes intended for 3.0.  Included are too
+rtlwifi fixes from Larry:  a regression that broke firmware loading for
+rtl8292cu; and a fix to arbitrate between two devices that share the
+same PCI ID but are handled by different drivers...yeah.
 
-To be clear, I don't think anyone is actually proposing that the
-driver version number really be used as any form of formal "ABI
-versioning" scheme.  In almost all cases, it's so the application can
-know to *not* do something is the driver is older than X.
+The rest are Bluetooth fixes -- quoth Gustavo:
 
-Given all the cases I've seen, it doesn't really hurt anything if the
-driver contains a fix from newer than X, aside from the fact that the
-application won't take advantage of whatever feature/functionality the
-fix made work.  In other words, I think from a backport standpoint, it
-usually doesn't *hurt* anything if a fix is backported without the
-version being incremented, aside from applications not knowing that
-the feature/fix is present.
+	Three regressions fix intended for 3.0. Two of them fix a
+	change made in our HCI security process for 3.0. The third
+	one fixes an issue with non-SSP devices.  All of them are
+	critical fixes. They should be in 3.0. Please pull!  Thanks.
 
-Really, this is all about applications being able to jam a hack into
-their code that translates to "don't call this ioctl() with some
-particular argument if it's driver W less than version X, because the
-driver had a bug that is likely to panic the guy's PC".  Sure, it's a
-crummy solution, but at this point it's the best that we have got.
+Please let me know if there are problems!
 
-Devin
+Thanks,
 
+John
+
+---
+
+The following changes since commit 5c18e80be9ff362f6523b097d495bb2e2f939946:
+
+  net/usb/kalmia: signedness bug in kalmia_bind() (2011-06-23 03:15:39 -0700)
+
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git for-davem
+
+Ilia Kolomisnky (1):
+      Bluetooth: Fix L2CAP connection establishment
+
+Johan Hedberg (1):
+      Bluetooth: Fix accepting connect requests for defer_setup
+
+John W. Linville (2):
+      Merge branch 'master' of master.kernel.org:/.../padovan/bluetooth-2.6
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6 into for-davem
+
+Larry Finger (2):
+      rtlwifi: rtl8192se: Handle duplicate PCI ID 0x10ec:0x8192 conflict with r8192e_pci
+      rtl8192cu: Fix missing firmware load
+
+Luiz Augusto von Dentz (1):
+      Bluetooth: Fix L2CAP security check
+
+ drivers/net/wireless/rtlwifi/pci.c          |   13 ++++++++++++-
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |   20 ++++++++++++++++++++
+ net/bluetooth/hci_conn.c                    |    6 +++---
+ net/bluetooth/l2cap_core.c                  |   21 +++++++++++++++------
+ 4 files changed, 50 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
+index 9f8ccae..254b64b 100644
+--- a/drivers/net/wireless/rtlwifi/pci.c
++++ b/drivers/net/wireless/rtlwifi/pci.c
+@@ -1624,6 +1624,16 @@ static bool _rtl_pci_find_adapter(struct pci_dev *pdev,
+ 	pci_read_config_byte(pdev, 0x8, &revisionid);
+ 	pci_read_config_word(pdev, 0x3C, &irqline);
+ 
++	/* PCI ID 0x10ec:0x8192 occurs for both RTL8192E, which uses
++	 * r8192e_pci, and RTL8192SE, which uses this driver. If the
++	 * revision ID is RTL_PCI_REVISION_ID_8192PCIE (0x01), then
++	 * the correct driver is r8192e_pci, thus this routine should
++	 * return false.
++	 */
++	if (deviceid == RTL_PCI_8192SE_DID &&
++	    revisionid == RTL_PCI_REVISION_ID_8192PCIE)
++		return false;
++
+ 	if (deviceid == RTL_PCI_8192_DID ||
+ 	    deviceid == RTL_PCI_0044_DID ||
+ 	    deviceid == RTL_PCI_0047_DID ||
+@@ -1856,7 +1866,8 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
+ 	pci_write_config_byte(pdev, 0x04, 0x07);
+ 
+ 	/* find adapter */
+-	_rtl_pci_find_adapter(pdev, hw);
++	if (!_rtl_pci_find_adapter(pdev, hw))
++		goto fail3;
+ 
+ 	/* Init IO handler */
+ 	_rtl_pci_io_handler_init(&pdev->dev, hw);
+diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+index bee7c14..092e342 100644
+--- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
++++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
+@@ -53,6 +53,8 @@ MODULE_FIRMWARE("rtlwifi/rtl8192cufw.bin");
+ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ {
+ 	struct rtl_priv *rtlpriv = rtl_priv(hw);
++	const struct firmware *firmware;
++	int err;
+ 
+ 	rtlpriv->dm.dm_initialgain_enable = 1;
+ 	rtlpriv->dm.dm_flag = 0;
+@@ -64,6 +66,24 @@ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ 			 ("Can't alloc buffer for fw.\n"));
+ 		return 1;
+ 	}
++	/* request fw */
++	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
++			rtlpriv->io.dev);
++	if (err) {
++		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
++			 ("Failed to request firmware!\n"));
++		return 1;
++	}
++	if (firmware->size > 0x4000) {
++		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
++			 ("Firmware is too big!\n"));
++		release_firmware(firmware);
++		return 1;
++	}
++	memcpy(rtlpriv->rtlhal.pfirmware, firmware->data, firmware->size);
++	rtlpriv->rtlhal.fwsize = firmware->size;
++	release_firmware(firmware);
++
+ 	return 0;
+ }
+ 
+diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
+index 3163330..d3a05b9 100644
+--- a/net/bluetooth/hci_conn.c
++++ b/net/bluetooth/hci_conn.c
+@@ -608,11 +608,11 @@ int hci_conn_security(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
+ 		goto encrypt;
+ 
+ auth:
+-	if (test_and_set_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
++	if (test_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
+ 		return 0;
+ 
+-	hci_conn_auth(conn, sec_level, auth_type);
+-	return 0;
++	if (!hci_conn_auth(conn, sec_level, auth_type))
++		return 0;
+ 
+ encrypt:
+ 	if (conn->link_mode & HCI_LM_ENCRYPT)
+diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
+index e64a1c2..56fdd91 100644
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@ -4002,21 +4002,30 @@ static int l2cap_security_cfm(struct hci_conn *hcon, u8 status, u8 encrypt)
+ 			}
+ 		} else if (sk->sk_state == BT_CONNECT2) {
+ 			struct l2cap_conn_rsp rsp;
+-			__u16 result;
++			__u16 res, stat;
+ 
+ 			if (!status) {
+-				sk->sk_state = BT_CONFIG;
+-				result = L2CAP_CR_SUCCESS;
++				if (bt_sk(sk)->defer_setup) {
++					struct sock *parent = bt_sk(sk)->parent;
++					res = L2CAP_CR_PEND;
++					stat = L2CAP_CS_AUTHOR_PEND;
++					parent->sk_data_ready(parent, 0);
++				} else {
++					sk->sk_state = BT_CONFIG;
++					res = L2CAP_CR_SUCCESS;
++					stat = L2CAP_CS_NO_INFO;
++				}
+ 			} else {
+ 				sk->sk_state = BT_DISCONN;
+ 				l2cap_sock_set_timer(sk, HZ / 10);
+-				result = L2CAP_CR_SEC_BLOCK;
++				res = L2CAP_CR_SEC_BLOCK;
++				stat = L2CAP_CS_NO_INFO;
+ 			}
+ 
+ 			rsp.scid   = cpu_to_le16(chan->dcid);
+ 			rsp.dcid   = cpu_to_le16(chan->scid);
+-			rsp.result = cpu_to_le16(result);
+-			rsp.status = cpu_to_le16(L2CAP_CS_NO_INFO);
++			rsp.result = cpu_to_le16(res);
++			rsp.status = cpu_to_le16(stat);
+ 			l2cap_send_cmd(conn, chan->ident, L2CAP_CONN_RSP,
+ 							sizeof(rsp), &rsp);
+ 		}
 -- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
