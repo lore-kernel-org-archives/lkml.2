@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754511Ab1FXVWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 17:22:55 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39321 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753887Ab1FXVWx convert rfc822-to-8bit (ORCPT
+	id S1753887Ab1FXV2h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 17:28:37 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:54923 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752167Ab1FXV2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 17:22:53 -0400
+	Fri, 24 Jun 2011 17:28:36 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110624232048.66f1f98c@stein>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-	<4E04912A.4090305@infradead.org>
-	<BANLkTim9cBiiK_GsZaspxpPJQDBvAcKCWg@mail.gmail.com>
-	<201106241554.10751.hverkuil@xs4all.nl>
-	<4E04A122.2080002@infradead.org>
-	<20110624203404.7a3f6f6a@stein>
-	<BANLkTimj-oEDvWxMao6zJ_sudUntEVjO1w@mail.gmail.com>
-	<1308949448.2093.20.camel@morgan.silverblock.net>
-	<20110624232048.66f1f98c@stein>
-Date: Fri, 24 Jun 2011 17:22:50 -0400
-Message-ID: <BANLkTinZoax2fcSxvyQgfsT-bmsF+BofyQ@mail.gmail.com>
-Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver
- version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from include/
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Cc: Andy Walls <awalls@md.metrocast.net>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Jesper Juhl <jj@chaosbits.net>,
-        LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        linux-media@vger.kernel.org, ceph-devel@vger.kernel.org,
-        Sage Weil <sage@newdream.net>
+In-Reply-To: <BANLkTimKjb5hNUJv1EsRuHdWZ1Wv5mrswg@mail.gmail.com>
+References: <20110529060702.GA7112@vigoh> <BANLkTimKjb5hNUJv1EsRuHdWZ1Wv5mrswg@mail.gmail.com>
+From: Lucas De Marchi <lucas.demarchi@profusion.mobi>
+Date: Fri, 24 Jun 2011 18:28:16 -0300
+Message-ID: <BANLkTi=HMx2CFpeoc4t7m8u4wOCxzu4apQ@mail.gmail.com>
+Subject: Re: [GIT PULL] Fix common misspellings
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
+        Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 5:20 PM, Stefan Richter
-<stefanr@s5r6.in-berlin.de> wrote:
-> Easier:
->  "I run Ubuntu 10.4".
->  "I run kernel 2.6.32."
-> One of these is usually already included in the first post or IRC message
-> from the user.
+On Sun, May 29, 2011 at 3:55 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Sat, May 28, 2011 at 11:07 PM, Lucas De Marchi
+> <lucas.demarchi@profusion.mobi> wrote:
+>>
+>> Please pull the following fixes for common misspellings. This patch is shorter
+>> than the other time, but larger than I expected, partially because there were
+>> some new entries in the dictionary.
 >
-> Separate driver versions are only needed on platforms where drivers are
-> not distributed by the operating system distributor, or driver source code
-> is not released within kernel source code.
+> This pull request is probably perfectly fine, but since I'll be
+> travelling with a rather weak laptop next week, and there were some
+> complaints about the cross-subsystem merge problems that the big(ger)
+> spelling fixes caused last time around, I'm afraid that I ended up
+> feeling that it's easier for me to ignore this pull request at this
+> time.
+>
+> When I'm back from traveling,. and if this release window turns out to
+> be quiet and problem free, I might decide that I'll pull some trivial
+> spelling fixes during a later -rc phase. On the other hand, I might
+> also go for being very strict about the -rc's too, so no promises.
 
-Unfortunately, this doesn't work as all too often the user has "Ubuntu
-10.1 but I installed the latest media_build tree a few months ago".
-Hence they are not necessarily on a particular binary release from a
-distro but rather have a mix of a distro's binary release and a
-v4l-dvb tree compiled from source.
+So I think the best thing is to wait for 3.1. Otherwise there will be
+several conflicts in linux-next.
 
-Devin
+I'll prepare another patch (this doesn't apply cleanly anymore and
+there are other fixes) and re-send when it's time.
 
--- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+
+Thanks
+
+Lucas De Marchi
