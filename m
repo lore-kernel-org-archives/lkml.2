@@ -1,204 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754001Ab1FXSvj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 14:51:39 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:59860 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754013Ab1FXSvd (ORCPT
+	id S1755311Ab1FXTMr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 15:12:47 -0400
+Received: from na3sys009aog113.obsmtp.com ([74.125.149.209]:46454 "EHLO
+	na3sys009aog113.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754564Ab1FXTMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 14:51:33 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=makelinux.com;
-	h=MIME-Version:Date:Message-ID:Subject:From:To:Cc:Content-Type:X-Identified-User;
-	b=t3/d3ylFp314U9H5M5M3SIkpzjH7Lyyko/KdJSLiJkeUrp2DuxBYyAxgkLw4yMAiccTn+NsJ9PwTSAykXl4enH3SYnuYZCKg2SxQmjx1rTIWc7sU/bw/uud4ewPSeSBF;
+	Fri, 24 Jun 2011 15:12:46 -0400
+Date: Fri, 24 Jun 2011 14:04:41 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: linux-kernel@vger.kernel.org
+Cc: Thomas Gleixner <tglx@linutronix.de>, Len Brown <lenb@kernel.org>
+Subject: High IRQ usage on CPU 0
+Message-ID: <20110624190441.GA2164@BohrerMBP.rgmadvisors.com>
 MIME-Version: 1.0
-Date: Fri, 24 Jun 2011 21:51:31 +0300
-Message-ID: <BANLkTims=UsUMkDQ8uB+J6YTVRSBD__otw@mail.gmail.com>
-Subject: [PATCH] Enable USB on TI DM365
-From: Constantine Shulyupin <const@makelinux.com>
-To: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
-        davinci-linux-open-source@linux.davincidsp.com
-Cc: nsekhar@ti.com, khilman@ti.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.com} {sentby:smtp auth 209.85.216.181 authed with const@makelinux.com}
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable USB on TI DM365
+Running 3.0.0-rc4+ I noticed I'm seeing the following on an idle Dell
+r610 system:
 
-Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
----
- arch/arm/mach-davinci/Makefile           |    3 +-
- arch/arm/mach-davinci/include/mach/usb.h |    2 +-
- arch/arm/mach-davinci/usb.c              |   32 ++++++++++++++++++++++++++---
- drivers/usb/musb/davinci.c               |   13 ++++++++++++
- drivers/usb/musb/davinci.h               |    1 +
- 5 files changed, 45 insertions(+), 6 deletions(-)
+Cpu0  :  0.0%us,  0.0%sy,  0.0%ni, 64.3%id,  0.0%wa, 35.7%hi,  0.0%si,  0.0%st
+Cpu1  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+Cpu2  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+Cpu3  :  0.0%us,  0.0%sy,  0.0%ni, 99.3%id,  0.0%wa,  0.3%hi,  0.3%si,  0.0%st
+Cpu4  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+Cpu5  :  0.0%us,  0.0%sy,  0.0%ni, 99.3%id,  0.0%wa,  0.3%hi,  0.3%si,  0.0%st
+Cpu6  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+Cpu7  :  0.0%us,  0.0%sy,  0.0%ni,100.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
+Cpu8  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+Cpu9  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+Cpu10 :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+Cpu11 :  0.0%us,  0.0%sy,  0.0%ni,100.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
+Cpu12 :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+Cpu13 :  0.0%us,  0.0%sy,  0.0%ni, 99.3%id,  0.0%wa,  0.3%hi,  0.3%si,  0.0%st
+Cpu14 :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.0%hi,  0.3%si,  0.0%st
+Cpu15 :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
 
-diff --git a/arch/arm/mach-davinci/Makefile b/arch/arm/mach-davinci/Makefile
-index 0b87a1c..52961a8 100644
---- a/arch/arm/mach-davinci/Makefile
-+++ b/arch/arm/mach-davinci/Makefile
-@@ -5,7 +5,7 @@
+Watching /proc/interrupts it looks like most of the interrupts on CPU0
+are on IRQ 0 from "IO-APIC-edge      timer".
 
- # Common objects
- obj-y 			:= time.o clock.o serial.o io.o psc.o \
--			   gpio.o dma.o usb.o common.o sram.o aemif.o
-+			   gpio.o dma.o common.o sram.o aemif.o
+perf top -C 0 shows:
 
- obj-$(CONFIG_DAVINCI_MUX)		+= mux.o
+---------------------------------------------------------------------
+PerfTop:    1024 irqs/sec  kernel:100.0%  exact:  0.0% [1000Hz cycles],  (all, CPU: 0)
+---------------------------------------------------------------------
 
-@@ -40,3 +40,4 @@ obj-$(CONFIG_MACH_OMAPL138_HAWKBOARD)	+= board-omapl138-hawk.o
- obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o
- obj-$(CONFIG_CPU_IDLE)			+= cpuidle.o
- obj-$(CONFIG_SUSPEND)			+= pm.o sleep.o
-+obj-$(CONFIG_USB_MUSB_DAVINCI)		+= usb.o
-diff --git a/arch/arm/mach-davinci/include/mach/usb.h
-b/arch/arm/mach-davinci/include/mach/usb.h
-index e0bc4ab..863c27f 100644
---- a/arch/arm/mach-davinci/include/mach/usb.h
-+++ b/arch/arm/mach-davinci/include/mach/usb.h
-@@ -54,6 +54,6 @@ struct	da8xx_ohci_root_hub {
- 	u8	potpgt;
- };
+             samples  pcnt function                            DSO
+             _______ _____ ___________________________________ _______
 
--void davinci_setup_usb(unsigned mA, unsigned potpgt_ms);
-+int davinci_setup_usb(unsigned mA, unsigned potpgt_ms);
+            11648.00 83.6% default_send_IPI_mask_sequence_phys vmlinux
+             1548.00 11.1% _raw_spin_lock_irqsave              vmlinux
+              530.00  3.8% intel_idle                          vmlinux
+               36.00  0.3% hpet_legacy_next_event              vmlinux
+               28.00  0.2% tick_handle_oneshot_broadcast       vmlinux
+               20.00  0.1% find_next_bit                       vmlinux
+               16.00  0.1% find_busiest_group                  vmlinux
+               15.00  0.1% _raw_spin_unlock_irqrestore         vmlinux
+               13.00  0.1% cpuidle_idle_call                   vmlinux
+               10.00  0.1% _raw_spin_lock                      vmlinux
+                9.00  0.1% tick_broadcast_oneshot_control      vmlinux
+                8.00  0.1% notifier_call_chain                 vmlinux
+                7.00  0.1% leave_mm                            vmlinux
 
- #endif	/* ifndef __ASM_ARCH_USB_H */
-diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
-index 23d2b6d..8b12206 100644
---- a/arch/arm/mach-davinci/usb.c
-+++ b/arch/arm/mach-davinci/usb.c
-@@ -4,19 +4,22 @@
- #include <linux/init.h>
- #include <linux/platform_device.h>
- #include <linux/dma-mapping.h>
--
- #include <linux/usb/musb.h>
+For some reason 'perf record -C 0 -g sleep 5' doesn't record anything,
+but here is the top functions from a 'perf record -a -g sleep 5':
 
- #include <mach/common.h>
- #include <mach/irqs.h>
- #include <mach/cputype.h>
- #include <mach/usb.h>
-+#include <mach/mux.h>
-+#include <linux/gpio.h>
+# Events: 77K cycles
+#
+# Overhead          Command       Shared Object                               Symbol
+# ........  ...............  ..................  ...................................
+#
+    80.22%          swapper  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
+                    |
+                    --- _raw_spin_lock_irqsave
+                       |          
+                       |--89.92%-- clockevents_notify
+                       |          intel_idle
+                       |          cpuidle_idle_call
+                       |          cpu_idle
+                       |          |          
+                       |          |--98.67%-- start_secondary
+                       |          |          
+                       |           --1.33%-- rest_init
+                       |                     start_kernel
+                       |                     x86_64_start_reservations
+                       |                     x86_64_start_kernel
+                       |          
+                       |--10.03%-- tick_broadcast_oneshot_control
+                       |          tick_notify
+                       |          notifier_call_chain
+                       |          raw_notifier_call_chain
+                       |          clockevents_notify
+                       |          intel_idle
+                       |          cpuidle_idle_call
+                       |          cpu_idle
+                       |          |          
+                       |          |--99.97%-- start_secondary
+                       |           --0.03%-- [...]
+                        --0.05%-- [...]
 
- #define DAVINCI_USB_OTG_BASE	0x01c64000
+     9.32%          swapper  [kernel.kallsyms]   [k] default_send_IPI_mask_sequence_phys
+                    |
+                    --- default_send_IPI_mask_sequence_phys
+                        physflat_send_IPI_mask
+                        lapic_timer_broadcast
+                        tick_do_broadcast
+                        tick_handle_oneshot_broadcast
+                        timer_interrupt
+                        handle_irq_event_percpu
+                        handle_irq_event
+                        handle_edge_irq
+                        handle_irq
+                        do_IRQ
+                        common_interrupt
+                       |          
+                       |--99.91%-- cpuidle_idle_call
+                       |          cpu_idle
+                       |          rest_init
+                       |          start_kernel
+                       |          x86_64_start_reservations
+                       |          x86_64_start_kernel
+                        --0.09%-- [...]
 
- #define DA8XX_USB0_BASE 	0x01e00000
- #define DA8XX_USB1_BASE 	0x01e25000
+     5.83%          swapper  [kernel.kallsyms]   [k] intel_idle
+                    |
+                    --- intel_idle
+                       |          
+                       |--99.67%-- cpuidle_idle_call
+                       |          cpu_idle
+                       |          |          
+                       |          |--94.19%-- start_secondary
+                       |          |          
+                       |           --5.81%-- rest_init
+                       |                     start_kernel
+                       |                     x86_64_start_reservations
+                       |                     x86_64_start_kernel
+                        --0.33%-- [...]
 
-+static int retval;
-+
- #if defined(CONFIG_USB_MUSB_HDRC) || defined(CONFIG_USB_MUSB_HDRC_MODULE)
- static struct musb_hdrc_eps_bits musb_eps[] = {
- 	{ "ep1_tx", 8, },
-@@ -87,7 +90,7 @@ static struct platform_device usb_dev = {
- 	.num_resources  = ARRAY_SIZE(usb_resources),
- };
+I'm not sure what other information would be useful here.  Please let
+me know if you need anything else.
 
--void __init davinci_setup_usb(unsigned mA, unsigned potpgt_ms)
-+int __init davinci_setup_usb(unsigned mA, unsigned potpgt_ms)
- {
- 	usb_data.power = mA > 510 ? 255 : mA / 2;
- 	usb_data.potpgt = (potpgt_ms + 1) / 2;
-@@ -99,7 +102,8 @@ void __init davinci_setup_usb(unsigned mA, unsigned
-potpgt_ms)
- 	} else	/* other devices don't have dedicated CPPI IRQ */
- 		usb_dev.num_resources = 2;
-
--	platform_device_register(&usb_dev);
-+	retval = platform_device_register(&usb_dev);
-+	return retval;
- }
-
- #ifdef CONFIG_ARCH_DAVINCI_DA8XX
-@@ -132,7 +136,7 @@ int __init da8xx_register_usb20(unsigned mA,
-unsigned potpgt)
-
- #else
-
--void __init davinci_setup_usb(unsigned mA, unsigned potpgt_ms)
-+int __init davinci_setup_usb(unsigned mA, unsigned potpgt_ms)
- {
- }
-
-@@ -178,3 +182,23 @@ int __init da8xx_register_usb11(struct
-da8xx_ohci_root_hub *pdata)
- 	return platform_device_register(&da8xx_usb11_device);
- }
- #endif	/* CONFIG_DAVINCI_DA8XX */
-+
-+#ifdef CONFIG_MACH_DAVINCI_DM365_EVM
-+int __init dm365evm_usb_configure(void)
-+{
-+	davinci_cfg_reg(DM365_GPIO33);
-+	gpio_request(33, "usb");
-+	gpio_direction_output(33, 1);
-+	retval = davinci_setup_usb(500, 8);
-+	return retval;
-+}
-+subsys_initcall(dm365evm_usb_configure);
-+
-+static void __exit dm365evm_usb_exit(void)
-+{
-+	platform_device_unregister(&usb_dev);
-+}
-+module_exit(dm365evm_usb_exit);
-+
-+#endif
-+MODULE_LICENSE("GPL");
-diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
-index 2a2adf6..0147f5c 100644
---- a/drivers/usb/musb/davinci.c
-+++ b/drivers/usb/musb/davinci.c
-@@ -72,6 +72,16 @@ static inline void phy_on(void)
- 	/* power everything up; start the on-chip PHY and its PLL */
- 	phy_ctrl &= ~(USBPHY_OSCPDWN | USBPHY_OTGPDWN | USBPHY_PHYPDWN);
- 	phy_ctrl |= USBPHY_SESNDEN | USBPHY_VBDTCTEN | USBPHY_PHYPLLON;
-+
-+	if (cpu_is_davinci_dm365()) {
-+		/*
-+		 * DM365 PHYCLKFREQ field [15:12] is set to 2
-+		 * to get clock from 24MHz crystal
-+		 */
-+		phy_ctrl |= USBPHY_CLKFREQ_24MHZ;
-+		/*phy_ctrl &= ~USBPHY_PHYPDWN;*/
-+	}
-+
- 	__raw_writel(phy_ctrl, USB_PHY_CTRL);
-
- 	/* wait for PLL to lock before proceeding */
-@@ -193,6 +203,9 @@ static void davinci_musb_source_power(struct musb
-*musb, int is_on, int immediat
- 		else
- 			schedule_work(&evm_vbus_work);
- 	}
-+
-+	if (cpu_is_davinci_dm365())
-+		gpio_set_value(33, is_on);
- 	if (immediate)
- 		vbus_state = is_on;
- #endif
-diff --git a/drivers/usb/musb/davinci.h b/drivers/usb/musb/davinci.h
-index 046c844..1bf50e6 100644
---- a/drivers/usb/musb/davinci.h
-+++ b/drivers/usb/musb/davinci.h
-@@ -17,6 +17,7 @@
- /* Integrated highspeed/otg PHY */
- #define USBPHY_CTL_PADDR	(DAVINCI_SYSTEM_MODULE_BASE + 0x34)
- #define USBPHY_DATAPOL		BIT(11)	/* (dm355) switch D+/D- */
-+#define USBPHY_CLKFREQ_24MHZ    BIT(13)
- #define USBPHY_PHYCLKGD		BIT(8)
- #define USBPHY_SESNDEN		BIT(7)	/* v(sess_end) comparator */
- #define USBPHY_VBDTCTEN		BIT(6)	/* v(bus) comparator */
--- 
-1.7.0.4
+Thanks,
+Shawn
 
 
--- 
-Constantine Shulyupin
-http://www.MakeLinux.com/
-Embedded Linux Systems,
-Device Drivers, TI DaVinci
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
+
