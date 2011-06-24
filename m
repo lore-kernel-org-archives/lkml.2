@@ -1,55 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753634Ab1FXNH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 09:07:29 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:32955 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751701Ab1FXNH2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 09:07:28 -0400
-Message-ID: <4E048C0D.7020403@suse.cz>
-Date: Fri, 24 Jun 2011 15:07:25 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	id S1753303Ab1FXNIa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 09:08:30 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:37970 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751094Ab1FXNI3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 09:08:29 -0400
+Date: Fri, 24 Jun 2011 14:08:18 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Jaroslav Kysela <perex@perex.cz>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH] SOUND: Fix non-ISA_DMA_API build failure
+Message-ID: <20110624130818.GC6327@linux-mips.org>
+References: <20110623144750.GA10180@linux-mips.org>
+ <s5hzkl7zlcq.wl%tiwai@suse.de>
+ <20110624111608.GA6327@linux-mips.org>
+ <s5hzkl72zce.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-Cc: Markus Trippelsdorf <markus@trippelsdorf.de>,
-        Nick Bowler <nbowler@elliptictech.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Mike Frysinger <vapier@gentoo.org>, Sam Ravnborg <sam@ravnborg.org>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: Re: __packed vs. __attribute__((packed)) in kernel headers
-References: <20110622063441.GA1740@x4.trippels.de>	 <20110623134209.GA10813@elliptictech.com>	 <20110623150209.GA12413@x4.trippels.de> <1308848277.6688.7.camel@Joe-Laptop>
-In-Reply-To: <1308848277.6688.7.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hzkl72zce.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.6.2011 18:57, Joe Perches wrote:
-> On Thu, 2011-06-23 at 17:02 +0200, Markus Trippelsdorf wrote:
->> On 2011.06.23 at 09:42 -0400, Nick Bowler wrote:
->>> On 2011-06-22 08:34 +0200, Markus Trippelsdorf wrote:
->>>> One possible solution would be to let the "scripts/headers_install.pl"
->>>> script automatically substitute __packed with __attribute__((packed)):
->>>>
->>>> diff --git a/scripts/headers_install.pl b/scripts/headers_install.pl
-> []
->> I'm not an expert of Perl regular expressions, but maybe this:
->>   $line =~ s/\s__packed;$/ __attribute__((packed));/g
->> is a little bit closer to the intention?
->
-> Maybe:
->
-> s/\b__packed\b/__attribute__((packed))/g
+On Fri, Jun 24, 2011 at 02:22:41PM +0200, Takashi Iwai wrote:
 
-Markus, will you post a patch with this fix?
+> >  o The drivers/media/radio/Kconfig part should be applied for 3.0 and
+> >    maybe -stable.
+> 
+> Yes, this will be good.
 
+I just tested that segment only and it works as expected.  Will repost in
+a minute.
 
-> though this argues against redefining
-> gcc __attributes__ in the first place.
+> >  o The sound/isa/Kconfig part is basically only fixing the dependency for
+> >    the Adlib driver allowing it to be built on non-ISA_DMA_API system and
+> >    is material for the next release after 3.0.
+> 
+> Any serious reason that snd-adlib must be built even with ISA=n?
 
-It's a handy shortcut, so why not have it. Although I don't understand 
-why checkpatch.pl has to warn about __attribute__((packed)).
+Definately not.
 
-Michal
+> As the device is really present only for ISA, it doesn't make much
+> sense to build this even though the driver itself doesn't need
+> ISA_DMA_API.
+
+I'm not aware of any systems that could use the Adlib in a ISA=n
+environment.  That's why my patch left the dependency on ISA untouched.
+
+  Ralf
