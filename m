@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933456Ab1FXBU6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 21:20:58 -0400
-Received: from claw.goop.org ([74.207.240.146]:41619 "EHLO claw.goop.org"
+	id S933327Ab1FXBU4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 21:20:56 -0400
+Received: from claw.goop.org ([74.207.240.146]:41620 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760176Ab1FXBT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1760177Ab1FXBT0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 23 Jun 2011 21:19:26 -0400
 From: Jeremy Fitzhardinge <jeremy@goop.org>
 To: Peter Zijlstra <peterz@infradead.org>
@@ -14,9 +14,9 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Nick Piggin <npiggin@kernel.dk>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 7/8] x86: add xadd helper macro
-Date: Thu, 23 Jun 2011 18:19:19 -0700
-Message-Id: <ce03e48f4b70a2a31accf32c8b41b781674e57c3.1308878118.git.jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 8/8] x86/ticketlock: use xadd helper
+Date: Thu, 23 Jun 2011 18:19:20 -0700
+Message-Id: <aa7c94ecfbee05a6b8e455271ba0bb467bf33b2f.1308878118.git.jeremy.fitzhardinge@citrix.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com>
 References: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com>
@@ -30,75 +30,29 @@ From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
 Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 ---
- arch/x86/include/asm/cmpxchg_32.h |   21 +++++++++++++++++++++
- arch/x86/include/asm/cmpxchg_64.h |   26 ++++++++++++++++++++++++++
- 2 files changed, 47 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/spinlock.h |    9 +--------
+ 1 files changed, 1 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
-index 284a6e8..30f0318 100644
---- a/arch/x86/include/asm/cmpxchg_32.h
-+++ b/arch/x86/include/asm/cmpxchg_32.h
-@@ -280,4 +280,25 @@ static inline unsigned long cmpxchg_386(volatile void *ptr, unsigned long old,
+diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+index dac6fc6..2d14e7c 100644
+--- a/arch/x86/include/asm/spinlock.h
++++ b/arch/x86/include/asm/spinlock.h
+@@ -71,14 +71,7 @@ static __always_inline struct __raw_tickets __ticket_spin_claim(struct arch_spin
+ {
+ 	register struct __raw_tickets tickets = { .tail = 1 };
  
- #endif
+-	if (sizeof(lock->tickets.head) == sizeof(u8))
+-		asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"
+-			      : "+r" (tickets), "+m" (lock->tickets)
+-			      : : "memory", "cc");
+-	else
+-		asm volatile (LOCK_PREFIX "xaddl %0, %1\n"
+-			     : "+r" (tickets), "+m" (lock->tickets)
+-			     : : "memory", "cc");
++	xadd(&lock->tickets, tickets);
  
-+#define xadd(ptr, inc)							\
-+	do {								\
-+		switch (sizeof(*(ptr))) {				\
-+		case 1:							\
-+			asm volatile (LOCK_PREFIX "xaddb %b0, %1\n"	\
-+				      : "+r" (inc), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case 2:							\
-+			asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"	\
-+				      : "+r" (inc), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case 4:							\
-+			asm volatile (LOCK_PREFIX "xaddl %0, %1\n"	\
-+				      : "+r" (inc), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		}							\
-+	} while(0)
-+
- #endif /* _ASM_X86_CMPXCHG_32_H */
-diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
-index 423ae58..62da1ff 100644
---- a/arch/x86/include/asm/cmpxchg_64.h
-+++ b/arch/x86/include/asm/cmpxchg_64.h
-@@ -151,4 +151,30 @@ extern void __cmpxchg_wrong_size(void);
- 	cmpxchg_local((ptr), (o), (n));					\
- })
- 
-+#define xadd(ptr, inc)							\
-+	do {								\
-+		switch (sizeof(*(ptr))) {				\
-+		case 1:							\
-+			asm volatile (LOCK_PREFIX "xaddb %b0, %1\n"	\
-+				      : "+r" (inc), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case 2:							\
-+			asm volatile (LOCK_PREFIX "xaddw %w0, %1\n"	\
-+				      : "+r" (inc), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case 4:							\
-+			asm volatile (LOCK_PREFIX "xaddl %0, %1\n"	\
-+				      : "+r" (inc), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		case 8:							\
-+			asm volatile (LOCK_PREFIX "xaddq %q0, %1\n"	\
-+				      : "+r" (inc), "+m" (*(ptr))	\
-+				      : : "memory", "cc");		\
-+			break;						\
-+		}							\
-+	} while(0)
-+
- #endif /* _ASM_X86_CMPXCHG_64_H */
+ 	return tickets;
+ }
 -- 
 1.7.5.4
 
