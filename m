@@ -1,130 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758366Ab1FXNuD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 09:50:03 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:36347 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758014Ab1FXNtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 09:49:45 -0400
-From: Andrea Righi <andrea@betterlinux.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Theodore Tso <tytso@mit.edu>, Shaohua Li <shaohua.li@intel.com>,
-        =?UTF-8?q?P=C3=A1draig=20Brady?= <P@draigBrady.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH v3 2/2] fadvise: implement POSIX_FADV_NOREUSE
-Date: Fri, 24 Jun 2011 15:49:10 +0200
-Message-Id: <1308923350-7932-3-git-send-email-andrea@betterlinux.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1308923350-7932-1-git-send-email-andrea@betterlinux.com>
-References: <1308923350-7932-1-git-send-email-andrea@betterlinux.com>
+	id S1758798Ab1FXNuY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 09:50:24 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:51860 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758482Ab1FXNuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 09:50:09 -0400
+Date: Fri, 24 Jun 2011 06:49:14 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: "Stijn Devriendt (sdevrien)" <sdevrien@cisco.com>
+CC: "khali@linux-fr.org" <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v3] Add support for the Philips SA56004 temperature
+ sensor.
+Message-ID: <20110624134914.GA1177@ericsson.com>
+References: <1307356845-10095-1-git-send-email-sdevrien@cisco.com>
+ <20110606124047.GA26180@ericsson.com>
+ <6E4D2678AC543844917CA081C9D6B33F04C74F28@XMB-AMS-103.cisco.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <6E4D2678AC543844917CA081C9D6B33F04C74F28@XMB-AMS-103.cisco.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There were some reported problems in the past about trashing page cache
-when a backup software (i.e., rsync) touches a huge amount of pages (see
-for example [1]).
+On Fri, Jun 24, 2011 at 06:40:57AM -0400, Stijn Devriendt (sdevrien) wrote:
+> Hi Guenter,
+> 
+> Is anything being done with this patch, yet?
+> I haven't heard anything from Jean so far.
+> 
+Hi Stijn,
 
-This problem has been almost fixed by the Minchan Kim's patch [2] and a
-proper use of fadvise() in the backup software. For example this patch
-set [3] has been proposed for inclusion in rsync.
+please don't top-post.
 
-However, there can be still other similar trashing problems: when the
-backup software reads all the source files, some of them may be part of
-the actual working set of the system. When a POSIX_FADV_DONTNEED is
-performed _all_ pages are evicted from pagecache, both the working set
-and the use-once pages touched only by the backup software.
+I don't recall a comment from Jean either.
 
-A previous proposal [4] tried to resolve this problem being less
-agressive in invalidating active pages, moving them to the inactive list
-intead of just evict them from the page cache.
+Jean, any comments ? It is your driver, so I thought it would make sense
+if you had a look.
 
-However, this approach changed completely the old behavior of
-invalidate_mapping_pages(), that is not only used by fadvise.
+Thanks,
+Guenter
 
-The new solution maps POSIX_FADV_NOREUSE to the less-agressive page
-invalidation policy.
-
-With POSIX_FADV_NOREUSE active pages are moved to the tail of the
-inactive list, and pages in the inactive list are just removed from page
-cache. Pages mapped by other processes or unevictable pages are not
-touched at all.
-
-In this way if the backup was the only user of a page, that page will be
-immediately removed from the page cache by calling POSIX_FADV_NOREUSE.
-If the page was also touched by other tasks it'll be moved to the
-inactive list, having another chance of being re-added to the working
-set, or simply reclaimed when memory is needed.
-
-In conclusion, now userspace applications that want to drop some page
-cache pages can choose between the following advices:
-
- POSIX_FADV_DONTNEED = drop page cache if possible
- POSIX_FADV_NOREUSE = reduce page cache eligibility
-
-[1] http://marc.info/?l=rsync&m=128885034930933&w=2
-[2] https://lkml.org/lkml/2011/2/20/57
-[3] http://lists.samba.org/archive/rsync/2010-November/025827.html
-[4] https://lkml.org/lkml/2011/6/23/35
-
-Signed-off-by: Andrea Righi <andrea@betterlinux.com>
----
- mm/fadvise.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
-
-diff --git a/mm/fadvise.c b/mm/fadvise.c
-index 8d723c9..bcc79ac 100644
---- a/mm/fadvise.c
-+++ b/mm/fadvise.c
-@@ -33,7 +33,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 	pgoff_t start_index;
- 	pgoff_t end_index;
- 	unsigned long nrpages;
--	int ret = 0;
-+	int ret = 0, force = true;
- 
- 	if (!file)
- 		return -EBADF;
-@@ -106,7 +106,7 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 		nrpages = end_index - start_index + 1;
- 		if (!nrpages)
- 			nrpages = ~0UL;
--		
-+
- 		ret = force_page_cache_readahead(mapping, file,
- 				start_index,
- 				nrpages);
-@@ -114,7 +114,8 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 			ret = 0;
- 		break;
- 	case POSIX_FADV_NOREUSE:
--		break;
-+		/* Reduce cache eligibility */
-+		force = false;
- 	case POSIX_FADV_DONTNEED:
- 		if (!bdi_write_congested(mapping->backing_dev_info))
- 			filemap_flush(mapping);
-@@ -124,8 +125,8 @@ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
- 		end_index = (endbyte >> PAGE_CACHE_SHIFT);
- 
- 		if (end_index >= start_index)
--			invalidate_mapping_pages(mapping, start_index,
--						end_index);
-+			__invalidate_mapping_pages(mapping, start_index,
-+						end_index, force);
- 		break;
- 	default:
- 		ret = -EINVAL;
--- 
-1.7.4.1
-
+> Thanks,
+> Stijn
+> 
+> > -----Original Message-----
+> > From: Guenter Roeck [mailto:guenter.roeck@ericsson.com]
+> > Sent: maandag 6 juni 2011 14:41
+> > To: Stijn Devriendt (sdevrien)
+> > Cc: khali@linux-fr.org; lm-sensors@lm-sensors.org; linux-
+> > kernel@vger.kernel.org
+> > Subject: Re: [PATCH v3] Add support for the Philips SA56004
+> temperature
+> > sensor.
+> > 
+> > On Mon, Jun 06, 2011 at 06:40:45AM -0400, sdevrien@cisco.com wrote:
+> > > From: Stijn Devriendt <sdevrien@cisco.com>
+> > >
+> > > Add support for the Philips SA56004, an LM86
+> > > compatible temperature sensor.
+> > >
+> > > Changes since v2:
+> > > - Changed BUG_ON to WARN_ON
+> > > Changes since v1:
+> > > - Updated documentation
+> > > - Trace replaced by BUG_ON
+> > > - style updates
+> > >
+> > > Signed-off-by: Stijn Devriendt <sdevrien@cisco.com>
+> > 
+> > Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> > 
+> > Jean, do you want to take this and/or have a look, or should I ?
+> > 
+> > Thanks,
+> > Guenter
