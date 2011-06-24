@@ -1,222 +1,216 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760170Ab1FXAh5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 20:37:57 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:64818 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751336Ab1FXAhz (ORCPT
+	id S932868Ab1FXAiC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 20:38:02 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:54422 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751336Ab1FXAh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 20:37:55 -0400
+	Thu, 23 Jun 2011 20:37:58 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=chromium.org; s=google;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mVHapMLLCzs9afILHGdjYMzvKvzRGTHFAfcUJLetEPteZolYDLo9aTlVhifr/mNE4a
-         VGkK6P7Gwtbi6QOKWv5RQShLt3uM5Q33sbSCiM7ZLOaWTghUddoas3uFkrUluKucVYmr
-         WZxO59FkJ2MbykOMtbNBw+zHZqrJ2qYZKKb00=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=kGVSZOhaecITY7e6loK9ie4qLiK9dcw1dFJye9d3IVXyqf9PEGkyj/Y/iOxG49jk6J
+         /G+iVGlwJHk6ECK2XhYKycSBb/fOYFz1SGJQUJ0GA16n2j675ctK1E3UYqbPrm2gkOML
+         BwotmafD8bOm1KB3hMtMN2cx10/EVyiT7EUWw=
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, djm@mindrot.org, segoon@openwall.com,
         kees.cook@canonical.com, mingo@elte.hu, rostedt@goodmis.org,
         jmorris@namei.org, fweisbec@gmail.com, tglx@linutronix.de,
         scarybeasts@gmail.com, Will Drewry <wad@chromium.org>,
-        Ingo Molnar <mingo@redhat.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Namhyung Kim <namhyung@gmail.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Ben Blum <bblum@andrew.cmu.edu>
-Subject: [PATCH v9 01/13] tracing: split out filter initialization and clean up uses
-Date: Thu, 23 Jun 2011 19:36:40 -0500
-Message-Id: <1308875813-20122-1-git-send-email-wad@chromium.org>
+        Ingo Molnar <mingo@redhat.com>
+Subject: [PATCH v9 02/13] tracing: split out syscall_trace_enter construction
+Date: Thu, 23 Jun 2011 19:36:41 -0500
+Message-Id: <1308875813-20122-2-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1308875813-20122-1-git-send-email-wad@chromium.org>
+References: <1308875813-20122-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Moves the perf-specific profile event allocation and freeing code into
-kernel/perf_event.c where it is called from and two symbols are exported
-via ftrace_event.h for instantiating struct event_filters without
-requiring a change to the core tracing code.
+perf appears to be the primary consumer of the CONFIG_FTRACE_SYSCALLS
+infrastructure.  As such, many the helpers target at perf can be split
+into a peerf-focused helper and a generic CONFIG_FTRACE_SYSCALLS
+consumer interface.
 
-The change allows globally registered ftrace events to be used in
-event_filter structs.  perf is the current consumer, but a possible
-future consumer is a system call filtering using the secure computing
-hooks (and the existing syscalls subsystem events).
+This change splits out syscall_trace_enter construction from
+perf_syscall_enter for current into two helpers:
+- ftrace_syscall_enter_state
+- ftrace_syscall_enter_state_size
+
+And adds another helper for completeness:
+- ftrace_syscall_exit_state_size
+
+These helpers allow for shared code between perf ftrace events and
+any other consumers of CONFIG_FTRACE_SYSCALLS events.  The proposed
+seccomp_filter patches use this code.
 
 v9: rebase on to bccaeafd7c117acee36e90d37c7e05c19be9e7bf
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- include/linux/ftrace_event.h       |    9 +++--
- kernel/events/core.c               |    7 +++-
- kernel/trace/trace_events_filter.c |   60 ++++++++++++++++++++++--------------
- 3 files changed, 48 insertions(+), 28 deletions(-)
+ include/trace/syscall.h       |    4 ++
+ kernel/trace/trace_syscalls.c |   96 +++++++++++++++++++++++++++++++++++------
+ 2 files changed, 86 insertions(+), 14 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 59d3ef1..1d8daca 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -229,6 +229,12 @@ extern int filter_current_check_discard(struct ring_buffer *buffer,
- 					void *rec,
- 					struct ring_buffer_event *event);
- 
-+extern void ftrace_free_filter(struct event_filter *filter);
-+extern int ftrace_parse_filter(struct event_filter **filter,
-+			       int event_id,
-+			       const char *filter_str);
-+extern const char *ftrace_get_filter_string(const struct event_filter *filter);
-+
- enum {
- 	FILTER_OTHER = 0,
- 	FILTER_STATIC_STRING,
-@@ -279,9 +285,6 @@ extern int  perf_trace_init(struct perf_event *event);
- extern void perf_trace_destroy(struct perf_event *event);
- extern int  perf_trace_add(struct perf_event *event, int flags);
- extern void perf_trace_del(struct perf_event *event, int flags);
--extern int  ftrace_profile_set_filter(struct perf_event *event, int event_id,
--				     char *filter_str);
--extern void ftrace_profile_free_filter(struct perf_event *event);
- extern void *perf_trace_buf_prepare(int size, unsigned short type,
- 				    struct pt_regs *regs, int *rctxp);
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 9efe710..a18af25 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5580,7 +5580,8 @@ static int perf_event_set_filter(struct perf_event *event, void __user *arg)
- 	if (IS_ERR(filter_str))
- 		return PTR_ERR(filter_str);
- 
--	ret = ftrace_profile_set_filter(event, event->attr.config, filter_str);
-+	ret = ftrace_parse_filter(&event->filter, event->attr.config,
-+				  filter_str);
- 
- 	kfree(filter_str);
- 	return ret;
-@@ -5588,7 +5589,9 @@ static int perf_event_set_filter(struct perf_event *event, void __user *arg)
- 
- static void perf_event_free_filter(struct perf_event *event)
- {
--	ftrace_profile_free_filter(event);
-+	struct event_filter *filter = event->filter;
-+	event->filter = NULL;
-+	ftrace_free_filter(filter);
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index 31966a4..242ae04 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -41,6 +41,10 @@ extern int reg_event_syscall_exit(struct ftrace_event_call *call);
+ extern void unreg_event_syscall_exit(struct ftrace_event_call *call);
+ extern int
+ ftrace_format_syscall(struct ftrace_event_call *call, struct trace_seq *s);
++extern int ftrace_syscall_enter_state(u8 *buf, size_t available,
++				      struct trace_entry **entry);
++extern size_t ftrace_syscall_enter_state_size(int nb_args);
++extern size_t ftrace_syscall_exit_state_size(void);
+ enum print_line_t print_syscall_enter(struct trace_iterator *iter, int flags,
+ 				      struct trace_event *event);
+ enum print_line_t print_syscall_exit(struct trace_iterator *iter, int flags,
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index ee7b5a0..f37f120 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -95,7 +95,7 @@ find_syscall_meta(unsigned long syscall)
+ 	return NULL;
  }
  
- #else
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 8008ddc..787b174 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -522,7 +522,7 @@ static void remove_filter_string(struct event_filter *filter)
+-static struct syscall_metadata *syscall_nr_to_meta(int nr)
++struct syscall_metadata *syscall_nr_to_meta(int nr)
+ {
+ 	if (!syscalls_metadata || nr >= NR_syscalls || nr < 0)
+ 		return NULL;
+@@ -498,7 +498,7 @@ static int sys_perf_refcount_exit;
+ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ {
+ 	struct syscall_metadata *sys_data;
+-	struct syscall_trace_enter *rec;
++	void *buf;
+ 	struct hlist_head *head;
+ 	int syscall_nr;
+ 	int rctx;
+@@ -513,25 +513,22 @@ static void perf_syscall_enter(void *ignore, struct pt_regs *regs, long id)
+ 		return;
+ 
+ 	/* get the size after alignment with the u32 buffer size field */
+-	size = sizeof(unsigned long) * sys_data->nb_args + sizeof(*rec);
+-	size = ALIGN(size + sizeof(u32), sizeof(u64));
+-	size -= sizeof(u32);
++	size = ftrace_syscall_enter_state_size(sys_data->nb_args);
+ 
+ 	if (WARN_ONCE(size > PERF_MAX_TRACE_SIZE,
+ 		      "perf buffer not large enough"))
+ 		return;
+ 
+-	rec = (struct syscall_trace_enter *)perf_trace_buf_prepare(size,
+-				sys_data->enter_event->event.type, regs, &rctx);
+-	if (!rec)
++	buf = perf_trace_buf_prepare(size, sys_data->enter_event->event.type,
++				     regs, &rctx);
++	if (!buf)
+ 		return;
+ 
+-	rec->nr = syscall_nr;
+-	syscall_get_arguments(current, regs, 0, sys_data->nb_args,
+-			       (unsigned long *)&rec->args);
++	/* The only error conditions in this helper are handled above. */
++	ftrace_syscall_enter_state(buf, size, NULL);
+ 
+ 	head = this_cpu_ptr(sys_data->enter_event->perf_events);
+-	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs, head);
++	perf_trace_buf_submit(buf, size, rctx, 0, 1, regs, head);
  }
  
- static int replace_filter_string(struct event_filter *filter,
--				 char *filter_string)
-+				 const char *filter_string)
- {
- 	kfree(filter->filter_string);
- 	filter->filter_string = kstrdup(filter_string, GFP_KERNEL);
-@@ -1936,21 +1936,27 @@ out_unlock:
- 	return err;
- }
+ int perf_sysenter_enable(struct ftrace_event_call *call)
+@@ -587,8 +584,7 @@ static void perf_syscall_exit(void *ignore, struct pt_regs *regs, long ret)
+ 		return;
  
--#ifdef CONFIG_PERF_EVENTS
--
--void ftrace_profile_free_filter(struct perf_event *event)
-+/* ftrace_free_filter - frees a parsed filter its internal structures.
-+ *
-+ * @filter: pointer to the event_filter to free.
-+ */
-+void ftrace_free_filter(struct event_filter *filter)
- {
--	struct event_filter *filter = event->filter;
--
--	event->filter = NULL;
--	__free_filter(filter);
-+	if (filter)
-+		__free_filter(filter);
- }
-+EXPORT_SYMBOL_GPL(ftrace_free_filter);
+ 	/* We can probably do that at build time */
+-	size = ALIGN(sizeof(*rec) + sizeof(u32), sizeof(u64));
+-	size -= sizeof(u32);
++	size = ftrace_syscall_exit_state_size();
  
--int ftrace_profile_set_filter(struct perf_event *event, int event_id,
--			      char *filter_str)
-+/* ftrace_parse_filter - allocates and populates a new event_filter
-+ *
-+ * @event_id: may be something like syscalls::sys_event_tkill's id.
-+ * @filter_str: pointer to the filter string. Ownership IS taken.
-+ */
-+int ftrace_parse_filter(struct event_filter **filter,
-+			int event_id,
-+			const char *filter_str)
- {
- 	int err;
--	struct event_filter *filter;
- 	struct filter_parse_state *ps;
- 	struct ftrace_event_call *call = NULL;
- 
-@@ -1966,12 +1972,12 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 		goto out_unlock;
- 
- 	err = -EEXIST;
--	if (event->filter)
-+	if (*filter)
- 		goto out_unlock;
- 
--	filter = __alloc_filter();
--	if (!filter) {
--		err = PTR_ERR(filter);
-+	*filter = __alloc_filter();
-+	if (IS_ERR_OR_NULL(*filter)) {
-+		err = PTR_ERR(*filter);
- 		goto out_unlock;
+ 	/*
+ 	 * Impossible, but be paranoid with the future
+@@ -688,3 +684,75 @@ static int syscall_exit_register(struct ftrace_event_call *event,
  	}
- 
-@@ -1980,14 +1986,14 @@ int ftrace_profile_set_filter(struct perf_event *event, int event_id,
- 	if (!ps)
- 		goto free_filter;
- 
--	parse_init(ps, filter_ops, filter_str);
-+	replace_filter_string(*filter, filter_str);
-+
-+	parse_init(ps, filter_ops, (*filter)->filter_string);
- 	err = filter_parse(ps);
- 	if (err)
- 		goto free_ps;
- 
--	err = replace_preds(call, filter, ps, filter_str, false);
--	if (!err)
--		event->filter = filter;
-+	err = replace_preds(call, *filter, ps, (*filter)->filter_string, false);
- 
- free_ps:
- 	filter_opstack_clear(ps);
-@@ -1995,14 +2001,22 @@ free_ps:
- 	kfree(ps);
- 
- free_filter:
--	if (err)
--		__free_filter(filter);
-+	if (err) {
-+		__free_filter(*filter);
-+		*filter = NULL;
-+	}
- 
- out_unlock:
- 	mutex_unlock(&event_mutex);
- 
- 	return err;
+ 	return 0;
  }
-+EXPORT_SYMBOL_GPL(ftrace_parse_filter);
- 
--#endif /* CONFIG_PERF_EVENTS */
--
-+const char *ftrace_get_filter_string(const struct event_filter *filter)
++
++/* ftrace_syscall_enter_state_size - returns the state size required.
++ *
++ * @nb_args: number of system call args expected.
++ *           a negative value implies the maximum allowed.
++ */
++size_t ftrace_syscall_enter_state_size(int nb_args)
 +{
-+	if (!filter)
-+		return NULL;
-+	return filter->filter_string;
++	/* syscall_get_arguments only supports up to 6 arguments. */
++	int arg_count = (nb_args >= 0 ? nb_args : 6);
++	size_t size = (sizeof(unsigned long) * arg_count) +
++		      sizeof(struct syscall_trace_enter);
++	size = ALIGN(size + sizeof(u32), sizeof(u64));
++	size -= sizeof(u32);
++	return size;
 +}
-+EXPORT_SYMBOL_GPL(ftrace_get_filter_string);
++EXPORT_SYMBOL_GPL(ftrace_syscall_enter_state_size);
++
++size_t ftrace_syscall_exit_state_size(void)
++{
++	return ALIGN(sizeof(struct syscall_trace_exit) + sizeof(u32),
++		     sizeof(u64)) - sizeof(u32);
++}
++EXPORT_SYMBOL_GPL(ftrace_syscall_exit_state_size);
++
++/* ftrace_syscall_enter_state - build state for filter matching
++ *
++ * @buf: buffer to populate with current task state for matching
++ * @available: size available for use in the buffer.
++ * @entry: optional pointer to the trace_entry member of the state.
++ *
++ * Returns 0 on success and non-zero otherwise.
++ * If @entry is NULL, it will be ignored.
++ */
++int ftrace_syscall_enter_state(u8 *buf, size_t available,
++			       struct trace_entry **entry)
++{
++	struct syscall_trace_enter *sys_enter;
++	struct syscall_metadata *sys_data;
++	int size;
++	int syscall_nr;
++	struct pt_regs *regs = task_pt_regs(current);
++
++	syscall_nr = syscall_get_nr(current, regs);
++	if (syscall_nr < 0)
++		return -EINVAL;
++
++	sys_data = syscall_nr_to_meta(syscall_nr);
++	if (!sys_data)
++		return -EINVAL;
++
++	/* Determine the actual size needed. */
++	size = sizeof(unsigned long) * sys_data->nb_args +
++	       sizeof(struct syscall_trace_enter);
++	size = ALIGN(size + sizeof(u32), sizeof(u64));
++	size -= sizeof(u32);
++
++	BUG_ON(size > available);
++	sys_enter = (struct syscall_trace_enter *)buf;
++
++	/* Populating the struct trace_sys_enter is left to the caller, but
++	 * a pointer is returned to encourage opacity.
++	 */
++	if (entry)
++		*entry = &sys_enter->ent;
++
++	sys_enter->nr = syscall_nr;
++	syscall_get_arguments(current, regs, 0, sys_data->nb_args,
++			      sys_enter->args);
++	return 0;
++}
++EXPORT_SYMBOL_GPL(ftrace_syscall_enter_state);
 -- 
 1.7.0.4
 
