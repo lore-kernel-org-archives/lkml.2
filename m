@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab1FXMNq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 08:13:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59012 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756530Ab1FXMNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 08:13:40 -0400
-Date: Fri, 24 Jun 2011 14:13:38 +0200
-From: Libor Pechacek <lpechacek@suse.cz>
-To: Paul Gortmaker <paul.gortmaker@windriver.com>
-Cc: stable@kernel.org, linux-kernel@vger.kernel.org, stable-review@kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [34-longterm 006/247] USB: serial: handle Data Carrier Detect
-	changes
-Message-ID: <20110624121337.GF20922@fm.suse.cz>
-References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com> <1308849690-14530-7-git-send-email-paul.gortmaker@windriver.com>
+	id S1755981Ab1FXMUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 08:20:31 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:35607 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752641Ab1FXMUa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 08:20:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308849690-14530-7-git-send-email-paul.gortmaker@windriver.com>
-User-Agent: Mutt/1.5.18-muttng (2008-05-17-r1399)
+In-Reply-To: <201106241326.27593.hverkuil@xs4all.nl>
+References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
+	<alpine.LNX.2.00.1106232356530.17688@swampdragon.chaosbits.net>
+	<4E04732A.3060305@infradead.org>
+	<201106241326.27593.hverkuil@xs4all.nl>
+Date: Fri, 24 Jun 2011 08:20:28 -0400
+Message-ID: <BANLkTinXymR_2A2Mr+UbhK63s2xjtK=B=g@mail.gmail.com>
+Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver
+ version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from include/
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Jesper Juhl <jj@chaosbits.net>, LKML <linux-kernel@vger.kernel.org>,
+        trivial@kernel.org, linux-media@vger.kernel.org,
+        ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+> Applications are certainly using it. I know this for a fact for the ivtv driver where
+> feature improvements are marked that way.
+>
+> Without more research on how this is used I am not comfortable with this.
+>
+> Regards,
+>
+>        Hans
 
-> @@ -726,6 +726,10 @@ static void spcp8x5_read_bulk_callback(struct urb *urb)
->  		/* overrun is special, not associated with a char */
->  		if (status & UART_OVERRUN_ERROR)
->  			tty_insert_flip_char(tty, 0, TTY_OVERRUN);
-> +		if (status & UART_DCD)
-> +			usb_serial_handle_dcd_change(port, tty,
-> +				   priv->line_status & MSR_STATUS_LINE_DCD);
-> +
->  		tty_insert_flip_string_fixed_flag(tty, data, tty_flag,
->  							urb->actual_length);
->  		tty_flip_buffer_push(tty);
+MythTV has a bunch of these too (mainly so the code can adapt to
+driver bugs that are fixed in later revisions).  Putting Mauro's patch
+upstream will definitely cause breakage.
 
-The above code is mistakenly placed inside the "if (tty && urb->actual_length)"
-block.  Should be right after it.
+Also, it screws up the ability for users to get fixes through the
+media_build tree (unless you are increasing the revision constantly
+with every merge you do).
 
-For kernels v2.6.31 - v2.6.34 use the following patch
-http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=commitdiff;h=6fe7015007299e14f5ea212a503bcba5958c7086
+Devin
 
-For kernels v2.6.35 - v2.6.37 use
-http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.37.y.git;a=commitdiff;h=2631217445b84e5d31341eaaf6e7951bf8907f52
-
-Libor
 -- 
-Libor Pechacek
-SUSE L3 Team, Prague
+Devin J. Heitmueller - Kernel Labs
+http://www.kernellabs.com
