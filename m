@@ -1,170 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755595Ab1FXLaV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 07:30:21 -0400
-Received: from smtp-vbr9.xs4all.nl ([194.109.24.29]:1436 "EHLO
-	smtp-vbr9.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab1FXLaT (ORCPT
+	id S1755744Ab1FXLfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 07:35:33 -0400
+Received: from casper.infradead.org ([85.118.1.10]:38885 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755311Ab1FXLfa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 07:30:19 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from include/
-Date: Fri, 24 Jun 2011 13:26:27 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1-tschai; KDE/4.6.2; x86_64; ; )
-Cc: Jesper Juhl <jj@chaosbits.net>, LKML <linux-kernel@vger.kernel.org>,
-        trivial@kernel.org, linux-media@vger.kernel.org,
-        ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net> <alpine.LNX.2.00.1106232356530.17688@swampdragon.chaosbits.net> <4E04732A.3060305@infradead.org>
-In-Reply-To: <4E04732A.3060305@infradead.org>
+	Fri, 24 Jun 2011 07:35:30 -0400
+Message-ID: <4E04767A.5020201@infradead.org>
+Date: Fri, 24 Jun 2011 08:35:22 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH] SOUND: Fix non-ISA_DMA_API build failure
+References: <20110623144750.GA10180@linux-mips.org> <s5hzkl7zlcq.wl%tiwai@suse.de> <20110624111608.GA6327@linux-mips.org>
+In-Reply-To: <20110624111608.GA6327@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106241326.27593.hverkuil@xs4all.nl>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 24, 2011 13:21:14 Mauro Carvalho Chehab wrote:
-> Em 23-06-2011 18:58, Jesper Juhl escreveu:
-> > It was pointed out by 'make versioncheck' that some includes of
-> > linux/version.h were not needed in include/.
-> > This patch removes them.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> >  include/linux/ceph/messenger.h |    1 -
-> >  include/media/pwc-ioctl.h      |    1 -
-> >  2 files changed, 0 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
-> > index 31d91a6..291aa6e 100644
-> > --- a/include/linux/ceph/messenger.h
-> > +++ b/include/linux/ceph/messenger.h
-> > @@ -6,7 +6,6 @@
-> >  #include <linux/net.h>
-> >  #include <linux/radix-tree.h>
-> >  #include <linux/uio.h>
-> > -#include <linux/version.h>
-> >  #include <linux/workqueue.h>
-> >  
-> >  #include "types.h"
-> > diff --git a/include/media/pwc-ioctl.h b/include/media/pwc-ioctl.h
-> > index 0f19779..1ed1e61 100644
-> > --- a/include/media/pwc-ioctl.h
-> > +++ b/include/media/pwc-ioctl.h
-> > @@ -53,7 +53,6 @@
-> >   */
-> >  
-> >  #include <linux/types.h>
-> > -#include <linux/version.h>
-> >  
-> >  /* Enumeration of image sizes */
-> >  #define PSZ_SQCIF	0x00
+Em 24-06-2011 08:16, Ralf Baechle escreveu:
+> On Fri, Jun 24, 2011 at 10:26:13AM +0200, Takashi Iwai wrote:
 > 
+>> Hrm...  I still don't understand why ES18XX or others were selected at
+>> the first place.  Isn't it covered by the conditional in
+>> sound/isa/Kconfig like below?
+>>
+>> ================================================================
+>> menuconfig SND_ISA
+>> 	bool "ISA sound devices"
+>> 	depends on ISA && ISA_DMA_API
+>> ...
+>> if SND_ISA
+>> ...
+>> config SND_ES18XX
+>> 	tristate "Generic ESS ES18xx driver"
+>> ...
+>> endif	# SND_ISA
+>> ================================================================
+>>
+>> Isn't SND_ISA=n in your case although ISA_DMA_API=n?
 > 
-> The usage of version.h at the Linux media kernel is due to a V4L2 API requirement[1],
-> where an ioctl query of VIDIOC_QUERYCAP type would return the driver version formatted
-> with KERNEL_VERSION() macro.
+> The answer is hidden in this Kconfig warning:
 > 
-> [1] http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-querycap.html
+> warning: (RADIO_MIROPCM20) selects SND_ISA which has unmet direct dependencies (SOUND && !M68K && SND && ISA && ISA_DMA_API)
 > 
-> While a few driver maintainers are careful enough to increment it on every new
-> kernel version where the driver was touched, others simply keep it outdated.
+> This is due to the following in drivers/media/radio/Kconfig:
 > 
-> IMHO, it doesn't make much sense on having a per-driver version field: the V4L2 layer
-> should be enough to abstract hardware differences, and to avoid userspace to have a per
-> driver list of hacks. I don't think that the userspace applications are really using it.
+> config RADIO_MIROPCM20
+>         tristate "miroSOUND PCM20 radio"
+>         depends on ISA && VIDEO_V4L2 && SND
+>         select SND_ISA
+>         select SND_MIRO
+> 
+> So SND_ISA gets forced on even though the dependency on ISA_DMA_API is not
+> fulfilled.  That's solved by adding the dependency on ISA_DMA_API to
+> RADIO_MIROPCM20.
 
-Applications are certainly using it. I know this for a fact for the ivtv driver where
-feature improvements are marked that way.
+Another option would be to convert the two above selects into depends on.
 
-Without more research on how this is used I am not comfortable with this.
-
-Regards,
-
-	Hans
-
-> Module versions should just use the MODULE_VERSION() macro.
-> 
-> So, IMO, the better would be to convert this field into a V4L2 API version field
-> instead like the enclosed patch. Of course, this also means to change the V4L2 API
-> Docbook. After that, we can cleanup all those linux/version.h code on all V4L drivers.
-> 
-> The idea is that, every time we add something new at the V4L2 API, we'll increment it
-> to match the current kernel version.
-> 
-> On a quick look, all drivers, except by one uses versions <= KERNEL_VERSION(3, 0, 0).
-> The only exception is the pwc driver, with version is KERNEL_VERSION(10, 0, 12). Due to
-> a bug on it, it also reports its version as: "10.0.14" at module version. The version
-> 10.0.12 is reported there since 2006, even having suffered a major change, due to the
-> removal of the V4L1 API, on changeset 479567ce3af7b99d645a3c53b8ca2fc65e46efdc.
-> So, I think it would be safe to change it to 3.0.0, as using the version here, in the favor
-> of a greater good. We can keep the driver-specific version only at 
-> 
-> Comments?
-> 
-> If others are ok with that, I'll prepare the changesets.
-> 
-> Cheers,
-> Mauro
-> 
-> 
-> -
-> 
-> [media] v4l2 core: Use a per-API version instead of a per driver version
-> 
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
-> index 213ba7d..d8fa571 100644
-> --- a/drivers/media/video/v4l2-ioctl.c
-> +++ b/drivers/media/video/v4l2-ioctl.c
-> @@ -16,6 +16,7 @@
->  #include <linux/slab.h>
->  #include <linux/types.h>
->  #include <linux/kernel.h>diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
-> index 213ba7d..b19ad56 100644
-> --- a/drivers/media/video/v4l2-ioctl.c
-> +++ b/drivers/media/video/v4l2-ioctl.c
-> @@ -16,6 +16,7 @@
->  #include <linux/slab.h>
->  #include <linux/types.h>
->  #include <linux/kernel.h>
-> +#include <linux/version.h>
->  
->  #include <linux/videodev2.h>
->  
-> @@ -27,6 +28,8 @@
->  #include <media/v4l2-device.h>
->  #include <media/v4l2-chip-ident.h>
->  
-> +#define V4L2_API_VERSION KERNEL_VERSION(3, 0, 0)
-> +
->  #define dbgarg(cmd, fmt, arg...) \
->  		do {							\
->  		    if (vfd->debug & V4L2_DEBUG_IOCTL_ARG) {		\
-> @@ -606,13 +609,16 @@ static long __video_do_ioctl(struct file *file,
->  			break;
->  
->  		ret = ops->vidioc_querycap(file, fh, cap);
-> -		if (!ret)
-> +		if (!ret) {
-> +			cap->version = V4L2_API_VERSION;
-> +
->  			dbgarg(cmd, "driver=%s, card=%s, bus=%s, "
->  					"version=0x%08x, "
->  					"capabilities=0x%08x\n",
->  					cap->driver, cap->card, cap->bus_info,
->  					cap->version,
->  					cap->capabilities);
-> +		}
->  		break;
->  	}
->  
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-media" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+Cheers,
+Mauro
