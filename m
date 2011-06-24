@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761298Ab1FXGIN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 02:08:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:53196 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761258Ab1FXGII convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 02:08:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=h6YxSLdUrW0hegW4nUvxEIcJhPyztxMwrpLBAAT1GwUvwUFHevLwyl7KDJsU7AQvWA
-         jgxUdWBtmWM/xDCwClZtjlSQScFLMMI46glRvfZM2rngDsHxDXQaxdN8X63hc1BoGuIs
-         cYHGYFUzZur1EWdDTR+jLkjNAPudZHO21aV4o=
-MIME-Version: 1.0
-In-Reply-To: <20110623212736.74bea79a.sfr@canb.auug.org.au>
+	id S1754111Ab1FXGKj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 02:10:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56055 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761381Ab1FXGKh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 02:10:37 -0400
+Date: Fri, 24 Jun 2011 16:10:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Michael Ellerman <michael@ellerman.id.au>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Linux-Next <linux-next@vger.kernel.org>
+Subject: Re: Build regressions/improvements in v3.0-rc3
+Message-Id: <20110624161029.e8f96175.sfr@canb.auug.org.au>
+In-Reply-To: <BANLkTimoWrwPNNYrLFN-_gyPnvSCEa9ksA@mail.gmail.com>
 References: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
 	<BANLkTikBDVR=S5J-=Kjq1QW3OU64WzHYRg@mail.gmail.com>
 	<20110618183029.822f4d82.sfr@canb.auug.org.au>
 	<20110623212736.74bea79a.sfr@canb.auug.org.au>
-Date: Fri, 24 Jun 2011 08:08:06 +0200
-X-Google-Sender-Auth: 3mY5bSnysMR0A4HNriuesp_1ZYE
-Message-ID: <BANLkTimoWrwPNNYrLFN-_gyPnvSCEa9ksA@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.0-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	<BANLkTimoWrwPNNYrLFN-_gyPnvSCEa9ksA@mail.gmail.com>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__24_Jun_2011_16_10_29_+1000_R+vMMgLengO_G_fu"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+--Signature=_Fri__24_Jun_2011_16_10_29_+1000_R+vMMgLengO_G_fu
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Thu, Jun 23, 2011 at 13:27, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> On Sat, 18 Jun 2011 18:30:29 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->> On Wed, 15 Jun 2011 11:19:48 +0200 Geert Uytterhoeven <geert@linux-m68k.org> wrote:
->> > Would it be possible to build with `make -k', so it continues in case
->> > of an error, and
->> > tries to build as much as possible?
->> > Yes, I know this may increase build time considerably, but in an ideal
->> > world, there
->> > are no compile errors and everything is built anyway ;-)
->>
->> Done (I think - it required very simple changes to a Python script and I
->> only do "monkey see, monkey do" Python programming :-))
+Hi Geert,
+
+On Fri, 24 Jun 2011 08:08:06 +0200 Geert Uytterhoeven <geert@linux-m68k.org=
+> wrote:
 >
-> I also made the mistake of fixing things so that the automatic "git
-> bisect for build failures" would work.  That was taking much too much
-> time (over 4 hours for one build), so I have turned it off.  Hopefully,
-> the builds will now run in a more reasonable time frame.
+> > I also made the mistake of fixing things so that the automatic "git
+> > bisect for build failures" would work. =C2=A0That was taking much too m=
+uch
+> > time (over 4 hours for one build), so I have turned it off. =C2=A0Hopef=
+ully,
+> > the builds will now run in a more reasonable time frame.
+>=20
+> Yeah, I noticed it. There are still no results for 3.0-rc4...
 
-Yeah, I noticed it. There are still no results for 3.0-rc4...
+3.0-rc4 should be complete in a few hours.  Hopefully rc5 will be faster.
 
-Probably you should only bisect for configs that where "green" recently.
-And hope people fix reported regressions the-next-day-as-we-speak :-)
+> Probably you should only bisect for configs that where "green" recently.
+> And hope people fix reported regressions the-next-day-as-we-speak :-)
 
-Gr{oetje,eeting}s,
+Well, I will leave that for the author :-)
 
-                        Geert
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+--Signature=_Fri__24_Jun_2011_16_10_29_+1000_R+vMMgLengO_G_fu
+Content-Type: application/pgp-signature
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOBCpVAAoJEDMEi1NhKgbsOWUH/ikMeyBq+a/qipkPPb9xlg4M
+kHePFopNPJrXBsYARsBROeSZRZpt21W7Jor6J1Hjwa/Yt5KVa2v42KDLaAJ6Ixxn
+WxYgcu08rxTkUAZNdJPivMgxHGFUp05gh+0mT5KcZOemRzT/jIBdHDS22cOQfj/r
+fT5S7eBFp3kX6fqYUCgM6/PSQCKszd/rTb3L/pQSIe90BNXs/3Ci4OWacCC+leBR
+jlt9/DOjzYiwOEQ6iIy9fxJdQ6YdE7YmhenVjguan08iK5xBRIA+8jh6G+QZSm0E
+kvm0lMPOov8O9LFQxsNI3ajpRZLznwPVyf4MLQDUDmA2Hpzb/3uX0fGLwwnJ02I=
+=efV9
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Jun_2011_16_10_29_+1000_R+vMMgLengO_G_fu--
