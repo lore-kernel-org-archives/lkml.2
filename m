@@ -1,208 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760308Ab1FXCPy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 22:15:54 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:39424 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760240Ab1FXCPw (ORCPT
+	id S932864Ab1FXCJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 22:09:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:35049 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760142Ab1FXCJv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 22:15:52 -0400
-Date: Fri, 24 Jun 2011 07:36:59 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
-Message-ID: <20110624020659.GA24776@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20110616032645.GF4952@linux.vnet.ibm.com>
- <1308225626.13240.34.camel@twins>
- <20110616130012.GL4952@linux.vnet.ibm.com>
- <1308248588.13240.267.camel@twins>
- <20110617045000.GM4952@linux.vnet.ibm.com>
- <1308297836.13240.380.camel@twins>
- <20110617090504.GN4952@linux.vnet.ibm.com>
- <1308303665.2355.11.camel@twins>
- <1308662243.26237.144.camel@twins>
- <20110622143906.GF16471@linux.vnet.ibm.com>
+	Thu, 23 Jun 2011 22:09:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,417,1304319600"; 
+   d="scan'208";a="22235264"
+From: "Ma, Ling" <ling.ma@intel.com>
+To: "Ma, Ling" <ling.ma@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>
+CC: "hpa@zytor.com" <hpa@zytor.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Jun 2011 10:09:37 +0800
+Subject: RE: [PATCH RFC] [x86] Optimize copy-page by reducing impact from HW
+ prefetch
+Thread-Topic: [PATCH RFC] [x86] Optimize copy-page by reducing impact from
+ HW prefetch
+Thread-Index: Acwxc9zXuTo3YQvYQpKzil1gi1OinwAnn06gAABUypA=
+Message-ID: <C10D3FB0CD45994C8A51FEC1227CE22F240ECD6FF5@shsmsx502.ccr.corp.intel.com>
+References: <1308351117-32452-1-git-send-email-ling.ma@intel.com>
+ <m2fwn13a3u.fsf@firstfloor.org> <20110623070448.GA25707@elte.hu> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20110622143906.GF16471@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Yes, clean up patch is first. 
+
+> -----Original Message-----
+> From: Ma, Ling
+> Sent: Friday, June 24, 2011 10:01 AM
+> To: 'Ingo Molnar'; Andi Kleen
+> Cc: hpa@zytor.com; tglx@linutronix.de; linux-kernel@vger.kernel.org
+> Subject: RE: [PATCH RFC] [x86] Optimize copy-page by reducing impact
+> from HW prefetch
 > 
-> so I am thinking of a solution that includes most of your ideas along
-> with using i_mmap_mutex in mmap_uprobe path.
+> Sure, I separate two patches ASAP, one is for performance tuning code
+> after some experiments,
+> another code style patch.
 > 
-
-Addressing Peter's comments given on irc wrt i_mmap_mutex.
-
-/*
-Changes:
-1. Uses inode->i_mutex instead of uprobes_mutex.
-2. Now along with vma rma walk, i_mmap_mutex is even held when we do deletion of uprobes into RB tree.
-3. mmap_uprobe takes i_mmap_mutex.
-
-Advantages:
-1. No need to drop mmap_sem.
-2. Now register/unregister can run in parallel.
-3.
-*/
-
-void _unregister_uprobe(...)
-{
-	if (!del_consumer(...)) {	// includes tree removal on last consumer
-		return;
-	}
-	if (uprobe->consumers)
-		return;
-
-	mutex_lock(&mapping->i_mmap_mutex);	//sync with mmap.
-	vma_prio_tree_foreach() {
-		// create list
-	}
-
-	mutex_unlock(&mapping->i_mmap_mutex);
-
-	list_for_each_entry_safe() {
-		// remove from list
-		down_read(&mm->mmap_sem);
-		remove_breakpoint();	// unconditional, if it wasn't there
-		up_read(&mm->mmap_sem);
-	}
-
-	mutex_lock(&mapping->i_mmap_mutex);
-	delete_uprobe(uprobe);
-	mutex_unlock(&mapping->i_mmap_mutex);
-
-	inode->uprobes_count--;
-	mutex_unlock(&inode->i_mutex);
-}
-
-int register_uprobe(...)
-{
-	uprobe = alloc_uprobe(...);	// find or insert in tree
-
-	mutex_lock(&inode->i_mutex);	// sync with register/unregister
-	if (uprobe->consumers) {
-		add_consumer();
-		goto put_unlock;
-	}
-	add_consumer();
-	inode->uprobes_count++;
-	mutex_lock(&mapping->i_mmap_mutex);	//sync with mmap.
-	vma_prio_tree_foreach(..) {
-		// get mm ref, add to list blah blah
-	}
-
-	mutex_unlock(&mapping->i_mmap_mutex);
-	list_for_each_entry_safe() {
-		if (ret) {
-			// del from list etc..
-			//
-			continue;
-		}
-		down_read(mm->mmap_sem);
-		ret = install_breakpoint();
-		up_read(..);
-		// del from list etc..
-		//
-		if (ret && (ret == -ESRCH || ret == -EEXIST))
-			ret = 0;
-	}
-
-	if (ret)
-		_unregister_uprobe();
-
-      put_unlock:
-	mutex_unlock(&inode->i_mutex);
-	put_uprobe(uprobe);
-	return ret;
-}
-
-void unregister_uprobe(...)
-{
-	mutex_lock(&inode->i_mutex);	// sync with register/unregister
-	uprobe = find_uprobe();	// ref++
-	_unregister_uprobe();
-	mutex_unlock(&inode->i_mutex);
-	put_uprobe(uprobe);
-}
-
-int mmap_uprobe(struct vm_area_struct *vma)
-{
-	struct list_head tmp_list;
-	struct uprobe *uprobe, *u;
-	struct mm_struct *mm;
-	struct inode *inode;
-	int ret = 0;
-
-	if (!valid_vma(vma))
-		return ret;	/* Bail-out */
-
-	mm = vma->vm_mm;
-	inode = vma->vm_file->f_mapping->host;
-	if (inode->uprobes_count)
-		return ret;
-	__iget(inode);
-
-	INIT_LIST_HEAD(&tmp_list);
-
-	mutex_lock(&mapping->i_mmap_mutex);
-	add_to_temp_list(vma, inode, &tmp_list);
-	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-		loff_t vaddr;
-
-		list_del(&uprobe->pending_list);
-		if (ret)
-			continue;
-
-		vaddr = vma->vm_start + uprobe->offset;
-		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-		ret = install_breakpoint(mm, uprobe, vaddr);
-
-		if (ret && (ret == -ESRCH || ret == -EEXIST))
-			ret = 0;
-	}
-
-	mutex_unlock(&mapping->i_mmap_mutex);
-	iput(inode);
-	return ret;
-}
-
-int munmap_uprobe(struct vm_area_struct *vma)
-{
-	struct list_head tmp_list;
-	struct uprobe *uprobe, *u;
-	struct mm_struct *mm;
-	struct inode *inode;
-	int ret = 0;
-
-	if (!valid_vma(vma))
-		return ret;	/* Bail-out */
-
-	mm = vma->vm_mm;
-	inode = vma->vm_file->f_mapping->host;
-	if (inode->uprobes_count)
-		return ret;
-
-//      walk thro RB tree and decrement mm->uprobes_count
-	walk_rbtree_and_dec_uprobes_count();	//hold treelock.
-
-	return ret;
-}
+> Thanks
+> Ling
+> 
+> > -----Original Message-----
+> > From: Ingo Molnar [mailto:mingo@elte.hu]
+> > Sent: Thursday, June 23, 2011 3:05 PM
+> > To: Andi Kleen
+> > Cc: Ma, Ling; hpa@zytor.com; tglx@linutronix.de; linux-
+> > kernel@vger.kernel.org
+> > Subject: Re: [PATCH RFC] [x86] Optimize copy-page by reducing impact
+> > from HW prefetch
+> >
+> >
+> > * Andi Kleen <andi@firstfloor.org> wrote:
+> >
+> > > ling.ma@intel.com writes:
+> > >
+> > > > impact(DCU prefetcher), and simplify original code. The
+> > > > performance is improved about 15% on core2, 36% on snb
+> > > > respectively. (We use our micro-benchmark, and will do further
+> > > > test according to your requirment)
+> > >
+> > > This doesn't make a lot of sense because neither Core-2 nor SNB use
+> > > the code path you patched. They all use the rep ; movs path
+> >
+> > Ling, mind double checking which one is the faster/better one on SNB,
+> > in cold-cache and hot-cache situations, copy_page or copy_page_c?
+> >
+> > Also, while looking at this file please fix the countless pieces of
+> > style excrements it has before modifying it:
+> >
+> >  - non-Linux comment style (and needless two comments - it can
+> >    be in one comment block):
+> >
+> >   /* Don't use streaming store because it's better when the target
+> >      ends up in cache. */
+> >
+> >   /* Could vary the prefetch distance based on SMP/UP */
+> >
+> >  - (there's other non-standard comment blocks in this file as well)
+> >
+> >  - The copy_page/copy_page_c naming is needlessly obfuscated, it
+> >    should be copy_page, copy_page_norep or so - the _c postfix has no
+> >    obvious meaning.
+> >
+> >  - all #include's should be at the top
+> >
+> >  - please standardize it on the 'instrn %x, %y' pattern that we
+> >    generally use in arch/x86/, not 'instrn %x,%y' pattern.
+> >
+> > and do this cleanup patch first and the speedup on top of it, and
+> > keep the two in two separate patches so that the modification to the
+> > assembly code can be reviewed more easily.
+> >
+> > Thanks,
+> >
+> > 	Ingo
