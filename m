@@ -1,68 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755348Ab1FXLUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 07:20:55 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:59286 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab1FXLUy (ORCPT
+	id S1755488Ab1FXLVY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 07:21:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34528 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755311Ab1FXLVV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 07:20:54 -0400
-Date: Fri, 24 Jun 2011 13:20:49 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 0/3 v3] rcu: Detect rcu uses under extended quiescent
- state
-Message-ID: <20110624112045.GF8058@somewhere.redhat.com>
-References: <1308870760-14153-1-git-send-email-fweisbec@gmail.com>
- <20110624035311.GB2266@linux.vnet.ibm.com>
+	Fri, 24 Jun 2011 07:21:21 -0400
+Message-ID: <4E04732A.3060305@infradead.org>
+Date: Fri, 24 Jun 2011 08:21:14 -0300
+From: Mauro Carvalho Chehab <mchehab@infradead.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110624035311.GB2266@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Jesper Juhl <jj@chaosbits.net>
+CC: LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
+        linux-media@vger.kernel.org, ceph-devel@vger.kernel.org,
+        Sage Weil <sage@newdream.net>
+Subject: [RFC] Don't use linux/version.h anymore to indicate a per-driver
+ version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from
+ include/
+References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net> <alpine.LNX.2.00.1106232356530.17688@swampdragon.chaosbits.net>
+In-Reply-To: <alpine.LNX.2.00.1106232356530.17688@swampdragon.chaosbits.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 08:53:11PM -0700, Paul E. McKenney wrote:
-> On Fri, Jun 24, 2011 at 01:12:37AM +0200, Frederic Weisbecker wrote:
-> > This time I have no current practical cases to fix. Those I fixed
-> > in previous versions were actually using rcu_dereference_raw(), which
-> > is legal in extended qs.
-> > 
-> > Frederic Weisbecker (3):
-> >   rcu: Detect illegal rcu dereference in extended quiescent state
-> >   rcu: Inform the user about dynticks idle mode on PROVE_RCU warning
-> >   rcu: Warn when rcu_read_lock() is used in extended quiescent state
-> > 
-> >  include/linux/rcupdate.h |   68 +++++++++++++++++++++++++++++++++++++++-------
-> >  kernel/lockdep.c         |    4 +++
-> >  kernel/rcupdate.c        |    4 +++
-> >  kernel/rcutiny.c         |   13 +++++++++
-> >  kernel/rcutree.c         |   14 +++++++++
-> >  5 files changed, 93 insertions(+), 10 deletions(-)
+Em 23-06-2011 18:58, Jesper Juhl escreveu:
+> It was pointed out by 'make versioncheck' that some includes of
+> linux/version.h were not needed in include/.
+> This patch removes them.
 > 
-> Queued, thank you, Frederic!
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  include/linux/ceph/messenger.h |    1 -
+>  include/media/pwc-ioctl.h      |    1 -
+>  2 files changed, 0 insertions(+), 2 deletions(-)
 > 
-> I have also applied your approach to SRCU, and I applied the following
-> to simplify the code a bit -- please let me know if there are any
-> problems with this approach.
-> 
-> 							Thanx, Paul
-> 
-> ------------------------------------------------------------------------
-> 
-> rcu: Remove one layer of abstraction from PROVE_RCU checking
-> 
-> Simplify things a bit by substituting the definitions of the single-line
-> rcu_read_acquire(), rcu_read_release(), rcu_read_acquire_bh(),
-> rcu_read_release_bh(), rcu_read_acquire_sched(), and
-> rcu_read_release_sched() functions at their call points.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> diff --git a/include/linux/ceph/messenger.h b/include/linux/ceph/messenger.h
+> index 31d91a6..291aa6e 100644
+> --- a/include/linux/ceph/messenger.h
+> +++ b/include/linux/ceph/messenger.h
+> @@ -6,7 +6,6 @@
+>  #include <linux/net.h>
+>  #include <linux/radix-tree.h>
+>  #include <linux/uio.h>
+> -#include <linux/version.h>
+>  #include <linux/workqueue.h>
+>  
+>  #include "types.h"
+> diff --git a/include/media/pwc-ioctl.h b/include/media/pwc-ioctl.h
+> index 0f19779..1ed1e61 100644
+> --- a/include/media/pwc-ioctl.h
+> +++ b/include/media/pwc-ioctl.h
+> @@ -53,7 +53,6 @@
+>   */
+>  
+>  #include <linux/types.h>
+> -#include <linux/version.h>
+>  
+>  /* Enumeration of image sizes */
+>  #define PSZ_SQCIF	0x00
 
-Yeah looks good. Thanks!
+
+The usage of version.h at the Linux media kernel is due to a V4L2 API requirement[1],
+where an ioctl query of VIDIOC_QUERYCAP type would return the driver version formatted
+with KERNEL_VERSION() macro.
+
+[1] http://linuxtv.org/downloads/v4l-dvb-apis/vidioc-querycap.html
+
+While a few driver maintainers are careful enough to increment it on every new
+kernel version where the driver was touched, others simply keep it outdated.
+
+IMHO, it doesn't make much sense on having a per-driver version field: the V4L2 layer
+should be enough to abstract hardware differences, and to avoid userspace to have a per
+driver list of hacks. I don't think that the userspace applications are really using it.
+Module versions should just use the MODULE_VERSION() macro.
+
+So, IMO, the better would be to convert this field into a V4L2 API version field
+instead like the enclosed patch. Of course, this also means to change the V4L2 API
+Docbook. After that, we can cleanup all those linux/version.h code on all V4L drivers.
+
+The idea is that, every time we add something new at the V4L2 API, we'll increment it
+to match the current kernel version.
+
+On a quick look, all drivers, except by one uses versions <= KERNEL_VERSION(3, 0, 0).
+The only exception is the pwc driver, with version is KERNEL_VERSION(10, 0, 12). Due to
+a bug on it, it also reports its version as: "10.0.14" at module version. The version
+10.0.12 is reported there since 2006, even having suffered a major change, due to the
+removal of the V4L1 API, on changeset 479567ce3af7b99d645a3c53b8ca2fc65e46efdc.
+So, I think it would be safe to change it to 3.0.0, as using the version here, in the favor
+of a greater good. We can keep the driver-specific version only at 
+
+Comments?
+
+If others are ok with that, I'll prepare the changesets.
+
+Cheers,
+Mauro
+
+
+-
+
+[media] v4l2 core: Use a per-API version instead of a per driver version
+
+Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+
+diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
+index 213ba7d..d8fa571 100644
+--- a/drivers/media/video/v4l2-ioctl.c
++++ b/drivers/media/video/v4l2-ioctl.c
+@@ -16,6 +16,7 @@
+ #include <linux/slab.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
+index 213ba7d..b19ad56 100644
+--- a/drivers/media/video/v4l2-ioctl.c
++++ b/drivers/media/video/v4l2-ioctl.c
+@@ -16,6 +16,7 @@
+ #include <linux/slab.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
++#include <linux/version.h>
+ 
+ #include <linux/videodev2.h>
+ 
+@@ -27,6 +28,8 @@
+ #include <media/v4l2-device.h>
+ #include <media/v4l2-chip-ident.h>
+ 
++#define V4L2_API_VERSION KERNEL_VERSION(3, 0, 0)
++
+ #define dbgarg(cmd, fmt, arg...) \
+ 		do {							\
+ 		    if (vfd->debug & V4L2_DEBUG_IOCTL_ARG) {		\
+@@ -606,13 +609,16 @@ static long __video_do_ioctl(struct file *file,
+ 			break;
+ 
+ 		ret = ops->vidioc_querycap(file, fh, cap);
+-		if (!ret)
++		if (!ret) {
++			cap->version = V4L2_API_VERSION;
++
+ 			dbgarg(cmd, "driver=%s, card=%s, bus=%s, "
+ 					"version=0x%08x, "
+ 					"capabilities=0x%08x\n",
+ 					cap->driver, cap->card, cap->bus_info,
+ 					cap->version,
+ 					cap->capabilities);
++		}
+ 		break;
+ 	}
+ 
