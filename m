@@ -1,338 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754806Ab1FXKFC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 06:05:02 -0400
+	id S1754881Ab1FXKFF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 06:05:05 -0400
 Received: from mailout4.samsung.com ([203.254.224.34]:30339 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752672Ab1FXKE7 (ORCPT
+	with ESMTP id S1754664Ab1FXKFA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 06:04:59 -0400
-X-AuditID: cbfee61b-b7bfdae000006d51-d9-4e046134f7b5
-Date: Fri, 24 Jun 2011 19:04:18 +0900
+	Fri, 24 Jun 2011 06:05:00 -0400
+X-AuditID: cbfee61b-b7bfdae000006d51-db-4e046134914e
+Date: Fri, 24 Jun 2011 19:04:19 +0900
 From: Donggeun Kim <dg77.kim@samsung.com>
-Subject: [PATCH 1/2] power_supply: Add charger driver for MAX8998/LP3974
+Subject: [PATCH 2/2] regulator: Add a new regulator for charge control of
+ MAX8998/LP3974
 In-reply-to: <1308909859-3674-1-git-send-email-dg77.kim@samsung.com>
 To: linux-kernel@vger.kernel.org
 Cc: cbouatmailru@gmail.com, sameo@linux.intel.com,
         broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
         kyungmin.park@samsung.com, dg77.kim@samsung.com
-Message-id: <1308909859-3674-2-git-send-email-dg77.kim@samsung.com>
+Message-id: <1308909859-3674-3-git-send-email-dg77.kim@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 Content-transfer-encoding: 7BIT
 References: <1308909859-3674-1-git-send-email-dg77.kim@samsung.com>
-X-OriginalArrivalTime: 24 Jun 2011 10:04:53.0072 (UTC)
- FILETIME=[29708D00:01CC3256]
+X-OriginalArrivalTime: 24 Jun 2011 10:04:53.0088 (UTC)
+ FILETIME=[2972FE00:01CC3256]
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch supports power supply APIs for MAX8998/LP3974.
+With the new regulator, "CHARGER", users can control charging current and
+turn on and off the charger.
+Note that the charger specification of LP3974 is different from
+that of MAX8998.
 
 Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
 ---
- drivers/mfd/max8998.c           |    2 +
- drivers/power/Kconfig           |    7 ++
- drivers/power/Makefile          |    1 +
- drivers/power/max8998_charger.c |  218 +++++++++++++++++++++++++++++++++++++++
- include/linux/mfd/max8998.h     |   12 ++
- 5 files changed, 240 insertions(+), 0 deletions(-)
- create mode 100644 drivers/power/max8998_charger.c
+ drivers/regulator/max8998.c |  137 ++++++++++++++++++++++++++++++++++++++++++-
+ include/linux/mfd/max8998.h |    6 ++
+ 2 files changed, 140 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/mfd/max8998.c b/drivers/mfd/max8998.c
-index 9ec7570..de4096a 100644
---- a/drivers/mfd/max8998.c
-+++ b/drivers/mfd/max8998.c
-@@ -39,6 +39,8 @@ static struct mfd_cell max8998_devs[] = {
- 		.name = "max8998-pmic",
- 	}, {
- 		.name = "max8998-rtc",
-+	}, {
-+		.name = "max8998-battery",
- 	},
+diff --git a/drivers/regulator/max8998.c b/drivers/regulator/max8998.c
+index 41a1495..8ddd299 100644
+--- a/drivers/regulator/max8998.c
++++ b/drivers/regulator/max8998.c
+@@ -86,6 +86,14 @@ static const struct voltage_map_desc buck3_voltage_map_desc = {
+ static const struct voltage_map_desc buck4_voltage_map_desc = {
+ 	.min = 800,	.step = 100,	.max = 2300,
+ };
++static const int charger_current_map_desc_max8998[] = {
++	90, 380, 475, 550, 570, 600, 700, 800
++};
++static const int charger_current_map_desc_lp3974[] = {
++	100, 400, 450, 500, 550, 600, 700, 800
++};
++
++static const int *charger_current_map_desc;
+ 
+ static const struct voltage_map_desc *ldo_voltage_map[] = {
+ 	NULL,
+@@ -110,6 +118,12 @@ static const struct voltage_map_desc *ldo_voltage_map[] = {
+ 	&buck12_voltage_map_desc,	/* BUCK2 */
+ 	&buck3_voltage_map_desc,	/* BUCK3 */
+ 	&buck4_voltage_map_desc,	/* BUCK4 */
++	NULL,				/* EN32KHZ_AP */
++	NULL,				/* EN32KHZ_CP */
++	NULL,				/* ENVICHG */
++	NULL,				/* ESAFEOUT1 */
++	NULL,				/* ESAFEOUT2 */
++	NULL,				/* CHARGER */
  };
  
-diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
-index e57b50b..3a6427d 100644
---- a/drivers/power/Kconfig
-+++ b/drivers/power/Kconfig
-@@ -235,4 +235,11 @@ config CHARGER_GPIO
- 	  This driver can be build as a module. If so, the module will be
- 	  called gpio-charger.
+ static inline int max8998_get_ldo(struct regulator_dev *rdev)
+@@ -168,6 +182,10 @@ static int max8998_get_enable_register(struct regulator_dev *rdev,
+ 		*reg = MAX8998_REG_CHGR2;
+ 		*shift = 7 - (ldo - MAX8998_ESAFEOUT1);
+ 		break;
++	case MAX8998_CHARGER:
++		*reg = MAX8998_REG_CHGR2;
++		*shift = 0;
++		break;
+ 	default:
+ 		return -EINVAL;
+ 	}
+@@ -193,6 +211,14 @@ static int max8998_ldo_is_enabled(struct regulator_dev *rdev)
+ 	return val & (1 << shift);
+ }
  
-+config CHARGER_MAX8998
-+	tristate "Maxim MAX8998/LP3974 PMIC battery charger driver"
-+	depends on MFD_MAX8998 && REGULATOR_MAX8998
-+	help
-+	  Say Y to enable support for the battery charger control sysfs and
-+	  platform data of MAX8998/LP3974 PMICs.
-+
- endif # POWER_SUPPLY
-diff --git a/drivers/power/Makefile b/drivers/power/Makefile
-index 009a90f..d0a62c7 100644
---- a/drivers/power/Makefile
-+++ b/drivers/power/Makefile
-@@ -36,3 +36,4 @@ obj-$(CONFIG_CHARGER_ISP1704)	+= isp1704_charger.o
- obj-$(CONFIG_CHARGER_MAX8903)	+= max8903_charger.o
- obj-$(CONFIG_CHARGER_TWL4030)	+= twl4030_charger.o
- obj-$(CONFIG_CHARGER_GPIO)	+= gpio-charger.o
-+obj-$(CONFIG_CHARGER_MAX8998)	+= max8998_charger.o
-diff --git a/drivers/power/max8998_charger.c b/drivers/power/max8998_charger.c
-new file mode 100644
-index 0000000..cc21fa2
---- /dev/null
-+++ b/drivers/power/max8998_charger.c
-@@ -0,0 +1,218 @@
-+/*
-+ * max8998_charger.c - Power supply consumer driver for the Maxim 8998/LP3974
-+ *
-+ *  Copyright (C) 2009-2010 Samsung Electronics
-+ *  MyungJoo Ham <myungjoo.ham@samsung.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/err.h>
-+#include <linux/slab.h>
-+#include <linux/platform_device.h>
-+#include <linux/power_supply.h>
-+#include <linux/mfd/max8998.h>
-+#include <linux/mfd/max8998-private.h>
-+
-+struct max8998_battery_data {
-+	struct device *dev;
-+	struct max8998_dev *iodev;
-+	struct power_supply battery;
-+};
-+
-+static enum power_supply_property max8998_battery_props[] = {
-+	POWER_SUPPLY_PROP_PRESENT, /* the presence of battery */
-+	POWER_SUPPLY_PROP_ONLINE, /* charger is active or not */
-+};
-+
-+/* Note that the charger control is done by a current regulator "CHARGER" */
-+static int max8998_battery_get_property(struct power_supply *psy,
-+		enum power_supply_property psp,
-+		union power_supply_propval *val)
++static int max8998_ldo_is_enabled_negated(struct regulator_dev *rdev)
 +{
-+	struct max8998_battery_data *max8998 = container_of(psy,
-+			struct max8998_battery_data, battery);
-+	struct i2c_client *i2c = max8998->iodev->i2c;
-+	int ret;
-+	u8 reg;
-+
-+	switch (psp) {
-+	case POWER_SUPPLY_PROP_PRESENT:
-+		ret = max8998_read_reg(i2c, MAX8998_REG_STATUS2, &reg);
-+		if (ret)
-+			return ret;
-+		if (reg & (1 << 4))
-+			val->intval = 0;
-+		else
-+			val->intval = 1;
-+		break;
-+	case POWER_SUPPLY_PROP_ONLINE:
-+		ret = max8998_read_reg(i2c, MAX8998_REG_STATUS2, &reg);
-+		if (ret)
-+			return ret;
-+		if (reg & (1 << 3))
-+			val->intval = 0;
-+		else
-+			val->intval = 1;
-+		break;
-+	default:
-+		return -EINVAL;
-+	}
-+
-+	return 0;
-+}
-+
-+static __devinit int max8998_battery_probe(struct platform_device *pdev)
-+{
-+	struct max8998_dev *iodev = dev_get_drvdata(pdev->dev.parent);
-+	struct max8998_platform_data *pdata = dev_get_platdata(iodev->dev);
-+	struct max8998_battery_data *max8998;
-+	struct i2c_client *i2c;
-+	int ret = 0;
-+
-+	if (!pdata) {
-+		dev_err(pdev->dev.parent, "No platform init data supplied\n");
-+		return -ENODEV;
-+	}
-+
-+	max8998 = kzalloc(sizeof(struct max8998_battery_data), GFP_KERNEL);
-+	if (!max8998)
-+		return -ENOMEM;
-+
-+	max8998->dev = &pdev->dev;
-+	max8998->iodev = iodev;
-+	platform_set_drvdata(pdev, max8998);
-+	i2c = max8998->iodev->i2c;
-+
-+	/* Setup "End of Charge" */
-+	/* If EOC value equals 0,
-+	 * remain value set from bootloader or default value */
-+	if (pdata->eoc >= 10 && pdata->eoc <= 45) {
-+		max8998_update_reg(i2c, MAX8998_REG_CHGR1,
-+				(pdata->eoc / 5 - 2) << 5, 0x7 << 5);
-+	} else if (pdata->eoc == 0) {
-+		dev_dbg(max8998->dev,
-+			"EOC value not set: leave it unchanged.\n");
-+	} else {
-+		dev_err(max8998->dev, "Invalid EOC value\n");
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+	/* Setup Charge Restart Level */
-+	switch (pdata->restart) {
-+	case 100:
-+		max8998_update_reg(i2c, MAX8998_REG_CHGR1, 0x1 << 3, 0x3 << 3);
-+		break;
-+	case 150:
-+		max8998_update_reg(i2c, MAX8998_REG_CHGR1, 0x0 << 3, 0x3 << 3);
-+		break;
-+	case 200:
-+		max8998_update_reg(i2c, MAX8998_REG_CHGR1, 0x2 << 3, 0x3 << 3);
-+		break;
-+	case -1:
-+		max8998_update_reg(i2c, MAX8998_REG_CHGR1, 0x3 << 3, 0x3 << 3);
-+		break;
-+	case 0:
-+		dev_dbg(max8998->dev,
-+			"Restart Level not set: leave it unchanged.\n");
-+		break;
-+	default:
-+		dev_err(max8998->dev, "Invalid Restart Level\n");
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+	/* Setup Charge Full Timeout */
-+	switch (pdata->timeout) {
-+	case 5:
-+		max8998_update_reg(i2c, MAX8998_REG_CHGR2, 0x0 << 4, 0x3 << 4);
-+		break;
-+	case 6:
-+		max8998_update_reg(i2c, MAX8998_REG_CHGR2, 0x1 << 4, 0x3 << 4);
-+		break;
-+	case 7:
-+		max8998_update_reg(i2c, MAX8998_REG_CHGR2, 0x2 << 4, 0x3 << 4);
-+		break;
-+	case -1:
-+		max8998_update_reg(i2c, MAX8998_REG_CHGR2, 0x3 << 4, 0x3 << 4);
-+		break;
-+	case 0:
-+		dev_dbg(max8998->dev,
-+			"Full Timeout not set: leave it unchanged.\n");
-+	default:
-+		dev_err(max8998->dev, "Invalid Full Timeout value\n");
-+		ret = -EINVAL;
-+		goto err;
-+	}
-+
-+	max8998->battery.name = "max8998_pmic";
-+	max8998->battery.type = POWER_SUPPLY_TYPE_BATTERY;
-+	max8998->battery.get_property = max8998_battery_get_property;
-+	max8998->battery.properties = max8998_battery_props;
-+	max8998->battery.num_properties = ARRAY_SIZE(max8998_battery_props);
-+
-+	ret = power_supply_register(max8998->dev, &max8998->battery);
-+	if (ret) {
-+		dev_err(max8998->dev, "failed: power supply register\n");
-+		goto err;
-+	}
-+
-+	return 0;
-+err:
-+	kfree(max8998);
++	int ret = max8998_ldo_is_enabled(rdev);
++	if (ret >= 0)
++		ret = !ret;
 +	return ret;
 +}
 +
-+static int __devexit max8998_battery_remove(struct platform_device *pdev)
+ static int max8998_ldo_enable(struct regulator_dev *rdev)
+ {
+ 	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
+@@ -502,6 +528,74 @@ buck2_exit:
+ 	return ret;
+ }
+ 
++static int max8998_charger_current_set(struct regulator_dev *rdev,
++					int min_uA, int max_uA)
 +{
-+	struct max8998_battery_data *max8998 = platform_get_drvdata(pdev);
++	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8998->iodev->i2c;
++	int reg = MAX8998_REG_CHGR1;
++	int shift = 0;
++	int mask = 0x7;
++	int ret;
++	u8 val;
++	int chosen = -1, chosen_current = -1;
++	int i;
 +
-+	power_supply_unregister(&max8998->battery);
-+	kfree(max8998);
++	if (!charger_current_map_desc)
++		return -ENXIO;
++
++	for (i = 0; i < (mask + 1); i++) {
++		int temp = charger_current_map_desc[i];
++		if (temp >= (min_uA / 1000) && temp <= (max_uA / 1000) &&
++				temp > chosen_current) {
++			chosen = i;
++			chosen_current = temp;
++		}
++	}
++
++	if (chosen < 0)
++		return -EINVAL;
++
++	ret = max8998_read_reg(i2c, reg, &val);
++	if (ret)
++		return ret;
++
++	val &= ~(mask << shift);
++	val |= (chosen & mask) << shift;
++
++	ret = max8998_write_reg(i2c, reg, val);
++	if (ret)
++		return ret;
++
++	dev_dbg(&rdev->dev, "charger current limit = %dmA (%xh)\n",
++			chosen_current, chosen);
 +
 +	return 0;
 +}
 +
-+static const struct platform_device_id max8998_battery_id[] = {
-+	{ "max8998-battery", TYPE_MAX8998 },
-+};
-+
-+static struct platform_driver max8998_battery_driver = {
-+	.driver = {
-+		.name = "max8998-battery",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe = max8998_battery_probe,
-+	.remove = __devexit_p(max8998_battery_remove),
-+	.id_table = max8998_battery_id,
-+};
-+
-+static int __init max8998_battery_init(void)
++static int max8998_charger_current_get(struct regulator_dev *rdev)
 +{
-+	return platform_driver_register(&max8998_battery_driver);
-+}
-+module_init(max8998_battery_init);
++	struct max8998_data *max8998 = rdev_get_drvdata(rdev);
++	struct i2c_client *i2c = max8998->iodev->i2c;
++	int reg = MAX8998_REG_CHGR1;
++	int shift = 0;
++	int mask = 0x7;
++	int ret;
++	u8 val;
 +
-+static void __exit max8998_battery_cleanup(void)
-+{
-+	platform_driver_unregister(&max8998_battery_driver);
-+}
-+module_exit(max8998_battery_cleanup);
++	ret = max8998_read_reg(i2c, reg, &val);
++	if (ret)
++		return ret;
 +
-+MODULE_DESCRIPTION("MAXIM 8998 battery control driver");
-+MODULE_AUTHOR("MyungJoo Ham <myungjoo.ham@samsung.com>");
-+MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:max8998-battery");
-diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
-index 61daa16..f4f0dfa 100644
---- a/include/linux/mfd/max8998.h
-+++ b/include/linux/mfd/max8998.h
-@@ -87,6 +87,15 @@ struct max8998_regulator_data {
-  * @wakeup: Allow to wake up from suspend
-  * @rtc_delay: LP3974 RTC chip bug that requires delay after a register
-  * write before reading it.
-+ * @eoc: End of Charge Level in percent: 10% ~ 45% by 5% step
-+ *   If it equals 0, leave it unchanged.
-+ *   Otherwise, it is a invalid value.
-+ * @restart: Restart Level in mV: 100, 150, 200, and -1 for disable.
-+ *   If it equals 0, leave it unchanged.
-+ *   Otherwise, it is a invalid value.
-+ * @timeout: Full Timeout in hours: 5, 6, 7, and -1 for disable.
-+ *   If it equals 0, leave it unchanged.
-+ *   Otherwise, leave it unchanged.
-  */
- struct max8998_platform_data {
- 	struct max8998_regulator_data	*regulators;
-@@ -107,6 +116,9 @@ struct max8998_platform_data {
- 	int				buck2_default_idx;
- 	bool				wakeup;
- 	bool				rtc_delay;
-+	int				eoc;
-+	int				restart;
-+	int				timeout;
++	val >>= shift;
++	val &= mask;
++
++	if (!charger_current_map_desc)
++		return -ENXIO;
++
++	return charger_current_map_desc[val] * 1000;
++}
++
+ static struct regulator_ops max8998_ldo_ops = {
+ 	.list_voltage		= max8998_list_voltage,
+ 	.is_enabled		= max8998_ldo_is_enabled,
+@@ -532,6 +626,22 @@ static struct regulator_ops max8998_others_ops = {
+ 	.set_suspend_disable	= max8998_ldo_disable,
  };
  
- #endif /*  __LINUX_MFD_MAX8998_H */
++static struct regulator_ops max8998_charger_ops = {
++	.is_enabled		= max8998_ldo_is_enabled_negated,
++	/*
++	 * Enable and disable are intentionally negated as the charger
++	 * control bit is active-negative while others are active-positive.
++	 */
++	.enable			= max8998_ldo_disable,
++	.disable		= max8998_ldo_enable,
++	.set_current_limit	= max8998_charger_current_set,
++	.get_current_limit	= max8998_charger_current_get,
++};
++
++static struct regulator_ops max8998_neg_online_ops = {
++	.is_enabled		= max8998_ldo_is_enabled_negated,
++};
++
+ static struct regulator_desc regulators[] = {
+ 	{
+ 		.name		= "LDO2",
+@@ -683,7 +793,13 @@ static struct regulator_desc regulators[] = {
+ 		.ops		= &max8998_others_ops,
+ 		.type		= REGULATOR_VOLTAGE,
+ 		.owner		= THIS_MODULE,
+-	}
++	}, {
++		.name		= "CHARGER",
++		.id		= MAX8998_CHARGER,
++		.ops		= &max8998_charger_ops,
++		.type		= REGULATOR_CURRENT,
++		.owner		= THIS_MODULE,
++	},
+ };
+ 
+ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+@@ -836,13 +952,29 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 			goto err_free_mem;
+ 	}
+ 
++	switch (pdev->id_entry->driver_data) {
++	case TYPE_MAX8998:
++		charger_current_map_desc =
++			charger_current_map_desc_max8998;
++		break;
++	case TYPE_LP3974:
++		charger_current_map_desc =
++			charger_current_map_desc_lp3974;
++		break;
++	default:
++		ret = -ENODEV;
++		goto err;
++	}
++
+ 	for (i = 0; i < pdata->num_regulators; i++) {
+ 		const struct voltage_map_desc *desc;
+ 		int id = pdata->regulators[i].id;
+ 		int index = id - MAX8998_LDO2;
+ 
+ 		desc = ldo_voltage_map[id];
+-		if (desc && regulators[index].ops != &max8998_others_ops) {
++		if (desc && regulators[index].ops != &max8998_others_ops &&
++		    regulators[index].ops != &max8998_charger_ops &&
++		    regulators[index].ops != &max8998_neg_online_ops) {
+ 			int count = (desc->max - desc->min) / desc->step + 1;
+ 			regulators[index].n_voltages = count;
+ 		}
+@@ -856,7 +988,6 @@ static __devinit int max8998_pmic_probe(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-
+ 	return 0;
+ err:
+ 	for (i = 0; i < max8998->num_regulators; i++)
+diff --git a/include/linux/mfd/max8998.h b/include/linux/mfd/max8998.h
+index f4f0dfa..c085935 100644
+--- a/include/linux/mfd/max8998.h
++++ b/include/linux/mfd/max8998.h
+@@ -52,6 +52,12 @@ enum {
+ 	MAX8998_ENVICHG,
+ 	MAX8998_ESAFEOUT1,
+ 	MAX8998_ESAFEOUT2,
++	/*
++	 * CHARGER: Controls ON/OFF, current limit of the charger.
++	 * However, note that even if CHARGER is ON, CHARGER_ONLINE
++	 * can be in "disabled" state by MAX8998 internal control.
++	**/
++	MAX8998_CHARGER,
+ };
+ 
+ /**
 -- 
 1.7.4.1
 
