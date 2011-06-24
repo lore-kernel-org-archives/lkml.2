@@ -1,66 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760199Ab1FXBJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 21:09:18 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:46005 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759905Ab1FXBJR convert rfc822-to-8bit (ORCPT
+	id S1760211Ab1FXBOJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 21:14:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39200 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751605Ab1FXBOI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 21:09:17 -0400
+	Thu, 23 Jun 2011 21:14:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
+        d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=SJfj8RiCg+4i9iVk13pe1ay33LSShgsjRm/lF70GjLJRotSG+5eBxmP3NbufiOhmL2
-         r6WEmJF6ohjI5s0BsC5g==
+         :cc:content-type;
+        b=QTcImvkVgz8QNx2XpMlqHgbaHTmm4YKiX3uYpXRvBGDgBIxOTk55iNcErGxDAw/DB+
+         zDVt3scypr0Dbg6xLlRVB79tNd9NSp/iExUsgOthwtkeA+8/PlntfkyuJ3Lt8R/bwcUc
+         duzyvo18RGoS5aU4jdQJZwFBGj0B7wmNdMSsY=
 MIME-Version: 1.0
-In-Reply-To: <987664A83D2D224EAE907B061CE93D5301E938F2FD@orsmsx505.amr.corp.intel.com>
-References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
-	<20110623133950.GB28333@srcf.ucam.org>
-	<4E0348E0.7050808@kpanic.de>
-	<20110623141222.GA30003@srcf.ucam.org>
-	<4E035DD1.1030603@kpanic.de>
-	<20110623170014.GN3263@one.firstfloor.org>
-	<987664A83D2D224EAE907B061CE93D5301E938F2FD@orsmsx505.amr.corp.intel.com>
-Date: Thu, 23 Jun 2011 18:09:14 -0700
-Message-ID: <BANLkTi=39V3MeQi9T9X8g1O7g0w6FNLGyQ@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
-From: Craig Bergstrom <craigb@google.com>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <B8D6CA50DACE9E4AAADE9A4D56FBAAE6166661@039-SN1MPN1-004.039d.mgd.msft.net>
+References: <20110621102605.1382.90232.sendpatchset@t400s>
+	<20110621102623.1382.71841.sendpatchset@t400s>
+	<B8D6CA50DACE9E4AAADE9A4D56FBAAE6166661@039-SN1MPN1-004.039d.mgd.msft.net>
+Date: Fri, 24 Jun 2011 10:14:06 +0900
+Message-ID: <BANLkTi=QhwBAv5GtrTpitVhx+yDZPnRN+g@mail.gmail.com>
+Subject: Re: [PATCH 02/02] virtio: Add virtio platform driver
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Bhushan Bharat-R65777 <R65777@freescale.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "vapier@gentoo.org" <vapier@gentoo.org>,
+        "mst@redhat.com" <mst@redhat.com>,
+        "linux-sh@vger.kernel.org" <linux-sh@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 10:12 AM, Luck, Tony <tony.luck@intel.com> wrote:
->> I don't think it makes sense to handle something like that with a list.
->> The compact representation currently in badram is great for that.
->
-> I'd tend to agree here.  Rick has made a convincing argument that there
-> are significant numbers of real world cases where a defective row/column
-> in a DIMM results in a predictable pattern of errors.  The ball is now
-> in Google's court to take a look at their systems that have high numbers
-> of errors to see if they can actually be described by a small number
-> of BadRAM patterns as Rick has claimed.
->
+Hi Bhushan Bharat,
 
-Hi All,
+On Thu, Jun 23, 2011 at 5:54 PM, Bhushan Bharat-R65777
+<R65777@freescale.com> wrote:
+> What purpose this virtio platform driver serves? Are you trying to make driver layers here and each virtio device driver can hook up into this platform driver. Is that correct ?
 
-We (Google) are working on a data-driven answer for this question.  I
-know that there has been some analysis on this topic on the past, but
-I don't want to speculate until we've had some time to put all the
-pieces together.  Stay tuned for specifics.
+The idea behind the virto platform driver is to have a reusable layer
+that handles common virtio and vring functionality. Regular virtio
+drivers for console, network and disk and interfacing to the virtio
+platform driver, so these paravirtualized drivers can with this virtio
+platform driver easily be reused by embedded platforms.
+
+Vendor specific code is abstracted away from the virtio platform
+driver and interfaced to using regular interrupts and SoC-specific
+callbacks. So with this patch virtio can be interfaced as any regular
+platform driver. This version of the driver is simply reusing the
+configuration method from lguest.
+
+If you want to see all code involved (including extremely experimental
+backing drivers) then have a look at:
+http://www.spinics.net/lists/linux-sh/msg07188.html
 
 Cheers,
-CraigB
 
-
-> -Tony
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+/ magnus
