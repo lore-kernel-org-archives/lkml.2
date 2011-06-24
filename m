@@ -1,155 +1,341 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752648Ab1FXF57 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 01:57:59 -0400
-Received: from mga11.intel.com ([192.55.52.93]:51321 "EHLO mga11.intel.com"
+	id S1752707Ab1FXF6j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 01:58:39 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33061 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752156Ab1FXF55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 01:57:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,417,1304319600"; 
-   d="scan'208";a="22290588"
-Subject: Re: [PATCH v2] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-From: Shaohua Li <shaohua.li@intel.com>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1308810981-5286-1-git-send-email-andrea@betterlinux.com>
-References: <1308810981-5286-1-git-send-email-andrea@betterlinux.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Jun 2011 13:57:54 +0800
-Message-ID: <1308895074.15392.167.camel@sli10-conroe>
+	id S1752156Ab1FXF6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 01:58:36 -0400
+Date: Fri, 24 Jun 2011 15:58:22 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 24
+Message-Id: <20110624155822.cb8cf6eb.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__24_Jun_2011_15_58_22_+1000_R34mrdR6r4NIUtUP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-23 at 14:36 +0800, Andrea Righi wrote:
-> There were some reported problems in the past about trashing page cache
-> when a backup software (i.e., rsync) touches a huge amount of pages (see
-> for example [1]).
-> 
-> This problem has been almost fixed by the Minchan Kim's patch [2] and a
-> proper use of fadvise() in the backup software. For example this patch
-> set [3] has been proposed for inclusion in rsync.
-> 
-> However, there can be still other similar trashing problems: when the
-> backup software reads all the source files, some of them may be part of
-> the actual working set of the system. When a
-> posix_fadvise(POSIX_FADV_DONTNEED) is performed _all_ pages are evicted
-> from pagecache, both the working set and the use-once pages touched only
-> by the backup software.
-> 
-> With the following solution when posix_fadvise(POSIX_FADV_DONTNEED) is
-> called for an active page instead of removing it from the page cache it
-> is added to the tail of the inactive list. Otherwise, if it's already in
-> the inactive list the page is removed from the page cache.
-> 
-> In this way if the backup was the only user of a page, that page will
-> be immediately removed from the page cache by calling
-> posix_fadvise(POSIX_FADV_DONTNEED). If the page was also touched by
-> other processes it'll be moved to the inactive list, having another
-> chance of being re-added to the working set, or simply reclaimed when
-> memory is needed.
-> 
-> Testcase:
-> 
->   - create a 1GB file called "zero"
->   - run md5sum zero to read all the pages in page cache (this is to
->     simulate the user activity on this file)
->   - run "rsync zero zero_copy" (rsync is patched with [3])
->   - re-run md5sum zero (user activity on the working set) and measure
->     the time to complete this command
-> 
-> The test has been performed using 3.0.0-rc4 vanilla and with this patch
-> applied (3.0.0-rc4-fadvise).
-> 
-> Results:
->                   avg elapsed time      block:block_bio_queue
->  3.0.0-rc4                  4.127s                      8,214
->  3.0.0-rc4-fadvise          2.146s                          0
-> 
-> In the first case the file is evicted from page cache completely and we
-> must re-read it from the disk. In the second case the file is still in
-> page cache (in the inactive list) and we don't need any other additional
-> I/O operation.
-> 
-> [1] http://marc.info/?l=rsync&m=128885034930933&w=2
-> [2] https://lkml.org/lkml/2011/2/20/57
-> [3] http://lists.samba.org/archive/rsync/2010-November/025827.html
-> 
-> ChangeLog v1 -> v2:
->  - fix comment in invalidate_mapping_pages()
-> 
-> Acked-by: Rik van Riel <riel@redhat.com>
-> Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-> ---
->  mm/swap.c     |    9 +++++----
->  mm/truncate.c |   10 +++++++---
->  2 files changed, 12 insertions(+), 7 deletions(-)
-> 
-> diff --git a/mm/swap.c b/mm/swap.c
-> index 3a442f1..fc8bb76 100644
-> --- a/mm/swap.c
-> +++ b/mm/swap.c
-> @@ -411,10 +411,11 @@ void add_page_to_unevictable_list(struct page *page)
->   *
->   * 1. active, mapped page -> none
->   * 2. active, dirty/writeback page -> inactive, head, PG_reclaim
-> - * 3. inactive, mapped page -> none
-> - * 4. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-> - * 5. inactive, clean -> inactive, tail
-> - * 6. Others -> none
-> + * 3. active, clean -> inactive, tail
-> + * 4. inactive, mapped page -> none
-> + * 5. inactive, dirty/writeback page -> inactive, head, PG_reclaim
-> + * 6. inactive, clean -> inactive, tail
-> + * 7. Others -> none
->   *
->   * In 4, why it moves inactive's head, the VM expects the page would
->   * be write it out by flusher threads as this is much more effective
-> diff --git a/mm/truncate.c b/mm/truncate.c
-> index 3a29a61..a36af48 100644
-> --- a/mm/truncate.c
-> +++ b/mm/truncate.c
-> @@ -357,11 +357,15 @@ unsigned long invalidate_mapping_pages(struct address_space *mapping,
->  			if (lock_failed)
->  				continue;
->  
-> -			ret = invalidate_inode_page(page);
-> +			if (PageActive(page))
-> +				ret = 0;
-> +			else
-> +				ret = invalidate_inode_page(page);
->  			unlock_page(page);
->  			/*
-> -			 * Invalidation is a hint that the page is no longer
-> -			 * of interest and try to speed up its reclaim.
-> +			 * Invalidation of an inactive page is a hint that the
-> +			 * page is no longer of interest and try to speed up
-> +			 * its reclaim.
->  			 */
->  			if (!ret)
->  				deactivate_page(page);
-this looks changed behavior, active page will not be invalidated.
-invalidate_mapping_pages is not just used by fadvise. for
-example, /proc/sys/vm/drop_cache can't drop active pages any more with
-the patch in the first invoke. Please audit other use cases too.
+--Signature=_Fri__24_Jun_2011_15_58_22_+1000_R34mrdR6r4NIUtUP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks,
-Shaohua
+Hi all,
 
+Changes since 20110623:
 
+My fixes tree includes:
+	(as an experiment) the early part of mmotm-2011-06-22-13-05
+	STAGING: Comedi: Build only on arches providing PAGE_KERNEL_NOCACHE
+
+The powerpc allyesconfig (and probably others) is still broken because of
+a commit in the net tree.
+
+The nfs tree lost its conflict.
+
+The net tree still has its 2 build failures.
+
+The wireless tree still has its build failure.
+
+The tmem tree lost its conflicts.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 194 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging arm-lpae/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
+CONFLICT (content): Merge conflict in arch/arm/mm/context.c
+CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
+CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+CONFLICT (content): Merge conflict in fs/ceph/export.c
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging of-pci/of-pci
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
+CONFLICT (content): Merge conflict in include/linux/netlink.h
+Applying: Bluetooth: include scatterlist.h where needed
+Merging bluetooth/master
+Merging mtd/master
+Merging l2-mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
+mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
+e.c left in tree.
+$ git rm -f drivers/mmc/host/sdhci-of-core.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (delete/modify): arch/arm/mach-ep93xx/dma-m2p.c deleted in HEAD an=
+d modified in trivial/for-next. Version trivial/for-next of arch/arm/mach-e=
+p93xx/dma-m2p.c left in tree.
+CONFLICT (delete/modify): arch/s390/kvm/sie64a.S deleted in HEAD and modifi=
+ed in trivial/for-next. Version trivial/for-next of arch/s390/kvm/sie64a.S =
+left in tree.
+CONFLICT (content): Merge conflict in drivers/mtd/maps/pxa2xx-flash.c
+$ git rm -f arch/arm/mach-ep93xx/dma-m2p.c
+$ git rm -f arch/s390/kvm/sie64a.S
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/Makefile
+CONFLICT (content): Merge conflict in drivers/gpio/Makefile
+CONFLICT (content): Merge conflict in drivers/gpio/gpio-ep93xx.c
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
+d_linux.c
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
+d_sdio.c
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_cfg80211.h
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_iw.c
+CONFLICT (content): Merge conflict in drivers/staging/usbip/userspace/src/u=
+tils.h
+Merging bkl-config/config
+Merging tmem/linux-next
+Merging writeback/next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+
+--Signature=_Fri__24_Jun_2011_15_58_22_+1000_R34mrdR6r4NIUtUP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOBCd+AAoJEDMEi1NhKgbsJeEH/3W430EysKVKpoKeiG3c7NOw
+0jVDAR3bcmicuBbLxSzIOgrs1ERh+RNC6p/P2ZFNKXGELmkm//34Ni0tvswcYPP5
+w8J5SH11rH+xGr1OwPVY2qTNQ1oC+GWL41//bTM0F46PX0vg+t89CmupUcodrM3h
+teovPP79LgW0DD4lQ130pEN/hi3+aCgxU30cCczMY0crtPEdW8wOhHEF3wb9Idg/
+8SphpJ1/X3VF4cN2CJpSAeAk3wvTY9uDyGs0eUiIFzvt+e2Mv3ipCodBO5NPU8W+
+fLTzvPh5zszJfI69t92NRj8KvFA52OjzEtVqP3TMpmPPdmkrLFj/AYY+XCdT9LU=
+=BK8z
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__24_Jun_2011_15_58_22_+1000_R34mrdR6r4NIUtUP--
