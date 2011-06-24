@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab1FXUja (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 16:39:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45143 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab1FXUj0 (ORCPT
+	id S1752193Ab1FXUic (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 16:38:32 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:48031 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751199Ab1FXUi3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 16:39:26 -0400
-Message-ID: <4E04F5D0.9090900@oracle.com>
-Date: Fri, 24 Jun 2011 13:38:40 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Fri, 24 Jun 2011 16:38:29 -0400
+Date: Fri, 24 Jun 2011 17:38:52 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: Wavering Arrandale output
+Message-ID: <20110624203851.GA22619@joana>
+Mail-Followup-To: Chris Wilson <chris@chris-wilson.co.uk>,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+References: <20110513204511.GA2187@joana>
+ <013811$1gi55@fmsmga002.fm.intel.com>
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Vitaly Wool <vwool@ru.mvista.com>
-Subject: Re: linux-next: Tree for June 24 (mtd + of)
-References: <20110624155822.cb8cf6eb.sfr@canb.auug.org.au>	 <20110624090456.191f1fda.randy.dunlap@oracle.com> <1308947172.13493.37.camel@koala>
-In-Reply-To: <1308947172.13493.37.camel@koala>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090202.4E04F5DE.0082:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <013811$1gi55@fmsmga002.fm.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/11 13:26, Artem Bityutskiy wrote:
-> On Fri, 2011-06-24 at 09:04 -0700, Randy Dunlap wrote:
->> On Fri, 24 Jun 2011 15:58:22 +1000 Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> Changes since 20110623:
->>>
->>> My fixes tree includes:
->>> 	(as an experiment) the early part of mmotm-2011-06-22-13-05
->>> 	STAGING: Comedi: Build only on arches providing PAGE_KERNEL_NOCACHE
->>
->>
->> When CONFIG_MTD=m, CONFIG_MTD_OF_PARTS=y:
->>
->> drivers/mtd/ofpart.o: In function `init_module':
->> ofpart.c:(.init.text+0x0): multiple definition of `init_module'
->> drivers/mtd/mtdcore.o:(.init.text+0x43): first defined here
+* Chris Wilson <chris@chris-wilson.co.uk> [2011-05-14 08:55:15 +0100]:
+
+> On Fri, 13 May 2011 17:45:11 -0300, "Gustavo F. Padovan" <padovan@profusion.mobi> wrote:
+> > Hi Chris,
+> > 
+> > Bug #28306 is going to complete his first birthday at the end of this month,
+> > it is nagging around for a long time and I have many interest in fix this.
+> > 
+> > So I tested your patch in duplicated bug #36599 and it doesn't work, but I
+> > managed to add some printks(see diff) there to help debug.
+> > 
+> > [    1.033866] [drm:intel_crtc_mode_set] *ERROR* 1. use_ssc 1
+> > [    1.033868] [drm:intel_crtc_mode_set] *ERROR* encoder->type 4
+> > [    1.033869] [drm:intel_crtc_mode_set] *ERROR* 2. use_ssc 1
+> > [    1.034120] [drm:intel_crtc_mode_set] *ERROR* is_lvds 1
+> > [    1.034121] [drm:intel_crtc_mode_set] *ERROR* has_edp_encoder
+> > (null)
+> > [    1.191465] [drm:intel_crtc_mode_set] *ERROR* 1. use_ssc 1
+> > [    1.191466] [drm:intel_crtc_mode_set] *ERROR* encoder->type 4
+> > [    1.191468] [drm:intel_crtc_mode_set] *ERROR* encoder->type 1
+> > [    1.191469] [drm:intel_crtc_mode_set] *ERROR* 2. use_ssc 0
+> > [    1.191720] [drm:intel_crtc_mode_set] *ERROR* is_lvds 0
+> > [    1.191721] [drm:intel_crtc_mode_set] *ERROR* has_edp_encoder
+> > (null)
+> > 
+> > It seems your patch has no effect once has_edp_encoder is null. Can you please
+> > look into this? I can provide any test you may want, just send me the patches.
+> > ;)
 > 
-> I guess this is some old issue? I do not think ofpart can be compiled-in
-> if the mtd core is a module...
+> With no eDP on the system, we wouldn't expect to apply any of the eDP
+> settings.
+> 
+> Even after your fix to the patch, nothing? Can you try just setting
+> use_ssc=0 (and keep your fix).
+> 
+> In 633f2ea26665d37bb3c8ae30799aa14988622653 (drm/i915: Disable SSC for
+> outputs other than LVDS or DP) I tried to implement another aspect of
+> source-clock control, that is the patch that appeared to work if you only
+> had VGA connected. So the next step would be to combine the two patches.
 
-[adding driver author, Vitaly]
+No fixes for this yet. There are many devices out there with this bug.
+Can someone please take a look on this? Just send me patches, I can test them.
 
-No, it's a current issue.
-
-config MTD_OF_PARTS
-	def_bool y
-	depends on OF
-
-and (implicitly) depends on MTD.  MTD=m, so boolean => y.
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	Gustavo
