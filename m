@@ -1,208 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab1FXTBj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 15:01:39 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:53384 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab1FXTBh (ORCPT
+	id S1754001Ab1FXSvj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 14:51:39 -0400
+Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:59860 "HELO
+	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754013Ab1FXSvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 15:01:37 -0400
-Date: Fri, 24 Jun 2011 14:49:49 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2011-06-24
-Message-ID: <20110624184949.GC4793@tuxdriver.com>
+	Fri, 24 Jun 2011 14:51:33 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=makelinux.com;
+	h=MIME-Version:Date:Message-ID:Subject:From:To:Cc:Content-Type:X-Identified-User;
+	b=t3/d3ylFp314U9H5M5M3SIkpzjH7Lyyko/KdJSLiJkeUrp2DuxBYyAxgkLw4yMAiccTn+NsJ9PwTSAykXl4enH3SYnuYZCKg2SxQmjx1rTIWc7sU/bw/uud4ewPSeSBF;
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Date: Fri, 24 Jun 2011 21:51:31 +0300
+Message-ID: <BANLkTims=UsUMkDQ8uB+J6YTVRSBD__otw@mail.gmail.com>
+Subject: [PATCH] Enable USB on TI DM365
+From: Constantine Shulyupin <const@makelinux.com>
+To: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Cc: nsekhar@ti.com, khilman@ti.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-Identified-User: {1470:box668.bluehost.com:makelinu:makelinux.com} {sentby:smtp auth 209.85.216.181 authed with const@makelinux.com}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Enable USB on TI DM365
 
-Here is another batch of fixes intended for 3.0.  Included are too
-rtlwifi fixes from Larry:  a regression that broke firmware loading for
-rtl8292cu; and a fix to arbitrate between two devices that share the
-same PCI ID but are handled by different drivers...yeah.
-
-The rest are Bluetooth fixes -- quoth Gustavo:
-
-	Three regressions fix intended for 3.0. Two of them fix a
-	change made in our HCI security process for 3.0. The third
-	one fixes an issue with non-SSP devices.  All of them are
-	critical fixes. They should be in 3.0. Please pull!  Thanks.
-
-Please let me know if there are problems!
-
-Thanks,
-
-John
-
+Signed-off-by: Constantine Shulyupin <const@MakeLinux.com>
 ---
+ arch/arm/mach-davinci/Makefile           |    3 +-
+ arch/arm/mach-davinci/include/mach/usb.h |    2 +-
+ arch/arm/mach-davinci/usb.c              |   32 ++++++++++++++++++++++++++---
+ drivers/usb/musb/davinci.c               |   13 ++++++++++++
+ drivers/usb/musb/davinci.h               |    1 +
+ 5 files changed, 45 insertions(+), 6 deletions(-)
 
-The following changes since commit 5c18e80be9ff362f6523b097d495bb2e2f939946:
+diff --git a/arch/arm/mach-davinci/Makefile b/arch/arm/mach-davinci/Makefile
+index 0b87a1c..52961a8 100644
+--- a/arch/arm/mach-davinci/Makefile
++++ b/arch/arm/mach-davinci/Makefile
+@@ -5,7 +5,7 @@
 
-  net/usb/kalmia: signedness bug in kalmia_bind() (2011-06-23 03:15:39 -0700)
+ # Common objects
+ obj-y 			:= time.o clock.o serial.o io.o psc.o \
+-			   gpio.o dma.o usb.o common.o sram.o aemif.o
++			   gpio.o dma.o common.o sram.o aemif.o
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git for-davem
+ obj-$(CONFIG_DAVINCI_MUX)		+= mux.o
 
-Ilia Kolomisnky (1):
-      Bluetooth: Fix L2CAP connection establishment
+@@ -40,3 +40,4 @@ obj-$(CONFIG_MACH_OMAPL138_HAWKBOARD)	+= board-omapl138-hawk.o
+ obj-$(CONFIG_CPU_FREQ)			+= cpufreq.o
+ obj-$(CONFIG_CPU_IDLE)			+= cpuidle.o
+ obj-$(CONFIG_SUSPEND)			+= pm.o sleep.o
++obj-$(CONFIG_USB_MUSB_DAVINCI)		+= usb.o
+diff --git a/arch/arm/mach-davinci/include/mach/usb.h
+b/arch/arm/mach-davinci/include/mach/usb.h
+index e0bc4ab..863c27f 100644
+--- a/arch/arm/mach-davinci/include/mach/usb.h
++++ b/arch/arm/mach-davinci/include/mach/usb.h
+@@ -54,6 +54,6 @@ struct	da8xx_ohci_root_hub {
+ 	u8	potpgt;
+ };
 
-Johan Hedberg (1):
-      Bluetooth: Fix accepting connect requests for defer_setup
+-void davinci_setup_usb(unsigned mA, unsigned potpgt_ms);
++int davinci_setup_usb(unsigned mA, unsigned potpgt_ms);
 
-John W. Linville (2):
-      Merge branch 'master' of master.kernel.org:/.../padovan/bluetooth-2.6
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6 into for-davem
+ #endif	/* ifndef __ASM_ARCH_USB_H */
+diff --git a/arch/arm/mach-davinci/usb.c b/arch/arm/mach-davinci/usb.c
+index 23d2b6d..8b12206 100644
+--- a/arch/arm/mach-davinci/usb.c
++++ b/arch/arm/mach-davinci/usb.c
+@@ -4,19 +4,22 @@
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
+ #include <linux/dma-mapping.h>
+-
+ #include <linux/usb/musb.h>
 
-Larry Finger (2):
-      rtlwifi: rtl8192se: Handle duplicate PCI ID 0x10ec:0x8192 conflict with r8192e_pci
-      rtl8192cu: Fix missing firmware load
+ #include <mach/common.h>
+ #include <mach/irqs.h>
+ #include <mach/cputype.h>
+ #include <mach/usb.h>
++#include <mach/mux.h>
++#include <linux/gpio.h>
 
-Luiz Augusto von Dentz (1):
-      Bluetooth: Fix L2CAP security check
+ #define DAVINCI_USB_OTG_BASE	0x01c64000
 
- drivers/net/wireless/rtlwifi/pci.c          |   13 ++++++++++++-
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |   20 ++++++++++++++++++++
- net/bluetooth/hci_conn.c                    |    6 +++---
- net/bluetooth/l2cap_core.c                  |   21 +++++++++++++++------
- 4 files changed, 50 insertions(+), 10 deletions(-)
+ #define DA8XX_USB0_BASE 	0x01e00000
+ #define DA8XX_USB1_BASE 	0x01e25000
 
-diff --git a/drivers/net/wireless/rtlwifi/pci.c b/drivers/net/wireless/rtlwifi/pci.c
-index 9f8ccae..254b64b 100644
---- a/drivers/net/wireless/rtlwifi/pci.c
-+++ b/drivers/net/wireless/rtlwifi/pci.c
-@@ -1624,6 +1624,16 @@ static bool _rtl_pci_find_adapter(struct pci_dev *pdev,
- 	pci_read_config_byte(pdev, 0x8, &revisionid);
- 	pci_read_config_word(pdev, 0x3C, &irqline);
- 
-+	/* PCI ID 0x10ec:0x8192 occurs for both RTL8192E, which uses
-+	 * r8192e_pci, and RTL8192SE, which uses this driver. If the
-+	 * revision ID is RTL_PCI_REVISION_ID_8192PCIE (0x01), then
-+	 * the correct driver is r8192e_pci, thus this routine should
-+	 * return false.
-+	 */
-+	if (deviceid == RTL_PCI_8192SE_DID &&
-+	    revisionid == RTL_PCI_REVISION_ID_8192PCIE)
-+		return false;
++static int retval;
 +
- 	if (deviceid == RTL_PCI_8192_DID ||
- 	    deviceid == RTL_PCI_0044_DID ||
- 	    deviceid == RTL_PCI_0047_DID ||
-@@ -1856,7 +1866,8 @@ int __devinit rtl_pci_probe(struct pci_dev *pdev,
- 	pci_write_config_byte(pdev, 0x04, 0x07);
- 
- 	/* find adapter */
--	_rtl_pci_find_adapter(pdev, hw);
-+	if (!_rtl_pci_find_adapter(pdev, hw))
-+		goto fail3;
- 
- 	/* Init IO handler */
- 	_rtl_pci_io_handler_init(&pdev->dev, hw);
-diff --git a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-index bee7c14..092e342 100644
---- a/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-+++ b/drivers/net/wireless/rtlwifi/rtl8192cu/sw.c
-@@ -53,6 +53,8 @@ MODULE_FIRMWARE("rtlwifi/rtl8192cufw.bin");
- static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
+ #if defined(CONFIG_USB_MUSB_HDRC) || defined(CONFIG_USB_MUSB_HDRC_MODULE)
+ static struct musb_hdrc_eps_bits musb_eps[] = {
+ 	{ "ep1_tx", 8, },
+@@ -87,7 +90,7 @@ static struct platform_device usb_dev = {
+ 	.num_resources  = ARRAY_SIZE(usb_resources),
+ };
+
+-void __init davinci_setup_usb(unsigned mA, unsigned potpgt_ms)
++int __init davinci_setup_usb(unsigned mA, unsigned potpgt_ms)
  {
- 	struct rtl_priv *rtlpriv = rtl_priv(hw);
-+	const struct firmware *firmware;
-+	int err;
- 
- 	rtlpriv->dm.dm_initialgain_enable = 1;
- 	rtlpriv->dm.dm_flag = 0;
-@@ -64,6 +66,24 @@ static int rtl92cu_init_sw_vars(struct ieee80211_hw *hw)
- 			 ("Can't alloc buffer for fw.\n"));
- 		return 1;
- 	}
-+	/* request fw */
-+	err = request_firmware(&firmware, rtlpriv->cfg->fw_name,
-+			rtlpriv->io.dev);
-+	if (err) {
-+		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
-+			 ("Failed to request firmware!\n"));
-+		return 1;
-+	}
-+	if (firmware->size > 0x4000) {
-+		RT_TRACE(rtlpriv, COMP_ERR, DBG_EMERG,
-+			 ("Firmware is too big!\n"));
-+		release_firmware(firmware);
-+		return 1;
-+	}
-+	memcpy(rtlpriv->rtlhal.pfirmware, firmware->data, firmware->size);
-+	rtlpriv->rtlhal.fwsize = firmware->size;
-+	release_firmware(firmware);
-+
- 	return 0;
+ 	usb_data.power = mA > 510 ? 255 : mA / 2;
+ 	usb_data.potpgt = (potpgt_ms + 1) / 2;
+@@ -99,7 +102,8 @@ void __init davinci_setup_usb(unsigned mA, unsigned
+potpgt_ms)
+ 	} else	/* other devices don't have dedicated CPPI IRQ */
+ 		usb_dev.num_resources = 2;
+
+-	platform_device_register(&usb_dev);
++	retval = platform_device_register(&usb_dev);
++	return retval;
  }
- 
-diff --git a/net/bluetooth/hci_conn.c b/net/bluetooth/hci_conn.c
-index 3163330..d3a05b9 100644
---- a/net/bluetooth/hci_conn.c
-+++ b/net/bluetooth/hci_conn.c
-@@ -608,11 +608,11 @@ int hci_conn_security(struct hci_conn *conn, __u8 sec_level, __u8 auth_type)
- 		goto encrypt;
- 
- auth:
--	if (test_and_set_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
-+	if (test_bit(HCI_CONN_ENCRYPT_PEND, &conn->pend))
- 		return 0;
- 
--	hci_conn_auth(conn, sec_level, auth_type);
--	return 0;
-+	if (!hci_conn_auth(conn, sec_level, auth_type))
-+		return 0;
- 
- encrypt:
- 	if (conn->link_mode & HCI_LM_ENCRYPT)
-diff --git a/net/bluetooth/l2cap_core.c b/net/bluetooth/l2cap_core.c
-index e64a1c2..56fdd91 100644
---- a/net/bluetooth/l2cap_core.c
-+++ b/net/bluetooth/l2cap_core.c
-@@ -4002,21 +4002,30 @@ static int l2cap_security_cfm(struct hci_conn *hcon, u8 status, u8 encrypt)
- 			}
- 		} else if (sk->sk_state == BT_CONNECT2) {
- 			struct l2cap_conn_rsp rsp;
--			__u16 result;
-+			__u16 res, stat;
- 
- 			if (!status) {
--				sk->sk_state = BT_CONFIG;
--				result = L2CAP_CR_SUCCESS;
-+				if (bt_sk(sk)->defer_setup) {
-+					struct sock *parent = bt_sk(sk)->parent;
-+					res = L2CAP_CR_PEND;
-+					stat = L2CAP_CS_AUTHOR_PEND;
-+					parent->sk_data_ready(parent, 0);
-+				} else {
-+					sk->sk_state = BT_CONFIG;
-+					res = L2CAP_CR_SUCCESS;
-+					stat = L2CAP_CS_NO_INFO;
-+				}
- 			} else {
- 				sk->sk_state = BT_DISCONN;
- 				l2cap_sock_set_timer(sk, HZ / 10);
--				result = L2CAP_CR_SEC_BLOCK;
-+				res = L2CAP_CR_SEC_BLOCK;
-+				stat = L2CAP_CS_NO_INFO;
- 			}
- 
- 			rsp.scid   = cpu_to_le16(chan->dcid);
- 			rsp.dcid   = cpu_to_le16(chan->scid);
--			rsp.result = cpu_to_le16(result);
--			rsp.status = cpu_to_le16(L2CAP_CS_NO_INFO);
-+			rsp.result = cpu_to_le16(res);
-+			rsp.status = cpu_to_le16(stat);
- 			l2cap_send_cmd(conn, chan->ident, L2CAP_CONN_RSP,
- 							sizeof(rsp), &rsp);
- 		}
+
+ #ifdef CONFIG_ARCH_DAVINCI_DA8XX
+@@ -132,7 +136,7 @@ int __init da8xx_register_usb20(unsigned mA,
+unsigned potpgt)
+
+ #else
+
+-void __init davinci_setup_usb(unsigned mA, unsigned potpgt_ms)
++int __init davinci_setup_usb(unsigned mA, unsigned potpgt_ms)
+ {
+ }
+
+@@ -178,3 +182,23 @@ int __init da8xx_register_usb11(struct
+da8xx_ohci_root_hub *pdata)
+ 	return platform_device_register(&da8xx_usb11_device);
+ }
+ #endif	/* CONFIG_DAVINCI_DA8XX */
++
++#ifdef CONFIG_MACH_DAVINCI_DM365_EVM
++int __init dm365evm_usb_configure(void)
++{
++	davinci_cfg_reg(DM365_GPIO33);
++	gpio_request(33, "usb");
++	gpio_direction_output(33, 1);
++	retval = davinci_setup_usb(500, 8);
++	return retval;
++}
++subsys_initcall(dm365evm_usb_configure);
++
++static void __exit dm365evm_usb_exit(void)
++{
++	platform_device_unregister(&usb_dev);
++}
++module_exit(dm365evm_usb_exit);
++
++#endif
++MODULE_LICENSE("GPL");
+diff --git a/drivers/usb/musb/davinci.c b/drivers/usb/musb/davinci.c
+index 2a2adf6..0147f5c 100644
+--- a/drivers/usb/musb/davinci.c
++++ b/drivers/usb/musb/davinci.c
+@@ -72,6 +72,16 @@ static inline void phy_on(void)
+ 	/* power everything up; start the on-chip PHY and its PLL */
+ 	phy_ctrl &= ~(USBPHY_OSCPDWN | USBPHY_OTGPDWN | USBPHY_PHYPDWN);
+ 	phy_ctrl |= USBPHY_SESNDEN | USBPHY_VBDTCTEN | USBPHY_PHYPLLON;
++
++	if (cpu_is_davinci_dm365()) {
++		/*
++		 * DM365 PHYCLKFREQ field [15:12] is set to 2
++		 * to get clock from 24MHz crystal
++		 */
++		phy_ctrl |= USBPHY_CLKFREQ_24MHZ;
++		/*phy_ctrl &= ~USBPHY_PHYPDWN;*/
++	}
++
+ 	__raw_writel(phy_ctrl, USB_PHY_CTRL);
+
+ 	/* wait for PLL to lock before proceeding */
+@@ -193,6 +203,9 @@ static void davinci_musb_source_power(struct musb
+*musb, int is_on, int immediat
+ 		else
+ 			schedule_work(&evm_vbus_work);
+ 	}
++
++	if (cpu_is_davinci_dm365())
++		gpio_set_value(33, is_on);
+ 	if (immediate)
+ 		vbus_state = is_on;
+ #endif
+diff --git a/drivers/usb/musb/davinci.h b/drivers/usb/musb/davinci.h
+index 046c844..1bf50e6 100644
+--- a/drivers/usb/musb/davinci.h
++++ b/drivers/usb/musb/davinci.h
+@@ -17,6 +17,7 @@
+ /* Integrated highspeed/otg PHY */
+ #define USBPHY_CTL_PADDR	(DAVINCI_SYSTEM_MODULE_BASE + 0x34)
+ #define USBPHY_DATAPOL		BIT(11)	/* (dm355) switch D+/D- */
++#define USBPHY_CLKFREQ_24MHZ    BIT(13)
+ #define USBPHY_PHYCLKGD		BIT(8)
+ #define USBPHY_SESNDEN		BIT(7)	/* v(sess_end) comparator */
+ #define USBPHY_VBDTCTEN		BIT(6)	/* v(bus) comparator */
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+1.7.0.4
+
+
+-- 
+Constantine Shulyupin
+http://www.MakeLinux.com/
+Embedded Linux Systems,
+Device Drivers, TI DaVinci
