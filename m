@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758714Ab1FXOpH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 10:45:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:38996 "EHLO mx2.suse.de"
+	id S1759640Ab1FXOqC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 10:46:02 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39008 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758698Ab1FXOpB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 10:45:01 -0400
+	id S1759395Ab1FXOpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 10:45:02 -0400
 From: Mel Gorman <mgorman@suse.de>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: =?UTF-8?q?P=C3=A1draig=20Brady?= <P@draigBrady.com>,
@@ -16,9 +16,9 @@ Cc: =?UTF-8?q?P=C3=A1draig=20Brady?= <P@draigBrady.com>,
         linux-mm <linux-mm@kvack.org>,
         linux-kernel <linux-kernel@vger.kernel.org>,
         Mel Gorman <mgorman@suse.de>
-Subject: [PATCH 1/4] mm: vmscan: Correct check for kswapd sleeping in sleeping_prematurely
-Date: Fri, 24 Jun 2011 15:44:54 +0100
-Message-Id: <1308926697-22475-2-git-send-email-mgorman@suse.de>
+Subject: [PATCH 2/4] mm: vmscan: Do not apply pressure to slab if we are not applying pressure to zone
+Date: Fri, 24 Jun 2011 15:44:55 +0100
+Message-Id: <1308926697-22475-3-git-send-email-mgorman@suse.de>
 X-Mailer: git-send-email 1.7.3.4
 In-Reply-To: <1308926697-22475-1-git-send-email-mgorman@suse.de>
 References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
@@ -33,45 +33,68 @@ During allocator-intensive workloads, kswapd will be woken frequently
 causing free memory to oscillate between the high and min watermark.
 This is expected behaviour.
 
-A problem occurs if the highest zone is small.  balance_pgdat()
-only considers unreclaimable zones when priority is DEF_PRIORITY
-but sleeping_prematurely considers all zones. It's possible for this
-sequence to occur
+When kswapd applies pressure to zones during node balancing, it checks
+if the zone is above a high+balance_gap threshold. If it is, it does
+not apply pressure but it unconditionally shrinks slab on a global
+basis which is excessive. In the event kswapd is being kept awake due to
+a high small unreclaimable zone, it skips zone shrinking but still
+calls shrink_slab().
 
-  1. kswapd wakes up and enters balance_pgdat()
-  2. At DEF_PRIORITY, marks highest zone unreclaimable
-  3. At DEF_PRIORITY-1, ignores highest zone setting end_zone
-  4. At DEF_PRIORITY-1, calls shrink_slab freeing memory from
-        highest zone, clearing all_unreclaimable. Highest zone
-        is still unbalanced
-  5. kswapd returns and calls sleeping_prematurely
-  6. sleeping_prematurely looks at *all* zones, not just the ones
-     being considered by balance_pgdat. The highest small zone
-     has all_unreclaimable cleared but but the zone is not
-     balanced. all_zones_ok is false so kswapd stays awake
-
-This patch corrects the behaviour of sleeping_prematurely to check
-the zones balance_pgdat() checked.
+Once pressure has been applied, the check for zone being unreclaimable
+is being made before the check is made if all_unreclaimable should be
+set. This miss of unreclaimable can cause has_under_min_watermark_zone
+to be set due to an unreclaimable zone preventing kswapd backing off
+on congestion_wait().
 
 Reported-and-tested-by: Pádraig Brady <P@draigBrady.com>
 Signed-off-by: Mel Gorman <mgorman@suse.de>
 ---
- mm/vmscan.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/vmscan.c |   23 +++++++++++++----------
+ 1 files changed, 13 insertions(+), 10 deletions(-)
 
 diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 8ff834e..841e3bf 100644
+index 841e3bf..9cebed1 100644
 --- a/mm/vmscan.c
 +++ b/mm/vmscan.c
-@@ -2323,7 +2323,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
- 		return true;
+@@ -2507,18 +2507,18 @@ loop_again:
+ 				KSWAPD_ZONE_BALANCE_GAP_RATIO);
+ 			if (!zone_watermark_ok_safe(zone, order,
+ 					high_wmark_pages(zone) + balance_gap,
+-					end_zone, 0))
++					end_zone, 0)) {
+ 				shrink_zone(priority, zone, &sc);
+-			reclaim_state->reclaimed_slab = 0;
+-			nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
+-			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
+-			total_scanned += sc.nr_scanned;
  
- 	/* Check the watermark levels */
--	for (i = 0; i < pgdat->nr_zones; i++) {
-+	for (i = 0; i <= classzone_idx; i++) {
- 		struct zone *zone = pgdat->node_zones + i;
+-			if (zone->all_unreclaimable)
+-				continue;
+-			if (nr_slab == 0 &&
+-			    !zone_reclaimable(zone))
+-				zone->all_unreclaimable = 1;
++				reclaim_state->reclaimed_slab = 0;
++				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
++				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
++				total_scanned += sc.nr_scanned;
++
++				if (nr_slab == 0 && !zone_reclaimable(zone))
++					zone->all_unreclaimable = 1;
++			}
++
+ 			/*
+ 			 * If we've done a decent amount of scanning and
+ 			 * the reclaim ratio is low, start doing writepage
+@@ -2528,6 +2528,9 @@ loop_again:
+ 			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
+ 				sc.may_writepage = 1;
  
- 		if (!populated_zone(zone))
++			if (zone->all_unreclaimable)
++				continue;
++
+ 			if (!zone_watermark_ok_safe(zone, order,
+ 					high_wmark_pages(zone), end_zone, 0)) {
+ 				all_zones_ok = 0;
 -- 
 1.7.3.4
 
