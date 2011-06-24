@@ -1,153 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756823Ab1FXTG0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 15:06:26 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:59229 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754881Ab1FXTGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 15:06:23 -0400
-From: Nishanth Aravamudan <nacc@us.ibm.com>
-To: Milton Miller <miltonm@bga.com>
-Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        benh@kernel.crashing.org, Paul Mackerras <paulus@samba.org>,
-        Nishanth Aravamudan <nacc@us.ibm.com>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Blanchard <anton@samba.org>
-Subject: [PATCH 4/4] powerpc: tidy up dma_map_ops after adding new hook
-Date: Fri, 24 Jun 2011 12:05:25 -0700
-Message-Id: <1308942325-4813-5-git-send-email-nacc@us.ibm.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1308942325-4813-1-git-send-email-nacc@us.ibm.com>
-References: <1308942325-4813-1-git-send-email-nacc@us.ibm.com>
+	id S1756023Ab1FXTHp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 15:07:45 -0400
+Received: from nm19.bullet.mail.ird.yahoo.com ([77.238.189.76]:37781 "HELO
+	nm19.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754881Ab1FXTHo convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 15:07:44 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 808394.65237.bm@omp1017.mail.ird.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Mqdqpp5VC1guV5M+s0xdkhWIS/hi8vGpnpdUrklTrrCWiR0bkwmXLtvrbRfEsNVKzGMApnc11Vh5pzdZIBPYSGi0NcO/komzEw+SmosKZoMC1r629GLwVEjobNCyDO91Gmw7aWN4ucveasdnxBC/vKqbIWBlDB+5cQXf+1vyNBg=;
+Message-ID: <716908.39790.qm@web29004.mail.ird.yahoo.com>
+X-YMail-OSG: SJtUrzkVM1k0nB8p5To3OdcJ0SlWQVLncLpkNJtlY8.j288
+ QAQAzx1ixttMsecVJBx8rg9gX7xPRL67rm8o1XysIAGfSH3p7r1NbXHffw5a
+ cZO8MksAcEE8q4gyKQtebQpNqiY0igERzHd0EFP12F5XYin00KShO2fc8PZK
+ uwlNirV5Fg78dTAGmgJlEAW2lt55MInDPdKDHjJ.Z78m4ZZrkA5ugxH0O5P7
+ q_iv8_WOq7GWRr.0Ggc2ht4RiZowBvwFFIVHbbPqg8wTapeSR6RnZa8qEMOo
+ 9K.8iqoT7xuQH4IbUpsim5t5Ym5Zt0FnXhdiRQfKcok17SuBCY9EkSDVHEpC
+ ObaF2EQS5iB3pNX79hHMGvfERPXE-
+X-Mailer: YahooMailClassic/14.0.3 YahooMailWebService/0.8.111.304355
+Date: Fri, 24 Jun 2011 20:07:42 +0100 (BST)
+From: Paul Parsons <lost.distance@yahoo.com>
+Subject: Re: w1/ds1wm regression after 2.6.39: "bus error, retrying"
+To: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <dagenaisj@sonatest.com>
+Cc: linux-kernel@vger.kernel.org, johnpol@2ka.mipt.ru
+In-Reply-To: <31ED5B2F-3AEC-45EC-8D2A-2E3EB313665F@sonatest.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Milton Miller <miltonm@bga.com>
+Hi Jean-Francois,
 
-The new get_required_mask hook name is longer than many of but not all
-of the prior ops.  Tidy the struct initializers to align the equal signs
-using the local whitespace.
+I think I've found the problem.
 
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
-Cc: linuxppc-dev@lists.ozlabs.org
-Cc: linux-kernel@vger.kernel.org
-Cc: benh@kernel.crashing.org
----
- arch/powerpc/kernel/dma-iommu.c |   14 +++++++-------
- arch/powerpc/kernel/dma.c       |   16 ++++++++--------
- arch/powerpc/kernel/ibmebus.c   |   14 +++++++-------
- arch/powerpc/kernel/vio.c       |   14 +++++++-------
- 4 files changed, 29 insertions(+), 29 deletions(-)
+On a hunch I restored the msleep() call that had been removed from ds1wm_reset() after 2.6.39:
 
-diff --git a/arch/powerpc/kernel/dma-iommu.c b/arch/powerpc/kernel/dma-iommu.c
-index c1ad9db..6f04b9c 100644
---- a/arch/powerpc/kernel/dma-iommu.c
-+++ b/arch/powerpc/kernel/dma-iommu.c
-@@ -104,13 +104,13 @@ static u64 dma_iommu_get_required_mask(struct device *dev)
- }
+--- clean-3.0-rc4/drivers/w1/masters/ds1wm.c	2011-06-21 04:25:46.000000000 +0100
++++ linux-3.0-rc4/drivers/w1/masters/ds1wm.c	2011-06-24 19:58:03.340701823 +0100
+@@ -182,6 +182,8 @@ static int ds1wm_reset(struct ds1wm_data
+ 		return 1;
+ 	}
  
- struct dma_map_ops dma_iommu_ops = {
--	.alloc_coherent	= dma_iommu_alloc_coherent,
--	.free_coherent	= dma_iommu_free_coherent,
--	.map_sg		= dma_iommu_map_sg,
--	.unmap_sg	= dma_iommu_unmap_sg,
--	.dma_supported	= dma_iommu_dma_supported,
--	.map_page	= dma_iommu_map_page,
--	.unmap_page	= dma_iommu_unmap_page,
-+	.alloc_coherent		= dma_iommu_alloc_coherent,
-+	.free_coherent		= dma_iommu_free_coherent,
-+	.map_sg			= dma_iommu_map_sg,
-+	.unmap_sg		= dma_iommu_unmap_sg,
-+	.dma_supported		= dma_iommu_dma_supported,
-+	.map_page		= dma_iommu_map_page,
-+	.unmap_page		= dma_iommu_unmap_page,
- 	.get_required_mask	= dma_iommu_get_required_mask,
- };
- EXPORT_SYMBOL(dma_iommu_ops);
-diff --git a/arch/powerpc/kernel/dma.c b/arch/powerpc/kernel/dma.c
-index df142d1..f94df52 100644
---- a/arch/powerpc/kernel/dma.c
-+++ b/arch/powerpc/kernel/dma.c
-@@ -149,14 +149,14 @@ static inline void dma_direct_sync_single(struct device *dev,
- #endif
- 
- struct dma_map_ops dma_direct_ops = {
--	.alloc_coherent	= dma_direct_alloc_coherent,
--	.free_coherent	= dma_direct_free_coherent,
--	.map_sg		= dma_direct_map_sg,
--	.unmap_sg	= dma_direct_unmap_sg,
--	.dma_supported	= dma_direct_dma_supported,
--	.map_page	= dma_direct_map_page,
--	.unmap_page	= dma_direct_unmap_page,
--	.get_required_mask	= dma_direct_get_required_mask,
-+	.alloc_coherent			= dma_direct_alloc_coherent,
-+	.free_coherent			= dma_direct_free_coherent,
-+	.map_sg				= dma_direct_map_sg,
-+	.unmap_sg			= dma_direct_unmap_sg,
-+	.dma_supported			= dma_direct_dma_supported,
-+	.map_page			= dma_direct_map_page,
-+	.unmap_page			= dma_direct_unmap_page,
-+	.get_required_mask		= dma_direct_get_required_mask,
- #ifdef CONFIG_NOT_COHERENT_CACHE
- 	.sync_single_for_cpu 		= dma_direct_sync_single,
- 	.sync_single_for_device 	= dma_direct_sync_single,
-diff --git a/arch/powerpc/kernel/ibmebus.c b/arch/powerpc/kernel/ibmebus.c
-index 90ef2a4..73110fb 100644
---- a/arch/powerpc/kernel/ibmebus.c
-+++ b/arch/powerpc/kernel/ibmebus.c
-@@ -134,14 +134,14 @@ static u64 ibmebus_dma_get_required_mask(struct device *dev)
- }
- 
- static struct dma_map_ops ibmebus_dma_ops = {
--	.alloc_coherent = ibmebus_alloc_coherent,
--	.free_coherent  = ibmebus_free_coherent,
--	.map_sg         = ibmebus_map_sg,
--	.unmap_sg       = ibmebus_unmap_sg,
--	.dma_supported  = ibmebus_dma_supported,
-+	.alloc_coherent     = ibmebus_alloc_coherent,
-+	.free_coherent      = ibmebus_free_coherent,
-+	.map_sg             = ibmebus_map_sg,
-+	.unmap_sg           = ibmebus_unmap_sg,
-+	.dma_supported      = ibmebus_dma_supported,
- 	.get_required_mask  = ibmebus_dma_get_required_mask,
--	.map_page       = ibmebus_map_page,
--	.unmap_page     = ibmebus_unmap_page,
-+	.map_page           = ibmebus_map_page,
-+	.unmap_page         = ibmebus_unmap_page,
- };
- 
- static int ibmebus_match_path(struct device *dev, void *data)
-diff --git a/arch/powerpc/kernel/vio.c b/arch/powerpc/kernel/vio.c
-index c049325..34d291d 100644
---- a/arch/powerpc/kernel/vio.c
-+++ b/arch/powerpc/kernel/vio.c
-@@ -611,13 +611,13 @@ static u64 vio_dma_get_required_mask(struct device *dev)
- }
- 
- struct dma_map_ops vio_dma_mapping_ops = {
--	.alloc_coherent = vio_dma_iommu_alloc_coherent,
--	.free_coherent  = vio_dma_iommu_free_coherent,
--	.map_sg         = vio_dma_iommu_map_sg,
--	.unmap_sg       = vio_dma_iommu_unmap_sg,
--	.map_page       = vio_dma_iommu_map_page,
--	.unmap_page     = vio_dma_iommu_unmap_page,
--	.dma_supported  = vio_dma_iommu_dma_supported,
-+	.alloc_coherent    = vio_dma_iommu_alloc_coherent,
-+	.free_coherent     = vio_dma_iommu_free_coherent,
-+	.map_sg            = vio_dma_iommu_map_sg,
-+	.unmap_sg          = vio_dma_iommu_unmap_sg,
-+	.map_page          = vio_dma_iommu_map_page,
-+	.unmap_page        = vio_dma_iommu_unmap_page,
-+	.dma_supported     = vio_dma_iommu_dma_supported,
- 	.get_required_mask = vio_dma_get_required_mask,
- };
- 
--- 
-1.7.4.1
++	msleep(1);
++
+ 	if (!ds1wm_data->slave_present) {
+ 		dev_dbg(&ds1wm_data->pdev->dev, "reset: no devices found\n");
+ 		return 1;
+
+This has completely eliminated the "bus error, retrying" error messages, and the hx4700 seems to be functioning normally again.
+
+Regards,
+Paul
+
+--- On Fri, 24/6/11, Jean-François Dagenais <dagenaisj@sonatest.com> wrote:
+
+> From: Jean-François Dagenais <dagenaisj@sonatest.com>
+> Subject: Re: w1/ds1wm regression after 2.6.39: "bus error, retrying"
+> To: "Paul Parsons" <lost.distance@yahoo.com>
+> Cc: linux-kernel@vger.kernel.org, johnpol@2ka.mipt.ru
+> Date: Friday, 24 June, 2011, 17:15
+> Hi Paul,
+> 
+> Sorry to hear that. 2.6.39's ds1wm driver did not support
+> dynamically finding the slaves on the bus, it would limit
+> it's search to 1 and exit. My modifications implement the
+> hardware assisted search as documented by the ds1wm spec
+> sheet.
+> 
+> There are a couple of ways you can workaround the problem
+> (temporarily or permanently). You might disable the bus
+> scanning altogether (like I explain below) and insert your
+> slave manually (as documented in the kernel w1 docs). If
+> only one slave is present, the bus master will usually just
+> skip the ROM matching part of the communication by doing a
+> "SKIP ROM" which essentially says to the slave "whoever you
+> are, I am talking to you". You could also patch the
+> ds1wm_search function to make it look like it was in 2.6.39,
+> or just use the whole file if it worked fine for you.
+> 
+> Now, to find the real problem, could you try the
+> following:
+> - to limit trace noise, disable the w1 auto probe by
+> setting the search count to 0, either in "wire" module load
+> ("search_count=0" in /etc/modprobe.conf or the like) or int
+> /sys under your w1 master instance
+> - build the ds1wm with "#define DEBUG" at the top (before
+> headers), this will prints lots of debug about the
+> accelerated search algorithm progress. (you could also set
+> the retry count to something less than 100 to also limit
+> noise in the trace)
+> - once booted, trigger one search manually by writing 1 in
+> /sys/bus/w1/devices/w1\ bus\ master/w1_master_search
+> dmesg will contain a nice trace (although big)
+> 
+> Do you have more than one slave device on the ds1wm bus?
+> 
+> I will try to help as much as I can.
+> /jfd
 
