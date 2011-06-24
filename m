@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757193Ab1FXNlQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 09:41:16 -0400
-Received: from mail.windriver.com ([147.11.1.11]:40645 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753644Ab1FXNlQ (ORCPT
+	id S1757480Ab1FXNll (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 09:41:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62233 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919Ab1FXNld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 09:41:16 -0400
-Message-ID: <4E0493E0.9080701@windriver.com>
-Date: Fri, 24 Jun 2011 09:40:48 -0400
-From: Paul Gortmaker <paul.gortmaker@windriver.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	Fri, 24 Jun 2011 09:41:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Prarit Bhargava <prarit@redhat.com>
+Subject: Re: [PATCH 00/35]: System Firmware and SMBIOS Support
+Date: Fri, 24 Jun 2011 15:40:57 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-ia64@vger.kernel.org, x86@kernel.org,
+        linux-acpi@vger.kernel.org, linux-ide@vger.kernel.org,
+        openipmi-developer@lists.sourceforge.net,
+        platform-driver-x86@vger.kernel.org, linux-crypto@vger.kernel.org,
+        dri-devel@lists.freedesktop.org, lm-sensors@lm-sensors.org,
+        linux-i2c@vger.kernel.org, linux-input@vger.kernel.org,
+        linux-media@vger.kernel.org, linux-mmc@vger.kernel.org,
+        netdev@vger.kernel.org, linux-pci@vger.kernel.org,
+        rtc-linux@googlegroups.com, evel@driverdev.osuosl.org,
+        linux-usb@vger.kernel.org, device-drivers-devel@blackfin.uclinux.org,
+        linux-watchdog@vger.kernel.org, grant.likely@secretlab.ca,
+        dz@debian.org, rpurdie@rpsys.net, eric.piel@tremplin-utc.net,
+        abelay@mit.edu, johnpol@2ka.mipt.ru
+References: <20110623172206.27602.34306.sendpatchset@prarit.bos.redhat.com>
+In-Reply-To: <20110623172206.27602.34306.sendpatchset@prarit.bos.redhat.com>
 MIME-Version: 1.0
-To: Libor Pechacek <lpechacek@suse.cz>
-CC: <stable@kernel.org>, <linux-kernel@vger.kernel.org>,
-        <stable-review@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [34-longterm 006/247] USB: serial: handle Data Carrier Detect
- changes
-References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com> <1308849690-14530-7-git-send-email-paul.gortmaker@windriver.com> <20110624121337.GF20922@fm.suse.cz>
-In-Reply-To: <20110624121337.GF20922@fm.suse.cz>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: [128.224.146.65]
+Message-Id: <201106241540.57952.arnd@arndb.de>
+X-Provags-ID: V02:K0:m++6f1cIBDORg80Sabu07FqOvpJc7GfwXMvTeAQie9o
+ 7vxbnrDWwfH/pFlOEvl759EchM7dawCu/c1j1XHkYqWfYUTSyi
+ ehSI7zar+MTVdqEe2qN5rtgy8bkPphdD6X8IoCfVYgvd4knyRI
+ izcVy17logivw2O5mlXo5W0iJBpkZy1OIcqaITQGBZWtsnZGVs
+ BTK5S0x31+ToicGq9CPkw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11-06-24 08:13 AM, Libor Pechacek wrote:
-> Hi Paul,
-> 
->> @@ -726,6 +726,10 @@ static void spcp8x5_read_bulk_callback(struct urb *urb)
->>  		/* overrun is special, not associated with a char */
->>  		if (status & UART_OVERRUN_ERROR)
->>  			tty_insert_flip_char(tty, 0, TTY_OVERRUN);
->> +		if (status & UART_DCD)
->> +			usb_serial_handle_dcd_change(port, tty,
->> +				   priv->line_status & MSR_STATUS_LINE_DCD);
->> +
->>  		tty_insert_flip_string_fixed_flag(tty, data, tty_flag,
->>  							urb->actual_length);
->>  		tty_flip_buffer_push(tty);
-> 
-> The above code is mistakenly placed inside the "if (tty && urb->actual_length)"
-> block.  Should be right after it.
+On Thursday 23 June 2011 19:22:06 Prarit Bhargava wrote:
+> This new patchset reworks the existing DMI code into two separate layers.  It is
+> based off of the feedback I received previously when discussing the SMBIOS
+> version patch on LKML.
 
-Thanks -- that is one of those cases where what seems like the
-"obvious choice" just so happens to also be the wrong one.  :(
+Hi Prarit,
 
-In any case, I appreciate the review, it is now fixed.
+No objections to the patches, but when you send out a series as long as
+this one, please ensure that all patches are sent as replies to the
+introductory mail. Also, do not repeat the one-line patch summary in the
+body of the email.
 
-Paul.
+When using "git send-email --thread --no-chain-reply", this works
+automatically. It will also let you put the Cc list into the
+patch description and work out where to send each patch.
 
-> 
-> For kernels v2.6.31 - v2.6.34 use the following patch
-> http://git.kernel.org/?p=linux/kernel/git/longterm/linux-2.6.32.y.git;a=commitdiff;h=6fe7015007299e14f5ea212a503bcba5958c7086
-> 
-> For kernels v2.6.35 - v2.6.37 use
-> http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.37.y.git;a=commitdiff;h=2631217445b84e5d31341eaaf6e7951bf8907f52
-> 
-> Libor
+	Arnd
