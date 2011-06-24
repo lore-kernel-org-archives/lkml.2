@@ -1,135 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754533Ab1FXT7k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 15:59:40 -0400
-Received: from smarthost1.mail.uk.easynet.net ([212.135.6.11]:49678 "EHLO
-	smarthost1.mail.uk.easynet.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753300Ab1FXT7j convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 15:59:39 -0400
-Thread-Index: AcwyqVDBNWkOKRKuQ5ey1S+JTy2VHg==
-References: <716908.39790.qm@web29004.mail.ird.yahoo.com>
-In-Reply-To: <716908.39790.qm@web29004.mail.ird.yahoo.com>
+	id S1754277Ab1FXUQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 16:16:51 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:19816 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752191Ab1FXUQu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 16:16:50 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6387"; a="99750991"
+Message-ID: <4E04F0B0.4030408@codeaurora.org>
+Date: Fri, 24 Jun 2011 13:16:48 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-1"
-Message-ID: <BA417AD7-62AA-4442-AE5F-FB29EEFC3905@sonatest.com>
-Content-Transfer-Encoding: 8BIT
-Cc: <linux-kernel@vger.kernel.org>, <johnpol@2ka.mipt.ru>
-From: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <dagenaisj@sonatest.com>
-Subject: Re: w1/ds1wm regression after 2.6.39: "bus error, retrying"
-Date: Fri, 24 Jun 2011 16:00:06 -0400
-To: "Paul Parsons" <lost.distance@yahoo.com>
-X-Mailer: Apple Mail (2.1084)
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.3790.4841
-Content-class: urn:content-classes:message
-Importance: normal
-X-OriginalArrivalTime: 24 Jun 2011 20:00:06.0888 (UTC) FILETIME=[50886680:01CC32A9]
+To: Ohad Ben-Cohen <ohad@wizery.com>
+CC: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: [RFC 0/8] Introducing a generic AMP/IPC framework
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+In-Reply-To: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jun 24, 2011, at 15:07, Paul Parsons wrote:
+On 06/21/2011 12:18 AM, Ohad Ben-Cohen wrote:
+> * Rpmsg: a virtio-based messaging bus that allows kernel drivers to
+> communicate with remote processors available on the system. In turn,
+> drivers could then expose appropriate user space interfaces, if needed
+> (tasks running on remote processors often have direct access to sensitive
+> resources like the system's physical memory, gpios, i2c buses, dma
+> controllers, etc..  so one normally wouldn't want to allow userland to
+> send everything/everywhere it wants).
+>
+> Every rpmsg device is a communication channel with a service running on a
+> remote processor (thus rpmsg devices are called channels). Channels are
+> identified by a textual name (which is used to match drivers to devices)
+> and have a local ("source") rpmsg address, and remote ("destination") rpmsg
+> address. When a driver starts listening on a channel (most commonly when it
+> is probed), the bus assigns the driver a unique rpmsg src address (a 32 bit
+> integer) and binds it with the driver's rx callback handler. This way
+> when inbound messages arrive to this src address, the rpmsg core dispatches
+> them to that driver, by invoking the driver's rx handler with the payload
+> of the incoming message.
+>
+[snip]
+>
+> In addition to dynamic creation of rpmsg channels, the rpmsg bus also
+> supports creation of static channels. This is needed in two cases:
+> - when a certain remote processor doesn't support sending those "name
+>   service" announcements. In that case, a static table of remote rpmsg
+>   services must be used to create the rpmsg channels.
+> - to support rpmsg server drivers, which aren't bound to a specific remote
+>   rpmsg address. Instead, they just listen on a local address, waiting for
+>   incoming messages. To send a message, those server drivers need to use
+>   the rpmsg_sendto() API, so they can explicitly indicate the dst address
+>   every time.
+>
 
-> Hi Jean-Francois,
-> 
-> I think I've found the problem.
-> 
-> On a hunch I restored the msleep() call that had been removed from ds1wm_reset() after 2.6.39:
-> 
-> --- clean-3.0-rc4/drivers/w1/masters/ds1wm.c	2011-06-21 04:25:46.000000000 +0100
-> +++ linux-3.0-rc4/drivers/w1/masters/ds1wm.c	2011-06-24 19:58:03.340701823 +0100
-> @@ -182,6 +182,8 @@ static int ds1wm_reset(struct ds1wm_data
-> 		return 1;
-> 	}
-> 
-> +	msleep(1);
-> +
-> 	if (!ds1wm_data->slave_present) {
-> 		dev_dbg(&ds1wm_data->pdev->dev, "reset: no devices found\n");
-> 		return 1;
-> 
-> This has completely eliminated the "bus error, retrying" error messages, and the hx4700 seems to be functioning normally again.
-The sleep I removed there only delays the time between the reset pulse and the function exiting, it doesn't populate the "slave_present" variable with a different value. The reset pulse and the wait that the ds1wm implements (by raising an interrupt at the end of it all) is spec'ed on the 1-wire specification, and the DS1WM_TIMEOUT is a really long time. So there should be plenty of time for the slaves to acknowledge the reset and participate in further communications.
+This sounds a lot like SMD (shared memory driver) on MSM. The main
+difference I see is that SMD uses the platform bus instead of the virtio
+bus and it has its own protocol for channel allocation.
 
-So here's my hunch. We observed this here on our circuit too. It is possible that the pull-up resistor on your circuit is too resistive which would make the slave device fail to properly come back to life after the reset pulse (bus shorted to the ground) when the drain opens, and hence not able to cope well with the search that follows. The 1ms wait basically gives the slave(s) time to charge up again (with the drain open, the voltage is high).
+>
+> * Remoteproc: a generic driver that maintains the state of the remote
+> processor(s). Simple rproc_get() and rproc_put() API is exposed, which
+> drivers can use when needed (first driver to call get() will load a firmware,
+> configure an iommu if needed, and boot the remote processor, while last
+> driver to call put() will power it down).
+>
+> Hardware differences are abstracted as usual: a platform-specific driver
+> registers its own start/stop handlers in the generic remoteproc driver,
+> and those are invoked when its time to power up/down the processor. As a
+> reference, this patch set include remoteproc support for both OMAP4's
+> cortex-M3 and Davinci's DSP, tested on the pandaboard and hawkboard,
+> respectively.
 
-The weird thing is that the ds1wm_reset function returns 0, since the while loop executes more than once, so it did find a slave (slave_present obtained from the PDR status bit), so the slave is kinda there... But the search fails somehow after that. Maybe there is something in your slave's spec sheet that could help, although the ds1wm reset timings. So I still think the debug trace and knowing if you have only one slave on the bus would help me figure this out. New question: what slave(s)? is it the DS2760?
+This remote proc code is eerily similar to PIL (peripheral image loader,
+yes we love our acronyms) which I posted a few months back[1]. Was it
+inspiration for this patch series?
 
-PS: there are also controls in the DS1WM_CNTRL register that has to do with strong-pull-ups which are just not used by the driver yet. refer to: http://datasheets.maxim-ic.com/en/ds/DS1WM.pdf
+In terms of API, s/pil/rproc/ and it would be 95% identical. There are
+some low-level differences though (see below).
 
-> 
-> Regards,
-> Paul
-> 
-> --- On Fri, 24/6/11, Jean-François Dagenais <dagenaisj@sonatest.com> wrote:
-> 
->> From: Jean-François Dagenais <dagenaisj@sonatest.com>
->> Subject: Re: w1/ds1wm regression after 2.6.39: "bus error, retrying"
->> To: "Paul Parsons" <lost.distance@yahoo.com>
->> Cc: linux-kernel@vger.kernel.org, johnpol@2ka.mipt.ru
->> Date: Friday, 24 June, 2011, 17:15
->> Hi Paul,
->> 
->> Sorry to hear that. 2.6.39's ds1wm driver did not support
->> dynamically finding the slaves on the bus, it would limit
->> it's search to 1 and exit. My modifications implement the
->> hardware assisted search as documented by the ds1wm spec
->> sheet.
->> 
->> There are a couple of ways you can workaround the problem
->> (temporarily or permanently). You might disable the bus
->> scanning altogether (like I explain below) and insert your
->> slave manually (as documented in the kernel w1 docs). If
->> only one slave is present, the bus master will usually just
->> skip the ROM matching part of the communication by doing a
->> "SKIP ROM" which essentially says to the slave "whoever you
->> are, I am talking to you". You could also patch the
->> ds1wm_search function to make it look like it was in 2.6.39,
->> or just use the whole file if it worked fine for you.
->> 
->> Now, to find the real problem, could you try the
->> following:
->> - to limit trace noise, disable the w1 auto probe by
->> setting the search count to 0, either in "wire" module load
->> ("search_count=0" in /etc/modprobe.conf or the like) or int
->> /sys under your w1 master instance
->> - build the ds1wm with "#define DEBUG" at the top (before
->> headers), this will prints lots of debug about the
->> accelerated search algorithm progress. (you could also set
->> the retry count to something less than 100 to also limit
->> noise in the trace)
->> - once booted, trigger one search manually by writing 1 in
->> /sys/bus/w1/devices/w1\ bus\ master/w1_master_search
->> dmesg will contain a nice trace (although big)
->> 
->> Do you have more than one slave device on the ds1wm bus?
->> 
->> I will try to help as much as I can.
->> /jfd
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> The gory part of remoteproc is the firmware handling. We tried to come up
+> with a simple binary format that will require minimum kernel code to handle,
+> but at the same time be generic enough in the hopes that it would prove
+> useful to others as well. We're not at all hang onto the binary format
+> we picked: if there's any technical reason to change it to support other
+> platforms, please let us know. We do realize that a single binary firmware
+> structure might eventually not work for everyone. it did prove useful for
+> us though; we adopted both the OMAP and Davinci platforms (and their
+> completely different remote processor devices) to this simple binary
+> structure, so we don't have to duplicate the firmware handling code.
 
-Jean-Francois Dagenais 
-Software Architect - B.Sc.A
+This is an important difference between remote proc and PIL. In PIL, we
+do image authentication in addition to processor boot. In this case, we
+need to give the authentication engine the elf header and program
+headers for the firmware so that it knows what parts of memory need to
+be authenticated. Instead of devising a new firmware format, we decided
+to just stick with elf and parse the headers in the kernel because we
+needed them for authentication anyway. Is this reason enough to move to
+an ELF format instead?
 
+Another difference is inter-processor dependencies. For example, on
+msm8660 the modem can't boot until the dsp has been booted. I suppose we
+could hide this detail in the platform specific get() implementation by
+calling rproc_get() on the dependent processor (hopefully no locking
+issues arise). I'd rather have it built into the core though as it isn't
+really specific to the hardware.
 
-Experience the new veo phased array flaw detector at www.sonatestveo.com.
+If we can resolve these differences I think we can easily support remote
+processor boot on MSM via remoteproc.
 
+[1] https://lkml.org/lkml/2011/3/9/490
 
-Sonatest AP
-2900 chemin des Quatre-Bourgeois
-Bureau 305
-Quebec City Quebec G1V 1Y4
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-T| +1 (418) 683 6222 x106   F| +1 (418) 683 7032   M|    W| www.sonatest.com
-
-
-
-This message (and any associated files) is intended only for the use of lost.distance@yahoo.com, linux-kernel@vger.kernel.org, johnpol@2ka.mipt.ru and may contain information that is confidential, subject to copyright or constitutes a trade secret. If you are not the above recipient(s) you are hereby notified that any dissemination, copying or distribution of this message, or files associated with this message, is strictly prohibited. If you have received this message in error, please notify us immediately by replying to the message and deleting it from your computer. Any views or opinions presented are solely those of the author and do not necessarily represent those of the company.
-
-Think green - help the environment by not printing this email.
