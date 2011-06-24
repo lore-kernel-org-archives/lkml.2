@@ -1,36 +1,99 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1755188Ab1FUI0c (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Tue, 21 Jun 2011 04:26:32 -0400
-Received: from mail.sienaheights.edu ([64.112.206.46]:49011 "EHLO
-        mail.sienaheights.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-        with ESMTP id S1753931Ab1FUI03 convert rfc822-to-8bit (ORCPT
+        id S1758277Ab1FXPFj (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Fri, 24 Jun 2011 11:05:39 -0400
+Received: from mailout.nutn.edu.tw ([140.133.2.50]:47449 "EHLO
+        mailout.mail.nutn.edu.tw" rhost-flags-OK-OK-OK-FAIL)
+        by vger.kernel.org with ESMTP id S1756964Ab1FXPFh (ORCPT
         <rfc822;linux-kernel@vger.kernel.org>);
-        Tue, 21 Jun 2011 04:26:29 -0400
-From: Storm Pagan <spagan@sienaheights.edu>
-Date: Tue, 21 Jun 2011 04:26:28 -0400
-Subject: Dear winner
-Thread-Topic: Dear winner
-Thread-Index: AQHML+zqW7420sWEFk+SvH5t43nXGw==
-Message-ID: <10D30DB3293221469AA66B9EEB69259D01EC706B2806@TRITON.sienahts.edu>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-x-tm-as-product-ver: SMEX-8.0.0.1181-6.500.1024-18212.004
-x-tm-as-result: No--5.931400-0.000000-31
-x-tm-as-user-approved-sender: Yes
-x-tm-as-user-blocked-sender: No
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+        Fri, 24 Jun 2011 11:05:37 -0400
+X-Greylist: delayed 1107 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jun 2011 11:05:37 EDT
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-ASG-Debug-ID: 1308926769-327a00020002-PS8eI2
+X-Barracuda-URL: http://140.133.2.50:8000/cgi-bin/mark.cgi
+From: "Z. Jianguo" <zhang43532@yahoo.com.hk>
+Reply-To: zjianguo34@livemail.tw
+X-ASG-Orig-Subj: Hi
+Subject: Hi
+Date: Fri, 24 Jun 2011 22:46:08 +0800
+Message-Id: <20110624144432.M5250@yahoo.com.hk>
+X-Mailer: OpenWebMail 2.53 
+X-OriginatingIP: 41.71.146.7 (junel)
 MIME-Version: 1.0
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain;
+        charset=utf-8
+To: undisclosed-recipients:;
+X-Barracuda-Connect: mail.nutn.edu.tw[140.133.2.10]
+X-Barracuda-Start-Time: 1308926788
+X-Barracuda-Spam-Score: 7.17
+X-Barracuda-Spam-Status: No, SCORE=7.17 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=ADVANCE_FEE_1, BSF_SC0_SA083, BSF_SC3_TG196f, BSF_SC3_TG196g, MAILTO_TO_SPAM_ADDR, US_DOLLARS_3
+X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.66906
+        Rule breakdown below
+         pts rule name              description
+        ---- ---------------------- --------------------------------------------------
+        0.17 US_DOLLARS_3           BODY: Mentions millions of $ ($NN,NNN,NNN.NN)
+        0.00 MAILTO_TO_SPAM_ADDR    URI: Includes a link to a likely spammer email
+        0.00 ADVANCE_FEE_1          Appears to be advance fee fraud (Nigerian 419)
+        1.50 BSF_SC0_SA083          Custom Rule SA083
+        3.50 BSF_SC3_TG196f         Custom Rule TG196f
+        2.00 BSF_SC3_TG196g         Custom Rule TG196g
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Your Email Address has won £750,000,000(GBP) in the just concluded BMW international awareness promotion held here in London.contact your claim's agent (Mr Christian bishof) via email;bmwclaims16@gmail.com with your name/age/country/occupation/sex/Tel
-congratulations!!!
-Bmw cordinator.
-Mr Storm pagan
+My name is Z. Jianguo, I have a transaction of $21,830,000.00 to bring to your 
+attention, if interested for more details, do kindly respond back to me 
+(zjianguo42@yahoo.com.hk) for further explanation on the said transaction.
+
+I would appreciate your kind response.
+
+Sincerely,
+Z. Jianguo
