@@ -1,76 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755331Ab1FXLRQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 07:17:16 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60088 "EHLO
+	id S1755363Ab1FXLTd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 07:19:33 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60095 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754779Ab1FXLRO (ORCPT
+	by vger.kernel.org with ESMTP id S1754488Ab1FXLTc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 07:17:14 -0400
+	Fri, 24 Jun 2011 07:19:32 -0400
+Date: Fri, 24 Jun 2011 12:19:29 +0100
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, patches@opensource.wolfsonmicro.com,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH] mfd: Add devices for WM831x clocking module
-Date: Fri, 24 Jun 2011 12:17:07 +0100
-Message-Id: <1308914227-3474-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-X-Mailer: git-send-email 1.7.5.4
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, ti@lists.linaro.org,
+        linux-omap@vger.kernel.org, lrg@ti.com, sameo@linux.intel.com,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Subject: Re: [PATCH] regulator: twl: Add 'fixed' set_voltage callback
+Message-ID: <20110624111929.GC9483@opensource.wolfsonmicro.com>
+References: <1308862014-11212-1-git-send-email-jaswinder.singh@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308862014-11212-1-git-send-email-jaswinder.singh@linaro.org>
+X-Cookie: Be careful!  UGLY strikes 9 out of 10!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the new generic clk API that should appear at some point we should be
-able to support the clocking sensibly in Linux.
+On Fri, Jun 24, 2011 at 02:16:54AM +0530, Jassi Brar wrote:
+> Define dummy set_voltage callback for fixed lines,
+> without which voltage constraints fail to apply.
+> 
+> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
 
-Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
----
- drivers/mfd/wm831x-core.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
-index 9370b8c..f25c339 100644
---- a/drivers/mfd/wm831x-core.c
-+++ b/drivers/mfd/wm831x-core.c
-@@ -691,6 +691,9 @@ static struct mfd_cell wm8310_devs[] = {
- 		.resources = wm831x_dcdc4_resources,
- 	},
- 	{
-+		.name = "wm831x-clk",
-+	},
-+	{
- 		.name = "wm831x-epe",
- 		.id = 1,
- 	},
-@@ -842,6 +845,9 @@ static struct mfd_cell wm8311_devs[] = {
- 		.resources = wm831x_dcdc4_resources,
- 	},
- 	{
-+		.name = "wm831x-clk",
-+	},
-+	{
- 		.name = "wm831x-epe",
- 		.id = 1,
- 	},
-@@ -969,6 +975,9 @@ static struct mfd_cell wm8312_devs[] = {
- 		.resources = wm831x_dcdc4_resources,
- 	},
- 	{
-+		.name = "wm831x-clk",
-+	},
-+	{
- 		.name = "wm831x-epe",
- 		.id = 1,
- 	},
-@@ -1120,6 +1129,9 @@ static struct mfd_cell wm8320_devs[] = {
- 		.resources = wm8320_dcdc4_buck_resources,
- 	},
- 	{
-+		.name = "wm831x-clk",
-+	},
-+	{
- 		.name = "wm831x-gpio",
- 		.num_resources = ARRAY_SIZE(wm831x_gpio_resources),
- 		.resources = wm831x_gpio_resources,
--- 
-1.7.5.4
-
+No, this isn't sensible - fixed voltage regulators aren't an unusual
+property of this device, they've very common.  The core should handle
+this gracefully.  Probably whatever consumer is doing the setting also
+ought to be updated to check that the voltages it wants to set are
+supported at startup since otherwise it can end up repeatedly trying to
+set something that'll never work.
