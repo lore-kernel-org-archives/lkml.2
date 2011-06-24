@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760204Ab1FXBIi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 21:08:38 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:48187 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760020Ab1FXBIg (ORCPT
+	id S1760199Ab1FXBJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 21:09:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:46005 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759905Ab1FXBJR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 21:08:36 -0400
-Date: Fri, 24 Jun 2011 03:08:35 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Craig Bergstrom <craigb@google.com>
-Cc: "Luck, Tony" <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
-        Stefan Assmann <sassmann@kpanic.de>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "mingo@elte.hu" <mingo@elte.hu>, "hpa@zytor.com" <hpa@zytor.com>,
-        "rick@vanrein.org" <rick@vanrein.org>,
-        "rdunlap@xenotime.net" <rdunlap@xenotime.net>
+	Thu, 23 Jun 2011 21:09:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=SJfj8RiCg+4i9iVk13pe1ay33LSShgsjRm/lF70GjLJRotSG+5eBxmP3NbufiOhmL2
+         r6WEmJF6ohjI5s0BsC5g==
+MIME-Version: 1.0
+In-Reply-To: <987664A83D2D224EAE907B061CE93D5301E938F2FD@orsmsx505.amr.corp.intel.com>
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
+	<20110623133950.GB28333@srcf.ucam.org>
+	<4E0348E0.7050808@kpanic.de>
+	<20110623141222.GA30003@srcf.ucam.org>
+	<4E035DD1.1030603@kpanic.de>
+	<20110623170014.GN3263@one.firstfloor.org>
+	<987664A83D2D224EAE907B061CE93D5301E938F2FD@orsmsx505.amr.corp.intel.com>
+Date: Thu, 23 Jun 2011 18:09:14 -0700
+Message-ID: <BANLkTi=39V3MeQi9T9X8g1O7g0w6FNLGyQ@mail.gmail.com>
 Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
-Message-ID: <20110624010835.GQ3263@one.firstfloor.org>
-References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de> <20110623133950.GB28333@srcf.ucam.org> <4E0348E0.7050808@kpanic.de> <20110623141222.GA30003@srcf.ucam.org> <4E035DD1.1030603@kpanic.de> <20110623170014.GN3263@one.firstfloor.org> <987664A83D2D224EAE907B061CE93D5301E938F2FD@orsmsx505.amr.corp.intel.com> <BANLkTikTTCU3eKkCtrbLbtpLJtksehyEMg@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTikTTCU3eKkCtrbLbtpLJtksehyEMg@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+From: Craig Bergstrom <craigb@google.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> We (Google) are working on a data-driven answer for this question.  I know
-> that there has been some analysis on this topic on the past, but I don't
-> want to speculate until we've had some time to put all the pieces together.
->  Stay tuned for specifics.
+On Thu, Jun 23, 2011 at 10:12 AM, Luck, Tony <tony.luck@intel.com> wrote:
+>> I don't think it makes sense to handle something like that with a list.
+>> The compact representation currently in badram is great for that.
+>
+> I'd tend to agree here.  Rick has made a convincing argument that there
+> are significant numbers of real world cases where a defective row/column
+> in a DIMM results in a predictable pattern of errors.  The ball is now
+> in Google's court to take a look at their systems that have high numbers
+> of errors to see if they can actually be described by a small number
+> of BadRAM patterns as Rick has claimed.
+>
 
-It would be also good if you posted your kernel patches.
+Hi All,
 
-It's highly unusual -- to say the least -- to let someone's openly
-developed and posted patchkit compete with someone's else secret 
-internal solution for review purposes.
+We (Google) are working on a data-driven answer for this question.  I
+know that there has been some analysis on this topic on the past, but
+I don't want to speculate until we've had some time to put all the
+pieces together.  Stay tuned for specifics.
 
--Andi
+Cheers,
+CraigB
+
+
+> -Tony
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
