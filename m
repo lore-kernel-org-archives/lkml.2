@@ -1,142 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751663Ab1FXDnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 23:43:13 -0400
-Received: from va3ehsobe001.messaging.microsoft.com ([216.32.180.11]:11273
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751304Ab1FXDnL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 23:43:11 -0400
-X-SpamScore: -6
-X-BigFish: VS-6(zz1432N98dKc8kzz1202hzzz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-Date: Fri, 24 Jun 2011 11:49:00 +0800
-From: Shawn Guo <shawn.guo@freescale.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: <patches@linaro.org>, <netdev@vger.kernel.org>,
-        <devicetree-discuss@lists.ozlabs.org>,
-        Jason Liu <jason.hui@linaro.org>, <linux-kernel@vger.kernel.org>,
-        Jeremy Kerr <jeremy.kerr@canonical.com>,
-        Sascha Hauer <s.hauer@pengutronix.de>,
-        <linux-arm-kernel@lists.infradead.org>,
-        David Gibson <david@gibson.dropbear.id.au>
-Subject: Re: [PATCH 1/3] serial/imx: add device tree support
-Message-ID: <20110624034859.GB19188@S2100-06.ap.freescale.net>
-References: <1308410354-21387-1-git-send-email-shawn.guo@linaro.org>
- <1308410354-21387-2-git-send-email-shawn.guo@linaro.org>
- <20110618161934.GH8195@ponder.secretlab.ca>
- <20110619073000.GA23171@S2100-06.ap.freescale.net>
- <20110621135558.GB9228@S2101-09.ap.freescale.net>
- <BANLkTim4vunTm1176MRw3pqRZnunu4=9jg@mail.gmail.com>
- <20110623183821.GA19188@S2100-06.ap.freescale.net>
- <BANLkTi=8Mks6T85WnEyihmB21U1j7reHrQ@mail.gmail.com>
+	id S1751942Ab1FXDwN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 23:52:13 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37196 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751209Ab1FXDwM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 23:52:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=CyK4fQt/hFfhTihVCaYomoC4c5DhQlw1UcdPPDsxV8Miu6knQgzcnizcaqHDdHV1hF
+         HZruifKiKYd8M8IRN77I7LfwVTh6I7qLccNGrEf0U4cS/+klWUVtz7cIu/C5YNJ1jxR0
+         FAvw5LxwVhQN1n+boxpqKL4V7PRMHCFWJe1DA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Disposition: inline
-In-Reply-To: <BANLkTi=8Mks6T85WnEyihmB21U1j7reHrQ@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF04992C07E5@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF04992C067D@HQMAIL01.nvidia.com>
+ <BANLkTi==jWGxbiW4QZ7SSfAdyShhEgvMig@mail.gmail.com> <74CDBE0F657A3D45AFBB94109FB122FF04992C07E5@HQMAIL01.nvidia.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 23 Jun 2011 23:51:51 -0400
+Message-ID: <BANLkTi=kZAww_t6RrxYaAnYBRUUA3e2yLg@mail.gmail.com>
+Subject: Re: More pinmux feedback, and GPIO vs. pinmux interaction
+To: Stephen Warren <swarren@nvidia.com>
+Cc: Linus Walleij <linus.walleij@linaro.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>,
+        Martin Persson <martin.persson@stericsson.com>,
+        Joe Perches <joe@perches.com>, Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23, 2011 at 05:11:54PM -0600, Grant Likely wrote:
-[...]
-> > diff --git a/drivers/of/base.c b/drivers/of/base.c
-> > index 632ebae..90349a2 100644
-> > --- a/drivers/of/base.c
-> > +++ b/drivers/of/base.c
-> > @@ -17,12 +17,27 @@
-> >  *      as published by the Free Software Foundation; either version
-> >  *      2 of the License, or (at your option) any later version.
-> >  */
-> > +#include <linux/ctype.h>
-> >  #include <linux/module.h>
-> >  #include <linux/of.h>
-> >  #include <linux/spinlock.h>
-> >  #include <linux/slab.h>
-> >  #include <linux/proc_fs.h>
-> >
-> > +struct alias_devname {
-> > +       char devname[32];
-> > +       struct list_head link;
-> > +       struct list_head head;
-> > +};
-> > +
-> > +struct alias_devid {
-> > +       int devid;
-> > +       struct device_node *node;
-> > +       struct list_head link;
-> > +};
-> 
-> Some LinuxDoc documentation on the meaning of these structures would
-> be helpful.  I'm not convinced that a two level lookup table is really
-> necessary.  A flat table containing alias, device_node pointer, and
-> possibly decoded devname and id is probably sufficient to get started.
->  Also, I think it will still be useful to store a pointer to the
-> actual alias name in the alias_devid record.
-> 
-I thought two level lookup with driver probe function passing in
-stem name will get the matching faster.  But I agree with you that
-a flat table may be sufficient to get started, since practically
-the alias number will not be that huge.
+On Thu, Jun 16, 2011 at 15:12, Stephen Warren wrote:
+> Linus Walleij wrote at Thursday, June 16, 2011 9:07 AM:
+>> On Wed, Jun 15, 2011 at 11:48 PM, Stephen Warren wrote:
+>> > Some more thoughts on pinmux:
 
-> > +
-> > +static LIST_HEAD(aliases_lookup);
-> > +
-> >  struct device_node *allnodes;
-> >  struct device_node *of_chosen;
-> >
-> > @@ -922,3 +937,170 @@ out_unlock:
-> >  }
-> >  #endif /* defined(CONFIG_OF_DYNAMIC) */
-> >
-> > +/*
-> > + * get_alias_dev_name_id - Get device name and id from alias name
-> > + *
-> > + * an: The alias name passed in
-> > + * dn: The pointer used to return device name
-> 
-> There is actually little point in decoding an alias to the device
-> name.  It is more useful to decode alias to the device_node pointer
-> which can be found with of_find_node_by_path().  I'd like to have a
-> lookup table generated which contains {const char *alias_name,
-> device_node *np} pairs.  It would also be useful for that table to
-> decode the 'id' from the end of the alias name when available.  Then,
-> given an alias stem and id (like imxuart and 2) the code could match
-> it to alias imxuart0 and look up the device_node associated with (I
-> could see this used by console setup code).  Alternately, driver probe
+can you guys start cc-ing uclinux-dist-devel@blackfin.uclinux.org on
+future pinmux discussions ?  we already have a thin layer in the
+Blackfin tree for handling pin muxing that has served us well for a
+few years, so we want to keep tabs on where this is going.  i just
+happened to stumble across this today.
 
-Yes, this is definitely one way to match.  But it's not as handy as
-the alternate one below, in terms of migrating the current platform
-drivers that use pdev->id everywhere to dt.  For the imx console
-setup example, we can get the device_node by matching alias stem and
-id, but we have to address the port we need with another two
-contains_of(), device_node -> dev -> port.
+arch/blackfin/include/asm/portmux.h:
+peripheral_request()
+peripheral_request_list()
+peripheral_free()
+peripheral_free_list()
 
-> code could use its device_node pointer to lookup its alias, and if no
-> alias exists, then use the table to find an unused id (and possibly
-> even add an entry to the table when it allocates an id).
-> 
-And this is easier for the current platform drivers to migrate to
-dt, so I would keep purchasing this one.
+this lets you pass in an array of pins and it returns success only if
+all were available.  we find the array request method gets used the
+vast majority of the time, so any proposed API should include that.
 
-[...]
-> > +               int devid = get_alias_name_id(pp->name, devname);
-> > +
-> > +               /* We do not want to proceed this sentinel one */
-> > +               if (!strcmp(pp->name, "name") && !strcmp(pp->value, "aliases"))
-> > +                       break;
-> 
-> Skipping the 'name' property is good, but I don't think you need to
-> check the value.  You should also skip the "phandle" property.
-> 
-Ok. I have not seen "phandle" property in aliases node though.  Can
-you give me an example, so that I can make one up for testing?
+> Just one note on the extra stuff for the future:
+>
+> * Tegra has say 100 muxable pins.
+> * GPIO vs. special function is selectable per pin.
+> * Muxing of which special function (and some other features, such as
+> pullup/down) is only at a granularity of "group of pins".
+> * Some other pin features (such as slew rate, drive strength) is also
+> only at a granularity of "group of pins" **but** the groups are defined
+> differently for these features than for muxing.
+>
+> I figure the general model is:
+>
+> * N pins, each perhaps with some per-pin controls.
+> * M groups of pins, each allowing muxing, and possibly other controls
+> and also an arbitrary number of:
+> * P groups of pins, allowing various other controls
 
--- 
-Regards,
-Shawn
+some Blackfin parts have ~160 pins, but usually they only have like 16
+to 64.  we've got pretty much similar functionality as you describe
+for Tegra.
 
+we also handle pins that can only be used in peripheral mode.  this
+allows us to write code that requests UART pins without having to know
+whether the pin is muxed or dedicated or somewhere in between.
+
+>> >> diff --git a/drivers/Makefile b/drivers/Makefile
+>> >>...
+>> >> +# GPIO must come after pinctrl as gpios may need to mux pins etc
+>> >> +obj-y Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â += pinctrl/
+>> >
+>> > Don't those patches imply that the GPIO controller code is calling into
+>> > the pinmux code to perform muxing, not the other way around?
+>>
+>> Yes.
+>>
+>> Grant does not seem to like the idea of the gpio subsystem
+>> meddeling with all this stuff anyway, so I intend to take all that
+>> into pinctrl, and then gpio only deal with, well GPIO. Setting
+>> bits quickly and such.
+
+but there has to be resource management between the two subsystems
+somewhere.  on the Blackfin side, if you request a pin as a GPIO using
+the GPIO api, and then try to request it in peripheral mode, you get
+EBUSY back.  you cant have the two blocks stepping on each others
+toes.
+
+> In particular, the kind of checks Tegra would need are (although exact
+> details of controller names etc, may be wrong):
+>
+> * I2C controller 0 can be routed out to two different sets of pins. Only
+> One set of pins must be connected to the I2C controller at once.
+
+some Blackfin parts have this to ease the conflicts between devices
+that customers want.  if UART0 and SPI0 share PF0, PF1, and PF2,
+sometimes UART0 can be routed to PG3 and PG4 so that SPI0 can be used.
+
+atm we've made this a Kconfig option.  obviously that wont fly in the
+"build one image to run on all platforms", but that isnt a problem for
+Blackfin systems today, and customers have been OK with this minor
+limitation.
+
+> Internally, each pinmux driver would need a lookup table that maps from
+> the tuple (pin, function) to "register value to program into HW", since
+> selecting a particular function on pin A might be a different register
+> value than selecting that same logical function on pin B.
+>
+> An example might be:
+>
+> pin Â function Â  register_value
+> A1 Â  UART 0 RX Â 0
+> A1 Â  I2C 0 SDA Â 1
+> A2 Â  UART 0 RX Â 5
+> ...
+>
+> If pinmux drivers exported this data model, then the pinmux core could
+> probably implement some of the error-checking I talked about above, such
+> as ensuring that a particular logical function was not activated on
+> multiple pins/groups at once.
+
+we implemented this on the Blackfin side by encoding things into the
+pin data.  but that's because we had enough space in u16 to cover all
+of our parts so far.
+
+for example, the PA1 pin can act as GPIO, or as a timer pin, or as
+part of our high speed peripheral SPORT.
+#define P_SPORT2_DTSEC (P_DEFINED | P_IDENT(GPIO_PA1) | P_FUNCT(0))
+#define P_TMR4 (P_DEFINED | P_IDENT(GPIO_PA1) | P_FUNCT(1))
+when someone does peripheral_request(P_TMR4), the code first reserves
+itself with the GPIO core, and then configures the pinmux logic to set
+this pin as "function 1" (it's a 2 bit field).
+
+we also have pin grouping logic implemented for the parts which dont
+have per-pin muxing so you cant request different pins in the same
+group for the same mode.
+-mike
