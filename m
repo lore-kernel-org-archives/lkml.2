@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab1FXJ7z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 05:59:55 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55792 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab1FXJ7x (ORCPT
+	id S1754706Ab1FXKEj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 06:04:39 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:53971 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab1FXKEi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 05:59:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=FQ3yKm6IskI2u7i1dg9WvPbgagBkPdMPDU1CWlIixcjsrLH3+kXgpT2cYHENhxfWY1
-         w4D+4Xjjqh6wb4arzHdFeniCEprWKB23tG7+TzzUezwPdGkDw09TkTuwBEPCgD5KkRgV
-         Zl8BVb9vlDLRUf7rytFKrRz9c24vulyat4k+k=
-From: John Kacur <jkacur@redhat.com>
-To: "James E.J. Bottomley" <JBottomley@parallels.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Cc: Eric Moore <eric.moore@lsi.com>, linux-scsi@vger.kernel.org,
-        John Kacur <jkacur@redhat.com>
-Subject: [PATCH] [SCSI] mpt2sas: Remove duplicate code in mpt2sas_base_attach
-Date: Fri, 24 Jun 2011 11:59:29 +0200
-Message-Id: <1308909569-5293-1-git-send-email-jkacur@redhat.com>
-X-Mailer: git-send-email 1.7.2.3
+	Fri, 24 Jun 2011 06:04:38 -0400
+X-AuditID: cbfee61b-b7bfdae000006d51-d3-4e04613446fc
+Date: Fri, 24 Jun 2011 19:04:17 +0900
+From: Donggeun Kim <dg77.kim@samsung.com>
+Subject: [PATCH 0/2] MFD MAX8998/LP3974: Support Charger
+To: linux-kernel@vger.kernel.org
+Cc: cbouatmailru@gmail.com, sameo@linux.intel.com,
+        broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, dg77.kim@samsung.com
+Message-id: <1308909859-3674-1-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 24 Jun 2011 10:04:52.0884 (UTC)
+ FILETIME=[2953DD40:01CC3256]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove this duplicate code I found by inspection.
+Patch 1/2: Support power supply APIs
 
-Signed-off-by: John Kacur <jkacur@redhat.com>
----
- drivers/scsi/mpt2sas/mpt2sas_base.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+Patch 2/2: Introduce a new regulator to control battery charger
 
-diff --git a/drivers/scsi/mpt2sas/mpt2sas_base.c b/drivers/scsi/mpt2sas/mpt2sas_base.c
-index efa0255..2660b3c 100644
---- a/drivers/scsi/mpt2sas/mpt2sas_base.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_base.c
-@@ -3933,13 +3933,6 @@ mpt2sas_base_attach(struct MPT2SAS_ADAPTER *ioc)
- 		goto out_free_resources;
- 	}
- 
--	if (!ioc->base_cmds.reply || !ioc->transport_cmds.reply ||
--	    !ioc->scsih_cmds.reply || !ioc->tm_cmds.reply ||
--	    !ioc->config_cmds.reply || !ioc->ctl_cmds.reply) {
--		r = -ENOMEM;
--		goto out_free_resources;
--	}
--
- 	init_completion(&ioc->shost_recovery_done);
- 
- 	for (i = 0; i < MPI2_EVENT_NOTIFY_EVENTMASK_WORDS; i++)
+Donggeun Kim (2):
+  power_supply: Add charger driver for MAX8998/LP3974
+  regulator: Add a new regulator for charge control of MAX8998/LP3974
+
+ drivers/mfd/max8998.c           |    2 +
+ drivers/power/Kconfig           |    7 ++
+ drivers/power/Makefile          |    1 +
+ drivers/power/max8998_charger.c |  218 +++++++++++++++++++++++++++++++++++++++
+ drivers/regulator/max8998.c     |  137 ++++++++++++++++++++++++-
+ include/linux/mfd/max8998.h     |   18 +++
+ 6 files changed, 380 insertions(+), 3 deletions(-)
+ create mode 100644 drivers/power/max8998_charger.c
+
 -- 
-1.7.2.3
+1.7.4.1
 
