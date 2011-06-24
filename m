@@ -1,81 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758798Ab1FXNuY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 09:50:24 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:51860 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758482Ab1FXNuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 09:50:09 -0400
-Date: Fri, 24 Jun 2011 06:49:14 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: "Stijn Devriendt (sdevrien)" <sdevrien@cisco.com>
-CC: "khali@linux-fr.org" <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v3] Add support for the Philips SA56004 temperature
- sensor.
-Message-ID: <20110624134914.GA1177@ericsson.com>
-References: <1307356845-10095-1-git-send-email-sdevrien@cisco.com>
- <20110606124047.GA26180@ericsson.com>
- <6E4D2678AC543844917CA081C9D6B33F04C74F28@XMB-AMS-103.cisco.com>
+	id S1758572Ab1FXNuK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 09:50:10 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62353 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758391Ab1FXNuF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 09:50:05 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Wim Van Sebroeck <wim@iguana.be>
+Subject: Re: [PATCH 8/10 v2] Generic Watchdog Timer Driver
+Date: Fri, 24 Jun 2011 15:49:32 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <20110618172637.GI3441@infomag.iguana.be> <201106182109.14520.arnd@arndb.de> <20110622200009.GC26745@infomag.iguana.be>
+In-Reply-To: <20110622200009.GC26745@infomag.iguana.be>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <6E4D2678AC543844917CA081C9D6B33F04C74F28@XMB-AMS-103.cisco.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106241549.32601.arnd@arndb.de>
+X-Provags-ID: V02:K0:SnBrpgStVJ0PnBap2ql9+gRwjubJju8ZdoaCOwut8iz
+ j1BlkNPAG9DlAEJfjwFK9xtMhjqn5znFTk7k8Jh1NYpbL9j/P3
+ wJy5WFQVZLEgoYIE6V9FLzWnhtlT8vHJbS+R/lMHSt/pDg16J3
+ bzsKt6NHjfmtY0Iw+fA/8PZ1CcmnRe/+HgyMTZiAO3MZQijupm
+ eI6dSgj4jsNlE4DXu33gg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 06:40:57AM -0400, Stijn Devriendt (sdevrien) wrote:
-> Hi Guenter,
+On Wednesday 22 June 2011 22:00:09 Wim Van Sebroeck wrote:
+> prefer to not do that for following reasons:
+> 1) I deliberately splitted the framework in a series of patches, so that people
+> understand better what the differen developmentt steps have been historically
+> and/or logically. By splitting it, I hope that people will understand better
+> why the API is what it is.
+> 2) most watchdog drivers don't do this yet. So this teaches existing device
+> driver writers also that this is a possible feature.
 > 
-> Is anything being done with this patch, yet?
-> I haven't heard anything from Jean so far.
-> 
-Hi Stijn,
 
-please don't top-post.
+Ok, makes sense.
 
-I don't recall a comment from Jean either.
-
-Jean, any comments ? It is your driver, so I thought it would make sense
-if you had a look.
-
-Thanks,
-Guenter
-
-> Thanks,
-> Stijn
-> 
-> > -----Original Message-----
-> > From: Guenter Roeck [mailto:guenter.roeck@ericsson.com]
-> > Sent: maandag 6 juni 2011 14:41
-> > To: Stijn Devriendt (sdevrien)
-> > Cc: khali@linux-fr.org; lm-sensors@lm-sensors.org; linux-
-> > kernel@vger.kernel.org
-> > Subject: Re: [PATCH v3] Add support for the Philips SA56004
-> temperature
-> > sensor.
-> > 
-> > On Mon, Jun 06, 2011 at 06:40:45AM -0400, sdevrien@cisco.com wrote:
-> > > From: Stijn Devriendt <sdevrien@cisco.com>
-> > >
-> > > Add support for the Philips SA56004, an LM86
-> > > compatible temperature sensor.
-> > >
-> > > Changes since v2:
-> > > - Changed BUG_ON to WARN_ON
-> > > Changes since v1:
-> > > - Updated documentation
-> > > - Trace replaced by BUG_ON
-> > > - style updates
-> > >
-> > > Signed-off-by: Stijn Devriendt <sdevrien@cisco.com>
-> > 
-> > Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> > 
-> > Jean, do you want to take this and/or have a look, or should I ?
-> > 
-> > Thanks,
-> > Guenter
+	Arnd
