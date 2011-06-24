@@ -1,112 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753451Ab1FXGOC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 02:14:02 -0400
-Received: from havoc.gtf.org ([69.61.125.42]:45535 "EHLO havoc.gtf.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752513Ab1FXGOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 02:14:00 -0400
-Date: Fri, 24 Jun 2011 02:13:59 -0400
-From: Jeff Garzik <jeff@garzik.org>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-ide@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [git patches] libata fixes (rebased)
-Message-ID: <20110624061359.GA20696@havoc.gtf.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.4.2.2i
+	id S1753294Ab1FXG3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 02:29:13 -0400
+Received: from na3sys009aob119.obsmtp.com ([74.125.149.245]:36397 "EHLO
+	psmtp.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751974Ab1FXG3L convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 02:29:11 -0400
+X-Greylist: delayed 403 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jun 2011 02:29:09 EDT
+MIME-Version: 1.0
+In-Reply-To: <1308862894-13802-1-git-send-email-jaswinder.singh@linaro.org>
+References: <1308862894-13802-1-git-send-email-jaswinder.singh@linaro.org>
+Date: Fri, 24 Jun 2011 11:52:25 +0530
+Message-ID: <BANLkTikFFUREhKyPaZrhHZje0KeaA3ef8Q@mail.gmail.com>
+Subject: Re: [PATCH] mfd: omap: Restore TLL initialization
+From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+To: Jassi Brar <jassisinghbrar@gmail.com>
+Cc: linux-kernel@vger.kernel.org, ti@lists.linaro.org, parthab@india.ti.com,
+        sameo@linux.intel.com, gadiyar@ti.com, balbi@ti.com,
+        linux-omap@vger.kernel.org, linux-usb@vger.kernel.org,
+        Jassi Brar <jaswinder.singh@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 24, 2011 at 2:31 AM, Jassi Brar <jassisinghbrar@gmail.com> wrote:
+> The commit
+>  7e6502d577106fb5b202bbaac64c5f1b065 'mfd: Add omap-usbhs runtime PM support'
+> besides moving to RPM, removes necessary TLL initialization as well.
+>
+> Restore the TLL initialization, without which device detection fails.
+>
+> Signed-off-by: Jassi Brar <jaswinder.singh@linaro.org>
+> ---
+>  drivers/mfd/omap-usb-host.c |   42 ++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 42 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
+> index 8552195..12ca77b 100644
+> --- a/drivers/mfd/omap-usb-host.c
+> +++ b/drivers/mfd/omap-usb-host.c
+> @@ -640,6 +640,7 @@ static int usbhs_enable(struct device *dev)
+>        struct usbhs_omap_platform_data *pdata = &omap->platdata;
+>        unsigned long                   flags = 0;
+>        int                             ret = 0;
+> +       unsigned long                   timeout;
+>        unsigned                        reg;
+>
+>        dev_dbg(dev, "starting TI HSUSB Controller\n");
+> @@ -676,6 +677,47 @@ static int usbhs_enable(struct device *dev)
+>        omap->usbhs_rev = usbhs_read(omap->uhh_base, OMAP_UHH_REVISION);
+>        dev_dbg(dev, "OMAP UHH_REVISION 0x%x\n", omap->usbhs_rev);
+>
+> +       /* perform TLL soft reset, and wait until reset is complete */
+> +       usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG,
+> +                       OMAP_USBTLL_SYSCONFIG_SOFTRESET);
+> +
+> +       /* Wait for TLL reset to complete */
+> +       timeout = jiffies + msecs_to_jiffies(1000);
+> +       while (!(usbhs_read(omap->tll_base, OMAP_USBTLL_SYSSTATUS)
+> +                       & OMAP_USBTLL_SYSSTATUS_RESETDONE)) {
+> +               cpu_relax();
+> +
+> +               if (time_after(jiffies, timeout)) {
+> +                       dev_dbg(dev, "operation timed out\n");
+> +                       ret = -EINVAL;
+> +                       goto err_tll;
+> +               }
+> +       }
+> +       dev_dbg(dev, "TLL RESET DONE\n");
+> +
+> +       /* (1<<3) = no idle mode only for initial debugging */
+> +       usbhs_write(omap->tll_base, OMAP_USBTLL_SYSCONFIG,
+> +                       OMAP_USBTLL_SYSCONFIG_ENAWAKEUP |
+> +                       OMAP_USBTLL_SYSCONFIG_SIDLEMODE |
+> +                       OMAP_USBTLL_SYSCONFIG_AUTOIDLE);
+> +
+> +       /* Put UHH in NoIdle/NoStandby mode */
+> +       reg = usbhs_read(omap->uhh_base, OMAP_UHH_SYSCONFIG);
+> +       if (is_omap_usbhs_rev1(omap)) {
+> +               reg |= (OMAP_UHH_SYSCONFIG_ENAWAKEUP
+> +                               | OMAP_UHH_SYSCONFIG_SIDLEMODE
+> +                               | OMAP_UHH_SYSCONFIG_CACTIVITY
+> +                               | OMAP_UHH_SYSCONFIG_MIDLEMODE);
+> +               reg &= ~OMAP_UHH_SYSCONFIG_AUTOIDLE;
+> +       } else if (is_omap_usbhs_rev2(omap)) {
+> +               reg &= ~OMAP4_UHH_SYSCONFIG_IDLEMODE_CLEAR;
+> +               reg |= OMAP4_UHH_SYSCONFIG_NOIDLE;
+> +               reg &= ~OMAP4_UHH_SYSCONFIG_STDBYMODE_CLEAR;
+> +               reg |= OMAP4_UHH_SYSCONFIG_NOSTDBY;
+> +       }
+> +
+> +       usbhs_write(omap->uhh_base, OMAP_UHH_SYSCONFIG, reg);
+> +
+>        reg = usbhs_read(omap->uhh_base, OMAP_UHH_HOSTCONFIG);
+>        /* setup ULPI bypass and burst configurations */
+>        reg |= (OMAP_UHH_HOSTCONFIG_INCR4_BURST_EN
+> --
+> 1.7.4.1
 
-Same summary/description as last time, except that the pata_marvell
-change was updated (via rebase) to give proper credit.
+if you move to RPM, you should'tn access these configuration/reset
+registers in your driver.
+moreover, the patch 'mfd: Add omap-usbhs runtime PM support' is
+already reverted.
 
-Please pull from 'upstream-linus' branch of
-master.kernel.org:/pub/scm/linux/kernel/git/jgarzik/libata-dev.git upstream-linus
-
-to receive the following updates:
-
- drivers/ata/libata-core.c    |    6 +++---
- drivers/ata/libata-scsi.c    |    6 ++++++
- drivers/ata/pata_marvell.c   |    3 +++
- drivers/ata/sata_dwc_460ex.c |    2 +-
- 4 files changed, 13 insertions(+), 4 deletions(-)
-
-Justin P. Mattock (1):
-      drivers/ata/sata_dwc_460ex: Fix typo 'corrresponding'
-
-Nishanth Aravamudan (1):
-      libata/sas: only set FROZEN flag if new EH is supported
-
-PaweÅ‚ Drewniak (1):
-      pata_marvell: Add support for 88SE91A0, 88SE91A4
-
-Tejun Heo (1):
-      libata: apply NOSETXFER horkage to the affected Pioneer drives
-
-diff --git a/drivers/ata/libata-core.c b/drivers/ata/libata-core.c
-index 736bee5..000d03a 100644
---- a/drivers/ata/libata-core.c
-+++ b/drivers/ata/libata-core.c
-@@ -4143,9 +4143,9 @@ static const struct ata_blacklist_entry ata_device_blacklist [] = {
- 	 * Devices which choke on SETXFER.  Applies only if both the
- 	 * device and controller are SATA.
- 	 */
--	{ "PIONEER DVD-RW  DVRTD08",	"1.00",	ATA_HORKAGE_NOSETXFER },
--	{ "PIONEER DVD-RW  DVR-212D",	"1.28", ATA_HORKAGE_NOSETXFER },
--	{ "PIONEER DVD-RW  DVR-216D",	"1.08", ATA_HORKAGE_NOSETXFER },
-+	{ "PIONEER DVD-RW  DVRTD08",	NULL,	ATA_HORKAGE_NOSETXFER },
-+	{ "PIONEER DVD-RW  DVR-212D",	NULL,	ATA_HORKAGE_NOSETXFER },
-+	{ "PIONEER DVD-RW  DVR-216D",	NULL,	ATA_HORKAGE_NOSETXFER },
- 
- 	/* End Marker */
- 	{ }
-diff --git a/drivers/ata/libata-scsi.c b/drivers/ata/libata-scsi.c
-index d51f979..927f968 100644
---- a/drivers/ata/libata-scsi.c
-+++ b/drivers/ata/libata-scsi.c
-@@ -3797,6 +3797,12 @@ EXPORT_SYMBOL_GPL(ata_sas_port_alloc);
-  */
- int ata_sas_port_start(struct ata_port *ap)
- {
-+	/*
-+	 * the port is marked as frozen at allocation time, but if we don't
-+	 * have new eh, we won't thaw it
-+	 */
-+	if (!ap->ops->error_handler)
-+		ap->pflags &= ~ATA_PFLAG_FROZEN;
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(ata_sas_port_start);
-diff --git a/drivers/ata/pata_marvell.c b/drivers/ata/pata_marvell.c
-index 75a6a0c..5d7f58a 100644
---- a/drivers/ata/pata_marvell.c
-+++ b/drivers/ata/pata_marvell.c
-@@ -161,6 +161,9 @@ static const struct pci_device_id marvell_pci_tbl[] = {
- 	{ PCI_DEVICE(0x11AB, 0x6121), },
- 	{ PCI_DEVICE(0x11AB, 0x6123), },
- 	{ PCI_DEVICE(0x11AB, 0x6145), },
-+	{ PCI_DEVICE(0x1B4B, 0x91A0), },
-+	{ PCI_DEVICE(0x1B4B, 0x91A4), },
-+
- 	{ }	/* terminate list */
- };
- 
-diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
-index 1c4b3aa..dc88a39 100644
---- a/drivers/ata/sata_dwc_460ex.c
-+++ b/drivers/ata/sata_dwc_460ex.c
-@@ -389,7 +389,7 @@ static void sata_dwc_tf_dump(struct ata_taskfile *tf)
- /*
-  * Function: get_burst_length_encode
-  * arguments: datalength: length in bytes of data
-- * returns value to be programmed in register corrresponding to data length
-+ * returns value to be programmed in register corresponding to data length
-  * This value is effectively the log(base 2) of the length
-  */
- static  int get_burst_length_encode(int datalength)
+keshava
