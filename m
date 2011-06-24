@@ -1,61 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753254Ab1FXHe1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 03:34:27 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:45480 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751778Ab1FXHeX convert rfc822-to-8bit (ORCPT
+	id S1753364Ab1FXHnd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 03:43:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34524 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752357Ab1FXHn3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 03:34:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TBxhHEfCZV2QHMWo7Q1MRjTYJvx4Wjyk2X6vRPzyT8tQTNbzoDylFB2qTZFtcWfIdh
-         5Ra/HUADSYH7kf9pRlVsnqkaTqKaTA1zZsMunpW1+yzUOKO44LkTLU4EPfhYDdlzUnTs
-         puc6+gO6wbXculZf9Ym3snK+OlQajWXztGZKA=
-MIME-Version: 1.0
-In-Reply-To: <6002eb70809bb1c87c84f32ab4a4f034d2d1ffb5.1308868289.git.joe@perches.com>
-References: <6002eb70809bb1c87c84f32ab4a4f034d2d1ffb5.1308868289.git.joe@perches.com>
-Date: Fri, 24 Jun 2011 09:34:21 +0200
-Message-ID: <BANLkTinrzbuM6TvEJkMmQKkwdf=RTSCxuw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] rt2x00: Fix unspeficied typo
-From: Ivo Van Doorn <ivdoorn@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Gertjan van Wingerde <gwingerde@gmail.com>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 24 Jun 2011 03:43:29 -0400
+Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110624020659.GA24776@linux.vnet.ibm.com>
+References: <20110616032645.GF4952@linux.vnet.ibm.com>
+	 <1308225626.13240.34.camel@twins>
+	 <20110616130012.GL4952@linux.vnet.ibm.com>
+	 <1308248588.13240.267.camel@twins>
+	 <20110617045000.GM4952@linux.vnet.ibm.com>
+	 <1308297836.13240.380.camel@twins>
+	 <20110617090504.GN4952@linux.vnet.ibm.com> <1308303665.2355.11.camel@twins>
+	 <1308662243.26237.144.camel@twins>
+	 <20110622143906.GF16471@linux.vnet.ibm.com>
+	 <20110624020659.GA24776@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Fri, 24 Jun 2011 09:42:04 +0200
+Message-ID: <1308901324.27849.7.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 12:35 AM, Joe Perches <joe@perches.com> wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Fri, 2011-06-24 at 07:36 +0530, Srikar Dronamraju wrote:
+> > 
+> > so I am thinking of a solution that includes most of your ideas along
+> > with using i_mmap_mutex in mmap_uprobe path.
+> > 
+> 
+> Addressing Peter's comments given on irc wrt i_mmap_mutex.
+> 
 
-Acked-by: Ivo van Doorn <IvDoorn@gmail.com>
+> void _unregister_uprobe(...)
+> {
+> 	if (!del_consumer(...)) {	// includes tree removal on last consumer
+> 		return;
+> 	}
+> 	if (uprobe->consumers)
+> 		return;
+> 
+> 	mutex_lock(&mapping->i_mmap_mutex);	//sync with mmap.
+> 	vma_prio_tree_foreach() {
+> 		// create list
+> 	}
+> 
+> 	mutex_unlock(&mapping->i_mmap_mutex);
+> 
+> 	list_for_each_entry_safe() {
+> 		// remove from list
+> 		down_read(&mm->mmap_sem);
+> 		remove_breakpoint();	// unconditional, if it wasn't there
+> 		up_read(&mm->mmap_sem);
+> 	}
+> 
+> 	mutex_lock(&mapping->i_mmap_mutex);
+> 	delete_uprobe(uprobe);
+> 	mutex_unlock(&mapping->i_mmap_mutex);
+> 
+> 	inode->uprobes_count--;
+> 	mutex_unlock(&inode->i_mutex);
 
-> ---
->  drivers/net/wireless/rt2x00/rt2x00queue.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/net/wireless/rt2x00/rt2x00queue.h b/drivers/net/wireless/rt2x00/rt2x00queue.h
-> index 167d458..5900474 100644
-> --- a/drivers/net/wireless/rt2x00/rt2x00queue.h
-> +++ b/drivers/net/wireless/rt2x00/rt2x00queue.h
-> @@ -54,7 +54,7 @@
->  * @QID_RX: RX queue
->  * @QID_OTHER: None of the above (don't use, only present for completeness)
->  * @QID_BEACON: Beacon queue (value unspecified, don't send it to device)
-> - * @QID_ATIM: Atim queue (value unspeficied, don't send it to device)
-> + * @QID_ATIM: Atim queue (value unspecified, don't send it to device)
->  */
->  enum data_queue_qid {
->        QID_AC_VO = 0,
-> --
-> 1.7.6.rc1
->
->
+Right, so this lonesome unlock got me puzzled for a while, I always find
+it best not to do asymmetric locking like this, keep the lock and unlock
+in the same function.
+
+> }
+> 
+> int register_uprobe(...)
+> {
+> 	uprobe = alloc_uprobe(...);	// find or insert in tree
+> 
+> 	mutex_lock(&inode->i_mutex);	// sync with register/unregister
+> 	if (uprobe->consumers) {
+> 		add_consumer();
+> 		goto put_unlock;
+> 	}
+> 	add_consumer();
+> 	inode->uprobes_count++;
+> 	mutex_lock(&mapping->i_mmap_mutex);	//sync with mmap.
+> 	vma_prio_tree_foreach(..) {
+> 		// get mm ref, add to list blah blah
+> 	}
+> 
+> 	mutex_unlock(&mapping->i_mmap_mutex);
+> 	list_for_each_entry_safe() {
+> 		if (ret) {
+> 			// del from list etc..
+> 			//
+> 			continue;
+> 		}
+> 		down_read(mm->mmap_sem);
+> 		ret = install_breakpoint();
+> 		up_read(..);
+> 		// del from list etc..
+> 		//
+> 		if (ret && (ret == -ESRCH || ret == -EEXIST))
+> 			ret = 0;
+> 	}
+> 
+> 	if (ret)
+> 		_unregister_uprobe();
+> 
+>       put_unlock:
+> 	mutex_unlock(&inode->i_mutex);
+
+You see, now this is a double unlock
+
+> 	put_uprobe(uprobe);
+> 	return ret;
+> }
+> 
+> void unregister_uprobe(...)
+> {
+> 	mutex_lock(&inode->i_mutex);	// sync with register/unregister
+> 	uprobe = find_uprobe();	// ref++
+> 	_unregister_uprobe();
+> 	mutex_unlock(&inode->i_mutex);
+
+idem
+
+> 	put_uprobe(uprobe);
+> }
+> 
+> int mmap_uprobe(struct vm_area_struct *vma)
+> {
+> 	struct list_head tmp_list;
+> 	struct uprobe *uprobe, *u;
+> 	struct mm_struct *mm;
+> 	struct inode *inode;
+> 	int ret = 0;
+> 
+> 	if (!valid_vma(vma))
+> 		return ret;	/* Bail-out */
+> 
+> 	mm = vma->vm_mm;
+> 	inode = vma->vm_file->f_mapping->host;
+> 	if (inode->uprobes_count)
+> 		return ret;
+> 	__iget(inode);
+> 
+> 	INIT_LIST_HEAD(&tmp_list);
+> 
+> 	mutex_lock(&mapping->i_mmap_mutex);
+> 	add_to_temp_list(vma, inode, &tmp_list);
+> 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+> 		loff_t vaddr;
+> 
+> 		list_del(&uprobe->pending_list);
+> 		if (ret)
+> 			continue;
+> 
+> 		vaddr = vma->vm_start + uprobe->offset;
+> 		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> 		ret = install_breakpoint(mm, uprobe, vaddr);
+
+Right, so this is the problem, you cannot do allocations under
+i_mmap_mutex, however I think you can under i_mutex.
+
+> 		if (ret && (ret == -ESRCH || ret == -EEXIST))
+> 			ret = 0;
+> 	}
+> 
+> 	mutex_unlock(&mapping->i_mmap_mutex);
+> 	iput(inode);
+> 	return ret;
+> }
+> 
+> int munmap_uprobe(struct vm_area_struct *vma)
+> {
+> 	struct list_head tmp_list;
+> 	struct uprobe *uprobe, *u;
+> 	struct mm_struct *mm;
+> 	struct inode *inode;
+> 	int ret = 0;
+> 
+> 	if (!valid_vma(vma))
+> 		return ret;	/* Bail-out */
+> 
+> 	mm = vma->vm_mm;
+> 	inode = vma->vm_file->f_mapping->host;
+> 	if (inode->uprobes_count)
+> 		return ret;
+
+Should that be !->uprobes_count?
+
+> //      walk thro RB tree and decrement mm->uprobes_count
+> 	walk_rbtree_and_dec_uprobes_count();	//hold treelock.
+> 
+> 	return ret;
+> }
+
