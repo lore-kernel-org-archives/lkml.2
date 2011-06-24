@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759698Ab1FXPoW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 11:44:22 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60678 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754280Ab1FXPoS convert rfc822-to-8bit (ORCPT
+	id S1759795Ab1FXPxd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 11:53:33 -0400
+Received: from oproxy4-pub.bluehost.com ([69.89.21.11]:34265 "HELO
+	oproxy4-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759332Ab1FXPxc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 11:44:18 -0400
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>, "Grosen, Mark" <mgrosen@ti.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Fri, 24 Jun 2011 21:13:49 +0530
-Subject: RE: [RFC 5/8] remoteproc: add davinci implementation
-Thread-Topic: [RFC 5/8] remoteproc: add davinci implementation
-Thread-Index: AcwygZv0mvORrL7JTyCtPxMg8s/QwAAAcl8w
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024D6C2F29@dbde02.ent.ti.com>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
-	<1308640714-17961-6-git-send-email-ohad@wizery.com>
-	<4E035B78.3080200@mvista.com>
-	<FFF198FBBF957F4393BA834040FEFFA202D66E@DFLE35.ent.ti.com>
- <4E04A9AE.3030801@mvista.com>
-In-Reply-To: <4E04A9AE.3030801@mvista.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Fri, 24 Jun 2011 11:53:32 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=hlRRIwi7O9GSyDHnqHVIylQhWlpXud0828teaPHeEcHng83lJl9fCdbB38Tu0YsiDn5rv3xa1F0YTnVzyBTcHq7RLW3Us21chRdfX9xyGxiZM5LW1blXRhGv8LTzGqtW;
+Date: Fri, 24 Jun 2011 08:53:18 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [git pull] PCI fixes
+Message-ID: <20110624085318.70bde05c@jbarnes-desktop>
+In-Reply-To: <BANLkTime_w_RLqU2dZV4zx9SEZaNTQoMNQ@mail.gmail.com>
+References: <20110623133740.0cdaf204@jbarnes-desktop>
+	<BANLkTime_w_RLqU2dZV4zx9SEZaNTQoMNQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+On Fri, 24 Jun 2011 08:38:07 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On Fri, Jun 24, 2011 at 20:43:50, Sergei Shtylyov wrote:
-
-> >>> +	rproc->priv = dsp_clk;
-> >>> +
-> >>> +	psc_base = ioremap(soc_info->psc_bases[0], SZ_4K);
-> >>> +
-> >>> +	/* insure local reset is asserted before writing start address */
-> >>> +	__raw_writel(NEXT_ENABLED, psc_base + MDCTL + 4 *
-> >> DA8XX_LPSC0_GEM);
-> >>> +
-> >>> +	__raw_writel(bootaddr, DA8XX_SYSCFG0_VIRT(HOST1CFG));
+> On Thu, Jun 23, 2011 at 1:37 PM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
+> >
+> > Just a few minor fixes.  We have one open issue with the resource
+> > re-allocation code that was re-added.  Ram has a fix but I'm concerned
+> > it will introduce other regressions.  So at this point we have a few
+> > options:
+> >  - revert the bridge resource re-allocation code (again)
+> >  - hide the re-allocation code behind a new kernel option (and not
+> >    try=!), this would at least let us experiment with new strategies
+> >    and PNP resource tracking etc
+> >  - apply Ram's patch and revert it all later if things are still broken
 > 
-> >>     DA8XX_SYSCFG0_VIRT() is not supposed to be used outside mach-davinci. The
-> >> variable it refers is not exported, so driver module won't work.
+> I think I've missed the regression discussion, so can you forward a
+> description and the fix?
 > 
-> > Ooops, I clearly did not build this as a module. Suggestion how to fix this?
+> I have to admit that I'm inclined to try the fix if it's clean, just
+> in the hope to get over this finally. But I'd like to see  what the
+> problem/fix is...
 > 
->     Using the normal ioremap() of SYSCFG0 space, I suppose.
+> Maybe I've seen it and just didn't react.
 
-Since procedure to set the boot address varies across DaVinci
-platforms, you could have a callback populated in platform data
-which will be implemented differently for original DaVinci and
-DA8xx devices.
+Some discussion was under "PCI: fix cardbus and sriov regressions",
+which includes a patchset as well. Oliver Hartkopp's problem is the one
+that worries me most. The SR-IOV issue is really a BIOS bug and
+unlikely to affect many people anyway (SR-IOV is really a big server
+feature).
 
-Also, all PSC accesses are better off going through clock
-framework to ensure proper locking and modularity.
-
-To assert/de-assert local reset when enabling or disabling PSC,
-you could use a flag in the clock structure to indicate the need
-for this. This way, if there is any other module needing a local
-reset, it can just define the same flag. Similarly, if the DSP
-does not need a local reset on a particular platform, that
-platform can simply skip the flag.
-
-This can be done in a manner similar to how the support for
-a forced transition PSC was added here:
-
-https://patchwork.kernel.org/patch/662941/
-
-Thanks,
-Sekhar
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
