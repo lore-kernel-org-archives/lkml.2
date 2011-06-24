@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753479Ab1FXGXA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 02:23:00 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:37053 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752577Ab1FXGWz (ORCPT
+	id S1753666Ab1FXGXO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 02:23:14 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:38042 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753270Ab1FXGW5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 02:22:55 -0400
+	Fri, 24 Jun 2011 02:22:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=o04EYw1XXe6szmXANEVudFAQ43X24to7cYI6pnmAzB6f+QL8Bsh7nB7tX2IZv12ijO
-         uMSrGo1qrn9V2uFwh7XThv1dS1KG7xaWrym59QvrRk4C866776c9pdo5qUKdzU5eZuW+
-         jv56mOAYj2HS6bHr1DKvfFsobf6MgwI9zpzK0=
+        b=mljbwCcKm9B7OPmsohv2hx4fLIMoNA4oxeV4VDUW98dR9Vlm5S7smO27zdMTNZ+FkW
+         RgUXoQ2y8M6aVCJ32nMYxfNN3v9H1tlhnGMwZQyTqzOKo/TbGxW1oTMH6ar41cRCdn0U
+         F1GyfWkN06JHl1OnGc4e6Vfgc890HER0ykcHc=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 2/3]Remove one to many nnn's in some comments.
-Date: Thu, 23 Jun 2011 23:22:28 -0700
-Message-Id: <1308896549-4560-2-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 3/3]Remove one to many lll's in some comments.
+Date: Thu, 23 Jun 2011 23:22:29 -0700
+Message-Id: <1308896549-4560-3-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1308896549-4560-1-git-send-email-justinmattock@gmail.com>
 References: <1308896549-4560-1-git-send-email-justinmattock@gmail.com>
@@ -29,55 +29,55 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 
-The patch below fixes some comments that seem to be typos. 
+The patch below fixes some comments.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.h |    2 +-
- drivers/usb/otg/fsl_otg.c                         |    2 +-
- net/mac80211/work.c                               |    2 +-
+ drivers/acpi/acpica/hwxface.c  |    2 +-
+ drivers/parport/parport_mfc3.c |    2 +-
+ include/net/mac80211.h         |    2 +-
  3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.h b/drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.h
-index 3ef42b3..83755ab 100644
---- a/drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.h
-+++ b/drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.h
-@@ -76,7 +76,7 @@ extern void sdioh_sdmmc_osfree(sdioh_info_t *sd);
- 
- struct sdioh_info {
- 	struct osl_info *osh;		/* osh handler */
--	bool client_intr_enabled;	/* interrupt connnected flag */
-+	bool client_intr_enabled;	/* interrupt connected flag */
- 	bool intr_handler_valid;	/* client driver interrupt handler valid */
- 	sdioh_cb_fn_t intr_handler;	/* registered interrupt handler */
- 	void *intr_handler_arg;	/* argument to call interrupt handler */
-diff --git a/drivers/usb/otg/fsl_otg.c b/drivers/usb/otg/fsl_otg.c
-index 0f420b2..2d9cc44 100644
---- a/drivers/usb/otg/fsl_otg.c
-+++ b/drivers/usb/otg/fsl_otg.c
-@@ -639,7 +639,7 @@ static int fsl_otg_set_power(struct otg_transceiver *otg_p, unsigned mA)
-  * Delayed pin detect interrupt processing.
+diff --git a/drivers/acpi/acpica/hwxface.c b/drivers/acpi/acpica/hwxface.c
+index f75f81a..f34ba22 100644
+--- a/drivers/acpi/acpica/hwxface.c
++++ b/drivers/acpi/acpica/hwxface.c
+@@ -355,7 +355,7 @@ ACPI_EXPORT_SYMBOL(acpi_read_bit_register)
   *
-  * When the Mini-A cable is disconnected from the board,
-- * the pin-detect interrupt happens before the disconnnect
-+ * the pin-detect interrupt happens before the disconnect
-  * interrupts for the connected device(s).  In order to
-  * process the disconnect interrupt(s) prior to switching
-  * roles, the pin-detect interrupts are delayed, and handled
-diff --git a/net/mac80211/work.c b/net/mac80211/work.c
-index d2e7f0e..a4fb304 100644
---- a/net/mac80211/work.c
-+++ b/net/mac80211/work.c
-@@ -1071,7 +1071,7 @@ static void ieee80211_work_work(struct work_struct *work)
- 		local->tmp_channel = NULL;
- 		/* If tmp_channel wasn't operating channel, then
- 		 * we need to go back on-channel.
--		 * NOTE:  If we can ever be here while scannning,
-+		 * NOTE:  If we can ever be here while scanning,
- 		 * or if the hw_config() channel config logic changes,
- 		 * then we may need to do a more thorough check to see if
- 		 * we still need to do a hardware config.  Currently,
+  * PARAMETERS:  register_id     - ID of ACPI Bit Register to access
+  *              Value           - Value to write to the register, in bit
+- *                                position zero. The bit is automaticallly
++ *                                position zero. The bit is automatically
+  *                                shifted to the correct position.
+  *
+  * RETURN:      Status
+diff --git a/drivers/parport/parport_mfc3.c b/drivers/parport/parport_mfc3.c
+index 362db31..1c0c642 100644
+--- a/drivers/parport/parport_mfc3.c
++++ b/drivers/parport/parport_mfc3.c
+@@ -397,7 +397,7 @@ static void __exit parport_mfc3_exit(void)
+ 
+ 
+ MODULE_AUTHOR("Joerg Dorchain <joerg@dorchain.net>");
+-MODULE_DESCRIPTION("Parport Driver for Multiface 3 expansion cards Paralllel Port");
++MODULE_DESCRIPTION("Parport Driver for Multiface 3 expansion cards Parallel Port");
+ MODULE_SUPPORTED_DEVICE("Multiface 3 Parallel Port");
+ MODULE_LICENSE("GPL");
+ 
+diff --git a/include/net/mac80211.h b/include/net/mac80211.h
+index e6d6a66..7486e4d 100644
+--- a/include/net/mac80211.h
++++ b/include/net/mac80211.h
+@@ -1390,7 +1390,7 @@ ieee80211_get_alt_retry_rate(const struct ieee80211_hw *hw,
+  * DOC: Beacon filter support
+  *
+  * Some hardware have beacon filter support to reduce host cpu wakeups
+- * which will reduce system power consumption. It usuallly works so that
++ * which will reduce system power consumption. It usually works so that
+  * the firmware creates a checksum of the beacon but omits all constantly
+  * changing elements (TSF, TIM etc). Whenever the checksum changes the
+  * beacon is forwarded to the host, otherwise it will be just dropped. That
 -- 
 1.7.5.4
 
