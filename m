@@ -1,348 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752063Ab1FXG67 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 02:58:59 -0400
-Received: from mx2.fusionio.com ([66.114.96.31]:32832 "EHLO mx2.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751411Ab1FXG66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 02:58:58 -0400
-X-ASG-Debug-ID: 1308898735-01de280c1e7e3f0001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E0435AC.4060402@fusionio.com>
-Date: Fri, 24 Jun 2011 08:58:52 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] block fixes for 3.0-rc4
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] block fixes for 3.0-rc4
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1308898735
-X-Barracuda-URL: http://10.101.1.181:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.50
-X-Barracuda-Spam-Status: No, SCORE=0.50 using global scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=BSF_RULE7568M
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.66962
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.50 BSF_RULE7568M          Custom Rule 7568M
+	id S1752681Ab1FXHCu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 03:02:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42699 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab1FXHCt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 03:02:49 -0400
+Message-Id: <201106240702.p5O72bkH003998@acsmt358.oracle.com>
+Date: Fri, 24 Jun 2011 15:02:08 +0800
+From: Wengang Wang <wen.gang.wang@oracle.com>
+To: stable@kernel.org
+Cc: greg.marsden@oracle.com, joe.jin@oracle.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] mm: prevent concurrent unmap_mapping_range() on the same inode --to stable
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090205.4E043697.0021:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+        mainline commit 2aa15890f3c191326678f1bd68af61ec6b8753ec
 
-A small collection of fixes for the current cycle. Most of these
-are stable material as well.
+    mm: prevent concurrent unmap_mapping_range() on the same inode
 
-- Fix a long standing race around the ioc lookup cache in cfq-iosched.
-  Very elusive bug, as the window is really small. Seemed to reproduce
-  most easily on single CPU systems.
+    Michael Leun reported that running parallel opens on a fuse filesystem
+    can trigger a "kernel BUG at mm/truncate.c:475"
 
-- Add REQ_SECURE to the shared bio/rq mask.
+    Gurudas Pai reported the same bug on NFS.
 
-- Bad types in throtl_log() prints.
+    The reason is, unmap_mapping_range() is not prepared for more than
+    one concurrent invocation per inode.  For example:
 
-- A small series of continued fixes disk event notification and bdev
-  claiming from Tejun.
+      thread1: going through a big range, stops in the middle of a vma and
+         stores the restart address in vm_truncate_count.
+
+      thread2: comes in with a small (e.g. single page) unmap request on
+         the same vma, somewhere before restart_address, finds that the
+         vma was already unmapped up to the restart address and happily
+         returns without doing anything.
+
+    Another scenario would be two big unmap requests, both having to
+    restart the unmapping and each one setting vm_truncate_count to its
+    own value.  This could go on forever without any of them being able to
+    finish.
+
+    Truncate and hole punching already serialize with i_mutex.  Other
+    callers of unmap_mapping_range() do not, and it's difficult to get
+    i_mutex protection for all callers.  In particular ->d_revalidate(),
+    which calls invalidate_inode_pages2_range() in fuse, may be called
+    with or without i_mutex.
+
+    This patch adds a new mutex to 'struct address_space' to prevent
+    running multiple concurrent unmap_mapping_range() on the same mapping.
+
+    [ We'll hopefully get rid of all this with the upcoming mm
+      preemptibility series by Peter Zijlstra, the "mm: Remove i_mmap_mutex
+      lockbreak" patch in particular.  But that is for 2.6.39 ]
 
 
-Please pull.
+    Adding this patch causes Kabi breakage.
 
+    Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+    Reported-by: Michael Leun <lkml20101129@newton.leun.net>
+    Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
+    Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
+    Acked-by: Hugh Dickins <hughd@google.com>
+    Cc: stable@kernel.org
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+    Signed-off-by: Wengang Wang <wen.gang.wang@oracle.com>
 
-  git://git.kernel.dk/linux-block.git for-linus
+---
+ fs/inode.c         |   22 +++++++++++++++-------
+ fs/nilfs2/btnode.c |   13 -------------
+ fs/nilfs2/btnode.h |    1 -
+ fs/nilfs2/super.c  |    2 +-
+ include/linux/fs.h |    2 ++
+ mm/memory.c        |    2 ++
+ 6 files changed, 20 insertions(+), 22 deletions(-)
 
-Jens Axboe (1):
-      cfq-iosched: fix locking around ioc->ioc_data assignment
-
-Joe Perches (1):
-      block: Add __attribute__((format(printf...) and fix fallout
-
-Namhyung Kim (1):
-      block: add REQ_SECURE to REQ_COMMON_MASK
-
-Tejun Heo (4):
-      block: don't use non-syncing event blocking in disk_check_events()
-      block: remove non-syncing __disk_block_events() and fold it into disk_block_events()
-      block: make disk_block_events() properly wait for work cancellation
-      block: use the passed in @bdev when claiming if partno is zero
-
- block/blk-throttle.c         |    4 +-
- block/cfq-iosched.c          |   16 +++++---
- block/genhd.c                |   79 ++++++++++++++++++++++++------------------
- fs/block_dev.c               |   14 +++++++-
- include/linux/blk_types.h    |    2 +-
- include/linux/blktrace_api.h |    3 +-
- 6 files changed, 73 insertions(+), 45 deletions(-)
-
-diff --git a/block/blk-throttle.c b/block/blk-throttle.c
-index a62be8d..3689f83 100644
---- a/block/blk-throttle.c
-+++ b/block/blk-throttle.c
-@@ -927,7 +927,7 @@ static int throtl_dispatch(struct request_queue *q)
- 
- 	bio_list_init(&bio_list_on_stack);
- 
--	throtl_log(td, "dispatch nr_queued=%lu read=%u write=%u",
-+	throtl_log(td, "dispatch nr_queued=%d read=%u write=%u",
- 			total_nr_queued(td), td->nr_queued[READ],
- 			td->nr_queued[WRITE]);
- 
-@@ -1204,7 +1204,7 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
- 	}
- 
- queue_bio:
--	throtl_log_tg(td, tg, "[%c] bio. bdisp=%u sz=%u bps=%llu"
-+	throtl_log_tg(td, tg, "[%c] bio. bdisp=%llu sz=%u bps=%llu"
- 			" iodisp=%u iops=%u queued=%d/%d",
- 			rw == READ ? 'R' : 'W',
- 			tg->bytes_disp[rw], bio->bi_size, tg->bps[rw],
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 3c7b537..f379943 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -988,9 +988,10 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 
- 	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
- 					st->min_vdisktime);
--	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u"
--			" sect=%u", used_sl, cfqq->slice_dispatch, charge,
--			iops_mode(cfqd), cfqq->nr_sectors);
-+	cfq_log_cfqq(cfqq->cfqd, cfqq,
-+		     "sl_used=%u disp=%u charge=%u iops=%u sect=%lu",
-+		     used_sl, cfqq->slice_dispatch, charge,
-+		     iops_mode(cfqd), cfqq->nr_sectors);
- 	cfq_blkiocg_update_timeslice_used(&cfqg->blkg, used_sl,
- 					  unaccounted_sl);
- 	cfq_blkiocg_set_start_empty_time(&cfqg->blkg);
-@@ -2023,8 +2024,8 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
- 	 */
- 	if (sample_valid(cic->ttime_samples) &&
- 	    (cfqq->slice_end - jiffies < cic->ttime_mean)) {
--		cfq_log_cfqq(cfqd, cfqq, "Not idling. think_time:%d",
--				cic->ttime_mean);
-+		cfq_log_cfqq(cfqd, cfqq, "Not idling. think_time:%lu",
-+			     cic->ttime_mean);
- 		return;
- 	}
- 
-@@ -2772,8 +2773,11 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
- 	smp_wmb();
- 	cic->key = cfqd_dead_key(cfqd);
- 
--	if (ioc->ioc_data == cic)
-+	if (rcu_dereference(ioc->ioc_data) == cic) {
-+		spin_lock(&ioc->lock);
- 		rcu_assign_pointer(ioc->ioc_data, NULL);
-+		spin_unlock(&ioc->lock);
-+	}
- 
- 	if (cic->cfqq[BLK_RW_ASYNC]) {
- 		cfq_exit_cfqq(cfqd, cic->cfqq[BLK_RW_ASYNC]);
-diff --git a/block/genhd.c b/block/genhd.c
-index 95822ae..3608289 100644
---- a/block/genhd.c
-+++ b/block/genhd.c
-@@ -1371,6 +1371,7 @@ struct disk_events {
- 	struct gendisk		*disk;		/* the associated disk */
- 	spinlock_t		lock;
- 
-+	struct mutex		block_mutex;	/* protects blocking */
- 	int			block;		/* event blocking depth */
- 	unsigned int		pending;	/* events already sent out */
- 	unsigned int		clearing;	/* events being cleared */
-@@ -1414,22 +1415,44 @@ static unsigned long disk_events_poll_jiffies(struct gendisk *disk)
- 	return msecs_to_jiffies(intv_msecs);
+diff --git a/fs/inode.c b/fs/inode.c
+index 4d8e3be..8bbe005 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -256,6 +256,20 @@ void destroy_inode(struct inode *inode)
+ 		kmem_cache_free(inode_cachep, (inode));
  }
  
--static void __disk_block_events(struct gendisk *disk, bool sync)
-+/**
-+ * disk_block_events - block and flush disk event checking
-+ * @disk: disk to block events for
-+ *
-+ * On return from this function, it is guaranteed that event checking
-+ * isn't in progress and won't happen until unblocked by
-+ * disk_unblock_events().  Events blocking is counted and the actual
-+ * unblocking happens after the matching number of unblocks are done.
-+ *
-+ * Note that this intentionally does not block event checking from
-+ * disk_clear_events().
-+ *
-+ * CONTEXT:
-+ * Might sleep.
-+ */
-+void disk_block_events(struct gendisk *disk)
- {
- 	struct disk_events *ev = disk->ev;
- 	unsigned long flags;
- 	bool cancel;
- 
-+	if (!ev)
-+		return;
++void address_space_init_once(struct address_space *mapping)
++{
++	memset(mapping, 0, sizeof(*mapping));
++	INIT_RADIX_TREE(&mapping->page_tree, GFP_ATOMIC);
++	spin_lock_init(&mapping->tree_lock);
++	spin_lock_init(&mapping->i_mmap_lock);
++	INIT_LIST_HEAD(&mapping->private_list);
++	spin_lock_init(&mapping->private_lock);
++	INIT_RAW_PRIO_TREE_ROOT(&mapping->i_mmap);
++	INIT_LIST_HEAD(&mapping->i_mmap_nonlinear);
++	mutex_init(&mapping->unmap_mutex);
++}
++EXPORT_SYMBOL(address_space_init_once);
 +
-+	/*
-+	 * Outer mutex ensures that the first blocker completes canceling
-+	 * the event work before further blockers are allowed to finish.
-+	 */
-+	mutex_lock(&ev->block_mutex);
-+
- 	spin_lock_irqsave(&ev->lock, flags);
- 	cancel = !ev->block++;
- 	spin_unlock_irqrestore(&ev->lock, flags);
+ /*
+  * These are initializations that only need to be done
+  * once, because the fields are idempotent across use
+@@ -267,13 +281,7 @@ void inode_init_once(struct inode *inode)
+ 	INIT_HLIST_NODE(&inode->i_hash);
+ 	INIT_LIST_HEAD(&inode->i_dentry);
+ 	INIT_LIST_HEAD(&inode->i_devices);
+-	INIT_RADIX_TREE(&inode->i_data.page_tree, GFP_ATOMIC);
+-	spin_lock_init(&inode->i_data.tree_lock);
+-	spin_lock_init(&inode->i_data.i_mmap_lock);
+-	INIT_LIST_HEAD(&inode->i_data.private_list);
+-	spin_lock_init(&inode->i_data.private_lock);
+-	INIT_RAW_PRIO_TREE_ROOT(&inode->i_data.i_mmap);
+-	INIT_LIST_HEAD(&inode->i_data.i_mmap_nonlinear);
++	address_space_init_once(&inode->i_data);
+ 	i_size_ordered_init(inode);
+ #ifdef CONFIG_INOTIFY
+ 	INIT_LIST_HEAD(&inode->inotify_watches);
+diff --git a/fs/nilfs2/btnode.c b/fs/nilfs2/btnode.c
+index 84c2538..8dff317 100644
+--- a/fs/nilfs2/btnode.c
++++ b/fs/nilfs2/btnode.c
+@@ -34,19 +34,6 @@
+ #include "btnode.h"
  
--	if (cancel) {
--		if (sync)
--			cancel_delayed_work_sync(&disk->ev->dwork);
--		else
--			cancel_delayed_work(&disk->ev->dwork);
--	}
-+	if (cancel)
-+		cancel_delayed_work_sync(&disk->ev->dwork);
-+
-+	mutex_unlock(&ev->block_mutex);
- }
  
- static void __disk_unblock_events(struct gendisk *disk, bool check_now)
-@@ -1461,27 +1484,6 @@ out_unlock:
- }
- 
- /**
-- * disk_block_events - block and flush disk event checking
-- * @disk: disk to block events for
-- *
-- * On return from this function, it is guaranteed that event checking
-- * isn't in progress and won't happen until unblocked by
-- * disk_unblock_events().  Events blocking is counted and the actual
-- * unblocking happens after the matching number of unblocks are done.
-- *
-- * Note that this intentionally does not block event checking from
-- * disk_clear_events().
-- *
-- * CONTEXT:
-- * Might sleep.
-- */
--void disk_block_events(struct gendisk *disk)
+-void nilfs_btnode_cache_init_once(struct address_space *btnc)
 -{
--	if (disk->ev)
--		__disk_block_events(disk, true);
+-	memset(btnc, 0, sizeof(*btnc));
+-	INIT_RADIX_TREE(&btnc->page_tree, GFP_ATOMIC);
+-	spin_lock_init(&btnc->tree_lock);
+-	INIT_LIST_HEAD(&btnc->private_list);
+-	spin_lock_init(&btnc->private_lock);
+-
+-	spin_lock_init(&btnc->i_mmap_lock);
+-	INIT_RAW_PRIO_TREE_ROOT(&btnc->i_mmap);
+-	INIT_LIST_HEAD(&btnc->i_mmap_nonlinear);
 -}
 -
--/**
-  * disk_unblock_events - unblock disk event checking
-  * @disk: disk to unblock events for
-  *
-@@ -1508,10 +1510,18 @@ void disk_unblock_events(struct gendisk *disk)
-  */
- void disk_check_events(struct gendisk *disk)
- {
--	if (disk->ev) {
--		__disk_block_events(disk, false);
--		__disk_unblock_events(disk, true);
-+	struct disk_events *ev = disk->ev;
-+	unsigned long flags;
-+
-+	if (!ev)
-+		return;
-+
-+	spin_lock_irqsave(&ev->lock, flags);
-+	if (!ev->block) {
-+		cancel_delayed_work(&ev->dwork);
-+		queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
- 	}
-+	spin_unlock_irqrestore(&ev->lock, flags);
+ static const struct address_space_operations def_btnode_aops = {
+ 	.sync_page		= block_sync_page,
+ };
+diff --git a/fs/nilfs2/btnode.h b/fs/nilfs2/btnode.h
+index 3e22751..067913e 100644
+--- a/fs/nilfs2/btnode.h
++++ b/fs/nilfs2/btnode.h
+@@ -37,7 +37,6 @@ struct nilfs_btnode_chkey_ctxt {
+ 	struct buffer_head *newbh;
+ };
+ 
+-void nilfs_btnode_cache_init_once(struct address_space *);
+ void nilfs_btnode_cache_init(struct address_space *, struct backing_dev_info *);
+ void nilfs_btnode_cache_clear(struct address_space *);
+ int nilfs_btnode_submit_block(struct address_space *, __u64, sector_t,
+diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
+index 63e7b10..93c11af 100644
+--- a/fs/nilfs2/super.c
++++ b/fs/nilfs2/super.c
+@@ -166,7 +166,7 @@ static void init_once(void *obj)
+ #ifdef CONFIG_NILFS_XATTR
+ 	init_rwsem(&ii->xattr_sem);
+ #endif
+-	nilfs_btnode_cache_init_once(&ii->i_btnode_cache);
++	address_space_init_once(&ii->i_btnode_cache);
+ 	ii->i_bmap = (struct nilfs_bmap *)&ii->i_bmap_union;
+ 	inode_init_once(&ii->vfs_inode);
  }
- EXPORT_SYMBOL_GPL(disk_check_events);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 1ff0962..1b9a47a 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -635,6 +635,7 @@ struct address_space {
+ 	spinlock_t		private_lock;	/* for use by the address_space */
+ 	struct list_head	private_list;	/* ditto */
+ 	struct address_space	*assoc_mapping;	/* ditto */
++	struct mutex		unmap_mutex;    /* to protect unmapping */
+ } __attribute__((aligned(sizeof(long))));
+ 	/*
+ 	 * On most architectures that alignment is already the case; but
+@@ -2158,6 +2159,7 @@ extern loff_t vfs_llseek(struct file *file, loff_t offset, int origin);
  
-@@ -1546,7 +1556,7 @@ unsigned int disk_clear_events(struct gendisk *disk, unsigned int mask)
- 	spin_unlock_irq(&ev->lock);
+ extern int inode_init_always(struct super_block *, struct inode *);
+ extern void inode_init_once(struct inode *);
++extern void address_space_init_once(struct address_space *mapping);
+ extern void inode_add_to_lists(struct super_block *, struct inode *);
+ extern void iput(struct inode *);
+ extern struct inode * igrab(struct inode *);
+diff --git a/mm/memory.c b/mm/memory.c
+index 53c1da0..6c836d3 100644
+--- a/mm/memory.c
++++ b/mm/memory.c
+@@ -2454,6 +2454,7 @@ void unmap_mapping_range(struct address_space *mapping,
+ 		details.last_index = ULONG_MAX;
+ 	details.i_mmap_lock = &mapping->i_mmap_lock;
  
- 	/* uncondtionally schedule event check and wait for it to finish */
--	__disk_block_events(disk, true);
-+	disk_block_events(disk);
- 	queue_delayed_work(system_nrt_wq, &ev->dwork, 0);
- 	flush_delayed_work(&ev->dwork);
- 	__disk_unblock_events(disk, false);
-@@ -1664,7 +1674,7 @@ static ssize_t disk_events_poll_msecs_store(struct device *dev,
- 	if (intv < 0 && intv != -1)
- 		return -EINVAL;
++	mutex_lock(&mapping->unmap_mutex);
+ 	spin_lock(&mapping->i_mmap_lock);
  
--	__disk_block_events(disk, true);
-+	disk_block_events(disk);
- 	disk->ev->poll_msecs = intv;
- 	__disk_unblock_events(disk, true);
+ 	/* Protect against endless unmapping loops */
+@@ -2470,6 +2471,7 @@ void unmap_mapping_range(struct address_space *mapping,
+ 	if (unlikely(!list_empty(&mapping->i_mmap_nonlinear)))
+ 		unmap_mapping_range_list(&mapping->i_mmap_nonlinear, &details);
+ 	spin_unlock(&mapping->i_mmap_lock);
++	mutex_unlock(&mapping->unmap_mutex);
+ }
+ EXPORT_SYMBOL(unmap_mapping_range);
  
-@@ -1750,6 +1760,7 @@ static void disk_add_events(struct gendisk *disk)
- 	INIT_LIST_HEAD(&ev->node);
- 	ev->disk = disk;
- 	spin_lock_init(&ev->lock);
-+	mutex_init(&ev->block_mutex);
- 	ev->block = 1;
- 	ev->poll_msecs = -1;
- 	INIT_DELAYED_WORK(&ev->dwork, disk_events_workfn);
-@@ -1770,7 +1781,7 @@ static void disk_del_events(struct gendisk *disk)
- 	if (!disk->ev)
- 		return;
- 
--	__disk_block_events(disk, true);
-+	disk_block_events(disk);
- 
- 	mutex_lock(&disk_events_mutex);
- 	list_del_init(&disk->ev->node);
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 1a2421f..610e8e0 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -762,7 +762,19 @@ static struct block_device *bd_start_claiming(struct block_device *bdev,
- 	if (!disk)
- 		return ERR_PTR(-ENXIO);
- 
--	whole = bdget_disk(disk, 0);
-+	/*
-+	 * Normally, @bdev should equal what's returned from bdget_disk()
-+	 * if partno is 0; however, some drivers (floppy) use multiple
-+	 * bdev's for the same physical device and @bdev may be one of the
-+	 * aliases.  Keep @bdev if partno is 0.  This means claimer
-+	 * tracking is broken for those devices but it has always been that
-+	 * way.
-+	 */
-+	if (partno)
-+		whole = bdget_disk(disk, 0);
-+	else
-+		whole = bdgrab(bdev);
-+
- 	module_put(disk->fops->owner);
- 	put_disk(disk);
- 	if (!whole)
-diff --git a/include/linux/blk_types.h b/include/linux/blk_types.h
-index 2a7cea5..6395692 100644
---- a/include/linux/blk_types.h
-+++ b/include/linux/blk_types.h
-@@ -167,7 +167,7 @@ enum rq_flag_bits {
- 	(REQ_FAILFAST_DEV | REQ_FAILFAST_TRANSPORT | REQ_FAILFAST_DRIVER)
- #define REQ_COMMON_MASK \
- 	(REQ_WRITE | REQ_FAILFAST_MASK | REQ_SYNC | REQ_META | REQ_DISCARD | \
--	 REQ_NOIDLE | REQ_FLUSH | REQ_FUA)
-+	 REQ_NOIDLE | REQ_FLUSH | REQ_FUA | REQ_SECURE)
- #define REQ_CLONE_MASK		REQ_COMMON_MASK
- 
- #define REQ_RAHEAD		(1 << __REQ_RAHEAD)
-diff --git a/include/linux/blktrace_api.h b/include/linux/blktrace_api.h
-index b22fb0d..8c7c2de 100644
---- a/include/linux/blktrace_api.h
-+++ b/include/linux/blktrace_api.h
-@@ -169,7 +169,8 @@ extern void blk_trace_shutdown(struct request_queue *);
- extern int do_blk_trace_setup(struct request_queue *q, char *name,
- 			      dev_t dev, struct block_device *bdev,
- 			      struct blk_user_trace_setup *buts);
--extern void __trace_note_message(struct blk_trace *, const char *fmt, ...);
-+extern __attribute__((format(printf, 2, 3)))
-+void __trace_note_message(struct blk_trace *, const char *fmt, ...);
- 
- /**
-  * blk_add_trace_msg - Add a (simple) message to the blktrace stream
-
 -- 
-Jens Axboe
+1.7.5.2
 
