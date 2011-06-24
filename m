@@ -1,96 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab1FXN6Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 09:58:16 -0400
-Received: from smtp-vbr13.xs4all.nl ([194.109.24.33]:1816 "EHLO
-	smtp-vbr13.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753724Ab1FXN6P (ORCPT
+	id S1757245Ab1FXN7l (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 09:59:41 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:55448 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753542Ab1FXN7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 09:58:15 -0400
-From: Hans Verkuil <hverkuil@xs4all.nl>
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from include/
-Date: Fri, 24 Jun 2011 15:54:10 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1-tschai; KDE/4.6.2; x86_64; ; )
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Jesper Juhl <jj@chaosbits.net>, LKML <linux-kernel@vger.kernel.org>,
-        trivial@kernel.org, linux-media@vger.kernel.org,
-        ceph-devel@vger.kernel.org, Sage Weil <sage@newdream.net>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net> <4E04912A.4090305@infradead.org> <BANLkTim9cBiiK_GsZaspxpPJQDBvAcKCWg@mail.gmail.com>
-In-Reply-To: <BANLkTim9cBiiK_GsZaspxpPJQDBvAcKCWg@mail.gmail.com>
+	Fri, 24 Jun 2011 09:59:39 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Wim Van Sebroeck <wim@iguana.be>
+Subject: Re: [PATCH 1/10 v2] Generic Watchdog Timer Driver
+Date: Fri, 24 Jun 2011 15:59:15 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+References: <20110618171946.GB3441@infomag.iguana.be> <201106182058.14702.arnd@arndb.de> <20110622195024.GA26745@infomag.iguana.be>
+In-Reply-To: <20110622195024.GA26745@infomag.iguana.be>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106241554.10751.hverkuil@xs4all.nl>
+Message-Id: <201106241559.16416.arnd@arndb.de>
+X-Provags-ID: V02:K0:+QpYKBQvFjXv6/1WqdcW5rbrSRfC4XwZvTwmkh6KZ0t
+ SlH/wHo7RnL77bKYkC9tKIssrWUBBIkQZEmpU79HleaHzZ4I4O
+ 0OzFaZ7o7vViUjdzx3WAwyhEpGmHMTmI5IdbgSftM/0drWuMGj
+ jLDPmJIsdjbwLXzdIGDGSxMEQuZ9YckjwzGG3OP5yAKMhV6u8X
+ G+bi8cIAkZofv12L5irYA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 24, 2011 15:45:59 Devin Heitmueller wrote:
-> On Fri, Jun 24, 2011 at 9:29 AM, Mauro Carvalho Chehab
-> <mchehab@infradead.org> wrote:
-> >> MythTV has a bunch of these too (mainly so the code can adapt to
-> >> driver bugs that are fixed in later revisions).  Putting Mauro's patch
-> >> upstream will definitely cause breakage.
-> >
-> > It shouldn't, as ivtv driver version is lower than 3.0.0. All the old bug fixes
-> > aren't needed if version is >= 3.0.0.
-> >
-> > Besides that, trusting on a driver revision number to detect that a bug is
-> > there is not the right thing to do, as version numbers are never increased at
-> > the stable kernels (nor distro modified kernels take care of increasing revision
-> > number as patches are backported there).
-> 
-> The versions are increased at the discretion of the driver maintainer,
-> usually when there is some userland visible change in driver behavior.
->  I assure you the application developers don't *want* to rely on such
-> a mechanism, but there have definitely been cases in the past where
-> there was no easy way to detect the behavior of the driver from
-> userland.
-> 
-> It lets application developers work around things like violations of
-> the V4L2 standard which get fixed in newer revisions of the driver.
-> It provides them the ability to put a hack in their code that says "if
-> (version < X) then this driver feature is broken and I shouldn't use
-> it."
+On Wednesday 22 June 2011 21:50:24 Wim Van Sebroeck wrote:
 
-Indeed. Ideally we shouldn't need it. But reality is different.
+> > I'm pretty sure you don't need bitops.h or uaccess.h here, because all the
+> > code using those has moved into the core.
+> 
+> bitops will be used later on, but this can indeed be cleaned up.
+> 
+> > > +#include <linux/io.h>
+> > 
+> > This is also not needed here, although it will probably be needed in most
+> > real drivers.
+> 
+> Same.
 
-What we have right now works and I see no compelling reason to change the
-behavior.
+Nevermind then.
 
-Regards,
+> > > +#include <linux/platform_device.h>
+> > > +
+> > > +/* Hardware heartbeat in seconds */
+> > > +#define WDT_HW_HEARTBEAT 2
+> > > +
+> > > +/* Timer heartbeat (500ms) */
+> > > +#define WDT_HEARTBEAT	(HZ/2)	/* should be <= ((WDT_HW_HEARTBEAT*HZ)/2) */
+> > > +
+> > > +/* User land timeout */
+> > > +#define WDT_TIMEOUT 15
+> > > +static int timeout = WDT_TIMEOUT;
+> > > +module_param(timeout, int, 0);
+> > > +MODULE_PARM_DESC(timeout, "Watchdog timeout in seconds. "
+> > > +	"(default = " __MODULE_STRING(WDT_TIMEOUT) ")");
+> > 
+> > Should the module parameter really be part of each individual driver?
+> > It would be nice if that can be moved into the core as well.
+> 
+> Yes, the module parameter is needed for each individual driver.
+> If we go for supporting multiple watchdog devices, then we will have to support
+> different timeout values. The timeout ranges also differ for different devices.
 
-	Hans
+Ok, but you'd still have to worry about a single driver supporting multiple
+distinct devices that each want a separate timeout, right?
 
-> > In other words, relying on it doesn't work fine.
+OTOH, we can still find a solution when it ever gets to the point of
+supporting multiple devices.
+
+> > > +static void wdt_timer_tick(unsigned long data);
+> > 
+> > I usually recommend reordering all functions so that you don't need any forward
+> > declarations, that makes the driver easier to read IMHO.
+> > 
+> > > +static DEFINE_TIMER(timer, wdt_timer_tick, 0, 0);
+> > > +					/* The timer that pings the watchdog */
 > 
-> It's the best (and really only solution) we have today.
+> Yes, I also tend to do that but it's used in the DEFINE_TIMER(timer, wdt_timer_tick, 0, 0);
+> just under it. No clean way to do that better imho...
+
+Ah, right. I missed that. You could get rid of the forward declaration
+by dynamically initializing the timer struct, but that would be no
+better than what you have now.
+
+> > Is it common for watchdog these days to have both a kernel timer and
+> > a user space timer?
 > 
-> >> Also, it screws up the ability for users to get fixes through the
-> >> media_build tree (unless you are increasing the revision constantly
-> >> with every merge you do).
-> >
-> > Why? Developers don't increase version numbers on every applied patch
-> > (with is great, as it avoids merge conflicts).
+> No, it is only common for watchdog devices that
+> 1) don't stop once started
+> 2) device that have very small (mostly < 1second) heartbeat values.
+> All other watchdog device timers don't need and use the kernel timer.
+
+Ok, I hadn't thought of these.
+
+> > If yes, that might be good to support in the core as well, instead of
+> > having to implement it in each driver.
+> > 
+> > If no, it might not be ideal to have in an example driver.
 > 
-> The driver maintainer doesn't *have* to increase the version - he does
-> it when he thinks it's appropriate.  The point is you are taking that
-> discretion out of *their* hands, and you yourself are unaware of when
-> it is actually needed.
+> As said, it's an example for a common exception. You should not look at this
+> as a common example driver. I added it, because it's a common exception that
+> people understand less.
+
+ok.
+
+> > > +struct watchdog_device {
+> > > +	char *name;
+> > > +	const struct watchdog_ops *ops;
+> > > +	long status;
+> > > +};
+> > > +
+> > > +It contains following fields:
+> > > +* name: a pointer to the (preferably unique) name of the watchdog timer device.
+> > > +* ops: a pointer to the list of watchdog operations that the watchdog supports.
+> > > +* status: this field contains a number of status bits that give extra
+> > > +  information about the status of the device (Like: is the device opened via
+> > > +  the /dev/watchdog interface or not, ...)
+> > 
+> > I think this should really have a pointer to the struct device implementing the
+> > watchdog, so that a driver that gets called with a struct watchdog_device can
+> > find its own state from there. Alternatively, you could have struct device
+> > embedded in struct watchdog_device and register it as a child of the hardware
+> > device.
 > 
-> You need to stop looking at this from a purist standpoint and think of
-> how application developers actually use the API.  They need tools like
-> this to allow them to work around driver bugs while having a source
-> codebase which operates against different kernels (including kernels
-> that may still have those bugs).
-> 
-> Sure, in a perfect world where drivers don't have bugs and
-> applications don't have to run against older kernels, what you are
-> saying is not illogical.  But then again, we don't live in a perfect
-> world.
-> 
-> Devin
-> 
-> 
+> Would go for a pointer to private data then.
+
+Ok.
+
+	Arnd
