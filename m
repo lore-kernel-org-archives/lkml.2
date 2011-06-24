@@ -1,101 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab1FXLWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 07:22:55 -0400
-Received: from mga09.intel.com ([134.134.136.24]:50560 "EHLO mga09.intel.com"
+	id S1755554Ab1FXLZO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 07:25:14 -0400
+Received: from mga03.intel.com ([143.182.124.21]:6480 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753234Ab1FXLWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 07:22:50 -0400
+	id S1754537Ab1FXLZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 07:25:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,419,1304319600"; 
-   d="scan'208";a="17715961"
-Subject: Re: [PATCH] dmaengine: failure to get a specific DMA channel is
- not critical
+   d="scan'208";a="18017140"
+Subject: Re: [Patch] dma: remove DMA_xxBIT_MASK macros
 From: "Koul, Vinod" <vinod.koul@intel.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-        Dan Williams <dan.j.williams@intel.com>
-In-Reply-To: <BANLkTingHGRRCOsVZDs1W+FfdL1s1NCxhw@mail.gmail.com>
-References: <Pine.LNX.4.64.1106201657280.11365@axis700.grange>
-	 <w3pzklcxchm.wl%kuninori.morimoto.gx@renesas.com>
-	 <BANLkTingHGRRCOsVZDs1W+FfdL1s1NCxhw@mail.gmail.com>
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4DFA69A6.2090507@suse.cz>
+References: <20110616090037.GA10326@cr0.redhat.com>
+	 <4DFA69A6.2090507@suse.cz>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 24 Jun 2011 16:15:29 +0530
-Message-ID: <1308912329.1536.0.camel@vkoul-udesk3>
+Date: Fri, 24 Jun 2011 16:17:50 +0530
+Message-ID: <1308912470.1536.1.camel@vkoul-udesk3>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-22 at 10:49 +0900, Magnus Damm wrote:
-> On Tue, Jun 21, 2011 at 9:19 AM, Kuninori Morimoto
-> <kuninori.morimoto.gx@renesas.com> wrote:
-> >
-> > Dear Guennadi, all
-> >
-> >> There exist systems with multiple DMA controllers with different
-> >> capabilities. For example, on some sh-mobile / rmobile systems there are
-> >> DMA controllers, whose channels can be configured to be used with
-> >> SD- and MMC-host controllers, serial ports etc. Besides there are also
-> >> DMA controllers, that can only be used for one special function, e.g.,
-> >> for USB. In such cases the DMA client filter function can just choose
-> >> to specify to the DMA driver, which channel it needs. Then the
-> >> .device_alloc_chan_resources() method of the DMA driver will check,
-> >> whether it can provide that dunction. If not, it will fail and the loop
-> >> in __dma_request_channel() will continue to the next DMA device, until
-> >> it finds a suitable one. This works fine with just one minor glitch:
-> >> the kernel logs error messages like
-> >>
-> >> dmaengine: failed to get <channel name>: (-<error code>)
-> >>
-> >> after each such non-critical failure. This patch lowers priority of
-> >> this message to the debug level.
-> >>
-> >> Reported-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
-> >> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-> >> ---
-> >>
-> >> Morimoto-san, I don't expect this patch to fail;), but if you like, you
-> >> could give it a short spin and send your "tested-by" in reply to this
-> >> mail.
-> >
-> > Thanks.
-> > I tested this patch.
-> >
-> > I don't know that the dmaengine design,
-> > but this patch remove non-critical error message from USB-DMAC for me.
-> > I tested it on mackerel board + renesas_usbhs + USB-DMAC
-> >
-> > Tested-by: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+On Thu, 2011-06-16 at 22:37 +0200, Jiri Slaby wrote:
+> On 06/16/2011 11:00 AM, Américo Wang wrote:
+> > 
+> > git grep shows there are no users in tree, so we can
+> > remove them safely.
+> > 
+> > Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+> > Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 > 
-> So I too gave the USBHS + USBHS-DMAC patches a go on top of
-> linux-3.0-rc and they seem to work as expected.
-> Without "[PATCH] dmaengine: failure to get a specific DMA channel is
-> not critical" applied I get the following log:
+> Oh, my __deprecated hack goes away. Nice :).
 > 
-> / # echo /dev/mtdblock4 > /sys/devices/platform/renesas_usbhs.1/gadget/lun0/file
-> 
-> [hook up laptop to the USB gadget port]
-> 
-> / # dmaengine: failed to get dma0chan4: (-22)
-> dmaengine: failed to get dma1chan0: (-22)
-> dmaengine: failed to get dma2chan0: (-22)
-> dmaengine: failed to get dma3chan0: (-22)
-> dmaengine: failed to get dma0chan4: (-22)
-> dmaengine: failed to get dma1chan0: (-22)
-> dmaengine: failed to get dma2chan0: (-22)
-> dmaengine: failed to get dma3chan0: (-22)
-> g_mass_storage gadget: high speed config #1: Linux File-Backed Storage
-> 
-> With this patch applied the "dmaengine: failed to get..." messages all go away.
-> 
-> Tested-by: Magnus Damm <damm@opensource.se>
-Applied Thanks.
+> Acked-by: Jiri Slaby <jslaby@suse.cz>
+Acked-by: Vinod Koul <vinod.koul@intel.com>
 
+> 
+> > ---
+> >  Documentation/feature-removal-schedule.txt |    7 -------
+> >  include/linux/dma-mapping.h                |   21 ---------------------
+> >  2 files changed, 0 insertions(+), 28 deletions(-)
+> > 
+> > diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+> > index 72e2384..8e2d816 100644
+> > --- a/Documentation/feature-removal-schedule.txt
+> > +++ b/Documentation/feature-removal-schedule.txt
+> > @@ -474,13 +474,6 @@ Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> >  
+> >  ----------------------------
+> >  
+> > -What: 	DMA_xxBIT_MASK macros
+> > -When:	Jun 2011
+> > -Why:	DMA_xxBIT_MASK macros were replaced with DMA_BIT_MASK() macros.
+> > -Who:	FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> > -
+> > -----------------------------
+> > -
+> >  What:	iwlwifi disable_hw_scan module parameters
+> >  When:	2.6.40
+> >  Why:	Hareware scan is the prefer method for iwlwifi devices for
+> > diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> > index ba8319a..dc77808 100644
+> > --- a/include/linux/dma-mapping.h
+> > +++ b/include/linux/dma-mapping.h
+> > @@ -54,27 +54,6 @@ struct dma_map_ops {
+> >  
+> >  #define DMA_BIT_MASK(n)	(((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
+> >  
+> > -typedef u64 DMA_nnBIT_MASK __deprecated;
+> > -
+> > -/*
+> > - * NOTE: do not use the below macros in new code and do not add new definitions
+> > - * here.
+> > - *
+> > - * Instead, just open-code DMA_BIT_MASK(n) within your driver
+> > - */
+> > -#define DMA_64BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(64)
+> > -#define DMA_48BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(48)
+> > -#define DMA_47BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(47)
+> > -#define DMA_40BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(40)
+> > -#define DMA_39BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(39)
+> > -#define DMA_35BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(35)
+> > -#define DMA_32BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(32)
+> > -#define DMA_31BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(31)
+> > -#define DMA_30BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(30)
+> > -#define DMA_29BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(29)
+> > -#define DMA_28BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(28)
+> > -#define DMA_24BIT_MASK	(DMA_nnBIT_MASK)DMA_BIT_MASK(24)
+> > -
+> >  #define DMA_MASK_NONE	0x0ULL
+> >  
+> >  static inline int valid_dma_direction(int dma_direction)
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> > 
+> 
+> 
 
 
 -- 
