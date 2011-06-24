@@ -1,97 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760207Ab1FXBsb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 21:48:31 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42513 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760005Ab1FXBsa (ORCPT
+	id S1760227Ab1FXCAG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 22:00:06 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41303 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752147Ab1FXCAE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 21:48:30 -0400
-X-SecurityPolicyCheck-FJ: OK by FUJITSU ADVANCED ENGINEERING MailBarrier
-Date: Fri, 24 Jun 2011 10:48:08 +0900
-From: =?ISO-2022-JP?B?IkZKQ0wpIBskQjIuTG4bKEIgGyRCQmdKZRsoQg==?=
-	 =?ISO-2022-JP?B?Ig==?= <ogino.daisuke@jp.fujitsu.com>
-To: linux-kernel@vger.kernel.org
-Subject: [patch] procfs: returns ENOENT on opening the being-removed proc entry
-Cc: linux-pci@vger.kernel.org, adobriyan@gmail.com
-Message-Id: <20110624104509.6195.371AB99A@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-2022-JP"
+	Thu, 23 Jun 2011 22:00:04 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=n8OuPOP5gMEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=eP2w8RFJMYaamG6b9ZwA:9 a=4SrUwmsTrvRdyjUPlPIA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 09/15] xen/trace: add tlb flush tracepoints
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        Xen Devel <Xen-devel@lists.xensource.com>,
+        Ingo Molnar <mingo@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <4E03C510.5050801@goop.org>
+References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
+	 <4db3e32a6b21efdb4d82646816ddb1bb82ff2259.1308607697.git.jeremy.fitzhardinge@citrix.com>
+	 <20110621140705.GD28229@dumpdata.com>  <4E03996B.9050904@goop.org>
+	 <1308860628.531.42.camel@gandalf.stny.rr.com>  <4E03C510.5050801@goop.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 23 Jun 2011 22:00:01 -0400
+Message-ID: <1308880801.531.54.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daisuke Ohino <ogino.daisuke@jp.fujitsu.com>
+On Thu, 2011-06-23 at 15:58 -0700, Jeremy Fitzhardinge wrote:
 
-opening the proc entry may return EINVAL if the entry is being removed, for
-example open("/proc/bus/pci/XX/YY") during the corresponding device is being
-hot-removed. The return value is inappropriate and should return ENOENT.
+> > If you really need something like this, maybe I'll add a
+> > DEFINE_EVENT_NOARGS() that will not require arguments and can eliminate
+> > a lot of code that TRACE_EVENT() adds.
+> 
+> If you like, but only if you think its worth the effort.  The empty
+> string thing is a bit of an ugly hack, but its not like it makes a mess
+> everywhere.
 
-This return value comes from proc_reg_open().
+The problem I have is not the ugliness, but more of the wasted code that
+is generated to do nothing. The TRACE_EVENT() generates lots of helper
+functions that are unique to handle different events. The fact that we
+have no args is generating code that does a lot of nothing. Every
+TRACE_EVENT() can create 5k of code/data. This is why I advocate the
+DEFINE_TRACE_CLASS() and DEFINE_EVENT() because it reuses a lot of the
+code.
 
-fs/proc/inode.c:
------------------------------------------------------------
-static int proc_reg_open(struct inode *inode, struct file *file)
-{
-(snip)
-        if (!pde->proc_fops) {
-                spin_unlock(&pde->pde_unload_lock);
-                kfree(pdeo);
-                return -EINVAL;
-        }
-(snip)
------------------------------------------------------------
+If we had a NOARGS event that was just a marker, then we could eliminate
+most of the helper functions for these kinds of trace points.
 
-pde->proc_fops is NULL iff the proc entry is being removed. It
-is set by remove_proc_entry().
-
------------------------------------------------------------
-void remove_proc_entry(const char *name, struct proc_dir_entry*parent)
-{
-(snip)
-        /*
-         * Stop accepting new callers into module. If you're
-         * dynamically allocating ->proc_fops, save a pointer somewhere.
-         */
-        de->proc_fops = NULL;
-(snip)
------------------------------------------------------------
-
-But POSIX says:
-
------------------------------------------------------------
-[EINVAL]
-    The implementation does not support synchronized I/O for this file.
------------------------------------------------------------
-
-Since removing proc entry is apparently not related to synchronized I/O,
-this function should return ENOENT in this case.
-
-Signed-off-by: Daisuke Ogino <ogino.daisuke@jp.fujitsu.com>
----
- fs/proc/inode.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/fs/proc/inode.c b/fs/proc/inode.c
-index 74b48cf..7ed72d6 100644
---- a/fs/proc/inode.c
-+++ b/fs/proc/inode.c
-@@ -319,7 +319,7 @@ static int proc_reg_open(struct inode *inode, struct file *file)
- 	if (!pde->proc_fops) {
- 		spin_unlock(&pde->pde_unload_lock);
- 		kfree(pdeo);
--		return -EINVAL;
-+		return -ENOENT;
- 	}
- 	pde->pde_users++;
- 	open = pde->proc_fops->open;
---
-
-Since I don't subscribe LKML, please Cc me if you have any comment.
-
-Thanks,
-Daisuke
+-- Steve
 
 
