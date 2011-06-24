@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab1FXMoZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 08:44:25 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:45910 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab1FXMoY (ORCPT
+	id S1753800Ab1FXMt0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 08:49:26 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:58035 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751701Ab1FXMtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 08:44:24 -0400
-Date: Fri, 24 Jun 2011 08:44:19 -0400
+	Fri, 24 Jun 2011 08:49:25 -0400
+Date: Fri, 24 Jun 2011 08:49:22 -0400
 From: Eric B Munson <emunson@mgebm.net>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: mingo@elte.hu, borislav.petkov@amd.com, bblum@andrew.cmu.edu,
         linux-kernel@vger.kernel.org, mhack@us.ibm.com, eranian@google.com
 Subject: Re: [PATCH 3/3] events: Ensure that timers are updated without
  requiring read() call
-Message-ID: <20110624124419.GA3727@mgebm.net>
+Message-ID: <20110624124921.GB3727@mgebm.net>
 References: <1308861279-15216-1-git-send-email-emunson@mgebm.net>
  <1308861279-15216-3-git-send-email-emunson@mgebm.net>
  <1308908656.27849.21.camel@twins>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="HcAYCG3uE/tztfnV"
+	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
 Content-Disposition: inline
 In-Reply-To: <1308908656.27849.21.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
@@ -29,7 +29,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---HcAYCG3uE/tztfnV
+--98e8jtXdkpgskNou
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -86,24 +86,29 @@ t *event)
 > Took the first two patches.
 >=20
 
-Thanks, I will send out an updated patch once I get it tested.
+Now that I think about it, this will just mask the problem.  I have a test
+program uses the mmap'd user space page to access event counters (it never
+calls read()).  In this case, the timer values in the event will never be
+updated.  It will display "properly" but the structure won't ever be correc=
+t.
+Given that, how can we keep the event values current?
 
 Eric
 
---HcAYCG3uE/tztfnV
+--98e8jtXdkpgskNou
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOBIajAAoJEH65iIruGRnNu20IAI9HSeDbolPW4AyX4vq9Q05e
-vZdLJLUO44k5YXvM0AaWk/AG2HErbTdKIiZ9XgRPXYxHsLIlkW2euSfM7VF2gFpH
-lr+N9V5Xi8USG5NOEC0nVxbQFlSKpLKDvNKPsHAjPLgUdodCw7+a5jQxza/YsMKd
-AebHowab2rGp63QFJz2mt6xsiHSGZJ22hyd5kba6IVWbBCaqADjJfnzG+2GZXAAl
-3dmu1E9FeXmPkNcmxY23iL8VNOWwFwkthTAWPTRiss7pVzMXbDWFD1iFVBGStHQK
-3lHY6yhX6kq+W7kO1ovFm0KGrqdir6Je6xSOrhU4KIUciXGIAG0tVvWDdyJDfqU=
-=W5/y
+iQEcBAEBAgAGBQJOBIfRAAoJEH65iIruGRnNpP8IAK+MdHBptF/irAhndCAEq5LK
+Q3N1D08tjGHMl5OntHR4/eKJOh7rOvr3oMxn6HaYn58MfA4Z1Q7+fX2wt0BdC+7B
+kUnylNuxArRFiqEiZnIqY8yyz+NHnRIKVdXzwyl2pOwgwkT9OePiSCQLsvnwTc3g
+GSx7GTqRUXK2Ozk6+iOgMd8v77aCajkIUn5B/JQlQD9XF4ktvc1e68O5DOEtBY1i
+aW1mkOfsxOkHjty7SzNeP2QEtHsU5l3fauYNCEACoK/UEAwH/Dn29Z0TNXjM3/nx
+Xx18MHyWhyDAjLytfeKwZ5guaiphG0KRvdD6qXZ/iRjtLHMoyeYW1qlUaAkkPws=
+=Nv7q
 -----END PGP SIGNATURE-----
 
---HcAYCG3uE/tztfnV--
+--98e8jtXdkpgskNou--
