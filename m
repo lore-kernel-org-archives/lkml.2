@@ -1,214 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753364Ab1FXHnd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 03:43:33 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:34524 "EHLO
+	id S1753303Ab1FXHqd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 03:46:33 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38804 "EHLO
 	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752357Ab1FXHn3 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752015Ab1FXHqc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 03:43:29 -0400
-Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-        Linux-mm <linux-mm@kvack.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Roland McGrath <roland@hack.frob.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110624020659.GA24776@linux.vnet.ibm.com>
-References: <20110616032645.GF4952@linux.vnet.ibm.com>
-	 <1308225626.13240.34.camel@twins>
-	 <20110616130012.GL4952@linux.vnet.ibm.com>
-	 <1308248588.13240.267.camel@twins>
-	 <20110617045000.GM4952@linux.vnet.ibm.com>
-	 <1308297836.13240.380.camel@twins>
-	 <20110617090504.GN4952@linux.vnet.ibm.com> <1308303665.2355.11.camel@twins>
-	 <1308662243.26237.144.camel@twins>
-	 <20110622143906.GF16471@linux.vnet.ibm.com>
-	 <20110624020659.GA24776@linux.vnet.ibm.com>
+	Fri, 24 Jun 2011 03:46:32 -0400
+Subject: Re: [patch 3/4] stop_machine: implement
+ stop_machine_from_offline_cpu()
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "hpa@zytor.com" <hpa@zytor.com>, "trenn@novell.com" <trenn@novell.com>,
+        "prarit@redhat.com" <prarit@redhat.com>,
+        "tj@kernel.org" <tj@kernel.org>,
+        "rusty@rustcorp.com.au" <rusty@rustcorp.com.au>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Song, Youquan" <youquan.song@intel.com>
+In-Reply-To: <1308853153.15847.90.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <20110622222021.904952469@sbsiddha-MOBL3.sc.intel.com>
+	 <20110622222044.038298780@sbsiddha-MOBL3.sc.intel.com>
+	 <1308821119.1022.84.camel@twins>
+	 <1308853153.15847.90.camel@sbsiddha-MOBL3.sc.intel.com>
 Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 24 Jun 2011 09:42:04 +0200
-Message-ID: <1308901324.27849.7.camel@twins>
+Date: Fri, 24 Jun 2011 09:45:34 +0200
+Message-ID: <1308901534.27849.10.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-24 at 07:36 +0530, Srikar Dronamraju wrote:
-> > 
-> > so I am thinking of a solution that includes most of your ideas along
-> > with using i_mmap_mutex in mmap_uprobe path.
-> > 
+On Thu, 2011-06-23 at 11:19 -0700, Suresh Siddha wrote:
+> > In commit d0af9eed5aa91b6b7b5049cae69e5ea956fd85c3 you mention that its
+> > specific to HT, wouldn't it make sense to limit the stop-machine use in
+> > the next patch to the sibling mask instead of the whole machine?
 > 
-> Addressing Peter's comments given on irc wrt i_mmap_mutex.
-> 
+> That specific issue was seen in the context of HT. But the SDM
+> guidelines (pre date HT and) are applicable for SMP too. 
 
-> void _unregister_uprobe(...)
-> {
-> 	if (!del_consumer(...)) {	// includes tree removal on last consumer
-> 		return;
-> 	}
-> 	if (uprobe->consumers)
-> 		return;
-> 
-> 	mutex_lock(&mapping->i_mmap_mutex);	//sync with mmap.
-> 	vma_prio_tree_foreach() {
-> 		// create list
-> 	}
-> 
-> 	mutex_unlock(&mapping->i_mmap_mutex);
-> 
-> 	list_for_each_entry_safe() {
-> 		// remove from list
-> 		down_read(&mm->mmap_sem);
-> 		remove_breakpoint();	// unconditional, if it wasn't there
-> 		up_read(&mm->mmap_sem);
-> 	}
-> 
-> 	mutex_lock(&mapping->i_mmap_mutex);
-> 	delete_uprobe(uprobe);
-> 	mutex_unlock(&mapping->i_mmap_mutex);
-> 
-> 	inode->uprobes_count--;
-> 	mutex_unlock(&inode->i_mutex);
+Sure, but we managed to ignore those long enough, could we not continue
+to violate them and keep to the minimum that is working in practice?
 
-Right, so this lonesome unlock got me puzzled for a while, I always find
-it best not to do asymmetric locking like this, keep the lock and unlock
-in the same function.
-
-> }
-> 
-> int register_uprobe(...)
-> {
-> 	uprobe = alloc_uprobe(...);	// find or insert in tree
-> 
-> 	mutex_lock(&inode->i_mutex);	// sync with register/unregister
-> 	if (uprobe->consumers) {
-> 		add_consumer();
-> 		goto put_unlock;
-> 	}
-> 	add_consumer();
-> 	inode->uprobes_count++;
-> 	mutex_lock(&mapping->i_mmap_mutex);	//sync with mmap.
-> 	vma_prio_tree_foreach(..) {
-> 		// get mm ref, add to list blah blah
-> 	}
-> 
-> 	mutex_unlock(&mapping->i_mmap_mutex);
-> 	list_for_each_entry_safe() {
-> 		if (ret) {
-> 			// del from list etc..
-> 			//
-> 			continue;
-> 		}
-> 		down_read(mm->mmap_sem);
-> 		ret = install_breakpoint();
-> 		up_read(..);
-> 		// del from list etc..
-> 		//
-> 		if (ret && (ret == -ESRCH || ret == -EEXIST))
-> 			ret = 0;
-> 	}
-> 
-> 	if (ret)
-> 		_unregister_uprobe();
-> 
->       put_unlock:
-> 	mutex_unlock(&inode->i_mutex);
-
-You see, now this is a double unlock
-
-> 	put_uprobe(uprobe);
-> 	return ret;
-> }
-> 
-> void unregister_uprobe(...)
-> {
-> 	mutex_lock(&inode->i_mutex);	// sync with register/unregister
-> 	uprobe = find_uprobe();	// ref++
-> 	_unregister_uprobe();
-> 	mutex_unlock(&inode->i_mutex);
-
-idem
-
-> 	put_uprobe(uprobe);
-> }
-> 
-> int mmap_uprobe(struct vm_area_struct *vma)
-> {
-> 	struct list_head tmp_list;
-> 	struct uprobe *uprobe, *u;
-> 	struct mm_struct *mm;
-> 	struct inode *inode;
-> 	int ret = 0;
-> 
-> 	if (!valid_vma(vma))
-> 		return ret;	/* Bail-out */
-> 
-> 	mm = vma->vm_mm;
-> 	inode = vma->vm_file->f_mapping->host;
-> 	if (inode->uprobes_count)
-> 		return ret;
-> 	__iget(inode);
-> 
-> 	INIT_LIST_HEAD(&tmp_list);
-> 
-> 	mutex_lock(&mapping->i_mmap_mutex);
-> 	add_to_temp_list(vma, inode, &tmp_list);
-> 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
-> 		loff_t vaddr;
-> 
-> 		list_del(&uprobe->pending_list);
-> 		if (ret)
-> 			continue;
-> 
-> 		vaddr = vma->vm_start + uprobe->offset;
-> 		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
-> 		ret = install_breakpoint(mm, uprobe, vaddr);
-
-Right, so this is the problem, you cannot do allocations under
-i_mmap_mutex, however I think you can under i_mutex.
-
-> 		if (ret && (ret == -ESRCH || ret == -EEXIST))
-> 			ret = 0;
-> 	}
-> 
-> 	mutex_unlock(&mapping->i_mmap_mutex);
-> 	iput(inode);
-> 	return ret;
-> }
-> 
-> int munmap_uprobe(struct vm_area_struct *vma)
-> {
-> 	struct list_head tmp_list;
-> 	struct uprobe *uprobe, *u;
-> 	struct mm_struct *mm;
-> 	struct inode *inode;
-> 	int ret = 0;
-> 
-> 	if (!valid_vma(vma))
-> 		return ret;	/* Bail-out */
-> 
-> 	mm = vma->vm_mm;
-> 	inode = vma->vm_file->f_mapping->host;
-> 	if (inode->uprobes_count)
-> 		return ret;
-
-Should that be !->uprobes_count?
-
-> //      walk thro RB tree and decrement mm->uprobes_count
-> 	walk_rbtree_and_dec_uprobes_count();	//hold treelock.
-> 
-> 	return ret;
-> }
-
+>From what I understand the explosion is WSM+/VMX on HT only because the
+siblings share state, or do we have proof that it yields problems
+between cores as well?
