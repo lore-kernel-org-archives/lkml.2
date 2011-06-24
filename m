@@ -1,29 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760185Ab1FXAix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 20:38:53 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44589 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964914Ab1FXAiS (ORCPT
+	id S964965Ab1FXAiX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 20:38:23 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:64818 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964943Ab1FXAiT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 20:38:18 -0400
+	Thu, 23 Jun 2011 20:38:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=chromium.org; s=google;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=FLSoo02KPuurhkS54ae19NHj3G5wERf2QBIcAb6x152ydWrOYgNoHLwjz0HOUAmCP9
-         oTlQASvrCtwzmosMHrceqt50E42jDOXZbdOKiUrHCtWVKL3tOfjUfWcmJGCebb29sMWv
-         d3oiR9P3ji4luNNgd8AefHkuMCYIHTx9Q4OY8=
+        b=XmRtYR7IeVcSt8obHyo0dyTGYxysEc1ccqDjN8UZazp48SytER3GqfmHUXnZKqrG1R
+         ncee8awwACBySRZYAggEB4NI2DRusf740jkFmCtPb3qfem1F9Myt9l4MlbbdsEAhi+Qe
+         NxttNzxixSozn0EFIcrOCyJrpgf2HBI85IEr0=
 From: Will Drewry <wad@chromium.org>
 To: linux-kernel@vger.kernel.org
 Cc: torvalds@linux-foundation.org, djm@mindrot.org, segoon@openwall.com,
         kees.cook@canonical.com, mingo@elte.hu, rostedt@goodmis.org,
         jmorris@namei.org, fweisbec@gmail.com, tglx@linutronix.de,
         scarybeasts@gmail.com, Will Drewry <wad@chromium.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org
-Subject: [PATCH v9 11/13] powerpc: select HAVE_SECCOMP_FILTER and provide seccomp_execve
-Date: Thu, 23 Jun 2011 19:36:50 -0500
-Message-Id: <1308875813-20122-11-git-send-email-wad@chromium.org>
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+Subject: [PATCH v9 12/13] sparc: select HAVE_SECCOMP_FILTER and provide seccomp_execve
+Date: Thu, 23 Jun 2011 19:36:51 -0500
+Message-Id: <1308875813-20122-12-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1308875813-20122-1-git-send-email-wad@chromium.org>
 References: <1308875813-20122-1-git-send-email-wad@chromium.org>
@@ -38,27 +37,35 @@ v9: rebase on to bccaeafd7c117acee36e90d37c7e05c19be9e7bf
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- arch/powerpc/Kconfig               |    1 +
- arch/powerpc/include/asm/seccomp.h |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
+ arch/sparc/Kconfig               |    2 ++
+ arch/sparc/include/asm/seccomp.h |    2 ++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 2729c66..030d392 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -129,6 +129,7 @@ config PPC
- 	select HAVE_HW_BREAKPOINT if PERF_EVENTS && PPC_BOOK3S_64
+diff --git a/arch/sparc/Kconfig b/arch/sparc/Kconfig
+index 253986b..d4d0ec4 100644
+--- a/arch/sparc/Kconfig
++++ b/arch/sparc/Kconfig
+@@ -26,6 +26,7 @@ config SPARC
+ 	select HAVE_DMA_API_DEBUG
+ 	select HAVE_ARCH_JUMP_LABEL
  	select HAVE_GENERIC_HARDIRQS
- 	select HAVE_SPARSE_IRQ
 +	select HAVE_SECCOMP_FILTER
- 	select IRQ_PER_CPU
  	select GENERIC_IRQ_SHOW
- 	select GENERIC_IRQ_SHOW_LEVEL
-diff --git a/arch/powerpc/include/asm/seccomp.h b/arch/powerpc/include/asm/seccomp.h
-index 00c1d91..3cb9cc1 100644
---- a/arch/powerpc/include/asm/seccomp.h
-+++ b/arch/powerpc/include/asm/seccomp.h
-@@ -7,10 +7,12 @@
+ 	select USE_GENERIC_SMP_HELPERS if SMP
+ 
+@@ -42,6 +43,7 @@ config SPARC64
+ 	select HAVE_KRETPROBES
+ 	select HAVE_KPROBES
+ 	select HAVE_MEMBLOCK
++	select HAVE_SECCOMP_FILTER
+ 	select HAVE_SYSCALL_WRAPPERS
+ 	select HAVE_DYNAMIC_FTRACE
+ 	select HAVE_FTRACE_MCOUNT_RECORD
+diff --git a/arch/sparc/include/asm/seccomp.h b/arch/sparc/include/asm/seccomp.h
+index adca1bc..a1dac08 100644
+--- a/arch/sparc/include/asm/seccomp.h
++++ b/arch/sparc/include/asm/seccomp.h
+@@ -6,10 +6,12 @@
  #define __NR_seccomp_write __NR_write
  #define __NR_seccomp_exit __NR_exit
  #define __NR_seccomp_sigreturn __NR_rt_sigreturn
@@ -70,7 +77,7 @@ index 00c1d91..3cb9cc1 100644
  #define __NR_seccomp_sigreturn_32 __NR_sigreturn
 +#define __NR_seccomp_execve_32 __NR_execve
  
- #endif	/* _ASM_POWERPC_SECCOMP_H */
+ #endif /* _ASM_SECCOMP_H */
 -- 
 1.7.0.4
 
