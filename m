@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759604Ab1FXOuQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 10:50:16 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38546 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759456Ab1FXOuN convert rfc822-to-8bit (ORCPT
+	id S1759381Ab1FXOxk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 10:53:40 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58746 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754057Ab1FXOxh convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 10:50:13 -0400
+	Fri, 24 Jun 2011 10:53:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=DFJsrYvXwjDRhQf3wjgguR7Qi65U8Zfj1kMOVQYK1U9hZUV40N7WGS4GYPR0ZOZfjV
-         irD8fqfHfWv7mviu+vJK2mljqWumhm9Rxas+YF3fUWLkp4gfJ9lnWzslSXRnmPLRkC4g
-         4/a3ygB8OhJnSn2Tzd/9RZ5O2ApjtGyaLzn/c=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qekAAsZls/tLuw3QNWnVZqYVcDuMFCzWpPCjsAp6LbI99HvlxIwhtESDk60//xo1vW
+         zU3cNKsjErK3IMqq6o4n4DxFKtWaZlk4BXQuaV5CS5rbxPDj/Mv5S8Hjv0jAcAuFgibB
+         azfJDztOAOrN5bjEMERh2q2eoX+FRrHwZCuZU=
 MIME-Version: 1.0
-In-Reply-To: <20110624161029.e8f96175.sfr@canb.auug.org.au>
-References: <alpine.DEB.2.00.1106151111200.18110@ayla.of.borg>
-	<BANLkTikBDVR=S5J-=Kjq1QW3OU64WzHYRg@mail.gmail.com>
-	<20110618183029.822f4d82.sfr@canb.auug.org.au>
-	<20110623212736.74bea79a.sfr@canb.auug.org.au>
-	<BANLkTimoWrwPNNYrLFN-_gyPnvSCEa9ksA@mail.gmail.com>
-	<20110624161029.e8f96175.sfr@canb.auug.org.au>
-Date: Fri, 24 Jun 2011 16:50:11 +0200
-X-Google-Sender-Auth: Xy6VzTPOG1wM6t7jHOPm4L68wPY
-Message-ID: <BANLkTinixfckRaUmnPWJ2oObJALjv-7p8g@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.0-rc3
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Michael Ellerman <michael@ellerman.id.au>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Linux-Next <linux-next@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <4E0488A9.6050109@imgtec.com>
+References: <4E0488A9.6050109@imgtec.com>
+Date: Fri, 24 Jun 2011 15:53:36 +0100
+Message-ID: <BANLkTi=0Xg_w54ZaUPeb9e+A-_pcTjTg+w@mail.gmail.com>
+Subject: Re: [PATCH 0/6] mmc: dw_mmc: misc fixes and improvements
+From: Will Newton <will.newton@gmail.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Chris Ball <cjb@laptop.org>, Will Newton <will.newton@imgtec.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, james@albanarts.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Fri, Jun 24, 2011 at 1:52 PM, James Hogan <james.hogan@imgtec.com> wrote:
+> Misc improvements and fixes for the Synopsys DesignWare MMC driver:
+>
+> [PATCH 1/6] mmc: dw_mmc: clear TXDR/RXDR ints before enabling
+>        fixes a failure to probe the next card after an unplug
+> [PATCH 2/6] mmc: dw_mmc: fix race with request and removal
+>        improves spinlock protection
+> [PATCH 3/6] mmc: dw_mmc: convert card tasklet to workqueue
+>        to allow platform callbacks to sleep
+> [PATCH 4/6] mmc: dw_mmc: brackets in register access macros
+>        just a small tidyup patch
+> [PATCH 5/6] mmc: dw_mmc: don't hard code fifo depth, fix usage
+>        improve detection of fifo depth
+> [PATCH 6/6] mmc: dw_mmc: handle unaligned buffers and sizes
+>        fix some mmc_test failures wrt unaligned buffer/sizes
+>
+>  drivers/mmc/host/dw_mmc.c  |  398 ++++++++++++++++++++++++++++++++++----------
+>  drivers/mmc/host/dw_mmc.h  |   17 +-
+>  include/linux/mmc/dw_mmc.h |   20 ++-
+>  3 files changed, 340 insertions(+), 95 deletions(-)
 
-On Fri, Jun 24, 2011 at 08:10, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> 3.0-rc4 should be complete in a few hours. Â Hopefully rc5 will be faster.
+All these patches:
 
-Completed at 101% 108/107! :-)
-But there are only 107 logs on the page.
-
-Anyway, the "-k" seems to work: much more problems in the logs. Thanks!
-
-Gr{oetje,eeting}s,
-
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
+Acked-by: Will Newton <will.newton@imgtec.com>
