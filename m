@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab1FXWXe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 18:23:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36205 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754705Ab1FXWXd (ORCPT
+	id S1757295Ab1FXW1f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 18:27:35 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45888 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754822Ab1FXW1c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 18:23:33 -0400
-Date: Fri, 24 Jun 2011 15:23:10 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: pomac@vapor.com, linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, akpm <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [BUG?] numa required on x86_64?
-Message-Id: <20110624152310.10803ffa.randy.dunlap@oracle.com>
-In-Reply-To: <1308952859.25830.8.camel@pi>
-References: <1308952859.25830.8.camel@pi>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090206.4E050E5B.003E:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+	Fri, 24 Jun 2011 18:27:32 -0400
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: tj@kernel.org
+Cc: linux-kernel@vger.kernel.org, padovan@profusion.mobi, marcel@holtmann.org,
+        a.p.zijlstra@chello.nl, akpm@linux-foundation.org
+Subject: [RFC] Add mod_delayed_work()
+Date: Fri, 24 Jun 2011 19:27:36 -0300
+Message-Id: <1308954457-21487-1-git-send-email-padovan@profusion.mobi>
+X-Mailer: git-send-email 1.7.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 25 Jun 2011 00:00:58 +0200 Ian Kumlien wrote:
+Hi,
 
-> Hi all,
-> 
-> Just found this when wanting to play with development kernels again.
-> Since there is no -gitXX snapshots anymore, I cloned the git =)...
-> 
-> But, it failed to build properly with my config:
-> 
-> mm/page_cgroup.c line 308: node_start_pfn and node_end_pfn is only
-> defined under NUMA on x86_64.
-> 
-> The commit that changed the use of this was introduced recently while
-> the mmzone_64.h hasn't been changed since april.
+In the work to move Bluetooth RX processing to workqueues I faced some
+issues when trying to move our timers to workqueue, including deadlocks.
+We use mod_timer() a lot to reset timer's delay, but the alternative with
+workqueues is
 
-You should have cc-ed the commit Author (I did so).
+	cancel_delayed_work_sync(work);
+	queue_delayed_work(wq, work, delay);
 
-> commit 37573e8c718277103f61f03741bdc5606d31b07e
-> Author: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date:   Wed Jun 15 15:08:42 2011 -0700
-> 
->     memcg: fix init_page_cgroup nid with sparsemem
->     
->     Commit 21a3c9646873 ("memcg: allocate memory cgroup structures in local
->     nodes") makes page_cgroup allocation as NUMA aware.  But that caused a
->     problem https://bugzilla.kernel.org/show_bug.cgi?id=36192.
->     
->     The problem was getting a NID from invalid struct pages, which was not
->     initialized because it was out-of-node, out of [node_start_pfn,
->     node_end_pfn)
->     
->     Now, with sparsemem, page_cgroup_init scans pfn from 0 to max_pfn.  But
->     this may scan a pfn which is not on any node and can access memmap which
->     is not initialized.
->     
->     This makes page_cgroup_init() for SPARSEMEM node aware and remove a code
->     to get nid from page->flags.  (Then, we'll use valid NID always.)
->     
->     [akpm@linux-foundation.org: try to fix up comments]
->     Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+This is too much for a simple change in the delay, so I did some research on
+this and found that other pieces[0] in the kernel may have the same needs and
+cooked a patch to create mod_delayed_work(). I used this name because we
+basically call mod_timer there (or queue the work if it is not pending).
 
-A patch for this has been posted at least 2 times.
-It's here:  http://marc.info/?l=linux-mm&m=130827204306775&w=2
+Then I propose replace the two lines above with:
+	mod_delayed_work(wq, work, delay);
 
-Andrew, please merge this (^that^) patch.
+Please comment.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	Gustavo
+
+[0] https://lkml.org/lkml/2011/2/3/175	
+
+Gustavo F. Padovan (1):
+  workqueue: Add mod_delayed_work()
+
+ include/linux/workqueue.h |    2 ++
+ kernel/workqueue.c        |   26 ++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
+
+-- 
+1.7.5.1
+
