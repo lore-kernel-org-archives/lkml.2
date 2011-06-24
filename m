@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759436Ab1FXOhw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 10:37:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56641 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758274Ab1FXOhs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 10:37:48 -0400
-Date: Fri, 24 Jun 2011 14:35:09 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-51928d12a6e07a1bd7b38d8b151a50cb24175dd3@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
-        mingo@redhat.com, ralf@linux-mips.org, linux@arm.linux.org.uk,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, john.stultz@linaro.org,
-        linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
-        ralf@linux-mips.org, tglx@linutronix.de
-In-Reply-To: <20110609130622.348437125@linutronix.de>
-References: <20110609130622.348437125@linutronix.de>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/cleanup] i8253: Cleanup outb/inb magic
-Git-Commit-ID: 51928d12a6e07a1bd7b38d8b151a50cb24175dd3
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1759300Ab1FXOgB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 10:36:01 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:32901 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758698Ab1FXOf6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 10:35:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:cc
+         :content-type:content-transfer-encoding;
+        b=Za8xjQKXty3LYQ4vEvKxNZXY2qXt8C7SZzvMdd88GCncSZX1IopjZtyC/4XFWWBVXd
+         k7PWO3R1aLE9zSn/G37Q==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 24 Jun 2011 14:36:25 +0000 (UTC)
+In-Reply-To: <20110624080535.GA19966@phantom.vanrein.org>
+References: <1308741534-6846-1-git-send-email-sassmann@kpanic.de>
+	<20110623133950.GB28333@srcf.ucam.org>
+	<4E0348E0.7050808@kpanic.de>
+	<20110623141222.GA30003@srcf.ucam.org>
+	<4E035DD1.1030603@kpanic.de>
+	<20110623170014.GN3263@one.firstfloor.org>
+	<987664A83D2D224EAE907B061CE93D5301E938F2FD@orsmsx505.amr.corp.intel.com>
+	<BANLkTikTTCU3eKkCtrbLbtpLJtksehyEMg@mail.gmail.com>
+	<20110624080535.GA19966@phantom.vanrein.org>
+Date: Fri, 24 Jun 2011 07:35:55 -0700
+Message-ID: <BANLkTim2yoYFTG4MZxv7KH1ujTV2h5c+LHb8hCp2dHCqZvbKYA@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+From: Craig Bergstrom <craigb@google.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  51928d12a6e07a1bd7b38d8b151a50cb24175dd3
-Gitweb:     http://git.kernel.org/tip/51928d12a6e07a1bd7b38d8b151a50cb24175dd3
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 9 Jun 2011 13:08:30 +0000
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 24 Jun 2011 16:22:55 +0200
+On Fri, Jun 24, 2011 at 1:05 AM, Rick van Rein <rick@vanrein.org> wrote:
+>
+> Hi Craig,
+>
+> > We (Google) are working on a data-driven answer for this question.  I know
+> > that there has been some analysis on this topic on the past, but I don't
+> > want to speculate until we've had some time to put all the pieces together.
+>
+> The easiest way to do this could be to take the algorithm from Memtest86
+> and apply it to your data, to see if it finds suitable patterns for the
+> cases tried.
+>
+> By counting bits set to zero in the masks, you could then determine how
+> 'tight' they are.  A mask with all-ones covers one memory page; each
+> zero bit in the mask (outside of the CPU's page size) doubles the number
+> of pages covered.
+>
+> You can ignore the address over which the mask is applied, although you
+> would then be assuming that all the pages covered by the mask are indeed
+> filled with RAM.
+>
+> You would want to add the figures for the different masks.
 
-i8253: Cleanup outb/inb magic
+This seems like a reasonable approach.  I know there was some analysis
+done, and I'm doing my best to get the folks who made the original
+decision to weigh in.
 
-Remove the hysterical outb/inb_pit defines and use outb_p/inb_p in the
-code.
+>
+> I am very curious about your findings.  Independently of those, I am in
+> favour of a patch that enables longer e820 tables if it has no further
+> impact on speed or space.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: Russell King <linux@arm.linux.org.uk>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: John Stultz <john.stultz@linaro.org>
-Link: http://lkml.kernel.org/r/20110609130622.348437125@linutronix.de
----
- arch/x86/kernel/apm_32.c |    6 +++---
- include/linux/i8253.h    |    3 ---
- 2 files changed, 3 insertions(+), 6 deletions(-)
+I think that we'd all be satisfied with a mechanism that allows for
+badram to be specified via both command line and an extended e820 map.
 
-diff --git a/arch/x86/kernel/apm_32.c b/arch/x86/kernel/apm_32.c
-index a30740e..0371c48 100644
---- a/arch/x86/kernel/apm_32.c
-+++ b/arch/x86/kernel/apm_32.c
-@@ -1220,11 +1220,11 @@ static void reinit_timer(void)
- 
- 	raw_spin_lock_irqsave(&i8253_lock, flags);
- 	/* set the clock to HZ */
--	outb_pit(0x34, PIT_MODE);		/* binary, mode 2, LSB/MSB, ch 0 */
-+	outb_p(0x34, PIT_MODE);		/* binary, mode 2, LSB/MSB, ch 0 */
- 	udelay(10);
--	outb_pit(LATCH & 0xff, PIT_CH0);	/* LSB */
-+	outb_p(LATCH & 0xff, PIT_CH0);	/* LSB */
- 	udelay(10);
--	outb_pit(LATCH >> 8, PIT_CH0);	/* MSB */
-+	outb_p(LATCH >> 8, PIT_CH0);	/* MSB */
- 	udelay(10);
- 	raw_spin_unlock_irqrestore(&i8253_lock, flags);
- #endif
-diff --git a/include/linux/i8253.h b/include/linux/i8253.h
-index 76039c8..0770fc5 100644
---- a/include/linux/i8253.h
-+++ b/include/linux/i8253.h
-@@ -20,9 +20,6 @@
- 
- #define PIT_LATCH	((PIT_TICK_RATE + HZ/2) / HZ)
- 
--#define inb_pit         inb_p
--#define outb_pit        outb_p
--
- extern raw_spinlock_t i8253_lock;
- 
- extern void setup_pit_timer(void);
+>
+>
+> Cheers,
+>  -Rick
