@@ -1,72 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755069Ab1FXLqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 07:46:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38185 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab1FXLqb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 07:46:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Zxggh4CZGloG15OopPKxN7/acmVTX4Sz8XgySuLMjSzwkohVKZxdp3ONODZHoN+ZXV
-         tCI2xIv2SByAK9WlUNfbytWMCFGdwSrciWZVxM5GTa4vyOfTu05KlC9e6DT7mcabqW0Z
-         uTP00cP+/zJOX52PeHvRczwmU3MM5V8Jn7nv4=
-MIME-Version: 1.0
-In-Reply-To: <20110624075742.GA10455@tiehlicka.suse.cz>
-References: <20110622120635.GB14343@tiehlicka.suse.cz>
-	<20110622121516.GA28359@infradead.org>
-	<20110622123204.GC14343@tiehlicka.suse.cz>
-	<20110623150842.d13492cd.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110623074133.GA31593@tiehlicka.suse.cz>
-	<20110623170811.16f4435f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110623090204.GE31593@tiehlicka.suse.cz>
-	<20110623190157.1bc8cbb9.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110624075742.GA10455@tiehlicka.suse.cz>
-Date: Fri, 24 Jun 2011 20:46:29 +0900
-Message-ID: <BANLkTin7TbK1dNjPG6jz_FaJy-QgOjDJaA@mail.gmail.com>
-Subject: Re: [PATCH] mm: preallocate page before lock_page at filemap COW.
- (WasRe: [PATCH V2] mm: Do not keep page locked during page fault while
- charging it for memcg
-From: Hiroyuki Kamezawa <kamezawa.hiroyuki@gmail.com>
-To: Michal Hocko <mhocko@suse.cz>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Hellwig <hch@infradead.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
-        Michel Lespinasse <walken@google.com>, Mel Gorman <mgorman@suse.de>,
-        Lutz Vieweg <lvml@5t9.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756771Ab1FXMZR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 08:25:17 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49641 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755931Ab1FXMZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 08:25:15 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,419,1304319600"; 
+   d="scan'208";a="17733284"
+Subject: Re: [PATCH] serial: sh-sci: don't filter on DMA device, use only
+ channel ID
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Dan Williams <dan.j.williams@intel.com>,
+        Magnus Damm <damm@opensource.se>
+In-Reply-To: <Pine.LNX.4.64.1106241354060.6014@axis700.grange>
+References: <Pine.LNX.4.64.1106241354060.6014@axis700.grange>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 24 Jun 2011 17:17:51 +0530
+Message-ID: <1308916071.1536.4.camel@vkoul-udesk3>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/24 Michal Hocko <mhocko@suse.cz>:
-> Sorry, forgot to send my
-> Reviewed-by: Michal Hocko <mhocko@suse>
->
+On Fri, 2011-06-24 at 13:56 +0200, Guennadi Liakhovetski wrote:
+> On some sh-mobile systems there are more than one DMA controllers, that
+> can be used for serial ports. Specifying a DMA device in sh-sci platform
+> data unnecessarily restricts the driver to only use one DMA controller.
+> 
+> Signed-off-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> ---
+>  drivers/tty/serial/sh-sci.c |   25 ++++++++-----------------
+>  include/linux/serial_sci.h  |    2 --
+>  2 files changed, 8 insertions(+), 19 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/sh-sci.c b/drivers/tty/serial/sh-sci.c
+> index ebd8629..8711f4e 100644
+> --- a/drivers/tty/serial/sh-sci.c
+> +++ b/drivers/tty/serial/sh-sci.c
+> @@ -1295,12 +1295,8 @@ static bool filter(struct dma_chan *chan, void *slave)
+>  	dev_dbg(chan->device->dev, "%s: slave ID %d\n", __func__,
+>  		param->slave_id);
+>  
+> -	if (param->dma_dev == chan->device->dev) {
+> -		chan->private = param;
+> -		return true;
+> -	} else {
+> -		return false;
+> -	}
+> +	chan->private = param;
+> +	return true;
+You should not assign chan->private. 
+Please move this  to dma_slave_control API
+>  }
+>  
+>  static void rx_timer_fn(unsigned long arg)
+> @@ -1326,10 +1322,10 @@ static void sci_request_dma(struct uart_port *port)
+>  	dma_cap_mask_t mask;
+>  	int nent;
+>  
+> -	dev_dbg(port->dev, "%s: port %d DMA %p\n", __func__,
+> -		port->line, s->cfg->dma_dev);
+> +	dev_dbg(port->dev, "%s: port %d\n", __func__,
+> +		port->line);
+>  
+> -	if (!s->cfg->dma_dev)
+> +	if (s->cfg->dma_slave_tx <= 0 || s->cfg->dma_slave_rx <= 0)
+>  		return;
+>  
+>  	dma_cap_zero(mask);
+> @@ -1339,7 +1335,6 @@ static void sci_request_dma(struct uart_port *port)
+>  
+>  	/* Slave ID, e.g., SHDMA_SLAVE_SCIF0_TX */
+>  	param->slave_id = s->cfg->dma_slave_tx;
+> -	param->dma_dev = s->cfg->dma_dev;
+>  
+>  	s->cookie_tx = -EINVAL;
+>  	chan = dma_request_channel(mask, filter, param);
+> @@ -1368,7 +1363,6 @@ static void sci_request_dma(struct uart_port *port)
+>  
+>  	/* Slave ID, e.g., SHDMA_SLAVE_SCIF0_RX */
+>  	param->slave_id = s->cfg->dma_slave_rx;
+> -	param->dma_dev = s->cfg->dma_dev;
+>  
+>  	chan = dma_request_channel(mask, filter, param);
+>  	dev_dbg(port->dev, "%s: RX: got channel %p\n", __func__, chan);
+> @@ -1413,9 +1407,6 @@ static void sci_free_dma(struct uart_port *port)
+>  {
+>  	struct sci_port *s = to_sci_port(port);
+>  
+> -	if (!s->cfg->dma_dev)
+> -		return;
+> -
+>  	if (s->chan_tx)
+>  		sci_tx_dma_release(s, false);
+>  	if (s->chan_rx)
+> @@ -1790,9 +1781,9 @@ static int __devinit sci_init_single(struct platform_device *dev,
+>  	 */
+>  	port->irq		= p->irqs[SCIx_RXI_IRQ];
+>  
+> -	if (p->dma_dev)
+> -		dev_dbg(port->dev, "DMA device %p, tx %d, rx %d\n",
+> -			p->dma_dev, p->dma_slave_tx, p->dma_slave_rx);
+> +	if (p->dma_slave_tx > 0 && p->dma_slave_rx > 0)
+> +		dev_dbg(port->dev, "DMA tx %d, rx %d\n",
+> +			p->dma_slave_tx, p->dma_slave_rx);
+>  
+>  	return 0;
+>  }
+> diff --git a/include/linux/serial_sci.h b/include/linux/serial_sci.h
+> index a2afc9f..9d01ffa 100644
+> --- a/include/linux/serial_sci.h
+> +++ b/include/linux/serial_sci.h
+> @@ -56,8 +56,6 @@ struct plat_sci_port {
+>  	unsigned int	scbrr_algo_id;		/* SCBRR calculation algo */
+>  	unsigned int	scscr;			/* SCSCR initialization */
+>  
+> -	struct device	*dma_dev;
+> -
+>  	unsigned int	dma_slave_tx;
+>  	unsigned int	dma_slave_rx;
+>  };
 
-Thanks.
 
-> I still have concerns about this way to handle the issue. See the follow
-> up discussion in other thread (https://lkml.org/lkml/2011/6/23/135).
->
-> Anyway I think that we do not have many other options to handle this.
-> Either we unlock, charge, lock&restes or we preallocate, fault in
->
-I agree.
+-- 
+~Vinod
 
-> Or am I missing some other ways how to do it? What do others think about
-> these approaches?
->
-
-Yes, I'd like to hear other mm specialists' suggestion. and I'll think
-other way, again.
-Anyway, memory reclaim with holding a lock_page() can cause big latency
-or starvation especially when memcg is used. It's better to avoid it.
-
-Thanks,
--Kame
