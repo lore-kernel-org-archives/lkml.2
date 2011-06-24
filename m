@@ -1,59 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760227Ab1FXCAG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 22:00:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:41303 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752147Ab1FXCAE (ORCPT
+	id S1760279Ab1FXCCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 22:02:36 -0400
+Received: from mga09.intel.com ([134.134.136.24]:42227 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760159Ab1FXCCc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 22:00:04 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=n8OuPOP5gMEA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=eP2w8RFJMYaamG6b9ZwA:9 a=4SrUwmsTrvRdyjUPlPIA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH 09/15] xen/trace: add tlb flush tracepoints
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Xen Devel <Xen-devel@lists.xensource.com>,
-        Ingo Molnar <mingo@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <4E03C510.5050801@goop.org>
-References: <cover.1308607697.git.jeremy.fitzhardinge@citrix.com>
-	 <4db3e32a6b21efdb4d82646816ddb1bb82ff2259.1308607697.git.jeremy.fitzhardinge@citrix.com>
-	 <20110621140705.GD28229@dumpdata.com>  <4E03996B.9050904@goop.org>
-	 <1308860628.531.42.camel@gandalf.stny.rr.com>  <4E03C510.5050801@goop.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 23 Jun 2011 22:00:01 -0400
-Message-ID: <1308880801.531.54.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 23 Jun 2011 22:02:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,417,1304319600"; 
+   d="scan'208";a="19080053"
+From: "Ma, Ling" <ling.ma@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>
+CC: "hpa@zytor.com" <hpa@zytor.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Jun 2011 10:01:28 +0800
+Subject: RE: [PATCH RFC] [x86] Optimize copy-page by reducing impact from HW
+ prefetch
+Thread-Topic: [PATCH RFC] [x86] Optimize copy-page by reducing impact from
+ HW prefetch
+Thread-Index: Acwxc9zXuTo3YQvYQpKzil1gi1OinwAnn06g
+Message-ID: <C10D3FB0CD45994C8A51FEC1227CE22F240ECD6FDD@shsmsx502.ccr.corp.intel.com>
+References: <1308351117-32452-1-git-send-email-ling.ma@intel.com>
+ <m2fwn13a3u.fsf@firstfloor.org> <20110623070448.GA25707@elte.hu>
+In-Reply-To: <20110623070448.GA25707@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-23 at 15:58 -0700, Jeremy Fitzhardinge wrote:
+Sure, I separate two patches ASAP, one is for performance tuning code after some experiments,
+another code style patch.
 
-> > If you really need something like this, maybe I'll add a
-> > DEFINE_EVENT_NOARGS() that will not require arguments and can eliminate
-> > a lot of code that TRACE_EVENT() adds.
+Thanks
+Ling
+
+> -----Original Message-----
+> From: Ingo Molnar [mailto:mingo@elte.hu]
+> Sent: Thursday, June 23, 2011 3:05 PM
+> To: Andi Kleen
+> Cc: Ma, Ling; hpa@zytor.com; tglx@linutronix.de; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH RFC] [x86] Optimize copy-page by reducing impact
+> from HW prefetch
 > 
-> If you like, but only if you think its worth the effort.  The empty
-> string thing is a bit of an ugly hack, but its not like it makes a mess
-> everywhere.
-
-The problem I have is not the ugliness, but more of the wasted code that
-is generated to do nothing. The TRACE_EVENT() generates lots of helper
-functions that are unique to handle different events. The fact that we
-have no args is generating code that does a lot of nothing. Every
-TRACE_EVENT() can create 5k of code/data. This is why I advocate the
-DEFINE_TRACE_CLASS() and DEFINE_EVENT() because it reuses a lot of the
-code.
-
-If we had a NOARGS event that was just a marker, then we could eliminate
-most of the helper functions for these kinds of trace points.
-
--- Steve
-
-
+> 
+> * Andi Kleen <andi@firstfloor.org> wrote:
+> 
+> > ling.ma@intel.com writes:
+> >
+> > > impact(DCU prefetcher), and simplify original code. The
+> > > performance is improved about 15% on core2, 36% on snb
+> > > respectively. (We use our micro-benchmark, and will do further
+> > > test according to your requirment)
+> >
+> > This doesn't make a lot of sense because neither Core-2 nor SNB use
+> > the code path you patched. They all use the rep ; movs path
+> 
+> Ling, mind double checking which one is the faster/better one on SNB,
+> in cold-cache and hot-cache situations, copy_page or copy_page_c?
+> 
+> Also, while looking at this file please fix the countless pieces of
+> style excrements it has before modifying it:
+> 
+>  - non-Linux comment style (and needless two comments - it can
+>    be in one comment block):
+> 
+>   /* Don't use streaming store because it's better when the target
+>      ends up in cache. */
+> 
+>   /* Could vary the prefetch distance based on SMP/UP */
+> 
+>  - (there's other non-standard comment blocks in this file as well)
+> 
+>  - The copy_page/copy_page_c naming is needlessly obfuscated, it
+>    should be copy_page, copy_page_norep or so - the _c postfix has no
+>    obvious meaning.
+> 
+>  - all #include's should be at the top
+> 
+>  - please standardize it on the 'instrn %x, %y' pattern that we
+>    generally use in arch/x86/, not 'instrn %x,%y' pattern.
+> 
+> and do this cleanup patch first and the speedup on top of it, and
+> keep the two in two separate patches so that the modification to the
+> assembly code can be reviewed more easily.
+> 
+> Thanks,
+> 
+> 	Ingo
