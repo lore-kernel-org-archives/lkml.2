@@ -1,92 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab1FXNqF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 09:46:05 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34396 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab1FXNqC convert rfc822-to-8bit (ORCPT
+	id S1757620Ab1FXNth (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 09:49:37 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:34135 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752174Ab1FXNtg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 09:46:02 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E04912A.4090305@infradead.org>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-	<alpine.LNX.2.00.1106232356530.17688@swampdragon.chaosbits.net>
-	<4E04732A.3060305@infradead.org>
-	<201106241326.27593.hverkuil@xs4all.nl>
-	<BANLkTinXymR_2A2Mr+UbhK63s2xjtK=B=g@mail.gmail.com>
-	<4E04912A.4090305@infradead.org>
-Date: Fri, 24 Jun 2011 09:45:59 -0400
-Message-ID: <BANLkTim9cBiiK_GsZaspxpPJQDBvAcKCWg@mail.gmail.com>
-Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver
- version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from include/
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>, Jesper Juhl <jj@chaosbits.net>,
-        LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        linux-media@vger.kernel.org, ceph-devel@vger.kernel.org,
-        Sage Weil <sage@newdream.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 24 Jun 2011 09:49:36 -0400
+From: Andrea Righi <andrea@betterlinux.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Theodore Tso <tytso@mit.edu>, Shaohua Li <shaohua.li@intel.com>,
+        =?UTF-8?q?P=C3=A1draig=20Brady?= <P@draigBrady.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH v3 0/2] fadvise: support POSIX_FADV_NOREUSE
+Date: Fri, 24 Jun 2011 15:49:08 +0200
+Message-Id: <1308923350-7932-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 9:29 AM, Mauro Carvalho Chehab
-<mchehab@infradead.org> wrote:
->> MythTV has a bunch of these too (mainly so the code can adapt to
->> driver bugs that are fixed in later revisions).  Putting Mauro's patch
->> upstream will definitely cause breakage.
->
-> It shouldn't, as ivtv driver version is lower than 3.0.0. All the old bug fixes
-> aren't needed if version is >= 3.0.0.
->
-> Besides that, trusting on a driver revision number to detect that a bug is
-> there is not the right thing to do, as version numbers are never increased at
-> the stable kernels (nor distro modified kernels take care of increasing revision
-> number as patches are backported there).
+There were some reported problems in the past about trashing page cache
+when a backup software (i.e., rsync) touches a huge amount of pages (see
+for example [1]).
 
-The versions are increased at the discretion of the driver maintainer,
-usually when there is some userland visible change in driver behavior.
- I assure you the application developers don't *want* to rely on such
-a mechanism, but there have definitely been cases in the past where
-there was no easy way to detect the behavior of the driver from
-userland.
+This problem has been almost fixed by the Minchan Kim's patch [2] and a
+proper use of fadvise() in the backup software. For example this patch
+set [3] has been proposed for inclusion in rsync.
 
-It lets application developers work around things like violations of
-the V4L2 standard which get fixed in newer revisions of the driver.
-It provides them the ability to put a hack in their code that says "if
-(version < X) then this driver feature is broken and I shouldn't use
-it."
+However, there can be still other similar trashing problems: when the
+backup software reads all the source files, some of them may be part of
+the actual working set of the system. When a POSIX_FADV_DONTNEED is
+performed _all_ pages are evicted from pagecache, both the working set
+and the use-once pages touched only by the backup software.
 
-> In other words, relying on it doesn't work fine.
+A previous proposal [4] tried to resolve this problem being less
+agressive in invalidating active pages, moving them to the inactive list
+intead of just evict them from the page cache.
 
-It's the best (and really only solution) we have today.
+However, this approach changed completely the old behavior of
+invalidate_mapping_pages(), that is not only used by fadvise.
 
->> Also, it screws up the ability for users to get fixes through the
->> media_build tree (unless you are increasing the revision constantly
->> with every merge you do).
->
-> Why? Developers don't increase version numbers on every applied patch
-> (with is great, as it avoids merge conflicts).
+The new solution maps POSIX_FADV_NOREUSE to the less-agressive page
+invalidation policy.
 
-The driver maintainer doesn't *have* to increase the version - he does
-it when he thinks it's appropriate.  The point is you are taking that
-discretion out of *their* hands, and you yourself are unaware of when
-it is actually needed.
+With POSIX_FADV_NOREUSE active pages are moved to the tail of the
+inactive list, and pages in the inactive list are just removed from page
+cache. Pages mapped by other processes or unevictable pages are not
+touched at all.
 
-You need to stop looking at this from a purist standpoint and think of
-how application developers actually use the API.  They need tools like
-this to allow them to work around driver bugs while having a source
-codebase which operates against different kernels (including kernels
-that may still have those bugs).
+In this way if the backup was the only user of a page, that page will be
+immediately removed from the page cache by calling POSIX_FADV_NOREUSE.
+If the page was also touched by other tasks it'll be moved to the
+inactive list, having another chance of being re-added to the working
+set, or simply reclaimed when memory is needed.
 
-Sure, in a perfect world where drivers don't have bugs and
-applications don't have to run against older kernels, what you are
-saying is not illogical.  But then again, we don't live in a perfect
-world.
+In conclusion, now userspace applications that want to drop some page
+cache pages can choose between the following advices:
 
-Devin
+ POSIX_FADV_DONTNEED = drop page cache if possible
+ POSIX_FADV_NOREUSE = reduce page cache eligibility
 
--- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Testcase:
+
+  - create a 1GB file called "zero"
+  - run md5sum zero to read all the pages in page cache (this is to
+    simulate the user activity on this file)
+  - run rsync zero zero_copy
+  - re-run md5sum zero (user activity on the working set) and measure
+    the time to complete this command
+
+rsync has been patched with [3], using POSIX_FADV_DONTNEED in one case and
+POSIX_FADV_NOREUSE in the other case.
+
+Results:
+
+ - after the backup run:
+   # perf stat -e block:block_bio_queue md5sum zero
+
+                  avg elapsed time      block:block_bio_queue
+ rsync-dontneed              4.24s                      2,072
+ rsync-noreuse               2.22s                          0
+
+[1] http://marc.info/?l=rsync&m=128885034930933&w=2
+[2] https://lkml.org/lkml/2011/2/20/57
+[3] http://lists.samba.org/archive/rsync/2010-November/025827.html
+[4] https://lkml.org/lkml/2011/6/23/35
+
+ChangeLog v2 -> v3:
+ - do not change the old POSIX_FADV_DONTNEED behavior and implement the less
+   aggressive page cache invalidation policy using POSIX_FADV_NOREUSE
+ - fix comments in the code
+
+[PATCH v3 1/2] mm: introduce __invalidate_mapping_pages()
+[PATCH v3 2/2] fadvise: implement POSIX_FADV_NOREUSE
+
+ include/linux/fs.h |    7 +++++--
+ mm/fadvise.c       |   11 ++++++-----
+ mm/swap.c          |    2 +-
+ mm/truncate.c      |   40 ++++++++++++++++++++++++++++++----------
+ 4 files changed, 42 insertions(+), 18 deletions(-)
