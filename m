@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754801Ab1FXVpT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 17:45:19 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:20805 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751436Ab1FXVpQ (ORCPT
+	id S1754795Ab1FXVrl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 17:47:41 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64114 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626Ab1FXVri convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 17:45:16 -0400
-Subject: [PATCH] sparse: Fix BUILD_BUG_ON_{ZERO,NULL} definitions
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Fri, 24 Jun 2011 22:45:12 +0100
-Message-ID: <1308951912.3034.23.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 Jun 2011 21:45:14.0944 (UTC) FILETIME=[006D5C00:01CC32B8]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18218.005
-X-TM-AS-Result: No--15.436700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Fri, 24 Jun 2011 17:47:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=h0v5bn/wDExCpgG/iAhP1xF+i1IlkXY070blengxHmVXw74jH170JvjqAeP5XDXBmZ
+         Ie9jKdt7Chh4ZlmP1qUYgnZcNfGdl+jOn4HI6GiiIXFpo9aMRy6oCS6AkJH9B6ZKA4F9
+         TIDrQNIKwDlnIP+9JHV1ie3dE0E4hku8Oz3UA=
+MIME-Version: 1.0
+In-Reply-To: <1301491283-14128-2-git-send-email-samuel.gabrielsson@gmail.com>
+References: <1301491283-14128-1-git-send-email-samuel.gabrielsson@gmail.com>
+	<1301491283-14128-2-git-send-email-samuel.gabrielsson@gmail.com>
+Date: Fri, 24 Jun 2011 14:47:37 -0700
+X-Google-Sender-Auth: 5q87eYfT8ov6ZnV9pqwrkiWU9cc
+Message-ID: <BANLkTikyp-p8ymJvEmk2+=zsOZ1+JYYGMA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] i7core_edac: Add scrubbing support
+From: Tony Luck <tony.luck@intel.com>
+To: Samuel Gabrielsson <samuel.gabrielsson@gmail.com>
+Cc: mchehab@redhat.com, linux-edac@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 903c0c7cdc21f2ccb7562a7bbc70289c0c2b16ad ('sparse: define dummy
-BUILD_BUG_ON definition for sparse') left these two broken.  The ZERO
-or NULL suffix specifies what the macro should expand to, not the
-value that would indicate a bug.
+On Wed, Mar 30, 2011 at 6:21 AM, Samuel Gabrielsson
+<samuel.gabrielsson@gmail.com> wrote:
+> +       const u32 cache_line_size = 64;
+> +       const u32 freq_dclk = 800*1000000;
 
-Signed-off-by: Ben Hutchings <bhutchings@solarflare.com>
----
-sparse currently reports a syntax error and no useful warnings for any
-source file which uses one of these macros.  Since module_param() uses
-BUILD_BUG_ON_ZERO(), that's a lot of source files.
+Is dclk always 800 MHz?  If so, a #define might me nice - you use it again in
+get_sdram_scrub_rate(). If not, then getting the actual frequency from some
+place would be good.
 
-Ben.
+> +               dw_scrub = 0x00ffffff & (cache_line_size * freq_dclk / new_bw);
 
- include/linux/kernel.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Does this give the right answer? It looks like you overflow the "u32" size
+of these calculations when you do 64*800000000 = 51200000000.
 
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index fb0e732..fccd366 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -671,8 +671,8 @@ struct sysinfo {
- 
- #ifdef __CHECKER__
- #define BUILD_BUG_ON_NOT_POWER_OF_2(n)
--#define BUILD_BUG_ON_ZERO(e)
--#define BUILD_BUG_ON_NULL(e)
-+#define BUILD_BUG_ON_ZERO(e) ((size_t)0)
-+#define BUILD_BUG_ON_NULL(e) ((void *)0)
- #define BUILD_BUG_ON(condition)
- #else /* __CHECKER__ */
- 
--- 
-1.7.4.4
+> +       return 0xffffffff & (cache_line_size * freq_dclk / (u64) scrubval);
 
+Ditto on the overflow question here.
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+-Tony
