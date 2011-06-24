@@ -1,122 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756444Ab1FXMKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 08:10:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52068 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753540Ab1FXMKB (ORCPT
+	id S1756210Ab1FXMLX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 08:11:23 -0400
+Received: from mail.windriver.com ([147.11.1.11]:55695 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753881Ab1FXMLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 08:10:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=QA6ju2ulI6mTSB2NzcDrPtFjES0tjQQDdi/ICd26DMXHSZlEzCLQJ8A6gVpRSr9M/I
-         cxqJvi3Czx6rShn+Jdmjcuz1PEoBj2LAraHefP6kcZiopsGWCy6f6Ji+XhpFTMlRXJZo
-         HB/7BM3MEuV3VZ78acO9UHq+uNchJ7//9++mU=
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, Solar Designer <solar@openwall.com>
-Subject: [PATCH 2/2] taskstats: restrict access to user
-Date: Fri, 24 Jun 2011 16:09:22 +0400
-Message-Id: <1308917362-4795-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 24 Jun 2011 08:11:22 -0400
+Message-ID: <4E047EE6.2030505@windriver.com>
+Date: Fri, 24 Jun 2011 08:11:18 -0400
+From: Paul Gortmaker <paul.gortmaker@windriver.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: "J. R. Okajima" <hooanon05@yahoo.co.jp>, <stable@kernel.org>,
+        <linux-kernel@vger.kernel.org>, <stable-review@kernel.org>
+Subject: Re: [34-longterm 100/247] NFS: fix the return value of nfs_file_fsync()
+References: <1308849690-14530-1-git-send-email-paul.gortmaker@windriver.com>	 <1308850515-15242-1-git-send-email-paul.gortmaker@windriver.com>	 <1308850515-15242-41-git-send-email-paul.gortmaker@windriver.com>	 <3853.1308880989@jrobl> <1308881159.30166.0.camel@lade.trondhjem.org>
+In-Reply-To: <1308881159.30166.0.camel@lade.trondhjem.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [128.224.146.65]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-taskstats information may be used for gathering private information.
-E.g. for openssh and vsftpd daemons read_characters/write_characters may
-be used to learn the precise password length.  Restrict it to processes
-being able to ptrace the target process.
+On 11-06-23 10:05 PM, Trond Myklebust wrote:
+> On Fri, 2011-06-24 at 11:03 +0900, J. R. Okajima wrote: 
+>> Paul Gortmaker:
+>>> By the commit af7fa16 2010-08-03 NFS: Fix up the fsync code
+>>> close(2) became returning the non-zero value even if it went well.
+>>> nfs_file_fsync() should return 0 when "status" is positive.
+>>>
+>>> [PG: in 34, nfs_file_fsync is just a wrapper around nfs_do_fsync,
+>>>  so the related code and actual change lands in nfs_do_fsync here.]
+>>
+>> In these 247 patches, I could not find the backport of
+>> 	af7fa16 2010-08-03 NFS: Fix up the fsync code
+>> If you bring the commit af7fa16 into 2.6.34.10, then you will need this
+>> one (0702099bd in upstream) too. Otherwise I am afraid it is
+>> unnecessary.
+>> But I'd ask a reply from Trond Myklebust.
+> 
+> I agree.
 
-For TASKSTATS_CMD_ATTR_REGISTER_CPUMASK the fix is euid check instead of
-a ptrace check as the handler is processed in the context of the target
-process, not the listener process'.  When ptrace_task_may_access_current()
-is introduced, it should be used instead of euid check.  Currently there
-is a small race when a process temporarily changes its euid (e.g. to
-access user's files), until the process sets euid back user's processes
-may gather privileged process' statistics.
+Thanks guys!  I'll queue 0702099bd86c33c2dcdbd3963433a61f3f503901
+for 34.10
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- kernel/taskstats.c |   23 ++++++++++++++++++++++-
- 1 files changed, 22 insertions(+), 1 deletions(-)
+Paul.
 
-diff --git a/kernel/taskstats.c b/kernel/taskstats.c
-index 9ffea36..d92c95a 100644
---- a/kernel/taskstats.c
-+++ b/kernel/taskstats.c
-@@ -27,6 +27,7 @@
- #include <linux/cgroup.h>
- #include <linux/fs.h>
- #include <linux/file.h>
-+#include <linux/ptrace.h>
- #include <net/genetlink.h>
- #include <asm/atomic.h>
- 
-@@ -132,6 +133,8 @@ static void send_cpu_listeners(struct sk_buff *skb,
- 	struct sk_buff *skb_next, *skb_cur = skb;
- 	void *reply = genlmsg_data(genlhdr);
- 	int rc, delcount = 0;
-+	const struct cred *cred = current_cred();
-+	struct task_struct *task;
- 
- 	rc = genlmsg_end(skb, reply);
- 	if (rc < 0) {
-@@ -142,6 +145,15 @@ static void send_cpu_listeners(struct sk_buff *skb,
- 	rc = 0;
- 	down_read(&listeners->sem);
- 	list_for_each_entry(s, &listeners->list, list) {
-+
-+		rcu_read_lock();
-+		task = find_task_by_vpid(s->pid);
-+		if (!task || __task_cred(task)->euid != cred->euid) {
-+			rcu_read_unlock();
-+			continue;
-+		}
-+		rcu_read_unlock();
-+
- 		skb_next = NULL;
- 		if (!list_is_last(&s->list, &listeners->list)) {
- 			skb_next = skb_clone(skb_cur, GFP_KERNEL);
-@@ -199,14 +211,19 @@ static void fill_stats(struct task_struct *tsk, struct taskstats *stats)
- static int fill_stats_for_pid(pid_t pid, struct taskstats *stats)
- {
- 	struct task_struct *tsk;
-+	int rc = -ESRCH;
- 
- 	rcu_read_lock();
- 	tsk = find_task_by_vpid(pid);
-+	if (tsk && !ptrace_may_access(tsk, PTRACE_MODE_READ)) {
-+		tsk = NULL;
-+		rc = -EACCES;
-+	}
- 	if (tsk)
- 		get_task_struct(tsk);
- 	rcu_read_unlock();
- 	if (!tsk)
--		return -ESRCH;
-+		return rc;
- 	fill_stats(tsk, stats);
- 	put_task_struct(tsk);
- 	return 0;
-@@ -224,6 +241,10 @@ static int fill_stats_for_tgid(pid_t tgid, struct taskstats *stats)
- 	 */
- 	rcu_read_lock();
- 	first = find_task_by_vpid(tgid);
-+	if (first && !ptrace_may_access(first, PTRACE_MODE_READ)) {
-+		rc = -EACCES;
-+		goto out;
-+	}
- 
- 	if (!first || !lock_task_sighand(first, &flags))
- 		goto out;
--- 
-1.7.0.4
-
+> 
+> Cheers
+>   Trond
+> 
