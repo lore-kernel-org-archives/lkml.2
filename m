@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752174Ab1FXUYD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 16:24:03 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:53341 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751133Ab1FXUYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 16:24:00 -0400
-Date: Fri, 24 Jun 2011 13:20:15 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Will Drewry <wad@chromium.org>
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        djm@mindrot.org, segoon@openwall.com, mingo@elte.hu,
-        rostedt@goodmis.org, jmorris@namei.org, fweisbec@gmail.com,
-        tglx@linutronix.de, scarybeasts@gmail.com,
-        Peter Zijlstra <peterz@infradead.org>,
-        "Paul E. McKenney" <paul.mckenney@linaro.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>, Eric Paris <eparis@redhat.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Michal Marek <mmarek@suse.cz>, Mike Galbraith <efault@gmx.de>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Jiri Slaby <jslaby@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v9 03/13] seccomp_filter: new mode with configurable
- syscall filters
-Message-ID: <20110624202015.GD32221@outflux.net>
-References: <1308875813-20122-1-git-send-email-wad@chromium.org>
- <1308875813-20122-3-git-send-email-wad@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308875813-20122-3-git-send-email-wad@chromium.org>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1753014Ab1FXU0S (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 16:26:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49920 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751403Ab1FXU0Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 16:26:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:date:in-reply-to:references
+         :content-type:x-mailer:content-transfer-encoding:message-id
+         :mime-version;
+        b=aTpTsiNbSSqryryCGpjxyu1ROHvBOVILyUJZ8g9RgX7qf89SM2v1Iv8voJWdpg2jqW
+         orl2pILIPjVWII/L7E8biNC8F1Vg3l7CuD7YRo8eZXCRznQ9t97i86MASv56U8vxVuHi
+         fwToi6bJvYx9ODt9Z7HLUUQQI7Kxp096WZ0WE=
+Subject: Re: linux-next: Tree for June 24 (mtd + of)
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 24 Jun 2011 23:26:06 +0300
+In-Reply-To: <20110624090456.191f1fda.randy.dunlap@oracle.com>
+References: <20110624155822.cb8cf6eb.sfr@canb.auug.org.au>
+	 <20110624090456.191f1fda.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
+Content-Transfer-Encoding: 8bit
+Message-ID: <1308947172.13493.37.camel@koala>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
+On Fri, 2011-06-24 at 09:04 -0700, Randy Dunlap wrote:
+> On Fri, 24 Jun 2011 15:58:22 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20110623:
+> > 
+> > My fixes tree includes:
+> > 	(as an experiment) the early part of mmotm-2011-06-22-13-05
+> > 	STAGING: Comedi: Build only on arches providing PAGE_KERNEL_NOCACHE
+> 
+> 
+> When CONFIG_MTD=m, CONFIG_MTD_OF_PARTS=y:
+> 
+> drivers/mtd/ofpart.o: In function `init_module':
+> ofpart.c:(.init.text+0x0): multiple definition of `init_module'
+> drivers/mtd/mtdcore.o:(.init.text+0x43): first defined here
 
-On Thu, Jun 23, 2011 at 07:36:42PM -0500, Will Drewry wrote:
-> This change adds a new seccomp mode which specifies the allowed system
-> calls dynamically.  When in the new mode (2), all system calls are
-> checked against process-defined filters - first by system call number,
-> then by a filter string.  If an entry exists for a given system call and
-> all filter predicates evaluate to true, then the task may proceed.
-> Otherwise, the task is killed.
-> [...]
-> Signed-off-by: Will Drewry <wad@chromium.org>
-
-Thanks for continuing to work on this. I look forward to being able to use
-it. :)
-
-Acked-by: Kees Cook <kees.cook@canonical.com>
+I guess this is some old issue? I do not think ofpart can be compiled-in
+if the mtd core is a module...
 
 -- 
-Kees Cook
-Ubuntu Security Team
+Best Regards,
+Artem Bityutskiy (Битюцкий Артём)
+
