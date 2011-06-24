@@ -1,114 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753800Ab1FXMt0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 08:49:26 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:58035 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751701Ab1FXMtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 08:49:25 -0400
-Date: Fri, 24 Jun 2011 08:49:22 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: mingo@elte.hu, borislav.petkov@amd.com, bblum@andrew.cmu.edu,
-        linux-kernel@vger.kernel.org, mhack@us.ibm.com, eranian@google.com
-Subject: Re: [PATCH 3/3] events: Ensure that timers are updated without
- requiring read() call
-Message-ID: <20110624124921.GB3727@mgebm.net>
-References: <1308861279-15216-1-git-send-email-emunson@mgebm.net>
- <1308861279-15216-3-git-send-email-emunson@mgebm.net>
- <1308908656.27849.21.camel@twins>
+	id S1753771Ab1FXNJG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 09:09:06 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:2150 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752959Ab1FXNJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 09:09:04 -0400
+X-Greylist: delayed 952 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jun 2011 09:09:03 EDT
+Message-ID: <4E0488A9.6050109@imgtec.com>
+Date: Fri, 24 Jun 2011 13:52:57 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="98e8jtXdkpgskNou"
-Content-Disposition: inline
-In-Reply-To: <1308908656.27849.21.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Ball <cjb@laptop.org>, Will Newton <will.newton@imgtec.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Matt Fleming <matt@console-pimps.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+CC: james@albanarts.com
+Subject: [PATCH 0/6] mmc: dw_mmc: misc fixes and improvements
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 24 Jun 2011 12:52:58.0460 (UTC) FILETIME=[A4CCA1C0:01CC326D]
+X-SEF-Processed: 7_3_0_01158__2011_06_24_13_53_00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Misc improvements and fixes for the Synopsys DesignWare MMC driver:
 
---98e8jtXdkpgskNou
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+[PATCH 1/6] mmc: dw_mmc: clear TXDR/RXDR ints before enabling
+	fixes a failure to probe the next card after an unplug
+[PATCH 2/6] mmc: dw_mmc: fix race with request and removal
+	improves spinlock protection
+[PATCH 3/6] mmc: dw_mmc: convert card tasklet to workqueue
+	to allow platform callbacks to sleep
+[PATCH 4/6] mmc: dw_mmc: brackets in register access macros
+	just a small tidyup patch
+[PATCH 5/6] mmc: dw_mmc: don't hard code fifo depth, fix usage
+	improve detection of fifo depth
+[PATCH 6/6] mmc: dw_mmc: handle unaligned buffers and sizes
+	fix some mmc_test failures wrt unaligned buffer/sizes
+ 
+ drivers/mmc/host/dw_mmc.c  |  398 ++++++++++++++++++++++++++++++++++----------
+ drivers/mmc/host/dw_mmc.h  |   17 +-
+ include/linux/mmc/dw_mmc.h |   20 ++-
+ 3 files changed, 340 insertions(+), 95 deletions(-)
 
-On Fri, 24 Jun 2011, Peter Zijlstra wrote:
-
-> On Thu, 2011-06-23 at 16:34 -0400, Eric B Munson wrote:
-> > The event tracing infrastructure exposes two timers which should be upd=
-ated
-> > each time the value of the counter is updated.  Currently, these counte=
-rs are
-> > only updated when userspace calls read() on the fd associated with an e=
-vent.
-> > This means that counters which are read via the mmap'd page exclusively=
- never
-> > have their timers updated.  This patch adds ensures that the timers are=
- updated
-> > each time the values in the mmap'd page are updated.
-> >=20
-> > Signed-off-by: Eric B Munson <emunson@mgebm.net>
-> > ---
-> >  kernel/events/core.c |   12 ++++++++++++
-> >  1 files changed, 12 insertions(+), 0 deletions(-)
-> >=20
-> > diff --git a/kernel/events/core.c b/kernel/events/core.c
-> > index 9e9a7fa..e3be175 100644
-> > --- a/kernel/events/core.c
-> > +++ b/kernel/events/core.c
-> > @@ -3382,6 +3382,18 @@ void perf_event_update_userpage(struct perf_even=
-t *event)
-> >  	struct perf_buffer *buffer;
-> > =20
-> >  	rcu_read_lock();
-> > +	/*
-> > +	 * compute total_time_enabled, total_time_running
-> > +	 * based on snapshot values taken when the event
-> > +	 * was last scheduled in.
-> > +	 *
-> > +	 * we cannot simply called update_context_time()
-> > +	 * because of locking issue as we are called in
->=20
-> s/are/can be/
->=20
-> > +	 * NMI context
-> > +	 */
-> > +	calc_timer_values(event,
-> > +				&event->total_time_enabled,
-> > +				&event->total_time_running);
->=20
-> I'm not sure writing those from NMI context is a sane thing to do, best
-> is to compute the values into a local variable and use that variable
-> below.
->=20
-> Took the first two patches.
->=20
-
-Now that I think about it, this will just mask the problem.  I have a test
-program uses the mmap'd user space page to access event counters (it never
-calls read()).  In this case, the timer values in the event will never be
-updated.  It will display "properly" but the structure won't ever be correc=
-t.
-Given that, how can we keep the event values current?
-
-Eric
-
---98e8jtXdkpgskNou
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOBIfRAAoJEH65iIruGRnNpP8IAK+MdHBptF/irAhndCAEq5LK
-Q3N1D08tjGHMl5OntHR4/eKJOh7rOvr3oMxn6HaYn58MfA4Z1Q7+fX2wt0BdC+7B
-kUnylNuxArRFiqEiZnIqY8yyz+NHnRIKVdXzwyl2pOwgwkT9OePiSCQLsvnwTc3g
-GSx7GTqRUXK2Ozk6+iOgMd8v77aCajkIUn5B/JQlQD9XF4ktvc1e68O5DOEtBY1i
-aW1mkOfsxOkHjty7SzNeP2QEtHsU5l3fauYNCEACoK/UEAwH/Dn29Z0TNXjM3/nx
-Xx18MHyWhyDAjLytfeKwZ5guaiphG0KRvdD6qXZ/iRjtLHMoyeYW1qlUaAkkPws=
-=Nv7q
------END PGP SIGNATURE-----
-
---98e8jtXdkpgskNou--
