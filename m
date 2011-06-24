@@ -1,60 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab1FXVx3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 17:53:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:46798 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab1FXVx0 (ORCPT
+	id S1756091Ab1FXWHj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 18:07:39 -0400
+Received: from nitrogen.vapor.com ([213.203.212.226]:47246 "EHLO
+	nitrogen.vapor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754355Ab1FXWHi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 17:53:26 -0400
-Message-ID: <4E05073A.3030209@infradead.org>
-Date: Fri, 24 Jun 2011 18:52:58 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: Devin Heitmueller <dheitmueller@kernellabs.com>,
-        Hans Verkuil <hverkuil@xs4all.nl>, Jesper Juhl <jj@chaosbits.net>,
-        LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        linux-media@vger.kernel.org, ceph-devel@vger.kernel.org,
-        Sage Weil <sage@newdream.net>
-Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver
- version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from
- include/
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>	<4E04912A.4090305@infradead.org>	<BANLkTim9cBiiK_GsZaspxpPJQDBvAcKCWg@mail.gmail.com>	<201106241554.10751.hverkuil@xs4all.nl>	<4E04A122.2080002@infradead.org>	<20110624203404.7a3f6f6a@stein>	<BANLkTimj-oEDvWxMao6zJ_sudUntEVjO1w@mail.gmail.com> <20110624231028.7f03dcae@stein>
-In-Reply-To: <20110624231028.7f03dcae@stein>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 24 Jun 2011 18:07:38 -0400
+X-Greylist: delayed 394 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jun 2011 18:07:37 EDT
+Subject: [BUG?] numa required on x86_64?
+From: Ian Kumlien <pomac@vapor.com>
+Reply-To: pomac@vapor.com
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-WJBQhO2Pmz4nmoSdzyrH"
+Date: Sat, 25 Jun 2011 00:00:58 +0200
+Message-ID: <1308952859.25830.8.camel@pi>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 24-06-2011 18:10, Stefan Richter escreveu:
-> On Jun 24 Devin Heitmueller wrote:
->> Really, this is all about applications being able to jam a hack into
->> their code that translates to "don't call this ioctl() with some
->> particular argument if it's driver W less than version X, because the
->> driver had a bug that is likely to panic the guy's PC".  Sure, it's a
->> crummy solution, but at this point it's the best that we have got.
-> 
-> The second best.  The best that we have got is that the user runs a fixed
-> kernel.
-> 
-> Anyway; if this is the only purpose that this interface version¹ serves,
-> then Mauro's subsystem-centralized solution has the benefit that it
-> eliminates mistakes due to oversight by individual driver authors.
-> Especially because the kind of implementation behavior changes that are
-> tracked by this type of version datum are sometimes just discovered or
-> documented in hindsight.  On the other hand, Mauro's solution is redundant
-> to the uname(2) syscall.
 
-Yes. That's why my initial proposal were to add some value to it by not associating
-it with the kernel version, but with a number that will be incremented only if
-the V4L2 API changes.
+--=-WJBQhO2Pmz4nmoSdzyrH
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-> 
-> ¹) Yes, it is still an ABI version, nothing less.  With all its backwards
-> and forwards compatibility ramifications.
+Hi all,
+
+Just found this when wanting to play with development kernels again.
+Since there is no -gitXX snapshots anymore, I cloned the git =3D)...
+
+But, it failed to build properly with my config:
+
+mm/page_cgroup.c line 308: node_start_pfn and node_end_pfn is only
+defined under NUMA on x86_64.
+
+The commit that changed the use of this was introduced recently while
+the mmzone_64.h hasn't been changed since april.
+
+commit 37573e8c718277103f61f03741bdc5606d31b07e
+Author: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date:   Wed Jun 15 15:08:42 2011 -0700
+
+    memcg: fix init_page_cgroup nid with sparsemem
+   =20
+    Commit 21a3c9646873 ("memcg: allocate memory cgroup structures in local
+    nodes") makes page_cgroup allocation as NUMA aware.  But that caused a
+    problem https://bugzilla.kernel.org/show_bug.cgi?id=3D36192.
+   =20
+    The problem was getting a NID from invalid struct pages, which was not
+    initialized because it was out-of-node, out of [node_start_pfn,
+    node_end_pfn)
+   =20
+    Now, with sparsemem, page_cgroup_init scans pfn from 0 to max_pfn.  But
+    this may scan a pfn which is not on any node and can access memmap whic=
+h
+    is not initialized.
+   =20
+    This makes page_cgroup_init() for SPARSEMEM node aware and remove a cod=
+e
+    to get nid from page->flags.  (Then, we'll use valid NID always.)
+   =20
+    [akpm@linux-foundation.org: try to fix up comments]
+    Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+
+--=20
+Ian Kumlien  -- http://demius.net || http://pomac.netswarm.net
+
+--=-WJBQhO2Pmz4nmoSdzyrH
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEABECAAYFAk4FCRoACgkQ7F3Euyc51N+J+wCcDSypUKYD6T2gO8fX9I21e63u
+P7AAnR4gzoX8sWpoqJnvQ4pdxAClXZ++
+=u4F0
+-----END PGP SIGNATURE-----
+
+--=-WJBQhO2Pmz4nmoSdzyrH--
 
