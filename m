@@ -1,166 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759069Ab1FXPIK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 11:08:10 -0400
-Received: from nm18-vm1.bullet.mail.ird.yahoo.com ([77.238.189.217]:33487 "HELO
-	nm18-vm1.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757103Ab1FXPIG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 11:08:06 -0400
-X-Yahoo-Newman-Property: ymail-5
-X-Yahoo-Newman-Id: 396982.4228.bm@omp1029.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=hkQFHmu7qUAO3sZKluzzZALdYaXCQls35GLiZKoqSOaBF5ZSaAR5z5c9fxuSgN6EfCnorF7S6+uQq1hEQ7ovZ+b7ZTLlBd5lUNxJMM651Bm4UdFKABry/C5NoSW9rK7xb9q1FhPSlEcVnovzFH42ni+ZxFgk8fu/V7cLyBn6Acw=;
-Message-ID: <216158.20018.qm@web29012.mail.ird.yahoo.com>
-X-YMail-OSG: 5eSFY5EVM1mYJx_4YwmJbCQOp8eiR9H2aYRAYkclLi1vXTc
- LL6tayiqKBRAKzTT.1Brlq4pEUdSHvUvesWojL6lS3zUbgxE9TgGZ0V0ot_U
- 6F9SKk46kW23WvkZtfFmi16_tC38GQkfK5vw3458sCXq6OLqFQeuJKt9ZSpD
- QUc.z4WOnYQ8v51hXVNSudP8.kSuVXvtqXXAnQdUSgldtO9109deSwViVZJu
- z.jTucSej4pyojN0G3fsBY04KkPG7dLd8w61m7cGcKN.8zY6IY.rBI35HWxY
- uLnm1X3iXQpJ..3rd_WuoL.NhSXC4Q7dvRIVrSrafr4eKyKX9AyIWf1IdplI
- qnocJNW8ctLD6WD2HmfHWD5o2L_Q-
-X-Mailer: YahooMailClassic/14.0.3 YahooMailWebService/0.8.111.304355
-Date: Fri, 24 Jun 2011 16:08:03 +0100 (BST)
-From: Paul Parsons <lost.distance@yahoo.com>
-Subject: w1/ds1wm regression after 2.6.39: "bus error, retrying"
-To: linux-kernel@vger.kernel.org, johnpol@2ka.mipt.ru, dagenaisj@sonatest.com
+	id S1759471Ab1FXPPn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 11:15:43 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43189 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754277Ab1FXPPj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 11:15:39 -0400
+Message-ID: <4E04A9AE.3030801@mvista.com>
+Date: Fri, 24 Jun 2011 19:13:50 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: "Grosen, Mark" <mgrosen@ti.com>
+CC: Ohad Ben-Cohen <ohad@wizery.com>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [RFC 5/8] remoteproc: add davinci implementation
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com> <1308640714-17961-6-git-send-email-ohad@wizery.com> <4E035B78.3080200@mvista.com> <FFF198FBBF957F4393BA834040FEFFA202D66E@DFLE35.ent.ti.com>
+In-Reply-To: <FFF198FBBF957F4393BA834040FEFFA202D66E@DFLE35.ent.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The linux-3.0-rc4 DS1WM 1-wire driver is logging "bus error, retrying" error messages on an HP iPAQ hx4700 PDA (XScale-PXA270):
+Hello.
 
-<snip>
-Driver for 1-wire Dallas network protocol.
-DS1WM w1 busmaster driver - (c) 2004 Szabolcs Gyurko
-1-Wire driver for the DS2760 battery monitor  chip  - (c) 2004-2005, Szabolcs Gyurko
-ds1wm ds1wm: pass: 1 bus error, retrying
-ds1wm ds1wm: pass: 2 bus error, retrying
-ds1wm ds1wm: pass: 3 bus error, retrying
-ds1wm ds1wm: pass: 4 bus error, retrying
-ds1wm ds1wm: pass: 5 bus error, retrying
-ds1wm ds1wm: pass: 6 bus error, retrying
-ds1wm ds1wm: pass: 7 bus error, retrying
-ds1wm ds1wm: pass: 8 bus error, retrying
-ds1wm ds1wm: pass: 9 bus error, retrying
-ds1wm ds1wm: pass: 10 bus error, retrying
-ds1wm ds1wm: pass: 11 bus error, retrying
-ds1wm ds1wm: pass: 12 bus error, retrying
-ds1wm ds1wm: pass: 13 bus error, retrying
-ds1wm ds1wm: pass: 14 bus error, retrying
-ds1wm ds1wm: pass: 15 bus error, retrying
-ds1wm ds1wm: pass: 16 bus error, retrying
-ds1wm ds1wm: pass: 17 bus error, retrying
-ds1wm ds1wm: pass: 18 bus error, retrying
-ds1wm ds1wm: pass: 19 bus error, retrying
-ds1wm ds1wm: pass: 20 bus error, retrying
-ds1wm ds1wm: pass: 21 bus error, retrying
-ds1wm ds1wm: pass: 22 bus error, retrying
-ds1wm ds1wm: pass: 23 bus error, retrying
-ds1wm ds1wm: pass: 24 bus error, retrying
-ds1wm ds1wm: pass: 25 bus error, retrying
-ds1wm ds1wm: pass: 26 bus error, retrying
-ds1wm ds1wm: pass: 27 bus error, retrying
-ds1wm ds1wm: pass: 28 bus error, retrying
-ds1wm ds1wm: pass: 29 bus error, retrying
-ds1wm ds1wm: pass: 30 bus error, retrying
-ds1wm ds1wm: pass: 31 bus error, retrying
-ds1wm ds1wm: pass: 32 bus error, retrying
-ds1wm ds1wm: pass: 33 bus error, retrying
-pcmcia_socket pcmcia_socket0: pccard: PCMCIA card inserted into slot 0
-pcmcia 0.0: pcmcia: registering new device pcmcia0.0 (IRQ: 124)
-scsi0 : pata_pcmcia
-ata1: PATA max PIO0 cmd 0xc4820000 ctl 0xc482000e irq 124
-ds1wm ds1wm: pass: 34 bus error, retrying
-ds1wm ds1wm: pass: 35 bus error, retrying
-ds1wm ds1wm: pass: 36 bus error, retrying
-ds1wm ds1wm: pass: 37 bus error, retrying
-ds1wm ds1wm: pass: 38 bus error, retrying
-ds1wm ds1wm: pass: 39 bus error, retrying
-ds1wm ds1wm: pass: 40 bus error, retrying
-ds1wm ds1wm: pass: 41 bus error, retrying
-ds1wm ds1wm: pass: 42 bus error, retrying
-ds1wm ds1wm: pass: 43 bus error, retrying
-ds1wm ds1wm: pass: 44 bus error, retrying
-ata1.00: CFA: CF Card, Ver1.27, max PIO4
-ata1.00: 2014992 sectors, multi 0: LBA 
-ds1wm ds1wm: pass: 45 bus error, retrying
-ds1wm ds1wm: pass: 46 bus error, retrying
-ata1.00: configured for PIO0
-scsi 0:0:0:0: Direct-Access     ATA      CF Card          Ver1 PQ: 0 ANSI: 5
-sd 0:0:0:0: [sda] 2014992 512-byte logical blocks: (1.03 GB/983 MiB)
-sd 0:0:0:0: [sda] Write Protect is off
-sd 0:0:0:0: [sda] Mode Sense: 00 3a 00 00
-sd 0:0:0:0: [sda] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
- sda: sda1
-sd 0:0:0:0: [sda] Attached SCSI removable disk
-ds1wm ds1wm: pass: 47 bus error, retrying
-APM Battery Driver
-mmc0 at 0xc48d2800 irq 130
-Registered led device: hx4700:amber
-Registered led device: hx4700:green
-Registered led device: hx4700:blue
-TCP cubic registered
-NET: Registered protocol family 17
-XScale iWMMXt coprocessor detected.
-pxa-rtc pxa-rtc: setting system clock to 2000-01-01 00:00:07 UTC (946684807)
-Warning: unable to open an initial console.
-VFS: Mounted root (jffs2 filesystem) readonly on device 31:2.
-Freeing init memory: 104K
-mmc0: new SD card at address 1234
-mmcblk0: mmc0:1234 SD01G 972 MiB 
- mmcblk0: p1
-udevd (337): /proc/337/oom_adj is deprecated, please use /proc/337/oom_score_adj instead.
-g_serial gadget: Gadget Serial v2.4
-g_serial gadget: g_serial ready
-pxa27x-udc pxa27x-udc: USB reset
-pxa27x-udc pxa27x-udc: USB reset
-pxa27x-udc pxa27x-udc: USB reset
-g_serial gadget: full speed config #1: Generic Serial config
-ds1wm ds1wm: pass: 1 bus error, retrying
-ds1wm ds1wm: pass: 2 bus error, retrying
-ds1wm ds1wm: pass: 3 bus error, retrying
-<snip>
-ds1wm ds1wm: pass: 91 bus error, retrying
-ds1wm ds1wm: pass: 92 bus error, retrying
-ds1wm ds1wm: pass: 93 bus error, retrying
-ds1wm ds1wm: pass: 1 bus error, retrying
-ds1wm ds1wm: pass: 2 bus error, retrying
-ds1wm ds1wm: pass: 3 bus error, retrying
-<snip>
-ds1wm ds1wm: pass: 29 bus error, retrying
-ds1wm ds1wm: pass: 30 bus error, retrying
-ds1wm ds1wm: pass: 31 bus error, retrying
-ds1wm ds1wm: pass: 1 bus error, retrying
-ds1wm ds1wm: pass: 2 bus error, retrying
-ds1wm ds1wm: pass: 3 bus error, retrying
-<snip>
-ds1wm ds1wm: pass: 98 bus error, retrying
-ds1wm ds1wm: pass: 99 bus error, retrying
-ds1wm ds1wm: pass: 100 bus error, retrying
-ds1wm ds1wm: pass: 1 bus error, retrying
-ds1wm ds1wm: pass: 2 bus error, retrying
-ds1wm ds1wm: pass: 3 bus error, retrying
-<snip>
-ds1wm ds1wm: pass: 92 bus error, retrying
-ds1wm ds1wm: pass: 93 bus error, retrying
-ds1wm ds1wm: pass: 94 bus error, retrying
-ds1wm ds1wm: pass: 1 bus error, retrying
-ds1wm ds1wm: pass: 2 bus error, retrying
-ds1wm ds1wm: pass: 3 bus error, retrying
-<snip>
-ds1wm ds1wm: pass: 98 bus error, retrying
-ds1wm ds1wm: pass: 99 bus error, retrying
-ds1wm ds1wm: pass: 100 bus error, retrying
-<snip>
+Grosen, Mark wrote:
 
-The visible result is that the battery charging LED is erratic; sometimes it works, mostly it doesn't.
+>>     It should work on DA830 as well,
 
-The linux-2.6.39 DS1WM 1-wire driver worked OK. I haven't tried 3.0-rc1, 3.0-rc2, or 3.0-rc3.
+    So please make it dependent on ARCH_DAVINCI_DA8XX.
 
-Regards.
+>> but not on real DaVinci, so the name is misleading...
+
+> Yes, we debated calling it da8xx, but felt that with minor changes it could
+> accomodate the other SoCs in the davinci family.
+
+    I don't think it's a good idea. Using cpu_is_*() is drivers is bad. Using 
+#ifdef's is not an option either.
+
+> However, it may be better
+> to start with just the da8xx/omapl13x parts and then rename if we add the
+> others. 
+
+>> [...]
+>>> +
+>>> +/*
+>>> + * Technical Reference:
+>>> + * OMAP-L138 Applications Processor System Reference Guide
+>>> + * http://www.ti.com/litv/pdf/sprugm7d
+>>> + */
+>>> +
+>>> +/* local reset bit (0 is asserted) in MDCTL15 register (section
+>> 9.6.18) */
+>>> +#define LRST		BIT(8)
+
+>>     Perhaps this should be named nLRST or something if the sense is inverted?
+
+> If there is an established naming convention for this, I'll adopt it.
+
+    Looking into my old PSC manual (can't get the recent documentation from TI's 
+site right now), the bit is called LRSTz.
+    It's worth moving this #define into <mach/psc.h> as well.
+
+>>> +/* register for DSP boot address in SYSCFG0 module (section 11.5.6)
+>> */
+>>> +#define HOST1CFG	0x44
+
+>>     Worth declaring in <mach/da8xx.h> instead...
+
+> Possibly - since it is only used for the DSP, I thought it would be better
+> to keep local to this implementation. I'll adopt whichever approach is the
+> convention. 
+
+    Well, the general approach is to keep the #define's where they are used, so 
+maybe we should keep this #define here.
+
+>>> +static inline int davinci_rproc_start(struct rproc *rproc, u64
+>> bootaddr)
+>>> +{
+>>> +	struct device *dev = rproc->dev;
+>>> +	struct davinci_rproc_pdata *pdata = dev->platform_data;
+>>> +	struct davinci_soc_info *soc_info = &davinci_soc_info;
+>>> +	void __iomem *psc_base;
+>>> +	struct clk *dsp_clk;
+>>> +
+>>> +	/* hw requires the start (boot) address be on 1KB boundary */
+>>> +	if (bootaddr & 0x3ff) {
+>>> +		dev_err(dev, "invalid boot address: must be aligned to
+>> 1KB\n");
+>>> +		return -EINVAL;
+>>> +	}
+>>> +
+>>> +	dsp_clk = clk_get(dev, pdata->clk_name);
+
+>>     We could match using clkdev functionality, but the clock entry
+>> would need to be changed then...
+
+> I followed the existing pattern I saw in other drivers.
+
+    Probably MUSB? We're trying to move away from passing the clock name to thge 
+drivers, using match by device instead.
+
+> If there is a new, better way, please point me to an example.
+
+    Look at the da850_clks[] in mach-davinci/da850.c: if the device name is 
+specified as a first argument to CLK() macro (instead of clock name the second 
+argument), the matching is done by device, so you don't need to specify the 
+clock name to clk_get(), passing NULL instead.
+
+>>> +	if (IS_ERR_OR_NULL(dsp_clk)) {
+>>> +		dev_err(dev, "clk_get error: %ld\n", PTR_ERR(dsp_clk));
+>>> +		return PTR_ERR(dsp_clk);
+>>> +	}
+>>> +
+>>> +	clk_enable(dsp_clk);
+
+>>      This seems rather senseless activity as on DA8xx the DSP core
+>> boots the ARM core, so the DSP clock will be already enabled.
+
+> I think it is needed. It's true that the DSP initiates the boot, but then it is
+> reset and the clock disabled. See Section 13.2 of
+
+    Hm, didn't know that. Contrarywise, we had to work around the races between 
+ARM and DSP cores on accessing locked SYSCFG registers -- in kernel. So I was 
+under impression that DSP code continues running some stuff of its own.
+
+> http://focus.ti.com/lit/ug/sprugm7e/sprugm7e.pdf:
+
+> 13.2 DSP Wake Up
+
+> Following deassertion of device reset, the DSP intializes the ARM296 so that
+> it can execute the ARM ROM bootloader. Upon successful wake up, the ARM
+> places the DSP in a reset and clock gated (SwRstDisable) state that is
+> controlled by the LPSC and the SYSCFG modules.
+
+> Besides, the boot loader could have disabled it to save power. The ARM and
+> DSP are clocked independently, so I think it's best to use clock management.
+
+    OK, agreed.
+
+>>> +	rproc->priv = dsp_clk;
+>>> +
+>>> +	psc_base = ioremap(soc_info->psc_bases[0], SZ_4K);
+>>> +
+>>> +	/* insure local reset is asserted before writing start address */
+>>> +	__raw_writel(NEXT_ENABLED, psc_base + MDCTL + 4 *
+>> DA8XX_LPSC0_GEM);
+>>> +
+>>> +	__raw_writel(bootaddr, DA8XX_SYSCFG0_VIRT(HOST1CFG));
+
+>>     DA8XX_SYSCFG0_VIRT() is not supposed to be used outside mach-davinci. The
+>> variable it refers is not exported, so driver module won't work.
+
+> Ooops, I clearly did not build this as a module. Suggestion how to fix this?
+
+    Using the normal ioremap() of SYSCFG0 space, I suppose.
+
+> Mark
+
+WBR, Sergei
