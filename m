@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755841Ab1FXWBC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 18:01:02 -0400
-Received: from wavehammer.waldi.eu.org ([82.139.201.20]:55020 "EHLO
-	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754557Ab1FXWBA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 18:01:00 -0400
-Date: Fri, 24 Jun 2011 23:51:55 +0200
-From: Bastian Blank <waldi@debian.org>
-To: xen-devel@lists.xensource.com, virtualization@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/2] xen: Add alias to autoload backend drivers
-Message-ID: <20110624215155.GB4735@wavehammer.waldi.eu.org>
-Mail-Followup-To: Bastian Blank <waldi@debian.org>,
-	xen-devel@lists.xensource.com,
-	virtualization@lists.linux-foundation.org,
-	linux-kernel@vger.kernel.org
+	id S1755343Ab1FXVw0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 17:52:26 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39791 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752785Ab1FXVwZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 17:52:25 -0400
+Message-ID: <4E050704.3070409@zytor.com>
+Date: Fri, 24 Jun 2011 14:52:04 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, the arch/x86 maintainers <x86@kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Nick Piggin <npiggin@kernel.dk>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: Re: [PATCH 3/8] x86/ticketlock: Use C for __ticket_spin_unlock
+References: <cover.1308259496.git.jeremy.fitzhardinge@citrix.com> <aa0d82c6e7a1c22a941da0df3c4ba58fea375074.1308878118.git.jeremy.fitzhardinge@citrix.com>
+In-Reply-To: <aa0d82c6e7a1c22a941da0df3c4ba58fea375074.1308878118.git.jeremy.fitzhardinge@citrix.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All the Xen backend drivers are assigned to a special bus type
-xen-backend. This allows userspace to load the modules on request.
+On 06/23/2011 06:19 PM, Jeremy Fitzhardinge wrote:
+> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> 
+> If we don't need to use a locked inc for unlock, then implement it in C.
+> 
+> Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> ---
+>  arch/x86/include/asm/spinlock.h |   33 ++++++++++++++++++---------------
+>  1 files changed, 18 insertions(+), 15 deletions(-)
+> 
+> diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
+> index f48a6e3..704b0c3 100644
+> --- a/arch/x86/include/asm/spinlock.h
+> +++ b/arch/x86/include/asm/spinlock.h
+> @@ -33,9 +33,21 @@
+>   * On PPro SMP or if we are using OOSTORE, we use a locked operation to unlock
+>   * (PPro errata 66, 92)
+>   */
+> -# define UNLOCK_LOCK_PREFIX LOCK_PREFIX
+> +static __always_inline void __ticket_unlock_release(struct arch_spinlock *lock)
+> +{
+> +	if (sizeof(lock->tickets.head) == sizeof(u8))
+> +		asm (LOCK_PREFIX "incb %0"
+> +		     : "+m" (lock->tickets.head) : : "memory");
+> +	else
+> +		asm (LOCK_PREFIX "incw %0"
+> +		     : "+m" (lock->tickets.head) : : "memory");
+> +
 
-This patch defines xen-backend:* aliases on the modules and exports this
-names through modalias and uevent.
+These should be asm volatile, I believe.
 
-Signed-off-by: Bastian Blank <waldi@debian.org>
----
- drivers/block/xen-blkback/blkback.c       |    1 +
- drivers/net/xen-netback/netback.c         |    1 +
- drivers/xen/xenbus/xenbus_probe.c         |    3 ++-
- drivers/xen/xenbus/xenbus_probe_backend.c |    3 +++
- 4 files changed, 7 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-index 5cf2993..ed62008 100644
---- a/drivers/block/xen-blkback/blkback.c
-+++ b/drivers/block/xen-blkback/blkback.c
-@@ -824,3 +824,4 @@ static int __init xen_blkif_init(void)
- module_init(xen_blkif_init);
- 
- MODULE_LICENSE("Dual BSD/GPL");
-+MODULE_ALIAS("xen-backend:vbd");
-diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-index 0e4851b..fd00f25 100644
---- a/drivers/net/xen-netback/netback.c
-+++ b/drivers/net/xen-netback/netback.c
-@@ -1743,3 +1743,4 @@ failed_init:
- module_init(netback_init);
- 
- MODULE_LICENSE("Dual BSD/GPL");
-+MODULE_ALIAS("xen-backend:vif");
-diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-index 2ed0b04..bd2f90c 100644
---- a/drivers/xen/xenbus/xenbus_probe.c
-+++ b/drivers/xen/xenbus/xenbus_probe.c
-@@ -393,7 +393,8 @@ static ssize_t devtype_show(struct device *dev,
- static ssize_t modalias_show(struct device *dev,
- 			     struct device_attribute *attr, char *buf)
- {
--	return sprintf(buf, "xen:%s\n", to_xenbus_device(dev)->devicetype);
-+	return sprintf(buf, "%s:%s\n", dev->bus->name,
-+		       to_xenbus_device(dev)->devicetype);
- }
- 
- struct device_attribute xenbus_dev_attrs[] = {
-diff --git a/drivers/xen/xenbus/xenbus_probe_backend.c b/drivers/xen/xenbus/xenbus_probe_backend.c
-index ec510e5..60adf91 100644
---- a/drivers/xen/xenbus/xenbus_probe_backend.c
-+++ b/drivers/xen/xenbus/xenbus_probe_backend.c
-@@ -107,6 +107,9 @@ static int xenbus_uevent_backend(struct device *dev,
- 	if (xdev == NULL)
- 		return -ENODEV;
- 
-+	if (add_uevent_var(env, "MODALIAS=xen-backend:%s", xdev->devicetype))
-+		return -ENOMEM;
-+
- 	/* stuff we want to pass to /sbin/hotplug */
- 	if (add_uevent_var(env, "XENBUS_TYPE=%s", xdev->devicetype))
- 		return -ENOMEM;
--- 
-1.7.5.4
-
+	-hpa
