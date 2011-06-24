@@ -1,299 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757248Ab1FXNg7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 09:36:59 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38329 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756947Ab1FXNg5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 09:36:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NgRuz3Bmk7OV/PkFSewGuVWS7vIT8l39EOV7J5pjCV/lIhGEAvAaw9/6cWWl7/QsJp
-         Qyma4AB3AGU8tCsK6DdN7u0QZJ/GfgC1XvMWDVJrfyt3xshriOO20CbGGpbwK8TRcjPY
-         TOFxvrkEewSaG2Mn1AzeXEe1Eh0wdQrSi7zUA=
+	id S1757285Ab1FXNhn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 09:37:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35189 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756995Ab1FXNhm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 09:37:42 -0400
+Message-ID: <4E049324.2000406@suse.cz>
+Date: Fri, 24 Jun 2011 15:37:40 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1308888133.3185.36.camel@Mark-Aurel.gas.de>
-References: <1308705639-4215-1-git-send-email-reimth@gmail.com>
-	<1308866743-8066-1-git-send-email-reimth@gmail.com>
-	<BANLkTi=P6rB=avMSxVkEx7JQ9d95Siw2ng@mail.gmail.com>
-	<1308888133.3185.36.camel@Mark-Aurel.gas.de>
-Date: Fri, 24 Jun 2011 09:36:56 -0400
-Message-ID: <BANLkTinz5OM+NDsZy8UqbAZRFCqVV93ZNg@mail.gmail.com>
-Subject: Re: [PATCH] drm/radeon: Fix Asus M2A-VM HDMI EDID error flooding problem
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Thomas Reim <thomas.reim@nepomuc.de>
-Cc: reimth@googlemail.com, Dave Airlie <airlied@redhat.com>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        Jean Delvare <khali@linux-fr.org>,
-        Tyson Whitehead <twhitehead@gmail.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Thomas Reim <rdratlos@yahoo.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] x86, kconfig: Pick up the .config arch version in
+ 'make oldconfig'
+References: <1306707270.2029.377.camel@i7.infradead.org>	 <20110530072300.GA9802@elte.hu>	 <1306745835.2029.389.camel@i7.infradead.org>	 <20110530091536.GA2827@elte.hu> <1306750170.2029.416.camel@i7.infradead.org>
+In-Reply-To: <1306750170.2029.416.camel@i7.infradead.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 12:02 AM, Thomas Reim <thomas.reim@nepomuc.de> wrote:
-> Hi Alex,
+On 30.5.2011 12:09, David Woodhouse wrote:
+> I wasted a bunch of time today because I'd taken a .config from my
+> test machine and tried to build it, and the existing setting of
+> CONFIG_X86_32 got changed to the host system's bitness which was
+> 64-bit.
 >
-> thank you for your feedback.
+> This patch fixes that. Last time I tried to fix this bug, I had
+> introduced a regression that broke:
 >
->> Thinking about it more, it might be cleaner to just make the extended
->> mode a flag, e.g.,
->> dret = radeon_ddc_probe_extended(radeon_connector,
->> radeon_connector->requires_extended_probe);
->> and handle the extended fetch in the same probe function.
->>
+>     make ARCH=x86_64 randconfig
+>     make ARCH=i386 randconfig
 >
-> OK. That makes also sense. I will adapt again the patch.
+> type of filtered-randconfig behavior which restricted randconfigs to
+> 64-bit and 32-bit configs, respectively.
 >
->> > +       /* RS690 HDMI DDC quirk:
->> > +        * Some integrated ATI Radeon chipset implementations (e. g.
->> > +        * Asus M2A-VM HDMI) indicate the availability of a DDC even
->> > +        * when there's no monitor connected to HDMI. For HDMI
->> > +        * connectors we check for the availability of EDID with
->> > +        * at least a correct EDID header and EDID version/revision
->> > +        * information. Only then, DDC is assumed to be available.
->> > +        * This prevents drm_get_edid() and drm_edid_block_valid() of
->> > +        * periodically dumping data and kernel errors into the logs
->> > +        * and onto the terminal, which would lead to an unacceptable
->> > +        * system behaviour */
->> > +       if (connector_type == DRM_MODE_CONNECTOR_HDMIA &&
->> > +               (rdev->family == CHIP_RS690 ||
->> > +                rdev->family == CHIP_RS740 ||
->> > +                rdev->family == CHIP_RV630))
->> This seems like an arbitrary selection of chips.  I haven't heard of
->> any problems related to ddc on rv630.  Also I think we should limit it
->> to the specific connector that is problematic rather than all hdmi
->> ports.  In the case of your board, it seems the hdmi port on the
->> add-in card is the only problematic one.  Lots of rs690 motherboards
->> have hdmi ports on the motherboard itself that work fine.  I'd prefer
->> to match based on the pci device and subsytem ids and the
->> supported_device and connector type.  See radeon_atom_apply_quirks()
->> in radeon_atombios.c for an example.  Something like:
->>
->> radeon_connector->requires_extended_probe =
->>         radeon_connector_needs_extended_probe(rdev, supported_dev,
->> connector_type);
+> This version fixes that so prior randconfig behavior is maintained,
+> although if a "filtered randconfig" is desired it seems like it would be
+> better to actually implement that properly, rather than relying on a
+> hack which preserves the obsolete 'ARCH=i386' and 'ARCH=x86_64' legacy
+> just to influence *one* of the many config options that might need to be
+> hard-coded if you actually want a 'randconfig' that produces a useful
+> end-result.
 >
-> I've added RS740 because linux uses the same firmware and this chip was
-> also part of the other patch you mentioned in your first e-mail. RV630
-> was added because I checked freedesktop bug 31943. The problem described
-> there is different from the one here, but I saw logs, when no monitor
-> was connected, and for this situation the patch would help.
+> Signed-off-by: David Woodhouse<David.Woodhouse@intel.com>
+> Link: http://lkml.kernel.org/r/1306707270.2029.377.camel@i7.infradead.org
+>
+> ---
+> v2: Explicitly turn off CONFIG_64BIT in i386_defconfig. The default for
+> CONFIG_64BIT has *changed* (from n to y) for ARCH=x86, so it needs to be
+> explicitly turned off or 'make i386_defconfig' will give you 64-bit :)
+>
+> diff --git a/Makefile b/Makefile
+> index 123d858..7b3b7c5 100644
+> --- a/Makefile
+> +++ b/Makefile
+> @@ -165,7 +165,8 @@ export srctree objtree VPATH
+>   # then ARCH is assigned, getting whatever value it gets normally, and
+>   # SUBARCH is subsequently ignored.
+>
+> -SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
+> +SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
+> +				  -e s/sun4u/sparc64/ \
+>   				  -e s/arm.*/arm/ -e s/sa110/arm/ \
+>   				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
+>   				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index cc6c53a..1f206b0 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -1,7 +1,7 @@
+>   # Select 32 or 64 bit
+>   config 64BIT
+>   	bool "64-bit kernel" if ARCH = "x86"
+> -	default ARCH = "x86_64"
+> +	default ARCH != "i386"
 
-I'd rather add quirks on a case by case bases rather than speculating
-on mailing list reports.
+This breaks all{mod,yes}config on 32bit and allnoconfig on 64bit (and 
+randconfig sometimes :)). The user expectation is that make 
+defconfig/allmodconfig/allyesconfig builds a kernel for their 
+architecture. You only handle defconfig below.
 
->
-> With regard to moving away from connector type and chip family to pci
-> devices I'm not really sure. I remember complaints from people a year
-> ago, that used the RS690 on a laptop and had the same problem. I just
-> can't find the related messages. Don't you believe that this could be to
-> focused? Especially, if we compare patch
-> http://git.kernel.org/?p=linux/kernel/git/airlied/drm-2.6.git;a=commitdiff;h=4a9a8b71e12d41abb71c4e741bff524f016cfef4?
->
-
-We should probably revert or rework that patch when we apply yours
-otherwise we may end up removing i2c buses unnecessarily in some
-cases.  I think this is a better approach.
-
-> I felt rather safe with the above approach, as nothing will go wrong, if
-> we check the HDMIA type connectors also RS690 of another manufacturers.
-> We just check for a valid first six bytes set of the EDID header now.
-
-As I said above, lets just apply this to the specific board and
-connector that is problematic.  I seems to only affect the hdmi port
-on the add-in cards, so there's no need to penalize all hdmi ports.
-If we get enough quirks down the road, we can make it a general rule.
-
->
->> > @@ -777,8 +780,17 @@ static int radeon_ddc_dump(struct drm_connector *connector)
->> >        if (!radeon_connector->ddc_bus)
->> >                return -1;
->> >        edid = drm_get_edid(connector, &radeon_connector->ddc_bus->adapter);
->> > +       /* Log EDID retrieval status here. In particular with regard to
->> > +        * connectors with requires_extended_probe flag set, that will prevent
->> > +        * function radeon_dvi_detect() to fetch EDID on this connector,
->> > +        * as long as there is no valid EDID header found */
->> >        if (edid) {
->> > +               DRM_INFO("Radeon display connector %s: Found valid EDID",
->> > +                               drm_get_connector_name(connector));
->> >                kfree(edid);
->> > +       } else {
->> > +               DRM_INFO("Radeon display connector %s: No monitor connected or invalid EDID",
->> > +                               drm_get_connector_name(connector));
->>
->> These will just spam the log as well.
->
-> Here's the log:
-> kernel: [   14.912386] [drm] Radeon Display Connectors
-> kernel: [   14.912389] [drm] Connector 0:
-> kernel: [   14.912391] [drm]   VGA
-> kernel: [   14.912394] [drm]   DDC: 0x7e50 0x7e40 0x7e54 0x7e44 0x7e58
-> 0x7e48 0x7e5c 0x7e4c
-> kernel: [   14.912397] [drm]   Encoders:
-> kernel: [   14.912398] [drm]     CRT1: INTERNAL_KLDSCP_DAC1
-> kernel: [   14.912401] [drm] Connector 1:
-> kernel: [   14.912402] [drm]   S-video
-> kernel: [   14.912404] [drm]   Encoders:
-> kernel: [   14.912405] [drm]     TV1: INTERNAL_KLDSCP_DAC1
-> kernel: [   14.912407] [drm] Connector 2:
-> kernel: [   14.912409] [drm]   HDMI-A
-> kernel: [   14.912410] [drm]   HPD2
-> kernel: [   14.912413] [drm]   DDC: 0x7e40 0x7e60 0x7e44 0x7e64 0x7e48
-> 0x7e68 0x7e4c 0x7e6c
-> kernel: [   14.912415] [drm]   Encoders:
-> kernel: [   14.912417] [drm]     DFP2: INTERNAL_DDI
-> kernel: [   14.912419] [drm] Connector 3:
-> kernel: [   14.912421] [drm]   DVI-D
-> kernel: [   14.912423] [drm]   DDC: 0x7e40 0x7e50 0x7e44 0x7e54 0x7e48
-> 0x7e58 0x7e4c 0x7e5c
-> kernel: [   14.912425] [drm]   Encoders:
-> kernel: [   14.912427] [drm]     DFP3: INTERNAL_LVTM1
-> kernel: [   15.071566] HDA Intel 0000:00:14.2: PCI INT A -> GSI 16
-> (level, low) -> IRQ 16
-> kernel: [   15.071645] HDA Intel 0000:00:14.2: irq 42 for MSI/MSI-X
-> kernel: [   15.072678] [drm] Radeon display connector VGA-1: No display
-> connected or invalid EDID
-> kernel: [   15.470734] Raw EDID:
-> kernel: [   15.470745] <3>00 00 00 00 00 00 00 00 00 00 00 07 00 00 00
-> 00  ................
-> kernel: [   15.470748] <3>00 00 00 00 00 00 00 00 00 00 07 00 00 00 00
-> 00  ................
-> kernel: [   15.470751] <3>00 00 00 00 00 00 00 00 00 00 7f 00 00 00 00
-> 00  ................
-> kernel: [   15.470754] <3>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   15.470757] <3>00 00 00 00 1f 00 00 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   15.470760] <3>00 00 00 00 00 07 00 00 00 00 00 7f 00 00 00
-> 00  ................
-> kernel: [   15.470762] <3>00 00 00 00 00 00 07 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   15.470765] <3>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 01  ................
-> kernel: [   15.470767]
-> kernel: [   15.779568] Raw EDID:
-> kernel: [   15.779578] <3>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   15.779581] <3>00 00 00 00 00 7f 00 00 00 00 03 00 00 00 00
-> 00  ................
-> kernel: [   15.779584] <3>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   15.779587] <3>00 00 00 00 ff 00 00 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   15.779590] <3>00 00 00 00 00 00 00 00 ff 00 00 00 00 00 00
-> 00  ................
-> kernel: [   15.779593] <3>00 00 00 00 00 00 00 00 00 01 00 00 00 00 00
-> 00  ................
-> kernel: [   15.779596] <3>00 00 00 7f 00 00 00 00 00 03 07 00 00 00 00
-> 00  ................
-> kernel: [   15.779598] <3>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   15.779600]
-> kernel: [   16.151817] Raw EDID:
-> kernel: [   16.151827] <3>00 00 00 00 00 00 1f 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   16.151830] <3>00 00 00 00 00 00 00 00 00 01 00 00 00 00 00
-> 00  ................
-> kernel: [   16.151833] <3>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   16.151836] <3>00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-> 00  ................
-> kernel: [   16.151839] <3>00 00 1f 00 00 00 00 00 00 00 00 00 00 00 0f
-> 00  ................
-> kernel: [   16.151842] <3>01 00 00 00 00 00 00 00 01 00 00 00 00 07 00
-> ff  ................
-> kernel: [   16.151844] <3>00 00 00 00 00 00 ff 00 00 00 00 00 00 00 7f
-> 00  ................
-> kernel: [   16.151847] <3>00 0f 00 00 00 00 00 00 00 3f 00 00 00 00 00
-> 00  .........?......
-> kernel: [   16.151849]
-> kernel: [   16.444209] Raw EDID:
-> kernel: [   16.444220] <3>00 07 00 00 00 00 00 00 ff 00 00 00 00 ff 00
-> 00  ................
-> kernel: [   16.444223] <3>00 00 3f 00 00 00 00 00 00 00 00 00 00 ff 00
-> 00  ..?.............
-> kernel: [   16.444226] <3>00 00 00 00 00 00 00 00 00 07 00 00 00 01 0f
-> 00  ................
-> kernel: [   16.444229] <3>00 07 00 00 00 00 00 00 00 00 01 07 00 00 00
-> 00  ................
-> kernel: [   16.444231] <3>00 00 00 00 00 00 00 00 7f 00 00 00 00 1f 00
-> 00  ................
-> kernel: [   16.444234] <3>00 00 03 00 00 00 00 3f 00 03 00 00 00 00 00
-> 00  .......?........
-> kernel: [   16.444237] <3>7f 00 00 1f 00 00 00 00 00 00 00 00 0f 07 00
-> 00  ................
-> kernel: [   16.444240] <3>00 00 00 00 00 00 00 00 00 00 03 00 00 00 00
-> 00  ................
-> kernel: [   16.444242]
-> kernel: [   16.444248] radeon 0000:01:05.0: HDMI-A-1: EDID block 0
-> invalid.
-> kernel: [   16.444252] [drm] Radeon display connector HDMI-A-1: No
-> display connected or invalid EDID
-> kernel: [   16.762734] [drm] Radeon display connector DVI-D-1: Found
-> valid EDID
->
-> Just one info entry per connector will be added during connector setup.
-> The EDID dump was already there and comes from the DDC probing during
-> connector setup. After that, there are no more entries in the log with
-> regard to the buggy HDMI connector. From a user point of view I would
-> prefer to have the two log entries:
-> radeon 0000:01:05.0: HDMI-A-1: EDID block 0 invalid.
-> [drm] Radeon display connector HDMI-A-1: No display connected or invalid
-> EDID.
-> One from the probing, which is a little bit cryptic, and the explaining
-> one which prelude the silence for this connector.
-
-ok, that makes sense.
-
->
->> > diff --git a/drivers/gpu/drm/radeon/radeon_i2c.c b/drivers/gpu/drm/radeon/radeon_i2c.c
->> > index 781196d..7e93cf9 100644
->> > --- a/drivers/gpu/drm/radeon/radeon_i2c.c
->> > +++ b/drivers/gpu/drm/radeon/radeon_i2c.c
->> > @@ -34,7 +34,7 @@
->> >  */
->> >  bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
->> >  {
->> > -       u8 out_buf[] = { 0x0, 0x0};
->> > +       u8 out = 0x0;
->> >        u8 buf[2];
->> >        int ret;
->> >        struct i2c_msg msgs[] = {
->> > @@ -42,7 +42,7 @@ bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
->> >                        .addr = 0x50,
->> >                        .flags = 0,
->> >                        .len = 1,
->> > -                       .buf = out_buf,
->> > +                       .buf = &out,
->> >                },
->> >                {
->> >                        .addr = 0x50,
->>
->>
->> The change above doesn't seem to be related.
->
-> This was a comment from Jean who complained about the ineffective usage
-> of the i2c bus. But I can also restore the old code. What's your
-> preference?
-
-Ah, I missed that.  Let's make that a separate patch, or fix it when
-you add support for the extended edid check.
-
-Thanks for fixing this up.
-
-Alex
-
->
-> Best regards
->
-> Thomas
->
->
+Michal
