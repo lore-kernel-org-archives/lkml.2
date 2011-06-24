@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933198Ab1FXAZo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 20:25:44 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:37333 "EHLO smtp.gentoo.org"
+	id S932834Ab1FXA3p (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 20:29:45 -0400
+Received: from claw.goop.org ([74.207.240.146]:46688 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759923Ab1FXAZn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 20:25:43 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: socketcan-core@lists.berlios.de,
-        Urs Thuermann <urs.thuermann@volkswagen.de>,
-        Oliver Hartkopp <oliver.hartkopp@volkswagen.de>,
-        netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] MAINTAINERS: mark socketcan-core lists as subscribers-only
-Date: Thu, 23 Jun 2011 20:25:42 -0400
-Message-Id: <1308875142-10429-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.5.3
+	id S1759615Ab1FXA3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 23 Jun 2011 20:29:44 -0400
+Message-ID: <4E03DA75.2080606@goop.org>
+Date: Thu, 23 Jun 2011 17:29:41 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: linux-bluetooth@vger.kernel.org
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Linux 3.0-rc4: regression reconnecting bluetooth headset (A2DP fails)
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The socketcan-core lists require subscription, so mark them as such.
+I have a Nokia BH-905i headset.  With a stock F15 kernel, it all works
+well. With current linux-2.6.git, it fails to reconnect properly.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
- MAINTAINERS |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+On connection, the headphones only beep once, whereas they normally beep
+twice; I think this is one beep per profile, and its only connecting HSP
+and failing A2DP.  In the sound control panel, it either comes up with
+"profile: off" or with the HSP/HFP (Telephony) profile rather than A2DP,
+and it fails to switch if I try to change profiles via the sound control
+panel.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index f0358cd..d3765e8 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -1639,7 +1639,7 @@ CAN NETWORK LAYER
- M:	Oliver Hartkopp <socketcan@hartkopp.net>
- M:	Oliver Hartkopp <oliver.hartkopp@volkswagen.de>
- M:	Urs Thuermann <urs.thuermann@volkswagen.de>
--L:	socketcan-core@lists.berlios.de
-+L:	socketcan-core@lists.berlios.de (subscribers-only)
- L:	netdev@vger.kernel.org
- W:	http://developer.berlios.de/projects/socketcan/
- S:	Maintained
-@@ -1651,7 +1651,7 @@ F:	include/linux/can/raw.h
- 
- CAN NETWORK DRIVERS
- M:	Wolfgang Grandegger <wg@grandegger.com>
--L:	socketcan-core@lists.berlios.de
-+L:	socketcan-core@lists.berlios.de (subscribers-only)
- L:	netdev@vger.kernel.org
- W:	http://developer.berlios.de/projects/socketcan/
- S:	Maintained
--- 
-1.7.5.3
+However, if I re-pair the device from scratch each time I use it, it
+connects properly and it all works fine.
+
+pactl list shows:
+
+Card #2
+	Name: bluez_card.00_0B_E4_A6_6C_0D
+	Driver: module-bluetooth-device.c
+	Owner Module: 23
+	Properties:
+		device.description = "Nokia BH-905i"
+		device.string = "00:0B:E4:A6:6C:0D"
+		device.api = "bluez"
+		device.class = "sound"
+		device.bus = "bluetooth"
+		device.form_factor = "headset"
+		bluez.path = "/org/bluez/843/hci0/dev_00_0B_E4_A6_6C_0D"
+		bluez.class = "0x240404"
+		bluez.name = "Nokia BH-905i"
+		device.icon_name = "audio-headset-bluetooth"
+		device.intended_roles = "phone"
+	Profiles:
+		a2dp: High Fidelity Playback (A2DP) (sinks: 1, sources: 0, priority. 10)
+		hsp: Telephony Duplex (HSP/HFP) (sinks: 1, sources: 1, priority. 20)
+		off: Off (sinks: 0, sources: 0, priority. 0)
+	Active Profile: hsp
+
+If I try to switch profiles on the command line it says:
+$ pactl set-card-profile 2 a2dp
+Failure: Input/Output error
+
+and /var/log/messages shows:
+module-bluetooth-device.c: A2DP is not connected, refused to switch profile
+
+Why isn't A2DP connecting?  How can I debug this further?
+
+Thanks,
+	J
 
