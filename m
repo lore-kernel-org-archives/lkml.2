@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753392Ab1FXKt1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 06:49:27 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:38650 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab1FXKtZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 06:49:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Cgd9LXR0TWUwyYi1uhrkw4oBJw+dUn8MsxIGyWqS+RptvBdWNRErchRcN2qgADu2Mh
-         yYqM7wNa9DyDxK7FcsHrwZD+BPOolXCnHLWBwQ1sROyxubP5+c/2Bw/Fpx7hAoZW6sps
-         wtOFpctZRf2bnYghS4Ug7VH58Nz/7I20VY+1s=
+	id S1751046Ab1FYFBk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 01:01:40 -0400
+Received: from ozlabs.org ([203.10.76.45]:59931 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750809Ab1FYFBi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 01:01:38 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Arnd Bergmann <arnd@arndb.de>, Jonas Bonn <jonas@southpole.se>
+Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH 14/19] OpenRISC: Module support
+In-Reply-To: <201106241205.32037.arnd@arndb.de>
+References: <1308483825-6023-1-git-send-email-jonas@southpole.se> <201106221626.12023.arnd@arndb.de> <1308905525.6699.23.camel@localhost> <201106241205.32037.arnd@arndb.de>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Fri, 24 Jun 2011 20:36:31 +0930
+Message-ID: <874o3f8p54.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin_ioBy-C15c6GkA4eirCAVEN-PHvuV3gOq0Ls3n5YTBw@mail.gmail.com>
-References: <1308854160-16022-1-git-send-email-sergiu@chromium.org>
-	<62229.1308859172@turing-police.cc.vt.edu>
-	<BANLkTiko9PvSDHEnbjCAvcAReLytWwg7qSoZGv778xuj3tqW=g@mail.gmail.com>
-	<20110623213315.GB4347@suse.de>
-	<BANLkTin_ioBy-C15c6GkA4eirCAVEN-PHvuV3gOq0Ls3n5YTBw@mail.gmail.com>
-Date: Fri, 24 Jun 2011 12:49:24 +0200
-Message-ID: <BANLkTi=avK-_SWwS938=oPuKRMq_5Ai3bw@mail.gmail.com>
-Subject: Re: [PATCH] char drivers: Ram oops kernel configuration parameters
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Greg KH <gregkh@suse.de>, Sergiu Iordache <sergiu@chromium.org>,
-        Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
-        Samo Pogacnik <samo_pogacnik@t-2.net>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Seiji Aguchi <seiji.aguchi@hds.com>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/24 Mandeep Singh Baines <msb@chromium.org>:
-> On Thu, Jun 23, 2011 at 2:33 PM, Greg KH <gregkh@suse.de> wrote:
->> On Thu, Jun 23, 2011 at 01:43:49PM -0700, Sergiu Iordache wrote:
->>> On Thu, Jun 23, 2011 at 12:59 PM, <Valdis.Kletnieks@vt.edu> wrote:
->>> > On Thu, 23 Jun 2011 11:36:00 PDT, Sergiu Iordache said:
->>> > > Ramoops currently has module parameters for setting the configuration
->>> > > variables (ram start, ram size and dump oopses). This makes it difficult to
->>> > > configure when the module is compiled as a builtin.
->>> >
->>> > Can't you add 'ramoops.ram_start=128M ramoops.ram_size=64M' or similar
->>> > to your kernel cmdline?
->>>
->>> You can but the problem is that when you're using the module as a
->>> builtin managing the command line is harder than managing Kconfig
->>> files. Instead of having different platform dependent config files
->>> (which already exist in most of the cases) under source control you
->>> would have to have different scripts which run the kernel with
->>> different parameters.
->>
->> Then why not make the sysfs files writable?
->>
->
-> We do use sysctl and sysfs for most of our tuning stuff.
->
-> But in this case, you wouldn't be able to write the sysfs file until
-> late in boot
-> so an early crashed would be lost.
->
-> Our command-line is pretty generic across targets. Even across archs.
->
+On Fri, 24 Jun 2011 12:05:31 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Friday 24 June 2011, Jonas Bonn wrote:
+> > I noticed that kernel/module.c already has this:
+> > 
+> > unsigned int __weak arch_mod_section_prepend(struct module *mod,
+> >                                              unsigned int section)
+> > 
+> >
+> > Is using a __weak attribute on the default (generic) implementations a
+> > better approach?
+> 
+> I normally don't like using __weak, because it more easily confuses
+> readers about which version is actually used.
 
-Maybe using platform data? With archs with device tree support can be easy.
+I share your reluctance with __weak, but as fewer people want to touch
+multiple archs it is becoming the norm.
 
-Marco
+Would happily accept patches...
+
+Thanks,
+Rusty.
