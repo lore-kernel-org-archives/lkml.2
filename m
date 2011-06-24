@@ -1,136 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab1FXLNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 07:13:13 -0400
-Received: from relay.parallels.com ([195.214.232.42]:54010 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753234Ab1FXLNL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 07:13:11 -0400
-Message-ID: <4E047145.8050601@parallels.com>
-Date: Fri, 24 Jun 2011 15:13:09 +0400
-From: Konstantin Khlebnikov <khlebnikov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
+	id S1755284Ab1FXLQl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 07:16:41 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:35637 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754488Ab1FXLQj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 07:16:39 -0400
+Date: Fri, 24 Jun 2011 12:16:08 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Jaroslav Kysela <perex@perex.cz>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH] SOUND: Fix non-ISA_DMA_API build failure
+Message-ID: <20110624111608.GA6327@linux-mips.org>
+References: <20110623144750.GA10180@linux-mips.org>
+ <s5hzkl7zlcq.wl%tiwai@suse.de>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] cfq-iosched: queue groups more gracefully
-References: <20110623162206.3222.3312.stgit@localhost6> <20110623175118.GD20763@redhat.com>
-In-Reply-To: <20110623175118.GD20763@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hzkl7zlcq.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Thu, Jun 23, 2011 at 08:22:06PM +0400, Konstantin Khlebnikov wrote:
->> This patch queue awakened cfq-groups according its current vdisktime,
->> it try to save upto one group timeslice from unused virtual disk time.
->> Thus group does not loses everything, if it was not continuously backlogged.
->>
->> Signed-off-by: Konstantin Khlebnikov<khlebnikov@openvz.org>
->
-> I think this patch is not required till we start preemption across
-> groups? Any more details of actual use will help.
+On Fri, Jun 24, 2011 at 10:26:13AM +0200, Takashi Iwai wrote:
 
-I saw some problems with fairness and latency between groups with parallel
-intensive IO and interactive groups -- cfq always put interactive groups at the end,
-so its latency is extremely high. With this patch interactive groups got real chance to
-be scheduled much earlier. I'm sorry, I can not show simple test-cases right now.
+> Hrm...  I still don't understand why ES18XX or others were selected at
+> the first place.  Isn't it covered by the conditional in
+> sound/isa/Kconfig like below?
+> 
+> ================================================================
+> menuconfig SND_ISA
+> 	bool "ISA sound devices"
+> 	depends on ISA && ISA_DMA_API
+> ...
+> if SND_ISA
+> ...
+> config SND_ES18XX
+> 	tristate "Generic ESS ES18xx driver"
+> ...
+> endif	# SND_ISA
+> ================================================================
+> 
+> Isn't SND_ISA=n in your case although ISA_DMA_API=n?
 
->
->> ---
->>   block/cfq-iosched.c |   36 ++++++++++++++++++++++++++++++------
->>   1 files changed, 30 insertions(+), 6 deletions(-)
->>
->> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
->> index c71533e..d5c7c79 100644
->> --- a/block/cfq-iosched.c
->> +++ b/block/cfq-iosched.c
->> @@ -592,6 +592,26 @@ cfq_group_slice(struct cfq_data *cfqd, struct cfq_group *cfqg)
->>   	return cfq_target_latency * cfqg->weight / st->total_weight;
->>   }
->>
->> +static inline u64
->> +cfq_group_vslice(struct cfq_data *cfqd, struct cfq_group *cfqg)
->> +{
->> +	struct cfq_rb_root *st =&cfqd->grp_service_tree;
->> +	u64 vslice;
->> +
->> +	/* There no group slices in iops mode */
->> +	if (iops_mode(cfqd))
->> +		return 0;
->> +
->> +	/*
->> +	 * Equal to cfq_scale_slice(cfq_group_slice(cfqd, cfqg), cfqg).
->> +	 * Add group weight beacuse it currently not in service tree.
->> +	 */
->> +	vslice = (u64)cfq_target_latency<<  CFQ_SERVICE_SHIFT;
->> +	vslice *= BLKIO_WEIGHT_DEFAULT;
->> +	do_div(vslice, st->total_weight + cfqg->weight);
->
-> Above is not equivalent to cfq_scale_slice(cfq_group_slice(cfqd, cfqg),
-> cfqg) as comment says.
->
-> you are not calculating cfq_group_slice(). Instead using cfq_target_latency.
+The answer is hidden in this Kconfig warning:
 
-No, this this expression gives the same value as cfq_scale_slice(cfq_group_slice())
-after the group will be added to service tree. It is equal to slice that the group will receive
-if it will be queued immediately after the addition.
+warning: (RADIO_MIROPCM20) selects SND_ISA which has unmet direct dependencies (SOUND && !M68K && SND && ISA && ISA_DMA_API)
 
->
-> Also it does not make sense. A higher weight group gets lower vslice
-> and in turn gets put further away on the tree. This is reverse of what
-> you want.
->
->> +	return vslice;
->> +}
->> +
->>   static inline unsigned
->>   cfq_scaled_cfqq_slice(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->>   {
->> @@ -884,16 +904,20 @@ cfq_group_notify_queue_add(struct cfq_data *cfqd, struct cfq_group *cfqg)
->>   		return;
->>
->>   	/*
->> -	 * Currently put the group at the end. Later implement something
->> -	 * so that groups get lesser vtime based on their weights, so that
->> -	 * if group does not loose all if it was not continuously backlogged.
->> +	 * Bump vdisktime to be greater or equal min_vdisktime.
->> +	 */
->> +	cfqg->vdisktime = max_vdisktime(cfqg->vdisktime, st->min_vdisktime);
->> +
->
-> why do we need to do this?
+This is due to the following in drivers/media/radio/Kconfig:
 
-Time should not go back, it's dangerous.
+config RADIO_MIROPCM20
+        tristate "miroSOUND PCM20 radio"
+        depends on ISA && VIDEO_V4L2 && SND
+        select SND_ISA
+        select SND_MIRO
 
->
->> +	/*
->> +	 * Put the group at the end, but save one slice from unused time.
->>   	 */
->>   	n = rb_last(&st->rb);
->>   	if (n) {
->>   		__cfqg = rb_entry_cfqg(n);
->> -		cfqg->vdisktime = __cfqg->vdisktime + CFQ_IDLE_DELAY;
->> -	} else
->> -		cfqg->vdisktime = st->min_vdisktime;
->> +		cfqg->vdisktime = max_vdisktime(cfqg->vdisktime,
-> 						^^^^^^^
-> I think you meant st->min_vdisktime here?
+So SND_ISA gets forced on even though the dependency on ISA_DMA_API is not
+fulfilled.  That's solved by adding the dependency on ISA_DMA_API to
+RADIO_MIROPCM20.
 
-No, I adjust group vdisktime to put it at the end, but save up to one slice.
-Although there may be a problem with the overlap, with wakeup after looong sleep..
+> Also, adlib driver is really only for ISA, so I see no big reason to
+> allow this built for non-ISA.
 
->> +				__cfqg->vdisktime -
->> +					cfq_group_vslice(cfqd, cfqg));
->> +	}
->>   	cfq_group_service_tree_add(st, cfqg);
->>   }
->>
->
-> Thanks
-> Vivek
+With the patch applied:
 
+[...]
+menuconfig SND_ISA
+        bool "ISA sound devices"
+        depends on ISA
+[...]
+
+if SND_ISA
+
+config SND_ADLIB
+        tristate "AdLib FM card"
+        select SND_OPL3_LIB
+[...]
+
+So the Adlib driver will still only be built with ISA enabled.  The only
+thing that makes the Adlib driver different from all the others in the
+ifdef SND_ISA ... endif bracket is that it does not directly or indirectly
+use the ISA DMA API and that's in the end the reason why sound/isa/Kconfig
+needs to be changed.
+
+I originally approach this a different way but now that I'm explaining the
+details I notice that it probably makes sense to split this patch into two:
+
+ o The drivers/media/radio/Kconfig part should be applied for 3.0 and
+   maybe -stable.
+ o The sound/isa/Kconfig part is basically only fixing the dependency for
+   the Adlib driver allowing it to be built on non-ISA_DMA_API system and
+   is material for the next release after 3.0.
+
+If you agree I'm going to repost the patch with aproprite log messages.
+
+  Ralf
