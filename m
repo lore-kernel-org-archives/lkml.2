@@ -1,65 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756906Ab1FXN3X (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 09:29:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54523 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753237Ab1FXN3W (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 09:29:22 -0400
-Message-ID: <4E04912A.4090305@infradead.org>
-Date: Fri, 24 Jun 2011 10:29:14 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1756965Ab1FXNaX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 09:30:23 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:45741 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752895Ab1FXNaW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 09:30:22 -0400
+Date: Fri, 24 Jun 2011 14:30:09 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Jaroslav Kysela <perex@perex.cz>, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        linux-mips@linux-mips.org
+Subject: [PATCH] MEDIA: Fix non-ISA_DMA_API link failure of sound code
+Message-ID: <20110624133009.GA30076@linux-mips.org>
 MIME-Version: 1.0
-To: Devin Heitmueller <dheitmueller@kernellabs.com>
-CC: Hans Verkuil <hverkuil@xs4all.nl>, Jesper Juhl <jj@chaosbits.net>,
-        LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        linux-media@vger.kernel.org, ceph-devel@vger.kernel.org,
-        Sage Weil <sage@newdream.net>
-Subject: Re: [RFC] Don't use linux/version.h anymore to indicate a per-driver
- version - Was: Re: [PATCH 03/37] Remove unneeded version.h includes from
- include/
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>	<alpine.LNX.2.00.1106232356530.17688@swampdragon.chaosbits.net>	<4E04732A.3060305@infradead.org>	<201106241326.27593.hverkuil@xs4all.nl> <BANLkTinXymR_2A2Mr+UbhK63s2xjtK=B=g@mail.gmail.com>
-In-Reply-To: <BANLkTinXymR_2A2Mr+UbhK63s2xjtK=B=g@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 24-06-2011 09:20, Devin Heitmueller escreveu:
->> Applications are certainly using it. I know this for a fact for the ivtv driver where
->> feature improvements are marked that way.
->>
->> Without more research on how this is used I am not comfortable with this.
->>
->> Regards,
->>
->>        Hans
-> 
-> MythTV has a bunch of these too (mainly so the code can adapt to
-> driver bugs that are fixed in later revisions).  Putting Mauro's patch
-> upstream will definitely cause breakage.
+A build with ISA && ISA_DMA && !ISA_DMA_API results in:
 
-It shouldn't, as ivtv driver version is lower than 3.0.0. All the old bug fixes
-aren't needed if version is >= 3.0.0.
+  CC      sound/isa/es18xx.o
+sound/isa/es18xx.c: In function ‘snd_es18xx_playback1_prepare’:
+sound/isa/es18xx.c:501:9: error: implicit declaration of function ‘snd_dma_program’ [-Werror=implicit-function-declaration]
+sound/isa/es18xx.c: In function ‘snd_es18xx_playback_pointer’:
+sound/isa/es18xx.c:818:3: error: implicit declaration of function ‘snd_dma_pointer’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
 
-Besides that, trusting on a driver revision number to detect that a bug is
-there is not the right thing to do, as version numbers are never increased at
-the stable kernels (nor distro modified kernels take care of increasing revision
-number as patches are backported there).
+make[2]: *** [sound/isa/es18xx.o] Error 1
+  CC      sound/isa/sscape.o
+sound/isa/sscape.c: In function ‘upload_dma_data’:
+sound/isa/sscape.c:481:3: error: implicit declaration of function ‘snd_dma_program’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
 
-In other words, relying on it doesn't work fine.
+make[2]: *** [sound/isa/sscape.o] Error 1
+  CC      sound/isa/ad1816a/ad1816a_lib.o
+sound/isa/ad1816a/ad1816a_lib.c: In function ‘snd_ad1816a_playback_prepare’:
+sound/isa/ad1816a/ad1816a_lib.c:244:2: error: implicit declaration of function ‘snd_dma_program’ [-Werror=implicit-function-declaration]
+sound/isa/ad1816a/ad1816a_lib.c: In function ‘snd_ad1816a_playback_pointer’:
+sound/isa/ad1816a/ad1816a_lib.c:302:2: error: implicit declaration of function ‘snd_dma_pointer’ [-Werror=implicit-function-declaration]
+sound/isa/ad1816a/ad1816a_lib.c: In function ‘snd_ad1816a_free’:
+sound/isa/ad1816a/ad1816a_lib.c:544:3: error: implicit declaration of function ‘snd_dma_disable’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
 
-> Also, it screws up the ability for users to get fixes through the
-> media_build tree (unless you are increasing the revision constantly
-> with every merge you do).
+make[3]: *** [sound/isa/ad1816a/ad1816a_lib.o] Error 1
+make[3]: Target `__build' not remade because of errors.
+make[2]: *** [sound/isa/ad1816a] Error 2
+  CC      sound/isa/es1688/es1688_lib.o
+sound/isa/es1688/es1688_lib.c: In function ‘snd_es1688_playback_prepare’:
+sound/isa/es1688/es1688_lib.c:417:2: error: implicit declaration of function ‘snd_dma_program’ [-Werror=implicit-function-declaration]
+sound/isa/es1688/es1688_lib.c: In function ‘snd_es1688_playback_pointer’:
+sound/isa/es1688/es1688_lib.c:509:2: error: implicit declaration of function ‘snd_dma_pointer’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
 
-Why? Developers don't increase version numbers on every applied patch
-(with is great, as it avoids merge conflicts).
+make[3]: *** [sound/isa/es1688/es1688_lib.o] Error 1
+make[3]: Target `__build' not remade because of errors.
+make[2]: *** [sound/isa/es1688] Error 2
+  CC      sound/isa/gus/gus_dma.o
+sound/isa/gus/gus_dma.c: In function ‘snd_gf1_dma_program’:
+sound/isa/gus/gus_dma.c:79:2: error: implicit declaration of function ‘snd_dma_program’ [-Werror=implicit-function-declaration]
+sound/isa/gus/gus_dma.c: In function ‘snd_gf1_dma_done’:
+sound/isa/gus/gus_dma.c:177:3: error: implicit declaration of function ‘snd_dma_disable’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
 
-Mauro
+make[3]: *** [sound/isa/gus/gus_dma.o] Error 1
+  CC      sound/isa/gus/gus_pcm.o
+sound/isa/gus/gus_pcm.c: In function ‘snd_gf1_pcm_capture_prepare’:
+sound/isa/gus/gus_pcm.c:591:2: error: implicit declaration of function ‘snd_dma_program’ [-Werror=implicit-function-declaration]
+sound/isa/gus/gus_pcm.c: In function ‘snd_gf1_pcm_capture_pointer’:
+sound/isa/gus/gus_pcm.c:619:2: error: implicit declaration of function ‘snd_dma_pointer’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
 
+make[3]: *** [sound/isa/gus/gus_pcm.o] Error 1
+make[3]: Target `__build' not remade because of errors.
+make[2]: *** [sound/isa/gus] Error 2
+  CC      sound/isa/sb/sb16_csp.o
+sound/isa/sb/sb16_csp.c: In function ‘snd_sb_csp_ioctl’:
+sound/isa/sb/sb16_csp.c:228:227: error: case label does not reduce to an integer constant
+make[3]: *** [sound/isa/sb/sb16_csp.o] Error 1
+  CC      sound/isa/sb/sb16_main.o
+sound/isa/sb/sb16_main.c: In function ‘snd_sb16_playback_prepare’:
+sound/isa/sb/sb16_main.c:276:2: error: implicit declaration of function ‘snd_dma_program’ [-Werror=implicit-function-declaration]
+sound/isa/sb/sb16_main.c: In function ‘snd_sb16_playback_pointer’:
+sound/isa/sb/sb16_main.c:456:2: error: implicit declaration of function ‘snd_dma_pointer’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+
+make[3]: *** [sound/isa/sb/sb16_main.o] Error 1
+  CC      sound/isa/sb/sb8_main.o
+sound/isa/sb/sb8_main.c: In function ‘snd_sb8_playback_prepare’:
+sound/isa/sb/sb8_main.c:172:3: error: implicit declaration of function ‘snd_dma_program’ [-Werror=implicit-function-declaration]
+sound/isa/sb/sb8_main.c: In function ‘snd_sb8_playback_pointer’:
+sound/isa/sb/sb8_main.c:425:2: error: implicit declaration of function ‘snd_dma_pointer’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+
+make[3]: *** [sound/isa/sb/sb8_main.o] Error 1
+make[3]: Target `__build' not remade because of errors.
+make[2]: *** [sound/isa/sb] Error 2
+  CC      sound/isa/wss/wss_lib.o
+sound/isa/wss/wss_lib.c: In function ‘snd_wss_playback_prepare’:
+sound/isa/wss/wss_lib.c:1025:2: error: implicit declaration of function ‘snd_dma_program’ [-Werror=implicit-function-declaration]
+sound/isa/wss/wss_lib.c: In function ‘snd_wss_playback_pointer’:
+sound/isa/wss/wss_lib.c:1160:2: error: implicit declaration of function ‘snd_dma_pointer’ [-Werror=implicit-function-declaration]
+sound/isa/wss/wss_lib.c: In function ‘snd_wss_free’:
+sound/isa/wss/wss_lib.c:1695:3: error: implicit declaration of function ‘snd_dma_disable’ [-Werror=implicit-function-declaration]
+cc1: some warnings being treated as errors
+
+make[3]: *** [sound/isa/wss/wss_lib.o] Error 1
+
+The root cause for this is hidden in this Kconfig warning:
+
+warning: (RADIO_MIROPCM20) selects SND_ISA which has unmet direct dependencies (SOUND && !M68K && SND && ISA && ISA_DMA_API)
+
+Adding a dependency on ISA_DMA_API to RADIO_MIROPCM20 fixes these issues.
+
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+
+ drivers/media/radio/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/media/radio/Kconfig b/drivers/media/radio/Kconfig
+index e4c97fd..0aeed28 100644
+--- a/drivers/media/radio/Kconfig
++++ b/drivers/media/radio/Kconfig
+@@ -168,7 +168,7 @@ config RADIO_MAXIRADIO
+ 
+ config RADIO_MIROPCM20
+ 	tristate "miroSOUND PCM20 radio"
+-	depends on ISA && VIDEO_V4L2 && SND
++	depends on ISA && ISA_DMA_API && VIDEO_V4L2 && SND
+ 	select SND_ISA
+ 	select SND_MIRO
+ 	---help---
