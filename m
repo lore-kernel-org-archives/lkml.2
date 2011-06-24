@@ -1,42 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759551Ab1FXPZl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 11:25:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40901 "EHLO mx2.suse.de"
+	id S1754430Ab1FXPgA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 11:36:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22692 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754311Ab1FXPZj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 11:25:39 -0400
-Date: Fri, 24 Jun 2011 17:25:37 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kconfig: do not overwrite symbol direct dependency in
- assignment
-Message-ID: <20110624152537.GA13167@sepie.suse.cz>
-References: <1306301804-12319-1-git-send-email-lacombar@gmail.com>
- <1307511731-2786-1-git-send-email-lacombar@gmail.com>
+	id S1754210Ab1FXPf7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 11:35:59 -0400
+Date: Fri, 24 Jun 2011 17:33:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>, Linus Torvalds <torvalds@linux-foundation.org>
+Cc: vda.linux@googlemail.com, jan.kratochvil@redhat.com,
+        pedro@codesourcery.com, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] ptrace_reparented fixes/cleanups
+Message-ID: <20110624153330.GA9346@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1307511731-2786-1-git-send-email-lacombar@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 08, 2011 at 01:42:11AM -0400, Arnaud Lacombe wrote:
-> Hi Michal,
-> 
-> Re-sent, mostly to have the commit log right.
-> 
-> Regards,
->  - Arnaud
-> 
-> ---
-> From: Arnaud Lacombe <lacombar@gmail.com>
-> 
-> Considering the following configuration:
+Hello.
 
-Applied to kbuild-2.6.git#kconfig, thanks.
+Another thing I wanted to cleanup for so long time.
 
-Michal
+ptrace_reparented() is wrong. Now we have real_parent_is_ptracer()
+which does the right thing, but the name is ugky and it is not
+exported.
+
+Fix ptrace_reparented() and kill the recently added
+real_parent_is_ptracer().
+
+Oleg.
+
