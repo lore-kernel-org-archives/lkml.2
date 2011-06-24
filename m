@@ -1,58 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760168Ab1FXBrE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 23 Jun 2011 21:47:04 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:22461 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760005Ab1FXBrD (ORCPT
+	id S1760207Ab1FXBsb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 23 Jun 2011 21:48:31 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:42513 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760005Ab1FXBsa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 23 Jun 2011 21:47:03 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6386"; a="99560409"
-From: David Brown <davidb@codeaurora.org>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        devel@driverdev.osuosl.org, Ingo Molnar <mingo@elte.hu>,
-        Lionel Debroux <lionel_debroux@yahoo.fr>, Torben Hohn <torbenh@gmx.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [PATCH 29/37] Remove unneeded version.h includes from drivers/staging/msm/
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
-	<alpine.LNX.2.00.1106240054540.17688@swampdragon.chaosbits.net>
-Date: Thu, 23 Jun 2011 18:47:01 -0700
-In-Reply-To: <alpine.LNX.2.00.1106240054540.17688@swampdragon.chaosbits.net>
-	(Jesper Juhl's message of "Fri, 24 Jun 2011 00:56:26 +0200 (CEST)")
-Message-ID: <8yahb7g6lwq.fsf@huya.qualcomm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	Thu, 23 Jun 2011 21:48:30 -0400
+X-SecurityPolicyCheck-FJ: OK by FUJITSU ADVANCED ENGINEERING MailBarrier
+Date: Fri, 24 Jun 2011 10:48:08 +0900
+From: =?ISO-2022-JP?B?IkZKQ0wpIBskQjIuTG4bKEIgGyRCQmdKZRsoQg==?=
+	 =?ISO-2022-JP?B?Ig==?= <ogino.daisuke@jp.fujitsu.com>
+To: linux-kernel@vger.kernel.org
+Subject: [patch] procfs: returns ENOENT on opening the being-removed proc entry
+Cc: linux-pci@vger.kernel.org, adobriyan@gmail.com
+Message-Id: <20110624104509.6195.371AB99A@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="ISO-2022-JP"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50 [ja]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 23 2011, Jesper Juhl wrote:
+From: Daisuke Ohino <ogino.daisuke@jp.fujitsu.com>
 
-> It was pointed out by 'make versioncheck' that some includes of
-> linux/version.h are not needed in drivers/staging/msm/.
-> This patch removes them.
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> diff --git a/drivers/staging/msm/msm_fb.c b/drivers/staging/msm/msm_fb.c
-> index e7ef836..e60f8f9 100644
-> --- a/drivers/staging/msm/msm_fb.c
-> +++ b/drivers/staging/msm/msm_fb.c
-> @@ -32,7 +32,6 @@
->  
->  #include <linux/workqueue.h>
->  #include <linux/string.h>
-> -#include <linux/version.h>
->  #include <linux/proc_fs.h>
->  #include <linux/vmalloc.h>
->  #include <linux/debugfs.h>
+opening the proc entry may return EINVAL if the entry is being removed, for
+example open("/proc/bus/pci/XX/YY") during the corresponding device is being
+hot-removed. The return value is inappropriate and should return ENOENT.
 
-Acked-by: David Brown <davidb@codeaurora.org>
+This return value comes from proc_reg_open().
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+fs/proc/inode.c:
+-----------------------------------------------------------
+static int proc_reg_open(struct inode *inode, struct file *file)
+{
+(snip)
+        if (!pde->proc_fops) {
+                spin_unlock(&pde->pde_unload_lock);
+                kfree(pdeo);
+                return -EINVAL;
+        }
+(snip)
+-----------------------------------------------------------
+
+pde->proc_fops is NULL iff the proc entry is being removed. It
+is set by remove_proc_entry().
+
+-----------------------------------------------------------
+void remove_proc_entry(const char *name, struct proc_dir_entry*parent)
+{
+(snip)
+        /*
+         * Stop accepting new callers into module. If you're
+         * dynamically allocating ->proc_fops, save a pointer somewhere.
+         */
+        de->proc_fops = NULL;
+(snip)
+-----------------------------------------------------------
+
+But POSIX says:
+
+-----------------------------------------------------------
+[EINVAL]
+    The implementation does not support synchronized I/O for this file.
+-----------------------------------------------------------
+
+Since removing proc entry is apparently not related to synchronized I/O,
+this function should return ENOENT in this case.
+
+Signed-off-by: Daisuke Ogino <ogino.daisuke@jp.fujitsu.com>
+---
+ fs/proc/inode.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+index 74b48cf..7ed72d6 100644
+--- a/fs/proc/inode.c
++++ b/fs/proc/inode.c
+@@ -319,7 +319,7 @@ static int proc_reg_open(struct inode *inode, struct file *file)
+ 	if (!pde->proc_fops) {
+ 		spin_unlock(&pde->pde_unload_lock);
+ 		kfree(pdeo);
+-		return -EINVAL;
++		return -ENOENT;
+ 	}
+ 	pde->pde_users++;
+ 	open = pde->proc_fops->open;
+--
+
+Since I don't subscribe LKML, please Cc me if you have any comment.
+
+Thanks,
+Daisuke
+
+
