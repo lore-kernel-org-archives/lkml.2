@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752260Ab1FYWmm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 18:42:42 -0400
-Received: from void.printf.net ([89.145.121.20]:46877 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751787Ab1FYWmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 18:42:40 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH 18/35] drivers/mmc changes for SMBIOS and System Firmware
-References: <20110623172401.27701.81021.sendpatchset@prarit.bos.redhat.com>
-Date: Sat, 25 Jun 2011 18:42:33 -0400
-In-Reply-To: <20110623172401.27701.81021.sendpatchset@prarit.bos.redhat.com>
-	(Prarit Bhargava's message of "Thu, 23 Jun 2011 13:24:02 -0400")
-Message-ID: <m2ei2hfs86.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1752515Ab1FYWxy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 18:53:54 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18973 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752048Ab1FYWxy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 18:53:54 -0400
+Date: Sun, 26 Jun 2011 00:44:53 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: =?ISO-8859-15?Q?Torbj=F6rn_Svensson?= 
+	<azoff@svenskalinuxforeningen.se>
+cc: Dan Magenheimer <dan.magenheimer@oracle.com>, linux-kernel@vger.kernel.org,
+        Trivial Patch Monkey <trivial@kernel.org>
+Subject: Re: [PATCH] Corrected a small typo in help text for
+ CONFIG_CLEANCACHE
+In-Reply-To: <4E06633F.9010307@svenskalinuxforeningen.se>
+Message-ID: <alpine.LNX.2.00.1106260043570.23991@swampdragon.chaosbits.net>
+References: <4E06633F.9010307@svenskalinuxforeningen.se>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-525282525-1309041893=:23991"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Prarit,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Thu, Jun 23 2011, Prarit Bhargava wrote:
-> drivers/mmc changes for SMBIOS and System Firmware
->
-> As part of the new SMBIOS and System Firmware code:
->
-> - cleanup of includes for dmi.h and mod_devicetable.h which were included in
-> some files that did not need them
->
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+--8323328-525282525-1309041893=:23991
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Sun, 26 Jun 2011, Torbjörn Svensson wrote:
+
+> Corrected a small typo in the help text for CONFIG_CLEANCACHE.
+> 
+> Signed-of-by: Torbjörn Svensson <azoff@svenskalinuxforeningen.se>
 > ---
->  drivers/mmc/host/sdhci-pltfm.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/mmc/host/sdhci-pltfm.c b/drivers/mmc/host/sdhci-pltfm.c
-> index dbab040..6fd7336 100644
-> --- a/drivers/mmc/host/sdhci-pltfm.c
-> +++ b/drivers/mmc/host/sdhci-pltfm.c
-> @@ -24,7 +24,6 @@
->  
->  #include <linux/delay.h>
->  #include <linux/highmem.h>
-> -#include <linux/mod_devicetable.h>
->  #include <linux/platform_device.h>
->  
->  #include <linux/mmc/host.h>
+>  mm/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/Kconfig b/mm/Kconfig
+> index 8ca47a5..f2f1ca1 100644
+> --- a/mm/Kconfig
+> +++ b/mm/Kconfig
+> @@ -356,7 +356,7 @@ config CLEANCACHE
+>  	  for clean pages that the kernel's pageframe replacement algorithm
+>  	  (PFRA) would like to keep around, but can't since there isn't enough
+>  	  memory.  So when the PFRA "evicts" a page, it first attempts to use
+> -	  cleancacne code to put the data contained in that page into
+> +	  cleancache code to put the data contained in that page into
+>  	  "transcendent memory", memory that is not directly accessible or
+>  	  addressable by the kernel and is of unknown and possibly
+>  	  time-varying size.  And when a cleancache-enabled
+> 
+For what it's worth;
 
-This patch doesn't apply to mmc-next, and is unnecessary there after
-Shawn Guo's cleanup -- there's no mod_devicetable.h include anymore.
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
 
-Thanks,
-
-- Chris.
 -- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
+--8323328-525282525-1309041893=:23991--
