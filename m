@@ -1,47 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752330Ab1FYVm0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 17:42:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42452 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab1FYVm0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 17:42:26 -0400
-Message-ID: <4E065630.2070407@redhat.com>
-Date: Sat, 25 Jun 2011 17:42:08 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Mel Gorman <mgorman@suse.de>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?B?UMOhZHJhaWcgQnJh?= =?UTF-8?B?ZHk=?= <P@draigBrady.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andrew Lutomirski <luto@mit.edu>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/4] mm: vmscan: Evaluate the watermarks against the correct
- classzone
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de> <1308926697-22475-4-git-send-email-mgorman@suse.de>
-In-Reply-To: <1308926697-22475-4-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1752199Ab1FYWKO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 18:10:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65268 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751787Ab1FYWKK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 18:10:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:date:message-id:x-mailer;
+        b=vGnz+LVKv+NgYrejmeQ+OeuB1SUCJpe7UkAbYTIVQww31EpUkbpC79b+43BZ1lF9uz
+         sTEMLiaVuhKllA7Aa79ymazYilcWhvPW9gjwhjYmcfO7MlsQcGnVshFi5UGjVKQCdKmu
+         9DpNez4Jogy1jUELdxtYx1j2f7njoEj/BRRGQ=
+From: Bryan Wu <bryan.wu@canonical.com>
+To: linus.walleij@linaro.org, linux-arm-kernel@lists.infradead.org,
+        rpurdie@rpsys.net, linux-kernel@vger.kernel.org
+Subject: [PATCH 0/4] Introduce a led trigger for CPU activity
+Date: Sun, 26 Jun 2011 06:10:00 +0800
+Message-Id: <1309039804-659-1-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/2011 10:44 AM, Mel Gorman wrote:
-> When deciding if kswapd is sleeping prematurely, the classzone is
-> taken into account but this is different to what balance_pgdat() and
-> the allocator are doing. Specifically, the DMA zone will be checked
-> based on the classzone used when waking kswapd which could be for a
-> GFP_KERNEL or GFP_HIGHMEM request. The lowmem reserve limit kicks in,
-> the watermark is not met and kswapd thinks its sleeping prematurely
-> keeping kswapd awake in error.
->
-> Reported-and-tested-by: Pádraig Brady<P@draigBrady.com>
-> Signed-off-by: Mel Gorman<mgorman@suse.de>
+Based on Linus Walleij's ARM LED consolidation work, this patchset introduce a
+new generic led trigger for CPU not only for ARM but also for others.
 
-Acked-by: Rik van Riel <riel@redhat.com>
+For enabling CPU idle event, CPU arch code should call ledtrig_cpu() stub to
+trigger idle start or idle end event.
+
+These 4 patches is against 3.0-rc4 and build successfully for versatile and
+realview.
+
+Bryan Wu (2):
+  leds: create a trigger for CPU activity
+  ARM: use new LEDS CPU trigger stub to replace old one
+
+Linus Walleij (2):
+  mach-realview: retire custom LED code
+  mach-versatile: retire custom LED code
+
+ arch/arm/kernel/process.c                |    6 +-
+ arch/arm/mach-realview/core.c            |   39 --------
+ arch/arm/mach-realview/core.h            |    2 -
+ arch/arm/mach-realview/realview_eb.c     |    4 -
+ arch/arm/mach-realview/realview_pb1176.c |    4 -
+ arch/arm/mach-realview/realview_pb11mp.c |    4 -
+ arch/arm/mach-realview/realview_pba8.c   |    4 -
+ arch/arm/mach-realview/realview_pbx.c    |    4 -
+ arch/arm/mach-versatile/core.c           |   42 ---------
+ arch/arm/plat-versatile/Kconfig          |    6 +-
+ arch/arm/plat-versatile/leds.c           |   13 ++-
+ drivers/leds/Kconfig                     |   10 ++
+ drivers/leds/Makefile                    |    1 +
+ drivers/leds/ledtrig-cpu.c               |  145 ++++++++++++++++++++++++++++++
+ include/linux/leds.h                     |   15 +++
+ 15 files changed, 188 insertions(+), 111 deletions(-)
+ create mode 100644 drivers/leds/ledtrig-cpu.c
 
 -- 
-All rights reversed
+1.7.4.1
