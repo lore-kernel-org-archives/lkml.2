@@ -1,96 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752007Ab1FYQfw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 12:35:52 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:34058 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751783Ab1FYQfr (ORCPT
+	id S1752193Ab1FYRnZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 13:43:25 -0400
+Received: from queueout02-winn.ispmail.ntl.com ([81.103.221.56]:61867 "EHLO
+	queueout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752050Ab1FYRm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 12:35:47 -0400
+	Sat, 25 Jun 2011 13:42:59 -0400
 From: Daniel Drake <dsd@laptop.org>
 To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
         akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, dilinger@queued.net, bigeasy@linutronix.de,
-        Daniel Drake <dsd@laptop.org>, devicetree-discuss@lists.ozlabs.org
-Subject: [PATCH v3 10/11] x86, olpc: Add XO-1 RTC driver
-Date: Sat, 25 Jun 2011 17:34:17 +0100
-Message-Id: <1309019658-1712-11-git-send-email-dsd@laptop.org>
+        Daniel Drake <dsd@laptop.org>
+Subject: [PATCH v3 11/11] x86, olpc: Add XO-1.5 SCI driver
+Date: Sat, 25 Jun 2011 17:34:18 +0100
+Message-Id: <1309019658-1712-12-git-send-email-dsd@laptop.org>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1309019658-1712-1-git-send-email-dsd@laptop.org>
 References: <1309019658-1712-1-git-send-email-dsd@laptop.org>
-X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=cJReeV9TH-wA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=In_Hgl4hAAAA:8 a=voM4FWlXAAAA:8 a=kkYrdeQgXcnu6qqWCvAA:9 a=9xP3Uv1LeyP_fYHj1hAA:7 a=d4CUUju0HPYA:10 a=ro211Ng2IWAA:10 a=Zh68SRI7RUMA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+X-Cloudmark-Analysis: v=1.1 cv=JvdXmxIgLJv2/GthKqHpGJEEHukvLcvELVXUanXFreg= c=1 sm=0 a=i5bpajMd5FwA:10 a=vJ1w_8FsMGIA:10 a=Op-mwl0xAAAA:8 a=In_Hgl4hAAAA:8 a=YmEKrBQnXbTnUyvlkEEA:9 a=V3UE25fxpKVRchcYZzsA:7 a=d4CUUju0HPYA:10 a=ro211Ng2IWAA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a driver to configure the XO-1 RTC via CS5536 MSRs, to be used as a
-system wakeup source via olpc-xo1-pm.
+Add a driver for the ACPI-based EC event interface found on the
+OLPC XO-1.5 laptop. This enables notification of battery/AC power events,
+and enables various devices to be used as wakeup sources through regular
+ACPI mechanisms.
 
-Device detection is based on finding the relevant device tree node.
+This driver can't be built as a module, because some drivers need to know
+at boot-time if SCI-based functionality is available via
+olpc_ec_wakeup_available().
 
 Signed-off-by: Daniel Drake <dsd@laptop.org>
 Acked-by: Andres Salomon <dilinger@queued.net>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-Reviewed-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: devicetree-discuss@lists.ozlabs.org
 ---
- .../devicetree/bindings/rtc/olpc-xo1-rtc.txt       |    5 +
- arch/x86/Kconfig                                   |    7 ++
- arch/x86/platform/olpc/Makefile                    |    1 +
- arch/x86/platform/olpc/olpc-xo1-rtc.c              |   82 ++++++++++++++++++++
- include/linux/cs5535.h                             |    5 +
- 5 files changed, 100 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/devicetree/bindings/rtc/olpc-xo1-rtc.txt
- create mode 100644 arch/x86/platform/olpc/olpc-xo1-rtc.c
+ arch/x86/Kconfig                       |    9 ++
+ arch/x86/platform/olpc/Makefile        |    1 +
+ arch/x86/platform/olpc/olpc-xo15-sci.c |  168 ++++++++++++++++++++++++++++++++
+ arch/x86/platform/olpc/olpc.c          |    9 ++
+ 4 files changed, 187 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/platform/olpc/olpc-xo15-sci.c
 
-diff --git a/Documentation/devicetree/bindings/rtc/olpc-xo1-rtc.txt b/Documentation/devicetree/bindings/rtc/olpc-xo1-rtc.txt
-new file mode 100644
-index 0000000..a2891ce
---- /dev/null
-+++ b/Documentation/devicetree/bindings/rtc/olpc-xo1-rtc.txt
-@@ -0,0 +1,5 @@
-+OLPC XO-1 RTC
-+~~~~~~~~~~~~~
-+
-+Required properties:
-+ - compatible : "olpc,xo1-rtc"
 diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 38af371..de81496 100644
+index de81496..1ed7d32 100644
 --- a/arch/x86/Kconfig
 +++ b/arch/x86/Kconfig
-@@ -2082,6 +2082,13 @@ config OLPC_XO1_PM
- 	---help---
- 	  Add support for poweroff and suspend of the OLPC XO-1 laptop.
+@@ -2103,6 +2103,15 @@ config OLPC_XO1_SCI
+ 	   - AC adapter status updates
+ 	   - Battery status updates
  
-+config OLPC_XO1_RTC
-+	bool "OLPC XO-1 Real Time Clock"
-+	depends on OLPC_XO1_PM && RTC_DRV_CMOS
++config OLPC_XO15_SCI
++	bool "OLPC XO-1.5 SCI extras"
++	depends on OLPC && ACPI && POWER_SUPPLY
 +	---help---
-+	  Add support for the XO-1 real time clock, which can be used as a
-+	  programmable wakeup source.
++	  Add support for SCI-based features of the OLPC XO-1.5 laptop:
++	   - EC-driven system wakeups
++	   - AC adapter status updates
++	   - Battery status updates
 +
- config OLPC_XO1_SCI
- 	bool "OLPC XO-1 SCI extras"
- 	depends on OLPC && OLPC_XO1_PM && POWER_SUPPLY
+ endif # X86_32
+ 
+ config AMD_NB
 diff --git a/arch/x86/platform/olpc/Makefile b/arch/x86/platform/olpc/Makefile
-index 1ec5ade..8922b9b 100644
+index 8922b9b..fd332c5 100644
 --- a/arch/x86/platform/olpc/Makefile
 +++ b/arch/x86/platform/olpc/Makefile
-@@ -1,3 +1,4 @@
- obj-$(CONFIG_OLPC)		+= olpc.o olpc_ofw.o olpc_dt.o
+@@ -2,3 +2,4 @@ obj-$(CONFIG_OLPC)		+= olpc.o olpc_ofw.o olpc_dt.o
  obj-$(CONFIG_OLPC_XO1_PM)		+= olpc-xo1-pm.o xo1-wakeup.o
-+obj-$(CONFIG_OLPC_XO1_RTC)	+= olpc-xo1-rtc.o
+ obj-$(CONFIG_OLPC_XO1_RTC)	+= olpc-xo1-rtc.o
  obj-$(CONFIG_OLPC_XO1_SCI)	+= olpc-xo1-sci.o
-diff --git a/arch/x86/platform/olpc/olpc-xo1-rtc.c b/arch/x86/platform/olpc/olpc-xo1-rtc.c
++obj-$(CONFIG_OLPC_XO15_SCI)	+= olpc-xo15-sci.o
+diff --git a/arch/x86/platform/olpc/olpc-xo15-sci.c b/arch/x86/platform/olpc/olpc-xo15-sci.c
 new file mode 100644
-index 0000000..476cc98
+index 0000000..a5990eb
 --- /dev/null
-+++ b/arch/x86/platform/olpc/olpc-xo1-rtc.c
-@@ -0,0 +1,82 @@
++++ b/arch/x86/platform/olpc/olpc-xo15-sci.c
+@@ -0,0 +1,168 @@
 +/*
-+ * Support for OLPC XO-1 Real Time Clock (RTC)
++ * Support for OLPC XO-1.5 System Control Interrupts (SCI)
 + *
-+ * Copyright (C) 2011 One Laptop per Child
++ * Copyright (C) 2009-2010 One Laptop per Child
 + *
 + * This program is free software; you can redistribute it and/or modify
 + * it under the terms of the GNU General Public License as published by
@@ -98,100 +88,183 @@ index 0000000..476cc98
 + * (at your option) any later version.
 + */
 +
-+#include <linux/mc146818rtc.h>
-+#include <linux/platform_device.h>
-+#include <linux/rtc.h>
-+#include <linux/of.h>
++#include <linux/device.h>
++#include <linux/slab.h>
++#include <linux/workqueue.h>
++#include <linux/power_supply.h>
 +
-+#include <asm/msr.h>
++#include <acpi/acpi_bus.h>
++#include <acpi/acpi_drivers.h>
 +#include <asm/olpc.h>
 +
-+static void rtc_wake_on(struct device *dev)
-+{
-+	olpc_xo1_pm_wakeup_set(CS5536_PM_RTC);
-+}
++#define DRV_NAME			"olpc-xo15-sci"
++#define PFX				DRV_NAME ": "
++#define XO15_SCI_CLASS			DRV_NAME
++#define XO15_SCI_DEVICE_NAME		"OLPC XO-1.5 SCI"
 +
-+static void rtc_wake_off(struct device *dev)
-+{
-+	olpc_xo1_pm_wakeup_clear(CS5536_PM_RTC);
-+}
++static unsigned long xo15_sci_gpe;
 +
-+static struct resource rtc_platform_resource[] = {
-+	[0] = {
-+		.start	= RTC_PORT(0),
-+		.end	= RTC_PORT(1),
-+		.flags	= IORESOURCE_IO,
-+	},
-+	[1] = {
-+		.start	= RTC_IRQ,
-+		.end	= RTC_IRQ,
-+		.flags	= IORESOURCE_IRQ,
++static void battery_status_changed(void)
++{
++	struct power_supply *psy = power_supply_get_by_name("olpc-battery");
++
++	if (psy) {
++		power_supply_changed(psy);
++		put_device(psy->dev);
 +	}
-+};
++}
 +
-+static struct cmos_rtc_board_info rtc_info = {
-+	.rtc_day_alarm = 0,
-+	.rtc_mon_alarm = 0,
-+	.rtc_century = 0,
-+	.wake_on = rtc_wake_on,
-+	.wake_off = rtc_wake_off,
-+};
-+
-+static struct platform_device xo1_rtc_device = {
-+	.name = "rtc_cmos",
-+	.id = -1,
-+	.num_resources = ARRAY_SIZE(rtc_platform_resource),
-+	.dev.platform_data = &rtc_info,
-+	.resource = rtc_platform_resource,
-+};
-+
-+static int __init xo1_rtc_init(void)
++static void ac_status_changed(void)
 +{
++	struct power_supply *psy = power_supply_get_by_name("olpc-ac");
++
++	if (psy) {
++		power_supply_changed(psy);
++		put_device(psy->dev);
++	}
++}
++
++static void process_sci_queue(void)
++{
++	u16 data;
 +	int r;
-+	struct device_node *node;
 +
-+	node = of_find_compatible_node(NULL, NULL, "olpc,xo1-rtc");
-+	if (!node)
-+		return 0;
-+	of_node_put(node);
++	do {
++		r = olpc_ec_sci_query(&data);
++		if (r || !data)
++			break;
 +
-+	pr_info("olpc-xo1-rtc: Initializing OLPC XO-1 RTC\n");
-+	rdmsrl(MSR_RTC_DOMA_OFFSET, rtc_info.rtc_day_alarm);
-+	rdmsrl(MSR_RTC_MONA_OFFSET, rtc_info.rtc_mon_alarm);
-+	rdmsrl(MSR_RTC_CEN_OFFSET, rtc_info.rtc_century);
++		pr_debug(PFX "SCI 0x%x received\n", data);
 +
-+	r = platform_device_register(&xo1_rtc_device);
++		switch (data) {
++		case EC_SCI_SRC_BATERR:
++		case EC_SCI_SRC_BATSOC:
++		case EC_SCI_SRC_BATTERY:
++		case EC_SCI_SRC_BATCRIT:
++			battery_status_changed();
++			break;
++		case EC_SCI_SRC_ACPWR:
++			ac_status_changed();
++			break;
++		}
++	} while (data);
++
 +	if (r)
-+		return r;
++		pr_err(PFX "Failed to clear SCI queue");
++}
 +
-+	device_init_wakeup(&xo1_rtc_device.dev, 1);
++static void process_sci_queue_work(struct work_struct *work)
++{
++	process_sci_queue();
++}
++
++static DECLARE_WORK(sci_work, process_sci_queue_work);
++
++static u32 xo15_sci_gpe_handler(acpi_handle gpe_device, u32 gpe, void *context)
++{
++	schedule_work(&sci_work);
++	return ACPI_INTERRUPT_HANDLED | ACPI_REENABLE_GPE;
++}
++
++static int xo15_sci_add(struct acpi_device *device)
++{
++	unsigned long long tmp;
++	acpi_status status;
++
++	if (!device)
++		return -EINVAL;
++
++	strcpy(acpi_device_name(device), XO15_SCI_DEVICE_NAME);
++	strcpy(acpi_device_class(device), XO15_SCI_CLASS);
++
++	/* Get GPE bit assignment (EC events). */
++	status = acpi_evaluate_integer(device->handle, "_GPE", NULL, &tmp);
++	if (ACPI_FAILURE(status))
++		return -EINVAL;
++
++	xo15_sci_gpe = tmp;
++	status = acpi_install_gpe_handler(NULL, xo15_sci_gpe,
++					  ACPI_GPE_EDGE_TRIGGERED,
++					  xo15_sci_gpe_handler, device);
++	if (ACPI_FAILURE(status))
++		return -ENODEV;
++
++	dev_info(&device->dev, "Initialized, GPE = 0x%lx\n", xo15_sci_gpe);
++
++	/* Flush queue, and enable all SCI events */
++	process_sci_queue();
++	olpc_ec_mask_write(EC_SCI_SRC_ALL);
++
++	acpi_enable_gpe(NULL, xo15_sci_gpe);
++
++	/* Enable wake-on-EC */
++	if (device->wakeup.flags.valid)
++		device_set_wakeup_enable(&device->dev, true);
++
 +	return 0;
 +}
-+arch_initcall(xo1_rtc_init);
 +
-diff --git a/include/linux/cs5535.h b/include/linux/cs5535.h
-index 72954c6..c077aec 100644
---- a/include/linux/cs5535.h
-+++ b/include/linux/cs5535.h
-@@ -40,6 +40,10 @@
- #define MSR_MFGPT_NR		0x51400029
- #define MSR_MFGPT_SETUP		0x5140002B
- 
-+#define MSR_RTC_DOMA_OFFSET	0x51400055
-+#define MSR_RTC_MONA_OFFSET	0x51400056
-+#define MSR_RTC_CEN_OFFSET	0x51400057
++static int xo15_sci_remove(struct acpi_device *device, int type)
++{
++	acpi_disable_gpe(NULL, xo15_sci_gpe);
++	acpi_remove_gpe_handler(NULL, xo15_sci_gpe, xo15_sci_gpe_handler);
++	cancel_work_sync(&sci_work);
++	return 0;
++}
 +
- #define MSR_LX_SPARE_MSR	0x80000011	/* DC-specific */
++static int xo15_sci_resume(struct acpi_device *device)
++{
++	/* Enable all EC events */
++	olpc_ec_mask_write(EC_SCI_SRC_ALL);
++
++	/* Power/battery status might have changed */
++	battery_status_changed();
++	ac_status_changed();
++
++	return 0;
++}
++
++static const struct acpi_device_id xo15_sci_device_ids[] = {
++	{"XO15EC", 0},
++	{"", 0},
++};
++
++static struct acpi_driver xo15_sci_drv = {
++	.name = DRV_NAME,
++	.class = XO15_SCI_CLASS,
++	.ids = xo15_sci_device_ids,
++	.ops = {
++		.add = xo15_sci_add,
++		.remove = xo15_sci_remove,
++		.resume = xo15_sci_resume,
++	},
++};
++
++static int __init xo15_sci_init(void)
++{
++	return acpi_bus_register_driver(&xo15_sci_drv);
++}
++device_initcall(xo15_sci_init);
+diff --git a/arch/x86/platform/olpc/olpc.c b/arch/x86/platform/olpc/olpc.c
+index 72fd041..8b9940e 100644
+--- a/arch/x86/platform/olpc/olpc.c
++++ b/arch/x86/platform/olpc/olpc.c
+@@ -222,6 +222,15 @@ bool olpc_ec_wakeup_available(void)
+ 		return true;
+ #endif
  
- #define MSR_GX_GLD_MSR_CONFIG	0xC0002001
-@@ -95,6 +99,7 @@ static inline int cs5535_pic_unreqz_select_high(unsigned int group,
- 
- /* CS5536_PM1_EN bits */
- #define CS5536_PM_PWRBTN	(1 << 8)
-+#define CS5536_PM_RTC		(1 << 10)
- 
- /* CS5536_PM_GPE0_STS bits */
- #define CS5536_GPIOM7_PME_FLAG	(1 << 31)
++	/*
++	 * XO-1.5 EC wakeups are available when olpc-xo15-sci driver is
++	 * compiled in
++	 */
++#ifdef CONFIG_OLPC_XO15_SCI
++	if (olpc_platform_info.boardrev >= olpc_board_pre(0xd0)) /* XO-1.5 */
++		return true;
++#endif
++
+ 	return false;
+ }
+ EXPORT_SYMBOL_GPL(olpc_ec_wakeup_available);
 -- 
 1.7.5.4
 
