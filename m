@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab1FYVEl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 17:04:41 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:50602 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab1FYVEk (ORCPT
+	id S1752127Ab1FYVOO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 17:14:14 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:18343 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab1FYVOJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 17:04:40 -0400
+	Sat, 25 Jun 2011 17:14:09 -0400
+Date: Sat, 25 Jun 2011 23:05:09 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: rtc-linux@googlegroups.com
+cc: Alessandro Zummo <a.zummo@towertech.it>, linux-kernel@vger.kernel.org,
+        Alexandre Rusev <source@mvista.com>,
+        "George G. Davis" <gdavis@mvista.com>, source@mvista.com
+Subject: [PATCH] rtc: Check return value of twl_rtc_write_u8() in
+ twl_rtc_set_time()
+Message-ID: <alpine.LNX.2.00.1106252300490.23991@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikt3YRO1fYRZNzHpygZxRdxK4x-bA@mail.gmail.com>
-References: <1308763983-24749-1-git-send-email-linus.walleij@stericsson.com>
-	<BANLkTikt3YRO1fYRZNzHpygZxRdxK4x-bA@mail.gmail.com>
-Date: Sat, 25 Jun 2011 23:04:39 +0200
-Message-ID: <BANLkTinQ6EZ9_Bh92SZswtyTax0LSJFX+w@mail.gmail.com>
-Subject: Re: [PATCH 1/3] leds: create a trigger for ARM CPU activity
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Bryan Wu <bryan.wu@canonical.com>, linux-kernel@vger.kernel.org
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Richard Purdie <rpurdie@rpsys.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 25, 2011 at 3:42 AM, Bryan Wu <bryan.wu@canonical.com> wrote:
+In drivers/rtc/rtc-twl.c:twl_rtc_set_time() we forget to save the
+return value of the call to
+twl_rtc_write_u8(save_control, REG_RTC_CTRL_REG);
+in 'ret', making the test of 'ret < 0' dead code since 'ret' then
+couldn't possibly have changed since the last test just a few lines
+above. It also makes us not detect failures from that specific
+twl_rtc_write_u8() call.
 
-> I've been thinking about moving the arm led_event interface to
-> drivers/leds/. And maybe other machines can simply benefit from this
-> trigger driver, since the led_event interface is actually not really
-> ARM specific.
->
-> So what about add a new trigger just named ledtrig-cpu.c which can be
-> shared by other machines as well as ARM monsters.
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/rtc/rtc-twl.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Well I don't know about that. The ARM CPU LED triggers mess around
-in arch/arm/kernel/process.c to insert a callback whenever the idle
-state is entered or exited for a CPU in cpu_idle(). I don't know if that
-is something other archs would like to copy to get working CPU usage
-LED indicators.
+diff --git a/drivers/rtc/rtc-twl.c b/drivers/rtc/rtc-twl.c
+index f9a2799..9a81f77 100644
+--- a/drivers/rtc/rtc-twl.c
++++ b/drivers/rtc/rtc-twl.c
+@@ -275,7 +275,7 @@ static int twl_rtc_set_time(struct device *dev, struct rtc_time *tm)
+ 		goto out;
+ 
+ 	save_control &= ~BIT_RTC_CTRL_REG_STOP_RTC_M;
+-	twl_rtc_write_u8(save_control, REG_RTC_CTRL_REG);
++	ret = twl_rtc_write_u8(save_control, REG_RTC_CTRL_REG);
+ 	if (ret < 0)
+ 		goto out;
+ 
+-- 
+1.7.5.2
 
-Also leds_event is a global callback which is pretty brutal,
-for example right now the driver hogs that callback, noone else can
-use it. (Well if only used for CPU maybe that's natural.)
 
-I mainly moved the machine part of this code to consolidate it, but
-let's ask on LKML to see if there is some general interest in this,
-for the moment I suggest we go with ARM CPU leds, it's easy enough
-to amend by just renaming the file and Kconfig text the day some other
-CPU wants to do this.
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
 
-Linus Walleij
