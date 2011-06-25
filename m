@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751571Ab1FYInc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 04:43:32 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:54486 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750995Ab1FYIn2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 04:43:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=cp8t9UuIk/tH++hIWa4wp9JHrNQCgdkvn93qbOEuN9o/JmbVBOng+2T4Oh9QPoFxYA
-         g7Wx8Ga6aaxndqnEmhq2eytRidlXV1ao3Mssgi0Yk9Uj5S7GFYPCezgekX51Nb69hUQ6
-         EKp6QvJzExfUfhGbZL2090k76qPLEeNZSblKc=
-Date: Sat, 25 Jun 2011 16:43:16 +0800
-From: Harry Wei <jiaweiwei.xiyou@gmail.com>
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/2]Documentation/zh_CN: Fix messy code files
-Message-ID: <20110625084301.GA3122@gmail.com>
-Mail-Followup-To: greg@kroah.com, linux-kernel@vger.kernel.org
-References: <20110612033343.GA4321@gmail.com>
+	id S1751376Ab1FYKFQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 06:05:16 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54627 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014Ab1FYKFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 06:05:11 -0400
+Date: Sat, 25 Jun 2011 12:04:49 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: rusty@rustcorp.com.au, arnd@arndb.de, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, monstr@monstr.eu, cmetcalf@tilera.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] modules: add default loader hook implementations
+Message-ID: <20110625100449.GA19097@elte.hu>
+References: <1308987512-6583-1-git-send-email-jonas@southpole.se>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=gb2312
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110612033343.GA4321@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1308987512-6583-1-git-send-email-jonas@southpole.se>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 12, 2011 at 11:33:48AM +0800, Harry Wei wrote:
-> From: Harry Wei <harryxiyou@gmail.com>
-> 
-> This is v3 patches for fixing the messy code files,
-> Documentation/zh_CN/email-clients.txt and
-> Documentation/zh_CN/SubmitChecklist.
-> 
-> v3's new figures.
-> Combine the remove and add back operations to one single patch.
-> So now we have only two patches for fixing this problem.
-> 
-> Harry Wei (2)
-> Documentation/zh_CN: Fix messy code file email-clients.txt
-> Documentation/zh_CN: Fix messy code file SubmitChecklist
->
-Hi greg,
-	Please remember to pull the two patches, which 
-fix the messy code files, Documentation/zh_CN/email-clients.txt
-and Documentation/zh_CN/SubmitChecklist. I have sent them to you.
 
-If you have any questions, please send me mails.
+* Jonas Bonn <jonas@southpole.se> wrote:
 
-Thanks
-Harry Wei
+> +/* This configures the module loader code to use the default implementations
+> + * for the architecture specific hooks.  Architectures should set a #define
+> + * for each of the hooks that it needs to override.
+> + */
+
+please use the standard (multi-line) comment style:
+
+  /*
+   * Comment .....
+   * ...... goes here.
+   */
+
+specified in Documentation/CodingStyle.
+
+(there are similar problems elsewhere in the patch as well.)
+
+Also, and more importantly, don't we generally do such things via 
+__weak aliases, because the result looks cleaner and needs no changes 
+for architectures beyond the removal of the generic functions? We 
+have excluded broken toolchains that miscompile/mislink __weak IIRC 
+so __weak ought to work.
+
+Thanks,
+
+	Ingo
