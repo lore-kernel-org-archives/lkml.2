@@ -1,54 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752951Ab1FYDug (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 23:50:36 -0400
-Received: from [85.103.0.11] ([85.103.0.11]:63703 "HELO ayca-pc.local"
-	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-	id S1752343Ab1FYDuf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 23:50:35 -0400
-X-Greylist: delayed 132644 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jun 2011 23:50:34 EDT
-Reply-To: reklam@reklamix.biz
-Message-ID: <37253c429168dc8a2b3512972ba0f1fd@gmail.com>
-From: "Reklamix.Biz Ofset Matbaa" <reklamixbiz@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-9?B?TWF0YmFhIN3+bGVyaW5pemUgVXlndW4gRml5YXRs/SwgS2FsaXRlbGkgx/Z6/G0=?=
-Date: Sat, 25 Jun 2011 06:50:33 +0300
+	id S1750872Ab1FYEMT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 00:12:19 -0400
+Received: from home.keithp.com ([63.227.221.253]:55288 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750722Ab1FYEMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 00:12:17 -0400
+From: "Keith Packard" <keithp@keithp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
+Subject: [PULL] drm-intel-fixes (drm/i915 driver)
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Fri, 24 Jun 2011 21:11:57 -0700
+Message-ID: <yunhb7eblde.fsf@aiko.keithp.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Reklamix.Biz tanýtýmýnýz için gerek duyduðunuz tüm ürünleri ve hizmeti 20 yýllýk tecrübeyle birleþtirip siz müþterilerine sunuyor.
-
-mailto:reklam@reklamix.biz
-
-Ürünlerimizden Bazýlarý :
-
-Matbaa Ürünleri: Broþür | Katalog | Dergi | Insert | Afiþ | El ilaný | Menü | Kartvizit | Kitap | Kutu | Çanta | Etiket | Fatura | Ýrsaliye | Kartela | Klasör
-
-Promosyon Ürünleri: Takvim | Ajanda | Organizer | Duvar Saati | Termometre | Masa Saati | Kalem | Küp Blok | Bloknot | Çanta | Masa Üstü Setler | Masa Üstü Gereçler | Elektronik Ürünler | Flash Bellek | Lazer Pointer Kalem | Anahtarlýk
-
-Ambalaj Ürünleri: Koli - Oluklu Kutu | Karton Kutu | Paket Kaðidi | Baskýlý Bant | Kaðýt Poþet | Karton Çanta | Ahsap Kutu
-
-Etiket Ürünleri: Kaðýt Etiket | Yapýþkanlý Kaðýt Etiket | Barkod Etiket | Sticker | Pvc Etiket | Metal Etiket | Aluminyum Etiket | Tekstil Etiketi | Dokuma Etiket | Rulo Etiket
-
-Reklamix.Biz  Reklam ve Matbaacýlýk Hizmetleri
-
-Tel. & Fax:  0.216. 574 33 54
-GSM: 0.532. 346 86 95 (N. Okan PAMAY)
-
-Maltepe Mah. Litros Yolu 2. Matbaacilar Sitesi No: 3NF4
-Topkapý - Zeytinburnu / ÝSTANBUL
-
-Avrupa Yakasý:
-Tel: 0.212. 544 16 68 - 544 80 34
-Fax: 0.212. 544 80 74
-
-http://www.reklamix.biz
-mailto:reklam@reklamix.biz
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
 
+Here's a few minor fixes for the intel drm driver.
+
+This should fix:
+
+ * Lost interrupts on Sandybridge from the BSD ring
+ * Sandybridge forcewake error during suspend/resume
+ * Performance regression due to discarding GTT mappings
+ * Broken 9xx display at startup due to lost call to intel_enable_plane
+
+The following changes since commit 56299378726d5f2ba8d3c8cbbd13cb280ba45e4f:
+
+  Linux 3.0-rc4 (2011-06-20 20:25:46 -0700)
+
+are available in the git repository at:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git drm=
+-intel-fixes
+
+Ben Widawsky (1):
+      drm/i915: save/resume forcewake lock fixes
+
+Chris Wilson (1):
+      drm/i915: Apply HWSTAM workaround for BSD ring on SandyBridge
+
+Eric Anholt (1):
+      Revert "drm/i915: Kill GTT mappings when moving from GTT domain"
+
+Keith Packard (1):
+      drm/i915: Call intel_enable_plane from i9xx_crtc_mode_set (again)
+
+ drivers/gpu/drm/i915/i915_gem.c            |   10 ++++------
+ drivers/gpu/drm/i915/i915_gem_execbuffer.c |    4 ----
+ drivers/gpu/drm/i915/i915_irq.c            |    1 +
+ drivers/gpu/drm/i915/i915_reg.h            |    1 +
+ drivers/gpu/drm/i915/i915_suspend.c        |    5 +++++
+ drivers/gpu/drm/i915/intel_display.c       |    3 +--
+ 6 files changed, 12 insertions(+), 12 deletions(-)
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOBWAOQp8BWwlsTdMRAuskAJ9DOSsroK76OXEXTeGJOpQotT6bzgCeJanV
+7V/jdG/8+PfwtimyTU5k0Cs=
+=jLku
+-----END PGP SIGNATURE-----
+--=-=-=--
