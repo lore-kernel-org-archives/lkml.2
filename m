@@ -1,69 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab1FYUxa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 16:53:30 -0400
-Received: from 1wt.eu ([62.212.114.60]:37247 "EHLO 1wt.eu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751337Ab1FYUx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 16:53:29 -0400
-Date: Sat, 25 Jun 2011 22:52:34 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, security@kernel.org,
-        kernel-hardening@lists.openwall.com, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, James Morris <jmorris@namei.org>,
-        linux-kernel@vger.kernel.org, Joe Perches <joe@perches.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Security] [PATCH] kernel: escape non-ASCII and control characters in printk()
-Message-ID: <20110625205234.GA8743@1wt.eu>
-References: <20110622095341.GA3353@albatros> <1308760683.10423.16.camel@Joe-Laptop> <20110622191022.66135615@lxorguk.ukuu.org.uk> <20110622190739.GB14351@albatros>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110622190739.GB14351@albatros>
-User-Agent: Mutt/1.4.2.3i
+	id S1752040Ab1FYVEl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 17:04:41 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:50602 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751231Ab1FYVEk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 17:04:40 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTikt3YRO1fYRZNzHpygZxRdxK4x-bA@mail.gmail.com>
+References: <1308763983-24749-1-git-send-email-linus.walleij@stericsson.com>
+	<BANLkTikt3YRO1fYRZNzHpygZxRdxK4x-bA@mail.gmail.com>
+Date: Sat, 25 Jun 2011 23:04:39 +0200
+Message-ID: <BANLkTinQ6EZ9_Bh92SZswtyTax0LSJFX+w@mail.gmail.com>
+Subject: Re: [PATCH 1/3] leds: create a trigger for ARM CPU activity
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Bryan Wu <bryan.wu@canonical.com>, linux-kernel@vger.kernel.org
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
+        Richard Purdie <rpurdie@rpsys.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Vasiliy,
+On Sat, Jun 25, 2011 at 3:42 AM, Bryan Wu <bryan.wu@canonical.com> wrote:
 
-On Wed, Jun 22, 2011 at 11:07:39PM +0400, Vasiliy Kulikov wrote:
-> The final check should be:
-> 
->     if (iscntrl(c) && (c != '\n') && (c != '\t'))
-> 
-> Any comments against this variant?
+> I've been thinking about moving the arm led_event interface to
+> drivers/leds/. And maybe other machines can simply benefit from this
+> trigger driver, since the led_event interface is actually not really
+> ARM specific.
+>
+> So what about add a new trigger just named ledtrig-cpu.c which can be
+> shared by other machines as well as ARM monsters.
 
-In fact, I'm not sure we're adding that much protection with such a check
-because as long as the '\n' is allowed, it's easy to fake logs. For instance :
+Well I don't know about that. The ARM CPU LED triggers mess around
+in arch/arm/kernel/process.c to insert a callback whenever the idle
+state is entered or exited for a CPU in cpu_idle(). I don't know if that
+is something other archs would like to copy to get working CPU usage
+LED indicators.
 
-$ cd /tmp
-$ echo "main() { *(int*)0=0; }" | gcc -xc -o fail -
-$ ln -s fail $'Oops: 000\nklogd'
-$ ./Oops*
-$ dmesg|tail -2
-Oops: 000
-klogd[1927]: segfault at 0 ip 0000000008048337 sp 00000000ffb54ba4 error 6 in fail[8048000+1000]
-$
+Also leds_event is a global callback which is pretty brutal,
+for example right now the driver hogs that callback, noone else can
+use it. (Well if only used for CPU maybe that's natural.)
 
-In an ideal world, only \n should be escaped since it's the only delimitor,
-and klogd would get the raw logs with lines correctly sequenced. Other
-characters should probably be escaped before going to log files if those
-files are supposed to be readable on a terminal.
+I mainly moved the machine part of this code to consolidate it, but
+let's ask on LKML to see if there is some general interest in this,
+for the moment I suggest we go with ARM CPU leds, it's easy enough
+to amend by just renaming the file and Kconfig text the day some other
+CPU wants to do this.
 
-But I recall it was not possible to escape \n when we worked on the subject
-several years ago on 2.4, because some drivers used to send multi-line logs
-in a single printk().
-
-The fundamental issue we're facing is that neither inputs nor outputs have
-been clearly typed in the past. I tend to consider that a log file is readable
-by "tail -f" and a such should not contain dangerous chars, however I also
-tend to prefer sending raw logs over the network when they are archived by
-different means. In the end it makes sense for the kernel and klogd to
-exchange raw logs and syslogd should encode them when pushing them to a
-file.
-
-Best regards,
-Willy
-
+Linus Walleij
