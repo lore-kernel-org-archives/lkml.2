@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753704Ab1FYDQU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 23:16:20 -0400
-Received: from tn-76-7-162-101.sta.embarqhsd.net ([76.7.162.101]:37104 "EHLO
-	animx.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752486Ab1FYDQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 23:16:18 -0400
-Date: Fri, 24 Jun 2011 23:16:16 -0400
-From: Wakko Warner <wakko@animx.eu.org>
-To: linux-kernel@vger.kernel.org
-Subject: Can't get sym53c8xx to work in kvm (qemu)
-Message-ID: <20110625031616.GA12699@animx.eu.org>
-Mail-Followup-To: linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.6+20040907i
+	id S1752951Ab1FYDug (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 23:50:36 -0400
+Received: from [85.103.0.11] ([85.103.0.11]:63703 "HELO ayca-pc.local"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+	id S1752343Ab1FYDuf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 23:50:35 -0400
+X-Greylist: delayed 132644 seconds by postgrey-1.27 at vger.kernel.org; Fri, 24 Jun 2011 23:50:34 EDT
+Reply-To: reklam@reklamix.biz
+Message-ID: <37253c429168dc8a2b3512972ba0f1fd@gmail.com>
+From: "Reklamix.Biz Ofset Matbaa" <reklamixbiz@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-9?B?TWF0YmFhIN3+bGVyaW5pemUgVXlndW4gRml5YXRs/SwgS2FsaXRlbGkgx/Z6/G0=?=
+Date: Sat, 25 Jun 2011 06:50:33 +0300
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I would prefer to be CC'd on reply.
+Reklamix.Biz tanýtýmýnýz için gerek duyduðunuz tüm ürünleri ve hizmeti 20 yýllýk tecrübeyle birleþtirip siz müþterilerine sunuyor.
 
-I am trying to use the LSI Logic / Symbios Logic 53c895a in the guest.  When
-the module loads, all I see in dmesg is:
-[    1.432545] sym53c8xx 0000:00:14.0: PCI INT A -> Link[LNKD] -> GSI 11 (level, high) -> IRQ 11
-[    1.433414] sym53c8xx 0000:00:14.0: PCI INT A disabled
+mailto:reklam@reklamix.biz
 
-I have tried 2.6.3[479] vanilla kernels.  I have tried both 32-bit and
-64-bit compiles.
+Ürünlerimizden Bazýlarý :
 
-If I boot ubuntu live 10.10 desktop (32-bit and 64-bit), I am able to see
-the scsi disk.  I may need to point out that the kvm process was not
-restarted when I boot to my kernel or the ubuntu live cd.
+Matbaa Ürünleri: Broþür | Katalog | Dergi | Insert | Afiþ | El ilaný | Menü | Kartvizit | Kitap | Kutu | Çanta | Etiket | Fatura | Ýrsaliye | Kartela | Klasör
 
-I am using debian with qemu-kvm 0.14.1+dfsg-1 and libvirt0 0.9.2-4.  I
-created the VM with libvirt.  According to ps, the command is:
-/usr/bin/kvm -S -M pc-0.14 -enable-kvm -m 1024
--smp 2,sockets=2,cores=1,threads=1 -name roshi
--uuid b34fc4d1-994e-422d-e552-d6f2297be392 -nodefconfig -nodefaults
--chardev socket,id=charmonitor,path=/var/lib/libvirt/qemu/roshi.monitor,server,nowait
--mon chardev=charmonitor,id=monitor,mode=readline -rtc base=utc -boot cn
--device lsi,id=scsi0,bus=pci.0,addr=0x14
--drive file=/dev/kamelvm/roshi,if=none,id=drive-virtio0-0-0,boot=on,format=raw
--device virtio-blk-pci,drive=drive-virtio0-0-0,id=virtio0-0-0
--drive file=/dev/kamelvm/roshi-tftpboot,if=none,id=drive-scsi0-0-0,format=raw
--device scsi-disk,bus=scsi0.0,scsi-id=0,drive=drive-scsi0-0-0,id=scsi0-0-0
--drive file=/tmp/ubuntu-10.10-desktop-i386.iso,if=none,media=cdrom,id=drive-ide1-0,readonly=on,format=raw
--device ide-drive,bus=ide.1,unit=0,drive=drive-ide0-1-0,id=ide0-1-0
--netdev tap,fd=20,id=hostnet0
--device e1000,netdev=hostnet0,id=net0,mac=52:54:00:9e:f7:d7,bus=pci.0,addr=0x5
--chardev pty,id=charserial0 -device isa-serial,chardev=charserial0,id=serial0
--usb -vnc 127.0.0.1:0 -vga cirrus
--device virtio-balloon-pci,id=balloon0,bus=pci.0,addr=0x6
+Promosyon Ürünleri: Takvim | Ajanda | Organizer | Duvar Saati | Termometre | Masa Saati | Kalem | Küp Blok | Bloknot | Çanta | Masa Üstü Setler | Masa Üstü Gereçler | Elektronik Ürünler | Flash Bellek | Lazer Pointer Kalem | Anahtarlýk
 
-I also tried it from the command line and removed chardev and mon and added
-sdl and mon vc.  I had the same result.
+Ambalaj Ürünleri: Koli - Oluklu Kutu | Karton Kutu | Paket Kaðidi | Baskýlý Bant | Kaðýt Poþet | Karton Çanta | Ahsap Kutu
 
-NOTE: The virtio disk works.
+Etiket Ürünleri: Kaðýt Etiket | Yapýþkanlý Kaðýt Etiket | Barkod Etiket | Sticker | Pvc Etiket | Metal Etiket | Aluminyum Etiket | Tekstil Etiketi | Dokuma Etiket | Rulo Etiket
 
--- 
- Microsoft has beaten Volkswagen's world record.  Volkswagen only created 22
- million bugs.
+Reklamix.Biz  Reklam ve Matbaacýlýk Hizmetleri
+
+Tel. & Fax:  0.216. 574 33 54
+GSM: 0.532. 346 86 95 (N. Okan PAMAY)
+
+Maltepe Mah. Litros Yolu 2. Matbaacilar Sitesi No: 3NF4
+Topkapý - Zeytinburnu / ÝSTANBUL
+
+Avrupa Yakasý:
+Tel: 0.212. 544 16 68 - 544 80 34
+Fax: 0.212. 544 80 74
+
+http://www.reklamix.biz
+mailto:reklam@reklamix.biz
+
+
