@@ -1,111 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758492Ab1FXXpP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 19:45:15 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57389 "EHLO ogre.sisk.pl"
+	id S1755126Ab1FYAAw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 20:00:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11462 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754918Ab1FXXpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 19:45:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Ram Pai <linuxram@us.ibm.com>
-Subject: Re: [PATCH 4/4] PCI: make cardbus-bridge resources nice-to-have
-Date: Sat, 25 Jun 2011 01:45:34 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-        svenkatr@ti.com, yinghai@kernel.org, cjb@laptop.org,
-        linux-pci@vger.kernel.org, linux-net-drivers@solarflare.com,
-        bhutchings@solarflare.com, Bjorn Helgaas <bhelgaas@google.com>
-References: <1308610037-6261-1-git-send-email-linuxram@us.ibm.com> <201106232242.29753.rjw@sisk.pl> <20110624162856.GL22917@ram-laptop>
-In-Reply-To: <20110624162856.GL22917@ram-laptop>
+	id S1753925Ab1FYAAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 24 Jun 2011 20:00:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,422,1304319600"; 
+   d="scan'208";a="17959487"
+Message-ID: <4E052531.3010603@linux.intel.com>
+Date: Fri, 24 Jun 2011 17:00:49 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106250145.34514.rjw@sisk.pl>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        David Oliver <david@rgmadvisors.com>, linux-kernel@vger.kernel.org,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        Zachary Vonler <zvonler@rgmadvisors.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Hugh Dickins <hughd@google.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: Change in functionality of futex() system call.
+References: <BANLkTinA9h=84gjYhus3EsNFL8tOUBe1jQ@mail.gmail.com>	 <1307373819.3098.40.camel@edumazet-laptop>	 <1307376672.2322.167.camel@twins>  <1307376989.2322.171.camel@twins>	 <1307377349.3098.65.camel@edumazet-laptop>	 <1307377782.2322.183.camel@twins>	 <1307378564.3098.67.camel@edumazet-laptop>	 <1307379926.2322.219.camel@twins>	 <1307380297.3098.74.camel@edumazet-laptop>	 <1307384634.2497.736.camel@laptop> <1307384871.3098.98.camel@edumazet-laptop>
+In-Reply-To: <1307384871.3098.98.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, June 24, 2011, Ram Pai wrote:
-> On Thu, Jun 23, 2011 at 10:42:29PM +0200, Rafael J. Wysocki wrote:
-> > On Thursday, June 23, 2011, Jesse Barnes wrote:
-> > > On Tue, 21 Jun 2011 17:48:16 -0700
-> > > Ram Pai <linuxram@us.ibm.com> wrote:
-> > > > I assume majority of the platforms will have enough resources to satisfy all
-> > > > the resource requests, and their BIOS would have done a decent job.
-> > > > 
-> > > > Even if the BIOS has not done a decent job, and there are enough resources
-> > > > available we should not see a regression.
-> > > > 
-> > > > The only platforms that would expose a regression is when resources are under
-> > > > contention and the BIOS has assigned enough resource to the cardbus bridge but
-> > > > not to some other device. It will be hard to find such a platform, but I am
-> > > > sure there is one out somewhere there.
-> > > > 
-> > > > I am sure we will see; some day, reports of regression because that platform
-> > > > would have the exact right characteristics to expose the issue. But then that
-> > > > platform is a highly constrained platform in the first place. Its debatable if
-> > > > that should be characterised as a regression, or a platform that was riding on
-> > > > good luck till now.
-> > > > 
-> > > > Even Oliver's platform is a highly constrained platform, and we probably can
-> > > > treat his platform as 'riding on good luck till now'.
-> > > > 
-> > > > We won't be able to satisfy all the platforms with resource constraints.  I
-> > > > think our probable choice is to select a solution that breaks least number of
-> > > > platforms and special case those broken platforms through kernel command line
-> > > > parameters.
-> > > 
-> > > Another option is to hide the new allocation behavior behind a kernel
-> > > parameter.  I know Bjorn has opposed this in the past because really
-> > > this sort of thing should "just work".  But so far it hasn't, and we've
-> > > had to revert both Bjorn's resource tracking changes as well as the
-> > > re-allocation code.
-> > > 
-> > > Hiding it behind a boot option would at least let us improve things
-> > > over time and potentially switch over to new resource code in the
-> > > future...
-> > > 
-> > > Thoughts?
-> > 
-> > Do I understand correctly that at the moment we have two set of systems,
-> > one of which works with the new code and doesn't work with the old code
-> > and the other one conversely?
-> 
-> Here is the current state:
-> 
-> (a) As of 2.6.39, for platforms whose BIOS have not allocated enough resources to its
-> devices, those devices will **continue to not work**. An example of such a platform is
-> the one whose BIOS has not allocated enough resources to SRIOV BARs.
-> 
-> (b) With Yinghai's patch
-> 	the commit "PCI: update bridge resources to get more big ranges when allocating space (again)"
-> 	http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=da7822e5ad71ec9b745b412639f1e5e0ba795a20
-> Most of the  platforms that were not working in (a) will start working, but will break a few platforms, that
-> have resource constraints and whose BIOS has not allocated enough resources to some of its devices.
-> Oliver's and Ben Hutching's platform are two of the known platforms; as of now.
-> 
-> (c) with my patch all the above platforms will start working. But the 4th patch in the series
-> raises a genuine concern that it might break resource-constrained platforms with cardbus bridges.
-> 
-> The question is which one of these is a lesser-evil  :)
-> 
-> Personally I think we should merge all the patches except the 4th patch, and support
-> Oliver's platform through kernel command line parameter. And I think we should
-> revert Yinghai's patch for now and merge it with all other patches in the 3.0.1
-> timeframe after thorough testing.
+Hi Eric,
 
-Well, I think in that case the default behavior should be as for 2.6.39
-and there may be a command line switch turning on some new behavior for
-whoever needs that.
+I'm finally getting time to review this in depth and try to help Shawn
+get his fix upstream. Trying to make sure I have all the facets of this
+straight in my head... or on paper at least ;-)
 
-This way we'll avoid introducing regressions on systems that don't use the
-new command line switch and we'' allow systems that don't work without it to
-be handled.
+On 06/06/2011 11:27 AM, Eric Dumazet wrote:
+> Le lundi 06 juin 2011 à 20:23 +0200, Peter Zijlstra a écrit :
+> 
+>>
+>> That's really not the point, what do we do when the COW happens during
+>> the FUTEX_WAIT? At that point the process vaddr changes mapping and we
+>> cannot continue the wait on the old page, since that would expose
+>> invisible information, nor can we switch to the new page since we queued
+>> on the old page.
+>>
+>> Therefore we have to force the COW and queue on the private copy, it
+>> really is the only semi sane semantic.
+> 
+> The point is we dont necessarly have to COW the page. If you attempt
+> this COW, you shoot on user that did not expect to have a COW.
+> 
+> Take this program : COW is not allowed, still this worked on 2.6.18 (it
+> waits until another process change the value in file and call
+> futex_wait())
+> 
+> Using PROT_READ | PROT_WRITE instead of PROT_READ was OK too.
+> 
+> (If we use PROT_READ | PROT_WRITE, then after your patch, program doesnt
+> work anymore since this process gets a private page after your hidden
+> COW : It'll wait forever)
 
-What the new behavior should be is to be determined I guess.
 
-Thanks,
-Rafael
+As I understand MMAP(2), this is working due to undefined behavior as
+Stephen pointed out earlier:
+
+"It is unspecified whether changes made to the file after the     mmap()
+call are visible in the mapped region."
+
+I don't think we are under any obligation to keep that working.
+
+--
+Darren
+
+> 
+> #include <errno.h>
+> #include <fcntl.h>
+> #include <stdint.h>
+> typedef uint32_t u32;   // for futex.h
+> #include <linux/futex.h>
+> #include <sys/mman.h>
+> #include <sys/syscall.h>
+> #include <unistd.h>
+> 
+> 
+> int main(int argc, char *argv[]) {
+>  	int fd, *futex, rc, val = 42;
+> 
+> 	fd = open("/tmp/futex_test", O_RDWR|O_CREAT, 0644);
+> 	write(fd, &val, 4);
+> 	futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE, fd, 0);
+> 	rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, 0, 0, 0);
+> 	printf("rc=%d errno=%d\n", rc, errno);
+> }
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
