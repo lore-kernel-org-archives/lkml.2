@@ -1,62 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075Ab1FYTkK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 15:40:10 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:53394 "EHLO
+	id S1752139Ab1FYUDI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 16:03:08 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:42526 "EHLO
 	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751726Ab1FYTkI (ORCPT
+	with ESMTP id S1751016Ab1FYUDF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 15:40:08 -0400
-Date: Sat, 25 Jun 2011 16:40:32 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Keith Packard <keithp@keithp.com>, Johan Hedberg <johan.hedberg@gmail.com>,
-        Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
-        Waldemar.Rymarkiewicz@tieto.com, marcel@holtmann.org,
-        linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Regression caused by "Bluetooth: Map sec_level to link key
- requirements"
-Message-ID: <20110625194032.GE22619@joana>
-Mail-Followup-To: Jeremy Fitzhardinge <jeremy@goop.org>,
-	Keith Packard <keithp@keithp.com>,
-	Johan Hedberg <johan.hedberg@gmail.com>,
-	Luiz Augusto von Dentz <luiz.dentz@gmail.com>,
-	Waldemar.Rymarkiewicz@tieto.com, marcel@holtmann.org,
-	linux-bluetooth@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <99B09243E1A5DA4898CDD8B700111448175AA2DB2A@EXMB04.eu.tieto.com>
- <20110609083345.GA2894@dell.ccr.corp.intel.com>
- <yuny61b3pnm.fsf@aiko.keithp.com>
- <99B09243E1A5DA4898CDD8B700111448175AA2DE98@EXMB04.eu.tieto.com>
- <20110610055558.GA1832@dell>
- <BANLkTim4F8ZvWPMHSXpcBj9Eb2uFThcz4w@mail.gmail.com>
- <yun8vsynkiy.fsf@aiko.keithp.com>
- <20110619175937.GA24188@dell.ger.corp.intel.com>
- <yunliwxabmz.fsf@aiko.keithp.com>
- <4E0575DE.4070004@goop.org>
+	Sat, 25 Jun 2011 16:03:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E0575DE.4070004@goop.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110609130621.921710458@linutronix.de>
+References: <20110609130509.346588418@linutronix.de>
+	<20110609130621.921710458@linutronix.de>
+Date: Sat, 25 Jun 2011 22:03:03 +0200
+Message-ID: <BANLkTinwpK=TFFexbeBeqXz-s=ouBK9gEg@mail.gmail.com>
+Subject: Re: [patch 1/5] i8253: Create common clockevent implementation
+From: Stijn Devriendt <highguy@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, Ingo Molnar <mingo@elte.hu>,
+        John Stultz <john.stultz@linaro.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Jeremy Fitzhardinge <jeremy@goop.org> [2011-06-24 22:45:02 -0700]:
+> +/*
+> + * Initialize the conversion factor and the min/max deltas of the clock event
+> + * structure and register the clock event source with the framework.
+> + */
+> +void __init clockevent_i8253_init(bool oneshot)
+> +{
+> +       if (oneshot)
+> +               i8253_clockevent.features |= CLOCK_EVT_FEAT_ONESHOT;
+> +       /*
+> +        * Start pit with the boot cpu mask. x86 might make it global
+> +        * when it is used as broadcast device later.
+> +        */
+> +       i8253_clockevent.cpumask = cpumask_of(smp_processor_id());
+> +
+> +       clockevents_config_and_register(&i8253_clockevent, PIT_TICK_RATE,
+> +                                       0xF, 0x7FFF);
+> +}
+> +#endif
+>
+Both this function and the i8253_clockevent declaration seem to be missing
+from include/linux/i8253.h causing compile failures for at least x86.
 
-> On 06/19/2011 12:01 PM, Keith Packard wrote:
-> >> I think you'll need both of them to fix the pairing/security issues.
-> > Yup, with both of those patches, I get syncml and dun working again.
-> >
-> > (sorry for the delayed testing, I'm traveling)
-> 
-> I just bisected the problems I had reconnecting my Nokia BH-905i
-> headphones to the same change that Keith identified, and merging
-> git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
-> into my tree fixed it.
-> 
-> So +1 from me to get this into mainline soon.
+I was just trying to compile tip of
+git://git.kernel.org/pub/scm/linux/kernel/git/mingo/linux-2.6-sched-devel.git
 
-It's on the way. Right now patches are on David Miller' tree.
+Should be fixed by applying the following patch.
 
-	Gustavo
+commit 0c24072a8d580acd5b4fc57009b72b217c0f23d9
+Author: Stijn Devriendt <HIGHGuY@gmail.com>
+Date:   Sat Jun 25 22:04:53 2011 +0200
+
+    Fix missing declarations of i8253.
+
+    Signed-off-by: Stijn Devriendt <HIGHGuY@gmail.com>
+
+diff --git a/include/linux/i8253.h b/include/linux/i8253.h
+index 0770fc5..e6c032f 100644
+--- a/include/linux/i8253.h
++++ b/include/linux/i8253.h
+@@ -22,6 +22,10 @@
+
+ extern raw_spinlock_t i8253_lock;
+
++extern struct clock_event_device i8253_clockevent;
++
+ extern void setup_pit_timer(void);
+
++extern void clockevent_i8253_init(bool oneshot);
++
+ #endif /* __LINUX_I8253_H */
