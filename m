@@ -1,143 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751918Ab1FYLjJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 07:39:09 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:49640 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751773Ab1FYLjF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 07:39:05 -0400
-X-Greylist: delayed 1626 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Jun 2011 07:39:05 EDT
-Date: Sat, 25 Jun 2011 12:11:42 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Greg Kroah-Hartman <greg@kroah.com>, devicetree-discuss@lists.ozlabs.org,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH 1/4] dt: early platform devices support
-Message-ID: <20110625121142.4c73ca70@taxman.wild-wind.fr.eu.org>
-In-Reply-To: <BANLkTi=7cM2dXniHM4mnXs46KaTc05hh-Q@mail.gmail.com>
-References: <1308924659-31894-1-git-send-email-marc.zyngier@arm.com>
-	<1308924659-31894-2-git-send-email-marc.zyngier@arm.com>
-	<BANLkTi=7cM2dXniHM4mnXs46KaTc05hh-Q@mail.gmail.com>
-Organization: Metropolis -- Nowhere
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-SA-Exim-Connect-IP: 93.97.26.37
-X-SA-Exim-Rcpt-To: grant.likely@secretlab.ca, greg@kroah.com, devicetree-discuss@lists.ozlabs.org, kay.sievers@vrfy.org, linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-X-SA-Exim-Mail-From: marc.zyngier@arm.com
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+	id S1751713Ab1FYLIo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 07:08:44 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:49768 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751480Ab1FYLIm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 07:08:42 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E05C397.9090701@cam.ac.uk>
+Date: Sat, 25 Jun 2011 12:16:39 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh <greg@kroah.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH] staging: fix more iio builds when IIO_RING_BUFFER is
+ not enabled
+References: <20110624155822.cb8cf6eb.sfr@canb.auug.org.au> <20110624092832.36ef2eae.randy.dunlap@oracle.com>
+In-Reply-To: <20110624092832.36ef2eae.randy.dunlap@oracle.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Jun 2011 22:49:56 -0600
-Grant Likely <grant.likely@secretlab.ca> wrote:
-
-> [cc'ing linux kernel since I discuss driver core issues]
-> [cc'ing greg and kay, 'cause I've included a patch I'd like you to
-> look at (see end of email)]
+On 06/24/11 17:28, Randy Dunlap wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> On Fri, Jun 24, 2011 at 8:10 AM, Marc Zyngier <marc.zyngier@arm.com> wrote:
-> > Add support for populating early platform devices from the device
-> > tree, by walking the tree and adding nodes whose 'compatible'
-> > property matches the 'class' string passed as a parameter.
-> >
-> > This allows devices to be probed long before the whole device
-> > infrastructure is available.
-> >
-> > Signed-off-by: Marc Zyngier <marc.zyngier@arm.com>
-> > ---
-> >  drivers/of/platform.c       |   26 ++++++++++++++++++++++++++
-> >  include/linux/of_platform.h |    1 +
-> >  2 files changed, 27 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-> > index e75af39..2a323ee 100644
-> > --- a/drivers/of/platform.c
-> > +++ b/drivers/of/platform.c
-> > @@ -458,4 +458,30 @@ int of_platform_populate(struct device_node *root,
-> >        of_node_put(root);
-> >        return rc;
-> >  }
-> > +
-> > +/**
-> > + * of_early_platform_populate() - Populate early platform devices from DT
-> > + * @class: string to compare to the 'compatible' attributes
-> > + *
-> > + * This function walks the device tree and register devices whose
-> > + * 'compatible' property matches the 'class' parameter.
-> > + *
-> > + * Returns 0 on success, < 0 on failure.
-> > + */
-> > +int of_early_platform_populate(const char *class)
-> > +{
-> > +       struct platform_device *pdev;
-> > +       struct device_node *np = NULL;
-> > +
-> > +       while ((np = of_find_compatible_node(np, NULL, class))) {
+> Fix lots more build errors in staging/iio when CONFIG_IIO_RING_BUFFER
+> is not enabled by moving enums and defines outside of the
+> CONFIG_IIO_RING_BUFFER ifdef block.
 > 
-> for_each_compatible_node()
+> Examples (one from each driver; there were 116 total errors):
 > 
-> > +               pdev = of_device_alloc(np, NULL, NULL);
-> > +               if (!pdev)
-> > +                       return -ENOMEM;
-> > +               list_del(&pdev->dev.devres_head);
-> > +               memset(&pdev->dev.devres_head, 0, sizeof(pdev->dev.devres_head));
-> > +               early_platform_add_devices(&pdev, 1);
+> drivers/staging/iio/accel/adis16204_core.c:437: error: 'ADIS16204_SCAN_SUPPLY' undeclared here (not in a function)
+> drivers/staging/iio/accel/adis16209_core.c:410: error: 'ADIS16209_SCAN_SUPPLY' undeclared here (not in a function)
+> drivers/staging/iio/gyro/adis16260_core.c:420: error: 'ADIS16260_SCAN_GYRO' undeclared here (not in a function)
+> drivers/staging/iio/imu/adis16400_core.c:565: error: 'ADIS16400_SCAN_SUPPLY' undeclared here (not in a function)
+Thanks Randy! I should really have taken the time to test the rest of these after
+your first patch.
+
+There's one more hiding in there I think, the adis16240.
+I'll fire off a patch for this one with you as reported-by.
 > 
-> I'm not sure this will work reliably.  The of_platform semantics are
-> still slightly different from 'regular' platform devices (which I do
-> intend to fix though), so it may cause problems with how the device
-> name gets assigned.  I'd need to dig into it though.
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> Cc: Jonathan Cameron <jic23@cam.ac.uk>
+> Cc: linux-iio@vger.kernel.org
+> ---
+>  drivers/staging/iio/accel/adis16204.h |    2 +-
+>  drivers/staging/iio/accel/adis16209.h |    4 ++--
+>  drivers/staging/iio/gyro/adis16260.h  |    2 +-
+>  drivers/staging/iio/imu/adis16400.h   |    2 +-
+>  4 files changed, 5 insertions(+), 5 deletions(-)
 > 
-> > +       }
-> > +
-> > +       return 0;
-> > +}
-> 
-> Hmmm, I'd really rather not go down the path of having different
-> 'classes' of devices that need to be registered at different times.
-> There just isn't a really good generic way to know which devices
-> should be the 'early' ones, it gets hairy with regard to making sure
-> devices don't get registered twice, and it doesn't actually solve the
-> problem that there is no way to handle dependencies between devices in
-> the Linux device model.
-> 
-> What I /want/ to do is allow drivers to defer initialization at .probe
-> time if some of the resources it needs aren't yet available.
-> Unfortunately, that doesn't work so well for interrupt controllers
-> since irq numbers are expected to be correctly populated in the
-> platform device resource table.  What complicates things further is
-> that most gpio controllers are doubling as irq controllers nowdays,
-> and those are typically modelled with platform devices themselves.
+> --- linux-next-20110624.orig/drivers/staging/iio/accel/adis16204.h
+> +++ linux-next-20110624/drivers/staging/iio/accel/adis16204.h
+> @@ -84,7 +84,6 @@ struct adis16204_state {
+>  
+>  int adis16204_set_irq(struct iio_dev *indio_dev, bool enable);
+>  
+> -#ifdef CONFIG_IIO_RING_BUFFER
+>  enum adis16204_scan {
+>  	ADIS16204_SCAN_SUPPLY,
+>  	ADIS16204_SCAN_ACC_X,
+> @@ -93,6 +92,7 @@ enum adis16204_scan {
+>  	ADIS16204_SCAN_TEMP,
+>  };
+>  
+> +#ifdef CONFIG_IIO_RING_BUFFER
+>  void adis16204_remove_trigger(struct iio_dev *indio_dev);
+>  int adis16204_probe_trigger(struct iio_dev *indio_dev);
+>  
+> --- linux-next-20110624.orig/drivers/staging/iio/accel/adis16209.h
+> +++ linux-next-20110624/drivers/staging/iio/accel/adis16209.h
+> @@ -121,8 +121,6 @@ struct adis16209_state {
+>  
+>  int adis16209_set_irq(struct iio_dev *indio_dev, bool enable);
+>  
+> -#ifdef CONFIG_IIO_RING_BUFFER
+> -
+>  #define ADIS16209_SCAN_SUPPLY	0
+>  #define ADIS16209_SCAN_ACC_X	1
+>  #define ADIS16209_SCAN_ACC_Y	2
+> @@ -132,6 +130,8 @@ int adis16209_set_irq(struct iio_dev *in
+>  #define ADIS16209_SCAN_INCLI_Y	6
+>  #define ADIS16209_SCAN_ROT	7
+>  
+> +#ifdef CONFIG_IIO_RING_BUFFER
+> +
+>  void adis16209_remove_trigger(struct iio_dev *indio_dev);
+>  int adis16209_probe_trigger(struct iio_dev *indio_dev);
+>  
+> --- linux-next-20110624.orig/drivers/staging/iio/gyro/adis16260.h
+> +++ linux-next-20110624/drivers/staging/iio/gyro/adis16260.h
+> @@ -104,7 +104,6 @@ struct adis16260_state {
+>  
+>  int adis16260_set_irq(struct iio_dev *indio_dev, bool enable);
+>  
+> -#ifdef CONFIG_IIO_RING_BUFFER
+>  /* At the moment triggers are only used for ring buffer
+>   * filling. This may change!
+>   */
+> @@ -115,6 +114,7 @@ int adis16260_set_irq(struct iio_dev *in
+>  #define ADIS16260_SCAN_TEMP	3
+>  #define ADIS16260_SCAN_ANGL	4
+>  
+> +#ifdef CONFIG_IIO_RING_BUFFER
+>  void adis16260_remove_trigger(struct iio_dev *indio_dev);
+>  int adis16260_probe_trigger(struct iio_dev *indio_dev);
+>  
+> --- linux-next-20110624.orig/drivers/staging/iio/imu/adis16400.h
+> +++ linux-next-20110624/drivers/staging/iio/imu/adis16400.h
+> @@ -158,7 +158,6 @@ struct adis16400_state {
+>  
+>  int adis16400_set_irq(struct iio_dev *indio_dev, bool enable);
+>  
+> -#ifdef CONFIG_IIO_RING_BUFFER
+>  /* At the moment triggers are only used for ring buffer
+>   * filling. This may change!
+>   */
+> @@ -182,6 +181,7 @@ int adis16400_set_irq(struct iio_dev *in
+>  #define ADIS16300_SCAN_INCLI_X	12
+>  #define ADIS16300_SCAN_INCLI_Y	13
+>  
+> +#ifdef CONFIG_IIO_RING_BUFFER
+>  void adis16400_remove_trigger(struct iio_dev *indio_dev);
+>  int adis16400_probe_trigger(struct iio_dev *indio_dev);
+>  
 
-While I totally agree with all the above, this patch tries to address a
-slightly different problem. On top of device/device dependencies, there
-is also a number of implicit dependencies.
-
-In the case I'm currently trying to solve, the kernel expects a timer
-to be up and running when hitting the delay loop calibration. At that
-stage, it is impossible to register a platform device, hence the use
-(abuse?) of early platform devices.
-
-The current ARM code relies on the timers *not* being a standard
-device, and being directly setup by an board specific method. The SMP
-timers are even worse, as they are directly called by the core code,
-meaning that we can only have *one* implementation at a time in the
-kernel.
-
-So the early platform stuff is a potential solution for that, though
-there is no way it would handle any kind of dependency. What I dream of
-is to have the full device/driver infrastructure available much
-earlier, before the rest of the kernel starts relying on some hardware
-being up and running...
-
-Cheers,
-
-	M.
--- 
-I'm the slime oozin' out from your TV set...
