@@ -1,445 +1,435 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751498Ab1FYHil (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 03:38:41 -0400
-Received: from mail.southpole.se ([193.12.106.18]:32993 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750910Ab1FYHih (ORCPT
+	id S1751271Ab1FYImF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 04:42:05 -0400
+Received: from higgs.elka.pw.edu.pl ([194.29.160.5]:33171 "EHLO
+	higgs.elka.pw.edu.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750995Ab1FYImA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 03:38:37 -0400
-From: Jonas Bonn <jonas@southpole.se>
-To: rusty@rustcorp.com.au
-Cc: arnd@arndb.de, linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        monstr@monstr.eu, cmetcalf@tilera.com, Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH] modules: add default loader hook implementations
-Date: Sat, 25 Jun 2011 09:38:32 +0200
-Message-Id: <1308987512-6583-1-git-send-email-jonas@southpole.se>
-X-Mailer: git-send-email 1.7.4.1
-X-Assp-Client-SSL: yes
+	Sat, 25 Jun 2011 04:42:00 -0400
+X-Comment: RFC 2476 MSA function at elektron.elka.pw.edu.pl logged sender identity as: wzabolot
+Message-ID: <4E059F4A.3050000@elektron.elka.pw.edu.pl>
+Date: Sat, 25 Jun 2011 10:41:46 +0200
+From: "wzabolot@elektron.elka.pw.edu.pl" <W.Zabolotny@elka.pw.edu.pl>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110606 Icedove/3.1.10
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Kernel 2.6.39.2 - incorrect calling of sleeping function and
+  lockdep problem found
+References: <4E04C82C.1090201@elka.pw.edu.pl> <4E04C966.9080002@elka.pw.edu.pl> <4E04CA6E.2080805@elka.pw.edu.pl>
+In-Reply-To: <4E04CA6E.2080805@elka.pw.edu.pl>
+Content-Type: multipart/mixed;
+ boundary="------------050308080806010203010906"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This is a multi-part message in MIME format.
+--------------050308080806010203010906
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-The module loader code allows architectures to hook into the code by
-providing a small number of entry points that each arch must implement.  This
-patch provides generic implementations of these entry points for arch's
-that don't need to do anything special.
+I've experienced yet another bunch of errors when trying to boot 
+2.6.39.1 on the affected machine:
+[  128.020070] ERROR: kmemcheck: Fatal error
+[  128.024158]
+[  128.025654] Pid: 1100, comm: modprobe Tainted: G        W   2.6.39.2 
+#1                  /D865GBF
+[  128.036901] EIP: 0060:[<c0460871>] EFLAGS: 00010186 CPU: 0
+[  128.042468] EIP is at mutex_lock_nested+0xd1/0x340
+[  128.047332] EAX: f4b38230 EBX: f49d0214 ECX: f4b3c000 EDX: 0000403f
+[  128.053673] ESI: f49d0218 EDI: 00000246 EBP: f4b3ddf4 ESP: c083430c
+[  128.060092]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  128.065568] CR0: 8005003b CR2: f5c347d8 CR3: 34b31000 CR4: 000006d0
+[  128.071912] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[  128.078253] DR6: ffff4ff0 DR7: 00000400
+[  128.082168]  [<c0126c38>] kmemcheck_error_save_bug+0x58/0x90
+[  128.088007]  [<c0127294>] kmemcheck_show+0x64/0x70
+[  128.092894]  [<c01274fd>] kmemcheck_fault+0x6d/0xc0
+[  128.097954]  [<c0122df0>] do_page_fault+0x270/0x440
+[  128.102927]  [<c0462b63>] error_code+0x5f/0x64
+[  128.107554]  [<c0249578>] reiserfs_write_lock+0x28/0x40
+[  128.112882]  [<c022f1d9>] reiserfs_readdir_dentry+0x2f9/0x580
+[  128.118801]  [<c022f477>] reiserfs_readdir+0x17/0x20
+[  128.123947]  [<c01d463e>] vfs_readdir+0x9e/0xc0
+[  128.128581]  [<c01d4720>] sys_getdents+0x60/0xc0
+[  128.133286]  [<c0462e10>] sysenter_do_call+0x12/0x36
+[  128.138432]  [<ffffffff>] 0xffffffff
+udevd[1093]: '/sbin/modprobe -b acpi:PNP0100:' [1100] terminated by 
+signal 5 (Trace/breakpoint trap)
+[...]
+[  361.899981] kobject: 'vtcon0' (f5ceba08): fill_kobj_path: path = 
+'/devices/virtual/vtconsole/vtcon0'
+[  370.646704] ERROR: kmemcheck: Fatal error
+[  370.650782]
+[  370.652272] Pid: 1606, comm: path_id Tainted: G        W   2.6.39.2 
+#1                  /D865GBF
+[  370.663388] EIP: 0060:[<c021ceb2>] EFLAGS: 00010246 CPU: 0
+[  370.668946] EIP is at sysfs_refresh_inode+0x82/0xa0
+[  370.673887] EAX: f5c572e8 EBX: f58ae0b0 ECX: 00000000 EDX: 00000000
+[  370.680212] ESI: f5c574e0 EDI: f5c574e0 EBP: f3a55e10 ESP: c0834430
+[  370.686537]  DS: 007b ES: 007b FS: 00d8 GS: 0033 SS: 0068
+[  370.692003] CR0: 80050033 CR2: f5c347d8 CR3: 34a44000 CR4: 000006d0
+[  370.698328] DR0: 00000000 DR1: 00000000 DR2: 00000000 DR3: 00000000
+[  370.704660] DR6: ffff4ff0 DR7: 00000400
+[  370.708558]  [<c0126c38>] kmemcheck_error_save_bug+0x58/0x90
+[  370.714302]  [<c0127294>] kmemcheck_show+0x64/0x70
+[  370.719181]  [<c01274fd>] kmemcheck_fault+0x6d/0xc0
+[  370.724206]  [<c0122df0>] do_page_fault+0x270/0x440
+[  370.729161]  [<c0462b63>] error_code+0x5f/0x64
+[  370.733762]  [<c021cf0b>] sysfs_permission+0x3b/0x70
+[  370.738813]  [<c01cecc6>] link_path_walk+0x1c6/0x8d0
+[  370.743935]  [<c01cf4f0>] path_lookupat+0x50/0x740
+[  370.748804]  [<c01d0b75>] do_path_lookup+0x25/0x70
+[  370.753750]  [<c01d0f3e>] user_path_at+0x3e/0x80
+[  370.758455]  [<c01c80c1>] sys_readlinkat+0x31/0xa0
+[  370.763400]  [<c01c8157>] sys_readlink+0x27/0x30
+[  370.768099]  [<c0462e10>] sysenter_do_call+0x12/0x36
+[  370.773141]  [<ffffffff>] 0xffffffff
 
-The generic implementations are set to be used by default only for those
-architectures that use asm-generic/module.h.  Architectures that do not use
-this generic header will be required to implement all of the hooks as before.
-
-Architectures that do use asm-generic/module.h get the default implementation
-automatically and will need to provide a #define in their asm/module.h for
-each of the hooks that they wish to override.  Being explicit about needing
-to override the function should reduce some confusion as to which hook is
-actually being used, and throws a nice link-time error if you try to
-override the hook without providing the implementation.
-
-An alternative would have been to provide the hooks and just mark them as
-__weak, but there's reluctance to do so as it makes it more difficult to figure
-out where the code that finally gets linked in is actually located.
-
-This patch is as non-invasive as possible, changing the default behaviour
-only for architectures that use asm-generic.  A review of the other arch's
-should follow, as many of them can presumably also be simplified by making
-use of these default hooks.
-
-Signed-off-by: Jonas Bonn <jonas@southpole.se>
----
-
-Hi Rusty,
-
-The alternative implementation, just marking the default implementations as
-__weak, is less invasive, but this patch is more along the lines of what
-Arnd preferred.  If this version isn't to your liking, I can submit the
-__weak alternative instead.
-
-Tested on the OpenRISC architecture and build-tested for x86.
-
-/Jonas
-
- arch/microblaze/include/asm/module.h |    4 ++
- arch/microblaze/kernel/module.c      |   35 -------------------
- arch/tile/include/asm/module.h       |   10 +++++
- arch/tile/kernel/module.c            |   31 ----------------
- arch/x86/include/asm/module.h        |   10 +++++
- arch/x86/kernel/module.c             |   37 --------------------
- include/asm-generic/module.h         |   13 +++++++
- include/linux/moduleloader.h         |   29 +++++++++++++++-
- kernel/module.c                      |   63 ++++++++++++++++++++++++++++++++++
- 9 files changed, 128 insertions(+), 104 deletions(-)
-
-diff --git a/arch/microblaze/include/asm/module.h b/arch/microblaze/include/asm/module.h
-index 7be1347..e2d51d6 100644
---- a/arch/microblaze/include/asm/module.h
-+++ b/arch/microblaze/include/asm/module.h
-@@ -28,4 +28,8 @@
- 
- typedef struct { volatile int counter; } module_t;
- 
-+/* Set defines for the moduleloader hooks that need to be overridden */
-+#define apply_relocate_add apply_relocate_add
-+#define module_finalize module_finalize
-+
- #endif /* _ASM_MICROBLAZE_MODULE_H */
-diff --git a/arch/microblaze/kernel/module.c b/arch/microblaze/kernel/module.c
-index 0e73f66..142426f 100644
---- a/arch/microblaze/kernel/module.c
-+++ b/arch/microblaze/kernel/module.c
-@@ -18,37 +18,6 @@
- #include <asm/pgtable.h>
- #include <asm/cacheflush.h>
- 
--void *module_alloc(unsigned long size)
--{
--	void *ret;
--	ret = (size == 0) ? NULL : vmalloc(size);
--	pr_debug("module_alloc (%08lx@%08lx)\n", size, (unsigned long int)ret);
--	return ret;
--}
--
--void module_free(struct module *module, void *region)
--{
--	pr_debug("module_free(%s,%08lx)\n", module->name,
--					(unsigned long)region);
--	vfree(region);
--}
--
--int module_frob_arch_sections(Elf_Ehdr *hdr,
--				Elf_Shdr *sechdrs,
--				char *secstrings,
--				struct module *mod)
--{
--	return 0;
--}
--
--int apply_relocate(Elf32_Shdr *sechdrs, const char *strtab,
--	unsigned int symindex, unsigned int relsec, struct module *module)
--{
--	printk(KERN_ERR "module %s: ADD RELOCATION unsupported\n",
--		module->name);
--	return -ENOEXEC;
--}
--
- int apply_relocate_add(Elf32_Shdr *sechdrs, const char *strtab,
- 	unsigned int symindex, unsigned int relsec, struct module *module)
- {
-@@ -155,7 +124,3 @@ int module_finalize(const Elf32_Ehdr *hdr, const Elf_Shdr *sechdrs,
- 	flush_dcache();
- 	return 0;
- }
--
--void module_arch_cleanup(struct module *mod)
--{
--}
-diff --git a/arch/tile/include/asm/module.h b/arch/tile/include/asm/module.h
-index 1e4b79f..670d266 100644
---- a/arch/tile/include/asm/module.h
-+++ b/arch/tile/include/asm/module.h
-@@ -1 +1,11 @@
-+#ifndef _ASM_TILE_SYSTEM_H
-+#define _ASM_TILE_SYSTEM_H
-+
- #include <asm-generic/module.h>
-+
-+/* Set defines for the moduleloader hooks that need to be overridden */
-+#define module_alloc module_alloc
-+#define module_free module_free
-+#define apply_relocate_add apply_relocate_add
-+
-+#endif
-diff --git a/arch/tile/kernel/module.c b/arch/tile/kernel/module.c
-index f68df69..28fa6ec 100644
---- a/arch/tile/kernel/module.c
-+++ b/arch/tile/kernel/module.c
-@@ -98,25 +98,6 @@ void module_free(struct module *mod, void *module_region)
- 	 */
- }
- 
--/* We don't need anything special. */
--int module_frob_arch_sections(Elf_Ehdr *hdr,
--			      Elf_Shdr *sechdrs,
--			      char *secstrings,
--			      struct module *mod)
--{
--	return 0;
--}
--
--int apply_relocate(Elf_Shdr *sechdrs,
--		   const char *strtab,
--		   unsigned int symindex,
--		   unsigned int relsec,
--		   struct module *me)
--{
--	pr_err("module %s: .rel relocation unsupported\n", me->name);
--	return -ENOEXEC;
--}
--
- #ifdef __tilegx__
- /*
-  * Validate that the high 16 bits of "value" is just the sign-extension of
-@@ -249,15 +230,3 @@ int apply_relocate_add(Elf_Shdr *sechdrs,
- 	}
- 	return 0;
- }
--
--int module_finalize(const Elf_Ehdr *hdr,
--		    const Elf_Shdr *sechdrs,
--		    struct module *me)
--{
--	/* FIXME: perhaps remove the "writable" bit from the TLB? */
--	return 0;
--}
--
--void module_arch_cleanup(struct module *mod)
--{
--}
-diff --git a/arch/x86/include/asm/module.h b/arch/x86/include/asm/module.h
-index 9eae775..8ec7dc3 100644
---- a/arch/x86/include/asm/module.h
-+++ b/arch/x86/include/asm/module.h
-@@ -63,4 +63,14 @@
- # define MODULE_ARCH_VERMAGIC MODULE_PROC_FAMILY
- #endif
- 
-+/* Set defines for the moduleloader hooks that need to be overridden */
-+#define module_alloc module_alloc
-+#ifdef CONFIG_X86_32
-+#define apply_relocate apply_relocate
-+#else
-+#define apply_relocate_add apply_relocate_add
-+#endif
-+#define module_finalize module_finalize
-+#define module_arch_cleanup module_arch_cleanup
-+
- #endif /* _ASM_X86_MODULE_H */
-diff --git a/arch/x86/kernel/module.c b/arch/x86/kernel/module.c
-index 52f256f..925179f 100644
---- a/arch/x86/kernel/module.c
-+++ b/arch/x86/kernel/module.c
-@@ -45,21 +45,6 @@ void *module_alloc(unsigned long size)
- 				-1, __builtin_return_address(0));
- }
- 
--/* Free memory returned from module_alloc */
--void module_free(struct module *mod, void *module_region)
--{
--	vfree(module_region);
--}
--
--/* We don't need anything special. */
--int module_frob_arch_sections(Elf_Ehdr *hdr,
--			      Elf_Shdr *sechdrs,
--			      char *secstrings,
--			      struct module *mod)
--{
--	return 0;
--}
--
- #ifdef CONFIG_X86_32
- int apply_relocate(Elf32_Shdr *sechdrs,
- 		   const char *strtab,
-@@ -100,17 +85,6 @@ int apply_relocate(Elf32_Shdr *sechdrs,
- 	}
- 	return 0;
- }
--
--int apply_relocate_add(Elf32_Shdr *sechdrs,
--		       const char *strtab,
--		       unsigned int symindex,
--		       unsigned int relsec,
--		       struct module *me)
--{
--	printk(KERN_ERR "module %s: ADD RELOCATION unsupported\n",
--	       me->name);
--	return -ENOEXEC;
--}
- #else /*X86_64*/
- int apply_relocate_add(Elf64_Shdr *sechdrs,
- 		   const char *strtab,
-@@ -181,17 +155,6 @@ overflow:
- 	       me->name);
- 	return -ENOEXEC;
- }
--
--int apply_relocate(Elf_Shdr *sechdrs,
--		   const char *strtab,
--		   unsigned int symindex,
--		   unsigned int relsec,
--		   struct module *me)
--{
--	printk(KERN_ERR "non add relocation not supported\n");
--	return -ENOSYS;
--}
--
- #endif
- 
- int module_finalize(const Elf_Ehdr *hdr,
-diff --git a/include/asm-generic/module.h b/include/asm-generic/module.h
-index ed5b44d..4e5dec8 100644
---- a/include/asm-generic/module.h
-+++ b/include/asm-generic/module.h
-@@ -19,4 +19,17 @@ struct mod_arch_specific
- #define Elf_Ehdr Elf32_Ehdr
- #endif
- 
-+/* This configures the module loader code to use the default implementations
-+ * for the architecture specific hooks.  Architectures should set a #define
-+ * for each of the hooks that it needs to override.
-+ */
-+#define asm_generic_moduleloader_hooks 1
-+#undef module_frob_arch_sections
-+#undef module_alloc
-+#undef module_free
-+#undef apply_relocate
-+#undef apply_relocate_add
-+#undef module_finalize
-+#undef module_arch_cleanup
-+
- #endif /* __ASM_GENERIC_MODULE_H */
-diff --git a/include/linux/moduleloader.h b/include/linux/moduleloader.h
-index c1f40c2..a21589b 100644
---- a/include/linux/moduleloader.h
-+++ b/include/linux/moduleloader.h
-@@ -1,6 +1,33 @@
- #ifndef _LINUX_MODULELOADER_H
- #define _LINUX_MODULELOADER_H
--/* The stuff needed for archs to support modules. */
-+
-+/* Architecture specific hooks into the module loader code */
-+
-+/* The hooks declared in this file all have trivial default implementations
-+ * that can be used by architectures that don't have special requirements for
-+ * these entry points.  They are 'effectively weak':  they can be overridden
-+ * but require an explicit 'declaration of intent' in that they require the
-+ * architecture to set a #define in their asm/module.h for each of the hooks
-+ * they wish to override.  If no define is set, the default hook will be
-+ * called and you'll get a link error if you try to override the function
-+ * elsewhere.  This (hopefully) will prevent some confusion as to which
-+ * implementation of the hook is actually being used...
-+ */
-+
-+/* The default behaviour requires that an architecture implement each of
-+ * these hooks.  The asm-generic/module.h header reverses this behaviour
-+ * and defaults to using the default hooks, which should be reasonable
-+ * for new architectures.
-+ */
-+#ifndef asm_generic_moduleloader_hooks
-+#define module_frob_arch_sections module_frob_arch_sections
-+#define module_alloc module_alloc
-+#define module_free module_free
-+#define apply_relocate apply_relocate
-+#define apply_relocate_add apply_relocate_add
-+#define module_finalize module_finalize
-+#define module_arch_cleanup module_arch_cleanup
-+#endif
- 
- #include <linux/module.h>
- #include <linux/elf.h>
-diff --git a/kernel/module.c b/kernel/module.c
-index 795bdc7..71a2dbe4 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -1697,6 +1697,19 @@ static void unset_module_core_ro_nx(struct module *mod) { }
- static void unset_module_init_ro_nx(struct module *mod) { }
- #endif
- 
-+#ifndef module_free
-+void module_free(struct module *mod, void *module_region)
-+{
-+	vfree(module_region);
-+}
-+#endif
-+
-+#ifndef module_arch_cleanup
-+void module_arch_cleanup(struct module *mod)
-+{
-+}
-+#endif
-+
- /* Free a module, remove from lists, etc. */
- static void free_module(struct module *mod)
- {
-@@ -1851,6 +1864,30 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
- 	return ret;
- }
- 
-+#ifndef apply_relocate
-+int apply_relocate(Elf_Shdr *sechdrs,
-+                   const char *strtab,
-+                   unsigned int symindex,
-+                   unsigned int relsec,
-+                   struct module *me)
-+{
-+	pr_err("module %s: REL relocation unsupported\n", me->name);
-+	return -ENOEXEC;
-+}
-+#endif
-+
-+#ifndef apply_relocate_add
-+int apply_relocate_add(Elf_Shdr *sechdrs,
-+                   const char *strtab,
-+                   unsigned int symindex,
-+                   unsigned int relsec,
-+                   struct module *me)
-+{
-+	pr_err("module %s: RELA relocation unsupported\n", me->name);
-+	return -ENOEXEC;
-+}
-+#endif
-+
- static int apply_relocations(struct module *mod, const struct load_info *info)
- {
- 	unsigned int i;
-@@ -2235,6 +2272,13 @@ static void dynamic_debug_remove(struct _ddebug *debug)
- 		ddebug_remove_module(debug->modname);
- }
- 
-+#ifndef module_alloc
-+void *module_alloc(unsigned long size)
-+{
-+	return size == 0 ? NULL : vmalloc(size);
-+}
-+#endif
-+
- static void *module_alloc_update_bounds(unsigned long size)
- {
- 	void *ret = module_alloc(size);
-@@ -2645,6 +2689,16 @@ static void flush_module_icache(const struct module *mod)
- 	set_fs(old_fs);
- }
- 
-+#ifndef module_frob_arch_sections
-+int module_frob_arch_sections(Elf_Ehdr *hdr,
-+                              Elf_Shdr *sechdrs,
-+                              char *secstrings,
-+                              struct module *mod)
-+{
-+	return 0;
-+}
-+#endif
-+
- static struct module *layout_and_allocate(struct load_info *info)
- {
- 	/* Module within temporary copy. */
-@@ -2716,6 +2770,15 @@ static void module_deallocate(struct module *mod, struct load_info *info)
- 	module_free(mod, mod->module_core);
- }
- 
-+#ifndef module_finalize
-+int module_finalize(const Elf_Ehdr *hdr,
-+                    const Elf_Shdr *sechdrs,
-+                    struct module *me)
-+{
-+	return 0;
-+}
-+#endif
-+
- static int post_relocation(struct module *mod, const struct load_info *info)
- {
- 	/* Sort exception table now relocations are done. */
+I attach gzipped messages from the whole booting (from serial console)
 -- 
-1.7.4.1
+Regards,
+WZab
 
+--------------050308080806010203010906
+Content-Type: application/x-gzip;
+ name="2.6.39.2.panic.gz"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="2.6.39.2.panic.gz"
+
+H4sICA6fBU4CAzIuNi4zOS4yLnBhbmljALxc63fqRpL/vPtXVCYfBt8YrG692fWcwRhfszE2
+Y7hJZnx8OAK1bA0gET38yMkfv1WtF0/bOGS4EyOJql9Xd9er1dVzB/hRGor83MOVH6Qv8CSi
+2A8D4A2jodoNDrUoDJO/P//mjI+g9jCZlBQaUjDgCmOKzg2oLSIRiZlwYoGE52LsOxmNUmfK
+ERzB9wwGvT70bzudXn8IF5EP/5diQxowo6nrTUWBdmcwlIj/fbcq23Qu5pNHMZk24dyPnfHM
+Dx7Ac+IE4iSi63AhIidBseJ11rPuzaC+iMIn3xUuLB5fY3/izOC21YO5s2iuk2f0wuJKE5S1
+D9SXH9neBB/VUhJHHH0QJ2NawXEkdC0SsYiehPtRJGGsS8SUTyGx9b6ZwuN7961kWsFRM4la
+7X4Xrn8afBRJ3ZRIW0JyncT5KJS2CeV9TihvHclTPjPgnpisI9Ej9hkkl28gue+p03WY+BPR
+hOtfoNZ5EZM0EblNod2inSRiQnYEcz+OybL8ANr9b9+tw5z3uugjVOTAhoKksf77DI1ztPAC
+OAXlRSoHmtvLyIkmj+XjTPPWOb0wDVzpKnr9ekJygZPAHeqW55kWEdDXOpcf+MkIvUQYvY7Q
+rhco+qYB14sL1TQ9saVt0okm3A7O+8TrGUwodME0qD3hqNLPrd7RTq4hlMpLjVjExaB7Pexc
+AZxbhv717ALQwSmawjiH3uBimMtomztQL/ArQ+UZqsUIlf8x1PNSVtVEVI2rbLushY/IUbMZ
+O98t6wBKm1NIoO2ErX63nTefERqHGKrW4OI7iarpY4lq24jKDLjqfO1cn0MXUftItF+nhu1+
+K0M1NFtOq7Yi6/Ds6qbT656vo74t68/n+QRohulmQ7WCipCS5KOyMqapvTO47H697HV64Dw5
+/oxMZ8MuLctEuqubn98mAwqOCwyYs/AZImeOtoRuZpfZwMfI/hUGAvoX10gZPIh4M/aiV2mB
+/CgvRXCC+t/yO7a15eswmmM8hyWikkUKssly6T889sQclohKFumq1ll64ZP0Q79RB+LEiRLZ
+DS+MQDiTRwhCd6MZ4USz1xH9Qv7ojt+Dg471aXkANiXDu+bWvlPm8DY5W+r31k58k+5cmp4b
+oSARuMJz0lmyXUP7vfrQnyNV9wb6YZRQQ5pibSe+krA1Z7LwR757h0IwCgELf5Lf0oAENIbu
+0UcR+CoC+xDC6Brj0pocrjeT/2HSmOAjdr8XAP84QPcm60TJ6LguhscY7zDE56QPsT8aY5J8
+p2zCZAD4SxPyngM/LhNuFa9zRKgQj+HroAtKnas7hLoejga37dHNT7dQG6fICvh35Ee/4tXD
+LBw7M3nDi24e7Y1jL+PY8IjmBTPxJDahch2kzKvWa50Pj6QNUayfhIHnP6RZEo/R3COzput1
+CCRGVz9Dh0NQnJKT+BiFeQyTxSx9kPcbPUDyCaIhQ7/dBRzBMI0mIs5smR5jhlHlcw+4Lihv
+m6aXJWwbnYlFki5GuPCYLFLMp25H2PSgySGIRvhk7sTT0dhP4vIJTmd+I70C3W0sdPqdW0Rp
+Qmc+Fi4tWFSVw8JBZ3GCCPB3z8iFjJmqWpalQKQApoG2zSHFL5PpfGMFlPqzBJj0XjM/TmLK
+6aQvDiNXRMcwD8f+zE9e4SEK04VcTgUNjGxhgo5VNt4EHYFtex36RxEhJk7efO5g0oYGgpnl
+2c3NcNTttb52Tk/GuHg8eZrjD+lv9XJNSUvK0xNXPJ3ErsPwlqY/DmfiNEleB8oxw8Y2fX0f
+g+yjEz9ClhRi1hn5JJqm2Lj8lH1pkr0wQ7U0GL8mIt6Ys3PieoUJem2xFYypTDF5CWceg841
+blk78Lo0lfXdcIauq5VwxjFwgzNN24nmJ74z83+jOUA9+F55k6KIY2RDJAdaQa0IaM0iDGw0
+0pNJMo4Upn22pU1PuGLatsqnVToANVUz2RSmxfS64hhUzH+MKRQLCxxn01CncjGG3VJM/I2S
+cHzOTMXg1lQ6AkzJNyR48qMkRdXK4bOsHZ39a5gmzW1RzvNfMIYCUAzyPM/Q81UP3ch1GdLU
+wMBUb3p2tA1gMZX8OYBVrnjxJvOiBCD1aAfAE+YY6EMyANOT6U0OkOU6UgLGFehtB0B/NaeU
+gwAmS+8TEG0JALOzXQAADRreHMBgbgEwUSyu5QA0Dbu6gAA0VzmAZqiu6eUABpvYlgSgOX0D
+IBEvhQTVa4MKDTLF2QbQprc3cj3pQfLox7TURA8co+o+hgG64xgfC/i5D+gzAYMHBQGIU3Sv
+Tz5RzVEJG43GzXQjV+1HQswXmeE9+iKiNWb2jqf9Dfz5YibmaI8ymGzw/hfR4MROXbGASSlj
+XOQaGwzo5ru3/xg0Vb5hm+3MhzXRXmbYIfjpa+sHsJQXrq9T5t4O7qS7KxObdbIrlAuTtIUI
+XBFMXuEJDR+nMERP0g4XrxGaVwK1yREtkwy4xWhx6aD9dYNJg/4+hJi4zgInWsfFYYRe65fR
+1U37x/NOfzT4dta+ag0GnUETwHqLeoTkw8smlB/Neg/8x84/ByWDxWy2jUE2f9kaXI4G3X91
+lvHRJt9roXM9vO128kak83+Po33Z6l4XUqncNLb2QlJtE2prG4UbS2Och/GrVKrlyaOUpgmq
+xcm+NphRzTF0xNN6nETpJCnAPAyUiwjTTgxMNjoXGTbWmes7Put0v0uFyhcBgEBJnPqJaH4U
+7zOf7X7kjc/vEGMGAr8/y/H7Pcq+5il6HvztOUYf+jtE8msT+z8sd6vewhl2XJIR1SOckvjv
+f72L3aqf4b/DY2e4bfz352AjLv09KHYl8zn+ax0cm3DP/lTs9sGxlz5umFLYS4ODY/tFpolB
+VczcQ2KPHTeXGPLE+A9g/6dsPhITTFLoBU6EU1nPx3vFcxWSbnn4BvYWYPieHwYb5v4LhiMJ
+/Byhsz+g3Dl2BnuYMfmT5/LRidy6H/0a18MAfgC8qseOJ+qtE8abH1flOPSSA8Dsloazg0iz
+FwwCVaxw+jfMpDPM/Tq1G2ZPafLxyYFkvz4jTT4+fxxmuzR7d2q7NPvArAqSBvLyDL5n2Cf1
+4zCrgnwa5g1pVH4QafaB2S0NZwcZm71g3pBGZQeRRj2I3qjsIDO1F8wb0vCDjI16CJvih7Ep
+fhib4oexKX4Ym+KHsSl+GJvih7Epfhib4oexKX4Ym+KHsak9YaoER74KqftBvo+1nzFUCc4f
+hNkpjcoPIs1+MLuk2csYdkuzJ8xOaVR2EGnUg+iNyg4yU3vC7JSGH2RsPmtTcsGVLx1XjeGd
+9vdl3NlipfB7tvge464Wl5R6vxbfZdzZYqW4e7b4HuOuFpeUc78W32Xc2SL/ZB/fYDzQov1r
+GLrH4MxmwJklX1hPnFjEsHDiWLjffaLddYab887Zt69NiMXMI/wcelv58Uw402ax4V1sWeIz
+cAWVTIYRuFkV5Qb3BdUpDwdtmDgzf5xXOKSyEqLfHW7uUBOccIGbttpQVA69y9+q3bJqQ4o2
+4LR7aBegCOeKmUM7D+ECavHUpwKuo2PaNkoFNT5JZw4hZ20nsrrHi8SvKW1QNBqg65bVsBic
+hQ9hr9sfQG22+PeprTJsy6h29JhhmMY9LHx3NHdemkUZUTPbSYG5H/jzdI63SrXXYyiKwe5h
+QNpDlQYXkTMXz2E0XXrPWA2cqem2TmVXaZC8sbmus7LWgdmc6+Y9yOKJflHk3S/3GLvnTVAq
+YlVVeUFc0rTDSKwTGvi5hzkVzCI17UcuwiiJQYNeuwNjJ5iW2zFcUSxFlahKE4aPQtalzUPs
+Xyhr1PNdPqgNe+yo4tJMkxdFNlKESDz5WQ0+1darLN8A4w2VWxpD2k6QV8DLciPaGEVDvMC5
+bUBeYcOge3Ijf45LZpUKD2hna9jtdW6b8CS19lR5URVZbcROFZzTgJ1yectP64zu6bvEMCyU
+tuhiN0jErHZ7BH2cET+d06Umh4k3LOUram2cCFmJC4pdQpiGTn3oi0iW+AQTAZ0nBMD5vBbJ
+GJ1Ltv2bxMfVg7528ovAEen3vuXFa40K0LYVLduxy4Nqc/2Fs1ISWyqzjIyY9pmffTd5XCPX
+lqhRViujfhCBiPwJTs6Dj92K4pyLWRW1bek8F0SaHJUArYLnVdrlp+RFI7P0jBdtirYD/dDd
+xmtu4a2k9OiVbH2RRoswFvkwNlcGwEYhWUYsf94pZFYnvdyQhnaprR7GuPLnvvQ8QTofozcJ
+PVl/BUkIrFHxZW0u8XXXjR6pTFWnaj2qv3t2ksmjG5Ymc4yWP0XHTzVLj8/1xTyFCfmGJTXQ
+LMOQxU5RmNK2eLpAI6hqwYjA1smWs6omFJRVTjXOajOlc6yte8Gjsg0TW6COyB3ZEW3iJ5Hj
+yyF20/n8tQkFpcU0i1G1QGfYhNtcZej4SRQm4SScgefM/dkrFLaNjt42bY6z2OkOWlRYVypa
+MUJqA32BpVmFqyCa5HUhYDHxtxBzhWs6mkW/TbWc7a48QLDkWhANslooJ6EqFJxrdiyr9gn5
+lFc4qJlKjpM5l9VSPSkDkzVIVNaII0ljmrHrDVVH3USPMfbDJkwwg0gExDNnDP+LT+rK32Tr
+GbHRMGxT1VjRwfxwggsqjClpjmnS0NmlM1GX1YUgJIWMCa3elSxTyqDshqZpumWXtYukKosI
+I2u0WmtBhAZTSsJa6eAHCgwYDPSjktBAQrUgzEYiL/ikvvvURJQuEkAFJJOQfAxVQdMxkJdV
+teEzynCbFyDC3bfbPna4Fnp5nRYx2Jql6LsYLs7P+2sMNlqlwXYxXPWHqwxaA+O3RaEgY7gO
+wc1qFZ58qomU5y8aFa3NyCzl/HcfgiyUPYakJ5HvPgj0oYEbPiNfFM4l5P9QjU8gSA2c6PWY
+KiLgL6ilp3gxmkTxX4BqBSNBAw0OqttD0ZjJDWZXFciotbdhmKBNy4bu8AH+WHPDOVqddFNw
+JytRlbrn3Zfds1CPDLQTMgxZwSn/18CIVQbOXvsS/nqD4cKbhc9/xZyLup7x65TgoDte41eJ
+nyTKe40eLmub1XF4SlZTtyhALrMysYuV16lIGHVujH4kKw53BWlx3hUL8yYD85rlAemWenbl
+B1Oc3usfW4jRvf1HjIaigQ4GmGADmvcXxlA9cERQshKRYepTGcYOxLMC8csa5FZE29QM7R3E
+9jYZv+xARC1QzfcQz5cRv7wjo8rRH743jp0d47gMCF+U4zLRb5TwlqYw5R34i32mSdMszXgP
+8eunBdYxoX93zi434b/sHGFDwwHGEX56cJxo3My9CdWrC1e20CxNiTeU40zP41M//AGzguPw
+OSivpa8/DTDWl9i6blBmVWDPQsfNPTj+amLWTSFm0B50MUEfx68YCecb6wqktA1N5cZKLJOl
+6OS/saOrnttuMM2wKYRe9imKq9mCSRZPJ5RDUNF5/ujZxzXqWGS1X4SG+Vud6rXl7yUeVRJj
+848LkaBHwMjX63VvZCm/m5fyy+Hmx2Ad51FRshka5yWbStXWCyeiOkBMkQ2tToksuj2M0xip
+5WoxT45KBItrKs7N4NnHvEqu/UKYyHHOggRBV8SmZVkFMfYHaa9vEJTWGZiByQT/+1I6ruGq
+gjxesMBpDvrZiNLgVxSmpWqbaUuwWE9buNLQcHFJOU4+iaQudhPu/FAe1tFcpS6/0DvjghCH
+XARlQXIBYXLGNH0FYrwEoWQQpvcmBEbtnRCGJSEM700IFTNAYxeEnkmhq29CaMyy+QYElRFX
+xz/q+aVH0uC8z1wIMGSOxRY4m5v2TjhRwYkcbrdkaI9M3wmVHUuVUK7tvQXFGgrGN5utQE1K
+qOrc5os8AfVeJxFOZbhG2g03qeDcD8HhyuUN6UQF530EDgMlmcIOOFZ0lk4bfwAO3YlGmeKK
+7TXzA7RMLTK6itww9TIISjtdscY0WLdH5NHRllBpEJ0WEMXx+6zEVUL0r/sZsdqwdFtha4kT
+8xqsCWetW9DR5cWx/xAgc95lq5pfK19u3pdguJ4jHdsJFotEplK7oaBGka04MnW3neiobNA0
+5LuBfdM+YkVTV7aywmqWXDgAOxOCNHoJBNcJ+odAckPzzNJmvey9QAVmazazPgyGayOvzBJK
+EJxNnRl7ZbMVK+bQ9jbWHSPiZB0ZL3fCZhiu9Q+BFCNiVSNirY6IjRmgYewBNhFOAYaXEkyO
+U4VoKtJ1vbfIz9bSXGsoCldVdE7dvkw1xBvHkLJXqcW5If24OJe0dG4IAZmuqCZKMGz3QcQE
+4ccUsj9wsAkzDKZolm4a65iGjn4iwxzjgHzgWJN9DNyyVH311BVhWUzVM/macFnixOUrBHrf
+six40UtqV7axBGUxyuBJrEgE4UbugCSoL2TA3877u14XlyKrx4AGom8MqG3qNEMIUb/yE/Ep
+HNXGuKHphk3/Lwmteou8LSqOkx1CpBcacnJdgSvfArViRK3Slhgl1cPy62N0vOW5LBrFghUj
+i6XxtSNit8P6UNAwNeHmx4JSNy3dUO+L81kwxoCBWeAiRJ2NMWHG+dWyc38Fh6HYOgWuny6y
+EDCFX1PMgWNw6XtkNPQGL2lVReM4huf00xtv75nCtXwcAVNfefpqdRQN09At7NE8fpgHfpVD
+5J6fmYpakJocV4yoHuhMYspa05mgM3HhRo4paS2F3sis0Mr6bD8Q2+hVm1HitEI/8X5dIoVa
+vglSym5qmMpSqJenxRd07lLuYFW/W9JBCtT0tV81BRMFU2r7rfB8ipdy92gpYV/aSWpmG0Vo
+apT6N0oE3ZDJ486cP4knBS0uNlXK4f1gkSZNGMyEWMBZmiSY7eOYn+R5xMnV9S+Dfw6GPXSd
++TO6wgRAaSsdupQA2V+lBNctOTNZ1rGCfTe46p/dF4S4JrXoTVwuRfYe6x0p8Lr/8+3Z9Vrj
+rMTMnf7yq7GicWS8qBrHNQ+9csAQ+P/sXftv40aS/j1/RSOHu7GxlsR+kN0UNnvnsT0TIxnH
+a9mXAIOBQJGUrbVEakVpPN7D/e9XXzdJPSw6mb0cEOLk3Wj06Krurq6qfhXrs6upQRxlmU0y
+RLs5LK3iaJEU3W4t35AoMH4VwVXOrvH48b/RP9Fztf21SzFLEtAQkWsN9fYt5UcWr5bsgXSI
+fXpxUeloAhy//nx6c3V59d7uGvF8W++LCXqzWa8+U1+/68b9QKr1afvQKuafaIr1e3hW7+h4
+l/n31LeniJqQRbN0fRewW+yDPXst8JTvI+nkJOvvlrie0F6fn9jngWmB9oQUEgtknCHbxwFp
+sk4r9S98l/gMF723iyhOX/BlH/8ce+RRIx3/5RP7d3cA/0hd4oa6xKO95bkcpWFC5alr2bCY
+5k/zaPkwRNvyjGiDpIdlx35aQfOAb+tqlOPvTEitTV+2NltNp+gn2ip+pcqvbalIxh6RJfkQ
+vr4mEtojKqUayPxEjUe2g9YZDq1PGWJqQ0PjEQakucqR8Sxt+TztsHjO4mHk+uihXu7tp1WB
+GAWSaNPFIl8McXpENP6YSAL1u9fG6S8aO11Tw/lsNXyIsmSaIsMBEWtUy0eN4xHodEcF5suU
+ZJQ/ruZEnvZw6dpAHIyN3CFG4MUQic5ijI+UPWxfmtpNjonIye7GQ3vBN8xmk7L1C4yueUXr
+/dh40CTab07Gk5TETMIaxg9kvN1JsYi6HJ2HUqWNfRd+stP84iF/Qs3QYd1Yc5hirIbDaJnP
+JvFwTxNgsxi0sJlHOd6L6KmBgfBeMSQ/jkREDF5tAo9e5ZBESSXA52EySauON423J+JYwArd
++mFI1kgDhmEWqKdpnD3pp2NnvK64Vcmw0XZibseVVIEWJDQmcb5YpFadrEKIpIkwGjuXW8xX
+i0mOhB/VQfGQFqaweLiYvdSCp5EpqZ+LcTGktUxCMqHlOyrmoPS9JtLY+rTh0JHSJn6YZ1aa
+frP6gyyC+u8S2Xli1EiUhAERuetJNBCeJWh2nUSRhmldzRZdkDbbl/JHQQSBPOajv5H0bQOt
+PLNo2p3TQrEricXITmpmv1cTxpexaeBBxMq8IlXjq1HpmdbUkGn6ikyJKPa3K4R6vjIMUga0
+dbNKjVVQSTGCRKVqJNGJWJNUS2uMnWg2OCKjfeGarByKz9HivsD8x5sHEaRWkFuklUE0mKsY
+h56EBJfL57qNQ8cBRpi+MqeQLXuBsNKnzcPwPiXXnH5ZDukD7EiIVw04kMa5Ntol5Iu0nMVg
+9OOmYaOGbI11PE2jzE5AIzv38cY++lK+6KONukGVmH5Eg4YFMg1SuNBpeh/FzzTtPQ9xF4Bh
+1NyqtdlPyBPa7DlfgR3T0G1xrR+En6DXpgpDAY+7UZM1H97gNzkX5aKHPIOliJ0opZVJw/z0
+v2qeo1tlky+h2ZSIEKpnX3/fKnli7MC78lVloV2YCd2gX1LKaE2zfLBLjod0OrdjDst9MUPY
+3Qu2r7i8TlkoEy0iGYxCroKxEHY/42iCbqiVxLH8IF1MommfGVKgHm2HfK8M56L9P7OBF/YO
+jBUP0WbInGOjaVvsaSOReQlswKTPbAoNbIsQ8UZiGRt2hGjV75g6RiKPiNl6TiseyseF9Scb
+sDEdLpAm8t1kMbP7n2KOnhAR1rTVc7N5Nn3usssxe85XtA3M3ixZvtjiFmxxS3IUeYoye0hR
+Hqq6nCeTjI3rupA96sSGQkzGW+zMFjvUivJxusAmihhRX5+RX6S8RcCxSMTGq8zm7Yymm7yM
+t8Xr5ur9CVvaJBX2ROAhZW+yfDh+ehi6KNY3LJ+v86SASWgUztRccuDofn6P4ww734whq88e
+wpKq0r7Q9sb0Y7KYfdoM8qJRnjHe5V3P5irxTOV7cL1pAkRujha0d3ThPZsXvCgRhBLBcdPH
+ZDmzO+14gfOkeY7Yq41TmJNSX6hjNgrMHZ6Ni5qR9kPcl9xlE8Qesg+04Jp0aL++tB8vOpfn
+F6U+ViRC8UB7CHadfNm5hkDhOM+Wi3yKA6EjTIcm6JNFq2SESCvc6YjjNScTvAgNsYzSKiql
+PDRADiff5vLzPL2m95WNc3xJb6/vr27ZKWiQDI6TCdgIqROkHTrG1zCqMlQRvEKhcZy3p1e4
+aqKJ419ZFtmAFBddai+454t8lNpnVhniiNcyQkyhdOHikyQlm3z7oYNMji6ybBy58/hIVwTS
+U0b7NQF/QWAcgTML7XUlEoWSWTwkoz77/sfO+W1ncMvO//McWZzfD04733NxdcJOb5HY5Oy8
+R790bn764MayZqJ9e5dnmdxRdb0gcJfaRTq1IdeuJCmpUWFgS8Z9dntxekY8Oz/7vrh4vQ7e
+NbQ8sFf8SYJ8pHcDVhXDvxcBD66Rw1P9Gp9QhAYRyrYFtq1S7m9rKH2NQyVbow3LKkikzHid
+pwm8hrUHZ9yI1htHExtPOa0CNxFtWsxTd8+PmqSsWSsZIqTSsn69EYGhbecnO/puEPkYg87H
++gQuOUDcAJwyd3OdFl1af9kTZYx/SaItibYkek3iVyRCK43DeSIZluG4fTa3GcfLGDMo6BAB
+rYhqHn9buRNES8xs8J+NzaBSNuUfqbRbpjDEXMKc7QxUV4cYAFdd5z6pcmaSEzNVCcmVgWNC
+ibgu4XfLBSBK+EqsS/Sd7rmhV+aXLeW46UGZz+ybnx0vpFVT5vEtO8Mhes2T3CUuVeJkkZM7
+rJzZ2YYaIf7PBXr2bQhnRepLIf2t5sRVc3zxS8XiN7QhML4WepNRsq9fFQc/2GUQKhKdh612
+NNz1QuKrXRoY+siQ3Mjww+k1+8iuPVq1sGuOV3f0qyWNIuki0jnGxcRj/ZpD/XvoGczJ+J2/
++F3R76QGrmbyZAOSgjUqazCcLCaeJaTdKS3KWLyc4q2it6NZMovoAxZrTs/NmqEJoefEULzC
+0KsZJvE2Q7PD0PeEr3HhYTwF4V5d08ugJ5CxrJq+PuIYn9xs/3ogfvjkLDLwTnC65rjVzBA6
+ZvYww2FvtLCx3w8RzRynd79Yg6rvlU/q3G92KVQeQVQWjEyRNM8sHxznbpbPs3ldKVki127h
+l/ddCfbD23NXQXNjA07O0XdjQ2ZpdbRjSKi3iBPxfGFOByfs7EySR96UcU1PXkpt0nPSM1/4
+PDDUltiFYM2wjACIAfvx7aky7Orsr7gPmlNXvJ4sVwDETCPZM99gtnELCse0W7kOPY0rJISE
+2+dUrNtyqVepyymJtetVhRE1DP13heuHiLzy4qIqRvNTGHr1JcvpLU7cs8I9FzRIl0zQHuB5
+lBPR1qXLvFwk9azoe3Yctq5cRF0DD2yoJcyFkQXa/7HzCca6c2qDw12CpNsy1fPmWNgvMBzs
++q/IJX16NbjsM7/mTYsoBK/G89UkQaY9t469z8nlZSTBKcINF+vSZLmmufQszVaurI/rsxBr
+mCJZt/ljkUSfNkfc56KDG0pyQff2+SIXl95nRxhPdvu2F0rO3k/K7IfEVkjuI9Iat9bxarTx
+/Eg1eVIZPxAIsakiCKqVeZIVQ2SqncKf06DYQJ2aKCBR6H3t/Rn5eKAt0ABYWl4+wQEqE9hg
+/jJ6HfgHeWfwQDaEW6hZFT+PkiEPsQBp4m+vdfvr5zOwU3rxZZKnBfZCZVA9O7/+ibZO7N2d
+24zpgOZHzSUNEdUT9ZlNBksvAi8SL4r9Gf/47C8VRaBx8bavYafLZWQDFm0gKDmdx4pGq8DD
+4N6QcVzcvBvAOu1KGxUeVwFTCzIo2tUgAB6ph9m3sht86zwSbcCzBCbxN9p3VVssMKaNJXxh
+E2OncPaKG3sgZN9cC5l2xZyHCBtqIi9rc+uXoo6pxa8n9qIe+RTFSV2O9pYIy7cZpLhxHm0J
+86Z1Tmbv2913Izxew0IEnOIjbsQm5EXvUya9TSr3Td1aqXz5Smfr7JmWOHLrTbIUdmQLODa0
+hxdeiDVIExunmwu/jBnIWQHVwc1kUbPwuQ0/tNEI9iFB7NUxfxytB5HWuW6DfGyVE7t4LCnL
+ysji+i6xb7fmGkgP7vndIk3RhFVmw3m3ktT2y0S3YyqT1IRacBA6y6ggNEorLsmROJXWYkqL
+xzWZDrBZfo2sPoCwykPTD/m/x28ury5v+xtIPchOTL1H6LKT3ix6TCGATrF8pvUvzTPxaoFj
+dzfLTjK2WGXuGZpB9xscy49JvVbl5jlnpdthb+7uLs+/05HwRjxMOmnKk46Kld8hPyI7qfQi
+wUdpxEf6zTeDKpU2ml8l43ZPoMEY59A5hKGsaAQSiABPt/pchr/lMalvHBUtPfxPtFu8G3xX
+x1wvaGA+2+toewqypOnU1lHJ52RzizC4e4vYgYsP36GbM2sHaK97FM7pxgl8VF1wsFEygiVu
+FqQ6e+ky7qG+3gKX492k54tOtlp2VsVoNS+69tt+8M12D4j3u8F//fc/2YvT29sbEL/eBZQa
+bBX759vPvbZ3QLW9A6blHRBtVyHRdhUSbfdCou02INtuA1K0vQNkxN2Wd6HtZizbbsaq7Vag
+2q5Cqu0q5Ld9JvDbbgN+25dzftuNOGi7DQRtt4Gg7TYQtH0e0G23Ad12G9BttwHd9nlAt92I
+TduN2LTdiE3bjdi03YhN2404JCMePGdUT+EenUaNZRKhnfusbrfbovuoKE4Xw+IxytJFdQDT
+oqGKlrN0Olwl4+oMuMVt35X7H1tvkiIX3PNaqDOvt/yPLfX7eTGc5vf3tbG2SeFb3fgvNB0k
+46dVQ9P/2Gqz03jZXrnLNstdtVfuqs1y99srd7/Ncg/aK/egzXLX7ZW7bpXc//GcRMXw7+ms
+jTPrrzb+EEh5CKQ8BFIeAikPgZSHQMpDIOUhkPIrAykPYZSHMMpDGOUhjPIQRnkIozyEUR7C
+KA9hlIcwykMY5SGM8hBGeQijPIRRHsIoD2GU/z/DKA/BkYfgyENw5CE48hAceQiOPARHHoIj
+D8GRh+DIQ3DkITjyEBx5CI78QwdHfmSMC4MUpR5AHy5ubn666a+RzPrsXbSMpg6Cbl1YceS+
+X3/2bVpPh4XIkWTVwSHO8sQhKNw6LMQ+e18hLf4M9Nk1MiJ78dc7N4H//u071vBXVy6D0OPI
+An3dZwDa6Dt4F89ooCRdvPvx9P0AvwAJxwTs7PqOPtXUSiiksyVqi5yyZLPVMv0ytAh/GWBk
+geOU8DWOk6PSEqmCL05/6bOxGkkjpMcu3tpPYeIJrtjFWfkb8NfZxfkvtg2e8uS4ZuPLAEnK
+L5DxuSQ0VPTSFSUxB8T02rFJkjExHdCn2DNSSS+u2QSeB9xTdm77qUdUrHzzzr5JDHMikJIN
+7JvArIl9HwI4u/H6zHieT6VG9ElQrX4slSbisxuJRK4jm7SaPqmyfUGylojmIac2nINNhWFP
+n/jWJ7H1Sa4/rdkYgbTF5zcB1U9/ajxGUV0WVRtFjeBoeIUhGFu0qDUEnwNNLKLPaYna5psa
+bcrRU2/1BohfqLboSwi/QNUQfpYqFCZUayo1TvbCUFqkzXiDzKHEfAUMJci4B9iS3woH6Si0
+X1ckVOhrSKVKETx8QuJdq9wV6tdGZfQC6GFHKsY8CTdJkZc3mQD5K1sunkE+DoG7ZjYYkEj5
+moHSeg8Di4tVw5tZOiFDVY9EogILN/Z5iyRMt+RJ//mGr0m0RbgqngtgjKGFRYWcuEFDJgtc
+n0qYKS9p0syifeXDEhbLoq/JYE1nlHRyGZd/RAe0FvdX+/9Qkv9/0ytGk6xXe77OiEXxfNIH
+1gCZT/8N+wgP+YlRnbNJZpPQj55ZMblHOmufHVk42N6Iuv5o0X6QW3p+7By1VF1tAgNMHCA9
+6K+DguIyIEWUCvjy76b5fP7s0CqOCiQETzyU512lPlSFqUse4EBobkEy8+E8ttWaPg0qvnBN
+txjAwHSyKMCAHa7p/VAIUc4T9Flw30N2/5KfB9CLMl+zxTOQ2tRFhfEEOYJ352fMcx25ihzY
+Exuks0mcZ8kKYATEwmjpBTUheTNFbuHEoiJo9vH6bHB9fXJ7czm4Pb29qIuRC0U+bQuJwRXJ
+1Zd+iVU0LB99d5gc3+dL10V8OMtp9i4nbnJJXd+R+10eetablHBRHYtAVQNyeF6XOntpv6NZ
+jZ09TOZFuqyIpSQ5e68TJxW8wf1yWSKWO+T4H2gVQDP0Sf1xFs3nyGpdcVehCPVv5c4D0vYf
+WLHMkT/dZQB3jEhm5Jwhs9cYnb6/ZtE8XdhlDvRJmA/sP2Atm55e6S5poa9Csr+HefwA9Okq
+3/yOvGu0jnOH8rIhfOf0fEXrD2PRsibkfobFzMJFrKFQ5Bpb5W2NraL3Y6toxzLsGuEpRfqX
+Ysorh+7o5phd3/zUs7PgVbp8yhePVbM6dW5y3ZWk6J1H07k6LU2B+IU+jXBQ8zvL58+Lyf3D
+kh3Fx4yHYdgBSFipIqRlZB9RjUrGA6/LjQqRit4yKLvH6f9d72uhY8BNkg8KSPqGyzAm6Vf/
+cg+9swwvaOm5yNJlBa/zmXclO/oQLZgQQMjx1HHFzfdUCGE5LmXjRN9TaNwt0E+OJqRaXhr3
+UcQChXHP+idgb0WZpTz7E1aNc+o2UrLHZCIndk2M35Z5XlWmaekJB7hbmf9/UVkopAjE2gM6
+FL51pXK/+MP94g8dW44k8EaENVu+6whH1TqHytL0Y4B25RzamgfXUgk7LW17uJOL6+tPVSGi
+5F45MtStfvWGVvXF8sUQU3/JMVa0YUjL3BoH7/MkSXMWR3Nn2RUaXp99Ft2qsaT4gfZ88WlH
+QJik+HqSGgG7p5ylePhymgpIb5SiBeUnGpJRTC63v4EhwrL0aQONr2w6FXSgd6DWWiusDn4z
+9cNq5GhJibTHuWqmLcEU1tVWhNoLAmCa7DPQdPlAr0ekKH0pP3z/j74UndFkeYzplPO+EPR1
+X6m+1hU344cWJqCZW7NLIqeZOeyzmpuWGmByL4dFbAyL+ZVhCUglpAbWW/qAWRIoWHeDt7SN
+89ibi+whyuI0eUMOnFRrw3EfXXx/dnlcOkrHSdM0zTWsuOK0dthJV69N6rwyKSH3mpSQFUPF
+aSdnak3fcUJf6yGBAqmUaW4g+rTb04o0JK+BCbeBFFoEsWGa2gRyjAosArGmoh+y1WwE6DXH
+03SNDCQc0WpL8ncZZFqQR9oV+uWOitd8NK2OTGPbLHqkQ5gqqwZaZehhZdRAAoURkrxTjuWC
+AzPU47jyCWFXYYceNNJXGmQRXyEHK1peORXNuz7NxLS2hpUy3iE6jCjI8IUFsqlKBlr5arek
+cRh39RqnKqxJBYEMtF9jyMg4ADqi6W36yG5uf7STifXOkcIJx47p+v7JpgZpQQ6apny5h7+/
+XyNfXZIQP/KIKlQ1jtX1GRvMaZNAg70XtWoeF/PHxSZelbMVLWmxqgXWXpc37OribA09Qhac
+QHkmaxTTioQmIQtDtdoziHt7E+zvTVAx9ANy8KqR4V2TfRFpQHti0Uz6NfYlHE9Fs6zmsNkG
+nnbqDaySj3BW533B77GplBR7GyOEahpt0ibRpE3eHm0KgpOt0Q+65N2Ehcck1RavGEHQ9X3u
+4Qhgq6TYawS6S8v9AB6dJjIqzP+HtHPpjeNI8vh9PgUXc5CEkZr5fgjrXWAGc5jF7MLw7M7F
+WAjVxaJNWxQpNpuP/fQbUV2RFDOaFQz7YMGC+h/1y1dkRGZW5aH2zvefPy83ZOITlimPqmy5
+4olqiiyVmCCOnTvVD3+Jbx/evaJf4epdmG+rO1bv9ljgvhpagUFnoPzlRYMv96uy8dHVl/q4
+1fUrTzZjsDm+jHMI6Vi/Iu+ZIRGxBmqWWtO+2O6QYqRU8eK+Z78Mx9q9GGj3XOLSnfzL3Ql+
+mcH7et/98mh3KhCUBuNSbd2Jqg2a6sX+5I/1JzAVCwSUbulPSe5MBW9vtfNa5kW18Skvdb/B
+QRXwCBAA4EoJFcW9YmyEo2UBD+DrfPvv9vb27mNLqJaEEaNuCEeeLoBGhfUwlwVSHKwW6GHn
+56A63NDmTDG/nryNzpzgKuLu3ck0jD/P1youYXozlqBAZq7K//jnK/w9SIrP8/2Zh+f/+bY8
+PMzXKi4Xx7017w6ZaUlYUTakw0+f3J45WuvOHg/jLBmDrlZcORgz84NzwSvOIIfL72aH+c0D
+5pQIOqN9P9/O/GV8/HjiITm9vMQbM83DOA3nE605gPEAdVpTMz7X6nzL5OeLL7+efH/xMH2+
+u4A2/v6fH/783/Dg7/908vaH6W4T/vK+/PXdyY9YAd9l8/7iy+7y6my5N/yQaxW8fBySFt+s
+3+6/QNXiBYbfuUi/qcbb+E2nCq/oVPFYp6oQv0Buh/UOrfqPqy+PcrNW6AkO9zsOz/cf3G91
+9xUmjlSgU8NYc+OHQ6K0dOsfL3fXPuAK50G43De828MToOdcwlR41azkAj9VWLmZdvvLqTMC
+LjJgn2mFOtxYv4PE9nDd6MkfoYfMq+YnH/Khq9UCMyo8PHWObQ59Xbu/Fdc38d/f/vU///bv
+7/DOxw90dflmsyFLMAQdLtM3gLkaL3bjIRF731cp6SrE9OhaD3fH/+NwZeTu5G77eYD+eHtx
+OUFQfHk9XzKJlfADDoOTtxYvoIeJztIgrBWiZW/RX3y+uBk/weM+zn5zury6nWimo6r9du66
+HH6BSnExnDRD2ZfamJbVrR2hXd9M4wXMUwzx6366eWw0OZnZe72+mx2bBRyMcXDoDm8ihtL8
+/W8//OVke3Nx9tP0UheHOtk4aFTchbj7aRhutu0GyREkP+GNlBNunOxm3/Tx2zni/dXns+Uf
+v7u4+hPkMu+f//Xj1f0X+n96GHTRUJKq66EshOpwIfxQyd8U4gQvasVl9KXGDwIH0SU0S/m9
+fRUt+ehjMq/uq/6gg3gdWjSrPEc42qQeAwrzjICWVKbdeHNxjWv6uO9zmgKrOcjMIqR48TeK
+PUyZ3mrKEI+WIW4quBxflO2ewN3ZGNzvb8YEE0mutry6GeNBV3CfYl55vL0b9mcQdUKWbGKh
++2BvzwYIVMKwoZ87cPO4ktb/fPnhz6fDosQl/q05ebudJ+w/mpMfd/f/+47MpJCDqZqKT8cq
+3maIpCDNAvd0vh1xE2DegoBBdA71db49rPJe31xcDjePi8E/TNefinvzcb6/dL5TdTZVMaWF
+qkiKVcLdlzM8+P9hroo/DLc/Q9vBnyffnbx5Sr/Hi8WpnH6bQZ6Czp3CjH86R8WHP7H5v83P
+4+nl1X43mTdICHHCJtYSLNT+r1fbX6BRP568ub19hH+HsoZyFoD/3Uf6x0/7+ZjIp+nLHclT
+yfO15U/y692wf5jlNkOO8a18ODv7NJf4y/D543KaBBSX0KXevMeODX9ZCtn4crQ+FoHv/OLz
+50/4i0/Xx6vs7uLmdj98PgXt6UHf7FcTrPnWPlRjRPO+eGPSuFp8GOo2v7b4R+QJ8khW+ZYK
+lwR5Nc7isv0au1g1x3uTP51NtSfBZIuJ0mo5X90K2OCnBwNPD/AGHzD3zjm2+P4fp+7w1za9
+Xl1eQi6DyccAw/oSR94sTxtjobz+W754cH0z4fbszLggd8S5yMc7IjwCkk7cXVttK3VHtM2+
+hVQU09pXFqHvDWDAxfkW8ueAjgDDamdKENN4m4MgV5fPtfK5VObURSjf7+qvp2SSHuohbjfL
+wkJ8cQni8MvS+QHE91R8J9ReMLb63D3o2ArG/GMION2zZ+EEcuhK3tkBgm6xr1JJX+qu0aTk
+g1AedXP6J/vJWeNeWQZeXyiPRi2fkaEuYGL/crgJfRzm68SfzjDeXsFcenX9L/QkGJjuuY+F
+nvLpUMDD40wdglF6h7dfILJ412ojQffxzDkEqm0j9J4UfDK1YwRESKZnb17d2fSamfSbkr3U
+L1JNGZecXv0oTptjmPcNn0z8cvUIJlAPY3xrptdM+ldn+89PmMtfnx6R0vPu8TOkTtPNjloM
+8jb5GQsWPeNf/+t//v73f3t6RgkuZKHN1CMkNPu4vFXKK2r697m8pzY/fbJPDBXCk8qip7iU
+cZRaujrw+/0gN4bwkzW/c1KF4HM+1fGqBxzhA3mparnai2Q8u1zqMy/y5ep22i1POp/K7+yO
++ARoqvTaUdXXBeghWQxSU6u7c2x81kI++qyuDylLG5JnrxmSlGu9VAvWgXt67q1JMceaJpwV
+s1oP1jtvolSPL1bEwRGdLppmNJToXF+5iSp3NOtt4xz4miSX6kWq7X72AqdLlZ82eXsCrpwY
+AVDd+qnZ9yX7562P/57J/iBUQEguWy/I1Xi54cWAa0e9/UL2i4CXcD+zCHI1Xml4OZQQYm+/
+kv0k4OFRfB7LdXI1Xm14OEtEFr0MZH89cyiQfJVoJbkab3hD9q2JprDa25J9J+BZyIVLFuRq
+vG3DcxVcA8Mbyb4R8AKUzlVBrsYbG17IzvK+d3A8ZTKTgJcMhPlWkKvxzhpeNtHz1pnI/ijg
+FWu7VOqIXI03NbwK4yMyx39O9tf9Xt0Yj1m1IFfjnb8h+zAvBTYvXS+rYz4VAc9b34XZR+Ra
+vGvT8EKyufR+9dqS/STgQfgcYhbkajzb8PDwVO0d17Uj+0HAK6aGFAS5Gs81vIojg7WOJ/ur
+fs+ZQ98rglyNt6wAgH2bwT4rfiD7RsBzGby6F+RqvNDwYFxYFg9fL/GwX099UA6TYqyCXI0X
+G17Eo1y9W75OZH8U8HAt0lRBrsZLDS+DX2Ar09eZ7A8CXol1fs9rVa7Gyw2vppIqs1/I/qrf
+c3YDA7faKsjVeEu8B/YdzkrMcVWynwQ8j4cNkiBX49WGB9lazqz2BrIfBDwId1wuglyNNzS8
+5GuKzDNsyb4T8HK1TpSr8bYNr0LEwofeSPbX/Z7DF5sTr/xOrsZb4j2wb6sPgXWeJWAL6/Ee
+yL21oUZBrsY7a3jBlhqZY5nI/ijgRag77jY7uRpvangZ8lS2DXB9TvYHAa94LJ4gV+Mt8Z7z
+kGolw/zeV0P21/2exy0iHvD0ci3eV9PwHMR7rHG/WrKfBDwfvTeSXI1nG16MJnhm35H9IOAl
+V6J3glyN5xpezjbXftb46sm+E/BwLZR13V6uxqN4L2wMvlHW9+2vgeyv+72wsdbzpehersYL
+DQ/mpFpY314CtpAmAQ8C7vm0zapcjRcbXnAlOWY/kf1RwIsuWBZs93I1Xmp4MHA9dyyZ7A8C
+XrZlfn9nVa7Gyw2v2JJZNP61kP0i4FUYnSxN7uVqPIr38Oy1SZW1TiX7634PT8weydR6uRqv
+NjzceudDbyD7QcCDTDvwWaOTq/GGhgdpbmSbp1+3ZN8JeMl6Hu/1cjXetuGBW/GB2R/JvhHw
+KpYuCHI1HsV7aWOiM2yJ6SsFbMO638OT9cZVSa7GO2t4MKGXwIpPAdswCngBD8VkQa7Gmxpe
+skfy3K8UsA2DgJdxkSEIcjXeecMrOTm2rXNDAdtQBLxa0bUIci3eDcV7uFtn+frhDQVsw7rf
+yxtnamazRi9X49mG50t2HI8CtiEIeKFC41ZBrsZzDS+laEPf924oYBucgJchlmeLq71cjecb
+Xgk28+JTwDYYAQ/CKZuTIFfjUbyHb/XFxKLxmyVgi27d75WNTcElK8jVeLHh4cvnLOS4SWR/
+FPB8SZXjdXI1Xmp40ZrKVqhuMtkfBLxkXGCTWi9X4+WGl/2RLb+bQvaLgAddt7Apu5er8UrD
+q5BJsqOWN5Xsr/u9ikc1bHCCXI1H8V7d2FyqZyN3IPtBwPMmuxQFuRpvaHgBEknu9rdk3wl4
+0R5ZW+7larxtw0slpsTsj2TfCHiQwhcWsfRyNd7Y8EqtkSWSN0vAFtfzXI+7Qjmz5cFersZb
+4j2wb7Frs6Exkf1RwHM4sJwgV+NNDQ9ymcoOityck/1BwAup4ifY1uVqvPOGh29juN7+zpD9
+IuAlyFXYQY5ersXbmYaHHxhkjbuzZD8JeOCVElvE6OVqPNvwarQl9UNj58j+qt/z+MUk+DMJ
+cjXeEu+BfYvLj6z2PNl3Ah5E8pm9gNDL1Xi+4eE5FnYIahfIvhHwfE6e7ef2cjVeaHghRr7G
+spsDtjhmwe/hB148dyy9XI0XG17CiIXhJbI/CnjQspFt+fVyNV5qeDD0A4v3dpnsDwJeNRCR
+eUGuxlviPY9f97KW5bm7QvbX/Z7D77RG9hJbL1fjlYZniy28b1eynwQ8l4thh4h6uRqvNjwP
+A4yl+buB7AcBL4BvYyvnvVyNNzS8iJ+GYI5lS/adgJciDI0syNV424aX8c0fNnJHsm8EvJI8
+3xbp5Wq8seFBsBtrH8zvKGBbX9/zfjN/Mc4KcjUexXsev4Vj2GGAHQVs6+t7KK/W8L7XydV4
+U8Pz+Hor6zwUsK2v74E8+lLZ4cxersY7b3j4JVTmuG4pYFtf3/O4YxgiCxd7uRbv1jQ8POrg
++759SwHb+vqex2+mgnMLglyNR/FegICqzB/YfW6fArb19T2Qu4of5BXkajyK9+KmFJvZ8cVb
+CtjW1/dAXvHD2l6Qq/Eo3sMXTvEjXr19CtjW1/fw68beBLYl18vVeKHh+Qztw4q/LNCl9fU9
+kIeaK8vie7kaLza8ZGxlEcttIvujgJdKLcxt9nI1Xmp4xZjEcpnbTPYHAQ8GfuJ+qZOr8Sje
+w5eVomdnFW4L2V/3e/PrOJatgfRyNV5peB6vqmB4lewnAc9XiJmjIFfj1YYXI8y5rHEHsh8E
+vJRhaBVBrsYbGh4E3JE7li3ZdwJedYZ/8aGXq/G2DQ/8qs2sb49kf93v4TULdf6a4KpcjUfx
+Hn5c8HDnxHP7S8CWyiTg4XcfvCRX4501PNzV4a0zkf1RwIu2Zh4SdHI13tTwUsaPmPf2z8n+
+IODlY5tWvVyNd97wSoiWuf29IftFwKsQ8FVJrsXbU7yHGxMp5r729pbsr/s9/MJgzsxt9nI1
+nm143uEniXr7juwHAS+Aa2Prb71cjecaHjRNYAt0e0/2nYAHE0Nh+7m9XI3nG15CvH7o7QPZ
+NwJegUySZfG9XI0XGl7Bj4X2bnlPAdv6+xogB7fCjyL0cjXeEu8FA3l0ieykx54CtvX3NQJe
+reATWyXo5Wq81PBcyYE7FgrY1t/XALkvubIz7b1cjZcbXrQQLzM8CtjW39cAeUo5smPVvVyN
+VxpecZV/22dPAdv6+xoB30axPA3v5Wq8Jd4Lds7U2Jcq9hSwrb+vEfBtFBi5klyNNzS8AKkg
+W5nfU8C2/r4GyGPM/ORtL1fjbRteyhARMMdCAdv6+xogB79yxLF0cjXe2PCg43m2Z7dfAra8
+nucGXDkvmYWLvVyNt8R7YN8GyzdM9xPZHwU8XJd/nofiB24tvQDrRHlyVnq6unRTKx1EFPX5
+WYIjeL/x+yzdB/nC4c/5g3w7/PLU6eFRDSWWzLbf9udU1EGoKfz2F9t/6uXqmjpveJB48bTn
+zpD9IuBlGIXsjG8v1+LdmYZXqq3cviX76x4c36uxJWVBrsajxvW49ZvYkZo7R/aDgOfikUHe
+y9V4ruH5CpFx33nuPNl3Al6oeLGZIFfj+YaXAr6d0NsPZN8IeDmEzM6v93I1Xmh4JZrAToPd
+LaFnXs/YQV4hZWVLdb1cjUeRa9iYUg1bjbpLZH/dg4eNw7i/CnI1Xmp4Hhez+uDpLpP9QcAL
+MSUWWfZyNV5ueMni/mxvv5D9IuBlUyObwHq5Gq80POi/lu1h3FWynwQ8vH8rSnI1HkWu+GYL
+vszb2x/I/rrfixC5Vs9ywl6uxhsaHl4aFFnrbMm+E/BCCvy0Vi9X420bXjKRvyp8N5J9I+Cl
+UmOV5Gq8seEVEyvbW72j0HOaBLzqUmQpay9X41HkmjBj56+R31HsOK37vYQZe2Yvi/ZyNd7U
+8FwOjsX9dxSwTYOA56uDsSXI1XjnDS96Z1hWdk8B21QEPDw1kqog1+Ldm4aXY0mF2aeAbUoC
+Hh7EZZ9W6eVqPNvwcIuBrRbdU8A2rfs9/AJ5yEaSq/Eo3sP9Mwh3e89wTwHb5AQ8yPcdm7J7
+uRrPNzx8z5qdsr2ngG0yAp6vlh+v7+VqvNDworOZDb37JWArQsaO12FZxzYve7kaLza8DE6Z
+vVZ0n8j+KOAVfJ0w9inxYeQaufKrSfw7yv3T1aVLrXTVx/A8zz2C9xszdosZuz/1Hxz+9xE/
+ov+UqZPvWb53x/pXpiKue26867tfczgiV9dQbnjOQ0LC2r+Q/SLg+ZItO6zYy9V4peEF6GAs
+1b6vZD8JeMlYy9Yherkarza8bL1lQdP9QPaDgIcVxEvXydV4Q8Orrjo+r27J/rrnrtB1K38j
+sper8ShirRt8HZStQt2PZN8IeC7UyIdGJ1fjjQ3P4xcsmOtdQs4iZOoVr9Tx7CRqL1fjnTW8
+ZFzl0/5E9kcBD8atZclcL1fjTQ0PPzXIlnnuz8n+IOCB53bGC3I13hKxRnyz6chLeQ+G7K/6
+PZBbmwJzLL1ci/dgGh7ksokd0n6wZH/V70W7cQ4SfUmuxlsi1oi3TDnD3gt7cGQ/CHghBP66
+ay9X47mGF+PhkqDn9j3ZdwJeCkc+NtjL1Xi+4WVcoWS1F8i+EfAK7m8WQa7GCw0PvGpgIeED
+hZzrmXp0G1OzZ4e0e7kab4lYwT7MGpCO9fYpZlzP1EHujS8sF+zlarzU8MC6YSddHyhgW8/U
+QR6KN+y8WS9X4+WGl5zP7GXnBwrY1jN1kGfwe2xxvZer8UrDK+bIHUcPFLCtZ+ogh1yOf764
+l6vxasPD04Ce9T0K2NYz9eg3Fi8Li4JcjbfEe2i/FstS4QcK2NYzdZC7XPnGUS9X420bnscL
+zplnoIBtPVkEeUi4BC7I1Xhjw4swKbGTCQ9LwFbXM3WQQ+fKbG+hl6vxzhoenpNlq1APE9kf
+Bbzsj2xN9HI13tTwSqx8+fnhnOwPAl71uaYkyNV4FO/h2yUlsNOAj4bsr/s9kOda2KmYXq7F
+ezQND5xeZdtuj5bsJwHP4c6REeRqPNvwAoTL7FTMoyP7QcCDLN6zRK+Xq/Fcw4vgWNjIffRk
+3wl4GfwyW+Ds5Wo83/CKgfZh9gPZNwJetZmHo71cjUfxHn6Pzln2NvHjErDV9Tw34sXg2fDS
+dXI1Xmx4zuDmSm8/kf1RwPMQL/KR1cnVeKnhBRO7+63w3zPZHwS8CCODnfXo5Wq83PCSi4nN
+uY+F7BcBD2Y0fuFCL1fjlYaHWyvsu0yPlewnAQ+cnguSXI1H8R7eFBkLO+ryOJD9db+Hlyza
+yhYxerkab2h4EMsbtjnwuCX7TsDzFhxnFORqvG3DCxDw8cYdyb4R8KBrRO73Orkab2x4kETz
+pe9HCtiEPBdfyjtyxL2Xq/HOGh5+VJ+dpXykgE3Ic9OmuMTT5F6uxpsaHsyLla0SPFLAJuS5
+eIFZ4bt2vVyNR/HefAFZYfv5/0cBm5Dn/n9l59bbtg3F8fd9CgJ73ODwTsoYBjSxExQYsMDZ
+sAJ9MGiJao048WAlaeZPv3MkkbbINKoEBDAj/Y7+vOpQ4gVw88ZnlxSfKu9IozxuoDeTuqPH
+4LCN9HPNTGhjsoFCKT5ZHovypGT5Jk3H4LCN9HNxg62CyTF8sjwe5eFE+Dxzg8M20s81OMwq
+H+KX4pPliSjP4j47qUtwDA7bSD+3Wwsx60im+GR5wd+zM4rL8KbN/rF32NxIP7fbISsb65Hi
+k+WpKI8XzGbP9KMO9ssReZDyfBSfLE9HeUrhtLzUvgn23Yg8bajMvhim+GR5JsozuHxKJs8G
++3ZEXkGNzpztFJ8sz0Z5BXo9mf0i2H+/3StmTEmTzTxK8cnygr+HnxRxfeTUvgv25Yg8ge6o
+GsEny3NRHu6QlVe9TbDPR+QpwPPYJfhkeb2/p+mMa6mz15vHMth/t90DXBiez8ZN8cnyyihP
+WsWyD6bH3mFz7/dzNa62p5UdwyfLq6I8HEiRzeg8+mC/HJFnhbD5QyfBJ8vzUV6BS/dkhacO
+9t2IvMK+MZU7xSfL6/09zWZUcz0cZfZStpvNqqp+f0UwgJmWySMng39Y2kt5gXAwzYXkw0EE
+cJYF23JEmJC4Ft779ERlLEqT0L0a1gc47YJxPSINF5UYLnaU0xOluShNqULKNNVcjDgf0YbP
+2OFbizfwqeJOCWcpS5ZjeXkq94+0W8XLb9yIPFvAY5CN8T+uD+Fmv/MXvZn2PobOoDluB4Yu
+V6s/VyDowT+UX315PyfX7sntiD8c9od4Ma7MBXXgFOYc3+ffbqs5YZrqX0m5f3jodKy3FfnL
+4Y7NcPKG9Mc/8MdnONp4xsnPjGTHxcJqdXN5Tb5zxHtraMwggZcfb+eEUk3nn38rKWeQNvx3
++Pf1Hx9u7vAMbjcqNbm6/RtCJ9oW2PsAmmwb4p5I819TN+uDrw++Ae2P+8r/Ql8tv6Cv7oTB
+oxULzfLDJ0h8VSrDvSXLyzZknacbSpZXn9rbtgdZLs5C0YwFoZBuy7uPvRnp8dJB6BLiVQun
+lGcQuoMQtM9CSnFmRit0xMiijajZwGX9j+v2R2VJlwZCkLv2h7YRxrfC0BhereicWAotN151
+teKtBiENwFcrMSdCOom76UBI9lHR1UlDYQW+XlqgmRjrxYoNQnwQEnmKQBnUuPjRYqXh/nDI
+usZLTX+pPL/UKmwtCeY347oUFvI7Ftx1W2LXjXvx683zF8hDZSEPixPPIAl55PF73oBvvu6/
+AaUlUOaMKtqPzoGSdTWgave8e0KsAqw8YdDPwHngPcarmgJW7aG+fvER4oYCBal8wgqmw93A
+YdpoAVgXs7Irmaq+QJGREMLoECuoBTXdANEV6n/94WHbNNv9I3BiM4wXFGjcR7sTWPqy1MDt
+to/3bZOy/uZ290CxUgNmT/lupChwmlDPQX5hxFpkt9/fP8MvFInxMmfxkrZ9nHRURTdGheSI
+IKaHGmqEUo5frgJVCw/Uc+MPHdfeSngUeMbYdh5Sr8/SknXpAVXcVRi/jmKD+g0dG0npiWLK
+JFSbW8CIM8ZSXE4x5BVU147xuFn9GiJXut0O0xDbEqEjZ0S7WQNwdX8AR19D4Kf/ARgNTEH3
+ZwEA
+--------------050308080806010203010906--
