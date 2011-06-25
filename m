@@ -1,28 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713Ab1FYLIo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 07:08:44 -0400
-Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:49768 "EHLO
-	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751480Ab1FYLIm (ORCPT
+	id S1751834Ab1FYLQU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 07:16:20 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:41548 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab1FYLQP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 07:08:42 -0400
+	Sat, 25 Jun 2011 07:16:15 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E05C397.9090701@cam.ac.uk>
-Date: Sat, 25 Jun 2011 12:16:39 +0100
+Message-ID: <4E05C560.3000408@cam.ac.uk>
+Date: Sat, 25 Jun 2011 12:24:16 +0100
 From: Jonathan Cameron <jic23@cam.ac.uk>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh <greg@kroah.com>,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        linux-iio@vger.kernel.org
-Subject: Re: [PATCH] staging: fix more iio builds when IIO_RING_BUFFER is
- not enabled
-References: <20110624155822.cb8cf6eb.sfr@canb.auug.org.au> <20110624092832.36ef2eae.randy.dunlap@oracle.com>
-In-Reply-To: <20110624092832.36ef2eae.randy.dunlap@oracle.com>
+To: Bryan Freed <bfreed@chromium.org>
+CC: linux-kernel@vger.kernel.org, jbrenner@taosinc.com, gregkh@suse.de,
+        arnd@arndb.de, linux-iio@vger.kernel.org
+Subject: Re: [PATCH v3 1/3] light sensor: Add SMBUS support to the tsl2563
+ driver.
+References: <1308948047-20488-1-git-send-email-bfreed@chromium.org>
+In-Reply-To: <1308948047-20488-1-git-send-email-bfreed@chromium.org>
 X-Enigmail-Version: 1.1.2
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -30,108 +29,263 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/24/11 17:28, Randy Dunlap wrote:
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+On 06/24/11 21:40, Bryan Freed wrote:
+> This is so we can support it on x86 SMBUS adapters.
 > 
-> Fix lots more build errors in staging/iio when CONFIG_IIO_RING_BUFFER
-> is not enabled by moving enums and defines outside of the
-> CONFIG_IIO_RING_BUFFER ifdef block.
+> Since i2c adapters which do not provide an smbus_xfer interface fall
+> back to using their I2C master_xfer interface, all the i2c_master_send()
+> calls in this driver are changed to i2c_smbus_*() calls.
+> This will fail on an i2c adapter that implements a proper subset of
+> (SMBUS_BYTE | SMBUS_BYTE_DATA | SMBUS_WORD_DATA), but I do not see that
+> in any of our adapters today.
 > 
-> Examples (one from each driver; there were 116 total errors):
-> 
-> drivers/staging/iio/accel/adis16204_core.c:437: error: 'ADIS16204_SCAN_SUPPLY' undeclared here (not in a function)
-> drivers/staging/iio/accel/adis16209_core.c:410: error: 'ADIS16209_SCAN_SUPPLY' undeclared here (not in a function)
-> drivers/staging/iio/gyro/adis16260_core.c:420: error: 'ADIS16260_SCAN_GYRO' undeclared here (not in a function)
-> drivers/staging/iio/imu/adis16400_core.c:565: error: 'ADIS16400_SCAN_SUPPLY' undeclared here (not in a function)
-Thanks Randy! I should really have taken the time to test the rest of these after
-your first patch.
+> This results in a few wrapper functions that provide little additional
+> functionality, so remove them and call the smbus functions directly from
+> the general driver code.
 
-There's one more hiding in there I think, the adis16240.
-I'll fire off a patch for this one with you as reported-by.
+Looks good. Thanks.
 > 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Bryan Freed <bfreed@chromium.org>
 Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
-> Cc: Jonathan Cameron <jic23@cam.ac.uk>
-> Cc: linux-iio@vger.kernel.org
 > ---
->  drivers/staging/iio/accel/adis16204.h |    2 +-
->  drivers/staging/iio/accel/adis16209.h |    4 ++--
->  drivers/staging/iio/gyro/adis16260.h  |    2 +-
->  drivers/staging/iio/imu/adis16400.h   |    2 +-
->  4 files changed, 5 insertions(+), 5 deletions(-)
+>  drivers/staging/iio/light/tsl2563.c |  106 +++++++++++++++--------------------
+>  1 files changed, 45 insertions(+), 61 deletions(-)
 > 
-> --- linux-next-20110624.orig/drivers/staging/iio/accel/adis16204.h
-> +++ linux-next-20110624/drivers/staging/iio/accel/adis16204.h
-> @@ -84,7 +84,6 @@ struct adis16204_state {
->  
->  int adis16204_set_irq(struct iio_dev *indio_dev, bool enable);
->  
-> -#ifdef CONFIG_IIO_RING_BUFFER
->  enum adis16204_scan {
->  	ADIS16204_SCAN_SUPPLY,
->  	ADIS16204_SCAN_ACC_X,
-> @@ -93,6 +92,7 @@ enum adis16204_scan {
->  	ADIS16204_SCAN_TEMP,
+> diff --git a/drivers/staging/iio/light/tsl2563.c b/drivers/staging/iio/light/tsl2563.c
+> index 9cffa2e..c60656f 100644
+> --- a/drivers/staging/iio/light/tsl2563.c
+> +++ b/drivers/staging/iio/light/tsl2563.c
+> @@ -137,37 +137,14 @@ struct tsl2563_chip {
+>  	u32			data1;
 >  };
 >  
-> +#ifdef CONFIG_IIO_RING_BUFFER
->  void adis16204_remove_trigger(struct iio_dev *indio_dev);
->  int adis16204_probe_trigger(struct iio_dev *indio_dev);
->  
-> --- linux-next-20110624.orig/drivers/staging/iio/accel/adis16209.h
-> +++ linux-next-20110624/drivers/staging/iio/accel/adis16209.h
-> @@ -121,8 +121,6 @@ struct adis16209_state {
->  
->  int adis16209_set_irq(struct iio_dev *indio_dev, bool enable);
->  
-> -#ifdef CONFIG_IIO_RING_BUFFER
+> -static int tsl2563_write(struct i2c_client *client, u8 reg, u8 value)
+> -{
+> -	int ret;
+> -	u8 buf[2];
 > -
->  #define ADIS16209_SCAN_SUPPLY	0
->  #define ADIS16209_SCAN_ACC_X	1
->  #define ADIS16209_SCAN_ACC_Y	2
-> @@ -132,6 +130,8 @@ int adis16209_set_irq(struct iio_dev *in
->  #define ADIS16209_SCAN_INCLI_Y	6
->  #define ADIS16209_SCAN_ROT	7
+> -	buf[0] = TSL2563_CMD | reg;
+> -	buf[1] = value;
+> -
+> -	ret = i2c_master_send(client, buf, sizeof(buf));
+> -	return (ret == sizeof(buf)) ? 0 : ret;
+> -}
+> -
+> -static int tsl2563_read(struct i2c_client *client, u8 reg, void *buf, int len)
+> -{
+> -	int ret;
+> -	u8 cmd = TSL2563_CMD | reg;
+> -
+> -	ret = i2c_master_send(client, &cmd, sizeof(cmd));
+> -	if (ret != sizeof(cmd))
+> -		return ret;
+> -
+> -	return i2c_master_recv(client, buf, len);
+> -}
+> -
+>  static int tsl2563_set_power(struct tsl2563_chip *chip, int on)
+>  {
+>  	struct i2c_client *client = chip->client;
+>  	u8 cmd;
 >  
-> +#ifdef CONFIG_IIO_RING_BUFFER
-> +
->  void adis16209_remove_trigger(struct iio_dev *indio_dev);
->  int adis16209_probe_trigger(struct iio_dev *indio_dev);
+>  	cmd = on ? TSL2563_CMD_POWER_ON : TSL2563_CMD_POWER_OFF;
+> -	return tsl2563_write(client, TSL2563_REG_CTRL, cmd);
+> +	return i2c_smbus_write_byte_data(client,
+> +					 TSL2563_CMD | TSL2563_REG_CTRL, cmd);
+>  }
 >  
-> --- linux-next-20110624.orig/drivers/staging/iio/gyro/adis16260.h
-> +++ linux-next-20110624/drivers/staging/iio/gyro/adis16260.h
-> @@ -104,7 +104,6 @@ struct adis16260_state {
+>  /*
+> @@ -178,36 +155,40 @@ static int tsl2563_get_power(struct tsl2563_chip *chip)
+>  {
+>  	struct i2c_client *client = chip->client;
+>  	int ret;
+> -	u8 val;
 >  
->  int adis16260_set_irq(struct iio_dev *indio_dev, bool enable);
+> -	ret = tsl2563_read(client, TSL2563_REG_CTRL, &val, sizeof(val));
+> -	if (ret != sizeof(val))
+> +	ret = i2c_smbus_read_byte_data(client, TSL2563_CMD | TSL2563_REG_CTRL);
+> +	if (ret < 0)
+>  		return ret;
 >  
-> -#ifdef CONFIG_IIO_RING_BUFFER
->  /* At the moment triggers are only used for ring buffer
->   * filling. This may change!
->   */
-> @@ -115,6 +114,7 @@ int adis16260_set_irq(struct iio_dev *in
->  #define ADIS16260_SCAN_TEMP	3
->  #define ADIS16260_SCAN_ANGL	4
+> -	return (val & TSL2563_CTRL_POWER_MASK) == TSL2563_CMD_POWER_ON;
+> +	return (ret & TSL2563_CTRL_POWER_MASK) == TSL2563_CMD_POWER_ON;
+>  }
 >  
-> +#ifdef CONFIG_IIO_RING_BUFFER
->  void adis16260_remove_trigger(struct iio_dev *indio_dev);
->  int adis16260_probe_trigger(struct iio_dev *indio_dev);
+>  static int tsl2563_configure(struct tsl2563_chip *chip)
+>  {
+>  	int ret;
 >  
-> --- linux-next-20110624.orig/drivers/staging/iio/imu/adis16400.h
-> +++ linux-next-20110624/drivers/staging/iio/imu/adis16400.h
-> @@ -158,7 +158,6 @@ struct adis16400_state {
+> -	ret = tsl2563_write(chip->client, TSL2563_REG_TIMING,
+> +	ret = i2c_smbus_write_byte_data(chip->client,
+> +			TSL2563_CMD | TSL2563_REG_TIMING,
+>  			chip->gainlevel->gaintime);
+>  	if (ret)
+>  		goto error_ret;
+> -	ret = tsl2563_write(chip->client, TSL2563_REG_HIGHLOW,
+> +	ret = i2c_smbus_write_byte_data(chip->client,
+> +			TSL2563_CMD | TSL2563_REG_HIGHLOW,
+>  			chip->high_thres & 0xFF);
+>  	if (ret)
+>  		goto error_ret;
+> -	ret = tsl2563_write(chip->client, TSL2563_REG_HIGHHIGH,
+> +	ret = i2c_smbus_write_byte_data(chip->client,
+> +			TSL2563_CMD | TSL2563_REG_HIGHHIGH,
+>  			(chip->high_thres >> 8) & 0xFF);
+>  	if (ret)
+>  		goto error_ret;
+> -	ret = tsl2563_write(chip->client, TSL2563_REG_LOWLOW,
+> +	ret = i2c_smbus_write_byte_data(chip->client,
+> +			TSL2563_CMD | TSL2563_REG_LOWLOW,
+>  			chip->low_thres & 0xFF);
+>  	if (ret)
+>  		goto error_ret;
+> -	ret = tsl2563_write(chip->client, TSL2563_REG_LOWHIGH,
+> +	ret = i2c_smbus_write_byte_data(chip->client,
+> +			TSL2563_CMD | TSL2563_REG_LOWHIGH,
+>  			(chip->low_thres >> 8) & 0xFF);
+>  /* Interrupt register is automatically written anyway if it is relevant
+>     so is not here */
+> @@ -242,8 +223,8 @@ static int tsl2563_read_id(struct tsl2563_chip *chip, u8 *id)
+>  	struct i2c_client *client = chip->client;
+>  	int ret;
 >  
->  int adis16400_set_irq(struct iio_dev *indio_dev, bool enable);
+> -	ret = tsl2563_read(client, TSL2563_REG_ID, id, sizeof(*id));
+> -	if (ret != sizeof(*id))
+> +	ret = i2c_smbus_read_byte_data(client, TSL2563_CMD | TSL2563_REG_ID);
+> +	if (ret < 0)
+>  		return ret;
 >  
-> -#ifdef CONFIG_IIO_RING_BUFFER
->  /* At the moment triggers are only used for ring buffer
->   * filling. This may change!
->   */
-> @@ -182,6 +181,7 @@ int adis16400_set_irq(struct iio_dev *in
->  #define ADIS16300_SCAN_INCLI_X	12
->  #define ADIS16300_SCAN_INCLI_Y	13
+>  	return 0;
+> @@ -313,8 +294,9 @@ static int tsl2563_adjust_gainlevel(struct tsl2563_chip *chip, u16 adc)
+>  		(adc > chip->gainlevel->max) ?
+>  			chip->gainlevel++ : chip->gainlevel--;
 >  
-> +#ifdef CONFIG_IIO_RING_BUFFER
->  void adis16400_remove_trigger(struct iio_dev *indio_dev);
->  int adis16400_probe_trigger(struct iio_dev *indio_dev);
+> -		tsl2563_write(client, TSL2563_REG_TIMING,
+> -			      chip->gainlevel->gaintime);
+> +		i2c_smbus_write_byte_data(client,
+> +					  TSL2563_CMD | TSL2563_REG_TIMING,
+> +					  chip->gainlevel->gaintime);
 >  
+>  		tsl2563_wait_adc(chip);
+>  		tsl2563_wait_adc(chip);
+> @@ -327,7 +309,6 @@ static int tsl2563_adjust_gainlevel(struct tsl2563_chip *chip, u16 adc)
+>  static int tsl2563_get_adc(struct tsl2563_chip *chip)
+>  {
+>  	struct i2c_client *client = chip->client;
+> -	u8 buf0[2], buf1[2];
+>  	u16 adc0, adc1;
+>  	int retry = 1;
+>  	int ret = 0;
+> @@ -350,19 +331,17 @@ static int tsl2563_get_adc(struct tsl2563_chip *chip)
+>  	}
+>  
+>  	while (retry) {
+> -		ret = tsl2563_read(client,
+> -				   TSL2563_REG_DATA0LOW,
+> -				   buf0, sizeof(buf0));
+> -		if (ret != sizeof(buf0))
+> +		ret = i2c_smbus_read_word_data(client,
+> +				TSL2563_CMD | TSL2563_REG_DATA0LOW);
+> +		if (ret < 0)
+>  			goto out;
+> +		adc0 = ret;
+>  
+> -		ret = tsl2563_read(client, TSL2563_REG_DATA1LOW,
+> -				   buf1, sizeof(buf1));
+> -		if (ret != sizeof(buf1))
+> +		ret = i2c_smbus_read_word_data(client,
+> +				TSL2563_CMD | TSL2563_REG_DATA1LOW);
+> +		if (ret < 0)
+>  			goto out;
+> -
+> -		adc0 = (buf0[1] << 8) + buf0[0];
+> -		adc1 = (buf1[1] << 8) + buf1[0];
+> +		adc1 = ret;
+>  
+>  		retry = tsl2563_adjust_gainlevel(chip, adc0);
+>  	}
+> @@ -592,11 +571,13 @@ static ssize_t tsl2563_write_thresh(struct iio_dev *indio_dev,
+>  	else
+>  		address = TSL2563_REG_LOWLOW;
+>  	mutex_lock(&chip->lock);
+> -	ret = tsl2563_write(chip->client, address, val & 0xFF);
+> +	ret = i2c_smbus_write_byte_data(chip->client, TSL2563_CMD | address,
+> +					val & 0xFF);
+>  	if (ret)
+>  		goto error_ret;
+> -	ret = tsl2563_write(chip->client, address + 1,
+> -			(val >> 8) & 0xFF);
+> +	ret = i2c_smbus_write_byte_data(chip->client,
+> +					TSL2563_CMD | (address + 1),
+> +					(val >> 8) & 0xFF);
+>  	if (IIO_EVENT_CODE_EXTRACT_DIR(event_code) == IIO_EV_DIR_RISING)
+>  		chip->high_thres = val;
+>  	else
+> @@ -612,7 +593,6 @@ static irqreturn_t tsl2563_event_handler(int irq, void *private)
+>  {
+>  	struct iio_dev *dev_info = private;
+>  	struct tsl2563_chip *chip = iio_priv(dev_info);
+> -	u8 cmd = TSL2563_CMD | TSL2563_CLEARINT;
+>  
+>  	iio_push_event(dev_info, 0,
+>  		       IIO_UNMOD_EVENT_CODE(IIO_EV_CLASS_LIGHT,
+> @@ -622,7 +602,7 @@ static irqreturn_t tsl2563_event_handler(int irq, void *private)
+>  		       iio_get_time_ns());
+>  
+>  	/* clear the interrupt and push the event */
+> -	i2c_master_send(chip->client, &cmd, sizeof(cmd));
+> +	i2c_smbus_write_byte(chip->client, TSL2563_CMD | TSL2563_CLEARINT);
+>  	return IRQ_HANDLED;
+>  }
+>  
+> @@ -647,13 +627,17 @@ static int tsl2563_write_interrupt_config(struct iio_dev *indio_dev,
+>  			if (ret)
+>  				goto out;
+>  		}
+> -		ret = tsl2563_write(chip->client, TSL2563_REG_INT, chip->intr);
+> +		ret = i2c_smbus_write_byte_data(chip->client,
+> +						TSL2563_CMD | TSL2563_REG_INT,
+> +						chip->intr);
+>  		chip->int_enabled = true;
+>  	}
+>  
+>  	if (!state && (chip->intr & 0x30)) {
+>  		chip->intr |= ~0x30;
+> -		ret = tsl2563_write(chip->client, TSL2563_REG_INT, chip->intr);
+> +		ret = i2c_smbus_write_byte_data(chip->client,
+> +						TSL2563_CMD | TSL2563_REG_INT,
+> +						chip->intr);
+>  		chip->int_enabled = false;
+>  		/* now the interrupt is not enabled, we can go to sleep */
+>  		schedule_delayed_work(&chip->poweroff_work, 5 * HZ);
+> @@ -668,16 +652,15 @@ static int tsl2563_read_interrupt_config(struct iio_dev *indio_dev,
+>  					   int event_code)
+>  {
+>  	struct tsl2563_chip *chip = iio_priv(indio_dev);
+> -	u8 rxbuf;
+>  	int ret;
+>  
+>  	mutex_lock(&chip->lock);
+> -	ret = tsl2563_read(chip->client, TSL2563_REG_INT,
+> -			   &rxbuf, sizeof(rxbuf));
+> +	ret = i2c_smbus_read_byte_data(chip->client,
+> +				       TSL2563_CMD | TSL2563_REG_INT);
+>  	mutex_unlock(&chip->lock);
+>  	if (ret < 0)
+>  		goto error_ret;
+> -	ret = !!(rxbuf & 0x30);
+> +	ret = !!(ret & 0x30);
+>  error_ret:
+>  
+>  	return ret;
+> @@ -797,7 +780,8 @@ static int tsl2563_remove(struct i2c_client *client)
+>  		cancel_delayed_work(&chip->poweroff_work);
+>  	/* Ensure that interrupts are disabled - then flush any bottom halves */
+>  	chip->intr |= ~0x30;
+> -	tsl2563_write(chip->client, TSL2563_REG_INT, chip->intr);
+> +	i2c_smbus_write_byte_data(chip->client, TSL2563_CMD | TSL2563_REG_INT,
+> +				  chip->intr);
+>  	flush_scheduled_work();
+>  	tsl2563_set_power(chip, 0);
+>  	if (client->irq)
 
