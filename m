@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752166Ab1FYSgR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 14:36:17 -0400
-Received: from smtp.inpi.gov.br ([189.3.205.135]:59756 "EHLO smtp.inpi.gov.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751678Ab1FYSgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 14:36:15 -0400
-X-Greylist: delayed 566 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Jun 2011 14:36:15 EDT
+	id S1751902Ab1FYOX7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 10:23:59 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:62624 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751452Ab1FYOX5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 10:23:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=XrgHEg9YUyd+GDcZ12pQCpjShScAuL8jRVCbjBDMzr1XTGIAZg7RxZvSDgSGZZTWFo
+         ZXrwvKIDn0GFytIzSYFtFyNn2xQtMytEULwRfg7CGsfJRoZ4ueWEmvIzgteXmnCgl9ho
+         a2CZLAknvGHA0D2Nz5nUPNtKgLw8X6C2Sul8I=
 MIME-Version: 1.0
-Date: Sat, 25 Jun 2011 11:22:16 -0300
-From: WESTERN UNION MONEY TRANSFER <info@wumt.com>
-To: info@wumt.com
-Subject: WESTERN UNION 5000.00USD URGENT PICK UP
-Organization: western union transfer center
-Reply-To: w.westernmoneytransfer@yahoo.com.hk
-X-Priority: 5 (Lowest)
-Message-ID: <4ca7c4462332f980918acb74fb6ddfe5@172.16.87.11>
-User-Agent: RoundCube Webmail/0.1b
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+From: Andrew Lutomirski <luto@mit.edu>
+Date: Sat, 25 Jun 2011 08:23:37 -0600
+X-Google-Sender-Auth: QrzDJ1fXfdgbjlpG6zPx4kIZt2E
+Message-ID: <BANLkTintLEcJvNzzspYRUV8fCx9=9dGDnA@mail.gmail.com>
+Subject: Re: [PATCH 0/4] Stop kswapd consuming 100% CPU when highest zone is small
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigbrady.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jun 24, 2011 at 8:44 AM, Mel Gorman <mgorman@suse.de> wrote:
+> (Built this time and passed a basic sniff-test.)
+>
+> During allocator-intensive workloads, kswapd will be woken frequently
+> causing free memory to oscillate between the high and min watermark.
+> This is expected behaviour.  Unfortunately, if the highest zone is
+> small, a problem occurs.
+>
 
--- 
-How are you doing today?
+[...]
 
-I write to inform you that we have already sent you $5000.00USD dollars through Western union as we have been given the mandate to transfer your full benefited sum of $1,800,000.00USD via our office here (Western Union)  by the United nations in conjunction with the Nigeria Government as a compensation.
+I've been running these for a couple days with no problems, although I
+haven't been trying to reproduce the problem.  (Well, no problems
+related to memory management.)
 
-I called to give you the information through phone as internet hackers were many but i cannot reach you yesterday even this morning.So,I decided to email you the MTCN and sender name so that can pick up this $5000.00USD to enable us send another $5000.00USD by tomorrow as you knows we will be sending you only $5000.00USD per day.
+I suspect that my pet unnecessary-OOM-kill bug is still around, but
+that's probably not related, especially since I can trigger it if I
+stick 8 GB of RAM in this laptop.
 
-Kindly pick up this information and hurry up to the nearest western union money office that is close to you and pick up this first payment that has been sent to you now and as soon as you are done with the pick up kindly get back to us in order for us to send you another payment by tomorrow,as you know that we shall be sending  you $5000USD par day.
-
-Manager :Mrs.Anita Daniel
-Email: w.westernmoneytransfer@yahoo.com.hk
-
-Email me once you picked up this $5000.00USD today.
-Here is the western union information to pick up the $5000.00USD,
-
-Payment Information.
-MTCN :_______________853-435-9544
-Sender's Name:_________Rose Micheal
-Text Question:__________What
-Answer:_______________Blue
-Amount Sent___________$5000.00USD
-Country:_______________Nigeria
-
-With due respect please get back to us urgently after the pick of the money and 
-if you have any problem you can as well contact us immediately.
-
-Thanks
-Mrs. Anita Daniel.
-western union Office.
-
+Thanks,
+Andy
