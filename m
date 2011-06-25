@@ -1,55 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758934Ab1FYABJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 24 Jun 2011 20:01:09 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:34335 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754968Ab1FYABG (ORCPT
+	id S1752124Ab1FYAGi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 24 Jun 2011 20:06:38 -0400
+Received: from nitrogen.vapor.com ([213.203.212.226]:39854 "EHLO
+	nitrogen.vapor.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751374Ab1FYAGh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 24 Jun 2011 20:01:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=AQlq8jMlVndfEqQeFS2HfVHQ3gi76RP5aB7LneqxXsIotU53SKRQjW9B2yfQm+dsSitA4gNcmHtrZoemm8QnsuCreI/6t8crZm8xADYTwWKJhitH5b10uKXa2bZVMRZG;
-Date: Fri, 24 Jun 2011 17:00:56 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ram Pai <linuxram@us.ibm.com>, yinghai@kernel.org
-Subject: Re: [git pull] PCI fixes
-Message-ID: <20110624170056.6056425e@jbarnes-desktop>
-In-Reply-To: <204d042e-86c0-41a5-80f0-e04d6b7adf25@email.android.com>
-References: <20110623133740.0cdaf204@jbarnes-desktop>
-	<BANLkTime_w_RLqU2dZV4zx9SEZaNTQoMNQ@mail.gmail.com>
-	<20110624085318.70bde05c@jbarnes-desktop>
-	<BANLkTinimDSWQaDcQj9nJj11juK2OCfLXg@mail.gmail.com>
-	<20110624091148.18f8959d@jbarnes-desktop>
-	<204d042e-86c0-41a5-80f0-e04d6b7adf25@email.android.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+	Fri, 24 Jun 2011 20:06:37 -0400
+Subject: Re: [BUG?] numa required on x86_64?
+From: Ian Kumlien <pomac@vapor.com>
+Reply-To: pomac@vapor.com
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        akpm <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110624152310.10803ffa.randy.dunlap@oracle.com>
+References: <1308952859.25830.8.camel@pi>
+	 <20110624152310.10803ffa.randy.dunlap@oracle.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-h7st1+Nmvgs54S/9jjpo"
+Date: Sat, 25 Jun 2011 02:06:32 +0200
+Message-ID: <1308960392.25830.11.camel@pi>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+X-Mailer: Evolution 2.32.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Jun 2011 15:56:42 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> 
-> 
-> 
-> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> >
-> >How about a boot param?  We've done similar things for _CRS, and it
-> >might give Yinghai and Ram some more flexibility in improving our
-> >dynamic resource allocation before enabling it again (if ever).
-> 
-> I'm OK with that, but then I'd suggest against the currently not yet merged series that doesn't seem to work anyway...
-> 
-> IOW, just a simple patch that disables the resource re-allocation, and enables it with some command line option.
+--=-h7st1+Nmvgs54S/9jjpo
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Ok sounds good, thanks.
+On fre, 2011-06-24 at 15:23 -0700, Randy Dunlap wrote:
+> On Sat, 25 Jun 2011 00:00:58 +0200 Ian Kumlien wrote:
+>=20
+> > Hi all,
+> >=20
+> > Just found this when wanting to play with development kernels again.
+> > Since there is no -gitXX snapshots anymore, I cloned the git =3D)...
+> >=20
+> > But, it failed to build properly with my config:
+> >=20
+> > mm/page_cgroup.c line 308: node_start_pfn and node_end_pfn is only
+> > defined under NUMA on x86_64.
+> >=20
+> > The commit that changed the use of this was introduced recently while
+> > the mmzone_64.h hasn't been changed since april.
+>=20
+> You should have cc-ed the commit Author (I did so).
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Sorry, tired and i was upgrading systems at work when i found this =3D)
+
+> > commit 37573e8c718277103f61f03741bdc5606d31b07e
+> > Author: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Date:   Wed Jun 15 15:08:42 2011 -0700
+> >=20
+> >     memcg: fix init_page_cgroup nid with sparsemem
+> >    =20
+> >     Commit 21a3c9646873 ("memcg: allocate memory cgroup structures in l=
+ocal
+> >     nodes") makes page_cgroup allocation as NUMA aware.  But that cause=
+d a
+> >     problem https://bugzilla.kernel.org/show_bug.cgi?id=3D36192.
+> >    =20
+> >     The problem was getting a NID from invalid struct pages, which was =
+not
+> >     initialized because it was out-of-node, out of [node_start_pfn,
+> >     node_end_pfn)
+> >    =20
+> >     Now, with sparsemem, page_cgroup_init scans pfn from 0 to max_pfn. =
+ But
+> >     this may scan a pfn which is not on any node and can access memmap =
+which
+> >     is not initialized.
+> >    =20
+> >     This makes page_cgroup_init() for SPARSEMEM node aware and remove a=
+ code
+> >     to get nid from page->flags.  (Then, we'll use valid NID always.)
+> >    =20
+> >     [akpm@linux-foundation.org: try to fix up comments]
+> >     Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> >     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> >     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>=20
+> A patch for this has been posted at least 2 times.
+> It's here:  http://marc.info/?l=3Dlinux-mm&m=3D130827204306775&w=3D2
+>=20
+> Andrew, please merge this (^that^) patch.
+
+Damn, i haven't been following LKML that closely recently =3D/
+
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code =
+***
+
+--=20
+Ian Kumlien  -- http://demius.net || http://pomac.netswarm.net
+
+--=-h7st1+Nmvgs54S/9jjpo
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iEYEABECAAYFAk4FJogACgkQ7F3Euyc51N/pPQCfehRQFGW4DPOtvWqZ/87AugI2
+MjcAmwVtU4FgC20g0AzwqFPID45PZLpq
+=FBsY
+-----END PGP SIGNATURE-----
+
+--=-h7st1+Nmvgs54S/9jjpo--
+
