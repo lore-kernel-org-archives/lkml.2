@@ -1,47 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751831Ab1FYNbR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 09:31:17 -0400
-Received: from r4linuxserver.com.br ([200.250.45.70]:56266 "EHLO
-	servidor.r4linuxserver.com.br" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751497Ab1FYNbP (ORCPT
+	id S1751952Ab1FYLnh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 07:43:37 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59280 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751773Ab1FYLng (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 09:31:15 -0400
-X-Greylist: delayed 5883 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Jun 2011 09:31:15 EDT
-Message-ID: <1643.182.63.109.18.1309001900.squirrel@teracom.com.br>
-Date: Sat, 25 Jun 2011 08:38:20 -0300 (BRT)
-Subject: The Google-UK 12th Anniversary Giveaway Promo  ( FINAL 
-     NOTIFICATION! )
-From: Promo Announcer =?iso-8859-1?Q?=A92011?= 
-	<googlepromo.online@london.com>
-User-Agent: SquirrelMail/1.4.6-rc1
+	Sat, 25 Jun 2011 07:43:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=qLivveF+SaqGm0wWTjxs+LhZYGwHDVpAioey6QtsJDd0cj95UDcpM9cv4tT5z1Ufgn
+         X5/1XQ4LnlNcoNjKJn0V1IOD/7eXIUuW80rLJeGK0xoPwp3tVRnT/l1YzryAf0oJuBXx
+         fsCzbRY/+9rBqIT4pu3zFTozz5v11EqjDS3H8=
+Date: Sat, 25 Jun 2011 13:43:31 +0200
+From: Tejun Heo <tj@kernel.org>
+To: "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: linux-kernel@vger.kernel.org, marcel@holtmann.org, a.p.zijlstra@chello.nl,
+        akpm@linux-foundation.org
+Subject: Re: [RFC 1/1] workqueue: Add mod_delayed_work()
+Message-ID: <20110625114331.GT30101@htj.dyndns.org>
+References: <1308954457-21487-1-git-send-email-padovan@profusion.mobi>
+ <1308954457-21487-2-git-send-email-padovan@profusion.mobi>
 MIME-Version: 1.0
-Content-Type: text/plain;charset=iso-8859-1
-Content-Transfer-Encoding: 8bit
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - servidor.r4linuxserver.com.br
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - london.com
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308954457-21487-2-git-send-email-padovan@profusion.mobi>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
+On Fri, Jun 24, 2011 at 07:27:37PM -0300, Gustavo F. Padovan wrote:
+> mod_delayed_work() updates a timer if the work is pending otherwise calls
+> queue_delayed_work_on() to queue the work with the specified delay.
+> 
+> Call cancel_delayed_work_sync() and then queue_delayed_work() again to
+> change a timer's delays is too expensive (and requires process context).
+> Istead we call mod_delayed_work() to only modify the timer's timeout.
 
+Yes, this part of the interface is lacking.  It might be best to
+modify queue_delayed_work() to adjust the timer according to the new
+timeout but we would need to audit the current users to make sure
+nothing breaks and I agree introducing a new function probably makes
+sense.
 
-We urgently wish to inform you again that your e-mail w o n £850,000 UK
-Pounds {with L u c k y # :12-12-23-35-40-41(12) & T i c k e t # :008 695
-757 336 64} in our on-going 12th Anniversary Online Giveaway draws .
-For further information to be provided, you have to reply this notice
-immediately to confirm this email account is still active.
+> +int mod_delayed_work(struct workqueue_struct *wq,
+> +			struct delayed_work *dwork, unsigned long delay)
+> +{
+> +	struct timer_list *timer = &dwork->timer;
+> +	struct work_struct *work = &dwork->work;
+> +
+> +	if (!test_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work)))
+> +		return queue_delayed_work_on(-1, wq, dwork, delay);
+> +
+> +	BUG_ON(!timer_pending(timer));
+> +
+> +	mod_timer(timer, jiffies + delay);
+> +
+> +	return 0;
+> +}
 
-Sincerely!
-Giveaway Online Announcer
+But I think the current implementation is as it is because modifying
+delayed work safely wasn't very simple.  The above code is broken in
+multiple ways - a delayed work could be pending without timer pending,
+and timer may expire after test_bit() but before the rest of the code.
 
+I haven't thought about it too hard but think it would require the
+timer sync part of __cancel_work_timer() (sans wait_on_work()) to get
+it correctly.  Care to delve into it?
+
+Thanks.
+
+-- 
+tejun
