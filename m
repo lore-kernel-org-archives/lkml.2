@@ -1,206 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752199Ab1FYXuE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 19:50:04 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41832 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab1FYXuB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 19:50:01 -0400
-Date: Sat, 25 Jun 2011 23:49:25 GMT
-From: tip-bot for Christoph Lameter <cl@linux.com>
-Message-ID: <tip-3824abd1279ef75f791c43a6b1e3162ae0692b42@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        penberg@cs.helsinki.fi, tj@kernel.org, cl@linux.com,
-        tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        penberg@cs.helsinki.fi, tj@kernel.org, tglx@linutronix.de,
-        cl@linux.com
-In-Reply-To: <20110601172614.173427964@linux.com>
-References: <20110601172614.173427964@linux.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/atomic] x86: Add support for cmpxchg_double
-Git-Commit-ID: 3824abd1279ef75f791c43a6b1e3162ae0692b42
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1752285Ab1FYX7p (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 19:59:45 -0400
+Received: from nessie.weebeastie.net ([220.233.7.36]:39382 "EHLO
+	bunyip.billabong.weebeastie.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751854Ab1FYX7o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 19:59:44 -0400
+Date: Sun, 26 Jun 2011 09:59:39 +1000
+From: CaT <cat@zip.com.au>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>
+Subject: boot/kernel init duration regression in 2.6.39 (was: Re: [Bug
+ #12909] boot/kernel init duration regression from 2.6.28)
+Message-ID: <20110625235939.GA17970@zip.com.au>
+References: <n4io5wq70ZO.A.gzG.rFn2JB@chimera>
+ <AsKNxFx2juN.A.z3H.SGn2JB@chimera>
+ <20090406224749.GC19377@zip.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 25 Jun 2011 23:49:26 +0000 (UTC)
+In-Reply-To: <20090406224749.GC19377@zip.com.au>
+Organisation: Furball Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3824abd1279ef75f791c43a6b1e3162ae0692b42
-Gitweb:     http://git.kernel.org/tip/3824abd1279ef75f791c43a6b1e3162ae0692b42
-Author:     Christoph Lameter <cl@linux.com>
-AuthorDate: Wed, 1 Jun 2011 12:25:47 -0500
-Committer:  H. Peter Anvin <hpa@zytor.com>
-CommitDate: Sat, 25 Jun 2011 12:17:32 -0700
+On Tue, Apr 07, 2009 at 08:47:49AM +1000, CaT wrote:
+> On Mon, Apr 06, 2009 at 09:05:41PM +0200, Rafael J. Wysocki wrote:
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=12909
+> > Subject		: boot/kernel init duration regression from 2.6.28
+> > Submitter	: CaT <cat@zip.com.au>
+> > Date		: 2009-03-16 10:25 (22 days old)
+> > References	: http://marc.info/?l=linux-kernel&m=123720083515950&w=4
+> 
+> I got it tracked down to .29-rc1. I guess I'll need to learn to use git
+> now (and user the desktop - compiling on the EEE takes /ages/). Also have
+> .29.1 ready to test when I get home tonight.
 
-x86: Add support for cmpxchg_double
+This bug appears to be back in .39 and .39.2. Same pause in the same section.
 
-A simple implementation that only supports the word size and does not
-have a fallback mode (would require a spinlock).
+eeepc 901 is involved.
 
-Add 32 and 64 bit support for cmpxchg_double. cmpxchg double uses
-the cmpxchg8b or cmpxchg16b instruction on x86 processors to compare
-and swap 2 machine words. This allows lockless algorithms to move more
-context information through critical sections.
+[    2.536287] eeepc_laptop: Eee PC Hotkey Driver
+[    2.538806] eeepc_laptop: Hotkey init flags 0x41
+[    3.353526] hub 2-0:1.0: hub_suspend
+[    3.353557] usb usb2: bus auto-suspend
+[    3.353569] usb usb2: suspend_rh
+[    3.596813] usb usb5: suspend_rh (auto-stop)
+[    4.020640] input: ImPS/2 Logitech Wheel Mouse as /devices/platform/i8042/serio1/input/input7
+[    4.353541] hub 3-0:1.0: hub_suspend
+[    4.353581] usb usb3: bus auto-suspend
+[    4.353597] usb usb3: suspend_rh
+[    4.353638] hub 4-0:1.0: hub_suspend
+[    4.353655] usb usb4: bus auto-suspend
+[    4.353665] usb usb4: suspend_rh
+[    4.353720] usb 1-8: usb auto-suspend
+[    4.506857] hub 5-0:1.0: hub_suspend
+[    4.506894] usb usb5: bus auto-suspend
+[    4.506911] usb usb5: suspend_rh
+[    4.506957] hub 6-0:1.0: hub_suspend
+[    4.506977] usb usb6: bus auto-suspend
+[    6.170185] ata2: link is slow to respond, please be patient (ready=0)
+[    6.366858] hub 1-0:1.0: hub_suspend
+[    6.366895] usb usb1: bus auto-suspend
+[    6.366911] ehci_hcd 0000:00:1d.7: suspend root hub
+[    7.670579] ata2.00: CFA: ASUS-PHISON SSD, TST2.04U, max UDMA/66
+[    7.673098] ata2.00: 7880544 sectors, multi 0: LBA 
+[    7.680458] ata2.00: configured for UDMA/66
+[    7.683267] scsi 1:0:0:0: Direct-Access     ATA      ASUS-PHISON SSD  TST2 PQ: 0 ANSI: 5
+[    7.686546] sd 1:0:0:0: [sdb] 7880544 512-byte logical blocks: (4.03 GB/3.75 GiB)
+[    7.686909] sd 1:0:0:0: Attached scsi generic sg1 type 0
+[    7.692132] sd 1:0:0:0: [sdb] Write Protect is off
+[    7.694745] sd 1:0:0:0: [sdb] Mode Sense: 00 3a 00 00
+[    7.694812] sd 1:0:0:0: [sdb] Write cache: disabled, read cache: enabled, doesn't support DPO or FUA
+[    7.700201]  sdb: sdb1 sdb2 < sdb5 > sdb3 sdb4
+[    7.704471] sd 1:0:0:0: [sdb] Attached SCSI disk
+[   27.999338] eeepc_laptop: TYPE (2000000) not reported by BIOS, enabling anyway
+[   28.006959] eeepc_laptop: PANELPOWER (4000000) not reported by BIOS, enabling anyway
+[   28.009855] eeepc_laptop: Get control methods supported: 0x6101713
+[   28.015878] input: Asus EeePC extra buttons as /devices/platform/eeepc/input/input8
+[   29.421681] eeepc_laptop: BIOS says wireless lan is unblocked, but the pci device is absent
+[   29.424576] eeepc_laptop: skipped wireless hotplug as probably inappropriate for this model
 
-Set a flag CONFIG_CMPXCHG_DOUBLE to signal that support for double word
-cmpxchg detection has been build into the kernel. Note that each subsystem
-using cmpxchg_double has to implement a fall back mechanism as long as
-we offer support for processors that do not implement cmpxchg_double.
-
-Reviewed-by: H. Peter Anvin <hpa@zytor.com>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Signed-off-by: Christoph Lameter <cl@linux.com>
-Link: http://lkml.kernel.org/r/20110601172614.173427964@linux.com
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
----
- arch/x86/Kconfig.cpu              |    3 ++
- arch/x86/include/asm/cmpxchg_32.h |   48 +++++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/cmpxchg_64.h |   45 ++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/cpufeature.h |    2 +
- 4 files changed, 98 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/Kconfig.cpu b/arch/x86/Kconfig.cpu
-index 6a7cfdf..e3ca7e0 100644
---- a/arch/x86/Kconfig.cpu
-+++ b/arch/x86/Kconfig.cpu
-@@ -312,6 +312,9 @@ config X86_CMPXCHG
- config CMPXCHG_LOCAL
- 	def_bool X86_64 || (X86_32 && !M386)
- 
-+config CMPXCHG_DOUBLE
-+	def_bool y
-+
- config X86_L1_CACHE_SHIFT
- 	int
- 	default "7" if MPENTIUM4 || MPSC
-diff --git a/arch/x86/include/asm/cmpxchg_32.h b/arch/x86/include/asm/cmpxchg_32.h
-index 284a6e8..3deb725 100644
---- a/arch/x86/include/asm/cmpxchg_32.h
-+++ b/arch/x86/include/asm/cmpxchg_32.h
-@@ -280,4 +280,52 @@ static inline unsigned long cmpxchg_386(volatile void *ptr, unsigned long old,
- 
- #endif
- 
-+#define cmpxchg8b(ptr, o1, o2, n1, n2)				\
-+({								\
-+	char __ret;						\
-+	__typeof__(o2) __dummy;					\
-+	__typeof__(*(ptr)) __old1 = (o1);			\
-+	__typeof__(o2) __old2 = (o2);				\
-+	__typeof__(*(ptr)) __new1 = (n1);			\
-+	__typeof__(o2) __new2 = (n2);				\
-+	asm volatile(LOCK_PREFIX "cmpxchg8b %2; setz %1"	\
-+		       : "=d"(__dummy), "=a" (__ret), "+m" (*ptr)\
-+		       : "a" (__old1), "d"(__old2),		\
-+		         "b" (__new1), "c" (__new2)		\
-+		       : "memory");				\
-+	__ret; })
-+
-+
-+#define cmpxchg8b_local(ptr, o1, o2, n1, n2)			\
-+({								\
-+	char __ret;						\
-+	__typeof__(o2) __dummy;					\
-+	__typeof__(*(ptr)) __old1 = (o1);			\
-+	__typeof__(o2) __old2 = (o2);				\
-+	__typeof__(*(ptr)) __new1 = (n1);			\
-+	__typeof__(o2) __new2 = (n2);				\
-+	asm volatile("cmpxchg8b %2; setz %1"			\
-+		       : "=d"(__dummy), "=a"(__ret), "+m" (*ptr)\
-+		       : "a" (__old), "d"(__old2),		\
-+		         "b" (__new1), "c" (__new2),		\
-+		       : "memory");				\
-+	__ret; })
-+
-+
-+#define cmpxchg_double(ptr, o1, o2, n1, n2)				\
-+({									\
-+	BUILD_BUG_ON(sizeof(*(ptr)) != 4);				\
-+	VM_BUG_ON((unsigned long)(ptr) % 8);				\
-+	cmpxchg8b((ptr), (o1), (o2), (n1), (n2));			\
-+})
-+
-+#define cmpxchg_double_local(ptr, o1, o2, n1, n2)			\
-+({									\
-+       BUILD_BUG_ON(sizeof(*(ptr)) != 4);				\
-+       VM_BUG_ON((unsigned long)(ptr) % 8);				\
-+       cmpxchg16b_local((ptr), (o1), (o2), (n1), (n2));			\
-+})
-+
-+#define system_has_cmpxchg_double() cpu_has_cx8
-+
- #endif /* _ASM_X86_CMPXCHG_32_H */
-diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
-index 423ae58..7cf5c0a 100644
---- a/arch/x86/include/asm/cmpxchg_64.h
-+++ b/arch/x86/include/asm/cmpxchg_64.h
-@@ -151,4 +151,49 @@ extern void __cmpxchg_wrong_size(void);
- 	cmpxchg_local((ptr), (o), (n));					\
- })
- 
-+#define cmpxchg16b(ptr, o1, o2, n1, n2)				\
-+({								\
-+	char __ret;						\
-+	__typeof__(o2) __junk;					\
-+	__typeof__(*(ptr)) __old1 = (o1);			\
-+	__typeof__(o2) __old2 = (o2);				\
-+	__typeof__(*(ptr)) __new1 = (n1);			\
-+	__typeof__(o2) __new2 = (n2);				\
-+	asm volatile(LOCK_PREFIX "cmpxchg16b %2;setz %1"	\
-+		       : "=d"(__junk), "=a"(__ret), "+m" (*ptr)	\
-+		       : "b"(__new1), "c"(__new2),		\
-+		         "a"(__old1), "d"(__old2));		\
-+	__ret; })
-+
-+
-+#define cmpxchg16b_local(ptr, o1, o2, n1, n2)			\
-+({								\
-+	char __ret;						\
-+	__typeof__(o2) __junk;					\
-+	__typeof__(*(ptr)) __old1 = (o1);			\
-+	__typeof__(o2) __old2 = (o2);				\
-+	__typeof__(*(ptr)) __new1 = (n1);			\
-+	__typeof__(o2) __new2 = (n2);				\
-+	asm volatile("cmpxchg16b %2;setz %1"			\
-+		       : "=d"(__junk), "=a"(__ret), "+m" (*ptr)	\
-+		       : "b"(__new1), "c"(__new2),		\
-+		         "a"(__old1), "d"(__old2));		\
-+	__ret; })
-+
-+#define cmpxchg_double(ptr, o1, o2, n1, n2)				\
-+({									\
-+	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
-+	VM_BUG_ON((unsigned long)(ptr) % 16);				\
-+	cmpxchg16b((ptr), (o1), (o2), (n1), (n2));			\
-+})
-+
-+#define cmpxchg_double_local(ptr, o1, o2, n1, n2)			\
-+({									\
-+	BUILD_BUG_ON(sizeof(*(ptr)) != 8);				\
-+	VM_BUG_ON((unsigned long)(ptr) % 16);				\
-+	cmpxchg16b_local((ptr), (o1), (o2), (n1), (n2));		\
-+})
-+
-+#define system_has_cmpxchg_double() cpu_has_cx16
-+
- #endif /* _ASM_X86_CMPXCHG_64_H */
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 71cc380..d1053cd 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -288,6 +288,8 @@ extern const char * const x86_power_flags[32];
- #define cpu_has_hypervisor	boot_cpu_has(X86_FEATURE_HYPERVISOR)
- #define cpu_has_pclmulqdq	boot_cpu_has(X86_FEATURE_PCLMULQDQ)
- #define cpu_has_perfctr_core	boot_cpu_has(X86_FEATURE_PERFCTR_CORE)
-+#define cpu_has_cx8		boot_cpu_has(X86_FEATURE_CX8)
-+#define cpu_has_cx16		boot_cpu_has(X86_FEATURE_CX16)
- 
- #if defined(CONFIG_X86_INVLPG) || defined(CONFIG_X86_64)
- # define cpu_has_invlpg		1
+-- 
+  "A search of his car uncovered pornography, a homemade sex aid, women's 
+  stockings and a Jack Russell terrier."
+    - http://www.dailytelegraph.com.au/news/wacky/indeed/story-e6frev20-1111118083480
