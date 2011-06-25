@@ -1,79 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751952Ab1FYLnh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 07:43:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59280 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751773Ab1FYLng (ORCPT
+	id S1751571Ab1FYMKy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 08:10:54 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:49409 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751100Ab1FYMKx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 07:43:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=qLivveF+SaqGm0wWTjxs+LhZYGwHDVpAioey6QtsJDd0cj95UDcpM9cv4tT5z1Ufgn
-         X5/1XQ4LnlNcoNjKJn0V1IOD/7eXIUuW80rLJeGK0xoPwp3tVRnT/l1YzryAf0oJuBXx
-         fsCzbRY/+9rBqIT4pu3zFTozz5v11EqjDS3H8=
-Date: Sat, 25 Jun 2011 13:43:31 +0200
-From: Tejun Heo <tj@kernel.org>
-To: "Gustavo F. Padovan" <padovan@profusion.mobi>
-Cc: linux-kernel@vger.kernel.org, marcel@holtmann.org, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org
-Subject: Re: [RFC 1/1] workqueue: Add mod_delayed_work()
-Message-ID: <20110625114331.GT30101@htj.dyndns.org>
-References: <1308954457-21487-1-git-send-email-padovan@profusion.mobi>
- <1308954457-21487-2-git-send-email-padovan@profusion.mobi>
+	Sat, 25 Jun 2011 08:10:53 -0400
+Date: Sat, 25 Jun 2011 08:10:52 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Kirill Smelkov <kirr@mns.spb.ru>
+cc: matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] USB: EHCI: Move sysfs related bits into ehci-sysfs.c
+In-Reply-To: <2a537d4dffef27cc7839eb19889eaa035edd44f9.1308933456.git.kirr@mns.spb.ru>
+Message-ID: <Pine.LNX.4.44L0.1106250807270.1039-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308954457-21487-2-git-send-email-padovan@profusion.mobi>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, 24 Jun 2011, Kirill Smelkov wrote:
 
-On Fri, Jun 24, 2011 at 07:27:37PM -0300, Gustavo F. Padovan wrote:
-> mod_delayed_work() updates a timer if the work is pending otherwise calls
-> queue_delayed_work_on() to queue the work with the specified delay.
+> The only sysfs attr implemented so far is "companion" from ehci-hub.c,
+> but in the next patch we are going to add another sysfs file, so prior
+> to that let's structure things and move already-in-there sysfs code to
+> separate file.
 > 
-> Call cancel_delayed_work_sync() and then queue_delayed_work() again to
-> change a timer's delays is too expensive (and requires process context).
-> Istead we call mod_delayed_work() to only modify the timer's timeout.
+> Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+> diff --git a/drivers/usb/host/ehci-sysfs.c b/drivers/usb/host/ehci-sysfs.c
+> new file mode 100644
+> index 0000000..347c8cb
+> --- /dev/null
+> +++ b/drivers/usb/host/ehci-sysfs.c
+> @@ -0,0 +1,94 @@
+> +/*
+> + * Copyright (C) 2001-2004 by David Brownell
 
-Yes, this part of the interface is lacking.  It might be best to
-modify queue_delayed_work() to adjust the timer according to the new
-timeout but we would need to audit the current users to make sure
-nothing breaks and I agree introducing a new function probably makes
-sense.
+One little note...  It's understandable that you put this line here,
+but it isn't really appropriate.  All the code you're moving into this
+new file was written by me.
 
-> +int mod_delayed_work(struct workqueue_struct *wq,
-> +			struct delayed_work *dwork, unsigned long delay)
-> +{
-> +	struct timer_list *timer = &dwork->timer;
-> +	struct work_struct *work = &dwork->work;
-> +
-> +	if (!test_bit(WORK_STRUCT_PENDING_BIT, work_data_bits(work)))
-> +		return queue_delayed_work_on(-1, wq, dwork, delay);
-> +
-> +	BUG_ON(!timer_pending(timer));
-> +
-> +	mod_timer(timer, jiffies + delay);
-> +
-> +	return 0;
-> +}
+Apart from that one issue,
 
-But I think the current implementation is as it is because modifying
-delayed work safely wasn't very simple.  The above code is broken in
-multiple ways - a delayed work could be pending without timer pending,
-and timer may expire after test_bit() but before the rest of the code.
+Acked-off-by: Alan Stern <stern@rowland.harvard.edu>
 
-I haven't thought about it too hard but think it would require the
-timer sync part of __cancel_work_timer() (sans wait_on_work()) to get
-it correctly.  Care to delve into it?
-
-Thanks.
-
--- 
-tejun
