@@ -1,36 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab1FZImr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 04:42:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43792 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab1FZImk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 04:42:40 -0400
-Message-ID: <4E06F0F8.6050009@redhat.com>
-Date: Sun, 26 Jun 2011 11:42:32 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1751990Ab1FZIyq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 04:54:46 -0400
+Received: from ausd-gateway.alameda.k12.ca.us ([206.110.190.22]:4227 "EHLO
+	smtp.alameda.k12.ca.us" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751806Ab1FZIyl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 04:54:41 -0400
+X-Greylist: delayed 331 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Jun 2011 04:54:41 EDT
+From: "Hallford, Mary" <mhallford@alameda.k12.ca.us>
+Date: Sun, 26 Jun 2011 01:49:07 -0700
+Subject: You won $552,000USD
+Thread-Topic: You won $552,000USD
+Thread-Index: AQHMM93oFN0CG5y8PUWTSd3RQxnhUw==
+Message-ID: <10A402A1197C5D4E90D5715F62189BBB1850CCCEF9@AUSDMAIL.ausd.alameda>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 21/22] KVM: MMU: mmio page fault support
-References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FDE0.5080800@cn.fujitsu.com> <20110622215940.GA30064@amt.cnet> <4E02B0BE.7070003@cn.fujitsu.com> <20110623142134.GA12181@amt.cnet> <4E037E21.6010203@cn.fujitsu.com>
-In-Reply-To: <4E037E21.6010203@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 Jun 2011 08:49:19.0570 (UTC) FILETIME=[F0168B20:01CC33DD]
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/23/2011 08:55 PM, Xiao Guangrong wrote:
-> Anyway, mmio spte is needed to detect bugs for hard mmu
->
-
-Note, we have the equivalent problem with bypass_guest_pf=1 and it works 
-fine.  We did have an issue with EPT due to a missing tlb flush, but we 
-don't need to design the whole mmu around it.
-
--- 
-error compiling committee.c: too many arguments to function
-
+Ticket no: 60470937545166
+You won $552,000USD. Send Name, Address, Country,
+Tel;to Renning Harling at (claimsdepartment22@live.co.uk<mailto:claimsdepartment22@live.co.uk>)
+________________________________
+Confidentiality Notice: This e-mail, including any attachments, is for the sole use of the intended recipient(s) and may contain confidential and privileged information. Any unauthorized review, use, disclosure or distribution is prohibited. If you are not the intended recipient, please contact the sender by reply e-mail and destroy all copies of the original messages.
