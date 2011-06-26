@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab1FZAEx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 20:04:53 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41217 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752048Ab1FZAEw (ORCPT
+	id S1752476Ab1FZAmh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 20:42:37 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40862 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752127Ab1FZAmg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 20:04:52 -0400
-Date: Sat, 25 Jun 2011 17:04:45 -0700 (PDT)
-Message-Id: <20110625.170445.957364657527336185.davem@davemloft.net>
-To: jj@chaosbits.net
-Cc: acme@ghostprotocols.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] net, llc: Avoid undefined behaviour in
- llc_conn_ac_inc_vr_by_1()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1106260009530.23991@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106260009530.23991@swampdragon.chaosbits.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sat, 25 Jun 2011 17:04:46 -0700 (PDT)
+	Sat, 25 Jun 2011 20:42:36 -0400
+Date: Sun, 26 Jun 2011 01:42:34 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sage Weil <sage@newdream.net>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: WTF is ceph_lookup_open() doing with nd->intent.open.file?
+Message-ID: <20110626004234.GB11013@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Sun, 26 Jun 2011 00:11:12 +0200 (CEST)
+ceph_lookup_open() does the following:
 
-> Introduce a sequence point (;) between two writes to llc_sk(sk)->vR in
-> net/llc/llc_c_ac.c:llc_conn_ac_inc_vr_by_1() so that the order in
-> which the writes happen become well defined.
-> 
-> While the code may work fine now it may break at any time with a
-> different compiler, a new version of current compiler or even just a
-> different optimization level of the current compiler. Much better to
-> clearly express what's intended in a way that guarantees the result.
-> 
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+        struct file *file = nd->intent.open.file;
+        struct inode *parent_inode = get_dentry_parent_inode(file->f_dentry);
 
-How about fixing the macro so that it doesn't have side effects
-like this?
+Note that at this point nd->intent.open.file is going to have NULL ->f_dentry.
+What's more, we end up calling ceph_init_file() on that struct file.  If
+open(2) fails *after* the call of that sucker, we'll end up leaking
+from ceph_file_cachep, since ->release() will *not* be called - VFS will
+have no damn indication that it needs to.  Not that calling ->i_fop->open()
+on something without ->f_op (and ->f_dentry, and...) would be a good idea...
 
-That's much better than a 6 line (improperly formatted, BTW) comment
-every time someone tried to use that macros with an lvalue that isn't
-a local variable.
+What is that code supposed to do, anyway?  Looks like a bastardized
+variant of the atomic open tricks NFS is pulling off, without the
+proper use of lookup_instantiate_filp()...  The thing is,
+lookup_instantiate_filp() takes care to set ->f_path.dentry, which is
+what distinguishes struct file that had been through ->open() from
+ones that had not.  So no ->release() for you...
+
+Moreover, what would you expect to set ->f_dentry by the time you call
+->lookup()?  Looks like you expect that parent_inode to be the directory
+you are doing lookup in, so why not use the dir argument of ceph_lookup_open()?
+While we are at it, what's "locked_dir" and what is it for?  AFAICS,
+nothing has ever looked at it - not since the mainline merge...
+
+Either I'm seriously confused, or that code is...
