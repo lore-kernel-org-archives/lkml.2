@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752245Ab1FZF5N (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 01:57:13 -0400
+	id S1752665Ab1FZF5R (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 01:57:17 -0400
 Received: from mail-pz0-f46.google.com ([209.85.210.46]:53142 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab1FZF4t (ORCPT
+	with ESMTP id S1751394Ab1FZF4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 01:56:49 -0400
+	Sun, 26 Jun 2011 01:56:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=eWesRloaenK6sZNiMf9LenCke89ESzzgAJhhi5Uiw7iWxn/FNx/nO6qy4Dbwbhwc/6
-         moPfynyvXSGHEVE7ga7xP26LvkZN41fGJeC2oEM1mS6qMiKRTT2RKljM1GzsMLbT8PPx
-         lkjtFFp1fLPiaaw/OIjBGC1+arvdpY12fT4C0=
+        b=VWLOPEfrE3ai/Ara14KSYJtNFXA8zUGxgNE1K2AY62aJqZAeLrBTnfg3G5+liPZ5NH
+         F6QhwwZtZpcWxnBzrhqSgeD20mcrj9kQ7N6gyJNszRQhBzoTrIwbaMBTpukZ1QdXVkYR
+         pDJjc6T6n6x78H5XwbG00ZdmSmxSAqt7A5Lew=
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, reiserfs-devel@vger.kernel.org
-Subject: [PATCH resend 5/6] reiserfs: use hweight_long()
-Date: Sun, 26 Jun 2011 14:57:55 +0900
-Message-Id: <1309067876-3537-6-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, Mark Fasheh <mfasheh@suse.com>,
+        ocfs2-devel@oss.oracle.com
+Subject: [PATCH resend 6/6] ocfs2: avoid unaligned access to dqc_bitmap
+Date: Sun, 26 Jun 2011 14:57:56 +0900
+Message-Id: <1309067876-3537-7-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1309067876-3537-1-git-send-email-akinobu.mita@gmail.com>
 References: <1309067876-3537-1-git-send-email-akinobu.mita@gmail.com>
@@ -26,35 +27,128 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use hweight_long() to count free bits in the bitmap.
+The dqc_bitmap field of struct ocfs2_local_disk_chunk is 32-bit aligned,
+but not 64-bit aligned. The dqc_bitmap is accessed by ocfs2_set_bit(),
+ocfs2_clear_bit(), ocfs2_test_bit(), or ocfs2_find_next_zero_bit().
+These are wrapper macros for ext2_*_bit() which need to take an unsigned
+long aligned address (though some architectures are able to handle
+unaligned address correctly)
+
+So some 64bit architectures may not be able to access the dqc_bitmap
+correctly.
+
+This avoids such unaligned access by using another wrapper functions for
+ext2_*_bit().  The code is taken from fs/ext4/mballoc.c which also need
+to handle unaligned bitmap access.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: reiserfs-devel@vger.kernel.org
+Acked-by: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: ocfs2-devel@oss.oracle.com
 ---
- fs/reiserfs/bitmap.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ fs/ocfs2/ocfs2.h       |   47 +++++++++++++++++++++++++++++++++++++++++++++++
+ fs/ocfs2/quota_local.c |   10 +++++-----
+ 2 files changed, 52 insertions(+), 5 deletions(-)
 
-diff --git a/fs/reiserfs/bitmap.c b/fs/reiserfs/bitmap.c
-index 567385a..d1aca1d 100644
---- a/fs/reiserfs/bitmap.c
-+++ b/fs/reiserfs/bitmap.c
-@@ -1222,15 +1222,11 @@ void reiserfs_cache_bitmap_metadata(struct super_block *sb,
- 	info->free_count = 0;
+diff --git a/fs/ocfs2/ocfs2.h b/fs/ocfs2/ocfs2.h
+index bcde467..d355e6e 100644
+--- a/fs/ocfs2/ocfs2.h
++++ b/fs/ocfs2/ocfs2.h
+@@ -849,5 +849,52 @@ static inline void _ocfs2_clear_bit(unsigned int bit, unsigned long *bitmap)
+ #define ocfs2_test_bit test_bit_le
+ #define ocfs2_find_next_zero_bit find_next_zero_bit_le
+ #define ocfs2_find_next_bit find_next_bit_le
++
++static inline void *correct_addr_and_bit_unaligned(int *bit, void *addr)
++{
++#if BITS_PER_LONG == 64
++	*bit += ((unsigned long) addr & 7UL) << 3;
++	addr = (void *) ((unsigned long) addr & ~7UL);
++#elif BITS_PER_LONG == 32
++	*bit += ((unsigned long) addr & 3UL) << 3;
++	addr = (void *) ((unsigned long) addr & ~3UL);
++#else
++#error "how many bits you are?!"
++#endif
++	return addr;
++}
++
++static inline void ocfs2_set_bit_unaligned(int bit, void *bitmap)
++{
++	bitmap = correct_addr_and_bit_unaligned(&bit, bitmap);
++	ocfs2_set_bit(bit, bitmap);
++}
++
++static inline void ocfs2_clear_bit_unaligned(int bit, void *bitmap)
++{
++	bitmap = correct_addr_and_bit_unaligned(&bit, bitmap);
++	ocfs2_clear_bit(bit, bitmap);
++}
++
++static inline int ocfs2_test_bit_unaligned(int bit, void *bitmap)
++{
++	bitmap = correct_addr_and_bit_unaligned(&bit, bitmap);
++	return ocfs2_test_bit(bit, bitmap);
++}
++
++static inline int ocfs2_find_next_zero_bit_unaligned(void *bitmap, int max,
++							int start)
++{
++	int fix = 0, ret, tmpmax;
++	bitmap = correct_addr_and_bit_unaligned(&fix, bitmap);
++	tmpmax = max + fix;
++	start += fix;
++
++	ret = ocfs2_find_next_zero_bit(bitmap, tmpmax, start) - fix;
++	if (ret > max)
++		return max;
++	return ret;
++}
++
+ #endif  /* OCFS2_H */
  
- 	while (--cur >= (unsigned long *)bh->b_data) {
--		int i;
--
- 		/* 0 and ~0 are special, we can optimize for them */
- 		if (*cur == 0)
- 			info->free_count += BITS_PER_LONG;
- 		else if (*cur != ~0L)	/* A mix, investigate */
--			for (i = BITS_PER_LONG - 1; i >= 0; i--)
--				if (!reiserfs_test_le_bit(i, cur))
--					info->free_count++;
-+			info->free_count += BITS_PER_LONG - hweight_long(*cur);
+diff --git a/fs/ocfs2/quota_local.c b/fs/ocfs2/quota_local.c
+index dc8007f..bee645e 100644
+--- a/fs/ocfs2/quota_local.c
++++ b/fs/ocfs2/quota_local.c
+@@ -549,8 +549,8 @@ static int ocfs2_recover_local_quota_file(struct inode *lqinode,
+ 				goto out_commit;
+ 			}
+ 			lock_buffer(qbh);
+-			WARN_ON(!ocfs2_test_bit(bit, dchunk->dqc_bitmap));
+-			ocfs2_clear_bit(bit, dchunk->dqc_bitmap);
++			WARN_ON(!ocfs2_test_bit_unaligned(bit, dchunk->dqc_bitmap));
++			ocfs2_clear_bit_unaligned(bit, dchunk->dqc_bitmap);
+ 			le32_add_cpu(&dchunk->dqc_free, 1);
+ 			unlock_buffer(qbh);
+ 			ocfs2_journal_dirty(handle, qbh);
+@@ -944,7 +944,7 @@ static struct ocfs2_quota_chunk *ocfs2_find_free_entry(struct super_block *sb,
+ 		      * ol_quota_entries_per_block(sb);
  	}
+ 
+-	found = ocfs2_find_next_zero_bit(dchunk->dqc_bitmap, len, 0);
++	found = ocfs2_find_next_zero_bit_unaligned(dchunk->dqc_bitmap, len, 0);
+ 	/* We failed? */
+ 	if (found == len) {
+ 		mlog(ML_ERROR, "Did not find empty entry in chunk %d with %u"
+@@ -1208,7 +1208,7 @@ static void olq_alloc_dquot(struct buffer_head *bh, void *private)
+ 	struct ocfs2_local_disk_chunk *dchunk;
+ 
+ 	dchunk = (struct ocfs2_local_disk_chunk *)bh->b_data;
+-	ocfs2_set_bit(*offset, dchunk->dqc_bitmap);
++	ocfs2_set_bit_unaligned(*offset, dchunk->dqc_bitmap);
+ 	le32_add_cpu(&dchunk->dqc_free, -1);
  }
  
+@@ -1289,7 +1289,7 @@ int ocfs2_local_release_dquot(handle_t *handle, struct dquot *dquot)
+ 			(od->dq_chunk->qc_headerbh->b_data);
+ 	/* Mark structure as freed */
+ 	lock_buffer(od->dq_chunk->qc_headerbh);
+-	ocfs2_clear_bit(offset, dchunk->dqc_bitmap);
++	ocfs2_clear_bit_unaligned(offset, dchunk->dqc_bitmap);
+ 	le32_add_cpu(&dchunk->dqc_free, 1);
+ 	unlock_buffer(od->dq_chunk->qc_headerbh);
+ 	ocfs2_journal_dirty(handle, od->dq_chunk->qc_headerbh);
 -- 
 1.7.4.4
 
