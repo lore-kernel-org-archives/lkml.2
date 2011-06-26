@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754381Ab1FZW5F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 18:57:05 -0400
-Received: from home.keithp.com ([63.227.221.253]:36197 "EHLO keithp.com"
+	id S1756179Ab1FZXLK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 19:11:10 -0400
+Received: from lucidpixels.com ([72.73.18.11]:44006 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755833Ab1FZWzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 18:55:06 -0400
-From: Keith Packard <keithp@keithp.com>
-To: Lucas De Marchi <lucas.de.marchi@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>
-Subject: Re: i915, framebuffer: wrong xoffset?
-In-Reply-To: <BANLkTikAJEma_NNi0NYnjBEB6RkFJK3Dpg@mail.gmail.com>
-References: <BANLkTikAJEma_NNi0NYnjBEB6RkFJK3Dpg@mail.gmail.com>
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Sun, 26 Jun 2011 15:55:02 -0700
-Message-ID: <yunhb7ckxtl.fsf@aiko.keithp.com>
+	id S1755974Ab1FZXKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 19:10:20 -0400
+X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Jun 2011 19:10:20 EDT
+Date: Sun, 26 Jun 2011 19:04:34 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+Subject: 2.6.39.2: page allocation failure question
+ (__alloc_pages_nodemask+0x626/0x860)
+Message-ID: <alpine.DEB.2.02.1106261902050.9133@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+Hi,
 
-On Sat, 18 Jun 2011 13:29:47 -0300, Lucas De Marchi <lucas.de.marchi@gmail.=
-com> wrote:
+[41624.229468] irq/52-eth0: page allocation failure. order:1, mode:0x20
+[41624.229472] Pid: 1980, comm: irq/52-eth0 Not tainted 2.6.39.2 #1
+[41624.229474] Call Trace:
+[41624.229475]  <IRQ>  [<ffffffff81084916>] ? __alloc_pages_nodemask+0x626/0x860
+[41624.229489]  [<ffffffff81601101>] ? cache_alloc_refill+0x25e/0x4c9
+[41624.229493]  [<ffffffff810ad3aa>] ? kmem_cache_alloc+0x7a/0xa0
+[41624.229496]  [<ffffffff814efd5c>] ? sk_prot_alloc.isra.41+0x3c/0x180
+[41624.229499]  [<ffffffff814eff30>] ? sk_clone+0x10/0x2b0
+[41624.229502]  [<ffffffff815436db>] ? inet_csk_clone+0xb/0xa0
+[41624.229506]  [<ffffffff8155b0a1>] ? tcp_create_openreq_child+0x21/0x4e0
+[41624.229509]  [<ffffffff81558233>] ? tcp_v4_syn_recv_sock+0x53/0x250
+[41624.229511]  [<ffffffff8155aec4>] ? tcp_check_req+0x2d4/0x490
+[41624.229513]  [<ffffffff8155810f>] ? tcp_v4_do_rcv+0x1bf/0x290
 
-> Since 3.0-rc1 when booting my computer the text in the fb console is
-> displayed with a wrong xoffset. I took a picture (sorry for the poor
-> quality):
+I do have enough swap available:
 
-Can you capture register dumps in the working and broken configuration?
+Mem:  16434572k total, 16165796k used,   268776k free,     9068k buffers
+Swap: 31246388k total,    18296k used, 31228092k free, 11210636k cached
 
-git clone git://anongit.freedesktop.org/git/xorg/app/intel-gpu-tools
+Perhaps I am just noticing this due to using the threadirq boot option
+but is it normal to have page allocation failures on kernel processes if 
+physical memory use is high/full and swap is available?
 
-Build that and run tools/intel_reg_dumper and send along the output of
-that in working and non-working configurations. That should show us
-where the problem lies.
+Justin.
 
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFOB7jGQp8BWwlsTdMRAmRnAJ44Ub0zbd0qXAAzBGwDj97h2GbxCACg5tL3
-Y7Pnemc/4eDkBHidORG5l1I=
-=nwaB
------END PGP SIGNATURE-----
---=-=-=--
