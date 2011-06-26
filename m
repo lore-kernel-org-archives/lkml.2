@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab1FZCj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 22:39:26 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:47388 "HELO
+	id S1752737Ab1FZC5o (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 22:57:44 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:58700 "HELO
 	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752085Ab1FZCjZ (ORCPT
+	with SMTP id S1752436Ab1FZC5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 22:39:25 -0400
-Date: Sat, 25 Jun 2011 22:39:24 -0400 (EDT)
+	Sat, 25 Jun 2011 22:57:42 -0400
+Date: Sat, 25 Jun 2011 22:57:41 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@netrider.rowland.org
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
 cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
         LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system
- sleep
-In-Reply-To: <201106240059.38687.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1106252235560.10907-100000@netrider.rowland.org>
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3/3] PM: Limit race conditions between runtime PM and
+ system sleep
+In-Reply-To: <201106260056.32221.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1106252249450.10907-100000@netrider.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Jun 2011, Rafael J. Wysocki wrote:
+On Sun, 26 Jun 2011, Rafael J. Wysocki wrote:
 
-> > > I'm still not clear on why the error handler needs to run at this time.
-> > 
-> > Because SATA ports are suspended with the help of the SCSI error handling
-> > mechanism (which Tejun claims is the best way to do that).
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> 
+> One of the roles of the PM core is to prevent different PM callbacks
+> executed for the same device object from racing with each other.
+> Unfortunately, after commit e8665002477f0278f84f898145b1f141ba26ee26
+> (PM: Allow pm_runtime_suspend() to succeed during system suspend)
+> runtime PM callbacks may be executed concurrently with system
+> suspend/resume callbacks for the same device.
 
-> I've carried out this exercise to see how complicated it is going to be
-> and it doesn't really seem to be _that_ complicated.  The appended patch
-> illustrates this, but it hasn't been tested, so caveat emptor.
+...
 
-The patch is straightforward enough.  But will it be sufficient?
+> Index: linux-2.6/Documentation/power/runtime_pm.txt
+> ===================================================================
+> --- linux-2.6.orig/Documentation/power/runtime_pm.txt
+> +++ linux-2.6/Documentation/power/runtime_pm.txt
 
-Suppose a SATA port is already in runtime suspend when the system sleep
-starts.  Will the error handler be able to do its special job?  I don't
-know...  It may turn out to be necessary for the SATA port to be
-runtime resumed somewhere along the line.
+> +The PM core does its best to reduce the probability of race conditions between
+> +the runtime PM and system suspend/resume (and hibernation) callbacks by carrying
+> +out the following operations:
+> +
+> +  * During system suspend it acquires a runtime PM reference to every device
+> +    and resume it if there's a runtime PM resume request pending right before
+> +    executing the subsystem-level .suspend() callback for it.  In addition to
+> +    that it disables the runtime PM framework for every device right after
+> +    executing the subsystem-level .suspend() callback for it.
+> +
+> +  * During system resume it enables the runtime PM framework for all devices
+> +    right before executing the subsystem-level .resume() callbacks for them.
+> +    Additionally, it drops references to all devices right after executing the
+> +    subsystem-level .resume() callbacks for them.
+
+I think it would be better to be a little more specific here.  Instead 
+of "acquires a runtime PM reference", say "calls 
+pm_runtime_get_noresume()".  Or at least, say "increments the 
+run-time usage counter".
+
+Likewise, instead of "disables the runtime PM framework", say "calls 
+pm_runtime_disable()" or at least "increments power.disable_depth".
+
+Hmmm, come to think of it...  The documentation for pm_runtime_enable() 
+and pm_runtime_disable() fails to mention power.disable_depth, which is 
+a surprising omission.  In particular, the description of 
+pm_runtime_enable() is wrong because it ignores the possibility of 
+nested disables.
 
 Alan Stern
 
