@@ -1,112 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754813Ab1FZTlG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 15:41:06 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:61861 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753368Ab1FZTjh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 15:39:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=fxoJLZLeC/iBoryFU4m6uDV05S73Ty2fg5ONHq/kVnFp9/HwNrraMjvqOPBzx1jj0M
-         Cyoup7Eg4GZEzj+iOTYR6q3/pSOfQxEvA+LBGsm1LrEEo+WGiXBthyn9NnQyFQ441iDG
-         eJ5H5i+wWM/6yyGvHrttdq+xA3mHI5sG7Rp3I=
-Date: Sun, 26 Jun 2011 21:39:18 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: [PATCH] slub: reduce overhead of slub_debug
-Message-ID: <20110626193918.GA3339@joi.lan>
+	id S1754831Ab1FZTrV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 15:47:21 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42196 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754506Ab1FZTqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 15:46:46 -0400
+Date: Sun, 26 Jun 2011 21:46:18 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
+ printk()
+Message-ID: <20110626194618.GA21740@elte.hu>
+References: <20110623152137.GA2536@albatros>
+ <20110626103915.GB11093@elte.hu>
+ <20110626165409.GA2584@albatros>
+ <20110626182628.GA20158@elte.hu>
+ <20110626190622.GB4217@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110626190622.GB4217@albatros>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-slub checks for poison one byte by one, which is highly inefficient
-and shows up frequently as a highest cpu-eater in perf top.
 
-Joining reads gives nice speedup:
+* Vasiliy Kulikov <segoon@openwall.com> wrote:
 
-(Compiling some project with different options)
-                                 make -j12    make clean
-slub_debug disabled:             1m 27s       1.2 s
-slub_debug enabled:              1m 46s       7.6 s
-slub_debug enabled + this patch: 1m 33s       3.2 s
+> On Sun, Jun 26, 2011 at 20:26 +0200, Ingo Molnar wrote:
+>
+> > > > Also, i think it would be better to make this opt-out, i.e. 
+> > > > exclude the handful of control characters that are harmful 
+> > > > (such as backline and console escape), instead of trying to 
+> > > > include the known-useful ones.
+> > > 
+> > > Do you see any issue with the check above?
+> > 
+> > There were clear problems with the first version you posted and 
+> > that's enough proof to request the exclusion of known-dangerous 
+> > characters instead of including known-useful characters.
+> 
+> It doesn't proof anything.  If I/someone else did a mistake with 
+> blacklisting would you say it is enough proof to request the 
+> inclusion of well-known allowed characters?
 
-check_bytes still shows up high, but not always at the top.
+No, because the problems such a mistake causes are not equivalent: it 
+would have been far more harmful to not print out the *very real* 
+product names written in some non-US language than to accidentally 
+include some control character you did not think of.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Pekka Enberg <penberg@kernel.org>
-Cc: Matt Mackall <mpm@selenic.com>
-Cc: linux-mm@kvack.org
----
- mm/slub.c |   36 ++++++++++++++++++++++++++++++++++--
- 1 files changed, 34 insertions(+), 2 deletions(-)
+> > A black list is well-defined: it disables the display of certain 
+> > characters because they are *known to be dangerous*.
+> 
+> What do you do with dangerous characters that are *not yet known* 
+> to be dangerous?
 
-diff --git a/mm/slub.c b/mm/slub.c
-index 35f351f..a40ef2d 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -557,10 +557,10 @@ static void init_object(struct kmem_cache *s, void *object, u8 val)
- 		memset(p + s->objsize, val, s->inuse - s->objsize);
- }
- 
--static u8 *check_bytes(u8 *start, unsigned int value, unsigned int bytes)
-+static u8 *check_bytes8(u8 *start, u8 value, unsigned int bytes)
- {
- 	while (bytes) {
--		if (*start != (u8)value)
-+		if (*start != value)
- 			return start;
- 		start++;
- 		bytes--;
-@@ -568,6 +568,38 @@ static u8 *check_bytes(u8 *start, unsigned int value, unsigned int bytes)
- 	return NULL;
- }
- 
-+static u8 *check_bytes(u8 *start, u8 value, unsigned int bytes)
-+{
-+	u64 value64;
-+	unsigned int words, prefix;
-+
-+	if (bytes <= 16)
-+		return check_bytes8(start, value, bytes);
-+
-+	value64 = value | value << 8 | value << 16 | value << 24;
-+	value64 = value64 | value64 << 32;
-+	prefix = 8 - ((unsigned long)start) % 8;
-+
-+	if (prefix) {
-+		u8 *r = check_bytes8(start, value, prefix);
-+		if (r)
-+			return r;
-+		start += prefix;
-+		bytes -= prefix;
-+	}
-+
-+	words = bytes / 8;
-+
-+	while (words) {
-+		if (*(u64 *)start != value64)
-+			return check_bytes8(start, value, 8);
-+		start += 8;
-+		words--;
-+	}
-+
-+	return check_bytes8(start, value, bytes % 8);
-+}
-+
- static void restore_bytes(struct kmem_cache *s, char *message, u8 data,
- 						void *from, void *to)
- {
--- 
-1.7.5.3
+I'm ready to act on facts only. Also, i really prefer the policy of 
+acting on known dangers instead of being afraid of the unknown.
 
+The whole 'trust but verify' thing.
+
+> > A white list on the other hand does it the wrong way around: it 
+> > tries to put the 'burden of proof' on the useful, good guys - and 
+> > that's counter-productive really.
+> 
+> Really?  I think strict API definition is productive, unlike using 
+> it in cases where it looks like working, but creating tricky and 
+> obscure bugs.
+
+You werent really creating a well-defined API here, were you?
+
+> Yes, drawing multicolor logs is funny, but ...egrrr...  printk() is 
+> not written for these things.
+
+maybe, but i still think that such a change works better, has fewer 
+unintended side effects and is better documented if it excludes known 
+dangers instead of trying to include known useful bits imperfectly.
+
+Thanks,
+
+	Ingo
