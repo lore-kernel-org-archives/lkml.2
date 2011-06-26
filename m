@@ -1,55 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab1FZUlN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 16:41:13 -0400
-Received: from mail.sambodha.org ([87.118.110.134]:62298 "EHLO
-	mail.sambodha.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755204Ab1FZUkw (ORCPT
+	id S1754971Ab1FZU04 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 16:26:56 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37691 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753605Ab1FZUZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 16:40:52 -0400
-X-Greylist: delayed 965 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Jun 2011 16:40:52 EDT
-From: Michael Brade <brade@informatik.uni-muenchen.de>
-Organization: =?iso-8859-1?q?Ludwig-Maximilians-Universit=E4t?= 
- =?iso-8859-1?q?_M=FCnchen?=
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.39.x: utsrelease.h contains "CHK include/generated/utsrelease"
-Date: Sun, 26 Jun 2011 22:24:20 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39.1-grsec; KDE/4.6.4; x86_64; ; )
+	Sun, 26 Jun 2011 16:25:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=N7nniTMfn/bGVrJdL5hHr7MfU3/EXGyUEWtEpBXa7BSQj14CjR4JmnXjvIuML+X040
+         4dWHknRk0upWF2CL51SuHxBUXeroFl0+9zjeuWN7aurE6kewThN5HECX3JEmAzmV+88v
+         PuklkXkKReoEo05XcJfQs3E6c1IEo01/AMMfg=
+Date: Mon, 27 Jun 2011 00:25:18 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
+ printk()
+Message-ID: <20110626202518.GA4915@albatros>
+References: <20110623152137.GA2536@albatros>
+ <20110626103915.GB11093@elte.hu>
+ <20110626165409.GA2584@albatros>
+ <20110626182628.GA20158@elte.hu>
+ <20110626190622.GB4217@albatros>
+ <20110626194618.GA21740@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106262224.20679.brade@informatik.uni-muenchen.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110626194618.GA21740@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sun, Jun 26, 2011 at 21:46 +0200, Ingo Molnar wrote:
+> > > > > Also, i think it would be better to make this opt-out, i.e. 
+> > > > > exclude the handful of control characters that are harmful 
+> > > > > (such as backline and console escape), instead of trying to 
+> > > > > include the known-useful ones.
+> > > > 
+> > > > Do you see any issue with the check above?
+> > > 
+> > > There were clear problems with the first version you posted and 
+> > > that's enough proof to request the exclusion of known-dangerous 
+> > > characters instead of including known-useful characters.
+> > 
+> > It doesn't proof anything.  If I/someone else did a mistake with 
+> > blacklisting would you say it is enough proof to request the 
+> > inclusion of well-known allowed characters?
+> 
+> No, because the problems such a mistake causes are not equivalent: it 
+> would have been far more harmful to not print out the *very real* 
+> product names written in some non-US language than to accidentally 
+> include some control character you did not think of.
 
-I repeatedly get garbled output in utsrelease.h when compiling my own kernel. 
-To reproduce:
+???
 
-make mrproper
-make allnoconfig
-make prepare
+Not "not print", but print in "crypted" form.  The information is
+still not lost, you can obviously restore it to the original form, with
+some effort, but possible.  Compare it with the harm of log spoofing -
+it is not "restorable".
 
-Output of "cat include/generated/utsrelease.h":
-  CHK     include/generated/utsrelease
 
-I am using linux-2.6.39.2 (stable git branch) with grsec-2.2.2 patch but it 
-also happens on 2.6.32.41 with xen and 2.6.39. I have searched with Google a 
-lot but I have never found an answer and only very few people seem to ever 
-post this problem.
+> > > A black list is well-defined: it disables the display of certain 
+> > > characters because they are *known to be dangerous*.
+> > 
+> > What do you do with dangerous characters that are *not yet known* 
+> > to be dangerous?
+> 
+> I'm ready to act on facts only.
 
-What is driving me nuts is that it works *sometimes* and I don't even know 
-when. I am using Debian unstable (amd64), and I have had the problem for a few 
-months now, at least since April.
+The *fact* is you/anybody/everybody might not know all bad things.  If
+you just don't care because it is yet unknown then you will be
+vulnerable as soon as it disclosured.
 
-Any ideas what's going on? Do you need any more info? Or do you have some 
-hints about how to debug this?
 
-Please CC me.
+> Also, i really prefer the policy of 
+> acting on known dangers instead of being afraid of the unknown.
 
-thanks a lot,
-  Michael
+Do you know the principle "Attacks always get better, never worse"?  If
+you are protected against only of known attack, you will be vulnerable
+to *every* danger not known to you.
 
+Maybe you don't know, but it is really possible to be protected against
+some *yet unknown* attack techniques.  (The assessment of what attacks it
+protects against is undefined too, though.)  And upstream Linux is *already*
+protected against some *yet unknown* bugs, not the whole bug classes,
+but at least small kinds of it.
+
+
+> > > A white list on the other hand does it the wrong way around: it 
+> > > tries to put the 'burden of proof' on the useful, good guys - and 
+> > > that's counter-productive really.
+> > 
+> > Really?  I think strict API definition is productive, unlike using 
+> > it in cases where it looks like working, but creating tricky and 
+> > obscure bugs.
+> 
+> You werent really creating a well-defined API here, were you?
+
+No, I was - only ascii chars and \n are allowed.  In v2 all ascii chars,
+the upper charset and 2 control chars are allowed.  Rather clear, IMO.
+
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
