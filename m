@@ -1,107 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754542Ab1FZS05 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 14:26:57 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:40761 "EHLO mx2.mail.elte.hu"
+	id S1754706Ab1FZSw3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 14:52:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40239 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754527Ab1FZS0t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 14:26:49 -0400
-Date: Sun, 26 Jun 2011 20:26:28 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110626182628.GA20158@elte.hu>
-References: <20110623152137.GA2536@albatros>
- <20110626103915.GB11093@elte.hu>
- <20110626165409.GA2584@albatros>
+	id S1754356Ab1FZSvz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 14:51:55 -0400
+Message-ID: <4E077FB9.7030600@redhat.com>
+Date: Sun, 26 Jun 2011 15:51:37 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110626165409.GA2584@albatros>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Sakari Ailus <sakari.ailus@iki.fi>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl doesn't
+ exist
+References: <4E0519B7.3000304@redhat.com> <201106261913.05752.arnd@arndb.de> <4E076CC6.2070408@redhat.com> <201106262020.20432.arnd@arndb.de>
+In-Reply-To: <201106262020.20432.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Vasiliy Kulikov <segoon@openwall.com> wrote:
-
-> > Also, i think it would be better to make this opt-out, i.e. 
-> > exclude the handful of control characters that are harmful (such 
-> > as backline and console escape), instead of trying to include the 
-> > known-useful ones.
+Em 26-06-2011 15:20, Arnd Bergmann escreveu:
+> On Sunday 26 June 2011 19:30:46 Mauro Carvalho Chehab wrote:
+>>> There was a lot of debate whether undefined ioctls on non-ttys should
+>>> return -EINVAL or -ENOTTY, including mass-conversions from -ENOTTY to
+>>> -EINVAL at some point in the pre-git era, IIRC.
+>>>
+>>> Inside of v4l2, I believe this is handled by video_usercopy(), which
+>>> turns the driver's -ENOIOCTLCMD into -ENOTTY. What cases do you observe
+>>> where this is not done correctly and we do return ENOIOCTLCMD to
+>>> vfs_ioctl?
+>>
+>> Well, currently, it is returning -EINVAL maybe due to the mass-conversions
+>> you've mentioned.
 > 
-> Do you see any issue with the check above?
-
-There were clear problems with the first version you posted and 
-that's enough proof to request the exclusion of known-dangerous 
-characters instead of including known-useful characters.
-
-> > The whole non-ASCII-languages issue would not have happened if 
-> > such an approach was taken.
-> >
-> > It's also the better approach for the kernel: we handle known 
-> > harmful things and are permissive otherwise.
+> I mean what do you return *to* vfs_ioctl from v4l? The conversions must
+> have been long before we introduced compat_ioctl and ENOIOCTLCMD.
 > 
-> I hope it is not a universal tip for the whole kernel development. 
-> Black lists are almost always suck.
+> As far as I can tell, video_ioctl2 has always converted ENOIOCTLCMD into
+> EINVAL, so changing the vfs functions would not have any effect.
+
+Yes.  This discussion was originated by a RFC patch proposing to change 
+video_ioctl2 to return -ENOIOCTLCMD instead of -EINVAL.
+
+>> The point is that -EINVAL has too many meanings at V4L. It currently can be
+>> either that an ioctl is not supported, or that one of the parameters had
+>> an invalid parameter. If the userspace can't distinguish between an unimplemented
+>> ioctl and an invalid parameter, it can't decide if it needs to fall back to
+>> some different methods of handling a V4L device.
+>>
+>> Maybe the answer would be to return -ENOTTY when an ioctl is not implemented.
 > 
-> Could you instantly answer without reading the previous discussion 
-> what control characters are harmful, what are sometimes harmful (on 
-> some ttys), and what are always safe and why (or even answer why it 
-> is harmful at all)?  I'm not a tty guy and I have to read 
-> console_codes(4) or similar docs to answer this question, the 
-> majority of kernel devs might have to read the docs too.
-> 
-> Writing the black list implies the full knowledge of _all_ possible 
-> malformed input values, which is somewhat hard to achieve (or even 
-> impossible).  Some developers might not be interested in learning 
-> such details, but still interested in how this API can be used.
+> That is what a lot of subsystems do these days. But wouldn't that change
+> your ABI?
 
-The point is to protect against known harm and not to turn it into 
-"lets disable things broadly, just in case something unusual is 
-harmful" kind of voodoo programming.
+Yes. The patch in question is also changing the DocBook spec for the ABI. We'll
+likely need to drop some notes about that at the features-to-be-removed.txt.
 
-And yes, i very much expect someone *restricting* Linux utility to 
-have *full* knowledge of the topic involved.
+I don't think that applications are relying at -EINVAL in order to detect if
+an ioctl is not supported, but before merging such patch, we need to double-check.
 
-> Quite the contrary, the allowed values set makes sense to the 
-> developer and more stricktly defines the API in question.  
-> Discussing the API goals and reaching the consensus about its usage 
-> is much more productive.  It might catch some wrong and dangerous 
-> API misuses.  If the allowed set becomes too strict one day, no 
-> problem - just explicitly relax the check.  If you lose some value 
-> in the black list (e.g. it becomes known that some control char 
-> sequence can be used to fake the logs), the miss significance would 
-> be higher.
-> 
-> And from the cynical point of view the white list is simply smaller 
-> and cleaner than the black list.
-
-A black list is well-defined: it disables the display of certain 
-characters because they are *known to be dangerous*.
-
-A white list on the other hand does it the wrong way around: it tries 
-to put the 'burden of proof' on the useful, good guys - and that's 
-counter-productive really.
-
-I don't mind protecting against known threats, with emphasis on 
-'known'.
-
-Thanks,
-
-	Ingo
+Mauro.
