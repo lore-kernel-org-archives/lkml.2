@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755828Ab1FZWzG (ORCPT <rfc822;w@1wt.eu>);
+	id S1754381Ab1FZW5F (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 18:57:05 -0400
+Received: from home.keithp.com ([63.227.221.253]:36197 "EHLO keithp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755833Ab1FZWzG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 26 Jun 2011 18:55:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60179 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755239Ab1FZWxQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 18:53:16 -0400
-Subject: Re: [Bug #38292] slab vs lockdep vs debugobjects
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-In-Reply-To: <20110626223134.GA24843@elte.hu>
-References: <VDRaLpg_NZ.A.tnC.JZ6BOB@chimera>
-	 <XWjMN7gBoXK.A.1zC.RZ6BOB@chimera> <1309125708.4756.1.camel@twins>
-	 <20110626223134.GA24843@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 27 Jun 2011 00:52:19 +0200
-Message-ID: <1309128739.4756.4.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+From: Keith Packard <keithp@keithp.com>
+To: Lucas De Marchi <lucas.de.marchi@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>
+Subject: Re: i915, framebuffer: wrong xoffset?
+In-Reply-To: <BANLkTikAJEma_NNi0NYnjBEB6RkFJK3Dpg@mail.gmail.com>
+References: <BANLkTikAJEma_NNi0NYnjBEB6RkFJK3Dpg@mail.gmail.com>
+User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
+Date: Sun, 26 Jun 2011 15:55:02 -0700
+Message-ID: <yunhb7ckxtl.fsf@aiko.keithp.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-27 at 00:31 +0200, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Sun, 2011-06-26 at 23:23 +0200, Rafael J. Wysocki wrote:
-> > > This message has been generated automatically as a part of a summary report
-> > > of recent regressions.
-> > > 
-> > > The following bug entry is on the current list of known regressions
-> > > from 2.6.39.  Please verify if it still should be listed and let the tracking team
-> > > know (either way).
-> > 
-> > who said its a regression?
-> 
-> I suspect Rafael saw your mail to lkml with a nasty looking lockdep 
-> message in it and assumed it was a new one?
-> 
-> Instead it's one that always had the chance to trigger?
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-Yeah, its just terribly hard, you need all the various debug options
-enabled and a lot of luck. There's nothing involved that changed
-recently afaik.
+On Sat, 18 Jun 2011 13:29:47 -0300, Lucas De Marchi <lucas.de.marchi@gmail.=
+com> wrote:
+
+> Since 3.0-rc1 when booting my computer the text in the fb console is
+> displayed with a wrong xoffset. I took a picture (sorry for the poor
+> quality):
+
+Can you capture register dumps in the working and broken configuration?
+
+git clone git://anongit.freedesktop.org/git/xorg/app/intel-gpu-tools
+
+Build that and run tools/intel_reg_dumper and send along the output of
+that in working and non-working configurations. That should show us
+where the problem lies.
+
+=2D-=20
+keith.packard@intel.com
+
+--=-=-=
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iD8DBQFOB7jGQp8BWwlsTdMRAmRnAJ44Ub0zbd0qXAAzBGwDj97h2GbxCACg5tL3
+Y7Pnemc/4eDkBHidORG5l1I=
+=nwaB
+-----END PGP SIGNATURE-----
+--=-=-=--
