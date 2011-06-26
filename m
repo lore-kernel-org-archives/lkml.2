@@ -1,210 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752395Ab1FZA6G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 20:58:06 -0400
-Received: from nm9.bullet.mail.ird.yahoo.com ([77.238.189.35]:35165 "HELO
-	nm9.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752075Ab1FZA6E (ORCPT
+	id S1752551Ab1FZBMM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 21:12:12 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60769 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab1FZBMK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 20:58:04 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 517776.69304.bm@omp1025.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:MIME-Version:Content-Type;
-  b=Xwo/E3lTszPjEVn6r3zzOHbwtrvBcKGx6e+zb4oE0ZNdCu3BzMH+9/6aLh6cQekIjA0cb61Sh+RpNgv48i+qDG3C+bLpKjJpfZ50RRawsSJj+1Yu2/E3Rb+Et/NgEitISYJ7LETzku2hnWAwAMscfSaEJMG+MNwC0B9qS8eytW8=;
-Message-ID: <345355.5665.qm@web29002.mail.ird.yahoo.com>
-X-YMail-OSG: Z_Oz2SMVM1mbP3kkm.aNjb5Kw3PzyAwZRql7X.vWa5kixzH
- iswmeSXb.wAj3dmWGKODCp95rY_jZ2v7q8Z3xjeyL80ABzurIKpXYklvR4w_
- zJWImYL6r5hrTRrgjUP8Ql5o3ppzc.rB0pQNZc_WPH5lplYVLKHrhfuUYT28
- zAHPKsBeGN8rOC0I8q1vbjki5.e5eGbW9v6WXLTNnVecoJ835bFHJlGLg2D7
- TXYCeQDutLHp9pxTus8E3dFce6fnuFG8JWGdODG1KIKpinkNn.ZVl3lsvyyA
- fDiR2eg9yjfbKYNBgvHIJ21n0VqtWWABWdxyvuftmJNtEviXfyZNRq6Y68Rb
- 6R7hC6yyuPy72inVND1bmt5.YrIk-
-X-Mailer: YahooMailClassic/14.0.3 YahooMailWebService/0.8.111.304355
-Date: Sun, 26 Jun 2011 01:58:01 +0100 (BST)
-From: Paul Parsons <lost.distance@yahoo.com>
-Subject: Re: w1/ds1wm regression after 2.6.39: "bus error, retrying"
-To: =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <dagenaisj@sonatest.com>
-Cc: linux-kernel@vger.kernel.org, johnpol@2ka.mipt.ru
+	Sat, 25 Jun 2011 21:12:10 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="0-117636420-1309049881=:5665"
+X-Originating-IP: [93.172.33.137]
+In-Reply-To: <4E04F0B0.4030408@codeaurora.org>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com> <4E04F0B0.4030408@codeaurora.org>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Sun, 26 Jun 2011 04:11:47 +0300
+Message-ID: <BANLkTi=sFtwam29i4TZdi=RO7BoytTTdrw@mail.gmail.com>
+Subject: Re: [RFC 0/8] Introducing a generic AMP/IPC framework
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0-117636420-1309049881=:5665
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+Hi Stephen,
 
-Oops, yes the msleep() had been left in. I've attached debug output from th=
-e original ds1wm.c. Not sure how the mailing list copes with bzip2 compress=
-ed attachments; hopefully it will work.=0A=0ARegards,=0APaul=0A=0A--- On Sa=
-t, 25/6/11, Jean-Fran=E7ois Dagenais <dagenaisj@sonatest.com> wrote:=0A> Th=
-is seems to be the output after you have restored the=0A> msleep. Could you=
- provide it without so we can get a better=0A> idea as to what happened. If=
- indeed this is a major=0A> regression for many devices, we'll have to subm=
-it a patch to=0A> the main branch.=0A> /jfd
---0-117636420-1309049881=:5665
-Content-Type: application/x-bzip2; name="dmesg.bz2"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment; filename="dmesg.bz2"
+On Fri, Jun 24, 2011 at 11:16 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
+> This sounds a lot like SMD (shared memory driver) on MSM. The main
+> difference I see is that SMD uses the platform bus instead of the virtio
+> bus and it has its own protocol for channel allocation.
 
-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
-qpJb2ICEvxC1K5bCYQeSIiCsmjXdDwKTonpn31KIqk4Q81Bb8LMdMoKtjObq
-nX/f3kgOwLAdue4Ixoiiqf7+51AgqmSWMVdiRnyI5kwImdciANgAqp3RSI8W
-HtpdobsZBEgkkxBVTZ1VggtNFKp6abyrXKc0lU8+K2+R/RkEFUzYOPz+V23h
-2Hj53+4i9ugcIAQVSUfXmdjhIqnBRVPzuh7vWeX5v2OMMnxMA5XjOdaoip0w
-jEKIii1Mw6fHTzpxD5bct4AgDzlf6fZKprK9aARCwLHglQRLCgBNJCs5AcS2
-nz2zDm0GlbWkjMbu+JDJcBzXQkeO8URVIn4sDLyq1YlaF58kHKLu3yh3Y6Ce
-u62/gf1kVT1+RMJgYGSyWBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgY
-GBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgZVlWVZVlODlVyq4ODg4ODg4OD
-g4ODg4ODg4ODg4ODlUySICAgICAgICAgICAjg4ODg4ODg4OVXKrg4ODg4ODg
-4ODg4ODg4ODg4ODg4OVXKrg4ODgICAgICAgICAgICAgNWVZVlWBgYrFYrFYr
-FZHI5HI5HI5HI5HI5HI5LFYGBisVisVisVisVicjkcjkcjicTicTicqAmkgF
-FUjlMC9RFU01WkTx0KIqnD25HXB1h2knQwbn76bMyMDURBnKRINJ/ePV9Xsx
-dPskeRDidUoxRnwMyIFgwNobIJnNRFUkoiqamddk6Df1bAqmbdvdf2Wc5emM
-PVKumBMdo+qPHhQ85eSHr1x3wZBASgwgJeEUhJrPT5q9w7WpszuLzerhACiq
-RMLMaVsNpGFQgqp3W22dFhhbXMuklZiGe6K4SEigCiqacD0W7MMG6uYX54k4
-OYIIoJqkQWzBBFBMS2qKnq8dSMdPbqWhunqrHYhjMwPFlZcFQRVleziLXtlu
-ioCsQVUhH4TWzxyNmbFcKFiaLJUSlq0tM3pqzq1WTFpl3asSXXQqzEmAmnxn
-HHPdHJzVCode+lJVOShJIdE0oIlDi5hk6EApznibAJFXEVcImSEVSZCkNkQj
-8x1lnORJGOeNk5SZRu6jTFRDEIayBrThaelhs7NgFn19NdJJmYB2TJaTQTUF
-VK9KkRAYL/z3hUGVK2ftIDULzNQoiqaY2JqMwFFUyttdPhSCU5FgIKpKngBo
-se+x/o2btCOsZLfjlnJs+mAM5sJOeC/zIIjiVWmv554mNXVoURVN8q0l1rOi
-iKpEQkduobK6wJvGBEBQT/zjLxeOREQZmnRFKR6JMwiePeZT6yNggqpslEAV
-mmS2tZhNNWtuR6jkNVpBDDFu552ywDCIIgsURVGmKjpVFpXhXCEAI1aQkAI5
-r1CSnhyeJX1WB/THD0xkKmCGuIhlc49u2vBtIQx6+i0uB5wVxNbltmgKqbN0
-kQVStdiEAoqmS2Pu2xAqKpb7oiDXgWyGAtv/tey6uyRyBBVPvqTZS1N4Xggq
-mEJE+FUEY5lrR0+HmM04w4Iqnzeon0GSosQiApECoBEKhE0cLSdkbztmV1WT
-tW+YIKpd12WSqiycIao1UvmZ7QEEUF72fb6V6UKdcBJjAoYwKGWVJKzKKozK
-IpZiCLi/GoJZHPuw6r/MVrUtR+ibto66IJO4J5pTOI1BqooiqU33AGg6CR+J
-o3hVH4BK06BqvzMwlXnvts5S3xktp4SBAFBJN+gJ4I0oEsUTRESmjqQkCN1C
-fDa85hckac3gmGJ5pOhVSrbjqaoK4kxFq2RJKmViGImw6bBMVqrOBBfDrimA
-gqpdO2douFeMksDBHNOwmjRRFUiKGAH22uGejTkVQKIqlqiKpKL88qnNkXl6
-Y1zSU0bqrJEpiWtSERgCCqZI2Uo3/9XK2Aoqn2UvnbjhfgSnXTQW8B5dmr4J
-q4h7tZ43uOqZzM6Px/n/XdsR1wRFhB7o0G/rNIAiqWsWcAsgjbp2crfdXVMp
-z+znXXKg1pWgSrkJNr1bMfgAgiglNVYAqpgdvf9Y/cgwWujiv1rHOvZLmUqp
-z50lU9eB9Kfy6ujdDA9CMHXqlfFUUlSU3wIBBVKqF5mO/e8kPxPglDUm4P/o
-//F3JFOFCQkO1k6Q
+Yeah, virtio is a key factor in this work; it was suggested to us by
+Arnd at the AMP plumbers discussions last year, where it was apparent
+that many vendors have their own IPC drivers/buses/channels over
+shared memory with some vendor-ish binary protocol. I must say we
+really liked virtio: it considerably simplified the code (we're not
+adding any new binary protocol), it's very nicely optimized and
+flexible, and it comes with a set of virtio drivers (e.g. network,
+console, block) so we don't have to write our own.
 
---0-117636420-1309049881=:5665--
+We also cared about adding this functionality as an IPC bus, so the
+driver core will help matching drivers to channels - it simplified the
+code (in both setup and tear down of channels) and kept it flexible.
+It will also facilitate error recovery (on remote crash, we just
+remove the virtio device, and then the driver core will in turn start
+->remove()ing the rpmsg drivers) and power management (via runtime
+PM).
+
+About SMD: I'm not familiar with it too much, but Brian naturally is
+(just for the sake of everyone who are not reading headers - Brian
+Swetland wrote the Linux SMD driver, and is also an author of this
+Google+TI joint work).
+
+Btw, I'm sure SMD is conceptually not MSM-specific, and have wondered
+whether you guys would like to use rpmsg/virtio (I know you have
+several drivers like network/tty/etc over SMD, somewhat similarly to
+virtio). Probably the biggest reason why not to is the pain in
+changing the binary protocol with the modem/dsp side. If you ever do
+think about it, I'd be happy to work with you to make it happen.
+
+> This remote proc code is eerily similar to PIL (peripheral image loader,
+> yes we love our acronyms) which I posted a few months back[1]. Was it
+> inspiration for this patch series?
+
+No, we weren't (or at least I wasn't) aware of PIL.
+
+> In terms of API, s/pil/rproc/ and it would be 95% identical. There are
+> some low-level differences though (see below).
+
+Indeed, eerily similar :O
+
+I just guess the API is so simple that probably most kernel hackers
+would use refcounting get/put semantics here.
+
+> This is an important difference between remote proc and PIL. In PIL, we
+> do image authentication in addition to processor boot.
+
+Yes, we have this too (secure code will need to authenticate the image
+in some use cases) - but that's not ready yet for submission and we
+decided to start off with the basics first and then evolve.
+
+> Instead of devising a new firmware format, we decided
+> to just stick with elf and parse the headers in the kernel because we
+> needed them for authentication anyway. Is this reason enough to move to
+> an ELF format instead?
+
+I think that consolidation of code is enough reason to make an effort.
+I know that our firmware format was chosen for simplicity, but I'm not
+sure if we have the tools yet to build standard ELF files for the
+remote processors (IIRC it's in the works though). I'll let Mark
+comment this one.
+
+> Another difference is inter-processor dependencies. For example, on
+> msm8660 the modem can't boot until the dsp has been booted. I suppose we
+> could hide this detail in the platform specific get() implementation by
+> calling rproc_get() on the dependent processor (hopefully no locking
+> issues arise). I'd rather have it built into the core though as it isn't
+> really specific to the hardware.
+
+No problems, I'm sure we can solve this one easily.
+
+> If we can resolve these differences I think we can easily support remote
+> processor boot on MSM via remoteproc.
+
+That'd be very cool, I sure do hope we can work together.
+
+Thanks for your comments !
+Ohad.
