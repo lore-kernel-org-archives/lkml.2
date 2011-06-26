@@ -1,154 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab1FZF5R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 01:57:17 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:53142 "EHLO
+	id S1751212Ab1FZGME (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 02:12:04 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59874 "EHLO
 	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751394Ab1FZF4x (ORCPT
+	with ESMTP id S1750973Ab1FZGMA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 01:56:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=VWLOPEfrE3ai/Ara14KSYJtNFXA8zUGxgNE1K2AY62aJqZAeLrBTnfg3G5+liPZ5NH
-         F6QhwwZtZpcWxnBzrhqSgeD20mcrj9kQ7N6gyJNszRQhBzoTrIwbaMBTpukZ1QdXVkYR
-         pDJjc6T6n6x78H5XwbG00ZdmSmxSAqt7A5Lew=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Mark Fasheh <mfasheh@suse.com>,
-        ocfs2-devel@oss.oracle.com
-Subject: [PATCH resend 6/6] ocfs2: avoid unaligned access to dqc_bitmap
-Date: Sun, 26 Jun 2011 14:57:56 +0900
-Message-Id: <1309067876-3537-7-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.7.4.4
-In-Reply-To: <1309067876-3537-1-git-send-email-akinobu.mita@gmail.com>
-References: <1309067876-3537-1-git-send-email-akinobu.mita@gmail.com>
+	Sun, 26 Jun 2011 02:12:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110625152009.f264be78.randy.dunlap@oracle.com>
+References: <20110624155822.cb8cf6eb.sfr@canb.auug.org.au> <20110624090456.191f1fda.randy.dunlap@oracle.com>
+ <1308947172.13493.37.camel@koala> <4E04F5D0.9090900@oracle.com>
+ <1308983721.23868.2.camel@koala> <20110625152009.f264be78.randy.dunlap@oracle.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Sun, 26 Jun 2011 00:11:40 -0600
+X-Google-Sender-Auth: bxfuy-fJyt0DtxrOmC9Rq-bsD7I
+Message-ID: <BANLkTi=Q-7bCHaH+-z6gnbwvexpGLYH6pA@mail.gmail.com>
+Subject: Re: linux-next: Tree for June 24 (mtd + of)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: dedekind1@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Vitaly Wool <vwool@ru.mvista.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The dqc_bitmap field of struct ocfs2_local_disk_chunk is 32-bit aligned,
-but not 64-bit aligned. The dqc_bitmap is accessed by ocfs2_set_bit(),
-ocfs2_clear_bit(), ocfs2_test_bit(), or ocfs2_find_next_zero_bit().
-These are wrapper macros for ext2_*_bit() which need to take an unsigned
-long aligned address (though some architectures are able to handle
-unaligned address correctly)
+On Sat, Jun 25, 2011 at 4:20 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On Sat, 25 Jun 2011 09:35:13 +0300 Artem Bityutskiy wrote:
+>
+>> On Fri, 2011-06-24 at 13:38 -0700, Randy Dunlap wrote:
+>> > On 06/24/11 13:26, Artem Bityutskiy wrote:
+>> > > On Fri, 2011-06-24 at 09:04 -0700, Randy Dunlap wrote:
+>> > >> On Fri, 24 Jun 2011 15:58:22 +1000 Stephen Rothwell wrote:
+>> > >>
+>> > >>> Hi all,
+>> > >>>
+>> > >>> Changes since 20110623:
+>> > >>>
+>> > >>> My fixes tree includes:
+>> > >>>         (as an experiment) the early part of mmotm-2011-06-22-13-05
+>> > >>>         STAGING: Comedi: Build only on arches providing PAGE_KERNEL_NOCACHE
+>> > >>
+>> > >>
+>> > >> When CONFIG_MTD=m, CONFIG_MTD_OF_PARTS=y:
+>> > >>
+>> > >> drivers/mtd/ofpart.o: In function `init_module':
+>> > >> ofpart.c:(.init.text+0x0): multiple definition of `init_module'
+>> > >> drivers/mtd/mtdcore.o:(.init.text+0x43): first defined here
+>> > >
+>> > > I guess this is some old issue? I do not think ofpart can be compiled-in
+>> > > if the mtd core is a module...
+>> >
+>> > [adding driver author, Vitaly]
+>> >
+>> > No, it's a current issue.
+>>
+>> I meant that the subject suggests this is about linux-next, but this
+>> problem should be in upstream.
+>
+> Sorry I misunderstood your comment.
+>
+> 3.0-rc4 does not have this build error when I use the .config file with it...
+> however, I think that 3.0-rc4 also does not build ofpart.ko as it should.
+>
+> Looks to me like changes in drivers/mtd/{Kconfig && Makefile} caused this
+> build error.
 
-So some 64bit architectures may not be able to access the dqc_bitmap
-correctly.
+The following commit in linux-next appears to be the culprit:
 
-This avoids such unaligned access by using another wrapper functions for
-ext2_*_bit().  The code is taken from fs/ext4/mballoc.c which also need
-to handle unaligned bitmap access.
+commit 1a6bc893044b961caae1c5a9c6c2065e608da427
+Author: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Date:   Sun May 29 21:32:33 2011 +0400
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Acked-by: Joel Becker <jlbec@evilplan.org>
-Cc: Mark Fasheh <mfasheh@suse.com>
-Cc: ocfs2-devel@oss.oracle.com
----
- fs/ocfs2/ocfs2.h       |   47 +++++++++++++++++++++++++++++++++++++++++++++++
- fs/ocfs2/quota_local.c |   10 +++++-----
- 2 files changed, 52 insertions(+), 5 deletions(-)
+    mtd: prepare to convert of_mtd_parse_partitions to partition parser
 
-diff --git a/fs/ocfs2/ocfs2.h b/fs/ocfs2/ocfs2.h
-index bcde467..d355e6e 100644
---- a/fs/ocfs2/ocfs2.h
-+++ b/fs/ocfs2/ocfs2.h
-@@ -849,5 +849,52 @@ static inline void _ocfs2_clear_bit(unsigned int bit, unsigned long *bitmap)
- #define ocfs2_test_bit test_bit_le
- #define ocfs2_find_next_zero_bit find_next_zero_bit_le
- #define ocfs2_find_next_bit find_next_bit_le
-+
-+static inline void *correct_addr_and_bit_unaligned(int *bit, void *addr)
-+{
-+#if BITS_PER_LONG == 64
-+	*bit += ((unsigned long) addr & 7UL) << 3;
-+	addr = (void *) ((unsigned long) addr & ~7UL);
-+#elif BITS_PER_LONG == 32
-+	*bit += ((unsigned long) addr & 3UL) << 3;
-+	addr = (void *) ((unsigned long) addr & ~3UL);
-+#else
-+#error "how many bits you are?!"
-+#endif
-+	return addr;
-+}
-+
-+static inline void ocfs2_set_bit_unaligned(int bit, void *bitmap)
-+{
-+	bitmap = correct_addr_and_bit_unaligned(&bit, bitmap);
-+	ocfs2_set_bit(bit, bitmap);
-+}
-+
-+static inline void ocfs2_clear_bit_unaligned(int bit, void *bitmap)
-+{
-+	bitmap = correct_addr_and_bit_unaligned(&bit, bitmap);
-+	ocfs2_clear_bit(bit, bitmap);
-+}
-+
-+static inline int ocfs2_test_bit_unaligned(int bit, void *bitmap)
-+{
-+	bitmap = correct_addr_and_bit_unaligned(&bit, bitmap);
-+	return ocfs2_test_bit(bit, bitmap);
-+}
-+
-+static inline int ocfs2_find_next_zero_bit_unaligned(void *bitmap, int max,
-+							int start)
-+{
-+	int fix = 0, ret, tmpmax;
-+	bitmap = correct_addr_and_bit_unaligned(&fix, bitmap);
-+	tmpmax = max + fix;
-+	start += fix;
-+
-+	ret = ocfs2_find_next_zero_bit(bitmap, tmpmax, start) - fix;
-+	if (ret > max)
-+		return max;
-+	return ret;
-+}
-+
- #endif  /* OCFS2_H */
- 
-diff --git a/fs/ocfs2/quota_local.c b/fs/ocfs2/quota_local.c
-index dc8007f..bee645e 100644
---- a/fs/ocfs2/quota_local.c
-+++ b/fs/ocfs2/quota_local.c
-@@ -549,8 +549,8 @@ static int ocfs2_recover_local_quota_file(struct inode *lqinode,
- 				goto out_commit;
- 			}
- 			lock_buffer(qbh);
--			WARN_ON(!ocfs2_test_bit(bit, dchunk->dqc_bitmap));
--			ocfs2_clear_bit(bit, dchunk->dqc_bitmap);
-+			WARN_ON(!ocfs2_test_bit_unaligned(bit, dchunk->dqc_bitmap));
-+			ocfs2_clear_bit_unaligned(bit, dchunk->dqc_bitmap);
- 			le32_add_cpu(&dchunk->dqc_free, 1);
- 			unlock_buffer(qbh);
- 			ocfs2_journal_dirty(handle, qbh);
-@@ -944,7 +944,7 @@ static struct ocfs2_quota_chunk *ocfs2_find_free_entry(struct super_block *sb,
- 		      * ol_quota_entries_per_block(sb);
- 	}
- 
--	found = ocfs2_find_next_zero_bit(dchunk->dqc_bitmap, len, 0);
-+	found = ocfs2_find_next_zero_bit_unaligned(dchunk->dqc_bitmap, len, 0);
- 	/* We failed? */
- 	if (found == len) {
- 		mlog(ML_ERROR, "Did not find empty entry in chunk %d with %u"
-@@ -1208,7 +1208,7 @@ static void olq_alloc_dquot(struct buffer_head *bh, void *private)
- 	struct ocfs2_local_disk_chunk *dchunk;
- 
- 	dchunk = (struct ocfs2_local_disk_chunk *)bh->b_data;
--	ocfs2_set_bit(*offset, dchunk->dqc_bitmap);
-+	ocfs2_set_bit_unaligned(*offset, dchunk->dqc_bitmap);
- 	le32_add_cpu(&dchunk->dqc_free, -1);
- }
- 
-@@ -1289,7 +1289,7 @@ int ocfs2_local_release_dquot(handle_t *handle, struct dquot *dquot)
- 			(od->dq_chunk->qc_headerbh->b_data);
- 	/* Mark structure as freed */
- 	lock_buffer(od->dq_chunk->qc_headerbh);
--	ocfs2_clear_bit(offset, dchunk->dqc_bitmap);
-+	ocfs2_clear_bit_unaligned(offset, dchunk->dqc_bitmap);
- 	le32_add_cpu(&dchunk->dqc_free, 1);
- 	unlock_buffer(od->dq_chunk->qc_headerbh);
- 	ocfs2_journal_dirty(handle, od->dq_chunk->qc_headerbh);
--- 
-1.7.4.4
+    Prepare to convert of_mtd_parse_partitions() to usual partitions parser:
+    1) Register ofpart parser
+    2) Internally don't use passed device for error printing
+    3) Add device_node to mtd_part_parser_data struct
+    4) Move of_mtd_parse_partitions from __devinit to common text section
+    5) add ofpart to the default list of partition parsers
 
+    Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+    Signed-off-by: Artem Bityutskiy <dedekind1@gmail.com>
+
+It adds a module_init() call to ofpart.c which does not work the way
+that ofpart.c is linked to mtdcore.o.  Seems like that commit series
+still needs work.
+
+g.
