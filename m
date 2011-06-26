@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab1FZDwx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 23:52:53 -0400
-Received: from dalton.quimica.unlp.edu.ar ([163.10.18.1]:36896 "EHLO
-	dalton.quimica.unlp.edu.ar" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752778Ab1FZDww (ORCPT
+	id S1751073Ab1FZF4k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 01:56:40 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:63942 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750934Ab1FZF4i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 23:52:52 -0400
-X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Jun 2011 23:52:52 EDT
-Message-ID: <20110626004213.12461o2ikcqlx674@webmail.quimica.unlp.edu.ar>
-Date: Sun, 26 Jun 2011 00:42:13 -0300
-From: Money Gram Transfer <pvillabril@quimica.unlp.edu.ar>
-Reply-to: money_gramlimited@mspil.edu.cn
-To: undisclosed-recipients:;
-Subject: 
-MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+	Sun, 26 Jun 2011 01:56:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=VXRAkZQIaIVk7a9qe9+Oh/VcnhnQWtQaoX53PjskRl4T8RzzGgEY7w5+J8e4XgjKkW
+         0nS3alL/Ivx6a6Z9TFPt1Su6D4RwoQss4sdDRuiXckwpB8/PPkJFReDmkepw5TJI2GJ9
+         PfXm+Psx3wmKaGZGaYyqz5p7RwQuyN3MvM5qI=
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Cc: Akinobu Mita <akinobu.mita@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+        Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
+        Alasdair Kergon <agk@redhat.com>, dm-devel@redhat.com,
+        NeilBrown <neilb@suse.de>, linux-raid@vger.kernel.org,
+        reiserfs-devel@vger.kernel.org, Joel Becker <jlbec@evilplan.org>,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+Subject: [PATCH resend 0/6] use little-endian bitops properly
+Date: Sun, 26 Jun 2011 14:57:50 +0900
+Message-Id: <1309067876-3537-1-git-send-email-akinobu.mita@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+All patches in this patch set were sent before. Individual patches
+improve little-endian bitops usage in several places.
+
+Akinobu Mita (6):
+  ext4: use proper little-endian bitops
+  dm: use use proper little-endian bitops
+  md: use proper little-endian bitops
+  reiserfs: use proper little-endian bitops
+  reiserfs: use hweight_long()
+  ocfs2: avoid unaligned access to dqc_bitmap
+
+ drivers/md/bitmap.c         |    4 +-
+ drivers/md/dm-log.c         |    9 +++----
+ fs/ext4/ext4.h              |    7 +++--
+ fs/ext4/ialloc.c            |    4 +-
+ fs/ocfs2/ocfs2.h            |   47 +++++++++++++++++++++++++++++++++++++++++++
+ fs/ocfs2/quota_local.c      |   10 ++++----
+ fs/reiserfs/bitmap.c        |    8 +-----
+ fs/reiserfs/resize.c        |    6 ++--
+ include/linux/reiserfs_fs.h |    2 +
+ 9 files changed, 71 insertions(+), 26 deletions(-)
+
+Cc: "Theodore Ts'o" <tytso@mit.edu>
+Cc: Andreas Dilger <adilger.kernel@dilger.ca>
+Cc: linux-ext4@vger.kernel.org
+Cc: Alasdair Kergon <agk@redhat.com>
+Cc: dm-devel@redhat.com
+Cc: NeilBrown <neilb@suse.de>
+Cc: linux-raid@vger.kernel.org
+Cc: reiserfs-devel@vger.kernel.org
+Cc: Joel Becker <jlbec@evilplan.org>
+Cc: Mark Fasheh <mfasheh@suse.com>
+Cc: ocfs2-devel@oss.oracle.com
 
 -- 
-My associate has helped me to send your first payment
-of $5000 USD to you as instructed by the Malaysian
-Government and Mr. David Cameron the United Kingdom
-prime minister after the last G20 meeting that was
-held in Malaysia, making you one of the beneficiaries.
-Here is the information below.
-
-Refrence Numbers: 86147516
-Sender Name Is = Patrick Lee Chun
-
-I told him to keep sending you $5000 USD twice a week
-until the FULL payment of ($820000.00 United State Dollars)
-is completed.
-
-A certificate will be made to change the Receivers Name
-to your name as stated by the Malaysian Government,reconfirm
-your {1}Full Names {2}address {3}Mobile Number
-
-via Email to:money_gram_transfer@ozledim.net Allan Davis
-to proceed.
-
-        Note:
-
-You cannot pickup the money until the certificate is
-obtained by you.
-
-Regards
-Mr. Allan Davis.
-Tel: +(60)163544376.
-
-For more info: www.g20.org
-
-
-
-
+1.7.4.4
 
