@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755497Ab1FZVrQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 17:47:16 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59365 "EHLO ogre.sisk.pl"
+	id S1754281Ab1FZVrt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 17:47:49 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59367 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754364Ab1FZVqx convert rfc822-to-8bit (ORCPT
+	id S1755382Ab1FZVqz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 17:46:53 -0400
+	Sun, 26 Jun 2011 17:46:55 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
         Florian Mickler <florian@mickler.org>,
-        "Jesse Barnes" <jbarnes@virtuousgeek.org>,
-        "Oliver Hartkopp" <socketcan@hartkopp.net>,
-        "Yinghai Lu" <yinghai@kernel.org>
+        "Jeff Layton" <jlayton@redhat.com>,
+        "Martijn Uffing" <mp3project@sarijopen.student.utwente.nl>
 References: <VDRaLpg_NZ.A.tnC.JZ6BOB@chimera>
 In-Reply-To: <VDRaLpg_NZ.A.tnC.JZ6BOB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -20,8 +19,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <XWjMN7gBoXK.A.pkD.yZ6BOB@chimera>
-Subject: [Bug #37432] sdhci-pci fails on 3.0.0-rc1 on Dell E6510
+Message-ID: <XWjMN7gBoXK.A.hZD.lZ6BOB@chimera>
+Subject: [Bug #37542] [OOPS] 3.0-rc1 cifs
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sun, 26 Jun 2011 23:23:44 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,11 +35,13 @@ from 2.6.39.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37432
-Subject		: sdhci-pci fails on 3.0.0-rc1 on Dell E6510
-Submitter	: Oliver Hartkopp <socketcan@hartkopp.net>
-Date		: 2011-06-07 20:06 (20 days old)
-First-Bad-Commit: http://git.kernel.org/linus/da7822e5ad71ec9b745b412639f1e5e0ba795a20
-References	: http://article.gmane.org/gmane.linux.kernel.mmc/8442
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37542
+Subject		: [OOPS] 3.0-rc1 cifs
+Submitter	: Martijn Uffing <mp3project@sarijopen.student.utwente.nl>
+Date		: 2011-06-09 20:15 (18 days old)
+Message-ID	: <Pine.LNX.4.64.1106092211500.19687@sarijopen.student.utwente.nl>
+References	: http://marc.info/?l=linux-kernel&m=130765235926144&w=2
+Handled-By	: Jeff Layton <jlayton@redhat.com>
+Patch		: https://bugzilla.kernel.org/attachment.cgi?id=63202
 
 
