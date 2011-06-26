@@ -1,284 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab1FZUVP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 16:21:15 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59160 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754879Ab1FZUUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 16:20:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 3/3] PM: Limit race conditions between runtime PM and system sleep
-Date: Sun, 26 Jun 2011 22:21:21 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        linux-scsi@vger.kernel.org
-References: <Pine.LNX.4.44L0.1106252249450.10907-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106252249450.10907-100000@netrider.rowland.org>
+	id S1755108Ab1FZUZN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 16:25:13 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:44483 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab1FZUYO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 16:24:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=vrfy.org; s=google;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=aXpEV/aYkg9D7MyWI0nKp0EtA/EmWzbW/Xslwvy5UIPj032abyq9HWO+SRQN5h8kGu
+         CJcKZu5SzSyWwY59QogleWUcPm15KIc6OyEnBSuo3i/wD1y6KCdcarM7OK8ahheAmboa
+         A9aZYIYGC2dR5YgPREpr2mt6XvV9XgRJjrekE=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106262221.22219.rjw@sisk.pl>
+In-Reply-To: <BANLkTi=y_+Pyp_zSuhU4LGzzfAio5Jg-KA@mail.gmail.com>
+References: <BANLkTi=dndbsjqbF7nTDJ0Qpvs=WNP=W6A@mail.gmail.com>
+ <1307485173-32010-1-git-send-email-wad@chromium.org> <20110609153328.c00b23c0.akpm@linux-foundation.org>
+ <BANLkTikJpjeoarMCEhaQ69g7UyM9-PqpVw@mail.gmail.com> <BANLkTimzZ5aRBiCm1TSy4yzfGUdchPeuMA@mail.gmail.com>
+ <BANLkTinN_9q4u3UTfHAoL=rmAo+PKVf2jg@mail.gmail.com> <BANLkTi=y_+Pyp_zSuhU4LGzzfAio5Jg-KA@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Sun, 26 Jun 2011 22:23:53 +0200
+Message-ID: <BANLkTimX=t-zjOd80Vux8YwipjfJ7hwetQ@mail.gmail.com>
+Subject: Re: [PATCH v2] init: add root=PARTUUID=UUID,PARTNROFF=%d support
+To: Will Drewry <wad@chromium.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        Jens Axboe <jaxboe@fusionio.com>, Namhyung Kim <namhyung@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday, June 26, 2011, Alan Stern wrote:
-> On Sun, 26 Jun 2011, Rafael J. Wysocki wrote:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> > One of the roles of the PM core is to prevent different PM callbacks
-> > executed for the same device object from racing with each other.
-> > Unfortunately, after commit e8665002477f0278f84f898145b1f141ba26ee26
-> > (PM: Allow pm_runtime_suspend() to succeed during system suspend)
-> > runtime PM callbacks may be executed concurrently with system
-> > suspend/resume callbacks for the same device.
-> 
-> ...
-> 
-> > Index: linux-2.6/Documentation/power/runtime_pm.txt
-> > ===================================================================
-> > --- linux-2.6.orig/Documentation/power/runtime_pm.txt
-> > +++ linux-2.6/Documentation/power/runtime_pm.txt
-> 
-> > +The PM core does its best to reduce the probability of race conditions between
-> > +the runtime PM and system suspend/resume (and hibernation) callbacks by carrying
-> > +out the following operations:
-> > +
-> > +  * During system suspend it acquires a runtime PM reference to every device
-> > +    and resume it if there's a runtime PM resume request pending right before
-> > +    executing the subsystem-level .suspend() callback for it.  In addition to
-> > +    that it disables the runtime PM framework for every device right after
-> > +    executing the subsystem-level .suspend() callback for it.
-> > +
-> > +  * During system resume it enables the runtime PM framework for all devices
-> > +    right before executing the subsystem-level .resume() callbacks for them.
-> > +    Additionally, it drops references to all devices right after executing the
-> > +    subsystem-level .resume() callbacks for them.
-> 
-> I think it would be better to be a little more specific here.  Instead 
-> of "acquires a runtime PM reference", say "calls 
-> pm_runtime_get_noresume()".  Or at least, say "increments the 
-> run-time usage counter".
-> 
-> Likewise, instead of "disables the runtime PM framework", say "calls 
-> pm_runtime_disable()" or at least "increments power.disable_depth".
+On Sun, Jun 26, 2011 at 20:00, Will Drewry <wad@chromium.org> wrote:
+> On Sun, Jun 26, 2011 at 11:43 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>> On Fri, Jun 24, 2011 at 21:53, Will Drewry <wad@chromium.org> wrote:
+>>
+>>> Upon further inspection, the code changes would not directly break any
+>>> existing code, but PARTUUID=...,PARTNROFF= would not be usable via the
+>>> other entrypoints to name_to_dev_t.  E.g., block2mtd or md because
+>>> they take in comma-separated parameters prior to calling
+>>> name_to_dev_t.  That seems like it'd be less than ideal.
+>>>
+>>> Kay,  Do you have a strong preference around the ,PARTNROFF= syntax?
+>>> I'm not sure what the cleanest approach is, but I'm inclined to finish
+>>> other patch cleanup (and documentation) and repost with '/' as the
+>>> separator instead of ','.   At present ',' is reused across several
+>>> places where devices are supplied by "name", but '/' is expected as
+>>> part of the normal path semantic.  The other option would be to use
+>>> ':' instead. ':' isn't usually overloaded as it is expected as part of
+>>> a the device major:minor naming scheme, but slashes seem more sane
+>>> even if weird:
+>>>
+>>>  PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF/PARTNROFF=1
+>>>
+>>> I'll repost along these lines unless someone indicates that this is
+>>> too grotesque to consider.
+>>
+>> Hmm, '/' might look a bit strange in the context of a path, which is
+>> the common use case for root=.
+>
+> Yeah - that was why I was considering colons too, but slashes seemed
+> less likely to have other weird expectations.
+>
+>> We catch PARTUUID before parsing any of the other options, right? So
+>> we can't really break anything.
+>
+> For root= parsing, it's always okay.  The problem is if you want to
+> use PARTUUID=...,PARTNR=.. as a device "name" in an argument to md= or
+> to mtd2block.  Both of those take their device name from a
+> comma-separated argument list.  While they could be fixed up to
+> support this syntax, it seems that it would make things pretty
+> confusing.  (The other option is to just not support this naming
+> scheme via those input paths.)
+>
+>> Fstab and mount options in general all use ',' to separate keywords,
+>> and I think we should do the same here. I think the ',' still looks
+>> more natural than an artificial '/' to avoid possibly breaking
+>> something we don't even call into. :)
+>
+> I think the comma looks better too, but I wasn't sure if it'd be fair
+> game to provide a early-init device resolution path that solely worked
+> for root= and not for the other consumers at that stage.  I'll see if
+> there is another way around this, but I'm not seeing anything offhand.
 
-OK, updated patch is appended.
+Maybe name_to_dev_t() could work like strtoul(), and get a separator
+character passed, and return the remaining string it did not parse as
+belonging to one single device. That could simplify the string
+separation in callers too, if they decide to support the new options.
 
-> Hmmm, come to think of it...  The documentation for pm_runtime_enable() 
-> and pm_runtime_disable() fails to mention power.disable_depth, which is 
-> a surprising omission.  In particular, the description of 
-> pm_runtime_enable() is wrong because it ignores the possibility of 
-> nested disables.
-
-That's a good point.  There seems to be no description of pm_runtime_barrier()
-too.  I'll prepare a separate patch for those issues.
+But I see your point, and it might be nice in general to be able to
+easily identify the two PART* keys as belonging together, describing a
+single device. Maybe the slash is way to go, I don't have a better
+idea.
 
 Thanks,
-Rafael
-
----
-From: Rafael J. Wysocki <rjw@sisk.pl>
-Subject: PM: Limit race conditions between runtime PM and system sleep
-
-One of the roles of the PM core is to prevent different PM callbacks
-executed for the same device object from racing with each other.
-Unfortunately, after commit e8665002477f0278f84f898145b1f141ba26ee26
-(PM: Allow pm_runtime_suspend() to succeed during system suspend)
-runtime PM callbacks may be executed concurrently with system
-suspend/resume callbacks for the same device.
-
-The main reason for commit e8665002477f0278f84f898145b1f141ba26ee26
-was that some subsystems and device drivers wanted to use runtime PM
-helpers, pm_runtime_suspend() and pm_runtime_put_sync() in
-particular, for carrying out the suspend of devices in their
-.suspend() callbacks.  However, as it's been determined recently,
-there are multiple reasons not to do so, inlcuding:
-
- * The caller really doesn't control the runtime PM usage counters,
-   because user space can access them through sysfs and effectively
-   block runtime PM.  That means using pm_runtime_suspend() or
-   pm_runtime_get_sync() to suspend devices during system suspend
-   may or may not work.
-
- * If a driver calls pm_runtime_suspend() from its .suspend()
-   callback, it causes the subsystem's .runtime_suspend() callback to
-   be executed, which leads to the call sequence:
-
-   subsys->suspend(dev)
-      driver->suspend(dev)
-         pm_runtime_suspend(dev)
-            subsys->runtime_suspend(dev)
-
-   recursive from the subsystem's point of view.  For some subsystems
-   that may actually work (e.g. the platform bus type), but for some
-   it will fail in a rather spectacular fashion (e.g. PCI).  In each
-   case it means a layering violation.
-
- * Both the subsystem and the driver can provide .suspend_noirq()
-   callbacks for system suspend that can do whatever the
-   .runtime_suspend() callbacks do just fine, so it really isn't
-   necessary to call pm_runtime_suspend() during system suspend.
-
- * The runtime PM's handling of wakeup devices is usually different
-   from the system suspend's one, so .runtime_suspend() may simply be
-   inappropriate for system suspend.
-
- * System suspend is supposed to work even if CONFIG_PM_RUNTIME is
-   unset.
-
- * The runtime PM workqueue is frozen before system suspend, so if
-   whatever the driver is going to do during system suspend depends
-   on it, that simply won't work.
-
-Still, there is a good reason to allow pm_runtime_resume() to
-succeed during system suspend and resume (for instance, some
-subsystems and device drivers may legitimately use it to ensure that
-their devices are in full-power states before suspending them).
-Moreover, there is no reason to prevent runtime PM callbacks from
-being executed in parallel with the system suspend/resume .prepare()
-and .complete() callbacks and the code removed by commit
-e8665002477f0278f84f898145b1f141ba26ee26 went too far in this
-respect.  On the other hand, runtime PM callbacks, including
-.runtime_resume(), must not be executed during system suspend's
-"late" stage of suspending devices and during system resume's "early"
-device resume stage.
-
-Taking all of the above into consideration, make the PM core
-acquire a runtime PM reference to every device and resume it if
-there's a runtime PM resume request pending right before executing
-the subsystem-level .suspend() callback for it.  Make the PM core
-drop references to all devices right after executing the
-subsystem-level .resume() callbacks for them.  Additionally,
-make the PM core disable the runtime PM framework for all devices
-during system suspend, after executing the subsystem-level .suspend()
-callbacks for them, and enable the runtime PM framework for all
-devices during system resume, right before executing the
-subsystem-level .resume() callbacks for them.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- Documentation/power/runtime_pm.txt |   19 +++++++++++++++++++
- drivers/base/power/main.c          |   27 ++++++++++++++++++++++-----
- 2 files changed, 41 insertions(+), 5 deletions(-)
-
-Index: linux-2.6/drivers/base/power/main.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/main.c
-+++ linux-2.6/drivers/base/power/main.c
-@@ -505,6 +505,7 @@ static int legacy_resume(struct device *
- static int device_resume(struct device *dev, pm_message_t state, bool async)
- {
- 	int error = 0;
-+	bool put = false;
- 
- 	TRACE_DEVICE(dev);
- 	TRACE_RESUME(0);
-@@ -521,6 +522,9 @@ static int device_resume(struct device *
- 	if (!dev->power.is_suspended)
- 		goto Unlock;
- 
-+	pm_runtime_enable(dev);
-+	put = true;
-+
- 	if (dev->pm_domain) {
- 		pm_dev_dbg(dev, state, "power domain ");
- 		error = pm_op(dev, &dev->pm_domain->ops, state);
-@@ -563,6 +567,10 @@ static int device_resume(struct device *
- 	complete_all(&dev->power.completion);
- 
- 	TRACE_RESUME(error);
-+
-+	if (put)
-+		pm_runtime_put_sync(dev);
-+
- 	return error;
- }
- 
-@@ -843,16 +851,22 @@ static int __device_suspend(struct devic
- 	int error = 0;
- 
- 	dpm_wait_for_children(dev, async);
--	device_lock(dev);
- 
- 	if (async_error)
--		goto Unlock;
-+		return 0;
-+
-+	pm_runtime_get_noresume(dev);
-+	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-+		pm_wakeup_event(dev, 0);
- 
- 	if (pm_wakeup_pending()) {
-+		pm_runtime_put_sync(dev);
- 		async_error = -EBUSY;
--		goto Unlock;
-+		return 0;
- 	}
- 
-+	device_lock(dev);
-+
- 	if (dev->pm_domain) {
- 		pm_dev_dbg(dev, state, "power domain ");
- 		error = pm_op(dev, &dev->pm_domain->ops, state);
-@@ -890,12 +904,15 @@ static int __device_suspend(struct devic
-  End:
- 	dev->power.is_suspended = !error;
- 
-- Unlock:
- 	device_unlock(dev);
- 	complete_all(&dev->power.completion);
- 
--	if (error)
-+	if (error) {
-+		pm_runtime_put_sync(dev);
- 		async_error = error;
-+	} else if (dev->power.is_suspended) {
-+		__pm_runtime_disable(dev, false);
-+	}
- 
- 	return error;
- }
-Index: linux-2.6/Documentation/power/runtime_pm.txt
-===================================================================
---- linux-2.6.orig/Documentation/power/runtime_pm.txt
-+++ linux-2.6/Documentation/power/runtime_pm.txt
-@@ -567,6 +567,11 @@ this is:
- 	pm_runtime_set_active(dev);
- 	pm_runtime_enable(dev);
- 
-+The PM core always increments the run-time usage counter before calling the
-+->suspend() callback and decrements it after calling the ->resume() callback.
-+Hence disabling run-time PM temporarily like this will not cause any run-time
-+suspend callbacks to be lost.
-+
- On some systems, however, system sleep is not entered through a global firmware
- or hardware operation.  Instead, all hardware components are put into low-power
- states directly by the kernel in a coordinated way.  Then, the system sleep
-@@ -579,6 +584,20 @@ place (in particular, if the system is n
- be more efficient to leave the devices that had been suspended before the system
- suspend began in the suspended state.
- 
-+The PM core does its best to reduce the probability of race conditions between
-+the runtime PM and system suspend/resume (and hibernation) callbacks by carrying
-+out the following operations:
-+
-+  * During system suspend it calls pm_runtime_get_noresume() and
-+    pm_runtime_barrier() for every device right before executing the
-+    subsystem-level .suspend() callback for it.  In addition to that it calls
-+    pm_runtime_disable() for every device right after executing the
-+    subsystem-level .suspend() callback for it.
-+
-+  * During system resume it calls pm_runtime_enable() and pm_runtime_put_sync()
-+    for every device right before and right after executing the subsystem-level
-+    .resume() callback for it, respectively.
-+
- 7. Generic subsystem callbacks
- 
- Subsystems may wish to conserve code space by using the set of generic power
+Kay
