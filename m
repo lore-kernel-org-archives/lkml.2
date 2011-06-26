@@ -1,135 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754441Ab1FZRdY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 13:33:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46352 "EHLO mx1.redhat.com"
+	id S1754434Ab1FZRpQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 13:45:16 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:34704 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754044Ab1FZRbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 13:31:17 -0400
-Message-ID: <4E076CC6.2070408@redhat.com>
-Date: Sun, 26 Jun 2011 14:30:46 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
+	id S1753498Ab1FZRnq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 13:43:46 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Evgeniy Dushistov <dushistov@mail.ru>
+CC: <linux-kernel@vger.kernel.org>, Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH] ufs: Fix backtrace seen when mounting a bad ufs file system
+Date: Sun, 26 Jun 2011 10:43:25 -0700
+Message-ID: <1309110205-26433-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Sakari Ailus <sakari.ailus@iki.fi>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl doesn't
- exist
-References: <4E0519B7.3000304@redhat.com> <4E0752E0.5030901@iki.fi> <4E075C45.3010200@redhat.com> <201106261913.05752.arnd@arndb.de>
-In-Reply-To: <201106261913.05752.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 26-06-2011 14:13, Arnd Bergmann escreveu:
-> On Sunday 26 June 2011 18:20:21 Mauro Carvalho Chehab wrote:
-> 
->>> The V4L2 core probably should return -ENOIOCTLCMD when an IOCTL isn't implemented, but as long as vfs_ioctl() would stay as it is, the user space would still get -EINVAL. Or is vfs_ioctl() about to change?
->>>
->>> fs/ioctl.c:
->>> ----8<-----------
->>> static long vfs_ioctl(struct file *filp, unsigned int cmd,
->>>                       unsigned long arg)
->>> {
->>>         int error = -ENOTTY;
->>>
->>>         if (!filp->f_op || !filp->f_op->unlocked_ioctl)
->>>                 goto out;
->>>
->>>         error = filp->f_op->unlocked_ioctl(filp, cmd, arg);
->>>         if (error == -ENOIOCTLCMD)
->>>                 error = -EINVAL;
->>>  out:
->>>         return error;
->>> }
->>> ----8<-----------
-> 
-> One of the differences between the old ->ioctl() and the ->unlocked_ioctl()
-> function is that unlocked_ioctl could point to the same function as
-> ->compat_ioctl(), so we have to catch functions returning -ENOIOCTLCMD.
-> 
->> Good catch!
->>
->> At the recent git history, the return for -ENOIOCTLCMD were modified
->> by this changeset:
->>
->> commit b19dd42faf413b4705d4adb38521e82d73fa4249
->> Author: Arnd Bergmann <arnd@arndb.de>
->> Date:   Sun Jul 4 00:15:10 2010 +0200
->>
->>     bkl: Remove locked .ioctl file operation
->> ...
->> @@ -39,21 +38,12 @@ static long vfs_ioctl(struct file *filp, unsigned int cmd,
->>  {
->>         int error = -ENOTTY;
->>  
->> -   if (!filp->f_op)
->> + if (!filp->f_op || !filp->f_op->unlocked_ioctl)
->>                 goto out;
->>  
->> -   if (filp->f_op->unlocked_ioctl) {
->> -           error = filp->f_op->unlocked_ioctl(filp, cmd, arg);
->> -           if (error == -ENOIOCTLCMD)
->> -                   error = -EINVAL;
->> -           goto out;
->> -   } else if (filp->f_op->ioctl) {
->> -           lock_kernel();
->> -           error = filp->f_op->ioctl(filp->f_path.dentry->d_inode,
->> -                                     filp, cmd, arg);
->> -           unlock_kernel();
->> ...
->>
->> Before Arnd's patch, locked ioctl's were returning -ENOIOCTLCMD, and
->> unlocked ones were returning -EINVAL. Now, the return of -ENOIOCTLCMD
->> doesn't go to userspace anymore. IMO, that's wrong and can cause
->> regressions, as some subsystems like DVB were returning -ENOIOCTLCMD
->> to userspace.
-> 
-> ENOIOCTLCMD should never be returned to user space, see the comment
-> in include/linux/errno.h:
-> 
-> /*
->  * These should never be seen by user programs.  To return one of ERESTART*
->  * codes, signal_pending() MUST be set.  Note that ptrace can observe these
->  * at syscall exit tracing, but they will never be left for the debugged user
->  * process to see.
->  */
-> 
+If an attempt is made to mount a bad ufs file system, the following backtrace
+may be seen.
 
-Ah, ok.
+Call Trace:
+[<ffffffff81443d50>] mutex_lock+0x18/0x70
+[<ffffffff8127d6cc>] ufs_sync_fs+0x2c/0x278
+[<ffffffff8120d814>] __sync_filesystem+0x74/0xb8
+[<ffffffff8120d934>] sync_filesystem+0x4c/0x80
+[<ffffffff811e23dc>] generic_shutdown_super+0x34/0x110
+[<ffffffff811e24dc>] kill_block_super+0x24/0x80
+[<ffffffff811e2644>] deactivate_locked_super+0x6c/0x98
+[<ffffffff811e32e0>] mount_bdev+0x218/0x220
+[<ffffffff811e295c>] mount_fs+0xe4/0x220
+[<ffffffff81201064>] vfs_kern_mount+0x64/0x110
+[<ffffffff812014fc>] do_kern_mount+0x4c/0x138
+[<ffffffff81202d58>] do_mount+0x440/0x898
+[<ffffffff8122c870>] compat_sys_mount+0xd8/0x248
 
-> There was a lot of debate whether undefined ioctls on non-ttys should
-> return -EINVAL or -ENOTTY, including mass-conversions from -ENOTTY to
-> -EINVAL at some point in the pre-git era, IIRC.
-> 
-> Inside of v4l2, I believe this is handled by video_usercopy(), which
-> turns the driver's -ENOIOCTLCMD into -ENOTTY. What cases do you observe
-> where this is not done correctly and we do return ENOIOCTLCMD to
-> vfs_ioctl?
+The backtrace occurs if ufs_read_cylinder_structures() reports an error.
+The calling function ufs_fill_super() tries to clean up, but does not return
+the error to the calling code. This ultimately causes the backtrace.
 
-Well, currently, it is returning -EINVAL maybe due to the mass-conversions
-you've mentioned.
+Fix problem by returning an error from ufs_fill_super() if
+ufs_read_cylinder_structures() fails.
 
-The point is that -EINVAL has too many meanings at V4L. It currently can be
-either that an ioctl is not supported, or that one of the parameters had
-an invalid parameter. If the userspace can't distinguish between an unimplemented
-ioctl and an invalid parameter, it can't decide if it needs to fall back to
-some different methods of handling a V4L device.
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+ fs/ufs/super.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-Maybe the answer would be to return -ENOTTY when an ioctl is not implemented.
+diff --git a/fs/ufs/super.c b/fs/ufs/super.c
+index 3915ade..c398221 100644
+--- a/fs/ufs/super.c
++++ b/fs/ufs/super.c
+@@ -1174,8 +1174,12 @@ magic_found:
+ 	 * Read cylinder group structures
+ 	 */
+ 	if (!(sb->s_flags & MS_RDONLY))
+-		if (!ufs_read_cylinder_structures(sb))
++		if (!ufs_read_cylinder_structures(sb)) {
++			dput(sb->s_root);
++			sb->s_root = NULL;
++			ret = -ENODEV;
+ 			goto failed;
++		}
+ 
+ 	UFSD("EXIT\n");
+ 	return 0;
+-- 
+1.7.3.1
 
->> Linus,
->>
->> what would be the expected behaviour?
-> 
-> Note that 1da177e is the initial commit to git, Linus did not write that
-> code, although he might have an opinion.
-
-Yes, I know. I'm expecting his comments on it.
-
-Mauro.
