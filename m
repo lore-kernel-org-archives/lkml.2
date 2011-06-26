@@ -1,115 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752551Ab1FZBMM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 21:12:12 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60769 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab1FZBMK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 21:12:10 -0400
+	id S1752576Ab1FZBNW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 21:13:22 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:44807 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752127Ab1FZBNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 25 Jun 2011 21:13:21 -0400
+Date: Sat, 25 Jun 2011 18:13:15 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 0/3 v3] rcu: Detect rcu uses under extended quiescent
+ state
+Message-ID: <20110626011315.GA27294@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <1308870760-14153-1-git-send-email-fweisbec@gmail.com>
+ <20110624035311.GB2266@linux.vnet.ibm.com>
+ <20110624112045.GF8058@somewhere.redhat.com>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.33.137]
-In-Reply-To: <4E04F0B0.4030408@codeaurora.org>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com> <4E04F0B0.4030408@codeaurora.org>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Sun, 26 Jun 2011 04:11:47 +0300
-Message-ID: <BANLkTi=sFtwam29i4TZdi=RO7BoytTTdrw@mail.gmail.com>
-Subject: Re: [RFC 0/8] Introducing a generic AMP/IPC framework
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110624112045.GF8058@somewhere.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Fri, Jun 24, 2011 at 01:20:49PM +0200, Frederic Weisbecker wrote:
+> On Thu, Jun 23, 2011 at 08:53:11PM -0700, Paul E. McKenney wrote:
+> > On Fri, Jun 24, 2011 at 01:12:37AM +0200, Frederic Weisbecker wrote:
+> > > This time I have no current practical cases to fix. Those I fixed
+> > > in previous versions were actually using rcu_dereference_raw(), which
+> > > is legal in extended qs.
+> > > 
+> > > Frederic Weisbecker (3):
+> > >   rcu: Detect illegal rcu dereference in extended quiescent state
+> > >   rcu: Inform the user about dynticks idle mode on PROVE_RCU warning
+> > >   rcu: Warn when rcu_read_lock() is used in extended quiescent state
+> > > 
+> > >  include/linux/rcupdate.h |   68 +++++++++++++++++++++++++++++++++++++++-------
+> > >  kernel/lockdep.c         |    4 +++
+> > >  kernel/rcupdate.c        |    4 +++
+> > >  kernel/rcutiny.c         |   13 +++++++++
+> > >  kernel/rcutree.c         |   14 +++++++++
+> > >  5 files changed, 93 insertions(+), 10 deletions(-)
+> > 
+> > Queued, thank you, Frederic!
+> > 
+> > I have also applied your approach to SRCU, and I applied the following
+> > to simplify the code a bit -- please let me know if there are any
+> > problems with this approach.
+> > 
+> > 							Thanx, Paul
+> > 
+> > ------------------------------------------------------------------------
+> > 
+> > rcu: Remove one layer of abstraction from PROVE_RCU checking
+> > 
+> > Simplify things a bit by substituting the definitions of the single-line
+> > rcu_read_acquire(), rcu_read_release(), rcu_read_acquire_bh(),
+> > rcu_read_release_bh(), rcu_read_acquire_sched(), and
+> > rcu_read_release_sched() functions at their call points.
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> Yeah looks good. Thanks!
 
-On Fri, Jun 24, 2011 at 11:16 PM, Stephen Boyd <sboyd@codeaurora.org> wrote:
-> This sounds a lot like SMD (shared memory driver) on MSM. The main
-> difference I see is that SMD uses the platform bus instead of the virtio
-> bus and it has its own protocol for channel allocation.
+And I thought that you might be amused by the following.  Hmmm...  I wonder
+how I am going to use event tracing for the portions of RCU that execute
+while in dyntick-idle mode...
 
-Yeah, virtio is a key factor in this work; it was suggested to us by
-Arnd at the AMP plumbers discussions last year, where it was apparent
-that many vendors have their own IPC drivers/buses/channels over
-shared memory with some vendor-ish binary protocol. I must say we
-really liked virtio: it considerably simplified the code (we're not
-adding any new binary protocol), it's very nicely optimized and
-flexible, and it comes with a set of virtio drivers (e.g. network,
-console, block) so we don't have to write our own.
+But first...  It turns out that rcu_check_extended_qs() is sometimes
+called with preemption enabled (for example, in CONFIG_TREE_PREEMPT_RCU),
+which causes smp_processor_id() to complain.  One way to fix this would be
+to write rcu_check_extended_qs() as follows:
 
-We also cared about adding this functionality as an IPC bus, so the
-driver core will help matching drivers to channels - it simplified the
-code (in both setup and tear down of channels) and kept it flexible.
-It will also facilitate error recovery (on remote crash, we just
-remove the virtio device, and then the driver core will in turn start
-->remove()ing the rpmsg drivers) and power management (via runtime
-PM).
+	bool rcu_check_extended_qs(void)
+	{
+		struct rcu_dynticks *rdtp;
 
-About SMD: I'm not familiar with it too much, but Brian naturally is
-(just for the sake of everyone who are not reading headers - Brian
-Swetland wrote the Linux SMD driver, and is also an author of this
-Google+TI joint work).
+		preempt_disable();
+		rdtp = &__get_cpu_var(rcu_dynticks);
+		if (atomic_read(&rdtp->dynticks) & 0x1) {
+			preempt_enable();
+			return false;
+		}
+		preempt_enable();
+		return true;
+	}
+	EXPORT_SYMBOL_GPL(rcu_check_extended_qs);
 
-Btw, I'm sure SMD is conceptually not MSM-specific, and have wondered
-whether you guys would like to use rpmsg/virtio (I know you have
-several drivers like network/tty/etc over SMD, somewhat similarly to
-virtio). Probably the biggest reason why not to is the pain in
-changing the binary protocol with the modem/dsp side. If you ever do
-think about it, I'd be happy to work with you to make it happen.
+Does the above make sense, or is there a higher-level bug that should be
+addressed in a different way?
 
-> This remote proc code is eerily similar to PIL (peripheral image loader,
-> yes we love our acronyms) which I posted a few months back[1]. Was it
-> inspiration for this patch series?
+See below for the splat due to tracing while in dyntick-idle mode.
+Might this explain some otherwise mysterious crashes when tracing is
+enabled?
 
-No, we weren't (or at least I wasn't) aware of PIL.
+							Thanx, Paul
 
-> In terms of API, s/pil/rproc/ and it would be 95% identical. There are
-> some low-level differences though (see below).
+------------------------------------------------------------------------
 
-Indeed, eerily similar :O
+[    0.449600] ===============================
+[    0.449605] [ INFO: suspicious RCU usage. ]
+[    0.449610] -------------------------------
+[    0.449616] /usr/local/autobench/var/tmp/build/arch/powerpc/include/asm/trace.h:122 suspicious rcu_dereference_check() usage!
+[    0.449626] 
+[    0.449627] other info that might help us debug this:
+[    0.449628] 
+[    0.449636] 
+[    0.449637] rcu_scheduler_active = 1, debug_locks = 0
+[    0.449644] rcu is in extended quiescent state!
+[    0.449650] no locks held by kworker/0:0/0.
+[    0.449655] 
+[    0.449656] stack backtrace:
+[    0.449662] Call Trace:
+[    0.449671] [c0000000e66d7b20] [c00000000001352c] .show_stack+0x70/0x184 (unreliable)
+[    0.449684] [c0000000e66d7bd0] [c0000000000b1ef0] .lockdep_rcu_suspicious+0xe8/0x110
+[    0.449697] [c0000000e66d7c70] [c000000000044fc0] .__trace_hcall_exit+0x1e4/0x218
+[    0.449709] [c0000000e66d7d20] [c000000000045c40] .plpar_hcall_norets+0xb4/0xd0
+[    0.449720] [c0000000e66d7d90] [c000000000047cd4] .pseries_dedicated_idle_sleep+0x1b0/0x22c
+[    0.449731] [c0000000e66d7e40] [c000000000016004] .cpu_idle+0x144/0x22c
+[    0.449743] [c0000000e66d7ed0] [c0000000006572cc] .start_secondary+0x378/0x384
+[    0.449754] [c0000000e66d7f90] [c000000000009268] .start_secondary_prolog+0x10/0x14
 
-I just guess the API is so simple that probably most kernel hackers
-would use refcounting get/put semantics here.
-
-> This is an important difference between remote proc and PIL. In PIL, we
-> do image authentication in addition to processor boot.
-
-Yes, we have this too (secure code will need to authenticate the image
-in some use cases) - but that's not ready yet for submission and we
-decided to start off with the basics first and then evolve.
-
-> Instead of devising a new firmware format, we decided
-> to just stick with elf and parse the headers in the kernel because we
-> needed them for authentication anyway. Is this reason enough to move to
-> an ELF format instead?
-
-I think that consolidation of code is enough reason to make an effort.
-I know that our firmware format was chosen for simplicity, but I'm not
-sure if we have the tools yet to build standard ELF files for the
-remote processors (IIRC it's in the works though). I'll let Mark
-comment this one.
-
-> Another difference is inter-processor dependencies. For example, on
-> msm8660 the modem can't boot until the dsp has been booted. I suppose we
-> could hide this detail in the platform specific get() implementation by
-> calling rproc_get() on the dependent processor (hopefully no locking
-> issues arise). I'd rather have it built into the core though as it isn't
-> really specific to the hardware.
-
-No problems, I'm sure we can solve this one easily.
-
-> If we can resolve these differences I think we can easily support remote
-> processor boot on MSM via remoteproc.
-
-That'd be very cool, I sure do hope we can work together.
-
-Thanks for your comments !
-Ohad.
