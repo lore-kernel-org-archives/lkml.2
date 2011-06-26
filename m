@@ -1,97 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754831Ab1FZTrV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 15:47:21 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42196 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754506Ab1FZTqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 15:46:46 -0400
-Date: Sun, 26 Jun 2011 21:46:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	id S1754488Ab1FZTzW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 15:55:22 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:55762 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754641Ab1FZTxb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 15:53:31 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl doesn't exist
+Date: Sun, 26 Jun 2011 21:52:52 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Sakari Ailus <sakari.ailus@iki.fi>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110626194618.GA21740@elte.hu>
-References: <20110623152137.GA2536@albatros>
- <20110626103915.GB11093@elte.hu>
- <20110626165409.GA2584@albatros>
- <20110626182628.GA20158@elte.hu>
- <20110626190622.GB4217@albatros>
+References: <4E0519B7.3000304@redhat.com> <201106262020.20432.arnd@arndb.de> <4E077FB9.7030600@redhat.com>
+In-Reply-To: <4E077FB9.7030600@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110626190622.GB4217@albatros>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106262152.53096.arnd@arndb.de>
+X-Provags-ID: V02:K0:fTl1sO+wl+3pMtU2eVPzuOmQO1jye5qJ7OHUEIPhDbi
+ JWiYzd3p+ncpEqO883v3ij1BgA0Mb0bj6po2i76oz9ALUmiHyi
+ avMM0F5tITUjtmVSyzPHBBVLNyBkG6LcVpGuEr8lpwWeg4sWZv
+ hPPeHVytzoKiRlJafzY09sZ/vT6jMALS/NGqy90YQSrd4I3uzD
+ zy0IwAjSUFJgWGgIp+pUw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Vasiliy Kulikov <segoon@openwall.com> wrote:
-
-> On Sun, Jun 26, 2011 at 20:26 +0200, Ingo Molnar wrote:
->
-> > > > Also, i think it would be better to make this opt-out, i.e. 
-> > > > exclude the handful of control characters that are harmful 
-> > > > (such as backline and console escape), instead of trying to 
-> > > > include the known-useful ones.
-> > > 
-> > > Do you see any issue with the check above?
+On Sunday 26 June 2011 20:51:37 Mauro Carvalho Chehab wrote:
 > > 
-> > There were clear problems with the first version you posted and 
-> > that's enough proof to request the exclusion of known-dangerous 
-> > characters instead of including known-useful characters.
+> > I mean what do you return to vfs_ioctl from v4l? The conversions must
+> > have been long before we introduced compat_ioctl and ENOIOCTLCMD.
+> > 
+> > As far as I can tell, video_ioctl2 has always converted ENOIOCTLCMD into
+> > EINVAL, so changing the vfs functions would not have any effect.
 > 
-> It doesn't proof anything.  If I/someone else did a mistake with 
-> blacklisting would you say it is enough proof to request the 
-> inclusion of well-known allowed characters?
+> Yes.  This discussion was originated by a RFC patch proposing to change 
+> video_ioctl2 to return -ENOIOCTLCMD instead of -EINVAL.
 
-No, because the problems such a mistake causes are not equivalent: it 
-would have been far more harmful to not print out the *very real* 
-product names written in some non-US language than to accidentally 
-include some control character you did not think of.
+Ok, I see. So returning -ENOIOCTLCMD is not an option IMHO, but if you
+are confident that it doesn't break anything, returning -ENOTTY would
+be possible and doesn't require any core changes.
 
-> > A black list is well-defined: it disables the display of certain 
-> > characters because they are *known to be dangerous*.
-> 
-> What do you do with dangerous characters that are *not yet known* 
-> to be dangerous?
-
-I'm ready to act on facts only. Also, i really prefer the policy of 
-acting on known dangers instead of being afraid of the unknown.
-
-The whole 'trust but verify' thing.
-
-> > A white list on the other hand does it the wrong way around: it 
-> > tries to put the 'burden of proof' on the useful, good guys - and 
-> > that's counter-productive really.
-> 
-> Really?  I think strict API definition is productive, unlike using 
-> it in cases where it looks like working, but creating tricky and 
-> obscure bugs.
-
-You werent really creating a well-defined API here, were you?
-
-> Yes, drawing multicolor logs is funny, but ...egrrr...  printk() is 
-> not written for these things.
-
-maybe, but i still think that such a change works better, has fewer 
-unintended side effects and is better documented if it excludes known 
-dangers instead of trying to include known useful bits imperfectly.
-
-Thanks,
-
-	Ingo
+	Arnd
