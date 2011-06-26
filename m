@@ -1,54 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751992Ab1F0Pix (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 11:38:53 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:40686 "EHLO duck.linux-mips.net"
+	id S1752068Ab1F0PjA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:39:00 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:40683 "EHLO duck.linux-mips.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751192Ab1F0PiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 11:38:14 -0400
-Message-Id: <5ef17c7883b7a81d7f321f88a36f6dfe7f40bdd2.1309182743.git.ralf@linux-mips.org>
+	id S1751473Ab1F0PiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 11:38:12 -0400
+Message-Id: <76e1849ea61248353ebb2b2b60ba36c6ea1b34b4.1309182743.git.ralf@linux-mips.org>
 In-Reply-To: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
 References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
 From: Ralf Baechle <ralf@linux-mips.org>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Grant Grundler <grundler@parisc-linux.org>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Date: Sun, 26 Jun 2011 12:28:44 +0100
-Subject: [PATCH 07/12] NET: de4x5: Fix section mismatch
+To: Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Date: Sun, 26 Jun 2011 12:30:22 +0100
+Subject: [PATCH 08/12] LED: lp5521: Fix section mismatches
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: drivers/net/tulip/de4x5.o(.data+0x34): Section mismatch in reference from the variable de4x5_eisa_driver to the function .init.text:de4x5_eisa_probe()
-The variable de4x5_eisa_driver references
-the function __init de4x5_eisa_probe()
-If the reference is valid then annotate the
-variable with __init* or __refdata (see linux/init.h) or name the variable:
-*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+WARNING: drivers/leds/leds-lp5521.o(.text+0xf2c): Section mismatch in reference from the function lp5521_probe() to the function .init.text:lp5521_init_led()
+The function lp5521_probe() references
+the function __init lp5521_init_led().
+This is often because lp5521_probe lacks a __init
+annotation or the annotation of lp5521_init_led is wrong.
+
+Fixing this mismatch triggers one more mismatch, fix that one as well.
 
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Grant Grundler <grundler@parisc-linux.org>
-Cc: netdev@vger.kernel.org
+To: Richard Purdie <rpurdie@rpsys.net>
+To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-mips@linux-mips.org
 ---
- drivers/net/tulip/de4x5.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/leds/leds-lp5521.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/net/tulip/de4x5.c b/drivers/net/tulip/de4x5.c
-index efaa1d6..ea473b6 100644
---- a/drivers/net/tulip/de4x5.c
-+++ b/drivers/net/tulip/de4x5.c
-@@ -1995,7 +1995,7 @@ SetMulticastFilter(struct net_device *dev)
+diff --git a/drivers/leds/leds-lp5521.c b/drivers/leds/leds-lp5521.c
+index c0cff64..cc1dc48 100644
+--- a/drivers/leds/leds-lp5521.c
++++ b/drivers/leds/leds-lp5521.c
+@@ -593,7 +593,7 @@ static void lp5521_unregister_sysfs(struct i2c_client *client)
+ 				&lp5521_led_attribute_group);
+ }
  
- static u_char de4x5_irq[] = EISA_ALLOWED_IRQ_LIST;
- 
--static int __init de4x5_eisa_probe (struct device *gendev)
-+static int __devinit de4x5_eisa_probe (struct device *gendev)
+-static int __init lp5521_init_led(struct lp5521_led *led,
++static int __devinit lp5521_init_led(struct lp5521_led *led,
+ 				struct i2c_client *client,
+ 				int chan, struct lp5521_platform_data *pdata)
  {
- 	struct eisa_device *edev;
- 	u_long iobase;
+@@ -637,7 +637,7 @@ static int __init lp5521_init_led(struct lp5521_led *led,
+ 	return 0;
+ }
+ 
+-static int lp5521_probe(struct i2c_client *client,
++static int __devinit lp5521_probe(struct i2c_client *client,
+ 			const struct i2c_device_id *id)
+ {
+ 	struct lp5521_chip		*chip;
 -- 
 1.7.4.4
 
