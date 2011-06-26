@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab1FZKjp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 06:39:45 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49032 "EHLO mx2.mail.elte.hu"
+	id S1753211Ab1FZKrA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 06:47:00 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46036 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753154Ab1FZKjk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 06:39:40 -0400
-Date: Sun, 26 Jun 2011 12:39:15 +0200
+	id S1753167Ab1FZKpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 06:45:32 -0400
+Date: Sun, 26 Jun 2011 12:45:21 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110626103915.GB11093@elte.hu>
-References: <20110623152137.GA2536@albatros>
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [rfc patch] x86,apic: fix DEBUG_PREEMPT gripe when booting with
+ threadirqs=1
+Message-ID: <20110626104521.GE11093@elte.hu>
+References: <1308743825.8568.3.camel@marge.simson.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110623152137.GA2536@albatros>
+In-Reply-To: <1308743825.8568.3.camel@marge.simson.net>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -35,69 +32,18 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Vasiliy Kulikov <segoon@openwall.com> wrote:
+* Mike Galbraith <mgalbraith@suse.de> wrote:
 
-> This patch escapes control characters fed to printk() except '\n' and '\t'.
+> x86,apic: fix DEBUG_PREEMPT gripe when booting with threadirqs=1
 > 
-> There are numerous printk() instances with user supplied input as "%s"
-> data, and unprivileged user may craft log messages with substrings
-> containing control characters via these printk()s.  Control characters
-> might fool root viewing the logs via tty, e.g. using ^[1A to suppress
-> the previous log line.
-> 
-> On the testing Samsung Q310 laptop there are no users of chars outside
-> of the restricted charset. 
-> 
-> v2 - Allow chars with code >127.  Allow tabs.
-> 
-> Reported-by: Solar Designer <solar@openwall.com>
-> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-> ---
->  kernel/printk.c |   17 ++++++++++++++++-
->  1 files changed, 16 insertions(+), 1 deletions(-)
-> 
-> ---
-> diff --git a/kernel/printk.c b/kernel/printk.c
-> index 3518539..727ff7d 100644
-> --- a/kernel/printk.c
-> +++ b/kernel/printk.c
-> @@ -41,6 +41,7 @@
->  #include <linux/cpu.h>
->  #include <linux/notifier.h>
->  #include <linux/rculist.h>
-> +#include <linux/ctype.h>
->  
->  #include <asm/uaccess.h>
->  
-> @@ -671,6 +672,20 @@ static void emit_log_char(char c)
->  		logged_chars++;
->  }
->  
-> +static void emit_log_char_escaped(char c)
-> +{
-> +	char buffer[8];
-> +	int i, len;
-> +
-> +	if (!iscntrl(c) || (c == '\n') || (c == '\t'))
-> +		emit_log_char(c);
-> +	else {
-> +		len = sprintf(buffer, "#x%02x", c);
-> +		for (i = 0; i < len; i++)
-> +			emit_log_char(buffer[i]);
-> +	}
+> If CONFIG_PREEMPT and CONFIG_INTR_REMAP are both set, and a box is
+> booted with threadirqs, the gripe below is emitted.  It was suggested
+> that native_smp_prepare_cpus() shouldn't need to be run with preemption
+> disabled, and indeed, box boots with no hint of trouble.  Remove it.
 
-Nit: please use balanced curly braces.
-
-Also, i think it would be better to make this opt-out, i.e. exclude 
-the handful of control characters that are harmful (such as backline 
-and console escape), instead of trying to include the known-useful 
-ones.
-
-The whole non-ASCII-languages issue would not have happened if such 
-an approach was taken.
-
-It's also the better approach for the kernel: we handle known harmful 
-things and are permissive otherwise.
+Would also require a careful review of the code we take out of 
+preempt protection now - have you done that by any chance? (if not, 
+mind doing it?)
 
 Thanks,
 
