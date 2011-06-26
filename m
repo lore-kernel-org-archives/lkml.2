@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753607Ab1FZMe6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 08:34:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43825 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417Ab1FZMdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 08:33:18 -0400
-Subject: Re: [rfc patch] x86,apic: fix DEBUG_PREEMPT gripe when booting
- with threadirqs=1
-From: Mike Galbraith <mgalbraith@suse.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-In-Reply-To: <20110626104521.GE11093@elte.hu>
-References: <1308743825.8568.3.camel@marge.simson.net>
-	 <20110626104521.GE11093@elte.hu>
+	id S1753600Ab1FZMmm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 08:42:42 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54653 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753522Ab1FZMme (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 08:42:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Wlydq4HaB8keuBBh931wgsGj3KyQ5pTtw0ima561BICV/oy5brjlYKFaENzLppdeeZ
+         b8cfxWKULFY5jYQ4tDZbZFgDVGjBJLrBgHbvhy83iUkyUQ3Yyar7zEbK5I7v+SGOr5AJ
+         rdzjN/wg2A6UQJJFvghoMcGMjxB9FS0mDlE44=
+Subject: Re: 2.6.39.2 BUG: unable to handle kernel NULL pointer dereference
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+        David Miller <davem@davemloft.net>
+In-Reply-To: <BANLkTikhGVYAFEZGS-AZf3CyS4yVN+Acvg@mail.gmail.com>
+References: <BANLkTing9LWO6AjbdzOJzkJ9aoJhn_TLnw@mail.gmail.com>
+	 <1309082172.2532.31.camel@edumazet-laptop>
+	 <BANLkTikhGVYAFEZGS-AZf3CyS4yVN+Acvg@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 26 Jun 2011 14:33:14 +0200
-Message-ID: <1309091594.11217.18.camel@marge.simson.net>
+Date: Sun, 26 Jun 2011 14:42:27 +0200
+Message-ID: <1309092147.2532.33.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-06-26 at 12:45 +0200, Ingo Molnar wrote:
-> * Mike Galbraith <mgalbraith@suse.de> wrote:
+Le dimanche 26 juin 2011 à 13:34 +0200, Fabio Coatti a écrit :
+> 2011/6/26 Eric Dumazet <eric.dumazet@gmail.com>:
+> > Le dimanche 26 juin 2011 à 10:28 +0200, Fabio Coatti a écrit :
+> >> I'm trying to boot with 2.6.39.2 but the process stops somewhere in
+> >> network stack, with a BUG: report.
+> >> I've been able to capture the kernel messages usign netconsole, so be
+> >> patient with poor alignment :)
 > 
-> > x86,apic: fix DEBUG_PREEMPT gripe when booting with threadirqs=1
-> > 
-> > If CONFIG_PREEMPT and CONFIG_INTR_REMAP are both set, and a box is
-> > booted with threadirqs, the gripe below is emitted.  It was suggested
-> > that native_smp_prepare_cpus() shouldn't need to be run with preemption
-> > disabled, and indeed, box boots with no hint of trouble.  Remove it.
+> >
+> > Hi Fabio
+> >
+> > Could you test following patch :
+> >
+> > http://git2.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=6407d74c5106bb362b4087693688afd34942b094
+> >
+> >
+> > This should be included in 2.6.39.3, if you confirm this fixes the
+> > problem.
+> >
 > 
-> Would also require a careful review of the code we take out of 
-> preempt protection now - have you done that by any chance? (if not, 
-> mind doing it?)
+> Yes, I can confirm that your patch fixes the problem, now running
+> 2.6.39.2 just fine. Many thanks!
 
-No, I haven't, I have only empirical evidence of having yet to see any
-nastiness with an RT kernel.
+Thanks for testing, David will include this to his stable queue I
+presume.
 
-I'll crawl through it once I get a couple PCI configuration space
-thingies sorted.  I'm rather expecting to then find out why
-INTR_REMAP/DMAR + X2APIC is disabled.. the head-on collision way.
 
-	-Mike
 
