@@ -1,89 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752652Ab1FZJuR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 05:50:17 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:35980 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752703Ab1FZJuM (ORCPT
+	id S1752829Ab1FZJ4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 05:56:25 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56383 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab1FZJ4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 05:50:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <1308921701.17580.9.camel@gandalf.stny.rr.com>
-References: <BANLkTi=qf7Dm6U+3B9qL+gYThe4oQXp3tg@mail.gmail.com>
-	<1308921701.17580.9.camel@gandalf.stny.rr.com>
-Date: Sun, 26 Jun 2011 17:50:10 +0800
-Message-ID: <BANLkTimQRtQ9F7w+dEL+PQPDQWRLaSkimA@mail.gmail.com>
-Subject: Re: [RFC] sched: use plist in pulling RT task
-From: Hillf Danton <dhillf@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Gregory Haskins <ghaskins@novell.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+	Sun, 26 Jun 2011 05:56:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=SNv4n1mLOVIzpopC1mVEWWcyZwaHC41wPFnl5wMN7cfWS7aYdSc7g+KpiSoONYYApA
+         p1ROWoenFl9L9ZGWf0RFCWtBapyjSLFlwgDXShqwITuNQDBUXGkxMi/9C1cIQtwf25Ys
+         2C2BXkyBl00J6uClUGoqxwxBdXmJ2X2oHb67A=
+Subject: Re: 2.6.39.2 BUG: unable to handle kernel NULL pointer dereference
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Fabio Coatti <fabio.coatti@gmail.com>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <BANLkTing9LWO6AjbdzOJzkJ9aoJhn_TLnw@mail.gmail.com>
+References: <BANLkTing9LWO6AjbdzOJzkJ9aoJhn_TLnw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 26 Jun 2011 11:56:12 +0200
+Message-ID: <1309082172.2532.31.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steven
+Le dimanche 26 juin 2011 à 10:28 +0200, Fabio Coatti a écrit :
+> I'm trying to boot with 2.6.39.2 but the process stops somewhere in
+> network stack, with a BUG: report.
+> I've been able to capture the kernel messages usign netconsole, so be
+> patient with poor alignment :)
+> 
+> Please note that at this moment I'm not subscribed to LKML, so please
+> keep me in CC if any answer is required. Below you can find the
+> netconsole trace and .config file.
+> 
+> Thanks for the attention.
+> 
+> 
+> ACPI: PCI Interrupt Link [LSMB] (IRQs 5 7 9 10 11 14 15) *0, disabled.
+> br0: port 1(eth0) entering forwarding state
+> i8042: PNP: No PS/2 controller found. Probing ports directly.
+> serio: i8042 KBD port at 0x60,0x64 irq 1
+> serio: i8042 AUX port at 0x60,0x64 irq 12
+> mousedev: PS/2 mouse device common for all mice
+> rtc_cmos 00:05: RTC can wake from S4
+> rtc_cmos 00:05: rtc core: registered rtc_cmos as rtc0
+> rtc0: alarms up to one year, y3k, 242 bytes nvram, hpet irqs
+> md: linear personality registered for level -1
+> md: raid0 personality registered for level 0
+> md: raid1 personality registered for level 1
+> md: raid10 personality registered for level 10
+> md: raid6 personality registered for level 6
+> md: raid5 personality registered for level 5
+> md: raid4 personality registered for level 4
+> md: multipath personality registered for level -4
+> device-mapper: uevent: version 1.0.3
+> device-mapper: ioctl: 4.20.0-ioctl (2011-02-02) initialised: dm-devel@redhat.com
+> cpuidle: using governor ladder
+> Netfilter messages via NETLINK v0.30.
+> TCP cubic registered
+> NET: Registered protocol family 17
+> NET: Registered protocol family 15
+> Registering the dns_resolver key type
+> rtc_cmos 00:05: setting system clock to 2011-06-26 08:10:48 UTC (1309075848)
+> Freeing unused kernel memory: 6372k freed
+> BUG: unable to handle kernel
+> NULL pointer dereference
+> at           (null)
+> IP:
+> [<          (null)>]           (null)
+> PGD 230a57067
+> PUD 2309fb067
+> PMD 0
+> 
+> Oops: 0010 [#1]
+> PREEMPT
+> SMP
+> 
+> last sysfs file: /sys/devices/virtual/net/br0/uevent
+> CPU 2
+> 
+> Modules linked in:
+> bridge
+> stp
+> llc
+> ip6t_rt
+> ip6table_filter
+> ip6_tables
+> x_tables
+> snd_usb_audio
+> uvcvideo
+> videodev
+> snd_usbmidi_lib
+> v4l2_compat_ioctl32
+> snd_rawmidi
+> snd_seq_device
+> hid_logitech
+> ipv6
+> usbhid
+> usb_storage
+> usb_libusual
+> uas
+> snd_hda_codec_hdmi
+> snd_hda_codec_analog
+> ohci_hcd
+> ehci_hcd
+> snd_hda_intel
+> snd_hda_codec
+> k10temp
+> i2c_nforce2
+> snd_hwdep
+> snd_pcm
+> asus_atk0110
+> snd_timer
+> snd
+> usbcore
+> soundcore
+> snd_page_alloc
+> 
+> 
+> Pid: 3359, comm: ip Tainted: G        W   2.6.39.2 #2
+> System manufacturer System Product Name
+> /M3N-HT DELUXE
+> 
+> RIP: 0010:[<0000000000000000>]
+> [<          (null)>]           (null)
+> RSP: 0018:ffff8802264398a0  EFLAGS: 00010202
+> RAX: 00000000000005dc RBX: 0000000000000320 RCX: ffff88022d38e608
+> RDX: ffffffffa01d6fc0 RSI: ffffffffa01d5c61 RDI: ffff88022d38ee38
+> RBP: ffff88022d38e000 R08: 0000000000000000 R09: ffff880230a5bb80
+> R10: ffffffff81353339 R11: 0000000000000000 R12: ffff88022d38e600
+> R13: 0000000000000000 R14: 0000000000000000 R15: ffffffffa01d5870
+> FS:  00007f4e5bb98700(0000) GS:ffff88023fd00000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 0000000000000000 CR3: 000000022640b000 CR4: 00000000000006e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process ip (pid: 3359, threadinfo ffff880226438000, task ffff880230ade300)
+> Stack:
+> ffffffffa01cc1e7
+> ffff88022d38e000
+> ffff8802264399a8
+> 0000000000000000
+> 
+> ffffffff8135bd0f
+> ffff88022d38e000
+> ffffffff81366ab9
+> ffff88022d38e000
+> 
+> ffff88022a4cfc10
+> ffff880226439ae8
+> 00000009a0124919
+> ffff88022d39ed00
+> 
+> Call Trace:
+> [<ffffffffa01cc1e7>] ? br_change_mtu+0x50/0x6f [bridge]
+> [<ffffffff8135bd0f>] ? dev_set_mtu+0x35/0x5b
+> [<ffffffff81366ab9>] ? do_setlink+0x189/0x706
+> [<ffffffff81365cfd>] ? rtnl_fill_ifinfo+0x954/0xa20
+> [<ffffffff810925fd>] ? handle_mm_fault+0x107/0x189
+> [<ffffffff8136738d>] ? rtnl_newlink+0x26a/0x4c1
+> [<ffffffff813671d3>] ? rtnl_newlink+0xb0/0x4c1
+> [<ffffffff813d7ead>] ? _raw_spin_unlock_irqrestore+0x20/0x2e
+> [<ffffffff813553dc>] ? __skb_recv_datagram+0x103/0x23f
+> [<ffffffff81366437>] ? rtnetlink_rcv+0x28/0x28
+> [<ffffffff8137744b>] ? netlink_rcv_skb+0x34/0x7d
+> [<ffffffff8136642e>] ? rtnetlink_rcv+0x1f/0x28
+> [<ffffffff81377239>] ? netlink_unicast+0xe5/0x14d
+> [<ffffffff813776da>] ? netlink_sendmsg+0x246/0x266
+> [<ffffffff8134a6bb>] ? sock_sendmsg+0x83/0x9b
+> [<ffffffff81091332>] ? __do_fault+0x396/0x3d1
+> [<ffffffff8134a49f>] ? move_addr_to_kernel+0x2c/0x4a
+> [<ffffffff8135463f>] ? verify_iovec+0x46/0x98
+> [<ffffffff8134aae5>] ? sys_sendmsg+0x22c/0x2b4
+> [<ffffffff810925fd>] ? handle_mm_fault+0x107/0x189
+> [<ffffffff8101a773>] ? do_page_fault+0x29b/0x2d4
+> [<ffffffff810960d3>] ? do_brk+0x2ca/0x326
+> [<ffffffff813d887b>] ? system_call_fastpath+0x16/0x1b
+> Code:
+> Bad RIP value.
+> 
+> RIP
+> [<          (null)>]           (null)
+> RSP <ffff8802264398a0>
+> CR2: 0000000000000000
+> ---[ end trace c2ce621f7ff96fed ]---
+> br0: no IPv6 routers present
+> br0: port 1(eth0) entering forwarding state
+> 
+> 
 
-It is reprepared according to your comments, difference from the last version
-is the following,
-1, pulled_prio is dropped since it is no more than the highest curr,
-2, test p->prio < src_rq->curr->prio is kept as it was,
-3, cleanup of a few typo.
+Hi Fabio
 
-Thanks
+Could you test following patch : 
 
-Hillf
----
- kernel/sched_rt.c |   21 +++++++++------------
- 1 files changed, 9 insertions(+), 12 deletions(-)
+http://git2.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=6407d74c5106bb362b4087693688afd34942b094
 
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index b03cd89..b5aca9c 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -1502,18 +1502,17 @@ static int pull_rt_task(struct rq *this_rq)
- 		/*
- 		 * Are there still pullable RT tasks?
- 		 */
--		if (src_rq->rt.rt_nr_running <= 1)
-+		if (!has_pushable_tasks(src_rq))
- 			goto skip;
 
--		p = pick_next_highest_task_rt(src_rq, this_cpu);
--
- 		/*
- 		 * Do we have an RT task that preempts
- 		 * the to-be-scheduled task?
- 		 */
--		if (p && (p->prio < this_rq->rt.highest_prio.curr)) {
--			WARN_ON(p == src_rq->curr);
--			WARN_ON(!p->on_rq);
-+		plist_for_each_entry(p, &src_rq->rt.pushable_tasks,
-+						    pushable_tasks) {
-+			if (p->prio >= this_rq->rt.highest_prio.curr)
-+				break;
+This should be included in 2.6.39.3, if you confirm this fixes the
+problem.
 
- 			/*
- 			 * There's a chance that p is higher in priority
-@@ -1526,17 +1525,15 @@ static int pull_rt_task(struct rq *this_rq)
- 			if (p->prio < src_rq->curr->prio)
- 				goto skip;
 
-+			if (!cpumask_test_cpu(this_cpu, &p->cpus_allowed))
-+				continue;
-+
- 			ret = 1;
 
- 			deactivate_task(src_rq, p, 0);
- 			set_task_cpu(p, this_cpu);
- 			activate_task(this_rq, p, 0);
--			/*
--			 * We continue with the search, just in
--			 * case there's an even higher prio task
--			 * in another runqueue. (low likelihood
--			 * but possible)
--			 */
-+			break;
- 		}
- skip:
- 		double_unlock_balance(this_rq, src_rq);
