@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753084Ab1FZLK5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 07:10:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45820 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab1FZLKu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 07:10:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=kY8AfQf9NAcTGie1rJ98sojr3DjbrchaA78RPhKNc4fv7oiQArgSP4Obj+DjgKuZ8S
-         f2hVsHpY4AT6bdjVX1Dd8veafGBMOszPwYnThTTkCRjddEB+eMIb+7pKoZL35zcxmvws
-         EKyJhmcAU6MZna4yr4IoZZwLa04ns5gT5Kw9I=
-MIME-Version: 1.0
-In-Reply-To: <1309039804-659-4-git-send-email-bryan.wu@canonical.com>
-References: <1309039804-659-1-git-send-email-bryan.wu@canonical.com>
-	<1309039804-659-4-git-send-email-bryan.wu@canonical.com>
-Date: Sun, 26 Jun 2011 13:10:48 +0200
-X-Google-Sender-Auth: Uag20hbFYQ_VP_yJiIFDII00dB0
-Message-ID: <BANLkTinx0uFE-ODhTcpsJdE5KSq_C8aB6g@mail.gmail.com>
-Subject: Re: [PATCH 3/4] mach-realview: retire custom LED code
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: linux-arm-kernel@lists.infradead.org, rpurdie@rpsys.net,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752288Ab1F0Pp4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:45:56 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:37178 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752168Ab1F0Ppx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 11:45:53 -0400
+Message-Id: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Andrew Morton <akpm@linux-foundation.org>, Alan Cox <alan@linux.intel.com>,
+        Brent Casavant <bcasavan@sgi.com>, David Airlie <airlied@linux.ie>,
+        "David S. Miller" <davem@davemloft.net>,
+        Grant Grundler <grundler@parisc-linux.org>,
+        "James E.J. Bottomley" <JBottomley@parallels.com>,
+        Jaroslav Kysela <perex@perex.cz>, Richard Purdie <rpurdie@rpsys.net>,
+        Steffen Klassert <klassert@mathematik.tu-chemnitz.de>,
+        Tejun Heo <tj@kernel.org>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-scsi@vger.kernel.org,
+        linux-serial@vger.kernel.org, netdev@vger.kernel.org
+Date: Sun, 26 Jun 2011 12:19:54 +0100
+Subject: [PATCH 00/12] Fix various section mismatches and build errors.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/26 Bryan Wu <bryan.wu@canonical.com>:
+I'm getting screen and screens full of section mismatches from my test
+builds of the current kernel to the point where it's sometimes more
+meaningful messages get hidden by the bulk of mismatches.  This is the
+first round of fixes with more to come.
 
-> This replaces the custom LED trigger code in mach-realview with
-> some overarching platform code for the plat-versatile family that
-> will lock down LEDs 2 thru 5 for CPU activity indication. The
-> day we have 8 core ARM systems the plat-versatile code will have
-> to become more elaborate.
->
-> Tested on RealView PB11MPCore by invoking four different CPU
-> hogs (yes > /dev/null&) and see the LEDs go on one at a time.
-> They all go off as the hogs are killed. Tested on the PB1176
-> as well - just one activity led (led 2) goes on and off with
-> CPU activity.
->
-> (bryan.wu@canonical.com: use ledtrig-cpu instead of ledtrig-arm-cpu)
->
-> Cc: Richard Purdie <rpurdie@rpsys.net>
-> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
-> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+  Ralf
 
-This is good, especially the KConfig fixups, but also include Pawel Moll's
-Acked-by on these patches.
+ drivers/gpu/drm/radeon/radeon_clocks.c |    4 ++--
+ drivers/leds/leds-lp5521.c             |    4 ++--
+ drivers/leds/leds-lp5523.c             |    4 ++--
+ drivers/misc/ioc4.c                    |    2 +-
+ drivers/net/3c509.c                    |    2 +-
+ drivers/net/3c59x.c                    |    2 +-
+ drivers/net/depca.c                    |   25 +++++++++++++------------
+ drivers/net/hp100.c                    |    2 +-
+ drivers/net/ne3210.c                   |   12 +++++++-----
+ drivers/net/tulip/de4x5.c              |    2 +-
+ drivers/scsi/sim710.c                  |    2 +-
+ drivers/tty/serial/Kconfig             |    2 +-
+ 12 files changed, 33 insertions(+), 30 deletions(-)
 
-Linus Walleij
