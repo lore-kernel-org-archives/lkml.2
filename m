@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab1FZXLK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 19:11:10 -0400
-Received: from lucidpixels.com ([72.73.18.11]:44006 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755974Ab1FZXKU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 19:10:20 -0400
-X-Greylist: delayed 343 seconds by postgrey-1.27 at vger.kernel.org; Sun, 26 Jun 2011 19:10:20 EDT
-Date: Sun, 26 Jun 2011 19:04:34 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-Subject: 2.6.39.2: page allocation failure question
- (__alloc_pages_nodemask+0x626/0x860)
-Message-ID: <alpine.DEB.2.02.1106261902050.9133@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1756071Ab1FZXVY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 19:21:24 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38146 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756053Ab1FZXT0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 19:19:26 -0400
+Date: Sun, 26 Jun 2011 16:19:14 -0700 (PDT)
+Message-Id: <20110626.161914.1023073148636112144.davem@davemloft.net>
+To: jj@chaosbits.net
+Cc: linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org,
+        herbert@gondor.hengli.com.au
+Subject: Re: [PATCH] Crypto: Don't use err uninitialized in
+ algif_hash.c:hash_sendmsg()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1106262320530.26572@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1106262320530.26572@swampdragon.chaosbits.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Sun, 26 Jun 2011 16:19:18 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Jesper Juhl <jj@chaosbits.net>
+Date: Sun, 26 Jun 2011 23:23:06 +0200 (CEST)
 
-[41624.229468] irq/52-eth0: page allocation failure. order:1, mode:0x20
-[41624.229472] Pid: 1980, comm: irq/52-eth0 Not tainted 2.6.39.2 #1
-[41624.229474] Call Trace:
-[41624.229475]  <IRQ>  [<ffffffff81084916>] ? __alloc_pages_nodemask+0x626/0x860
-[41624.229489]  [<ffffffff81601101>] ? cache_alloc_refill+0x25e/0x4c9
-[41624.229493]  [<ffffffff810ad3aa>] ? kmem_cache_alloc+0x7a/0xa0
-[41624.229496]  [<ffffffff814efd5c>] ? sk_prot_alloc.isra.41+0x3c/0x180
-[41624.229499]  [<ffffffff814eff30>] ? sk_clone+0x10/0x2b0
-[41624.229502]  [<ffffffff815436db>] ? inet_csk_clone+0xb/0xa0
-[41624.229506]  [<ffffffff8155b0a1>] ? tcp_create_openreq_child+0x21/0x4e0
-[41624.229509]  [<ffffffff81558233>] ? tcp_v4_syn_recv_sock+0x53/0x250
-[41624.229511]  [<ffffffff8155aec4>] ? tcp_check_req+0x2d4/0x490
-[41624.229513]  [<ffffffff8155810f>] ? tcp_v4_do_rcv+0x1bf/0x290
+> If af_alg_make_sg() returns <0 in hash_sendmsg() we'll jump to the
+> 'unlock' label without having set 'err' to anything. At the 'unlock'
+> label the value of 'err' is tested to determine return value of the
+> function - not good to base that on a uninitialized variable.
+> 
+> This patch sets 'err' to the return value of hash_sendmsg() before the
+> 'goto' when the value is less than zero, which seems to me to be the
+> proper thing to do.
+> 
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 
-I do have enough swap available:
-
-Mem:  16434572k total, 16165796k used,   268776k free,     9068k buffers
-Swap: 31246388k total,    18296k used, 31228092k free, 11210636k cached
-
-Perhaps I am just noticing this due to using the threadirq boot option
-but is it normal to have page allocation failures on kernel processes if 
-physical memory use is high/full and swap is available?
-
-Justin.
-
+Acked-by: David S. Miller <davem@davemloft.net>
