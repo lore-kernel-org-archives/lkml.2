@@ -1,116 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1FZU04 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 16:26:56 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37691 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753605Ab1FZUZZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 16:25:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=N7nniTMfn/bGVrJdL5hHr7MfU3/EXGyUEWtEpBXa7BSQj14CjR4JmnXjvIuML+X040
-         4dWHknRk0upWF2CL51SuHxBUXeroFl0+9zjeuWN7aurE6kewThN5HECX3JEmAzmV+88v
-         PuklkXkKReoEo05XcJfQs3E6c1IEo01/AMMfg=
-Date: Mon, 27 Jun 2011 00:25:18 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110626202518.GA4915@albatros>
-References: <20110623152137.GA2536@albatros>
- <20110626103915.GB11093@elte.hu>
- <20110626165409.GA2584@albatros>
- <20110626182628.GA20158@elte.hu>
- <20110626190622.GB4217@albatros>
- <20110626194618.GA21740@elte.hu>
+	id S1755178Ab1FZU3T (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 16:29:19 -0400
+Received: from imr3.ericy.com ([198.24.6.13]:43119 "EHLO imr3.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755208Ab1FZU12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 16:27:28 -0400
+Date: Sun, 26 Jun 2011 13:26:48 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: sdevrien@cisco.com
+CC: khali@linux-fr.org, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [v3] Add support for the Philips SA56004 temperature sensor.
+Message-ID: <20110626202648.GA9118@ericsson.com>
+References: <1307356845-10095-1-git-send-email-sdevrien@cisco.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20110626194618.GA21740@elte.hu>
+In-Reply-To: <1307356845-10095-1-git-send-email-sdevrien@cisco.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 26, 2011 at 21:46 +0200, Ingo Molnar wrote:
-> > > > > Also, i think it would be better to make this opt-out, i.e. 
-> > > > > exclude the handful of control characters that are harmful 
-> > > > > (such as backline and console escape), instead of trying to 
-> > > > > include the known-useful ones.
-> > > > 
-> > > > Do you see any issue with the check above?
-> > > 
-> > > There were clear problems with the first version you posted and 
-> > > that's enough proof to request the exclusion of known-dangerous 
-> > > characters instead of including known-useful characters.
-> > 
-> > It doesn't proof anything.  If I/someone else did a mistake with 
-> > blacklisting would you say it is enough proof to request the 
-> > inclusion of well-known allowed characters?
+On Mon, Jun 06, 2011 at 10:40:45AM -0000, sdevrien@cisco.com wrote:
+> From: Stijn Devriendt <sdevrien@cisco.com>
 > 
-> No, because the problems such a mistake causes are not equivalent: it 
-> would have been far more harmful to not print out the *very real* 
-> product names written in some non-US language than to accidentally 
-> include some control character you did not think of.
-
-???
-
-Not "not print", but print in "crypted" form.  The information is
-still not lost, you can obviously restore it to the original form, with
-some effort, but possible.  Compare it with the harm of log spoofing -
-it is not "restorable".
-
-
-> > > A black list is well-defined: it disables the display of certain 
-> > > characters because they are *known to be dangerous*.
-> > 
-> > What do you do with dangerous characters that are *not yet known* 
-> > to be dangerous?
+> Add support for the Philips SA56004, an LM86
+> compatible temperature sensor.
 > 
-> I'm ready to act on facts only.
-
-The *fact* is you/anybody/everybody might not know all bad things.  If
-you just don't care because it is yet unknown then you will be
-vulnerable as soon as it disclosured.
-
-
-> Also, i really prefer the policy of 
-> acting on known dangers instead of being afraid of the unknown.
-
-Do you know the principle "Attacks always get better, never worse"?  If
-you are protected against only of known attack, you will be vulnerable
-to *every* danger not known to you.
-
-Maybe you don't know, but it is really possible to be protected against
-some *yet unknown* attack techniques.  (The assessment of what attacks it
-protects against is undefined too, though.)  And upstream Linux is *already*
-protected against some *yet unknown* bugs, not the whole bug classes,
-but at least small kinds of it.
-
-
-> > > A white list on the other hand does it the wrong way around: it 
-> > > tries to put the 'burden of proof' on the useful, good guys - and 
-> > > that's counter-productive really.
-> > 
-> > Really?  I think strict API definition is productive, unlike using 
-> > it in cases where it looks like working, but creating tricky and 
-> > obscure bugs.
+> Changes since v2:
+> - Changed BUG_ON to WARN_ON
+> Changes since v1:
+> - Updated documentation
+> - Trace replaced by BUG_ON
+> - style updates
 > 
-> You werent really creating a well-defined API here, were you?
+> Signed-off-by: Stijn Devriendt <sdevrien@cisco.com>
+> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> 
+I don't see a reason for holding this patch up further. Applied to -next.
+If you disagree, please speak up now or be silent forever.
 
-No, I was - only ascii chars and \n are allowed.  In v2 all ascii chars,
-the upper charset and 2 control chars are allowed.  Rather clear, IMO.
-
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Thanks,
+Guenter
