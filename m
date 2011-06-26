@@ -1,61 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753260Ab1FZLII (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 07:08:08 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50987 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab1FZLIE convert rfc822-to-8bit (ORCPT
+	id S1753084Ab1FZLK5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 07:10:57 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45820 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753214Ab1FZLKu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 07:08:04 -0400
+	Sun, 26 Jun 2011 07:10:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=mSLtHPnxfph31e4fxZUcy5ZKJ+yM0GR2g8vrRHx2MuuCSrU0r7uM33zkNjYCyIFOW+
-         /SsOzGwhqJGynTN+4AnDdVSX1HMWS1Lgc/8koJnybonBPnvEMKGQ2x301rcHwLbP88h0
-         6Wv2Uw2akhVpf1uMC22PgGa3KZDKz16h9CFDg=
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=kY8AfQf9NAcTGie1rJ98sojr3DjbrchaA78RPhKNc4fv7oiQArgSP4Obj+DjgKuZ8S
+         f2hVsHpY4AT6bdjVX1Dd8veafGBMOszPwYnThTTkCRjddEB+eMIb+7pKoZL35zcxmvws
+         EKyJhmcAU6MZna4yr4IoZZwLa04ns5gT5Kw9I=
 MIME-Version: 1.0
-In-Reply-To: <1309039804-659-3-git-send-email-bryan.wu@canonical.com>
+In-Reply-To: <1309039804-659-4-git-send-email-bryan.wu@canonical.com>
 References: <1309039804-659-1-git-send-email-bryan.wu@canonical.com>
-	<1309039804-659-3-git-send-email-bryan.wu@canonical.com>
-Date: Sun, 26 Jun 2011 13:08:01 +0200
-X-Google-Sender-Auth: NC24SC3aBBJcC4FBNGoNjZQQQ_4
-Message-ID: <BANLkTinCWcjNOR6uoGno1riRb+LBZLJ+Gg@mail.gmail.com>
-Subject: Re: [PATCH 2/4] ARM: use new LEDS CPU trigger stub to replace old one
+	<1309039804-659-4-git-send-email-bryan.wu@canonical.com>
+Date: Sun, 26 Jun 2011 13:10:48 +0200
+X-Google-Sender-Auth: Uag20hbFYQ_VP_yJiIFDII00dB0
+Message-ID: <BANLkTinx0uFE-ODhTcpsJdE5KSq_C8aB6g@mail.gmail.com>
+Subject: Re: [PATCH 3/4] mach-realview: retire custom LED code
 From: Linus Walleij <linus.walleij@linaro.org>
 To: Bryan Wu <bryan.wu@canonical.com>
 Cc: linux-arm-kernel@lists.infradead.org, rpurdie@rpsys.net,
         linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Bryan, notice that this:
-
 2011/6/26 Bryan Wu <bryan.wu@canonical.com>:
 
-> -               leds_event(led_idle_start);
-> +               ledtrig_cpu(CPU_LED_IDLE_START);
-(...)
-> -               leds_event(led_idle_end);
-> +               ledtrig_cpu(CPU_LED_IDLE_END);
+> This replaces the custom LED trigger code in mach-realview with
+> some overarching platform code for the plat-versatile family that
+> will lock down LEDs 2 thru 5 for CPU activity indication. The
+> day we have 8 core ARM systems the plat-versatile code will have
+> to become more elaborate.
+>
+> Tested on RealView PB11MPCore by invoking four different CPU
+> hogs (yes > /dev/null&) and see the LEDs go on one at a time.
+> They all go off as the hogs are killed. Tested on the PB1176
+> as well - just one activity led (led 2) goes on and off with
+> CPU activity.
+>
+> (bryan.wu@canonical.com: use ledtrig-cpu instead of ledtrig-arm-cpu)
+>
+> Cc: Richard Purdie <rpurdie@rpsys.net>
+> Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
 
-That breaks all the old users of the CPU activity LEDs.
+This is good, especially the KConfig fixups, but also include Pawel Moll's
+Acked-by on these patches.
 
-I only fixed up RealView and Versatile!
-
-grep -r led_idle_start arch/arm/
-
-Gives you a hint that you also have to retire custom LEDs from
-orion, omap, at91, footbridge, sa1100, ks8695, shark, clps711x,
-pxa and omap1.
-
-You have to write a patch each an every one of these, and
-since they all are already using that mechanism actively
-you need to select the LED trigger in their Kconfig.
-
-Thanks,
 Linus Walleij
