@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752666Ab1FZCvq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 22:51:46 -0400
-Received: from gadamer.sociales.uba.ar ([157.92.168.13]:46157 "EHLO
-	gadamer.sociales.uba.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752436Ab1FZCvo (ORCPT
+	id S1752688Ab1FZCj0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 22:39:26 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:47388 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752085Ab1FZCjZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 22:51:44 -0400
-X-Greylist: delayed 797 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Jun 2011 22:51:43 EDT
-Message-ID: <20110625233601.203451g53aw3opox@webmail.sociales.uba.ar>
-Date: Sat, 25 Jun 2011 23:36:01 -0300
-From: BLACKBERRY 2011 EMAIL AWARDS <Info@blackberry.co.uk>
-Reply-to: www-blackberry2011@live.com
-To: undisclosed-recipients:;
-Subject: UNCLAIMED PRIZE!
+	Sat, 25 Jun 2011 22:39:25 -0400
+Date: Sat, 25 Jun 2011 22:39:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] PCI / PM: Block races between runtime PM and system
+ sleep
+In-Reply-To: <201106240059.38687.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1106252235560.10907-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=ISO-8859-1;
- DelSp="Yes";
- format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Claims Agent/Lottery Attorney,
-Barr. Mike Brown,
-BlackBerry® Prize Claims Unit,
-Regent Mayfair Building,
-4th Floor, 153-155 Street,
-London W1B 4JE, UK
-Email:www-BlackBerry2011@live.com
-phone: +44-70-4573-9682
+On Fri, 24 Jun 2011, Rafael J. Wysocki wrote:
 
-Congratulations Dear Winner from the BLACKBERRY® Management and Staff.
+> > > I'm still not clear on why the error handler needs to run at this time.
+> > 
+> > Because SATA ports are suspended with the help of the SCSI error handling
+> > mechanism (which Tejun claims is the best way to do that).
 
-Your email address was randomly selected by the BlackBerry Smart  
-Device (RASK) from an
-Exclusive List of 21,000,000 Million internet users' e-mail addresses of
-individuals and corporate entities cutting accross the globe, on 26th  
-June, 2011.
+> I've carried out this exercise to see how complicated it is going to be
+> and it doesn't really seem to be _that_ complicated.  The appended patch
+> illustrates this, but it hasn't been tested, so caveat emptor.
 
-Your email address has been awarded the star-prize of
-1,650,000.00 Million GBP(1 Million-6-Hundred-And-Fifty-Great Britain  
-Pounds Sterlings)
-among the other consolation prize-winners.
+The patch is straightforward enough.  But will it be sufficient?
 
-Note:No tickets were sold! Your Winning No is: UK-094517-BB; Bonus NO  
-is: BB-0446-MP, Ticket No is :BB5050
+Suppose a SATA port is already in runtime suspend when the system sleep
+starts.  Will the error handler be able to do its special job?  I don't
+know...  It may turn out to be necessary for the SATA port to be
+runtime resumed somewhere along the line.
 
-File for your Claims today by forwarding the below details to:  
-www-blackberry2011@live.com to process your winning funds:::
-
-Full Name.....................
-Sex...........................
-Winning Number................UK-094517-BB
-Age.......................
-Occupation....................
-Mobile No.....................
-Email Address.......
-Residential Contact...........
-Marital Status................
-State and Nationality.........
-
-
-...Congratulations from the BLACKBERRY® LOTTERY PRIZE PAYMENT UNIT,UK...
-Terms and Conditions apply!
-CopyRight © 2011 BLACKBERRY CORPORATION
-
-
-
-
+Alan Stern
 
