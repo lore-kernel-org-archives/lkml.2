@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752718Ab1FZDBY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 25 Jun 2011 23:01:24 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:39610 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751187Ab1FZDBV (ORCPT
+	id S1752807Ab1FZDwx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 25 Jun 2011 23:52:53 -0400
+Received: from dalton.quimica.unlp.edu.ar ([163.10.18.1]:36896 "EHLO
+	dalton.quimica.unlp.edu.ar" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752778Ab1FZDww (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 25 Jun 2011 23:01:21 -0400
-Date: Sat, 25 Jun 2011 23:01:21 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Jesper Juhl <jj@chaosbits.net>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        <linux-scsi@vger.kernel.org>
-Subject: Re: [PATCH 1/3] PM / Runtime: Update documentation of interactions
- with system sleep
-In-Reply-To: <alpine.LNX.2.00.1106260055270.23991@swampdragon.chaosbits.net>
-Message-ID: <Pine.LNX.4.44L0.1106252257440.10907-100000@netrider.rowland.org>
+	Sat, 25 Jun 2011 23:52:52 -0400
+X-Greylist: delayed 510 seconds by postgrey-1.27 at vger.kernel.org; Sat, 25 Jun 2011 23:52:52 EDT
+Message-ID: <20110626004213.12461o2ikcqlx674@webmail.quimica.unlp.edu.ar>
+Date: Sun, 26 Jun 2011 00:42:13 -0300
+From: Money Gram Transfer <pvillabril@quimica.unlp.edu.ar>
+Reply-to: money_gramlimited@mspil.edu.cn
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 Jun 2011, Jesper Juhl wrote:
 
-> On Sun, 26 Jun 2011, Rafael J. Wysocki wrote:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> > 
-> 
-> A few tiny nit-picks..
+-- 
+My associate has helped me to send your first payment
+of $5000 USD to you as instructed by the Malaysian
+Government and Mr. David Cameron the United Kingdom
+prime minister after the last G20 meeting that was
+held in Malaysia, making you one of the beneficiaries.
+Here is the information below.
 
-And a few more...
+Refrence Numbers: 86147516
+Sender Name Is = Patrick Lee Chun
 
-> > The documents describing the interactions between runtime PM and
-> > system sleep generally refer to the model in which the system sleep
-> > state is entered through a global firmware or hardware operation.
-> > As a result, some recommendations given in there are not entirely
-> > suitable for systems in which this is not the case.  Update the
-> > documentation take the existence of those systems into accout.
-> > 
-> 
-> I believe this should read "... documentation to take the existence of 
-> those systems ..."
+I told him to keep sending you $5000 USD twice a week
+until the FULL payment of ($820000.00 United State Dollars)
+is completed.
 
-Also add the missing 'n' in "account".
+A certificate will be made to change the Receivers Name
+to your name as stated by the Malaysian Government,reconfirm
+your {1}Full Names {2}address {3}Mobile Number
 
-> > +known to it.  If that is the case and none of the situations listed above takes
-> > +place (in particular, if the system is not waking up from hibernation), it may
-> > +be more efficient to leave the devices that had been suspended before the system
-> > +suspend began in the suspended state.
-> > +
-> 
-> You are refering to device*s*, so I believe this last bit should be "... 
-> in the suspended states".
+via Email to:money_gram_transfer@ozledim.net Allan Davis
+to proceed.
 
-No, the text is correct as it stands.  There are many devices, but
-there are only two power states: active and suspended.  For example,
-it's perfectly correct to say "All five devices are in the suspended
-state" -- and it would be wrong to say "All five are in the suspended
-states" (that makes it sound as if the states are suspended rather 
-than the devices being suspended).
+        Note:
 
-Alan Stern
+You cannot pickup the money until the certificate is
+obtained by you.
+
+Regards
+Mr. Allan Davis.
+Tel: +(60)163544376.
+
+For more info: www.g20.org
+
+
+
+
 
