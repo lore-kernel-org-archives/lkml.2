@@ -1,71 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab1FZQpW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 12:45:22 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:33588 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754386Ab1FZQnh convert rfc822-to-8bit (ORCPT
+	id S1754454Ab1FZQyz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 12:54:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57355 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348Ab1FZQyP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 12:43:37 -0400
+	Sun, 26 Jun 2011 12:54:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=vrfy.org; s=google;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=cVjP2lqS7NuDqxstK79S/lguPpbvpKvBz4ATugDWsS6chgROr/P5czyvSqw7BxYLuo
-         BBWapPkabo7yCYRP7t0PjC6LidHTY5mRoOcjvY6jM/3Wl3QF3/Aa036b6L5aO3aNEEY9
-         mMoHrPnUaBxndmLLn64GnjYdnUsLYXs6MRC+Q=
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lJoLGLMSHf4U8Z/s1B/PPXgLqFlp4Sesg7bkgIXIFdoPk5HuNr6ptVftdDRoCawtb1
+         7CQWhaJKDLONKkNKRO3rK5RYsL0pWGPpnh3WeMOA/gUgB66xZZ5CGv9KcZUFNuwqF1rY
+         5TLWlcz5ZVKQSb+JLnUSd/849YJ0ft4wDV5Ag=
+Date: Sun, 26 Jun 2011 20:54:09 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
+ printk()
+Message-ID: <20110626165409.GA2584@albatros>
+References: <20110623152137.GA2536@albatros>
+ <20110626103915.GB11093@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimzZ5aRBiCm1TSy4yzfGUdchPeuMA@mail.gmail.com>
-References: <BANLkTi=dndbsjqbF7nTDJ0Qpvs=WNP=W6A@mail.gmail.com>
- <1307485173-32010-1-git-send-email-wad@chromium.org> <20110609153328.c00b23c0.akpm@linux-foundation.org>
- <BANLkTikJpjeoarMCEhaQ69g7UyM9-PqpVw@mail.gmail.com> <BANLkTimzZ5aRBiCm1TSy4yzfGUdchPeuMA@mail.gmail.com>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Sun, 26 Jun 2011 18:43:17 +0200
-Message-ID: <BANLkTinN_9q4u3UTfHAoL=rmAo+PKVf2jg@mail.gmail.com>
-Subject: Re: [PATCH v2] init: add root=PARTUUID=UUID,PARTNROFF=%d support
-To: Will Drewry <wad@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Jens Axboe <jaxboe@fusionio.com>, Namhyung Kim <namhyung@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110626103915.GB11093@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 21:53, Will Drewry <wad@chromium.org> wrote:
+Hi Ingo,
 
-> Upon further inspection, the code changes would not directly break any
-> existing code, but PARTUUID=...,PARTNROFF= would not be usable via the
-> other entrypoints to name_to_dev_t.  E.g., block2mtd or md because
-> they take in comma-separated parameters prior to calling
-> name_to_dev_t.  That seems like it'd be less than ideal.
+On Sun, Jun 26, 2011 at 12:39 +0200, Ingo Molnar wrote:
+> > +	if (!iscntrl(c) || (c == '\n') || (c == '\t'))
+> > +		emit_log_char(c);
+> > +	else {
+> > +		len = sprintf(buffer, "#x%02x", c);
+> > +		for (i = 0; i < len; i++)
+> > +			emit_log_char(buffer[i]);
+> > +	}
+> 
+> Nit: please use balanced curly braces.
+
+OK.
+
+> Also, i think it would be better to make this opt-out, i.e. exclude 
+> the handful of control characters that are harmful (such as backline 
+> and console escape), instead of trying to include the known-useful 
+> ones.
+
+Do you see any issue with the check above?
+
+
+> The whole non-ASCII-languages issue would not have happened if such 
+> an approach was taken.
 >
-> Kay,  Do you have a strong preference around the ,PARTNROFF= syntax?
-> I'm not sure what the cleanest approach is, but I'm inclined to finish
-> other patch cleanup (and documentation) and repost with '/' as the
-> separator instead of ','.   At present ',' is reused across several
-> places where devices are supplied by "name", but '/' is expected as
-> part of the normal path semantic.  The other option would be to use
-> ':' instead. ':' isn't usually overloaded as it is expected as part of
-> a the device major:minor naming scheme, but slashes seem more sane
-> even if weird:
->
->  PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF/PARTNROFF=1
->
-> I'll repost along these lines unless someone indicates that this is
-> too grotesque to consider.
+> It's also the better approach for the kernel: we handle known harmful 
+> things and are permissive otherwise.
 
-Hmm, '/' might look a bit strange in the context of a path, which is
-the common use case for root=.
+I hope it is not a universal tip for the whole kernel development.
+Black lists are almost always suck.
 
-We catch PARTUUID before parsing any of the other options, right? So
-we can't really break anything.
+Could you instantly answer without reading the previous discussion what
+control characters are harmful, what are sometimes harmful (on some
+ttys), and what are always safe and why (or even answer why it is
+harmful at all)?  I'm not a tty guy and I have to read console_codes(4)
+or similar docs to answer this question, the majority of kernel devs
+might have to read the docs too.
 
-Fstab and mount options in general all use ',' to separate keywords,
-and I think we should do the same here. I think the ',' still looks
-more natural than an artificial '/' to avoid possibly breaking
-something we don't even call into. :)
+Writing the black list implies the full knowledge of _all_ possible
+malformed input values, which is somewhat hard to achieve (or even
+impossible).  Some developers might not be interested in learning such
+details, but still interested in how this API can be used.
+
+Quite the contrary, the allowed values set makes sense to the developer
+and more stricktly defines the API in question.  Discussing the API
+goals and reaching the consensus about its usage is much more
+productive.  It might catch some wrong and dangerous API misuses.  If the
+allowed set becomes too strict one day, no problem - just explicitly
+relax the check.  If you lose some value in the black list (e.g. it
+becomes known that some control char sequence can be used to fake the
+logs), the miss significance would be higher.
+
+
+And from the cynical point of view the white list is simply smaller and
+cleaner than the black list.
+
 
 Thanks,
-Kay
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
