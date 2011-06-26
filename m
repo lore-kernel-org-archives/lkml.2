@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752018Ab1F0PkJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 11:40:09 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:40660 "EHLO duck.linux-mips.net"
+	id S1751992Ab1F0Pix (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:38:53 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:40686 "EHLO duck.linux-mips.net"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751191Ab1F0PiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 11:38:06 -0400
-Message-Id: <956509cd581fe584bd7ad1107eccf76cd99aec59.1309182743.git.ralf@linux-mips.org>
+	id S1751192Ab1F0PiO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 11:38:14 -0400
+Message-Id: <5ef17c7883b7a81d7f321f88a36f6dfe7f40bdd2.1309182743.git.ralf@linux-mips.org>
 In-Reply-To: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
 References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
 From: Ralf Baechle <ralf@linux-mips.org>
 To: "David S. Miller" <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org
-Date: Sun, 26 Jun 2011 12:26:26 +0100
-Subject: [PATCH 06/12] NET: ne3210: Fix bucketload full of section mismatches.
+Cc: Grant Grundler <grundler@parisc-linux.org>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Date: Sun, 26 Jun 2011 12:28:44 +0100
+Subject: [PATCH 07/12] NET: de4x5: Fix section mismatch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-WARNING: drivers/net/ne3210.o(.data+0x40): Section mismatch in reference from the variable ne3210_eisa_driver to the function .init.text:ne3210_eisa_probe()
-The variable ne3210_eisa_driver references
-the function __init ne3210_eisa_probe()
+WARNING: drivers/net/tulip/de4x5.o(.data+0x34): Section mismatch in reference from the variable de4x5_eisa_driver to the function .init.text:de4x5_eisa_probe()
+The variable de4x5_eisa_driver references
+the function __init de4x5_eisa_probe()
 If the reference is valid then annotate the
 variable with __init* or __refdata (see linux/init.h) or name the variable:
 *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
 
-Fixing this mismatch triggers yet more mismatches, fix those as well.
-
 Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 To: "David S. Miller" <davem@davemloft.net>
+Cc: Grant Grundler <grundler@parisc-linux.org>
 Cc: netdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-mips@linux-mips.org
 ---
- drivers/net/ne3210.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
+ drivers/net/tulip/de4x5.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/ne3210.c b/drivers/net/ne3210.c
-index 243ed2a..e30b8ff 100644
---- a/drivers/net/ne3210.c
-+++ b/drivers/net/ne3210.c
-@@ -80,17 +80,19 @@ static void ne3210_block_output(struct net_device *dev, int count, const unsigne
+diff --git a/drivers/net/tulip/de4x5.c b/drivers/net/tulip/de4x5.c
+index efaa1d6..ea473b6 100644
+--- a/drivers/net/tulip/de4x5.c
++++ b/drivers/net/tulip/de4x5.c
+@@ -1995,7 +1995,7 @@ SetMulticastFilter(struct net_device *dev)
  
- #define NE3210_DEBUG	0x0
+ static u_char de4x5_irq[] = EISA_ALLOWED_IRQ_LIST;
  
--static unsigned char irq_map[] __initdata = {15, 12, 11, 10, 9, 7, 5, 3};
--static unsigned int shmem_map[] __initdata = {0xff0, 0xfe0, 0xfff0, 0xd8, 0xffe0, 0xffc0, 0xd0, 0x0};
--static const char *ifmap[] __initdata = {"UTP", "?", "BNC", "AUI"};
--static int ifmap_val[] __initdata = {
-+static unsigned char irq_map[] __devinitdata = {15, 12, 11, 10, 9, 7, 5, 3};
-+static unsigned int shmem_map[] __devinitdata = {
-+	0xff0, 0xfe0, 0xfff0, 0xd8, 0xffe0, 0xffc0, 0xd0, 0x0
-+};
-+static const char *ifmap[] __devinitdata = {"UTP", "?", "BNC", "AUI"};
-+static int ifmap_val[] __devinitdata = {
- 		IF_PORT_10BASET,
- 		IF_PORT_UNKNOWN,
- 		IF_PORT_10BASE2,
- 		IF_PORT_AUI,
- };
- 
--static int __init ne3210_eisa_probe (struct device *device)
-+static int __devinit ne3210_eisa_probe (struct device *device)
+-static int __init de4x5_eisa_probe (struct device *gendev)
++static int __devinit de4x5_eisa_probe (struct device *gendev)
  {
- 	unsigned long ioaddr, phys_mem;
- 	int i, retval, port_index;
+ 	struct eisa_device *edev;
+ 	u_long iobase;
 -- 
 1.7.4.4
 
