@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751212Ab1FZGME (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 02:12:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59874 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750973Ab1FZGMA convert rfc822-to-8bit (ORCPT
+	id S1751253Ab1FZILG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 04:11:06 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49974 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751172Ab1FZILA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 02:12:00 -0400
+	Sun, 26 Jun 2011 04:11:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=FEV+ieSCLM2jvPL9X82k8OU6qH5ZBRUEBRABYEN4SimiSgRciaL0t/yIBRovUnlAnA
+         JoMQUWcy58xwmoBtAixqIRiRj92BLy8HIYD3NWpqaexA6kcwiYZUTiv2FhYW8VVca9wk
+         gW7D4FDORzV6ZzbXscAzKw+7mXNqaNhAWZi7E=
 MIME-Version: 1.0
-In-Reply-To: <20110625152009.f264be78.randy.dunlap@oracle.com>
-References: <20110624155822.cb8cf6eb.sfr@canb.auug.org.au> <20110624090456.191f1fda.randy.dunlap@oracle.com>
- <1308947172.13493.37.camel@koala> <4E04F5D0.9090900@oracle.com>
- <1308983721.23868.2.camel@koala> <20110625152009.f264be78.randy.dunlap@oracle.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Sun, 26 Jun 2011 00:11:40 -0600
-X-Google-Sender-Auth: bxfuy-fJyt0DtxrOmC9Rq-bsD7I
-Message-ID: <BANLkTi=Q-7bCHaH+-z6gnbwvexpGLYH6pA@mail.gmail.com>
-Subject: Re: linux-next: Tree for June 24 (mtd + of)
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: dedekind1@gmail.com, Stephen Rothwell <sfr@canb.auug.org.au>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Vitaly Wool <vwool@ru.mvista.com>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <BANLkTi=bKG4b6ziSkCqEfgqJ3VmktwVc7A@mail.gmail.com>
+References: <1306834660-15374-1-git-send-email-geert@linux-m68k.org>
+	<8eace637-27d2-41c5-bcbd-0087d6c75a75@email.android.com>
+	<BANLkTi=bKG4b6ziSkCqEfgqJ3VmktwVc7A@mail.gmail.com>
+Date: Sun, 26 Jun 2011 10:10:58 +0200
+X-Google-Sender-Auth: Dq0sGlHpCko0M3JYIPD_ZL20pv4
+Message-ID: <BANLkTikB3QTyd3Ue7N+w6V3xq1jqToAu2g@mail.gmail.com>
+Subject: Re: [PATCH 2/2] staging/iio: Make IIO depend on GENERIC_HARDIRQS
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: "jonathan.cameron@gmail.com" <jic23@cam.ac.uk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Jeff Mahoney <jeffm@suse.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 25, 2011 at 4:20 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> On Sat, 25 Jun 2011 09:35:13 +0300 Artem Bityutskiy wrote:
+On Tue, May 31, 2011 at 21:34, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Tue, May 31, 2011 at 13:01, jonathan.cameron@gmail.com
+> <jic23@cam.ac.uk> wrote:
+>> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>>>On m68k (which doesn't support generic hardirqs yet):
 >
->> On Fri, 2011-06-24 at 13:38 -0700, Randy Dunlap wrote:
->> > On 06/24/11 13:26, Artem Bityutskiy wrote:
->> > > On Fri, 2011-06-24 at 09:04 -0700, Randy Dunlap wrote:
->> > >> On Fri, 24 Jun 2011 15:58:22 +1000 Stephen Rothwell wrote:
->> > >>
->> > >>> Hi all,
->> > >>>
->> > >>> Changes since 20110623:
->> > >>>
->> > >>> My fixes tree includes:
->> > >>> � � � � (as an experiment) the early part of mmotm-2011-06-22-13-05
->> > >>> � � � � STAGING: Comedi: Build only on arches providing PAGE_KERNEL_NOCACHE
->> > >>
->> > >>
->> > >> When CONFIG_MTD=m, CONFIG_MTD_OF_PARTS=y:
->> > >>
->> > >> drivers/mtd/ofpart.o: In function `init_module':
->> > >> ofpart.c:(.init.text+0x0): multiple definition of `init_module'
->> > >> drivers/mtd/mtdcore.o:(.init.text+0x43): first defined here
->> > >
->> > > I guess this is some old issue? I do not think ofpart can be compiled-in
->> > > if the mtd core is a module...
->> >
->> > [adding driver author, Vitaly]
->> >
->> > No, it's a current issue.
->>
->> I meant that the subject suggests this is about linux-next, but this
->> problem should be in upstream.
+> [...]
 >
-> Sorry I misunderstood your comment.
+>>>Hence IIO_TRIGGER should depend on GENERIC_HARDIRQS.
+>>>But as IIO_TRIGGER and IIO_RING_BUFFER form a maze of dependencies and
+>>>selects,
+>>>just make the whole IIO subsystem depend on GENERIC_HARDIRQS.
+>>>
+>>>This dependency also covers !S390, so that one can be removed again.
+>> Dratt  We talked about this and thought S390 was the only non generic hard irq left.  Should have played safe sorry!
 >
-> 3.0-rc4 does not have this build error when I use the .config file with it...
-> however, I think that 3.0-rc4 also does not build ofpart.ko as it should.
+> I hope s390 will be the only one soon ;-)
 >
-> Looks to me like changes in drivers/mtd/{Kconfig && Makefile} caused this
-> build error.
+>>>Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+>> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+>
+> Thanks!
 
-The following commit in linux-next appears to be the culprit:
+Ping? Still broken in -next (and linus, FWIM).
 
-commit 1a6bc893044b961caae1c5a9c6c2065e608da427
-Author: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Date:   Sun May 29 21:32:33 2011 +0400
+Gr{oetje,eeting}s,
 
-    mtd: prepare to convert of_mtd_parse_partitions to partition parser
+                        Geert
 
-    Prepare to convert of_mtd_parse_partitions() to usual partitions parser:
-    1) Register ofpart parser
-    2) Internally don't use passed device for error printing
-    3) Add device_node to mtd_part_parser_data struct
-    4) Move of_mtd_parse_partitions from __devinit to common text section
-    5) add ofpart to the default list of partition parsers
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-    Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-    Signed-off-by: Artem Bityutskiy <dedekind1@gmail.com>
-
-It adds a module_init() call to ofpart.c which does not work the way
-that ofpart.c is linked to mtdcore.o.  Seems like that commit series
-still needs work.
-
-g.
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
