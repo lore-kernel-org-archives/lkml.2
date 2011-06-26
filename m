@@ -1,101 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab1FZM0a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 08:26:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58794 "EHLO ogre.sisk.pl"
+	id S1753607Ab1FZMe6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 08:34:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43825 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753458Ab1FZM0Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 08:26:25 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] PCI / PM: Detect early wakeup in pci_pm_prepare()
-Date: Sun, 26 Jun 2011 14:27:29 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        linux-pci@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1753417Ab1FZMdS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 08:33:18 -0400
+Subject: Re: [rfc patch] x86,apic: fix DEBUG_PREEMPT gripe when booting
+ with threadirqs=1
+From: Mike Galbraith <mgalbraith@suse.de>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20110626104521.GE11093@elte.hu>
+References: <1308743825.8568.3.camel@marge.simson.net>
+	 <20110626104521.GE11093@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 26 Jun 2011 14:33:14 +0200
+Message-ID: <1309091594.11217.18.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.1 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106261427.30155.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Sun, 2011-06-26 at 12:45 +0200, Ingo Molnar wrote:
+> * Mike Galbraith <mgalbraith@suse.de> wrote:
+> 
+> > x86,apic: fix DEBUG_PREEMPT gripe when booting with threadirqs=1
+> > 
+> > If CONFIG_PREEMPT and CONFIG_INTR_REMAP are both set, and a box is
+> > booted with threadirqs, the gripe below is emitted.  It was suggested
+> > that native_smp_prepare_cpus() shouldn't need to be run with preemption
+> > disabled, and indeed, box boots with no hint of trouble.  Remove it.
+> 
+> Would also require a careful review of the code we take out of 
+> preempt protection now - have you done that by any chance? (if not, 
+> mind doing it?)
 
-After commit e8665002477f0278f84f898145b1f141ba26ee26
-(PM: Allow pm_runtime_suspend() to succeed during system suspend)
-runtime resume requests may be put into the PM workqueue after
-the pm_runtime_barrier() in dpm_prepare().  If the given device
-is configured to wake up the system from sleep states, this should
-be regarded as a wakeup event, because it means that a wakeup device
-requires attention.  However, for PCI devices the subsequent
-pm_runtime_get_sync() in pci_pm_prepare() will resume the device
-unconditionally and the wakeup event situation will not be detected.
+No, I haven't, I have only empirical evidence of having yet to see any
+nastiness with an RT kernel.
 
-To fix this problem, it is necessary to add an early wakeup detection
-mechanism, analogous to the one in dpm_prepare(), to
-pci_pm_prepare().
+I'll crawl through it once I get a couple PCI configuration space
+thingies sorted.  I'm rather expecting to then find out why
+INTR_REMAP/DMAR + X2APIC is disabled.. the head-on collision way.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+	-Mike
 
----
-
-Hi,
-
-I think we need this patch in 3.0 (in addition to all of the previously
-applied patches).  I'm sorry I didn't notice that before, it only came
-to my mind when I was working on the "PM: Fix up interactions between system
-suspend/resume and runtime PM" patch series.
-
-Thanks,
-Rafael
-
----
- drivers/pci/pci-driver.c |   16 +++++++++++++++-
- 1 file changed, 15 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/drivers/pci/pci-driver.c
-===================================================================
---- linux-2.6.orig/drivers/pci/pci-driver.c
-+++ linux-2.6/drivers/pci/pci-driver.c
-@@ -18,6 +18,7 @@
- #include <linux/sched.h>
- #include <linux/cpu.h>
- #include <linux/pm_runtime.h>
-+#include <linux/suspend.h>
- #include "pci.h"
- 
- struct pci_dynid {
-@@ -616,6 +617,19 @@ static int pci_pm_prepare(struct device
- 	int error = 0;
- 
- 	/*
-+	 * If a PCI device configured to wake up the system from sleep states
-+	 * has been suspended at run time and there's a resume request pending
-+	 * for it, this is equivalent to the device signaling wakeup, so the
-+	 * system suspend operation should be aborted.
-+	 */
-+	pm_runtime_get_noresume(dev);
-+	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-+		pm_wakeup_event(dev, 0);
-+
-+	if (pm_wakeup_pending())
-+		return -EBUSY;
-+
-+	/*
- 	 * PCI devices suspended at run time need to be resumed at this
- 	 * point, because in general it is necessary to reconfigure them for
- 	 * system suspend.  Namely, if the device is supposed to wake up the
-@@ -624,7 +638,7 @@ static int pci_pm_prepare(struct device
- 	 * system from the sleep state, we'll have to prevent it from signaling
- 	 * wake-up.
- 	 */
--	pm_runtime_get_sync(dev);
-+	pm_runtime_resume(dev);
- 
- 	if (drv && drv->pm && drv->pm->prepare)
- 		error = drv->pm->prepare(dev);
