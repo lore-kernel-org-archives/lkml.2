@@ -1,88 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757954Ab1F0LpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 07:45:15 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:51068 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755898Ab1F0Lop convert rfc822-to-8bit (ORCPT
+	id S932125Ab1F0Lvb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 07:51:31 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:42311 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757628Ab1F0Lud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 07:44:45 -0400
+	Mon, 27 Jun 2011 07:50:33 -0400
+X-Sasl-enc: Mg0T9Jf+z5nm47I5yduBgmDNFwB3R7CEt3AIbo4TvQuC 1309175431
+From: Roberto Sassu <roberto.sassu@polito.it>
+To: linux-security-module@vger.kernel.org
+Cc: keyrings@linux-nfs.org, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, dhowells@redhat.com, jmorris@namei.org,
+        zohar@linux.vnet.ibm.com, safford@watson.ibm.com, ramunno@polito.it,
+        tyhicks@linux.vnet.ibm.com, kirkland@canonical.com,
+        ecryptfs-devel@lists.launchpad.net,
+        Roberto Sassu <roberto.sassu@polito.it>
+Subject: [PATCH v5 0/7] eCryptfs: added support for the encrypted key type
+Date: Mon, 27 Jun 2011 13:45:38 +0200
+Message-Id: <1309175148-6651-1-git-send-email-roberto.sassu@polito.it>
+X-Mailer: git-send-email 1.7.4.4
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinxptCJRETreCpUoV-nU2K4fuFcmQ@mail.gmail.com>
-References: <1307695731-28018-1-git-send-email-linus.walleij@stericsson.com>
-	<BANLkTinxptCJRETreCpUoV-nU2K4fuFcmQ@mail.gmail.com>
-Date: Mon, 27 Jun 2011 13:44:43 +0200
-Message-ID: <BANLkTimMSChGFUSnFWFHv3nNUca_Fyawaw@mail.gmail.com>
-Subject: Re: [PATCH 0/2] RFC: gpio: driver-local pin configuration
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Stijn Devriendt <highguy@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Kurt Van Dijck <kurt.van.dijck@eia.be>,
-        Ben Nizette <bn@niasdigital.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; protocol="application/x-pkcs7-signature"; micalg="sha1"; boundary="----011B7A1B8C9F799EBDF73EA9199DEDBA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 12:57 PM, Stijn Devriendt <highguy@gmail.com> wrote:
-> On Fri, Jun 10, 2011 at 10:48 AM, Linus Walleij
-> <linus.walleij@stericsson.com> wrote:
->>
->> Background: Grant didn't like the idea of an ioctl() like
->> configuration function in the struct gpio_chip vtable, so we
->> decided to see if it was wiser to go back to the initial suggestion
->> of making it possible for drivers to dereference the struct
->> gpio_chip and perform driver-local operations via regular
->> function calls instead.
->>
-> I couldn't find Grant's rationale in an e-mail thread somewhere, but
-> except from the few comments I passed on, I liked the approach.
+This is an S/MIME signed message
 
-Grant gave me these comments in person. Grant, maybe you
-can restate? I might be referring it the wrong way.
+------011B7A1B8C9F799EBDF73EA9199DEDBA
 
-> I rather dislike exposing the gpio_to_chip. It makes implementations
-> work around gpiolib completely. We might as well strip it out
-> completely then and go back to drivers doing platform specific GPIO
-> register accesses.
+This patch set adds support for the 'encrypted' key type in the eCryptfs
+filesystem.
 
-Myself I am pretty neutral and happy with any of these two
-approaches, I just want to be able to migrate my U300 and Nomadik
-drivers to gpio_chip and irq_chip, and without a handle on the memory
-map I cannot do that.
+Changelog from version v4:
+ - rebased on the kernel version 3.0-rc4;
+ - fixed master key dumping in request_master_key() when debug is enabled;
+ - made more understandable the debug messages added in the patch 3/7.
 
->> This one is then exposed in the chip-specific header  in
->> <linux/gpio/u300.h>, and all the configuration defines that
->> were previously globally generic in <linux/gpio.h> are also
->> moved there and made driver-specific without any attempt of
->> generalizing this.
->>
-> How about a SPI flash that has its chip select hooked up to a
-> GPIO that requires setting open-drain for example. Now that
-> SPI-driver needs to be aware of each independent gpio-chip
-> implementation.
+Roberto Sassu
 
-Yes. To make the driver platform neutral, it needs to for example
-provide a callback in the platform data like (* set_pin_bias) or so,
-and then your platform has to implement this biasing.
 
-In this specific case that kind of stuff would likely be preferable
-to have in the platform anyway, but I understand what you mean.
+Roberto Sassu (7):
+  encrypted_keys: avoid dumping the master key if the request fails
+  encrypted-keys: fixed valid_master_desc() function description
+  encrypted-keys: added additional debug messages
+  encrypted-keys: add key format support
+  eCryptfs: export global eCryptfs definitions to
+    include/linux/ecryptfs.h
+  encrypted-keys: add ecryptfs format support
+  eCryptfs: added support for the encrypted key type
 
-In the pinctrl framework I try to handle all such pin control stuff
-with the intention of letting the GPIO drivers wrap it if they
-prefer, but in this framework platforms could also handle GPIO
-and pin control in an orthogonal way, which would likely be
-preferable in most cases.
+ Documentation/keys-ecryptfs.txt                   |   68 ++++++
+ Documentation/security/keys-trusted-encrypted.txt |   52 +++--
+ fs/ecryptfs/ecryptfs_kernel.h                     |  150 ++++---------
+ fs/ecryptfs/keystore.c                            |   13 +-
+ include/keys/encrypted-type.h                     |   13 +-
+ include/linux/ecryptfs.h                          |  113 +++++++++
+ security/keys/Makefile                            |    2 +-
+ security/keys/ecryptfs_format.c                   |   81 +++++++
+ security/keys/ecryptfs_format.h                   |   30 +++
+ security/keys/encrypted.c                         |  251 ++++++++++++++++-----
+ 10 files changed, 584 insertions(+), 189 deletions(-)
+ create mode 100644 Documentation/keys-ecryptfs.txt
+ create mode 100644 include/linux/ecryptfs.h
+ create mode 100644 security/keys/ecryptfs_format.c
+ create mode 100644 security/keys/ecryptfs_format.h
 
-Linus Walleij
+-- 
+1.7.4.4
+
+
+------011B7A1B8C9F799EBDF73EA9199DEDBA
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+
+MIIICQYJKoZIhvcNAQcCoIIH+jCCB/YCAQExCzAJBgUrDgMCGgUAMAsGCSqGSIb3
+DQEHAaCCBWQwggVgMIIESKADAgECAgICuzANBgkqhkiG9w0BAQUFADBlMQswCQYD
+VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQD
+Ey1Qb2xpdGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkw
+HhcNMTAxMjIwMTExOTU0WhcNMTUxMjMxMjM1OTU5WjBfMQswCQYDVQQGEwJJVDEe
+MBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMRcwFQYDVQQDEw5Sb2JlcnRv
+ICBTYXNzdTEXMBUGCgmSJomT8ixkAQETB2QwMjEzMDUwggEiMA0GCSqGSIb3DQEB
+AQUAA4IBDwAwggEKAoIBAQDS6p4SaJdmmJHJu9On9ZohhBFE2GgYiY7YtRnhhQJA
+NfOtHEhSbpUMaSOfq/Pna6ipR5nAFrlM8cOGcSHZdxrPcgzeJU7F2v1fl2ThvFOc
+TIkcC1aAJGQUuCaCXDlQt+KFecJWTrRZnalMHZueO+J6cgHcvR1CQz5e88dSzo3Q
+XZy0w/hxGL9Ht9velqsl48ohBk2rs/svAOCp6GfqT1Yxwx1p87d3ViTrmuZB4/X+
+da39nJqmo6AZ/y3Zg+r91BgNcfsHVqFT0JTcG6qRIaeqTtqVYpYl+rH1rZzYCakD
+yQyys66sBvaXyaiMr0M+SpyH+LaGz5bDn5Odq16FYEq7AgMBAAGjggIeMIICGjAO
+BgNVHQ8BAf8EBAMCA/gwJwYDVR0lBCAwHgYIKwYBBQUHAwIGCCsGAQUFBwMDBggr
+BgEFBQcDBDAiBgNVHREEGzAZgRdyb2JlcnRvLnNhc3N1QHBvbGl0by5pdDAMBgNV
+HRMBAf8EAjAAMB0GA1UdDgQWBBQgKbXSXn+j769x0tsZQ9pSOzIIdDAfBgNVHSME
+GDAWgBTNm1tbnup2IcQQaOjSLTfbHy/I5DCBywYDVR0gBIHDMIHAMD4GCisGAQQB
+qQcBAQIwMDAuBggrBgEFBQcCARYiaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9j
+cHMvMS4yLzBEBgorBgEEAakHAgECMDYwNAYIKwYBBQUHAgEWKGh0dHA6Ly93d3cu
+aXRhbHkuZXVyb3BraS5vcmcvY2EvY3BzLzEuMi8wOAYKKwYBBAGVYgECAjAqMCgG
+CCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0L2Nwcy8yLjIvMGYGCCsGAQUF
+BwEBBFowWDAhBggrBgEFBQcwAYYVaHR0cDovL29jc3AucG9saXRvLml0MDMGCCsG
+AQUFBzAChidodHRwOi8vY2EucG9saXRvLml0L2NlcnRzL3BvbGl0b19jYS5jZXIw
+NwYDVR0fBDAwLjAsoCqgKIYmaHR0cDovL2NhLnBvbGl0by5pdC9jcmwvcG9saXRv
+X2NybC5jcmwwDQYJKoZIhvcNAQEFBQADggEBADMe0aHcBJXV6pMJPVVSt1Vazd8Y
+LuTLO45Igs9Sb2LuaO6pvcDGvq9dEJnBhP1B+zBAK6WEA1PWb66xC4QXaJnlGZTX
+S3XeBivHWm6BNOH2kNeU0HBeGZCV/n5r70TPxkEAcc7u8YY2i6CiMM428YhZK8Zj
+oN9D3QNIRf4HZgh0FTbf8eL/XvBbK/oPC+Rew+Qql6M3DHnaS1q2SKUwwO/4VXA4
+JsOdatFI68AMXH0Xx9UIcjRi+kvsyvwHlc0Z8AoAtfRMoIl4zFF4Qaowec2UunBK
+YlqPpFTtU9czuoEP12A86nqSVsoNok2mZOeYa9IdIjeE2rfdKx6k3YNRg08xggJt
+MIICaQIBATBrMGUxCzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBk
+aSBUb3Jpbm8xNjA0BgNVBAMTLVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZp
+Y2F0aW9uIEF1dGhvcml0eQICArswCQYFKw4DAhoFAKCB2DAYBgkqhkiG9w0BCQMx
+CwYJKoZIhvcNAQcBMBwGCSqGSIb3DQEJBTEPFw0xMTA2MjcxMTQ1NDhaMCMGCSqG
+SIb3DQEJBDEWBBTjVfQKmCyvRa3NPuM7OOVvVr0iIjB5BgkqhkiG9w0BCQ8xbDBq
+MAsGCWCGSAFlAwQBKjALBglghkgBZQMEARYwCwYJYIZIAWUDBAECMAoGCCqGSIb3
+DQMHMA4GCCqGSIb3DQMCAgIAgDANBggqhkiG9w0DAgIBQDAHBgUrDgMCBzANBggq
+hkiG9w0DAgIBKDANBgkqhkiG9w0BAQEFAASCAQCeXTnbt0SpRrQwwGT46b3P6BIN
+9fSZziWmdIdU5joBybWCtYwPZKM0a0xGQ+63BWDM/2tchk3cV9asf6Pro5dLpxsL
+WDje55bLh2xuTuJqRlKALYUe6mXyKKRMKywEm2y7PmpsZsUdo6/jzo+S2DDHbJiV
+0BDi6wGzDQ2h+Omiy+hVaBGD9uqxfCWEH/M79loiNiKxgxklITSvcBaWUeobrG8Y
+P+EFGDtzCsIerZYrL2HsUP/i9MOTOaQNhvDnpoAnryV1MHHXD5+keRTpJKh/KOMK
+5lHsR+MTFFRf2IZLiopd6EPVYPu0UnVZRdpvq14eGOpAR6s/FCv5DxRQfKB6
+
+------011B7A1B8C9F799EBDF73EA9199DEDBA--
+
+
