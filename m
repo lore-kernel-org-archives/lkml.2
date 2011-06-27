@@ -1,375 +1,251 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755176Ab1F0WXG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 18:23:06 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49286 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755156Ab1F0WVZ (ORCPT
+	id S1754918Ab1F0WY6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 18:24:58 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:54125 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755198Ab1F0WXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 18:21:25 -0400
-Date: Mon, 27 Jun 2011 16:21:21 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging
- bus
-Message-ID: <20110627222121.GD20865@ponder.secretlab.ca>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
- <1308640714-17961-8-git-send-email-ohad@wizery.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308640714-17961-8-git-send-email-ohad@wizery.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 27 Jun 2011 18:23:09 -0400
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, tglx@linutronix.de, mingo@elte.hu,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>
+Subject: [PATCH v3] futex: Fix regression with read only mappings
+Date: Mon, 27 Jun 2011 17:22:55 -0500
+Message-Id: <1309213375-31471-1-git-send-email-sbohrer@rgmadvisors.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <4E08F893.10103@linux.intel.com>
+References: <4E08F893.10103@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 21, 2011 at 10:18:33AM +0300, Ohad Ben-Cohen wrote:
-> Add a virtio-based IPC bus, which enables kernel users to communicate
-> with remote processors over shared memory using a simple messaging
-> protocol.
-> 
-> Assign a local address for every local endpoint that is created,
-> and bind it to the user's callback. Invoke that callback when the
-> destination of an inbound message is the user's address.
-> 
-> Signed-off-by: Ohad Ben-Cohen <ohad@wizery.com>
+commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+parameter from get_futex_key()) in 2.6.33 introduced a user-mode
+regression in that it additionally prevented futex operations on a
+region within a read only memory mapped file.  For example this breaks
+workloads that have one or more reader processes doing a FUTEX_WAIT on a
+futex within a read only shared mapping, and a writer processes that has
+a writable mapping issuing the FUTEX_WAKE.
 
-Hey Ohad,
+This fixes the regression for futex operations that should be valid on
+RO mappings by trying a RO get_user_pages_fast() when the RW
+get_user_pages_fast() fails so as not to slow down the common path of
+writable anonymous maps and bailing when we used the RO path on
+anonymous memory.
 
-Nice patch.  I'm quite thrilled to see this implemented.  Some
-comments below, but otherwise I think it looks pretty good.
+While fixing the regression this patch opens up two possible bad
+scenarios as identified by KOSAKI Motohiro:
+
+1) This patch also allows FUTEX_WAIT on RO private mappings which have
+the following corner case.
+
+  Thread-A: call futex(FUTEX_WAIT, memory-region-A).
+            get_futex_key() return inode based key.
+            sleep on the key
+  Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
+  Thread-B: write memory-region-A.
+            COW happen. This process's memory-region-A become related
+            to new COWed private (ie PageAnon=1) page.
+  Thread-B: call futex(FUETX_WAKE, memory-region-A).
+            get_futex_key() return mm based key.
+            IOW, we fail to wake up Thread-A.
+
+2) Current futex code doesn't handle zero page properly.
+
+  Read mode get_user_pages() can return zero page, but current futex
+  code doesn't handle it at all. Then, zero page makes infinite loop
+  internally.
+
+This Patch is based on Peter Zijlstra's initial patch with modifications to
+only allow RO mappings for futex operations that need VERIFY_READ access.
+
+Reported-by: David Oliver <david@rgmadvisors.com>
+Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+---
+
+Changes FLAGS_WRITE to FLAGS_RO.  Made flags an unsigned int instead of
+int.  Added/cleaned up comments.
+
+ kernel/futex.c |   50 ++++++++++++++++++++++++++++++++++++--------------
+ 1 files changed, 36 insertions(+), 14 deletions(-)
+
+diff --git a/kernel/futex.c b/kernel/futex.c
+index fe28dc2..1737a66 100644
+--- a/kernel/futex.c
++++ b/kernel/futex.c
+@@ -75,6 +75,7 @@ int __read_mostly futex_cmpxchg_enabled;
+ #define FLAGS_SHARED		0x01
+ #define FLAGS_CLOCKRT		0x02
+ #define FLAGS_HAS_TIMEOUT	0x04
++#define FLAGS_RO		0x08
+ 
+ /*
+  * Priority Inheritance state:
+@@ -216,7 +217,7 @@ static void drop_futex_key_refs(union futex_key *key)
+ /**
+  * get_futex_key() - Get parameters which are the keys for a futex
+  * @uaddr:	virtual address of the futex
+- * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
++ * @flags:	futex flags: FLAGS_SHARED and FLAGS_RO are valid.
+  * @key:	address where result is stored.
+  *
+  * Returns a negative error code or 0
+@@ -229,12 +230,12 @@ static void drop_futex_key_refs(union futex_key *key)
+  * lock_page() might sleep, the caller should not hold a spinlock.
+  */
+ static int
+-get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
++get_futex_key(u32 __user *uaddr, unsigned int flags, union futex_key *key)
+ {
+ 	unsigned long address = (unsigned long)uaddr;
+ 	struct mm_struct *mm = current->mm;
+ 	struct page *page, *page_head;
+-	int err;
++	int err, ro = 0;
+ 
+ 	/*
+ 	 * The futex address must be "naturally" aligned.
+@@ -251,7 +252,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+ 	 * Note : We do have to check 'uaddr' is a valid user address,
+ 	 *        but access_ok() should be faster than find_vma()
+ 	 */
+-	if (!fshared) {
++	if (!(flags & FLAGS_SHARED)) {
+ 		if (unlikely(!access_ok(VERIFY_WRITE, uaddr, sizeof(u32))))
+ 			return -EFAULT;
+ 		key->private.mm = mm;
+@@ -262,8 +263,18 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+ 
+ again:
+ 	err = get_user_pages_fast(address, 1, 1, &page);
++        /*
++         * If write access is not required (eg. FUTEX_WAIT), try
++         * and get read-only access.
++         */
++	if (err == -EFAULT && flags & FLAGS_RO) {
++		err = get_user_pages_fast(address, 1, 0, &page);
++		ro = 1;
++	}
+ 	if (err < 0)
+ 		return err;
++	else
++		err = 0;
+ 
+ #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+ 	page_head = page;
+@@ -316,6 +327,15 @@ again:
+ 	 * the object not the particular process.
+ 	 */
+ 	if (PageAnon(page_head)) {
++		/*
++		 * A RO anonymous page will never change and thus doesn't make
++		 * sense for futex operations.
++		 */
++		if (ro) {
++			err = -EFAULT;
++			goto out;
++		}
++
+ 		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+ 		key->private.mm = mm;
+ 		key->private.address = address;
+@@ -327,9 +347,10 @@ again:
+ 
+ 	get_futex_key_refs(key);
+ 
++out:
+ 	unlock_page(page_head);
+ 	put_page(page_head);
+-	return 0;
++	return err;
+ }
+ 
+ static inline void put_futex_key(union futex_key *key)
+@@ -940,7 +961,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+ 	if (!bitset)
+ 		return -EINVAL;
+ 
+-	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
++	ret = get_futex_key(uaddr, flags | FLAGS_RO, &key);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+@@ -986,10 +1007,10 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
+ 	int ret, op_ret;
+ 
+ retry:
+-	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
++	ret = get_futex_key(uaddr1, flags | FLAGS_RO, &key1);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+-	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
++	ret = get_futex_key(uaddr2, flags, &key2);
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
+ 
+@@ -1243,10 +1264,11 @@ retry:
+ 		pi_state = NULL;
+ 	}
+ 
+-	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
++	ret = get_futex_key(uaddr1, flags | FLAGS_RO, &key1);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+-	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
++	ret = get_futex_key(uaddr2, requeue_pi ? flags : flags | FLAGS_RO,
++	                    &key2);
+ 	if (unlikely(ret != 0))
+ 		goto out_put_key1;
+ 
+@@ -1790,7 +1812,7 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
+ 	 * while the syscall executes.
+ 	 */
+ retry:
+-	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
++	ret = get_futex_key(uaddr, flags | FLAGS_RO, &q->key);
+ 	if (unlikely(ret != 0))
+ 		return ret;
+ 
+@@ -1941,7 +1963,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
+ 	}
+ 
+ retry:
+-	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
++	ret = get_futex_key(uaddr, flags, &q.key);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+@@ -2060,7 +2082,7 @@ retry:
+ 	if ((uval & FUTEX_TID_MASK) != vpid)
+ 		return -EPERM;
+ 
+-	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
++	ret = get_futex_key(uaddr, flags, &key);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+@@ -2249,7 +2271,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+ 	debug_rt_mutex_init_waiter(&rt_waiter);
+ 	rt_waiter.task = NULL;
+ 
+-	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
++	ret = get_futex_key(uaddr2, flags, &key2);
+ 	if (unlikely(ret != 0))
+ 		goto out;
+ 
+-- 
+1.6.5.2
 
 
-> ---
->  Documentation/ABI/testing/sysfs-bus-rpmsg |   75 +++
->  Documentation/rpmsg.txt                   |  308 +++++++++
->  drivers/Kconfig                           |    1 +
->  drivers/Makefile                          |    1 +
->  drivers/rpmsg/Kconfig                     |   14 +
->  drivers/rpmsg/Makefile                    |    1 +
->  drivers/rpmsg/virtio_rpmsg_bus.c          | 1036 +++++++++++++++++++++++++++++
->  include/linux/mod_devicetable.h           |   10 +
->  include/linux/rpmsg.h                     |  421 ++++++++++++
->  include/linux/virtio_ids.h                |    1 +
->  10 files changed, 1868 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/ABI/testing/sysfs-bus-rpmsg
->  create mode 100644 Documentation/rpmsg.txt
->  create mode 100644 drivers/rpmsg/Kconfig
->  create mode 100644 drivers/rpmsg/Makefile
->  create mode 100644 drivers/rpmsg/virtio_rpmsg_bus.c
->  create mode 100644 include/linux/rpmsg.h
-> 
-> diff --git a/Documentation/rpmsg.txt b/Documentation/rpmsg.txt
-> new file mode 100644
-> index 0000000..0a7c820
-> --- /dev/null
-> +++ b/Documentation/rpmsg.txt
-[...]
 
-Great documentation!  Thanks!
-
-> diff --git a/drivers/Kconfig b/drivers/Kconfig
-> index 1f6d6d3..840f835 100644
-> --- a/drivers/Kconfig
-> +++ b/drivers/Kconfig
-> @@ -128,4 +128,5 @@ source "drivers/clocksource/Kconfig"
->  
->  source "drivers/remoteproc/Kconfig"
->  
-> +source "drivers/rpmsg/Kconfig"
->  endmenu
-> diff --git a/drivers/Makefile b/drivers/Makefile
-> index 4d53a18..2980a15 100644
-> --- a/drivers/Makefile
-> +++ b/drivers/Makefile
-> @@ -22,6 +22,7 @@ obj-$(CONFIG_ARM_AMBA)		+= amba/
->  obj-$(CONFIG_DMA_ENGINE)	+= dma/
->  
->  obj-$(CONFIG_VIRTIO)		+= virtio/
-> +obj-$(CONFIG_RPMSG)		+= rpmsg/
->  obj-$(CONFIG_XEN)		+= xen/
->  
->  # regulators early, since some subsystems rely on them to initialize
-> diff --git a/drivers/rpmsg/Kconfig b/drivers/rpmsg/Kconfig
-> new file mode 100644
-> index 0000000..41303f5
-> --- /dev/null
-> +++ b/drivers/rpmsg/Kconfig
-> @@ -0,0 +1,14 @@
-> +# RPMSG always gets selected by whoever wants it
-> +config RPMSG
-> +	tristate
-> +	select VIRTIO
-> +	select VIRTIO_RING
-> +
-> +if RPMSG
-> +
-> +# OK, it's a little counter-intuitive to do this, but it puts it neatly under
-> +# the rpmsg menu (and it's the approach preferred by the virtio folks).
-> +
-> +source "drivers/virtio/Kconfig"
-
-What happens when kvm and rpmsg both get enabled on the same kernel.
-ARM virtualization is currently being worked on, so it will happen.
-Also, I can see this finding use in the x86 world to talk to
-coprocessor boards (like the Xilinx FPGA plugin board which can have a
-soft core on it).
-
-> +
-> +endif # RPMSG
-> diff --git a/drivers/rpmsg/Makefile b/drivers/rpmsg/Makefile
-> new file mode 100644
-> index 0000000..7617fcb
-> --- /dev/null
-> +++ b/drivers/rpmsg/Makefile
-> @@ -0,0 +1 @@
-> +obj-$(CONFIG_RPMSG)	+= virtio_rpmsg_bus.o
-> diff --git a/drivers/rpmsg/virtio_rpmsg_bus.c b/drivers/rpmsg/virtio_rpmsg_bus.c
-> new file mode 100644
-> index 0000000..3e98b02
-> --- /dev/null
-> +++ b/drivers/rpmsg/virtio_rpmsg_bus.c
-[...]
-> +/* rpmsg devices and drivers are matched using the service name */
-> +static inline int rpmsg_id_match(const struct rpmsg_channel *rpdev,
-> +				  const struct rpmsg_device_id *id)
-> +{
-> +	if (strncmp(id->name, rpdev->id.name, RPMSG_NAME_SIZE))
-> +		return 0;
-> +
-> +	return 1;
-> +}
-
-or simply: 'return strncmp(id->name, rpdev->id.name, RPMSG_NAME_SIZE) == 0;'
-
-:-)
-
-> +/* for more info, see below documentation of rpmsg_create_ept() */
-> +static struct rpmsg_endpoint *__rpmsg_create_ept(struct virtproc_info *vrp,
-> +		struct rpmsg_channel *rpdev,
-> +		void (*cb)(struct rpmsg_channel *, void *, int, void *, u32),
-> +		void *priv, u32 addr)
-> +{
-> +	int err, tmpaddr, request;
-> +	struct rpmsg_endpoint *ept;
-> +	struct device *dev = rpdev ? &rpdev->dev : &vrp->vdev->dev;
-> +
-> +	if (!idr_pre_get(&vrp->endpoints, GFP_KERNEL))
-> +		return NULL;
-> +
-> +	ept = kzalloc(sizeof(*ept), GFP_KERNEL);
-> +	if (!ept) {
-> +		dev_err(dev, "failed to kzalloc a new ept\n");
-> +		return NULL;
-> +	}
-> +
-> +	ept->rpdev = rpdev;
-> +	ept->cb = cb;
-> +	ept->priv = priv;
-> +
-> +	/* do we need to allocate a local address ? */
-> +	request = addr == RPMSG_ADDR_ANY ? RPMSG_RESERVED_ADDRESSES : addr;
-> +
-> +	spin_lock(&vrp->endpoints_lock);
-
-Is a spin_lock the right choice for endpoints, or should it be a
-mutex (do the endpoints operations need to be atomic)?
-
-> +/*
-> + * find an existing channel using its name + address properties,
-> + * and destroy it
-> + */
-> +static int rpmsg_destroy_channel(struct virtproc_info *vrp,
-> +					struct rpmsg_channel_info *chinfo)
-> +{
-> +	struct virtio_device *vdev = vrp->vdev;
-> +	struct device *dev;
-> +
-> +	dev = device_find_child(&vdev->dev, chinfo, rpmsg_channel_match);
-> +	if (!dev)
-> +		return -EINVAL;
-> +
-> +	device_unregister(dev);
-> +
-> +	put_device(dev);
-> +
-> +	kfree(to_rpmsg_channel(dev));
-
-At put_device time, it is conceivable that the dev pointer is no
-longer valid.  You'll need to get do the to_rpmsg_channel() before
-putting the dev.
-
-> +
-> +	return 0;
-> +}
-> +
-> +/* super simple buffer "allocator" that is just enough for now */
-> +static void *get_a_tx_buf(struct virtproc_info *vrp)
-> +{
-> +	unsigned int len;
-> +	void *ret;
-> +
-> +	/* support multiple concurrent senders */
-> +	spin_lock(&vrp->tx_lock);
-> +
-> +	/*
-> +	 * either pick the next unused tx buffer
-> +	 * (half of our buffers are used for sending messages)
-> +	 */
-> +	if (vrp->last_sbuf < vrp->num_bufs / 2)
-> +		ret = vrp->sbufs + vrp->buf_size * vrp->last_sbuf++;
-> +	/* or recycle a used one */
-> +	else
-> +		ret = virtqueue_get_buf(vrp->svq, &len);
-> +
-> +	spin_unlock(&vrp->tx_lock);
-> +
-> +	return ret;
-> +}
-> +
-> +/**
-> + * rpmsg_upref_sleepers() - enable "tx-complete" interrupts, if needed
-> + * @vrp: virtual remote processor state
-> + *
-> + * This function is called before a sender is blocked, waiting for
-> + * a tx buffer to become available.
-> + *
-> + * If we already have blocking senders, this function merely increases
-> + * the "sleepers" reference count, and exits.
-> + *
-> + * Otherwise, if this is the first sender to block, we also enable
-> + * virtio's tx callbacks, so we'd be immediately notified when a tx
-> + * buffer is consumed (we rely on virtio's tx callback in order
-> + * to wake up sleeping senders as soon as a tx buffer is used by the
-> + * remote processor).
-> + */
-> +static void rpmsg_upref_sleepers(struct virtproc_info *vrp)
-> +{
-> +	/* support multiple concurrent senders */
-> +	spin_lock(&vrp->tx_lock);
-> +
-> +	/* are we the first sleeping context waiting for tx buffers ? */
-> +	if (!vrp->sleepers++)
-
-Maybe use a kref?  It might be useful to have a kref_get_first() that
-takes a callback used for the first increment.
-
-> +static int rpmsg_remove_device(struct device *dev, void *data)
-> +{
-> +	struct rpmsg_channel *rpdev = to_rpmsg_channel(dev);
-> +
-> +	device_unregister(dev);
-> +
-> +	kfree(rpdev);
-
-put_device() I think.
-
-> +
-> +	return 0;
-> +}
-> +
-> +static void __devexit rpmsg_remove(struct virtio_device *vdev)
-> +{
-> +	struct virtproc_info *vrp = vdev->priv;
-> +	int ret;
-> +
-> +	ret = device_for_each_child(&vdev->dev, NULL, rpmsg_remove_device);
-> +	if (ret)
-> +		dev_warn(&vdev->dev, "can't remove rpmsg device: %d\n", ret);
-> +
-> +	idr_remove_all(&vrp->endpoints);
-> +	idr_destroy(&vrp->endpoints);
-> +
-> +	vdev->config->del_vqs(vrp->vdev);
-> +
-> +	kfree(vrp);
-> +}
-> +
-> +static struct virtio_device_id id_table[] = {
-> +	{ VIRTIO_ID_RPMSG, VIRTIO_DEV_ANY_ID },
-> +	{ 0 },
-> +};
-> +
-> +static unsigned int features[] = {
-> +	VIRTIO_RPMSG_F_NS,
-> +};
-> +
-> +static struct virtio_driver virtio_ipc_driver = {
-> +	.feature_table	= features,
-> +	.feature_table_size = ARRAY_SIZE(features),
-> +	.driver.name	= KBUILD_MODNAME,
-> +	.driver.owner	= THIS_MODULE,
-> +	.id_table	= id_table,
-> +	.probe		= rpmsg_probe,
-> +	.remove		= __devexit_p(rpmsg_remove),
-> +};
-> +
-> +static int __init init(void)
-
-Even for static functions, it's a really good idea to prefix all
-function names and file scoped symbol with a common prefix like
-"rpmsg_".  Doing so avoids even the outside chance of a namespace
-conflict.
-
-> +{
-> +	int ret;
-> +
-> +	ret = bus_register(&rpmsg_bus);
-> +	if (ret) {
-> +		pr_err("failed to register rpmsg bus: %d\n", ret);
-> +		return ret;
-> +	}
-> +
-> +	return register_virtio_driver(&virtio_ipc_driver);
-
-And if register_virtio_driver fails?
-
-> +}
-> +module_init(init);
-> +
-> +static void __exit fini(void)
-> +{
-> +	unregister_virtio_driver(&virtio_ipc_driver);
-> +	bus_unregister(&rpmsg_bus);
-> +}
-> +module_exit(fini);
-> +
-> +MODULE_DEVICE_TABLE(virtio, id_table);
-> +MODULE_DESCRIPTION("Virtio-based remote processor messaging bus");
-> +MODULE_LICENSE("GPL v2");
-> diff --git a/include/linux/mod_devicetable.h b/include/linux/mod_devicetable.h
-> index ae28e93..561567e 100644
-> --- a/include/linux/mod_devicetable.h
-> +++ b/include/linux/mod_devicetable.h
-> @@ -533,4 +533,14 @@ struct isapnp_device_id {
->  	kernel_ulong_t driver_data;	/* data private to the driver */
->  };
->  
-> +/* rpmsg */
-> +
-> +#define RPMSG_NAME_SIZE			32
-> +#define RPMSG_DEVICE_MODALIAS_FMT	"rpmsg:%s"
-> +
-> +struct rpmsg_device_id {
-> +	char name[RPMSG_NAME_SIZE];
-> +	kernel_ulong_t driver_data	/* Data private to the driver */
-> +			__attribute__((aligned(sizeof(kernel_ulong_t))));
-> +};
-
-Should this be co-located with vio_device_id?
-
-It makes it easier to dereference in kernel code if you do:
-
-#ifdef __KERNEL__
-	void *data;
-#else
-	kernel_ulong_t data;
-#endif
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
 
