@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab1F0Oh1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 10:37:27 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41742 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751104Ab1F0OhV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 10:37:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Q87fQMyers12sS7QNhS/NGq7aZTBQtHHIXL2Gfwk97WMchEyypQlmpJ7RKz2BDBU7l
-         t97De5pXrqS8CDuaYPRgw33IcWNBIhk6fEu/C8W3UqAGrsEvvsiliwoIVxPQu2e2Ul8x
-         xEZXzgcQOkh/aNyEUM0GGxS9IxTQV5I3G1J7M=
-Subject: [PATCH] watchdog: gef_wdt: fix MODULE_ALIAS
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Martyn Welch <martyn.welch@ge.com>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Jun 2011 22:37:16 +0800
-Message-ID: <1309185436.29085.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1752804Ab1F0Oj7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 10:39:59 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48995 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751731Ab1F0Ojx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 10:39:53 -0400
+Date: Mon, 27 Jun 2011 16:39:49 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Bhaskar Upadhaya <bhaskar.upadhaya@freescale.com>,
+        Scott Wood <scottwood@freescale.com>,
+        Kumar Gala <galak@kernel.crashing.org>
+Subject: Re: [PATCH] powerpc: drop +x perms on text file
+In-Reply-To: <1306728449-16812-1-git-send-email-vapier@gentoo.org>
+Message-ID: <alpine.LNX.2.00.1106271639410.11049@pobox.suse.cz>
+References: <1306728449-16812-1-git-send-email-vapier@gentoo.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the space between "platform:" prefix and the driver name.
+On Mon, 30 May 2011, Mike Frysinger wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/watchdog/gef_wdt.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> ---
+>  0 files changed, 0 insertions(+), 0 deletions(-)
+>  mode change 100755 => 100644 Documentation/devicetree/bindings/net/can/fsl-flexcan.txt
+> 
+> diff --git a/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt b/Documentation/devicetree/bindings/net/can/fsl-flexcan.txt
+> old mode 100755
+> new mode 100644
 
-diff --git a/drivers/watchdog/gef_wdt.c b/drivers/watchdog/gef_wdt.c
-index 29a7cd4..b146082 100644
---- a/drivers/watchdog/gef_wdt.c
-+++ b/drivers/watchdog/gef_wdt.c
-@@ -329,4 +329,4 @@ MODULE_AUTHOR("Martyn Welch <martyn.welch@ge.com>");
- MODULE_DESCRIPTION("GE watchdog driver");
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_MISCDEV(WATCHDOG_MINOR);
--MODULE_ALIAS("platform: gef_wdt");
-+MODULE_ALIAS("platform:gef_wdt");
+Applied.
+
 -- 
-1.7.4.1
-
-
-
+Jiri Kosina
+SUSE Labs
