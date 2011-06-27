@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756381Ab1F0Cu4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 22:50:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55944 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756308Ab1F0Cuc convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 22:50:32 -0400
+	id S1755908Ab1F0C7h (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 22:59:37 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54911 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756149Ab1F0C61 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 22:58:27 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E07F1C0.2070305@jp.fujitsu.com>
+Date: Mon, 27 Jun 2011 11:58:08 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <20110626130607.5931a2f8@pedra>
-References: <cover.1309103285.git.mchehab@redhat.com> <20110626130607.5931a2f8@pedra>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 26 Jun 2011 19:49:42 -0700
-Message-ID: <BANLkTimBxTpzK3Ooc-gz=nJbhZ1Mu5d1cQ@mail.gmail.com>
-Subject: Re: [PATCH 01/14] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl
- doesn't exist
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: segoon@openwall.com
+CC: linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        rientjes@google.com, wilsons@start.ca, security@kernel.org,
+        eparis@redhat.com, solar@openwall.com
+Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
+References: <1308917318-4749-1-git-send-email-segoon@openwall.com>
+In-Reply-To: <1308917318-4749-1-git-send-email-segoon@openwall.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 26, 2011 at 9:06 AM, Mauro Carvalho Chehab
-<mchehab@redhat.com> wrote:
-> +       <term><errorcode>ENOIOCTLCMD</errorcode></term>
-> +       <listitem>
-> +         <para>The application attempted to use a non-existent ioctl. This is returned by the V4L2 core only.
-> +               Applications should be able to handle this error code, in order to detect if a new ioctl is
-> +               not implemented at the current Kernel version. Kernel versions lower than 3.0 returns EINVAL to
-> +               non-existing ioctl's.</para>
+(2011/06/24 21:08), Vasiliy Kulikov wrote:
+> /proc/PID/io may be used for gathering private information.  E.g. for
+> openssh and vsftpd daemons wchars/rchars may be used to learn the
+> precise password length.  Restrict it to processes being able to ptrace
+> the target process.
+> 
+> ptrace_may_access() is needed to prevent keeping open file descriptor of
+> "io" file, executing setuid binary and gathering io information of the
+> setuid'ed process.
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
 
-This seems entirely bogus.
+This description seems makes sense to me. But Vasilly, I have one question.
+Doesn't this change break iotop command or other userland tools?
 
-ENOICTLCMD is meant to be an entirely kernel-internal one, which is
-meant to never be shown to user space. IOW, vfs_ioctl() turns it into
-EINVAL (which I personally think is bogus - traditionally ENOTTY is
-the right one for "not a valid ioctl", but there are people who
-disagree - whatever)
 
-The rationale for it is mainly as a way for layers inside the kernel
-to determine the difference between "ioctl existed but failed with
-EINVAL" vs "ioctl doesn't actually exist". Some layers try first one
-thing and then another, and want to know the difference. An example of
-that might be some code that first tries to call device-specific
-version, and if that doesn't exist, do a generic emulation version.
+> ---
+>  fs/proc/base.c |    7 +++++--
+>  1 files changed, 5 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/proc/base.c b/fs/proc/base.c
+> index 14def99..5ae25d1 100644
+> --- a/fs/proc/base.c
+> +++ b/fs/proc/base.c
+> @@ -2712,6 +2712,9 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
+>  	struct task_io_accounting acct = task->ioac;
+>  	unsigned long flags;
+>  
+> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+> +		return -EACCES;
+> +
 
-Of course, as far as I can tell, almost nothing does that anyway.
-Regardless, it's definitely wrong to document it as being returned to
-user land. It should never be user-visible.
+I think this check need a comment. Usually procfs don't use ptrace_may_access() directly
+(see mm_for_maps) because it's racy against exec(). However I think your code is ok.
+because a few bytes io accounting leak has no big matter.
 
-                  Linus
+
