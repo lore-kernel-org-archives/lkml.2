@@ -1,94 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab1F0I7K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 04:59:10 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:38353 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757368Ab1F0I5u convert rfc822-to-8bit (ORCPT
+	id S1757316Ab1F0JBo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 05:01:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:44843 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757482Ab1F0I7K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 04:57:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=l63JfKjg6/oShW+hg5+9+khoN+yz7DCWl4n/OEBHEL088Km8dSpIAhuPdPYODxzaNq
-         RIGHgf+P+309e+NafhhfVoWt+EGxi9geeLIQ0S2ToIciJ3D1BdEZzaJTAvBQpyTpBWdq
-         h+xyYxW/y68fJUqTfahicb9dQ//ybMMcXH23s=
-MIME-Version: 1.0
-In-Reply-To: <a8885a55-bf77-43d7-8491-045137aa38ee@email.android.com>
-References: <1308881738-6392-1-git-send-email-wdgvip@gmail.com>
-	<20110624124154.GC19804@sirena.org.uk>
-	<BANLkTi=O44wyaFB_B83LGiQhAVtFOp64pyhMaCKCf_YZz6b1GA@mail.gmail.com>
-	<5EB3BFCD089AD643B9BB63439F5FD5E937BB882D@SHAASIEXM01.ASIA.ROOT.PRI>
-	<a8885a55-bf77-43d7-8491-045137aa38ee@email.android.com>
-Date: Mon, 27 Jun 2011 16:57:48 +0800
-Message-ID: <BANLkTi=wU04jiOE-5GDDG9Pd4PgVnN61bTkqGfnkShHKo7iVFg@mail.gmail.com>
-Subject: Re: [PATCH] INPUT:Add ABS_PRESSURE input event support for
- touchscreen driver
-From: daoguang wu <wdgvip@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Baohua Song <Baohua.Song@csr.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
-        "ben-linux@fluff.org" <ben-linux@fluff.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "wdgvip@gamil.com" <wdgvip@gamil.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=GB2312
+	Mon, 27 Jun 2011 04:59:10 -0400
+Subject: Re: [PATCH v4 3.0-rc2-tip 7/22]  7: uprobes: mmap and fork hooks.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+        Linux-mm <linux-mm@kvack.org>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, Hugh Dickins <hughd@google.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Roland McGrath <roland@hack.frob.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20110627064502.GB24776@linux.vnet.ibm.com>
+References: <20110616130012.GL4952@linux.vnet.ibm.com>
+	 <1308248588.13240.267.camel@twins>
+	 <20110617045000.GM4952@linux.vnet.ibm.com>
+	 <1308297836.13240.380.camel@twins>
+	 <20110617090504.GN4952@linux.vnet.ibm.com> <1308303665.2355.11.camel@twins>
+	 <1308662243.26237.144.camel@twins>
+	 <20110622143906.GF16471@linux.vnet.ibm.com>
+	 <20110624020659.GA24776@linux.vnet.ibm.com>
+	 <1308901324.27849.7.camel@twins>
+	 <20110627064502.GB24776@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Mon, 27 Jun 2011 10:57:51 +0200
+Message-ID: <1309165071.6701.4.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/27 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
->
->
-> Baohua Song <Baohua.Song@csr.com> wrote:
->
->>
->>
->>> -----Original Message-----
->>> From: linux-arm-kernel-bounces@lists.infradead.org
->>> [mailto:linux-arm-kernel-bounces@lists.infradead.org] On Behalf Of
->>daoguang
->>> wu
->>> Sent: 2011Äê6ÔÂ27ÈÕ 10:15
->>> To: Mark Brown
->>> Cc: kgene.kim@samsung.com; ben-linux@fluff.org;
->>> dmitry.torokhov@gmail.com; linux-kernel@vger.kernel.org;
->>> wdgvip@gamil.com; linux-input@vger.kernel.org;
->>> linux-arm-kernel@lists.infradead.org
->>> Subject: Re: [PATCH] INPUT:Add ABS_PRESSURE input event support for
->>> touchscreen driver
->>>
->>> 2011/6/24 Mark Brown <broonie@opensource.wolfsonmicro.com>:
->>> > On Fri, Jun 24, 2011 at 10:15:38AM +0800, Wu DaoGuang wrote:
->>> >> The touchscreen driver s3c2410_ts.c doesn't work well when using
->>> >> the tslib, an abstraction layer for touchscreen panel events.
->>> >> Tslib needs ABS_X ABS_Y and ABS_PRESSURE events to report, but
->>only
->>> >> the former two the driver can provide.
->>> >
->>> > It seems much more sane to fix this in tslib, the kernel is not
->>actually
->>> > reporting pressure meaningfully here and there's already BTN_TOUCH
->>to
->>> > report if the pen is down.
->>> >
->>> yeah,I will try to fix it in tslib.
->>
->>You may send a patch to tslib.
->>
->
-> This has already been fixed in tslib a couple years ago. I'm not sure if a
-> new version was cut or not.
-> --
-> Dmitry
+On Mon, 2011-06-27 at 12:15 +0530, Srikar Dronamraju wrote:
 
-I try the latest tslib ,and find there is no such problem and the
-latest version of tslib  can be downloaded from
-git://github.com/kergoth/tslib.git.
+> > > 	mutex_lock(&mapping->i_mmap_mutex);
+> > > 	add_to_temp_list(vma, inode, &tmp_list);
+> > > 	list_for_each_entry_safe(uprobe, u, &tmp_list, pending_list) {
+> > > 		loff_t vaddr;
+> > > 
+> > > 		list_del(&uprobe->pending_list);
+> > > 		if (ret)
+> > > 			continue;
+> > > 
+> > > 		vaddr = vma->vm_start + uprobe->offset;
+> > > 		vaddr -= vma->vm_pgoff << PAGE_SHIFT;
+> > > 		ret = install_breakpoint(mm, uprobe, vaddr);
+> > 
+> > Right, so this is the problem, you cannot do allocations under
+> > i_mmap_mutex, however I think you can under i_mutex.
+> 
+> I didnt know that we cannot do allocations under i_mmap_mutex.
+> Why is this? 
 
-Thanks a lot.
+Because we try to take i_mmap_mutex during reclaim, trying to unmap
+pages. So suppose we do an allocation while holding i_mmap_mutex, find
+there's no free memory, try and unmap a page in order to free it, and
+we're stuck.
+
+> I cant take i_mutex, because we would have already held
+> down_write(mmap_sem) here. 
+
+Right. So can we add a lock in the uprobe? All we need is per uprobe
+serialization, right?
