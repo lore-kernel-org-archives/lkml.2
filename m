@@ -1,71 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755396Ab1F0XB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:01:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:49699 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755150Ab1F0XAY convert rfc822-to-8bit (ORCPT
+	id S1755451Ab1F0XFI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:05:08 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38885 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab1F0XEh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:00:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sGA02sbXrBBdSU9dfKzjpMhVeAIh9W062vsVi/ZbRMCDuATYfiBcxHUbyH7JOHfFmy
-         LTWxoI6XXrmK8y2thEbrw80ZCndZASyu98iZSbRyJ5vvhuP7DW0kp3UjcuNsoaLbWaR4
-         AtWtJEQocFfb3BTxJuozail7uiuf5Jfb0YsTs=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1106271619350.24034@linux>
-References: <alpine.LNX.2.00.1106271619350.24034@linux>
-Date: Mon, 27 Jun 2011 19:00:24 -0400
-Message-ID: <BANLkTimrUYk-8GSsf35mUmLVBAaO84R6dA@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: silence generated makefile message
-From: Arnaud Lacombe <lacombar@gmail.com>
-To: Peter Foley <pefoley2@verizon.net>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        mmarek@suse.cz
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 27 Jun 2011 19:04:37 -0400
+Date: Mon, 27 Jun 2011 16:00:53 -0700 (PDT)
+Message-Id: <20110627.160053.10231914928438213.davem@davemloft.net>
+To: vitalivanov@gmail.com
+Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+        jkosina@suse.cz, grant.likely@secretlab.ca, eric.dumazet@gmail.com,
+        tglx@linutronix.de
+Subject: Re: [PATCH] treewide: fix kernel-doc warnings
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1309192426.17574.47.camel@vivanov>
+References: <1309192426.17574.47.camel@vivanov>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 27 Jun 2011 16:00:55 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+Date: Mon, 27 Jun 2011 19:33:46 +0300
 
-On Mon, Jun 27, 2011 at 5:42 PM, Peter Foley <pefoley2@verizon.net> wrote:
->
-> This patch silences the make -C /usr/src/git O=/usr/src/git/build/.
-> message shown when using the generated makefile in KBUILD_OUTDIR.
->
-I would expect verbose build to show that message. not hides it
-unconditionally, no ?
+>>From 55fe3701d1ed1f1302a73cd5bfdfc7972e89f5b7 Mon Sep 17 00:00:00 2001
+> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+> Date: Mon, 27 Jun 2011 19:07:08 +0300
+> Subject: [PATCH] treewide: fix kernel-doc warnings
+> 
+> Fix 'make htmldocs' warnings:
+> 
+> Warning(/include/linux/hrtimer.h:153): No description found for
+> parameter 'clockid'
+> Warning(/include/linux/device.h:604): Excess struct/union/enum/typedef
+> member 'of_match' description in 'device'
+> Warning(/include/net/sock.h:349): Excess struct/union/enum/typedef
+> member 'sk_rmem_alloc' description in 'sock'
+> 
+> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
 
- - Arnaud
-
-> Signed-off-by: Peter Foley <pefoley2@verizon.net>
-> ---
->  scripts/mkmakefile |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/scripts/mkmakefile b/scripts/mkmakefile
-> index 5325423..f4642f2 100644
-> --- a/scripts/mkmakefile
-> +++ b/scripts/mkmakefile
-> @@ -40,7 +40,7 @@ MAKEFLAGS += --no-print-directory
->  all    := \$(filter-out all Makefile,\$(MAKECMDGOALS))
->
->  all:
-> -       \$(MAKE) \$(MAKEARGS) \$(all)
-> +       @\$(MAKE) \$(MAKEARGS) \$(all)
->
->  Makefile:;
->
-> --
-> 1.7.5.3
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kbuild" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Acked-by: David S. Miller <davem@davemloft.net>
