@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757918Ab1F0KJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 06:09:36 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45912 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757884Ab1F0KHm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 06:07:42 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E08565C.4080007@jp.fujitsu.com>
-Date: Mon, 27 Jun 2011 19:07:24 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: segoon@openwall.com
-CC: linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        rientjes@google.com, wilsons@start.ca, security@kernel.org,
-        eparis@redhat.com, kernel-hardening@lists.openwall.com,
-        torvalds@linux-foundation.org
-Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
-References: <1308917318-4749-1-git-send-email-segoon@openwall.com> <4E07F1C0.2070305@jp.fujitsu.com> <20110627070300.GA4463@albatros> <4E08324D.9040605@jp.fujitsu.com> <20110627085242.GA6635@albatros>
-In-Reply-To: <20110627085242.GA6635@albatros>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757884Ab1F0KPr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 06:15:47 -0400
+Received: from gate.crashing.org ([63.228.1.57]:51945 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757495Ab1F0KOo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 06:14:44 -0400
+Subject: Re: [RFC PATCH] irq: add irq_domain translation infrastructure
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Cc: Grant Likely <grant.likely@secretlab.ca>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        Andres Salomon <dilinger@queued.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <4E08541A.4060302@linutronix.de>
+References: <20110526065438.23444.69386.stgit@ponder>
+	 <20110627090059.GA31287@linutronix.de> <1309166659.32158.380.camel@pasglop>
+	 <4E08541A.4060302@linutronix.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Jun 2011 20:14:29 +1000
+Message-ID: <1309169669.32158.387.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/27 17:52), Vasiliy Kulikov wrote:
-> (cc'ed Linus)
-> 
-> On Mon, Jun 27, 2011 at 16:33 +0900, KOSAKI Motohiro wrote:
->> (2011/06/27 16:03), Vasiliy Kulikov wrote:
->>> On Mon, Jun 27, 2011 at 11:58 +0900, KOSAKI Motohiro wrote:
->>>> (2011/06/24 21:08), Vasiliy Kulikov wrote:
->>>>> /proc/PID/io may be used for gathering private information.  E.g. for
->>>>> openssh and vsftpd daemons wchars/rchars may be used to learn the
->>>>> precise password length.  Restrict it to processes being able to ptrace
->>>>> the target process.
->>>>>
->>>>> ptrace_may_access() is needed to prevent keeping open file descriptor of
->>>>> "io" file, executing setuid binary and gathering io information of the
->>>>> setuid'ed process.
->>>>>
->>>>> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
->>>>
->>>> This description seems makes sense to me. But Vasilly, I have one question.
->>>> Doesn't this change break iotop command or other userland tools?
->>>
->>> I don't use iotop, but after reading the sources it looks like it uses
->>> taskstats for information gathering, which will be broken for sure by
->>> the second patch.  All other userland tools using alien io files will be
->>> broken too.
->>>
->>> I'd say the whole approach of world readable debugging/statistics
->>> information was broken from the beginning, now we are stuck with these
->>> interfaces because of acient mistakes.
->>
->> Just idea. (perhaps it's too dumb).
->>
->> If a user want to know throughput, usually they only need KB/s granularity.
->> If a user want to know password hints, they need to know strict bytes granularity.
->> So, adding some random bytes to this statistics may help to obscure key data,
->> or just "stat = ROUND_UP(stat, 1024)".
->>
->> But, I hope to wait another experts response. they may know better approach. :)
-> 
-> Yep, Linus has already suggested a similar thing:
-> http://www.openwall.com/lists/oss-security/2011/06/27/4
-> 
-> As to random bytes - if it is very predictable (e.g. rand() % 10000) one
-> may restore the original value.  But it would still do much harm to good
-> programs (io stats going up and down!).  Adding really random bytes
-> seems somewhat too complicated for these needs to me.
-> 
-> As to rounding - this is a workaround, not a fix.  What if some program
-> reads one byte from tty and then do some io activity exactly of 1kb-1?
-> Then you just measure kbs and get original tty activity.  (just a crazy
-> example to show that it is not a full solution.)
-> 
-> 
-> Without any proof/estimate, just an idea: it's possible to get not only
-> password length, which needs as much granularity as possible, but
-> another information, which doesn't need any strict value.  E.g.
-> statistics changing, what should indicate that some significant event
-> has just happened.
+On Mon, 2011-06-27 at 11:57 +0200, Sebastian Andrzej Siewior wrote:
 
-I'm ok any alternative way if you have. I only want to don't break iotop.
-It's used very widely and frequently from performance tuning engineers.
+> I see. No, actually I don't. xics is pseries where I don't see the .dts. 
+> So you are saying that we have one irq_domain but 2+ different
+> interrupt-parents nodes?
 
-I'm sorry. I can't answer your story is real threat or not. I'm not security
-expert. I don't have enough knowledge.
+Yes. Basically the various PCI bridges and other interrupt sources like
+HEA contain what are called "source controllers" that control the
+targetting of interrupts (toward a CPU thread), priority, masking etc...
 
-Thanks.
+Those act as device-tree parents as well, there's pretty much one per
+PCI host bridge for example since that's where all of the
+configuration/masking/etc... happens.
+
+However, they then turn interrupts into a special bus message that
+reaches eventually a presentation controller (there's one per HW
+thread). Those messages are basically the "HW interrupt numbers" (along
+with priority info etc...) and that number encodes a "BUID" which
+identifies the source controller that shot the message.
+
+Thus the "interrupt numbers" are unique accross the fabric and live in a
+unique number space. It's one domain for all intend and purposes. But
+several device-nodes.
+
+Now as to whether it's several irq_chip or not .. well, it depends :-)
+On pHyp and old style pseries, it's a single set of FW call, it's
+abstracted, so it's also basically one chip. On WSP, the separate source
+controllers (ICS) are exposed as individual chips.
+
+> How do you distinguish then between two different controllers lets say
+> xics and a gpio based controller? This implementation calls ->dt_translate
+> until one controller returns 0 which looks like brute force.
+
+It's a bit brute force but would work if the xics implementation of that
+translate call checks that the device-node is indeed a XICS source
+controller (which can be identified by its compatible property).
+
+Now I have lost track a bit with what Grant is doing, is this the old DT
+stuff I objected to ? I basically asked him to make the remapping
+orthogonal from the DT matching.
+
+> xics_host_xlate() returns always zero so you would have to go for
+> the compatible and check it.
+> Every device has an interrupt-parent node. Shouldn't the code call exact 
+> this irq controller xlate function instead of trying them all?
+
+Well, my powerpc code iterates the domains with "match" to check which
+one claims to own the parent device-node, then calls xlate for that one,
+but I see why one could collapse those two action after all.
+
+Cheers,
+Ben.
+
+> >  
+> > Cheers,
+> > Ben.
+> > 
+> Sebastian
 
 
