@@ -1,48 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755451Ab1F0XFI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:05:08 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:38885 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354Ab1F0XEh (ORCPT
+	id S1755281Ab1F0XDb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:03:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:33180 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755063Ab1F0XB6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:04:37 -0400
-Date: Mon, 27 Jun 2011 16:00:53 -0700 (PDT)
-Message-Id: <20110627.160053.10231914928438213.davem@davemloft.net>
-To: vitalivanov@gmail.com
-Cc: linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-        jkosina@suse.cz, grant.likely@secretlab.ca, eric.dumazet@gmail.com,
-        tglx@linutronix.de
-Subject: Re: [PATCH] treewide: fix kernel-doc warnings
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1309192426.17574.47.camel@vivanov>
-References: <1309192426.17574.47.camel@vivanov>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 27 Jun 2011 16:00:55 -0700 (PDT)
+	Mon, 27 Jun 2011 19:01:58 -0400
+Date: Mon, 27 Jun 2011 17:01:54 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: H Hartley Sweeten <hartleys@visionengravers.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio: vr41xx_giu: use resource_size()
+Message-ID: <20110627230154.GI20865@ponder.secretlab.ca>
+References: <201106061352.19881.hartleys@visionengravers.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106061352.19881.hartleys@visionengravers.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-Date: Mon, 27 Jun 2011 19:33:46 +0300
+On Mon, Jun 06, 2011 at 01:52:19PM -0700, H Hartley Sweeten wrote:
+> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
 
->>From 55fe3701d1ed1f1302a73cd5bfdfc7972e89f5b7 Mon Sep 17 00:00:00 2001
-> From: Vitaliy Ivanov <vitalivanov@gmail.com>
-> Date: Mon, 27 Jun 2011 19:07:08 +0300
-> Subject: [PATCH] treewide: fix kernel-doc warnings
-> 
-> Fix 'make htmldocs' warnings:
-> 
-> Warning(/include/linux/hrtimer.h:153): No description found for
-> parameter 'clockid'
-> Warning(/include/linux/device.h:604): Excess struct/union/enum/typedef
-> member 'of_match' description in 'device'
-> Warning(/include/net/sock.h:349): Excess struct/union/enum/typedef
-> member 'sk_rmem_alloc' description in 'sock'
-> 
-> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+Thanks.  I've already merged a patch that makes this change.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+g.
+
+> 
+> ---
+> 
+> diff --git a/drivers/gpio/vr41xx_giu.c b/drivers/gpio/vr41xx_giu.c
+> index a365be0..98723cb 100644
+> --- a/drivers/gpio/vr41xx_giu.c
+> +++ b/drivers/gpio/vr41xx_giu.c
+> @@ -518,7 +518,7 @@ static int __devinit giu_probe(struct platform_device *pdev)
+>  	if (!res)
+>  		return -EBUSY;
+>  
+> -	giu_base = ioremap(res->start, res->end - res->start + 1);
+> +	giu_base = ioremap(res->start, resource_size(res));
+>  	if (!giu_base)
+>  		return -ENOMEM;
+>  
