@@ -1,149 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755652Ab1F0X26 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:28:58 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:8046 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755518Ab1F0X23 (ORCPT
+	id S1755485Ab1F0XbP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:31:15 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45461 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755482Ab1F0X3k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:28:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id
-         :references:user-agent:mime-version:content-type;
-        b=UgkxAxlGEyjUF/EuNum4wDSbP+rT01YfJc4T7VArnI1DBgpEhJ0eFPTXrkTREEWt4L
-         LgNL2Rq97pCVljSGcttA==
-Date: Mon, 27 Jun 2011 16:28:20 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Ben Greear <greearb@candelatech.com>
-cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@kernel.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 2/2] slub:  Add method to verify memory is not deleted.
-In-Reply-To: <1309216631-31493-3-git-send-email-greearb@candelatech.com>
-Message-ID: <alpine.DEB.2.00.1106271622510.24211@chino.kir.corp.google.com>
-References: <1309216631-31493-1-git-send-email-greearb@candelatech.com> <1309216631-31493-3-git-send-email-greearb@candelatech.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 27 Jun 2011 19:29:40 -0400
+Date: Tue, 28 Jun 2011 00:29:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/8] drivers: add generic remoteproc framework
+Message-ID: <20110627232903.GB7736@n2100.arm.linux.org.uk>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com> <1308640714-17961-2-git-send-email-ohad@wizery.com> <20110627204958.GB20865@ponder.secretlab.ca>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110627204958.GB20865@ponder.secretlab.ca>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jun 2011, greearb@candelatech.com wrote:
-
-> From: Ben Greear <greearb@candelatech.com>
+On Mon, Jun 27, 2011 at 02:49:58PM -0600, Grant Likely wrote:
+> > +struct {
+> > +      char magic[4] = { 'R', 'P', 'R', 'C' };
+> > +      u32 version;
+> > +      u32 header_len;
+> > +      char header[...] = { header_len bytes of unformatted, textual header };
+> > +      struct section {
+> > +          u32 type;
+> > +          u64 da;
+> > +          u32 len;
+> > +          u8 content[...] = { len bytes of binary data };
+> > +      } [ no limit on number of sections ];
+> > +} __packed;
 > 
-> This is for tracking down suspect memory usage.
-> 
+> Other have commented on the image format, so I'll skip this bit other
+> than saying that I agree it would be great to have a common format.
 
-Several things wrong with this:
+(Don't have the original message to reply to...)
 
- - I have no idea where patch 1/2 is.
+Do we really want to end up with header being 5 bytes, header_len set
+as 5, and having to load/store all this data using byte loads/stores ?
 
- - the subject line is ambiguous, when you say memory is "deleted," I 
-   thought at first you were talking about hot-removed, but it seems like 
-   you're talking about "freed."
+If we don't want that, then I suggest we get rid of the packed attribute,
+and require stuff to be naturally aligned.
 
- - what "suspect memory usage" are you adding functionality to catch and
-   how are you doing it?
+First issue is that struct section could be much better layed out:
 
- - you didn't cc the slab maintainers, Pekka Enberg and Christoph Lameter
-   (I added them).
+struct section {
+	u32 type;
+	u32 len;
+	u64 da;
+	u8 content[];
+};
 
-> Signed-off-by: Ben Greear <greearb@candelatech.com>
-> ---
-> :100644 100644 ad4dd1c... 35a13d2... M	include/linux/slab.h
-> :100644 100644 14d0135... b3d7680... M	mm/slub.c
->  include/linux/slab.h |    9 +++++++++
->  mm/slub.c            |   34 ++++++++++++++++++++++++++++++++++
->  2 files changed, 43 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index ad4dd1c..35a13d2 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -302,6 +302,15 @@ extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
->  
->  #endif /* CONFIG_NUMA */
->  
-> +/** Calling this on deleted objects will print some
-> + * SLUB debugging information.
-> + */
-
-Ambiguous as to what it will be printing and violation of the comment 
-style used in the kernel (see Documentation/CodingStyle).
-
-> +#if defined(CONFIG_SLUB) && defined(CONFIG_SLUB_DEBUG)
-> +extern bool verify_mem_not_deleted(const void *x);
-> +#else
-> +#define verify_mem_not_deleted(x)
-
-This will surely break if anybody isn't using slub or CONFIG_SLUB_DEBUG 
-and it testing verify_mem_not_deleted().  You probably want
-
-	static inline bool verify_mem_not_deleted(const void *x)
-	{
-		return false;
-	}
-
-> +#endif
-> +
->  /*
->   * Shortcuts
->   */
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 14d0135..b3d7680 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2953,6 +2953,40 @@ size_t ksize(const void *object)
->  }
->  EXPORT_SYMBOL(ksize);
->  
-> +#if defined(CONFIG_SLUB_DEBUG)
-
-#ifdef CONFIG_SLUB_DEBUG
-
-> +bool verify_mem_not_deleted(const void *x)
-> +{
-> +	struct page *page;
-> +	void *object = (void *)x;
-> +	struct kmem_cache *s;
-> +	unsigned long flags;
-> +	bool rv = false;
-> +
-> +	if (unlikely(ZERO_OR_NULL_PTR(x)))
-> +		false;
-> +
-
-Did you even compile-test this?
-
-> +	local_irq_save(flags);
-> +
-> +	page = virt_to_head_page(x);
-> +	if (unlikely(!PageSlab(page))) {
-> +		BUG_ON(!PageCompound(page));
-
-Why is there a BUG_ON() here if we didn't pass a pointer to a slab object?
-
-> +		goto out_unlock;
-> +	}
-> +
-> +	s = page->slab;
-> +
-> +	if (on_freelist(s, page, object)) {
-> +		object_err(s, page, object, "Object is on fee-list");
-
-s/fee/free/
-
-> +		goto out_unlock;
-> +	}
-> +	rv = true;
-> +out_unlock:
-> +	local_irq_restore(flags);
-> +	return rv;
-> +}
-> +EXPORT_SYMBOL(verify_mem_not_deleted);
-> +#endif
-> +
+and require sizeof(struct section) % sizeof(u64) == 0 - iow, to find
+the next section, round len up to sizeof(u64).  Ditto for the header.
