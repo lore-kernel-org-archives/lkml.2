@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754171Ab1F0UTF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 16:19:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22351 "EHLO mx1.redhat.com"
+	id S1754256Ab1F0UTX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 16:19:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29044 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754130Ab1F0URr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 16:17:47 -0400
+	id S1754153Ab1F0URt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 16:17:49 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
         linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
 Cc: vgoyal@redhat.com, khlebnikov@openvz.org, jmoyer@redhat.com
-Subject: [PATCH 2/3] ext4: Explicitly specify fsync dependency on journaling thread
-Date: Mon, 27 Jun 2011 16:17:43 -0400
-Message-Id: <1309205864-13124-3-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 3/3] ext3: Explicitly specify fsync dependency on journaling thread
+Date: Mon, 27 Jun 2011 16:17:44 -0400
+Message-Id: <1309205864-13124-4-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
 References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
@@ -26,24 +26,24 @@ in a separate cgroup and journalling thread is running in root group.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- fs/ext4/fsync.c |    3 +++
+ fs/ext3/fsync.c |    3 +++
  1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
-index ce66d2f..8b16a90 100644
---- a/fs/ext4/fsync.c
-+++ b/fs/ext4/fsync.c
-@@ -216,7 +216,10 @@ int ext4_sync_file(struct file *file, int datasync)
- 	    !jbd2_trans_will_send_data_barrier(journal, commit_tid))
- 		needs_barrier = true;
- 	jbd2_log_start_commit(journal, commit_tid);
+diff --git a/fs/ext3/fsync.c b/fs/ext3/fsync.c
+index 09b13bb..1e8de9c 100644
+--- a/fs/ext3/fsync.c
++++ b/fs/ext3/fsync.c
+@@ -82,7 +82,10 @@ int ext3_sync_file(struct file *file, int datasync)
+ 	    !journal_trans_will_send_data_barrier(journal, commit_tid))
+ 		needs_barrier = 1;
+ 	log_start_commit(journal, commit_tid);
 +	blk_set_depends_on_task(journal->j_dev->bd_disk->queue,
 +				journal->j_task);
- 	ret = jbd2_log_wait_commit(journal, commit_tid);
+ 	ret = log_wait_commit(journal, commit_tid);
 +	blk_reset_depends_on_task(journal->j_dev->bd_disk->queue);
- 	if (needs_barrier)
- 		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
-  out:
+ 
+ 	/*
+ 	 * In case we didn't commit a transaction, we have to flush
 -- 
 1.7.4.4
 
