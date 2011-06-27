@@ -1,52 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752468Ab1F0PM4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 11:12:56 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:38388 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751264Ab1F0PMs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 11:12:48 -0400
-Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl 
- doesn't exist
-From: Andy Walls <awalls@md.metrocast.net>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>, Sakari Ailus <sakari.ailus@iki.fi>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <4E088B83.2050001@redhat.com>
-References: <4E0519B7.3000304@redhat.com> <201106262020.20432.arnd@arndb.de>
-	 <4E077FB9.7030600@redhat.com> <201106270738.27417.hverkuil@xs4all.nl>
-	 <20110627120233.GD12671@valkosipuli.localdomain>
-	 <86e5c1f0a0222d3b2cf371f3c9d3b067.squirrel@webmail.xs4all.nl>
-	 <4E088B83.2050001@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Jun 2011 11:12:49 -0400
-Message-ID: <1309187569.3559.63.camel@morgan.silverblock.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=2.50.10432:5.4.6813,1.0.148,0.0.0000
- definitions=2011-06-27_03:2011-06-25,2011-06-27,1970-01-01 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 suspectscore=0
- phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1012030000 definitions=main-1106270064
+	id S1752303Ab1F0PU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:20:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3770 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751192Ab1F0PUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 11:20:23 -0400
+Date: Mon, 27 Jun 2011 17:18:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ptrace: make former thread ID available via
+	PTRACE_GETEVENTMSG after PTRACE_EVENT_EXEC stop (v.2)
+Message-ID: <20110627151827.GA6223@redhat.com>
+References: <201106262108.43011.vda.linux@googlemail.com> <20110626200442.GA16293@redhat.com> <20110627081139.GY30101@htj.dyndns.org> <20110627134713.GB3527@redhat.com> <20110627135252.GB30101@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110627135252.GB30101@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-27 at 10:54 -0300, Mauro Carvalho Chehab wrote:
+On 06/27, Tejun Heo wrote:
+>
+> Hello, Oleg.
+>
+> On Mon, Jun 27, 2011 at 03:47:13PM +0200, Oleg Nesterov wrote:
+> > > Do we want to enable this silently?  Wouldn't it be better to make it
+> > > dependent on PT_SEIZED?
+> >
+> > Hmm. Not sure I understand. Why can't PTRACE_SEIZE add PT_TRACE_EXEC
+> > (and PT_TRACESYSGOOD) along with PT_SEIZED during attach?
+>
+> I'm worrying about !PT_SEIZED case.  If we make it solely depend on
+> PT_TRACE_EXEC, newer kernels report the old pid while olders ones
+> don't
 
-> The right thing to do is to create a separate chapter for error codes, based on errno(3)
-> man page [snip]
+Ah, understood. So you think that the old pid should be only reported
+if PT_SEIZED.
 
-IMO, the IEEE Std 1003.1 is a better source for errno definitions than
-the errno(3) manpage:
+May be... Denys, what do you think?
 
-http://pubs.opengroup.org/onlinepubs/000095399/functions/xsh_chap02_03.html
+OTOH, it looks simpler if PT_TRACE_EXEC always reports the old pid,
+this can't break the applications which do not know about this new
+feature.
 
-Regards,
-Andy
+> and the only way to discover would be either comparing kernel
+> version or actually trying it - both aren't too nice.
+
+Fortunately, currently tracehook_report_exec() zeroes ->ptrace_message.
+At least this means that anything != 0 means it works.
+
+Oleg.
 
