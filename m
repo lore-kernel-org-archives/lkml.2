@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab1F0SQO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 14:16:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18262 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab1F0SQH (ORCPT
+	id S1753006Ab1F0SS4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 14:18:56 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42807 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753237Ab1F0SRF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 14:16:07 -0400
-Content-Type: text/plain; charset=UTF-8
-From: Chris Mason <chris.mason@oracle.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-        "Btrfs mailing list" <linux-btrfs@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Btrfs updates
-Date: Mon, 27 Jun 2011 14:15:25 -0400
-Message-Id: <1309197689-sup-653@shiny>
-User-Agent: Sup/git
-Content-Transfer-Encoding: 8bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090204.4E08C8C8.0019:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+	Mon, 27 Jun 2011 14:17:05 -0400
+Subject: Re: [PATCH v2] futex: Fix regression with read only mappings
+From: Peter Zijlstra <peterz@infradead.org>
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <20110627164008.GA2095@BohrerMBP.rgmadvisors.com>
+References: <20110623194949.GA2083@BohrerMBP.rgmadvisors.com>
+	 <1308931186-28707-1-git-send-email-sbohrer@rgmadvisors.com>
+	 <4E052DC3.6000902@linux.intel.com>
+	 <20110627164008.GA2095@BohrerMBP.rgmadvisors.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 27 Jun 2011 20:15:59 +0200
+Message-ID: <1309198559.6701.108.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Mon, 2011-06-27 at 11:40 -0500, Shawn Bohrer wrote:
+> > >     if (PageAnon(page_head)) {
+> > 
+> > This bit needs a comment too (unless I am the only one to whom this
+> was
+> > non-obvious), maybe:
+> > 
+> >               
+> >               /*
+> >                * A read-only anonymous page implies a COW on a
+> >                * MAP_PRIVATE mapping. There is no sane use-case
+> >                * for this scenario, return -EFAULT to userspace.
+> >                */
+> 
+> Your comment is wrong.  Unfortunately the code is completly
+> non-obvious to me as well, and I have no idea why it is there.  This
+> little snippet came from Peter's suggested fix in:
+> 
+> https://lkml.org/lkml/2011/6/6/368
+> 
+> Sadly Peter's gone silent and I'm left wondering if he knew some
+> corner case that should return -EFAULT with a RO anonymous page or if
+> he _thought_ this was preventing RO MAP_PRIVATE mappings.  If it is
+> the latter then this block can be removed because it does NOT do that.
+> > > +           if (ro) {
+> > > +                   err = -EFAULT;
+> > > +                   goto out;
+> > > +           }
+> > > + 
 
-The for-linus branch of the btrfs unstable tree:
+Peter simply gets too much email.. anyway, the reason I put that there
+is that a RO Anon page will never change and is thus a little pointless
+to use for futex ops.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
 
-Has our current set of fixes.  Linus will probably notice the head
-commit was from this morning.  I reordered a refcount bump inside the
-lock that protects the delayed inode tree and did a commit --amend.
-
-This is just for clarity, the delayed_inode can't go away because it is
-pinned by the inode itself.  But, I don't want that code copy & pasted
-elsewhere to create bugs later on.
-
-These fix a regression in the new delayed_inode code where inodes that
-are dropped from ram need to check for a delayed inode before we load
-them back in.
-
-Josef's commit avoids oopsen if the free extent cache had
-to be discarded, and my commit makes sure a newly created empty file
-gets logged properly if someone calls fsync on it.
-
-Miao Xie (1) commits (+91/-26):
-    btrfs: fix inconsonant inode information
-
-Josef Bacik (1) commits (+6/-3):
-    Btrfs: make sure to update total_bitmaps when freeing cache V3
-
-Ilya Dryomov (1) commits (+2/-2):
-    Btrfs: fix type mismatch in find_free_extent()
-
-Chris Mason (1) commits (+1/-0):
-    Btrfs: make sure to record the transid in new inodes
-
-Total: (4) commits (+100/-31)
-
- fs/btrfs/delayed-inode.c    |  104 +++++++++++++++++++++++++++++++++----------
- fs/btrfs/delayed-inode.h    |    1 +
- fs/btrfs/extent-tree.c      |    4 +-
- fs/btrfs/free-space-cache.c |    9 +++-
- fs/btrfs/inode.c            |   13 +++++-
- 5 files changed, 100 insertions(+), 31 deletions(-)
