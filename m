@@ -1,333 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab1F0XTV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:19:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60293 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754368Ab1F0XRC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:17:02 -0400
-Date: Mon, 27 Jun 2011 23:16:56 GMT
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Message-ID: <tip-192d8857427dd23707d5f0b86ca990c3af6f2d74@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20110623182057.076997177@sbsiddha-MOBL3.sc.intel.com>
-References: <20110623182057.076997177@sbsiddha-MOBL3.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mtrr] x86, mtrr: use stop_machine APIs for doing MTRR rendezvous
-Git-Commit-ID: 192d8857427dd23707d5f0b86ca990c3af6f2d74
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 27 Jun 2011 23:16:56 +0000 (UTC)
+	id S1755543Ab1F0XUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:20:20 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:43775 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755485Ab1F0XRS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 19:17:18 -0400
+From: greearb@candelatech.com
+To: linux-kernel@vger.kernel.org
+Cc: Ben Greear <greearb@candelatech.com>
+Subject: [PATCH 0/2] SLUB memory debugging improvements.
+Date: Mon, 27 Jun 2011 16:17:09 -0700
+Message-Id: <1309216631-31493-1-git-send-email-greearb@candelatech.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  192d8857427dd23707d5f0b86ca990c3af6f2d74
-Gitweb:     http://git.kernel.org/tip/192d8857427dd23707d5f0b86ca990c3af6f2d74
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Thu, 23 Jun 2011 11:19:29 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 27 Jun 2011 15:17:13 -0700
+From: Ben Greear <greearb@candelatech.com>
 
-x86, mtrr: use stop_machine APIs for doing MTRR rendezvous
+The idea is to grab a useful sized stack trace for creation/deletion
+points instead of just a single method.
 
-MTRR rendezvous sequence is not implemened using stop_machine() before, as this
-gets called both from the process context aswell as the cpu online paths
-(where the cpu has not come online and the interrupts are disabled etc).
+A second patch adds a command to check if memory should be
+in use.  This is in an attempt to track down some use-after-free
+bugs I'm seeing in nfs/rpc.
 
-Now that we have a new stop_machine_from_inactive_cpu() API, use it for
-rendezvous during mtrr init of a logical processor that is coming online.
+However, I did not exactly hit the bug I was expecting, but got
+this output instead.  I'm not sure if my debug patches are not
+working right, or if this warning is just another symptom of the
+problem:
 
-For the rest (runtime MTRR modification, system boot, resume paths), use
-stop_machine() to implement the rendezvous sequence. This will consolidate and
-cleanup the code.
+=============================================================================
+BUG kmalloc-64: Wrong object count. Counter is 2 but counted were 1
+-----------------------------------------------------------------------------
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Link: http://lkml.kernel.org/r/20110623182057.076997177@sbsiddha-MOBL3.sc.intel.com
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/kernel/cpu/mtrr/main.c |  192 ++++++++------------------------------
- include/linux/stop_machine.h    |    2 -
- kernel/stop_machine.c           |    2 +-
- 3 files changed, 42 insertions(+), 154 deletions(-)
+INFO: Slab 0xffffea0001e19fd0 objects=20 used=20 fp=0x          (null) flags=0x20000000004080
+Pid: 2349, comm: kworker/1:2 Not tainted 3.0.0-rc4+ #4
+Call Trace:
+ [<ffffffff81105484>] slab_err+0x8a/0x98
+ [<ffffffff81077c0b>] ? register_lock_class+0x1e/0x336
+ [<ffffffff81078c91>] ? mark_lock+0x2d/0x22d
+ [<ffffffff81105783>] on_freelist+0x179/0x1ad
+ [<ffffffffa0290601>] ? __rpc_execute+0x1ce/0x24b [sunrpc]
+ [<ffffffff81106849>] verify_mem_not_deleted+0x5f/0xb3
+ [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
+ [<ffffffffa02981b5>] rpcb_getport_done+0x23/0x126 [sunrpc]
+ [<ffffffffa02900ba>] rpc_exit_task+0x3f/0x6d [sunrpc]
+ [<ffffffffa02904ab>] __rpc_execute+0x78/0x24b [sunrpc]
+ [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
+ [<ffffffffa02906d0>] rpc_async_schedule+0x10/0x12 [sunrpc]
+ [<ffffffff810611b7>] process_one_work+0x230/0x41d
+ [<ffffffff81061102>] ? process_one_work+0x17b/0x41d
+ [<ffffffff81063613>] worker_thread+0x133/0x217
+ [<ffffffff810634e0>] ? manage_workers+0x191/0x191
+ [<ffffffff81066e10>] kthread+0x7d/0x85
+ [<ffffffff81485924>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8147eb18>] ? retint_restore_args+0x13/0x13
+ [<ffffffff81066d93>] ? __init_kthread_worker+0x56/0x56
+ [<ffffffff81485920>] ? gs_change+0x13/0x13
+FIX kmalloc-64: Object count adjusted.
+=============================================================================
+BUG kmalloc-64: Wrong object count. Counter is 1 but counted were 20
+-----------------------------------------------------------------------------
 
-diff --git a/arch/x86/kernel/cpu/mtrr/main.c b/arch/x86/kernel/cpu/mtrr/main.c
-index 3d17bc7..707b637 100644
---- a/arch/x86/kernel/cpu/mtrr/main.c
-+++ b/arch/x86/kernel/cpu/mtrr/main.c
-@@ -137,55 +137,43 @@ static void __init init_table(void)
- }
- 
- struct set_mtrr_data {
--	atomic_t	count;
--	atomic_t	gate;
- 	unsigned long	smp_base;
- 	unsigned long	smp_size;
- 	unsigned int	smp_reg;
- 	mtrr_type	smp_type;
- };
- 
--static DEFINE_PER_CPU(struct cpu_stop_work, mtrr_work);
--
- /**
-- * mtrr_work_handler - Synchronisation handler. Executed by "other" CPUs.
-+ * mtrr_rendezvous_handler - Work done in the synchronization handler. Executed
-+ * by all the CPUs.
-  * @info: pointer to mtrr configuration data
-  *
-  * Returns nothing.
-  */
--static int mtrr_work_handler(void *info)
-+static int mtrr_rendezvous_handler(void *info)
- {
- #ifdef CONFIG_SMP
- 	struct set_mtrr_data *data = info;
--	unsigned long flags;
--
--	atomic_dec(&data->count);
--	while (!atomic_read(&data->gate))
--		cpu_relax();
--
--	local_irq_save(flags);
--
--	atomic_dec(&data->count);
--	while (atomic_read(&data->gate))
--		cpu_relax();
- 
--	/*  The master has cleared me to execute  */
-+	/*
-+	 * We use this same function to initialize the mtrrs during boot,
-+	 * resume, runtime cpu online and on an explicit request to set a
-+	 * specific MTRR.
-+	 *
-+	 * During boot or suspend, the state of the boot cpu's mtrrs has been
-+	 * saved, and we want to replicate that across all the cpus that come
-+	 * online (either at the end of boot or resume or during a runtime cpu
-+	 * online). If we're doing that, @reg is set to something special and on
-+	 * all the cpu's we do mtrr_if->set_all() (On the logical cpu that
-+	 * started the boot/resume sequence, this might be a duplicate
-+	 * set_all()).
-+	 */
- 	if (data->smp_reg != ~0U) {
- 		mtrr_if->set(data->smp_reg, data->smp_base,
- 			     data->smp_size, data->smp_type);
--	} else if (mtrr_aps_delayed_init) {
--		/*
--		 * Initialize the MTRRs inaddition to the synchronisation.
--		 */
-+	} else if (mtrr_aps_delayed_init || !cpu_online(smp_processor_id())) {
- 		mtrr_if->set_all();
- 	}
--
--	atomic_dec(&data->count);
--	while (!atomic_read(&data->gate))
--		cpu_relax();
--
--	atomic_dec(&data->count);
--	local_irq_restore(flags);
- #endif
- 	return 0;
- }
-@@ -223,20 +211,11 @@ static inline int types_compatible(mtrr_type type1, mtrr_type type2)
-  * 14. Wait for buddies to catch up
-  * 15. Enable interrupts.
-  *
-- * What does that mean for us? Well, first we set data.count to the number
-- * of CPUs. As each CPU announces that it started the rendezvous handler by
-- * decrementing the count, We reset data.count and set the data.gate flag
-- * allowing all the cpu's to proceed with the work. As each cpu disables
-- * interrupts, it'll decrement data.count once. We wait until it hits 0 and
-- * proceed. We clear the data.gate flag and reset data.count. Meanwhile, they
-- * are waiting for that flag to be cleared. Once it's cleared, each
-- * CPU goes through the transition of updating MTRRs.
-- * The CPU vendors may each do it differently,
-- * so we call mtrr_if->set() callback and let them take care of it.
-- * When they're done, they again decrement data->count and wait for data.gate
-- * to be set.
-- * When we finish, we wait for data.count to hit 0 and toggle the data.gate flag
-- * Everyone then enables interrupts and we all continue on.
-+ * What does that mean for us? Well, stop_machine() will ensure that
-+ * the rendezvous handler is started on each CPU. And in lockstep they
-+ * do the state transition of disabling interrupts, updating MTRR's
-+ * (the CPU vendors may each do it differently, so we call mtrr_if->set()
-+ * callback and let them take care of it.) and enabling interrupts.
-  *
-  * Note that the mechanism is the same for UP systems, too; all the SMP stuff
-  * becomes nops.
-@@ -244,115 +223,26 @@ static inline int types_compatible(mtrr_type type1, mtrr_type type2)
- static void
- set_mtrr(unsigned int reg, unsigned long base, unsigned long size, mtrr_type type)
- {
--	struct set_mtrr_data data;
--	unsigned long flags;
--	int cpu;
--
--#ifdef CONFIG_SMP
--	/*
--	 * If this cpu is not yet active, we are in the cpu online path. There
--	 * can be no stop_machine() in parallel, as stop machine ensures this
--	 * by using get_online_cpus(). We can skip taking the stop_cpus_mutex,
--	 * as we don't need it and also we can't afford to block while waiting
--	 * for the mutex.
--	 *
--	 * If this cpu is active, we need to prevent stop_machine() happening
--	 * in parallel by taking the stop cpus mutex.
--	 *
--	 * Also, this is called in the context of cpu online path or in the
--	 * context where cpu hotplug is prevented. So checking the active status
--	 * of the raw_smp_processor_id() is safe.
--	 */
--	if (cpu_active(raw_smp_processor_id()))
--		mutex_lock(&stop_cpus_mutex);
--#endif
--
--	preempt_disable();
--
--	data.smp_reg = reg;
--	data.smp_base = base;
--	data.smp_size = size;
--	data.smp_type = type;
--	atomic_set(&data.count, num_booting_cpus() - 1);
--
--	/* Make sure data.count is visible before unleashing other CPUs */
--	smp_wmb();
--	atomic_set(&data.gate, 0);
--
--	/* Start the ball rolling on other CPUs */
--	for_each_online_cpu(cpu) {
--		struct cpu_stop_work *work = &per_cpu(mtrr_work, cpu);
--
--		if (cpu == smp_processor_id())
--			continue;
-+	struct set_mtrr_data data = { .smp_reg = reg,
-+				      .smp_base = base,
-+				      .smp_size = size,
-+				      .smp_type = type
-+				    };
- 
--		stop_one_cpu_nowait(cpu, mtrr_work_handler, &data, work);
--	}
--
--
--	while (atomic_read(&data.count))
--		cpu_relax();
--
--	/* Ok, reset count and toggle gate */
--	atomic_set(&data.count, num_booting_cpus() - 1);
--	smp_wmb();
--	atomic_set(&data.gate, 1);
--
--	local_irq_save(flags);
--
--	while (atomic_read(&data.count))
--		cpu_relax();
--
--	/* Ok, reset count and toggle gate */
--	atomic_set(&data.count, num_booting_cpus() - 1);
--	smp_wmb();
--	atomic_set(&data.gate, 0);
--
--	/* Do our MTRR business */
--
--	/*
--	 * HACK!
--	 *
--	 * We use this same function to initialize the mtrrs during boot,
--	 * resume, runtime cpu online and on an explicit request to set a
--	 * specific MTRR.
--	 *
--	 * During boot or suspend, the state of the boot cpu's mtrrs has been
--	 * saved, and we want to replicate that across all the cpus that come
--	 * online (either at the end of boot or resume or during a runtime cpu
--	 * online). If we're doing that, @reg is set to something special and on
--	 * this cpu we still do mtrr_if->set_all(). During boot/resume, this
--	 * is unnecessary if at this point we are still on the cpu that started
--	 * the boot/resume sequence. But there is no guarantee that we are still
--	 * on the same cpu. So we do mtrr_if->set_all() on this cpu aswell to be
--	 * sure that we are in sync with everyone else.
--	 */
--	if (reg != ~0U)
--		mtrr_if->set(reg, base, size, type);
--	else
--		mtrr_if->set_all();
--
--	/* Wait for the others */
--	while (atomic_read(&data.count))
--		cpu_relax();
--
--	atomic_set(&data.count, num_booting_cpus() - 1);
--	smp_wmb();
--	atomic_set(&data.gate, 1);
--
--	/*
--	 * Wait here for everyone to have seen the gate change
--	 * So we're the last ones to touch 'data'
--	 */
--	while (atomic_read(&data.count))
--		cpu_relax();
-+	stop_machine(mtrr_rendezvous_handler, &data, cpu_online_mask);
-+}
- 
--	local_irq_restore(flags);
--	preempt_enable();
--#ifdef CONFIG_SMP
--	if (cpu_active(raw_smp_processor_id()))
--		mutex_unlock(&stop_cpus_mutex);
--#endif
-+static void set_mtrr_from_inactive_cpu(unsigned int reg, unsigned long base,
-+				      unsigned long size, mtrr_type type)
-+{
-+	struct set_mtrr_data data = { .smp_reg = reg,
-+				      .smp_base = base,
-+				      .smp_size = size,
-+				      .smp_type = type
-+				    };
-+
-+	stop_machine_from_inactive_cpu(mtrr_rendezvous_handler, &data,
-+				       cpu_callout_mask);
- }
- 
- /**
-@@ -806,7 +696,7 @@ void mtrr_ap_init(void)
- 	 *   2. cpu hotadd time. We let mtrr_add/del_page hold cpuhotplug
- 	 *      lock to prevent mtrr entry changes
- 	 */
--	set_mtrr(~0U, 0, 0, 0);
-+	set_mtrr_from_inactive_cpu(~0U, 0, 0, 0);
- }
- 
- /**
-diff --git a/include/linux/stop_machine.h b/include/linux/stop_machine.h
-index e0f2da2..4a9d0c7 100644
---- a/include/linux/stop_machine.h
-+++ b/include/linux/stop_machine.h
-@@ -27,8 +27,6 @@ struct cpu_stop_work {
- 	struct cpu_stop_done	*done;
- };
- 
--extern struct mutex stop_cpus_mutex;
--
- int stop_one_cpu(unsigned int cpu, cpu_stop_fn_t fn, void *arg);
- void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
- 			 struct cpu_stop_work *work_buf);
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index e8f05b1..c112475 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -132,8 +132,8 @@ void stop_one_cpu_nowait(unsigned int cpu, cpu_stop_fn_t fn, void *arg,
- 	cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu), work_buf);
- }
- 
--DEFINE_MUTEX(stop_cpus_mutex);
- /* static data for stop_cpus */
-+static DEFINE_MUTEX(stop_cpus_mutex);
- static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
- 
- static void queue_stop_cpus_work(const struct cpumask *cpumask,
+INFO: Slab 0xffffea0001e19fd0 objects=20 used=1 fp=0x          (null) flags=0x20000000004081
+Pid: 2349, comm: kworker/1:2 Not tainted 3.0.0-rc4+ #4
+Call Trace:
+ [<ffffffff81105484>] slab_err+0x8a/0x98
+ [<ffffffff81078c91>] ? mark_lock+0x2d/0x22d
+ [<ffffffff8147e4c2>] ? _raw_spin_unlock_irqrestore+0x42/0x79
+ [<ffffffff81041b91>] ? get_parent_ip+0x11/0x41
+ [<ffffffff81105783>] on_freelist+0x179/0x1ad
+ [<ffffffffa029889c>] ? rpcb_map_release+0x3f/0x44 [sunrpc]
+ [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
+ [<ffffffff81106d4b>] free_debug_processing+0x5c/0x18e
+ [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
+ [<ffffffff811073b0>] __slab_free+0x57/0x150
+ [<ffffffffa029889c>] ? rpcb_map_release+0x3f/0x44 [sunrpc]
+ [<ffffffffa029889c>] ? rpcb_map_release+0x3f/0x44 [sunrpc]
+ [<ffffffff81107e9c>] kfree+0x107/0x13a
+ [<ffffffffa029889c>] rpcb_map_release+0x3f/0x44 [sunrpc]
+ [<ffffffffa028fa5a>] rpc_release_calldata+0x12/0x14 [sunrpc]
+ [<ffffffffa028fc41>] rpc_free_task+0x59/0x61 [sunrpc]
+ [<ffffffffa028fccb>] rpc_final_put_task+0x82/0x8a [sunrpc]
+ [<ffffffffa029066f>] __rpc_execute+0x23c/0x24b [sunrpc]
+ [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
+ [<ffffffffa02906d0>] rpc_async_schedule+0x10/0x12 [sunrpc]
+ [<ffffffff810611b7>] process_one_work+0x230/0x41d
+ [<ffffffff81061102>] ? process_one_work+0x17b/0x41d
+ [<ffffffff81063613>] worker_thread+0x133/0x217
+ [<ffffffff810634e0>] ? manage_workers+0x191/0x191
+ [<ffffffff81066e10>] kthread+0x7d/0x85
+ [<ffffffff81485924>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8147eb18>] ? retint_restore_args+0x13/0x13
+ [<ffffffff81066d93>] ? __init_kthread_worker+0x56/0x56
+ [<ffffffff81485920>] ? gs_change+0x13/0x13
+FIX kmalloc-64: Object count adjusted.
+
+
+Ben Greear (2):
+  slub: Enable backtrace for create/delete points.
+  slub:  Add method to verify memory is not deleted.
+
+ include/linux/slab.h |    9 ++++++
+ mm/slub.c            |   73 +++++++++++++++++++++++++++++++++++++++++++++-----
+ 2 files changed, 75 insertions(+), 7 deletions(-)
+
+-- 
+1.7.3.4
+
