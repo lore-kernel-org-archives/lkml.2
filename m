@@ -1,57 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752303Ab1F0PU3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 11:20:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3770 "EHLO mx1.redhat.com"
+	id S1752148Ab1F0PYk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:24:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41502 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751192Ab1F0PUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 11:20:23 -0400
-Date: Mon, 27 Jun 2011 17:18:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ptrace: make former thread ID available via
-	PTRACE_GETEVENTMSG after PTRACE_EVENT_EXEC stop (v.2)
-Message-ID: <20110627151827.GA6223@redhat.com>
-References: <201106262108.43011.vda.linux@googlemail.com> <20110626200442.GA16293@redhat.com> <20110627081139.GY30101@htj.dyndns.org> <20110627134713.GB3527@redhat.com> <20110627135252.GB30101@htj.dyndns.org>
+	id S1751129Ab1F0PYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 11:24:34 -0400
+Message-ID: <4E08A0A0.1080409@redhat.com>
+Date: Mon, 27 Jun 2011 12:24:16 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110627135252.GB30101@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Andy Walls <awalls@md.metrocast.net>
+CC: Hans Verkuil <hverkuil@xs4all.nl>, Sakari Ailus <sakari.ailus@iki.fi>,
+        Arnd Bergmann <arnd@arndb.de>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl  doesn't
+ exist
+References: <4E0519B7.3000304@redhat.com> <201106262020.20432.arnd@arndb.de>	 <4E077FB9.7030600@redhat.com> <201106270738.27417.hverkuil@xs4all.nl>	 <20110627120233.GD12671@valkosipuli.localdomain>	 <86e5c1f0a0222d3b2cf371f3c9d3b067.squirrel@webmail.xs4all.nl>	 <4E088B83.2050001@redhat.com> <1309187569.3559.63.camel@morgan.silverblock.net>
+In-Reply-To: <1309187569.3559.63.camel@morgan.silverblock.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27, Tejun Heo wrote:
->
-> Hello, Oleg.
->
-> On Mon, Jun 27, 2011 at 03:47:13PM +0200, Oleg Nesterov wrote:
-> > > Do we want to enable this silently?  Wouldn't it be better to make it
-> > > dependent on PT_SEIZED?
-> >
-> > Hmm. Not sure I understand. Why can't PTRACE_SEIZE add PT_TRACE_EXEC
-> > (and PT_TRACESYSGOOD) along with PT_SEIZED during attach?
->
-> I'm worrying about !PT_SEIZED case.  If we make it solely depend on
-> PT_TRACE_EXEC, newer kernels report the old pid while olders ones
-> don't
+Em 27-06-2011 12:12, Andy Walls escreveu:
+> On Mon, 2011-06-27 at 10:54 -0300, Mauro Carvalho Chehab wrote:
+> 
+>> The right thing to do is to create a separate chapter for error codes, based on errno(3)
+>> man page [snip]
+> 
+> IMO, the IEEE Std 1003.1 is a better source for errno definitions than
+> the errno(3) manpage:
+> 
+> http://pubs.opengroup.org/onlinepubs/000095399/functions/xsh_chap02_03.html
 
-Ah, understood. So you think that the old pid should be only reported
-if PT_SEIZED.
+True, but it doesn't cover all error types. For sure we need to use the POSIX standard
+when working at the DocBook.
 
-May be... Denys, what do you think?
-
-OTOH, it looks simpler if PT_TRACE_EXEC always reports the old pid,
-this can't break the applications which do not know about this new
-feature.
-
-> and the only way to discover would be either comparing kernel
-> version or actually trying it - both aren't too nice.
-
-Fortunately, currently tracehook_report_exec() zeroes ->ptrace_message.
-At least this means that anything != 0 means it works.
-
-Oleg.
-
+Cheers,
+Mauro
