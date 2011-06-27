@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756274Ab1F0Jf6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 05:35:58 -0400
-Received: from eu1sys200aog107.obsmtp.com ([207.126.144.123]:57046 "EHLO
-	eu1sys200aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757482Ab1F0Jdy (ORCPT
+	id S1757708Ab1F0JgH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 05:36:07 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:51388 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757166Ab1F0JeP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 05:33:54 -0400
+	Mon, 27 Jun 2011 05:34:15 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: Vinod Koul <vinod.koul@intel.com>
 Cc: <linux-kernel@vger.kernel.org>, Dan Williams <dan.j.williams@intel.com>,
         Lee Jones <lee.jones@linaro.org>,
-        Rabin Vincent <rabin.vincent@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
         Robert Marklund <robert.marklund@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH 3/4] dmaengine/ste_dma40: allow memory buswidth/burst to be configured
-Date: Mon, 27 Jun 2011 11:33:38 +0200
-Message-ID: <1309167218-23409-1-git-send-email-linus.walleij@stericsson.com>
+        Per Forlin <per.forlin@linaro.org>,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Subject: [PATCH 4/4] dmaengine/ste_dma40: use AMBA PrimeCell helper macros
+Date: Mon, 27 Jun 2011 11:33:46 +0200
+Message-ID: <1309167226-23447-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
 Content-Type: text/plain
@@ -24,248 +25,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rabin Vincent <rabin.vincent@stericsson.com>
+From: Linus Walleij <linus.walleij@linaro.org>
 
-Currently the runtime config implementation forces the memory side
-parameters to be the same as the peripheral side. Allow these to be
-different, and check for misconfiguration.
+The DMA40 is not a PrimeCell from ARM, but it still use the same
+ID registers. So let's utilize the existing macros in the
+PrimeCell header to identify manufacturer and revision of the IP
+block instead of reinventing the wheel.
 
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Reviewed-by: Ulf HANSSON <ulf.hansson@stericsson.com>
-Tested-by: Stefan Nilsson <stefan.xk.nilsson@stericsson.com>
-Reviewed-by: Per Forlin <per.forlin@stericsson.com>
-Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
 Cc: Robert Marklund <robert.marklund@stericsson.com>
+Cc: Per Forlin <per.forlin@linaro.org>
+Cc: Rabin Vincent <rabin.vincent@stericsson.com>
 Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/dma/ste_dma40.c |  168 ++++++++++++++++++++++++++++------------------
- 1 files changed, 102 insertions(+), 66 deletions(-)
+ drivers/dma/ste_dma40.c    |   72 ++++++++++++++++----------------------------
+ drivers/dma/ste_dma40_ll.h |    3 --
+ 2 files changed, 26 insertions(+), 49 deletions(-)
 
 diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index 35b078d..096167f 100644
+index 096167f..75ba586 100644
 --- a/drivers/dma/ste_dma40.c
 +++ b/drivers/dma/ste_dma40.c
-@@ -2181,17 +2181,78 @@ static void d40_issue_pending(struct dma_chan *chan)
- 	spin_unlock_irqrestore(&d40c->lock, flags);
- }
+@@ -13,6 +13,7 @@
+ #include <linux/clk.h>
+ #include <linux/delay.h>
+ #include <linux/err.h>
++#include <linux/amba/bus.h>
  
-+static int
-+dma40_config_to_halfchannel(struct d40_chan *d40c,
-+			    struct stedma40_half_channel_info *info,
-+			    enum dma_slave_buswidth width,
-+			    u32 maxburst)
-+{
-+	enum stedma40_periph_data_width addr_width;
-+	int psize;
-+
-+	switch (width) {
-+	case DMA_SLAVE_BUSWIDTH_1_BYTE:
-+		addr_width = STEDMA40_BYTE_WIDTH;
-+		break;
-+	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-+		addr_width = STEDMA40_HALFWORD_WIDTH;
-+		break;
-+	case DMA_SLAVE_BUSWIDTH_4_BYTES:
-+		addr_width = STEDMA40_WORD_WIDTH;
-+		break;
-+	case DMA_SLAVE_BUSWIDTH_8_BYTES:
-+		addr_width = STEDMA40_DOUBLEWORD_WIDTH;
-+		break;
-+	default:
-+		dev_err(d40c->base->dev,
-+			"illegal peripheral address width "
-+			"requested (%d)\n",
-+			width);
-+		return -EINVAL;
-+	}
-+
-+	if (chan_is_logical(d40c)) {
-+		if (maxburst >= 16)
-+			psize = STEDMA40_PSIZE_LOG_16;
-+		else if (maxburst >= 8)
-+			psize = STEDMA40_PSIZE_LOG_8;
-+		else if (maxburst >= 4)
-+			psize = STEDMA40_PSIZE_LOG_4;
-+		else
-+			psize = STEDMA40_PSIZE_LOG_1;
-+	} else {
-+		if (maxburst >= 16)
-+			psize = STEDMA40_PSIZE_PHY_16;
-+		else if (maxburst >= 8)
-+			psize = STEDMA40_PSIZE_PHY_8;
-+		else if (maxburst >= 4)
-+			psize = STEDMA40_PSIZE_PHY_4;
-+		else
-+			psize = STEDMA40_PSIZE_PHY_1;
-+	}
-+
-+	info->data_width = addr_width;
-+	info->psize = psize;
-+	info->flow_ctrl = STEDMA40_NO_FLOW_CTRL;
-+
-+	return 0;
-+}
-+
- /* Runtime reconfiguration extension */
--static void d40_set_runtime_config(struct dma_chan *chan,
--			       struct dma_slave_config *config)
-+static int d40_set_runtime_config(struct dma_chan *chan,
-+				  struct dma_slave_config *config)
- {
- 	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
- 	struct stedma40_chan_cfg *cfg = &d40c->dma_cfg;
--	enum dma_slave_buswidth config_addr_width;
-+	enum dma_slave_buswidth src_addr_width, dst_addr_width;
- 	dma_addr_t config_addr;
--	u32 config_maxburst;
--	enum stedma40_periph_data_width addr_width;
--	int psize;
-+	u32 src_maxburst, dst_maxburst;
-+	int ret;
-+
-+	src_addr_width = config->src_addr_width;
-+	src_maxburst = config->src_maxburst;
-+	dst_addr_width = config->dst_addr_width;
-+	dst_maxburst = config->dst_maxburst;
+ #include <plat/ste_dma40.h>
  
- 	if (config->direction == DMA_FROM_DEVICE) {
- 		dma_addr_t dev_addr_rx =
-@@ -2210,8 +2271,11 @@ static void d40_set_runtime_config(struct dma_chan *chan,
- 				cfg->dir);
- 		cfg->dir = STEDMA40_PERIPH_TO_MEM;
+@@ -44,9 +45,6 @@
+ #define D40_ALLOC_PHY		(1 << 30)
+ #define D40_ALLOC_LOG_FREE	0
  
--		config_addr_width = config->src_addr_width;
--		config_maxburst = config->src_maxburst;
-+		/* Configure the memory side */
-+		if (dst_addr_width == DMA_SLAVE_BUSWIDTH_UNDEFINED)
-+			dst_addr_width = src_addr_width;
-+		if (dst_maxburst == 0)
-+			dst_maxburst = src_maxburst;
- 
- 	} else if (config->direction == DMA_TO_DEVICE) {
- 		dma_addr_t dev_addr_tx =
-@@ -2230,68 +2294,39 @@ static void d40_set_runtime_config(struct dma_chan *chan,
- 				cfg->dir);
- 		cfg->dir = STEDMA40_MEM_TO_PERIPH;
- 
--		config_addr_width = config->dst_addr_width;
--		config_maxburst = config->dst_maxburst;
+-/* Hardware designer of the block */
+-#define D40_HW_DESIGNER 0x8
 -
-+		/* Configure the memory side */
-+		if (src_addr_width == DMA_SLAVE_BUSWIDTH_UNDEFINED)
-+			src_addr_width = dst_addr_width;
-+		if (src_maxburst == 0)
-+			src_maxburst = dst_maxburst;
- 	} else {
- 		dev_err(d40c->base->dev,
- 			"unrecognized channel direction %d\n",
- 			config->direction);
--		return;
-+		return -EINVAL;
- 	}
+ /**
+  * enum 40_command - The different commands and/or statuses.
+  *
+@@ -2561,25 +2559,6 @@ static int __init d40_phy_res_init(struct d40_base *base)
  
--	switch (config_addr_width) {
--	case DMA_SLAVE_BUSWIDTH_1_BYTE:
--		addr_width = STEDMA40_BYTE_WIDTH;
--		break;
--	case DMA_SLAVE_BUSWIDTH_2_BYTES:
--		addr_width = STEDMA40_HALFWORD_WIDTH;
--		break;
--	case DMA_SLAVE_BUSWIDTH_4_BYTES:
--		addr_width = STEDMA40_WORD_WIDTH;
--		break;
--	case DMA_SLAVE_BUSWIDTH_8_BYTES:
--		addr_width = STEDMA40_DOUBLEWORD_WIDTH;
--		break;
--	default:
-+	if (src_maxburst * src_addr_width != dst_maxburst * dst_addr_width) {
- 		dev_err(d40c->base->dev,
--			"illegal peripheral address width "
--			"requested (%d)\n",
--			config->src_addr_width);
--		return;
-+			"src/dst width/maxburst mismatch: %d*%d != %d*%d\n",
-+			src_maxburst,
-+			src_addr_width,
-+			dst_maxburst,
-+			dst_addr_width);
-+		return -EINVAL;
- 	}
+ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ {
+-	static const struct d40_reg_val dma_id_regs[] = {
+-		/* Peripheral Id */
+-		{ .reg = D40_DREG_PERIPHID0, .val = 0x0040},
+-		{ .reg = D40_DREG_PERIPHID1, .val = 0x0000},
+-		/*
+-		 * D40_DREG_PERIPHID2 Depends on HW revision:
+-		 *  DB8500ed has 0x0008,
+-		 *  ? has 0x0018,
+-		 *  DB8500v1 has 0x0028
+-		 *  DB8500v2 has 0x0038
+-		 */
+-		{ .reg = D40_DREG_PERIPHID3, .val = 0x0000},
+-
+-		/* PCell Id */
+-		{ .reg = D40_DREG_CELLID0, .val = 0x000d},
+-		{ .reg = D40_DREG_CELLID1, .val = 0x00f0},
+-		{ .reg = D40_DREG_CELLID2, .val = 0x0005},
+-		{ .reg = D40_DREG_CELLID3, .val = 0x00b1}
+-	};
+ 	struct stedma40_platform_data *plat_data;
+ 	struct clk *clk = NULL;
+ 	void __iomem *virtbase = NULL;
+@@ -2588,8 +2567,9 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	int num_log_chans = 0;
+ 	int num_phy_chans;
+ 	int i;
+-	u32 val;
+-	u32 rev;
++	u32 pid;
++	u32 cid;
++	u8 rev;
  
--	if (chan_is_logical(d40c)) {
--		if (config_maxburst >= 16)
--			psize = STEDMA40_PSIZE_LOG_16;
--		else if (config_maxburst >= 8)
--			psize = STEDMA40_PSIZE_LOG_8;
--		else if (config_maxburst >= 4)
--			psize = STEDMA40_PSIZE_LOG_4;
--		else
--			psize = STEDMA40_PSIZE_LOG_1;
--	} else {
--		if (config_maxburst >= 16)
--			psize = STEDMA40_PSIZE_PHY_16;
--		else if (config_maxburst >= 8)
--			psize = STEDMA40_PSIZE_PHY_8;
--		else if (config_maxburst >= 4)
--			psize = STEDMA40_PSIZE_PHY_4;
--		else if (config_maxburst >= 2)
--			psize = STEDMA40_PSIZE_PHY_2;
--		else
--			psize = STEDMA40_PSIZE_PHY_1;
+ 	clk = clk_get(&pdev->dev, NULL);
+ 
+@@ -2613,32 +2593,32 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	if (!virtbase)
+ 		goto failure;
+ 
+-	/* HW version check */
+-	for (i = 0; i < ARRAY_SIZE(dma_id_regs); i++) {
+-		if (dma_id_regs[i].val !=
+-		    readl(virtbase + dma_id_regs[i].reg)) {
+-			d40_err(&pdev->dev,
+-				"Unknown hardware! Expected 0x%x at 0x%x but got 0x%x\n",
+-				dma_id_regs[i].val,
+-				dma_id_regs[i].reg,
+-				readl(virtbase + dma_id_regs[i].reg));
+-			goto failure;
+-		}
 -	}
-+	ret = dma40_config_to_halfchannel(d40c, &cfg->src_info,
-+					  src_addr_width,
-+					  src_maxburst);
-+	if (ret)
-+		return ret;
+-
+-	/* Get silicon revision and designer */
+-	val = readl(virtbase + D40_DREG_PERIPHID2);
++	/* This is just a regular AMBA PrimeCell ID actually */
++	for (pid = 0, i = 0; i < 4; i++)
++		pid |= (readl(virtbase + resource_size(res) - 0x20 + 4 * i)
++			& 255) << (i * 8);
++	for (cid = 0, i = 0; i < 4; i++)
++		cid |= (readl(virtbase + resource_size(res) - 0x10 + 4 * i)
++			& 255) << (i * 8);
  
--	/* Set up all the endpoint configs */
--	cfg->src_info.data_width = addr_width;
--	cfg->src_info.psize = psize;
--	cfg->src_info.big_endian = false;
--	cfg->src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL;
--	cfg->dst_info.data_width = addr_width;
--	cfg->dst_info.psize = psize;
--	cfg->dst_info.big_endian = false;
--	cfg->dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL;
-+	ret = dma40_config_to_halfchannel(d40c, &cfg->dst_info,
-+					  dst_addr_width,
-+					  dst_maxburst);
-+	if (ret)
-+		return ret;
- 
- 	/* Fill in register values */
- 	if (chan_is_logical(d40c))
-@@ -2304,12 +2339,14 @@ static void d40_set_runtime_config(struct dma_chan *chan,
- 	d40c->runtime_addr = config_addr;
- 	d40c->runtime_direction = config->direction;
- 	dev_dbg(d40c->base->dev,
--		"configured channel %s for %s, data width %d, "
--		"maxburst %d bytes, LE, no flow control\n",
-+		"configured channel %s for %s, data width %d/%d, "
-+		"maxburst %d/%d elements, LE, no flow control\n",
- 		dma_chan_name(chan),
- 		(config->direction == DMA_FROM_DEVICE) ? "RX" : "TX",
--		config_addr_width,
--		config_maxburst);
-+		src_addr_width, dst_addr_width,
-+		src_maxburst, dst_maxburst);
-+
-+	return 0;
- }
- 
- static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
-@@ -2330,9 +2367,8 @@ static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 	case DMA_RESUME:
- 		return d40_resume(d40c);
- 	case DMA_SLAVE_CONFIG:
--		d40_set_runtime_config(chan,
-+		return d40_set_runtime_config(chan,
- 			(struct dma_slave_config *) arg);
--		return 0;
- 	default:
- 		break;
+-	if ((val & D40_DREG_PERIPHID2_DESIGNER_MASK) !=
+-	    D40_HW_DESIGNER) {
++	if (cid != AMBA_CID) {
++		d40_err(&pdev->dev, "Unknown hardware! No PrimeCell ID\n");
++		goto failure;
++	}
++	if (AMBA_MANF_BITS(pid) != AMBA_VENDOR_ST) {
+ 		d40_err(&pdev->dev, "Unknown designer! Got %x wanted %x\n",
+-			val & D40_DREG_PERIPHID2_DESIGNER_MASK,
+-			D40_HW_DESIGNER);
++			AMBA_MANF_BITS(pid),
++			AMBA_VENDOR_ST);
+ 		goto failure;
  	}
+-
+-	rev = (val & D40_DREG_PERIPHID2_REV_MASK) >>
+-		D40_DREG_PERIPHID2_REV_POS;
++	/*
++	 * HW revision:
++	 * DB8500ed has revision 0
++	 * ? has revision 1
++	 * DB8500v1 has revision 2
++	 * DB8500v2 has revision 3
++	 */
++	rev = AMBA_REV_BITS(pid);
+ 
+ 	/* The number of physical channels on this HW */
+ 	num_phy_chans = 4 * (readl(virtbase + D40_DREG_ICFG) & 0x7) + 4;
+diff --git a/drivers/dma/ste_dma40_ll.h b/drivers/dma/ste_dma40_ll.h
+index 195ee65..b44c4551 100644
+--- a/drivers/dma/ste_dma40_ll.h
++++ b/drivers/dma/ste_dma40_ll.h
+@@ -184,9 +184,6 @@
+ #define D40_DREG_PERIPHID0	0xFE0
+ #define D40_DREG_PERIPHID1	0xFE4
+ #define D40_DREG_PERIPHID2	0xFE8
+-#define D40_DREG_PERIPHID2_REV_POS 4
+-#define D40_DREG_PERIPHID2_REV_MASK (0xf << D40_DREG_PERIPHID2_REV_POS)
+-#define D40_DREG_PERIPHID2_DESIGNER_MASK 0xf
+ #define D40_DREG_PERIPHID3	0xFEC
+ #define D40_DREG_CELLID0	0xFF0
+ #define D40_DREG_CELLID1	0xFF4
 -- 
 1.7.3.2
 
