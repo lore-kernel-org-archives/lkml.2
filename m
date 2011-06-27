@@ -1,113 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab1F0XUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:20:20 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:43775 "EHLO
+	id S1755561Ab1F0XUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:20:23 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:43777 "EHLO
 	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485Ab1F0XRS (ORCPT
+	with ESMTP id S1754957Ab1F0XR0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:17:18 -0400
+	Mon, 27 Jun 2011 19:17:26 -0400
 From: greearb@candelatech.com
 To: linux-kernel@vger.kernel.org
 Cc: Ben Greear <greearb@candelatech.com>
-Subject: [PATCH 0/2] SLUB memory debugging improvements.
-Date: Mon, 27 Jun 2011 16:17:09 -0700
-Message-Id: <1309216631-31493-1-git-send-email-greearb@candelatech.com>
+Subject: [PATCH 1/2] slub: Enable backtrace for create/delete points.
+Date: Mon, 27 Jun 2011 16:17:10 -0700
+Message-Id: <1309216631-31493-2-git-send-email-greearb@candelatech.com>
 X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1309216631-31493-1-git-send-email-greearb@candelatech.com>
+References: <1309216631-31493-1-git-send-email-greearb@candelatech.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ben Greear <greearb@candelatech.com>
 
-The idea is to grab a useful sized stack trace for creation/deletion
-points instead of just a single method.
+This patch attempts to grab a backtrace for the creation
+and deletion points of the slub object.  When a fault is
+detected, we can then get a better idea of where the item
+was deleted.
 
-A second patch adds a command to check if memory should be
-in use.  This is in an attempt to track down some use-after-free
-bugs I'm seeing in nfs/rpc.
+Signed-off-by: Ben Greear <greearb@candelatech.com>
+---
+:100644 100644 35f351f... 14d0135... M	mm/slub.c
+ mm/slub.c |   39 ++++++++++++++++++++++++++++++++-------
+ 1 files changed, 32 insertions(+), 7 deletions(-)
 
-However, I did not exactly hit the bug I was expecting, but got
-this output instead.  I'm not sure if my debug patches are not
-working right, or if this warning is just another symptom of the
-problem:
-
-=============================================================================
-BUG kmalloc-64: Wrong object count. Counter is 2 but counted were 1
------------------------------------------------------------------------------
-
-INFO: Slab 0xffffea0001e19fd0 objects=20 used=20 fp=0x          (null) flags=0x20000000004080
-Pid: 2349, comm: kworker/1:2 Not tainted 3.0.0-rc4+ #4
-Call Trace:
- [<ffffffff81105484>] slab_err+0x8a/0x98
- [<ffffffff81077c0b>] ? register_lock_class+0x1e/0x336
- [<ffffffff81078c91>] ? mark_lock+0x2d/0x22d
- [<ffffffff81105783>] on_freelist+0x179/0x1ad
- [<ffffffffa0290601>] ? __rpc_execute+0x1ce/0x24b [sunrpc]
- [<ffffffff81106849>] verify_mem_not_deleted+0x5f/0xb3
- [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
- [<ffffffffa02981b5>] rpcb_getport_done+0x23/0x126 [sunrpc]
- [<ffffffffa02900ba>] rpc_exit_task+0x3f/0x6d [sunrpc]
- [<ffffffffa02904ab>] __rpc_execute+0x78/0x24b [sunrpc]
- [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
- [<ffffffffa02906d0>] rpc_async_schedule+0x10/0x12 [sunrpc]
- [<ffffffff810611b7>] process_one_work+0x230/0x41d
- [<ffffffff81061102>] ? process_one_work+0x17b/0x41d
- [<ffffffff81063613>] worker_thread+0x133/0x217
- [<ffffffff810634e0>] ? manage_workers+0x191/0x191
- [<ffffffff81066e10>] kthread+0x7d/0x85
- [<ffffffff81485924>] kernel_thread_helper+0x4/0x10
- [<ffffffff8147eb18>] ? retint_restore_args+0x13/0x13
- [<ffffffff81066d93>] ? __init_kthread_worker+0x56/0x56
- [<ffffffff81485920>] ? gs_change+0x13/0x13
-FIX kmalloc-64: Object count adjusted.
-=============================================================================
-BUG kmalloc-64: Wrong object count. Counter is 1 but counted were 20
------------------------------------------------------------------------------
-
-INFO: Slab 0xffffea0001e19fd0 objects=20 used=1 fp=0x          (null) flags=0x20000000004081
-Pid: 2349, comm: kworker/1:2 Not tainted 3.0.0-rc4+ #4
-Call Trace:
- [<ffffffff81105484>] slab_err+0x8a/0x98
- [<ffffffff81078c91>] ? mark_lock+0x2d/0x22d
- [<ffffffff8147e4c2>] ? _raw_spin_unlock_irqrestore+0x42/0x79
- [<ffffffff81041b91>] ? get_parent_ip+0x11/0x41
- [<ffffffff81105783>] on_freelist+0x179/0x1ad
- [<ffffffffa029889c>] ? rpcb_map_release+0x3f/0x44 [sunrpc]
- [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
- [<ffffffff81106d4b>] free_debug_processing+0x5c/0x18e
- [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
- [<ffffffff811073b0>] __slab_free+0x57/0x150
- [<ffffffffa029889c>] ? rpcb_map_release+0x3f/0x44 [sunrpc]
- [<ffffffffa029889c>] ? rpcb_map_release+0x3f/0x44 [sunrpc]
- [<ffffffff81107e9c>] kfree+0x107/0x13a
- [<ffffffffa029889c>] rpcb_map_release+0x3f/0x44 [sunrpc]
- [<ffffffffa028fa5a>] rpc_release_calldata+0x12/0x14 [sunrpc]
- [<ffffffffa028fc41>] rpc_free_task+0x59/0x61 [sunrpc]
- [<ffffffffa028fccb>] rpc_final_put_task+0x82/0x8a [sunrpc]
- [<ffffffffa029066f>] __rpc_execute+0x23c/0x24b [sunrpc]
- [<ffffffffa02906c0>] ? rpc_execute+0x42/0x42 [sunrpc]
- [<ffffffffa02906d0>] rpc_async_schedule+0x10/0x12 [sunrpc]
- [<ffffffff810611b7>] process_one_work+0x230/0x41d
- [<ffffffff81061102>] ? process_one_work+0x17b/0x41d
- [<ffffffff81063613>] worker_thread+0x133/0x217
- [<ffffffff810634e0>] ? manage_workers+0x191/0x191
- [<ffffffff81066e10>] kthread+0x7d/0x85
- [<ffffffff81485924>] kernel_thread_helper+0x4/0x10
- [<ffffffff8147eb18>] ? retint_restore_args+0x13/0x13
- [<ffffffff81066d93>] ? __init_kthread_worker+0x56/0x56
- [<ffffffff81485920>] ? gs_change+0x13/0x13
-FIX kmalloc-64: Object count adjusted.
-
-
-Ben Greear (2):
-  slub: Enable backtrace for create/delete points.
-  slub:  Add method to verify memory is not deleted.
-
- include/linux/slab.h |    9 ++++++
- mm/slub.c            |   73 +++++++++++++++++++++++++++++++++++++++++++++-----
- 2 files changed, 75 insertions(+), 7 deletions(-)
-
+diff --git a/mm/slub.c b/mm/slub.c
+index 35f351f..14d0135 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -191,8 +191,10 @@ static LIST_HEAD(slab_caches);
+ /*
+  * Tracking user of a slab.
+  */
++#define TRACK_ADDRS_COUNT 16
+ struct track {
+-	unsigned long addr;	/* Called from address */
++	unsigned long caddr;
++	unsigned long addrs[TRACK_ADDRS_COUNT];	/* Called from address */
+ 	int cpu;		/* Was running on cpu */
+ 	int pid;		/* Pid context */
+ 	unsigned long when;	/* When did the operation occur */
+@@ -420,7 +422,24 @@ static void set_track(struct kmem_cache *s, void *object,
+ 	struct track *p = get_track(s, object, alloc);
+ 
+ 	if (addr) {
+-		p->addr = addr;
++		struct stack_trace trace;
++		int i;
++
++		trace.nr_entries = 0;
++		trace.max_entries = TRACK_ADDRS_COUNT;
++		trace.entries = p->addrs;
++		trace.skip = 3;
++		save_stack_trace(&trace);
++
++		/* See rant in lockdep.c */
++		if (trace.nr_entries != 0 &&
++		    trace.entries[trace.nr_entries - 1] == ULONG_MAX)
++			trace.nr_entries--;
++
++		for (i = trace.nr_entries; i<TRACK_ADDRS_COUNT; i++)
++			p->addrs[i] = 0;
++
++		p->caddr = addr;
+ 		p->cpu = smp_processor_id();
+ 		p->pid = current->pid;
+ 		p->when = jiffies;
+@@ -439,11 +458,17 @@ static void init_tracking(struct kmem_cache *s, void *object)
+ 
+ static void print_track(const char *s, struct track *t)
+ {
+-	if (!t->addr)
++	int i;
++	if (!t->caddr)
+ 		return;
+ 
+ 	printk(KERN_ERR "INFO: %s in %pS age=%lu cpu=%u pid=%d\n",
+-		s, (void *)t->addr, jiffies - t->when, t->cpu, t->pid);
++		s, (void *)t->caddr, jiffies - t->when, t->cpu, t->pid);
++	for (i = 0; i < TRACK_ADDRS_COUNT; i++)
++		if (t->addrs[i])
++			printk(KERN_ERR "\t%pS\n", (void *)t->addrs[i]);
++		else
++			break;
+ }
+ 
+ static void print_tracking(struct kmem_cache *s, void *object)
+@@ -3721,7 +3746,7 @@ static int add_location(struct loc_track *t, struct kmem_cache *s,
+ 			break;
+ 
+ 		caddr = t->loc[pos].addr;
+-		if (track->addr == caddr) {
++		if (track->caddr == caddr) {
+ 
+ 			l = &t->loc[pos];
+ 			l->count++;
+@@ -3744,7 +3769,7 @@ static int add_location(struct loc_track *t, struct kmem_cache *s,
+ 			return 1;
+ 		}
+ 
+-		if (track->addr < caddr)
++		if (track->caddr < caddr)
+ 			end = pos;
+ 		else
+ 			start = pos;
+@@ -3762,7 +3787,7 @@ static int add_location(struct loc_track *t, struct kmem_cache *s,
+ 			(t->count - pos) * sizeof(struct location));
+ 	t->count++;
+ 	l->count = 1;
+-	l->addr = track->addr;
++	l->addr = track->caddr;
+ 	l->sum_time = age;
+ 	l->min_time = age;
+ 	l->max_time = age;
 -- 
 1.7.3.4
 
