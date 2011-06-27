@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757156Ab1F0N1w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 09:27:52 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:52819 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759961Ab1F0N0d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 09:26:33 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: viresh kumar <viresh.kumar@st.com>, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH V2 0/3] Add drivers/pwm and drivers/pwm/st_pwm.c
-Date: Mon, 27 Jun 2011 15:26:12 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        Shiraz HASHIM <shiraz.hashim@st.com>, Vipin KUMAR <vipin.kumar@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>, Pratyush ANAND <pratyush.anand@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <cover.1306831238.git.viresh.kumar@st.com> <4E086590.8080100@st.com>
-In-Reply-To: <4E086590.8080100@st.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106271526.12848.arnd@arndb.de>
-X-Provags-ID: V02:K0:heGAwoCuc1k2+L8E2l6kNzTYwZe8MhRagFyF6HJH1Tg
- RQcYiXP0aATyz7xbFDpGEUR06KzVNndKdz5Xae0pMeTZDdb3CO
- dQa9KoENsTOBGXdDAZ9sEudQ2uGyuWXveLKLb0w/tSCcz2s+mD
- DXoVM2FBrPtgbYTUOSTRzVP33eY+OVgItYvOWikmhQkkZE8Ay+
- TjVYoZhlo19gnJcOaGuSg==
+	id S1752189Ab1F0Pjv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:39:51 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:40674 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751358Ab1F0PiJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 11:38:09 -0400
+Message-Id: <f0b3d9a91be8dba5c45c14efebaa9c7800694f15.1309182743.git.ralf@linux-mips.org>
+In-Reply-To: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
+References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Alan Cox <alan@linux.intel.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org
+Date: Mon, 27 Jun 2011 14:26:56 +0100
+Subject: [PATCH 10/12] SERIAL: SC26xx: Fix link error.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 27 June 2011, viresh kumar wrote:
-> On 05/31/2011 02:21 PM, Viresh KUMAR wrote:
-> > This patchset adds drivers/pwm directory as suggested by Arnd Bergmann in
-> > following discussion:
-> > 
-> > http://comments.gmane.org/gmane.linux.ports.arm.kernel/118651
-> > 
-> > and also adds support for ST Microelectronics Pulse Width Modulator. This is
-> > currently used by ST's SPEAr platform and tested on the same.
-> > 
-> > Changes since V1:
-> >  - Moved driver to drivers/pwm/ directory from drivers/misc
-> >  - arch/arm/configs/spear3xx_defconfig updated accordingly.
-> > 
-> > Changes since earlier patchset:
-> >  - Moved driver to drivers/misc/ directory.
-> > 
-> > It was earlier reviewed as part of following patchset:
-> > "[PATCH V6 00/17] Adding devices support for all spear machines"
-> > 
-> > Viresh Kumar (3):
-> >   drivers/pwm st_pwm: Add support for ST's Pulse Width Modulator
-> >   SPEAr3xx: Add machine support for ST's PWM IP
-> >   SPEAr3xx: Update defconfig for ST's PWM
->
-> Will you push this patchset through your tree or somebody else will do?
+Kconfig allows enabling console support for the SC26xx driver even when
+it's configured as a module resulting in a:
 
-Good question. If Sascha is able to come up with the patch to introduce
-the generic layer, I think it would be good to have it go though him.
+ERROR: "uart_console_device" [drivers/tty/serial/sc26xx.ko] undefined!
 
-Otherwise I guess I can carry it, but I'd start a new tree for
-drivers/{misc,char} then and put it in there, along with patches to
-move the other pwm drivers.
+modpost error since the driver was merged in
+eea63e0e8a60d00485b47fb6e75d9aa2566b989b [SC26XX: New serial driver for
+SC2681 uarts] in 2.6.25.  Fixed by only allowing console support to be
+enabled if the driver is builtin.
 
-	Arnd
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+To: Alan Cox <alan@linux.intel.com>
+Cc: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+---
+ drivers/tty/serial/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index 636144c..b3692e6 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -1419,7 +1419,7 @@ config SERIAL_SC26XX
+ 
+ config SERIAL_SC26XX_CONSOLE
+ 	bool "Console on SC2681/SC2692 serial port"
+-	depends on SERIAL_SC26XX
++	depends on SERIAL_SC26XX=y
+ 	select SERIAL_CORE_CONSOLE
+ 	help
+ 	  Support for Console on SC2681/SC2692 serial ports.
+-- 
+1.7.4.4
+
