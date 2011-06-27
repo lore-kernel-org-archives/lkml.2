@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755576Ab1F0XhA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:37:00 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:63900 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755414Ab1F0Xfe (ORCPT
+	id S1755683Ab1F0Xhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:37:42 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40652 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755461Ab1F0XgK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:35:34 -0400
-Date: Mon, 27 Jun 2011 19:33:54 -0400 (EDT)
-From: Peter Foley <pefoley2@verizon.net>
-To: Peter Foley <pefoley2@verizon.net>
-Cc: Arnaud Lacombe <lacombar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
-        mmarek@suse.cz
-Subject: [PATCH V2] kbuild: silence generated makefile message
-In-reply-to: <alpine.LNX.2.00.1106271915160.38876@linux>
-Message-id: <alpine.LNX.2.00.1106271932480.13060@linux>
-References: <alpine.LNX.2.00.1106271619350.24034@linux>
- <BANLkTimrUYk-8GSsf35mUmLVBAaO84R6dA@mail.gmail.com>
- <alpine.LNX.2.00.1106271915160.38876@linux>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 27 Jun 2011 19:36:10 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110627232903.GB7736@n2100.arm.linux.org.uk>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+ <1308640714-17961-2-git-send-email-ohad@wizery.com> <20110627204958.GB20865@ponder.secretlab.ca>
+ <20110627232903.GB7736@n2100.arm.linux.org.uk>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 27 Jun 2011 17:35:49 -0600
+X-Google-Sender-Auth: 1-Lcwx9Yk3mwrJnSeuFQcNgh2zA
+Message-ID: <BANLkTi=MDSuiGb64Se1T7zCWG6syxXbhTg@mail.gmail.com>
+Subject: Re: [RFC 1/8] drivers: add generic remoteproc framework
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Ohad Ben-Cohen <ohad@wizery.com>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 27, 2011 at 5:29 PM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Mon, Jun 27, 2011 at 02:49:58PM -0600, Grant Likely wrote:
+>> > +struct {
+>> > +      char magic[4] = { 'R', 'P', 'R', 'C' };
+>> > +      u32 version;
+>> > +      u32 header_len;
+>> > +      char header[...] = { header_len bytes of unformatted, textual header };
+>> > +      struct section {
+>> > +          u32 type;
+>> > +          u64 da;
+>> > +          u32 len;
+>> > +          u8 content[...] = { len bytes of binary data };
+>> > +      } [ no limit on number of sections ];
+>> > +} __packed;
+>>
+>> Other have commented on the image format, so I'll skip this bit other
+>> than saying that I agree it would be great to have a common format.
+>
+> (Don't have the original message to reply to...)
+>
+> Do we really want to end up with header being 5 bytes, header_len set
+> as 5, and having to load/store all this data using byte loads/stores ?
+>
+> If we don't want that, then I suggest we get rid of the packed attribute,
+> and require stuff to be naturally aligned.
+>
+> First issue is that struct section could be much better layed out:
+>
+> struct section {
+>        u32 type;
+>        u32 len;
+>        u64 da;
+>        u8 content[];
+> };
+>
+> and require sizeof(struct section) % sizeof(u64) == 0 - iow, to find
+> the next section, round len up to sizeof(u64).  Ditto for the header.
 
-This patch silences the "make -C /usr/src/git O=/usr/src/git/build/." 
-message shown when using the generated makefile in KBUILD_OUTDIR.
+Hopefully this will all be moot since it has been proposed to use elf
+images directly.
 
+g.
 
-Signed-off-by: Peter Foley <pefoley2@verizon.net>
----
-
-V2: Show message when V=1
-
- scripts/mkmakefile |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-diff --git a/scripts/mkmakefile b/scripts/mkmakefile
-index 5325423..ea26f37 100644
---- a/scripts/mkmakefile
-+++ b/scripts/mkmakefile
-@@ -30,6 +30,10 @@ PATCHLEVEL = $4
- lastword = \$(word \$(words \$(1)),\$(1))
- makedir := \$(dir \$(call lastword,\$(MAKEFILE_LIST)))
- 
-+ifneq (\$(V),1)
-+Q := @
-+endif
-+
- MAKEARGS := -C $1
- MAKEARGS += O=\$(if \$(patsubst /%,,\$(makedir)),\$(CURDIR)/)\$(patsubst %/,%,\$(makedir))
- 
-@@ -40,7 +44,7 @@ MAKEFLAGS += --no-print-directory
- all	:= \$(filter-out all Makefile,\$(MAKECMDGOALS))
- 
- all:
--	\$(MAKE) \$(MAKEARGS) \$(all)
-+	\$(Q)\$(MAKE) \$(MAKEARGS) \$(all)
- 
- Makefile:;
- 
 -- 
-1.7.5.3
-
-
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
