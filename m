@@ -1,43 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab1F0Nnk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 09:43:40 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:51462 "EHLO imr4.ericy.com"
+	id S1752545Ab1F0NtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 09:49:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46425 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751868Ab1F0Nnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 09:43:33 -0400
-Date: Mon, 27 Jun 2011 06:42:39 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-CC: Fenghua Yu <fenghua.yu@intel.com>, Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: coretemp: Support for Intel Atom E6XX CPU (TunnelCreek)?
-Message-ID: <20110627134239.GA10808@ericsson.com>
-References: <201106271220.51953.alexander.stein@systec-electronic.com>
+	id S1750934Ab1F0NtJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 09:49:09 -0400
+Date: Mon, 27 Jun 2011 15:47:13 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ptrace: make former thread ID available via
+	PTRACE_GETEVENTMSG after PTRACE_EVENT_EXEC stop (v.2)
+Message-ID: <20110627134713.GB3527@redhat.com>
+References: <201106262108.43011.vda.linux@googlemail.com> <20110626200442.GA16293@redhat.com> <20110627081139.GY30101@htj.dyndns.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106271220.51953.alexander.stein@systec-electronic.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110627081139.GY30101@htj.dyndns.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 06:20:51AM -0400, Alexander Stein wrote:
-> Hello,
-> 
-> I have a patch (for v2.6.39) which adds support for Intel Atom E6XX 
-> (TunnelCreek) to coretemp. It's merely only adding x86_model 0x26.
-> But there are models (e.g. E660 and E660T) with different TjMax, namely 90 
-> degrees C and 110 degrees C. But these different model can't be detected by 
-> reading from hardware.
-> IMO there should be some support to adjust the temperature from userspace. 
-> Reading Documentation/hwmon/sysfs-interface only temp1_offset seems to be 
-> useable. But I think it is somewhat misleading (especially on multicores), 
-> because there must only be one offset.
-> What do you think about this?
-> 
-You can adjust the reported temperature with an entry in sensors3.conf.
+On 06/27, Tejun Heo wrote:
+>
+> Hello, Oleg, Denys.
+>
+> On Sun, Jun 26, 2011 at 10:04:42PM +0200, Oleg Nesterov wrote:
+> > May be PT_TRACE_EXEC makes more sense. Note that
+> > ptrace_event_enabled() was recently added.
+>
+> Do we want to enable this silently?  Wouldn't it be better to make it
+> dependent on PT_SEIZED?
 
-Guenter
+Hmm. Not sure I understand. Why can't PTRACE_SEIZE add PT_TRACE_EXEC
+(and PT_TRACESYSGOOD) along with PT_SEIZED during attach?
+
+I think this makes more sense, this way the tracer can disable this
+later via PTRACE_SETOPTIONS if it wants. Not that I think this is really
+useful but still. Otherwise we are going to silently disable
+PTRACE_O_TRACEEXEC, this may be confusing.
+
+
+But. If we want the PT_TRACE_EXEC behaviour for PT_SEIZED task (personally
+I think we do), then we should probably record the old pid unconditionally,
+the tracer can attach later.
+
+Even in this case ptrace_event(PTRACE_EVENT_EXEC) can race with detach +
+attach in theory, but I think in this case we do not care.
+
+Oleg.
+
