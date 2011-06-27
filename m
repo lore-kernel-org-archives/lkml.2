@@ -1,115 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab1F0WlM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 18:41:12 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:27241 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab1F0WjX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 18:39:23 -0400
-Date: Tue, 28 Jun 2011 00:30:17 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Dan Carpenter <error27@gmail.com>
-cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][Resend] SCSI, target, loopback: Fix memory leak in
- tcm_loop_make_scsi_hba()
-In-Reply-To: <20110627222526.GA14591@shale.localdomain>
-Message-ID: <alpine.LNX.2.00.1106280029150.30245@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106272351520.30245@swampdragon.chaosbits.net> <20110627222526.GA14591@shale.localdomain>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1755300Ab1F0WfK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 18:35:10 -0400
+Received: from lucidpixels.com ([72.73.18.11]:54681 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755211Ab1F0Wem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 18:34:42 -0400
+Date: Mon, 27 Jun 2011 18:34:41 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: "Ronciak, John" <john.ronciak@intel.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Subject: RE: [E1000-devel] 2.6.39.2: skb_over_panic: kernel BUG at
+ net/core/skbuff.c:127!
+In-Reply-To: <D38E8E86660E514AB505863C19C9287C03A585@ORSMSX101.amr.corp.intel.com>
+Message-ID: <alpine.DEB.2.02.1106271831060.6721@p34.internal.lan>
+References: <alpine.DEB.2.02.1106271742310.6721@p34.internal.lan> <D38E8E86660E514AB505863C19C9287C03A525@ORSMSX101.amr.corp.intel.com> <alpine.DEB.2.02.1106271814200.6721@p34.internal.lan>
+ <D38E8E86660E514AB505863C19C9287C03A585@ORSMSX101.amr.corp.intel.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jun 2011, Dan Carpenter wrote:
-
-> On Mon, Jun 27, 2011 at 11:54:48PM +0200, Jesper Juhl wrote:
-> > --- a/drivers/target/loopback/tcm_loop.c
-> > +++ b/drivers/target/loopback/tcm_loop.c
-> > @@ -1321,7 +1321,8 @@ struct se_wwn *tcm_loop_make_scsi_hba(
-> >  
-> >  	printk(KERN_ERR "Unable to locate prefix for emulated Target Port:"
-> >  			" %s\n", name);
-> > -	return ERR_PTR(-EINVAL);
-> > +	ret = -EINVAL;
-> > +	goto out;
-> 
-> You've added a weird bunny hop goto here.  It might be better to
-> change the if (ptr) check to if (!ptr) so we could fall through
-> here in the normal case.
-> 
-> >  
-> >  check_len:
-> >  	if (strlen(name) >= TL_WWN_ADDR_LEN) {
-> 
-> If this check fails then it calls kfree() and returns.  It would be
-> cleaner to "goto out" here as well.
-> 
-
-You mean like this - right?
-
----
-
-There is a memory leak in tcm_loop_make_scsi_hba().
-
-If all the strstr() calls return NULL and we end up at
- return ERR_PTR(-EINVAL);
-then we'll be leaking the memory previously allocated to tl_hba as
-that variable goes out of scope.
-
-This patch should fix the leak.
-
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/target/loopback/tcm_loop.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
-index 70c2e7f..e7a32e9 100644
---- a/drivers/target/loopback/tcm_loop.c
-+++ b/drivers/target/loopback/tcm_loop.c
-@@ -1314,22 +1314,21 @@ struct se_wwn *tcm_loop_make_scsi_hba(
- 		goto check_len;
- 	}
- 	ptr = strstr(name, "iqn.");
--	if (ptr) {
--		tl_hba->tl_proto_id = SCSI_PROTOCOL_ISCSI;
--		goto check_len;
-+	if (!ptr) {
-+		printk(KERN_ERR "Unable to locate prefix for emulated Target "
-+				"Port: %s\n", name);
-+		ret = -EINVAL;
-+		goto out;
- 	}
--
--	printk(KERN_ERR "Unable to locate prefix for emulated Target Port:"
--			" %s\n", name);
--	return ERR_PTR(-EINVAL);
-+	tl_hba->tl_proto_id = SCSI_PROTOCOL_ISCSI;
- 
- check_len:
- 	if (strlen(name) >= TL_WWN_ADDR_LEN) {
- 		printk(KERN_ERR "Emulated NAA %s Address: %s, exceeds"
- 			" max: %d\n", name, tcm_loop_dump_proto_id(tl_hba),
- 			TL_WWN_ADDR_LEN);
--		kfree(tl_hba);
--		return ERR_PTR(-EINVAL);
-+		ret = -EINVAL;
-+		goto out;
- 	}
- 	snprintf(&tl_hba->tl_wwn_address[0], TL_WWN_ADDR_LEN, "%s", &name[off]);
- 
--- 
-1.7.5.2
 
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+On Mon, 27 Jun 2011, Ronciak, John wrote:
+
+>> Hello John,
+>> Justin.
+> You still didn't tell us what eth interface is on which HW.  We need to know that.  Do an 'ethtool -i eth2' and the same for each of the other interfaces in the system.  The igb driver that is used on the NIC described above is in high use without people reporting this error.
+>
+> Cheers,
+> John
+
+Sorry,
+
+eth0 = e1000e (on-board (on an Intel DP55KG))
+eth{1,2,3,4} = igb (the 4-port NIC I mentioned)
+eth5 = ixgbe (the 10GbE AT2 server board (copper))
+
+--
+
+[    2.301687] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GB/s:Width x1) hidden:mac
+[    2.301878] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
+[    2.302162] e1000e 0000:00:19.0: eth0: MAC: 9, PHY: 9, PBA No: FFFFFF-0FF
+
+[    2.350085] igb 0000:03:00.0: eth1: (PCIe:2.5Gb/s:Width x4) hidden:mac
+[    2.350351] igb 0000:03:00.0: eth1: PBA No: E84075-002
+[    2.400381] igb 0000:03:00.1: eth2: (PCIe:2.5Gb/s:Width x4) hidden:mac
+[    2.400486] igb 0000:03:00.1: eth2: PBA No: E84075-002
+[    2.448103] igb 0000:03:00.2: eth3: (PCIe:2.5Gb/s:Width x4) hidden:mac
+[    2.448391] igb 0000:03:00.2: eth3: PBA No: E84075-002
+[    2.496095] igb 0000:03:00.3: eth4: (PCIe:2.5Gb/s:Width x4) hidden:mac
+[    2.496377] igb 0000:03:00.3: eth4: PBA No: E84075-002
+
+[   38.916123] ixgbe 0000:01:00.0: eth5: NIC Link is Up 10 Gbps, Flow Control: RX/TX
+
+--
+
+ethtool output as requested:
+
+driver: e1000e
+version: 1.3.10-k2
+firmware-version: 0.12-5
+bus-info: 0000:00:19.0
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: yes
+supports-register-dump: yes
+
+ethtool -I eth1
+driver: igb
+version: 3.0.6-k2
+firmware-version: 3.19-0
+bus-info: 0000:03:00.3
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: yes
+supports-register-dump: yes
+
+ethtool -I eth2
+driver: igb
+version: 3.0.6-k2
+firmware-version: 3.19-0
+bus-info: 0000:03:00.2
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: yes
+supports-register-dump: yes
+
+ethtool -I eth3
+driver: igb
+version: 3.0.6-k2
+firmware-version: 3.19-0
+bus-info: 0000:03:00.1
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: yes
+supports-register-dump: yes
+
+ethtool -I eth4
+driver: igb
+version: 3.0.6-k2
+firmware-version: 3.19-0
+bus-info: 0000:03:00.0
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: yes
+supports-register-dump: yes
+
+ethtool -I eth5
+driver: ixgbe
+version: 3.2.9-k2
+firmware-version: 2.9-0
+bus-info: 0000:01:00.0
+supports-statistics: yes
+supports-test: yes
+supports-eeprom-access: yes
+supports-register-dump: yes
+
+Justin.
+
+
 
