@@ -1,63 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab1F0SNn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 14:13:43 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:43934 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753210Ab1F0SNh (ORCPT
+	id S1752171Ab1F0SQO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 14:16:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18262 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab1F0SQH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 14:13:37 -0400
-Date: Mon, 27 Jun 2011 15:13:56 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-bluetooth@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Marcel Holtmann <marcel@holtmann.org>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org,
-        davem@davemloft.net
-Subject: Re: [PATCH -next] bluetooth: uses crypto interfaces, select CRYPTO
-Message-ID: <20110627181355.GA5964@joana>
-Mail-Followup-To: Randy Dunlap <randy.dunlap@oracle.com>,
-	linux-bluetooth@vger.kernel.org,
-	Stephen Rothwell <sfr@canb.auug.org.au>,
-	Marcel Holtmann <marcel@holtmann.org>, linux-next@vger.kernel.org,
-	LKML <linux-kernel@vger.kernel.org>, linux-wireless@vger.kernel.org,
-	davem@davemloft.net
-References: <20110622163651.7ebc407c.sfr@canb.auug.org.au>
- <20110622100811.258091ff.randy.dunlap@oracle.com>
- <20110627110308.dc64e3a7.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110627110308.dc64e3a7.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 27 Jun 2011 14:16:07 -0400
+Content-Type: text/plain; charset=UTF-8
+From: Chris Mason <chris.mason@oracle.com>
+To: "Linus Torvalds" <torvalds@linux-foundation.org>,
+        "Btrfs mailing list" <linux-btrfs@vger.kernel.org>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] Btrfs updates
+Date: Mon, 27 Jun 2011 14:15:25 -0400
+Message-Id: <1309197689-sup-653@shiny>
+User-Agent: Sup/git
+Content-Transfer-Encoding: 8bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090204.4E08C8C8.0019:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Randy Dunlap <randy.dunlap@oracle.com> [2011-06-27 11:03:08 -0700]:
+Hi everyone,
 
-> On Wed, 22 Jun 2011 10:08:11 -0700 Randy Dunlap wrote:
-> 
-> > From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> ping.  still need this patch in linux-next....
-> 
-> 
-> > Recent changes to hci_core.c use crypto interfaces, so select CRYPTO
-> > to make sure that those interfaces are present.
-> > 
-> > Fixes these build errors when CRYPTO is not enabled:
-> > 
-> > net/built-in.o: In function `hci_register_dev':
-> > (.text+0x4cf86): undefined reference to `crypto_alloc_base'
-> > net/built-in.o: In function `hci_unregister_dev':
-> > (.text+0x4f912): undefined reference to `crypto_destroy_tfm'
-> > 
-> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> > ---
-> >  net/bluetooth/Kconfig |    1 +
-> >  1 file changed, 1 insertion(+)
+The for-linus branch of the btrfs unstable tree:
 
-Applied. Thanks.
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git for-linus
 
-	Gustavo
+Has our current set of fixes.  Linus will probably notice the head
+commit was from this morning.  I reordered a refcount bump inside the
+lock that protects the delayed inode tree and did a commit --amend.
+
+This is just for clarity, the delayed_inode can't go away because it is
+pinned by the inode itself.  But, I don't want that code copy & pasted
+elsewhere to create bugs later on.
+
+These fix a regression in the new delayed_inode code where inodes that
+are dropped from ram need to check for a delayed inode before we load
+them back in.
+
+Josef's commit avoids oopsen if the free extent cache had
+to be discarded, and my commit makes sure a newly created empty file
+gets logged properly if someone calls fsync on it.
+
+Miao Xie (1) commits (+91/-26):
+    btrfs: fix inconsonant inode information
+
+Josef Bacik (1) commits (+6/-3):
+    Btrfs: make sure to update total_bitmaps when freeing cache V3
+
+Ilya Dryomov (1) commits (+2/-2):
+    Btrfs: fix type mismatch in find_free_extent()
+
+Chris Mason (1) commits (+1/-0):
+    Btrfs: make sure to record the transid in new inodes
+
+Total: (4) commits (+100/-31)
+
+ fs/btrfs/delayed-inode.c    |  104 +++++++++++++++++++++++++++++++++----------
+ fs/btrfs/delayed-inode.h    |    1 +
+ fs/btrfs/extent-tree.c      |    4 +-
+ fs/btrfs/free-space-cache.c |    9 +++-
+ fs/btrfs/inode.c            |   13 +++++-
+ 5 files changed, 100 insertions(+), 31 deletions(-)
