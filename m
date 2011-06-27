@@ -1,222 +1,202 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754988Ab1F0Vr3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 17:47:29 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52029 "EHLO
+	id S1754170Ab1F0VrO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 17:47:14 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:57031 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab1F0VqD (ORCPT
+	with ESMTP id S1754325Ab1F0VqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 27 Jun 2011 17:46:03 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
         Arnd Bergmann <arnd@arndb.de>, Ralf Baechle <ralf@linux-mips.org>,
-        Thomas Koeller <thomas.koeller@baslerweb.com>,
+        Manuel Lauss <manuel.lauss@googlemail.com>,
         linux-serial@vger.kernel.org
-Subject: [PATCH 1/7] serial/8250: remove obsolete RM9000 port type
-Date: Mon, 27 Jun 2011 23:45:14 +0200
-Message-Id: <1309211120-2803-2-git-send-email-arnd@arndb.de>
+Subject: [PATCH 2/7] serial/8250: move alchemy I/O handler to platform code
+Date: Mon, 27 Jun 2011 23:45:15 +0200
+Message-Id: <1309211120-2803-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1309211120-2803-1-git-send-email-arnd@arndb.de>
 References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:faH53VwtQQqiczOH70o2HjE8jNwYucDA2XG041CxM7s
- RN86++zdhAie4ytZqKhOIpV8zJxXnarq2AwfIi0Iijqsa846KF
- OxMpN0v08T7gJk2Z9Tarwb9lTzBbR1F6BIZUeUdY/Ze1bJLJT3
- /7yGg+QnXfYIgp0duhPr2WIQd+fgd0bgkX1YWvojFExQNuo1/Y
- ZhefSojzt8eqRPCP+bzag==
+X-Provags-ID: V02:K0:XNemfpUs4Gb/QMlpu95j56y9k7bSU2m7j89pn/Y3VFr
+ Lh/3gzUOUZKLG3XMCmy1b6wNV8YK+OtFtSh3yMuEC15QMXUsl1
+ LaHH9/fBITSFhfLkSh3rktSWDVX56gxpxGmNzBUaic+VETDhg+
+ CG9q+mBjS5VT5uk4FDbQyfmXx+cnR926IB2bYA3VO4tKFuxtbR
+ hgeTge2xXX64rfGxTckKQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This code was only used on the MIPS eXcite platform, which got
-removed in 2009. Since no code ever sets UPIO_RM9000, none of
-the code is being used any more now.
+Only one platform ever sets the UPIO_AU iotype, so it's
+cleaner to define the handlers in the code that actually
+requires it, rather than building the same logic into
+every 8250 driver.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Thomas Koeller <thomas.koeller@baslerweb.com>
+Cc: Manuel Lauss <manuel.lauss@googlemail.com>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-serial@vger.kernel.org
 ---
- arch/mips/Kconfig           |    7 ----
- drivers/tty/serial/8250.c   |   68 +------------------------------------------
- drivers/tty/serial/Kconfig  |    9 ------
- include/linux/serial_core.h |    3 +-
- 4 files changed, 2 insertions(+), 85 deletions(-)
+ arch/mips/alchemy/common/platform.c |   50 ++++++++++++++++++++++++++++++
+ drivers/tty/serial/8250.c           |   58 -----------------------------------
+ 2 files changed, 50 insertions(+), 58 deletions(-)
 
-diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
-index 653da62..a07f7b8 100644
---- a/arch/mips/Kconfig
-+++ b/arch/mips/Kconfig
-@@ -1045,10 +1045,6 @@ config PCI_GT64XXX_PCI0
- config NO_EXCEPT_FILL
- 	bool
- 
--config MIPS_RM9122
--	bool
--	select SERIAL_RM9000
--
- config SOC_EMMA2RH
- 	bool
- 	select CEVT_R4K
-@@ -1094,9 +1090,6 @@ config SOC_PNX8550
- config SWAP_IO_SPACE
- 	bool
- 
--config SERIAL_RM9000
--	bool
--
- config SGI_HAS_INDYDOG
- 	bool
- 
-diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index b40f7b9..cf19b26 100644
---- a/drivers/tty/serial/8250.c
-+++ b/drivers/tty/serial/8250.c
-@@ -273,13 +273,6 @@ static const struct serial8250_config uart_config[] = {
- 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
- 		.flags		= UART_CAP_FIFO | UART_CAP_UUE | UART_CAP_RTOIE,
- 	},
--	[PORT_RM9000] = {
--		.name		= "RM9000",
--		.fifo_size	= 16,
--		.tx_loadsz	= 16,
--		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
--		.flags		= UART_CAP_FIFO,
--	},
- 	[PORT_OCTEON] = {
- 		.name		= "OCTEON",
- 		.fifo_size	= 64,
-@@ -347,44 +340,6 @@ static inline int map_8250_out_reg(struct uart_port *p, int offset)
- 	return au_io_out_map[offset];
+diff --git a/arch/mips/alchemy/common/platform.c b/arch/mips/alchemy/common/platform.c
+index 3b2c18b..750441f 100644
+--- a/arch/mips/alchemy/common/platform.c
++++ b/arch/mips/alchemy/common/platform.c
+@@ -45,6 +45,54 @@ static void alchemy_8250_pm(struct uart_port *port, unsigned int state,
+ #endif
  }
  
--#elif defined(CONFIG_SERIAL_8250_RM9K)
++/* Au1x00 UART hardware has a weird register layout */
++static const u8 au_io_in_map[] = {
++	[UART_RX]  = 0,
++	[UART_IER] = 2,
++	[UART_IIR] = 3,
++	[UART_LCR] = 5,
++	[UART_MCR] = 6,
++	[UART_LSR] = 7,
++	[UART_MSR] = 8,
++};
++
++static const u8 au_io_out_map[] = {
++	[UART_TX]  = 1,
++	[UART_IER] = 2,
++	[UART_FCR] = 4,
++	[UART_LCR] = 5,
++	[UART_MCR] = 6,
++};
++
++/* sane hardware needs no mapping */
++static inline int map_8250_in_reg(struct uart_port *p, int offset)
++{
++	if (p->iotype != UPIO_AU)
++		return offset;
++	return au_io_in_map[offset];
++}
++
++static inline int map_8250_out_reg(struct uart_port *p, int offset)
++{
++	if (p->iotype != UPIO_AU)
++		return offset;
++	return au_io_out_map[offset];
++}
++
++/* sane hardware needs no mapping */
++static unsigned int au_serial_in(struct uart_port *p, int offset)
++{
++	offset = map_8250_in_reg(p, offset) << p->regshift;
++	return __raw_readl(p->membase + offset);
++}
++
++static void au_serial_out(struct uart_port *p, int offset, int value)
++{
++	offset = map_8250_out_reg(p, offset) << p->regshift;
++	__raw_writel(value, p->membase + offset);
++}
++
++
+ #define PORT(_base, _irq)					\
+ 	{							\
+ 		.mapbase	= _base,			\
+@@ -55,6 +103,8 @@ static void alchemy_8250_pm(struct uart_port *port, unsigned int state,
+ 				  UPF_FIXED_TYPE,		\
+ 		.type		= PORT_16550A,			\
+ 		.pm		= alchemy_8250_pm,		\
++		.serial_in	= au_serial_in,			\
++		.serial_out	= au_serial_out			\
+ 	}
+ 
+ static struct plat_serial8250_port au1x00_uart_data[][4] __initdata = {
+diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
+index cf19b26..c8f107e 100644
+--- a/drivers/tty/serial/8250.c
++++ b/drivers/tty/serial/8250.c
+@@ -304,50 +304,9 @@ static const struct serial8250_config uart_config[] = {
+ 	},
+ };
+ 
+-#if defined(CONFIG_MIPS_ALCHEMY)
 -
--static const u8
--	regmap_in[8] = {
--		[UART_RX]	= 0x00,
--		[UART_IER]	= 0x0c,
--		[UART_IIR]	= 0x14,
--		[UART_LCR]	= 0x1c,
--		[UART_MCR]	= 0x20,
--		[UART_LSR]	= 0x24,
--		[UART_MSR]	= 0x28,
--		[UART_SCR]	= 0x2c
--	},
--	regmap_out[8] = {
--		[UART_TX] 	= 0x04,
--		[UART_IER]	= 0x0c,
--		[UART_FCR]	= 0x18,
--		[UART_LCR]	= 0x1c,
--		[UART_MCR]	= 0x20,
--		[UART_LSR]	= 0x24,
--		[UART_MSR]	= 0x28,
--		[UART_SCR]	= 0x2c
--	};
+-/* Au1x00 UART hardware has a weird register layout */
+-static const u8 au_io_in_map[] = {
+-	[UART_RX]  = 0,
+-	[UART_IER] = 2,
+-	[UART_IIR] = 3,
+-	[UART_LCR] = 5,
+-	[UART_MCR] = 6,
+-	[UART_LSR] = 7,
+-	[UART_MSR] = 8,
+-};
 -
+-static const u8 au_io_out_map[] = {
+-	[UART_TX]  = 1,
+-	[UART_IER] = 2,
+-	[UART_FCR] = 4,
+-	[UART_LCR] = 5,
+-	[UART_MCR] = 6,
+-};
+-
+-/* sane hardware needs no mapping */
 -static inline int map_8250_in_reg(struct uart_port *p, int offset)
 -{
--	if (p->iotype != UPIO_RM9000)
+-	if (p->iotype != UPIO_AU)
 -		return offset;
--	return regmap_in[offset];
+-	return au_io_in_map[offset];
 -}
 -
 -static inline int map_8250_out_reg(struct uart_port *p, int offset)
 -{
--	if (p->iotype != UPIO_RM9000)
+-	if (p->iotype != UPIO_AU)
 -		return offset;
--	return regmap_out[offset];
+-	return au_io_out_map[offset];
 -}
 -
- #else
+-#else
+-
+-/* sane hardware needs no mapping */
+ #define map_8250_in_reg(up, offset) (offset)
+ #define map_8250_out_reg(up, offset) (offset)
  
- /* sane hardware needs no mapping */
-@@ -524,7 +479,6 @@ static void set_io_from_upio(struct uart_port *p)
- 		p->serial_out = mem_serial_out;
+-#endif
+-
+ static unsigned int hub6_serial_in(struct uart_port *p, int offset)
+ {
+ 	offset = map_8250_in_reg(p, offset) << p->regshift;
+@@ -386,18 +345,6 @@ static unsigned int mem32_serial_in(struct uart_port *p, int offset)
+ 	return readl(p->membase + offset);
+ }
+ 
+-static unsigned int au_serial_in(struct uart_port *p, int offset)
+-{
+-	offset = map_8250_in_reg(p, offset) << p->regshift;
+-	return __raw_readl(p->membase + offset);
+-}
+-
+-static void au_serial_out(struct uart_port *p, int offset, int value)
+-{
+-	offset = map_8250_out_reg(p, offset) << p->regshift;
+-	__raw_writel(value, p->membase + offset);
+-}
+-
+ static unsigned int tsi_serial_in(struct uart_port *p, int offset)
+ {
+ 	unsigned int tmp;
+@@ -484,11 +431,6 @@ static void set_io_from_upio(struct uart_port *p)
+ 		p->serial_out = mem32_serial_out;
  		break;
  
--	case UPIO_RM9000:
- 	case UPIO_MEM32:
- 		p->serial_in = mem32_serial_in;
- 		p->serial_out = mem32_serial_out;
-@@ -620,24 +574,6 @@ static void serial_dl_write(struct uart_8250_port *up, int value)
- 	else
- 		_serial_dl_write(up, value);
- }
--#elif defined(CONFIG_SERIAL_8250_RM9K)
--static int serial_dl_read(struct uart_8250_port *up)
--{
--	return	(up->port.iotype == UPIO_RM9000) ?
--		(((__raw_readl(up->port.membase + 0x10) << 8) |
--		(__raw_readl(up->port.membase + 0x08) & 0xff)) & 0xffff) :
--		_serial_dl_read(up);
--}
+-	case UPIO_AU:
+-		p->serial_in = au_serial_in;
+-		p->serial_out = au_serial_out;
+-		break;
 -
--static void serial_dl_write(struct uart_8250_port *up, int value)
--{
--	if (up->port.iotype == UPIO_RM9000) {
--		__raw_writel(value, up->port.membase + 0x08);
--		__raw_writel(value >> 8, up->port.membase + 0x10);
--	} else {
--		_serial_dl_write(up, value);
--	}
--}
- #else
- #define serial_dl_read(up) _serial_dl_read(up)
- #define serial_dl_write(up, value) _serial_dl_write(up, value)
-@@ -1394,9 +1330,7 @@ static void serial8250_start_tx(struct uart_port *port)
- 			unsigned char lsr;
- 			lsr = serial_in(up, UART_LSR);
- 			up->lsr_saved_flags |= lsr & LSR_SAVE_FLAGS;
--			if ((up->port.type == PORT_RM9000) ?
--				(lsr & UART_LSR_THRE) :
--				(lsr & UART_LSR_TEMT))
-+			if (lsr & UART_LSR_TEMT)
- 				transmit_chars(up);
- 		}
- 	}
-diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
-index 636144c..ea12815 100644
---- a/drivers/tty/serial/Kconfig
-+++ b/drivers/tty/serial/Kconfig
-@@ -258,15 +258,6 @@ config SERIAL_8250_ACORN
- 	  system, say Y to this option.  The driver can handle 1, 2, or 3 port
- 	  cards.  If unsure, say N.
- 
--config SERIAL_8250_RM9K
--	bool "Support for MIPS RM9xxx integrated serial port"
--	depends on SERIAL_8250 != n && SERIAL_RM9000
--	select SERIAL_8250_SHARE_IRQ
--	help
--	  Selecting this option will add support for the integrated serial
--	  port hardware found on MIPS RM9122 and similar processors.
--	  If unsure, say N.
--
- comment "Non-8250 serial port support"
- 
- config SERIAL_AMBA_PL010
-diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index a5c3114..df295e0 100644
---- a/include/linux/serial_core.h
-+++ b/include/linux/serial_core.h
-@@ -41,7 +41,7 @@
- #define PORT_RSA	13
- #define PORT_NS16550A	14
- #define PORT_XSCALE	15
--#define PORT_RM9000	16	/* PMC-Sierra RM9xxx internal UART */
-+/* #define PORT_RM9000	16 */	/* was: PMC-Sierra RM9xxx internal UART */
- #define PORT_OCTEON	17	/* Cavium OCTEON internal UART */
- #define PORT_AR7	18	/* Texas Instruments AR7 internal UART */
- #define PORT_U6_16550A	19	/* ST-Ericsson U6xxx internal UART */
-@@ -318,7 +318,6 @@ struct uart_port {
- #define UPIO_AU			(4)			/* Au1x00 type IO */
- #define UPIO_TSI		(5)			/* Tsi108/109 type IO */
- #define UPIO_DWAPB		(6)			/* DesignWare APB UART */
--#define UPIO_RM9000		(7)			/* RM9000 type IO */
- #define UPIO_DWAPB32		(8)			/* DesignWare APB UART (32 bit accesses) */
- 
- 	unsigned int		read_status_mask;	/* driver specific */
+ 	case UPIO_TSI:
+ 		p->serial_in = tsi_serial_in;
+ 		p->serial_out = tsi_serial_out;
 -- 
 1.7.5.4
 
