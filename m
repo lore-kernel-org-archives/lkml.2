@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752227Ab1F0QLs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 12:11:48 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:57781 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752482Ab1F0QLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 12:11:45 -0400
-Subject: Re: coretemp: Support for Intel Atom E6XX CPU (TunnelCreek)?
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: Jean Delvare <khali@linux-fr.org>
-CC: Alexander Stein <alexander.stein@systec-electronic.com>,
-        Fenghua Yu <fenghua.yu@intel.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110627164108.777c2e28@endymion.delvare>
-References: <201106271220.51953.alexander.stein@systec-electronic.com>
-	 <20110627164108.777c2e28@endymion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Mon, 27 Jun 2011 09:10:54 -0700
-Message-ID: <1309191054.8271.636.camel@groeck-laptop>
+	id S1752717Ab1F0QO2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 12:14:28 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28613 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752485Ab1F0QOW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 12:14:22 -0400
+Date: Mon, 27 Jun 2011 12:13:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Bastian Blank <waldi@debian.org>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] xen: Add alias to autoload backend drivers
+Message-ID: <20110627161327.GO6978@dumpdata.com>
+References: <20110624215155.GB4735@wavehammer.waldi.eu.org>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110624215155.GB4735@wavehammer.waldi.eu.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090203.4E08AC33.0060:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-27 at 10:41 -0400, Jean Delvare wrote:
-> Hi Alexander,
-> 
-> On Mon, 27 Jun 2011 12:20:51 +0200, Alexander Stein wrote:
-> > I have a patch (for v2.6.39) which adds support for Intel Atom E6XX 
-> > (TunnelCreek) to coretemp. It's merely only adding x86_model 0x26.
-> 
-> You have a patch, great for you. What do you expect if you don't share
-> it with us?
-> 
-> I'm not quite sure what your patch would be doing anyway. Since kernel
-> 2.6.35, supported CPU models are detected using the DTS feature flag
-> rather than the family and model numbers, so your Atom E6XX should be
-> detected just fine.
-> 
-Maybe it is for Tjmax detection ?
+On Fri, Jun 24, 2011 at 11:51:55PM +0200, Bastian Blank wrote:
+> All the Xen backend drivers are assigned to a special bus type
+> xen-backend. This allows userspace to load the modules on request.
 
-> Note that there was a bug in kernels 2.6.35 to 2.6.39 with regards to
-> TjMax guessing, which was fixed by Gunter Roeck with:
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=4f5f71a7abe329bdad81ee6a8e4545054a7cc30a
-> You'll have to update to kernel version 2.6.39.2 to get this fix.
-> 
-> Do you happen to know what CPUs model number 0x26 covers? Do you know
-> if this model supports MSR_IA32_TEMPERATURE_TARGET or not? The original
-> Atom (model 0x1c) did not.
-> 
-> > But there are models (e.g. E660 and E660T) with different TjMax, namely 90 
-> > degrees C and 110 degrees C. But these different model can't be detected by 
-> > reading from hardware.
-> 
-> I would appreciate a patch to Documentation/hwmon/coretemp adding the
-> known TjMax for these new Atom models.
-> 
-> BTW, is it really impossible to identify these models with a different
-> TjMax? Don't the strings "E660" and "E660T" appear in the respective
-> "model name" entries in /proc/cpuinfo?
+Is there a specific version of udev that would take advantage of this?
 
-I thought about replacing the manual TjMax detection code with code
-using the model string to take care of problems like this - essentially
-by providing a table with entries { model string, Tjmax } for each CPU
-with Tjmax other than 100 degrees C. This way we could get rid of some
-of the odd code we have today. Would that make sense ?
-
-Thanks,
-Guenter
-
-
+> 
+> This patch defines xen-backend:* aliases on the modules and exports this
+> names through modalias and uevent.
+> 
+> Signed-off-by: Bastian Blank <waldi@debian.org>
+> ---
+>  drivers/block/xen-blkback/blkback.c       |    1 +
+>  drivers/net/xen-netback/netback.c         |    1 +
+>  drivers/xen/xenbus/xenbus_probe.c         |    3 ++-
+>  drivers/xen/xenbus/xenbus_probe_backend.c |    3 +++
+>  4 files changed, 7 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
+> index 5cf2993..ed62008 100644
+> --- a/drivers/block/xen-blkback/blkback.c
+> +++ b/drivers/block/xen-blkback/blkback.c
+> @@ -824,3 +824,4 @@ static int __init xen_blkif_init(void)
+>  module_init(xen_blkif_init);
+>  
+>  MODULE_LICENSE("Dual BSD/GPL");
+> +MODULE_ALIAS("xen-backend:vbd");
+> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
+> index 0e4851b..fd00f25 100644
+> --- a/drivers/net/xen-netback/netback.c
+> +++ b/drivers/net/xen-netback/netback.c
+> @@ -1743,3 +1743,4 @@ failed_init:
+>  module_init(netback_init);
+>  
+>  MODULE_LICENSE("Dual BSD/GPL");
+> +MODULE_ALIAS("xen-backend:vif");
+> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+> index 2ed0b04..bd2f90c 100644
+> --- a/drivers/xen/xenbus/xenbus_probe.c
+> +++ b/drivers/xen/xenbus/xenbus_probe.c
+> @@ -393,7 +393,8 @@ static ssize_t devtype_show(struct device *dev,
+>  static ssize_t modalias_show(struct device *dev,
+>  			     struct device_attribute *attr, char *buf)
+>  {
+> -	return sprintf(buf, "xen:%s\n", to_xenbus_device(dev)->devicetype);
+> +	return sprintf(buf, "%s:%s\n", dev->bus->name,
+> +		       to_xenbus_device(dev)->devicetype);
+>  }
+>  
+>  struct device_attribute xenbus_dev_attrs[] = {
+> diff --git a/drivers/xen/xenbus/xenbus_probe_backend.c b/drivers/xen/xenbus/xenbus_probe_backend.c
+> index ec510e5..60adf91 100644
+> --- a/drivers/xen/xenbus/xenbus_probe_backend.c
+> +++ b/drivers/xen/xenbus/xenbus_probe_backend.c
+> @@ -107,6 +107,9 @@ static int xenbus_uevent_backend(struct device *dev,
+>  	if (xdev == NULL)
+>  		return -ENODEV;
+>  
+> +	if (add_uevent_var(env, "MODALIAS=xen-backend:%s", xdev->devicetype))
+> +		return -ENOMEM;
+> +
+>  	/* stuff we want to pass to /sbin/hotplug */
+>  	if (add_uevent_var(env, "XENBUS_TYPE=%s", xdev->devicetype))
+>  		return -ENOMEM;
+> -- 
+> 1.7.5.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
