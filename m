@@ -1,89 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab1F0Fh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 01:37:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49056 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756447Ab1F0Ff3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 01:35:29 -0400
-Date: Mon, 27 Jun 2011 15:35:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: linux-next: build failure after merge of the final tree (net
- tree related)
-Message-Id: <20110627153522.8884b125.sfr@canb.auug.org.au>
-In-Reply-To: <20110623152535.e9ec4ad2.sfr@canb.auug.org.au>
-References: <20110623152535.e9ec4ad2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__27_Jun_2011_15_35_22_+1000_PG1115==keTrKek0"
+	id S1755136Ab1F0Fjs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 01:39:48 -0400
+Received: from smtp-vbr6.xs4all.nl ([194.109.24.26]:3838 "EHLO
+	smtp-vbr6.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756593Ab1F0Fiv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 01:38:51 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl doesn't exist
+Date: Mon, 27 Jun 2011 07:38:27 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1-tschai; KDE/4.6.2; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, Sakari Ailus <sakari.ailus@iki.fi>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <4E0519B7.3000304@redhat.com> <201106262020.20432.arnd@arndb.de> <4E077FB9.7030600@redhat.com>
+In-Reply-To: <4E077FB9.7030600@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106270738.27417.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__27_Jun_2011_15_35_22_+1000_PG1115==keTrKek0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sunday, June 26, 2011 20:51:37 Mauro Carvalho Chehab wrote:
+> Em 26-06-2011 15:20, Arnd Bergmann escreveu:
+> > On Sunday 26 June 2011 19:30:46 Mauro Carvalho Chehab wrote:
+> >>> There was a lot of debate whether undefined ioctls on non-ttys should
+> >>> return -EINVAL or -ENOTTY, including mass-conversions from -ENOTTY to
+> >>> -EINVAL at some point in the pre-git era, IIRC.
+> >>>
+> >>> Inside of v4l2, I believe this is handled by video_usercopy(), which
+> >>> turns the driver's -ENOIOCTLCMD into -ENOTTY. What cases do you observe
+> >>> where this is not done correctly and we do return ENOIOCTLCMD to
+> >>> vfs_ioctl?
+> >>
+> >> Well, currently, it is returning -EINVAL maybe due to the mass-conversions
+> >> you've mentioned.
+> > 
+> > I mean what do you return *to* vfs_ioctl from v4l? The conversions must
+> > have been long before we introduced compat_ioctl and ENOIOCTLCMD.
+> > 
+> > As far as I can tell, video_ioctl2 has always converted ENOIOCTLCMD into
+> > EINVAL, so changing the vfs functions would not have any effect.
+> 
+> Yes.  This discussion was originated by a RFC patch proposing to change 
+> video_ioctl2 to return -ENOIOCTLCMD instead of -EINVAL.
+> 
+> >> The point is that -EINVAL has too many meanings at V4L. It currently can be
+> >> either that an ioctl is not supported, or that one of the parameters had
+> >> an invalid parameter. If the userspace can't distinguish between an unimplemented
+> >> ioctl and an invalid parameter, it can't decide if it needs to fall back to
+> >> some different methods of handling a V4L device.
+> >>
+> >> Maybe the answer would be to return -ENOTTY when an ioctl is not implemented.
+> > 
+> > That is what a lot of subsystems do these days. But wouldn't that change
+> > your ABI?
+> 
+> Yes. The patch in question is also changing the DocBook spec for the ABI. We'll
+> likely need to drop some notes about that at the features-to-be-removed.txt.
+> 
+> I don't think that applications are relying at -EINVAL in order to detect if
+> an ioctl is not supported, but before merging such patch, we need to double-check.
 
-Hi all,
+I really don't think we can change this behavior. It's been part of the spec since
+forever and it is not just open source apps that can rely on this, but also closed
+source. Making an ABI change like this can really mess up applications.
 
-On Thu, 23 Jun 2011 15:25:35 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
->=20
-> drivers/net/can/sja1000/sja1000_of_platform.c: In function 'sja1000_ofp_r=
-ead_reg':
-> drivers/net/can/sja1000/sja1000_of_platform.c:61:2: error: implicit decla=
-ration of function 'in_8'
-> drivers/net/can/sja1000/sja1000_of_platform.c: In function 'sja1000_ofp_w=
-rite_reg':
-> drivers/net/can/sja1000/sja1000_of_platform.c:67:2: error: implicit decla=
-ration of function 'out_8'
-> drivers/net/can/sja1000/sja1000_of_platform.c: In function 'sja1000_ofp_r=
-emove':
-> drivers/net/can/sja1000/sja1000_of_platform.c:81:2: error: implicit decla=
-ration of function 'iounmap'
-> drivers/net/can/sja1000/sja1000_of_platform.c: In function 'sja1000_ofp_p=
-robe':
-> drivers/net/can/sja1000/sja1000_of_platform.c:113:2: error: implicit decl=
-aration of function 'ioremap_nocache'
-> drivers/net/can/sja1000/sja1000_of_platform.c:113:7: warning: assignment =
-makes pointer from integer without a cast
->=20
-> Since this file has not been changed recently, I suspect that this was
-> caused by commit b7f080cfe223 ("net: remove mm.h inclusion from
-> netdevice.h").
->=20
-> I have left the build broken for now since it is also broken for other
-> reasons.
+We should instead review the spec and ensure that applications can discover what
+is and what isn't supported through e.g. capabilities.
 
-I am still getting these, is there a fix pending?
+Regards,
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Mon__27_Jun_2011_15_35_22_+1000_PG1115==keTrKek0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOCBaaAAoJEDMEi1NhKgbsBfcIAKLSIowpnsalVOdo8ytKEw3R
-pok9RIOUUhXc56F26jW6Ac/v6FlHxPMWRAJITk+8o8CSvEZ5ub6dQj+Pi0UTedsP
-eYGTTltE21cQstFzDP6nKf5r4ChZAxb6K+ROMCrHgInDbN+KPW/c3PoELiWOmjmS
-c/wzV/a0twgnFG7UXABFcKoAjaGavbO5uvPfb5stCfQmzt9QRx8qqomCv50qh2XT
-g6ByEIJLdzK6g3GMpA+J7QDnlwfehCfHH9gFEDoP/elRbi2/rDvz4rZH4d03/7ii
-WAT9HKcMHfcvvZ+gw8pUzQgs2Qjk8U2izNl1va7Tspjp45pUNOniDgk4uXQym1U=
-=ZBJV
------END PGP SIGNATURE-----
-
---Signature=_Mon__27_Jun_2011_15_35_22_+1000_PG1115==keTrKek0--
+	Hans
