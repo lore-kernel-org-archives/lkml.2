@@ -1,91 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756434Ab1F0DFx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 23:05:53 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38183 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756165Ab1F0DFC (ORCPT
+	id S1756485Ab1F0DIA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 23:08:00 -0400
+Received: from cluster-d.mailcontrol.com ([85.115.60.190]:33879 "EHLO
+	cluster-d.mailcontrol.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756053Ab1F0DG1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 23:05:02 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E07F349.2040900@jp.fujitsu.com>
-Date: Mon, 27 Jun 2011 12:04:41 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	Sun, 26 Jun 2011 23:06:27 -0400
+From: Baohua Song <Baohua.Song@csr.com>
+To: daoguang wu <wdgvip@gmail.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "kgene.kim@samsung.com" <kgene.kim@samsung.com>,
+        "ben-linux@fluff.org" <ben-linux@fluff.org>,
+        "dmitry.torokhov@gmail.com" <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "wdgvip@gamil.com" <wdgvip@gamil.com>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [PATCH] INPUT:Add ABS_PRESSURE input event support for
+	touchscreen driver
+Thread-Topic: [PATCH] INPUT:Add ABS_PRESSURE input event support for
+	touchscreen driver
+Thread-Index: AQHMMmw+q7Lm5r8fFUK635sRs78/TZTP9RmAgACUE1A=
+Date: Mon, 27 Jun 2011 03:05:32 +0000
+Message-ID: <5EB3BFCD089AD643B9BB63439F5FD5E937BB882D@SHAASIEXM01.ASIA.ROOT.PRI>
+References: <1308881738-6392-1-git-send-email-wdgvip@gmail.com>
+	<20110624124154.GC19804@sirena.org.uk>
+ <BANLkTi=O44wyaFB_B83LGiQhAVtFOp64pyhMaCKCf_YZz6b1GA@mail.gmail.com>
+In-Reply-To: <BANLkTi=O44wyaFB_B83LGiQhAVtFOp64pyhMaCKCf_YZz6b1GA@mail.gmail.com>
+Accept-Language: zh-CN, en-GB, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [10.125.4.86]
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-To: andrea@betterlinux.com
-CC: akpm@linux-foundation.org, minchan.kim@gmail.com, riel@redhat.com,
-        peterz@infradead.org, hannes@cmpxchg.org,
-        kamezawa.hiroyu@jp.fujitsu.com, aarcange@redhat.com, hughd@google.com,
-        jamesjer@betterlinux.com, marcus@bluehost.com, matt@bluehost.com,
-        tytso@mit.edu, shaohua.li@intel.com, P@draigBrady.com,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 0/2] fadvise: support POSIX_FADV_NOREUSE
-References: <1308923350-7932-1-git-send-email-andrea@betterlinux.com>
-In-Reply-To: <1308923350-7932-1-git-send-email-andrea@betterlinux.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5R39vtD012212
 
-(2011/06/24 22:49), Andrea Righi wrote:
-> There were some reported problems in the past about trashing page cache
-> when a backup software (i.e., rsync) touches a huge amount of pages (see
-> for example [1]).
+
+
+> -----Original Message-----
+> From: linux-arm-kernel-bounces@lists.infradead.org
+> [mailto:linux-arm-kernel-bounces@lists.infradead.org] On Behalf Of daoguang
+> wu
+> Sent: 2011Äê6ÔÂ27ÈÕ 10:15
+> To: Mark Brown
+> Cc: kgene.kim@samsung.com; ben-linux@fluff.org;
+> dmitry.torokhov@gmail.com; linux-kernel@vger.kernel.org;
+> wdgvip@gamil.com; linux-input@vger.kernel.org;
+> linux-arm-kernel@lists.infradead.org
+> Subject: Re: [PATCH] INPUT:Add ABS_PRESSURE input event support for
+> touchscreen driver
 > 
-> This problem has been almost fixed by the Minchan Kim's patch [2] and a
-> proper use of fadvise() in the backup software. For example this patch
-> set [3] has been proposed for inclusion in rsync.
+> 2011/6/24 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> > On Fri, Jun 24, 2011 at 10:15:38AM +0800, Wu DaoGuang wrote:
+> >> The touchscreen driver s3c2410_ts.c doesn't work well when using
+> >> the tslib, an abstraction layer for touchscreen panel events.
+> >> Tslib needs ABS_X ABS_Y and ABS_PRESSURE events to report, but only
+> >> the former two the driver can provide.
+> >
+> > It seems much more sane to fix this in tslib, the kernel is not actually
+> > reporting pressure meaningfully here and there's already BTN_TOUCH to
+> > report if the pen is down.
+> >
+> yeah,I will try to fix it in tslib.
+
+You may send a patch to tslib. 
+
+> Thanks a lot.
 > 
-> However, there can be still other similar trashing problems: when the
-> backup software reads all the source files, some of them may be part of
-> the actual working set of the system. When a POSIX_FADV_DONTNEED is
-> performed _all_ pages are evicted from pagecache, both the working set
-> and the use-once pages touched only by the backup software.
+> _______________________________________________
+> linux-arm-kernel mailing list
+> linux-arm-kernel@lists.infradead.org
+> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
 > 
-> A previous proposal [4] tried to resolve this problem being less
-> agressive in invalidating active pages, moving them to the inactive list
-> intead of just evict them from the page cache.
 > 
-> However, this approach changed completely the old behavior of
-> invalidate_mapping_pages(), that is not only used by fadvise.
-> 
-> The new solution maps POSIX_FADV_NOREUSE to the less-agressive page
-> invalidation policy.
-> 
-> With POSIX_FADV_NOREUSE active pages are moved to the tail of the
-> inactive list, and pages in the inactive list are just removed from page
-> cache. Pages mapped by other processes or unevictable pages are not
-> touched at all.
-> 
-> In this way if the backup was the only user of a page, that page will be
-> immediately removed from the page cache by calling POSIX_FADV_NOREUSE.
-> If the page was also touched by other tasks it'll be moved to the
-> inactive list, having another chance of being re-added to the working
-> set, or simply reclaimed when memory is needed.
-> 
-> In conclusion, now userspace applications that want to drop some page
-> cache pages can choose between the following advices:
-> 
->  POSIX_FADV_DONTNEED = drop page cache if possible
->  POSIX_FADV_NOREUSE = reduce page cache eligibility
-
-Eeek.
-
-Your POSIX_FADV_NOREUSE is very different from POSIX definition.
-POSIX says,
-
-       POSIX_FADV_NOREUSE
-              Specifies that the application expects to access the specified data once  and  then
-              not reuse it thereafter.
-
-IfI understand correctly, it designed for calling _before_ data access
-and to be expected may prevent lru activation. But your NORESE is designed
-for calling _after_ data access. Big difference might makes a chance of
-portability issue.
+>  To report this email as spam click
+> https://www.mailcontrol.com/sr/wQw0zmjPoHdJTZGyOCrrhg==
+> t4zoc+!n!INSV2C4qhUHSr1YUlPAL0C6yBmfTIRMbBnxawg== .
 
 
-
-
-
+Member of the CSR plc group of companies. CSR plc registered in England and Wales, registered number 4187346, registered office Churchill House, Cambridge Business Park, Cowley Road, Cambridge, CB4 0WZ, United Kingdom
+More information can be found at www.csr.com. Follow CSR on Twitter at http://twitter.com/CSR_PLC and read our blog at www.csr.com/blog
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
