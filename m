@@ -1,86 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758032Ab1F0J7A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 05:59:00 -0400
-Received: from www.linutronix.de ([62.245.132.108]:58323 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757799Ab1F0J5u (ORCPT
+	id S1757768Ab1F0KCe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 06:02:34 -0400
+Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54584 "EHLO
+	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757519Ab1F0KBW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 05:57:50 -0400
-Message-ID: <4E08541A.4060302@linutronix.de>
-Date: Mon, 27 Jun 2011 11:57:46 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
+	Mon, 27 Jun 2011 06:01:22 -0400
+Date: Mon, 27 Jun 2011 15:31:05 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Yong Zhang <yong.zhang0@gmail.com>, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>, paulus@samba.org,
+        galak@kernel.crashing.org, yrl.pp-manager.tt@hitachi.com
+Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
+	lead to system crash/freeze
+Message-ID: <20110627100104.GA24705@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com> <1308911347.531.56.camel@gandalf.stny.rr.com> <4E074671.7060100@hitachi.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Grant Likely <grant.likely@secretlab.ca>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Andres Salomon <dilinger@queued.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH] irq: add irq_domain translation infrastructure
-References: <20110526065438.23444.69386.stgit@ponder>	 <20110627090059.GA31287@linutronix.de> <1309166659.32158.380.camel@pasglop>
-In-Reply-To: <1309166659.32158.380.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E074671.7060100@hitachi.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Benjamin Herrenschmidt wrote:
-> On Mon, 2011-06-27 at 11:00 +0200, Sebastian Andrzej Siewior wrote:
->> * Grant Likely | 2011-05-26 00:54:38 [-0600]:
->>
->>> diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
->>> index 39645b6..9891cd4 100644
->>> --- a/arch/x86/kernel/devicetree.c
->>> +++ b/arch/x86/kernel/devicetree.c
->>> @@ -371,36 +321,49 @@ static struct of_ioapic_type of_ioapic_type[] =
->>> 	},
->>> };
->>>
->>> -static int ioapic_xlate(struct irq_domain *id, const u32 *intspec, u32 intsize,
->>> -			u32 *out_hwirq, u32 *out_type)
->>> +static int ioapic_dt_translate(struct irq_domain *domain,
->>> +				struct device_node *controller,
->>> +				const u32 *intspec, u32 intsize,
->>> +				irq_hw_number_t *out_hwirq, u32 *out_type)
->>> {
->>> -	struct mp_ioapic_gsi *gsi_cfg;
->>> 	struct io_apic_irq_attr attr;
->>> 	struct of_ioapic_type *it;
->>> 	u32 line, idx, type;
->>> +	int rc;
->>>
->>> -	if (intsize < 2)
->>> +	if (controller != domain->of_node)
->>> 		return -EINVAL;
->> Is there a reason not havining the (controller != domain->of_node) check
->> in irq_create_of_mapping()?
+On Sun, Jun 26, 2011 at 11:47:13PM +0900, Masami Hiramatsu wrote:
+> (2011/06/24 19:29), Steven Rostedt wrote:
+> > On Fri, 2011-06-24 at 17:21 +0800, Yong Zhang wrote:
+> >> Hi,
+> >>
+> >> When I use kprobe to do something, I found some wired thing.
+> >>
+> >> When CONFIG_FUNCTION_TRACER is disabled:
+> >> (gdb) disassemble do_fork
+> >> Dump of assembler code for function do_fork:
+> >>    0xc0037390 <+0>:	mflr    r0
+> >>    0xc0037394 <+4>:	stwu    r1,-64(r1)
+> >>    0xc0037398 <+8>:	mfcr    r12
+> >>    0xc003739c <+12>:	stmw    r27,44(r1)
+> >>
+> >> Then I:
+> >> modprobe kprobe_example func=do_fork offset=4
+> >> ls
+> >> Things works well.
+> >>
+> >> But when CONFIG_FUNCTION_TRACER is enabled:
+> >> (gdb) disassemble do_fork
+> >> Dump of assembler code for function do_fork:
+> >>    0xc0040334 <+0>:	mflr    r0
+> >>    0xc0040338 <+4>:	stw     r0,4(r1)
+> >>    0xc004033c <+8>:	bl      0xc00109d4 <mcount>
+> >>    0xc0040340 <+12>:	stwu    r1,-80(r1)
+> >>    0xc0040344 <+16>:	mflr    r0
+> >>    0xc0040348 <+20>:	stw     r0,84(r1)
+> >>    0xc004034c <+24>:	mfcr    r12
+> >> Then I:
+> >> modprobe kprobe_example func=do_fork offset=12
+> >> ls
+> >> 'ls' will never retrun. system freeze.
+> > 
+> > I'm not sure if x86 had a similar issue.
+> > 
+> > Masami, have any ideas to why this happened?
 > 
-> Not all domains are associated with a single OF node.
+> No, I don't familiar with ppc implementation. I guess
+> that single-step resume code failed to emulate the
+> instruction, but it strongly depends on ppc arch.
+> Maybe IBM people may know what happened.
 > 
-> Take xics, where there can be quite a few "source controllers" which act
-> as device-tree interrupt parents but there's a single global domain.
+> Ananth, Jim, would you have any ideas?
 
-I see. No, actually I don't. xics is pseries where I don't see the .dts. 
-So you are saying that we have one irq_domain but 2+ different
-interrupt-parents nodes?
+On powerpc, we emulate sstep whenever possible. Only recently support to
+emulate loads and stores got added. I don't have access to a powerpc box
+today... but will try to recreate the problem ASAP and see what could be
+happening in the presence of mcount.
 
-How do you distinguish then between two different controllers lets say
-xics and a gpio based controller? This implementation calls ->dt_translate
-until one controller returns 0 which looks like brute force.
-
-xics_host_xlate() returns always zero so you would have to go for
-the compatible and check it.
-Every device has an interrupt-parent node. Shouldn't the code call exact 
-this irq controller xlate function instead of trying them all?
-
->  
-> Cheers,
-> Ben.
-> 
-Sebastian
-
+Ananth
