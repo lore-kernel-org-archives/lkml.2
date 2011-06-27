@@ -1,107 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab1F0XQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:16:57 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60262 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754798Ab1F0XQb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:16:31 -0400
-Date: Mon, 27 Jun 2011 23:16:06 GMT
-From: tip-bot for Tejun Heo <tj@kernel.org>
-Message-ID: <tip-fd7355ba1e936487f5aae6fc058c6cb300e44a64@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, tj@kernel.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-        akpm@linux-foundation.org, tj@kernel.org, suresh.b.siddha@intel.com,
-        tglx@linutronix.de, hpa@linux.intel.com, mingo@elte.hu
-In-Reply-To: <20110623182056.897818337@sbsiddha-MOBL3.sc.intel.com>
-References: <20110623182056.897818337@sbsiddha-MOBL3.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mtrr] stop_machine: reorganize stop_cpus() implementation
-Git-Commit-ID: fd7355ba1e936487f5aae6fc058c6cb300e44a64
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 27 Jun 2011 23:16:08 +0000 (UTC)
+	id S1755584Ab1F0XU2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:20:28 -0400
+Received: from vms173013pub.verizon.net ([206.46.173.13]:52463 "EHLO
+	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754177Ab1F0XSU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 19:18:20 -0400
+Date: Mon, 27 Jun 2011 19:16:20 -0400 (EDT)
+From: Peter Foley <pefoley2@verizon.net>
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: Peter Foley <pefoley2@verizon.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>,
+        mmarek@suse.cz
+Subject: Re: [PATCH] kbuild: silence generated makefile message
+In-reply-to: <BANLkTimrUYk-8GSsf35mUmLVBAaO84R6dA@mail.gmail.com>
+Message-id: <alpine.LNX.2.00.1106271915160.38876@linux>
+References: <alpine.LNX.2.00.1106271619350.24034@linux>
+ <BANLkTimrUYk-8GSsf35mUmLVBAaO84R6dA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fd7355ba1e936487f5aae6fc058c6cb300e44a64
-Gitweb:     http://git.kernel.org/tip/fd7355ba1e936487f5aae6fc058c6cb300e44a64
-Author:     Tejun Heo <tj@kernel.org>
-AuthorDate: Thu, 23 Jun 2011 11:19:27 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 27 Jun 2011 15:17:07 -0700
+On Mon, 27 Jun 2011, Arnaud Lacombe wrote:
 
-stop_machine: reorganize stop_cpus() implementation
+> Hi,
+> 
+> On Mon, Jun 27, 2011 at 5:42 PM, Peter Foley <pefoley2@verizon.net> wrote:
+> >
+> > This patch silences the make -C /usr/src/git O=/usr/src/git/build/.
+> > message shown when using the generated makefile in KBUILD_OUTDIR.
+> >
+> I would expect verbose build to show that message. not hides it
+> unconditionally, no ?
+> 
+>  - Arnaud
+> 
 
-Refactor the queuing part of the stop cpus work from __stop_cpus() into
-queue_stop_cpus_work().
+Good point, I'll fix that.
 
-The reorganization is to help future improvements to stop_machine()
-and doesn't introduce any behavior difference.
+Thanks,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Link: http://lkml.kernel.org/r/20110623182056.897818337@sbsiddha-MOBL3.sc.intel.com
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- kernel/stop_machine.c |   16 ++++++++++++----
- 1 files changed, 12 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/stop_machine.c b/kernel/stop_machine.c
-index 0cae1cc..4c89ee9 100644
---- a/kernel/stop_machine.c
-+++ b/kernel/stop_machine.c
-@@ -136,10 +136,11 @@ DEFINE_MUTEX(stop_cpus_mutex);
- /* static data for stop_cpus */
- static DEFINE_PER_CPU(struct cpu_stop_work, stop_cpus_work);
- 
--int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
-+static void queue_stop_cpus_work(const struct cpumask *cpumask,
-+				 cpu_stop_fn_t fn, void *arg,
-+				 struct cpu_stop_done *done)
- {
- 	struct cpu_stop_work *work;
--	struct cpu_stop_done done;
- 	unsigned int cpu;
- 
- 	/* initialize works and done */
-@@ -147,9 +148,8 @@ int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
- 		work = &per_cpu(stop_cpus_work, cpu);
- 		work->fn = fn;
- 		work->arg = arg;
--		work->done = &done;
-+		work->done = done;
- 	}
--	cpu_stop_init_done(&done, cpumask_weight(cpumask));
- 
- 	/*
- 	 * Disable preemption while queueing to avoid getting
-@@ -161,7 +161,15 @@ int __stop_cpus(const struct cpumask *cpumask, cpu_stop_fn_t fn, void *arg)
- 		cpu_stop_queue_work(&per_cpu(cpu_stopper, cpu),
- 				    &per_cpu(stop_cpus_work, cpu));
- 	preempt_enable();
-+}
- 
-+static int __stop_cpus(const struct cpumask *cpumask,
-+		       cpu_stop_fn_t fn, void *arg)
-+{
-+	struct cpu_stop_done done;
-+
-+	cpu_stop_init_done(&done, cpumask_weight(cpumask));
-+	queue_stop_cpus_work(cpumask, fn, arg, &done);
- 	wait_for_completion(&done.completion);
- 	return done.executed ? done.ret : -ENOENT;
- }
+Peter
