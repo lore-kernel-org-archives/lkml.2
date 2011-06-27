@@ -1,92 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752092Ab1F0OXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 10:23:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39295 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750895Ab1F0OXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 10:23:37 -0400
-Date: Mon, 27 Jun 2011 16:21:36 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        hch@infradead.org
-Subject: Re: [PATCH 2/8] kill tracehook_notify_death()
-Message-ID: <20110627142136.GA5812@redhat.com>
-References: <20110622210757.GA20549@redhat.com> <20110622210834.GC20549@redhat.com> <20110623122253.GM30101@htj.dyndns.org> <20110623132126.GA10410@redhat.com> <20110623132754.GO30101@htj.dyndns.org> <20110623132831.GA11453@redhat.com> <20110623170650.GA14601@redhat.com> <20110625141553.GX30101@htj.dyndns.org> <20110626205157.GB16293@redhat.com> <20110627082443.GA30101@htj.dyndns.org>
+	id S1751987Ab1F0OXB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 10:23:01 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:37917 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750895Ab1F0OWz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 10:22:55 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: Re: [PATCH] pch_dma: Fix channel locking
+Date: Mon, 27 Jun 2011 16:22:52 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
+Cc: "Wang, Yong Y" <yong.y.wang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        "Wang, Qi" <qi.wang@intel.com>,
+        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>
+References: <1308755133-8605-1-git-send-email-alexander.stein@systec-electronic.com> <201106230942.24105.alexander.stein@systec-electronic.com> <4E04206C.5000008@dsn.okisemi.com>
+In-Reply-To: <4E04206C.5000008@dsn.okisemi.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110627082443.GA30101@htj.dyndns.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-2022-jp"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106271622.52763.alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-On 06/27, Tejun Heo wrote:
->
-> On Sun, Jun 26, 2011 at 10:51:57PM +0200, Oleg Nesterov wrote:
-> > > Yeap, we've discussed this before and this indeed is odd.  However, is
-> > > there something ptracer can't do with PTRACE_EVENT_EXIT instead?
-> >
-> > Firstly, I think PTRACE_EVENT_EXIT should not stop the tracee if it
-> > was SIGKILL'ed. Even if the tracee stops, it can be killed later.
-> > The tracer can't detach after that, it can't even wait() to detecte
-> > a zombie leader.
->
-> For SIGKILL, yes, it is different, but if PTRACE_EVENT_EXIT is enough
-> for all other cases, I think we're mostly set.
+On Friday 24 June 2011 07:28:12 Tomoya MORINAGA wrote:
+> Hi Alexander Stein
+> 
+> I couldn't see the issue at all.
+> 
+> (2011/06/23 16:42), Alexander Stein wrote:
+> > The close and open is actually needed (I had a separate application for
+> > that yesterday).
+> 
+> Does the above mean that we must delete "close" processing from your
+> test program, right ?
+> (Modifying like this, I couldn't see the issue)
 
-I think this is not that simple. I already mentioned this before, I think
-we need a separate discussion. I'll try to return to this in a few days.
+As you've written below, you used setserial to enable DMA mode. I used my own 
+application for that using 2 ioctls.
 
-Firstly, we should decide when PTRACE_EVENT_EXIT should stop, and when it
-shouldn't. In this discussion I'll assume sys_exit_group() should respect
-PTRACE_EVENT_EXIT.
+> > If all is done without closing again, I get the following bug:
+> Does the above mean that executing your test program many times whose 2
+> "close" are deleted , did you see the issue ?
 
-> BTW, it seems like we
-> would actually stop at PTRACE_EVENT_EXIT even after SIGKILL. This is
-> wrong & racy.
+The issue is only printed once. steps in short:
+* Enable DMA
+* Send 270 chars
 
-Yes! because the tracee can call ptrace_stop() after the pending SIGKILL
-was already dequeued from task->pending, this fools
-schedule()->signal_pending_state().
+> My steps like below
+> Boot Fedora14
+> Install DMA driver
+> Install pch_uart driver
+> Enable DMA (setserial /dev/ttyPCH0 ^low_latency)
+> Modifying your test program
+>   Delete 2 close() function.
+> Compile your test program.
+> Execute the tp.
+> Execute the tp.
+> Execute the tp.
+> I couldn't see any error message.
 
-So, __fatal_signal_pending() is too "weak",
+Ok. I have a 2.6.39 kernel with the following patches:
+pch_phub: Don't panic if dmi_get_system_info returns NULL
+drivers/tty/serial/pch_uart.c: don't oops if dmi_get_system_info returns NULL
+pch_uart: Add console support
 
-> may_ptrace_stop() should be checking for
-> sigkill_pending(), right?
+I need these to get a booting board with console support on pch_uart.
+After boot (dma and pch_uart compiled into kernel), I do
+* setserial /dev/ttyPCH0 ^low_latency
+* ./raise_dma_fault
+<- Here I get the message
 
-Yes, but at the same time even __fatal_signal_pending() is too strong!
-What if the tracee exits on its own, and its sys_exit() races with
-exit_group() from another thread? In this case I think it should stop,
-but __fatal_signal_pending() is true.
+For the reference the used code for raise_dma_fault:
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/serial.h>
+int main(int argc, char *argv[])
+{
+int fd;
+char buf[270];
 
+	fd = open ("/dev/ttyPCH0", O_RDWR);
+	write (fd, buf, 270);
 
-And worse. What if the tracee stops in PTRACE_EVENT_EXIT, and _then_
-another thread does sys_exit_group()? The tracee will be "killed".
-I do not think this is right. I think the "implicit" SIGKILL in this
-case should _not_ wake up the tracee. Only the real SIGKILL (or any
-fatal signal which mutates to SIGKILL). Otherwise we simply can't
-guarantee PTRACE_EVENT_EXIT works "reliably" in this case.
+	close (fd);
+	return 0;
+}
 
+Maybe you need to enable CONFIG_TRACE_IRQFLAGS and CONFIG_PROVE_LOCKING 
+additionally to see the messages.
 
-We have signal_group_exit()/SIGNAL_GROUP_EXIT. I think we also need
-SIGNAL_THE_REAL_SIGKILL_WAS_SENT flag. Note also we have the similar
-problems with the coredump. SIGKILL should abort it. Also, we should
-define what TIF_SIGPENDIND and interruptible wait mean after exit_signals()
-and/or exit_notify(). Some drivers (tty? I do not remember) expect that
-the exiting task can do wait_event_interruptible() and react to ^C.
-
-
-
-> I don't have
-> any major problem with the original.  Please go ahead.
-
-Thanks. Can I add your reviewed-by/acked-by ?
-
-Oleg.
-
+Regards,
+Alexander
