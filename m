@@ -1,295 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab1F0AtV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 20:49:21 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:38901 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755753Ab1F0ArZ (ORCPT
+	id S1756095Ab1F0A7j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 20:59:39 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:50516 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755975Ab1F0A7c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 20:47:25 -0400
-X-AuditID: cbfee61a-b7c53ae000002dc1-a9-4e07d31aa0a6
-Date: Mon, 27 Jun 2011 09:47:34 +0900
-From: Chanwoo Choi <cw00.choi@samsung.com>
-Subject: Re: [PATCH] ARM: EXYNOS4: Support for generic I/O power domains on
- EXYNOS4210
-In-reply-to: <4E076CC5.3000908@gmail.com>
-To: Sylwester Nawrocki <snjw23@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Kukjin Kim <kgene.kim@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Myungjoo Ham <myungjoo.ham@samsung.com>,
-        linux-pm@lists.linux-foundation.org,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        linux-samsung-soc <linux-samsung-soc@vger.kernel.org>,
-        linux-kernel@vger.kernel.org
-Message-id: <4E07D326.9000407@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=UTF-8
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-References: <4E0461BE.5030304@samsung.com> <4E076CC5.3000908@gmail.com>
-X-OriginalArrivalTime: 27 Jun 2011 00:47:38.0495 (UTC)
- FILETIME=[D01E38F0:01CC3463]
-X-Brightmail-Tracker: AAAAAA==
+	Sun, 26 Jun 2011 20:59:32 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] [media] Stop using linux/version.h on most drivers
+Date: Mon, 27 Jun 2011 02:59:38 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.6.4; x86_64; ; )
+Cc: Hans Verkuil <hverkuil@xs4all.nl>, LKML <linux-kernel@vger.kernel.org>,
+        Devin Heitmueller <dheitmueller@kernellabs.com>,
+        Jesper Juhl <jj@chaosbits.net>, trivial@kernel.org,
+        linux-media@vger.kernel.org, ceph-devel@vger.kernel.org,
+        Sage Weil <sage@newdream.net>, Mike Isely <isely@isely.net>,
+        Hans De Goede <hdegoede@redhat.com>,
+        "Jean-Francois Moine" <moinejf@free.fr>
+References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net> <201106251209.21228.hverkuil@xs4all.nl> <4E05D13A.6030209@redhat.com>
+In-Reply-To: <4E05D13A.6030209@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106270259.38405.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Hi Mauro,
 
-Sylwester Nawrocki wrote:
-> Hello,
-> 
-> On 06/24/2011 12:06 PM, Chanwoo Choi wrote:
->> Use the generic power domains support to implement support
->> for power domain on EXYNOS4210.
->>
->> This patch is based on your "pm-domains" branch.(v7)
->>
->> Signed-off-by: Chanwoo Choi<cw00.choi@samsung.com>
->> Signed-off-by: Myungjoo Ham<myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin.park<kyungmin.park@samsung.com>
->> ---
->>   arch/arm/mach-exynos4/Kconfig                      |    1 +
->>   arch/arm/mach-exynos4/Makefile                     |    1 +
->>   arch/arm/mach-exynos4/include/mach/pm-exynos4210.h |   78 ++++++++++++
->>   arch/arm/mach-exynos4/mach-nuri.c                  |   20 +++
->>   arch/arm/mach-exynos4/pm-exynos4210.c              |  131 ++++++++++++++++++++
->>   5 files changed, 231 insertions(+), 0 deletions(-)
->>   create mode 100644 arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
->>   create mode 100644 arch/arm/mach-exynos4/pm-exynos4210.c
->>
-> ...
-> 
->> diff --git a/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
->> new file mode 100644
->> index 0000000..fa1c7a0
->> --- /dev/null
->> +++ b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
->> @@ -0,0 +1,78 @@
->> +/* linux/arch/arm/mach-exynos4/include/mach/pm-exynos4.h
->> + *
->> + * Exynos4 Power management support
->> + *
->> + * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
->> + *		http://www.samsung.com
->> + *
->> + * This program is free software; you can redistribute it and/or modify
->> + * it under the terms of the GNU General Public License version 2 as
->> + * published by the Free Software Foundation.
->> + */
->> +
->> +#ifndef __PM_EXYNOS4210_H__
->> +#define __PM_EXYNOS4210_H__
->> +
->> +#include<linux/pm_domain.h>
->> +
->> +struct platform_device;
->> +
->> +struct exynos4210_pm_domain {
->> +	struct generic_pm_domain genpd;
->> +
->> +	const char *name;
->> +	void __iomem *base;
->> +	int boot_on;
->> +};
->> +
->> +static inline struct exynos4210_pm_domain *to_exynos4210_pd(
->> +		struct generic_pm_domain *pd)
->> +{
->> +	return container_of(pd, struct exynos4210_pm_domain, genpd);
->> +}
->> +
->> +#ifdef CONFIG_PM
->> +enum exynos4210_pd_data {
->> +	EXYNOS4210_PD_MFC,
->> +	EXYNOS4210_PD_G3D,
->> +	EXYNOS4210_PD_LCD0,
->> +	EXYNOS4210_PD_LCD1,
->> +	EXYNOS4210_PD_TV,
->> +	EXYNOS4210_PD_CAM,
->> +	EXYNOS4210_PD_GPS,
->> +	EXYNOS4210_PD_MAX_NUM
->> +};
->> +
->> +extern struct exynos4210_pm_domain exynos4210_pd_list[EXYNOS4210_PD_MAX_NUM];
-> 
-> Could this array be made static in ../pm-exynos4210.c ?
-> It looks like all functions using it are there. Plus you have already
-> enum exynos4210_pd_data to identify each power domain.
+On Saturday 25 June 2011 14:14:50 Mauro Carvalho Chehab wrote:
+> Em 25-06-2011 07:09, Hans Verkuil escreveu:
+> > On Friday, June 24, 2011 20:25:26 Mauro Carvalho Chehab wrote:
 
-It is poosible to define static arrary in ../pm-exynos4210.c,
-but it could be defined as non-static to keep the same form 
-with the patch using generic I/O power domain support :
-http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=commit;h=9b3c17cd4555612ff852b7c1ce9583d48d9b0c31
+[snip]
 
-And I will modify that use previous definition of enum exynos4210_pd_data
-to identify each power domain.
+> 	- uvcvideo: not sure about its current status about its migration to
+> video_ioctl2. If Laurent is not doing a migration to video_ioctl2 any time
+> soon, a simple patch for it could make it act consistently. In any case, I
+> don't think we should create a include/media/version.h just due to
+> uvcvideo.
 
-> 
->> +#define EXYNOS4210_MFC		(&exynos4210_pd_list[EXYNOS4210_PD_MFC])
->> +#define EXYNOS4210_G3D		(&exynos4210_pd_list[EXYNOS4210_PD_G3D])
->> +#define EXYNOS4210_LCD0		(&exynos4210_pd_list[EXYNOS4210_PD_LCD0])
->> +#define EXYNOS4210_LCD1		(&exynos4210_pd_list[EXYNOS4210_PD_LCD1])
->> +#define EXYNOS4210_TV		(&exynos4210_pd_list[EXYNOS4210_PD_TV])
->> +#define EXYNOS4210_CAM		(&exynos4210_pd_list[EXYNOS4210_PD_CAM])
->> +#define EXYNOS4210_GPS		(&exynos4210_pd_list[EXYNOS4210_PD_GPS])
->> +
->> +extern int exynos4210_pd_init(struct exynos4210_pm_domain *domain);
->> +extern int exynos4210_add_device_to_domain(struct exynos4210_pm_domain *domain,
->> +				struct platform_device *pdev);
-> 
-> Is there any advantage of having these functions marked as "extern" ?
-> 
-I will remove "extern" keyword.
+That's not on my todo-list for now, -EBUSY :-)
 
->> +#else
->> +#define EXYNOS4210_MFC		NULL
->> +#define EXYNOS4210_G3D		NULL
->> +#define EXYNOS4210_LCD0		NULL
->> +#define EXYNOS4210_LCD1		NULL
->> +#define EXYNOS4210_TV		NULL
->> +#define EXYNOS4210_CAM		NULL
->> +#define EXYNOS4210_GPS		NULL
->> +
->> +extern int exynos4210_pd_init(struct exynos4210_pm_domain *domain)
-> 
-> Shouldn't it be "static inline" instead ?
+I bump the uvcvideo driver version whenever the userspace API changes. Using 
+the kernel version number applications could find out whether the API they 
+need is implemented, but detecting API changes would become more difficult. 
+That might not be a real issue though, as applications usually don't care.
 
-My mistake. I will fix it.
-
->> +{
->> +	return 0;
->> +}
->> +extern int exynos4_add_device_to_domain(struct exynos4210_pm_domain *domain,
->> +				struct platform_device *pdev)
-> 
-> Ditto.
-> 
-I will fix it.
-> ...
->> diff --git a/arch/arm/mach-exynos4/mach-nuri.c b/arch/arm/mach-exynos4/mach-nuri.c
->> index 642702b..3e5c42c 100644
->> --- a/arch/arm/mach-exynos4/mach-nuri.c
->> +++ b/arch/arm/mach-exynos4/mach-nuri.c
->> @@ -37,6 +37,7 @@
->>   #include<plat/iic.h>
->>
->>   #include<mach/map.h>
->> +#include<mach/pm-exynos4210.h>
->>
->>   /* Following are default values for UCON, ULCON and UFCON UART registers */
->>   #define NURI_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
->> @@ -376,6 +377,23 @@ static struct platform_device *nuri_devices[] __initdata = {
->>   	&nuri_backlight_device,
->>   };
->>
->> +static void __init nuri_power_domain_init(void)
->> +{
->> +	int i;
->> +
->> +	for (i = 0 ; i<  EXYNOS4210_PD_MAX_NUM ; i++)
->> +		exynos4210_pd_init(&exynos4210_pd_list[i]);
->> +
->> +	/* Add device to power-domain */
->> +	exynos4210_add_device_to_domain(EXYNOS4210_MFC, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_G3D, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_LCD0,&nuri_lcd_device);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_LCD1, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_TV, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_CAM, NULL);
->> +	exynos4210_add_device_to_domain(EXYNOS4210_GPS, NULL);
->> +}
->> +
->>   static void __init nuri_map_io(void)
->>   {
->>   	s5p_init_io(NULL, 0, S5P_VA_CHIPID);
->> @@ -398,6 +416,8 @@ static void __init nuri_machine_init(void)
->>
->>   	/* Last */
->>   	platform_add_devices(nuri_devices, ARRAY_SIZE(nuri_devices));
->> +
->> +	nuri_power_domain_init();
->>   }
->>
->>   MACHINE_START(NURI, "NURI")
->> diff --git a/arch/arm/mach-exynos4/pm-exynos4210.c b/arch/arm/mach-exynos4/pm-exynos4210.c
->> new file mode 100644
->> index 0000000..8e95d49
->> --- /dev/null
->> +++ b/arch/arm/mach-exynos4/pm-exynos4210.c
->> @@ -0,0 +1,131 @@
->> +/* linux/arch/arm/mach-exynos4/pm-exynos4210.c
->> + *
-> ...
->> +
->> +struct exynos4210_pm_domain exynos4210_pd_list[] = {
->> +	{
->> +		.name		= "PD_MFC",
->> +		.base		= S5P_PMU_MFC_CONF,
->> +		.boot_on	= 0,
->> +	}, {
->> +		.name		= "PD_G3D",
->> +		.base		= S5P_PMU_G3D_CONF,
->> +		.boot_on	= 0,
->> +	}, {
-> ...
->> +
->> +int exynos4210_pd_init(struct exynos4210_pm_domain *domain)
->> +{
->> +	struct generic_pm_domain *genpd =&domain->genpd;
->> +
->> +	pm_genpd_init(genpd, NULL, false);
->> +
->> +	genpd->stop_device = pm_runtime_clk_suspend;
->> +	genpd->start_device = pm_runtime_clk_resume;
-> 
-> Have you considered handling the S5P_CLKGATE_BLOCK register to make
-> sure the clock domains are enabled ? AFAICS it is not properly handled
-> by current clock API on mach-exynos4. Thus if bootloader clears
-> S5P_CLKGATE_BLOCK register clocks remain globally masked.
-> 
-> This issue have been attempted to be resolved in this patch:
-> http://git.infradead.org/users/kmpark/linux-2.6-samsung/commit/39a81876d034dcbdc2a4c4c4b847b3b49e38870c
-> 
-> While at here, it might be good to resolve this either on power domains
-> or the clock API level.
-> 
-
-I know this issue about your commnt. This patch didn't consider the clock domain
-because refer to the previous function which enable/disable only the power state
-of power domain. As your comment, I will adapt that handling S5P_CLKGATE_BLOCK to 
-control the clock domains.
-
->> +	genpd->power_off = pd_power_down;
->> +	genpd->power_on = pd_power_up;
->> +
->> +	if (domain->boot_on)
->> +		pd_power_up(genpd);
->> +
->> +	return 0;
->> +}
->> +
->> +int exynos4210_add_device_to_domain(struct exynos4210_pm_domain *domain,
->> +				struct platform_device *pdev)
->> +{
->> +	struct device *dev =&pdev->dev;
->> +	struct generic_pm_domain *genpd =&domain->genpd;
->> +
->> +	if (pdev != NULL)
->> +		return pm_genpd_add_device(genpd, dev);
->> +	else
->> +		return -EINVAL;
-> 
-> You could do instead:
-> 
-> +	if (pdev)
-> +		return pm_genpd_add_device(genpd, dev);
-> +
-> +	return -EINVAL;
-> 
-Ok, I will modify it.
-Thanks for your comment.
-
+-- 
 Regards,
-Chanwoo Choi
 
+Laurent Pinchart
