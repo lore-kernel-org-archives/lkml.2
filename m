@@ -1,70 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab1F0Xzd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:55:33 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:56025 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755579Ab1F0Xys convert rfc822-to-8bit (ORCPT
+	id S1755772Ab1F0X67 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:58:59 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:6462 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755743Ab1F0X5f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:54:48 -0400
-From: "Grosen, Mark" <mgrosen@ti.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Ohad Ben-Cohen <ohad@wizery.com>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC 1/8] drivers: add generic remoteproc framework
-Thread-Topic: [RFC 1/8] drivers: add generic remoteproc framework
-Thread-Index: AQHML+SIQi02E6+wtECtfcP+kXbIPpTSC5UA//+3jZCAAGK6gP//xDIA
-Date: Mon, 27 Jun 2011 23:54:30 +0000
-Message-ID: <FFF198FBBF957F4393BA834040FEFFA202EF28@DFLE35.ent.ti.com>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
- <1308640714-17961-2-git-send-email-ohad@wizery.com>
- <20110627204958.GB20865@ponder.secretlab.ca>
- <FFF198FBBF957F4393BA834040FEFFA202EE00@DFLE35.ent.ti.com>
- <20110627222401.GE20865@ponder.secretlab.ca>
-In-Reply-To: <20110627222401.GE20865@ponder.secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 27 Jun 2011 19:57:35 -0400
+Message-ID: <4E0918E9.2020802@cavium.com>
+Date: Mon, 27 Jun 2011 16:57:29 -0700
+From: David Daney <david.daney@cavium.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-serial@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: [PATCH 0/7] serial/8250: I/O accessor cleanups
+References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
+In-Reply-To: <1309211120-2803-1-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 Jun 2011 23:57:34.0839 (UTC) FILETIME=[FC367070:01CC3525]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Grant Likely
-> Sent: Monday, June 27, 2011 3:24 PM
+On 06/27/2011 02:45 PM, Arnd Bergmann wrote:
+> Hi Greg,
+>
+> This series of patches cleans up the part of the 8250 device
+> driver that is responsible for accessing the hardware registers.
+> The driver defines all sorts of methods to do that right now,
+> when it really should only support memory mapped and programmed
+> I/O by default, and the latter only on PC-compatible platforms
+> including those that have ISA/PCMCIA/PCI buses.
+>
+> The series shrinks the 8250 driver by about 10% in both binary
+> and source code size, hopefully with no loss of functionality,
+> and it allows platforms to no longer define bogus inb/outb
+> functions when they don't provide CONFIG_HAS_IOPORT. I've
+> build-tested for x86 and ARM with and without HAS_IOPORT.
+>
+> Hopefully Ralf can provide some feedback about the three
+> MIPS platforms that have code changed by this.
+>
+> 	Arnd
+>
+> Arnd Bergmann (7):
+>    serial/8250: remove obsolete RM9000 port type
+>    serial/8250: move alchemy I/O handler to platform code
+>    serial/8250: move UPIO_TSI to powerpc
+>    serial/8250: move DWAP support to arch/mips
+>    serial/8250: remove obsolete and broken PORT_RSA support
+>    serial/8250: sanitize fourport handling
+>    serial/8250: make PIO support optional
+>
+>   arch/mips/Kconfig                         |    7 -
+>   arch/mips/alchemy/common/platform.c       |   50 +++
+>   arch/mips/pmc-sierra/msp71xx/msp_serial.c |   32 ++-
+>   arch/powerpc/kernel/legacy_serial.c       |   24 ++
+>   drivers/tty/serial/8250.c                 |  472 +++--------------------------
+>   drivers/tty/serial/8250.h                 |    8 +
+>   drivers/tty/serial/8250_hub6.c            |   17 +
+>   drivers/tty/serial/Kconfig                |   15 -
+>   drivers/tty/serial/serial_core.c          |    4 -
+>   drivers/tty/serial/sunsu.c                |   93 ------
+>   include/linux/serial.h                    |    2 +-
+>   include/linux/serial_core.h               |   10 +-
+>   include/linux/serial_reg.h                |   51 ---
+>   13 files changed, 171 insertions(+), 614 deletions(-)
+>
+> Cc: Ralf Baechle<ralf@linux-mips.org>
+> Cc: linux-serial@vger.kernel.org
+> Cc: Benjamin Herrenschmidt<benh@kernel.crashing.org>
+>
 
-> > Our AMPs (remote processors) have a variety of boot mechanisms that vary
-> > across the different SoCs (yes, TI likes HW diversity). In some cases, the
-> > boot address is more like an entry point and that comes from the firmware,
-> > so it is not a static attribute of a driver. Correct me if I misunderstood
-> > your question.
-> 
-> More to the point, I would expect the boot_address to be a property of
-> the rproc instance because it represents the configuration of the
-> remote processor.  It seems odd that the caller of ->start would know
-> better than the rproc driver about the entry point of the processor.
-> 
-> g.
 
-Yes, in many cases the boot_address will be defined by the HW. However, we have
-processors that are "soft" - the boot_address comes from the particular firmware
-being loaded and can (will) be different with each firmware image. We factored
-out the firmware loader to be device-independent (in remoteproc.c) so it's not
-repeated in each device-specific implementation like omap_remoteproc.c and
-davinci_remoteproc.c. In the cases where the HW dictates what happens, the start()
-method should just ignore the boot_address.
+FWIW, this was basically the intention when I added the I/O accessor 
+functions.
 
-Mark
+If you like you can add:
+
+Acked-by: David Daney <david.daney@cavium.com>
 
