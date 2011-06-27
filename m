@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755058Ab1F0HPn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 03:15:43 -0400
-Received: from alice.et.bocholt.fh-gelsenkirchen.de ([193.175.197.63]:35763
-	"EHLO alice.et.bocholt.fh-gelsenkirchen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756536Ab1F0HO6 (ORCPT
+	id S1757128Ab1F0H2L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 03:28:11 -0400
+Received: from www.linutronix.de ([62.245.132.108]:57633 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756402Ab1F0H00 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 03:14:58 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 alice.et.bocholt.fh-gelsenkirchen.de p5R7EIqo018707
-From: Dirk Gouders <gouders@et.bocholt.fh-gelsenkirchen.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, "Robse" <rob-se@live.de>
-Subject: Re: [Bug #37472] Lenovo U160 (i915 black screen)
-In-Reply-To: <Rm1pgFxEGUF.A.YXE.hM7BOB@chimera> (Rafael J. Wysocki's message
-	of "Mon, 27 Jun 2011 00:35:14 +0200 (CEST)")
-References: <fvHbBUhG0PD.A.IGE.HM7BOB@chimera>
-	<Rm1pgFxEGUF.A.YXE.hM7BOB@chimera>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
-Date: Mon, 27 Jun 2011 09:14:17 +0200
-Message-ID: <giy60nn3ue.fsf@mx10.gouders.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Greylist: Sender succeeded STARTTLS authentication, not delayed by milter-greylist-4.2.3 (alice.et.bocholt.fh-gelsenkirchen.de [192.168.0.63]); Mon, 27 Jun 2011 09:14:19 +0200 (CEST)
+	Mon, 27 Jun 2011 03:26:26 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de
+Subject: [PATCH 1/2] gpio/gpio-generic: read set register for caching if available
+Date: Mon, 27 Jun 2011 09:26:22 +0200
+Message-Id: <1309159583-11339-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.4.4
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The ->data is a shadow copy which is used during the ->set callback in
+order to avoid a read of the register before write.
+If ->reg_set is set then we write to this location therefore we should
+cache that value.
 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.38 and 2.6.39.  Please verify if it still should
-> be listed and let the tracking team know (either way).
->
->
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37472
-> Subject		: Lenovo U160 (i915 black screen)
-> Submitter	: Robse <rob-se@live.de>
-> Date		: 2011-06-14 15:17 (13 days old)
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+ drivers/gpio/gpio-generic.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-This sounds like a problem, I was discussing with Jesse Barnes, some
-days ago[1].  For me, the usage of the kernel parameter
-'i915.lvds_use_ssc=0' serves as a useful workaround.
+diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
+index 231714d..9f8b5c6 100644
+--- a/drivers/gpio/gpio-generic.c
++++ b/drivers/gpio/gpio-generic.c
+@@ -398,7 +398,10 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
+ 	if (ret)
+ 		return ret;
+ 
+-	bgc->data = bgc->read_reg(bgc->reg_dat);
++	if (bgc->reg_set)
++		bgc->data = bgc->read_reg(bgc->reg_set);
++	else
++		bgc->data = bgc->read_reg(bgc->reg_dat);
+ 
+ 	return ret;
+ }
+-- 
+1.7.4.4
 
-Perhaps, Robse will try that option and document it in the Bug-Entry if
-it also works for him.
-
-Dirk
-
-[1] https://lkml.org/lkml/2011/5/31/387
