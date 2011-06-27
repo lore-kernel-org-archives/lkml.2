@@ -1,42 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754075Ab1F0Tq7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 15:46:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:62399 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753942Ab1F0Tpr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 15:45:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=QrEGCuTG0TbMFLiKttzeNYwXN3MK2UOA6k3z71jdvaoTteQyLdy/mduSYqtuJuD+HB
-         hLYlDDYETL8+89Eb41qzQ6csELdLRT2mWnsavTsXAcjUY518htCuz27+kvEO1REff6f7
-         +Q3cC5k/SkqPuxAIBtzd0K0vracJKtORA/k88=
-Date: Mon, 27 Jun 2011 12:45:10 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Cyril Chemparathy <cyril@ti.com>,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 1/2] Input: tnetv107x-keypad - fix MODULE_ALIAS
-Message-ID: <20110627194507.GC13829@core.coreip.homeip.net>
-References: <1309185168.29085.0.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309185168.29085.0.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754284Ab1F0UTa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 16:19:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754154Ab1F0URt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 16:17:49 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Cc: vgoyal@redhat.com, khlebnikov@openvz.org, jmoyer@redhat.com
+Subject: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups 
+Date: Mon, 27 Jun 2011 16:17:41 -0400
+Message-Id: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 10:32:48PM +0800, Axel Lin wrote:
-> Remove the space between "platform:" prefix and the driver name.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Hi,
 
-Applied both, thanks Axel.
+Konstantin reported that fsync is very slow with ext4 if fsyncing process
+is in a separate cgroup and one is using CFQ IO scheduler.
+
+https://lkml.org/lkml/2011/6/23/269
+
+Issue seems to be that fsync process is in a separate cgroup and journalling
+thread is in root cgroup. After every IO from fsync, CFQ idles on fysnc
+process queue waiting for more requests to come. But this process is now
+waiting for IO to finish from journaling thread. After waiting for 8ms
+fsync's queue gives way to jbd's queue. Then we start idling on jbd
+thread and new IO from fsync is sitting in a separate queue in a separate
+group.
+
+Bottom line, that after every IO we end up idling on fysnc and jbd thread
+so much that if somebody is doing fsync after every 4K of IO, throughput
+nose dives.
+
+Similar issue had issue come up with-in same cgroup also when "fsync"
+and "jbd" thread were being queued on differnt service trees and idling
+was killing. At that point of time two solutions were proposed. One
+from Jeff Moyer and one from Corrado Zoccolo.
+
+Jeff came up with the idea of coming with block layer API to yield the
+queue if explicitly told by file system, hence cutting down on idling.
+
+https://lkml.org/lkml/2010/7/2/277
+
+Corrado, came up with a simpler approach of keeping jbd and fsync processes
+on same service tree by parsing RQ_NOIDLE flag. By queuing on same service
+tree, one queue preempts other queue hence cutting down on idling time.
+Upstream went ahead with simpler approach to fix the issue.
+
+commit 749ef9f8423054e326f3a246327ed2db4b6d395f
+Author: Corrado Zoccolo <czoccolo@gmail.com>
+Date:   Mon Sep 20 15:24:50 2010 +0200
+
+    cfq: improve fsync performance for small files
+
+
+Now with cgroups, same problem resurfaces but this time we can not queue
+both the processes on same service tree and take advantage of preemption
+as separate cgroups have separate service trees and both processes
+belong to separate cgroups. We do not allow cross cgroup preemption 
+as that wil break down the isolation between groups.
+
+So this patch series resurrects Jeff's solution of file system specifying
+the IO dependencies between threads explicitly to the block layer/ioscheduler.
+One ioscheduler knows that current queue we are idling on is dependent on
+IO from some other queue, CFQ allows dispatch of requests from that other
+queue in the context of current active queue.
+
+So if fysnc thread specifies the dependency on journalling thread, then
+when time slice of fsync thread is running, it allows dispatch from
+jbd in the time slice of fsync thread. Hence cutting down on idling.
+
+This patch series seems to be working for me. I did testing for ext4 only.
+This series is based on for-3.1/core branch of Jen's block tree.
+Konstantin, can you please give it a try and see if it fixes your
+issue.
+
+Any feedback on how to solve this issue is appreciated.
+
+Thanks
+Vivek
+
+
+Vivek Goyal (3):
+  block: A new interface for specifying IO dependencing among tasks
+  ext4: Explicitly specify fsync dependency on journaling thread
+  ext3: Explicitly specify fsync dependency on journaling thread
+
+ block/blk-core.c         |   42 ++++++++
+ block/cfq-iosched.c      |  236 ++++++++++++++++++++++++++++++++++++++++++---
+ block/elevator.c         |   16 +++
+ fs/ext3/fsync.c          |    3 +
+ fs/ext4/fsync.c          |    3 +
+ include/linux/blkdev.h   |    8 ++-
+ include/linux/elevator.h |    6 +
+ 7 files changed, 297 insertions(+), 17 deletions(-)
 
 -- 
-Dmitry
+1.7.4.4
+
