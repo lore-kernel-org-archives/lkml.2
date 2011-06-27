@@ -1,103 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757426Ab1F0IrY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 04:47:24 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:13990 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754649Ab1F0Ipl (ORCPT
+	id S1755584Ab1F0Iva (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 04:51:30 -0400
+Received: from perceval.ideasonboard.com ([95.142.166.194]:37665 "EHLO
+	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756668Ab1F0Ite (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 04:45:41 -0400
-X-IronPort-AV: E=Sophos;i="4.65,431,1304294400"; 
-   d="scan'208";a="6490902"
-Subject: Re: [Xen-devel] [PATCH 2/2] xen: Add alias to autoload backend
- drivers
-From: Ian Campbell <Ian.Campbell@citrix.com>
-To: Bastian Blank <waldi@debian.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110624215155.GB4735@wavehammer.waldi.eu.org>
-References: <20110624215155.GB4735@wavehammer.waldi.eu.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Citrix Systems, Inc.
-Date: Mon, 27 Jun 2011 09:45:39 +0100
-Message-ID: <1309164339.32717.155.camel@zakaz.uk.xensource.com>
+	Mon, 27 Jun 2011 04:49:34 -0400
+From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
+To: balbi@ti.com
+Subject: Re: [PATCH 16/37] Remove unneeded version.h includes (and add where needed) for drivers/usb/
+Date: Mon, 27 Jun 2011 10:49:46 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.6.4; x86_64; ; )
+Cc: Jesper Juhl <jj@chaosbits.net>, LKML <linux-kernel@vger.kernel.org>,
+        trivial@kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
+        linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net
+References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net> <alpine.LNX.2.00.1106240030390.17688@swampdragon.chaosbits.net> <20110627082036.GE2508@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110627082036.GE2508@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.32.3 
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106271049.46580.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-24 at 22:51 +0100, Bastian Blank wrote:
-> All the Xen backend drivers are assigned to a special bus type
-> xen-backend. This allows userspace to load the modules on request.
+Hi Felipe,
+
+On Monday 27 June 2011 10:20:37 Felipe Balbi wrote:
+> On Fri, Jun 24, 2011 at 12:31:43AM +0200, Jesper Juhl wrote:
+> > It was pointed out by 'make versioncheck' that linux/version.h was not
+> > always being included where needed and sometimes included needlessly
+> > in drivers/usb/.
+> > This patch fixes up the includes.
+> > 
+> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 > 
-> This patch defines xen-backend:* aliases on the modules and exports this
-> names through modalias and uevent.
+> Laurent, I guess Jesper needs your Ack for the uvc part. It looks good
+> to me, but I'll leave it to you.
 
-Excellent, this was a big missing piece of functionality for distros.
-Thanks!
+For the UVC gadget driver,
 
-> Signed-off-by: Bastian Blank <waldi@debian.org>
+Acked-by: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
 
-Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Sorry for the delay.
 
-> ---
->  drivers/block/xen-blkback/blkback.c       |    1 +
->  drivers/net/xen-netback/netback.c         |    1 +
->  drivers/xen/xenbus/xenbus_probe.c         |    3 ++-
->  drivers/xen/xenbus/xenbus_probe_backend.c |    3 +++
->  4 files changed, 7 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-> index 5cf2993..ed62008 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -824,3 +824,4 @@ static int __init xen_blkif_init(void)
->  module_init(xen_blkif_init);
->  
->  MODULE_LICENSE("Dual BSD/GPL");
-> +MODULE_ALIAS("xen-backend:vbd");
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index 0e4851b..fd00f25 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -1743,3 +1743,4 @@ failed_init:
->  module_init(netback_init);
->  
->  MODULE_LICENSE("Dual BSD/GPL");
-> +MODULE_ALIAS("xen-backend:vif");
-> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-> index 2ed0b04..bd2f90c 100644
-> --- a/drivers/xen/xenbus/xenbus_probe.c
-> +++ b/drivers/xen/xenbus/xenbus_probe.c
-> @@ -393,7 +393,8 @@ static ssize_t devtype_show(struct device *dev,
->  static ssize_t modalias_show(struct device *dev,
->  			     struct device_attribute *attr, char *buf)
->  {
-> -	return sprintf(buf, "xen:%s\n", to_xenbus_device(dev)->devicetype);
-> +	return sprintf(buf, "%s:%s\n", dev->bus->name,
-> +		       to_xenbus_device(dev)->devicetype);
->  }
->  
->  struct device_attribute xenbus_dev_attrs[] = {
-> diff --git a/drivers/xen/xenbus/xenbus_probe_backend.c b/drivers/xen/xenbus/xenbus_probe_backend.c
-> index ec510e5..60adf91 100644
-> --- a/drivers/xen/xenbus/xenbus_probe_backend.c
-> +++ b/drivers/xen/xenbus/xenbus_probe_backend.c
-> @@ -107,6 +107,9 @@ static int xenbus_uevent_backend(struct device *dev,
->  	if (xdev == NULL)
->  		return -ENODEV;
->  
-> +	if (add_uevent_var(env, "MODALIAS=xen-backend:%s", xdev->devicetype))
-> +		return -ENOMEM;
-> +
->  	/* stuff we want to pass to /sbin/hotplug */
->  	if (add_uevent_var(env, "XENBUS_TYPE=%s", xdev->devicetype))
->  		return -ENOMEM;
+> > ---
+> > 
+> >  drivers/usb/gadget/uvc.h         |    1 +
+> >  drivers/usb/gadget/uvc_v4l2.c    |    1 -
+> >  drivers/usb/storage/realtek_cr.c |    1 -
+> >  3 files changed, 1 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
+> > index 5b79194..81971fb 100644
+> > --- a/drivers/usb/gadget/uvc.h
+> > +++ b/drivers/usb/gadget/uvc.h
+> > @@ -56,6 +56,7 @@ struct uvc_event
+> > 
+> >  #include <linux/usb.h>	/* For usb_endpoint_* */
+> >  #include <linux/usb/gadget.h>
+> >  #include <linux/videodev2.h>
+> > 
+> > +#include <linux/version.h>
+> > 
+> >  #include <media/v4l2-fh.h>
+> >  
+> >  #include "uvc_queue.h"
+> > 
+> > diff --git a/drivers/usb/gadget/uvc_v4l2.c
+> > b/drivers/usb/gadget/uvc_v4l2.c index 5e807f0..a715805 100644
+> > --- a/drivers/usb/gadget/uvc_v4l2.c
+> > +++ b/drivers/usb/gadget/uvc_v4l2.c
+> > @@ -16,7 +16,6 @@
+> > 
+> >  #include <linux/errno.h>
+> >  #include <linux/list.h>
+> >  #include <linux/mutex.h>
+> > 
+> > -#include <linux/version.h>
+> > 
+> >  #include <linux/videodev2.h>
+> >  #include <linux/vmalloc.h>
+> >  #include <linux/wait.h>
+> > 
+> > diff --git a/drivers/usb/storage/realtek_cr.c
+> > b/drivers/usb/storage/realtek_cr.c index d509a4a..fe21104 100644
+> > --- a/drivers/usb/storage/realtek_cr.c
+> > +++ b/drivers/usb/storage/realtek_cr.c
+> > @@ -26,7 +26,6 @@
+> > 
+> >  #include <linux/sched.h>
+> >  #include <linux/workqueue.h>
+> >  #include <linux/kernel.h>
+> > 
+> > -#include <linux/version.h>
+> > 
+> >  #include <scsi/scsi.h>
+> >  #include <scsi/scsi_cmnd.h>
 
+-- 
+Regards,
 
+Laurent Pinchart
