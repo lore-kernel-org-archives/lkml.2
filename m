@@ -1,100 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757912Ab1F0K7V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 06:59:21 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:53903 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757783Ab1F0K5r convert rfc822-to-8bit (ORCPT
+	id S932068Ab1F0LBF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 07:01:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62192 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932089Ab1F0K7z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 06:57:47 -0400
+	Mon, 27 Jun 2011 06:59:55 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=TYKl2GFL0jADohFGAo3QheQbwg29YncFXK5sMLqKcyTiFY2Un8llAgYVDbW1W6Kfye
-         YxGBwHoXxkcP5yoehfRJ+RMSQy5jAvHqt5muMOoyUa6hNxeWZuJcHpqsZdmojxu7I/QO
-         aaD5uEbXsLub+nQkbg9ui7K7U5ULo2P7Wm1S0=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=f/C63AASlK5968PVoX90VgNiUDACTYJMu76V8U/oj+AsMNv1g7DJYrogBx9XgP6JwB
+         evajqQ1eKdoh770YEf1sFDThDxY+QYXCuAmqyYRbHaHR+TPcZMVknkVfiqRkIsduwKLk
+         Y++3SaCwbJWh5HqJHkC3AI4KtFpGH0kT+Nxk8=
+Date: Mon, 27 Jun 2011 14:59:49 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        rientjes@google.com, wilsons@start.ca, security@kernel.org,
+        eparis@redhat.com, kernel-hardening@lists.openwall.com,
+        torvalds@linux-foundation.org
+Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
+Message-ID: <20110627105949.GA9260@albatros>
+References: <1308917318-4749-1-git-send-email-segoon@openwall.com>
+ <4E07F1C0.2070305@jp.fujitsu.com>
+ <20110627070300.GA4463@albatros>
+ <4E08324D.9040605@jp.fujitsu.com>
+ <20110627085242.GA6635@albatros>
+ <4E08565C.4080007@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1307695731-28018-1-git-send-email-linus.walleij@stericsson.com>
-References: <1307695731-28018-1-git-send-email-linus.walleij@stericsson.com>
-Date: Mon, 27 Jun 2011 12:57:46 +0200
-Message-ID: <BANLkTinxptCJRETreCpUoV-nU2K4fuFcmQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] RFC: gpio: driver-local pin configuration
-From: Stijn Devriendt <highguy@gmail.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Kurt Van Dijck <kurt.van.dijck@eia.be>,
-        Ben Nizette <bn@niasdigital.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E08565C.4080007@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 10:48 AM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> From: Linus Walleij <linus.walleij@linaro.org>
->
-> This is a modification of the previous generic GPIO configuration
-> patch series.
->
-> I'm Cc:ing everyone involved in earlier discussions so we can
-> move forward on this consolidation work, lest I cannot convert
-> my drivers to use struct gpio_chip / gpiolib.
->
-> Background: Grant didn't like the idea of an ioctl() like
-> configuration function in the struct gpio_chip vtable, so we
-> decided to see if it was wiser to go back to the initial suggestion
-> of making it possible for drivers to dereference the struct
-> gpio_chip and perform driver-local operations via regular
-> function calls instead.
->
-I couldn't find Grant's rationale in an e-mail thread somewhere, but
-except from the few comments I passed on, I liked the approach.
+On Mon, Jun 27, 2011 at 19:07 +0900, KOSAKI Motohiro wrote:
+> I'm ok any alternative way if you have. I only want to don't break iotop.
+> It's used very widely and frequently from performance tuning engineers.
 
-> So in this patch set I expose gpio_to_chip(), then alter the
-> previous rewrite of the U300 GPIO driver to instead use a local
-> configuration function by wrapping the previously defined config
-> function into this:
->
+It doesn't break listening for own processes statistics.  It disables
+spying for alien processes.  Or is iotop does something useful using
+other users' processes information?  The only thing I can think about is
+watching for the related processes running under the separate account
+(e.g. separate DB and web user accounts).
 
-I rather dislike exposing the gpio_to_chip. It makes implementations
-work around gpiolib completely. We might as well strip it out
-completely then and go back to drivers doing platform specific GPIO
-register accesses.
+For performance things IMO the precise io activity is needed anyway.  If
+you have to watch for other processes, you probably have to be root
+(which is overkill, though).
 
-I have a patch lying around somewhere which introduces the concept of
-gpio groups. This is already a step up from the single gpio-pin access
-and will duplicate every effort to do things like the configuration below.
-It already duplicates most of the calls for multiple pins...
 
-> /* External function to configure pins */
-> int u300_gpio_set_config(unsigned gpio, u16 param, unsigned long *data)
-> {
->        struct gpio_chip *chip = gpio_to_chip(gpio);
->        unsigned offset = gpio - chip->base;
->
->        return u300_gpio_config(chip, offset, param, data);
-> }
->
-> This one is then exposed in the chip-specific header  in
-> <linux/gpio/u300.h>, and all the configuration defines that
-> were previously globally generic in <linux/gpio.h> are also
-> moved there and made driver-specific without any attempt of
-> generalizing this.
->
-How about a SPI flash that has its chip select hooked up to a
-GPIO that requires setting open-drain for example. Now that
-SPI-driver needs to be aware of each independent gpio-chip
-implementation.
+Don't know whether it can help - I've suggested the way to define a
+group allowed to read somewhat private procfs files:
 
-Stijn
+http://www.openwall.com/lists/kernel-hardening/2011/06/15/19
+
+It is incomplete (in sense of taskstats missing) and it is a bit dumb/not
+configurable.  Here I suggest a bit more configurable scheme:
+
+http://www.openwall.com/lists/kernel-hardening/2011/06/22/1
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
