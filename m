@@ -1,102 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab1F0XRi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:17:38 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:43779 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755393Ab1F0XRe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:17:34 -0400
-From: greearb@candelatech.com
-To: linux-kernel@vger.kernel.org
-Cc: Ben Greear <greearb@candelatech.com>
-Subject: [PATCH 2/2] slub:  Add method to verify memory is not deleted.
-Date: Mon, 27 Jun 2011 16:17:11 -0700
-Message-Id: <1309216631-31493-3-git-send-email-greearb@candelatech.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1309216631-31493-1-git-send-email-greearb@candelatech.com>
-References: <1309216631-31493-1-git-send-email-greearb@candelatech.com>
+	id S1755624Ab1F0XUc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:20:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3280 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754967Ab1F0XS2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 19:18:28 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,434,1304319600"; 
+   d="scan'208";a="19012272"
+Message-ID: <4E090F99.7050602@linux.intel.com>
+Date: Mon, 27 Jun 2011 16:17:45 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+CC: Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [PATCH v2] futex: Fix regression with read only mappings
+References: <20110623194949.GA2083@BohrerMBP.rgmadvisors.com> <1308931186-28707-1-git-send-email-sbohrer@rgmadvisors.com> <4E052DC3.6000902@linux.intel.com> <20110627164008.GA2095@BohrerMBP.rgmadvisors.com> <1309198559.6701.108.camel@twins> <4E08EAE8.6060805@linux.intel.com> <20110627210818.GC2095@BohrerMBP.rgmadvisors.com> <4E08F893.10103@linux.intel.com> <20110627221425.GD2095@BohrerMBP.rgmadvisors.com>
+In-Reply-To: <20110627221425.GD2095@BohrerMBP.rgmadvisors.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Greear <greearb@candelatech.com>
 
-This is for tracking down suspect memory usage.
 
-Signed-off-by: Ben Greear <greearb@candelatech.com>
----
-:100644 100644 ad4dd1c... 35a13d2... M	include/linux/slab.h
-:100644 100644 14d0135... b3d7680... M	mm/slub.c
- include/linux/slab.h |    9 +++++++++
- mm/slub.c            |   34 ++++++++++++++++++++++++++++++++++
- 2 files changed, 43 insertions(+), 0 deletions(-)
+On 06/27/2011 03:14 PM, Shawn Bohrer wrote:
+> On Mon, Jun 27, 2011 at 02:39:31PM -0700, Darren Hart wrote:
+>>
+>>
+>> On 06/27/2011 02:08 PM, Shawn Bohrer wrote:
+>>> On Mon, Jun 27, 2011 at 01:41:12PM -0700, Darren Hart wrote:
+>>>>
+>>>>
+>>>> On 06/27/2011 11:15 AM, Peter Zijlstra wrote:
+>>>>> On Mon, 2011-06-27 at 11:40 -0500, Shawn Bohrer wrote:
+>>>>>>>>     if (PageAnon(page_head)) {
+>>>>>>>
+>>>>>>> This bit needs a comment too (unless I am the only one to whom this
+>>>>>> was
+>>>>>>> non-obvious), maybe:
+>>>>>>>
+>>>>>>>               
+>>>>>>>               /*
+>>>>>>>                * A read-only anonymous page implies a COW on a
+>>>>>>>                * MAP_PRIVATE mapping. There is no sane use-case
+>>>>>>>                * for this scenario, return -EFAULT to userspace.
+>>>>>>>                */
+>>>>>>
+>>>>>> Your comment is wrong.  Unfortunately the code is completly
+>>>>>> non-obvious to me as well, and I have no idea why it is there.  This
+>>>>>> little snippet came from Peter's suggested fix in:
+>>>>>>
+>>>>>> https://lkml.org/lkml/2011/6/6/368
+>>>>>>
+>>>>>> Sadly Peter's gone silent and I'm left wondering if he knew some
+>>>>>> corner case that should return -EFAULT with a RO anonymous page or if
+>>>>>> he _thought_ this was preventing RO MAP_PRIVATE mappings.  If it is
+>>>>>> the latter then this block can be removed because it does NOT do that.
+>>>>>>>> +           if (ro) {
+>>>>>>>> +                   err = -EFAULT;
+>>>>>>>> +                   goto out;
+>>>>>>>> +           }
+>>>>>>>> + 
+>>>>>
+>>>>> Peter simply gets too much email.. anyway, the reason I put that there
+>>>>> is that a RO Anon page will never change and is thus a little pointless
+>>>>> to use for futex ops.
+>>>>>
+>>>>
+>>>> Right, and that was the logic I was trying to document. Shawn, how is my
+>>>> comment above wrong? A read-only anonymous page but itself doesn't imply
+>>>> a COW, but it does it does in the context of this code from my reading.
+>>>
+>>> All I can tell you is from my testing is a PROT_READ, MAP_PRIVATE
+>>> page isn't an anonymous page. In other words.
+>>>
+>>> futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE, fd, 0);
+>>> rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, 0, 0, 0);
+>>>
+>>> Works just fine with my patch and does NOT return EFAULT.  Your
+>>> comment indicates the opposite.
+>>
+>> I see. That would suggest to me then that the get_user_pages doesn't
+>> force the COW when for read-only access when write access is requested.
+>> This makes sense from a get_user_pages perspective.
+>>
+>> Kosaki pointed out that the mapping information is contained in the VMA.
+>> We could test for this only if the RW get_user_pages fails, that would
+>> leave the common case fast, but would hurt the valid RO SHARED case. The
+>> alternative it seems is to just let RW private users hang themselves.
+> 
+> RW private users?  
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index ad4dd1c..35a13d2 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -302,6 +302,15 @@ extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
- 
- #endif /* CONFIG_NUMA */
- 
-+/** Calling this on deleted objects will print some
-+ * SLUB debugging information.
-+ */
-+#if defined(CONFIG_SLUB) && defined(CONFIG_SLUB_DEBUG)
-+extern bool verify_mem_not_deleted(const void *x);
-+#else
-+#define verify_mem_not_deleted(x)
-+#endif
-+
- /*
-  * Shortcuts
-  */
-diff --git a/mm/slub.c b/mm/slub.c
-index 14d0135..b3d7680 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2953,6 +2953,40 @@ size_t ksize(const void *object)
- }
- EXPORT_SYMBOL(ksize);
- 
-+#if defined(CONFIG_SLUB_DEBUG)
-+bool verify_mem_not_deleted(const void *x)
-+{
-+	struct page *page;
-+	void *object = (void *)x;
-+	struct kmem_cache *s;
-+	unsigned long flags;
-+	bool rv = false;
-+
-+	if (unlikely(ZERO_OR_NULL_PTR(x)))
-+		false;
-+
-+	local_irq_save(flags);
-+
-+	page = virt_to_head_page(x);
-+	if (unlikely(!PageSlab(page))) {
-+		BUG_ON(!PageCompound(page));
-+		goto out_unlock;
-+	}
-+
-+	s = page->slab;
-+
-+	if (on_freelist(s, page, object)) {
-+		object_err(s, page, object, "Object is on fee-list");
-+		goto out_unlock;
-+	}
-+	rv = true;
-+out_unlock:
-+	local_irq_restore(flags);
-+	return rv;
-+}
-+EXPORT_SYMBOL(verify_mem_not_deleted);
-+#endif
-+
- void kfree(const void *x)
- {
- 	struct page *page;
+Sorry, I meant "RO private users"
+
+I believe that RW private users always have been
+> able and still can use a futex within their mapping between threads.
+> The RW get_user_pages() does force a COW which means that another
+> process updating the underlying file won't wake up the process, but
+> once again this seems to have been the behavior on 2.6.18-128.7.1.el5,
+> 2.6.32.41 and probably all other versions.
+> 
+>> I'm tempted to accept the latter and document it in the futex.c file and
+>> then in the man page.
+>>
+>> Thoughts?
+> 
+> So yes I vote for the patch I've been sending with perhaps a futex man
+> page cleanup.  It does open some corner cases for RO private mappings.
+> You can hang on the zero page, or hang if you change the permissions
+> on the mapping after the fact with mprotect, but both of those things
+> seem very obscure to me thus I vote they should simply be documented
+> (I did add them to the patch description).
+
+
+I'm concerned about the zero page. I need to go re-read all of Kosaki's
+last round of patches related to the zero page. I'll look at this
+tonight or tomorrow, but if I remember correctly, the zero page left a
+DOS opportunity - we can't re-introduce something like that.
+
+Thanks,
+
 -- 
-1.7.3.4
-
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
