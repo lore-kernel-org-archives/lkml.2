@@ -1,32 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753768Ab1F0V7J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 17:59:09 -0400
-Received: from mx6.nociplan.com.ar ([200.123.164.165]:16879 "EHLO
-	servidor.dussaut.com" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754663Ab1F0V5J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 17:57:09 -0400
-X-Greylist: delayed 1353 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Jun 2011 17:56:54 EDT
-Reply-To: <davidxxx51@mail.kz>
-From: "David Scott" <davidxxx60@mail.kz>
-Subject: from David Scott      
-Date: Mon, 27 Jun 2011 14:16:50 -0700
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <SERVIDORHFlI8UA32Ik0000e81d@servidor.dussaut.com>
-X-OriginalArrivalTime: 27 Jun 2011 20:42:57.0859 (UTC) FILETIME=[CC30B130:01CC350A]
-To: unlisted-recipients:; (no To-header on input)
+	id S1754036Ab1F0VR2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 17:17:28 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:48997 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754322Ab1F0VRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 17:17:24 -0400
+From: Richard Weinberger <richard@nod.at>
+To: viro@zeniv.linux.org.uk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Richard Weinberger <richard@nod.at>
+Subject: [PATCH][Resend] Fix infinite loop in search_binary_handler()
+Date: Mon, 27 Jun 2011 23:17:04 +0200
+Message-Id: <1309209424-32679-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a Client that wishes to Invest Her financial Estate in Your Country, can You be of Assistance as a Partner? I will give Details when You Reply. This Transaction will demand Absolute Secrecy from You. representative.email: davidxxx50@mail.kz
+When search_binary_handler() is called to find a handler
+for /sbin/modprobe it will end up in an infinite loop because
+it executes request_module() to load a binfmt module with
+/sbin/modprobe...
 
-David Scott
+Running a x86_64 kernel without ia32 emulation and a x86 user land
+triggers this issue.
+
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ fs/exec.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 97e0d52..7271b22 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1411,7 +1411,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			    printable(bprm->buf[2]) &&
+ 			    printable(bprm->buf[3]))
+ 				break; /* -ENOEXEC */
+-			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
++
++			/* Avoid an infinite loop */
++			if (strcmp(modprobe_path, bprm->filename))
++				request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
+ #endif
+ 		}
+ 	}
+-- 
+1.7.5.4
+
