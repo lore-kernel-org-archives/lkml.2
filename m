@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752559Ab1F0P4T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 11:56:19 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63089 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482Ab1F0P4Q convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 11:56:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=FrxQQlLoCgQmH0vrVm0RLQAUzaWcSR+URrDAwcNS6WwnMZ3u5vGrDzUYHu4EpBtxlt
-         tF2q3pZT5PDR6MF2ZE3wFBdqW26gQAawKnHVZX7gsRyAJQ3SFDQ0QP2XNkZ7I3eq4Gac
-         ARBqV5zgXvIo794QU00nU7iqtYHnbIUaBsbjA=
+	id S1752305Ab1F0P50 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:57:26 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:56608 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752482Ab1F0P5Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 11:57:24 -0400
+Date: Mon, 27 Jun 2011 10:57:21 -0500 (CDT)
+From: Brent Casavant <bcasavan@sgi.com>
+Reply-To: Brent Casavant <bcasavan@sgi.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+cc: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH 11/12] MISC: IOC4: Fix section mismatch / race
+ condition.
+In-Reply-To: <2ecba7369d1ac0d7b1ab08ccce65f240719f99c8.1309182743.git.ralf@linux-mips.org>
+Message-ID: <alpine.DEB.2.00.1106271056200.28116@pkunk.americas.sgi.com>
+References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org> <2ecba7369d1ac0d7b1ab08ccce65f240719f99c8.1309182743.git.ralf@linux-mips.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Organization: "Silicon Graphics, Inc."
+Importance: normal
 MIME-Version: 1.0
-In-Reply-To: <BANLkTin+pn=WSegcW7cnHk4=76wHkaHPCw@mail.gmail.com>
-References: <BANLkTin+pn=WSegcW7cnHk4=76wHkaHPCw@mail.gmail.com>
-From: Prateek Sharma <prateek3.14@gmail.com>
-Date: Mon, 27 Jun 2011 21:25:55 +0530
-Message-ID: <BANLkTi=eVDsTy0nU5nuiDC+SDe_rhCt3qg@mail.gmail.com>
-Subject: Re: Linux 3.0-rc4 - fail to compile...
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Will this issue be be please fixed in rc5 ? Not being able to even
-compile it is a big hindrance.
+On Mon, 27 Jun 2011, Ralf Baechle wrote:
 
+> WARNING: drivers/misc/ioc4.o(.data+0x144): Section mismatch in reference from the variable ioc4_load_modules_work to the function .devinit.text:ioc4_load_modules()
+> The variable ioc4_load_modules_work references
+> the function __devinit ioc4_load_modules()
+> If the reference is valid then annotate the
+> variable with __init* or __refdata (see linux/init.h) or name the variable:
+> *driver, *_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console
+> 
+> This one is potencially fatal; by the time ioc4_load_modules is invoked
+> it may already have been freed.  For that reason ioc4_load_modules_work
+> can't be turned to __devinitdata but also because it's referenced in
+> ioc4_exit.
+> 
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+> To: Brent Casavant <bcasavan@sgi.com>
+> To: Andrew Morton <akpm@linux-foundation.org>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: linux-kernel@vger.kernel.org
+> Cc: linux-mips@linux-mips.org
+> ---
+>  drivers/misc/ioc4.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/misc/ioc4.c b/drivers/misc/ioc4.c
+> index 668d41e..df03dd3 100644
+> --- a/drivers/misc/ioc4.c
+> +++ b/drivers/misc/ioc4.c
+> @@ -270,7 +270,7 @@ ioc4_variant(struct ioc4_driver_data *idd)
+>  	return IOC4_VARIANT_PCI_RT;
+>  }
+>  
+> -static void __devinit
+> +static void
+>  ioc4_load_modules(struct work_struct *work)
+>  {
+>  	request_module("sgiioc4");
+> -- 
+> 1.7.4.4
+> 
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paul Rolland (???・???)
->
-> Sent: Tuesday, June 21, 2011 3:14 PM
-> To: Linus Torvalds
-> Cc: Linux Kernel Mailing List; rol@witbe.net
-> Subject: Re: Linux 3.0-rc4 - fail to compile...
-> Hello,
->
-> On Mon, 20 Jun 2011 21:02:56 -0700
->
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
->
-> > Mostly the usual small driver one- (or few-) liners, and some bigger
-> > changes to drm (and md). But also two new smallish drivers
->
-> > (net/usb/kalmia.c, and the ADP8870 backlight driver). Some filesystem
-> > fixes (btrfs, cifs, afs, xfs, nfsd).
->
-> This is failing to compile on my machine :
-> ...
->   CC      mm/page_cgroup.o
->   CC      fs/direct-io.o
->
-> mm/page_cgroup.c: In function ‘page_cgroup_init’:
-> mm/page_cgroup.c:308: error: implicit declaration of function ‘node_start_pfn’
-> mm/page_cgroup.c:309: error: implicit declaration of function ‘node_end_pfn’
-> make[1]: *** [mm/page_cgroup.o] Error 1
->
-> make: *** [mm] Error 2
-> make: *** Waiting for unfinished jobs....
->   CC      fs/mpage.o
->   CC      fs/ioprio.o
-> This seems to be caused by arch/x86/include/asm/mmzone_64.h which only defines
-> node_start_pfn and node_end_pfn if CONFIG_NUMA is set.
->
->
-> Adding CONFIG_NUMA to my .config fixes the issue.
->
-> Paul
+Acked-by: Brent Casavant <bcasavan@sgi.com>
+
+-- 
+Brent Casavant
+Silicon Graphics International
