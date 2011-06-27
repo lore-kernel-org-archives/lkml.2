@@ -1,110 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab1F0VFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 17:05:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52944 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754368Ab1F0VEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 17:04:45 -0400
-Message-ID: <4E08F06B.9020106@redhat.com>
-Date: Mon, 27 Jun 2011 17:04:43 -0400
-From: Josef Bacik <josef@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1754498Ab1F0VJR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 17:09:17 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:38112 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754306Ab1F0VIZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 17:08:25 -0400
+Date: Mon, 27 Jun 2011 16:08:18 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Darren Hart <dvhart@linux.intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [PATCH v2] futex: Fix regression with read only mappings
+Message-ID: <20110627210818.GC2095@BohrerMBP.rgmadvisors.com>
+References: <20110623194949.GA2083@BohrerMBP.rgmadvisors.com>
+ <1308931186-28707-1-git-send-email-sbohrer@rgmadvisors.com>
+ <4E052DC3.6000902@linux.intel.com>
+ <20110627164008.GA2095@BohrerMBP.rgmadvisors.com>
+ <1309198559.6701.108.camel@twins>
+ <4E08EAE8.6060805@linux.intel.com>
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk
-Subject: Re: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
-References: <1309197745-14107-1-git-send-email-josef@redhat.com>
-In-Reply-To: <1309197745-14107-1-git-send-email-josef@redhat.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E08EAE8.6060805@linux.intel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2011 02:02 PM, Josef Bacik wrote:
-> This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.  Turns out
-> using fiemap in things like cp cause more problems than it solves, so lets try
-> and give userspace an interface that doesn't suck.  We need to match solaris
-> here, and the definitions are
+On Mon, Jun 27, 2011 at 01:41:12PM -0700, Darren Hart wrote:
 > 
-> *o* If /whence/ is SEEK_HOLE, the offset of the start of the
-> next hole greater than or equal to the supplied offset
-> is returned. The definition of a hole is provided near
-> the end of the DESCRIPTION.
 > 
-> *o* If /whence/ is SEEK_DATA, the file pointer is set to the
-> start of the next non-hole file region greater than or
-> equal to the supplied offset.
+> On 06/27/2011 11:15 AM, Peter Zijlstra wrote:
+> > On Mon, 2011-06-27 at 11:40 -0500, Shawn Bohrer wrote:
+> >>>>     if (PageAnon(page_head)) {
+> >>>
+> >>> This bit needs a comment too (unless I am the only one to whom this
+> >> was
+> >>> non-obvious), maybe:
+> >>>
+> >>>               
+> >>>               /*
+> >>>                * A read-only anonymous page implies a COW on a
+> >>>                * MAP_PRIVATE mapping. There is no sane use-case
+> >>>                * for this scenario, return -EFAULT to userspace.
+> >>>                */
+> >>
+> >> Your comment is wrong.  Unfortunately the code is completly
+> >> non-obvious to me as well, and I have no idea why it is there.  This
+> >> little snippet came from Peter's suggested fix in:
+> >>
+> >> https://lkml.org/lkml/2011/6/6/368
+> >>
+> >> Sadly Peter's gone silent and I'm left wondering if he knew some
+> >> corner case that should return -EFAULT with a RO anonymous page or if
+> >> he _thought_ this was preventing RO MAP_PRIVATE mappings.  If it is
+> >> the latter then this block can be removed because it does NOT do that.
+> >>>> +           if (ro) {
+> >>>> +                   err = -EFAULT;
+> >>>> +                   goto out;
+> >>>> +           }
+> >>>> + 
+> > 
+> > Peter simply gets too much email.. anyway, the reason I put that there
+> > is that a RO Anon page will never change and is thus a little pointless
+> > to use for futex ops.
+> >
 > 
-> So in the generic case the entire file is data and there is a virtual hole at
-> the end.  That means we will just return i_size for SEEK_HOLE and will return
-> the same offset for SEEK_DATA.  This is how Solaris does it so we have to do it
-> the same way.
-> 
-> Thanks,
-> 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
-> ---
->  fs/read_write.c    |   37 +++++++++++++++++++++++++++++++++++++
->  include/linux/fs.h |    4 +++-
->  2 files changed, 40 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/read_write.c b/fs/read_write.c
-> index 5520f8a..d58551e 100644
-> --- a/fs/read_write.c
-> +++ b/fs/read_write.c
-> @@ -64,6 +64,23 @@ generic_file_llseek_unlocked(struct file *file, loff_t offset, int origin)
->  			return file->f_pos;
->  		offset += file->f_pos;
->  		break;
-> +	case SEEK_DATA:
-> +		/*
-> +		 * In the generic case the entire file is data, so as long as
-> +		 * offset isn't at the end of the file then the offset is data.
-> +		 */
-> +		if (offset >= inode->i_size)
-> +			return -ENXIO;
-> +		break;
-> +	case SEEK_HOLE:
-> +		/*
-> +		 * There is a virtual hole at the end of the file, so as long as
-> +		 * offset isn't i_size or larger, return i_size.
-> +		 */
-> +		if (offset >= inode->i_size)
-> +			return -ENXIO;
-> +		offset = inode->i_size;
-> +		break;
->  	}
->  
->  	if (offset < 0 && !unsigned_offsets(file))
-> @@ -141,6 +158,26 @@ loff_t default_llseek(struct file *file, loff_t offset, int origin)
->  				goto out;
->  			}
->  			offset += file->f_pos;
-> +			break;
-> +		case SEEK_DATA:
-> +			/*
-> +			 * In the generic case the entire file is data, so as
-> +			 * long as offset isn't at the end of the file then the
-> +			 * offset is data.
-> +			 */
-> +			if (offset >= inode->i_size)
-> +				return -ENXIO;
-> +			break;
-> +		case SEEK_HOLE:
-> +			/*
-> +			 * There is a virtual hole at the end of the file, so
-> +			 * as long as offset isn't i_size or larger, return
-> +			 * i_size.
-> +			 */
-> +			if (offset >= inode->i_size)
-> +				return -ENXIO;
-> +			offset = inode->i_size;
-> +			break;
+> Right, and that was the logic I was trying to document. Shawn, how is my
+> comment above wrong? A read-only anonymous page but itself doesn't imply
+> a COW, but it does it does in the context of this code from my reading.
 
-Hrm sorry I just noticed this doesn't compile.  I'll fix it up and
-resend along with the xfstest update that Andreas pointed out.  Thanks,
+All I can tell you is from my testing is a PROT_READ, MAP_PRIVATE
+page isn't an anonymous page. In other words.
 
-Josef
+futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE, fd, 0);
+rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, 0, 0, 0);
+
+Works just fine with my patch and does NOT return EFAULT.  Your
+comment indicates the opposite.
+
+--
+Shawn
+
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
+
