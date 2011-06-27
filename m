@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757455Ab1F0JCd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 05:02:33 -0400
-Received: from www.linutronix.de ([62.245.132.108]:54941 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756600Ab1F0JBF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 05:01:05 -0400
-Date: Mon, 27 Jun 2011 11:00:59 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        Andres Salomon <dilinger@queued.net>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [RFC PATCH] irq: add irq_domain translation infrastructure
-Message-ID: <20110627090059.GA31287@linutronix.de>
-References: <20110526065438.23444.69386.stgit@ponder>
+	id S1751466Ab1F0JLT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 05:11:19 -0400
+Received: from ozlabs.org ([203.10.76.45]:46222 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757442Ab1F0JJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 05:09:57 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Arnd Bergmann <arnd@arndb.de>, Jonas Bonn <jonas@southpole.se>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, monstr@monstr.eu, cmetcalf@tilera.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] modules: add default loader hook implementations
+In-Reply-To: <201106251508.50129.arnd@arndb.de>
+References: <1308987512-6583-1-git-send-email-jonas@southpole.se> <20110625100449.GA19097@elte.hu> <1308998367.6699.30.camel@localhost> <201106251508.50129.arnd@arndb.de>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Mon, 27 Jun 2011 18:37:53 +0930
+Message-ID: <87hb7b7ic6.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110526065438.23444.69386.stgit@ponder>
-X-Key-Id: 97C4700B
-X-Key-Fingerprint: 09E2 D1F3 9A3A FF13 C3D3  961C 0688 1C1E 97C4 700B
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Grant Likely | 2011-05-26 00:54:38 [-0600]:
-
->diff --git a/arch/x86/kernel/devicetree.c b/arch/x86/kernel/devicetree.c
->index 39645b6..9891cd4 100644
->--- a/arch/x86/kernel/devicetree.c
->+++ b/arch/x86/kernel/devicetree.c
->@@ -371,36 +321,49 @@ static struct of_ioapic_type of_ioapic_type[] =
-> 	},
-> };
+On Sat, 25 Jun 2011 15:08:49 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Saturday 25 June 2011, Jonas Bonn wrote:
+> > On Sat, 2011-06-25 at 12:04 +0200, Ingo Molnar wrote:
+> > > Also, and more importantly, don't we generally do such things via 
+> > > __weak aliases, because the result looks cleaner and needs no changes 
+> > > for architectures beyond the removal of the generic functions? We 
+> > > have excluded broken toolchains that miscompile/mislink __weak IIRC 
+> > > so __weak ought to work.
+> > 
+> > When we discussed this briefly yesterday, both Rusty and Arnd showed a
+> > preference for not using __weak aliases... I'll leave it to them to
+> > comment further.
+> > 
+> > The alternative patch that just provides __weak implementations for
+> > these hooks is much less invasive than the patch I sent, effectively
+> > touching only kernel/module.c
+> > 
+> > Let me know which is preferable.
 > 
->-static int ioapic_xlate(struct irq_domain *id, const u32 *intspec, u32 intsize,
->-			u32 *out_hwirq, u32 *out_type)
->+static int ioapic_dt_translate(struct irq_domain *domain,
->+				struct device_node *controller,
->+				const u32 *intspec, u32 intsize,
->+				irq_hw_number_t *out_hwirq, u32 *out_type)
-> {
->-	struct mp_ioapic_gsi *gsi_cfg;
-> 	struct io_apic_irq_attr attr;
-> 	struct of_ioapic_type *it;
-> 	u32 line, idx, type;
->+	int rc;
-> 
->-	if (intsize < 2)
->+	if (controller != domain->of_node)
-> 		return -EINVAL;
+> I don't care much either way, you would get my Ack for both solutions.
+> The __weak approach would definitely make a simpler patch, and the
+> patch you sent adds extra complexity because of the
+> asm_generic_moduleloader_hooks macro you used to avoid having to
+> change all other architectures.
 
-Is there a reason not havining the (controller != domain->of_node) check
-in irq_create_of_mapping()?
+I think you misread me.  If all else is equal, I dislike weak functions.
+But AFAICT the two standard mechanisms are #ifdef HAVE_ARCH and __weak.
+Inventing a third one is not going to be a win.
 
-Sebastian
+And given where we are, __weak seems the easier path than HAVE_ARCH.
+A followup patch to toss out the now-unneeded empty arch functions would
+be nice, too.
+
+Thanks,
+Rusty.
