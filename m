@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab1F0PFe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 11:05:34 -0400
-Received: from smtp-out-056.synserver.de ([212.40.185.56]:1095 "HELO
-	smtp-out-056.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752082Ab1F0PFZ (ORCPT
+	id S1752231Ab1F0PIX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:08:23 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:47487 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751312Ab1F0PIS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 11:05:25 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 21528
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Liam Girdwood <lrg@ti.com>
-Cc: alsa-devel@alsa-project.org, device-drivers-devel@blackfin.uclinux.org,
-        linux-kernel@vger.kernel.org, Mike Frysinger <vapier.adi@gmail.com>,
-        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3 3/3] Blackfin: bf537: Stamp: Register adav801 codec and ASoC machine driver
-Date: Mon, 27 Jun 2011 17:04:03 +0200
-Message-Id: <1309187043-30914-3-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1309187043-30914-1-git-send-email-lars@metafoo.de>
-References: <1309187043-30914-1-git-send-email-lars@metafoo.de>
+	Mon, 27 Jun 2011 11:08:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=tw3D5Drx/kz9nkbNOm/ny4rAP4MMuFYOAiL/zipDaXzXhMxPHpSaFL/Xi2DczH+CDG
+         irKIfwBESNzbgpoiyZpIZpq4OUOIdz6ZZU4drlpKnyqk89C1ZKqKiMnJMOlz8xW4VQbZ
+         qwTcVyFcmkAeL12lyisQNgzNpBVFOZYZWIvSw=
+Subject: Re: random(4) driver questions
+From: Sasha Levin <levinsasha928@gmail.com>
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Sandy Harris <sandyinchina@gmail.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110627145442.GA2729@thunk.org>
+References: <BANLkTinC7vfaRWf5TK9gJuQVtVwDkEQFcQ@mail.gmail.com>
+	 <20110627145442.GA2729@thunk.org>
+Content-Type: text/plain; charset="us-ascii"
+Date: Mon, 27 Jun 2011 11:08:13 -0400
+Message-ID: <1309187293.15376.3.camel@lappy>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is already an entry in the spi device table for the codec, but the
-modalias was wrong. Also the config symbol name for the codec is wrong, so this
-is fixed as well.
+On Mon, 2011-06-27 at 10:54 -0400, Ted Ts'o wrote:
+> > What happens to /dev/random when it runs on
+> > a virtual machine and all the things it relies on
+> > for entropy get virtualised away?
+> > 
+> > The server that the VM is hosted on will usually
+> > have plenty of entropy, often a hardware RNG.
+> > Is there an interface that makes that visible
+> > from the VM? Perhaps a virtual "hardware"
+> > RNG driven by /dev/urandom on the host?
+> 
+> Yes, paravirtualizing the random number generator would be a big help.
+> Probably what I would do is to periodically add entropy from the host
+> OS to the guest OS, via some paravirt channel.  This would add a new
+> "catastrophic reseeding", and if the virtual guest can mix in some
+> other unknown material, again that can only help.
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
----
- arch/blackfin/mach-bf537/boards/stamp.c |   19 ++++++++++++++++---
- 1 files changed, 16 insertions(+), 3 deletions(-)
+virtio has a 'virtio-rng' device which does just that.
 
-diff --git a/arch/blackfin/mach-bf537/boards/stamp.c b/arch/blackfin/mach-bf537/boards/stamp.c
-index 5d30566..198018e 100644
---- a/arch/blackfin/mach-bf537/boards/stamp.c
-+++ b/arch/blackfin/mach-bf537/boards/stamp.c
-@@ -1000,9 +1000,9 @@ static struct spi_board_info bfin_spi_board_info[] __initdata = {
- 	},
- #endif
- 
--#if defined(CONFIG_SND_BF5XX_SOC_ADAV80X) || defined(CONFIG_SND_BF5XX_SOC_ADAV80X_MODULE)
-+#if defined(CONFIG_SND_SOC_ADAV80X) || defined(CONFIG_SND_SOC_ADV80X_MODULE)
- 	{
--		.modalias = "adav80x",
-+		.modalias = "adav801",
- 		.max_speed_hz = 3125000,     /* max spi clock (SCK) speed in HZ */
- 		.bus_num = 0,
- 		.chip_select = 1,
-@@ -2118,7 +2118,7 @@ static struct i2c_board_info __initdata bfin_i2c_board_info[] = {
- 	},
- #endif
- 
--#if defined(CONFIG_SND_BF5XX_SOC_ADAV80X) || defined(CONFIG_SND_BF5XX_SOC_ADAV80X_MODULE)
-+#if defined(CONFIG_SND_SOC_ADAV80X) || defined(CONFIG_SND_SOC_ADAV80X_MODULE)
- 	{
- 		I2C_BOARD_INFO("adav803", 0x10),
- 	},
-@@ -2553,6 +2553,14 @@ static struct platform_device bfin_ad73311_codec_device = {
- };
- #endif
- 
-+#if defined(CONFIG_SND_SOC_BFIN_EVAL_ADAV80X) || \
-+	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAV80X_MODULE)
-+static struct platform_device bfin_eval_adav801_device = {
-+	.name = "bfin-eval-adav801",
-+	.id = -1,
-+};
-+#endif
-+
- #if defined(CONFIG_SND_BF5XX_SOC_I2S) || defined(CONFIG_SND_BF5XX_SOC_I2S_MODULE)
- static struct platform_device bfin_i2s = {
- 	.name = "bfin-i2s",
-@@ -2833,6 +2841,11 @@ static struct platform_device *stamp_devices[] __initdata = {
- 	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAU1701_MODULE)
- 	&bf5xx_adau1701_device,
- #endif
-+
-+#if defined(CONFIG_SND_SOC_BFIN_EVAL_ADAV80X) || \
-+	defined(CONFIG_SND_SOC_BFIN_EVAL_ADAV80X_MODULE)
-+	&bfin_eval_adav801_device,
-+#endif
- };
- 
- static int __init net2272_init(void)
 -- 
-1.7.2.5
+
+Sasha.
 
