@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756472Ab1F0FDR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 01:03:17 -0400
-Received: from mail.perches.com ([173.55.12.10]:3218 "EHLO mail.perches.com"
+	id S1756524Ab1F0FDZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 01:03:25 -0400
+Received: from mail.perches.com ([173.55.12.10]:3221 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755629Ab1F0FB5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 01:01:57 -0400
+	id S1756297Ab1F0FB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 01:01:59 -0400
 From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org, "Jan \"Yenya\" Kasprzak" <kas@fi.muni.cz>
+To: netdev@vger.kernel.org, Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 2/8] cosa: Update to current logging forms
-Date: Sun, 26 Jun 2011 22:01:29 -0700
-Message-Id: <61af65d0325575eea0bbd7af411e6ea29e1cc443.1309150684.git.joe@perches.com>
+Subject: [PATCH 3/8] cyclom: Update to current logging forms
+Date: Sun, 26 Jun 2011 22:01:30 -0700
+Message-Id: <300fe9f0e38fcdf63856f73ec86134085ea762c0.1309150684.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.rc1
 In-Reply-To: <cover.1309150683.git.joe@perches.com>
 References: <cover.1309150683.git.joe@perches.com>
@@ -23,676 +23,672 @@ Use pr_fmt, pr_<level> and netdev_<level> as appropriate.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/wan/cosa.c |  226 ++++++++++++++++++++++-------------------------
- 1 files changed, 106 insertions(+), 120 deletions(-)
+ drivers/net/wan/cycx_drv.c  |   81 +++++++++-----------
+ drivers/net/wan/cycx_main.c |   31 ++++----
+ drivers/net/wan/cycx_x25.c  |  177 ++++++++++++++++++++-----------------------
+ 3 files changed, 133 insertions(+), 156 deletions(-)
 
-diff --git a/drivers/net/wan/cosa.c b/drivers/net/wan/cosa.c
-index 6fb6f8e..6aed238 100644
---- a/drivers/net/wan/cosa.c
-+++ b/drivers/net/wan/cosa.c
-@@ -74,6 +74,8 @@
-  * The Sync PPP/Cisco HDLC layer (syncppp.c) ported to Linux by Alan Cox
-  */
+diff --git a/drivers/net/wan/cycx_drv.c b/drivers/net/wan/cycx_drv.c
+index 164c362..2a3ecae 100644
+--- a/drivers/net/wan/cycx_drv.c
++++ b/drivers/net/wan/cycx_drv.c
+@@ -48,6 +48,8 @@
+ * Aug  8, 1998	acme		Initial version.
+ */
  
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
+ #include <linux/init.h>		/* __init */
  #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
-@@ -361,14 +363,13 @@ static int __init cosa_init(void)
+ #include <linux/kernel.h>	/* printk(), and other useful stuff */
+@@ -81,10 +83,9 @@ static u16 checksum(u8 *buf, u32 len);
+ /* Global Data */
  
- 	if (cosa_major > 0) {
- 		if (register_chrdev(cosa_major, "cosa", &cosa_fops)) {
--			printk(KERN_WARNING "cosa: unable to get major %d\n",
--				cosa_major);
-+			pr_warn("unable to get major %d\n", cosa_major);
- 			err = -EIO;
- 			goto out;
+ /* private data */
+-static const char modname[] = "cycx_drv";
+ static const char fullname[] = "Cyclom 2X Support Module";
+-static const char copyright[] = "(c) 1998-2003 Arnaldo Carvalho de Melo "
+-			  "<acme@conectiva.com.br>";
++static const char copyright[] =
++	"(c) 1998-2003 Arnaldo Carvalho de Melo <acme@conectiva.com.br>";
+ 
+ /* Hardware configuration options.
+  * These are arrays of configuration options used by verification routines.
+@@ -110,8 +111,8 @@ static const long cycx_2x_irq_options[]  = { 7, 3, 5, 9, 10, 11, 12, 15 };
+ 
+ static int __init cycx_drv_init(void)
+ {
+-	printk(KERN_INFO "%s v%u.%u %s\n", fullname, MOD_VERSION, MOD_RELEASE,
+-			 copyright);
++	pr_info("%s v%u.%u %s\n",
++		fullname, MOD_VERSION, MOD_RELEASE, copyright);
+ 
+ 	return 0;
+ }
+@@ -139,18 +140,16 @@ int cycx_setup(struct cycx_hw *hw, void *cfm, u32 len, unsigned long dpmbase)
+ 
+ 	/* Verify IRQ configuration options */
+ 	if (!get_option_index(cycx_2x_irq_options, hw->irq)) {
+-		printk(KERN_ERR "%s: IRQ %d is invalid!\n", modname, hw->irq);
++		pr_err("IRQ %d is invalid!\n", hw->irq);
+ 		return -EINVAL;
+ 	}
+ 
+ 	/* Setup adapter dual-port memory window and test memory */
+ 	if (!dpmbase) {
+-		printk(KERN_ERR "%s: you must specify the dpm address!\n",
+-				modname);
++		pr_err("you must specify the dpm address!\n");
+  		return -EINVAL;
+ 	} else if (!get_option_index(cyc2x_dpmbase_options, dpmbase)) {
+-		printk(KERN_ERR "%s: memory address 0x%lX is invalid!\n",
+-				modname, dpmbase);
++		pr_err("memory address 0x%lX is invalid!\n", dpmbase);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -158,13 +157,12 @@ int cycx_setup(struct cycx_hw *hw, void *cfm, u32 len, unsigned long dpmbase)
+ 	hw->dpmsize = CYCX_WINDOWSIZE;
+ 
+ 	if (!detect_cyc2x(hw->dpmbase)) {
+-		printk(KERN_ERR "%s: adapter Cyclom 2X not found at "
+-				"address 0x%lX!\n", modname, dpmbase);
++		pr_err("adapter Cyclom 2X not found at address 0x%lX!\n",
++		       dpmbase);
+ 		return -EINVAL;
+ 	}
+ 
+-	printk(KERN_INFO "%s: found Cyclom 2X card at address 0x%lX.\n",
+-			 modname, dpmbase);
++	pr_info("found Cyclom 2X card at address 0x%lX\n", dpmbase);
+ 
+ 	/* Load firmware. If loader fails then shut down adapter */
+ 	err = load_cyc2x(hw, cfm, len);
+@@ -339,7 +337,7 @@ static int cycx_data_boot(void __iomem *addr, u8 *code, u32 len)
+ 	for (i = 0 ; i < len ; i += CFM_LOAD_BUFSZ)
+ 		if (buffer_load(addr, code + i,
+ 				min_t(u32, CFM_LOAD_BUFSZ, (len - i))) < 0) {
+-			printk(KERN_ERR "%s: Error !!\n", modname);
++			pr_err("Error !!\n");
+ 			return -1;
  		}
- 	} else {
- 		if (!(cosa_major=register_chrdev(0, "cosa", &cosa_fops))) {
--			printk(KERN_WARNING "cosa: unable to register chardev\n");
-+			pr_warn("unable to register chardev\n");
- 			err = -EIO;
- 			goto out;
+ 
+@@ -370,7 +368,7 @@ static int cycx_code_boot(void __iomem *addr, u8 *code, u32 len)
+ 	for (i = 0 ; i < len ; i += CFM_LOAD_BUFSZ)
+ 		if (buffer_load(addr, code + i,
+ 				min_t(u32, CFM_LOAD_BUFSZ, (len - i)))) {
+-			printk(KERN_ERR "%s: Error !!\n", modname);
++			pr_err("Error !!\n");
+ 			return -1;
  		}
-@@ -378,7 +379,7 @@ static int __init cosa_init(void)
- 	for (i=0; io[i] != 0 && i < MAX_CARDS; i++)
- 		cosa_probe(io[i], irq[i], dma[i]);
- 	if (!nr_cards) {
--		printk(KERN_WARNING "cosa: no devices found.\n");
-+		pr_warn("no devices found\n");
- 		unregister_chrdev(cosa_major, "cosa");
- 		err = -ENODEV;
+ 
+@@ -391,23 +389,20 @@ static int load_cyc2x(struct cycx_hw *hw, struct cycx_firmware *cfm, u32 len)
+ 	u16 cksum;
+ 
+ 	/* Announce */
+-	printk(KERN_INFO "%s: firmware signature=\"%s\"\n", modname,
+-							    cfm->signature);
++	pr_info("firmware signature=\"%s\"\n", cfm->signature);
+ 
+ 	/* Verify firmware signature */
+ 	if (strcmp(cfm->signature, CFM_SIGNATURE)) {
+-		printk(KERN_ERR "%s:load_cyc2x: not Cyclom-2X firmware!\n",
+-				modname);
++		pr_err("load_cyc2x: not Cyclom-2X firmware!\n");
+ 		return -EINVAL;
+ 	}
+ 
+-	printk(KERN_INFO "%s: firmware version=%u\n", modname, cfm->version);
++	pr_info("firmware version=%u\n", cfm->version);
+ 
+ 	/* Verify firmware module format version */
+ 	if (cfm->version != CFM_VERSION) {
+-		printk(KERN_ERR "%s:%s: firmware format %u rejected! "
+-				"Expecting %u.\n",
+-				modname, __func__, cfm->version, CFM_VERSION);
++		pr_err("%s: firmware format %u rejected! Expecting %u.\n",
++		       __func__, cfm->version, CFM_VERSION);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -419,23 +414,22 @@ static int load_cyc2x(struct cycx_hw *hw, struct cycx_firmware *cfm, u32 len)
+ 	if (((len - sizeof(struct cycx_firmware) - 1) != cfm->info.codesize) ||
+ */
+ 	if (cksum != cfm->checksum) {
+-		printk(KERN_ERR "%s:%s: firmware corrupted!\n",
+-				modname, __func__);
+-		printk(KERN_ERR " cdsize = 0x%x (expected 0x%lx)\n",
+-				len - (int)sizeof(struct cycx_firmware) - 1,
+-				cfm->info.codesize);
+-		printk(KERN_ERR " chksum = 0x%x (expected 0x%x)\n",
+-				cksum, cfm->checksum);
++		pr_err("%s: firmware corrupted!\n", __func__);
++		pr_err(" cdsize = 0x%x (expected 0x%lx)\n",
++		       len - (int)sizeof(struct cycx_firmware) - 1,
++		       cfm->info.codesize);
++		pr_err(" chksum = 0x%x (expected 0x%x)\n",
++		       cksum, cfm->checksum);
+ 		return -EINVAL;
+ 	}
+ 
+ 	/* If everything is ok, set reset, data and code pointers */
+ 	img_hdr = (struct cycx_fw_header *)&cfm->image;
+ #ifdef FIRMWARE_DEBUG
+-	printk(KERN_INFO "%s:%s: image sizes\n", __func__, modname);
+-	printk(KERN_INFO " reset=%lu\n", img_hdr->reset_size);
+-	printk(KERN_INFO "  data=%lu\n", img_hdr->data_size);
+-	printk(KERN_INFO "  code=%lu\n", img_hdr->code_size);
++	pr_info("%s: image sizes\n", __func__);
++	pr_info(" reset=%lu\n", img_hdr->reset_size);
++	pr_info("  data=%lu\n", img_hdr->data_size);
++	pr_info("  code=%lu\n", img_hdr->code_size);
+ #endif
+ 	reset_image = ((u8 *)img_hdr) + sizeof(struct cycx_fw_header);
+ 	data_image = reset_image + img_hdr->reset_size;
+@@ -443,15 +437,14 @@ static int load_cyc2x(struct cycx_hw *hw, struct cycx_firmware *cfm, u32 len)
+ 
+ 	/*---- Start load ----*/
+ 	/* Announce */
+-	printk(KERN_INFO "%s: loading firmware %s (ID=%u)...\n", modname,
+-			 cfm->descr[0] ? cfm->descr : "unknown firmware",
+-			 cfm->info.codeid);
++	pr_info("loading firmware %s (ID=%u)...\n",
++		cfm->descr[0] ? cfm->descr : "unknown firmware",
++		cfm->info.codeid);
+ 
+ 	for (i = 0 ; i < 5 ; i++) {
+ 		/* Reset Cyclom hardware */
+ 		if (!reset_cyc2x(hw->dpmbase)) {
+-			printk(KERN_ERR "%s: dpm problem or board not found\n",
+-					modname);
++			pr_err("dpm problem or board not found\n");
+ 			return -EINVAL;
+ 		}
+ 
+@@ -468,19 +461,19 @@ static int load_cyc2x(struct cycx_hw *hw, struct cycx_firmware *cfm, u32 len)
+ 				msleep_interruptible(1 * 1000);
+ 	}
+ 
+-	printk(KERN_ERR "%s: reset not started.\n", modname);
++	pr_err("reset not started\n");
+ 	return -EINVAL;
+ 
+ reset_loaded:
+ 	/* Load data.bin */
+ 	if (cycx_data_boot(hw->dpmbase, data_image, img_hdr->data_size)) {
+-		printk(KERN_ERR "%s: cannot load data file.\n", modname);
++		pr_err("cannot load data file\n");
+ 		return -EINVAL;
+ 	}
+ 
+ 	/* Load code.bin */
+ 	if (cycx_code_boot(hw->dpmbase, code_image, img_hdr->code_size)) {
+-		printk(KERN_ERR "%s: cannot load code file.\n", modname);
++		pr_err("cannot load code file\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -493,7 +486,7 @@ reset_loaded:
+ 	/* Arthur Ganzert's tip: wait a while after the firmware loading...
+ 	   seg abr 26 17:17:12 EST 1999 - acme */
+ 	msleep_interruptible(7 * 1000);
+-	printk(KERN_INFO "%s: firmware loaded!\n", modname);
++	pr_info("firmware loaded!\n");
+ 
+ 	/* enable interrupts */
+ 	cycx_inten(hw);
+diff --git a/drivers/net/wan/cycx_main.c b/drivers/net/wan/cycx_main.c
+index a0976d1..81fbbad 100644
+--- a/drivers/net/wan/cycx_main.c
++++ b/drivers/net/wan/cycx_main.c
+@@ -40,6 +40,8 @@
+ * 1998/08/08	acme		Initial version.
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/stddef.h>	/* offsetof(), etc. */
+ #include <linux/errno.h>	/* return codes */
+ #include <linux/string.h>	/* inline memset(), etc. */
+@@ -107,7 +109,7 @@ static int __init cycx_init(void)
+ {
+ 	int cnt, err = -ENOMEM;
+ 
+-	printk(KERN_INFO "%s v%u.%u %s\n",
++	pr_info("%s v%u.%u %s\n",
+ 		cycx_fullname, CYCX_DRV_VERSION, CYCX_DRV_RELEASE,
+ 		cycx_copyright);
+ 
+@@ -133,9 +135,8 @@ static int __init cycx_init(void)
+ 		err = register_wan_device(wandev);
+ 
+ 		if (err) {
+-			printk(KERN_ERR "%s: %s registration failed with "
+-					"error %d!\n",
+-					cycx_drvname, card->devname, err);
++			pr_err("%s registration failed with error %d!\n",
++			       card->devname, err);
+ 			break;
+ 		}
+ 	}
+@@ -198,14 +199,13 @@ static int cycx_wan_setup(struct wan_device *wandev, wandev_conf_t *conf)
+ 
+ 	rc = -EINVAL;
+ 	if (!conf->data_size || !conf->data) {
+-		printk(KERN_ERR "%s: firmware not found in configuration "
+-				"data!\n", wandev->name);
++		pr_err("%s: firmware not found in configuration data!\n",
++		       wandev->name);
  		goto out;
-@@ -447,26 +448,25 @@ static int cosa_probe(int base, int irq, int dma)
- 	/* Checking validity of parameters: */
- 	/* IRQ should be 2-7 or 10-15; negative IRQ means autoprobe */
- 	if ((irq >= 0  && irq < 2) || irq > 15 || (irq < 10 && irq > 7)) {
--		printk (KERN_INFO "cosa_probe: invalid IRQ %d\n", irq);
-+		pr_info("invalid IRQ %d\n", irq);
- 		return -1;
- 	}
- 	/* I/O address should be between 0x100 and 0x3ff and should be
- 	 * multiple of 8. */
- 	if (base < 0x100 || base > 0x3ff || base & 0x7) {
--		printk (KERN_INFO "cosa_probe: invalid I/O address 0x%x\n",
--			base);
-+		pr_info("invalid I/O address 0x%x\n", base);
- 		return -1;
- 	}
- 	/* DMA should be 0,1 or 3-7 */
- 	if (dma < 0 || dma == 4 || dma > 7) {
--		printk (KERN_INFO "cosa_probe: invalid DMA %d\n", dma);
-+		pr_info("invalid DMA %d\n", dma);
- 		return -1;
- 	}
- 	/* and finally, on 16-bit COSA DMA should be 4-7 and 
- 	 * I/O base should not be multiple of 0x10 */
- 	if (((base & 0x8) && dma < 4) || (!(base & 0x8) && dma > 3)) {
--		printk (KERN_INFO "cosa_probe: 8/16 bit base and DMA mismatch"
--			" (base=0x%x, dma=%d)\n", base, dma);
-+		pr_info("8/16 bit base and DMA mismatch (base=0x%x, dma=%d)\n",
-+			base, dma);
- 		return -1;
  	}
  
-@@ -479,7 +479,7 @@ static int cosa_probe(int base, int irq, int dma)
- 		return -1;
- 	
- 	if (cosa_reset_and_read_id(cosa, cosa->id_string) < 0) {
--		printk(KERN_DEBUG "cosa: probe at 0x%x failed.\n", base);
-+		printk(KERN_DEBUG "probe at 0x%x failed.\n", base);
- 		err = -1;
- 		goto err_out;
- 	}
-@@ -492,8 +492,7 @@ static int cosa_probe(int base, int irq, int dma)
- 	else {
- /* Print a warning only if we are not autoprobing */
- #ifndef COSA_ISA_AUTOPROBE
--		printk(KERN_INFO "cosa: valid signature not found at 0x%x.\n",
--			base);
-+		pr_info("valid signature not found at 0x%x\n", base);
- #endif
- 		err = -1;
- 		goto err_out;
-@@ -501,14 +500,14 @@ static int cosa_probe(int base, int irq, int dma)
- 	/* Update the name of the region now we know the type of card */ 
- 	release_region(base, is_8bit(cosa)?2:4);
- 	if (!request_region(base, is_8bit(cosa)?2:4, cosa->type)) {
--		printk(KERN_DEBUG "cosa: changing name at 0x%x failed.\n", base);
-+		printk(KERN_DEBUG "changing name at 0x%x failed.\n", base);
- 		return -1;
+ 	if (conf->irq <= 0) {
+-		printk(KERN_ERR "%s: can't configure without IRQ!\n",
+-				wandev->name);
++		pr_err("%s: can't configure without IRQ!\n", wandev->name);
+ 		goto out;
  	}
  
- 	/* Now do IRQ autoprobe */
- 	if (irq < 0) {
- 		unsigned long irqs;
--/*		printk(KERN_INFO "IRQ autoprobe\n"); */
-+/*		pr_info("IRQ autoprobe\n"); */
- 		irqs = probe_irq_on();
- 		/* 
- 		 * Enable interrupt on tx buffer empty (it sure is) 
-@@ -526,13 +525,13 @@ static int cosa_probe(int base, int irq, int dma)
- 		cosa_getdata8(cosa);
+@@ -213,8 +213,7 @@ static int cycx_wan_setup(struct wan_device *wandev, wandev_conf_t *conf)
+ 	irq = conf->irq == 2 ? 9 : conf->irq;	/* IRQ2 -> IRQ9 */
  
- 		if (irq < 0) {
--			printk (KERN_INFO "cosa IRQ autoprobe: multiple interrupts obtained (%d, board at 0x%x)\n",
-+			pr_info("multiple interrupts obtained (%d, board at 0x%x)\n",
- 				irq, cosa->datareg);
- 			err = -1;
- 			goto err_out;
- 		}
- 		if (irq == 0) {
--			printk (KERN_INFO "cosa IRQ autoprobe: no interrupt obtained (board at 0x%x)\n",
-+			pr_info("no interrupt obtained (board at 0x%x)\n",
- 				cosa->datareg);
- 		/*	return -1; */
- 		}
-@@ -579,8 +578,7 @@ static int cosa_probe(int base, int irq, int dma)
- 
- 		/* Register the network interface */
- 		if (!(chan->netdev = alloc_hdlcdev(chan))) {
--			printk(KERN_WARNING "%s: alloc_hdlcdev failed.\n",
--			       chan->name);
-+			pr_warn("%s: alloc_hdlcdev failed\n", chan->name);
- 			goto err_hdlcdev;
- 		}
- 		dev_to_hdlc(chan->netdev)->attach = cosa_net_attach;
-@@ -591,14 +589,14 @@ static int cosa_probe(int base, int irq, int dma)
- 		chan->netdev->irq = chan->cosa->irq;
- 		chan->netdev->dma = chan->cosa->dma;
- 		if (register_hdlc_device(chan->netdev)) {
--			printk(KERN_WARNING "%s: register_hdlc_device()"
--			       " failed.\n", chan->netdev->name);
-+			netdev_warn(chan->netdev,
-+				    "register_hdlc_device() failed\n");
- 			free_netdev(chan->netdev);
- 			goto err_hdlcdev;
- 		}
+ 	if (request_irq(irq, cycx_isr, 0, wandev->name, card)) {
+-		printk(KERN_ERR "%s: can't reserve IRQ %d!\n",
+-				wandev->name, irq);
++		pr_err("%s: can't reserve IRQ %d!\n", wandev->name, irq);
+ 		goto out;
  	}
  
--	printk (KERN_INFO "cosa%d: %s (%s at 0x%x irq %d dma %d), %d channels\n",
-+	pr_info("cosa%d: %s (%s at 0x%x irq %d dma %d), %d channels\n",
- 		cosa->num, cosa->id_string, cosa->type,
- 		cosa->datareg, cosa->irq, cosa->dma, cosa->nchannels);
- 
-@@ -618,8 +616,7 @@ err_out1:
- 	free_irq(cosa->irq, cosa);
- err_out:
- 	release_region(cosa->datareg,is_8bit(cosa)?2:4);
--	printk(KERN_NOTICE "cosa%d: allocating resources failed\n",
--	       cosa->num);
-+	pr_notice("cosa%d: allocating resources failed\n", cosa->num);
- 	return err;
- }
- 
-@@ -641,14 +638,14 @@ static int cosa_net_open(struct net_device *dev)
- 	unsigned long flags;
- 
- 	if (!(chan->cosa->firmware_status & COSA_FW_START)) {
--		printk(KERN_NOTICE "%s: start the firmware first (status %d)\n",
--			chan->cosa->name, chan->cosa->firmware_status);
-+		pr_notice("%s: start the firmware first (status %d)\n",
-+			  chan->cosa->name, chan->cosa->firmware_status);
- 		return -EPERM;
- 	}
- 	spin_lock_irqsave(&chan->cosa->lock, flags);
- 	if (chan->usage != 0) {
--		printk(KERN_WARNING "%s: cosa_net_open called with usage count"
--		       " %d\n", chan->name, chan->usage);
-+		pr_warn("%s: cosa_net_open called with usage count %d\n",
-+			chan->name, chan->usage);
- 		spin_unlock_irqrestore(&chan->cosa->lock, flags);
- 		return -EBUSY;
- 	}
-@@ -736,8 +733,7 @@ static char *cosa_net_setup_rx(struct channel_data *chan, int size)
- 	kfree_skb(chan->rx_skb);
- 	chan->rx_skb = dev_alloc_skb(size);
- 	if (chan->rx_skb == NULL) {
--		printk(KERN_NOTICE "%s: Memory squeeze, dropping packet\n",
--			chan->name);
-+		pr_notice("%s: Memory squeeze, dropping packet\n", chan->name);
- 		chan->netdev->stats.rx_dropped++;
- 		return NULL;
- 	}
-@@ -748,8 +744,7 @@ static char *cosa_net_setup_rx(struct channel_data *chan, int size)
- static int cosa_net_rx_done(struct channel_data *chan)
- {
- 	if (!chan->rx_skb) {
--		printk(KERN_WARNING "%s: rx_done with empty skb!\n",
--			chan->name);
-+		pr_warn("%s: rx_done with empty skb!\n", chan->name);
- 		chan->netdev->stats.rx_errors++;
- 		chan->netdev->stats.rx_frame_errors++;
- 		return 0;
-@@ -768,8 +763,7 @@ static int cosa_net_rx_done(struct channel_data *chan)
- static int cosa_net_tx_done(struct channel_data *chan, int size)
- {
- 	if (!chan->tx_skb) {
--		printk(KERN_WARNING "%s: tx_done with empty skb!\n",
--			chan->name);
-+		pr_warn("%s: tx_done with empty skb!\n", chan->name);
- 		chan->netdev->stats.tx_errors++;
- 		chan->netdev->stats.tx_aborted_errors++;
- 		return 1;
-@@ -794,15 +788,15 @@ static ssize_t cosa_read(struct file *file,
- 	char *kbuf;
- 
- 	if (!(cosa->firmware_status & COSA_FW_START)) {
--		printk(KERN_NOTICE "%s: start the firmware first (status %d)\n",
--			cosa->name, cosa->firmware_status);
-+		pr_notice("%s: start the firmware first (status %d)\n",
-+			  cosa->name, cosa->firmware_status);
- 		return -EPERM;
- 	}
- 	if (mutex_lock_interruptible(&chan->rlock))
- 		return -ERESTARTSYS;
- 	
- 	if ((chan->rxdata = kmalloc(COSA_MTU, GFP_DMA|GFP_KERNEL)) == NULL) {
--		printk(KERN_INFO "%s: cosa_read() - OOM\n", cosa->name);
-+		pr_info("%s: cosa_read() - OOM\n", cosa->name);
- 		mutex_unlock(&chan->rlock);
- 		return -ENOMEM;
- 	}
-@@ -869,8 +863,8 @@ static ssize_t cosa_write(struct file *file,
- 	char *kbuf;
- 
- 	if (!(cosa->firmware_status & COSA_FW_START)) {
--		printk(KERN_NOTICE "%s: start the firmware first (status %d)\n",
--			cosa->name, cosa->firmware_status);
-+		pr_notice("%s: start the firmware first (status %d)\n",
-+			  cosa->name, cosa->firmware_status);
- 		return -EPERM;
- 	}
- 	if (down_interruptible(&chan->wsem))
-@@ -881,8 +875,8 @@ static ssize_t cosa_write(struct file *file,
- 	
- 	/* Allocate the buffer */
- 	if ((kbuf = kmalloc(count, GFP_KERNEL|GFP_DMA)) == NULL) {
--		printk(KERN_NOTICE "%s: cosa_write() OOM - dropping packet\n",
--			cosa->name);
-+		pr_notice("%s: cosa_write() OOM - dropping packet\n",
-+			  cosa->name);
- 		up(&chan->wsem);
- 		return -ENOMEM;
- 	}
-@@ -932,7 +926,7 @@ static int chrdev_tx_done(struct channel_data *chan, int size)
- 
- static unsigned int cosa_poll(struct file *file, poll_table *poll)
- {
--	printk(KERN_INFO "cosa_poll is here\n");
-+	pr_info("cosa_poll is here\n");
- 	return 0;
- }
- 
-@@ -1017,15 +1011,14 @@ static inline int cosa_reset(struct cosa_data *cosa)
- {
- 	char idstring[COSA_MAX_ID_STRING];
- 	if (cosa->usage > 1)
--		printk(KERN_INFO "cosa%d: WARNING: reset requested with cosa->usage > 1 (%d). Odd things may happen.\n",
-+		pr_info("cosa%d: WARNING: reset requested with cosa->usage > 1 (%d). Odd things may happen.\n",
- 			cosa->num, cosa->usage);
- 	cosa->firmware_status &= ~(COSA_FW_RESET|COSA_FW_START);
- 	if (cosa_reset_and_read_id(cosa, idstring) < 0) {
--		printk(KERN_NOTICE "cosa%d: reset failed\n", cosa->num);
-+		pr_notice("cosa%d: reset failed\n", cosa->num);
- 		return -EIO;
- 	}
--	printk(KERN_INFO "cosa%d: resetting device: %s\n", cosa->num,
--		idstring);
-+	pr_info("cosa%d: resetting device: %s\n", cosa->num, idstring);
- 	cosa->firmware_status |= COSA_FW_RESET;
- 	return 0;
- }
-@@ -1037,11 +1030,11 @@ static inline int cosa_download(struct cosa_data *cosa, void __user *arg)
- 	int i;
- 
- 	if (cosa->usage > 1)
--		printk(KERN_INFO "%s: WARNING: download of microcode requested with cosa->usage > 1 (%d). Odd things may happen.\n",
-+		pr_info("%s: WARNING: download of microcode requested with cosa->usage > 1 (%d). Odd things may happen.\n",
- 			cosa->name, cosa->usage);
- 	if (!(cosa->firmware_status & COSA_FW_RESET)) {
--		printk(KERN_NOTICE "%s: reset the card first (status %d).\n",
--			cosa->name, cosa->firmware_status);
-+		pr_notice("%s: reset the card first (status %d)\n",
-+			  cosa->name, cosa->firmware_status);
- 		return -EPERM;
- 	}
- 	
-@@ -1059,11 +1052,11 @@ static inline int cosa_download(struct cosa_data *cosa, void __user *arg)
- 
- 	i = download(cosa, d.code, d.len, d.addr);
- 	if (i < 0) {
--		printk(KERN_NOTICE "cosa%d: microcode download failed: %d\n",
--			cosa->num, i);
-+		pr_notice("cosa%d: microcode download failed: %d\n",
-+			  cosa->num, i);
- 		return -EIO;
- 	}
--	printk(KERN_INFO "cosa%d: downloading microcode - 0x%04x bytes at 0x%04x\n",
-+	pr_info("cosa%d: downloading microcode - 0x%04x bytes at 0x%04x\n",
- 		cosa->num, d.len, d.addr);
- 	cosa->firmware_status |= COSA_FW_RESET|COSA_FW_DOWNLOAD;
- 	return 0;
-@@ -1076,12 +1069,11 @@ static inline int cosa_readmem(struct cosa_data *cosa, void __user *arg)
- 	int i;
- 
- 	if (cosa->usage > 1)
--		printk(KERN_INFO "cosa%d: WARNING: readmem requested with "
--			"cosa->usage > 1 (%d). Odd things may happen.\n",
-+		pr_info("cosa%d: WARNING: readmem requested with cosa->usage > 1 (%d). Odd things may happen.\n",
- 			cosa->num, cosa->usage);
- 	if (!(cosa->firmware_status & COSA_FW_RESET)) {
--		printk(KERN_NOTICE "%s: reset the card first (status %d).\n",
--			cosa->name, cosa->firmware_status);
-+		pr_notice("%s: reset the card first (status %d)\n",
-+			  cosa->name, cosa->firmware_status);
- 		return -EPERM;
- 	}
- 
-@@ -1093,11 +1085,10 @@ static inline int cosa_readmem(struct cosa_data *cosa, void __user *arg)
- 
- 	i = readmem(cosa, d.code, d.len, d.addr);
- 	if (i < 0) {
--		printk(KERN_NOTICE "cosa%d: reading memory failed: %d\n",
--			cosa->num, i);
-+		pr_notice("cosa%d: reading memory failed: %d\n", cosa->num, i);
- 		return -EIO;
- 	}
--	printk(KERN_INFO "cosa%d: reading card memory - 0x%04x bytes at 0x%04x\n",
-+	pr_info("cosa%d: reading card memory - 0x%04x bytes at 0x%04x\n",
- 		cosa->num, d.len, d.addr);
- 	cosa->firmware_status |= COSA_FW_RESET;
- 	return 0;
-@@ -1109,23 +1100,22 @@ static inline int cosa_start(struct cosa_data *cosa, int address)
- 	int i;
- 
- 	if (cosa->usage > 1)
--		printk(KERN_INFO "cosa%d: WARNING: start microcode requested with cosa->usage > 1 (%d). Odd things may happen.\n",
-+		pr_info("cosa%d: WARNING: start microcode requested with cosa->usage > 1 (%d). Odd things may happen.\n",
- 			cosa->num, cosa->usage);
- 
- 	if ((cosa->firmware_status & (COSA_FW_RESET|COSA_FW_DOWNLOAD))
- 		!= (COSA_FW_RESET|COSA_FW_DOWNLOAD)) {
--		printk(KERN_NOTICE "%s: download the microcode and/or reset the card first (status %d).\n",
--			cosa->name, cosa->firmware_status);
-+		pr_notice("%s: download the microcode and/or reset the card first (status %d)\n",
-+			  cosa->name, cosa->firmware_status);
- 		return -EPERM;
- 	}
- 	cosa->firmware_status &= ~COSA_FW_RESET;
- 	if ((i=startmicrocode(cosa, address)) < 0) {
--		printk(KERN_NOTICE "cosa%d: start microcode at 0x%04x failed: %d\n",
--			cosa->num, address, i);
-+		pr_notice("cosa%d: start microcode at 0x%04x failed: %d\n",
-+			  cosa->num, address, i);
- 		return -EIO;
- 	}
--	printk(KERN_INFO "cosa%d: starting microcode at 0x%04x\n",
--		cosa->num, address);
-+	pr_info("cosa%d: starting microcode at 0x%04x\n", cosa->num, address);
- 	cosa->startaddr = address;
- 	cosa->firmware_status |= COSA_FW_START;
- 	return 0;
-@@ -1255,11 +1245,11 @@ static int cosa_start_tx(struct channel_data *chan, char *buf, int len)
- #ifdef DEBUG_DATA
- 	int i;
- 
--	printk(KERN_INFO "cosa%dc%d: starting tx(0x%x)", chan->cosa->num,
--		chan->num, len);
-+	pr_info("cosa%dc%d: starting tx(0x%x)",
-+		chan->cosa->num, chan->num, len);
- 	for (i=0; i<len; i++)
--		printk(" %02x", buf[i]&0xff);
--	printk("\n");
-+		pr_cont(" %02x", buf[i]&0xff);
-+	pr_cont("\n");
- #endif
- 	spin_lock_irqsave(&cosa->lock, flags);
- 	chan->txbuf = buf;
-@@ -1353,7 +1343,7 @@ static void cosa_kick(struct cosa_data *cosa)
- 	if (test_bit(TXBIT, &cosa->rxtx))
- 		s = "TX DMA";
- 
--	printk(KERN_INFO "%s: %s timeout - restarting.\n", cosa->name, s); 
-+	pr_info("%s: %s timeout - restarting\n", cosa->name, s);
- 	spin_lock_irqsave(&cosa->lock, flags);
- 	cosa->rxtx = 0;
- 
-@@ -1387,7 +1377,7 @@ static int cosa_dma_able(struct channel_data *chan, char *buf, int len)
- 		return 0;
- 	if ((b^ (b+len)) & 0x10000) {
- 		if (count++ < 5)
--			printk(KERN_INFO "%s: packet spanning a 64k boundary\n",
-+			pr_info("%s: packet spanning a 64k boundary\n",
- 				chan->name);
- 		return 0;
- 	}
-@@ -1498,8 +1488,7 @@ static int readmem(struct cosa_data *cosa, char __user *microcode, int length, i
- 		char c;
- 		int i;
- 		if ((i=get_wait_data(cosa)) == -1) {
--			printk (KERN_INFO "cosa: 0x%04x bytes remaining\n",
--				length);
-+			pr_info("0x%04x bytes remaining\n", length);
- 			return -11;
- 		}
- 		c=i;
-@@ -1582,14 +1571,15 @@ static int get_wait_data(struct cosa_data *cosa)
- 			short r;
- 			r = cosa_getdata8(cosa);
- #if 0
--			printk(KERN_INFO "cosa: get_wait_data returning after %d retries\n", 999-retries);
-+			pr_info("get_wait_data returning after %d retries\n",
-+				999-retries);
- #endif
- 			return r;
- 		}
- 		/* sleep if not ready to read */
- 		schedule_timeout_interruptible(1);
- 	}
--	printk(KERN_INFO "cosa: timeout in get_wait_data (status 0x%x)\n",
-+	pr_info("timeout in get_wait_data (status 0x%x)\n",
- 		cosa_getstatus(cosa));
- 	return -1;
- }
-@@ -1607,7 +1597,7 @@ static int put_wait_data(struct cosa_data *cosa, int data)
- 		if (cosa_getstatus(cosa) & SR_TX_RDY) {
- 			cosa_putdata8(cosa, data);
- #if 0
--			printk(KERN_INFO "Putdata: %d retries\n", 999-retries);
-+			pr_info("Putdata: %d retries\n", 999-retries);
- #endif
- 			return 0;
- 		}
-@@ -1616,7 +1606,7 @@ static int put_wait_data(struct cosa_data *cosa, int data)
- 		schedule_timeout_interruptible(1);
- #endif
- 	}
--	printk(KERN_INFO "cosa%d: timeout in put_wait_data (status 0x%x)\n",
-+	pr_info("cosa%d: timeout in put_wait_data (status 0x%x)\n",
- 		cosa->num, cosa_getstatus(cosa));
- 	return -1;
- }
-@@ -1636,13 +1626,13 @@ static int puthexnumber(struct cosa_data *cosa, int number)
- 	sprintf(temp, "%04X", number);
- 	for (i=0; i<4; i++) {
- 		if (put_wait_data(cosa, temp[i]) == -1) {
--			printk(KERN_NOTICE "cosa%d: puthexnumber failed to write byte %d\n",
--				cosa->num, i);
-+			pr_notice("cosa%d: puthexnumber failed to write byte %d\n",
-+				  cosa->num, i);
- 			return -1-2*i;
- 		}
- 		if (get_wait_data(cosa) != temp[i]) {
--			printk(KERN_NOTICE "cosa%d: puthexhumber failed to read echo of byte %d\n",
--				cosa->num, i);
-+			pr_notice("cosa%d: puthexhumber failed to read echo of byte %d\n",
-+				  cosa->num, i);
- 			return -2-2*i;
- 		}
- 	}
-@@ -1687,8 +1677,7 @@ static inline void tx_interrupt(struct cosa_data *cosa, int status)
- {
- 	unsigned long flags, flags1;
- #ifdef DEBUG_IRQS
--	printk(KERN_INFO "cosa%d: SR_DOWN_REQUEST status=0x%04x\n",
--		cosa->num, status);
-+	pr_info("cosa%d: SR_DOWN_REQUEST status=0x%04x\n", cosa->num, status);
- #endif
- 	spin_lock_irqsave(&cosa->lock, flags);
- 	set_bit(TXBIT, &cosa->rxtx);
-@@ -1696,8 +1685,7 @@ static inline void tx_interrupt(struct cosa_data *cosa, int status)
- 		/* flow control, see the comment above */
- 		int i=0;
- 		if (!cosa->txbitmap) {
--			printk(KERN_WARNING "%s: No channel wants data "
--				"in TX IRQ. Expect DMA timeout.",
-+			pr_warn("%s: No channel wants data in TX IRQ. Expect DMA timeout.\n",
- 				cosa->name);
- 			put_driver_status_nolock(cosa);
- 			clear_bit(TXBIT, &cosa->rxtx);
-@@ -1780,14 +1768,14 @@ static inline void tx_interrupt(struct cosa_data *cosa, int status)
- 	if (cosa->busmaster) {
- 		unsigned long addr = virt_to_bus(cosa->txbuf);
- 		int count=0;
--		printk(KERN_INFO "busmaster IRQ\n");
-+		pr_info("busmaster IRQ\n");
- 		while (!(cosa_getstatus(cosa)&SR_TX_RDY)) {
- 			count++;
- 			udelay(10);
- 			if (count > 1000) break;
- 		}
--		printk(KERN_INFO "status %x\n", cosa_getstatus(cosa));
--		printk(KERN_INFO "ready after %d loops\n", count);
-+		pr_info("status %x\n", cosa_getstatus(cosa));
-+		pr_info("ready after %d loops\n", count);
- 		cosa_putdata16(cosa, (addr >> 16)&0xffff);
- 
- 		count = 0;
-@@ -1796,7 +1784,7 @@ static inline void tx_interrupt(struct cosa_data *cosa, int status)
- 			if (count > 1000) break;
- 			udelay(10);
- 		}
--		printk(KERN_INFO "ready after %d loops\n", count);
-+		pr_info("ready after %d loops\n", count);
- 		cosa_putdata16(cosa, addr &0xffff);
- 		flags1 = claim_dma_lock();
- 		set_dma_mode(cosa->dma, DMA_MODE_CASCADE);
-@@ -1824,7 +1812,7 @@ static inline void rx_interrupt(struct cosa_data *cosa, int status)
- {
- 	unsigned long flags;
- #ifdef DEBUG_IRQS
--	printk(KERN_INFO "cosa%d: SR_UP_REQUEST\n", cosa->num);
-+	pr_info("cosa%d: SR_UP_REQUEST\n", cosa->num);
- #endif
- 
- 	spin_lock_irqsave(&cosa->lock, flags);
-@@ -1847,7 +1835,7 @@ static inline void rx_interrupt(struct cosa_data *cosa, int status)
- 			debug_data_in(cosa, cosa->rxsize & 0xff);
- #endif
- #if 0
--			printk(KERN_INFO "cosa%d: receive rxsize = (0x%04x).\n",
-+			pr_info("cosa%d: receive rxsize = (0x%04x)\n",
- 				cosa->num, cosa->rxsize);
- #endif
- 		}
-@@ -1857,12 +1845,12 @@ static inline void rx_interrupt(struct cosa_data *cosa, int status)
- 		debug_data_in(cosa, cosa->rxsize);
- #endif
- #if 0
--		printk(KERN_INFO "cosa%d: receive rxsize = (0x%04x).\n",
-+		pr_info("cosa%d: receive rxsize = (0x%04x)\n",
- 			cosa->num, cosa->rxsize);
- #endif
- 	}
- 	if (((cosa->rxsize & 0xe000) >> 13) >= cosa->nchannels) {
--		printk(KERN_WARNING "%s: rx for unknown channel (0x%04x)\n",
-+		pr_warn("%s: rx for unknown channel (0x%04x)\n",
- 			cosa->name, cosa->rxsize);
- 		spin_unlock_irqrestore(&cosa->lock, flags);
- 		goto reject;
-@@ -1877,7 +1865,7 @@ static inline void rx_interrupt(struct cosa_data *cosa, int status)
- 
- 	if (!cosa->rxbuf) {
- reject:		/* Reject the packet */
--		printk(KERN_INFO "cosa%d: rejecting packet on channel %d\n",
-+		pr_info("cosa%d: rejecting packet on channel %d\n",
- 			cosa->num, cosa->rxchan->num);
- 		cosa->rxbuf = cosa->bouncebuf;
- 	}
-@@ -1924,11 +1912,11 @@ static inline void eot_interrupt(struct cosa_data *cosa, int status)
- #ifdef DEBUG_DATA
- 	{
- 		int i;
--		printk(KERN_INFO "cosa%dc%d: done rx(0x%x)", cosa->num, 
--			cosa->rxchan->num, cosa->rxsize);
-+		pr_info("cosa%dc%d: done rx(0x%x)",
-+			cosa->num, cosa->rxchan->num, cosa->rxsize);
- 		for (i=0; i<cosa->rxsize; i++)
--			printk (" %02x", cosa->rxbuf[i]&0xff);
--		printk("\n");
-+			pr_cont(" %02x", cosa->rxbuf[i]&0xff);
-+		pr_cont("\n");
- 	}
- #endif
- 		/* Packet for unknown channel? */
-@@ -1940,8 +1928,7 @@ static inline void eot_interrupt(struct cosa_data *cosa, int status)
- 			if (cosa->rxchan->rx_done(cosa->rxchan))
- 				clear_bit(cosa->rxchan->num, &cosa->rxbitmap);
- 	} else {
--		printk(KERN_NOTICE "cosa%d: unexpected EOT interrupt\n",
--			cosa->num);
-+		pr_notice("cosa%d: unexpected EOT interrupt\n", cosa->num);
- 	}
- 	/*
- 	 * Clear the RXBIT, TXBIT and IRQBIT (the latest should be
-@@ -1963,8 +1950,7 @@ static irqreturn_t cosa_interrupt(int irq, void *cosa_)
- again:
- 	status = cosa_getstatus(cosa);
- #ifdef DEBUG_IRQS
--	printk(KERN_INFO "cosa%d: got IRQ, status 0x%02x\n", cosa->num,
--		status & 0xff);
-+	pr_info("cosa%d: got IRQ, status 0x%02x\n", cosa->num, status & 0xff);
- #endif
- #ifdef DEBUG_IO
- 	debug_status_in(cosa, status);
-@@ -1985,15 +1971,15 @@ again:
- 			udelay(100);
- 			goto again;
- 		}
--		printk(KERN_INFO "cosa%d: unknown status 0x%02x in IRQ after %d retries\n",
-+		pr_info("cosa%d: unknown status 0x%02x in IRQ after %d retries\n",
- 			cosa->num, status & 0xff, count);
- 	}
- #ifdef DEBUG_IRQS
- 	if (count)
--		printk(KERN_INFO "%s: %d-times got unknown status in IRQ\n",
-+		pr_info("%s: %d-times got unknown status in IRQ\n",
- 			cosa->name, count);
- 	else
--		printk(KERN_INFO "%s: returning from IRQ\n", cosa->name);
-+		pr_info("%s: returning from IRQ\n", cosa->name);
- #endif
- 	return IRQ_HANDLED;
- }
-@@ -2024,41 +2010,41 @@ static void debug_status_in(struct cosa_data *cosa, int status)
- 		s = "NO_REQ";
+@@ -246,8 +245,7 @@ static int cycx_wan_setup(struct wan_device *wandev, wandev_conf_t *conf)
  		break;
+ #endif
+ 	default:
+-		printk(KERN_ERR "%s: this firmware is not supported!\n",
+-				wandev->name);
++		pr_err("%s: this firmware is not supported!\n", wandev->name);
+ 		rc = -EINVAL;
  	}
--	printk(KERN_INFO "%s: IO: status -> 0x%02x (%s%s%s%s)\n",
-+	pr_info("%s: IO: status -> 0x%02x (%s%s%s%s)\n",
- 		cosa->name,
- 		status,
--		status & SR_USR_RQ ? "USR_RQ|":"",
--		status & SR_TX_RDY ? "TX_RDY|":"",
--		status & SR_RX_RDY ? "RX_RDY|":"",
-+		status & SR_USR_RQ ? "USR_RQ|" : "",
-+		status & SR_TX_RDY ? "TX_RDY|" : "",
-+		status & SR_RX_RDY ? "RX_RDY|" : "",
- 		s);
+ 
+@@ -288,8 +286,7 @@ static int cycx_wan_shutdown(struct wan_device *wandev)
+ 	card = wandev->private;
+ 	wandev->state = WAN_UNCONFIGURED;
+ 	cycx_down(&card->hw);
+-	printk(KERN_INFO "%s: irq %d being freed!\n", wandev->name,
+-			wandev->irq);
++	pr_info("%s: irq %d being freed!\n", wandev->name, wandev->irq);
+ 	free_irq(wandev->irq, card);
+ out:	return ret;
+ }
+@@ -308,8 +305,8 @@ static irqreturn_t cycx_isr(int irq, void *dev_id)
+ 		goto out;
+ 
+ 	if (card->in_isr) {
+-		printk(KERN_WARNING "%s: interrupt re-entrancy on IRQ %d!\n",
+-				    card->devname, card->wandev.irq);
++		pr_warn("%s: interrupt re-entrancy on IRQ %d!\n",
++			card->devname, card->wandev.irq);
+ 		goto out;
+ 	}
+ 
+@@ -337,7 +334,7 @@ void cycx_set_state(struct cycx_device *card, int state)
+ 			string_state = "disconnected!";
+ 			break;
+ 		}
+-		printk(KERN_INFO "%s: link %s\n", card->devname, string_state);
++		pr_info("%s: link %s\n", card->devname, string_state);
+ 		card->wandev.state = state;
+ 	}
+ 
+diff --git a/drivers/net/wan/cycx_x25.c b/drivers/net/wan/cycx_x25.c
+index cf9e15f..06f3f63 100644
+--- a/drivers/net/wan/cycx_x25.c
++++ b/drivers/net/wan/cycx_x25.c
+@@ -76,6 +76,8 @@
+ * 1998/08/08	acme		Initial version.
+ */
+ 
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #define CYCLOMX_X25_DEBUG 1
+ 
+ #include <linux/ctype.h>	/* isdigit() */
+@@ -230,8 +232,8 @@ int cycx_x25_wan_init(struct cycx_device *card, wandev_conf_t *conf)
+ 
+ 	/* Verify configuration ID */
+ 	if (conf->config_id != WANCONFIG_X25) {
+-		printk(KERN_INFO "%s: invalid configuration ID %u!\n",
+-				 card->devname, conf->config_id);
++		pr_info("%s: invalid configuration ID %u!\n",
++			card->devname, conf->config_id);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -374,8 +376,7 @@ static int cycx_wan_new_if(struct wan_device *wandev, struct net_device *dev,
+ 	int err = 0;
+ 
+ 	if (!conf->name[0] || strlen(conf->name) > WAN_IFNAME_SZ) {
+-		printk(KERN_INFO "%s: invalid interface name!\n",
+-		       card->devname);
++		pr_info("%s: invalid interface name!\n", card->devname);
+ 		return -EINVAL;
+ 	}
+ 
+@@ -398,8 +399,8 @@ static int cycx_wan_new_if(struct wan_device *wandev, struct net_device *dev,
+ 
+ 		if (len) {
+ 			if (len > WAN_ADDRESS_SZ) {
+-				printk(KERN_ERR "%s: %s local addr too long!\n",
+-						wandev->name, chan->name);
++				pr_err("%s: %s local addr too long!\n",
++				       wandev->name, chan->name);
+ 				err = -EINVAL;
+ 				goto error;
+ 			} else {
+@@ -429,15 +430,14 @@ static int cycx_wan_new_if(struct wan_device *wandev, struct net_device *dev,
+ 		if (lcn >= card->u.x.lo_pvc && lcn <= card->u.x.hi_pvc)
+ 			chan->lcn = lcn;
+ 		else {
+-			printk(KERN_ERR
+-				"%s: PVC %u is out of range on interface %s!\n",
+-				wandev->name, lcn, chan->name);
++			pr_err("%s: PVC %u is out of range on interface %s!\n",
++			       wandev->name, lcn, chan->name);
+ 			err = -EINVAL;
+ 			goto error;
+ 		}
+ 	} else {
+-		printk(KERN_ERR "%s: invalid media address on interface %s!\n",
+-				wandev->name, chan->name);
++		pr_err("%s: invalid media address on interface %s!\n",
++		       wandev->name, chan->name);
+ 		err = -EINVAL;
+ 		goto error;
+ 	}
+@@ -607,9 +607,8 @@ static netdev_tx_t cycx_netdevice_hard_start_xmit(struct sk_buff *skb,
+ 		++chan->ifstats.tx_dropped;
+ 	else if (chan->svc && chan->protocol &&
+ 		 chan->protocol != ntohs(skb->protocol)) {
+-		printk(KERN_INFO
+-		       "%s: unsupported Ethertype 0x%04X on interface %s!\n",
+-		       card->devname, ntohs(skb->protocol), dev->name);
++		pr_info("%s: unsupported Ethertype 0x%04X on interface %s!\n",
++			card->devname, ntohs(skb->protocol), dev->name);
+ 		++chan->ifstats.tx_errors;
+ 	} else if (chan->protocol == ETH_P_IP) {
+ 		switch (chan->state) {
+@@ -643,9 +642,8 @@ static netdev_tx_t cycx_netdevice_hard_start_xmit(struct sk_buff *skb,
+ 			cycx_x25_chan_disconnect(dev);
+ 			goto free_packet;
+ 	        default:
+-			printk(KERN_INFO
+-			       "%s: unknown %d x25-iface request on %s!\n",
+-			       card->devname, skb->data[0], dev->name);
++			pr_info("%s: unknown %d x25-iface request on %s!\n",
++				card->devname, skb->data[0], dev->name);
+ 			++chan->ifstats.tx_errors;
+ 			goto free_packet;
+ 		}
+@@ -746,8 +744,7 @@ static void cycx_x25_irq_tx(struct cycx_device *card, struct cycx_x25_cmd *cmd)
+ 		card->buff_int_mode_unbusy = 1;
+ 		netif_wake_queue(dev);
+ 	} else
+-		printk(KERN_ERR "%s:ackvc for inexistent lcn %d\n",
+-				 card->devname, lcn);
++		pr_err("%s:ackvc for inexistent lcn %d\n", card->devname, lcn);
  }
  
- static void debug_status_out(struct cosa_data *cosa, int status)
+ /* Receive interrupt handler.
+@@ -780,8 +777,8 @@ static void cycx_x25_irq_rx(struct cycx_device *card, struct cycx_x25_cmd *cmd)
+ 	dev = cycx_x25_get_dev_by_lcn(wandev, lcn);
+ 	if (!dev) {
+ 		/* Invalid channel, discard packet */
+-		printk(KERN_INFO "%s: receiving on orphaned LCN %d!\n",
+-				 card->devname, lcn);
++		pr_info("%s: receiving on orphaned LCN %d!\n",
++			card->devname, lcn);
+ 		return;
+ 	}
+ 
+@@ -802,8 +799,8 @@ static void cycx_x25_irq_rx(struct cycx_device *card, struct cycx_x25_cmd *cmd)
+ 		if ((skb = dev_alloc_skb((chan->protocol == ETH_P_X25 ? 1 : 0) +
+ 					 bufsize +
+ 					 dev->hard_header_len)) == NULL) {
+-			printk(KERN_INFO "%s: no socket buffers available!\n",
+-					 card->devname);
++			pr_info("%s: no socket buffers available!\n",
++				card->devname);
+ 			chan->drop_sequence = 1;
+ 			++chan->ifstats.rx_dropped;
+ 			return;
+@@ -826,8 +823,8 @@ static void cycx_x25_irq_rx(struct cycx_device *card, struct cycx_x25_cmd *cmd)
+ 		if (bitm)
+ 			chan->drop_sequence = 1;
+ 
+-		printk(KERN_INFO "%s: unexpectedly long packet sequence "
+-			"on interface %s!\n", card->devname, dev->name);
++		pr_info("%s: unexpectedly long packet sequence on interface %s!\n",
++			card->devname, dev->name);
+ 		++chan->ifstats.rx_length_errors;
+ 		return;
+ 	}
+@@ -880,8 +877,8 @@ static void cycx_x25_irq_connect(struct cycx_device *card,
+ 	dev = cycx_x25_get_dev_by_dte_addr(wandev, rem);
+ 	if (!dev) {
+ 		/* Invalid channel, discard packet */
+-		printk(KERN_INFO "%s: connect not expected: remote %s!\n",
+-				 card->devname, rem);
++		pr_info("%s: connect not expected: remote %s!\n",
++			card->devname, rem);
+ 		return;
+ 	}
+ 
+@@ -909,8 +906,8 @@ static void cycx_x25_irq_connect_confirm(struct cycx_device *card,
+ 	if (!dev) {
+ 		/* Invalid channel, discard packet */
+ 		clear_bit(--key, (void*)&card->u.x.connection_keys);
+-		printk(KERN_INFO "%s: connect confirm not expected: lcn %d, "
+-				 "key=%d!\n", card->devname, lcn, key);
++		pr_info("%s: connect confirm not expected: lcn %d, key=%d!\n",
++			card->devname, lcn, key);
+ 		return;
+ 	}
+ 
+@@ -934,8 +931,8 @@ static void cycx_x25_irq_disconnect_confirm(struct cycx_device *card,
+ 	dev = cycx_x25_get_dev_by_lcn(wandev, lcn);
+ 	if (!dev) {
+ 		/* Invalid channel, discard packet */
+-		printk(KERN_INFO "%s:disconnect confirm not expected!:lcn %d\n",
+-				 card->devname, lcn);
++		pr_info("%s:disconnect confirm not expected!:lcn %d\n",
++			card->devname, lcn);
+ 		return;
+ 	}
+ 
+@@ -980,13 +977,13 @@ static void cycx_x25_irq_log(struct cycx_device *card, struct cycx_x25_cmd *cmd)
+ 	cycx_peek(&card->hw, cmd->buf + 10 + toread, &code, 1);
+ 	cycx_peek(&card->hw, cmd->buf + 10 + toread + 1, &routine, 1);
+ 
+-	printk(KERN_INFO "cycx_x25_irq_handler: X25_LOG (0x4500) indic.:\n");
+-	printk(KERN_INFO "cmd->buf=0x%X\n", cmd->buf);
+-	printk(KERN_INFO "Log message code=0x%X\n", msg_code);
+-	printk(KERN_INFO "Link=%d\n", link);
+-	printk(KERN_INFO "log code=0x%X\n", code);
+-	printk(KERN_INFO "log routine=0x%X\n", routine);
+-	printk(KERN_INFO "Message size=%d\n", size);
++	pr_info("cycx_x25_irq_handler: X25_LOG (0x4500) indic.:\n");
++	pr_info("cmd->buf=0x%X\n", cmd->buf);
++	pr_info("Log message code=0x%X\n", msg_code);
++	pr_info("Link=%d\n", link);
++	pr_info("log code=0x%X\n", code);
++	pr_info("log routine=0x%X\n", routine);
++	pr_info("Message size=%d\n", size);
+ 	hex_dump("Message", bf, toread);
+ #endif
+ }
+@@ -1009,24 +1006,14 @@ static void cycx_x25_irq_stat(struct cycx_device *card,
+ static void cycx_x25_irq_spurious(struct cycx_device *card,
+ 				  struct cycx_x25_cmd *cmd)
  {
--	printk(KERN_INFO "%s: IO: status <- 0x%02x (%s%s%s%s%s%s)\n",
-+	pr_info("%s: IO: status <- 0x%02x (%s%s%s%s%s%s)\n",
- 		cosa->name,
- 		status,
--		status & SR_RX_DMA_ENA  ? "RXDMA|":"!rxdma|",
--		status & SR_TX_DMA_ENA  ? "TXDMA|":"!txdma|",
--		status & SR_RST         ? "RESET|":"",
--		status & SR_USR_INT_ENA ? "USRINT|":"!usrint|",
--		status & SR_TX_INT_ENA  ? "TXINT|":"!txint|",
--		status & SR_RX_INT_ENA  ? "RXINT":"!rxint");
-+		status & SR_RX_DMA_ENA  ? "RXDMA|"  : "!rxdma|",
-+		status & SR_TX_DMA_ENA  ? "TXDMA|"  : "!txdma|",
-+		status & SR_RST         ? "RESET|"  : "",
-+		status & SR_USR_INT_ENA ? "USRINT|" : "!usrint|",
-+		status & SR_TX_INT_ENA  ? "TXINT|"  : "!txint|",
-+		status & SR_RX_INT_ENA  ? "RXINT"   : "!rxint");
+-	printk(KERN_INFO "%s: spurious interrupt (0x%X)!\n",
+-			 card->devname, cmd->command);
++	pr_info("%s: spurious interrupt (0x%X)!\n",
++		card->devname, cmd->command);
+ }
+ #ifdef CYCLOMX_X25_DEBUG
+ static void hex_dump(char *msg, unsigned char *p, int len)
+ {
+-	unsigned char hex[1024],
+-	    	* phex = hex;
+-
+-	if (len >= (sizeof(hex) / 2))
+-		len = (sizeof(hex) / 2) - 1;
+-
+-	while (len--) {
+-		sprintf(phex, "%02x", *p++);
+-		phex += 2;
+-	}
+-
+-	printk(KERN_INFO "%s: %s\n", msg, hex);
++	print_hex_dump(KERN_INFO, msg, DUMP_PREFIX_OFFSET, 16, 1,
++		       p, len, true);
+ }
+ #endif
+ 
+@@ -1203,8 +1190,8 @@ static int x25_place_call(struct cycx_device *card,
+ 	u8 key;
+ 
+ 	if (card->u.x.connection_keys == ~0U) {
+-		printk(KERN_INFO "%s: too many simultaneous connection "
+-				 "requests!\n", card->devname);
++		pr_info("%s: too many simultaneous connection requests!\n",
++			card->devname);
+ 		return -EAGAIN;
+ 	}
+ 
+@@ -1381,8 +1368,8 @@ static void cycx_x25_chan_timer(unsigned long d)
+ 	if (chan->state == WAN_CONNECTED)
+ 		cycx_x25_chan_disconnect(dev);
+ 	else
+-		printk(KERN_ERR "%s: %s for svc (%s) not connected!\n",
+-				chan->card->devname, __func__, dev->name);
++		pr_err("%s: %s for svc (%s) not connected!\n",
++		       chan->card->devname, __func__, dev->name);
  }
  
- static void debug_data_in(struct cosa_data *cosa, int data)
+ /* Set logical channel state. */
+@@ -1433,8 +1420,8 @@ static void cycx_x25_set_chan_state(struct net_device *dev, u8 state)
+ 			break;
+ 		}
+ 
+-		printk(KERN_INFO "%s: interface %s %s\n", card->devname,
+-				  dev->name, string_state);
++		pr_info("%s: interface %s %s\n",
++			card->devname, dev->name, string_state);
+ 		chan->state = state;
+ 	}
+ 
+@@ -1488,7 +1475,7 @@ static void cycx_x25_chan_send_event(struct net_device *dev, u8 event)
+ 	unsigned char *ptr;
+ 
+ 	if ((skb = dev_alloc_skb(1)) == NULL) {
+-		printk(KERN_ERR "%s: out of memory\n", __func__);
++		pr_err("%s: out of memory\n", __func__);
+ 		return;
+ 	}
+ 
+@@ -1557,56 +1544,56 @@ static void reset_timer(struct net_device *dev)
+ #ifdef CYCLOMX_X25_DEBUG
+ static void cycx_x25_dump_config(struct cycx_x25_config *conf)
  {
--	printk(KERN_INFO "%s: IO: data -> 0x%04x\n", cosa->name, data);
-+	pr_info("%s: IO: data -> 0x%04x\n", cosa->name, data);
+-	printk(KERN_INFO "X.25 configuration\n");
+-	printk(KERN_INFO "-----------------\n");
+-	printk(KERN_INFO "link number=%d\n", conf->link);
+-	printk(KERN_INFO "line speed=%d\n", conf->speed);
+-	printk(KERN_INFO "clock=%sternal\n", conf->clock == 8 ? "Ex" : "In");
+-	printk(KERN_INFO "# level 2 retransm.=%d\n", conf->n2);
+-	printk(KERN_INFO "level 2 window=%d\n", conf->n2win);
+-	printk(KERN_INFO "level 3 window=%d\n", conf->n3win);
+-	printk(KERN_INFO "# logical channels=%d\n", conf->nvc);
+-	printk(KERN_INFO "level 3 pkt len=%d\n", conf->pktlen);
+-	printk(KERN_INFO "my address=%d\n", conf->locaddr);
+-	printk(KERN_INFO "remote address=%d\n", conf->remaddr);
+-	printk(KERN_INFO "t1=%d seconds\n", conf->t1);
+-	printk(KERN_INFO "t2=%d seconds\n", conf->t2);
+-	printk(KERN_INFO "t21=%d seconds\n", conf->t21);
+-	printk(KERN_INFO "# PVCs=%d\n", conf->npvc);
+-	printk(KERN_INFO "t23=%d seconds\n", conf->t23);
+-	printk(KERN_INFO "flags=0x%x\n", conf->flags);
++	pr_info("X.25 configuration\n");
++	pr_info("-----------------\n");
++	pr_info("link number=%d\n", conf->link);
++	pr_info("line speed=%d\n", conf->speed);
++	pr_info("clock=%sternal\n", conf->clock == 8 ? "Ex" : "In");
++	pr_info("# level 2 retransm.=%d\n", conf->n2);
++	pr_info("level 2 window=%d\n", conf->n2win);
++	pr_info("level 3 window=%d\n", conf->n3win);
++	pr_info("# logical channels=%d\n", conf->nvc);
++	pr_info("level 3 pkt len=%d\n", conf->pktlen);
++	pr_info("my address=%d\n", conf->locaddr);
++	pr_info("remote address=%d\n", conf->remaddr);
++	pr_info("t1=%d seconds\n", conf->t1);
++	pr_info("t2=%d seconds\n", conf->t2);
++	pr_info("t21=%d seconds\n", conf->t21);
++	pr_info("# PVCs=%d\n", conf->npvc);
++	pr_info("t23=%d seconds\n", conf->t23);
++	pr_info("flags=0x%x\n", conf->flags);
  }
  
- static void debug_data_out(struct cosa_data *cosa, int data)
+ static void cycx_x25_dump_stats(struct cycx_x25_stats *stats)
  {
--	printk(KERN_INFO "%s: IO: data <- 0x%04x\n", cosa->name, data);
-+	pr_info("%s: IO: data <- 0x%04x\n", cosa->name, data);
+-	printk(KERN_INFO "X.25 statistics\n");
+-	printk(KERN_INFO "--------------\n");
+-	printk(KERN_INFO "rx_crc_errors=%d\n", stats->rx_crc_errors);
+-	printk(KERN_INFO "rx_over_errors=%d\n", stats->rx_over_errors);
+-	printk(KERN_INFO "n2_tx_frames=%d\n", stats->n2_tx_frames);
+-	printk(KERN_INFO "n2_rx_frames=%d\n", stats->n2_rx_frames);
+-	printk(KERN_INFO "tx_timeouts=%d\n", stats->tx_timeouts);
+-	printk(KERN_INFO "rx_timeouts=%d\n", stats->rx_timeouts);
+-	printk(KERN_INFO "n3_tx_packets=%d\n", stats->n3_tx_packets);
+-	printk(KERN_INFO "n3_rx_packets=%d\n", stats->n3_rx_packets);
+-	printk(KERN_INFO "tx_aborts=%d\n", stats->tx_aborts);
+-	printk(KERN_INFO "rx_aborts=%d\n", stats->rx_aborts);
++	pr_info("X.25 statistics\n");
++	pr_info("--------------\n");
++	pr_info("rx_crc_errors=%d\n", stats->rx_crc_errors);
++	pr_info("rx_over_errors=%d\n", stats->rx_over_errors);
++	pr_info("n2_tx_frames=%d\n", stats->n2_tx_frames);
++	pr_info("n2_rx_frames=%d\n", stats->n2_rx_frames);
++	pr_info("tx_timeouts=%d\n", stats->tx_timeouts);
++	pr_info("rx_timeouts=%d\n", stats->rx_timeouts);
++	pr_info("n3_tx_packets=%d\n", stats->n3_tx_packets);
++	pr_info("n3_rx_packets=%d\n", stats->n3_rx_packets);
++	pr_info("tx_aborts=%d\n", stats->tx_aborts);
++	pr_info("rx_aborts=%d\n", stats->rx_aborts);
  }
  
- static void debug_data_cmd(struct cosa_data *cosa, int data)
+ static void cycx_x25_dump_devs(struct wan_device *wandev)
  {
--	printk(KERN_INFO "%s: IO: data <- 0x%04x (%s|%s)\n",
-+	pr_info("%s: IO: data <- 0x%04x (%s|%s)\n",
- 		cosa->name, data,
- 		data & SR_RDY_RCV ? "RX_RDY" : "!rx_rdy",
- 		data & SR_RDY_SND ? "TX_RDY" : "!tx_rdy");
+ 	struct net_device *dev = wandev->dev;
+ 
+-	printk(KERN_INFO "X.25 dev states\n");
+-	printk(KERN_INFO "name: addr:           txoff:  protocol:\n");
+-	printk(KERN_INFO "---------------------------------------\n");
++	pr_info("X.25 dev states\n");
++	pr_info("name: addr:           txoff:  protocol:\n");
++	pr_info("---------------------------------------\n");
+ 
+ 	while(dev) {
+ 		struct cycx_x25_channel *chan = netdev_priv(dev);
+ 
+-		printk(KERN_INFO "%-5.5s %-15.15s   %d     ETH_P_%s\n",
+-				 chan->name, chan->addr, netif_queue_stopped(dev),
+-				 chan->protocol == ETH_P_IP ? "IP" : "X25");
++		pr_info("%-5.5s %-15.15s   %d     ETH_P_%s\n",
++			chan->name, chan->addr, netif_queue_stopped(dev),
++			chan->protocol == ETH_P_IP ? "IP" : "X25");
+ 		dev = chan->slave;
+ 	}
+ }
 -- 
 1.7.6.rc1
 
