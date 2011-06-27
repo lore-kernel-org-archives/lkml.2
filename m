@@ -1,85 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab1F0Hre (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 03:47:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51332 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756758Ab1F0HqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 03:46:19 -0400
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of
- arbitrary physical addresses
-From: Petr Tesarik <ptesarik@suse.cz>
-To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-In-Reply-To: <BANLkTi=MeNcOhxU2TYvaC+xwebxcROnjcw@mail.gmail.com>
-References: <201106171038.25988.ptesarik@suse.cz>
-	 <20110617093032.GA19235@elte.hu> <201106171155.32062.ptesarik@suse.cz>
-	 <BANLkTi=MeNcOhxU2TYvaC+xwebxcROnjcw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: SUSE LINUX
-Date: Mon, 27 Jun 2011 09:46:12 +0200
-Message-Id: <1309160772.7689.9.camel@nathan.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 8bit
+	id S1757162Ab1F0HzZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 03:55:25 -0400
+Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:51980 "EHLO
+	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756103Ab1F0Hy5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 03:54:57 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
+Cc: Lee Jones <lee.jones@linaro.org>,
+        Om Prakash <omprakash.pal@stericsson.com>,
+        Linus Walleij <linus.walleij@linaro.org>
+Subject: [PATCH] mfd/stmpe: fix missing kerneldoc
+Date: Mon, 27 Jun 2011 09:54:22 +0200
+Message-ID: <1309161262-16670-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.7.3.2
+MIME-Version: 1.0
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Américo Wang píše v Po 20. 06. 2011 v 10:42 +0800:
-> On Fri, Jun 17, 2011 at 5:55 PM, Petr Tesarik <ptesarik@suse.cz> wrote:
-> > Dne Pá 17. června 2011 11:30:32 Ingo Molnar napsal(a):
-> >> * Petr Tesarik <ptesarik@suse.cz> wrote:
-> >> > This patch series enhances /dev/mem, so that read and write is
-> >> > possible at any address. The patchset includes actual
-> >> > implementation for x86.
-> >>
-> >> This series lacks a description of why this is desired.
-> >
-> > Hi Ingo,
-> >
-> >> My strong opinion is that it's not desired at all: /dev/mem never
-> >> worked beyond 4G addresses so by today it has become largely obsolete
-> >> and is on the way out really.
-> >>
-> >> I'm aware of these current /dev/mem uses:
-> >>
-> >>  - Xorg maps below 4G non-RAM addresses and the video BIOS
-> >>
-> >>  - It used to have some debugging role but these days kexec and kgdb
-> >>    has largely taken over that role - partly due to the 4G limit.
-> >
-> > It is still used as a "memory source" by Dave Anderson's crash utility for
-> > live examination of a running system. Redhat has "overcome" the /dev/mem
-> > deficiencies by writing an out-of-tree re-implementation of /dev/mem, which
-> > uses /dev/crash instead. As it is an "unnecessary duplication of an existing
-> > driver", this method was rejected by the project manager here at SUSE.
-> >
-> > The suggested alternative was to enhance (or fix) the existing driver. Without
-> > this patch series there is no way to access high memory. In conjunction with
-> > CONFIG_HIGHPTE, it makes the crash utility near to useless on anything with
-> > high memory, because crash can no longer translate virtual to physical
-> > addresses.
-> >
-> 
-> How about /proc/kcore? AFAIK, it can access highmem, but Dave didn't consider
-> it for some reason.
+From: Om Prakash <omprakash.pal@stericsson.com>
 
-(Sorry for the dealy, I was on vacation.)
+Generating kerneldoc for STMPE result in warnings, so fix this by
+adding missing documentation.
 
-/proc/kcore is in fact supported by the crash utility and it does work
-with highmem to some extent. Unfortunately, it cannot handle all of it,
-because it is ELF32 format, so there's no way to describe regions beyond
-4GB.
+Signed-off-by: Om Prakash <omprakash.pal@stericsson.com>
+Reviewed-by: Rabin Vincent <rabin.vincent@stericsson.com>
+Reviewed-by: Jonas Aberg <jonas.aberg@stericsson.com>
+Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
+---
+ drivers/mfd/stmpe.c       |    2 +-
+ drivers/mfd/stmpe.h       |    1 +
+ include/linux/mfd/stmpe.h |    3 +++
+ 3 files changed, 5 insertions(+), 1 deletions(-)
 
-Petr Tesarik
+diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
+index 7ab7746..2963689 100644
+--- a/drivers/mfd/stmpe.c
++++ b/drivers/mfd/stmpe.c
+@@ -228,7 +228,7 @@ int stmpe_block_write(struct stmpe *stmpe, u8 reg, u8 length,
+ EXPORT_SYMBOL_GPL(stmpe_block_write);
+ 
+ /**
+- * stmpe_set_altfunc: set the alternate function for STMPE pins
++ * stmpe_set_altfunc()- set the alternate function for STMPE pins
+  * @stmpe:	Device to configure
+  * @pins:	Bitmask of pins to affect
+  * @block:	block to enable alternate functions for
+diff --git a/drivers/mfd/stmpe.h b/drivers/mfd/stmpe.h
+index 0dbdc4e..e4ee3895 100644
+--- a/drivers/mfd/stmpe.h
++++ b/drivers/mfd/stmpe.h
+@@ -42,6 +42,7 @@ struct stmpe_variant_block {
+  * @id_mask:	bits valid in CHIPID register for comparison with id_val
+  * @num_gpios:	number of GPIOS
+  * @af_bits:	number of bits used to specify the alternate function
++ * @regs: variant specific registers.
+  * @blocks:	list of blocks present on this device
+  * @num_blocks:	number of blocks present on this device
+  * @num_irqs:	number of internal IRQs available on this device
+diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
+index e762c27..be1af7c 100644
+--- a/include/linux/mfd/stmpe.h
++++ b/include/linux/mfd/stmpe.h
+@@ -57,6 +57,7 @@ struct stmpe_variant_info;
+  * @irq_lock: IRQ bus lock
+  * @dev: device, mostly for dev_dbg()
+  * @i2c: i2c client
++ * @partnum: part number
+  * @variant: the detected STMPE model number
+  * @regs: list of addresses of registers which are at different addresses on
+  *	  different variants.  Indexed by one of STMPE_IDX_*.
+@@ -121,6 +122,8 @@ struct stmpe_keypad_platform_data {
+  * @norequest_mask: bitmask specifying which GPIOs should _not_ be
+  *		    requestable due to different usage (e.g. touch, keypad)
+  *		    STMPE_GPIO_NOREQ_* macros can be used here.
++ * @setup: board specific setup callback.
++ * @remove: board specific remove callback
+  */
+ struct stmpe_gpio_platform_data {
+ 	int gpio_base;
+-- 
+1.7.3.2
 
