@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752927Ab1F0Quz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 12:50:55 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:55861 "EHLO imr4.ericy.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752875Ab1F0Quw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 12:50:52 -0400
-Subject: RE: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
- (TunnelCreek)?
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: "R, Durgadoss" <durgadoss.r@intel.com>
-CC: Jean Delvare <khali@linux-fr.org>, "Yu, Fenghua" <fenghua.yu@intel.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-In-Reply-To: <D6D887BA8C9DFF48B5233887EF04654109E84A62C0@bgsmsx502.gar.corp.intel.com>
-References: <201106271220.51953.alexander.stein@systec-electronic.com>
-	 <20110627164108.777c2e28@endymion.delvare>
-	 <1309191054.8271.636.camel@groeck-laptop>
-	 <D6D887BA8C9DFF48B5233887EF04654109E84A62C0@bgsmsx502.gar.corp.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Mon, 27 Jun 2011 09:50:05 -0700
-Message-ID: <1309193405.8271.645.camel@groeck-laptop>
+	id S1752966Ab1F0Qvg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 12:51:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:34823 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666Ab1F0Qvd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 12:51:33 -0400
+Date: Mon, 27 Jun 2011 12:51:10 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Bastian Blank <waldi@debian.org>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: [PATCH 2/2] xen: Add alias to autoload backend
+ drivers
+Message-ID: <20110627165109.GB13335@dumpdata.com>
+References: <20110624215155.GB4735@wavehammer.waldi.eu.org>
+ <20110627161327.GO6978@dumpdata.com>
+ <20110627163728.GA23028@wavehammer.waldi.eu.org>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110627163728.GA23028@wavehammer.waldi.eu.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4E08B508.013B:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-27 at 12:40 -0400, R, Durgadoss wrote:
-> Hi Guenter,
+On Mon, Jun 27, 2011 at 06:37:29PM +0200, Bastian Blank wrote:
+> On Mon, Jun 27, 2011 at 12:13:27PM -0400, Konrad Rzeszutek Wilk wrote:
+> > On Fri, Jun 24, 2011 at 11:51:55PM +0200, Bastian Blank wrote:
+> > > All the Xen backend drivers are assigned to a special bus type
+> > > xen-backend. This allows userspace to load the modules on request.
+> > Is there a specific version of udev that would take advantage of this?
 > 
-> > I thought about replacing the manual TjMax detection code with code
-> > using the model string to take care of problems like this - essentially
-> > by providing a table with entries { model string, Tjmax } for each CPU
-> > with Tjmax other than 100 degrees C. This way we could get rid of some
-> > of the odd code we have today. Would that make sense ?
-> 
-> I completely agree with you here.
-> This way, a lot of code in get_tjmax will be reduced, by just
-> a search through some array.
->  
-Unfortunately, looking at Alexander's /proc/cpuinfo output, it looks
-like the E6xx chips have no mention of E6xx in the CPU ID string, which
-unfortunately kills the idea. 
+> Was there a version within the last three years that can't? The patch is
+> tested and udev does its work.
 
-Do you know if there is _any_ means to distinguish E6xx from E6xxT ?
-
-Thanks,
-Guenter
-
-
+Ok, that answers that question. Queue up for 3.1
