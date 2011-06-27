@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab1F0HzZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 03:55:25 -0400
-Received: from eu1sys200aog115.obsmtp.com ([207.126.144.139]:51980 "EHLO
-	eu1sys200aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756103Ab1F0Hy5 (ORCPT
+	id S1755480Ab1F0H4K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 03:56:10 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:58160 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756911Ab1F0Hy7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 03:54:57 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Om Prakash <omprakash.pal@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] mfd/stmpe: fix missing kerneldoc
-Date: Mon, 27 Jun 2011 09:54:22 +0200
-Message-ID: <1309161262-16670-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
-MIME-Version: 1.0
-Content-Type: text/plain
+	Mon, 27 Jun 2011 03:54:59 -0400
+Date: Mon, 27 Jun 2011 09:54:42 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-s390 <linux-s390@vger.kernel.org>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for 2.6.40-rc4
+Message-ID: <20110627095442.10a70204@mschwide>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Om Prakash <omprakash.pal@stericsson.com>
+Hi Linus,
 
-Generating kerneldoc for STMPE result in warnings, so fix this by
-adding missing documentation.
+please pull from 'for-linus' branch of
 
-Signed-off-by: Om Prakash <omprakash.pal@stericsson.com>
-Reviewed-by: Rabin Vincent <rabin.vincent@stericsson.com>
-Reviewed-by: Jonas Aberg <jonas.aberg@stericsson.com>
-Reviewed-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/stmpe.c       |    2 +-
- drivers/mfd/stmpe.h       |    1 +
- include/linux/mfd/stmpe.h |    3 +++
- 3 files changed, 5 insertions(+), 1 deletions(-)
+	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
 
-diff --git a/drivers/mfd/stmpe.c b/drivers/mfd/stmpe.c
-index 7ab7746..2963689 100644
---- a/drivers/mfd/stmpe.c
-+++ b/drivers/mfd/stmpe.c
-@@ -228,7 +228,7 @@ int stmpe_block_write(struct stmpe *stmpe, u8 reg, u8 length,
- EXPORT_SYMBOL_GPL(stmpe_block_write);
+to receive the following updates:
+
+Christian Borntraeger (3):
+      [S390] kvm-s390: fix kconfig dependencies
+      [S390] s390: enforce HW limits for the initial sampling rate
+      [S390] hwsampler: Set a sane default sampling rate
+
+Jan Glauber (1):
+      [S390] allow setting of upper 32 bit in smp_ctl_set_bit
+
+ arch/s390/Kconfig         |    1 +
+ arch/s390/kernel/smp.c    |    4 ++--
+ arch/s390/oprofile/init.c |    8 +++++++-
+ 3 files changed, 10 insertions(+), 3 deletions(-)
+
+diff --git a/arch/s390/Kconfig b/arch/s390/Kconfig
+index 90d77bd..c03fef7 100644
+--- a/arch/s390/Kconfig
++++ b/arch/s390/Kconfig
+@@ -579,6 +579,7 @@ config S390_GUEST
+ 	def_bool y
+ 	prompt "s390 guest support for KVM (EXPERIMENTAL)"
+ 	depends on 64BIT && EXPERIMENTAL
++	select VIRTUALIZATION
+ 	select VIRTIO
+ 	select VIRTIO_RING
+ 	select VIRTIO_CONSOLE
+diff --git a/arch/s390/kernel/smp.c b/arch/s390/kernel/smp.c
+index 52420d2..1d55c95 100644
+--- a/arch/s390/kernel/smp.c
++++ b/arch/s390/kernel/smp.c
+@@ -262,7 +262,7 @@ void smp_ctl_set_bit(int cr, int bit)
  
- /**
-- * stmpe_set_altfunc: set the alternate function for STMPE pins
-+ * stmpe_set_altfunc()- set the alternate function for STMPE pins
-  * @stmpe:	Device to configure
-  * @pins:	Bitmask of pins to affect
-  * @block:	block to enable alternate functions for
-diff --git a/drivers/mfd/stmpe.h b/drivers/mfd/stmpe.h
-index 0dbdc4e..e4ee3895 100644
---- a/drivers/mfd/stmpe.h
-+++ b/drivers/mfd/stmpe.h
-@@ -42,6 +42,7 @@ struct stmpe_variant_block {
-  * @id_mask:	bits valid in CHIPID register for comparison with id_val
-  * @num_gpios:	number of GPIOS
-  * @af_bits:	number of bits used to specify the alternate function
-+ * @regs: variant specific registers.
-  * @blocks:	list of blocks present on this device
-  * @num_blocks:	number of blocks present on this device
-  * @num_irqs:	number of internal IRQs available on this device
-diff --git a/include/linux/mfd/stmpe.h b/include/linux/mfd/stmpe.h
-index e762c27..be1af7c 100644
---- a/include/linux/mfd/stmpe.h
-+++ b/include/linux/mfd/stmpe.h
-@@ -57,6 +57,7 @@ struct stmpe_variant_info;
-  * @irq_lock: IRQ bus lock
-  * @dev: device, mostly for dev_dbg()
-  * @i2c: i2c client
-+ * @partnum: part number
-  * @variant: the detected STMPE model number
-  * @regs: list of addresses of registers which are at different addresses on
-  *	  different variants.  Indexed by one of STMPE_IDX_*.
-@@ -121,6 +122,8 @@ struct stmpe_keypad_platform_data {
-  * @norequest_mask: bitmask specifying which GPIOs should _not_ be
-  *		    requestable due to different usage (e.g. touch, keypad)
-  *		    STMPE_GPIO_NOREQ_* macros can be used here.
-+ * @setup: board specific setup callback.
-+ * @remove: board specific remove callback
-  */
- struct stmpe_gpio_platform_data {
- 	int gpio_base;
--- 
-1.7.3.2
-
+ 	memset(&parms.orvals, 0, sizeof(parms.orvals));
+ 	memset(&parms.andvals, 0xff, sizeof(parms.andvals));
+-	parms.orvals[cr] = 1 << bit;
++	parms.orvals[cr] = 1UL << bit;
+ 	on_each_cpu(smp_ctl_bit_callback, &parms, 1);
+ }
+ EXPORT_SYMBOL(smp_ctl_set_bit);
+@@ -276,7 +276,7 @@ void smp_ctl_clear_bit(int cr, int bit)
+ 
+ 	memset(&parms.orvals, 0, sizeof(parms.orvals));
+ 	memset(&parms.andvals, 0xff, sizeof(parms.andvals));
+-	parms.andvals[cr] = ~(1L << bit);
++	parms.andvals[cr] = ~(1UL << bit);
+ 	on_each_cpu(smp_ctl_bit_callback, &parms, 1);
+ }
+ EXPORT_SYMBOL(smp_ctl_clear_bit);
+diff --git a/arch/s390/oprofile/init.c b/arch/s390/oprofile/init.c
+index 5995e9b..0e358c2 100644
+--- a/arch/s390/oprofile/init.c
++++ b/arch/s390/oprofile/init.c
+@@ -25,7 +25,7 @@ extern void s390_backtrace(struct pt_regs * const regs, unsigned int depth);
+ 
+ #include "hwsampler.h"
+ 
+-#define DEFAULT_INTERVAL	4096
++#define DEFAULT_INTERVAL	4127518
+ 
+ #define DEFAULT_SDBT_BLOCKS	1
+ #define DEFAULT_SDB_BLOCKS	511
+@@ -151,6 +151,12 @@ static int oprofile_hwsampler_init(struct oprofile_operations *ops)
+ 	if (oprofile_max_interval == 0)
+ 		return -ENODEV;
+ 
++	/* The initial value should be sane */
++	if (oprofile_hw_interval < oprofile_min_interval)
++		oprofile_hw_interval = oprofile_min_interval;
++	if (oprofile_hw_interval > oprofile_max_interval)
++		oprofile_hw_interval = oprofile_max_interval;
++
+ 	if (oprofile_timer_init(ops))
+ 		return -ENODEV;
+ 
