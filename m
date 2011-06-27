@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753068Ab1F0RbE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 13:31:04 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47708 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752964Ab1F0R3L (ORCPT
+	id S1751928Ab1F0Req (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 13:34:46 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:55458 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751379Ab1F0Rel convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 13:29:11 -0400
+	Mon, 27 Jun 2011 13:34:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=rDHWv4dEGINHNwbHvWZYcv7fPjhpUJTUQa6C4qMjgmotWIdsP8RpCbBALbcbqoCxiN
-         fKa64hZy+wT/7xWZuuzUmytQs/J4uj0uwJN22n5taaRZaYsT5sLkzvZJjoOd6u/jELVb
-         m7up0Qc+HY86cQpKCehzy8ZvDsTMoGoRZGouI=
-Subject: Re: linux-3.0-rc4, wlan0 device is not showing with ifconfig
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Stephan Raue <mailinglists@openelec.tv>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <4E08A4C9.60709@openelec.tv>
-References: <4E08A4C9.60709@openelec.tv>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Jun 2011 19:29:07 +0200
-Message-ID: <1309195747.2532.81.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=eNGdKmUlTVx3SavMXX0FZkB6a6LnYskyuhgKj+mcQ81l9nTk6yVGNBGd1YAKcaPF7n
+         R29ToCqq7SNuufrTkmSw==
+MIME-Version: 1.0
+In-Reply-To: <20110624192903.GM22917@ram-laptop>
+References: <1308561849-3223-1-git-send-email-linuxram@us.ibm.com>
+ <4DFFB6B0.6090307@hartkopp.net> <4DFFB945.5090203@hartkopp.net>
+ <20110620214127.GA22917@ram-laptop> <4DFFC2FC.5050502@hartkopp.net>
+ <4E0353CA.7000708@hartkopp.net> <20110624192903.GM22917@ram-laptop>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Date: Mon, 27 Jun 2011 11:34:17 -0600
+Message-ID: <BANLkTikG0oTdSSh9oLc-M_zzFWuTu0sh_w@mail.gmail.com>
+Subject: Re: [PATCH 0/4] PCI: fix cardbus and sriov regressions
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: Oliver Hartkopp <socketcan@hartkopp.net>, yinghai@kernel.org,
+        jbarnes@virtuousgeek.org, linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-pci@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 27 juin 2011 Ã  17:42 +0200, Stephan Raue a Ã©crit :
-> Hi,
-> 
-> running linux-3.0-rc4 my wlan0 device is not showing with ifconfig, even 
-> if the driver (r8712u) loads successfull.
-> 
-> strace ifconfig shows:
-> 
-> ioctl(3, SIOCGIFFLAGS, {ifr_name="wlan0", 
-> ifr_flags=IFF_BROADCAST|IFF_MULTICAST}) = 0
-> ioctl(3, SIOCGIFHWADDR, {ifr_name="wlan0", 
-> ifr_hwaddr=80:1f:02:0b:5d:9a}) = 0
-> ioctl(3, SIOCGIFMETRIC, {ifr_name="wlan0", ifr_metric=0}) = 0
-> ioctl(3, SIOCGIFMTU, {ifr_name="wlan0", ifr_mtu=1500}) = 0
-> ioctl(3, SIOCGIFMAP, {ifr_name="wlan0", ifr_map={mem_start=0, mem_end=0, 
-> base_addr=0, irq=0, dma=0, port=0}}) = 0
-> ioctl(3, SIOCGIFTXQLEN, {ifr_name="wlan0", ifr_qlen=1000}) = 0
-> ioctl(3, SIOCGIFADDR, {ifr_name="wlan0", ???}) = -1 EADDRNOTAVAIL 
-> (Cannot assign requested address)
-> close(3)                                = 0
-> 
-> the interface will be shown after i setup a ipadress manually:
-> 
-> ifconfig wlan0 192.68.0.13
-> strace ifconfig
-> 
-> ioctl(3, SIOCGIFFLAGS, {ifr_name="wlan0", 
-> ifr_flags=IFF_UP|IFF_BROADCAST|IFF_MULTICAST}) = 0
-> ioctl(3, SIOCGIFHWADDR, {ifr_name="wlan0", 
-> ifr_hwaddr=80:1f:02:0b:5d:9a}) = 0
-> ioctl(3, SIOCGIFMETRIC, {ifr_name="wlan0", ifr_metric=0}) = 0
-> ioctl(3, SIOCGIFMTU, {ifr_name="wlan0", ifr_mtu=1500}) = 0
-> ioctl(3, SIOCGIFMAP, {ifr_name="wlan0", ifr_map={mem_start=0, mem_end=0, 
-> base_addr=0, irq=0, dma=0, port=0}}) = 0
-> ioctl(3, SIOCGIFTXQLEN, {ifr_name="wlan0", ifr_qlen=1000}) = 0
-> ioctl(3, SIOCGIFADDR, {ifr_name="wlan0", ifr_addr={AF_INET, 
-> inet_addr("168.0.0.13")}}) = 0
-> ioctl(3, SIOCGIFDSTADDR, {ifr_name="wlan0", ifr_dstaddr={AF_INET, 
-> inet_addr("168.0.0.13")}}) = 0
-> ioctl(3, SIOCGIFBRDADDR, {ifr_name="wlan0", ifr_broadaddr={AF_INET, 
-> inet_addr("168.0.255.255")}}) = 0
-> ioctl(3, SIOCGIFNETMASK, {ifr_name="wlan0", ifr_netmask={AF_INET, 
-> inet_addr("255.255.0.0")}}) = 0
-> 
-> is this problem known and is there a fix for this?
+[+linux-pci again]
 
-Pretty normal behavior, if your device is not "UP"
+On Fri, Jun 24, 2011 at 1:29 PM, Ram Pai <linuxram@us.ibm.com> wrote:
+> On Thu, Jun 23, 2011 at 04:55:06PM +0200, Oliver Hartkopp wrote:
+>> Hello RP,
+>>
+>> unfortunately i noticed the discussion on linux-kernel ML a bit late, as i did
+>> not subscribe it due to the traffic.
+>
+> sorry, did not see this mail earlier.
+>
+>
+>> >>> When comparing the logs with mgdiff, i found
+>> >>>
+>> >>> in revered:
+>> >>>
+>> >>> pci_bus 0000:04: resource 0 [io  0x2000-0x20ff]
+>> >>> pci_bus 0000:04: resource 1 [io  0x2400-0x24ff]
+>> >>>
+>> >>> in the fixed version (4 patches)
+>> >>>
+>> >>> pci_bus 0000:04: resource 0 [io  0x2400-0x24ff]
+>> >>> pci_bus 0000:04: resource 1 [io  0x2001-0x2100]
+>>
+>> Did you get further with the unusual alignment?
+>
+> No. i was thinking this alignment  should be ok, since that cardbus resource
+> has to be SIZE aligned and not START aligned.
+>
+> However if it is not acceptable, i will figure out a way
+> to get it aligned on the right boundaries.
 
-To see all devices, even DOWN ones, use "ifconfig -a"
+Does the bridge leading to bus 04 really support a window starting at 0x2001?
 
+I assume this is a CardBus bridge because it has two I/O windows.  My
+interpretation of the MindShare CardBus book (I don't have the PC Card
+Standard) is that the low two bits of the I/O base address register
+tell you whether 16- or 32-bit addressing is supported (00b means
+16-bit decoding is used, 01b means 32-bit decoding is used), and that
+the actual window starts on a four-byte aligned address.
 
+If that's correct, an I/O base register containing 0x2001 would mean a
+window starting at 0x2000 and supporting 32-bit decoding, and it would
+be impossible to have a window starting at 0x2001, i.e., one that
+contains 0x2001 but not 0x2000.
+
+Bjorn
