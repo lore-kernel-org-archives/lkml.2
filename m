@@ -1,53 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab1F0Rmn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 13:42:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58722 "EHLO mx1.redhat.com"
+	id S1753094Ab1F0SCd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 14:02:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11058 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772Ab1F0Rmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 13:42:36 -0400
-Date: Mon, 27 Jun 2011 19:40:41 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: penguin-kernel@i-love.sakura.ne.jp
-Cc: roland@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: arch_ptrace_attach() without ptrace_traceme()?
-Message-ID: <20110627174041.GA13983@redhat.com>
-References: <201106270720.p5R7Kd9E095193@www262.sakura.ne.jp> <20110627133420.GA3527@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110627133420.GA3527@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752989Ab1F0SCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 14:02:30 -0400
+From: Josef Bacik <josef@redhat.com>
+To: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk
+Subject: [PATCH 1/4] fs: add SEEK_HOLE and SEEK_DATA flags
+Date: Mon, 27 Jun 2011 14:02:21 -0400
+Message-Id: <1309197745-14107-1-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27, Oleg Nesterov wrote:
->
-> On 06/27, penguin-kernel@i-love.sakura.ne.jp wrote:
-> >
-> > Regarding commit f1671f6d "ptrace: fix exit_ptrace() vs ptrace_traceme() race",
-> > is calling arch_ptrace_attach() when ptrace_traceme() returned 0 without doing
-> > anything (due to PF_EXITING race) expected behavior?
->
-> Hmm. Good point, I thinks this should be fixed.
+This just gets us ready to support the SEEK_HOLE and SEEK_DATA flags.  Turns out
+using fiemap in things like cp cause more problems than it solves, so lets try
+and give userspace an interface that doesn't suck.  We need to match solaris
+here, and the definitions are
 
-But it is not clear how we can fix this, perhaps we should ignore this
-problem...
+*o* If /whence/ is SEEK_HOLE, the offset of the start of the
+next hole greater than or equal to the supplied offset
+is returned. The definition of a hole is provided near
+the end of the DESCRIPTION.
 
-arch_ptrace_attach() is inherently racy when PTRACE_TRACEME is called.
-Please note that f1671f6d did not introduce this race, although I have
-to admit I didn't notice this problem when I did this patch.
+*o* If /whence/ is SEEK_DATA, the file pointer is set to the
+start of the next non-hole file region greater than or
+equal to the supplied offset.
 
-The race with PF_EXITING you described doesn't differ from another
-scenario. PF_EXITING is not set, ptrace_traceme() actually attaches
-the caller, but its paren exits and untraces it before it does
-arch_ptrace_attach().
+So in the generic case the entire file is data and there is a virtual hole at
+the end.  That means we will just return i_size for SEEK_HOLE and will return
+the same offset for SEEK_DATA.  This is how Solaris does it so we have to do it
+the same way.
 
-If only I knew what arch_ptrace_attach() can do in general ;) But
-probably it should be paired with ptrace_disable(), and it is not
-called when the tracer detaches on exit anyway. So I think we can
-ignore this race.
+Thanks,
 
-Oleg.
+Signed-off-by: Josef Bacik <josef@redhat.com>
+---
+ fs/read_write.c    |   37 +++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h |    4 +++-
+ 2 files changed, 40 insertions(+), 1 deletions(-)
+
+diff --git a/fs/read_write.c b/fs/read_write.c
+index 5520f8a..d58551e 100644
+--- a/fs/read_write.c
++++ b/fs/read_write.c
+@@ -64,6 +64,23 @@ generic_file_llseek_unlocked(struct file *file, loff_t offset, int origin)
+ 			return file->f_pos;
+ 		offset += file->f_pos;
+ 		break;
++	case SEEK_DATA:
++		/*
++		 * In the generic case the entire file is data, so as long as
++		 * offset isn't at the end of the file then the offset is data.
++		 */
++		if (offset >= inode->i_size)
++			return -ENXIO;
++		break;
++	case SEEK_HOLE:
++		/*
++		 * There is a virtual hole at the end of the file, so as long as
++		 * offset isn't i_size or larger, return i_size.
++		 */
++		if (offset >= inode->i_size)
++			return -ENXIO;
++		offset = inode->i_size;
++		break;
+ 	}
+ 
+ 	if (offset < 0 && !unsigned_offsets(file))
+@@ -141,6 +158,26 @@ loff_t default_llseek(struct file *file, loff_t offset, int origin)
+ 				goto out;
+ 			}
+ 			offset += file->f_pos;
++			break;
++		case SEEK_DATA:
++			/*
++			 * In the generic case the entire file is data, so as
++			 * long as offset isn't at the end of the file then the
++			 * offset is data.
++			 */
++			if (offset >= inode->i_size)
++				return -ENXIO;
++			break;
++		case SEEK_HOLE:
++			/*
++			 * There is a virtual hole at the end of the file, so
++			 * as long as offset isn't i_size or larger, return
++			 * i_size.
++			 */
++			if (offset >= inode->i_size)
++				return -ENXIO;
++			offset = inode->i_size;
++			break;
+ 	}
+ 	retval = -EINVAL;
+ 	if (offset >= 0 || unsigned_offsets(file)) {
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 6e73e2e..552cdfe 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -32,7 +32,9 @@
+ #define SEEK_SET	0	/* seek relative to beginning of file */
+ #define SEEK_CUR	1	/* seek relative to current file position */
+ #define SEEK_END	2	/* seek relative to end of file */
+-#define SEEK_MAX	SEEK_END
++#define SEEK_DATA	3	/* seek to the next data */
++#define SEEK_HOLE	4	/* seek to the next hole */
++#define SEEK_MAX	SEEK_HOLE
+ 
+ struct fstrim_range {
+ 	__u64 start;
+-- 
+1.7.5.2
 
