@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab1F0WRc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 18:17:32 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:42969 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755219Ab1F0WPr (ORCPT
+	id S1755204Ab1F0WTF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 18:19:05 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57924 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755141Ab1F0WSJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 18:15:47 -0400
-Date: Mon, 27 Jun 2011 23:15:41 +0100
-From: Jamie Iles <jamie@jamieiles.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, Jamie Iles <jamie@jamieiles.com>,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 4/7] serial/8250: move DWAP support to arch/mips
-Message-ID: <20110627221541.GA5370@gallagher>
-References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
- <1309211120-2803-5-git-send-email-arnd@arndb.de>
+	Mon, 27 Jun 2011 18:18:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=lsECwtGN7ec0kjJevEqB2QihjYVsogBIS2Kjm25o/QYkpdKwakvmcAHpQ4dvh79I4y
+         if9e6KiCG7aGBbhZ+3+XRIIrM+E6OOHMYVn1AomrxVFjiFbijj/PJG2Rv/XSQFcDRyfy
+         EF1CgajLWqOaj951JN4CUTfyyROT2+nWqWRMc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309211120-2803-5-git-send-email-arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <yunhb7ckxtl.fsf@aiko.keithp.com>
+References: <BANLkTikAJEma_NNi0NYnjBEB6RkFJK3Dpg@mail.gmail.com> <yunhb7ckxtl.fsf@aiko.keithp.com>
+From: Lucas De Marchi <lucas.de.marchi@gmail.com>
+Date: Mon, 27 Jun 2011 19:17:48 -0300
+Message-ID: <BANLkTikhFyR9c6UfJX2oTdWq9crb9M73Ow@mail.gmail.com>
+Subject: Re: i915, framebuffer: wrong xoffset?
+To: Keith Packard <keithp@keithp.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Dave Airlie <airlied@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+Hi Keith,
 
-On Mon, Jun 27, 2011 at 11:45:17PM +0200, Arnd Bergmann wrote:
-> Only one board uses the UPIO_DWAP iotype, and nothing uses
-> the UPIO_DWAP32 iotype. It seems much cleaner to handle the
-> DWAP quirk as a new port type, and move the serial_out
-> accessor into the platform code. If more platforms start
-> using the DWAP port, that function can be moved into a
-> common location.
+On Sun, Jun 26, 2011 at 19:55, Keith Packard <keithp@keithp.com> wrote:
+> On Sat, 18 Jun 2011 13:29:47 -0300, Lucas De Marchi <lucas.de.marchi@gmail.com> wrote:
+>
+>> Since 3.0-rc1 when booting my computer the text in the fb console is
+>> displayed with a wrong xoffset. I took a picture (sorry for the poor
+>> quality):
+>
+> Can you capture register dumps in the working and broken configuration?
+>
+> git clone git://anongit.freedesktop.org/git/xorg/app/intel-gpu-tools
+>
+> Build that and run tools/intel_reg_dumper and send along the output of
+> that in working and non-working configurations. That should show us
+> where the problem lies.
 
-I posted a series[1] a couple of weeks back that does this for 
-DWAPB/DWAPB32 in a slightly different way which also removes the extra 
-interrupt handling into the platform code.
+I've just build a new kernel and noticed it's fixed in current Linux
+tree. Since -rc4 still had this bug, it was very quick to bisect this,
+and the fix was this commit:
 
-Incidentally, I've been trying to mainline a platform (picoxcell) that 
-has a DWAPB (with 32-bit access requirement) but struggled to get 
-feedback on the SoC port but hope to resubmit as a device tree based 
-platform.
 
-1. http://marc.info/?l=linux-serial&m=130821602729595&w=2
+commit efc2924e733631a64c0afed8dbba2741d186998c
+Author: Keith Packard <keithp@keithp.com>
+Date:   Mon Jun 6 17:12:49 2011 -0700
 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> Cc: Jamie Iles <jamie@jamieiles.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: linux-serial@vger.kernel.org
-> ---
->  arch/mips/pmc-sierra/msp71xx/msp_serial.c |   32 ++++++++++-
->  drivers/tty/serial/8250.c                 |   87 +++--------------------------
->  drivers/tty/serial/8250_hub6.c            |   17 ++++++
+    drm/i915: Call intel_enable_plane from i9xx_crtc_mode_set (again)
 
-Should the hub6 stuff be in this patch?
+    This change got placed in the ironlake path instead of the 9xx path
+    during a recent code shuffle.
 
->  drivers/tty/serial/serial_core.c          |    4 -
->  include/linux/serial_core.h               |    5 +-
->  5 files changed, 57 insertions(+), 88 deletions(-)
-> 
-> diff --git a/arch/mips/pmc-sierra/msp71xx/msp_serial.c b/arch/mips/pmc-sierra/msp71xx/msp_serial.c
-> index f726162..6c9f1d3 100644
-> --- a/arch/mips/pmc-sierra/msp71xx/msp_serial.c
-> +++ b/arch/mips/pmc-sierra/msp71xx/msp_serial.c
-> @@ -38,6 +38,33 @@
->  #include <msp_int.h>
->  #include <msp_regs.h>
->  
-> +/* Save the LCR value so it can be re-written when a Busy Detect IRQ occurs. */
-> +static inline void dwapb_save_out_value(struct uart_port *p, int offset,
-> +					int value)
-> +{
-> +	struct uart_8250_port *up =
-> +		container_of(p, struct uart_8250_port, port);
+    Signed-off-by: Keith Packard <keithp@keithp.com>
 
-I couldn't see that struct uart_8250_port is moved out of 8250.c, so I'm 
-not sure that this would work in here?
 
-Jamie
+
+Does it make sense? Do you still want the register dumps or they
+aren't needed anymore?
+
+
+Lucas De Marchi
