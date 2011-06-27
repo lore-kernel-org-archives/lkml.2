@@ -1,64 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756368Ab1F0HeY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 03:34:24 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:43081 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756825Ab1F0HdW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 03:33:22 -0400
-X-ASG-Debug-ID: 1309160001-03d6a510aabb150001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E08323D.7090004@fusionio.com>
-Date: Mon, 27 Jun 2011 09:33:17 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1756341Ab1F0HfS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 03:35:18 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59527 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756880Ab1F0Hd4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 03:33:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E08324D.9040605@jp.fujitsu.com>
+Date: Mon, 27 Jun 2011 16:33:33 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-Subject: Re: [Bug #38122] 3.0-rc3 WARNING: at  drivers/gpu/drm/i915/i915_drv.c:340
- gen6_gt_force_wake_put+0x29/0x52 [i915]()
-References: <VDRaLpg_NZ.A.tnC.JZ6BOB@chimera> <XWjMN7gBoXK.A.ULD.cZ6BOB@chimera>
-X-ASG-Orig-Subj: Re: [Bug #38122] 3.0-rc3 WARNING: at  drivers/gpu/drm/i915/i915_drv.c:340
- gen6_gt_force_wake_put+0x29/0x52 [i915]()
-In-Reply-To: <XWjMN7gBoXK.A.ULD.cZ6BOB@chimera>
-Content-Type: text/plain; charset="UTF-8"
+To: segoon@openwall.com
+CC: linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        rientjes@google.com, wilsons@start.ca, security@kernel.org,
+        eparis@redhat.com, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
+References: <1308917318-4749-1-git-send-email-segoon@openwall.com> <4E07F1C0.2070305@jp.fujitsu.com> <20110627070300.GA4463@albatros>
+In-Reply-To: <20110627070300.GA4463@albatros>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1309160001
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.12
-X-Barracuda-Spam-Status: No, SCORE=0.12 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=CN_BODY_332, INFO_TLD
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.67253
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
-	0.12 CN_BODY_332            BODY: CN_BODY_332
-	0.00 INFO_TLD               URI: Contains an URL in the INFO top-level domain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-26 23:23, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
+(2011/06/27 16:03), Vasiliy Kulikov wrote:
+> On Mon, Jun 27, 2011 at 11:58 +0900, KOSAKI Motohiro wrote:
+>> (2011/06/24 21:08), Vasiliy Kulikov wrote:
+>>> /proc/PID/io may be used for gathering private information.  E.g. for
+>>> openssh and vsftpd daemons wchars/rchars may be used to learn the
+>>> precise password length.  Restrict it to processes being able to ptrace
+>>> the target process.
+>>>
+>>> ptrace_may_access() is needed to prevent keeping open file descriptor of
+>>> "io" file, executing setuid binary and gathering io information of the
+>>> setuid'ed process.
+>>>
+>>> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+>>
+>> This description seems makes sense to me. But Vasilly, I have one question.
+>> Doesn't this change break iotop command or other userland tools?
 > 
-> The following bug entry is on the current list of known regressions
-> from 2.6.39.  Please verify if it still should be listed and let the tracking team
-> know (either way).
+> I don't use iotop, but after reading the sources it looks like it uses
+> taskstats for information gathering, which will be broken for sure by
+> the second patch.  All other userland tools using alien io files will be
+> broken too.
 > 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=38122
-> Subject		: 3.0-rc3 WARNING: at drivers/gpu/drm/i915/i915_drv.c:340 gen6_gt_force_wake_put+0x29/0x52 [i915]()
-> Submitter	: Jens Axboe <jaxboe@fusionio.com>
-> Date		: 2011-06-14 12:12 (13 days old)
-> Message-ID	: <<4DE3E2C9.6060207@fusionio.com>>
-> References	: http://marc.info/?l=linux-kernel&m=130805412314680&w=2
-> 		  https://lkml.org/lkml/2011/5/30/261
+> I'd say the whole approach of world readable debugging/statistics
+> information was broken from the beginning, now we are stuck with these
+> interfaces because of acient mistakes.
 
-By the looks of it, commit 483f1798 should fix it.
+Just idea. (perhaps it's too dumb).
 
--- 
-Jens Axboe
+If a user want to know throughput, usually they only need KB/s granularity.
+If a user want to know password hints, they need to know strict bytes granularity.
+So, adding some random bytes to this statistics may help to obscure key data,
+or just "stat = ROUND_UP(stat, 1024)".
+
+But, I hope to wait another experts response. they may know better approach. :)
+
+
+> BTW, what to do with sched and status?  It stores some sensitive
+> information too (execution times and vm space, respectively).
+
+Dunno. I'm not security expert.
+
+
+>>> ---
+>>>  fs/proc/base.c |    7 +++++--
+>>>  1 files changed, 5 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/fs/proc/base.c b/fs/proc/base.c
+>>> index 14def99..5ae25d1 100644
+>>> --- a/fs/proc/base.c
+>>> +++ b/fs/proc/base.c
+>>> @@ -2712,6 +2712,9 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
+>>>  	struct task_io_accounting acct = task->ioac;
+>>>  	unsigned long flags;
+>>>  
+>>> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+>>> +		return -EACCES;
+>>> +
+>>
+>> I think this check need a comment. Usually procfs don't use ptrace_may_access() directly
+>> (see mm_for_maps) because it's racy against exec().
+> 
+> This makes sense.  Reading /proc/self/io and exec'ing setuid program
+> would cause the race.  What lock should I use to block execve()?
+> 
+> 
+> Also I'm worried about these statistics after dropping the privileges.
+> After setuid() and similar things not changing pid unprivileged user
+> gets some information about the previous io activity of this task being
+> privileged.  In some situations it doesn't reveal any sensitive
+> information, in some it might.  Clearing taskstats on credential
+> changing functions would totally break taskstats' interfaces; and should
+> be temporary changing fsuid/euid followed by reverting it considered
+> harmfull?  I don't know.
+
+Can you please explain more? I'm feeling "reset at credential change" is
+reasonable idea. How broken is there?
+
+
+>> However I think your code is ok.
+>> because a few bytes io accounting leak has no big matter.
+> 
+> Please don't do any assumptions about the significance of these few
+> bytes.  It can be not "few" bytes if either the scheduler's granularity
+> is significant or the scheduler does wrong assumptions about CPU speeds.
+> Also if someone gets CAP_SYS_NICE he may totally break these assumptions.
+> 
+> My ssh example is just a proof that io stat is harmfull *sometimes*.
+> I didn't investigate in what cases it is harmless for sure (if it's
+> possible at all).
+
+Umm. reasonable. task->signal->cred_guard_mutex can be used for preventing
+exec() race, I think. (see check_mem_permission() and et al).
+
 
