@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab1F0QUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 12:20:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:60574 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab1F0QUT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 12:20:19 -0400
-Date: Mon, 27 Jun 2011 09:20:04 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Prateek Sharma <prateek3.14@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm <akpm@linux-foundation.org>,
-        torvalds <torvalds@linux-foundation.org>
-Subject: Re: Linux 3.0-rc4 - fail to compile...
-Message-Id: <20110627092004.92495c82.randy.dunlap@oracle.com>
-In-Reply-To: <BANLkTi=eVDsTy0nU5nuiDC+SDe_rhCt3qg@mail.gmail.com>
-References: <BANLkTin+pn=WSegcW7cnHk4=76wHkaHPCw@mail.gmail.com>
-	<BANLkTi=eVDsTy0nU5nuiDC+SDe_rhCt3qg@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090207.4E08ADC0.0037:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+	id S1752787Ab1F0QbH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 12:31:07 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:53500 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752754Ab1F0Qaz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 12:30:55 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Subject: Re: linux-next: Tree for June 27 (uml)
+Date: Mon, 27 Jun 2011 18:30:43 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.4; x86_64; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jeff Dike <jdike@addtoit.com>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net, viro@zeniv.linux.org.uk
+References: <20110627161656.688820b9.sfr@canb.auug.org.au> <20110627082733.75e58ae4.randy.dunlap@oracle.com>
+In-Reply-To: <20110627082733.75e58ae4.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106271830.43698.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jun 2011 21:25:55 +0530 Prateek Sharma wrote:
+Am Montag 27 Juni 2011, 17:27:33 schrieb Randy Dunlap:
+> On Mon, 27 Jun 2011 16:16:56 +1000 Stephen Rothwell wrote:
+> > Hi all,
+> 
+> > Changes since 20110624:
+> uml defconfig builds on x86 (32-bit and 64-bit) fail with:
+> 
+> fs/hostfs/hostfs_kern.c:756: error: 'mask' undeclared (first use in this
+> function)
 
-> Will this issue be be please fixed in rc5 ? Not being able to even
-> compile it is a big hindrance.
+Hmm, "->permission() sanitizing: don't pass flags to ->permission()" is the evil doer.
+Al?
 
-I asked Andrew to merge the patch for this but I haven't seen any email
-from him recently, so maybe someone else needs to merge the patch.
-
-http://marc.info/?l=linux-mm&m=130827204306775&w=2
-
-Acked-by: Mel Gorman <mgorman@suse.de>
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-
-
-
-> > -----Original Message-----
-> > From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paul Rolland (???・???)
-> >
-> > Sent: Tuesday, June 21, 2011 3:14 PM
-> > To: Linus Torvalds
-> > Cc: Linux Kernel Mailing List; rol@witbe.net
-> > Subject: Re: Linux 3.0-rc4 - fail to compile...
-> > Hello,
-> >
-> > On Mon, 20 Jun 2011 21:02:56 -0700
-> >
-> > Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> >
-> > > Mostly the usual small driver one- (or few-) liners, and some bigger
-> > > changes to drm (and md). But also two new smallish drivers
-> >
-> > > (net/usb/kalmia.c, and the ADP8870 backlight driver). Some filesystem
-> > > fixes (btrfs, cifs, afs, xfs, nfsd).
-> >
-> > This is failing to compile on my machine :
-> > ...
-> >   CC      mm/page_cgroup.o
-> >   CC      fs/direct-io.o
-> >
-> > mm/page_cgroup.c: In function ‘page_cgroup_init’:
-> > mm/page_cgroup.c:308: error: implicit declaration of function ‘node_start_pfn’
-> > mm/page_cgroup.c:309: error: implicit declaration of function ‘node_end_pfn’
-> > make[1]: *** [mm/page_cgroup.o] Error 1
-> >
-> > make: *** [mm] Error 2
-> > make: *** Waiting for unfinished jobs....
-> >   CC      fs/mpage.o
-> >   CC      fs/ioprio.o
-> > This seems to be caused by arch/x86/include/asm/mmzone_64.h which only defines
-> > node_start_pfn and node_end_pfn if CONFIG_NUMA is set.
-> >
-> >
-> > Adding CONFIG_NUMA to my .config fixes the issue.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+Thanks,
+//richard
