@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754256Ab1F0UTX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 16:19:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29044 "EHLO mx1.redhat.com"
+	id S1754074Ab1F0UW5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 16:22:57 -0400
+Received: from smtp.ispras.ru ([83.149.198.202]:56528 "EHLO smtp.ispras.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153Ab1F0URt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 16:17:49 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Cc: vgoyal@redhat.com, khlebnikov@openvz.org, jmoyer@redhat.com
-Subject: [PATCH 3/3] ext3: Explicitly specify fsync dependency on journaling thread
-Date: Mon, 27 Jun 2011 16:17:44 -0400
-Message-Id: <1309205864-13124-4-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
-References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+	id S1754311Ab1F0UWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 16:22:10 -0400
+From: Alexey Khoroshilov <khoroshilov@ispras.ru>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] jffs2: use mutex_is_locked() in __jffs2_flush_wbuf()
+Date: Tue, 28 Jun 2011 00:21:30 +0400
+Message-Id: <1309206090-2805-1-git-send-email-khoroshilov@ispras.ru>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Set/reset fsync dependency of fsync on journalling thread. This allows
-CFQ to dispatch IO from journalling thread in fsync's time slice.
-Otherwise, lots of cfq queue idling takes place if fsync is running
-in a separate cgroup and journalling thread is running in root group.
+Use a helper to test if a mutex is held instead of a hack with
+mutex_trylock().
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
 ---
- fs/ext3/fsync.c |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ fs/jffs2/wbuf.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/fs/ext3/fsync.c b/fs/ext3/fsync.c
-index 09b13bb..1e8de9c 100644
---- a/fs/ext3/fsync.c
-+++ b/fs/ext3/fsync.c
-@@ -82,7 +82,10 @@ int ext3_sync_file(struct file *file, int datasync)
- 	    !journal_trans_will_send_data_barrier(journal, commit_tid))
- 		needs_barrier = 1;
- 	log_start_commit(journal, commit_tid);
-+	blk_set_depends_on_task(journal->j_dev->bd_disk->queue,
-+				journal->j_task);
- 	ret = log_wait_commit(journal, commit_tid);
-+	blk_reset_depends_on_task(journal->j_dev->bd_disk->queue);
+diff --git a/fs/jffs2/wbuf.c b/fs/jffs2/wbuf.c
+index 4515bea..a10fb24 100644
+--- a/fs/jffs2/wbuf.c
++++ b/fs/jffs2/wbuf.c
+@@ -578,8 +578,7 @@ static int __jffs2_flush_wbuf(struct jffs2_sb_info *c, int pad)
+ 	if (!jffs2_is_writebuffered(c))
+ 		return 0;
  
- 	/*
- 	 * In case we didn't commit a transaction, we have to flush
+-	if (mutex_trylock(&c->alloc_sem)) {
+-		mutex_unlock(&c->alloc_sem);
++	if (!mutex_is_locked(&c->alloc_sem)) {
+ 		printk(KERN_CRIT "jffs2_flush_wbuf() called with alloc_sem not locked!\n");
+ 		BUG();
+ 	}
 -- 
-1.7.4.4
+1.7.4.1
 
