@@ -1,123 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753674Ab1F0S5E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 14:57:04 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39114 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753548Ab1F0SzK (ORCPT
+	id S1753296Ab1F0TBC (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 15:01:02 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50008 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753462Ab1F0S7l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 14:55:10 -0400
-Subject: [PATCH] i2c: Allow i2c_add_numbered_adapter() to assign a bus id.
-To: "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>,
-        linux-i2c@vger.kernel.org,
-        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
-        linux-kernel@vger.kernel.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Cc: Dirk Brandewie <dirk.brandewie@gmail.com>, bones@secretlab.ca,
-        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Date: Mon, 27 Jun 2011 12:55:05 -0600
-Message-ID: <20110627185505.19423.64214.stgit@ponder>
-User-Agent: StGit/0.15
+	Mon, 27 Jun 2011 14:59:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dAtp9gZY2KTSHHujo6RFhMUu5qrufcj9h+tAS/xq8HjDxSv4Riq2XTHKgNBQ3Dfe5P
+         AO0J3sqG6UHD9njM6ZJ9OFbFjAyt1wAdtGfZxpB3DJiFhcR8iHROREVVr80q6QswfYeo
+         tb5p0kdVVVPJVGSX985jQAqwIQkZXl6G2ofTg=
+Date: Mon, 27 Jun 2011 20:59:36 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Vince Weaver <vweaver1@eecs.utk.edu>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@gmail.com>
+Subject: Re: perf: is PERF_COUNT_SW_CONTEXT_SWITCHES a kernel or user event?
+Message-ID: <20110627185933.GA3726@somewhere>
+References: <alpine.DEB.2.00.1106241658420.23095@cl320.eecs.utk.edu>
+ <1309171403.6701.77.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309171403.6701.77.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, if an i2c bus driver supports both static and dynamic bus
-ids, it needs to choose between calling i2c_add_numbered_adapter() and
-i2c_add_adapter().  This patch makes i2c_add_numbered_adapter()
-redirect to i2c_add_adapter() if the requested bus id is -1.
+On Mon, Jun 27, 2011 at 12:43:23PM +0200, Peter Zijlstra wrote:
+> On Fri, 2011-06-24 at 17:03 -0400, Vince Weaver wrote:
+> > Hello
+> > 
+> > the commit included in 2.6.34:
+> >   perf: Use hot regs with software sched switch/migrate events
+> >   e49a5bd38159dfb1928fd25b173bc9de4bbadb21
+> > 
+> > Changes the behavior of the PERF_COUNT_SW_CONTEXT_SWITCHES
+> > counter.
+> > 
+> > Before 2.6.34 all of the PERF_COUNT_SW_CONTEXT_SWITCHES events were 
+> > counted as happening in userspace (they show up in "perf stat -e cs:u") 
+> > but after the commit they always happen in kernelspace ("perf stat -e 
+> > cs:k").
+> > 
+> > Was this intended behavior?
+> > I'm writing a validation test for this and want to make sure I get it
+> > right.
+> > 
+> > This can be confusing if your tool defaults to userspace only counts (PAPI 
+> > does this).
+> 
+> hurm, difficult case, like the changelog explains the previous behaviour
+> wasn't ideal either. Seems like we want somewhat of a middle ground
+> there, but I'm not quite sure how to make that happen.
+> 
+> Let me ponder things for a bit.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- drivers/i2c/busses/i2c-cpm.c   |    7 ++-----
- drivers/i2c/busses/i2c-pxa.c   |    7 ++-----
- drivers/i2c/busses/i2c-s6000.c |    5 +----
- drivers/i2c/i2c-core.c         |    5 +++++
- 4 files changed, 10 insertions(+), 14 deletions(-)
+If you consider the strict meaning of exclude_user/exclude_kernel, they exclude
+events that _happen_ in user/kernel space. And context switches happen in kernel
+space.
 
-diff --git a/drivers/i2c/busses/i2c-cpm.c b/drivers/i2c/busses/i2c-cpm.c
-index 3a20961..b1d9cd2 100644
---- a/drivers/i2c/busses/i2c-cpm.c
-+++ b/drivers/i2c/busses/i2c-cpm.c
-@@ -662,11 +662,8 @@ static int __devinit cpm_i2c_probe(struct platform_device *ofdev)
- 	/* register new adapter to i2c module... */
- 
- 	data = of_get_property(ofdev->dev.of_node, "linux,i2c-index", &len);
--	if (data && len == 4) {
--		cpm->adap.nr = *data;
--		result = i2c_add_numbered_adapter(&cpm->adap);
--	} else
--		result = i2c_add_adapter(&cpm->adap);
-+	cpm->adap.nr = (data && len == 4) ? be32_to_cpup(data) : -1;
-+	result = i2c_add_numbered_adapter(&cpm->adap);
- 
- 	if (result < 0) {
- 		dev_err(&ofdev->dev, "Unable to register with I2C\n");
-diff --git a/drivers/i2c/busses/i2c-pxa.c b/drivers/i2c/busses/i2c-pxa.c
-index f59224a..d603646 100644
---- a/drivers/i2c/busses/i2c-pxa.c
-+++ b/drivers/i2c/busses/i2c-pxa.c
-@@ -1079,7 +1079,7 @@ static int i2c_pxa_probe(struct platform_device *dev)
- 	 * The reason to do so is to avoid sysfs names that only make
- 	 * sense when there are multiple adapters.
- 	 */
--	i2c->adap.nr = dev->id != -1 ? dev->id : 0;
-+	i2c->adap.nr = dev->id;
- 	snprintf(i2c->adap.name, sizeof(i2c->adap.name), "pxa_i2c-i2c.%u",
- 		 i2c->adap.nr);
- 
-@@ -1142,10 +1142,7 @@ static int i2c_pxa_probe(struct platform_device *dev)
- 	i2c->adap.dev.of_node = dev->dev.of_node;
- #endif
- 
--	if (i2c_type == REGS_CE4100)
--		ret = i2c_add_adapter(&i2c->adap);
--	else
--		ret = i2c_add_numbered_adapter(&i2c->adap);
-+	ret = i2c_add_numbered_adapter(&i2c->adap);
- 	if (ret < 0) {
- 		printk(KERN_INFO "I2C: Failed to add bus\n");
- 		goto eadapt;
-diff --git a/drivers/i2c/busses/i2c-s6000.c b/drivers/i2c/busses/i2c-s6000.c
-index cb5d01e..c64ba73 100644
---- a/drivers/i2c/busses/i2c-s6000.c
-+++ b/drivers/i2c/busses/i2c-s6000.c
-@@ -341,10 +341,7 @@ static int __devinit s6i2c_probe(struct platform_device *dev)
- 	i2c_wr16(iface, S6_I2C_TXTL, 0);
- 
- 	platform_set_drvdata(dev, iface);
--	if (bus_num < 0)
--		rc = i2c_add_adapter(p_adap);
--	else
--		rc = i2c_add_numbered_adapter(p_adap);
-+	rc = i2c_add_numbered_adapter(p_adap);
- 	if (rc)
- 		goto err_irq_free;
- 	return 0;
-diff --git a/drivers/i2c/i2c-core.c b/drivers/i2c/i2c-core.c
-index 9a58994..131079a 100644
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -925,6 +925,9 @@ EXPORT_SYMBOL(i2c_add_adapter);
-  * or otherwise built in to the system's mainboard, and where i2c_board_info
-  * is used to properly configure I2C devices.
-  *
-+ * If the requested bus number is set to -1, then this function will behave
-+ * identically to i2c_add_adapter, and will dynamically assign a bus number.
-+ *
-  * If no devices have pre-been declared for this bus, then be sure to
-  * register the adapter before any dynamically allocated ones.  Otherwise
-  * the required bus ID may not be available.
-@@ -940,6 +943,8 @@ int i2c_add_numbered_adapter(struct i2c_adapter *adap)
- 	int	id;
- 	int	status;
- 
-+	if (adap->nr == -1) /* -1 means dynamically assign bus id */
-+		return i2c_add_adapter(adap);
- 	if (adap->nr & ~MAX_ID_MASK)
- 		return -EINVAL;
- 
+Using the resuming ip in userspace if exclude_kernel and the current kernel
+ip if exclude_user or default no exclude is a pure arbitrary interpretation of the
+exclude things. We could, but I believe it only makes the things confusing for people.
 
+If some users want an option where the event can trigger everywhere but hists are
+sorted by the resuming userspace ip, let's tweak the "perf report -s parent" thing
+to take the resuming userspace ip from the callchain as the parent and you get
+the desired result.
+
+This will have the advantage to keep exclude_* behaviour consistent everywhere and
+if we want to have that user resuming ip feature, it will be available for any kind of
+events.
