@@ -1,116 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752892Ab1F0Nxg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 09:53:36 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:14097
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751261Ab1F0Nx3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 09:53:29 -0400
-X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Mon, 27 Jun 2011 09:53:29 EDT
-X-SpamScore: -18
-X-BigFish: VPS-18(zz936eK4015L10e3K1432N98dKzz1202hzzz32i668h839h)
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNGB7N-01-J8T-02
-X-M-MSG: 
-Date: Mon, 27 Jun 2011 15:38:09 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Vince Weaver <vweaver1@eecs.utk.edu>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [patch] perf_events: more wrong events for AMD fam10h
-Message-ID: <20110627133809.GC4590@erda.amd.com>
-References: <alpine.DEB.2.00.1106071532250.21714@cl320.eecs.utk.edu>
- <1309173740.6701.103.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1309173740.6701.103.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S1752142Ab1F0Pjp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:39:45 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:40682 "EHLO duck.linux-mips.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751382Ab1F0PiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 11:38:10 -0400
+Message-Id: <1868ba261f47136619ef71c85ff1ef56b085fbe2.1309182743.git.ralf@linux-mips.org>
+In-Reply-To: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
+References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
+From: Ralf Baechle <ralf@linux-mips.org>
+To: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org
+Date: Mon, 27 Jun 2011 14:40:35 +0100
+Subject: [PATCH 12/12] DRM: Radeon: Fix section mismatch.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.06.11 07:22:20, Peter Zijlstra wrote:
-> On Tue, 2011-06-07 at 15:39 -0400, Vince Weaver wrote:
-> > Hello
-> > 
-> > I'm in the process of auditing perf_event's awesome "generalized events".
-> > 
-> > On AMD fam10h for some we have the following definitions:
-> >   cache-references = INSTRUCTION_CACHE_FETCHES	0x530080
-> >   cache-misses 	   = INSTRUCTION_CACHE_MISSES	0x530081
-> > 
-> > on Intel at least I'm pretty sure these events match to Last Level Cache 
-> > accesses/misses, not icache.  Is there a reason for this?
-> > 
-> > Attached is a patch that removes these until better events can be found.
-> > (LLC is tricky on AMD as it's a shared resource).
-> > 
-> > Note, l1-dcache-stores is broken too, I'm looking into it.
-> > 
-> > Thanks,
-> > 
-> > Vince
-> > vweaver1@eecs.utk.edu
-> > 
-> > diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-> > index fe29c1d..a46b987 100644
-> > --- a/arch/x86/kernel/cpu/perf_event_amd.c
-> > +++ b/arch/x86/kernel/cpu/perf_event_amd.c
-> > @@ -98,8 +98,6 @@ static const u64 amd_perfmon_event_map[] =
-> >  {
-> >    [PERF_COUNT_HW_CPU_CYCLES]			= 0x0076,
-> >    [PERF_COUNT_HW_INSTRUCTIONS]			= 0x00c0,
+WARNING: drivers/gpu/drm/radeon/radeon.o(.text+0x5d1fc): Section mismatch in reference from the function radeon_get_clock_info() to the function .devinit.text:radeon_read_clocks_OF()
+The function radeon_get_clock_info() references
+the function __devinit radeon_read_clocks_OF().
+This is often because radeon_get_clock_info lacks a __devinit
+annotation or the annotation of radeon_read_clocks_OF is wrong.
 
-I am not sure if Intel's LLC definition includes uncore events which
-are equivalent to AMD's northbridge counter (L3) events (it could be
-meant the LLC of the core only?).
+Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+To: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-mips@linux-mips.org
+---
+ drivers/gpu/drm/radeon/radeon_clocks.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Following definition taken form the Intel spec (SDM 3B, 30.2.3 and
-Appendix A):
-
-> > -  [PERF_COUNT_HW_CACHE_REFERENCES]		= 0x0080,
-
-"This event counts requests originating from the core that reference a
-cache line in the last level cache." (Intel event 2EH/4FH)
-
-> > -  [PERF_COUNT_HW_CACHE_MISSES]			= 0x0081,
-
-"This event counts each cache miss condition for references to the
-last level cache." (Intel event 2EH/41H)
-
-> 
-> Would 0x40000F7E0 and 0x40000F7E1 be better?
-
-Taking this is a bit tricky, we would measure all misses of the node
-then. We actually would have to select the current core. But for this
-we need to schedule one northbridge counter for each core. On a six
-core (family 10h ref D) we don't have enough counters then. There is
-also an erratum, we can not do per-core L3 measurements.
-
-On family 15h northbridge counters are not yet implemented.
-
-On k7/k8 we must select L2 events (0x0080/0x0081).
-
-So even if LLC includes per-definition the L3, it is not easy to
-implement. But using 0x0080/0x0081 on all models would give similar
-results for every cpu family.
-
--Robert
-
-> 
-> >    [PERF_COUNT_HW_BRANCH_INSTRUCTIONS]		= 0x00c2,
-> >    [PERF_COUNT_HW_BRANCH_MISSES]			= 0x00c3,
-> >    [PERF_COUNT_HW_STALLED_CYCLES_FRONTEND]	= 0x00d0, /* "Decoder empty" event */
-> 
-> 
-
+diff --git a/drivers/gpu/drm/radeon/radeon_clocks.c b/drivers/gpu/drm/radeon/radeon_clocks.c
+index 2d48e7a..dcd0863e 100644
+--- a/drivers/gpu/drm/radeon/radeon_clocks.c
++++ b/drivers/gpu/drm/radeon/radeon_clocks.c
+@@ -96,7 +96,7 @@ uint32_t radeon_legacy_get_memory_clock(struct radeon_device *rdev)
+  * Read XTAL (ref clock), SCLK and MCLK from Open Firmware device
+  * tree. Hopefully, ATI OF driver is kind enough to fill these
+  */
+-static bool __devinit radeon_read_clocks_OF(struct drm_device *dev)
++static bool radeon_read_clocks_OF(struct drm_device *dev)
+ {
+ 	struct radeon_device *rdev = dev->dev_private;
+ 	struct device_node *dp = rdev->pdev->dev.of_node;
+@@ -166,7 +166,7 @@ static bool __devinit radeon_read_clocks_OF(struct drm_device *dev)
+ 	return true;
+ }
+ #else
+-static bool __devinit radeon_read_clocks_OF(struct drm_device *dev)
++static bool radeon_read_clocks_OF(struct drm_device *dev)
+ {
+ 	return false;
+ }
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+1.7.4.4
 
