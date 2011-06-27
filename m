@@ -1,50 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753023Ab1F0RWT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 13:22:19 -0400
-Received: from c60.cesmail.net ([216.154.195.49]:61589 "EHLO c60.cesmail.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752474Ab1F0RWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 13:22:14 -0400
-Message-ID: <4E08BC44.3020105@gnu.org>
-Date: Mon, 27 Jun 2011 13:22:12 -0400
-From: Pavel Roskin <proski@gnu.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753112Ab1F0RZE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 13:25:04 -0400
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:49290 "EHLO
+	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752989Ab1F0RXI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 13:23:08 -0400
+Date: Mon, 27 Jun 2011 19:23:05 +0200
+From: Bastian Blank <waldi@debian.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xensource.com, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: [PATCH 2/2] xen: Add alias to autoload backend
+ drivers
+Message-ID: <20110627172305.GC23028@wavehammer.waldi.eu.org>
+Mail-Followup-To: Bastian Blank <waldi@debian.org>,
+	Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+	xen-devel@lists.xensource.com,
+	virtualization@lists.linux-foundation.org,
+	linux-kernel@vger.kernel.org
+References: <20110624215155.GB4735@wavehammer.waldi.eu.org>
+ <20110627161327.GO6978@dumpdata.com>
+ <20110627163728.GA23028@wavehammer.waldi.eu.org>
+ <20110627165109.GB13335@dumpdata.com>
+ <20110627165711.GA2201@dumpdata.com>
 MIME-Version: 1.0
-To: Johannes Berg <johannes@sipsolutions.net>
-CC: Arend van Spriel <arend@broadcom.com>,
-        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        Geert Uytterhoeven <geert@linux-m68k.org>,
-        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -next] bcma: main.c needs to include <linux/slab.h>
-References: <alpine.DEB.2.00.1106261016100.25900@ayla.of.borg>	 <BANLkTikSLx6FKvF518s99Q8eRU_WF+cn9A@mail.gmail.com>	 <BANLkTinGvM79fza-=bFwcbtfFzGHAVKJag@mail.gmail.com>	 <BANLkTikVtWe0jB_jLeP1YZTEKSYA97gdqQ@mail.gmail.com>	 <4E08B4AA.409@broadcom.com> (sfid-20110627_185027_507290_BCE834F5) <1309193844.3911.27.camel@jlt3.sipsolutions.net>
-In-Reply-To: <1309193844.3911.27.camel@jlt3.sipsolutions.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110627165711.GA2201@dumpdata.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2011 12:57 PM, Johannes Berg wrote:
+On Mon, Jun 27, 2011 at 12:57:11PM -0400, Konrad Rzeszutek Wilk wrote:
+> Ugh actually no I can't.
 
-> Yeah, good rule. Consider if you have a.h, b.h and z.c, z.c needs b.h
-> but not a.h, and now b.h includes a.h ("for convenience") -- changing
-> a.h would needlessly recompile z.c. Now, changing slab.h will probably
-> recompile everything anyway, but still...
+Why? It does not actually change things.
 
-In my configuration after touching slab.h and recompilation:
+> Can you re-submit these two patches (and stick on Acked-by Ian on them) and
+> split the "xen: Add alias to autoload backend driver" in three patches:
+>  1) the xen-netback (and copy David Miller)
+>  2) the xen-blkback (and copy Jens Axboe)
+>  3) the xenbus one
 
-$ find -name '*.o' -newer ../linux3/include/linux/slab.h |wc -l
-1508
-$ find -name '*.o' |wc -l
-1928
+That is silly.
 
-78% object files were recompiled, 22% were no recompiled.  Careful use 
-of includes does save time.
+> That should be five patches total.
+
+No, 2+2 is 4, not five.
+
+Bastian
 
 -- 
-Regards,
-Pavel Roskin
+Each kiss is as the first.
+		-- Miramanee, Kirk's wife, "The Paradise Syndrome",
+		   stardate 4842.6
