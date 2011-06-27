@@ -1,195 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757275Ab1F0Ih3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 04:37:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35907 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755465Ab1F0Igk (ORCPT
+	id S1756882Ab1F0IwX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 04:52:23 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:35335 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757240Ab1F0IuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 04:36:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tlosZc2DDYZTottMROCC6KyD99XqtX1iPtW5mbm0aVG7iiSJlWq+tNYkKL2Xv9DtH6
-         +aS9i7AOCzzc15yFy5M2x4L5rBP7qgqz+n8nY7qARg6xLya7sqbmW1lxrtbTPaVpFcK/
-         zYDNuK2Y9lFjWjLr2GzGe1/lVdNOMvAkzvtvM=
-Date: Mon, 27 Jun 2011 12:36:33 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110627083633.GA5846@albatros>
-References: <20110623152137.GA2536@albatros>
- <20110626103915.GB11093@elte.hu>
- <20110626165409.GA2584@albatros>
- <20110626182628.GA20158@elte.hu>
- <20110626190622.GB4217@albatros>
- <20110626194618.GA21740@elte.hu>
- <20110626202518.GA4915@albatros>
- <20110626220126.GA24004@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110626220126.GA24004@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 27 Jun 2011 04:50:09 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 27 Jun 2011 17:42:05 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        Ying Han <yinghan@google.com>, Michal Hocko <mhocko@suse.cz>
+Subject: [BUGFIX][PATCH] Fix direct softlimit reclaim to be called in memcg
+ limit path.
+Message-Id: <20110627174205.ccee1027.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 00:01 +0200, Ingo Molnar wrote:
-> * Vasiliy Kulikov <segoon@openwall.com> wrote:
-> > On Sun, Jun 26, 2011 at 21:46 +0200, Ingo Molnar wrote:
-> > > No, because the problems such a mistake causes are not equivalent: it 
-> > > would have been far more harmful to not print out the *very real* 
-> > > product names written in some non-US language than to accidentally 
-> > > include some control character you did not think of.
-> > 
-> > ???
-> > 
-> > Not "not print", but print in "crypted" form.  The information is 
-> > still not lost, you can obviously restore it to the original form, 
-> > with some effort, but possible.  Compare it with the harm of log 
-> > spoofing - it is not "restorable".
-> 
-> The harm of 'potential' log spoofing affecting exactly zero known 
-> users right now,
+>From 702df89e4cd8e7734223c367ebc56d47afea403a Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 27 Jun 2011 17:24:54 +0900
+Subject: [PATCH] Fix direct softlimit reclaim to be called in memcg limit path.
 
-???
+commit d149e3b(memcg: add the soft_limit reclaim in global direct reclaim)
+adds a softlimit hook to shrink_zones(). By this, soft limit is called
+as
 
-A potential thing affects all users that *can be* affected by actual
-log spoofing.  This is what the word "potential" means.
+   try_to_free_pages()
+       do_try_to_free_pages()
+           shrink_zones()
+               mem_cgroup_soft_limit_reclaim()
 
-Analogy: if some privilege escalation bug is found in some very core
-code then all users iteracting with an untrusted security domains
-(local users, network, etc.) being able to exploit it would be affected.
-It is silly to say that nobody is affected because you just don't know
-any such cases of this bug exploitation in the past.
+Then, direct reclaim is memcg softlimit hint aware, now.
 
+But, the memory cgroup's "limit" path can call softlimit shrinker.
 
-> > > > > A black list is well-defined: it disables the display of 
-> > > > > certain characters because they are *known to be dangerous*.
-> > > > 
-> > > > What do you do with dangerous characters that are *not yet known* 
-> > > > to be dangerous?
-> > > 
-> > > I'm ready to act on facts only.
-> > 
-> > The *fact* is you/anybody/everybody might not know all bad things.  
-> > If you just don't care because it is yet unknown then you will be 
-> > vulnerable as soon as it disclosured.
-> 
-> Erm, do you claim that it's not possible to know which characters are 
-> dangerous and which ones not?
+   try_to_free_mem_cgroup_pages()
+       do_try_to_free_pages()
+           shrink_zones()
+               mem_cgroup_soft_limit_reclaim()
 
-A sample:
+This will cause a global reclaim when a memcg hits limit.
 
-Is BEL dangerous?  I can imagine 200 BELs/scrolls down would hang a
-slow tty by a considerable amount of time without ^C ability to kill the
-log viewer.  On the rest ttys it is harmless.  Even Alan wanted to add
-it to the white list, not just exclude from the black list.
+This is bug. soft_limit_reclaim() should be called when
+scanning_global_lru(sc) == true.
 
+And the commit adds a variable "total_scanned" for counting
+softlimit scanned pages....it's not "total".
+This patch removes the variable and update sc->nr_scanned
+instead of it. This will affect shrink_slab()'s scan condition
+but, global LRU is scanned by softlimit and I think this change makes
+sense.
 
-If someone skilled in the TTY codes provides us the full analysis of tty
-code table with *a proof* what codes are harmfull (in the sense of
-logging) and what are not, the question would be closed.  I'm not
-skilled it in, I'd not try to do it (maybe the manpage is incomplete?).
-I've reported just the *known for sure* farmfull sequence (the first
-report of cntrl chars harm belogs to Solar Designer and dates to 2006:
-http://lists.openwall.net/linux-kernel/2006/08/22/29).
+TODO
+  - avoid too much scan in a zone when softlimit did enough jobs.
 
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/vmscan.c |   27 +++++++++++++++------------
+ 1 files changed, 15 insertions(+), 12 deletions(-)
 
-> > > Also, i really prefer the policy of acting on known dangers 
-> > > instead of being afraid of the unknown.
-      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-> > Do you know the principle "Attacks always get better, never worse"?  
-> > If you are protected against only of known attack, you will be 
-> > vulnerable to *every* danger not known to you.
-> > 
-> > Maybe you don't know, but it is really possible to be protected 
-> > against some *yet unknown* attack techniques.  (The assessment of 
-> > what attacks it protects against is undefined too, though.)  And 
-> > upstream Linux is *already* protected against some *yet unknown* 
-> > bugs, not the whole bug classes, but at least small kinds of it.
-> 
-> This claim is silly - do you claim some 'unknown bug' in the ASCII 
-> printout space?
-
-You were talking about dangers in general, I'm answering about it in
-general too.
-
-
-> Cannot you be bothered to enumerate the known 'bad' control and 
-> escape characters?
-
-Note it is not bad characters, but character sequences.  You cannot just
-grep for bad substrings because of KERN_CONT (because the black list means
-everything not denied is permitted, and breaking ctrl sequence is then
-permitted, right?), so you have to define a state machine for this
-filtering (if you want to filter just only bad charsequences).  It looks
-too complicated for me for this little thing - just to write to a log
-with user supplied data.  But you say it is simplier and safer, maybe
-you will do it?
-
-
-> You *clearly* did not consider the full utility spectrum in the first 
-> version of the patch
-
-Sure, that's why maintainers exist and they should be competent to
-ack/nak the solution that does/doesn't fit the actual needs.
-
-BTW, it has happened because of missing clear conversions about what
-characters printk() can be fed.  In the comment the encoding is not
-mentioned, only "See also: printf(3)", which might be related to format
-strings only.
-
-Also '\n' problem with multiline messages wouldn't arrise if printk()
-was clearly declared as a function logging exactly one line.
-
-
-> > > > > A white list on the other hand does it the wrong way around: 
-> > > > > it tries to put the 'burden of proof' on the useful, good 
-> > > > > guys - and that's counter-productive really.
-> > > > 
-> > > > Really?  I think strict API definition is productive, unlike 
-> > > > using it in cases where it looks like working, but creating 
-> > > > tricky and obscure bugs.
-> > > 
-> > > You werent really creating a well-defined API here, were you?
-> > 
-> > No, I was - only ascii chars and \n are allowed.  In v2 all ascii 
-> > chars, the upper charset and 2 control chars are allowed.  Rather 
-> > clear, IMO.
-> 
-> Please enumerate the space you excluded
-
-All control characters except space chars (tabs and \n) are not needed
-for the log purposes, they define the cursor position, output colors,
-and tty modes.  All this is not needed for log purposes, it is a cynical
-log, not a cristmas tree.
-
-
-> and the reason for exclusion.
-
-Note that *you* want to define a black list with a clear denied
-semantics, I want to do the reverse - to define the allowed semantics,
-which additionally implies better API semantics understanding.  I don't
-need to enumerate all evils, I'm evading it by defining what one can do
-for sure.
-
-
-I don't understand why you so resist to define API more clear to avoid
-other possible problems in the future.
-
-
-Thanks,
-
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 8ff834e..4f49535 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -1995,14 +1995,13 @@ restart:
+  * If a zone is deemed to be full of pinned pages then just give it a light
+  * scan then give up on it.
+  */
+-static unsigned long shrink_zones(int priority, struct zonelist *zonelist,
++static void shrink_zones(int priority, struct zonelist *zonelist,
+ 					struct scan_control *sc)
+ {
+ 	struct zoneref *z;
+ 	struct zone *zone;
+ 	unsigned long nr_soft_reclaimed;
+ 	unsigned long nr_soft_scanned;
+-	unsigned long total_scanned = 0;
+ 
+ 	for_each_zone_zonelist_nodemask(zone, z, zonelist,
+ 					gfp_zone(sc->gfp_mask), sc->nodemask) {
+@@ -2017,19 +2016,23 @@ static unsigned long shrink_zones(int priority, struct zonelist *zonelist,
+ 				continue;
+ 			if (zone->all_unreclaimable && priority != DEF_PRIORITY)
+ 				continue;	/* Let kswapd poll it */
++			/*
++			 * This steals pages from memory cgroups over softlimit
++			 * and returns the number of reclaimed pages and
++			 * scanned pages. This works for global memory pressure
++			 * and balancing, not for a memcg's limit.
++			 */
++			nr_soft_scanned = 0;
++			nr_soft_reclaimed = mem_cgroup_soft_limit_reclaim(zone,
++						sc->order, sc->gfp_mask,
++						&nr_soft_scanned);
++			sc->nr_reclaimed += nr_soft_reclaimed;
++			sc->nr_scanned += nr_soft_scanned;
++			/* need some check for avoid more shrink_zone() */
+ 		}
+ 
+-		nr_soft_scanned = 0;
+-		nr_soft_reclaimed = mem_cgroup_soft_limit_reclaim(zone,
+-							sc->order, sc->gfp_mask,
+-							&nr_soft_scanned);
+-		sc->nr_reclaimed += nr_soft_reclaimed;
+-		total_scanned += nr_soft_scanned;
+-
+ 		shrink_zone(priority, zone, sc);
+ 	}
+-
+-	return total_scanned;
+ }
+ 
+ static bool zone_reclaimable(struct zone *zone)
+@@ -2094,7 +2097,7 @@ static unsigned long do_try_to_free_pages(struct zonelist *zonelist,
+ 		sc->nr_scanned = 0;
+ 		if (!priority)
+ 			disable_swap_token(sc->mem_cgroup);
+-		total_scanned += shrink_zones(priority, zonelist, sc);
++		shrink_zones(priority, zonelist, sc);
+ 		/*
+ 		 * Don't shrink slabs when reclaiming memory from
+ 		 * over limit cgroups
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+1.7.4.1
+
+
