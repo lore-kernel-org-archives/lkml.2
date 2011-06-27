@@ -1,116 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab1F0Qyk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 12:54:40 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39989 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab1F0Qyi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 12:54:38 -0400
+	id S1752892Ab1F0QzA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 12:55:00 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44372 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752914Ab1F0Qy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 12:54:56 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,433,1304319600"; 
+   d="scan'208";a="20640189"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>
+CC: Jean Delvare <khali@linux-fr.org>, "Yu, Fenghua" <fenghua.yu@intel.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Date: Mon, 27 Jun 2011 22:24:44 +0530
+Subject: RE: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
+ (TunnelCreek)?
+Thread-Topic: [lm-sensors] coretemp: Support for Intel Atom E6XX CPU
+ (TunnelCreek)?
+Thread-Index: Acw06ljYrgjERCkkR0qmhcAeLOKPPgAADh2Q
+Message-ID: <D6D887BA8C9DFF48B5233887EF04654109E84A62C7@bgsmsx502.gar.corp.intel.com>
+References: <201106271220.51953.alexander.stein@systec-electronic.com>
+	 <20110627164108.777c2e28@endymion.delvare>
+	 <1309191054.8271.636.camel@groeck-laptop>
+	 <D6D887BA8C9DFF48B5233887EF04654109E84A62C0@bgsmsx502.gar.corp.intel.com>
+ <1309193405.8271.645.camel@groeck-laptop>
+In-Reply-To: <1309193405.8271.645.camel@groeck-laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-In-Reply-To: <1309192426.17574.47.camel@vivanov>
-References: <1309192426.17574.47.camel@vivanov>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 27 Jun 2011 10:54:17 -0600
-X-Google-Sender-Auth: IPDxzkGhZC8d4rK8G4IzD2LnADI
-Message-ID: <BANLkTik3fNOqsiDaDt=HhDw1DVsBBJFX1Q@mail.gmail.com>
-Subject: Re: [PATCH] treewide: fix kernel-doc warnings
-To: Vitaliy Ivanov <vitalivanov@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jiri Kosina <jkosina@suse.cz>, "David S. Miller" <davem@davemloft.net>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5RGtPBg015010
 
-On Mon, Jun 27, 2011 at 10:33 AM, Vitaliy Ivanov <vitalivanov@gmail.com> wrote:
-> Fixing 'make htmldocs' warnings:
->
-> Warning(/include/linux/hrtimer.h:153): No description found for parameter 'clockid'
-> Warning(/include/linux/device.h:604): Excess struct/union/enum/typedef member 'of_match' description in 'device'
-> Warning(/include/net/sock.h:349): Excess struct/union/enum/typedef member 'sk_rmem_alloc' description in 'sock'
->
-> Issue with:
-> Warning(/include/net/wimax.h:432): No description found for parameter 'rfkill_input'
-> is already solved in net-next tree -
-> commit #c6af9c406ceb3434281cf230938453931dcbab75 - net: wimax: Remove of unused 'rfkill_input' pointer.
->
-> Patch is against latest Linus' tree.
->
-> ---
-> >From 55fe3701d1ed1f1302a73cd5bfdfc7972e89f5b7 Mon Sep 17 00:00:00 2001
-> From: Vitaliy Ivanov <vitalivanov@gmail.com>
-> Date: Mon, 27 Jun 2011 19:07:08 +0300
-> Subject: [PATCH] treewide: fix kernel-doc warnings
->
-> Fix 'make htmldocs' warnings:
->
-> Warning(/include/linux/hrtimer.h:153): No description found for
-> parameter 'clockid'
-> Warning(/include/linux/device.h:604): Excess struct/union/enum/typedef
-> member 'of_match' description in 'device'
-> Warning(/include/net/sock.h:349): Excess struct/union/enum/typedef
-> member 'sk_rmem_alloc' description in 'sock'
->
-> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
-> ---
->  include/linux/device.h  |    1 -
->  include/linux/hrtimer.h |    1 +
->  include/net/sock.h      |    1 -
->  3 files changed, 1 insertions(+), 2 deletions(-)
->
-> diff --git a/include/linux/device.h b/include/linux/device.h
-> index 553fd37..e4f62d8 100644
-> --- a/include/linux/device.h
-> +++ b/include/linux/device.h
-> @@ -530,7 +530,6 @@ struct device_dma_parameters {
->  * @dma_mem:   Internal for coherent mem override.
->  * @archdata:  For arch-specific additions.
->  * @of_node:   Associated device tree node.
-> - * @of_match:  Matching of_device_id from driver.
->  * @devt:      For creating the sysfs "dev".
->  * @devres_lock: Spinlock to protect the resource of the device.
->  * @devres_head: The resources list of the device.
+Hi Guenter,
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> Unfortunately, looking at Alexander's /proc/cpuinfo output, it looks
+> like the E6xx chips have no mention of E6xx in the CPU ID string, which
+> unfortunately kills the idea.
+> 
+> Do you know if there is _any_ means to distinguish E6xx from E6xxT ?
+> 
 
-> diff --git a/include/linux/hrtimer.h b/include/linux/hrtimer.h
-> index 51932e5..fd0dc30 100644
-> --- a/include/linux/hrtimer.h
-> +++ b/include/linux/hrtimer.h
-> @@ -135,6 +135,7 @@ struct hrtimer_sleeper {
->  * @cpu_base:          per cpu clock base
->  * @index:             clock type index for per_cpu support when moving a
->  *                     timer to a base on another cpu.
-> + * @clockid:           clock id for per_cpu support
->  * @active:            red black tree root node for the active timers
->  * @resolution:                the resolution of the clock, in nanoseconds
->  * @get_time:          function to retrieve the current time of the clock
-> diff --git a/include/net/sock.h b/include/net/sock.h
-> index f2046e4..c0b938c 100644
-> --- a/include/net/sock.h
-> +++ b/include/net/sock.h
-> @@ -178,7 +178,6 @@ struct sock_common {
->   *    @sk_dst_cache: destination cache
->   *    @sk_dst_lock: destination cache lock
->   *    @sk_policy: flow policy
-> -  *    @sk_rmem_alloc: receive queue bytes committed
->   *    @sk_receive_queue: incoming packets
->   *    @sk_wmem_alloc: transmit queue bytes committed
->   *    @sk_write_queue: Packet sending queue
-> --
-> 1.7.0.4
->
->
->
->
+Sorry I do not know. But I can ask some folks here and get back
+to you guys. Should not take more time, once I identify the right
+person to ask :-)
 
+Thanks,
+Durga
 
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
