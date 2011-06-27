@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752859Ab1F0N77 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 09:59:59 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52943 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab1F0N7x convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 09:59:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=sw1Dq9VAgDe8fTMR1GSnTh772W39pobbrltBn5egez9NrqiF+UYYLIdY7vFSPN0NUy
-         ckn8RVyH8LeirF/ar+zKiQLC6A7EYw8479X9j3ghpJ4x0MGxoVqiWHFF0T36FRNvVePY
-         OO+JpsguFG97YsTDDq0pPp0keJmxLWJvzeGl4=
+	id S1752645Ab1F0OBG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 10:01:06 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:46449 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750897Ab1F0OBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 10:01:01 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201106271400.p5RE0u38026164@stout.americas.sgi.com>
+Date: Mon, 27 Jun 2011 09:00:56 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 3.0-rc5
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.5 7/5/10
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1106261016100.25900@ayla.of.borg>
-References: <alpine.DEB.2.00.1106261016100.25900@ayla.of.borg>
-Date: Mon, 27 Jun 2011 15:59:53 +0200
-Message-ID: <BANLkTikSLx6FKvF518s99Q8eRU_WF+cn9A@mail.gmail.com>
-Subject: Re: [PATCH -next] bcma: main.c needs to include <linux/slab.h>
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: linux-wireless@vger.kernel.org, linux-next@vger.kernel.org,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/26 Geert Uytterhoeven <geert@linux-m68k.org>:
-> m68k allmodconfig:
->
-> drivers/bcma/main.c: In function ‘bcma_release_core_dev’:
-> drivers/bcma/main.c:68: error: implicit declaration of function ‘kfree’
+Linus, please pull the following three XFS changes for 3.0-rc5:
+- The first fixes a problem where certain XFS inode fields were
+  not getting re-initialized when they were recycled.
+- The second ensures a flag related to speculatively preallocating
+  space beyond EOF gets reset when a file is truncated.
+- The third properly sets a flag indicating that a lookup failure
+  is allowed for user-supplied attribute names.  This was causing
+  a failed assertion when running a test that attempts to remove
+  a non-existent selinux-related attribute.
 
-We already include slab.h in:
-host_pci.c
-scan.c
-sprom.c
+Thank you.
 
-Maybe we can just include this in bcma.h as a better solution? We
-could drop other includes then.
-Can you submit patch for this?
+  					-Alex
 
--- 
-Rafał
+The following changes since commit 258e43fdb00c73d424b114ae3850accd55b27cbb:
+
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6 (2011-06-26 19:40:31 -0700)
+
+are available in the git repository at:
+
+  git://oss.sgi.com/xfs/xfs for-linus
+
+Dave Chinner (3):
+      xfs: reset inode per-lifetime state when recycling it
+      xfs: clear XFS_IDIRTY_RELEASE on truncate down
+      xfs: prevent bogus assert when trying to remove non-existent attribute
+
+ fs/xfs/xfs_attr.c     |    7 +++++++
+ fs/xfs/xfs_iget.c     |   13 +++++++++----
+ fs/xfs/xfs_inode.h    |   10 ++++++++++
+ fs/xfs/xfs_vnodeops.c |    7 +++++--
+ 4 files changed, 31 insertions(+), 6 deletions(-)
