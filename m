@@ -1,123 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab1F0HfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 03:35:18 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59527 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756880Ab1F0Hd4 (ORCPT
+	id S1756963Ab1F0Hm6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 03:42:58 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:38301 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756855Ab1F0HmX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 03:33:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E08324D.9040605@jp.fujitsu.com>
-Date: Mon, 27 Jun 2011 16:33:33 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	Mon, 27 Jun 2011 03:42:23 -0400
+Date: Mon, 27 Jun 2011 15:42:12 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Mandeep Singh Baines <msb@google.com>
+Cc: Mandeep Singh Baines <msb@chromium.org>,
+        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+        linux-crypto@vger.kernel.org, Joe Perches <joe@perches.com>
+Subject: Re: [PATCH v3] crypto: sha1: use SHA1_BLOCK_SIZE
+Message-ID: <20110627074212.GA9289@gondor.apana.org.au>
+References: <1306379477-24552-1-git-send-email-msb@chromium.org> <20110525.233411.1372538972166578285.davem@davemloft.net> <20110526232058.GQ11023@google.com> <20110531052245.GA17068@gondor.apana.org.au> <20110623190227.GH13916@google.com>
 MIME-Version: 1.0
-To: segoon@openwall.com
-CC: linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        rientjes@google.com, wilsons@start.ca, security@kernel.org,
-        eparis@redhat.com, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
-References: <1308917318-4749-1-git-send-email-segoon@openwall.com> <4E07F1C0.2070305@jp.fujitsu.com> <20110627070300.GA4463@albatros>
-In-Reply-To: <20110627070300.GA4463@albatros>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110623190227.GH13916@google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/27 16:03), Vasiliy Kulikov wrote:
-> On Mon, Jun 27, 2011 at 11:58 +0900, KOSAKI Motohiro wrote:
->> (2011/06/24 21:08), Vasiliy Kulikov wrote:
->>> /proc/PID/io may be used for gathering private information.  E.g. for
->>> openssh and vsftpd daemons wchars/rchars may be used to learn the
->>> precise password length.  Restrict it to processes being able to ptrace
->>> the target process.
->>>
->>> ptrace_may_access() is needed to prevent keeping open file descriptor of
->>> "io" file, executing setuid binary and gathering io information of the
->>> setuid'ed process.
->>>
->>> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
->>
->> This description seems makes sense to me. But Vasilly, I have one question.
->> Doesn't this change break iotop command or other userland tools?
+On Thu, Jun 23, 2011 at 12:02:27PM -0700, Mandeep Singh Baines wrote:
+> Modify sha1_update to use SHA1_BLOCK_SIZE.
 > 
-> I don't use iotop, but after reading the sources it looks like it uses
-> taskstats for information gathering, which will be broken for sure by
-> the second patch.  All other userland tools using alien io files will be
-> broken too.
-> 
-> I'd say the whole approach of world readable debugging/statistics
-> information was broken from the beginning, now we are stuck with these
-> interfaces because of acient mistakes.
+> Signed-off-by: Mandeep Singh Baines <msb@chromium.org>
 
-Just idea. (perhaps it's too dumb).
-
-If a user want to know throughput, usually they only need KB/s granularity.
-If a user want to know password hints, they need to know strict bytes granularity.
-So, adding some random bytes to this statistics may help to obscure key data,
-or just "stat = ROUND_UP(stat, 1024)".
-
-But, I hope to wait another experts response. they may know better approach. :)
-
-
-> BTW, what to do with sched and status?  It stores some sensitive
-> information too (execution times and vm space, respectively).
-
-Dunno. I'm not security expert.
-
-
->>> ---
->>>  fs/proc/base.c |    7 +++++--
->>>  1 files changed, 5 insertions(+), 2 deletions(-)
->>>
->>> diff --git a/fs/proc/base.c b/fs/proc/base.c
->>> index 14def99..5ae25d1 100644
->>> --- a/fs/proc/base.c
->>> +++ b/fs/proc/base.c
->>> @@ -2712,6 +2712,9 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
->>>  	struct task_io_accounting acct = task->ioac;
->>>  	unsigned long flags;
->>>  
->>> +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
->>> +		return -EACCES;
->>> +
->>
->> I think this check need a comment. Usually procfs don't use ptrace_may_access() directly
->> (see mm_for_maps) because it's racy against exec().
-> 
-> This makes sense.  Reading /proc/self/io and exec'ing setuid program
-> would cause the race.  What lock should I use to block execve()?
-> 
-> 
-> Also I'm worried about these statistics after dropping the privileges.
-> After setuid() and similar things not changing pid unprivileged user
-> gets some information about the previous io activity of this task being
-> privileged.  In some situations it doesn't reveal any sensitive
-> information, in some it might.  Clearing taskstats on credential
-> changing functions would totally break taskstats' interfaces; and should
-> be temporary changing fsuid/euid followed by reverting it considered
-> harmfull?  I don't know.
-
-Can you please explain more? I'm feeling "reset at credential change" is
-reasonable idea. How broken is there?
-
-
->> However I think your code is ok.
->> because a few bytes io accounting leak has no big matter.
-> 
-> Please don't do any assumptions about the significance of these few
-> bytes.  It can be not "few" bytes if either the scheduler's granularity
-> is significant or the scheduler does wrong assumptions about CPU speeds.
-> Also if someone gets CAP_SYS_NICE he may totally break these assumptions.
-> 
-> My ssh example is just a proof that io stat is harmfull *sometimes*.
-> I didn't investigate in what cases it is harmless for sure (if it's
-> possible at all).
-
-Umm. reasonable. task->signal->cred_guard_mutex can be used for preventing
-exec() race, I think. (see check_mem_permission() and et al).
-
-
+Patch applied.  Thanks a lot!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
