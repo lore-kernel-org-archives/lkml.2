@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326Ab1F0E3i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 00:29:38 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:43860 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756134Ab1F0E3O convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 00:29:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Jxm8n3qKRPECe+S9sA1VnOusrGOz3ZMpnWf7Bb87EMdY2O6TXDpUqxoyA/kPzbiZT3
-         DlKDBRVUljuwZ+W8Sd+GEMQoDOKx9J0bImH/Aa+B6TY01U30youXB96gkWUx+hwqrS8D
-         w9BhVuD89V1RFnxlQqNaqNEj2ncNZ9Qw8aSc0=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimFL44XRDeA6z6pvKGw-zpcdsNUEw@mail.gmail.com>
-References: <BANLkTiknCeAxe30MJdVTxDom+ko8+EDQ4A@mail.gmail.com>
-	<1307642718-22257-1-git-send-email-minipli@googlemail.com>
-	<20110609155630.0f734351.akpm@linux-foundation.org>
-	<1307711337-4042-1-git-send-email-minipli@googlemail.com>
-	<20110610134821.GL24424@n2100.arm.linux.org.uk>
-	<BANLkTimFL44XRDeA6z6pvKGw-zpcdsNUEw@mail.gmail.com>
-Date: Mon, 27 Jun 2011 06:29:12 +0200
-Message-ID: <BANLkTikzPx8rTa9YSqccXA+zjM0YNJmyOw@mail.gmail.com>
-Subject: Re: [PATCH] arm, exec: remove redundant set_fs(USER_DS)
-From: Mathias Krause <minipli@googlemail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756372Ab1F0FCg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 01:02:36 -0400
+Received: from mail.perches.com ([173.55.12.10]:3215 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756228Ab1F0FBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 01:01:50 -0400
+From: Joe Perches <joe@perches.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/8] wan: Use current logging forms
+Date: Sun, 26 Jun 2011 22:01:27 -0700
+Message-Id: <cover.1309150683.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 10, 2011 at 3:53 PM, Mathias Krause <minipli@googlemail.com> wrote:
-> On Fri, Jun 10, 2011 at 3:48 PM, Russell King - ARM Linux
-> <linux@arm.linux.org.uk> wrote:
->> On Fri, Jun 10, 2011 at 03:08:57PM +0200, Mathias Krause wrote:
->>> The address limit is already set in flush_old_exec() so this
->>> set_fs(USER_DS) is redundant.
->>
->> Please show where and how this is done.  I've looked and can't see
->> any equivalent call to set_fs() in flush_old_exec().
->
-> Before dac853a (exec: delay address limit change until point of no
-> return) it was done in search_binary_handler(), now it is done in
-> flush_old_exec(). Either way set_fs(USER_DS) was/gets called before
-> start_thread() so the call there is redundant.
+Joe Perches (8):
+  generic_hdlc: Update to current logging forms
+  cosa: Update to current logging forms
+  cyclom: Update to current logging forms
+  frame relay dlci/frad: Update to current logging forms
+  dscc4: Update to current logging forms
+  farsync: Update to current logging forms
+  ixp4xx_hss: Update to current logging forms
+  wan: Update to current logging forms
 
-Russell, any new opinion on this?
+ drivers/net/wan/c101.c         |   30 +++---
+ drivers/net/wan/cosa.c         |  226 +++++++++++++++++++---------------------
+ drivers/net/wan/cycx_drv.c     |   81 +++++++--------
+ drivers/net/wan/cycx_main.c    |   31 +++---
+ drivers/net/wan/cycx_x25.c     |  177 +++++++++++++++-----------------
+ drivers/net/wan/dlci.c         |   22 +++--
+ drivers/net/wan/dscc4.c        |   80 +++++++--------
+ drivers/net/wan/farsync.c      |    7 +-
+ drivers/net/wan/hd64570.c      |    8 +-
+ drivers/net/wan/hd64572.c      |    8 +-
+ drivers/net/wan/hdlc.c         |   16 ++--
+ drivers/net/wan/hdlc_cisco.c   |   21 ++---
+ drivers/net/wan/hdlc_fr.c      |   96 ++++++++----------
+ drivers/net/wan/hdlc_ppp.c     |    9 +-
+ drivers/net/wan/hdlc_x25.c     |   12 +--
+ drivers/net/wan/hostess_sv11.c |   11 +-
+ drivers/net/wan/ixp4xx_hss.c   |   28 +++---
+ drivers/net/wan/lapbether.c    |   18 ++--
+ drivers/net/wan/n2.c           |   42 ++++----
+ drivers/net/wan/pc300_drv.c    |    4 +-
+ drivers/net/wan/pc300too.c     |   36 +++----
+ drivers/net/wan/pci200syn.c    |   29 +++---
+ drivers/net/wan/sbni.c         |   67 ++++++------
+ drivers/net/wan/sdla.c         |   52 ++++++----
+ drivers/net/wan/sealevel.c     |   11 +-
+ drivers/net/wan/wanxl.c        |   90 ++++++++---------
+ drivers/net/wan/x25_asy.c      |   47 ++++----
+ drivers/net/wan/z85230.c       |   34 +++---
+ 28 files changed, 620 insertions(+), 673 deletions(-)
 
-Mathias
+-- 
+1.7.6.rc1
+
