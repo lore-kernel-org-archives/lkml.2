@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752621Ab1F0Oas (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 10:30:48 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:60526 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752552Ab1F0Oam convert rfc822-to-8bit (ORCPT
+	id S1752699Ab1F0OdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 10:33:01 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39875 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751152Ab1F0Oc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 10:30:42 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Tony Lindgren <tony@atomide.com>
-CC: "Girdwood, Liam" <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: Re: [PATCH v6 00/18] MFD/ASoC/Input: TWL4030/TWL60X0 changes
-Date: Mon, 27 Jun 2011 17:30:34 +0300
-Message-ID: <2519112.D3nfO1VTXY@barack>
-User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
-In-Reply-To: <20110627101835.GI23145@atomide.com>
-References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com> <1770658.gTOGV79JgY@barack> <20110627101835.GI23145@atomide.com>
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="utf-8"
+	Mon, 27 Jun 2011 10:32:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=bnFmLRvw9VqKsbOluBIiSDBJavKv594CeKRF88BBr1feGFhSNohk/AA9nIbxXDroTX
+         XtOhYpKV2Z9heYyp10EpwyJ1kdmuiqLoVlx7yYfa67NY6b8dr94CahcJaftRHtSFk3pr
+         P1KXRCKwDBX4FNmzZAWfOE5sM1rEp4qOpagUc=
+Subject: [PATCH 1/2] Input: tnetv107x-keypad - fix MODULE_ALIAS
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Cyril Chemparathy <cyril@ti.com>, linux-input@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 27 Jun 2011 22:32:48 +0800
+Message-ID: <1309185168.29085.0.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tony,
+Remove the space between "platform:" prefix and the driver name.
 
-On Monday 27 June 2011 12:18:35 Tony Lindgren wrote:
-> * Péter Ujfalusi <peter.ujfalusi@ti.com> [110627 02:39]:
-> 
-> > Hi Tony, Samuel,
-> > 
-> > Would you have time to take a look at this series?
-> 
-> 
-> Looks good to me. If it conflicts with what we have queued
-> in the devel-cleanup branch, I should probably queue it.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/input/keyboard/tnetv107x-keypad.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-There are conflicts in mach-omap2 (quite a lot), if I apply the series on top 
-of the devel-cleanup branch.
+diff --git a/drivers/input/keyboard/tnetv107x-keypad.c b/drivers/input/keyboard/tnetv107x-keypad.c
+index c8f097a..1c58681 100644
+--- a/drivers/input/keyboard/tnetv107x-keypad.c
++++ b/drivers/input/keyboard/tnetv107x-keypad.c
+@@ -337,5 +337,5 @@ module_exit(keypad_exit);
  
-> If there are no conflicts, then Samuel can queue it.
-
-I suppose this should then go through l-o...
-
+ MODULE_AUTHOR("Cyril Chemparathy");
+ MODULE_DESCRIPTION("TNETV107X Keypad Driver");
+-MODULE_ALIAS("platform: tnetv107x-keypad");
++MODULE_ALIAS("platform:tnetv107x-keypad");
+ MODULE_LICENSE("GPL");
 -- 
-Péter
+1.7.4.1
+
+
+
