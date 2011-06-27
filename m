@@ -1,49 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755281Ab1F0XDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 19:03:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:33180 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755063Ab1F0XB6 (ORCPT
+	id S1755424Ab1F0XLl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 19:11:41 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:34298 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755413Ab1F0XJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 19:01:58 -0400
-Date: Mon, 27 Jun 2011 17:01:54 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: vr41xx_giu: use resource_size()
-Message-ID: <20110627230154.GI20865@ponder.secretlab.ca>
-References: <201106061352.19881.hartleys@visionengravers.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106061352.19881.hartleys@visionengravers.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 27 Jun 2011 19:09:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=k9sD3Y5n1AYrv/3f8aCiiNqxp+tg56gUPt+58l+MwwN/wNa+xKuY4nhdLf7QDiAI84
+         ZVTmMxPiedf2v/dNBrOOgJOMPSP/2yUZ2znPiikSFYPNc+Ai1yZvPhMoSM/QNjBYff24
+         Vus6e4Nfyz0nUueRTTxg6fCYLhaQZvcaiALf8=
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Daniel J Blueman <daniel.blueman@gmail.com>
+Subject: [PATCH] vesafb: fix memory leak
+Date: Tue, 28 Jun 2011 07:08:53 +0800
+Message-Id: <1309216133-3118-1-git-send-email-daniel.blueman@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 06, 2011 at 01:52:19PM -0700, H Hartley Sweeten wrote:
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
+When releasing framebuffer, free colourmap allocations.
 
-Thanks.  I've already merged a patch that makes this change.
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+---
+ drivers/video/vesafb.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-g.
+diff --git a/drivers/video/vesafb.c b/drivers/video/vesafb.c
+index a99bbe8..501b340 100644
+--- a/drivers/video/vesafb.c
++++ b/drivers/video/vesafb.c
+@@ -175,6 +175,7 @@ static int vesafb_setcolreg(unsigned regno, unsigned red, unsigned green,
+ 
+ static void vesafb_destroy(struct fb_info *info)
+ {
++	fb_dealloc_cmap(&info->cmap);
+ 	if (info->screen_base)
+ 		iounmap(info->screen_base);
+ 	release_mem_region(info->apertures->ranges[0].base, info->apertures->ranges[0].size);
+-- 
+1.7.4.1
 
-> 
-> ---
-> 
-> diff --git a/drivers/gpio/vr41xx_giu.c b/drivers/gpio/vr41xx_giu.c
-> index a365be0..98723cb 100644
-> --- a/drivers/gpio/vr41xx_giu.c
-> +++ b/drivers/gpio/vr41xx_giu.c
-> @@ -518,7 +518,7 @@ static int __devinit giu_probe(struct platform_device *pdev)
->  	if (!res)
->  		return -EBUSY;
->  
-> -	giu_base = ioremap(res->start, res->end - res->start + 1);
-> +	giu_base = ioremap(res->start, resource_size(res));
->  	if (!giu_base)
->  		return -ENOMEM;
->  
