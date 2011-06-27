@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753026Ab1F0RPe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 13:15:34 -0400
-Received: from diomedes.noc.ntua.gr ([147.102.222.220]:63317 "EHLO
-	diomedes.noc.ntua.gr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753097Ab1F0RP3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 13:15:29 -0400
-Date: Mon, 27 Jun 2011 20:18:42 +0300
-From: Kornilios Kourtis <kkourt@cslab.ece.ntua.gr>
-To: Vasileios Karakasis <bkk@cslab.ece.ntua.gr>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-numa@vger.kernel.org
-Subject: Re: [BUG] Invalid return address of mmap() followed by mbind() in
- multithreaded context
-Message-ID: <20110627171842.GA7554@solar.cslab.ece.ntua.gr>
-References: <4DFB710D.7000902@cslab.ece.ntua.gr>
+	id S1753023Ab1F0RWT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 13:22:19 -0400
+Received: from c60.cesmail.net ([216.154.195.49]:61589 "EHLO c60.cesmail.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752474Ab1F0RWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 13:22:14 -0400
+Message-ID: <4E08BC44.3020105@gnu.org>
+Date: Mon, 27 Jun 2011 13:22:12 -0400
+From: Pavel Roskin <proski@gnu.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DFB710D.7000902@cslab.ece.ntua.gr>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.7 (diomedes.noc.ntua.gr [147.102.222.220]); Mon, 27 Jun 2011 20:15:19 +0300 (EEST)
+To: Johannes Berg <johannes@sipsolutions.net>
+CC: Arend van Spriel <arend@broadcom.com>,
+        =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] bcma: main.c needs to include <linux/slab.h>
+References: <alpine.DEB.2.00.1106261016100.25900@ayla.of.borg>	 <BANLkTikSLx6FKvF518s99Q8eRU_WF+cn9A@mail.gmail.com>	 <BANLkTinGvM79fza-=bFwcbtfFzGHAVKJag@mail.gmail.com>	 <BANLkTikVtWe0jB_jLeP1YZTEKSYA97gdqQ@mail.gmail.com>	 <4E08B4AA.409@broadcom.com> (sfid-20110627_185027_507290_BCE834F5) <1309193844.3911.27.camel@jlt3.sipsolutions.net>
+In-Reply-To: <1309193844.3911.27.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/27/2011 12:57 PM, Johannes Berg wrote:
 
-Hi,
+> Yeah, good rule. Consider if you have a.h, b.h and z.c, z.c needs b.h
+> but not a.h, and now b.h includes a.h ("for convenience") -- changing
+> a.h would needlessly recompile z.c. Now, changing slab.h will probably
+> recompile everything anyway, but still...
 
-On Fri, Jun 17, 2011 at 06:21:49PM +0300, Vasileios Karakasis wrote:
-> Hi,
-> 
-> I am implementing a multithreaded numa aware code where each thread
-> mmap()'s an anonymous private region and then mbind()'s it to its local
-> node. The threads are performing a series of such mmap() + mbind()
-> operations. My program crashed with SIGSEGV and I noticed that mmap()
-> returned an invalid address.
+In my configuration after touching slab.h and recompilation:
 
-I've taken a closer look at this issue.
+$ find -name '*.o' -newer ../linux3/include/linux/slab.h |wc -l
+1508
+$ find -name '*.o' |wc -l
+1928
 
-As Vasileios said, it can be reproduced by having two threads doing the
-following loop:
-| for {
-| 	addr = mmap(4096, MAP_ANONUMOUS)
-| 	if (addr == (void *)-1)
-| 		continue
-| 	mbind(addr, 4096, 0x1) // do mbind on first NUMA node
-| }
-After a couple of iterations, mbind() will return EFAULT, although the addr is
-valid.
-
-Doing a bisect, pins it down to the following commit (Author added to To:):
-	9d8cebd4bcd7c3878462fdfda34bbcdeb4df7ef4
-	mm: fix mbind vma merge problem
-Which adds merging of vmas in the mbind() path.
-Reverting this commit, seems to fix the issue.
-
-I 've added some printks to track down the issue, and EFAULT is returned on:
-mm/mempolicy.c: mbind_range()
-|   vma = find_vma_prev(mm. start, &prev);
-|   if (!vma |vma->vm_start > start)
-|       return EFAULT;
-Where: vma->start > start
-
-I am not sure what exactly happens, but concurrent merges and splits
-of (already mapped) VMAs do not seem to work well together.
-
-cheers,
--Kornilios
+78% object files were recompiled, 22% were no recompiled.  Careful use 
+of includes does save time.
 
 -- 
-Kornilios Kourtis
+Regards,
+Pavel Roskin
