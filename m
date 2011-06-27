@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752717Ab1F0QO2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 12:14:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28613 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752485Ab1F0QOW (ORCPT
+	id S1752772Ab1F0QOx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 12:14:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64800 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752610Ab1F0QOu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 12:14:22 -0400
-Date: Mon, 27 Jun 2011 12:13:27 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Bastian Blank <waldi@debian.org>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] xen: Add alias to autoload backend drivers
-Message-ID: <20110627161327.GO6978@dumpdata.com>
-References: <20110624215155.GB4735@wavehammer.waldi.eu.org>
+	Mon, 27 Jun 2011 12:14:50 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl  doesn't exist
+Date: Mon, 27 Jun 2011 18:14:35 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Hans Verkuil <hverkuil@xs4all.nl>, Sakari Ailus <sakari.ailus@iki.fi>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <4E0519B7.3000304@redhat.com> <201106271656.04612.hverkuil@xs4all.nl> <4E08A2E6.6020902@redhat.com>
+In-Reply-To: <4E08A2E6.6020902@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110624215155.GB4735@wavehammer.waldi.eu.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090203.4E08AC33.0060:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106271814.36251.arnd@arndb.de>
+X-Provags-ID: V02:K0:U+qE7BebdIT07bxBxZT+D1fw/MDSesI8jYUrpOrYowJ
+ kOeh4DGLD8o1ZeUZ5nLf1+bNSdh2ONoB2mDQrT5gDCPUhzKfc6
+ JuPMO4gyHLhB7xNDwUFPhrkXjr+nQgx5aYqASVvhK8KWKdfjnp
+ CIZDTMRKW8wwdte4/W3h7ey9z7OkNewjEsScnh0teEPnRiupdh
+ yU4BYpPkZq6iNiOPjufkw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 11:51:55PM +0200, Bastian Blank wrote:
-> All the Xen backend drivers are assigned to a special bus type
-> xen-backend. This allows userspace to load the modules on request.
+On Monday 27 June 2011, Mauro Carvalho Chehab wrote:
+> > The point is that the spec can easily be improved to make such 'NOP' operations
+> > explicit, or to require that if a capability is present, then the corresponding
+> > ioctl(s) must also be present. Things like that are easy to verify as well with
+> > v4l2-compliance.
+> 
+> We currently have more than 64 ioctl's. Adding a capability bit for each doesn't
+> seem the right thing to do. Ok, some could be grouped, but, even so, there are
+> drivers that implement the VIDIOC_G, but doesn't implement the corresponding VIDIO_S.
+> So, I think we don't have enough available bits for doing that.
 
-Is there a specific version of udev that would take advantage of this?
+It shouldn't be too hard to do an ioctl command that returns a le_bitmask with the
+ioctl command number as an index (0 to 91, currently), and the bit set for each
+command that has the corresponding v4l2_ioctl_ops member filled for the device.
+That would be an obvious way to query the operations, but I don't know if it's
+useful.
 
-> 
-> This patch defines xen-backend:* aliases on the modules and exports this
-> names through modalias and uevent.
-> 
-> Signed-off-by: Bastian Blank <waldi@debian.org>
-> ---
->  drivers/block/xen-blkback/blkback.c       |    1 +
->  drivers/net/xen-netback/netback.c         |    1 +
->  drivers/xen/xenbus/xenbus_probe.c         |    3 ++-
->  drivers/xen/xenbus/xenbus_probe_backend.c |    3 +++
->  4 files changed, 7 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/block/xen-blkback/blkback.c b/drivers/block/xen-blkback/blkback.c
-> index 5cf2993..ed62008 100644
-> --- a/drivers/block/xen-blkback/blkback.c
-> +++ b/drivers/block/xen-blkback/blkback.c
-> @@ -824,3 +824,4 @@ static int __init xen_blkif_init(void)
->  module_init(xen_blkif_init);
->  
->  MODULE_LICENSE("Dual BSD/GPL");
-> +MODULE_ALIAS("xen-backend:vbd");
-> diff --git a/drivers/net/xen-netback/netback.c b/drivers/net/xen-netback/netback.c
-> index 0e4851b..fd00f25 100644
-> --- a/drivers/net/xen-netback/netback.c
-> +++ b/drivers/net/xen-netback/netback.c
-> @@ -1743,3 +1743,4 @@ failed_init:
->  module_init(netback_init);
->  
->  MODULE_LICENSE("Dual BSD/GPL");
-> +MODULE_ALIAS("xen-backend:vif");
-> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-> index 2ed0b04..bd2f90c 100644
-> --- a/drivers/xen/xenbus/xenbus_probe.c
-> +++ b/drivers/xen/xenbus/xenbus_probe.c
-> @@ -393,7 +393,8 @@ static ssize_t devtype_show(struct device *dev,
->  static ssize_t modalias_show(struct device *dev,
->  			     struct device_attribute *attr, char *buf)
->  {
-> -	return sprintf(buf, "xen:%s\n", to_xenbus_device(dev)->devicetype);
-> +	return sprintf(buf, "%s:%s\n", dev->bus->name,
-> +		       to_xenbus_device(dev)->devicetype);
->  }
->  
->  struct device_attribute xenbus_dev_attrs[] = {
-> diff --git a/drivers/xen/xenbus/xenbus_probe_backend.c b/drivers/xen/xenbus/xenbus_probe_backend.c
-> index ec510e5..60adf91 100644
-> --- a/drivers/xen/xenbus/xenbus_probe_backend.c
-> +++ b/drivers/xen/xenbus/xenbus_probe_backend.c
-> @@ -107,6 +107,9 @@ static int xenbus_uevent_backend(struct device *dev,
->  	if (xdev == NULL)
->  		return -ENODEV;
->  
-> +	if (add_uevent_var(env, "MODALIAS=xen-backend:%s", xdev->devicetype))
-> +		return -ENOMEM;
-> +
->  	/* stuff we want to pass to /sbin/hotplug */
->  	if (add_uevent_var(env, "XENBUS_TYPE=%s", xdev->devicetype))
->  		return -ENOMEM;
-> -- 
-> 1.7.5.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	Arnd
