@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757090Ab1F0HLY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 03:11:24 -0400
-Received: from db3ehsobe001.messaging.microsoft.com ([213.199.154.139]:38637
-	"EHLO DB3EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932072Ab1F0HKn convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 03:10:43 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz936eK1432Nzz1202hzz8275ch8275bhz2dh2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:137.71.25.55;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta1.analog.com;RD:nwd2mail10.analog.com;EFVD:NLI
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Jesper Juhl <jj@chaosbits.net>, LKML <linux-kernel@vger.kernel.org>
-CC: "trivial@kernel.org" <trivial@kernel.org>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Alessandro Rubini <rubini@cvml.unipv.it>,
-        Mike Frysinger <vapier@gentoo.org>,
-        "device-drivers-devel@blackfin.uclinux.org" 
-	<device-drivers-devel@blackfin.uclinux.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Date: Mon, 27 Jun 2011 08:10:18 +0100
-Subject: RE: [PATCH 09/37] Remove unneeded version.h includes from
- drivers/input/
-Thread-Topic: [PATCH 09/37] Remove unneeded version.h includes from
- drivers/input/
-Thread-Index: Acwx87X/665MqTkTS9uUgK1k6WtcpgCpYGjw
-Message-ID: <544AC56F16B56944AEC3BD4E3D5917713EA0AEE78D@LIMKCMBX1.ad.analog.com>
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1106240009201.17688@swampdragon.chaosbits.net>
-In-Reply-To: <alpine.LNX.2.00.1106240009201.17688@swampdragon.chaosbits.net>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932084Ab1F0HNF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 03:13:05 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:45874 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757093Ab1F0HLp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 03:11:45 -0400
+Date: Mon, 27 Jun 2011 09:11:39 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, minchan.kim@gmail.com, riel@redhat.com,
+        peterz@infradead.org, hannes@cmpxchg.org,
+        kamezawa.hiroyu@jp.fujitsu.com, aarcange@redhat.com, hughd@google.com,
+        jamesjer@betterlinux.com, marcus@bluehost.com, matt@bluehost.com,
+        tytso@mit.edu, shaohua.li@intel.com, P@draigBrady.com,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] fadvise: support POSIX_FADV_NOREUSE
+Message-ID: <20110627071139.GC1247@thinkpad>
+References: <1308923350-7932-1-git-send-email-andrea@betterlinux.com>
+ <4E07F349.2040900@jp.fujitsu.com>
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E07F349.2040900@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jesper Juhl wrote on 2011-06-24:
-> It was pointed out by 'make versioncheck' that some includes of
-> linux/version.h are not needed in drivers/input/.
-> This patch removes them.
->
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/input/keyboard/adp5588-keys.c |    1 -
->  drivers/input/keyboard/adp5589-keys.c |    1 -
+On Mon, Jun 27, 2011 at 12:04:41PM +0900, KOSAKI Motohiro wrote:
+> (2011/06/24 22:49), Andrea Righi wrote:
+> > There were some reported problems in the past about trashing page cache
+> > when a backup software (i.e., rsync) touches a huge amount of pages (see
+> > for example [1]).
+> > 
+> > This problem has been almost fixed by the Minchan Kim's patch [2] and a
+> > proper use of fadvise() in the backup software. For example this patch
+> > set [3] has been proposed for inclusion in rsync.
+> > 
+> > However, there can be still other similar trashing problems: when the
+> > backup software reads all the source files, some of them may be part of
+> > the actual working set of the system. When a POSIX_FADV_DONTNEED is
+> > performed _all_ pages are evicted from pagecache, both the working set
+> > and the use-once pages touched only by the backup software.
+> > 
+> > A previous proposal [4] tried to resolve this problem being less
+> > agressive in invalidating active pages, moving them to the inactive list
+> > intead of just evict them from the page cache.
+> > 
+> > However, this approach changed completely the old behavior of
+> > invalidate_mapping_pages(), that is not only used by fadvise.
+> > 
+> > The new solution maps POSIX_FADV_NOREUSE to the less-agressive page
+> > invalidation policy.
+> > 
+> > With POSIX_FADV_NOREUSE active pages are moved to the tail of the
+> > inactive list, and pages in the inactive list are just removed from page
+> > cache. Pages mapped by other processes or unevictable pages are not
+> > touched at all.
+> > 
+> > In this way if the backup was the only user of a page, that page will be
+> > immediately removed from the page cache by calling POSIX_FADV_NOREUSE.
+> > If the page was also touched by other tasks it'll be moved to the
+> > inactive list, having another chance of being re-added to the working
+> > set, or simply reclaimed when memory is needed.
+> > 
+> > In conclusion, now userspace applications that want to drop some page
+> > cache pages can choose between the following advices:
+> > 
+> >  POSIX_FADV_DONTNEED = drop page cache if possible
+> >  POSIX_FADV_NOREUSE = reduce page cache eligibility
+> 
+> Eeek.
+> 
+> Your POSIX_FADV_NOREUSE is very different from POSIX definition.
+> POSIX says,
+> 
+>        POSIX_FADV_NOREUSE
+>               Specifies that the application expects to access the specified data once  and  then
+>               not reuse it thereafter.
+> 
+> IfI understand correctly, it designed for calling _before_ data access
+> and to be expected may prevent lru activation. But your NORESE is designed
+> for calling _after_ data access. Big difference might makes a chance of
+> portability issue.
 
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+You're right. NOREUSE is designed to implement drop behind policy.
 
-Greetings,
-Michael
+I'll post a new patch that will plug this logic in DONTNEED (like the
+presious version), but without breaking the old /proc/sys/vm/drop_caches
+behavior.
 
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368; Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
-
-
+Thanks,
+-Andrea
