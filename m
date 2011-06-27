@@ -1,72 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab1F0Vww (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 17:52:52 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:42786 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754478Ab1F0Vwq convert rfc822-to-8bit (ORCPT
+	id S1754713Ab1F0WFO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 18:05:14 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:26646 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755131Ab1F0WDy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 17:52:46 -0400
-From: "Grosen, Mark" <mgrosen@ti.com>
-To: Grant Likely <grant.likely@secretlab.ca>, Ohad Ben-Cohen <ohad@wizery.com>
-CC: davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: RE: [RFC 1/8] drivers: add generic remoteproc framework
-Thread-Topic: [RFC 1/8] drivers: add generic remoteproc framework
-Thread-Index: AQHML+SIQi02E6+wtECtfcP+kXbIPpTSC5UA//+3jZA=
-Date: Mon, 27 Jun 2011 21:52:30 +0000
-Message-ID: <FFF198FBBF957F4393BA834040FEFFA202EE00@DFLE35.ent.ti.com>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
-	<1308640714-17961-2-git-send-email-ohad@wizery.com>
- <20110627204958.GB20865@ponder.secretlab.ca>
-In-Reply-To: <20110627204958.GB20865@ponder.secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [128.247.5.50]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 27 Jun 2011 18:03:54 -0400
+Date: Mon, 27 Jun 2011 23:54:48 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+cc: James Bottomley <jbottomley@parallels.com>,
+        Dan Carpenter <error27@gmail.com>, Christoph Hellwig <hch@lst.de>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH][Resend] SCSI, target, loopback: Fix memory leak in
+ tcm_loop_make_scsi_hba()
+Message-ID: <alpine.LNX.2.00.1106272351520.30245@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Grant Likely
-> Sent: Monday, June 27, 2011 1:50 PM
+There is a memory leak in tcm_loop_make_scsi_hba().
 
-Grant, thanks for the feedback. I'll try to answer one of your
-questions below and leave the rest for Ohad.
+If all the strstr() calls return NULL and we end up at
+ return ERR_PTR(-EINVAL);
+then we'll be leaking the memory previously allocated to tl_hba as
+that variable goes out of scope.
 
-Mark
+This patch should fix the leak.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/target/loopback/tcm_loop.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+  Compile tested only.
+  Last submitted April 07, 2011
+
+diff --git a/drivers/target/loopback/tcm_loop.c b/drivers/target/loopback/tcm_loop.c
+index 70c2e7f..aa3bb70 100644
+--- a/drivers/target/loopback/tcm_loop.c
++++ b/drivers/target/loopback/tcm_loop.c
+@@ -1321,7 +1321,8 @@ struct se_wwn *tcm_loop_make_scsi_hba(
  
-> > +Every remoteproc implementation must provide these handlers:
-> > +
-> > +struct rproc_ops {
-> > +	int (*start)(struct rproc *rproc, u64 bootaddr);
-> > +	int (*stop)(struct rproc *rproc);
-> > +};
-> > +
-> > +The ->start() handler takes a rproc handle and an optional bootaddr
-> argument,
-> > +and should power on the device and boot it (using the bootaddr
-> argument
-> > +if the hardware requires one).
-> 
-> Naive question: Why is bootaddr an argument?  Wouldn't rproc drivers
-> keep track of the boot address in their driver private data?
+ 	printk(KERN_ERR "Unable to locate prefix for emulated Target Port:"
+ 			" %s\n", name);
+-	return ERR_PTR(-EINVAL);
++	ret = -EINVAL;
++	goto out;
  
-Our AMPs (remote processors) have a variety of boot mechanisms that vary
-across the different SoCs (yes, TI likes HW diversity). In some cases, the
-boot address is more like an entry point and that comes from the firmware,
-so it is not a static attribute of a driver. Correct me if I misunderstood
-your question.
+ check_len:
+ 	if (strlen(name) >= TL_WWN_ADDR_LEN) {
+-- 
+1.7.5.2
 
-Mark
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
