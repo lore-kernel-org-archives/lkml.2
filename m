@@ -1,78 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754421Ab1F0UnI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 16:43:08 -0400
-Received: from mga09.intel.com ([134.134.136.24]:54074 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754466Ab1F0UlN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 16:41:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,434,1304319600"; 
-   d="scan'208";a="18952552"
-Message-ID: <4E08EAE8.6060805@linux.intel.com>
-Date: Mon, 27 Jun 2011 13:41:12 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1754513Ab1F0UuO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 16:50:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54343 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754232Ab1F0UuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 16:50:01 -0400
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        eric.dumazet@gmail.com, david@rgmadvisors.com,
-        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
-        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [PATCH v2] futex: Fix regression with read only mappings
-References: <20110623194949.GA2083@BohrerMBP.rgmadvisors.com>	 <1308931186-28707-1-git-send-email-sbohrer@rgmadvisors.com>	 <4E052DC3.6000902@linux.intel.com>	 <20110627164008.GA2095@BohrerMBP.rgmadvisors.com> <1309198559.6701.108.camel@twins>
-In-Reply-To: <1309198559.6701.108.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201106271907.59067.hverkuil@xs4all.nl>
+References: <4E0519B7.3000304@redhat.com> <201106271656.04612.hverkuil@xs4all.nl>
+ <4E08A2E6.6020902@redhat.com> <201106271907.59067.hverkuil@xs4all.nl>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Mon, 27 Jun 2011 13:48:48 -0700
+Message-ID: <BANLkTin=PTbTwBR2s+owMLy+GmKigeoYvg@mail.gmail.com>
+Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl
+ doesn't exist
+To: Hans Verkuil <hverkuil@xs4all.nl>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On 06/27/2011 11:15 AM, Peter Zijlstra wrote:
-> On Mon, 2011-06-27 at 11:40 -0500, Shawn Bohrer wrote:
->>>>     if (PageAnon(page_head)) {
->>>
->>> This bit needs a comment too (unless I am the only one to whom this
->> was
->>> non-obvious), maybe:
->>>
->>>               
->>>               /*
->>>                * A read-only anonymous page implies a COW on a
->>>                * MAP_PRIVATE mapping. There is no sane use-case
->>>                * for this scenario, return -EFAULT to userspace.
->>>                */
->>
->> Your comment is wrong.  Unfortunately the code is completly
->> non-obvious to me as well, and I have no idea why it is there.  This
->> little snippet came from Peter's suggested fix in:
->>
->> https://lkml.org/lkml/2011/6/6/368
->>
->> Sadly Peter's gone silent and I'm left wondering if he knew some
->> corner case that should return -EFAULT with a RO anonymous page or if
->> he _thought_ this was preventing RO MAP_PRIVATE mappings.  If it is
->> the latter then this block can be removed because it does NOT do that.
->>>> +           if (ro) {
->>>> +                   err = -EFAULT;
->>>> +                   goto out;
->>>> +           }
->>>> + 
-> 
-> Peter simply gets too much email.. anyway, the reason I put that there
-> is that a RO Anon page will never change and is thus a little pointless
-> to use for futex ops.
+On Mon, Jun 27, 2011 at 10:07 AM, Hans Verkuil <hverkuil@xs4all.nl> wrote:
 >
+> No, what we do is perfectly consistent: i.e. we always return EINVAL when an
+> ioctl is not supported. That's what 'consistent' means. Whether that is the
+> *right* error code is something else.
 
-Right, and that was the logic I was trying to document. Shawn, how is my
-comment above wrong? A read-only anonymous page but itself doesn't imply
-a COW, but it does it does in the context of this code from my reading.
+You don't even understand the problem.
 
+The problem is two-fold:
+ (a) it's the _wrong_ error code (this part you seem to get)
+but also
+ (b) you ALSO return -EINVAL for ioctl's you support!
 
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+How har dis (b) to understand? The fact is, -EINVAL does not mean "I
+don't support that ioctl". It _should_ mean "I _do_ support that
+ioctl, but you passed me bogus arguments for that ioctl that I cannot
+handle".
+
+And right now, for the v4l crowd, -EINVAL means "random error code
+that _could_ be because the ioctl doesn't exist, but it could also be
+because the ioctl _does_ exist but didn't like it's value".
+
+See the problem?
+
+The correct error code for "I don't understand this ioctl" is ENOTTY.
+The naming may be odd, but you should think of that error value as a
+"unrecognized ioctl number, you're feeding me random numbers that I
+don't understand and I assume for historical reasons that you tried to
+do some tty operation on me".
+
+I don't understand why the v4l people have such a hard time getting
+this. This has been going on for years.
+
+I would suggest that somebody just switch around the EINVAL in
+__video_do_ioctl() to -ENOTTY (and change the ENOIOCTLCMD translation
+to also make it ENOTTY instead of EINVAL) and just try to see if
+anything breaks.
+
+Maybe things actually break, and we'd have to undo it for
+compatibility reasons (and perhaps add a comment about the program
+that is so flaky that it needs a EINVAL return from the ioctl), but I
+really do not understand people like you who seem to argue against
+doing the right thing without even _trying_ it.
+
+Saying that your API is "consistent" is clearly bullshit. Your API is
+_wrong_. It's not consistent. Returning EINVAL can mean two different
+things, there's no way to tell which case it was - that's not
+"consistent" by any stretch of the imagination.
+
+                            Linus
