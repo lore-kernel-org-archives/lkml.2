@@ -1,57 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759681Ab1F0Mja (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 08:39:30 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:45467 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757506Ab1F0Mhe convert rfc822-to-8bit (ORCPT
+	id S1757590Ab1F0MlJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 08:41:09 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:47965 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757481Ab1F0Mjx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 08:37:34 -0400
+	Mon, 27 Jun 2011 08:39:53 -0400
+Date: Mon, 27 Jun 2011 14:39:46 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        akpm@linux-foundation.org, minchan.kim@gmail.com, riel@redhat.com,
+        peterz@infradead.org, hannes@cmpxchg.org,
+        kamezawa.hiroyu@jp.fujitsu.com, aarcange@redhat.com, hughd@google.com,
+        jamesjer@betterlinux.com, marcus@bluehost.com, matt@bluehost.com,
+        tytso@mit.edu, shaohua.li@intel.com, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/2] fadvise: support POSIX_FADV_NOREUSE
+Message-ID: <20110627123946.GB1658@thinkpad>
+References: <1308923350-7932-1-git-send-email-andrea@betterlinux.com>
+ <4E07F349.2040900@jp.fujitsu.com>
+ <20110627071139.GC1247@thinkpad>
+ <4E0858CF.6070808@draigBrady.com>
+ <20110627102933.GA1282@thinkpad>
+ <4E086F51.50403@draigBrady.com>
 MIME-Version: 1.0
-In-Reply-To: <20110627120256.GA19531@opensource.wolfsonmicro.com>
-References: <1307695731-28018-1-git-send-email-linus.walleij@stericsson.com>
-	<BANLkTinxptCJRETreCpUoV-nU2K4fuFcmQ@mail.gmail.com>
-	<BANLkTimMSChGFUSnFWFHv3nNUca_Fyawaw@mail.gmail.com>
-	<20110627120256.GA19531@opensource.wolfsonmicro.com>
-Date: Mon, 27 Jun 2011 14:37:32 +0200
-Message-ID: <BANLkTikpMdakfTU+RRsXQVnpO4-KGkOGJQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] RFC: gpio: driver-local pin configuration
-From: Linus Walleij <linus.walleij@linaro.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Stijn Devriendt <highguy@gmail.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Kurt Van Dijck <kurt.van.dijck@eia.be>,
-        Ben Nizette <bn@niasdigital.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E086F51.50403@draigBrady.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 2:02 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Mon, Jun 27, 2011 at 01:44:43PM +0200, Linus Walleij wrote:
->
->> Yes. To make the driver platform neutral, it needs to for example
->> provide a callback in the platform data like (* set_pin_bias) or so,
->> and then your platform has to implement this biasing.
->
->> In this specific case that kind of stuff would likely be preferable
->> to have in the platform anyway, but I understand what you mean.
->
-> How about device tree usage?  I guess there we'd end up doing it by
-> putting the configuration on the GPIO end of things rather than on the
-> GPIO user side?
+On Mon, Jun 27, 2011 at 12:53:53PM +0100, Pádraig Brady wrote:
+> On 27/06/11 11:29, Andrea Righi wrote:
+> > The actual problem I think is that apps expect that DONTNEED can be used
+> > to drop cache, but this is not written anywhere in the POSIX standard.
+> > 
+> > I would also like to have both functionalities: 1) be sure to drop page
+> > cache pages (now there's only a system-wide knob to do this:
+> > /proc/sys/vm/drop_caches), 2) give an advice to the kernel that I will
+> > not reuse some pages in the future.
+> > 
+> > The standard can only provide 2). If we also want 1) at the file
+> > granularity, I think we'd need to introduce something linux specific to
+> > avoid having portability problems.
+> 
+> True, though Linux is the reference for posix_fadvise() implementations,
+> given its lack of support on other platforms.
+> 
+> So just to summarize for _my_ reference.
+> You're changing DONTNEED to mean "drop if !PageActive()".
+> I.E. according to http://linux-mm.org/PageReplacementDesign
+> "drop if files only accessed once".
 
-Sorry I can't quite understand that, please elaborate!
+Drop if pages were only accessed once, they're not mapped by any other
+process and they're not unevictable.
 
-Thanks,
-Linus Walleij
+> 
+> This will mean that there is no way currently to
+> remove a particular file from the cache on linux.
+
+Correct. There's not a way to do this for a single file (except running
+POSIX_FADV_DONTNEED twice...).
+
+> Hopefully that won't affect any of:
+> http://codesearch.google.com/#search/&q=POSIX_FADV_DONTNEED
+> 
+> Ideally I'd like cache functions for:
+>  DROP, ADD, ADD if space¹
+> which could correspond to:
+>  DONTNEED, WILLNEED, NOREUSE
+> but what we're going for are these somewhat overlapping functions:
+>  DROP if used once², ADD, ADD if space
+
+IIUC, NOREUSE means "the application will use this range of the file
+once". It's something that we do _before_ accessing the file.  And the
+kernel needs to remember the ranges of NOREUSE data for each file, so
+that page cache can be immediately dropped after the data has been
+accessed (if possible).
+
+-Andrea
+
+> 
+> cheers,
+> Pádraig.
+> 
+> ¹ Not implemented yet.
+> 
+> ² Hopefully there are no access patterns a single
+> process can do to make a PageActive as that would
+> probably not be desired in relation to "Drop if used once"
+> functionality.
