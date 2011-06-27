@@ -1,64 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab1F0SCw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 14:02:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43510 "EHLO mx1.redhat.com"
+	id S1753065Ab1F0SDA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 14:03:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39147 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752452Ab1F0SCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 14:02:35 -0400
+	id S1753138Ab1F0SCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 14:02:41 -0400
 From: Josef Bacik <josef@redhat.com>
 To: linux-fsdevel@vger.kernel.org, linux-btrfs@vger.kernel.org,
         linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk
-Subject: [PATCH 3/4] Ext4: handle SEEK_HOLE/SEEK_DATA generically
-Date: Mon, 27 Jun 2011 14:02:23 -0400
-Message-Id: <1309197745-14107-3-git-send-email-josef@redhat.com>
+Subject: [PATCH 4/4] fs: handle SEEK_HOLE/SEEK_DATA properly in all fs's that define their own llseek
+Date: Mon, 27 Jun 2011 14:02:24 -0400
+Message-Id: <1309197745-14107-4-git-send-email-josef@redhat.com>
 In-Reply-To: <1309197745-14107-1-git-send-email-josef@redhat.com>
 References: <1309197745-14107-1-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since Ext4 has its own lseek we need to make sure it handles
-SEEK_HOLE/SEEK_DATA.  For now just do the same thing that is done in the generic
-case, somebody else can come along and make it do fancy things later.  Thanks,
+This converts everybody to handle SEEK_HOLE/SEEK_DATA properly.  In some cases
+we just return -EINVAL, in others we do the normal generic thing, and in others
+we're simply making sure that the properly due-dilligence is done.  For example
+in NFS/CIFS we need to make sure the file size is update properly for the
+SEEK_HOLE and SEEK_DATA case, but since it calls the generic llseek stuff itself
+that is all we have to do.  Thanks,
 
 Signed-off-by: Josef Bacik <josef@redhat.com>
 ---
- fs/ext4/file.c |   21 +++++++++++++++++++++
- 1 files changed, 21 insertions(+), 0 deletions(-)
+ fs/block_dev.c   |   11 ++++++++---
+ fs/ceph/dir.c    |    8 +++++++-
+ fs/ceph/file.c   |   20 ++++++++++++++++++--
+ fs/cifs/cifsfs.c |    7 +++++--
+ fs/fuse/file.c   |   21 +++++++++++++++++++--
+ fs/hpfs/dir.c    |    4 ++++
+ fs/nfs/file.c    |    7 +++++--
+ 7 files changed, 66 insertions(+), 12 deletions(-)
 
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index 2c09723..ce766f9 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -236,6 +236,27 @@ loff_t ext4_llseek(struct file *file, loff_t offset, int origin)
+diff --git a/fs/block_dev.c b/fs/block_dev.c
+index 1a2421f..29fde2c 100644
+--- a/fs/block_dev.c
++++ b/fs/block_dev.c
+@@ -355,20 +355,25 @@ static loff_t block_llseek(struct file *file, loff_t offset, int origin)
+ 	mutex_lock(&bd_inode->i_mutex);
+ 	size = i_size_read(bd_inode);
+ 
++	retval = -EINVAL;
+ 	switch (origin) {
+-		case 2:
++		case SEEK_END:
+ 			offset += size;
+ 			break;
+-		case 1:
++		case SEEK_CUR:
+ 			offset += file->f_pos;
++		case SEEK_SET:
++			break;
++		default:
++			goto out;
+ 	}
+-	retval = -EINVAL;
+ 	if (offset >= 0 && offset <= size) {
+ 		if (offset != file->f_pos) {
+ 			file->f_pos = offset;
+ 		}
+ 		retval = offset;
+ 	}
++out:
+ 	mutex_unlock(&bd_inode->i_mutex);
+ 	return retval;
+ }
+diff --git a/fs/ceph/dir.c b/fs/ceph/dir.c
+index ef8f08c..79cd77c 100644
+--- a/fs/ceph/dir.c
++++ b/fs/ceph/dir.c
+@@ -446,14 +446,19 @@ static loff_t ceph_dir_llseek(struct file *file, loff_t offset, int origin)
+ 	loff_t retval;
+ 
+ 	mutex_lock(&inode->i_mutex);
++	retval = -EINVAL;
+ 	switch (origin) {
+ 	case SEEK_END:
+ 		offset += inode->i_size + 2;   /* FIXME */
+ 		break;
+ 	case SEEK_CUR:
+ 		offset += file->f_pos;
++	case SEEK_SET:
++		break;
++	default:
++		goto out;
+ 	}
+-	retval = -EINVAL;
++
+ 	if (offset >= 0 && offset <= inode->i_sb->s_maxbytes) {
+ 		if (offset != file->f_pos) {
+ 			file->f_pos = offset;
+@@ -477,6 +482,7 @@ static loff_t ceph_dir_llseek(struct file *file, loff_t offset, int origin)
+ 		if (offset > old_offset)
+ 			fi->dir_release_count--;
+ 	}
++out:
+ 	mutex_unlock(&inode->i_mutex);
+ 	return retval;
+ }
+diff --git a/fs/ceph/file.c b/fs/ceph/file.c
+index 9542f07..774feb1 100644
+--- a/fs/ceph/file.c
++++ b/fs/ceph/file.c
+@@ -770,13 +770,16 @@ static loff_t ceph_llseek(struct file *file, loff_t offset, int origin)
+ 
+ 	mutex_lock(&inode->i_mutex);
+ 	__ceph_do_pending_vmtruncate(inode);
+-	switch (origin) {
+-	case SEEK_END:
++	if (origin != SEEK_CUR || origin != SEEK_SET) {
+ 		ret = ceph_do_getattr(inode, CEPH_STAT_CAP_SIZE);
+ 		if (ret < 0) {
+ 			offset = ret;
+ 			goto out;
+ 		}
++	}
++
++	switch (origin) {
++	case SEEK_END:
+ 		offset += inode->i_size;
+ 		break;
+ 	case SEEK_CUR:
+@@ -792,6 +795,19 @@ static loff_t ceph_llseek(struct file *file, loff_t offset, int origin)
  		}
  		offset += file->f_pos;
  		break;
 +	case SEEK_DATA:
-+		/*
-+		 * In the generic case the entire file is data, so as long as
-+		 * offset isn't at the end of the file then the offset is data.
-+		 */
 +		if (offset >= inode->i_size) {
-+			mutex_unlock(&inode->i_mutex);
-+			return -ENXIO;
++			ret = -ENXIO;
++			goto out;
 +		}
 +		break;
 +	case SEEK_HOLE:
-+		/*
-+		 * There is a virtual hole at the end of the file, so as long as
-+		 * offset isn't i_size or larger, return i_size.
-+		 */
 +		if (offset >= inode->i_size) {
-+			mutex_unlock(&inode->i_mutex);
-+			return -ENXIO;
++			ret = -ENXIO;
++			goto out;
 +		}
 +		offset = inode->i_size;
 +		break;
  	}
  
- 	if (offset < 0 || offset > maxbytes) {
+ 	if (offset < 0 || offset > inode->i_sb->s_maxbytes) {
+diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
+index 2f0c586..acaaf62 100644
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -772,8 +772,11 @@ static ssize_t cifs_file_aio_write(struct kiocb *iocb, const struct iovec *iov,
+ 
+ static loff_t cifs_llseek(struct file *file, loff_t offset, int origin)
+ {
+-	/* origin == SEEK_END => we must revalidate the cached file length */
+-	if (origin == SEEK_END) {
++	/*
++	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
++	 * the cached file length
++	 */
++	if (origin != SEEK_SET || origin != SEEK_CUR) {
+ 		int rc;
+ 		struct inode *inode = file->f_path.dentry->d_inode;
+ 
+diff --git a/fs/fuse/file.c b/fs/fuse/file.c
+index 82a6646..73b89df 100644
+--- a/fs/fuse/file.c
++++ b/fs/fuse/file.c
+@@ -1600,15 +1600,32 @@ static loff_t fuse_file_llseek(struct file *file, loff_t offset, int origin)
+ 	struct inode *inode = file->f_path.dentry->d_inode;
+ 
+ 	mutex_lock(&inode->i_mutex);
+-	switch (origin) {
+-	case SEEK_END:
++	if (origin != SEEK_CUR || origin != SEEK_SET) {
+ 		retval = fuse_update_attributes(inode, NULL, file, NULL);
+ 		if (retval)
+ 			goto exit;
++	}
++
++	switch (origin) {
++	case SEEK_END:
+ 		offset += i_size_read(inode);
+ 		break;
+ 	case SEEK_CUR:
+ 		offset += file->f_pos;
++		break;
++	case SEEK_DATA:
++		if (offset >= i_size_read(inode)) {
++			retval = -ENXIO;
++			goto exit;
++		}
++		break;
++	case SEEK_HOLE:
++		if (offset >= i_size_read(inode)) {
++			retval = -ENXIO;
++			goto exit;
++		}
++		offset = i_size_read(inode);
++		break;
+ 	}
+ 	retval = -EINVAL;
+ 	if (offset >= 0 && offset <= inode->i_sb->s_maxbytes) {
+diff --git a/fs/hpfs/dir.c b/fs/hpfs/dir.c
+index f46ae02..96a8ed9 100644
+--- a/fs/hpfs/dir.c
++++ b/fs/hpfs/dir.c
+@@ -29,6 +29,10 @@ static loff_t hpfs_dir_lseek(struct file *filp, loff_t off, int whence)
+ 	struct hpfs_inode_info *hpfs_inode = hpfs_i(i);
+ 	struct super_block *s = i->i_sb;
+ 
++	/* Somebody else will have to figure out what to do here */
++	if (whence == SEEK_DATA || whence == SEEK_HOLE)
++		return -EINVAL;
++
+ 	hpfs_lock(s);
+ 
+ 	/*printk("dir lseek\n");*/
+diff --git a/fs/nfs/file.c b/fs/nfs/file.c
+index 2f093ed..2c1705b 100644
+--- a/fs/nfs/file.c
++++ b/fs/nfs/file.c
+@@ -187,8 +187,11 @@ static loff_t nfs_file_llseek(struct file *filp, loff_t offset, int origin)
+ 			filp->f_path.dentry->d_name.name,
+ 			offset, origin);
+ 
+-	/* origin == SEEK_END => we must revalidate the cached file length */
+-	if (origin == SEEK_END) {
++	/*
++	 * origin == SEEK_END || SEEK_DATA || SEEK_HOLE => we must revalidate
++	 * the cached file length
++	 */
++	if (origin != SEEK_SET || origin != SEEK_CUR) {
+ 		struct inode *inode = filp->f_mapping->host;
+ 
+ 		int retval = nfs_revalidate_file_size(inode, filp);
 -- 
 1.7.5.2
 
