@@ -1,45 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab1F0PYk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 11:24:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41502 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751129Ab1F0PYe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 11:24:34 -0400
-Message-ID: <4E08A0A0.1080409@redhat.com>
-Date: Mon, 27 Jun 2011 12:24:16 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110419 Red Hat/3.1.10-1.el6_0 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Andy Walls <awalls@md.metrocast.net>
-CC: Hans Verkuil <hverkuil@xs4all.nl>, Sakari Ailus <sakari.ailus@iki.fi>,
-        Arnd Bergmann <arnd@arndb.de>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl  doesn't
- exist
-References: <4E0519B7.3000304@redhat.com> <201106262020.20432.arnd@arndb.de>	 <4E077FB9.7030600@redhat.com> <201106270738.27417.hverkuil@xs4all.nl>	 <20110627120233.GD12671@valkosipuli.localdomain>	 <86e5c1f0a0222d3b2cf371f3c9d3b067.squirrel@webmail.xs4all.nl>	 <4E088B83.2050001@redhat.com> <1309187569.3559.63.camel@morgan.silverblock.net>
-In-Reply-To: <1309187569.3559.63.camel@morgan.silverblock.net>
-Content-Type: text/plain; charset=UTF-8
+	id S1751147Ab1F0P2Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:28:16 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46918 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab1F0P2L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 11:28:11 -0400
+Date: Mon, 27 Jun 2011 08:27:33 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Richard Weinberger <richard@nod.at>, Jeff Dike <jdike@addtoit.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        user-mode-linux-devel@lists.sourceforge.net
+Subject: Re: linux-next: Tree for June 27 (uml)
+Message-Id: <20110627082733.75e58ae4.randy.dunlap@oracle.com>
+In-Reply-To: <20110627161656.688820b9.sfr@canb.auug.org.au>
+References: <20110627161656.688820b9.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090207.4E08A176.015D:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 27-06-2011 12:12, Andy Walls escreveu:
-> On Mon, 2011-06-27 at 10:54 -0300, Mauro Carvalho Chehab wrote:
-> 
->> The right thing to do is to create a separate chapter for error codes, based on errno(3)
->> man page [snip]
-> 
-> IMO, the IEEE Std 1003.1 is a better source for errno definitions than
-> the errno(3) manpage:
-> 
-> http://pubs.opengroup.org/onlinepubs/000095399/functions/xsh_chap02_03.html
+On Mon, 27 Jun 2011 16:16:56 +1000 Stephen Rothwell wrote:
 
-True, but it doesn't cover all error types. For sure we need to use the POSIX standard
-when working at the DocBook.
+> Hi all,
+> 
+> Changes since 20110624:
 
-Cheers,
-Mauro
+
+uml defconfig builds on x86 (32-bit and 64-bit) fail with:
+
+fs/hostfs/hostfs_kern.c:756: error: 'mask' undeclared (first use in this function)
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
