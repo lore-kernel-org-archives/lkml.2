@@ -1,125 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab1F0IVX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 04:21:23 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:45787 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756231Ab1F0IUp (ORCPT
+	id S1754925Ab1F0IZg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 04:25:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46741 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755879Ab1F0IYs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 04:20:45 -0400
-Date: Mon, 27 Jun 2011 11:20:37 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: LKML <linux-kernel@vger.kernel.org>, trivial@kernel.org,
-        Felipe Balbi <balbi@ti.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Matthew Dharm <mdharm-usb@one-eyed-alien.net>,
-        linux-usb@vger.kernel.org, usb-storage@lists.one-eyed-alien.net,
-        Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-Subject: Re: [PATCH 16/37] Remove unneeded version.h includes (and add where
- needed) for drivers/usb/
-Message-ID: <20110627082036.GE2508@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <alpine.LNX.2.00.1106232344480.17688@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1106240030390.17688@swampdragon.chaosbits.net>
+	Mon, 27 Jun 2011 04:24:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uHp74mXccNjzO7+w61FagK2mQU9JB6OuGQV+I5WSSsdOGjSUSI+DVprUv/3GrF0CzB
+         akHXm3HAc54wH+oDL3hzTJWYIfTcSwbLkPNiyvX63vwo8OofU2fxqgxYRqmWOoOc2/ix
+         3xtYydXJrTyQS2blV3apTxSzUnhxc7aIUIViE=
+Date: Mon, 27 Jun 2011 10:24:43 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        hch@infradead.org
+Subject: Re: [PATCH 2/8] kill tracehook_notify_death()
+Message-ID: <20110627082443.GA30101@htj.dyndns.org>
+References: <1308322240-8247-7-git-send-email-tj@kernel.org>
+ <20110622210757.GA20549@redhat.com>
+ <20110622210834.GC20549@redhat.com>
+ <20110623122253.GM30101@htj.dyndns.org>
+ <20110623132126.GA10410@redhat.com>
+ <20110623132754.GO30101@htj.dyndns.org>
+ <20110623132831.GA11453@redhat.com>
+ <20110623170650.GA14601@redhat.com>
+ <20110625141553.GX30101@htj.dyndns.org>
+ <20110626205157.GB16293@redhat.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="BQPnanjtCNWHyqYD"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1106240030390.17688@swampdragon.chaosbits.net>
+In-Reply-To: <20110626205157.GB16293@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Oleg.
 
---BQPnanjtCNWHyqYD
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, Jun 26, 2011 at 10:51:57PM +0200, Oleg Nesterov wrote:
+> > Yeap, we've discussed this before and this indeed is odd.  However, is
+> > there something ptracer can't do with PTRACE_EVENT_EXIT instead?
+> 
+> Firstly, I think PTRACE_EVENT_EXIT should not stop the tracee if it
+> was SIGKILL'ed. Even if the tracee stops, it can be killed later.
+> The tracer can't detach after that, it can't even wait() to detecte
+> a zombie leader.
 
-Hi,
+For SIGKILL, yes, it is different, but if PTRACE_EVENT_EXIT is enough
+for all other cases, I think we're mostly set.  BTW, it seems like we
+would actually stop at PTRACE_EVENT_EXIT even after SIGKILL.  This is
+wrong & racy.  may_ptrace_stop() should be checking for
+sigkill_pending(), right?
 
-On Fri, Jun 24, 2011 at 12:31:43AM +0200, Jesper Juhl wrote:
-> It was pointed out by 'make versioncheck' that linux/version.h was not
-> always being included where needed and sometimes included needlessly
-> in drivers/usb/.
-> This patch fixes up the includes.
->=20
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > Heh, I think this needs to be prettier even at the cost of an inline
+> > function.
+> 
+> May be, but the code is sooooo simple. In fact I thought about the helper,
+> but can't find a good name.
+> 
+> Anyway, this is so minor, unless you strongly object I am going to push
+> this patch as is. We can add a helper later although I don't think it is
+> needed.
+> 
+> The same logic could be written as
+> 
+> 	if (thread_group_empty(tsk)) {
+> 		int sig = ptrace_reparented(tsk) ?
+> 			SIGCHLD : tsk->exit_signal;
+> 		autoreap = do_notify_parent(tsk, sig);
+> 	} else if (task->ptrace) {
+> 		autoreap = do_notify_parent(tsk, SIGCHLD);
+> 	} else {
+> 		autoreap = !thread_group_leader();
+> 	}
+> 
+> note that it certainly looks "prettier". However, personaly I strongly
+> prefer the non-pretty code above, imho it is more straighforward and
+> understandable. It is hardly possible to misread/misunderstand it.
 
-Laurent, I guess Jesper needs your Ack for the uvc part. It looks good
-to me, but I'll leave it to you.
+Well, it's cosmetic after all and you're the maintainer.  I don't have
+any major problem with the original.  Please go ahead.
 
-> ---
->  drivers/usb/gadget/uvc.h         |    1 +
->  drivers/usb/gadget/uvc_v4l2.c    |    1 -
->  drivers/usb/storage/realtek_cr.c |    1 -
->  3 files changed, 1 insertions(+), 2 deletions(-)
->=20
-> diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
-> index 5b79194..81971fb 100644
-> --- a/drivers/usb/gadget/uvc.h
-> +++ b/drivers/usb/gadget/uvc.h
-> @@ -56,6 +56,7 @@ struct uvc_event
->  #include <linux/usb.h>	/* For usb_endpoint_* */
->  #include <linux/usb/gadget.h>
->  #include <linux/videodev2.h>
-> +#include <linux/version.h>
->  #include <media/v4l2-fh.h>
-> =20
->  #include "uvc_queue.h"
-> diff --git a/drivers/usb/gadget/uvc_v4l2.c b/drivers/usb/gadget/uvc_v4l2.c
-> index 5e807f0..a715805 100644
-> --- a/drivers/usb/gadget/uvc_v4l2.c
-> +++ b/drivers/usb/gadget/uvc_v4l2.c
-> @@ -16,7 +16,6 @@
->  #include <linux/errno.h>
->  #include <linux/list.h>
->  #include <linux/mutex.h>
-> -#include <linux/version.h>
->  #include <linux/videodev2.h>
->  #include <linux/vmalloc.h>
->  #include <linux/wait.h>
-> diff --git a/drivers/usb/storage/realtek_cr.c b/drivers/usb/storage/realt=
-ek_cr.c
-> index d509a4a..fe21104 100644
-> --- a/drivers/usb/storage/realtek_cr.c
-> +++ b/drivers/usb/storage/realtek_cr.c
-> @@ -26,7 +26,6 @@
->  #include <linux/sched.h>
->  #include <linux/workqueue.h>
->  #include <linux/kernel.h>
-> -#include <linux/version.h>
-> =20
->  #include <scsi/scsi.h>
->  #include <scsi/scsi_cmnd.h>
-> --=20
-> 1.7.5.2
->=20
->=20
-> --=20
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
->=20
+Thanks.
 
---=20
-balbi
-
---BQPnanjtCNWHyqYD
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOCD1UAAoJEAv8Txj19kN1Kh8IAKPGsOWhj1NsBB8cDcKIWgir
-VyY7/yaxPHWr2lkclvSE4rZndQliXMHq2fLqk+RfF8NARLmCDtqatFItJIUnPzoO
-S4E5UJFEHJ+V5BgvAhJi9MsZzHn09Yls2bXTZy4JOWKNHNZ0FOddcYCDvqc2gBF7
-34Tz77tp2uxP0lLICThyPsah058T2iejKmcDuhIBYeJaGrE1FflsGu/fjEU2Z40P
-kaN/u/h6Qwl7yuGWqtX4I42hBF2KcpeyRZ9cUDL1foBgqzqpyYXKozTrJ78YkzTI
-DAzPzRVgxto75nW4hrCx1uxSUglQHH38eb7MejNccx4a3N9fu0Gc7Xp3DsW4ikg=
-=jo2C
------END PGP SIGNATURE-----
-
---BQPnanjtCNWHyqYD--
+-- 
+tejun
