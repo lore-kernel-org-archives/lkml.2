@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab1F0FDb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 01:03:31 -0400
-Received: from mail.perches.com ([173.55.12.10]:3222 "EHLO mail.perches.com"
+	id S1756556Ab1F0FDe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 01:03:34 -0400
+Received: from mail.perches.com ([173.55.12.10]:3223 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755561Ab1F0FCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 01:02:00 -0400
+	id S1756308Ab1F0FCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 01:02:01 -0400
 From: Joe Perches <joe@perches.com>
-To: netdev@vger.kernel.org, Mike McLagan <mike.mclagan@linux.org>
+To: netdev@vger.kernel.org, Francois Romieu <romieu@fr.zoreil.com>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 4/8] frame relay dlci/frad: Update to current logging forms
-Date: Sun, 26 Jun 2011 22:01:31 -0700
-Message-Id: <640f3aa3a6a954563769d9f3de090f9573b75ef6.1309150684.git.joe@perches.com>
+Subject: [PATCH 5/8] dscc4: Update to current logging forms
+Date: Sun, 26 Jun 2011 22:01:32 -0700
+Message-Id: <98fab15052d0e037e5a5c813cf2d6bc5d49564a8.1309150684.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.rc1
 In-Reply-To: <cover.1309150683.git.joe@perches.com>
 References: <cover.1309150683.git.joe@perches.com>
@@ -23,247 +23,308 @@ Use pr_fmt, pr_<level> and netdev_<level> as appropriate.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/wan/dlci.c |   22 +++++++++++++------
- drivers/net/wan/sdla.c |   52 +++++++++++++++++++++++++++--------------------
- 2 files changed, 45 insertions(+), 29 deletions(-)
+ drivers/net/wan/dscc4.c |   80 ++++++++++++++++++++++------------------------
+ 1 files changed, 38 insertions(+), 42 deletions(-)
 
-diff --git a/drivers/net/wan/dlci.c b/drivers/net/wan/dlci.c
-index 21b104d..48ab38a 100644
---- a/drivers/net/wan/dlci.c
-+++ b/drivers/net/wan/dlci.c
-@@ -28,6 +28,8 @@
-  *		2 of the License, or (at your option) any later version.
+diff --git a/drivers/net/wan/dscc4.c b/drivers/net/wan/dscc4.c
+index 3590d58..058e169 100644
+--- a/drivers/net/wan/dscc4.c
++++ b/drivers/net/wan/dscc4.c
+@@ -80,6 +80,8 @@
+  * - misc crapectomy.
   */
  
 +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
 +
  #include <linux/module.h>
- #include <linux/kernel.h>
+ #include <linux/sched.h>
  #include <linux/types.h>
-@@ -112,8 +114,7 @@ static void dlci_receive(struct sk_buff *skb, struct net_device *dev)
+@@ -553,7 +555,7 @@ static int dscc4_wait_ack_cec(struct dscc4_dev_priv *dpriv,
+ 		schedule_timeout_uninterruptible(10);
+ 		rmb();
+ 	} while (++i > 0);
+-	printk(KERN_ERR "%s: %s timeout\n", dev->name, msg);
++	netdev_err(dev, "%s timeout\n", msg);
+ done:
+ 	return (i >= 0) ? i : -EAGAIN;
+ }
+@@ -569,18 +571,18 @@ static int dscc4_do_action(struct net_device *dev, char *msg)
+ 		u32 state = readl(ioaddr);
  
- 	dlp = netdev_priv(dev);
- 	if (!pskb_may_pull(skb, sizeof(*hdr))) {
--		printk(KERN_NOTICE "%s: invalid data no header\n",
+ 		if (state & ArAck) {
+-			printk(KERN_DEBUG "%s: %s ack\n", dev->name, msg);
++			netdev_dbg(dev, "%s ack\n", msg);
+ 			writel(ArAck, ioaddr);
+ 			goto done;
+ 		} else if (state & Arf) {
+-			printk(KERN_ERR "%s: %s failed\n", dev->name, msg);
++			netdev_err(dev, "%s failed\n", msg);
+ 			writel(Arf, ioaddr);
+ 			i = -1;
+ 			goto done;
+ 	}
+ 		rmb();
+ 	} while (++i > 0);
+-	printk(KERN_ERR "%s: %s timeout\n", dev->name, msg);
++	netdev_err(dev, "%s timeout\n", msg);
+ done:
+ 	return i;
+ }
+@@ -636,7 +638,7 @@ static void dscc4_tx_reset(struct dscc4_dev_priv *dpriv, struct net_device *dev)
+ 
+ 	writel(MTFi|Rdt, dpriv->base_addr + dpriv->dev_id*0x0c + CH0CFG);
+ 	if (dscc4_do_action(dev, "Rdt") < 0)
+-		printk(KERN_ERR "%s: Tx reset failed\n", dev->name);
++		netdev_err(dev, "Tx reset failed\n");
+ }
+ #endif
+ 
+@@ -722,22 +724,20 @@ static int __devinit dscc4_init_one(struct pci_dev *pdev,
+ 
+ 	rc = pci_request_region(pdev, 0, "registers");
+ 	if (rc < 0) {
+-	        printk(KERN_ERR "%s: can't reserve MMIO region (regs)\n",
+-			DRV_NAME);
++		pr_err("can't reserve MMIO region (regs)\n");
+ 	        goto err_disable_0;
+ 	}
+ 	rc = pci_request_region(pdev, 1, "LBI interface");
+ 	if (rc < 0) {
+-	        printk(KERN_ERR "%s: can't reserve MMIO region (lbi)\n",
+-			DRV_NAME);
++		pr_err("can't reserve MMIO region (lbi)\n");
+ 	        goto err_free_mmio_region_1;
+ 	}
+ 
+ 	ioaddr = pci_ioremap_bar(pdev, 0);
+ 	if (!ioaddr) {
+-		printk(KERN_ERR "%s: cannot remap MMIO region %llx @ %llx\n",
+-			DRV_NAME, (unsigned long long)pci_resource_len(pdev, 0),
+-			(unsigned long long)pci_resource_start(pdev, 0));
++		pr_err("cannot remap MMIO region %llx @ %llx\n",
++		       (unsigned long long)pci_resource_len(pdev, 0),
++		       (unsigned long long)pci_resource_start(pdev, 0));
+ 		rc = -EIO;
+ 		goto err_free_mmio_regions_2;
+ 	}
+@@ -757,7 +757,7 @@ static int __devinit dscc4_init_one(struct pci_dev *pdev,
+ 
+ 	rc = request_irq(pdev->irq, dscc4_irq, IRQF_SHARED, DRV_NAME, priv->root);
+ 	if (rc < 0) {
+-		printk(KERN_WARNING "%s: IRQ %d busy\n", DRV_NAME, pdev->irq);
++		pr_warn("IRQ %d busy\n", pdev->irq);
+ 		goto err_release_4;
+ 	}
+ 
+@@ -904,7 +904,7 @@ static int dscc4_found1(struct pci_dev *pdev, void __iomem *ioaddr)
+ 
+ 	root = kcalloc(dev_per_card, sizeof(*root), GFP_KERNEL);
+ 	if (!root) {
+-		printk(KERN_ERR "%s: can't allocate data\n", DRV_NAME);
++		pr_err("can't allocate data\n");
+ 		goto err_out;
+ 	}
+ 
+@@ -916,7 +916,7 @@ static int dscc4_found1(struct pci_dev *pdev, void __iomem *ioaddr)
+ 
+ 	ppriv = kzalloc(sizeof(*ppriv), GFP_KERNEL);
+ 	if (!ppriv) {
+-		printk(KERN_ERR "%s: can't allocate private data\n", DRV_NAME);
++		pr_err("can't allocate private data\n");
+ 		goto err_free_dev;
+ 	}
+ 
+@@ -952,7 +952,7 @@ static int dscc4_found1(struct pci_dev *pdev, void __iomem *ioaddr)
+ 
+ 		ret = register_hdlc_device(d);
+ 		if (ret < 0) {
+-			printk(KERN_ERR "%s: unable to register\n", DRV_NAME);
++			pr_err("unable to register\n");
+ 			dscc4_release_ring(dpriv);
+ 			goto err_unregister;
+ 	        }
+@@ -1005,7 +1005,7 @@ static int dscc4_loopback_check(struct dscc4_dev_priv *dpriv)
+ 	if (settings->loopback && (settings->clock_type != CLOCK_INT)) {
+ 		struct net_device *dev = dscc4_to_dev(dpriv);
+ 
+-		printk(KERN_INFO "%s: loopback requires clock\n", dev->name);
++		netdev_info(dev, "loopback requires clock\n");
+ 		return -1;
+ 	}
+ 	return 0;
+@@ -1078,7 +1078,7 @@ static int dscc4_open(struct net_device *dev)
+ 		scc_patchl(0, PowerUp, dpriv, dev, CCR0);
+ 		scc_patchl(0, 0x00050000, dpriv, dev, CCR2);
+ 		scc_writel(EventsMask, dpriv, dev, IMR);
+-		printk(KERN_INFO "%s: up again.\n", dev->name);
++		netdev_info(dev, "up again\n");
+ 		goto done;
+ 	}
+ 
+@@ -1095,11 +1095,11 @@ static int dscc4_open(struct net_device *dev)
+ 	 * situations.
+ 	 */
+ 	if (scc_readl_star(dpriv, dev) & SccBusy) {
+-		printk(KERN_ERR "%s busy. Try later\n", dev->name);
++		netdev_err(dev, "busy - try later\n");
+ 		ret = -EAGAIN;
+ 		goto err_out;
+ 	} else
+-		printk(KERN_INFO "%s: available. Good\n", dev->name);
++		netdev_info(dev, "available - good\n");
+ 
+ 	scc_writel(EventsMask, dpriv, dev, IMR);
+ 
+@@ -1117,7 +1117,7 @@ static int dscc4_open(struct net_device *dev)
+ 	 * reset is needed. Suggestions anyone ?
+ 	 */
+ 	if ((ret = dscc4_xpr_ack(dpriv)) < 0) {
+-		printk(KERN_ERR "%s: %s timeout\n", DRV_NAME, "XPR");
++		pr_err("XPR timeout\n");
+ 		goto err_disable_scc_events;
+ 	}
+ 	
+@@ -1342,8 +1342,7 @@ static int dscc4_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+ 			return -EPERM;
+ 
+ 		if (dpriv->flags & FakeReset) {
+-			printk(KERN_INFO "%s: please reset the device"
+-			       " before this command\n", dev->name);
++			netdev_info(dev, "please reset the device before this command\n");
+ 			return -EPERM;
+ 		}
+ 		if (copy_from_user(&dpriv->settings, line, size))
+@@ -1506,8 +1505,7 @@ static irqreturn_t dscc4_irq(int irq, void *token)
+ 	writel(state, ioaddr + GSTAR);
+ 
+ 	if (state & Arf) {
+-		printk(KERN_ERR "%s: failure (Arf). Harass the maintener\n",
 -		       dev->name);
-+		netdev_notice(dev, "invalid data no header\n");
- 		dev->stats.rx_errors++;
- 		kfree_skb(skb);
- 		return;
-@@ -126,7 +127,8 @@ static void dlci_receive(struct sk_buff *skb, struct net_device *dev)
- 
- 	if (hdr->control != FRAD_I_UI)
- 	{
--		printk(KERN_NOTICE "%s: Invalid header flag 0x%02X.\n", dev->name, hdr->control);
-+		netdev_notice(dev, "Invalid header flag 0x%02X\n",
-+			      hdr->control);
- 		dev->stats.rx_errors++;
++		netdev_err(dev, "failure (Arf). Harass the maintainer\n");
+ 		goto out;
  	}
- 	else
-@@ -135,14 +137,18 @@ static void dlci_receive(struct sk_buff *skb, struct net_device *dev)
- 			case FRAD_P_PADDING:
- 				if (hdr->NLPID != FRAD_P_SNAP)
- 				{
--					printk(KERN_NOTICE "%s: Unsupported NLPID 0x%02X.\n", dev->name, hdr->NLPID);
-+					netdev_notice(dev, "Unsupported NLPID 0x%02X\n",
-+						      hdr->NLPID);
- 					dev->stats.rx_errors++;
- 					break;
- 				}
- 	 
- 				if (hdr->OUI[0] + hdr->OUI[1] + hdr->OUI[2] != 0)
- 				{
--					printk(KERN_NOTICE "%s: Unsupported organizationally unique identifier 0x%02X-%02X-%02X.\n", dev->name, hdr->OUI[0], hdr->OUI[1], hdr->OUI[2]);
-+					netdev_notice(dev, "Unsupported organizationally unique identifier 0x%02X-%02X-%02X\n",
-+						      hdr->OUI[0],
-+						      hdr->OUI[1],
-+						      hdr->OUI[2]);
- 					dev->stats.rx_errors++;
- 					break;
- 				}
-@@ -163,12 +169,14 @@ static void dlci_receive(struct sk_buff *skb, struct net_device *dev)
- 			case FRAD_P_SNAP:
- 			case FRAD_P_Q933:
- 			case FRAD_P_CLNP:
--				printk(KERN_NOTICE "%s: Unsupported NLPID 0x%02X.\n", dev->name, hdr->pad);
-+				netdev_notice(dev, "Unsupported NLPID 0x%02X\n",
-+					      hdr->pad);
- 				dev->stats.rx_errors++;
- 				break;
- 
- 			default:
--				printk(KERN_NOTICE "%s: Invalid pad byte 0x%02X.\n", dev->name, hdr->pad);
-+				netdev_notice(dev, "Invalid pad byte 0x%02X\n",
-+					      hdr->pad);
- 				dev->stats.rx_errors++;
- 				break;				
- 		}
-diff --git a/drivers/net/wan/sdla.c b/drivers/net/wan/sdla.c
-index 3f4e2b5..c853161 100644
---- a/drivers/net/wan/sdla.c
-+++ b/drivers/net/wan/sdla.c
-@@ -32,6 +32,8 @@
-  *		2 of the License, or (at your option) any later version.
-  */
- 
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/types.h>
-@@ -350,24 +352,24 @@ static void sdla_errors(struct net_device *dev, int cmd, int dlci, int ret, int
- 		case SDLA_RET_MODEM:
- 			state = data;
- 			if (*state & SDLA_MODEM_DCD_LOW)
--				printk(KERN_INFO "%s: Modem DCD unexpectedly low!\n", dev->name);
-+				netdev_info(dev, "Modem DCD unexpectedly low!\n");
- 			if (*state & SDLA_MODEM_CTS_LOW)
--				printk(KERN_INFO "%s: Modem CTS unexpectedly low!\n", dev->name);
-+				netdev_info(dev, "Modem CTS unexpectedly low!\n");
- 			/* I should probably do something about this! */
- 			break;
- 
- 		case SDLA_RET_CHANNEL_OFF:
--			printk(KERN_INFO "%s: Channel became inoperative!\n", dev->name);
-+			netdev_info(dev, "Channel became inoperative!\n");
- 			/* same here */
- 			break;
- 
- 		case SDLA_RET_CHANNEL_ON:
--			printk(KERN_INFO "%s: Channel became operative!\n", dev->name);
-+			netdev_info(dev, "Channel became operative!\n");
- 			/* same here */
- 			break;
- 
- 		case SDLA_RET_DLCI_STATUS:
--			printk(KERN_INFO "%s: Status change reported by Access Node.\n", dev->name);
-+			netdev_info(dev, "Status change reported by Access Node\n");
- 			len /= sizeof(struct _dlci_stat);
- 			for(pstatus = data, i=0;i < len;i++,pstatus++)
- 			{
-@@ -382,29 +384,32 @@ static void sdla_errors(struct net_device *dev, int cmd, int dlci, int ret, int
- 					sprintf(line, "unknown status: %02X", pstatus->flags);
- 					state = line;
- 				}
--				printk(KERN_INFO "%s: DLCI %i: %s.\n", dev->name, pstatus->dlci, state);
-+				netdev_info(dev, "DLCI %i: %s\n",
-+					    pstatus->dlci, state);
- 				/* same here */
+ 	state &= ~ArAck;
+@@ -1515,7 +1513,7 @@ static irqreturn_t dscc4_irq(int irq, void *token)
+ 		if (debug > 0)
+ 			printk(KERN_DEBUG "%s: CfgIV\n", DRV_NAME);
+ 		if (priv->iqcfg[priv->cfg_cur++%IRQ_RING_SIZE] & cpu_to_le32(Arf))
+-			printk(KERN_ERR "%s: %s failed\n", dev->name, "CFG");
++			netdev_err(dev, "CFG failed\n");
+ 		if (!(state &= ~Cfg))
+ 			goto out;
+ 	}
+@@ -1596,8 +1594,8 @@ try:
+ 				++dpriv->tx_dirty;
+ 			} else {
+ 				if (debug > 1)
+-					printk(KERN_ERR "%s Tx: NULL skb %d\n",
+-						dev->name, cur);
++					netdev_err(dev, "Tx: NULL skb %d\n",
++						   cur);
  			}
- 			break;
- 
- 		case SDLA_RET_DLCI_UNKNOWN:
--			printk(KERN_INFO "%s: Received unknown DLCIs:", dev->name);
-+			netdev_info(dev, "Received unknown DLCIs:");
- 			len /= sizeof(short);
- 			for(pdlci = data,i=0;i < len;i++,pdlci++)
--				printk(" %i", *pdlci);
--			printk("\n");
-+				pr_cont(" %i", *pdlci);
-+			pr_cont("\n");
- 			break;
- 
- 		case SDLA_RET_TIMEOUT:
--			printk(KERN_ERR "%s: Command timed out!\n", dev->name);
-+			netdev_err(dev, "Command timed out!\n");
- 			break;
- 
- 		case SDLA_RET_BUF_OVERSIZE:
--			printk(KERN_INFO "%s: Bc/CIR overflow, acceptable size is %i\n", dev->name, len);
-+			netdev_info(dev, "Bc/CIR overflow, acceptable size is %i\n",
-+				    len);
- 			break;
- 
- 		case SDLA_RET_BUF_TOO_BIG:
--			printk(KERN_INFO "%s: Buffer size over specified max of %i\n", dev->name, len);
-+			netdev_info(dev, "Buffer size over specified max of %i\n",
-+				    len);
- 			break;
- 
- 		case SDLA_RET_CHANNEL_INACTIVE:
-@@ -415,7 +420,8 @@ static void sdla_errors(struct net_device *dev, int cmd, int dlci, int ret, int
- 				break;
- 
- 		default: 
--			printk(KERN_DEBUG "%s: Cmd 0x%2.2X generated return code 0x%2.2X\n", dev->name, cmd, ret);
-+			netdev_dbg(dev, "Cmd 0x%02X generated return code 0x%02X\n",
-+				   cmd, ret);
- 			/* Further processing could be done here */
- 			break;
- 	}
-@@ -678,12 +684,14 @@ static netdev_tx_t sdla_transmit(struct sk_buff *skb,
- 		case ARPHRD_FRAD:
- 			if (skb->dev->type != ARPHRD_DLCI)
- 			{
--				printk(KERN_WARNING "%s: Non DLCI device, type %i, tried to send on FRAD module.\n", dev->name, skb->dev->type);
-+				netdev_warn(dev, "Non DLCI device, type %i, tried to send on FRAD module\n",
-+					    skb->dev->type);
- 				accept = 0;
+ 			/*
+ 			 * If the driver ends sending crap on the wire, it
+@@ -1616,7 +1614,7 @@ try:
+ 		 * Transmit Data Underrun
+ 		 */
+ 		if (state & Xdu) {
+-			printk(KERN_ERR "%s: XDU. Ask maintainer\n", DRV_NAME);
++			netdev_err(dev, "Tx Data Underrun. Ask maintainer\n");
+ 			dpriv->flags = NeedIDT;
+ 			/* Tx reset */
+ 			writel(MTFi | Rdt,
+@@ -1625,13 +1623,13 @@ try:
+ 			return;
+ 		}
+ 		if (state & Cts) {
+-			printk(KERN_INFO "%s: CTS transition\n", dev->name);
++			netdev_info(dev, "CTS transition\n");
+ 			if (!(state &= ~Cts)) /* DEBUG */
+ 				goto try;
+ 		}
+ 		if (state & Xmr) {
+ 			/* Frame needs to be sent again - FIXME */
+-			printk(KERN_ERR "%s: Xmr. Ask maintainer\n", DRV_NAME);
++			netdev_err(dev, "Tx ReTx. Ask maintainer\n");
+ 			if (!(state &= ~Xmr)) /* DEBUG */
+ 				goto try;
+ 		}
+@@ -1649,7 +1647,7 @@ try:
+ 					break;
  			}
- 			break;
- 		default:
--			printk(KERN_WARNING "%s: unknown firmware type 0x%4.4X\n", dev->name, dev->type);
-+			netdev_warn(dev, "unknown firmware type 0x%04X\n",
-+				    dev->type);
- 			accept = 0;
- 			break;
- 	}
-@@ -807,7 +815,8 @@ static void sdla_receive(struct net_device *dev)
+ 			if (!i)
+-				printk(KERN_INFO "%s busy in irq\n", dev->name);
++				netdev_info(dev, "busy in irq\n");
  
- 		if (i == CONFIG_DLCI_MAX)
- 		{
--			printk(KERN_NOTICE "%s: Received packet from invalid DLCI %i, ignoring.", dev->name, dlci);
-+			netdev_notice(dev, "Received packet from invalid DLCI %i, ignoring\n",
-+				      dlci);
- 			dev->stats.rx_errors++;
- 			success = 0;
+ 			scc_addr = dpriv->base_addr + 0x0c*dpriv->dev_id;
+ 			/* Keep this order: IDT before IDR */
+@@ -1686,7 +1684,7 @@ try:
  		}
-@@ -819,7 +828,7 @@ static void sdla_receive(struct net_device *dev)
- 		skb = dev_alloc_skb(len + sizeof(struct frhdr));
- 		if (skb == NULL) 
- 		{
--			printk(KERN_NOTICE "%s: Memory squeeze, dropping packet.\n", dev->name);
-+			netdev_notice(dev, "Memory squeeze, dropping packet\n");
- 			dev->stats.rx_dropped++;
- 			success = 0;
+ 		if (state & Cd) {
+ 			if (debug > 0)
+-				printk(KERN_INFO "%s: CD transition\n", dev->name);
++				netdev_info(dev, "CD transition\n");
+ 			if (!(state &= ~Cd)) /* DEBUG */
+ 				goto try;
  		}
-@@ -880,8 +889,7 @@ static irqreturn_t sdla_isr(int dummy, void *dev_id)
- 
- 	if (!flp->initialized)
- 	{
--		printk(KERN_WARNING "%s: irq %d for uninitialized device.\n",
--		       dev->name, dev->irq);
-+		netdev_warn(dev, "irq %d for uninitialized device\n", dev->irq);
- 		return IRQ_NONE;
- 	}
- 
-@@ -901,7 +909,7 @@ static irqreturn_t sdla_isr(int dummy, void *dev_id)
- 		case SDLA_INTR_TX:
- 		case SDLA_INTR_COMPLETE:
- 		case SDLA_INTR_TIMER:
--			printk(KERN_WARNING "%s: invalid irq flag 0x%02X.\n", dev->name, byte);
-+			netdev_warn(dev, "invalid irq flag 0x%02X\n", byte);
- 			break;
- 	}
- 
-@@ -1347,7 +1355,7 @@ static int sdla_set_config(struct net_device *dev, struct ifmap *map)
- 		return -EINVAL;
- 
- 	if (!request_region(map->base_addr, SDLA_IO_EXTENTS, dev->name)){
--		printk(KERN_WARNING "SDLA: io-port 0x%04lx in use\n", dev->base_addr);
-+		pr_warn("io-port 0x%04lx in use\n", dev->base_addr);
- 		return -EINVAL;
- 	}
- 	base = map->base_addr;
-@@ -1412,7 +1420,7 @@ static int sdla_set_config(struct net_device *dev, struct ifmap *map)
+@@ -1695,11 +1693,11 @@ try:
+ #ifdef DSCC4_POLLING
+ 			while (!dscc4_tx_poll(dpriv, dev));
+ #endif
+-			printk(KERN_INFO "%s: Tx Hi\n", dev->name);
++			netdev_info(dev, "Tx Hi\n");
+ 			state &= ~Hi;
  		}
- 	}
- 
--	printk(KERN_NOTICE "%s: Unknown card type\n", dev->name);
-+	netdev_notice(dev, "Unknown card type\n");
- 	err = -ENODEV;
- 	goto fail;
- 
+ 		if (state & Err) {
+-			printk(KERN_INFO "%s: Tx ERR\n", dev->name);
++			netdev_info(dev, "Tx ERR\n");
+ 			dev->stats.tx_errors++;
+ 			state &= ~Err;
+ 		}
+@@ -1769,7 +1767,7 @@ try:
+ 			goto try;
+ 		}
+ 		if (state & Hi ) { /* HI bit */
+-			printk(KERN_INFO "%s: Rx Hi\n", dev->name);
++			netdev_info(dev, "Rx Hi\n");
+ 			state &= ~Hi;
+ 			goto try;
+ 		}
+@@ -1800,7 +1798,7 @@ try:
+ 				goto try;
+ 		}
+ 		if (state & Cts) {
+-			printk(KERN_INFO "%s: CTS transition\n", dev->name);
++			netdev_info(dev, "CTS transition\n");
+ 			if (!(state &= ~Cts)) /* DEBUG */
+ 				goto try;
+ 		}
+@@ -1859,14 +1857,12 @@ try:
+ 			       sizeof(struct RxFD), scc_addr + CH0BRDA);
+ 			writel(MTFi|Rdr|Idr, scc_addr + CH0CFG);
+ 			if (dscc4_do_action(dev, "RDR") < 0) {
+-				printk(KERN_ERR "%s: RDO recovery failed(%s)\n",
+-				       dev->name, "RDR");
++				netdev_err(dev, "RDO recovery failed(RDR)\n");
+ 				goto rdo_end;
+ 			}
+ 			writel(MTFi|Idr, scc_addr + CH0CFG);
+ 			if (dscc4_do_action(dev, "IDR") < 0) {
+-				printk(KERN_ERR "%s: RDO recovery failed(%s)\n",
+-				       dev->name, "IDR");
++				netdev_err(dev, "RDO recovery failed(IDR)\n");
+ 				goto rdo_end;
+ 			}
+ 		rdo_end:
+@@ -1875,7 +1871,7 @@ try:
+ 			goto try;
+ 		}
+ 		if (state & Cd) {
+-			printk(KERN_INFO "%s: CD transition\n", dev->name);
++			netdev_info(dev, "CD transition\n");
+ 			if (!(state &= ~Cd)) /* DEBUG */
+ 				goto try;
+ 		}
 -- 
 1.7.6.rc1
 
