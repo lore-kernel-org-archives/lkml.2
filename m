@@ -1,128 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab1F0WfK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 18:35:10 -0400
-Received: from lucidpixels.com ([72.73.18.11]:54681 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755211Ab1F0Wem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 18:34:42 -0400
-Date: Mon, 27 Jun 2011 18:34:41 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: "Ronciak, John" <john.ronciak@intel.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Subject: RE: [E1000-devel] 2.6.39.2: skb_over_panic: kernel BUG at
- net/core/skbuff.c:127!
-In-Reply-To: <D38E8E86660E514AB505863C19C9287C03A585@ORSMSX101.amr.corp.intel.com>
-Message-ID: <alpine.DEB.2.02.1106271831060.6721@p34.internal.lan>
-References: <alpine.DEB.2.02.1106271742310.6721@p34.internal.lan> <D38E8E86660E514AB505863C19C9287C03A525@ORSMSX101.amr.corp.intel.com> <alpine.DEB.2.02.1106271814200.6721@p34.internal.lan>
- <D38E8E86660E514AB505863C19C9287C03A585@ORSMSX101.amr.corp.intel.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1755268Ab1F0WjI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 18:39:08 -0400
+Received: from mother.openwall.net ([195.42.179.200]:54193 "HELO
+	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754890Ab1F0WhT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 18:37:19 -0400
+Date: Tue, 28 Jun 2011 02:37:12 +0400
+From: Solar Designer <solar@openwall.com>
+To: kernel-hardening@lists.openwall.com
+Cc: Vasiliy Kulikov <segoon@openwall.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        rientjes@google.com, wilsons@start.ca, security@kernel.org,
+        eparis@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
+Message-ID: <20110627223712.GA8685@openwall.com>
+References: <1308917318-4749-1-git-send-email-segoon@openwall.com> <4E07F1C0.2070305@jp.fujitsu.com> <20110627070300.GA4463@albatros> <4E08324D.9040605@jp.fujitsu.com> <20110627085242.GA6635@albatros>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110627085242.GA6635@albatros>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jun 27, 2011 at 12:52:42PM +0400, Vasiliy Kulikov wrote:
+> As to random bytes - if it is very predictable (e.g. rand() % 10000) one
+> may restore the original value.  But it would still do much harm to good
+> programs (io stats going up and down!).  Adding really random bytes
+> seems somewhat too complicated for these needs to me.
 
+Random noise doesn't help very much even if it's totally unpredictable
+and even if it's much louder than the signal.  It will only increase the
+number of samples needed to see the signal through the noise.
 
-On Mon, 27 Jun 2011, Ronciak, John wrote:
+More effective ways to deal with side-channel attacks are to make things
+appear constant or, better yet, to remove the side-channel altogether
+if possible.  I'd happily break iotop for non-admins on many of my
+systems, so please give me a way to do it.
 
->> Hello John,
->> Justin.
-> You still didn't tell us what eth interface is on which HW.  We need to know that.  Do an 'ethtool -i eth2' and the same for each of the other interfaces in the system.  The igb driver that is used on the NIC described above is in high use without people reporting this error.
->
-> Cheers,
-> John
+http://en.wikipedia.org/wiki/Side_channel_attack#Countermeasures
 
-Sorry,
-
-eth0 = e1000e (on-board (on an Intel DP55KG))
-eth{1,2,3,4} = igb (the 4-port NIC I mentioned)
-eth5 = ixgbe (the 10GbE AT2 server board (copper))
-
---
-
-[    2.301687] e1000e 0000:00:19.0: eth0: (PCI Express:2.5GB/s:Width x1) hidden:mac
-[    2.301878] e1000e 0000:00:19.0: eth0: Intel(R) PRO/1000 Network Connection
-[    2.302162] e1000e 0000:00:19.0: eth0: MAC: 9, PHY: 9, PBA No: FFFFFF-0FF
-
-[    2.350085] igb 0000:03:00.0: eth1: (PCIe:2.5Gb/s:Width x4) hidden:mac
-[    2.350351] igb 0000:03:00.0: eth1: PBA No: E84075-002
-[    2.400381] igb 0000:03:00.1: eth2: (PCIe:2.5Gb/s:Width x4) hidden:mac
-[    2.400486] igb 0000:03:00.1: eth2: PBA No: E84075-002
-[    2.448103] igb 0000:03:00.2: eth3: (PCIe:2.5Gb/s:Width x4) hidden:mac
-[    2.448391] igb 0000:03:00.2: eth3: PBA No: E84075-002
-[    2.496095] igb 0000:03:00.3: eth4: (PCIe:2.5Gb/s:Width x4) hidden:mac
-[    2.496377] igb 0000:03:00.3: eth4: PBA No: E84075-002
-
-[   38.916123] ixgbe 0000:01:00.0: eth5: NIC Link is Up 10 Gbps, Flow Control: RX/TX
-
---
-
-ethtool output as requested:
-
-driver: e1000e
-version: 1.3.10-k2
-firmware-version: 0.12-5
-bus-info: 0000:00:19.0
-supports-statistics: yes
-supports-test: yes
-supports-eeprom-access: yes
-supports-register-dump: yes
-
-ethtool -I eth1
-driver: igb
-version: 3.0.6-k2
-firmware-version: 3.19-0
-bus-info: 0000:03:00.3
-supports-statistics: yes
-supports-test: yes
-supports-eeprom-access: yes
-supports-register-dump: yes
-
-ethtool -I eth2
-driver: igb
-version: 3.0.6-k2
-firmware-version: 3.19-0
-bus-info: 0000:03:00.2
-supports-statistics: yes
-supports-test: yes
-supports-eeprom-access: yes
-supports-register-dump: yes
-
-ethtool -I eth3
-driver: igb
-version: 3.0.6-k2
-firmware-version: 3.19-0
-bus-info: 0000:03:00.1
-supports-statistics: yes
-supports-test: yes
-supports-eeprom-access: yes
-supports-register-dump: yes
-
-ethtool -I eth4
-driver: igb
-version: 3.0.6-k2
-firmware-version: 3.19-0
-bus-info: 0000:03:00.0
-supports-statistics: yes
-supports-test: yes
-supports-eeprom-access: yes
-supports-register-dump: yes
-
-ethtool -I eth5
-driver: ixgbe
-version: 3.2.9-k2
-firmware-version: 2.9-0
-bus-info: 0000:01:00.0
-supports-statistics: yes
-supports-test: yes
-supports-eeprom-access: yes
-supports-register-dump: yes
-
-Justin.
-
-
-
+Alexander
