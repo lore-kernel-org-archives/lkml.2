@@ -1,71 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab1F0S2h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 14:28:37 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:53110 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753344Ab1F0S2d convert rfc822-to-8bit (ORCPT
+	id S1753393Ab1F0ScE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 14:32:04 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:47799 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753094Ab1F0Sb7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 14:28:33 -0400
-X-SpamScore: -9
-X-BigFish: VPS-9(zz936eK1432Nzz1202hzz8275bh8275dhz2dh2a8h668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:137.71.25.57;KIP:(null);UIP:(null);IPVD:NLI;H:nwd2mta2.analog.com;RD:nwd2mail11.analog.com;EFVD:NLI
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Mike Frysinger <vapier@gentoo.org>,
-        "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "David S. Miller" <davem@davemloft.net>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 27 Jun 2011 19:28:11 +0100
-Subject: RE: [PATCH] MAINTAINERS: drop Michael from bfin_mac driver
-Thread-Topic: [PATCH] MAINTAINERS: drop Michael from bfin_mac driver
-Thread-Index: Acw0917bCkfN37sbRB+s80VYcIbRDAAAJIRQ
-Message-ID: <544AC56F16B56944AEC3BD4E3D5917713EA0AEEA8C@LIMKCMBX1.ad.analog.com>
-References: <1309199047-18843-1-git-send-email-vapier@gentoo.org>
-In-Reply-To: <1309199047-18843-1-git-send-email-vapier@gentoo.org>
-Accept-Language: de-DE, en-US
+	Mon, 27 Jun 2011 14:31:59 -0400
+From: "Grosen, Mark" <mgrosen@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>
+CC: Ohad Ben-Cohen <ohad@wizery.com>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [RFC 5/8] remoteproc: add davinci implementation
+Thread-Topic: [RFC 5/8] remoteproc: add davinci implementation
+Thread-Index: AQHML+P0Hfr3a08OpEW7Q/TK8TF6jpTLaEUAgAB6tVCAARO0AIAACGCAgASPneA=
+Date: Mon, 27 Jun 2011 18:31:41 +0000
+Message-ID: <FFF198FBBF957F4393BA834040FEFFA202EC99@DFLE35.ent.ti.com>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+	<1308640714-17961-6-git-send-email-ohad@wizery.com>
+	<4E035B78.3080200@mvista.com>
+	<FFF198FBBF957F4393BA834040FEFFA202D66E@DFLE35.ent.ti.com>
+ <4E04A9AE.3030801@mvista.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024D6C2F29@dbde02.ent.ti.com>
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024D6C2F29@dbde02.ent.ti.com>
+Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
 X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
+x-originating-ip: [128.247.5.50]
 Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-X-OriginatorOrg: analog.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Frysinger wrote on 2011-06-27:
-> We want people to just use the list now rather than hitting up people
-> who are no longer responsible for it.
->
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-> ---
->  MAINTAINERS |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> diff --git a/MAINTAINERS b/MAINTAINERS index 1cb0d86..d4aa639 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1424,7 +1424,6 @@ S:      Supported
->  F:   arch/blackfin/
->
- BLACKFIN EMAC DRIVER -M:       Michael Hennerich <michael.hennerich@analog.com>
- L:     uclinux-dist-devel@blackfin.uclinux.org W:      http://blackfin.uclinux.org
- S:     Supported
+> From: Nori, Sekhar
+> Sent: Friday, June 24, 2011 8:44 AM
+> 
+> Hi Mark,
 
+Sekhar, thanks for your feedback and ideas. Comments below.
 
-Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+Mark
 
+> Since procedure to set the boot address varies across DaVinci
+> platforms, you could have a callback populated in platform data
+> which will be implemented differently for original DaVinci and
+> DA8xx devices.
 
-Greetings,
-Michael
+I looked at DM6467 and it's the same as OMAPL13x, except at a different
+address. Rather than a callback, it could be just an address in the
+platform data.
 
---
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft: Muenchen; Registergericht: Muenchen HRB 40368; Geschaeftsfuehrer:Dr.Carsten Suckrow, Thomas Wessel, William A. Martin, Margaret Seif
+> 
+> Also, all PSC accesses are better off going through clock
+> framework to ensure proper locking and modularity.
+> 
+> To assert/de-assert local reset when enabling or disabling PSC,
+> you could use a flag in the clock structure to indicate the need
+> for this. This way, if there is any other module needing a local
+> reset, it can just define the same flag. Similarly, if the DSP
+> does not need a local reset on a particular platform, that
+> platform can simply skip the flag.
+> 
+> This can be done in a manner similar to how the support for
+> a forced transition PSC was added here:
+> 
+> https://patchwork.kernel.org/patch/662941/
 
+Yes, I like this idea - much cleaner. For example, the start() method
+becomes (pseudo-code):
 
+start()
+{
+    /* bootaddrreg derived from platform data */
+    bootaddrreg = boot_address;
 
+    clk_enable();
+}
+
+Referring to your patch above, would it be better to just pass
+the flags into the davinci_psc_config() function rather than breaking out more
+arguments for each flag?
+
+Mark
