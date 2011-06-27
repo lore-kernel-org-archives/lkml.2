@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756832Ab1F0Gxn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 02:53:43 -0400
-Received: from mga11.intel.com ([192.55.52.93]:14701 "EHLO mga11.intel.com"
+	id S1756362Ab1F0Gye (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 02:54:34 -0400
+Received: from mga14.intel.com ([143.182.124.37]:22264 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756292Ab1F0Gwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 02:52:39 -0400
+	id S1756795Ab1F0Gwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 02:52:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,431,1304319600"; 
-   d="scan'208";a="20933163"
-Subject: [patch 1/2]cfq-iosched: fix a rcu warning
+   d="scan'208";a="18962120"
+Subject: [patch 2/2]cfq-iosched: make code consistent
 From: Shaohua Li <shaohua.li@intel.com>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Jens Axboe <jaxboe@fusionio.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 27 Jun 2011 14:52:37 +0800
-Message-ID: <1309157557.15392.176.camel@sli10-conroe>
+Date: Mon, 27 Jun 2011 14:52:40 +0800
+Message-ID: <1309157560.15392.177.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -23,30 +23,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got a rcu warnning at boot. the ioc->ioc_data is rcu_deferenced, but
-doesn't hold rcu_read_lock.
+ioc->ioc_data is rcu protectd, so uses correct API to access it.
+This doesn't change any behavior, but just make code consistent.
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index f379943..fd566c1 100644
+index f379943..ae21919 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -2773,11 +2773,14 @@ static void __cfq_exit_single_io_context(struct cfq_data *cfqd,
- 	smp_wmb();
- 	cic->key = cfqd_dead_key(cfqd);
+@@ -3084,7 +3087,8 @@ cfq_drop_dead_cic(struct cfq_data *cfqd, struct io_context *ioc,
  
-+	rcu_read_lock();
- 	if (rcu_dereference(ioc->ioc_data) == cic) {
-+		rcu_read_unlock();
- 		spin_lock(&ioc->lock);
- 		rcu_assign_pointer(ioc->ioc_data, NULL);
- 		spin_unlock(&ioc->lock);
--	}
-+	} else
-+		rcu_read_unlock();
+ 	spin_lock_irqsave(&ioc->lock, flags);
  
- 	if (cic->cfqq[BLK_RW_ASYNC]) {
- 		cfq_exit_cfqq(cfqd, cic->cfqq[BLK_RW_ASYNC]);
+-	BUG_ON(ioc->ioc_data == cic);
++	BUG_ON(rcu_dereference_check(ioc->ioc_data,
++		lockdep_is_held(&ioc->lock)) == cic);
+ 
+ 	radix_tree_delete(&ioc->radix_root, cfqd->cic_index);
+ 	hlist_del_rcu(&cic->cic_list);
 
 
