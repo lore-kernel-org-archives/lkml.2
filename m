@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755843Ab1F0EZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 00:25:57 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:47622 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756263Ab1F0EYT convert rfc822-to-8bit (ORCPT
+	id S1756326Ab1F0E3i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 00:29:38 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:43860 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756134Ab1F0E3O convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 00:24:19 -0400
+	Mon, 27 Jun 2011 00:29:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=meIzhV/kWGByYiPEWURje0Wl3Srw8vuPKF1zrl9g2xHtULoG8NtDZDTeQAxhDYtYZV
-         dXlpx0XQq0r+LjgMkDrocNPXZn9qOBtqHDOI9NeN87ngboTO3jFgAaCmu5qhs6w1QDlN
-         +LikGctyrLxmeTMlnYfMk7Rr+yyMCiUMjnOF4=
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Jxm8n3qKRPECe+S9sA1VnOusrGOz3ZMpnWf7Bb87EMdY2O6TXDpUqxoyA/kPzbiZT3
+         DlKDBRVUljuwZ+W8Sd+GEMQoDOKx9J0bImH/Aa+B6TY01U30youXB96gkWUx+hwqrS8D
+         w9BhVuD89V1RFnxlQqNaqNEj2ncNZ9Qw8aSc0=
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <BANLkTimQ55xBwzoxnSAKznG-GTHZ+LtShw@mail.gmail.com>
-References: <1308751077.4846.1.camel@phoenix> <BANLkTimQ55xBwzoxnSAKznG-GTHZ+LtShw@mail.gmail.com>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 27 Jun 2011 12:23:59 +0800
-Message-ID: <BANLkTi=7HEnt_SZjPV+-NOrQX=+XLbBGNg@mail.gmail.com>
-Subject: Re: [PATCH] spi: omap2-mcspi: fix omap2_mcspi_probe error handling
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Juha Yrjola <juha.yrjola@nokia.com>,
-        spi-devel-general@lists.sourceforge.net
+In-Reply-To: <BANLkTimFL44XRDeA6z6pvKGw-zpcdsNUEw@mail.gmail.com>
+References: <BANLkTiknCeAxe30MJdVTxDom+ko8+EDQ4A@mail.gmail.com>
+	<1307642718-22257-1-git-send-email-minipli@googlemail.com>
+	<20110609155630.0f734351.akpm@linux-foundation.org>
+	<1307711337-4042-1-git-send-email-minipli@googlemail.com>
+	<20110610134821.GL24424@n2100.arm.linux.org.uk>
+	<BANLkTimFL44XRDeA6z6pvKGw-zpcdsNUEw@mail.gmail.com>
+Date: Mon, 27 Jun 2011 06:29:12 +0200
+Message-ID: <BANLkTikzPx8rTa9YSqccXA+zjM0YNJmyOw@mail.gmail.com>
+Subject: Re: [PATCH] arm, exec: remove redundant set_fs(USER_DS)
+From: Mathias Krause <minipli@googlemail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/6/22 Grant Likely <grant.likely@secretlab.ca>:
-> On Wed, Jun 22, 2011 at 7:57 AM, Axel Lin <axel.lin@gmail.com> wrote:
->> This patch includes below fixes for error handling:
->> 1. return proper error if kcalloc for mcspi->dma_channels fails
->> 2. return proper error if omap2_mcspi_master_setup fails
->> 3. properly release allocated resources in error paths and
->>   improve the naming of goto labels.
+On Fri, Jun 10, 2011 at 3:53 PM, Mathias Krause <minipli@googlemail.com> wrote:
+> On Fri, Jun 10, 2011 at 3:48 PM, Russell King - ARM Linux
+> <linux@arm.linux.org.uk> wrote:
+>> On Fri, Jun 10, 2011 at 03:08:57PM +0200, Mathias Krause wrote:
+>>> The address limit is already set in flush_old_exec() so this
+>>> set_fs(USER_DS) is redundant.
+>>
+>> Please show where and how this is done.  I've looked and can't see
+>> any equivalent call to set_fs() in flush_old_exec().
 >
-> Is this to be applied immediately, or queued up in linux-next for v3.1?
->
-It's not urgent. It's ok to queue up in linux-next for v3.1.
+> Before dac853a (exec: delay address limit change until point of no
+> return) it was done in search_binary_handler(), now it is done in
+> flush_old_exec(). Either way set_fs(USER_DS) was/gets called before
+> start_thread() so the call there is redundant.
 
-Axel
+Russell, any new opinion on this?
+
+Mathias
