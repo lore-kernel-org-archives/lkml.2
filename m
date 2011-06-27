@@ -1,100 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab1F0BOL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 21:14:11 -0400
-Received: from perceval.ideasonboard.com ([95.142.166.194]:35101 "EHLO
-	perceval.ideasonboard.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755709Ab1F0BOF (ORCPT
+	id S1755644Ab1F0B3U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 21:29:20 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44799 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756068Ab1F0B07 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 21:14:05 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-Subject: Re: [PATCH 11/14] [media] uvcvideo: Use LINUX_VERSION_CODE for VIDIOC_QUERYCAP
-Date: Mon, 27 Jun 2011 03:14:10 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37-gentoo-r3; KDE/4.6.4; x86_64; ; )
-Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Sakari Ailus <sakari.ailus@maxwell.research.nokia.com>
-References: <cover.1309103285.git.mchehab@redhat.com> <20110626130616.0d91dca7@pedra>
-In-Reply-To: <20110626130616.0d91dca7@pedra>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Sun, 26 Jun 2011 21:26:59 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 27 Jun 2011 10:19:44 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: =?ISO-2022-JP?B?IkZKQ0wpIBskQjIuTG4bKEIgGyRCQmdKZRsoQiI=?= 
+	<ogino.daisuke@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+        adobriyan@gmail.com, linux-fsdevel@vger.kernel.org
+Subject: Re: [patch] procfs: returns ENOENT on opening the being-removed
+ proc entry
+Message-Id: <20110627101944.b53cb3f0.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110624104509.6195.371AB99A@jp.fujitsu.com>
+References: <20110624104509.6195.371AB99A@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-2022-JP
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106270314.11202.laurent.pinchart@ideasonboard.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+On Fri, 24 Jun 2011 10:48:08 +0900
+"FJCL) 荻野 大輔" <ogino.daisuke@jp.fujitsu.com> wrote:
 
-On Sunday 26 June 2011 18:06:16 Mauro Carvalho Chehab wrote:
-> uvcvideo doesn't use vidioc_ioctl2. As the API is changing to use
-> a common version for all drivers, we need to expliticly fix this
-> driver.
+> From: Daisuke Ohino <ogino.daisuke@jp.fujitsu.com>
 > 
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+> opening the proc entry may return EINVAL if the entry is being removed, for
+> example open("/proc/bus/pci/XX/YY") during the corresponding device is being
+> hot-removed. The return value is inappropriate and should return ENOENT.
 > 
-> diff --git a/drivers/media/video/uvc/uvc_driver.c
-> b/drivers/media/video/uvc/uvc_driver.c index b6eae48..749c722 100644
-> --- a/drivers/media/video/uvc/uvc_driver.c
-> +++ b/drivers/media/video/uvc/uvc_driver.c
-> @@ -31,6 +31,7 @@
->  #include <linux/videodev2.h>
->  #include <linux/vmalloc.h>
->  #include <linux/wait.h>
-> +#include <linux/version.h>
->  #include <asm/atomic.h>
->  #include <asm/unaligned.h>
+> This return value comes from proc_reg_open().
 > 
-> @@ -1857,7 +1858,7 @@ static int uvc_probe(struct usb_interface *intf,
->  			sizeof(dev->mdev.serial));
->  	strcpy(dev->mdev.bus_info, udev->devpath);
->  	dev->mdev.hw_revision = le16_to_cpu(udev->descriptor.bcdDevice);
-> -	dev->mdev.driver_version = DRIVER_VERSION_NUMBER;
-> +	dev->mdev.driver_version = LINUX_VERSION_CODE;
+> fs/proc/inode.c:
+> -----------------------------------------------------------
+> static int proc_reg_open(struct inode *inode, struct file *file)
+> {
+> (snip)
+>         if (!pde->proc_fops) {
+>                 spin_unlock(&pde->pde_unload_lock);
+>                 kfree(pdeo);
+>                 return -EINVAL;
+>         }
+> (snip)
+> -----------------------------------------------------------
+> 
+> pde->proc_fops is NULL iff the proc entry is being removed. It
+> is set by remove_proc_entry().
+> 
+> -----------------------------------------------------------
+> void remove_proc_entry(const char *name, struct proc_dir_entry*parent)
+> {
+> (snip)
+>         /*
+>          * Stop accepting new callers into module. If you're
+>          * dynamically allocating ->proc_fops, save a pointer somewhere.
+>          */
+>         de->proc_fops = NULL;
+> (snip)
+> -----------------------------------------------------------
+> 
+> But POSIX says:
+> 
+> -----------------------------------------------------------
+> [EINVAL]
+>     The implementation does not support synchronized I/O for this file.
+> -----------------------------------------------------------
+> 
+> Since removing proc entry is apparently not related to synchronized I/O,
+> this function should return ENOENT in this case.
+> 
+> Signed-off-by: Daisuke Ogino <ogino.daisuke@jp.fujitsu.com>
 
-If we report the kernel version number through the media controller API as 
-well, this needs to be documented. In that case media_version should report 
-the kernel version as well, and driver_version would become deprecated.
+It makes sense to me. 
 
->  	if (media_device_register(&dev->mdev) < 0)
->  		goto error;
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+
+Add fsdevel to CC.
+
+> ---
+>  fs/proc/inode.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/media/video/uvc/uvc_v4l2.c
-> b/drivers/media/video/uvc/uvc_v4l2.c index 1fe2c8f..7f77528 100644
-> --- a/drivers/media/video/uvc/uvc_v4l2.c
-> +++ b/drivers/media/video/uvc/uvc_v4l2.c
-> @@ -571,7 +571,7 @@ static long uvc_v4l2_do_ioctl(struct file *file,
-> unsigned int cmd, void *arg) strlcpy(cap->card, vdev->name, sizeof
-> cap->card);
->  		usb_make_path(stream->dev->udev,
->  			      cap->bus_info, sizeof(cap->bus_info));
-> -		cap->version = DRIVER_VERSION_NUMBER;
-> +		cap->version = LINUX_VERSION_CODE;
->  		if (stream->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
->  			cap->capabilities = V4L2_CAP_VIDEO_CAPTURE
+> diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+> index 74b48cf..7ed72d6 100644
+> --- a/fs/proc/inode.c
+> +++ b/fs/proc/inode.c
+> @@ -319,7 +319,7 @@ static int proc_reg_open(struct inode *inode, struct file *file)
+>  	if (!pde->proc_fops) {
+>  		spin_unlock(&pde->pde_unload_lock);
+>  		kfree(pdeo);
+> -		return -EINVAL;
+> +		return -ENOENT;
+>  	}
+>  	pde->pde_users++;
+>  	open = pde->proc_fops->open;
+> --
 > 
->  					  | V4L2_CAP_STREAMING;
+> Since I don't subscribe LKML, please Cc me if you have any comment.
 > 
-> diff --git a/drivers/media/video/uvc/uvcvideo.h
-> b/drivers/media/video/uvc/uvcvideo.h index 20107fd..df32a43 100644
-> --- a/drivers/media/video/uvc/uvcvideo.h
-> +++ b/drivers/media/video/uvc/uvcvideo.h
-> @@ -183,8 +183,7 @@ struct uvc_xu_control {
->   * Driver specific constants.
->   */
+> Thanks,
+> Daisuke
 > 
-> -#define DRIVER_VERSION_NUMBER	KERNEL_VERSION(1, 1, 0)
-> -#define DRIVER_VERSION		"v1.1.0"
-> +#define DRIVER_VERSION		"1.1.1"
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
 
-Why do you remove the 'v' ?
-
->  /* Number of isochronous URBs. */
->  #define UVC_URBS		5
-
--- 
-Regards,
-
-Laurent Pinchart
