@@ -1,128 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756376Ab1F0C5f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 22:57:35 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40115 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755043Ab1F0C4z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 22:56:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 27 Jun 2011 11:49:39 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2011-06-22-13-05 uploaded
-Message-Id: <20110627114939.a941b9eb.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <201106222042.p5MKgiEe025352@imap1.linux-foundation.org>
-References: <201106222042.p5MKgiEe025352@imap1.linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756381Ab1F0Cu4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 22:50:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55944 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756308Ab1F0Cuc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 22:50:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110626130607.5931a2f8@pedra>
+References: <cover.1309103285.git.mchehab@redhat.com> <20110626130607.5931a2f8@pedra>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sun, 26 Jun 2011 19:49:42 -0700
+Message-ID: <BANLkTimBxTpzK3Ooc-gz=nJbhZ1Mu5d1cQ@mail.gmail.com>
+Subject: Re: [PATCH 01/14] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl
+ doesn't exist
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 22 Jun 2011 13:05:19 -0700
-akpm@linux-foundation.org wrote:
+On Sun, Jun 26, 2011 at 9:06 AM, Mauro Carvalho Chehab
+<mchehab@redhat.com> wrote:
+> +       <term><errorcode>ENOIOCTLCMD</errorcode></term>
+> +       <listitem>
+> +         <para>The application attempted to use a non-existent ioctl. This is returned by the V4L2 core only.
+> +               Applications should be able to handle this error code, in order to detect if a new ioctl is
+> +               not implemented at the current Kernel version. Kernel versions lower than 3.0 returns EINVAL to
+> +               non-existing ioctl's.</para>
 
-> The mm-of-the-moment snapshot 2011-06-22-13-05 has been uploaded to
-> 
->    http://userweb.kernel.org/~akpm/mmotm/
-> 
-> and will soon be available at
->    git://zen-kernel.org/kernel/mmotm.git
-> or
->    git://git.cmpxchg.org/linux-mmotm.git
-> 
-> It contains the following patches against 3.0-rc4:
-> 
+This seems entirely bogus.
 
-It may be too late but this was reported on KVM guest.
+ENOICTLCMD is meant to be an entirely kernel-internal one, which is
+meant to never be shown to user space. IOW, vfs_ioctl() turns it into
+EINVAL (which I personally think is bogus - traditionally ENOTTY is
+the right one for "not a valid ioctl", but there are people who
+disagree - whatever)
 
-==
-[  490.359961]
-[  490.360944] =================================
-[  490.360944] [ INFO: inconsistent lock state ]
-[  490.360944] 3.0.0-rc4-mm1 #1
-[  490.360944] ---------------------------------
-[  490.360944] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
-[  490.360944] kworker/0:0/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
-[  490.360944]  (&(&mapping->tree_lock)->rlock){?.+...}, at: [<ffffffff8110cbea>                  ] test_clear_page_writeback+0x6a/0x160
-[  490.360944] {HARDIRQ-ON-W} state was registered at:
-[  490.360944]   [<ffffffff81097069>] __lock_acquire+0x609/0x1670
-[  490.360944]   [<ffffffff81098754>] lock_acquire+0xa4/0x120
-[  490.360944]   [<ffffffff8159e396>] _raw_spin_lock+0x36/0x70
-[  490.360944]   [<ffffffff8117d7e6>] end_writeback+0x36/0xd0
-[  490.360944]   [<ffffffff8117d982>] evict+0x102/0x180
-[  490.360944]   [<ffffffff8117ddda>] iput+0xea/0x1c0
-[  490.360944]   [<ffffffff81172d2c>] do_unlinkat+0x16c/0x1d0
-[  490.360944]   [<ffffffff81172da6>] sys_unlink+0x16/0x20
-[  490.360944]   [<ffffffff815a6fc2>] system_call_fastpath+0x16/0x1b
-[  490.360944] irq event stamp: 85616
-[  490.360944] hardirqs last  enabled at (85613): [<ffffffff810140a1>] default_i                  dle+0x61/0x190
-[  490.360944] hardirqs last disabled at (85614): [<ffffffff8159efea>] save_args                  +0x6a/0x70
-[  490.360944] softirqs last  enabled at (85616): [<ffffffff8105fc83>] _local_bh                  _enable+0x13/0x20
-[  490.360944] softirqs last disabled at (85615): [<ffffffff8105fd05>] irq_enter                  +0x75/0x90
-[  490.360944]
-[  490.360944] other info that might help us debug this:
-[  490.360944]  Possible unsafe locking scenario:
-[  490.360944]
-[  490.360944]        CPU0
-[  490.360944]        ----
-[  490.360944]   lock(&(&mapping->tree_lock)->rlock);
-[  490.360944]   <Interrupt>
-[  490.360944]     lock(&(&mapping->tree_lock)->rlock);
-[  490.360944]
-[  490.360944]  *** DEADLOCK ***
-[  490.360944]
-[  490.360944] 1 lock held by kworker/0:0/0:
-[  490.360944]  #0:  (&(&vblk->lock)->rlock){-.-...}, at: [<ffffffffa000f1ab>] blk_done+0x2b/0x120 [virtio_blk]
-[  490.360944]
-[  490.360944] stack backtrace:
-[  490.360944] Pid: 0, comm: kworker/0:0 Not tainted 3.0.0-rc4-mm1 #1
-[  490.360944] Call Trace:
-[  490.360944]  <IRQ>  [<ffffffff810957f5>] print_usage_bug+0x235/0x280
-[  490.360944]  [<ffffffff810962d6>] mark_lock+0x346/0x410
-[  490.360944]  [<ffffffff810971f9>] __lock_acquire+0x799/0x1670
-[  490.360944]  [<ffffffff81032059>] ? kvm_clock_read+0x19/0x20
-[  490.360944]  [<ffffffff81032dc8>] ? pvclock_clocksource_read+0x58/0xd0
-[  490.360944]  [<ffffffff81032dc8>] ? pvclock_clocksource_read+0x58/0xd0
-[  490.360944]  [<ffffffff81085135>] ? sched_clock_local+0x25/0x90
-[  490.360944]  [<ffffffff8110cbea>] ? test_clear_page_writeback+0x6a/0x160
-[  490.360944]  [<ffffffff81098754>] lock_acquire+0xa4/0x120
-[  490.360944]  [<ffffffff8110cbea>] ? test_clear_page_writeback+0x6a/0x160
-[  490.360944]  [<ffffffff81085135>] ? sched_clock_local+0x25/0x90
-[  490.360944]  [<ffffffff8159e545>] _raw_spin_lock_irqsave+0x55/0xa0
-[  490.360944]  [<ffffffff8110cbea>] ? test_clear_page_writeback+0x6a/0x160
-[  490.360944]  [<ffffffff81096cab>] ? __lock_acquire+0x24b/0x1670
-[  490.360944]  [<ffffffff8110cbea>] test_clear_page_writeback+0x6a/0x160
-[  490.360944]  [<ffffffff811012c4>] end_page_writeback+0x24/0x60
-[  490.360944]  [<ffffffff81193dca>] end_buffer_async_write+0x13a/0x220
-[  490.360944]  [<ffffffff81085258>] ? sched_clock_cpu+0xb8/0x110
-[  490.360944]  [<ffffffff811922c0>] end_bio_bh_io_sync+0x30/0x50
-[  490.360944]  [<ffffffff811969ad>] bio_endio+0x1d/0x40
-[  490.360944]  [<ffffffff812a73a3>] req_bio_endio+0xa3/0xe0
-[  490.360944]  [<ffffffff812a8294>] blk_update_request+0x104/0x4e0
-[  490.360944]  [<ffffffff812a84e1>] ? blk_update_request+0x351/0x4e0
-[  490.360944]  [<ffffffff8109244d>] ? trace_hardirqs_off+0xd/0x10
-[  490.360944]  [<ffffffff812a8697>] blk_update_bidi_request+0x27/0xb0
-[  490.360944]  [<ffffffff812a99ee>] __blk_end_request_all+0x2e/0x60
-[  490.360944]  [<ffffffffa000f1cb>] blk_done+0x4b/0x120 [virtio_blk]
-[  490.360944]  [<ffffffffa00052fc>] vring_interrupt+0x3c/0xb0 [virtio_ring]
-[  490.360944]  [<ffffffff810c6f3d>] handle_irq_event_percpu+0x5d/0x210
-[  490.360944]  [<ffffffff810c713e>] handle_irq_event+0x4e/0x80
-[  490.360944]  [<ffffffff810ca213>] handle_edge_irq+0x83/0x140
-[  490.360944]  [<ffffffff8100d40c>] handle_irq+0x4c/0xa0
-[  490.360944]  [<ffffffff815a8acd>] do_IRQ+0x5d/0xe0
-[  490.360944]  [<ffffffff8159f093>] common_interrupt+0x13/0x13
-[  490.360944]  <EOI>  [<ffffffff810320bb>] ? native_safe_halt+0xb/0x10
-[  490.360944]  [<ffffffff8109677d>] ? trace_hardirqs_on+0xd/0x10
-[  490.360944]  [<ffffffff810140a6>] default_idle+0x66/0x190
-[  490.360944]  [<ffffffff8100b0ac>] cpu_idle+0xbc/0x110
-[  490.360944]  [<ffffffff815950ca>] start_secondary+0x256/0x258
-[  OK  ]
+The rationale for it is mainly as a way for layers inside the kernel
+to determine the difference between "ioctl existed but failed with
+EINVAL" vs "ioctl doesn't actually exist". Some layers try first one
+thing and then another, and want to know the difference. An example of
+that might be some code that first tries to call device-specific
+version, and if that doesn't exist, do a generic emulation version.
 
+Of course, as far as I can tell, almost nothing does that anyway.
+Regardless, it's definitely wrong to document it as being returned to
+user land. It should never be user-visible.
+
+                  Linus
