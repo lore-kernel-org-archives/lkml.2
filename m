@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751928Ab1F0Req (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 13:34:46 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:55458 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751379Ab1F0Rel convert rfc822-to-8bit (ORCPT
+	id S1752665Ab1F0Rfp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 13:35:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23730 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752018Ab1F0Rfl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 13:34:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=google.com; s=beta;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=eNGdKmUlTVx3SavMXX0FZkB6a6LnYskyuhgKj+mcQ81l9nTk6yVGNBGd1YAKcaPF7n
-         R29ToCqq7SNuufrTkmSw==
+	Mon, 27 Jun 2011 13:35:41 -0400
+Date: Mon, 27 Jun 2011 13:34:47 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Bastian Blank <waldi@debian.org>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: [PATCH 2/2] xen: Add alias to autoload backend
+ drivers
+Message-ID: <20110627173447.GD2430@dumpdata.com>
+References: <20110624215155.GB4735@wavehammer.waldi.eu.org>
+ <20110627161327.GO6978@dumpdata.com>
+ <20110627163728.GA23028@wavehammer.waldi.eu.org>
+ <20110627165109.GB13335@dumpdata.com>
+ <20110627165711.GA2201@dumpdata.com>
+ <20110627172305.GC23028@wavehammer.waldi.eu.org>
 MIME-Version: 1.0
-In-Reply-To: <20110624192903.GM22917@ram-laptop>
-References: <1308561849-3223-1-git-send-email-linuxram@us.ibm.com>
- <4DFFB6B0.6090307@hartkopp.net> <4DFFB945.5090203@hartkopp.net>
- <20110620214127.GA22917@ram-laptop> <4DFFC2FC.5050502@hartkopp.net>
- <4E0353CA.7000708@hartkopp.net> <20110624192903.GM22917@ram-laptop>
-From: Bjorn Helgaas <bhelgaas@google.com>
-Date: Mon, 27 Jun 2011 11:34:17 -0600
-Message-ID: <BANLkTikG0oTdSSh9oLc-M_zzFWuTu0sh_w@mail.gmail.com>
-Subject: Re: [PATCH 0/4] PCI: fix cardbus and sriov regressions
-To: Ram Pai <linuxram@us.ibm.com>
-Cc: Oliver Hartkopp <socketcan@hartkopp.net>, yinghai@kernel.org,
-        jbarnes@virtuousgeek.org, linux-kernel <linux-kernel@vger.kernel.org>,
-        linux-pci@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110627172305.GC23028@wavehammer.waldi.eu.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A090203.4E08BF43.0032:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[+linux-pci again]
+On Mon, Jun 27, 2011 at 07:23:05PM +0200, Bastian Blank wrote:
+> On Mon, Jun 27, 2011 at 12:57:11PM -0400, Konrad Rzeszutek Wilk wrote:
+> > Ugh actually no I can't.
+> 
+> Why? It does not actually change things.
+> 
+> > Can you re-submit these two patches (and stick on Acked-by Ian on them) and
+> > split the "xen: Add alias to autoload backend driver" in three patches:
+> >  1) the xen-netback (and copy David Miller)
+> >  2) the xen-blkback (and copy Jens Axboe)
+> >  3) the xenbus one
+> 
+> That is silly.
 
-On Fri, Jun 24, 2011 at 1:29 PM, Ram Pai <linuxram@us.ibm.com> wrote:
-> On Thu, Jun 23, 2011 at 04:55:06PM +0200, Oliver Hartkopp wrote:
->> Hello RP,
->>
->> unfortunately i noticed the discussion on linux-kernel ML a bit late, as i did
->> not subscribe it due to the traffic.
->
-> sorry, did not see this mail earlier.
->
->
->> >>> When comparing the logs with mgdiff, i found
->> >>>
->> >>> in revered:
->> >>>
->> >>> pci_bus 0000:04: resource 0 [io  0x2000-0x20ff]
->> >>> pci_bus 0000:04: resource 1 [io  0x2400-0x24ff]
->> >>>
->> >>> in the fixed version (4 patches)
->> >>>
->> >>> pci_bus 0000:04: resource 0 [io  0x2400-0x24ff]
->> >>> pci_bus 0000:04: resource 1 [io  0x2001-0x2100]
->>
->> Did you get further with the unusual alignment?
->
-> No. i was thinking this alignment  should be ok, since that cardbus resource
-> has to be SIZE aligned and not START aligned.
->
-> However if it is not acceptable, i will figure out a way
-> to get it aligned on the right boundaries.
+Please do it.
 
-Does the bridge leading to bus 04 really support a window starting at 0x2001?
+> 
+> > That should be five patches total.
+> 
+> No, 2+2 is 4, not five.
 
-I assume this is a CardBus bridge because it has two I/O windows.  My
-interpretation of the MindShare CardBus book (I don't have the PC Card
-Standard) is that the low two bits of the I/O base address register
-tell you whether 16- or 32-bit addressing is supported (00b means
-16-bit decoding is used, 01b means 32-bit decoding is used), and that
-the actual window starts on a four-byte aligned address.
-
-If that's correct, an I/O base register containing 0x2001 would mean a
-window starting at 0x2000 and supporting 32-bit decoding, and it would
-be impossible to have a window starting at 0x2001, i.e., one that
-contains 0x2001 but not 0x2000.
-
-Bjorn
+Right. Got my math wrong.
