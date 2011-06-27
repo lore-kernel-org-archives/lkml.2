@@ -1,115 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756347Ab1F0Ctn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 26 Jun 2011 22:49:43 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:43955 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756308Ab1F0Cs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 26 Jun 2011 22:48:57 -0400
-Date: Sun, 26 Jun 2011 22:48:54 -0400
-Message-Id: <E1Qb1sc-0000ex-PX@tytso-glaptop>
-To: linux-kernel@vger.kernel.org
-Subject: 2011 Kernel Summit Planning kickoff
-From: "Theodore Ts'o" <tytso@mit.edu>
-Phone: (781) 391-3464
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+	id S1756376Ab1F0C5f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 26 Jun 2011 22:57:35 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40115 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755043Ab1F0C4z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 26 Jun 2011 22:56:55 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 27 Jun 2011 11:49:39 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: mmotm 2011-06-22-13-05 uploaded
+Message-Id: <20110627114939.a941b9eb.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <201106222042.p5MKgiEe025352@imap1.linux-foundation.org>
+References: <201106222042.p5MKgiEe025352@imap1.linux-foundation.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, 22 Jun 2011 13:05:19 -0700
+akpm@linux-foundation.org wrote:
 
-It's time to start the planning process for the 2011 Kernel Summit!
-This year, the kernel summit will be held in Prague in the Czech
-Republic on October 24--26.  This year, the biggest change is that the
-conference will be running three days, where the first day will be
-dedicated to some kernel subsystem workshops.  The second day will be
-focused on development process issues and be more discussion oriented;
-for this reason, it will be limited to core kernel developers picked
-through a nomination and selection process which as in previous years.
-The third day will be more presentation oriented (although hopefully we
-will have some discussion); and all kernel summit workshop attendees
-will be welcome attend the 3rd day.
+> The mm-of-the-moment snapshot 2011-06-22-13-05 has been uploaded to
+> 
+>    http://userweb.kernel.org/~akpm/mmotm/
+> 
+> and will soon be available at
+>    git://zen-kernel.org/kernel/mmotm.git
+> or
+>    git://git.cmpxchg.org/linux-mmotm.git
+> 
+> It contains the following patches against 3.0-rc4:
+> 
 
-The kernel summit is organized by a program committee, but it could just
-as easily said that it is organized by the whole Linux Kernel
-development community.  Which is to say, its goals are to make Linux
-kernel development flow more smoothly, and what we talk about is driven
-by the work that is going on in the development community at large.  So
-to that end, we need your help!
+It may be too late but this was reported on KVM guest.
 
-First off, please see the Kernel Summit 2011 web site, which can be
-reached at http://ksummit2011.kernel.org.  This announcement, an
-explanation of the process by which we decide which the program
-committee decides who is issued invitations to attend the kernel summit,
-and much more information, can be found at this web site.
+==
+[  490.359961]
+[  490.360944] =================================
+[  490.360944] [ INFO: inconsistent lock state ]
+[  490.360944] 3.0.0-rc4-mm1 #1
+[  490.360944] ---------------------------------
+[  490.360944] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+[  490.360944] kworker/0:0/0 [HC1[1]:SC0[0]:HE0:SE1] takes:
+[  490.360944]  (&(&mapping->tree_lock)->rlock){?.+...}, at: [<ffffffff8110cbea>                  ] test_clear_page_writeback+0x6a/0x160
+[  490.360944] {HARDIRQ-ON-W} state was registered at:
+[  490.360944]   [<ffffffff81097069>] __lock_acquire+0x609/0x1670
+[  490.360944]   [<ffffffff81098754>] lock_acquire+0xa4/0x120
+[  490.360944]   [<ffffffff8159e396>] _raw_spin_lock+0x36/0x70
+[  490.360944]   [<ffffffff8117d7e6>] end_writeback+0x36/0xd0
+[  490.360944]   [<ffffffff8117d982>] evict+0x102/0x180
+[  490.360944]   [<ffffffff8117ddda>] iput+0xea/0x1c0
+[  490.360944]   [<ffffffff81172d2c>] do_unlinkat+0x16c/0x1d0
+[  490.360944]   [<ffffffff81172da6>] sys_unlink+0x16/0x20
+[  490.360944]   [<ffffffff815a6fc2>] system_call_fastpath+0x16/0x1b
+[  490.360944] irq event stamp: 85616
+[  490.360944] hardirqs last  enabled at (85613): [<ffffffff810140a1>] default_i                  dle+0x61/0x190
+[  490.360944] hardirqs last disabled at (85614): [<ffffffff8159efea>] save_args                  +0x6a/0x70
+[  490.360944] softirqs last  enabled at (85616): [<ffffffff8105fc83>] _local_bh                  _enable+0x13/0x20
+[  490.360944] softirqs last disabled at (85615): [<ffffffff8105fd05>] irq_enter                  +0x75/0x90
+[  490.360944]
+[  490.360944] other info that might help us debug this:
+[  490.360944]  Possible unsafe locking scenario:
+[  490.360944]
+[  490.360944]        CPU0
+[  490.360944]        ----
+[  490.360944]   lock(&(&mapping->tree_lock)->rlock);
+[  490.360944]   <Interrupt>
+[  490.360944]     lock(&(&mapping->tree_lock)->rlock);
+[  490.360944]
+[  490.360944]  *** DEADLOCK ***
+[  490.360944]
+[  490.360944] 1 lock held by kworker/0:0/0:
+[  490.360944]  #0:  (&(&vblk->lock)->rlock){-.-...}, at: [<ffffffffa000f1ab>] blk_done+0x2b/0x120 [virtio_blk]
+[  490.360944]
+[  490.360944] stack backtrace:
+[  490.360944] Pid: 0, comm: kworker/0:0 Not tainted 3.0.0-rc4-mm1 #1
+[  490.360944] Call Trace:
+[  490.360944]  <IRQ>  [<ffffffff810957f5>] print_usage_bug+0x235/0x280
+[  490.360944]  [<ffffffff810962d6>] mark_lock+0x346/0x410
+[  490.360944]  [<ffffffff810971f9>] __lock_acquire+0x799/0x1670
+[  490.360944]  [<ffffffff81032059>] ? kvm_clock_read+0x19/0x20
+[  490.360944]  [<ffffffff81032dc8>] ? pvclock_clocksource_read+0x58/0xd0
+[  490.360944]  [<ffffffff81032dc8>] ? pvclock_clocksource_read+0x58/0xd0
+[  490.360944]  [<ffffffff81085135>] ? sched_clock_local+0x25/0x90
+[  490.360944]  [<ffffffff8110cbea>] ? test_clear_page_writeback+0x6a/0x160
+[  490.360944]  [<ffffffff81098754>] lock_acquire+0xa4/0x120
+[  490.360944]  [<ffffffff8110cbea>] ? test_clear_page_writeback+0x6a/0x160
+[  490.360944]  [<ffffffff81085135>] ? sched_clock_local+0x25/0x90
+[  490.360944]  [<ffffffff8159e545>] _raw_spin_lock_irqsave+0x55/0xa0
+[  490.360944]  [<ffffffff8110cbea>] ? test_clear_page_writeback+0x6a/0x160
+[  490.360944]  [<ffffffff81096cab>] ? __lock_acquire+0x24b/0x1670
+[  490.360944]  [<ffffffff8110cbea>] test_clear_page_writeback+0x6a/0x160
+[  490.360944]  [<ffffffff811012c4>] end_page_writeback+0x24/0x60
+[  490.360944]  [<ffffffff81193dca>] end_buffer_async_write+0x13a/0x220
+[  490.360944]  [<ffffffff81085258>] ? sched_clock_cpu+0xb8/0x110
+[  490.360944]  [<ffffffff811922c0>] end_bio_bh_io_sync+0x30/0x50
+[  490.360944]  [<ffffffff811969ad>] bio_endio+0x1d/0x40
+[  490.360944]  [<ffffffff812a73a3>] req_bio_endio+0xa3/0xe0
+[  490.360944]  [<ffffffff812a8294>] blk_update_request+0x104/0x4e0
+[  490.360944]  [<ffffffff812a84e1>] ? blk_update_request+0x351/0x4e0
+[  490.360944]  [<ffffffff8109244d>] ? trace_hardirqs_off+0xd/0x10
+[  490.360944]  [<ffffffff812a8697>] blk_update_bidi_request+0x27/0xb0
+[  490.360944]  [<ffffffff812a99ee>] __blk_end_request_all+0x2e/0x60
+[  490.360944]  [<ffffffffa000f1cb>] blk_done+0x4b/0x120 [virtio_blk]
+[  490.360944]  [<ffffffffa00052fc>] vring_interrupt+0x3c/0xb0 [virtio_ring]
+[  490.360944]  [<ffffffff810c6f3d>] handle_irq_event_percpu+0x5d/0x210
+[  490.360944]  [<ffffffff810c713e>] handle_irq_event+0x4e/0x80
+[  490.360944]  [<ffffffff810ca213>] handle_edge_irq+0x83/0x140
+[  490.360944]  [<ffffffff8100d40c>] handle_irq+0x4c/0xa0
+[  490.360944]  [<ffffffff815a8acd>] do_IRQ+0x5d/0xe0
+[  490.360944]  [<ffffffff8159f093>] common_interrupt+0x13/0x13
+[  490.360944]  <EOI>  [<ffffffff810320bb>] ? native_safe_halt+0xb/0x10
+[  490.360944]  [<ffffffff8109677d>] ? trace_hardirqs_on+0xd/0x10
+[  490.360944]  [<ffffffff810140a6>] default_idle+0x66/0x190
+[  490.360944]  [<ffffffff8100b0ac>] cpu_idle+0xbc/0x110
+[  490.360944]  [<ffffffff815950ca>] start_secondary+0x256/0x258
+[  OK  ]
 
-Secondly, please join the ksummit-2011-discuss mailing list and submit
-suggestions for topics that you think should be discussed at the kernel
-summit --- either specific technical issues which impact the entire
-kernel (topics that are specific to a single subsystem are probably
-better discussed at the various workshops that are held for a particular
-subsystem, such as the Linux Storage and File System workshop, or the
-Power Management Summit, etc.), or ideas for process improvements to how
-we do our development.  (Hint: if you suggest a topic which the program
-committee agrees is an important and vital area for discussion at the
-Kernel Summit, and you happen to be a good person to lead or participate
-in that discussion, that's one of the ways you can wangle an invite to
-the Kernel Summit.  The other way, of course, is to write a lot of good
-code and/or take on the responsibilities of being a subsystem or
-architecture maintainer.  :-) In addition, for those of you who have
-attended the kernel summit in the past, if you have suggestions for how
-we can make the kernel summit run more smoothly, please drop a note to
-the ksummit-2011-discuss list.  We're always looking for ways we can
-improve the kernel summit.
-
-Thirdly, once again, this year we will be asking people to propose
-significant/interesting "out of the box" discussion topics.  We will be
-inviting the submitters of the 3-5 of the most interesting discussion
-topics to come to the kernel summit to help lead those discussions.  The
-form for submitting these proposals will also be used for accepting
-proposals for presentations of the third day of the summit.  Please send
-in proposals by July 22, 2011.
-
-In addition, please examine the list of names which the program
-committee will consider for receiving kernel summit invitations.  As
-detailed in the description of the Invitation Process, the list is
-compiled mechanically using a script which pulls information from the
-git source code repository for the kernel.  It is used only as a
-starting point; if you can think of people (including yourself) that you
-think should be considered by the program committee, please let us know,
-either by filling out the nominations form, or by sending e-mail to the
-program committee at ksummit-2011-pc.  NOTE: Please send us any
-nominations/suggestions by June 30th, 2011.
-
-If you are on the list, please check to make sure there aren't any typos
-in your name and that the e-mail address is the one you would prefer to
-use for kernel summit related e-mails.  We sometimes have trouble
-contacting people that we have chosen to receive an invitation, and you
-can make our lives much easier by checking to make sure we have your
-correct contact information.
-
-Finally, one of the primary reasons why I started the kernel summit
-eleven years ago was because I've found that people work better after
-they have had a chance to meet each other face to face.  If you only
-know someone via e-mail, it's lot easier to get into flame wars.  But
-after you've met someone, broken bread and drunk beer with them, it's
-easier to work with them as a colleague and fellow developer.  While the
-Linux Kernel development community has grown significantly since March,
-2001, this principle still holds true.  So even if you don't end up
-getting an invitation to the kernel summit, your participation and
-suggestions are incredibly helpful and are an important contribution to
-the community.  And either way, I hope we will see you at some of the
-upcoming Linux developer conferences and workshops, such as the
-LinuxCon. event in Vancouver, and the Linux Plumbers Conference in Santa
-Rosa.
-
-Thanks, and I look forward to working with you to make Kernel Summit,
-and Linux Kernel development in general, even more successful this year
-and in the future.
-
-				Theodore Ts'o
-
-				Chair, Kernel Summit Program Committee
