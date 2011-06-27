@@ -1,116 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945Ab1F0HE1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 03:04:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54539 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756253Ab1F0HDG (ORCPT
+	id S1756971Ab1F0HG6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 03:06:58 -0400
+Received: from ams-iport-2.cisco.com ([144.254.224.141]:52364 "EHLO
+	ams-iport-2.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754954Ab1F0HFW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 03:03:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=E+ycO5Q9ErUfMAFutgttUOVC3dAwrwLHr88WGw5za2qxZLLX/4hkqjXR/MbGIft2OG
-         SchMGXazuBJOt7s74TUKw1C4zVwiMSo+lkmm9D16+XiOkgWIhZDZev7QxZb/uyd9vjiQ
-         CZZh1t3nfzu4jDJ3JM7FT57JbD/yEGgM32MiY=
-Date: Mon, 27 Jun 2011 11:03:00 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
-        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
-        rientjes@google.com, wilsons@start.ca, security@kernel.org,
-        eparis@redhat.com, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
-Message-ID: <20110627070300.GA4463@albatros>
-References: <1308917318-4749-1-git-send-email-segoon@openwall.com>
- <4E07F1C0.2070305@jp.fujitsu.com>
+	Mon, 27 Jun 2011 03:05:22 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EAF8qCE6Q/khM/2dsb2JhbABSp0N3iHShSZ0yhjAElnqLJg
+X-IronPort-AV: E=Sophos;i="4.65,431,1304294400"; 
+   d="scan'208";a="39385899"
+X-MimeOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E07F1C0.2070305@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;
+	charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Subject: RE: [PATCH v3] Add support for the Philips SA56004 temperature sensor.
+Date: Mon, 27 Jun 2011 09:04:46 +0200
+Message-ID: <6E4D2678AC543844917CA081C9D6B33F04CF4FFC@XMB-AMS-103.cisco.com>
+In-Reply-To: <BANLkTi=gAqpDNBjCXzvNEhSuzm=3Mg9rVg@mail.gmail.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-Topic: [PATCH v3] Add support for the Philips SA56004 temperature sensor.
+Thread-Index: Acw0OuLD9ts8TCMfSEa2rhYj8TtcwgAXWa+Q
+References: <1307356845-10095-1-git-send-email-sdevrien@cisco.com> <BANLkTi=gAqpDNBjCXzvNEhSuzm=3Mg9rVg@mail.gmail.com>
+From: "Stijn Devriendt (sdevrien)" <sdevrien@cisco.com>
+To: "Fubo Chen" <fubo.chen@gmail.com>
+Cc: <khali@linux-fr.org>, <lm-sensors@lm-sensors.org>,
+        <linux-kernel@vger.kernel.org>, <guenter.roeck@ericsson.com>
+X-OriginalArrivalTime: 27 Jun 2011 07:05:20.0938 (UTC) FILETIME=[93FC98A0:01CC3498]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 11:58 +0900, KOSAKI Motohiro wrote:
-> (2011/06/24 21:08), Vasiliy Kulikov wrote:
-> > /proc/PID/io may be used for gathering private information.  E.g. for
-> > openssh and vsftpd daemons wchars/rchars may be used to learn the
-> > precise password length.  Restrict it to processes being able to ptrace
-> > the target process.
-> > 
-> > ptrace_may_access() is needed to prevent keeping open file descriptor of
-> > "io" file, executing setuid binary and gathering io information of the
-> > setuid'ed process.
-> > 
-> > Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> On Mon, Jun 6, 2011 at 12:40 PM,  <sdevrien@cisco.com> wrote:
+> > +       } else
+> > +       if (man_id == 0xA1) { /*  NXP Semiconductor/Philips */
 > 
-> This description seems makes sense to me. But Vasilly, I have one question.
-> Doesn't this change break iotop command or other userland tools?
+> No kernel coder writes like this. Has this ever been run through
+> checkpatch ?
+It has. Unfortunately this is just the coding style in the whole
+driver. I believe it's better to have a consistent file rather
+than 3 different styles.
 
-I don't use iotop, but after reading the sources it looks like it uses
-taskstats for information gathering, which will be broken for sure by
-the second patch.  All other userland tools using alien io files will be
-broken too.
+Stijn
 
-I'd say the whole approach of world readable debugging/statistics
-information was broken from the beginning, now we are stuck with these
-interfaces because of acient mistakes.
-
-BTW, what to do with sched and status?  It stores some sensitive
-information too (execution times and vm space, respectively).
-
-
-> > ---
-> >  fs/proc/base.c |    7 +++++--
-> >  1 files changed, 5 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/proc/base.c b/fs/proc/base.c
-> > index 14def99..5ae25d1 100644
-> > --- a/fs/proc/base.c
-> > +++ b/fs/proc/base.c
-> > @@ -2712,6 +2712,9 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
-> >  	struct task_io_accounting acct = task->ioac;
-> >  	unsigned long flags;
-> >  
-> > +	if (!ptrace_may_access(task, PTRACE_MODE_READ))
-> > +		return -EACCES;
-> > +
-> 
-> I think this check need a comment. Usually procfs don't use ptrace_may_access() directly
-> (see mm_for_maps) because it's racy against exec().
-
-This makes sense.  Reading /proc/self/io and exec'ing setuid program
-would cause the race.  What lock should I use to block execve()?
-
-
-Also I'm worried about these statistics after dropping the privileges.
-After setuid() and similar things not changing pid unprivileged user
-gets some information about the previous io activity of this task being
-privileged.  In some situations it doesn't reveal any sensitive
-information, in some it might.  Clearing taskstats on credential
-changing functions would totally break taskstats' interfaces; and should
-be temporary changing fsuid/euid followed by reverting it considered
-harmfull?  I don't know.
-
-
-> However I think your code is ok.
-> because a few bytes io accounting leak has no big matter.
-
-Please don't do any assumptions about the significance of these few
-bytes.  It can be not "few" bytes if either the scheduler's granularity
-is significant or the scheduler does wrong assumptions about CPU speeds.
-Also if someone gets CAP_SYS_NICE he may totally break these assumptions.
-
-My ssh example is just a proof that io stat is harmfull *sometimes*.
-I didn't investigate in what cases it is harmless for sure (if it's
-possible at all).
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
