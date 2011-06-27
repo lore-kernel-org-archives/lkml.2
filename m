@@ -1,58 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752455Ab1F0PxN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 11:53:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35781 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752030Ab1F0PxK (ORCPT
+	id S1752559Ab1F0P4T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 11:56:19 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:63089 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab1F0P4Q convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 11:53:10 -0400
-Date: Mon, 27 Jun 2011 11:52:52 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        linux-input@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] xen-kbdfront: enable xen-kbdfront for HVM
- guests
-Message-ID: <20110627155252.GL6978@dumpdata.com>
-References: <alpine.DEB.2.00.1106241730220.12963@kaball-desktop>
+	Mon, 27 Jun 2011 11:56:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=FrxQQlLoCgQmH0vrVm0RLQAUzaWcSR+URrDAwcNS6WwnMZ3u5vGrDzUYHu4EpBtxlt
+         tF2q3pZT5PDR6MF2ZE3wFBdqW26gQAawKnHVZX7gsRyAJQ3SFDQ0QP2XNkZ7I3eq4Gac
+         ARBqV5zgXvIo794QU00nU7iqtYHnbIUaBsbjA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1106241730220.12963@kaball-desktop>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4E08A75F.0067:SCFMA922111,ss=1,re=-4.000,fgs=0
+In-Reply-To: <BANLkTin+pn=WSegcW7cnHk4=76wHkaHPCw@mail.gmail.com>
+References: <BANLkTin+pn=WSegcW7cnHk4=76wHkaHPCw@mail.gmail.com>
+From: Prateek Sharma <prateek3.14@gmail.com>
+Date: Mon, 27 Jun 2011 21:25:55 +0530
+Message-ID: <BANLkTi=eVDsTy0nU5nuiDC+SDe_rhCt3qg@mail.gmail.com>
+Subject: Re: Linux 3.0-rc4 - fail to compile...
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 05:33:16PM +0100, Stefano Stabellini wrote:
-> xen-kbdfront: enable xen-kbdfront for HVM guests too
+Will this issue be be please fixed in rc5 ? Not being able to even
+compile it is a big hindrance.
 
-Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 
-Dmitry, can you pick this up for 3.1 please?
-
-> 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> 
-> diff --git a/drivers/input/misc/xen-kbdfront.c b/drivers/input/misc/xen-kbdfront.c
-> index 62bae99..ad2e51c 100644
-> --- a/drivers/input/misc/xen-kbdfront.c
-> +++ b/drivers/input/misc/xen-kbdfront.c
-> @@ -373,7 +373,7 @@ static struct xenbus_driver xenkbd_driver = {
->  
->  static int __init xenkbd_init(void)
->  {
-> -	if (!xen_pv_domain())
-> +	if (!xen_domain())
->  		return -ENODEV;
->  
->  	/* Nothing to do if running in dom0. */
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+> -----Original Message-----
+> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-owner@vger.kernel.org] On Behalf Of Paul Rolland (???・???)
+>
+> Sent: Tuesday, June 21, 2011 3:14 PM
+> To: Linus Torvalds
+> Cc: Linux Kernel Mailing List; rol@witbe.net
+> Subject: Re: Linux 3.0-rc4 - fail to compile...
+> Hello,
+>
+> On Mon, 20 Jun 2011 21:02:56 -0700
+>
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>
+> > Mostly the usual small driver one- (or few-) liners, and some bigger
+> > changes to drm (and md). But also two new smallish drivers
+>
+> > (net/usb/kalmia.c, and the ADP8870 backlight driver). Some filesystem
+> > fixes (btrfs, cifs, afs, xfs, nfsd).
+>
+> This is failing to compile on my machine :
+> ...
+>   CC      mm/page_cgroup.o
+>   CC      fs/direct-io.o
+>
+> mm/page_cgroup.c: In function ‘page_cgroup_init’:
+> mm/page_cgroup.c:308: error: implicit declaration of function ‘node_start_pfn’
+> mm/page_cgroup.c:309: error: implicit declaration of function ‘node_end_pfn’
+> make[1]: *** [mm/page_cgroup.o] Error 1
+>
+> make: *** [mm] Error 2
+> make: *** Waiting for unfinished jobs....
+>   CC      fs/mpage.o
+>   CC      fs/ioprio.o
+> This seems to be caused by arch/x86/include/asm/mmzone_64.h which only defines
+> node_start_pfn and node_end_pfn if CONFIG_NUMA is set.
+>
+>
+> Adding CONFIG_NUMA to my .config fixes the issue.
+>
+> Paul
