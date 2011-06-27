@@ -1,342 +1,612 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754878Ab1F0VqY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 17:46:24 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:53852 "EHLO
+	id S1755054Ab1F0Vrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 17:47:36 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52414 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753828Ab1F0VqQ (ORCPT
+	with ESMTP id S1754794Ab1F0VqI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 17:46:16 -0400
+	Mon, 27 Jun 2011 17:46:08 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Arnd Bergmann <arnd@arndb.de>, Ralf Baechle <ralf@linux-mips.org>,
-        Jamie Iles <jamie@jamieiles.com>, linux-serial@vger.kernel.org
-Subject: [PATCH 4/7] serial/8250: move DWAP support to arch/mips
-Date: Mon, 27 Jun 2011 23:45:17 +0200
-Message-Id: <1309211120-2803-5-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Kiyokazu SUTO <suto@ks-and-ks.ne.jp>,
+        linux-serial@vger.kernel.org
+Subject: [PATCH 5/7] serial/8250: remove obsolete and broken PORT_RSA support
+Date: Mon, 27 Jun 2011 23:45:18 +0200
+Message-Id: <1309211120-2803-6-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1309211120-2803-1-git-send-email-arnd@arndb.de>
 References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:WimkWB0pNGnmqwP1VytdcWYIShDgkvpU1VHYCnaWexv
- 9skU/o3uShh3GsmAo3Nvai93ltWGuJc/CNY2x357ChLhtoRi0A
- iCU3lIeAewMdaBMu/kOPP/1oZ3wbOKTlTuPIyGT1Eh5fJIUpZ5
- QX434ZmiFomJCK/ngTk2c/MyVDGc98p78wbJuHpYMPhSPxOYKh
- U9Q6yr+XJ7l7Nq1jUm/vw==
+X-Provags-ID: V02:K0:Ba+LRxJ/ZJfZNNSmdiZEnAwy83zF6ceTc8ffcfBWub7
+ AVn1FMbXOhOO4aGmAi1o8AOV+XGkdDcSnhyBcMpW6DID8hOoZ1
+ 0Tpc0vIBdUEpF+5SCyhRPpgH6LkqErovhQvZQg78c+AZqAio6h
+ QNZEr7LaciCwF/OYU0JKnJ3f5YvwR4y1GkMDnGvRajmCBJUqRf
+ TS6/bvIE2cGmgcfE0GAZg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Only one board uses the UPIO_DWAP iotype, and nothing uses
-the UPIO_DWAP32 iotype. It seems much cleaner to handle the
-DWAP quirk as a new port type, and move the serial_out
-accessor into the platform code. If more platforms start
-using the DWAP port, that function can be moved into a
-common location.
+For all I can tell, the RSA support in the 8250 driver
+is not functional and has not been for a long time.
+
+The RSA-DV II/S ISA card[1] was sold by IODATA in the
+1990s as a faster alternative to regular ISA serial ports,
+and it was discontinued in 2002. Linux support was added
+by Kiyokazu SUTO in 2000.
+
+The driver defines an I/O port base address of -8 (negative
+eight), which should always get refused by request_region
+on all architectures for being outside of the valid
+resource range.
+
+Further, it seems that a patch to setserial would be
+required in order to set PORT_RSA when not using
+autoconfiguration.
+
+This patch removes all code related to the RSA support, with
+the exception of the user-visible PORT_RSA definition.
+Some of the code has been copied into the sunsu.c driver,
+so remove it from there as well.
+
+[1] http://translate.google.com/translate?hl=en&sl=ja&u=http://www.iodata.jp/products/network/rsadv2s.htm
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>
-Cc: Jamie Iles <jamie@jamieiles.com>
+Cc: Kiyokazu SUTO <suto@ks-and-ks.ne.jp>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: linux-serial@vger.kernel.org
 ---
- arch/mips/pmc-sierra/msp71xx/msp_serial.c |   32 ++++++++++-
- drivers/tty/serial/8250.c                 |   87 +++--------------------------
- drivers/tty/serial/8250_hub6.c            |   17 ++++++
- drivers/tty/serial/serial_core.c          |    4 -
- include/linux/serial_core.h               |    5 +-
- 5 files changed, 57 insertions(+), 88 deletions(-)
+ drivers/tty/serial/8250.c   |  200 ++-----------------------------------------
+ drivers/tty/serial/Kconfig  |    6 --
+ drivers/tty/serial/sunsu.c  |   93 --------------------
+ include/linux/serial.h      |    2 +-
+ include/linux/serial_core.h |    2 +-
+ include/linux/serial_reg.h  |   51 -----------
+ 6 files changed, 10 insertions(+), 344 deletions(-)
 
-diff --git a/arch/mips/pmc-sierra/msp71xx/msp_serial.c b/arch/mips/pmc-sierra/msp71xx/msp_serial.c
-index f726162..6c9f1d3 100644
---- a/arch/mips/pmc-sierra/msp71xx/msp_serial.c
-+++ b/arch/mips/pmc-sierra/msp71xx/msp_serial.c
-@@ -38,6 +38,33 @@
- #include <msp_int.h>
- #include <msp_regs.h>
- 
-+/* Save the LCR value so it can be re-written when a Busy Detect IRQ occurs. */
-+static inline void dwapb_save_out_value(struct uart_port *p, int offset,
-+					int value)
-+{
-+	struct uart_8250_port *up =
-+		container_of(p, struct uart_8250_port, port);
-+
-+	if (offset == UART_LCR)
-+		up->lcr = value;
-+}
-+
-+/* Read the IER to ensure any interrupt is cleared before returning from ISR. */
-+static inline void dwapb_check_clear_ier(struct uart_port *p, int offset)
-+{
-+	if (offset == UART_TX || offset == UART_IER)
-+		p->serial_in(p, UART_IER);
-+}
-+
-+static void dwapb_serial_out(struct uart_port *p, int offset, int value)
-+{
-+	int save_offset = offset;
-+	offset = map_8250_out_reg(p, offset) << p->regshift;
-+	dwapb_save_out_value(p, save_offset, value);
-+	writeb(value, p->membase + offset);
-+	dwapb_check_clear_ier(p, save_offset);
-+}
-+
- void __init msp_serial_setup(void)
- {
- 	char    *s;
-@@ -59,9 +86,10 @@ void __init msp_serial_setup(void)
- 	up.irq          = MSP_INT_UART0;
- 	up.uartclk      = uartclk;
- 	up.regshift     = 2;
--	up.iotype       = UPIO_DWAPB; /* UPIO_MEM like */
-+	up.iotype       = UPIO_MEM;
-+	up.serial_out	= dwapb_serial_out;
- 	up.flags        = ASYNC_BOOT_AUTOCONF | ASYNC_SKIP_TEST;
--	up.type         = PORT_16550A;
-+	up.type         = PORT_DWAP;
- 	up.line         = 0;
- 	up.private_data		= (void*)UART0_STATUS_REG;
- 	if (early_serial_setup(&up))
 diff --git a/drivers/tty/serial/8250.c b/drivers/tty/serial/8250.c
-index d575ccb..5698157 100644
+index 5698157..0ddba34 100644
 --- a/drivers/tty/serial/8250.c
 +++ b/drivers/tty/serial/8250.c
-@@ -100,12 +100,6 @@ static unsigned int skip_txen_test; /* force skip of txen test at init time */
- #define CONFIG_SERIAL_MANY_PORTS 1
- #endif
+@@ -116,13 +116,6 @@ static const struct old_serial_port old_serial_port[] = {
  
--/*
-- * HUB6 is always on.  This will be removed once the header
-- * files have been cleaned.
-- */
--#define CONFIG_HUB6 1
+ #define UART_NR	CONFIG_SERIAL_8250_NR_UARTS
+ 
+-#ifdef CONFIG_SERIAL_8250_RSA
 -
- #include <asm/serial.h>
- /*
-  * SERIAL_PORT_DFNS tells us about built-in ports that have no
-@@ -302,25 +296,18 @@ static const struct serial8250_config uart_config[] = {
- 				  UART_FCR_T_TRIG_01,
- 		.flags		= UART_CAP_FIFO | UART_CAP_RTOIE,
+-#define PORT_RSA_MAX 4
+-static unsigned long probe_rsa[PORT_RSA_MAX];
+-static unsigned int probe_rsa_count;
+-#endif /* CONFIG_SERIAL_8250_RSA  */
+-
+ struct uart_8250_port {
+ 	struct uart_port	port;
+ 	struct timer_list	timer;		/* "no irq" timer */
+@@ -246,13 +239,6 @@ static const struct serial8250_config uart_config[] = {
+ 		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+ 		.flags		= UART_CAP_FIFO | UART_CAP_EFR | UART_CAP_SLEEP,
  	},
-+	[PORT_DWAP] = {
-+		.name		= "16550A",
-+		.fifo_size	= 16,
-+		.tx_loadsz	= 16,
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
-+		.flags		= UART_CAP_FIFO,
-+	},
- };
- 
- #define map_8250_in_reg(up, offset) (offset)
- #define map_8250_out_reg(up, offset) (offset)
- 
--static unsigned int hub6_serial_in(struct uart_port *p, int offset)
--{
--	offset = map_8250_in_reg(p, offset) << p->regshift;
--	outb(p->hub6 - 1 + offset, p->iobase);
--	return inb(p->iobase + 1);
--}
--
--static void hub6_serial_out(struct uart_port *p, int offset, int value)
--{
--	offset = map_8250_out_reg(p, offset) << p->regshift;
--	outb(p->hub6 - 1 + offset, p->iobase);
--	outb(value, p->iobase + 1);
--}
--
- static unsigned int mem_serial_in(struct uart_port *p, int offset)
- {
- 	offset = map_8250_in_reg(p, offset) << p->regshift;
-@@ -345,42 +332,6 @@ static unsigned int mem32_serial_in(struct uart_port *p, int offset)
- 	return readl(p->membase + offset);
+-	[PORT_RSA] = {
+-		.name		= "RSA",
+-		.fifo_size	= 2048,
+-		.tx_loadsz	= 2048,
+-		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_11,
+-		.flags		= UART_CAP_FIFO,
+-	},
+ 	[PORT_NS16550A] = {
+ 		.name		= "NS16550A",
+ 		.fifo_size	= 16,
+@@ -488,75 +474,6 @@ static void serial8250_set_sleep(struct uart_8250_port *p, int sleep)
+ 	}
  }
  
--/* Save the LCR value so it can be re-written when a Busy Detect IRQ occurs. */
--static inline void dwapb_save_out_value(struct uart_port *p, int offset,
--					int value)
+-#ifdef CONFIG_SERIAL_8250_RSA
+-/*
+- * Attempts to turn on the RSA FIFO.  Returns zero on failure.
+- * We set the port uart clock rate if we succeed.
+- */
+-static int __enable_rsa(struct uart_8250_port *up)
+-{
+-	unsigned char mode;
+-	int result;
+-
+-	mode = serial_inp(up, UART_RSA_MSR);
+-	result = mode & UART_RSA_MSR_FIFO;
+-
+-	if (!result) {
+-		serial_outp(up, UART_RSA_MSR, mode | UART_RSA_MSR_FIFO);
+-		mode = serial_inp(up, UART_RSA_MSR);
+-		result = mode & UART_RSA_MSR_FIFO;
+-	}
+-
+-	if (result)
+-		up->port.uartclk = SERIAL_RSA_BAUD_BASE * 16;
+-
+-	return result;
+-}
+-
+-static void enable_rsa(struct uart_8250_port *up)
+-{
+-	if (up->port.type == PORT_RSA) {
+-		if (up->port.uartclk != SERIAL_RSA_BAUD_BASE * 16) {
+-			spin_lock_irq(&up->port.lock);
+-			__enable_rsa(up);
+-			spin_unlock_irq(&up->port.lock);
+-		}
+-		if (up->port.uartclk == SERIAL_RSA_BAUD_BASE * 16)
+-			serial_outp(up, UART_RSA_FRR, 0);
+-	}
+-}
+-
+-/*
+- * Attempts to turn off the RSA FIFO.  Returns zero on failure.
+- * It is unknown why interrupts were disabled in here.  However,
+- * the caller is expected to preserve this behaviour by grabbing
+- * the spinlock before calling this function.
+- */
+-static void disable_rsa(struct uart_8250_port *up)
+-{
+-	unsigned char mode;
+-	int result;
+-
+-	if (up->port.type == PORT_RSA &&
+-	    up->port.uartclk == SERIAL_RSA_BAUD_BASE * 16) {
+-		spin_lock_irq(&up->port.lock);
+-
+-		mode = serial_inp(up, UART_RSA_MSR);
+-		result = !(mode & UART_RSA_MSR_FIFO);
+-
+-		if (!result) {
+-			serial_outp(up, UART_RSA_MSR, mode & ~UART_RSA_MSR_FIFO);
+-			mode = serial_inp(up, UART_RSA_MSR);
+-			result = !(mode & UART_RSA_MSR_FIFO);
+-		}
+-
+-		if (result)
+-			up->port.uartclk = SERIAL_RSA_BAUD_BASE_LO * 16;
+-		spin_unlock_irq(&up->port.lock);
+-	}
+-}
+-#endif /* CONFIG_SERIAL_8250_RSA */
+-
+ /*
+  * This is a quickie test to see how big the FIFO is.
+  * It doesn't work at all the time, more's the pity.
+@@ -1042,23 +959,6 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
+ 		break;
+ 	}
+ 
+-#ifdef CONFIG_SERIAL_8250_RSA
+-	/*
+-	 * Only probe for RSA ports if we got the region.
+-	 */
+-	if (up->port.type == PORT_16550A && probeflags & PROBE_RSA) {
+-		int i;
+-
+-		for (i = 0 ; i < probe_rsa_count; ++i) {
+-			if (probe_rsa[i] == up->port.iobase &&
+-			    __enable_rsa(up)) {
+-				up->port.type = PORT_RSA;
+-				break;
+-			}
+-		}
+-	}
+-#endif
+-
+ 	serial_outp(up, UART_LCR, save_lcr);
+ 
+ 	if (up->capabilities != uart_config[up->port.type].flags) {
+@@ -1078,10 +978,6 @@ static void autoconfig(struct uart_8250_port *up, unsigned int probeflags)
+ 	/*
+ 	 * Reset the UART.
+ 	 */
+-#ifdef CONFIG_SERIAL_8250_RSA
+-	if (up->port.type == PORT_RSA)
+-		serial_outp(up, UART_RSA_FRR, 0);
+-#endif
+ 	serial_outp(up, UART_MCR, save_mcr);
+ 	serial8250_clear_fifos(up);
+ 	serial_in(up, UART_RX);
+@@ -1836,14 +1732,6 @@ static int serial8250_startup(struct uart_port *port)
+ 		serial_outp(up, UART_LCR, 0);
+ 	}
+ 
+-#ifdef CONFIG_SERIAL_8250_RSA
+-	/*
+-	 * If this is an RSA port, see if we can kick it up to the
+-	 * higher speed clock.
+-	 */
+-	enable_rsa(up);
+-#endif
+-
+ 	/*
+ 	 * Clear the FIFO buffers and disable them.
+ 	 * (they will be reenabled in set_termios())
+@@ -2067,13 +1955,6 @@ static void serial8250_shutdown(struct uart_port *port)
+ 	serial_out(up, UART_LCR, serial_inp(up, UART_LCR) & ~UART_LCR_SBC);
+ 	serial8250_clear_fifos(up);
+ 
+-#ifdef CONFIG_SERIAL_8250_RSA
+-	/*
+-	 * Reset the RSA board back to 115kbps compat mode.
+-	 */
+-	disable_rsa(up);
+-#endif
+-
+ 	/*
+ 	 * Read data port to reset things, and then unlink from
+ 	 * the IRQ chain.
+@@ -2344,8 +2225,10 @@ static unsigned int serial8250_port_size(struct uart_8250_port *pt)
+ /*
+  * Resource handling.
+  */
+-static int serial8250_request_std_resource(struct uart_8250_port *up)
++static int serial8250_request_port(struct uart_port *port)
+ {
++	struct uart_8250_port *up =
++		container_of(port, struct uart_8250_port, port);
+ 	unsigned int size = serial8250_port_size(up);
+ 	int ret = 0;
+ 
+@@ -2381,8 +2264,10 @@ static int serial8250_request_std_resource(struct uart_8250_port *up)
+ 	return ret;
+ }
+ 
+-static void serial8250_release_std_resource(struct uart_8250_port *up)
++static void serial8250_release_port(struct uart_port *port)
+ {
++	struct uart_8250_port *up =
++		container_of(port, struct uart_8250_port, port);
+ 	unsigned int size = serial8250_port_size(up);
+ 
+ 	switch (up->port.iotype) {
+@@ -2408,65 +2293,6 @@ static void serial8250_release_std_resource(struct uart_8250_port *up)
+ 	}
+ }
+ 
+-static int serial8250_request_rsa_resource(struct uart_8250_port *up)
+-{
+-	unsigned long start = UART_RSA_BASE << up->port.regshift;
+-	unsigned int size = 8 << up->port.regshift;
+-	int ret = -EINVAL;
+-
+-	switch (up->port.iotype) {
+-	case UPIO_HUB6:
+-	case UPIO_PORT:
+-		start += up->port.iobase;
+-		if (request_region(start, size, "serial-rsa"))
+-			ret = 0;
+-		else
+-			ret = -EBUSY;
+-		break;
+-	}
+-
+-	return ret;
+-}
+-
+-static void serial8250_release_rsa_resource(struct uart_8250_port *up)
+-{
+-	unsigned long offset = UART_RSA_BASE << up->port.regshift;
+-	unsigned int size = 8 << up->port.regshift;
+-
+-	switch (up->port.iotype) {
+-	case UPIO_HUB6:
+-	case UPIO_PORT:
+-		release_region(up->port.iobase + offset, size);
+-		break;
+-	}
+-}
+-
+-static void serial8250_release_port(struct uart_port *port)
 -{
 -	struct uart_8250_port *up =
--		container_of(p, struct uart_8250_port, port);
+-		container_of(port, struct uart_8250_port, port);
 -
--	if (offset == UART_LCR)
--		up->lcr = value;
+-	serial8250_release_std_resource(up);
+-	if (up->port.type == PORT_RSA)
+-		serial8250_release_rsa_resource(up);
 -}
 -
--/* Read the IER to ensure any interrupt is cleared before returning from ISR. */
--static inline void dwapb_check_clear_ier(struct uart_port *p, int offset)
+-static int serial8250_request_port(struct uart_port *port)
 -{
--	if (offset == UART_TX || offset == UART_IER)
--		p->serial_in(p, UART_IER);
+-	struct uart_8250_port *up =
+-		container_of(port, struct uart_8250_port, port);
+-	int ret = 0;
+-
+-	ret = serial8250_request_std_resource(up);
+-	if (ret == 0 && up->port.type == PORT_RSA) {
+-		ret = serial8250_request_rsa_resource(up);
+-		if (ret < 0)
+-			serial8250_release_std_resource(up);
+-	}
+-
+-	return ret;
 -}
 -
--static void dwapb_serial_out(struct uart_port *p, int offset, int value)
--{
--	int save_offset = offset;
--	offset = map_8250_out_reg(p, offset) << p->regshift;
--	dwapb_save_out_value(p, save_offset, value);
--	writeb(value, p->membase + offset);
--	dwapb_check_clear_ier(p, save_offset);
--}
--
--static void dwapb32_serial_out(struct uart_port *p, int offset, int value)
--{
--	int save_offset = offset;
--	offset = map_8250_out_reg(p, offset) << p->regshift;
--	dwapb_save_out_value(p, save_offset, value);
--	writel(value, p->membase + offset);
--	dwapb_check_clear_ier(p, save_offset);
--}
--
- static unsigned int io_serial_in(struct uart_port *p, int offset)
+ static void serial8250_config_port(struct uart_port *port, int flags)
  {
- 	offset = map_8250_in_reg(p, offset) << p->regshift;
-@@ -398,11 +349,6 @@ static void set_io_from_upio(struct uart_port *p)
  	struct uart_8250_port *up =
- 		container_of(p, struct uart_8250_port, port);
- 	switch (p->iotype) {
--	case UPIO_HUB6:
--		p->serial_in = hub6_serial_in;
--		p->serial_out = hub6_serial_out;
--		break;
+@@ -2478,14 +2304,10 @@ static void serial8250_config_port(struct uart_port *port, int flags)
+ 	 * Find the region that we can probe for.  This in turn
+ 	 * tells us whether we can probe for the type of port.
+ 	 */
+-	ret = serial8250_request_std_resource(up);
++	ret = serial8250_request_port(port);
+ 	if (ret < 0)
+ 		return;
+ 
+-	ret = serial8250_request_rsa_resource(up);
+-	if (ret < 0)
+-		probeflags &= ~PROBE_RSA;
 -
- 	case UPIO_MEM:
- 		p->serial_in = mem_serial_in;
- 		p->serial_out = mem_serial_out;
-@@ -413,16 +359,6 @@ static void set_io_from_upio(struct uart_port *p)
- 		p->serial_out = mem32_serial_out;
- 		break;
+ 	if (up->port.iotype != up->cur_iotype)
+ 		set_io_from_upio(port);
  
--	case UPIO_DWAPB:
--		p->serial_in = mem_serial_in;
--		p->serial_out = dwapb_serial_out;
--		break;
+@@ -2499,10 +2321,8 @@ static void serial8250_config_port(struct uart_port *port, int flags)
+ 	if (up->port.type != PORT_UNKNOWN && flags & UART_CONFIG_IRQ)
+ 		autoconfig_irq(up);
+ 
+-	if (up->port.type != PORT_RSA && probeflags & PROBE_RSA)
+-		serial8250_release_rsa_resource(up);
+ 	if (up->port.type == PORT_UNKNOWN)
+-		serial8250_release_std_resource(up);
++		serial8250_release_port(port);
+ }
+ 
+ static int
+@@ -3198,8 +3018,4 @@ MODULE_PARM_DESC(nr_uarts, "Maximum number of UARTs supported. (1-" __MODULE_STR
+ module_param(skip_txen_test, uint, 0644);
+ MODULE_PARM_DESC(skip_txen_test, "Skip checking for the TXEN bug at init time");
+ 
+-#ifdef CONFIG_SERIAL_8250_RSA
+-module_param_array(probe_rsa, ulong, &probe_rsa_count, 0444);
+-MODULE_PARM_DESC(probe_rsa, "Probe I/O ports for RSA");
+-#endif
+ MODULE_ALIAS_CHARDEV_MAJOR(TTY_MAJOR);
+diff --git a/drivers/tty/serial/Kconfig b/drivers/tty/serial/Kconfig
+index ea12815..3ec604f 100644
+--- a/drivers/tty/serial/Kconfig
++++ b/drivers/tty/serial/Kconfig
+@@ -235,12 +235,6 @@ config SERIAL_8250_DETECT_IRQ
+ 
+ 	  If unsure, say N.
+ 
+-config SERIAL_8250_RSA
+-	bool "Support RSA serial ports"
+-	depends on SERIAL_8250_EXTENDED
+-	help
+-	  ::: To be written :::
 -
--	case UPIO_DWAPB32:
--		p->serial_in = mem32_serial_in;
--		p->serial_out = dwapb32_serial_out;
--		break;
+ config SERIAL_8250_MCA
+ 	tristate "Support 8250-type ports on MCA buses"
+ 	depends on SERIAL_8250 != n && MCA
+diff --git a/drivers/tty/serial/sunsu.c b/drivers/tty/serial/sunsu.c
+index 92aa545..a52af85 100644
+--- a/drivers/tty/serial/sunsu.c
++++ b/drivers/tty/serial/sunsu.c
+@@ -75,7 +75,6 @@ static const struct serial_uart_config uart_config[PORT_MAX_8250+1] = {
+ 	{ "16C950/954",	128,	UART_CLEAR_FIFO | UART_USE_FIFO },
+ 	{ "ST16654",	64,	UART_CLEAR_FIFO | UART_USE_FIFO | UART_STARTECH },
+ 	{ "XR16850",	128,	UART_CLEAR_FIFO | UART_USE_FIFO | UART_STARTECH },
+-	{ "RSA",	2048,	UART_CLEAR_FIFO | UART_USE_FIFO }
+ };
+ 
+ struct uart_sunsu_port {
+@@ -179,75 +178,6 @@ static unsigned int serial_icr_read(struct uart_sunsu_port *up, int offset)
+ }
+ #endif
+ 
+-#ifdef CONFIG_SERIAL_8250_RSA
+-/*
+- * Attempts to turn on the RSA FIFO.  Returns zero on failure.
+- * We set the port uart clock rate if we succeed.
+- */
+-static int __enable_rsa(struct uart_sunsu_port *up)
+-{
+-	unsigned char mode;
+-	int result;
 -
- 	default:
- 		p->serial_in = io_serial_in;
- 		p->serial_out = io_serial_out;
-@@ -440,8 +376,6 @@ serial_out_sync(struct uart_8250_port *up, int offset, int value)
- 	case UPIO_MEM:
- 	case UPIO_MEM32:
- 	case UPIO_AU:
--	case UPIO_DWAPB:
--	case UPIO_DWAPB32:
- 		p->serial_out(p, offset, value);
- 		p->serial_in(p, UART_LCR);	/* safe, no side-effects */
- 		break;
-@@ -1512,8 +1446,7 @@ static irqreturn_t serial8250_interrupt(int irq, void *dev_id)
- 			handled = 1;
- 
- 			end = NULL;
--		} else if ((up->port.iotype == UPIO_DWAPB ||
--			    up->port.iotype == UPIO_DWAPB32) &&
-+		} else if ((up->port.type == PORT_DWAP) &&
- 			  (iir & UART_IIR_BUSY) == UART_IIR_BUSY) {
- 			/* The DesignWare APB UART has an Busy Detect (0x07)
- 			 * interrupt meaning an LCR write attempt occurred while the
-@@ -2421,8 +2354,6 @@ static int serial8250_request_std_resource(struct uart_8250_port *up)
- 	case UPIO_TSI:
- 	case UPIO_MEM32:
- 	case UPIO_MEM:
--	case UPIO_DWAPB:
--	case UPIO_DWAPB32:
- 		if (!up->port.mapbase)
- 			break;
- 
-@@ -2459,8 +2390,6 @@ static void serial8250_release_std_resource(struct uart_8250_port *up)
- 	case UPIO_TSI:
- 	case UPIO_MEM32:
- 	case UPIO_MEM:
--	case UPIO_DWAPB:
--	case UPIO_DWAPB32:
- 		if (!up->port.mapbase)
- 			break;
- 
-diff --git a/drivers/tty/serial/8250_hub6.c b/drivers/tty/serial/8250_hub6.c
-index a5c778e..fd1361e 100644
---- a/drivers/tty/serial/8250_hub6.c
-+++ b/drivers/tty/serial/8250_hub6.c
-@@ -9,6 +9,21 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/serial_8250.h>
-+#include <linux/io.h>
-+
-+static unsigned int hub6_serial_in(struct uart_port *p, int offset)
-+{
-+	offset = offset << p->regshift;
-+	outb(p->hub6 - 1 + offset, p->iobase);
-+	return inb(p->iobase + 1);
-+}
-+
-+static void hub6_serial_out(struct uart_port *p, int offset, int value)
-+{
-+	offset = offset << p->regshift;
-+	outb(p->hub6 - 1 + offset, p->iobase);
-+	outb(value, p->iobase + 1);
-+}
- 
- #define HUB6(card,port)							\
- 	{								\
-@@ -18,6 +33,8 @@
- 		.iotype		= UPIO_HUB6,				\
- 		.flags		= UPF_BOOT_AUTOCONF,			\
- 		.hub6		= (card) << 6 | (port) << 3 | 1,	\
-+		.serial_in	= hub6_serial_in,			\
-+		.serial_out	= hub6_serial_out,			\
+-	mode = serial_inp(up, UART_RSA_MSR);
+-	result = mode & UART_RSA_MSR_FIFO;
+-
+-	if (!result) {
+-		serial_outp(up, UART_RSA_MSR, mode | UART_RSA_MSR_FIFO);
+-		mode = serial_inp(up, UART_RSA_MSR);
+-		result = mode & UART_RSA_MSR_FIFO;
+-	}
+-
+-	if (result)
+-		up->port.uartclk = SERIAL_RSA_BAUD_BASE * 16;
+-
+-	return result;
+-}
+-
+-static void enable_rsa(struct uart_sunsu_port *up)
+-{
+-	if (up->port.type == PORT_RSA) {
+-		if (up->port.uartclk != SERIAL_RSA_BAUD_BASE * 16) {
+-			spin_lock_irq(&up->port.lock);
+-			__enable_rsa(up);
+-			spin_unlock_irq(&up->port.lock);
+-		}
+-		if (up->port.uartclk == SERIAL_RSA_BAUD_BASE * 16)
+-			serial_outp(up, UART_RSA_FRR, 0);
+-	}
+-}
+-
+-/*
+- * Attempts to turn off the RSA FIFO.  Returns zero on failure.
+- * It is unknown why interrupts were disabled in here.  However,
+- * the caller is expected to preserve this behaviour by grabbing
+- * the spinlock before calling this function.
+- */
+-static void disable_rsa(struct uart_sunsu_port *up)
+-{
+-	unsigned char mode;
+-	int result;
+-
+-	if (up->port.type == PORT_RSA &&
+-	    up->port.uartclk == SERIAL_RSA_BAUD_BASE * 16) {
+-		spin_lock_irq(&up->port.lock);
+-
+-		mode = serial_inp(up, UART_RSA_MSR);
+-		result = !(mode & UART_RSA_MSR_FIFO);
+-
+-		if (!result) {
+-			serial_outp(up, UART_RSA_MSR, mode & ~UART_RSA_MSR_FIFO);
+-			mode = serial_inp(up, UART_RSA_MSR);
+-			result = !(mode & UART_RSA_MSR_FIFO);
+-		}
+-
+-		if (result)
+-			up->port.uartclk = SERIAL_RSA_BAUD_BASE_LO * 16;
+-		spin_unlock_irq(&up->port.lock);
+-	}
+-}
+-#endif /* CONFIG_SERIAL_8250_RSA */
+-
+ static inline void __stop_tx(struct uart_sunsu_port *p)
+ {
+ 	if (p->ier & UART_IER_THRI) {
+@@ -626,14 +556,6 @@ static int sunsu_startup(struct uart_port *port)
+ 		serial_outp(up, UART_LCR, 0);
  	}
  
- static struct plat_serial8250_port hub6_data[] = {
-diff --git a/drivers/tty/serial/serial_core.c b/drivers/tty/serial/serial_core.c
-index db7912c..e5a0cae 100644
---- a/drivers/tty/serial/serial_core.c
-+++ b/drivers/tty/serial/serial_core.c
-@@ -2063,8 +2063,6 @@ uart_report_port(struct uart_driver *drv, struct uart_port *port)
- 	case UPIO_MEM32:
- 	case UPIO_AU:
- 	case UPIO_TSI:
--	case UPIO_DWAPB:
--	case UPIO_DWAPB32:
- 		snprintf(address, sizeof(address),
- 			 "MMIO 0x%llx", (unsigned long long)port->mapbase);
- 		break;
-@@ -2484,8 +2482,6 @@ int uart_match_port(struct uart_port *port1, struct uart_port *port2)
- 	case UPIO_MEM32:
- 	case UPIO_AU:
- 	case UPIO_TSI:
--	case UPIO_DWAPB:
--	case UPIO_DWAPB32:
- 		return (port1->mapbase == port2->mapbase);
+-#ifdef CONFIG_SERIAL_8250_RSA
+-	/*
+-	 * If this is an RSA port, see if we can kick it up to the
+-	 * higher speed clock.
+-	 */
+-	enable_rsa(up);
+-#endif
+-
+ 	/*
+ 	 * Clear the FIFO buffers and disable them.
+ 	 * (they will be reenabled in set_termios())
+@@ -748,13 +670,6 @@ static void sunsu_shutdown(struct uart_port *port)
+ 				  UART_FCR_CLEAR_XMIT);
+ 	serial_outp(up, UART_FCR, 0);
+ 
+-#ifdef CONFIG_SERIAL_8250_RSA
+-	/*
+-	 * Reset the RSA board back to 115kbps compat mode.
+-	 */
+-	disable_rsa(up);
+-#endif
+-
+ 	/*
+ 	 * Read data port to reset things.
+ 	 */
+@@ -810,10 +725,6 @@ sunsu_change_speed(struct uart_port *port, unsigned int cflag,
+ 	if (uart_config[up->port.type].flags & UART_USE_FIFO) {
+ 		if ((up->port.uartclk / quot) < (2400 * 16))
+ 			fcr = UART_FCR_ENABLE_FIFO | UART_FCR_TRIGGER_1;
+-#ifdef CONFIG_SERIAL_8250_RSA
+-		else if (up->port.type == PORT_RSA)
+-			fcr = UART_FCR_ENABLE_FIFO | UART_FCR_TRIGGER_14;
+-#endif
+ 		else
+ 			fcr = UART_FCR_ENABLE_FIFO | UART_FCR_TRIGGER_8;
  	}
- 	return 0;
+@@ -1156,10 +1067,6 @@ static void sunsu_autoconfig(struct uart_sunsu_port *up)
+ 	/*
+ 	 * Reset the UART.
+ 	 */
+-#ifdef CONFIG_SERIAL_8250_RSA
+-	if (up->port.type == PORT_RSA)
+-		serial_outp(up, UART_RSA_FRR, 0);
+-#endif
+ 	serial_outp(up, UART_MCR, save_mcr);
+ 	serial_outp(up, UART_FCR, (UART_FCR_ENABLE_FIFO |
+ 				     UART_FCR_CLEAR_RCVR |
+diff --git a/include/linux/serial.h b/include/linux/serial.h
+index ef91406..7bf30a6 100644
+--- a/include/linux/serial.h
++++ b/include/linux/serial.h
+@@ -76,7 +76,7 @@ struct serial_struct {
+ #define PORT_16C950	10	/* Oxford Semiconductor */
+ #define PORT_16654	11
+ #define PORT_16850	12
+-#define PORT_RSA	13	/* RSA-DV II/S card */
++#define PORT_RSA	13	/* obsolete RSA-DV II/S card */
+ #define PORT_MAX	13
+ 
+ #define SERIAL_IO_PORT	0
 diff --git a/include/linux/serial_core.h b/include/linux/serial_core.h
-index df295e0..598992f 100644
+index 598992f..f84c560 100644
 --- a/include/linux/serial_core.h
 +++ b/include/linux/serial_core.h
-@@ -46,7 +46,8 @@
- #define PORT_AR7	18	/* Texas Instruments AR7 internal UART */
- #define PORT_U6_16550A	19	/* ST-Ericsson U6xxx internal UART */
- #define PORT_TEGRA	20	/* NVIDIA Tegra internal UART */
--#define PORT_MAX_8250	20	/* max port ID */
-+#define PORT_DWAP	21	/* Designware */
-+#define PORT_MAX_8250	21	/* max port ID */
+@@ -38,7 +38,7 @@
+ #define PORT_16C950	10
+ #define PORT_16654	11
+ #define PORT_16850	12
+-#define PORT_RSA	13
++/* #define PORT_RSA	13 */	/* was: RSA-DV II/S */
+ #define PORT_NS16550A	14
+ #define PORT_XSCALE	15
+ /* #define PORT_RM9000	16 */	/* was: PMC-Sierra RM9xxx internal UART */
+diff --git a/include/linux/serial_reg.h b/include/linux/serial_reg.h
+index c75bda3..4fa3d59 100644
+--- a/include/linux/serial_reg.h
++++ b/include/linux/serial_reg.h
+@@ -284,57 +284,6 @@
+ #define UART_ACR_ICRRD	0x40	/* ICR Read enable */
+ #define UART_ACR_ASREN	0x80	/* Additional status enable */
  
+-
+-
+-/*
+- * These definitions are for the RSA-DV II/S card, from
+- *
+- * Kiyokazu SUTO <suto@ks-and-ks.ne.jp>
+- */
+-
+-#define UART_RSA_BASE (-8)
+-
+-#define UART_RSA_MSR ((UART_RSA_BASE) + 0) /* I/O: Mode Select Register */
+-
+-#define UART_RSA_MSR_SWAP (1 << 0) /* Swap low/high 8 bytes in I/O port addr */
+-#define UART_RSA_MSR_FIFO (1 << 2) /* Enable the external FIFO */
+-#define UART_RSA_MSR_FLOW (1 << 3) /* Enable the auto RTS/CTS flow control */
+-#define UART_RSA_MSR_ITYP (1 << 4) /* Level (1) / Edge triger (0) */
+-
+-#define UART_RSA_IER ((UART_RSA_BASE) + 1) /* I/O: Interrupt Enable Register */
+-
+-#define UART_RSA_IER_Rx_FIFO_H (1 << 0) /* Enable Rx FIFO half full int. */
+-#define UART_RSA_IER_Tx_FIFO_H (1 << 1) /* Enable Tx FIFO half full int. */
+-#define UART_RSA_IER_Tx_FIFO_E (1 << 2) /* Enable Tx FIFO empty int. */
+-#define UART_RSA_IER_Rx_TOUT (1 << 3) /* Enable char receive timeout int */
+-#define UART_RSA_IER_TIMER (1 << 4) /* Enable timer interrupt */
+-
+-#define UART_RSA_SRR ((UART_RSA_BASE) + 2) /* IN: Status Read Register */
+-
+-#define UART_RSA_SRR_Tx_FIFO_NEMP (1 << 0) /* Tx FIFO is not empty (1) */
+-#define UART_RSA_SRR_Tx_FIFO_NHFL (1 << 1) /* Tx FIFO is not half full (1) */
+-#define UART_RSA_SRR_Tx_FIFO_NFUL (1 << 2) /* Tx FIFO is not full (1) */
+-#define UART_RSA_SRR_Rx_FIFO_NEMP (1 << 3) /* Rx FIFO is not empty (1) */
+-#define UART_RSA_SRR_Rx_FIFO_NHFL (1 << 4) /* Rx FIFO is not half full (1) */
+-#define UART_RSA_SRR_Rx_FIFO_NFUL (1 << 5) /* Rx FIFO is not full (1) */
+-#define UART_RSA_SRR_Rx_TOUT (1 << 6) /* Character reception timeout occurred (1) */
+-#define UART_RSA_SRR_TIMER (1 << 7) /* Timer interrupt occurred */
+-
+-#define UART_RSA_FRR ((UART_RSA_BASE) + 2) /* OUT: FIFO Reset Register */
+-
+-#define UART_RSA_TIVSR ((UART_RSA_BASE) + 3) /* I/O: Timer Interval Value Set Register */
+-
+-#define UART_RSA_TCR ((UART_RSA_BASE) + 4) /* OUT: Timer Control Register */
+-
+-#define UART_RSA_TCR_SWITCH (1 << 0) /* Timer on */
+-
+-/*
+- * The RSA DSV/II board has two fixed clock frequencies.  One is the
+- * standard rate, and the other is 8 times faster.
+- */
+-#define SERIAL_RSA_BAUD_BASE (921600)
+-#define SERIAL_RSA_BAUD_BASE_LO (SERIAL_RSA_BAUD_BASE / 8)
+-
  /*
-  * ARM specific type numbers.  These are not currently guaranteed
-@@ -317,8 +318,6 @@ struct uart_port {
- #define UPIO_MEM32		(3)
- #define UPIO_AU			(4)			/* Au1x00 type IO */
- #define UPIO_TSI		(5)			/* Tsi108/109 type IO */
--#define UPIO_DWAPB		(6)			/* DesignWare APB UART */
--#define UPIO_DWAPB32		(8)			/* DesignWare APB UART (32 bit accesses) */
- 
- 	unsigned int		read_status_mask;	/* driver specific */
- 	unsigned int		ignore_status_mask;	/* driver specific */
+  * Extra serial register definitions for the internal UARTs
+  * in TI OMAP processors.
 -- 
 1.7.5.4
 
