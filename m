@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760418Ab1F1SJZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 14:09:25 -0400
-Received: from lo.gmane.org ([80.91.229.12]:45742 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759528Ab1F1SI4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 14:08:56 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Aditya Kali <adityakali@google.com>
-Subject: Re: [RFC PATCH 4/4] cgroups: Add an rlimit subsystem
-Date: Tue, 28 Jun 2011 18:08:42 +0000 (UTC)
-Message-ID: <loom.20110628T194004-818@post.gmane.org>
-References: <1308527474-20704-1-git-send-email-fweisbec@gmail.com> <1308527474-20704-5-git-send-email-fweisbec@gmail.com>
-Mime-Version: 1.0
+	id S1760554Ab1F1SLG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 14:11:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48707 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760525Ab1F1SKy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 14:10:54 -0400
+Date: Tue, 28 Jun 2011 15:11:15 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Anderson Briglia <anderson.briglia@openbossa.org>,
+        Anderson Lizardo <anderson.lizardo@openbossa.org>,
+        Bruna Moreira <bruna.moreira@openbossa.org>,
+        Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the wireless tree
+Message-ID: <20110628181115.GB23183@joana>
+Mail-Followup-To: Stephen Rothwell <sfr@canb.auug.org.au>,
+	"John W. Linville" <linville@tuxdriver.com>,
+	linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+	Anderson Briglia <anderson.briglia@openbossa.org>,
+	Anderson Lizardo <anderson.lizardo@openbossa.org>,
+	Bruna Moreira <bruna.moreira@openbossa.org>,
+	Vinicius Costa Gomes <vinicius.gomes@openbossa.org>,
+	Alexey Dobriyan <adobriyan@gmail.com>,
+	David Miller <davem@davemloft.net>, netdev@vger.kernel.org
+References: <20110623130317.b3a6085e.sfr@canb.auug.org.au>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 216.239.45.4 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Chrome/12.0.742.77 Safari/534.30)
+Content-Disposition: inline
+In-Reply-To: <20110623130317.b3a6085e.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec <at> gmail.com> writes:
-> +struct rlim {
-> +	struct res_counter		proc_counter;
-> +	struct cgroup_subsys_state	css;
-> +};
-This can be used to enforce limits on FDs (RLIMIT_NOFILE), TCP/UDP ports,
-locked memory, queued data on sockets, etc. How making proc_counter an
-array (currently of size 1) ? Though with this patch there is just one, but it 
-will great to have ready support for easily adding more.
+Hi John,
 
-> +static struct cftype cft_max_proc = {
-> +	.name		= "max_proc",
-> +	.read_u64	= max_proc_read_u64,
-> +	.write_u64	= max_proc_write_u64,
-> +};
-How about exporting USAGE, MAX_USAGE and FAILCNT too? These are useful
-for resource estimation.
+* Stephen Rothwell <sfr@canb.auug.org.au> [2011-06-23 13:03:17 +1000]:
 
+> Hi John,
+> 
+> After merging the wireless tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> net/bluetooth/smp.c: In function 'smp_e':
+> net/bluetooth/smp.c:49:21: error: storage size of 'sg' isn't known
+> net/bluetooth/smp.c:67:2: error: implicit declaration of function 'sg_init_one'
+> net/bluetooth/smp.c:49:21: warning: unused variable 'sg'
+> 
+> Caused by commit d22ef0bc83c5 ("Bluetooth: Add LE SMP Cryptoolbox
+> functions").  Missing include file, presumably.  This batch has been in
+> the bluetooth tree since June 14, so it may have been exposed by the
+> removal of linux/mm.h from netdevice.h ...
+> 
+> I have added the following patch as a merge fix up for today.
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Thu, 23 Jun 2011 12:58:55 +1000
+> Subject: [PATCH] Bluetooth: include scatterlist.h where needed
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  net/bluetooth/smp.c |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/net/bluetooth/smp.c b/net/bluetooth/smp.c
+> index 52e9ec2..a36f870 100644
+> --- a/net/bluetooth/smp.c
+> +++ b/net/bluetooth/smp.c
+> @@ -25,6 +25,7 @@
+>  #include <net/bluetooth/l2cap.h>
+>  #include <net/bluetooth/smp.h>
+>  #include <linux/crypto.h>
+> +#include <linux/scatterlist.h>
+>  #include <crypto/b128ops.h>
 
+Thanks for pick this patch to wireless tree ;) 
+
+	Gustavo
