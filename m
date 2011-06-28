@@ -1,56 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab1F1GvI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 02:51:08 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:50162 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753338Ab1F1GuS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 02:50:18 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 98.234.237.12
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+xDeWNB5Fr+9Xux9LDzU2W
-Date: Mon, 27 Jun 2011 23:50:10 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: =?utf-8?B?UMOpdGVy?= Ujfalusi <peter.ujfalusi@ti.com>
-Cc: "Girdwood, Liam" <lrg@ti.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: Re: Re: [PATCH v6 00/18] MFD/ASoC/Input: TWL4030/TWL60X0
- changes
-Message-ID: <20110628065010.GZ23145@atomide.com>
-References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com>
- <2519112.D3nfO1VTXY@barack>
- <20110628061721.GY23145@atomide.com>
- <7290395.1hzL9xckCf@barack>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <7290395.1hzL9xckCf@barack>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756584Ab1F1GvP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 02:51:15 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45973 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755521Ab1F1Guo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 02:50:44 -0400
+Date: Tue, 28 Jun 2011 16:50:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (sound tree
+ related)
+Message-Id: <20110628165039.7e1fa073.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Péter Ujfalusi <peter.ujfalusi@ti.com> [110627 23:39]:
-> Hi Tony,
-> 
-> On Tuesday 28 June 2011 08:17:21 Tony Lindgren wrote:
-> > OK. Assuming Samuel is fine with the patches, care to put
-> > together a branch against devel-cleanup for me to pull?
-> 
-> While waiting for Samuel, I can start preparing the branch for you, since the 
-> bulk of the conflicts are in mach-omap2, should not affect the MFD parts.
-> Can I add your ack to the mach-omap2 parts, or are you prefer to handle this 
-> yourself?
+Hi all,
 
-OK here you go for the omap changes:
+After merging the final tree, today's linux-next build (i386 defconfig)
+failed like this:
 
-Acked-by: Tony Lindgren <tony@atomide.com>
+sound/pci/hda/patch_via.c:185:28: error: field 'loopback' has incomplete type
+sound/pci/hda/patch_via.c:187:22: error: array type has incomplete element type
+sound/pci/hda/patch_via.c: In function 'is_aa_path_mute':
+sound/pci/hda/patch_via.c:891:39: error: dereferencing pointer to incomplete type
+sound/pci/hda/patch_via.c:891:51: error: dereferencing pointer to incomplete type
+sound/pci/hda/patch_via.c:892:11: error: dereferencing pointer to incomplete type
+sound/pci/hda/patch_via.c: In function 'add_loopback_list':
+sound/pci/hda/patch_via.c:2004:29: warning: type defaults to 'int' in type name
+sound/pci/hda/patch_via.c:2004:29: warning: type defaults to 'int' in type name
+sound/pci/hda/patch_via.c:2004:29: error: negative width in bit-field '<anonymous>'
+sound/pci/hda/patch_via.c:2007:6: error: dereferencing pointer to incomplete type
+sound/pci/hda/patch_via.c:2008:6: error: dereferencing pointer to incomplete type
+sound/pci/hda/patch_via.c:2009:6: error: dereferencing pointer to incomplete type
+
+Caused by commit ada509ec00e4 ("ALSA: hda - Simplify analog-low-current
+mode check for VIA codecs") which removed the CONFIG_SND_HDA_POWER_SAVE
+protection of the usage, but not the definition in
+sound/pci/hda/hda_local.h.
+
+I have added the below patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 28 Jun 2011 16:46:09 +1000
+Subject: [PATCH] ALSA: hda - remove SND_HDA_POWER_SAVE protection of struct
+ hda_loopback_check
+
+to fix build problems when it is disabled.
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ sound/pci/hda/hda_local.h |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/sound/pci/hda/hda_local.h b/sound/pci/hda/hda_local.h
+index b333bf4..88b277e 100644
+--- a/sound/pci/hda/hda_local.h
++++ b/sound/pci/hda/hda_local.h
+@@ -565,7 +565,6 @@ int snd_hda_get_bool_hint(struct hda_codec *codec, const char *key)
+  * power-management
+  */
+ 
+-#ifdef CONFIG_SND_HDA_POWER_SAVE
+ void snd_hda_schedule_power_save(struct hda_codec *codec);
+ 
+ struct hda_amp_list {
+@@ -582,7 +581,6 @@ struct hda_loopback_check {
+ int snd_hda_check_amp_list_power(struct hda_codec *codec,
+ 				 struct hda_loopback_check *check,
+ 				 hda_nid_t nid);
+-#endif /* CONFIG_SND_HDA_POWER_SAVE */
+ 
+ /*
+  * AMP control callbacks
+-- 
+1.7.5.4
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
