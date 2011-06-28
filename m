@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753036Ab1F1TlX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 15:41:23 -0400
-Received: from mail.lang.hm ([64.81.33.126]:45950 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394Ab1F1TlQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 15:41:16 -0400
-Date: Tue, 28 Jun 2011 12:41:10 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-cc: linux-kernel-mail <linux-kernel@vger.kernel.org>,
-        linux-newbie@vger.kernel.org
-Subject: Re: Question on syslogd and syslog
-In-Reply-To: <BANLkTin_Yo+wnwWyMFoG3Nv5SSzJj8J1_w@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1106281238210.7935@asgard.lang.hm>
-References: <BANLkTin_Yo+wnwWyMFoG3Nv5SSzJj8J1_w@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752977Ab1F1ToS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 15:44:18 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:52527 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752772Ab1F1ToN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 15:44:13 -0400
+X-Sasl-enc: Tp+PuF+mzCMY5CxX848Xgh0fdnZg7H425KyZUcnwNXsT 1309290252
+Date: Tue, 28 Jun 2011 16:44:09 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Sandy Harris <sandyinchina@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: random(4) driver questions
+Message-ID: <20110628194409.GB25840@khazad-dum.debian.net>
+References: <BANLkTinC7vfaRWf5TK9gJuQVtVwDkEQFcQ@mail.gmail.com>
+ <20110627145442.GA2729@thunk.org>
+ <sig.11608c07e8.4E095C34.1020904@containermaster-cmp.de>
+ <BANLkTi=X0wu8MpRZh21MzMeeDh81CFHH_w@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTi=X0wu8MpRZh21MzMeeDh81CFHH_w@mail.gmail.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-you would be creating a completely different over-the-wire protocol for 
-your syslog messages.
-
-however, note that newer syslog daemons (syslog-ng and rsyslog for 
-example) allow you to do filtering on just about anything in the message, 
-not just the facility and severity.
-
-David Lang
-
-On Tue, 28 Jun 2011, Sri Ram Vemulpali wrote:
-
-> Date: Tue, 28 Jun 2011 14:11:59 -0400
-> From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-> To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
->     linux-newbie@vger.kernel.org
-> Subject: Question on syslogd and syslog
+On Tue, 28 Jun 2011, Sandy Harris wrote:
+> Johann Meier <recv@containermaster-cmp.de> wrote:
+> > If you don't have a hardware rnd, you can use an entropy daemon like
+> > haveged (http://www.issihosts.com/haveged/)
 > 
-> Hello All,
->
->    I am looking to modify number of facilities available in syslog so
-> that for my application I can have much more array of them at disposal
-> of my need. So currently only LOG_LOCAL0 - LOG_LOCAL7 are defined for
-> user, what if I want to extend them, is there a way I can extend them.
-> Or should I go ahead and modify the source code of syslog. Can any
-> please point me in right direction and where can I get syslogd and
-> syslog source code. Thanks in advance.
->
->
+> Yes, and there are several other alternatives. Someone suggested a
+
+The best of which is probably to _get_ a TRNG device.
+
+I can recommend this excellent and inexpensive (< £40) one:
+http://www.entropykey.co.uk/
+
+It will do ~32kbit/s (well, at least that's what mine is doing right now).
+It is designed for Linux and also for safe use and safe distribution of
+entropy.  It is a small USB device, and uses the USB cdc_acm driver to talk
+to a FLOSS userspace application (MIT license).
+
+As any USB device, it is _not_ going to be capable of providing entropy to
+the kernel boot process or to very early userspace.
+
+PS: I am in no way affiliated with Simtec electronics, I am just one of
+their happy customers.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
