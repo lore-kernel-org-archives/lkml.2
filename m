@@ -1,94 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756530Ab1F1E44 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 00:56:56 -0400
-Received: from containermaster.com ([88.198.52.246]:33608 "EHLO
-	containermaster-cmp.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab1F1EzP (ORCPT
+	id S1756596Ab1F1FQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 01:16:28 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:41873 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab1F1FOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 00:55:15 -0400
-X-Greylist: delayed 549 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 00:55:14 EDT
-Message-ID: <sig.11608c07e8.4E095C34.1020904@containermaster-cmp.de>
-Date: Tue, 28 Jun 2011 06:44:36 +0200
-From: Johann Meier <recv@containermaster-cmp.de>
-User-Agent: SpamAssassin version 3.2.4
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: random(4) driver questions
-References: <BANLkTinC7vfaRWf5TK9gJuQVtVwDkEQFcQ@mail.gmail.com> <20110627145442.GA2729@thunk.org>
-In-Reply-To: <20110627145442.GA2729@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Tue, 28 Jun 2011 01:14:47 -0400
+Date: Mon, 27 Jun 2011 22:12:57 -0700 (PDT)
+Message-Id: <20110627.221257.1290251511587162468.davem@davemloft.net>
+To: ralf@linux-mips.org
+Cc: akpm@linux-foundation.org, alan@linux.intel.com, bcasavan@sgi.com,
+        airlied@linux.ie, grundler@parisc-linux.org, JBottomley@parallels.com,
+        perex@perex.cz, rpurdie@rpsys.net, klassert@mathematik.tu-chemnitz.de,
+        tj@kernel.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
+        linux-scsi@vger.kernel.org, linux-serial@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCH 00/12] Fix various section mismatches and build errors.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
+References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Assp-Client-SSL: yes
-X-Assp-Passing: authenticated
-X-Assp-ID: ASSP.nospam (30923-01606)
-X-Assp-Version: 1.8.5.9(1.0.07)
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 27 Jun 2011 22:13:00 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/11 16:54, Ted Ts'o wrote:
-> On Sat, Jun 25, 2011 at 01:51:07PM +0800, Sandy Harris wrote:
->> There was a paper some time back by a group of Israeli researchers
->> and looking at the Linux /dev/random driver, and claiming to find
->> it wanting in several ways. www.pinkas.net/PAPERS/gpr06.pdf
->>
->> To what extent have their objections been dealt with. If some
->> were considered bogus, is there documentation somewhere
->> explaining why?
-> 
-> Suffice it to say the random generator has changed significantly since
-> 2006.  There is now a secondary pool, which uses catastrophic
-> reseeding, etc.
-> 
->> One problem they pointed out is that there may be little
->> entropy available on a Linux-based router; no keyboard or
->> mouse, solid state storage so no disk entropy, and an
->> enemy might observe network activity, so network
->> interrupts give little or no useful entropy.
-> 
-> Sure, but a Linux-based router shouldn't be doing crypto work.  If it
-> *is* and it is important crypto work, then it needs a hardware random
-> number generator.  There's no magic here.
-> 
-> If you don't want to pay the cost of a random number generator, you
-> can do things such as at installation time, bootstrapping the random
-> number generator with some cryptographically secure randomness
-> available by the installation system.
-> 
->> The only in-kernel solution I can think of would be
->> to add something in the system call interface to
->> make very system call throw timing information
->> into the pool. I very much doubt, though, that that
->> is a good idea. What do others think, and does
->> anyone have a better idea?
-> 
-> It won't hurt (aside from wasting CPU time, assuming you don't add any
-> entropy credits), but won't necessarily help, either.
-> 
->> What happens to /dev/random when it runs on
->> a virtual machine and all the things it relies on
->> for entropy get virtualised away?
->>
->> The server that the VM is hosted on will usually
->> have plenty of entropy, often a hardware RNG.
->> Is there an interface that makes that visible
->> from the VM? Perhaps a virtual "hardware"
->> RNG driven by /dev/urandom on the host?
-> 
-> Yes, paravirtualizing the random number generator would be a big help.
-> Probably what I would do is to periodically add entropy from the host
-> OS to the guest OS, via some paravirt channel.  This would add a new
-> "catastrophic reseeding", and if the virtual guest can mix in some
-> other unknown material, again that can only help.
-> 
-> 						- Ted
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
 
-If you don't have a hardware rnd, you can use an entropy daemon like
-haveged (http://www.issihosts.com/haveged/)
+See commit:
+
+commit 948252cb9e01d65a89ecadf67be5018351eee15e
+Author: David S. Miller <davem@davemloft.net>
+Date:   Tue May 31 19:27:48 2011 -0700
+
+    Revert "net: fix section mismatches"
+    
+    This reverts commit e5cb966c0838e4da43a3b0751bdcac7fe719f7b4.
+    
+    It causes new build regressions with gcc-4.2 which is
+    pretty common on non-x86 platforms.
+    
+    Reported-by: James Bottomley <James.Bottomley@HansenPartnership.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+and postings that led to this revert including:
+
+http://marc.info/?l=linux-netdev&m=130653748205263&w=2
