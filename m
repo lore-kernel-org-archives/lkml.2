@@ -1,65 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844Ab1F1HtV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 03:49:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:36991 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756150Ab1F1Hsl (ORCPT
+	id S1756423Ab1F1HvZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 03:51:25 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62751 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755873Ab1F1Hud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 03:48:41 -0400
+	Tue, 28 Jun 2011 03:50:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=BpcY/XVXgZiCYV85v//5S3HyXjoY1oOFOPavyJWEiCRjkqrePJOpmrkRb6qajOA12q
-         tURxsDCmZFZVnu67sD4y63FGhUT92QzFC2BnwnYJ1i4SBOxiOoSWrMClxOSt7vGMe66X
-         6sJYXN1q5Y+pl3diTuUOAhKmBBfgIJZAbN/Ss=
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=PMxN6tnKLPFahN+iS5rttzR4yHvVVBPbfs7ooHJRSKag6ERleh5kumh40nmWl9RyN2
+         WGtuURzcbQJHPPGiskyMQqAg+W47fDDB79CO4CGnevuYCve13KVuXU5qThN9fjQ89idl
+         oJQYpz2TD1BDtLgGnzAlGiTjl0J68veZqufu0=
+Date: Tue, 28 Jun 2011 11:50:27 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
+        Eric Paris <eparis@redhat.com>, Solar Designer <solar@openwall.com>
+Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
+Message-ID: <20110628075027.GA4051@albatros>
+References: <1308917318-4749-1-git-send-email-segoon@openwall.com>
+ <BANLkTine1Q7thbLVUb34ZsRZt4q184dZzg@mail.gmail.com>
 MIME-Version: 1.0
-Date: Tue, 28 Jun 2011 03:48:38 -0400
-Message-ID: <CAJRGBZw6cqqPmR9rxfKOeT69vpOLFFBr842Yy4A1_VbLX=r+1Q@mail.gmail.com>
-Subject: [PATCH] fix memory leak in acpi-cpufreq
-From: Luming Yu <luming.yu@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Len Brown <lenb@kernel.org>
-Content-Type: multipart/mixed; boundary=90e6ba2121735d96d904a6c0e5bb
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTine1Q7thbLVUb34ZsRZt4q184dZzg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---90e6ba2121735d96d904a6c0e5bb
-Content-Type: text/plain; charset=UTF-8
+On Tue, Jun 28, 2011 at 06:43 +0530, Balbir Singh wrote:
+> On Fri, Jun 24, 2011 at 5:38 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> > /proc/PID/io may be used for gathering private information.  E.g. for
+> > openssh and vsftpd daemons wchars/rchars may be used to learn the
+> > precise password length.  Restrict it to processes being able to ptrace
+> > the target process.
+> >
+> 
+> Hmm.. How do I reproduce this,
 
-Hi there,
+Just register taskstats listener and wait for "vsftpd" process.
+read_characters = strlen("USER username\r\n") + strlen("PASSWD
+pass\r\n") + 1.
 
-I came across a memory leak problem found in cyclic cpu-online-offline test.
-The inlined patch simple does this to fix it.
+> won't they be enough randomness around
+> rchar/wchar by the time the attacker reads it?
 
-> b/drivers/cpufreq/acpi-cpufreq.c
->static void __exit acpi_cpufreq_exit(void)
->  	cpufreq_unregister_driver(&acpi_cpufreq_driver);
-> -	free_percpu(acpi_perf_data);
->+	free_acpi_perf_data();
+No, if you set "UsePrivilegeSeparation yes" in /etc/sshd/sshd_config or
+similar setting in vsftpd config (set by default), one process will
+have very small io activity, which is 100% related to the io in
+question.
 
-Ps. The patch is enclosed in attachment. The inline one
-is c&p of it for reading.
+http://www.openwall.com/lists/oss-security/2011/06/24/6
+
+So, the total io = io with the network + io with privileged parent.
 
 
 Thanks,
-Luming
 
-Signed-off-by: Yu Luming <luming.yu@intel.com>
-
---90e6ba2121735d96d904a6c0e5bb
-Content-Type: text/x-diff; charset=US-ASCII; name="acpi-cpufreq-memleak.patch"
-Content-Disposition: attachment; filename="acpi-cpufreq-memleak.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gpgjv3m50
-
-ZGlmZiAtLWdpdCBhL2RyaXZlcnMvY3B1ZnJlcS9hY3BpLWNwdWZyZXEuYyBiL2RyaXZlcnMvY3B1
-ZnJlcS9hY3BpLWNwdWZyZXEuYwppbmRleCA0ZTA0ZTEyLi41OTZkNWRkIDEwMDY0NAotLS0gYS9k
-cml2ZXJzL2NwdWZyZXEvYWNwaS1jcHVmcmVxLmMKKysrIGIvZHJpdmVycy9jcHVmcmVxL2FjcGkt
-Y3B1ZnJlcS5jCkBAIC03NTksNyArNzU5LDcgQEAgc3RhdGljIHZvaWQgX19leGl0IGFjcGlfY3B1
-ZnJlcV9leGl0KHZvaWQpCiAKIAljcHVmcmVxX3VucmVnaXN0ZXJfZHJpdmVyKCZhY3BpX2NwdWZy
-ZXFfZHJpdmVyKTsKIAotCWZyZWVfcGVyY3B1KGFjcGlfcGVyZl9kYXRhKTsKKwlmcmVlX2FjcGlf
-cGVyZl9kYXRhKCk7CiB9CiAKIG1vZHVsZV9wYXJhbShhY3BpX3BzdGF0ZV9zdHJpY3QsIHVpbnQs
-IDA2NDQpOwo=
---90e6ba2121735d96d904a6c0e5bb--
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
