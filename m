@@ -1,44 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab1F1UDd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 16:03:33 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44175 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751247Ab1F1UD2 (ORCPT
+	id S1752789Ab1F1UVb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 16:21:31 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:57526 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751118Ab1F1UVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 16:03:28 -0400
-Date: Tue, 28 Jun 2011 21:03:19 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Maxime Ripard <maxime.ripard@free-electrons.com>
-Cc: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Make Dell Latitude E6320 use reboot=pci
-Message-ID: <20110628200319.GA22487@srcf.ucam.org>
-References: <1309269451-4966-1-git-send-email-maxime.ripard@free-electrons.com>
- <20110628174137.GA18115@srcf.ucam.org>
- <4E0A2D0C.6030701@free-electrons.com>
+	Tue, 28 Jun 2011 16:21:24 -0400
+X-Sasl-enc: acm8WJ9BooH5oFjhuj1PY/VMYaASnyZmt0Oan46KEPTR 1309292483
+Date: Tue, 28 Jun 2011 13:06:56 -0700
+From: Greg KH <greg@kroah.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: driverdevel <devel@driverdev.osuosl.org>, gregkh@suse.de,
+        linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
+        "Luis R. Rodriguez" <mcgrof@gmail.com>, Joe Perches <joe@perches.com>,
+        Naveen Singh <nsingh@atheros.com>
+Subject: Re: staging: fix ath6kl build when CFG80211 is not enabled
+Message-ID: <20110628200656.GA7992@kroah.com>
+References: <20110527130321.18a51d63.randy.dunlap@oracle.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E0A2D0C.6030701@free-electrons.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20110527130321.18a51d63.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 09:35:40PM +0200, Maxime Ripard wrote:
-> On 28/06/2011 19:41, Matthew Garrett wrote:
-> >On Tue, Jun 28, 2011 at 03:57:31PM +0200, Maxime Ripard wrote:
-> >>The Dell Latitude E6320 doesn't reboot unless reboot=pci is set.
-> >
-> >On which kernel versions?
+On Fri, May 27, 2011 at 01:03:21PM -0700, Randy Dunlap wrote:
 > 
-> All the versions from 2.6.38 to 3.0-rc5.
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Fix build errors when CONFIG_CFG80211 is not enabled:
+> 
+> drivers/built-in.o: In function `ar6k_cfg80211_deinit':
+> (.text+0x189b71): undefined reference to `cfg80211_scan_done'
+> drivers/built-in.o: In function `ar6k_cfg80211_deinit':
+> (.text+0x189b86): undefined reference to `wiphy_unregister'
+> drivers/built-in.o: In function `ar6k_cfg80211_deinit':
+> (.text+0x189b8d): undefined reference to `wiphy_free'
+> drivers/built-in.o: In function `ar6k_cfg80211_init':
+> (.text+0x18add7): undefined reference to `wiphy_new'
+> drivers/built-in.o: In function `ar6k_cfg80211_init':
+> (.text+0x18ae48): undefined reference to `wiphy_register'
+> drivers/built-in.o: In function `ar6k_cfg80211_tkip_micerr_event':
+> (.text+0x18ae95): undefined reference to `cfg80211_michael_mic_failure'
+> drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
+> (.text+0x18afb5): undefined reference to `__ieee80211_get_channel'
+> drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
+> (.text+0x18afd2): undefined reference to `cfg80211_inform_bss_frame'
+> drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
+> (.text+0x18b046): undefined reference to `cfg80211_ibss_joined'
+> drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
+> (.text+0x18b176): undefined reference to `cfg80211_connect_result'
+> drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
+> (.text+0x18b190): undefined reference to `cfg80211_disconnected'
+> drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
+> (.text+0x18b291): undefined reference to `cfg80211_get_bss'
+> drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
+> (.text+0x18b457): undefined reference to `cfg80211_put_bss'
+> drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
+> (.text+0x18b4fa): undefined reference to `cfg80211_roamed'
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Luis R. Rodriguez <mcgrof@gmail.com>
+> Cc: Joe Perches <joe@perches.com>
+> Cc: Naveen Singh <nsingh@atheros.com>
+> ---
+>  drivers/staging/ath6kl/Kconfig |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> --- linux-next-20110517.orig/drivers/staging/ath6kl/Kconfig
+> +++ linux-next-20110517/drivers/staging/ath6kl/Kconfig
+> @@ -1,6 +1,7 @@
+>  config ATH6K_LEGACY
+>  	tristate "Atheros AR6003 support (non mac80211)"
+>          depends on MMC && WLAN
+> +	depends on CFG80211
 
-Could you provide the acpidump output for the system?
+Is this still needed in the next linux-next release?
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+confused,
+
+greg k-h
