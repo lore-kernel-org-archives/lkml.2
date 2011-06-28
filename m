@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab1F1Xlv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 19:41:51 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39230 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752414Ab1F1Xlq (ORCPT
+	id S1753336Ab1F1Xn4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 19:43:56 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:15076 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752414Ab1F1Xnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 19:41:46 -0400
-Date: Wed, 29 Jun 2011 00:41:30 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>, Rob Herring <rob.herring@calxeda.com>,
-        nico@fluxnic.net
-Subject: Re: [PATCH 4/4] ARM: convert PCI defines to variables
-Message-ID: <20110628234130.GJ21898@n2100.arm.linux.org.uk>
-References: <1309301859-17651-1-git-send-email-robherring2@gmail.com> <1309301859-17651-5-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309301859-17651-5-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 28 Jun 2011 19:43:47 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=eEFl259fCTuCOgA7m8I6tnKctEsQZmJWIBoKYNWGRbuzWlHFe4BLCvQjwMSJlvoGY
+	9HS6ClDPdvYIxLTT90Qng==
+From: Curt Wohlgemuth <curtw@google.com>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Curt Wohlgemuth <curtw@google.com>
+Subject: [PATCH] writeback: Don't wait for completion in writeback_inodes_sb_nr
+Date: Tue, 28 Jun 2011 16:43:35 -0700
+Message-Id: <1309304616-8657-1-git-send-email-curtw@google.com>
+X-Mailer: git-send-email 1.7.3.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 05:57:39PM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
-> 
-> Convert PCIBIOS_MIN_IO, PCIBIOS_MIN_MEM, and PCIMEM_BASE to variables to allow
-> multi-platform builds. This also removes the requirement for a platform to
-> have a mach/hardware.h.
+Contrary to the comment block atop writeback_inodes_sb_nr(),
+we *were* calling
 
-Please don't include PCIMEM_BASE in that - move that into asm/vga.h and
-call it VGA_BASE because that's really what it is.  There's also the
-matter of a definition of a HAS_ symbol...
+        wait_for_completion(&done);
 
-> diff --git a/arch/arm/include/asm/vga.h b/arch/arm/include/asm/vga.h
-> index 250a4dd..86290df 100644
-> --- a/arch/arm/include/asm/vga.h
-> +++ b/arch/arm/include/asm/vga.h
-> @@ -2,7 +2,7 @@
->  #define ASMARM_VGA_H
->  
->  #include <linux/io.h>
-> -#include <mach/hardware.h>
-> +#include <asm/pci.h>
->  
->  #define VGA_MAP_MEM(x,s)	(PCIMEM_BASE + (x))
->  
+which should not be done, as this is not called for data
+integrity sync.
 
-VGA is not dependent on having PCI - there have been ARM platforms which
-have VGA without PCI.
+Signed-off-by: Curt Wohlgemuth <curtw@google.com>
+---
+ fs/fs-writeback.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-> diff --git a/arch/arm/mach-pxa/include/mach/hardware.h b/arch/arm/mach-pxa/include/mach/hardware.h
-> index b4ea392..de63ca3 100644
-> --- a/arch/arm/mach-pxa/include/mach/hardware.h
-> +++ b/arch/arm/mach-pxa/include/mach/hardware.h
-> @@ -337,8 +337,6 @@ extern unsigned long get_clock_tick_rate(void);
->  #endif
->  
->  #if defined(CONFIG_MACH_ARMCORE) && defined(CONFIG_PCI)
-> -#define PCIBIOS_MIN_IO		0
-> -#define PCIBIOS_MIN_MEM		0
->  #define ARCH_HAS_DMA_SET_COHERENT_MASK
->  #endif
->  
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 0f015a0..3f711ac 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -1186,17 +1186,14 @@ static void wait_sb_inodes(struct super_block *sb)
+  */
+ void writeback_inodes_sb_nr(struct super_block *sb, unsigned long nr)
+ {
+-	DECLARE_COMPLETION_ONSTACK(done);
+ 	struct wb_writeback_work work = {
+ 		.sb		= sb,
+ 		.sync_mode	= WB_SYNC_NONE,
+-		.done		= &done,
+ 		.nr_pages	= nr,
+ 	};
+ 
+ 	WARN_ON(!rwsem_is_locked(&sb->s_umount));
+ 	bdi_queue_work(sb->s_bdi, &work);
+-	wait_for_completion(&done);
+ }
+ EXPORT_SYMBOL(writeback_inodes_sb_nr);
+ 
+-- 
+1.7.3.1
 
-This definitely breaks because ARCH_HAS_DMA_SET_COHERENT_MASK needs to
-be picked up by linux/dma-mapping.h.  However, this may already be
-broken as there's no clear path where this reliably happens.
