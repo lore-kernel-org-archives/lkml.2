@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753210Ab1F1WGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 18:06:47 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40978 "EHLO
+	id S1752665Ab1F1WG6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 18:06:58 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40981 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752759Ab1F1WGh (ORCPT
+	with ESMTP id S1752392Ab1F1WGv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 18:06:37 -0400
+	Tue, 28 Jun 2011 18:06:51 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 13/29] gma500: Kill spare kref
+Subject: [PATCH 14/29] gma500: GEM glue
 To: linux-kernel@vger.kernel.org, greg@kroah.com
-Date: Tue, 28 Jun 2011 23:06:12 +0100
-Message-ID: <20110628220610.898.21862.stgit@bob.linux.org.uk>
+Date: Tue, 28 Jun 2011 23:06:26 +0100
+Message-ID: <20110628220622.898.39097.stgit@bob.linux.org.uk>
 In-Reply-To: <20110628220151.898.15775.stgit@bob.linux.org.uk>
 References: <20110628220151.898.15775.stgit@bob.linux.org.uk>
 User-Agent: StGIT/0.14.3
@@ -24,108 +24,96 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-We are using the underlying kref in the GEM object so we don't need our own
+Add this temporarily so we can keep making progress and also bundle all the
+GEM bits we need together in our staging driver while we get them into GEM
+itself.
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/psb_fb.c  |    1 -
- drivers/staging/gma500/psb_gtt.c |   41 ++++++--------------------------------
- drivers/staging/gma500/psb_gtt.h |    1 -
- 3 files changed, 6 insertions(+), 37 deletions(-)
+ drivers/staging/gma500/Makefile   |    3 ++
+ drivers/staging/gma500/gem_glue.c |   47 +++++++++++++++++++++++++++++++++++++
+ drivers/staging/gma500/gem_glue.h |    4 +++
+ 3 files changed, 53 insertions(+), 1 deletions(-)
+ create mode 100644 drivers/staging/gma500/gem_glue.c
+ create mode 100644 drivers/staging/gma500/gem_glue.h
 
 
-diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index 988f4db..fb75aba 100644
---- a/drivers/staging/gma500/psb_fb.c
-+++ b/drivers/staging/gma500/psb_fb.c
-@@ -231,7 +231,6 @@ static int psbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
- 	struct psb_fbdev *fbdev = info->par;
- 	struct psb_framebuffer *psbfb = &fbdev->pfb;
- 	char *fb_screen_base = NULL;
--	struct drm_device *dev = psbfb->base.dev;
+diff --git a/drivers/staging/gma500/Makefile b/drivers/staging/gma500/Makefile
+index db73ec6..01aaa28 100644
+--- a/drivers/staging/gma500/Makefile
++++ b/drivers/staging/gma500/Makefile
+@@ -3,7 +3,8 @@
+ #
+ ccflags-y += -Iinclude/drm
  
- 	if (vma->vm_pgoff != 0)
- 		return -EINVAL;
-diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
-index 54a9308..9da1375 100644
---- a/drivers/staging/gma500/psb_gtt.c
-+++ b/drivers/staging/gma500/psb_gtt.c
-@@ -303,8 +303,6 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
- 	gt->in_gart = backed;
- 	/* Ensure this is set for non GEM objects */
- 	gt->gem.dev = dev;
--	kref_init(&gt->kref);
--
- 	ret = allocate_resource(dev_priv->gtt_mem, &gt->resource,
- 				len, start, end, PAGE_SIZE, NULL, NULL);
- 	if (ret == 0) {
-@@ -316,18 +314,15 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
- }
- 
- /**
-- *	psb_gtt_destroy		-	final free up of a gtt
-- *	@kref: the kref of the gtt
-- *
-- *	Called from the kernel kref put when the final reference to our
-- *	GTT object is dropped. At that point we can free up the resources.
-+ *	psb_gtt_free_range	-	release GTT address space
-+ *	@dev: our DRM device
-+ *	@gt: a mapping created with psb_gtt_alloc_range
-  *
-- *	For now we handle mmap clean up here to work around limits in GEM
-+ *	Release a resource that was allocated with psb_gtt_alloc_range. If the object
-+ *	has been pinned by mmap users we clean this up here currently.
-  */
--static void psb_gtt_destroy(struct kref *kref)
-+void psb_gtt_free_range(struct drm_device *dev, struct gtt_range *gt)
- {
--	struct gtt_range *gt = container_of(kref, struct gtt_range, kref);
--
- 	/* Undo the mmap pin if we are destroying the object */
- 	if (gt->mmapping) {
- 		psb_gtt_unpin(gt);
-@@ -338,30 +333,6 @@ static void psb_gtt_destroy(struct kref *kref)
- 	kfree(gt);
- }
- 
--/**
-- *	psb_gtt_kref_put	-	drop reference to a GTT object
-- *	@gt: the GT being dropped
-- *
-- *	Drop a reference to a psb gtt
-- */
--void psb_gtt_kref_put(struct gtt_range *gt)
--{
--	kref_put(&gt->kref, psb_gtt_destroy);
--}
--
--/**
-- *	psb_gtt_free_range	-	release GTT address space
-- *	@dev: our DRM device
-- *	@gt: a mapping created with psb_gtt_alloc_range
-- *
-- *	Release a resource that was allocated with psb_gtt_alloc_range
-- */
--void psb_gtt_free_range(struct drm_device *dev, struct gtt_range *gt)
--{
--	psb_gtt_kref_put(gt);
--}
--
--
- struct psb_gtt *psb_gtt_alloc(struct drm_device *dev)
- {
- 	struct psb_gtt *tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
-diff --git a/drivers/staging/gma500/psb_gtt.h b/drivers/staging/gma500/psb_gtt.h
-index 7e1f21e..4d6dc5f 100644
---- a/drivers/staging/gma500/psb_gtt.h
-+++ b/drivers/staging/gma500/psb_gtt.h
-@@ -44,7 +44,6 @@ extern void psb_gtt_takedown(struct drm_device *dev);
- struct gtt_range {
- 	struct resource resource;	/* Resource for our allocation */
- 	u32 offset;			/* GTT offset of our object */
--	struct kref kref;		/* Can probably go FIXME - GEM kref will do */
- 	struct drm_gem_object gem;	/* GEM high level stuff */
- 	int in_gart;			/* Currently in the GART (ref ct) */
- 	bool stolen;			/* Backed from stolen RAM */
+-psb_gfx-y += psb_bl.o \
++psb_gfx-y += gem_glue.o \
++	  psb_bl.o \
+ 	  psb_drv.o \
+ 	  psb_gem.o \
+ 	  psb_fb.o \
+diff --git a/drivers/staging/gma500/gem_glue.c b/drivers/staging/gma500/gem_glue.c
+new file mode 100644
+index 0000000..0817497
+--- /dev/null
++++ b/drivers/staging/gma500/gem_glue.c
+@@ -0,0 +1,47 @@
++/**************************************************************************
++ * Copyright (c) 2011, Intel Corporation.
++ * All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ **************************************************************************/
++
++#include <drm/drmP.h>
++#include <drm/drm.h>
++
++/**
++ * Initialize an already allocated GEM object of the specified size with
++ * no GEM provided backing store. Instead the caller is responsible for
++ * backing the object and handling it.
++ */
++int drm_gem_private_object_init(struct drm_device *dev,
++			struct drm_gem_object *obj, size_t size)
++{
++	BUG_ON((size & (PAGE_SIZE - 1)) != 0);
++
++	obj->dev = dev;
++	obj->filp = NULL;
++
++	kref_init(&obj->refcount);
++	atomic_set(&obj->handle_count, 0);
++	obj->size = size;
++
++	return 0;
++}
++
++void drm_gem_object_release_wrap(struct drm_gem_object *obj)
++{
++	if (obj->filp)
++		drm_gem_object_release(obj);
++}
+diff --git a/drivers/staging/gma500/gem_glue.h b/drivers/staging/gma500/gem_glue.h
+new file mode 100644
+index 0000000..c38285b
+--- /dev/null
++++ b/drivers/staging/gma500/gem_glue.h
+@@ -0,0 +1,4 @@
++extern void drm_gem_object_release_wrap(struct drm_gem_object *obj);
++extern int drm_gem_private_object_init(struct drm_device *dev,
++			struct drm_gem_object *obj, size_t size);
++
 
