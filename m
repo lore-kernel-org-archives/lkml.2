@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab1F1XX2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 19:23:28 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:60635 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751449Ab1F1XXV convert rfc822-to-8bit (ORCPT
+	id S1752688Ab1F1XY3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 19:24:29 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:9386 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab1F1XYX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 19:23:21 -0400
-MIME-Version: 1.0
-In-Reply-To: <1308926697-22475-4-git-send-email-mgorman@suse.de>
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
-	<1308926697-22475-4-git-send-email-mgorman@suse.de>
-Date: Wed, 29 Jun 2011 08:23:20 +0900
-Message-ID: <BANLkTini5rmyX_7wnAx8SA4Zw-wn21K9GQ@mail.gmail.com>
-Subject: Re: [PATCH 3/4] mm: vmscan: Evaluate the watermarks against the
- correct classzone
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        =?UTF-8?Q?P=C3=A1draig_Brady?= <P@draigbrady.com>,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 Jun 2011 19:24:23 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Tue, 28 Jun 2011 19:24:22 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Michal Simek <monstr@monstr.eu>, Rob Herring <rob.herring@calxeda.com>
+Subject: Re: [RFC PATCH 0/4] ARM: make mach/hardware.h optional
+In-reply-to: <1309301859-17651-1-git-send-email-robherring2@gmail.com>
+Message-id: <alpine.LFD.2.00.1106281919310.2142@xanadu.home>
+References: <1309301859-17651-1-git-send-email-robherring2@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 11:44 PM, Mel Gorman <mgorman@suse.de> wrote:
-> When deciding if kswapd is sleeping prematurely, the classzone is
-> taken into account but this is different to what balance_pgdat() and
-> the allocator are doing. Specifically, the DMA zone will be checked
-> based on the classzone used when waking kswapd which could be for a
-> GFP_KERNEL or GFP_HIGHMEM request. The lowmem reserve limit kicks in,
-> the watermark is not met and kswapd thinks its sleeping prematurely
-> keeping kswapd awake in error.
->
-> Reported-and-tested-by: Pádraig Brady <P@draigBrady.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Tue, 28 Jun 2011, Rob Herring wrote:
 
--- 
-Kind regards,
-Minchan Kim
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Currently, all ARM platforms must have a mach/hardware.h include. This is
+> because it is ultimately included by linux/pci.h which is included in many
+> places even for !CONFIG_PCI.
+> 
+> This could be fixed simply with an ifdef around the include of mach/hardware.h
+> in asm/pci.h. However, in the interest of fixing this for single kernel
+> binary builds, this series removes the include of mach/hardware.h outside of
+> mach-* and plat-*. What's used from hardware.h is a couple of PCI defines. 
+> Converting them to variables allows each platform to set the values as needed.
+
+Excellent !  This is certainly moving things in the right direction.
+
+For the 4 patches, you can add:
+
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+
+Obviously for patch 1/4 it would be nice to have the opinion of the PCI 
+maintainer as well.
+
+
+Nicolas
