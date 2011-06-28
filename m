@@ -1,86 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751412Ab1F1VTY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 17:19:24 -0400
-Received: from smtp3-g21.free.fr ([212.27.42.3]:54634 "EHLO smtp3-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750788Ab1F1VTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 17:19:20 -0400
-From: Arnaud Giersch <arnaud.giersch@free.fr>
-To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH][Resend] coredump: call vfs_getattr() to get inode attributes
-Date: Tue, 28 Jun 2011 23:19:10 +0200
-Message-ID: <87tyb9r6wh.fsf@free.fr>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1751599Ab1F1V04 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 17:26:56 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:34233 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751590Ab1F1V0k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 17:26:40 -0400
+X-Sasl-enc: ZdLkQhxdP3C2+H+j7G/F+/zd9DV2b2PofbR0daoTwuup 1309296399
+Date: Tue, 28 Jun 2011 14:20:16 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/29] gma500: revamp frame buffer creation and handling
+Message-ID: <20110628212016.GA26600@kroah.com>
+References: <20110616160104.6039.44019.stgit@localhost.localdomain>
+ <20110616160756.6039.69998.stgit@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110616160756.6039.69998.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaud Giersch <arnaud.giersch@free.fr>
+On Thu, Jun 16, 2011 at 05:08:00PM +0100, Alan Cox wrote:
+> From: Alan Cox <alan@linux.intel.com>
+> 
+> Restructure this to work the same way as the i915 frame buffer does. That
+> cleans up various chunks of code.
+> 
+> We can now set a mode in modetest but mode restore is a bit iffy
+> 
+> Signed-off-by: Alan Cox <alan@linux.intel.com>
 
-In do_coredump(), call vfs_getattr() to get inode attributes, and do not
-get them directly from the fields of the inode struct.
-
-Without this patch, when dumping core on an NFSv4 mount, and the i_uid
-field is not correctly filled at open time, the uid check fails, and an
-empty core dump is produced.
-
-This apparently only happens when there was no "core" file before the
-dump.  If a "core" file owned by the current user is already present, it
-is correctly filled.
-
-The reason is that decode_attr_owner() in fs/nfs/nfs4xdr.c is not
-allowed to call the idmapper when it receives may_sleep = 0 (see commit
-80e52aced138bb41b045a8595a87510f27d8d8c5, and some explanations in
-http://article.gmane.org/gmane.linux.nfs/33391).
-
-Signed-off-by: Arnaud Giersch <arnaud.giersch@free.fr>
----
- fs/exec.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/fs/exec.c b/fs/exec.c
-index 6075a1e..a016756 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -2147,7 +2147,7 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 			goto close_fail;
-  		}
- 	} else {
--		struct inode *inode;
-+		struct kstat stat;
- 
- 		if (cprm.limit < binfmt->min_coredump)
- 			goto fail_unlock;
-@@ -2158,8 +2158,10 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		if (IS_ERR(cprm.file))
- 			goto fail_unlock;
- 
--		inode = cprm.file->f_path.dentry->d_inode;
--		if (inode->i_nlink > 1)
-+		if (vfs_getattr(cprm.file->f_path.mnt, cprm.file->f_path.dentry,
-+				&stat))
-+			goto close_fail;
-+		if (stat.nlink > 1)
- 			goto close_fail;
- 		if (d_unhashed(cprm.file->f_path.dentry))
- 			goto close_fail;
-@@ -2167,13 +2169,13 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
- 		 * AK: actually i see no reason to not allow this for named
- 		 * pipes etc, but keep the previous behaviour for now.
- 		 */
--		if (!S_ISREG(inode->i_mode))
-+		if (!S_ISREG(stat.mode))
- 			goto close_fail;
- 		/*
- 		 * Dont allow local users get cute and trick others to coredump
- 		 * into their pre-created files.
- 		 */
--		if (inode->i_uid != current_fsuid())
-+		if (stat.uid != current_fsuid())
- 			goto close_fail;
- 		if (!cprm.file->f_op || !cprm.file->f_op->write)
- 			goto close_fail;
+As other patches didn't apply, I'll have to stop here in the series :(
