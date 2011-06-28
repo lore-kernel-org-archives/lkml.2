@@ -1,239 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756691Ab1F1Hkd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 03:40:33 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:37485 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756679Ab1F1Hjv (ORCPT
+	id S1756858Ab1F1Hlv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 03:41:51 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42526 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756408Ab1F1Hky (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 03:39:51 -0400
-X-AuditID: b753bd60-a327cba0000050a4-72-4e098544a05f
-X-AuditID: b753bd60-a327cba0000050a4-72-4e098544a05f
-From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip  4/4] perf script: add option resolving vmlinux path
-To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        David Ahern <dsahern@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        pp-manager@sdl.hitachi.co.jp,
-        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        David Ahern <dsahern@gmail.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Tue, 28 Jun 2011 16:40:50 +0900
-Message-ID: <20110628074049.4269.64126.stgit@linux3>
-In-Reply-To: <20110628074019.4269.32109.stgit@linux3>
-References: <20110628074019.4269.32109.stgit@linux3>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 28 Jun 2011 03:40:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:date:in-reply-to:references
+         :content-type:x-mailer:content-transfer-encoding:message-id
+         :mime-version;
+        b=rfTBoLhxslXjIvSkblWgTMb+rl6szciZYqxcZD8ziUh+XE+bdz2+YwI+wPGwGpNDcM
+         YwaJjTiQqRYnVT6gdfuC/ZJnPORJslr/RQMI7nnwk3a1G3BiwLQqqoebYbJDwsBOcPKg
+         BbHdOE198LTf0NKYQeJQRe8A0RgcmrcWVT8oQ=
+Subject: Re: [PATCH 2/2] mtd/ofpart: add ofoldpart alias
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: linux-mtd@lists.infradead.org, Grant Likely <grant.likely@secretlab.ca>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        David Woodhouse <dwmw2@infradead.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Date: Tue, 28 Jun 2011 10:41:41 +0300
+In-Reply-To: <1309178086-10604-1-git-send-email-dbaryshkov@gmail.com>
+References: <1309154611.23597.18.camel@sauron>
+	 <1309178086-10604-1-git-send-email-dbaryshkov@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Message-ID: <1309246907.23597.34.camel@sauron>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add the option get the path of [kernel.kallsyms].
-Specify '--show-kernel-path' option to use this function.
-This patch enables other applications to use this output easily.
+On Mon, 2011-06-27 at 16:34 +0400, Dmitry Eremin-Solenikov wrote:
+> ofpart.ko also provides ofoldpart MTD parser. Add respective
+> MODULE_ALIAS("ofoldpart"); declaration.
+> 
+> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+> ---
+>  drivers/mtd/ofpart.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mtd/ofpart.c b/drivers/mtd/ofpart.c
+> index aa33b8a..77f0640 100644
+> --- a/drivers/mtd/ofpart.c
+> +++ b/drivers/mtd/ofpart.c
+> @@ -176,3 +176,6 @@ module_init(ofpart_parser_init);
+>  MODULE_LICENSE("GPL");
+>  MODULE_DESCRIPTION("Parser for MTD partitioning information in device tree");
+>  MODULE_AUTHOR("Vitaly Wool, David Gibson");
+> +/* Required so that this module will be picked up ofoldpart
+> + * MTD partition information parser */
+> +MODULE_ALIAS("ofoldpart");
 
-Without --show-kernel-path  option
+Well, the codyng style documents how multi-line comments should look
+like... And this comment is less readable than your previous
+explanation... But I've fixed this myself and pushed to my tree, thanks!
 
-# perf script -f ip,dso
-ffffffff81467612 irq_return ([kernel.kallsyms])
-ffffffff81467612 irq_return ([kernel.kallsyms])
-    7f24fc02a6b3 _start (/lib64/ld-2.14.so)
-[snip]
-
-With --show-kernel-path option
-
-# perf script -f ip,dso --show-kernel-path
-ffffffff81467612 irq_return (/lib/modules/3.0.0-rc3-tip+/build/vmlinux)
-ffffffff81467612 irq_return (/lib/modules/3.0.0-rc3-tip+/build/vmlinux)
-    7f24fc02a6b3 _start (/lib64/ld-2.14.so)
-[snip]
-
-Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: David Ahern <dsahern@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
----
-
- tools/perf/Documentation/perf-script.txt |    3 +++
- tools/perf/builtin-script.c              |   15 +++++----------
- tools/perf/util/session.c                |   26 +++++++++-----------------
- tools/perf/util/symbol.c                 |   12 ++++++++++++
- tools/perf/util/symbol.h                 |    2 ++
- 5 files changed, 31 insertions(+), 27 deletions(-)
-
-diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
-index 39c4721..be59d8b 100644
---- a/tools/perf/Documentation/perf-script.txt
-+++ b/tools/perf/Documentation/perf-script.txt
-@@ -185,6 +185,9 @@ OPTIONS
- --show-symbol-offset::
- 	Show the offset of the symbols.
- 
-+--show-kernel-path::
-+	Try to resolve the path of [kernel.kallsyms]
-+
- SEE ALSO
- --------
- linkperf:perf-record[1], linkperf:perf-script-perl[1],
-diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index f9b7047..750673f 100644
---- a/tools/perf/builtin-script.c
-+++ b/tools/perf/builtin-script.c
-@@ -324,7 +324,7 @@ static void print_sample_addr(union perf_event *event,
- {
- 	struct addr_location al;
- 	u8 cpumode = event->header.misc & PERF_RECORD_MISC_CPUMODE_MASK;
--	const char *symname, *dsoname;
-+	const char *symname;
- 	unsigned long offset;
- 
- 	printf("%16" PRIx64, sample->addr);
-@@ -359,14 +359,8 @@ static void print_sample_addr(union perf_event *event,
- 		}
- 	}
- 
--	if (PRINT_FIELD(DSO)) {
--		if (al.map && al.map->dso && al.map->dso->name)
--			dsoname = al.map->dso->name;
--		else
--			dsoname = "";
--
--		printf(" (%s)", dsoname);
--	}
-+	if (PRINT_FIELD(DSO) && al.map && al.map->dso)
-+		printf(" (%s)", dso__get_dsoname_for_print(al.map->dso));
- }
- 
- static void process_event(union perf_event *event __unused,
-@@ -1092,7 +1086,8 @@ static const struct option options[] = {
- 		     parse_output_fields),
- 	OPT_BOOLEAN('\0', "show-symbol-offset", &show_symbol_offset,
- 		    "Show the offset of the symbol."),
--
-+	OPT_BOOLEAN('\0', "show-kernel-path", &show_kernel_path,
-+		    "Show the path of [kernel.kallsyms]"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index bb522ed..f385511 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -13,6 +13,8 @@
- #include "sort.h"
- #include "util.h"
- 
-+bool show_kernel_path;
-+
- static int perf_session__open(struct perf_session *self, bool force)
- {
- 	struct stat input_stat;
-@@ -1208,7 +1210,7 @@ void perf_session__print_ip(union perf_event *event,
- 			    int print_sym, int print_dso, int print_offset)
- {
- 	struct addr_location al;
--	const char *symname, *dsoname;
-+	const char *symname;
- 	unsigned long offset;
- 	struct callchain_cursor *cursor = &session->callchain_cursor;
- 	struct callchain_cursor_node *node;
-@@ -1244,14 +1246,9 @@ void perf_session__print_ip(union perf_event *event,
- 
- 				printf(" %s", symname);
- 			}
--			if (print_dso) {
--				if (node->map && node->map->dso && node->map->dso->name)
--					dsoname = node->map->dso->name;
--				else
--					dsoname = "";
--
--				printf(" (%s)", dsoname);
--			}
-+			if (print_dso && node->map && node->map->dso)
-+				printf(" (%s)", dso__get_dsoname_for_print(
-+							node->map->dso));
- 			printf("\n");
- 
- 			callchain_cursor_advance(cursor);
-@@ -1271,13 +1268,8 @@ void perf_session__print_ip(union perf_event *event,
- 			}
- 		}
- 
--		if (print_dso) {
--			if (al.map && al.map->dso && al.map->dso->name)
--				dsoname = al.map->dso->name;
--			else
--				dsoname = "";
--
--			printf(" (%s)", dsoname);
--		}
-+		if (print_dso && al.map && al.map->dso)
-+			printf(" (%s)",
-+			       dso__get_dsoname_for_print(al.map->dso));
- 	}
- }
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index eec1963..60dbd39 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -41,6 +41,7 @@ static int dso__load_guest_kernel_sym(struct dso *dso, struct map *map,
- 			symbol_filter_t filter);
- static int vmlinux_path__nr_entries;
- static char **vmlinux_path;
-+bool show_kernel_path;
- 
- struct symbol_conf symbol_conf = {
- 	.exclude_other	  = true,
-@@ -431,6 +432,17 @@ size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp)
- 	return ret;
- }
- 
-+const char *dso__get_dsoname_for_print(struct dso *dso)
-+{
-+	if (dso) {
-+		if (show_kernel_path && dso->long_name)
-+			return dso->long_name;
-+		else
-+			return dso->name;
-+	} else
-+		return "";
-+}
-+
- int kallsyms__parse(const char *filename, void *arg,
- 		    int (*process_symbol)(void *arg, const char *name,
- 					  char type, u64 start, u64 end))
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 325ee36..6b9a7f3 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -96,6 +96,7 @@ struct symbol_conf {
- };
- 
- extern struct symbol_conf symbol_conf;
-+extern bool show_kernel_path;
- 
- static inline void *symbol__priv(struct symbol *sym)
- {
-@@ -195,6 +196,7 @@ size_t dso__fprintf_buildid(struct dso *dso, FILE *fp);
- size_t dso__fprintf_symbols_by_name(struct dso *dso,
- 				    enum map_type type, FILE *fp);
- size_t dso__fprintf(struct dso *dso, enum map_type type, FILE *fp);
-+const char *dso__get_dsoname_for_print(struct dso *dso);
- 
- enum symtab_type {
- 	SYMTAB__KALLSYMS = 0,
+-- 
+Best Regards,
+Artem Bityutskiy
 
