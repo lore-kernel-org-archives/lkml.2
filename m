@@ -1,166 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752019Ab1F1VnY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 17:43:24 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56860 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751130Ab1F1VnS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 17:43:18 -0400
+	id S1751721Ab1F1VpR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 17:45:17 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37879 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751052Ab1F1VpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 17:45:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Martin <marogge@onlinehome.de>
+Subject: Re: [Bug #37752] Kernel Panic in drm_vblank_put+0x13/0x50 on P4 HT machine with 82915G/GV/910GL Integrated Graphics Controller
+Date: Tue, 28 Jun 2011 23:46:16 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <fvHbBUhG0PD.A.IGE.HM7BOB@chimera> <Rm1pgFxEGUF.A._PE.UM7BOB@chimera> <201106282223.40536.marogge@onlinehome.de>
+In-Reply-To: <201106282223.40536.marogge@onlinehome.de>
 MIME-Version: 1.0
-In-Reply-To: <20110620225016.4530.73978.stgit@riker>
-References: <20110620225016.4530.73978.stgit@riker>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 28 Jun 2011 15:42:58 -0600
-X-Google-Sender-Auth: uwv3FkZ-Wlokfp5CnQZ4y2bdkf8
-Message-ID: <BANLkTimLmK=dx3cSVeiD__Tq4WF0zgC98w@mail.gmail.com>
-Subject: Re: [PATCH] of/gpio: Add new method for getting gpios under different
- property names
-To: John Bonesio <bones@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106282346.17074.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 20, 2011 at 4:50 PM, John Bonesio <bones@secretlab.ca> wrote:
-> This patch adds a new routine, of_get_named_gpio_flags(), which takes the
-> property name as a parameter rather than assuming "gpios".
->
-> of_get_gpio_flags() is modified to call of_get_named_gpio_flags() with "gpios"
-> as the property parameter.
->
-> Signed-off-by: John Bonesio <bones@secretlab.ca>
+On Tuesday, June 28, 2011, Martin wrote:
+> On Monday 27 June 2011 00:35:16 Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a report
+> > of regressions introduced between 2.6.38 and 2.6.39.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > introduced between 2.6.38 and 2.6.39.  Please verify if it still should
+> > be listed and let the tracking team know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37752
+> > Subject		: Kernel Panic in drm_vblank_put+0x13/0x50 on P4 HT machine 
+> with
+> > 82915G/GV/910GL Integrated Graphics Controller Submitter	: Martin Rogge
+> > <marogge@onlinehome.de>
+> > Date		: 2011-06-17 13:02 (10 days old)
+> 
+> As far as I can see the bug is still present in the 2.6.39 line. However. I 
+> have good news. Out of a whim I've been trying 3.0-rc4 and the panic has not 
+> occurred in a few days.
+> 
+> I can try and bisect which commit fixed the issue. I guess I have to reverse 
+> the semantics of good and bad for this one. Don't tell the clergy.
+> 
+> Anyway, since it takes a while to establish the absence of a panic, don't 
+> expect any results soon.
 
-Merged, thanks.
-g.
+Well, we have a policy to close regression bugs that have been fixed in the
+Linus' tree or don't appear in there at all, so I'll close this one too.
 
-> ---
->
->  drivers/of/gpio.c       |   12 +++++++-----
->  include/linux/of_gpio.h |   42 ++++++++++++++++++++++++++++++++++++++----
->  2 files changed, 45 insertions(+), 9 deletions(-)
->
-> diff --git a/drivers/of/gpio.c b/drivers/of/gpio.c
-> index 9059603..6e6a786 100644
-> --- a/drivers/of/gpio.c
-> +++ b/drivers/of/gpio.c
-> @@ -20,9 +20,11 @@
->  #include <linux/of_gpio.h>
->  #include <linux/slab.h>
->
-> +
->  /**
-> - * of_get_gpio_flags - Get a GPIO number and flags to use with GPIO API
-> + * of_get_named_gpio_flags - Get a GPIO number and flags to use with GPIO API
->  * @np:                device node to get GPIO from
-> + * @list_name: property name that contains a list
->  * @index:     index of the GPIO
->  * @flags:     a flags pointer to fill in
->  *
-> @@ -30,8 +32,8 @@
->  * value on the error condition. If @flags is not NULL the function also fills
->  * in flags for the GPIO.
->  */
-> -int of_get_gpio_flags(struct device_node *np, int index,
-> -                     enum of_gpio_flags *flags)
-> +int of_get_named_gpio_flags(struct device_node *np, const char *list_name,
-> +                           int index, enum of_gpio_flags *flags)
->  {
->        int ret;
->        struct device_node *gpio_np;
-> @@ -40,7 +42,7 @@ int of_get_gpio_flags(struct device_node *np, int index,
->        const void *gpio_spec;
->        const __be32 *gpio_cells;
->
-> -       ret = of_parse_phandles_with_args(np, "gpios", "#gpio-cells", index,
-> +       ret = of_parse_phandles_with_args(np, list_name, "#gpio-cells", index,
->                                          &gpio_np, &gpio_spec);
->        if (ret) {
->                pr_debug("%s: can't parse gpios property\n", __func__);
-> @@ -79,7 +81,7 @@ err0:
->        pr_debug("%s exited with status %d\n", __func__, ret);
->        return ret;
->  }
-> -EXPORT_SYMBOL(of_get_gpio_flags);
-> +EXPORT_SYMBOL(of_get_named_gpio_flags);
->
->  /**
->  * of_gpio_count - Count GPIOs for a device
-> diff --git a/include/linux/of_gpio.h b/include/linux/of_gpio.h
-> index 6598c04..920f195 100644
-> --- a/include/linux/of_gpio.h
-> +++ b/include/linux/of_gpio.h
-> @@ -46,8 +46,9 @@ static inline struct of_mm_gpio_chip *to_of_mm_gpio_chip(struct gpio_chip *gc)
->        return container_of(gc, struct of_mm_gpio_chip, gc);
->  }
->
-> -extern int of_get_gpio_flags(struct device_node *np, int index,
-> -                            enum of_gpio_flags *flags);
-> +extern int of_get_named_gpio_flags(struct device_node *np,
-> +               const char *list_name, int index, enum of_gpio_flags *flags);
-> +
->  extern unsigned int of_gpio_count(struct device_node *np);
->
->  extern int of_mm_gpiochip_add(struct device_node *np,
-> @@ -60,8 +61,8 @@ extern struct gpio_chip *of_node_to_gpiochip(struct device_node *np);
->  #else /* CONFIG_OF_GPIO */
->
->  /* Drivers may not strictly depend on the GPIO support, so let them link. */
-> -static inline int of_get_gpio_flags(struct device_node *np, int index,
-> -                                   enum of_gpio_flags *flags)
-> +static inline int of_get_named_gpio_flags(struct device_node *np,
-> +               const char *list_name, int index, enum of_gpio_flags *flags)
->  {
->        return -ENOSYS;
->  }
-> @@ -77,6 +78,39 @@ static inline void of_gpiochip_remove(struct gpio_chip *gc) { }
->  #endif /* CONFIG_OF_GPIO */
->
->  /**
-> + * of_get_gpio_flags - Get a GPIO number and flags to use with GPIO API
-> + * @np:                device node to get GPIO from
-> + * @index:     index of the GPIO
-> + * @flags:     a flags pointer to fill in
-> + *
-> + * Returns GPIO number to use with Linux generic GPIO API, or one of the errno
-> + * value on the error condition. If @flags is not NULL the function also fills
-> + * in flags for the GPIO.
-> + */
-> +static inline int of_get_gpio_flags(struct device_node *np, int index,
-> +                     enum of_gpio_flags *flags)
-> +{
-> +       return of_get_named_gpio_flags(np, "gpios", index, flags);
-> +}
-> +
-> +
-> +/**
-> + * of_get_named_gpio - Get a GPIO number to use with GPIO API
-> + * @np:                device node to get GPIO from
-> + * @list_name: property name that contains a list
-> + * @index:     index of the GPIO
-> + *
-> + * Returns GPIO number to use with Linux generic GPIO API, or one of the errno
-> + * value on the error condition.
-> + */
-> +static inline int of_get_named_gpio(struct device_node *np,
-> +                                   const char *list_name, int index)
-> +{
-> +       return of_get_named_gpio_flags(np, list_name, index, NULL);
-> +}
-> +
-> +
-> +/**
->  * of_get_gpio - Get a GPIO number to use with GPIO API
->  * @np:                device node to get GPIO from
->  * @index:     index of the GPIO
->
->
+I you're able to identify the fix, please let the -stable maintainers know
+about it.
 
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+Thanks,
+Rafael
