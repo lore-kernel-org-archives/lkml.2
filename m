@@ -1,39 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752807Ab1F1XBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 19:01:00 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58617 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751351Ab1F1XAw convert rfc822-to-8bit (ORCPT
+	id S1752660Ab1F1XES (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 19:04:18 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38288 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751205Ab1F1XEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 19:00:52 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.136.221]
-In-Reply-To: <BANLkTim+CemMz7A3J94e1UywCNd0r1SABQ@mail.gmail.com>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
- <1308640714-17961-8-git-send-email-ohad@wizery.com> <20110627222121.GD20865@ponder.secretlab.ca>
- <BANLkTikt08CDJiKNxGF2mKmOhyxHfv21_g@mail.gmail.com> <BANLkTim+CemMz7A3J94e1UywCNd0r1SABQ@mail.gmail.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 29 Jun 2011 02:00:31 +0300
-Message-ID: <BANLkTi=16XEpvhWEAoUt_s5F41czeq2DVQ@mail.gmail.com>
-Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 Jun 2011 19:04:11 -0400
+Date: Tue, 28 Jun 2011 16:03:47 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?ISO-8859-1?Q?P?= =?ISO-8859-1?Q?=E1draig?= Brady 
+	<P@draigBrady.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/2] fadvise: move active pages to inactive list with
+ POSIX_FADV_DONTNEED
+Message-Id: <20110628160347.a5ffcc26.akpm@linux-foundation.org>
+In-Reply-To: <20110628225645.GB2274@thinkpad>
+References: <1309181361-14633-1-git-send-email-andrea@betterlinux.com>
+	<20110628151233.f0a279be.akpm@linux-foundation.org>
+	<20110628225645.GB2274@thinkpad>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 1:51 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> It's not the device_for_each_child() that you're 'putting' back from
-> here.  Its the original kref initialization when the device was
-> created.
+On Wed, 29 Jun 2011 00:56:45 +0200
+Andrea Righi <andrea@betterlinux.com> wrote:
 
-device_unregister() is already calling put_device(), doesn't that deal
-with the original kref init for us ?
+> > > 
+> > > In this way if the backup was the only user of a page, that page will be
+> > > immediately removed from the page cache by calling POSIX_FADV_DONTNEED.  If the
+> > > page was also touched by other processes it'll be moved to the inactive list,
+> > > having another chance of being re-added to the working set, or simply reclaimed
+> > > when memory is needed.
+> > 
+> > So if an application touches a page twice and then runs
+> > POSIX_FADV_DONTNEED, that page will now not be freed.
+> > 
+> > That's a big behaviour change.  For many existing users
+> > POSIX_FADV_DONTNEED simply doesn't work any more!
+> 
+> Yes. This is the main concern that was raised by P__draig.
+> 
+> > 
+> > I'd have thought that adding a new POSIX_FADV_ANDREA would be safer
+> > than this.
+> 
+> Actually Jerry (in cc) proposed
+> POSIX_FADV_IDONTNEEDTHISBUTIFSOMEBODYELSEDOESTHENDONTTOUCHIT in a
+> private email. :)
+
+Sounds good.  Needs more underscores though.
+
+> > 
+> > 
+> > The various POSIX_FADV_foo's are so ill-defined that it was a mistake
+> > to ever use them.  We should have done something overtly linux-specific
+> > and given userspace more explicit and direct pagecache control.
+> 
+> That would give us the possibility to implement a wide range of
+> different operations (drop, drop if used once, add to the active list,
+> add to the inactive list, etc..). Some users always complain that they
+> would like to have a better control over the page cache from userspace.
+
+Well, I'd listen to proposals ;)
+
+One thing we must be careful about is to not expose things like "active
+list" to userspace.  linux-4.5 may not _have_ an active list, and its
+implementors would hate us and would have to jump through hoops to
+implement vaguely compatible behaviour in the new scheme.
+
+So any primitives which are exposed should be easily implementable and
+should *make sense* within any future scheme...
+
