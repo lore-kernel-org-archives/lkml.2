@@ -1,39 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752249Ab1F1UkR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 16:40:17 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:43251 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751364Ab1F1UkD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 16:40:03 -0400
-X-Sasl-enc: kkzSLBIiPdItvsD7IFik/pPYKyuPjPV0MnaTnuuBdK8J 1309293602
-Date: Tue, 28 Jun 2011 13:25:15 -0700
-From: Greg KH <greg@kroah.com>
-To: Marin Mitov <mitov@issp.bas.bg>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: use videobuf2 framework for
- drivers/staging/dt3155v4l driver
-Message-ID: <20110628202515.GA9177@kroah.com>
-References: <201105282145.27809.mitov@issp.bas.bg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201105282145.27809.mitov@issp.bas.bg>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1752807Ab1F1UbQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 16:31:16 -0400
+Received: from mail.perches.com ([173.55.12.10]:3267 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751296Ab1F1UbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 16:31:10 -0400
+Subject: Re: [PATCH] net/core: Convert to current logging forms
+From: Joe Perches <joe@perches.com>
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1309292501.2771.48.camel@bwh-desktop>
+References: <385ebf7e98e377e6e6c384beb961b65d4a95fb18.1309289792.git.joe@perches.com>
+	 <1309292501.2771.48.camel@bwh-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Jun 2011 13:31:08 -0700
+Message-ID: <1309293068.29598.14.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 28, 2011 at 09:45:27PM +0300, Marin Mitov wrote:
-> This patch transforms drivers/staging/dt3155v4l driver to use videobuf2 framework.
-> Tested and works with "xawtv -f".
-> 
-> Either streaming API or read method should be selected during kernel configuration.
+On Tue, 2011-06-28 at 21:21 +0100, Ben Hutchings wrote:
+> On Tue, 2011-06-28 at 12:40 -0700, Joe Perches wrote:
+> > Use pr_fmt, pr_<level>, and netdev_<level> as appropriate.
+> > Coalesce long formats.
+> [...]
+> > --- a/net/core/dev.c
+> > +++ b/net/core/dev.c
+> > @@ -72,6 +72,8 @@
+> > +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> [...]
+> KBUILD_MODNAME is presumably going to be "dev".
 
-I've applied this, but why would you ever not want to use the streaming
-api?
+'tis.
 
-thanks,
+> That's not very meaningful.
 
-greg k-h
+I think it's not useless though.
+
+Anything else you think it should be?
+Maybe "net_core_device:" or some such like that?
+
+Here are the format strings now prefaced by "dev:"
+
+$ strings net/core/built-in.o |grep "^<.>dev:"
+<6>dev: netif_stop_queue() cannot be called before register_netdev()
+<4>dev: dev_remove_pack: %p not found
+<3>dev: Loading kernel module for a network device with CAP_SYS_MODULE (deprecated)
+<0>dev: %s: failed to move %s to init_net: %d
+<3>dev: alloc_netdev: Unable to allocate device with zero queues
+<3>dev: alloc_netdev: Unable to allocate device with zero RX queues
+<3>dev: alloc_netdev: Unable to allocate device
+
+
+
