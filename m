@@ -1,81 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760169Ab1F1SZR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 14:25:17 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:55784 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760333Ab1F1SZF convert rfc822-to-8bit (ORCPT
+	id S932285Ab1F1S3d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 14:29:33 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:64154 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760345Ab1F1SZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 14:25:05 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTin4Sp6rw25WffuEXeEQhJBiCzmiTQ@mail.gmail.com>
-References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
- <1309244992-2305-9-git-send-email-jim.cromie@gmail.com> <BANLkTikpuHNBU5yJwwxsPLmdPyG1TNj97Q@mail.gmail.com>
- <20110628145404.GD2472@redhat.com> <BANLkTin4Sp6rw25WffuEXeEQhJBiCzmiTQ@mail.gmail.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Tue, 28 Jun 2011 12:24:34 -0600
-Message-ID: <BANLkTim5_SyUb+09J_Bwz5REsZ0+Rq0SoA@mail.gmail.com>
-Subject: Re: [PATCH 08/11] dynamic_debug: return int from ddebug_change
-To: Bart Van Assche <bvanassche@acm.org>
-Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
-        gnb@fmeh.org, gregkh@suse.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 Jun 2011 14:25:25 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Tue, 28 Jun 2011 14:25:16 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Todd Poynor <toddpoynor@google.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 0/3] Add generic idle notifiers
+In-reply-to: <1309229190-25006-1-git-send-email-toddpoynor@google.com>
+Message-id: <alpine.LFD.2.00.1106281422560.2142@xanadu.home>
+References: <1309229190-25006-1-git-send-email-toddpoynor@google.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 11:48 AM, Bart Van Assche <bvanassche@acm.org> wrote:
-> On Tue, Jun 28, 2011 at 4:54 PM, Jason Baron <jbaron@redhat.com> wrote:
->> On Tue, Jun 28, 2011 at 12:24:56PM +0200, Bart Van Assche wrote:
->> > On Tue, Jun 28, 2011 at 9:09 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
->> > > @@ -425,6 +424,7 @@ static int ddebug_exec_query(char *query_string)
->> > >  #define MAXWORDS 9
->> > >        int nwords;
->> > >        char *words[MAXWORDS];
->> > > +       int nfound;
->> > >
->> > >        nwords = ddebug_tokenize(query_string, words, MAXWORDS);
->> > >        if (nwords <= 0)
->> > > @@ -435,7 +435,8 @@ static int ddebug_exec_query(char *query_string)
->> > >                return -EINVAL;
->> > >
->> > >        /* actually go and implement the change */
->> > > -       ddebug_change(&query, flags, mask);
->> > > +       nfound = ddebug_change(&query, flags, mask);
->> > > +
->> > >        return 0;
->> >
->> > Do these changes actually do anything, or did I miss something ?
->>
->> its used in a subsequent patch to decide whether or not to call
->> add_to_pending.
->
-> As far as I can see your comment applies to the function
-> ddebug_change() while my comment applies to the function
-> ddebug_exec_query(). If you have a close look at the above changes you
-> will see that these do nothing more than adding a dead assignment.
->
-> Bart.
->
+On Mon, 27 Jun 2011, Todd Poynor wrote:
 
-its dead in 8/11, but used in 9/11
+> Add notifiers for idle entry and exit, called with IDLE_START when a
+> CPU goes idle and IDLE_END when it goes out of idle, based on the
+> existing idle notifiers for the x86_64 arch.
+> 
+> Convert x86_64 to use these notifiers, and call the notifiers on ARM.
+> 
+> Convert the ARM LEDs events for idle start/end to these notifiers.
 
- 	nfound = ddebug_change(&query, flags, mask);
+This is nice.
 
-+	pr_info("nfound %d on %s\n", nfound, show_ddebug_query(&query));
-+	if (!nfound)
-+		ddebug_add_to_pending(&query, flags, mask);
-+
- 	return 0;
+Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
 
-I can merge 8 & 9 if it matters,
-but ISTM that the important part is that the patchset is bisectable.
+for all 3 patches.
 
-- Things compile at each patch (with a couple warnings,
-including unescape, which I fat-fingered and will fix)
-$ for i in `seq 1 10`; do (cd - && git checkout HEAD~1 && git status);
-make; done
 
-- and functionality doesnt regress
-AFAIK - I may have botched something while rebasing bits and pieces.
+Nicolas
