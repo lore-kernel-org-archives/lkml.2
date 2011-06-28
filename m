@@ -1,74 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759016Ab1F1Qnz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 12:43:55 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:39307 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758591Ab1F1QmY (ORCPT
+	id S1758736Ab1F1QlP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 12:41:15 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43735 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759678Ab1F1QkN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 12:42:24 -0400
-Date: Tue, 28 Jun 2011 20:42:18 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@redhat.com>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] perf, x86: Add hw_watchdog_set_attr() in a sake of
- nmi-watchdog on P4
-Message-ID: <20110628164218.GK1159@sun>
-References: <20110627190358.GQ3765@redhat.com>
- <20110627193201.GB1159@sun>
- <CABPqkBTE_6ma70ZQbbz1NnznCGB7YO74kmL+=fP66qFVvVFLBw@mail.gmail.com>
- <20110628152827.GE1159@sun>
- <20110628153731.GY3765@redhat.com>
- <20110628154422.GG1159@sun>
- <20110628154646.GH1159@sun>
- <CABPqkBS4ukQ-asVD68MR_Bb_E89+EcHOcMP3Vv=RMJ9RnuYBSw@mail.gmail.com>
- <20110628161110.GJ1159@sun>
- <20110628162714.GV7027@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110628162714.GV7027@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 Jun 2011 12:40:13 -0400
+Date: Tue, 28 Jun 2011 17:42:23 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Hans Verkuil <hverkuil@xs4all.nl>,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        Sakari Ailus <sakari.ailus@iki.fi>, Arnd Bergmann <arnd@arndb.de>,
+        Linux Media Mailing List <linux-media@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl
+ doesn't exist
+Message-ID: <20110628174223.3d78ca4c@lxorguk.ukuu.org.uk>
+In-Reply-To: <BANLkTi=6W0quy1M71UapwKDe97E67b4EiA@mail.gmail.com>
+References: <4E0519B7.3000304@redhat.com>
+	<201106271907.59067.hverkuil@xs4all.nl>
+	<BANLkTin=PTbTwBR2s+owMLy+GmKigeoYvg@mail.gmail.com>
+	<201106280804.48742.hverkuil@xs4all.nl>
+	<BANLkTi=6W0quy1M71UapwKDe97E67b4EiA@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 12:27:14PM -0400, Don Zickus wrote:
-> On Tue, Jun 28, 2011 at 08:11:10PM +0400, Cyrill Gorcunov wrote:
-> > 
-> >  	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
-> > -->	hw_nmi_watchdog_set_attr(wd_attr);
-> > 
-> > itself? Ie you suspect some different point where to call it?
-> > 
-> > When I said not a "best place" I meant about __weak function bare implementation
-> > placed that near to call (which is looked somehow suspicious for me from overall
-> > code structure), but I didn't mean the call sequence itself ;)
+> (In fact, the _correct_ thing to do would probably be to just do
 > 
-> Sorry I was probably vague.  What I meant to say is that the call
-> 'hw_nmi_watchdog_set_attr' is really x86 specific and thought we could
-> bury it down there somehow.  Yeah the __weak symbol cleverly gets around
-> it.
+>    #define ENOIOCTLCMD ENOTTY
 > 
-> I was thinking it would be nice to stick it in hw_nmi_get_sample_period as
-> that is arch specific.  But it really wouldn't make sense there.
-> 
-> It's probably fine for now and maybe someday we can come up with a better
-> idea where to put it.
+> and get rid of any translation - just giving ENOTTY a more appropriate
+> name and less chance for confusion)
 
-OK, clear enough, lets stick with other issues. Thanks!
+Some code uses the two to separate 'the driver specific helper code
+doesn't handle this' and 'does handle this'. In that situation you take
+away the ability of a driver to override a midlayer ioctl with -ENOTTY to
+say "I don't support this even if most people do"
 
-> 
-> I don't want to waste to much time thinking about it as I have other
-> issues I am dealing with.  I just wanted to get this resolved so I can
-> push this patch into RHEL-6.
-> 
-> Cheers,
-> Don
+> There may be applications out there that really break when they get
+> ENOTTY instead of EINVAL. But most cases that check for errors from
+> ioctl's tend to just say "did this succeed or not" rather than "did
+> this return EINVAL". That's *doubly* true since the error code has
+> been ambiguous, so checking for the exact error code has always been
+> pretty pointless.
 
-	Cyrill
+Chances are if anything is busted its busted the other way on Linux and
+expects -ENOTTY. Certainly the large number I've been fixing over time
+haven't shown up any problems.
