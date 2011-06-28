@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758544Ab1F1PX7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 11:23:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61723 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758571Ab1F1PWp (ORCPT
+	id S1758748Ab1F1P1W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 11:27:22 -0400
+Received: from mga14.intel.com ([143.182.124.37]:59253 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757698Ab1F1PZV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 11:22:45 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH 2/2] pwm: Add a i.MX23/28 pwm driver
-Date: Tue, 28 Jun 2011 17:22:21 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Ryan Mallon <ryan@bluewatersys.com>
-References: <1309255368-9775-1-git-send-email-s.hauer@pengutronix.de> <1309255368-9775-3-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1309255368-9775-3-git-send-email-s.hauer@pengutronix.de>
+	Tue, 28 Jun 2011 11:25:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,437,1304319600"; 
+   d="scan'208";a="19784162"
+From: "Ma, Ling" <ling.ma@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>
+CC: "hpa@zytor.com" <hpa@zytor.com>, "tglx@linutronix.de" <tglx@linutronix.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 28 Jun 2011 23:23:52 +0800
+Subject: RE: [PATCH RFC] [x86] Optimize copy-page by reducing impact from HW
+ prefetch
+Thread-Topic: [PATCH RFC] [x86] Optimize copy-page by reducing impact from
+ HW prefetch
+Thread-Index: Acwxc9zXuTo3YQvYQpKzil1gi1OinwEGCmlA
+Message-ID: <C10D3FB0CD45994C8A51FEC1227CE22F27050B5318@shsmsx502.ccr.corp.intel.com>
+References: <1308351117-32452-1-git-send-email-ling.ma@intel.com>
+ <m2fwn13a3u.fsf@firstfloor.org> <20110623070448.GA25707@elte.hu>
+In-Reply-To: <20110623070448.GA25707@elte.hu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106281722.21600.arnd@arndb.de>
-X-Provags-ID: V02:K0:vaoHWQRhx4GLN/ctEyI9sUeKIaGXWXXkh/Pm957gNuZ
- csC8Xa0F8pkgRbHclHn5U6VLBiz2rMOg9Xt1aBNJwCe2sctF6q
- YZWGAhoxmQYkDIWNUzHtFxTwieDT8Kl/AubpuYQKgscXigNmbF
- +OL7ufl+eRcn1MFKLzGOLFyUuemBtL2aVQKlkkbMOPBRxjPn0X
- HTimSBfJO7UC0xo4M4qDg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sascha,
+Hi Ingo
+ 
+> Ling, mind double checking which one is the faster/better one on SNB,
+> in cold-cache and hot-cache situations, copy_page or copy_page_c?
+Copy_page_c 
+on hot-cache copy_page_c on SNB combines data to 128bit (processor limit 128bit/cycle for write) after startup latency
+so it is faster than copy_page which provides 64bit/cycle for write.
 
-On Tuesday 28 June 2011, Sascha Hauer wrote:
-> +
-> +/* common register space */
-> +static void __iomem *pwm_base_common;
-> +#define REG_PWM_CTRL   0x0
-> +#define PWM_SFTRST     (1 << 31)
-> +#define PWM_CLKGATE    (1 << 30)
-> +#define PWM_ENABLE(p)  (1 << (p))
-> +
+on cold-cache copy_page_c doesn't use prefetch, which uses prfetch according to copy size,
+so copy_page function is better. 
 
-The driver looks pretty good overall, but the global pwm_base_common register
-is rather ugly. I think this should really be passed down through resources
-from  the platform device in one way or another.
+Thanks
+Ling
 
-	Arnd
