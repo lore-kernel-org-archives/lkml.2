@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754385Ab1F1K30 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 06:29:26 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:4518 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756320Ab1F1K2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 06:28:22 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com, avictor.za@gmail.com,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH] AT91: add AT91SAM9X5 dummy configuration variable
-Date: Tue, 28 Jun 2011 13:35:27 +0200
-Message-Id: <1309260927-11411-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
+	id S1757323Ab1F1Lfh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 07:35:37 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:45008 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757143Ab1F1LfW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 07:35:22 -0400
+Message-ID: <4E09BC89.40306@free-electrons.com>
+Date: Tue, 28 Jun 2011 13:35:37 +0200
+From: David Wagner <david.wagner@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: dedekind1@gmail.com
+CC: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] UBI: new module ubiblk: block layer on top of UBI
+References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>	<1308922482-14967-2-git-send-email-david.wagner@free-electrons.com> <1309202771.24805.11.camel@koala>
+In-Reply-To: <1309202771.24805.11.camel@koala>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add this Kconfig variable to ease the submission of this chip support.
-As this chip/board inclusion is dealayed due to deep consolidation of
-arm/mach-at91 sources, we include this dummy configuration variable to allow
-submission of SAM9x5 related drivers in other subsystems.
+Hi,
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- arch/arm/mach-at91/Kconfig |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+On 06/27/2011 09:26 PM, Artem Bityutskiy wrote:
+> On Fri, 2011-06-24 at 15:34 +0200, david.wagner@free-electrons.com
+> wrote:
+>> +	/* Stolen from mtd_blkdevs.c */
+>> +	/* Create processing thread */
+>> +	dev->thread = kthread_run(ubi_ubiblk_thread, dev, "%s%d_%d",
+>> +				  "kubiblkd", dev->ubi_num, dev->vol_id);
+>> +	if (IS_ERR(dev->thread)) {
+>> +		ret = PTR_ERR(dev->thread);
+>> +		goto out_thread;
+>> +	}
+> 
+> Why we need a kernel thread? Could you please describe when exactly it
+> is needed and why we cannot avoid having it?
 
-diff --git a/arch/arm/mach-at91/Kconfig b/arch/arm/mach-at91/Kconfig
-index 2248467..ce45f64 100644
---- a/arch/arm/mach-at91/Kconfig
-+++ b/arch/arm/mach-at91/Kconfig
-@@ -12,6 +12,9 @@ config HAVE_AT91_USART4
- config HAVE_AT91_USART5
- 	bool
- 
-+config ARCH_AT91SAM9X5
-+	bool
-+
- menu "Atmel AT91 System-on-Chip"
- 
- choice
+Do you mean that there could be another/better way ?
+I read that workqueues could be used for that but since they seem to
+internally use kthreads, I don't see the advantage yet. Simpler API ?
+
+I also tried without a kthread altogether (and call do_ubiblk_request
+directly within the callback registered with blk_init_queue) but got
+lost in locks/context debugging ...
+
+It seems that do_ubiblk_request needs to be in process context because
+there are thousands causes for blocking (locking, page fault, for
+instance, are the one I encountered). And on the other hand,
+blk_run_queue must not block ; So we need to wake the thread up and
+return (what ubi_ubiblk_request does).
+So, would this be a sufficient justification ?
+
+
+It's probably possible, however, to have only one thread for the whole
+module instead of having one for each volume ; but that seemed good
+enough on first approach.
+
+
+I fixed the read errors issue with filesystems != SquashFS, so they
+should all work, now.
+I'll send the next iteration, probably later today.
+
 -- 
-1.7.3
-
+David Wagner, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
