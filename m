@@ -1,44 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760739Ab1F1SXi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 14:23:38 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:42765 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759398Ab1F1SWb (ORCPT
+	id S1760169Ab1F1SZR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 14:25:17 -0400
+Received: from mail-pz0-f51.google.com ([209.85.210.51]:55784 "EHLO
+	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760333Ab1F1SZF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 14:22:31 -0400
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: slab vs lockdep vs debugobjects
-Date: Tue, 28 Jun 2011 20:22:22 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.3; i686; ; )
-Cc: Pekka Enberg <penberg@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>
-References: <1308592080.26237.114.camel@twins> <201106262204.25710.maciej.rutecki@gmail.com> <1309124100.4756.0.camel@twins>
-In-Reply-To: <1309124100.4756.0.camel@twins>
+	Tue, 28 Jun 2011 14:25:05 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106282022.23269.maciej.rutecki@gmail.com>
+In-Reply-To: <BANLkTin4Sp6rw25WffuEXeEQhJBiCzmiTQ@mail.gmail.com>
+References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
+ <1309244992-2305-9-git-send-email-jim.cromie@gmail.com> <BANLkTikpuHNBU5yJwwxsPLmdPyG1TNj97Q@mail.gmail.com>
+ <20110628145404.GD2472@redhat.com> <BANLkTin4Sp6rw25WffuEXeEQhJBiCzmiTQ@mail.gmail.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Tue, 28 Jun 2011 12:24:34 -0600
+Message-ID: <BANLkTim5_SyUb+09J_Bwz5REsZ0+Rq0SoA@mail.gmail.com>
+Subject: Re: [PATCH 08/11] dynamic_debug: return int from ddebug_change
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jason Baron <jbaron@redhat.com>, linux-kernel@vger.kernel.org,
+        gnb@fmeh.org, gregkh@suse.de
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On niedziela, 26 czerwca 2011 o 23:35:00 Peter Zijlstra wrote:
-> On Sun, 2011-06-26 at 22:04 +0200, Maciej Rutecki wrote:
-> > I created a Bugzilla entry at
-> > https://bugzilla.kernel.org/show_bug.cgi?id=36912
-> > for your bug report, please add your address to the CC list in there,
-> > thanks!
-> 
-> How the hell does that improve things?
-Sorry for the noise, I wrong assumed that is regression, and problem does not 
-occured before. Rafael already removed it from regression list.
+On Tue, Jun 28, 2011 at 11:48 AM, Bart Van Assche <bvanassche@acm.org> wrote:
+> On Tue, Jun 28, 2011 at 4:54 PM, Jason Baron <jbaron@redhat.com> wrote:
+>> On Tue, Jun 28, 2011 at 12:24:56PM +0200, Bart Van Assche wrote:
+>> > On Tue, Jun 28, 2011 at 9:09 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
+>> > > @@ -425,6 +424,7 @@ static int ddebug_exec_query(char *query_string)
+>> > >  #define MAXWORDS 9
+>> > >        int nwords;
+>> > >        char *words[MAXWORDS];
+>> > > +       int nfound;
+>> > >
+>> > >        nwords = ddebug_tokenize(query_string, words, MAXWORDS);
+>> > >        if (nwords <= 0)
+>> > > @@ -435,7 +435,8 @@ static int ddebug_exec_query(char *query_string)
+>> > >                return -EINVAL;
+>> > >
+>> > >        /* actually go and implement the change */
+>> > > -       ddebug_change(&query, flags, mask);
+>> > > +       nfound = ddebug_change(&query, flags, mask);
+>> > > +
+>> > >        return 0;
+>> >
+>> > Do these changes actually do anything, or did I miss something ?
+>>
+>> its used in a subsequent patch to decide whether or not to call
+>> add_to_pending.
+>
+> As far as I can see your comment applies to the function
+> ddebug_change() while my comment applies to the function
+> ddebug_exec_query(). If you have a close look at the above changes you
+> will see that these do nothing more than adding a dead assignment.
+>
+> Bart.
+>
 
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+its dead in 8/11, but used in 9/11
+
+ 	nfound = ddebug_change(&query, flags, mask);
+
++	pr_info("nfound %d on %s\n", nfound, show_ddebug_query(&query));
++	if (!nfound)
++		ddebug_add_to_pending(&query, flags, mask);
++
+ 	return 0;
+
+I can merge 8 & 9 if it matters,
+but ISTM that the important part is that the patchset is bisectable.
+
+- Things compile at each patch (with a couple warnings,
+including unescape, which I fat-fingered and will fix)
+$ for i in `seq 1 10`; do (cd - && git checkout HEAD~1 && git status);
+make; done
+
+- and functionality doesnt regress
+AFAIK - I may have botched something while rebasing bits and pieces.
