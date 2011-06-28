@@ -1,40 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752627Ab1F1XYs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 19:24:48 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56818 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab1F1XYn (ORCPT
+	id S1752772Ab1F1X0Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 19:26:24 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:23955 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751252Ab1F1X0W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 19:24:43 -0400
-Date: Wed, 29 Jun 2011 00:24:29 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Rob Herring <robherring2@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>, Rob Herring <rob.herring@calxeda.com>,
-        nico@fluxnic.net
-Subject: Re: [PATCH 2/4] ARM: remove unnecessary mach/hardware.h includes
-Message-ID: <20110628232429.GI21898@n2100.arm.linux.org.uk>
-References: <1309301859-17651-1-git-send-email-robherring2@gmail.com> <1309301859-17651-3-git-send-email-robherring2@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309301859-17651-3-git-send-email-robherring2@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Tue, 28 Jun 2011 19:26:22 -0400
+X-IronPort-AV: E=Sophos;i="4.65,440,1304319600"; 
+   d="scan'208";a="559122653"
+Subject: Re: [PATCH][Resend] coredump: call vfs_getattr() to get inode
+ attributes
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Arnaud Giersch <arnaud.giersch@free.fr>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Tue, 28 Jun 2011 19:26:01 -0400
+In-Reply-To: <87tyb9r6wh.fsf@free.fr>
+References: <87tyb9r6wh.fsf@free.fr>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
+Message-ID: <1309303561.27467.9.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 28 Jun 2011 23:26:02.0717 (UTC) FILETIME=[BED548D0:01CC35EA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 05:57:37PM -0500, Rob Herring wrote:
-> From: Rob Herring <rob.herring@calxeda.com>
+On Tue, 2011-06-28 at 23:19 +0200, Arnaud Giersch wrote: 
+> From: Arnaud Giersch <arnaud.giersch@free.fr>
 > 
-> Remove some includes of mach/hardware.h which are not needed. hardware.h will
-> be removed completely for tegra and cns3xxx in follow on patch.
+> In do_coredump(), call vfs_getattr() to get inode attributes, and do not
+> get them directly from the fields of the inode struct.
+> 
+> Without this patch, when dumping core on an NFSv4 mount, and the i_uid
+> field is not correctly filled at open time, the uid check fails, and an
+> empty core dump is produced.
+> 
+> This apparently only happens when there was no "core" file before the
+> dump.  If a "core" file owned by the current user is already present, it
+> is correctly filled.
+> 
+> The reason is that decode_attr_owner() in fs/nfs/nfs4xdr.c is not
+> allowed to call the idmapper when it receives may_sleep = 0 (see commit
+> 80e52aced138bb41b045a8595a87510f27d8d8c5, and some explanations in
+> http://article.gmane.org/gmane.linux.nfs/33391).
+> 
+> Signed-off-by: Arnaud Giersch <arnaud.giersch@free.fr>
 
-At least this one is incorrect:
+This wants to be fixed in the NFS layer, not the VFS.
 
-arch/arm/mach-rpc/include/mach/hardware.h:#define IO_EC_MEMC_BASE              0x80000000
-arch/arm/kernel/ecard.c:                    address = IO_EC_MEMC_BASE + (slot << 12);
+What we should do is the following:
 
-That's just one of the defines that ecard.c uses from mach/hardare.h.
+     1. Save the string versions of user@domain/group@domain in the
+        struct nfs4_opendata so that we can resolve them from the
+        process context in _nfs4_proc_open(). 
+     2. Fix nfs4_atomic_open() so that it revalidates any inode that has
+        the NFS_INO_INVALID_ATTR flag set.
+
+Cheers
+   Trond
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
 
