@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab1F1HlS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 03:41:18 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:53170 "EHLO
+	id S1756796Ab1F1HlX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 03:41:23 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:53183 "EHLO
 	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756675Ab1F1Hjb (ORCPT
+	with ESMTP id S1756677Ab1F1Hji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 03:39:31 -0400
-X-AuditID: b753bd60-a1ec5ba000003bac-ea-4e0985316ff8
-X-AuditID: b753bd60-a1ec5ba000003bac-ea-4e0985316ff8
+	Tue, 28 Jun 2011 03:39:38 -0400
+X-AuditID: b753bd60-a3c7dba0000050a4-f6-4e0985379362
+X-AuditID: b753bd60-a3c7dba0000050a4-f6-4e0985379362
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip 1/4] perf script: resolve DSOs and symbols for user-space
+Subject: [PATCH -tip 2/4] perf script: print DSOs and symbols for BTS
+ branch_from addr
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
@@ -25,8 +26,8 @@ Cc: linux-kernel@vger.kernel.org,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         David Ahern <dsahern@gmail.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Tue, 28 Jun 2011 16:40:30 +0900
-Message-ID: <20110628074029.4269.32165.stgit@linux3>
+Date: Tue, 28 Jun 2011 16:40:37 +0900
+Message-ID: <20110628074037.4269.7659.stgit@linux3>
 In-Reply-To: <20110628074019.4269.32109.stgit@linux3>
 References: <20110628074019.4269.32109.stgit@linux3>
 User-Agent: StGIT/0.14.3
@@ -38,17 +39,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Resolve user-space DSOs and symbols.
-Latest perf-script can resolve DSOs and symbols for only kernel
-and kernel modules. This patch resolves them for other
-executable binaries.
+Print DSOs and symbols for branch_from address of BTS.
+BTS records branch_from address in 'addr' fields,
+and branch_to address in 'ip' field. Latest perf-script
+resolves DSOs and symbols only for 'ip' field.
+This patch resolves them for 'addr' field too.
 
-# perf script -f ip,addr,sym,dso
-7f87279646b0           ([kernel.kallsyms]) ffffffff81467612 irq_return ([kernel.kallsyms])
-7f87279646b0    _start (/lib64/ld-2.14.so) ffffffff81467612 irq_return ([kernel.kallsyms])
-7f8727967b70 _dl_start (/lib64/ld-2.14.so)     7f87279646b3 _start (/lib64/ld-2.14.so)
-7f8727967b70 _dl_start (/lib64/ld-2.14.so) ffffffff81467612 irq_return ([kernel.kallsyms])
-[snip]
+# perf script -f ip,addr,dso,sym
+  3f03e016b0                  ([kernel.kallsyms]) ffffffff81467612 irq_return ([kernel.kallsyms])
+  3f03e016b0           _start (/lib64/ld-2.14.so) ffffffff81467612 irq_return ([kernel.kallsyms])
+  3f03e04b80        _dl_start (/lib64/ld-2.14.so)       3f03e016b3 _start (/lib64/ld-2.14.so)
+  3f03e04b80        _dl_start (/lib64/ld-2.14.so) ffffffff81467612 irq_return ([kernel.kallsyms])
+  3f03e04ba6        _dl_start (/lib64/ld-2.14.so) ffffffff81467612 irq_return ([kernel.kallsyms])
 
 Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
 Cc: Peter Zijlstra <peterz@infradead.org>
@@ -60,51 +62,24 @@ Cc: David Ahern <dsahern@gmail.com>
 Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
 
- tools/perf/builtin-script.c |    3 +++
- tools/perf/util/event.c     |    4 ++++
- tools/perf/util/session.c   |    2 +-
- 3 files changed, 8 insertions(+), 1 deletions(-)
+ tools/perf/builtin-script.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
 diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
-index 3056b45..e45433f 100644
+index e45433f..2d68086 100644
 --- a/tools/perf/builtin-script.c
 +++ b/tools/perf/builtin-script.c
-@@ -327,6 +327,9 @@ static void print_sample_addr(union perf_event *event,
- 	thread__find_addr_map(thread, session, cpumode, MAP__FUNCTION,
- 			      event->ip.pid, sample->addr, &al);
- 	if (!al.map)
-+		thread__find_addr_map(thread, session, PERF_RECORD_MISC_USER,
-+			MAP__FUNCTION, event->ip.pid, sample->addr, &al);
-+	if (!al.map)
- 		thread__find_addr_map(thread, session, cpumode, MAP__VARIABLE,
- 				      event->ip.pid, sample->addr, &al);
+@@ -306,6 +306,12 @@ static bool sample_addr_correlates_sym(struct perf_event_attr *attr)
+ 	     (attr->config == PERF_COUNT_SW_PAGE_FAULTS_MAJ)))
+ 		return true;
  
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 3c1b8a6..68e7af9 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -771,6 +771,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
- 
- 	thread__find_addr_map(thread, session, cpumode, MAP__FUNCTION,
- 			      event->ip.pid, event->ip.ip, al);
-+	if (!al->map)
-+		thread__find_addr_map(thread, session, PERF_RECORD_MISC_USER,
-+				MAP__FUNCTION, event->ip.pid, event->ip.ip, al);
++	/* BTS Events */
++	if ((attr->type == PERF_TYPE_HARDWARE) &&
++	    (attr->config & PERF_COUNT_HW_BRANCH_INSTRUCTIONS) &&
++	    (attr->sample_period == 1))
++		return true;
 +
- 	dump_printf(" ...... dso: %s\n",
- 		    al->map ? al->map->dso->long_name :
- 			al->level == 'H' ? "[hypervisor]" : "<not found>");
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index b723f21..632266f 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -1257,7 +1257,7 @@ void perf_session__print_ip(union perf_event *event,
- 		}
+ 	return false;
+ }
  
- 	} else {
--		printf("%16" PRIx64, al.addr);
-+		printf("%16" PRIx64, sample->ip);
- 		if (print_sym) {
- 			if (al.sym && al.sym->name)
- 				symname = al.sym->name;
 
