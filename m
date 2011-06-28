@@ -1,101 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752992Ab1F1XWg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 19:22:36 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61513 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab1F1XW3 (ORCPT
+	id S1753189Ab1F1XXQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 19:23:16 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:56979 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab1F1XXL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 19:22:29 -0400
-Subject: [PATCH] i2c: Tegra: Add DeviceTree support
-To: kradtke@nvidia.com, swarren@nvidia.com, lucas.demarchi@profusion.mobi,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        grant.likely@secretlab.ca, riyer@nvidia.com, linux-i2c@vger.kernel.org,
-        ben-linux@fluff.org, khali@linux-fr.org
-From: John Bonesio <bones@secretlab.ca>
-Date: Tue, 28 Jun 2011 16:22:24 -0700
-Message-ID: <20110628232224.8010.87215.stgit@riker>
-User-Agent: StGit/0.15
+	Tue, 28 Jun 2011 19:23:11 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20110628125249.GX9396@suse.de>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+	<1308926697-22475-4-git-send-email-mgorman@suse.de>
+	<BANLkTinH_EcYUAAsrGmboMywqPcCfye2gg@mail.gmail.com>
+	<20110628125249.GX9396@suse.de>
+Date: Wed, 29 Jun 2011 08:23:10 +0900
+Message-ID: <BANLkTik16=kYyNtK-h-z3Ex64yPHUHFnVQ@mail.gmail.com>
+Subject: Re: [PATCH 3/4] mm: vmscan: Evaluate the watermarks against the
+ correct classzone
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "P?draig Brady" <P@draigbrady.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Andrew Lutomirski <luto@mit.edu>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch modifies the tegra i2c driver so that it can be initiailized
-using the device tree along with the devices connected to the i2c bus.
+On Tue, Jun 28, 2011 at 9:52 PM, Mel Gorman <mgorman@suse.de> wrote:
+> On Mon, Jun 27, 2011 at 03:53:04PM +0900, Minchan Kim wrote:
+>> On Fri, Jun 24, 2011 at 11:44 PM, Mel Gorman <mgorman@suse.de> wrote:
+>> > When deciding if kswapd is sleeping prematurely, the classzone is
+>> > taken into account but this is different to what balance_pgdat() and
+>> > the allocator are doing. Specifically, the DMA zone will be checked
+>> > based on the classzone used when waking kswapd which could be for a
+>> > GFP_KERNEL or GFP_HIGHMEM request. The lowmem reserve limit kicks in,
+>> > the watermark is not met and kswapd thinks its sleeping prematurely
+>> > keeping kswapd awake in error.
+>>
+>>
+>> I thought it was intentional when you submitted a patch firstly.
+>
+> It was, it also wasn't right.
+>
+>> "Kswapd makes sure zones include enough free pages(ie, include reserve
+>> limit of above zones).
+>> But you seem to see DMA zone can't meet above requirement forever in
+>> some situation so that kswapd doesn't sleep.
+>> Right?
+>>
+>
+> Right.
+>
+>> >
+>> > Reported-and-tested-by: Pádraig Brady <P@draigBrady.com>
+>> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+>> > ---
+>> >  mm/vmscan.c |    2 +-
+>> >  1 files changed, 1 insertions(+), 1 deletions(-)
+>> >
+>> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+>> > index 9cebed1..a76b6cc2 100644
+>> > --- a/mm/vmscan.c
+>> > +++ b/mm/vmscan.c
+>> > @@ -2341,7 +2341,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+>> >                }
+>> >
+>> >                if (!zone_watermark_ok_safe(zone, order, high_wmark_pages(zone),
+>> > -                                                       classzone_idx, 0))
+>> > +                                                       i, 0))
+>>
+>> Isn't it  better to use 0 instead of i?
+>>
+>
+> I considered it but went with i to compromise between making sure zones
+> included enough free pages without requiring that ZONE_DMA meet an
+> almost impossible requirement when under continual memory pressure.
 
-Signed-off-by: John Bonesio <bones@secretlab.ca>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-Acked-by: OIof Johansson <olof@lixom.net>
----
+I see.
+Thanks, Mel.
 
- drivers/i2c/busses/i2c-tegra.c |   18 +++++++++++++++++-
- 1 files changed, 17 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-index 4d93196..48bb250 100644
---- a/drivers/i2c/busses/i2c-tegra.c
-+++ b/drivers/i2c/busses/i2c-tegra.c
-@@ -26,6 +26,7 @@
- #include <linux/delay.h>
- #include <linux/slab.h>
- #include <linux/i2c-tegra.h>
-+#include <linux/of_i2c.h>
- 
- #include <asm/unaligned.h>
- 
-@@ -540,6 +541,7 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 	struct resource *iomem;
- 	struct clk *clk;
- 	struct clk *i2c_clk;
-+	const unsigned int *prop;
- 	void *base;
- 	int irq;
- 	int ret = 0;
-@@ -597,7 +599,17 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 	i2c_dev->irq = irq;
- 	i2c_dev->cont_id = pdev->id;
- 	i2c_dev->dev = &pdev->dev;
--	i2c_dev->bus_clk_rate = pdata ? pdata->bus_clk_rate : 100000;
-+
-+	i2c_dev->bus_clk_rate = 100000; /* default clock rate */
-+	if (pdata) {
-+		i2c_dev->bus_clk_rate = pdata->bus_clk_rate;
-+
-+	} else if (i2c_dev->dev->of_node) {    /* if there is a device tree node ... */
-+		prop = of_get_property(i2c_dev->dev->of_node,
-+				"clock-frequency", NULL);
-+		if (prop)
-+			i2c_dev->bus_clk_rate = be32_to_cpup(prop);
-+	}
- 
- 	if (pdev->id == 3)
- 		i2c_dev->is_dvc = 1;
-@@ -627,6 +639,7 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 	i2c_dev->adapter.algo = &tegra_i2c_algo;
- 	i2c_dev->adapter.dev.parent = &pdev->dev;
- 	i2c_dev->adapter.nr = pdev->id;
-+	i2c_dev->adapter.dev.of_node = pdev->dev.of_node;
- 
- 	ret = i2c_add_numbered_adapter(&i2c_dev->adapter);
- 	if (ret) {
-@@ -634,6 +647,8 @@ static int tegra_i2c_probe(struct platform_device *pdev)
- 		goto err_free_irq;
- 	}
- 
-+	of_i2c_register_devices(&i2c_dev->adapter);
-+
- 	return 0;
- err_free_irq:
- 	free_irq(i2c_dev->irq, i2c_dev);
-@@ -708,6 +723,7 @@ static struct platform_driver tegra_i2c_driver = {
- 	.driver  = {
- 		.name  = "tegra-i2c",
- 		.owner = THIS_MODULE,
-+		.of_match_table = tegra_i2c_of_match,
- 	},
- };
- 
-
+-- 
+Kind regards,
+Minchan Kim
