@@ -1,129 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab1F1LLw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 07:11:52 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57951 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756702Ab1F1LKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 07:10:54 -0400
-Date: Tue, 28 Jun 2011 13:10:43 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
-        hong.xu@atmel.com, linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] MTD: atmel_nand: optimize read/write buffer functions
-Message-ID: <20110628111043.GH6588@pengutronix.de>
-References: <1309261856-27402-1-git-send-email-nicolas.ferre@atmel.com>
+	id S1757290Ab1F1LWY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 07:22:24 -0400
+Received: from gate.eia.be ([194.78.71.18]:12218 "EHLO mail.eia.be"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756877Ab1F1LUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 07:20:19 -0400
+X-Greylist: delayed 338 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 07:20:19 EDT
+Date: Tue, 28 Jun 2011 13:14:10 +0200
+From: Kurt Van Dijck <kurt.van.dijck@eia.be>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Ryan Mallon <ryan@bluewatersys.com>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] PWM: add pwm framework support
+Message-ID: <20110628111410.GB19308@e-circ.dyndns.org>
+Mail-Followup-To: Sascha Hauer <s.hauer@pengutronix.de>,
+	linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+	Ryan Mallon <ryan@bluewatersys.com>,
+	Shawn Guo <shawn.guo@linaro.org>,
+	linux-arm-kernel@lists.infradead.org
+References: <1309255368-9775-1-git-send-email-s.hauer@pengutronix.de>
+ <1309255368-9775-2-git-send-email-s.hauer@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1309261856-27402-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1309255368-9775-2-git-send-email-s.hauer@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 28 Jun 2011 11:14:23.0757 (UTC) FILETIME=[890393D0:01CC3584]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 01:50:56PM +0200, Nicolas Ferre wrote:
-> For PIO NAND access functions, we use the features of the SMC:
-> - no need to take into account the NAND bus width: SMC will deal with this
-> - a word aligned memcpy on the NAND chip-select space is able to generate
->   proper SMC behavior while optimizing AHB bus usage thanks to optimized memcpy
->   implementation.
+On Tue, Jun 28, 2011 at 12:02:47PM +0200, Sascha Hauer wrote:
+> This patch adds framework support for PWM (pulse width modulation) devices.
 > 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
->  drivers/mtd/nand/atmel_nand.c |   71 +++++++++++++++++-----------------------
->  1 files changed, 30 insertions(+), 41 deletions(-)
-> 
-> diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
-> index b300705..cb8a04b 100644
-> --- a/drivers/mtd/nand/atmel_nand.c
-> +++ b/drivers/mtd/nand/atmel_nand.c
-> @@ -160,37 +160,6 @@ static int atmel_nand_device_ready(struct mtd_info *mtd)
->                  !!host->board->rdy_pin_active_low;
->  }
->  
-> -/*
-> - * Minimal-overhead PIO for data access.
-> - */
-> -static void atmel_read_buf8(struct mtd_info *mtd, u8 *buf, int len)
-> -{
-> -	struct nand_chip	*nand_chip = mtd->priv;
-> -
-> -	__raw_readsb(nand_chip->IO_ADDR_R, buf, len);
-> -}
-> -
-> -static void atmel_read_buf16(struct mtd_info *mtd, u8 *buf, int len)
-> -{
-> -	struct nand_chip	*nand_chip = mtd->priv;
-> -
-> -	__raw_readsw(nand_chip->IO_ADDR_R, buf, len / 2);
-> -}
-> -
-> -static void atmel_write_buf8(struct mtd_info *mtd, const u8 *buf, int len)
-> -{
-> -	struct nand_chip	*nand_chip = mtd->priv;
-> -
-> -	__raw_writesb(nand_chip->IO_ADDR_W, buf, len);
-> -}
-> -
-> -static void atmel_write_buf16(struct mtd_info *mtd, const u8 *buf, int len)
-> -{
-> -	struct nand_chip	*nand_chip = mtd->priv;
-> -
-> -	__raw_writesw(nand_chip->IO_ADDR_W, buf, len / 2);
-> -}
-> -
->  static void dma_complete_func(void *completion)
->  {
->  	complete(completion);
-> @@ -265,33 +234,53 @@ err_buf:
->  static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
->  {
->  	struct nand_chip *chip = mtd->priv;
-> -	struct atmel_nand_host *host = chip->priv;
-> +	u32 align;
-> +	u8 *pbuf;
->  
->  	if (use_dma && len > mtd->oobsize)
->  		/* only use DMA for bigger than oob size: better performances */
->  		if (atmel_nand_dma_op(mtd, buf, len, 1) == 0)
->  			return;
->  
-> -	if (host->board->bus_width_16)
-> -		atmel_read_buf16(mtd, buf, len);
-> -	else
-> -		atmel_read_buf8(mtd, buf, len);
-> +	/* if no DMA operation possible, use PIO */
-> +	pbuf = buf;
-> +	align = 0x03 & ((unsigned)pbuf);
+> The is a barebone PWM API already in the kernel under include/linux/pwm.h,
+The ?? is ...
 > +
-> +	if (align) {
-> +		u32 align_len = 4 - align;
+[...]
+> +Locking
+> +-------
 > +
-> +		/* non aligned buffer: re-align to next word boundary */
-> +		ioread8_rep(chip->IO_ADDR_R, pbuf, align_len);
-> +		pbuf += align_len;
-> +		len -= align_len;
+> +The PWM core list manipulations are protected by a mutex, so pwm_request()
+> +and pwm_free() may not be called from an atomic context. Currently the
+> +PWM core does not enforce any locking to pwm_enable(), pwm_disable() and
+> +pwm_config(), so the calling context is currently driver specific. This
+> +is an issue derived from the former barebone API and should be fixed soon.
+[...]
+> +
+> +struct pwm_device {
+> +	struct			pwm_chip *chip;
+> +	const char		*label;
+> +	int			enabled;
+.enabled is never used, in favor of FLAG_ENABLED
+> +	unsigned long		flags;
+> +#define FLAG_REQUESTED	0
+> +#define FLAG_ENABLED	1
+> +	struct list_head	node;
+> +};
+> +
+[...]
+> +
+> +static struct pwm_device *find_pwm(int pwm_id)
+s/find_pwm/_find_pwm/ to indicate it needs pwm_lock?
+
+> +/**
+> + * pwmchip_add() - register a new pwm
+> + * @chip: the pwm
+> + *
+> + * register a new pwm. pwm->pwm_id must be initialized. if pwm_id < 0 then
+> + * a dynamically assigned id will be used, otherwise the id specified,
+> + */
+> +int pwmchip_add(struct pwm_chip *chip)
+> +{
+> +	struct pwm_device *pwm;
+> +	int ret = 0;
+> +
+> +	pwm = kzalloc(sizeof(*pwm), GFP_KERNEL);
+> +	if (!pwm)
+> +		return -ENOMEM;
+> +
+> +	pwm->chip = chip;
+> +
+> +	mutex_lock(&pwm_lock);
+> +
+> +	if (chip->pwm_id >= 0 && find_pwm(chip->pwm_id)) {
+> +		ret = -EBUSY;
+> +		goto out;
 > +	}
-> +	memcpy((void *)pbuf, chip->IO_ADDR_R, len);
-I think you don't need to cast to (void *). I think you need to cast the
-2nd parameter instead because sparse don't like you passing an void
-__iomem *.
-Is it correct to read from chip->IO_ADDR_R, don't you need
-chip->IO_ADDR_R + align_len? Taking this into account, does it really
-help to align pbuf?
+> +
+> +	if (chip->pwm_id < 0)
+> +		chip->pwm_id = next_pwm_id++;
+> +
+> +	list_add_tail(&pwm->node, &pwm_list);
+> +out:
+> +	mutex_unlock(&pwm_lock);
+> +
++	if (ret) ??
+> +	kfree(pwm);
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(pwmchip_add);
+> +
 
-Best regards
-Uwe
-
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Kind regards,
+Kurt
