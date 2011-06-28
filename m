@@ -1,57 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756056Ab1F1BRS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 21:17:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56451 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755761Ab1F1BPW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 21:15:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LH8FLl/5r+RlveTwpcOdDXFgS5fAsosPFE7BroCOKuBGVYW8/KpcvR8hSJpssQeWxR
-         a2v/177wBwTbOi49gie+o1cnjot9dTGWHFgccrKLOMN7CCW//k4Ik9HS2QsXfIJiU8o2
-         G55NK4r4gyop69fKDEPBjg6HKxGw+K4yE6aDI=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTine1Q7thbLVUb34ZsRZt4q184dZzg@mail.gmail.com>
-References: <1308917318-4749-1-git-send-email-segoon@openwall.com>
-	<BANLkTine1Q7thbLVUb34ZsRZt4q184dZzg@mail.gmail.com>
-Date: Tue, 28 Jun 2011 06:45:21 +0530
-Message-ID: <BANLkTinkTLmrB8P7snBq8XOmiap44f+Fqg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
-From: Balbir Singh <bsingharora@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, Solar Designer <solar@openwall.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756065Ab1F1BTN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 21:19:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:50749 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755805Ab1F1BSz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 21:18:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,435,1304319600"; 
+   d="scan'208";a="20825389"
+Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
+From: Shaohua Li <shaohua.li@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "khlebnikov@openvz.org" <khlebnikov@openvz.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+In-Reply-To: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Jun 2011 09:18:52 +0800
+Message-ID: <1309223932.15392.186.camel@sli10-conroe>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 6:43 AM, Balbir Singh <balbir@linux.vnet.ibm.com> wrote:
-> On Fri, Jun 24, 2011 at 5:38 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
->> /proc/PID/io may be used for gathering private information.  E.g. for
->> openssh and vsftpd daemons wchars/rchars may be used to learn the
->> precise password length.  Restrict it to processes being able to ptrace
->> the target process.
->>
->
-> Hmm.. How do I reproduce this, won't they be enough randomness around
-> rchar/wchar by the time the attacker reads it?
->
->> ptrace_may_access() is needed to prevent keeping open file descriptor of
->> "io" file, executing setuid binary and gathering io information of the
->> setuid'ed process.
+On Tue, 2011-06-28 at 04:17 +0800, Vivek Goyal wrote:
+> Hi,
+> 
+> Konstantin reported that fsync is very slow with ext4 if fsyncing process
+> is in a separate cgroup and one is using CFQ IO scheduler.
+> 
+> https://lkml.org/lkml/2011/6/23/269
+> 
+> Issue seems to be that fsync process is in a separate cgroup and journalling
+> thread is in root cgroup. After every IO from fsync, CFQ idles on fysnc
+> process queue waiting for more requests to come. But this process is now
+> waiting for IO to finish from journaling thread. After waiting for 8ms
+> fsync's queue gives way to jbd's queue. Then we start idling on jbd
+> thread and new IO from fsync is sitting in a separate queue in a separate
+> group.
+> 
+> Bottom line, that after every IO we end up idling on fysnc and jbd thread
+> so much that if somebody is doing fsync after every 4K of IO, throughput
+> nose dives.
+> 
+> Similar issue had issue come up with-in same cgroup also when "fsync"
+> and "jbd" thread were being queued on differnt service trees and idling
+> was killing. At that point of time two solutions were proposed. One
+> from Jeff Moyer and one from Corrado Zoccolo.
+> 
+> Jeff came up with the idea of coming with block layer API to yield the
+> queue if explicitly told by file system, hence cutting down on idling.
+> 
+> https://lkml.org/lkml/2010/7/2/277
+> 
+> Corrado, came up with a simpler approach of keeping jbd and fsync processes
+> on same service tree by parsing RQ_NOIDLE flag. By queuing on same service
+> tree, one queue preempts other queue hence cutting down on idling time.
+> Upstream went ahead with simpler approach to fix the issue.
+> 
+> commit 749ef9f8423054e326f3a246327ed2db4b6d395f
+> Author: Corrado Zoccolo <czoccolo@gmail.com>
+> Date:   Mon Sep 20 15:24:50 2010 +0200
+> 
+>     cfq: improve fsync performance for small files
+> 
+> 
+> Now with cgroups, same problem resurfaces but this time we can not queue
+> both the processes on same service tree and take advantage of preemption
+> as separate cgroups have separate service trees and both processes
+> belong to separate cgroups. We do not allow cross cgroup preemption 
+> as that wil break down the isolation between groups.
+> 
+> So this patch series resurrects Jeff's solution of file system specifying
+> the IO dependencies between threads explicitly to the block layer/ioscheduler.
+> One ioscheduler knows that current queue we are idling on is dependent on
+> IO from some other queue, CFQ allows dispatch of requests from that other
+> queue in the context of current active queue.
+> 
+> So if fysnc thread specifies the dependency on journalling thread, then
+> when time slice of fsync thread is running, it allows dispatch from
+> jbd in the time slice of fsync thread. Hence cutting down on idling.
+> 
+> This patch series seems to be working for me. I did testing for ext4 only.
+> This series is based on for-3.1/core branch of Jen's block tree.
+> Konstantin, can you please give it a try and see if it fixes your
+> issue.
+> 
+> Any feedback on how to solve this issue is appreciated.
+Hi Vivek,
+can we introduce a group think time check in cfq? say in a group the
+last queue is backed for the group and the queue is a non-idle queue, if
+the group think time is big, we don't allow the group idle and preempt
+could happen. The fsync thread is a non-idle queue with Corrado's patch,
+this allows fast group switch.
 
-Please NOTE my email address has changed to bsingharora@gmail.com, the
-last email has an invalid from header.
-I apologize for the inconvenience
+Thanks,
+Shaohua
 
-Balbir Singh
