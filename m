@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab1F1Fpd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 01:45:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:58951 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756433Ab1F1FoK (ORCPT
+	id S1756665Ab1F1FtX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 01:49:23 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:53856 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755462Ab1F1FsB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 01:44:10 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jamie Iles <jamie@jamieiles.com>
-Subject: Re: [PATCH 4/7] serial/8250: move DWAP support to arch/mips
-Date: Tue, 28 Jun 2011 07:43:42 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>, linux-serial@vger.kernel.org
-References: <1309211120-2803-1-git-send-email-arnd@arndb.de> <1309211120-2803-5-git-send-email-arnd@arndb.de> <20110627221541.GA5370@gallagher>
-In-Reply-To: <20110627221541.GA5370@gallagher>
+	Tue, 28 Jun 2011 01:48:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=C3F2xPQk2KsHfArq1Bw0pj+uZ8lUxm1KGi4HSpmG9oPp+/iCZxOcwsStcSU+AMvO31
+         jgnWcFox5fqQTVgJxTJPxbif7HoDTckdGbCVfbibLc0kp/HeMVzdxafX+LV9oEc9iPLe
+         UjduHGs46WokzCGYV6PF8Xh1zHIQkbPOlA0qs=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106280743.42952.arnd@arndb.de>
-X-Provags-ID: V02:K0:gqHTEsx5i9Vet4Vqa6SUE75p23UiW0dS08ZCTHFiCGD
- 7RJpAD5ImTQ4r/eWwE2H6dFOObLyBqkGoj3geG/IJDR4jdDa9z
- 1u0Xo1F/VOC/HDUER1KJjITNpFab6MwokjGllFWzWdiLWkJjSd
- Nup+4mrpD40KPF+53CL8Ffv6/pIKWea+R8koM6VOIjLURsSdr/
- LaLOkPIGKf/hc55XMTKDg==
+In-Reply-To: <sig.11608c07e8.4E095C34.1020904@containermaster-cmp.de>
+References: <BANLkTinC7vfaRWf5TK9gJuQVtVwDkEQFcQ@mail.gmail.com>
+	<20110627145442.GA2729@thunk.org>
+	<sig.11608c07e8.4E095C34.1020904@containermaster-cmp.de>
+Date: Tue, 28 Jun 2011 13:47:58 +0800
+Message-ID: <BANLkTi=X0wu8MpRZh21MzMeeDh81CFHH_w@mail.gmail.com>
+Subject: Re: random(4) driver questions
+From: Sandy Harris <sandyinchina@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 June 2011 00:15:41 Jamie Iles wrote:
-> On Mon, Jun 27, 2011 at 11:45:17PM +0200, Arnd Bergmann wrote:
-> > Only one board uses the UPIO_DWAP iotype, and nothing uses
-> > the UPIO_DWAP32 iotype. It seems much cleaner to handle the
-> > DWAP quirk as a new port type, and move the serial_out
-> > accessor into the platform code. If more platforms start
-> > using the DWAP port, that function can be moved into a
-> > common location.
-> 
-> I posted a series[1] a couple of weeks back that does this for 
-> DWAPB/DWAPB32 in a slightly different way which also removes the extra 
-> interrupt handling into the platform code.
+Johann Meier <recv@containermaster-cmp.de> wrote:
 
-Yes, your series looks better than my patch (and works!), so let's
-take that instead.
+> If you don't have a hardware rnd, you can use an entropy daemon like
+> haveged (http://www.issihosts.com/haveged/)
 
-> Incidentally, I've been trying to mainline a platform (picoxcell) that 
-> has a DWAPB (with 32-bit access requirement) but struggled to get 
-> feedback on the SoC port but hope to resubmit as a device tree based 
-> platform.
+Yes, and there are several other alternatives. Someone suggested a
+timer-based daemon earlier in this thread. It looks reasonable at
+first glance, but in security matters, I'm reluctant to trust version
+0.1 of anything.
 
-Ok. Please have a look at the xilinx zynq and the csr SiRFprimaII
-submissions then. I'm planning to merge new platforms in 3.1, but
-only ones that have been fully converted to the device tree and
-require no board specific files. I have to admit that I mostly ignored
-the picoxcell submission at the time, but I'll definitely review the
-patches when you resubmit them.
+Peter Gutmann's cryptlib includes a well-analyzed daemon:
+http://www.cs.auckland.ac.nz/~pgut001/cryptlib/
 
-> >  arch/mips/pmc-sierra/msp71xx/msp_serial.c |   32 ++++++++++-
-> >  drivers/tty/serial/8250.c                 |   87 +++--------------------------
-> >  drivers/tty/serial/8250_hub6.c            |   17 ++++++
-> 
-> Should the hub6 stuff be in this patch?
-
-No, I must have accidentally folded that. I'll do a new patch for that.
-
-> > +/* Save the LCR value so it can be re-written when a Busy Detect IRQ occurs. */
-> > +static inline void dwapb_save_out_value(struct uart_port *p, int offset,
-> > +					int value)
-> > +{
-> > +	struct uart_8250_port *up =
-> > +		container_of(p, struct uart_8250_port, port);
-> 
-> I couldn't see that struct uart_8250_port is moved out of 8250.c, so I'm 
-> not sure that this would work in here?
-
-Right, I missed that as well.
-
-Thanks!
-
-	Arnd
+John Denker's turbid, using a sound card without microphone,
+looks very good:
+http://www.av8n.com/turbid/paper/turbid.htm
