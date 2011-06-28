@@ -1,94 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab1F1IJR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 04:09:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59340 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756463Ab1F1IIw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 04:08:52 -0400
-Date: Tue, 28 Jun 2011 10:08:47 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
-        kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-        yinghan@google.com, linux-mm@kvack.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [patch 14/22] memcg: fix direct softlimit reclaim to be called
- in limit path
-Message-ID: <20110628080847.GA16518@tiehlicka.suse.cz>
-References: <201106272318.p5RNICJW001465@imap1.linux-foundation.org>
+	id S1756661Ab1F1IJ0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 04:09:26 -0400
+Received: from mailrelay001.isp.belgacom.be ([195.238.6.51]:17661 "EHLO
+	mailrelay001.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754544Ab1F1IIy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 04:08:54 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EADaLCU5tg6TL/2dsb2JhbABSpzp4iHcCwnIOhiIEmheBMoZq
+Date: Tue, 28 Jun 2011 10:08:52 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Martyn Welch <martyn.welch@ge.com>,
+        linux-watchdog@vger.kernel.org
+Subject: Re: [PATCH] watchdog: gef_wdt: fix MODULE_ALIAS
+Message-ID: <20110628080852.GD23305@infomag.iguana.be>
+References: <1309185436.29085.3.camel@phoenix>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106272318.p5RNICJW001465@imap1.linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1309185436.29085.3.camel@phoenix>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am sorry, that I am answering that late but I didn't get to this
-sooner.
+Hi Axel,
 
-On Mon 27-06-11 16:18:12, Andrew Morton wrote:
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Remove the space between "platform:" prefix and the driver name.
 > 
-> commit d149e3b ("memcg: add the soft_limit reclaim in global direct
-> reclaim") adds a softlimit hook to shrink_zones().  By this, soft limit is
-> called as
-> 
->    try_to_free_pages()
->        do_try_to_free_pages()
->            shrink_zones()
->                mem_cgroup_soft_limit_reclaim()
-> 
-> Then, direct reclaim is memcg softlimit hint aware, now.
-> 
-> But, the memory cgroup's "limit" path can call softlimit shrinker.
-> 
->    try_to_free_mem_cgroup_pages()
->        do_try_to_free_pages()
->            shrink_zones()
->                mem_cgroup_soft_limit_reclaim()
-> 
-> This will cause a global reclaim when a memcg hits limit.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Sorry, I do not get it. How does it cause the global reclaim? Did you
-mean soft reclaim?
+Added to linux-2.6-watchdog-next for final testing.
+Will go upsteam with other fixes this week.
 
-> 
-> This is bug. soft_limit_reclaim() should be called when
-> scanning_global_lru(sc) == true.
+Kind regards,
+Wim.
 
-Agreed
-
-> 
-> And the commit adds a variable "total_scanned" for counting softlimit
-> scanned pages....it's not "total".  This patch removes the variable and
-> update sc->nr_scanned instead of it. This will affect shrink_slab()'s
-> scan condition but, global LRU is scanned by softlimit and I think this
-> change makes sense.
-
-Yes, the previous semantic was really confusing (part of the scanned
-accounting is returned by shrink_zones and the other part in sc). This
-could be ideally a separate change because it fixes a different bug
-(softlimit is not considered for slab srhinking)
-
-> 
-> TODO: avoid too much scanning of a zone when softlimit did enough work.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> Cc: Ying Han <yinghan@google.com>
-> Cc: Michal Hocko <mhocko@suse.cz>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-
-Just in case it is not late yet.
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
-
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
