@@ -1,49 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756872Ab1F1Kjp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 06:39:45 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:46778 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754342Ab1F1Ki7 convert rfc822-to-8bit (ORCPT
+	id S1756631Ab1F1KnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 06:43:12 -0400
+Received: from e23smtp04.au.ibm.com ([202.81.31.146]:40251 "EHLO
+	e23smtp04.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756751Ab1F1Klo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 06:38:59 -0400
-Subject: Re: x86, perf, pmu: make reserve_ds_buffers() allocate memory
- dynamically
-From: Peter Zijlstra <peterz@infradead.org>
-To: Don Zickus <dzickus@redhat.com>
-Cc: eranian@google.com, fweisbec@gmail.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20110624160143.GA29969@redhat.com>
-References: <20110624160143.GA29969@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 28 Jun 2011 12:38:01 +0200
-Message-ID: <1309257481.6701.192.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 28 Jun 2011 06:41:44 -0400
+Date: Tue, 28 Jun 2011 16:11:28 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Yong Zhang <yong.zhang0@gmail.com>, paulus@samba.org,
+        yrl.pp-manager.tt@hitachi.com, linuxppc-dev@lists.ozlabs.org,
+        galak@kernel.crashing.org
+Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
+	lead to system crash/freeze
+Message-ID: <20110628104128.GA4310@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com> <1308911347.531.56.camel@gandalf.stny.rr.com> <4E074671.7060100@hitachi.com> <20110627100104.GA24705@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110627100104.GA24705@in.ibm.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-06-24 at 12:01 -0400, Don Zickus wrote:
-> Hi guys,
-> 
-> Some kdump folks noticed that on large machines (say 80 cpu threads), the
-> kernel reserved a good chunk of memory in the kdump kernel with the call
-> to reserve_ds_buffers(). About 64k per cpu.
-> 
-> Normally the kdump kernel boots with maxcpus=1 to limit the amount of
-> processing and memory usage it needs.  However, with reserve_ds_buffers()
-> it seems to allocate a giant chunk of memory due to its use of
-> for_each_possible_cpu().
-> 
-> I was wondering if it was possible to move some of that allocation to the
-> cpu_prepare/cpu_starting routines and allocate during a cpu hotplug event.
-> I am not sure if some of this allocation is on a per cpu basis (which
-> includes multiple cores) or if there is some sort of other restriction
-> that required the code to be statically allocated at boot time.
+On Mon, Jun 27, 2011 at 03:31:05PM +0530, Ananth N Mavinakayanahalli wrote:
+> On Sun, Jun 26, 2011 at 11:47:13PM +0900, Masami Hiramatsu wrote:
+> > (2011/06/24 19:29), Steven Rostedt wrote:
+> > > On Fri, 2011-06-24 at 17:21 +0800, Yong Zhang wrote:
+> > >> Hi,
+> > >>
+> > >> When I use kprobe to do something, I found some wired thing.
+> > >>
+> > >> When CONFIG_FUNCTION_TRACER is disabled:
+> > >> (gdb) disassemble do_fork
+> > >> Dump of assembler code for function do_fork:
+> > >>    0xc0037390 <+0>:	mflr    r0
+> > >>    0xc0037394 <+4>:	stwu    r1,-64(r1)
+> > >>    0xc0037398 <+8>:	mfcr    r12
+> > >>    0xc003739c <+12>:	stmw    r27,44(r1)
+> > >>
+> > >> Then I:
+> > >> modprobe kprobe_example func=do_fork offset=4
+> > >> ls
+> > >> Things works well.
+> > >>
+> > >> But when CONFIG_FUNCTION_TRACER is enabled:
+> > >> (gdb) disassemble do_fork
+> > >> Dump of assembler code for function do_fork:
+> > >>    0xc0040334 <+0>:	mflr    r0
+> > >>    0xc0040338 <+4>:	stw     r0,4(r1)
+> > >>    0xc004033c <+8>:	bl      0xc00109d4 <mcount>
+> > >>    0xc0040340 <+12>:	stwu    r1,-80(r1)
+> > >>    0xc0040344 <+16>:	mflr    r0
+> > >>    0xc0040348 <+20>:	stw     r0,84(r1)
+> > >>    0xc004034c <+24>:	mfcr    r12
+> > >> Then I:
+> > >> modprobe kprobe_example func=do_fork offset=12
+> > >> ls
+> > >> 'ls' will never retrun. system freeze.
 
-The only complication I can remember is that the BTS buffers are an
-order 4 allocation, so the later you allocate them the less likely they
-are to be available.
+My access to a 32bit powerpc box is very limited. Also, embedded powerpc
+has had issues with gcc-4.6 while gcc-4.5 worked fine.
 
-Other than that there isn't anything magical about any of it.
+> > > I'm not sure if x86 had a similar issue.
+> > > 
+> > > Masami, have any ideas to why this happened?
+> > 
+> > No, I don't familiar with ppc implementation. I guess
+> > that single-step resume code failed to emulate the
+> > instruction, but it strongly depends on ppc arch.
+> > Maybe IBM people may know what happened.
+> > 
+> > Ananth, Jim, would you have any ideas?
+> 
+> On powerpc, we emulate sstep whenever possible. Only recently support to
+> emulate loads and stores got added. I don't have access to a powerpc box
+> today... but will try to recreate the problem ASAP and see what could be
+> happening in the presence of mcount.
+
+I tried to recreate this problem on a 64-bit pSeries box without
+success. Every one of the instructions in the stream at .do_fork are
+emulated and work fine there -- no hangs/crashes with or without
+function tracer.
+
+Yong,
+I am copying Kumar to see if he knows of any issues with 32-bit kprobes
+(he wrote it) or with the function tracer, or with the toolchain itself.
+
+You may want to check if, in the failure case, the instruction in
+question is single-stepped or emulated (print out the value of
+kprobe->ainsn.boostable in the post_handler) and see if you can find a
+pattern to the failure.
+
+Ananth
