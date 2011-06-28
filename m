@@ -1,91 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757269Ab1F1LLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 07:11:16 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:51638 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754670Ab1F1LJb (ORCPT
+	id S1757284Ab1F1LLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 07:11:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:57951 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756702Ab1F1LKy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 07:09:31 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: Samuel Ortiz <sameo@linux.intel.com>, <linux-kernel@vger.kernel.org>
-Cc: Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] mfd: move TPS55910 Kconfig option
-Date: Tue, 28 Jun 2011 13:09:14 +0200
-Message-ID: <1309259354-32213-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	Tue, 28 Jun 2011 07:10:54 -0400
+Date: Tue, 28 Jun 2011 13:10:43 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: linux-mtd@lists.infradead.org, linux-arm-kernel@lists.infradead.org,
+        hong.xu@atmel.com, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] MTD: atmel_nand: optimize read/write buffer functions
+Message-ID: <20110628111043.GH6588@pengutronix.de>
+References: <1309261856-27402-1-git-send-email-nicolas.ferre@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1309261856-27402-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Having another TPS chip at the end of the Kconfig when all it's
-relatives are grouped together in their own section seems totally
-counter-intuitive. Move it, also in the Makefile.
+On Tue, Jun 28, 2011 at 01:50:56PM +0200, Nicolas Ferre wrote:
+> For PIO NAND access functions, we use the features of the SMC:
+> - no need to take into account the NAND bus width: SMC will deal with this
+> - a word aligned memcpy on the NAND chip-select space is able to generate
+>   proper SMC behavior while optimizing AHB bus usage thanks to optimized memcpy
+>   implementation.
+> 
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> ---
+>  drivers/mtd/nand/atmel_nand.c |   71 +++++++++++++++++-----------------------
+>  1 files changed, 30 insertions(+), 41 deletions(-)
+> 
+> diff --git a/drivers/mtd/nand/atmel_nand.c b/drivers/mtd/nand/atmel_nand.c
+> index b300705..cb8a04b 100644
+> --- a/drivers/mtd/nand/atmel_nand.c
+> +++ b/drivers/mtd/nand/atmel_nand.c
+> @@ -160,37 +160,6 @@ static int atmel_nand_device_ready(struct mtd_info *mtd)
+>                  !!host->board->rdy_pin_active_low;
+>  }
+>  
+> -/*
+> - * Minimal-overhead PIO for data access.
+> - */
+> -static void atmel_read_buf8(struct mtd_info *mtd, u8 *buf, int len)
+> -{
+> -	struct nand_chip	*nand_chip = mtd->priv;
+> -
+> -	__raw_readsb(nand_chip->IO_ADDR_R, buf, len);
+> -}
+> -
+> -static void atmel_read_buf16(struct mtd_info *mtd, u8 *buf, int len)
+> -{
+> -	struct nand_chip	*nand_chip = mtd->priv;
+> -
+> -	__raw_readsw(nand_chip->IO_ADDR_R, buf, len / 2);
+> -}
+> -
+> -static void atmel_write_buf8(struct mtd_info *mtd, const u8 *buf, int len)
+> -{
+> -	struct nand_chip	*nand_chip = mtd->priv;
+> -
+> -	__raw_writesb(nand_chip->IO_ADDR_W, buf, len);
+> -}
+> -
+> -static void atmel_write_buf16(struct mtd_info *mtd, const u8 *buf, int len)
+> -{
+> -	struct nand_chip	*nand_chip = mtd->priv;
+> -
+> -	__raw_writesw(nand_chip->IO_ADDR_W, buf, len / 2);
+> -}
+> -
+>  static void dma_complete_func(void *completion)
+>  {
+>  	complete(completion);
+> @@ -265,33 +234,53 @@ err_buf:
+>  static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
+>  {
+>  	struct nand_chip *chip = mtd->priv;
+> -	struct atmel_nand_host *host = chip->priv;
+> +	u32 align;
+> +	u8 *pbuf;
+>  
+>  	if (use_dma && len > mtd->oobsize)
+>  		/* only use DMA for bigger than oob size: better performances */
+>  		if (atmel_nand_dma_op(mtd, buf, len, 1) == 0)
+>  			return;
+>  
+> -	if (host->board->bus_width_16)
+> -		atmel_read_buf16(mtd, buf, len);
+> -	else
+> -		atmel_read_buf8(mtd, buf, len);
+> +	/* if no DMA operation possible, use PIO */
+> +	pbuf = buf;
+> +	align = 0x03 & ((unsigned)pbuf);
+> +
+> +	if (align) {
+> +		u32 align_len = 4 - align;
+> +
+> +		/* non aligned buffer: re-align to next word boundary */
+> +		ioread8_rep(chip->IO_ADDR_R, pbuf, align_len);
+> +		pbuf += align_len;
+> +		len -= align_len;
+> +	}
+> +	memcpy((void *)pbuf, chip->IO_ADDR_R, len);
+I think you don't need to cast to (void *). I think you need to cast the
+2nd parameter instead because sparse don't like you passing an void
+__iomem *.
+Is it correct to read from chip->IO_ADDR_R, don't you need
+chip->IO_ADDR_R + align_len? Taking this into account, does it really
+help to align pbuf?
 
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- drivers/mfd/Kconfig  |   18 +++++++++---------
- drivers/mfd/Makefile |    3 ++-
- 2 files changed, 11 insertions(+), 10 deletions(-)
+Best regards
+Uwe
 
-diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
-index 519ebab..f0d550b 100644
---- a/drivers/mfd/Kconfig
-+++ b/drivers/mfd/Kconfig
-@@ -171,6 +171,15 @@ config MFD_TPS6586X
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called tps6586x.
- 
-+config MFD_TPS65910
-+	bool "TPS65910 Power Management chip"
-+	depends on I2C=y && GPIOLIB
-+	select MFD_CORE
-+	select GPIO_TPS65910
-+	help
-+	  if you say yes here you get support for the TPS65910 series of
-+	  Power Management chips.
-+
- config MFD_TPS65912
- 	bool "TPS65912 PMIC"
- 	depends on GPIOLIB
-@@ -742,15 +751,6 @@ config MFD_PM8XXX_IRQ
- 	  This is required to use certain other PM 8xxx features, such as GPIO
- 	  and MPP.
- 
--config MFD_TPS65910
--	bool "TPS65910 Power Management chip"
--	depends on I2C=y && GPIOLIB
--	select MFD_CORE
--	select GPIO_TPS65910
--	help
--	  if you say yes here you get support for the TPS65910 series of
--	  Power Management chips.
--
- endif # MFD_SUPPORT
- 
- menu "Multimedia Capabilities Port drivers"
-diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
-index 5309ec3..4747a4d 100644
---- a/drivers/mfd/Makefile
-+++ b/drivers/mfd/Makefile
-@@ -36,6 +36,7 @@ obj-$(CONFIG_MFD_WM8994)	+= wm8994-core.o wm8994-irq.o
- obj-$(CONFIG_TPS6105X)		+= tps6105x.o
- obj-$(CONFIG_TPS65010)		+= tps65010.o
- obj-$(CONFIG_TPS6507X)		+= tps6507x.o
-+obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-irq.o
- tps65912-objs                   := tps65912-core.o tps65912-irq.o
- obj-$(CONFIG_MFD_TPS65912)	+= tps65912.o
- obj-$(CONFIG_MFD_TPS65912_I2C)	+= tps65912-i2c.o
-@@ -98,4 +99,4 @@ obj-$(CONFIG_MFD_CS5535)	+= cs5535-mfd.o
- obj-$(CONFIG_MFD_OMAP_USB_HOST)	+= omap-usb-host.o
- obj-$(CONFIG_MFD_PM8921_CORE) 	+= pm8921-core.o
- obj-$(CONFIG_MFD_PM8XXX_IRQ) 	+= pm8xxx-irq.o
--obj-$(CONFIG_MFD_TPS65910)	+= tps65910.o tps65910-irq.o
-+
 -- 
-1.7.3.2
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
