@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752681Ab1F1TcS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 15:32:18 -0400
-Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:29380 "HELO
-	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750733Ab1F1TcM (ORCPT
+	id S1752488Ab1F1Tfz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 15:35:55 -0400
+Received: from mail.free-electrons.com ([88.190.12.23]:47040 "EHLO
+	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751060Ab1F1Tft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 15:32:12 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-YMail-OSG: 9BzUKRgVM1lPCBwzKd7i3nVhAN.WgzUtEyC_7veLoQkNmAl
- ybyhYVcUBJpkevN0mubJSSzO7lC1PCQBn7mF03ccuupnQ8bsINZvfAv5PcTt
- 9ZLa9pKgJ22YPnG7iBeA1YKhnmeIx1HiB3CpcFwdbQ.ygSSQwAxBqBiCki2d
- FMwEgO7wwmSJizIbEbI2XPeTpPCVMWk2O015Uh36u5dHtv0e3qYRRKSALmGp
- 2Jw78rxsRwN2kVh3H2F90HWiyVqC.JY7pg2ZbKeRwqnBso7omqr0YQNpSTyI
- HeNCi2bevNDcw0ppZ7_8sysFENFDUBey__4KGoa.170TRNVH5JWcwD3v4BY7
- 7ycWCS5qOBzaf2K2ELxDhXPpY
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-Date: Tue, 28 Jun 2011 14:32:08 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] slub: reduce overhead of slub_debug
-In-Reply-To: <20110626193918.GA3339@joi.lan>
-Message-ID: <alpine.DEB.2.00.1106281431370.27518@router.home>
-References: <20110626193918.GA3339@joi.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 28 Jun 2011 15:35:49 -0400
+Message-ID: <4E0A2D0C.6030701@free-electrons.com>
+Date: Tue, 28 Jun 2011 21:35:40 +0200
+From: Maxime Ripard <maxime.ripard@free-electrons.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Matthew Garrett <mjg@redhat.com>
+CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Make Dell Latitude E6320 use reboot=pci
+References: <1309269451-4966-1-git-send-email-maxime.ripard@free-electrons.com> <20110628174137.GA18115@srcf.ucam.org>
+In-Reply-To: <20110628174137.GA18115@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 Jun 2011, Marcin Slusarz wrote:
+On 28/06/2011 19:41, Matthew Garrett wrote:
+> On Tue, Jun 28, 2011 at 03:57:31PM +0200, Maxime Ripard wrote:
+>> The Dell Latitude E6320 doesn't reboot unless reboot=pci is set.
+>
+> On which kernel versions?
 
-> slub checks for poison one byte by one, which is highly inefficient
-> and shows up frequently as a highest cpu-eater in perf top.
+All the versions from 2.6.38 to 3.0-rc5.
 
-Ummm.. Performance improvements for debugging modes? If you need
-performance then switch off debuggin.
 
+-- 
+Maxime Ripard, Free Electrons
+Kernel, drivers, real-time and embedded Linux
+development, consulting, training and support.
+http://free-electrons.com
