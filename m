@@ -1,49 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab1F1Vzc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 17:55:32 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34609 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751149Ab1F1VzZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 17:55:25 -0400
-MIME-Version: 1.0
-X-Originating-IP: [46.116.136.221]
-In-Reply-To: <20110627232903.GB7736@n2100.arm.linux.org.uk>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
- <1308640714-17961-2-git-send-email-ohad@wizery.com> <20110627204958.GB20865@ponder.secretlab.ca>
- <20110627232903.GB7736@n2100.arm.linux.org.uk>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 29 Jun 2011 00:55:04 +0300
-Message-ID: <BANLkTinG=uiUwq4oKGPCX4Phi7gM8NwSQg@mail.gmail.com>
-Subject: Re: [RFC 1/8] drivers: add generic remoteproc framework
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752189Ab1F1Vzw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 17:55:52 -0400
+Received: from mail.perches.com ([173.55.12.10]:3278 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751783Ab1F1Vzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 17:55:43 -0400
+Subject: Re: [PATCH] net/core: Convert to current logging forms
+From: Joe Perches <joe@perches.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: Ben Hutchings <bhutchings@solarflare.com>, netdev@vger.kernel.org,
+        "David S. Miller" <davem@davemloft.net>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20110628144923.2bdac9f9@nehalam.ftrdhcpuser.net>
+References: <385ebf7e98e377e6e6c384beb961b65d4a95fb18.1309289792.git.joe@perches.com>
+	 <1309292501.2771.48.camel@bwh-desktop>
+	 <1309293068.29598.14.camel@Joe-Laptop>
+	 <1309293416.2771.50.camel@bwh-desktop>
+	 <1309297068.29598.26.camel@Joe-Laptop>
+	 <20110628144923.2bdac9f9@nehalam.ftrdhcpuser.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Jun 2011 14:55:40 -0700
+Message-ID: <1309298140.29598.31.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 2:29 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> (Don't have the original message to reply to...)
+On Tue, 2011-06-28 at 14:49 -0700, Stephen Hemminger wrote:
+> Does this actually create useful benefit or just create more bug possibilities?
 
-Sorry about that.
+Probably not the bug possibilities.
+It's pretty trivial.
 
-My recent emails to linux-arm-kernel were bounced with a "Message has
-a suspicious header" reason. not sure what am I doing wrong..
+> Those messages are mostly self explanatory as is.
 
-> Do we really want to end up with header being 5 bytes, header_len set
-> as 5, and having to load/store all this data using byte loads/stores ?
+It also has some utility for the cases in drivers
+between the alloc_netdev and register_netdev[ice]
+where printk/pr_<level> currently has to be used.
 
-As Grant said, we're trying to move to ELF now, but if we do end up
-sticking with this custom format eventually, we'll sure do take care
-of all the alignment issues.
+Beyond that, (foolish?) consistency only.
 
-Thanks!
+cheers, Joe
+
