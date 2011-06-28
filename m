@@ -1,120 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758143Ab1F1QDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 12:03:21 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:57220 "EHLO
+	id S1758991Ab1F1QEZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 12:04:25 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51841 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758893Ab1F1QCK (ORCPT
+	by vger.kernel.org with ESMTP id S1758894Ab1F1QCM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 12:02:10 -0400
-X-Sasl-enc: z+67bR9kmMjjyAUf0GGnFA/5tIb3Wx7xmFIEA/dDNqVw 1309276930
+	Tue, 28 Jun 2011 12:02:12 -0400
+X-Sasl-enc: JtoR6hUkfZs+dbtGE7jxRJR5eu6aUq3U75XQ1Rw5BW++ 1309276931
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 2/9] st_kim: Handle case of no device found for ID 0
-Date: Tue, 28 Jun 2011 09:01:59 -0700
-Message-Id: <1309276926-1327-2-git-send-email-gregkh@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Greg KH <gregkh@suse.de>, David Airlie <airlied@linux.ie>,
+        <stable@kernel.org>
+Subject: [PATCH 3/9] drivers/base/platform.c: don't mark platform_device_register_resndata() as __init_or_module
+Date: Tue, 28 Jun 2011 09:02:00 -0700
+Message-Id: <1309276926-1327-3-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1309276926-1327-1-git-send-email-gregkh@suse.de>
 References: <20110628153911.GD32710@kroah.com>
  <1309276926-1327-1-git-send-email-gregkh@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <rostedt@goodmis.org>
+From: Andrew Morton <akpm@linux-foundation.org>
 
-Running ktest.pl, I hit this bug:
+This reverts 737a3bb9416ce2a7c7a4 ("Driver core: move platform device
+creation helpers to .init.text (if MODULE=n)").  That patch assumed that
+platform_device_register_resndata() is only ever called from __init code
+but that isn't true in the case ioctl->drm_ioctl->radeon_cp_init().
 
-[   19.780654] BUG: unable to handle kernel NULL pointer dereference at 0000000c
-[   19.780660] IP: [<c112efcd>] dev_get_drvdata+0xc/0x46
-[   19.780669] *pdpt = 0000000031daf001 *pde = 0000000000000000
-[   19.780673] Oops: 0000 [#1] SMP
-[   19.780680] Dumping ftrace buffer:^M
-[   19.780685]    (ftrace buffer empty)
-[   19.780687] Modules linked in: ide_pci_generic firewire_ohci firewire_core evbug crc_itu_t e1000 ide_core i2c_i801 iTCO_wdt
-[   19.780697]
-[   19.780700] Pid: 346, comm: v4l_id Not tainted 2.6.39-test-02740-gcaebc16-dirty #4                  /DG965MQ
-[   19.780706] EIP: 0060:[<c112efcd>] EFLAGS: 00010202 CPU: 0
-[   19.780709] EIP is at dev_get_drvdata+0xc/0x46
-[   19.780712] EAX: 00000008 EBX: f1e37da4 ECX: 00000000 EDX: 00000000
-[   19.780715] ESI: f1c3f200 EDI: c33ec95c EBP: f1e37d80 ESP: f1e37d80
-[   19.780718]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068
-[   19.780721] Process v4l_id (pid: 346, ti=f1e36000 task=f2bc2a60 task.ti=f1e36000)
-[   19.780723] Stack:
-[   19.780725]  f1e37d8c c117d395 c33ec93c f1e37db4 c117a0f9 00000002 00000000 c1725e54
-[   19.780732]  00000001 00000007 f2918c90 f1c3f200 c33ec95c f1e37dd4 c1789d3d 22222222
-[   19.780740]  22222222 22222222 f2918c90 f1c3f200 f29194f4 f1e37de8 c178d5c4 c1725e54
-[   19.780747] Call Trace:
-[   19.780752]  [<c117d395>] st_kim_ref+0x28/0x41
-[   19.780756]  [<c117a0f9>] st_register+0x29/0x562
-[   19.780761]  [<c1725e54>] ? v4l2_open+0x111/0x1e3
-[   19.780766]  [<c1789d3d>] fmc_prepare+0x97/0x424
-[   19.780770]  [<c178d5c4>] fm_v4l2_fops_open+0x70/0x106
-[   19.780773]  [<c1725e54>] ? v4l2_open+0x111/0x1e3
-[   19.780777]  [<c1725e9b>] v4l2_open+0x158/0x1e3
-[   19.780782]  [<c065173b>] chrdev_open+0x22c/0x276
-[   19.780787]  [<c0647c4e>] __dentry_open+0x35c/0x581
-[   19.780792]  [<c06498f9>] nameidata_to_filp+0x7c/0x96
-[   19.780795]  [<c065150f>] ? cdev_put+0x57/0x57
-[   19.780800]  [<c0660cad>] do_last+0x743/0x9d4
-[   19.780804]  [<c065d5fc>] ? path_init+0x1ee/0x596
-[   19.780808]  [<c0661481>] path_openat+0x10c/0x597
-[   19.780813]  [<c05204a1>] ? trace_hardirqs_off+0x27/0x37
-[   19.780817]  [<c0509651>] ? local_clock+0x78/0xc7
-[   19.780821]  [<c0661945>] do_filp_open+0x39/0xc2
-[   19.780827]  [<c1cabc76>] ? _raw_spin_unlock+0x4c/0x5d^M
-[   19.780831]  [<c0674ccd>] ? alloc_fd+0x19e/0x1b7
-[   19.780836]  [<c06499ca>] do_sys_open+0xb7/0x1bd
-[   19.780840]  [<c0608eea>] ? sys_munmap+0x78/0x8d
-[   19.780844]  [<c0649b06>] sys_open+0x36/0x58
-[   19.780849]  [<c1cb809f>] sysenter_do_call+0x12/0x38
-[   19.780852] Code: d8 2f 20 c3 01 83 15 dc 2f 20 c3 00 f0 ff 00 83 05 e0 2f 20 c3 01 83 15 e4 2f 20 c3 00 5d c3 55 89 e5 3e 8d 74 26 00 85 c0 74 28 <8b> 40 04 83 05 e8 2f 20 c3 01 83 15 ec 2f 20 c3 00 85 c0 74 13 ^M
-[   19.780889] EIP: [<c112efcd>] dev_get_drvdata+0xc/0x46 SS:ESP 0068:f1e37d80
-[   19.780894] CR2: 000000000000000c
-[   19.780898] ---[ end trace e7d1d0f6a2d1d390 ]---
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=35192
 
-The id of 0 passed to st_kim_ref() found no device, keeping pdev null,
-and causing pdev->dev cause a NULL pointer dereference. After having
-st_kim_ref() check for NULL, the st_unregister() function needed to be
-updated to handle the case that st_gdata was not set by the
-st_kim_ref().
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Reported-by: Anthony Basile <blueness@gentoo.org>
+Cc: Greg KH <gregkh@suse.de>
+Cc: David Airlie <airlied@linux.ie>
+Cc: <stable@kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/misc/ti-st/st_core.c |    2 +-
- drivers/misc/ti-st/st_kim.c  |    4 ++++
- 2 files changed, 5 insertions(+), 1 deletions(-)
+ drivers/base/platform.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/misc/ti-st/st_core.c b/drivers/misc/ti-st/st_core.c
-index f91f82e..54c91ff 100644
---- a/drivers/misc/ti-st/st_core.c
-+++ b/drivers/misc/ti-st/st_core.c
-@@ -605,7 +605,7 @@ long st_unregister(struct st_proto_s *proto)
- 	pr_debug("%s: %d ", __func__, proto->chnl_id);
- 
- 	st_kim_ref(&st_gdata, 0);
--	if (proto->chnl_id >= ST_MAX_CHANNELS) {
-+	if (!st_gdata || proto->chnl_id >= ST_MAX_CHANNELS) {
- 		pr_err(" chnl_id %d not supported", proto->chnl_id);
- 		return -EPROTONOSUPPORT;
- 	}
-diff --git a/drivers/misc/ti-st/st_kim.c b/drivers/misc/ti-st/st_kim.c
-index 5da93ee..3613c3b 100644
---- a/drivers/misc/ti-st/st_kim.c
-+++ b/drivers/misc/ti-st/st_kim.c
-@@ -604,6 +604,10 @@ void st_kim_ref(struct st_data_s **core_data, int id)
- 	struct kim_data_s	*kim_gdata;
- 	/* get kim_gdata reference from platform device */
- 	pdev = st_get_plat_device(id);
-+	if (!pdev) {
-+		*core_data = NULL;
-+		return;
-+	}
- 	kim_gdata = dev_get_drvdata(&pdev->dev);
- 	*core_data = kim_gdata->core_data;
- }
+diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+index 1c291af..6040717 100644
+--- a/drivers/base/platform.c
++++ b/drivers/base/platform.c
+@@ -367,7 +367,7 @@ EXPORT_SYMBOL_GPL(platform_device_unregister);
+  *
+  * Returns &struct platform_device pointer on success, or ERR_PTR() on error.
+  */
+-struct platform_device *__init_or_module platform_device_register_resndata(
++struct platform_device *platform_device_register_resndata(
+ 		struct device *parent,
+ 		const char *name, int id,
+ 		const struct resource *res, unsigned int num,
 -- 
 1.7.5.4
 
