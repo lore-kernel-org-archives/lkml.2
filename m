@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab1F1IZq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 04:25:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:36035 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756710Ab1F1IZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 04:25:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=OEnA0jTiIk5WWMJmrhLtUcMaAiX5tfLvTHMV34/VZsCj5MZJ8xtyjOBq6N1AnRNOmy
-         ndzdNLgvkRTPfIWI4qsXncs3cMyEKPt9Fxa427ny7r/q5fICV7cjuC6/vrnjKWUP6dyA
-         lPowgCs5wEtRo7WkST3PR6uC3u7b12kHiek40=
-Date: Tue, 28 Jun 2011 10:25:12 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ptrace: make former thread ID available via
- PTRACE_GETEVENTMSG after PTRACE_EVENT_EXEC stop (v.2)
-Message-ID: <20110628082512.GA3386@htj.dyndns.org>
-References: <201106262108.43011.vda.linux@googlemail.com>
- <20110626200442.GA16293@redhat.com>
- <20110627081139.GY30101@htj.dyndns.org>
- <20110627134713.GB3527@redhat.com>
- <20110627135252.GB30101@htj.dyndns.org>
- <20110627151827.GA6223@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110627151827.GA6223@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756137Ab1F1I3k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 04:29:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40115 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755420Ab1F1I0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 04:26:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,436,1304319600"; 
+   d="scan'208";a="19149638"
+Date: Tue, 28 Jun 2011 09:25:40 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org
+Subject: Re: [PATCH 10/12] SERIAL: SC26xx: Fix link error.
+Message-ID: <20110628092540.61c94bf9@bob.linux.org.uk>
+In-Reply-To: <f0b3d9a91be8dba5c45c14efebaa9c7800694f15.1309182743.git.ralf@linux-mips.org>
+References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
+	<f0b3d9a91be8dba5c45c14efebaa9c7800694f15.1309182743.git.ralf@linux-mips.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, 27 Jun 2011 14:26:56 +0100
+Ralf Baechle <ralf@linux-mips.org> wrote:
 
-On Mon, Jun 27, 2011 at 05:18:27PM +0200, Oleg Nesterov wrote:
-> > and the only way to discover would be either comparing kernel
-> > version or actually trying it - both aren't too nice.
+> Kconfig allows enabling console support for the SC26xx driver even
+> when it's configured as a module resulting in a:
 > 
-> Fortunately, currently tracehook_report_exec() zeroes ->ptrace_message.
-> At least this means that anything != 0 means it works.
+> ERROR: "uart_console_device" [drivers/tty/serial/sc26xx.ko] undefined!
+> 
+> modpost error since the driver was merged in
+> eea63e0e8a60d00485b47fb6e75d9aa2566b989b [SC26XX: New serial driver
+> for SC2681 uarts] in 2.6.25.  Fixed by only allowing console support
+> to be enabled if the driver is builtin.
+> 
+> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
 
-Yeah, but that's a pretty silly way to do it.  If we make it depend on
-PT_SEIZED, we can simply say "if seized, EXEC reports..." but as it
-currently stands, it would go like "If the message is non-zero on
-EXEC, it indicates...  This behavior is valid since kernel version
-x.x.x".  Maybe adding a guarantee that PTRACE_SEIZE capable kernel
-always reports the old pid on EXEC but that would still seem
-unnecessarily complicated.  It isn't a bug fix.  I don't see much
-point in introducing new behavior separately.
-
-Thanks.
-
--- 
-tejun
+Acked-by: Alan Cox <alan@linux.intel.com>
