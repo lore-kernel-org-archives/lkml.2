@@ -1,66 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab1F1Wyt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 18:54:49 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48479 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750821Ab1F1Wyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 18:54:43 -0400
-Date: Wed, 29 Jun 2011 00:54:41 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/29] gma500: Ensure the frame buffer has a linear
- virtual mapping
-In-Reply-To: <20110628234235.35cbc7bd@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LNX.2.00.1106290047190.11049@pobox.suse.cz>
-References: <20110616160104.6039.44019.stgit@localhost.localdomain> <20110616160642.6039.31781.stgit@localhost.localdomain> <20110628211859.GA23217@kroah.com> <20110628230245.4cec6958@lxorguk.ukuu.org.uk> <alpine.LNX.2.00.1106290003060.11049@pobox.suse.cz>
- <alpine.LNX.2.00.1106290013350.11049@pobox.suse.cz> <20110628234235.35cbc7bd@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752001Ab1F1W45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 18:56:57 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:53481 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751711Ab1F1W4v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 18:56:51 -0400
+Date: Wed, 29 Jun 2011 00:56:45 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/2] fadvise: move active pages to inactive list with
+ POSIX_FADV_DONTNEED
+Message-ID: <20110628225645.GB2274@thinkpad>
+References: <1309181361-14633-1-git-send-email-andrea@betterlinux.com>
+ <20110628151233.f0a279be.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110628151233.f0a279be.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jun 2011, Alan Cox wrote:
-
-> > I am still wondering how come that this is causing trouble to anyone 
-> > though -- is anyone really developing real code on top of linux-next 
-> > (which should be there to cross-check merge problems between subsystems 
-> > and test functionality) instead of particular subsystem tree?
+On Tue, Jun 28, 2011 at 03:12:33PM -0700, Andrew Morton wrote:
+> On Mon, 27 Jun 2011 15:29:19 +0200
+> Andrea Righi <andrea@betterlinux.com> wrote:
 > 
-> I run -next on a regular basis. I'm actually doing a lot of Linux mid
-> development on it because I need bits going via various trees from x86 to
-> staging to input together.
-
-Yes, cross-tree development is definitely a mode in which I can imagine 
-linux-next could be used as a base for actual code development (and 
-probably the only one which is justifiable).
-
-> I'm not btw saying your approach is wrong - in fact I imagine its the 
-> only way to make it managable for some things but in the gma500 case at 
-> least and I suspect much of staging it tends to cause merge problems. It 
-> would be helpful if you route any gma500 bits via me because of the 
-> amount of change in that subtree.
-
-Yeah, thanks.
-
-As said already -- normally I don't accept staging bits at all (for a 
-reason), that was a mistake. Sorry for that.
-
-On Tue, 28 Jun 2011, Alan Cox wrote:
-
-> > I can either drop the gma500 bits I have queued now (and stop applying 
-> > anything touching it, hard rule), or you rebasing on top of Greg's staging 
-> > tree instead of linux-next (and I sorting out the merge conflict later).
+> > There were some reported problems in the past about trashing page cache when a
+> > backup software (i.e., rsync) touches a huge amount of pages (see for example
+> > [1]).
+> >     
+> > This problem has been almost fixed by the Minchan Kim's patch [2] and a proper
+> > use of fadvise() in the backup software. For example this patch set [3] has
+> > been proposed for inclusion in rsync.
+> >     
+> > However, there can be still other similar trashing problems: when the backup
+> > software reads all the source files, some of them may be part of the actual
+> > working set of the system. When a POSIX_FADV_DONTNEED is performed _all_ pages
+> > are evicted from pagecache, both the working set and the use-once pages touched
+> > only by the backup software.
+> >     
+> > With the following solution when POSIX_FADV_DONTNEED is called for an active
+> > page instead of removing it from the page cache it is added to the tail of the
+> > inactive list. Otherwise, if it's already in the inactive list the page is
+> > removed from the page cache. Pages mapped by other processes or unevictable
+> > pages are not touched at all.
+> > 
+> > In this way if the backup was the only user of a page, that page will be
+> > immediately removed from the page cache by calling POSIX_FADV_DONTNEED.  If the
+> > page was also touched by other processes it'll be moved to the inactive list,
+> > having another chance of being re-added to the working set, or simply reclaimed
+> > when memory is needed.
 > 
-> If you can drop the gma500 bits and send them my way I'll merge them via
-> the gma500 pile.
+> So if an application touches a page twice and then runs
+> POSIX_FADV_DONTNEED, that page will now not be freed.
+> 
+> That's a big behaviour change.  For many existing users
+> POSIX_FADV_DONTNEED simply doesn't work any more!
 
-Sure. I have already pushed out a tree with those reverted and will be 
-sending you the patches separately in a second.
+Yes. This is the main concern that was raised by Pádraig.
 
--- 
-Jiri Kosina
-SUSE Labs
+> 
+> I'd have thought that adding a new POSIX_FADV_ANDREA would be safer
+> than this.
+
+Actually Jerry (in cc) proposed
+POSIX_FADV_IDONTNEEDTHISBUTIFSOMEBODYELSEDOESTHENDONTTOUCHIT in a
+private email. :)
+
+> 
+> 
+> The various POSIX_FADV_foo's are so ill-defined that it was a mistake
+> to ever use them.  We should have done something overtly linux-specific
+> and given userspace more explicit and direct pagecache control.
+
+That would give us the possibility to implement a wide range of
+different operations (drop, drop if used once, add to the active list,
+add to the inactive list, etc..). Some users always complain that they
+would like to have a better control over the page cache from userspace.
+
+-Andrea
