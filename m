@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758280Ab1F1OnO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 10:43:14 -0400
-Received: from li9-11.members.linode.com ([67.18.176.11]:48048 "EHLO
-	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757357Ab1F1OmH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 10:42:07 -0400
-Date: Tue, 28 Jun 2011 10:42:06 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Sandy Harris <sandyinchina@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: random(4) driver questions
-Message-ID: <20110628144206.GJ2729@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Sandy Harris <sandyinchina@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <BANLkTinC7vfaRWf5TK9gJuQVtVwDkEQFcQ@mail.gmail.com>
- <20110627145442.GA2729@thunk.org>
- <BANLkTin1cABBLn0yPxk6oyTbw4miN7TEPw@mail.gmail.com>
+	id S1756990Ab1F1OoA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 10:44:00 -0400
+Received: from relay.parallels.com ([195.214.232.42]:55458 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758170Ab1F1OnA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 10:43:00 -0400
+Message-ID: <4E09E871.8040600@parallels.com>
+Date: Tue, 28 Jun 2011 18:42:57 +0400
+From: Konstantin Khlebnikov <khlebnikov@parallels.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTin1cABBLn0yPxk6oyTbw4miN7TEPw@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
+References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com> <4E09B457.9050800@parallels.com> <20110628134500.GD17552@redhat.com>
+In-Reply-To: <20110628134500.GD17552@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 02:02:58PM +0800, Sandy Harris wrote:
-> However, for the secondary pools, a block cipher seems to
-> me to be the obvious thing to use because there is plenty
-> of analysis, in the Yarrow paper and follow-ups, of that
-> technique. Also, I think it might be faster.
+Vivek Goyal wrote:
+> On Tue, Jun 28, 2011 at 03:00:39PM +0400, Konstantin Khlebnikov wrote:
+>> Vivek Goyal wrote:
+>>> This patch series seems to be working for me. I did testing for ext4 only.
+>>> This series is based on for-3.1/core branch of Jen's block tree.
+>>> Konstantin, can you please give it a try and see if it fixes your
+>>> issue.
+>>
+>> It works for me too, for ext3 and ext4, on top 3.0-rc5, after these trivial fixes:
+>>
+>> --- a/block/cfq-iosched.c
+>> +++ b/block/cfq-iosched.c
+>> @@ -1511,7 +1519,7 @@ static void cfq_add_rq_rb(struct request *rq)
+>>           * if that happens, put the alias on the dispatch list
+>>           */
+>>          while ((__alias = elv_rb_add(&cfqq->sort_list, rq)) != NULL)
+>> -               cfq_dispatch_insert(cfqd->queue, __alias);
+>> +               cfq_dispatch_insert(cfqd->queue, __alias, false);
+>>
+>>          if (!cfq_cfqq_on_rr(cfqq))
+>>                  cfq_add_cfqq_rr(cfqd, cfqq);
+>> @@ -3797,12 +3797,11 @@ cfq_set_depends_on_task(struct request_queue *q, struct task_struct *tsk)
+>>           */
+>>          rcu_read_lock();
+>>          if (task_blkio_cgroup(current) == task_blkio_cgroup(tsk))
+>> -               return;
+>> -       rcu_read_unlock();
+>> +               goto out_unlock_rcu;
+>>
+>>          cic = cfq_cic_lookup(cfqd, current->io_context);
+>>          if (!cic)
+>> -               return;
+>> +               goto out_unlock_rcu;
+>
+> You have done this change because you want to keep cfq_cic_lookup() also
+> in rcu read side critical section? I am assuming that it works even
+> without this. Though keeping it under rcu is probably more correct as
+> cic objects are freed in rcu manner.
 
-Well, there hasn't actually been any analysis of the use of a block
-cipher.  The Yarrow paper and all follow-ons that I'm aware simply
-assume that the block cipher is secure.  Most of the Yarrow analysis
-has been on what I consider to be largely pointless, academic
-considerations about "what if you're able to get the internal state".
-(Whereas I'm of the opinion, if you can get access to the internal
-state of the kernel, you probably can do a lot of other things that
-are much bigger deal --- such as, dropping in a root exploit and then
-start tapping your keyboard, network, etc.)
+No, your just forgot to relese rcu in case task_blkio_cgroup(current) == task_blkio_cgroup(tsk)
 
-> An AES-128 context, 11 128-bit round keys, is roughly the
-> same size as one of the current secondary pools, 32 32-bit
-> chunks. What would maintainers think of a patch along
-> those lines?
+>
+> Thanks
+> Vivek
 
-But if you're ditching the AES key scheduling step, it's no longer
-AES, which means all of the analysis for AES not necessarily
-applicable....  So if you're going for a cryptographic conservative
-design, it's not at all clear to me that a bastardized AES is an
-improvement.
-
-Also, note that faster is *not* a feature for a random number
-generator...
-
-> Another question is whether and when we might replace
-> SHA-1 with a more modern hash. Jeff Garzik has a patch
-> to add Skein to the crypto API. That would be faster
-> than SHA-1 and perhaps more easily analyzed since
-> the compression function is a block cipher. Of course
-> the SHA-3 Advanced Hash Standard process is not
-> scheduled to finish for another year and there's a
-> good argument that we should wait for that.
-
-Waiting for SHA-3 (and then giving a bit more time for the
-cryptographers to spend more time trying to attack it) seems like a
-better approach to me....
-
-						- Ted
