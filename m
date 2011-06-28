@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755886Ab1F1BO5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 21:14:57 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40646 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755843Ab1F1BNz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 21:13:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=KtLp3E0H8DWBaqMp02yco3+aRMl16RSLfMr0gz8XzUewVhuh4uIUmthQQTOOQPbBFY
-         VpbTu5FU8FFMMnjG2JmIqjmwtrfNfY5IDdPT/Ek9zNoYBj7uMtda+6CzoFezDWwep2Gm
-         AktvjQrqGPWfXHBvUu7Z7zr4UYmYaABehAWCk=
-MIME-Version: 1.0
-In-Reply-To: <1308917318-4749-1-git-send-email-segoon@openwall.com>
-References: <1308917318-4749-1-git-send-email-segoon@openwall.com>
-Date: Tue, 28 Jun 2011 06:43:54 +0530
-X-Google-Sender-Auth: 7_Iu00vuSryIOOAF9xD5IDUk5KU
-Message-ID: <BANLkTine1Q7thbLVUb34ZsRZt4q184dZzg@mail.gmail.com>
-Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, Solar Designer <solar@openwall.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756009Ab1F1BPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 21:15:46 -0400
+Received: from mga14.intel.com ([143.182.124.37]:58020 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755823Ab1F1BOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 21:14:02 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,435,1304319600"; 
+   d="scan'208";a="19463995"
+From: Huang Ying <ying.huang@intel.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
+        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
+        linux-acpi@vger.kernel.org, Chen Gong <gong.chen@linux.intel.com>
+Subject: [PATCH 3/3] ACPI, APEI, ERST, Fix erst-dbg long record reading issue
+Date: Tue, 28 Jun 2011 09:13:54 +0800
+Message-Id: <1309223634-12248-4-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1309223634-12248-1-git-send-email-ying.huang@intel.com>
+References: <1309223634-12248-1-git-send-email-ying.huang@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 24, 2011 at 5:38 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> /proc/PID/io may be used for gathering private information.  E.g. for
-> openssh and vsftpd daemons wchars/rchars may be used to learn the
-> precise password length.  Restrict it to processes being able to ptrace
-> the target process.
->
+From: Chen Gong <gong.chen@linux.intel.com>
 
-Hmm.. How do I reproduce this, won't they be enough randomness around
-rchar/wchar by the time the attacker reads it?
+When we debug ERST table with erst-dbg, if the error record in ERST
+table is too long(>4K), it can't be read out.  So this patch increases
+the buffer size to 16K to ensure such error records can be read from
+ERST table.
 
-> ptrace_may_access() is needed to prevent keeping open file descriptor of
-> "io" file, executing setuid binary and gathering io information of the
-> setuid'ed process.
+Signed-off-by: Chen Gong <gong.chen@linux.intel.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+---
+ drivers/acpi/apei/erst-dbg.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Balbir Singh
+--- a/drivers/acpi/apei/erst-dbg.c
++++ b/drivers/acpi/apei/erst-dbg.c
+@@ -33,7 +33,7 @@
+ 
+ #define ERST_DBG_PFX			"ERST DBG: "
+ 
+-#define ERST_DBG_RECORD_LEN_MAX		4096
++#define ERST_DBG_RECORD_LEN_MAX		0x4000
+ 
+ static void *erst_dbg_buf;
+ static unsigned int erst_dbg_buf_len;
