@@ -1,121 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab1F1ECa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 00:02:30 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49205 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755990Ab1F1EC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 00:02:26 -0400
-Date: Tue, 28 Jun 2011 14:02:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Johannes Berg <johannes.berg@intel.com>,
-        "Wey-Yi Guy" <wey-yi.w.guy@intel.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Emmanuel Grumbach <emmanuel.grumbach@intel.com>
-Subject: linux-next: manual merge of the net tree with the wireless-current
- tree
-Message-Id: <20110628140219.1480dc7a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756451Ab1F1EjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 00:39:12 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:30903 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756373Ab1F1Eir convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 00:38:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=vS5Y3FtiZ0d1nPJ7tPEyCAcJqVEX3zL4+9ypyqHjBlczBsCYyAQk8/coxK1uyWTra+
+         CmbVoQtb+dhG9z20D+fQ==
+MIME-Version: 1.0
+In-Reply-To: <1308829759.1022.109.camel@twins>
+References: <20110621071649.862846205@google.com> <20110621071700.879990875@google.com>
+ <1308829759.1022.109.camel@twins>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 27 Jun 2011 21:38:13 -0700
+Message-ID: <CAPM31R+x-kABaHp6G-Q2rG2SkjAn4FFa1nBwHhwAOhdV+CNjnQ@mail.gmail.com>
+Subject: Re: [patch 12/16] sched: prevent interactions with throttled entities
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, Jun 23, 2011 at 4:49 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2011-06-21 at 00:17 -0700, Paul Turner wrote:
+>> @@ -2635,8 +2704,10 @@ static int update_shares_cpu(struct task
+>>
+>>         raw_spin_lock_irqsave(&rq->lock, flags);
+>>
+>> -       update_rq_clock(rq);
+>> -       update_cfs_load(cfs_rq, 1);
+>> +       if (!throttled_hierarchy(cfs_rq)) {
+>> +               update_rq_clock(rq);
+>> +               update_cfs_load(cfs_rq, 1);
+>> +       }
+>>
+>>         /*
+>
+> OK, so we can't contribute to load since we're throttled, but
+> tg->load_weight might have changed meanwhile?
+>
 
-Today's linux-next merge of the net tree got a conflict in
-drivers/net/wireless/iwlwifi/iwl-tx.c between commits 1107a08a1a3e
-("iwlagn: fix cmd queue unmap"), e815407d395e ("iwlagn: map command
-buffers BIDI") and 2627c002cbed ("iwlagn: use PCI_DMA_* for pci_*
-operations") from the wireless-current tree and commit 795414db8607
-("iwlagn: don't use the PCI wrappers for DMA operation") from the net
-tree.
+What's why we continue to update their shares (also at
+enqueue/dequeue) but not their load, so that the weight will be
+correct when unthrottling*
 
-I fixed it up (I think - see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> Also, update_cfs_shares()->reweight_entity() can dequeue/enqueue the
+> entity, doesn't that require an up-to-date rq->clock?
+>
 
-diff --cc drivers/net/wireless/iwlwifi/iwl-tx.c
-index 9eee978,fd8aee9..0000000
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@@ -126,9 -126,8 +126,8 @@@ static inline u8 iwl_tfd_get_num_tbs(st
-  }
-  
-  static void iwlagn_unmap_tfd(struct iwl_priv *priv, struct iwl_cmd_meta *meta,
- -			     struct iwl_tfd *tfd)
- +			     struct iwl_tfd *tfd, enum dma_data_direction dma_dir)
-  {
-- 	struct pci_dev *dev = priv->pci_dev;
-  	int i;
-  	int num_tbs;
-  
-@@@ -150,8 -149,8 +149,8 @@@
-  
-  	/* Unmap chunks, if any. */
-  	for (i = 1; i < num_tbs; i++)
-- 		pci_unmap_single(dev, iwl_tfd_tb_get_addr(tfd, i),
-+ 		dma_unmap_single(priv->bus.dev, iwl_tfd_tb_get_addr(tfd, i),
- -				iwl_tfd_tb_get_len(tfd, i), DMA_TO_DEVICE);
- +				iwl_tfd_tb_get_len(tfd, i), dma_dir);
-  }
-  
-  /**
-@@@ -167,8 -166,7 +166,8 @@@ void iwlagn_txq_free_tfd(struct iwl_pri
-  	struct iwl_tfd *tfd_tmp = txq->tfds;
-  	int index = txq->q.read_ptr;
-  
- -	iwlagn_unmap_tfd(priv, &txq->meta[index], &tfd_tmp[index]);
- +	iwlagn_unmap_tfd(priv, &txq->meta[index], &tfd_tmp[index],
-- 			 PCI_DMA_TODEVICE);
-++			 DMA_TO_DEVICE);
-  
-  	/* free SKB */
-  	if (txq->txb) {
-@@@ -311,8 -309,10 +310,8 @@@ void iwl_cmd_queue_unmap(struct iwl_pri
-  		i = get_cmd_index(q, q->read_ptr);
-  
-  		if (txq->meta[i].flags & CMD_MAPPED) {
- -			dma_unmap_single(priv->bus.dev,
- -					 dma_unmap_addr(&txq->meta[i], mapping),
- -					 dma_unmap_len(&txq->meta[i], len),
- +			iwlagn_unmap_tfd(priv, &txq->meta[i], &txq->tfds[i],
-- 					 PCI_DMA_BIDIRECTIONAL);
-+ 					 DMA_BIDIRECTIONAL);
-  			txq->meta[i].flags = 0;
-  		}
-  
-@@@ -693,12 -698,11 +692,12 @@@ int iwl_enqueue_hcmd(struct iwl_priv *p
-  			continue;
-  		if (!(cmd->dataflags[i] & IWL_HCMD_DFL_NOCOPY))
-  			continue;
-- 		phys_addr = pci_map_single(priv->pci_dev, (void *)cmd->data[i],
-- 					   cmd->len[i], PCI_DMA_BIDIRECTIONAL);
-- 		if (pci_dma_mapping_error(priv->pci_dev, phys_addr)) {
-+ 		phys_addr = dma_map_single(priv->bus.dev, (void *)cmd->data[i],
- -					   cmd->len[i], DMA_TO_DEVICE);
-++					   cmd->len[i], DMA_BIDIRECTIONAL);
-+ 		if (dma_mapping_error(priv->bus.dev, phys_addr)) {
-  			iwlagn_unmap_tfd(priv, out_meta,
- -					 &txq->tfds[q->write_ptr]);
- +					 &txq->tfds[q->write_ptr],
-- 					 PCI_DMA_BIDIRECTIONAL);
-++					 DMA_BIDIRECTIONAL);
-  			idx = -ENOMEM;
-  			goto out;
-  		}
-@@@ -802,7 -806,7 +801,7 @@@ void iwl_tx_cmd_complete(struct iwl_pri
-  	cmd = txq->cmd[cmd_index];
-  	meta = &txq->meta[cmd_index];
-  
-- 	iwlagn_unmap_tfd(priv, meta, &txq->tfds[index], PCI_DMA_BIDIRECTIONAL);
- -	iwlagn_unmap_tfd(priv, meta, &txq->tfds[index]);
-++	iwlagn_unmap_tfd(priv, meta, &txq->tfds[index], DMA_BIDIRECTIONAL);
-  
-  	/* Input error checking is done when commands are added to queue. */
-  	if (meta->flags & CMD_WANT_SKB) {
+It shouldn't, we're only doing an account_enqueue/dequeue, and there
+shouldn't be a cfs_rq->curr to lead to updates (on a throttled
+entity).  I suppose we might do something interesting in the case of a
+race with alb forcing something throttled to run intersecting with
+update_shares()**.
+
+The original concern here was [*] above, keeping shares current for
+the unthrottle.  *However*, with the hierarchal throttle accounting in
+the current version, I think this can be improved.
+
+Instead, we should skip update_shares/update_cfs_shares for all
+throttled entities and simply do a final update shares when
+throttle_count goes to 0 in tg_throttle_down (which also avoids **).
+I thought of doing this at the end of preparing the last patchset but
+by that time it was tested and I didn't want to change things around
+here at the last minute.
+
+Will fix for this week.
+
+
+>
+>
