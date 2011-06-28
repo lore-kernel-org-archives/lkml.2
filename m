@@ -1,45 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758364Ab1F1OuK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 10:50:10 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:52208 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758322Ab1F1On6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 10:43:58 -0400
-X-Sasl-enc: gl5K20nLCa53TuNDAoGVRzsCriLQeEd1s9xMgIgE4csR 1309272237
-Date: Tue, 28 Jun 2011 07:43:48 -0700
-From: Greg KH <greg@kroah.com>
-To: Arjan Mels <arjan.mels@gmx.net>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, matt mooney <mfm@muteddisk.com>
-Subject: Re: linux-next: manual merge of the staging tree with the
- staging.current tree
-Message-ID: <20110628144348.GA9290@kroah.com>
-References: <20110609165804.2e96bb77.sfr@canb.auug.org.au>
- <20110609184206.GC2760@kroah.com>
- <20110609205111.GB32526@kroah.com>
- <DE6BB9BF2B09415FACB0F74F3CF4CF5C@Main>
+	id S1758386Ab1F1OuR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 10:50:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50638 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758040Ab1F1Orr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 10:47:47 -0400
+Date: Tue, 28 Jun 2011 10:47:44 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@parallels.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
+Message-ID: <20110628144744.GF17552@redhat.com>
+References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+ <4E09B457.9050800@parallels.com>
+ <20110628134500.GD17552@redhat.com>
+ <4E09E871.8040600@parallels.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <DE6BB9BF2B09415FACB0F74F3CF4CF5C@Main>
+In-Reply-To: <4E09E871.8040600@parallels.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 04:07:25PM +0200, Arjan Mels wrote:
-> Greg, Stephen,
+On Tue, Jun 28, 2011 at 06:42:57PM +0400, Konstantin Khlebnikov wrote:
+> Vivek Goyal wrote:
+> >On Tue, Jun 28, 2011 at 03:00:39PM +0400, Konstantin Khlebnikov wrote:
+> >>Vivek Goyal wrote:
+> >>>This patch series seems to be working for me. I did testing for ext4 only.
+> >>>This series is based on for-3.1/core branch of Jen's block tree.
+> >>>Konstantin, can you please give it a try and see if it fixes your
+> >>>issue.
+> >>
+> >>It works for me too, for ext3 and ext4, on top 3.0-rc5, after these trivial fixes:
+> >>
+> >>--- a/block/cfq-iosched.c
+> >>+++ b/block/cfq-iosched.c
+> >>@@ -1511,7 +1519,7 @@ static void cfq_add_rq_rb(struct request *rq)
+> >>          * if that happens, put the alias on the dispatch list
+> >>          */
+> >>         while ((__alias = elv_rb_add(&cfqq->sort_list, rq)) != NULL)
+> >>-               cfq_dispatch_insert(cfqd->queue, __alias);
+> >>+               cfq_dispatch_insert(cfqd->queue, __alias, false);
+> >>
+> >>         if (!cfq_cfqq_on_rr(cfqq))
+> >>                 cfq_add_cfqq_rr(cfqd, cfqq);
+> >>@@ -3797,12 +3797,11 @@ cfq_set_depends_on_task(struct request_queue *q, struct task_struct *tsk)
+> >>          */
+> >>         rcu_read_lock();
+> >>         if (task_blkio_cgroup(current) == task_blkio_cgroup(tsk))
+> >>-               return;
+> >>-       rcu_read_unlock();
+> >>+               goto out_unlock_rcu;
+> >>
+> >>         cic = cfq_cic_lookup(cfqd, current->io_context);
+> >>         if (!cic)
+> >>-               return;
+> >>+               goto out_unlock_rcu;
+> >
+> >You have done this change because you want to keep cfq_cic_lookup() also
+> >in rcu read side critical section? I am assuming that it works even
+> >without this. Though keeping it under rcu is probably more correct as
+> >cic objects are freed in rcu manner.
 > 
-> Below mentioned patch does not seem to have made it into the
-> linux-next tree (and other stable branches).
+> No, your just forgot to relese rcu in case task_blkio_cgroup(current) == task_blkio_cgroup(tsk)
 
-What do you mean by "other stable branches"?
+Oh, that's right. Thanks for catching this. I will fix it.
 
-> What do I need to do to correct this?
-
-I don't understand what you are wanting to correct, please be explicit
-as I am totally confused.
-
-greg k-h
+Thanks
+Vivek
