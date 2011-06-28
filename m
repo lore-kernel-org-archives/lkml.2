@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759081Ab1F1RD6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 13:03:58 -0400
-Received: from oproxy8-pub.bluehost.com ([69.89.22.20]:55512 "HELO
-	oproxy8-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758631Ab1F1RCi (ORCPT
+	id S1759590Ab1F1RE4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 13:04:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:61015 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758471Ab1F1RDS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 13:02:38 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=ovho7T6nuT/HGxw3qE/2xTUUuSZ40zEgjAhx0Ha9HSnYRtWnfozPiyvuMaDC6ffL46tgOiTdoJEi/fPpRgVkcnlcJdoLbnZQttPUeyrSg6BZjFGM86ZMeBeyEOAbLVtn;
-Date: Tue, 28 Jun 2011 10:02:27 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ram Pai <linuxram@us.ibm.com>, yinghai@kernel.org
-Subject: Re: [git pull] PCI fixes
-Message-ID: <20110628100227.28f471aa@jbarnes-desktop>
-In-Reply-To: <204d042e-86c0-41a5-80f0-e04d6b7adf25@email.android.com>
-References: <20110623133740.0cdaf204@jbarnes-desktop>
-	<BANLkTime_w_RLqU2dZV4zx9SEZaNTQoMNQ@mail.gmail.com>
-	<20110624085318.70bde05c@jbarnes-desktop>
-	<BANLkTinimDSWQaDcQj9nJj11juK2OCfLXg@mail.gmail.com>
-	<20110624091148.18f8959d@jbarnes-desktop>
-	<204d042e-86c0-41a5-80f0-e04d6b7adf25@email.android.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 28 Jun 2011 13:03:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 1/2] PWM: add pwm framework support
+Date: Tue, 28 Jun 2011 19:03:05 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Ryan Mallon <ryan@bluewatersys.com>
+References: <1309255368-9775-1-git-send-email-s.hauer@pengutronix.de> <201106281427.04373.arnd@arndb.de> <20110628161842.GK6069@pengutronix.de>
+In-Reply-To: <20110628161842.GK6069@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
+Message-Id: <201106281903.06121.arnd@arndb.de>
+X-Provags-ID: V02:K0:C99Dx9x3AdL0B0+5i3nHEVQ9PCcVrmqwZ/M/sFB+eCO
+ eELoaJZ/nhrXx+IEbJih66Y4W70O8C8OinfJsko+CoX9XxMsgM
+ s6whdu3g+mstvGHTuOsKLkZG9bnegjU2vkcIKCyWMyX0J+oOWx
+ o85c4a4lzPd84srWbUOy7626G8NPfymjaiGyke7ylXqKrDMDOE
+ 55OJVnuUD2SnWmj7r/Ekg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 24 Jun 2011 15:56:42 -0700
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Tuesday 28 June 2011, Sascha Hauer wrote:
+> > How about using idr? It provides you a fast lookup and handles giving
+> > out unique numbers.
+> 
+> Sounds like a good idea, but is idr compatible with the pwmchip_reserve
+> function below? idr gives no guarantee that the first id is zero, but I
+> need exactly this to make the ids for the internal PWMs known at compile
+> time.
 
-> 
-> 
-> 
-> Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> >
-> >How about a boot param?  We've done similar things for _CRS, and it
-> >might give Yinghai and Ram some more flexibility in improving our
-> >dynamic resource allocation before enabling it again (if ever).
-> 
-> I'm OK with that, but then I'd suggest against the currently not yet merged series that doesn't seem to work anyway...
-> 
-> IOW, just a simple patch that disables the resource re-allocation, and enables it with some command line option.
+You can certainly use ida_get_new_above to guarantee that implicit
+number allocation doesn't interfere with the reserved numbers. Whether
+that guarantees that you get the reserved numbers when you ask for them,
+I don't know.
 
-Ram or Yinghai, want to come up with something?  (And
-note: pci=bridge_realloc or something would be a lot more descriptive
-than pci=try=2!)
+A possible way to deal with that would be to allocate an array of pointers
+for the reserved space but use IDR for the rest, but at that point the
+complexity is probably higher than what you have now ;-)
 
-Thanks,
--- 
-Jesse Barnes, Intel Open Source Technology Center
+Another question is whether the dynamic allocation even makes sense. How
+does a driver that wants to use a PWM find out what number to ask for
+when it's not reserved for the platform to start with. Maybe the
+answer is to just use an array or tree for the lookup and refuse to
+register multiple PWMs to the same number.
+
+	Arnd
