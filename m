@@ -1,118 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756045Ab1F1B0F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 21:26:05 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:41394 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab1F1BWu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 21:22:50 -0400
-From: Sergiu Iordache <sergiu@chromium.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sergiu Iordache <sergiu@chromium.org>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] char drivers: ramoops record_size module parameter
-Date: Mon, 27 Jun 2011 18:21:53 -0700
-Message-Id: <1309224113-21818-4-git-send-email-sergiu@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1309224113-21818-1-git-send-email-sergiu@chromium.org>
-References: <1309224113-21818-1-git-send-email-sergiu@chromium.org>
-X-System-Of-Record: true
+	id S1756083Ab1F1B0L (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 21:26:11 -0400
+Received: from ozlabs.org ([203.10.76.45]:42097 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755674Ab1F1BYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 21:24:19 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Arnd Bergmann <arnd@arndb.de>, Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Jonas Bonn <jonas@southpole.se>, Ingo Molnar <mingo@elte.hu>,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        monstr@monstr.eu, cmetcalf@tilera.com,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] modules: add default loader hook implementations
+In-Reply-To: <201106271305.44746.arnd@arndb.de>
+References: <1308987512-6583-1-git-send-email-jonas@southpole.se> <87hb7b7ic6.fsf@rustcorp.com.au> <BANLkTinmhQT=__WP+10cr2HZPy1TvdxZ=w@mail.gmail.com> <201106271305.44746.arnd@arndb.de>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Tue, 28 Jun 2011 10:53:33 +0930
+Message-ID: <87mxh2lpey.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of the dump is currently set using the RECORD_SIZE macro which
-is set to a page size. This patch makes the record size a module
-parameter and allows it to be set through platform data as well to allow
-larger dumps if needed.
+On Mon, 27 Jun 2011 13:05:44 +0200, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Monday 27 June 2011, Geert Uytterhoeven wrote:
+> > >> I don't care much either way, you would get my Ack for both solutions.
+> > >> The __weak approach would definitely make a simpler patch, and the
+> > >> patch you sent adds extra complexity because of the
+> > >> asm_generic_moduleloader_hooks macro you used to avoid having to
+> > >> change all other architectures.
+> > >
+> > > I think you misread me.  If all else is equal, I dislike weak functions.
+> > > But AFAICT the two standard mechanisms are #ifdef HAVE_ARCH and __weak.
+> > > Inventing a third one is not going to be a win.
+> > 
+> > It's not inventing a new one, the third one is already in use.
+> 
+> True. In fact, we are (slowly) migrating away from HAVE_ARCH_* elsewhere.
+> In include/asm-generic/*.h, the common method is now to #define the exact
+> symbol if an architecture wants to override the generic version.
+> 
+> Weak symbols are fairly obscure in comparison, but they are actively
+> used by a few architectures (mips, sh) and some core code in kernel/
+> and mm/.
 
-Change-Id: Ie6bd28a898dab476abf34decb0eecc42122f17ce
-Signed-off-by: Sergiu Iordache <sergiu@chromium.org>
----
- drivers/char/ramoops.c  |   18 +++++++++++-------
- include/linux/ramoops.h |    1 +
- 2 files changed, 12 insertions(+), 7 deletions(-)
+I stand corrected.  It seems to be done one way or another pretty much
+on a whim.
 
-diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
-index 56338a3..b16cf07 100644
---- a/drivers/char/ramoops.c
-+++ b/drivers/char/ramoops.c
-@@ -30,7 +30,10 @@
- 
- #define RAMOOPS_KERNMSG_HDR "===="
- 
--#define RECORD_SIZE 4096UL
-+static ulong record_size = 4096UL;
-+module_param(record_size, ulong, 0400);
-+MODULE_PARM_DESC(record_size,
-+		"size of each dump done on oops/panic");
- 
- static ulong mem_address;
- module_param(mem_address, ulong, 0400);
-@@ -77,10 +80,10 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
- 	if (reason == KMSG_DUMP_OOPS && !dump_oops)
- 		return;
- 
--	buf = cxt->virt_addr + (cxt->count * RECORD_SIZE);
-+	buf = cxt->virt_addr + (cxt->count * record_size);
- 	buf_orig = buf;
- 
--	memset(buf, '\0', RECORD_SIZE);
-+	memset(buf, '\0', record_size);
- 	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
- 	buf += res;
- 	do_gettimeofday(&timestamp);
-@@ -88,8 +91,8 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
- 	buf += res;
- 
- 	hdr_size = buf - buf_orig;
--	l2_cpy = min(l2, RECORD_SIZE - hdr_size);
--	l1_cpy = min(l1, RECORD_SIZE - hdr_size - l2_cpy);
-+	l2_cpy = min(l2, record_size - hdr_size);
-+	l1_cpy = min(l1, record_size - hdr_size - l2_cpy);
- 
- 	s2_start = l2 - l2_cpy;
- 	s1_start = l1 - l1_cpy;
-@@ -110,6 +113,7 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 		mem_size = pdata->mem_size;
- 		mem_address = pdata->mem_address;
- 		dump_oops = pdata->dump_oops;
-+		record_size = pdata->record_size;
- 	}
- 
- 	if (!mem_size) {
-@@ -119,12 +123,12 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 
- 	rounddown_pow_of_two(mem_size);
- 
--	if (mem_size < RECORD_SIZE) {
-+	if (mem_size < record_size) {
- 		printk(KERN_ERR "ramoops: size too small");
- 		goto fail3;
- 	}
- 
--	cxt->max_count = mem_size / RECORD_SIZE;
-+	cxt->max_count = mem_size / record_size;
- 	cxt->count = 0;
- 	cxt->size = mem_size;
- 	cxt->phys_addr = mem_address;
-diff --git a/include/linux/ramoops.h b/include/linux/ramoops.h
-index 1d05505..cfa2623 100644
---- a/include/linux/ramoops.h
-+++ b/include/linux/ramoops.h
-@@ -11,6 +11,7 @@ struct ramoops_platform_data {
- 	unsigned long	mem_size;
- 	unsigned long	mem_address;
- 	unsigned char	dump_oops;
-+	unsigned long	record_size;
- };
- 
- #endif
--- 
-1.7.3.1
+To avoid more bikeshedding, smallest patch wins.  That's __weak, right?
 
+Thanks,
+Rusty.
