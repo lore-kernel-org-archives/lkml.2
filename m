@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab1F1Tgu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 15:36:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59974 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751060Ab1F1Tgn (ORCPT
+	id S1752681Ab1F1TcS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 15:32:18 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:29380 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750733Ab1F1TcM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 15:36:43 -0400
+	Tue, 28 Jun 2011 15:32:12 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-YMail-OSG: 9BzUKRgVM1lPCBwzKd7i3nVhAN.WgzUtEyC_7veLoQkNmAl
+ ybyhYVcUBJpkevN0mubJSSzO7lC1PCQBn7mF03ccuupnQ8bsINZvfAv5PcTt
+ 9ZLa9pKgJ22YPnG7iBeA1YKhnmeIx1HiB3CpcFwdbQ.ygSSQwAxBqBiCki2d
+ FMwEgO7wwmSJizIbEbI2XPeTpPCVMWk2O015Uh36u5dHtv0e3qYRRKSALmGp
+ 2Jw78rxsRwN2kVh3H2F90HWiyVqC.JY7pg2ZbKeRwqnBso7omqr0YQNpSTyI
+ HeNCi2bevNDcw0ppZ7_8sysFENFDUBey__4KGoa.170TRNVH5JWcwD3v4BY7
+ 7ycWCS5qOBzaf2K2ELxDhXPpY
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+Date: Tue, 28 Jun 2011 14:32:08 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+cc: Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] slub: reduce overhead of slub_debug
+In-Reply-To: <20110626193918.GA3339@joi.lan>
+Message-ID: <alpine.DEB.2.00.1106281431370.27518@router.home>
+References: <20110626193918.GA3339@joi.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20110627183829.GA16033@albatros>
-References: <20110623152137.GA2536@albatros> <20110626103915.GB11093@elte.hu>
- <20110626165409.GA2584@albatros> <20110626182628.GA20158@elte.hu>
- <20110626190622.GB4217@albatros> <20110626194618.GA21740@elte.hu>
- <20110626202518.GA4915@albatros> <20110626220126.GA24004@elte.hu>
- <20110627083633.GA5846@albatros> <20110627104058.45e93c41@pyx> <20110627183829.GA16033@albatros>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Tue, 28 Jun 2011 12:30:14 -0700
-Message-ID: <BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com>
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in printk()
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 11:38 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
->
-> Sure, I don't propose it anymore (v2 goes without it).
+On Sun, 26 Jun 2011, Marcin Slusarz wrote:
 
-What point would you like to filter things at?
+> slub checks for poison one byte by one, which is highly inefficient
+> and shows up frequently as a highest cpu-eater in perf top.
 
-I really think that user space should do its own filtering - nobody
-does a plain 'cat' on dmesg. Or if they do, they really have
-themselves to blame.
+Ummm.. Performance improvements for debugging modes? If you need
+performance then switch off debuggin.
 
-And afaik, we don't do any escape sequence handling at the console
-level either, so you cannot mess up the console with control
-characters.
-
-And the most dangerous character seems to be one that you don't
-filter: the one we really do react to is '\n', and you could possibly
-make confusing log messages by embedding a newline in your string and
-then trying to make the rest look like something bad (say, an oops).
-
-So I'm not entirely convinced about this filtering at all.
-
-                     Linus
