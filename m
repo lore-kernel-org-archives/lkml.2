@@ -1,48 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753145Ab1F1Tki (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 15:40:38 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33661 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752976Ab1F1Tk1 (ORCPT
+	id S1753214Ab1F1Too (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 15:44:44 -0400
+Received: from slow3-v.mail.gandi.net ([217.70.178.89]:34316 "EHLO
+	slow3-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab1F1Toj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 15:40:27 -0400
-Message-ID: <4E0A2E26.5000001@gmail.com>
-Date: Tue, 28 Jun 2011 12:40:22 -0700
-From: David Daney <ddaney.cavm@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 28 Jun 2011 15:44:39 -0400
+X-WhiteListed: mail was accepted with no delay
+X-WhiteListed: mail was accepted with no delay
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 83.160.107.163
+Date: Tue, 28 Jun 2011 21:40:40 +0200
+From: Matthias Kaehlcke <matthias@kaehlcke.net>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Arnd Bergmann <arnd@arndb.de>, viresh kumar <viresh.kumar@st.com>,
+        Shawn Guo <shawn.guo@linaro.org>, Ryan Mallon <ryan@bluewatersys.com>
+Subject: Re: [PATCH 1/2] PWM: add pwm framework support
+Message-ID: <20110628194040.GE15091@darwin>
+Mail-Followup-To: Matthias Kaehlcke <matthias@kaehlcke.net>,
+	Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+	linux-arm-kernel@lists.infradead.org, Arnd Bergmann <arnd@arndb.de>,
+	viresh kumar <viresh.kumar@st.com>,
+	Shawn Guo <shawn.guo@linaro.org>,
+	Ryan Mallon <ryan@bluewatersys.com>
+References: <1309255368-9775-1-git-send-email-s.hauer@pengutronix.de>
+ <1309255368-9775-2-git-send-email-s.hauer@pengutronix.de>
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: Marcin Slusarz <marcin.slusarz@gmail.com>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] slub: reduce overhead of slub_debug
-References: <20110626193918.GA3339@joi.lan> <alpine.DEB.2.00.1106281431370.27518@router.home>
-In-Reply-To: <alpine.DEB.2.00.1106281431370.27518@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309255368-9775-2-git-send-email-s.hauer@pengutronix.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2011 12:32 PM, Christoph Lameter wrote:
-> On Sun, 26 Jun 2011, Marcin Slusarz wrote:
->
->> slub checks for poison one byte by one, which is highly inefficient
->> and shows up frequently as a highest cpu-eater in perf top.
->
-> Ummm.. Performance improvements for debugging modes? If you need
-> performance then switch off debuggin.
+El Tue, Jun 28, 2011 at 12:02:47PM +0200 Sascha Hauer ha dit:
 
-There is no reason to make things gratuitously slow.  I don't know about 
-the merits of this particular patch, but I must disagree with the 
-general sentiment.
+> This patch adds framework support for PWM (pulse width modulation) devices.
+[...]
+> diff --git a/drivers/pwm/core.c b/drivers/pwm/core.c
+> new file mode 100644
+> index 0000000..79dc051
+> --- /dev/null
+> +++ b/drivers/pwm/core.c
+[...]
+> +/**
+> + * pwmchip_add() - register a new pwm
+> + * @chip: the pwm
+> + *
+> + * register a new pwm. pwm->pwm_id must be initialized. if pwm_id < 0 then
+> + * a dynamically assigned id will be used, otherwise the id specified,
+> + */
+> +int pwmchip_add(struct pwm_chip *chip)
+> +{
+> +	struct pwm_device *pwm;
+> +	int ret = 0;
+> +
+> +	pwm = kzalloc(sizeof(*pwm), GFP_KERNEL);
+> +	if (!pwm)
+> +		return -ENOMEM;
+> +
+> +	pwm->chip = chip;
+> +
+> +	mutex_lock(&pwm_lock);
+> +
+> +	if (chip->pwm_id >= 0 && find_pwm(chip->pwm_id)) {
+> +		ret = -EBUSY;
+> +		goto out;
+> +	}
+> +
+> +	if (chip->pwm_id < 0)
+> +		chip->pwm_id = next_pwm_id++;
+> +
+> +	list_add_tail(&pwm->node, &pwm_list);
+> +out:
+> +	mutex_unlock(&pwm_lock);
+> +
+> +	kfree(pwm);
 
-We have high performance tracing, why not improve this as well.
+as already pointed out by kurt, pwm should only be freed in case of an
+error
 
-Just last week I was trying to find the cause of memory corruption that 
-only occurred at very high network packet rates.  Memory allocation 
-speed was definitely getting in the way of debugging.  For me, faster 
-SLUB debugging would be welcome.
+> +
+> +	return ret;
+> +}
+> +EXPORT_SYMBOL_GPL(pwmchip_add);
+> +
+> +/**
+> + * pwmchip_remove() - remove a pwm
+> + * @chip: the pwm
+> + *
+> + * remove a pwm. This function may return busy if the pwm is still requested.
+> + */
+> +int pwmchip_remove(struct pwm_chip *chip)
+> +{
+> +	struct pwm_device *pwm;
+> +	int ret = 0;
+> +
+> +	mutex_lock(&pwm_lock);
+> +
+> +	pwm = find_pwm(chip->pwm_id);
+> +	if (!pwm) {
+> +		ret = -ENOENT;
+> +		goto out;
+> +	}
+> +
+> +	if (test_bit(FLAG_REQUESTED, &pwm->flags)) {
+> +		ret = -EBUSY;
+> +		goto out;
+> +	}
+> +
+> +	list_del(&pwm->node);
+  +	kfree(pwm);
+> +out:
+> +	mutex_unlock(&pwm_lock);
+> +
+> +	return ret;
+> +}
 
-David Daney
+[...]
+
+best regards
+
+-- 
+Matthias Kaehlcke
+Embedded Linux Developer
+Amsterdam
+
+             It always seems impossible until it's done
+                        (Nelson Mandela)
+                                                                 .''`.
+    using free software / Debian GNU/Linux | http://debian.org  : :'  :
+                                                                `. `'`
+gpg --keyserver pgp.mit.edu --recv-keys 47D8E5D4                  `-
