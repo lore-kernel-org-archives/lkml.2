@@ -1,268 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757106Ab1F1IQh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 04:16:37 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33139 "EHLO
+	id S1756771Ab1F1IZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 04:25:46 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36035 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756776Ab1F1INe (ORCPT
+	with ESMTP id S1756710Ab1F1IZS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 04:13:34 -0400
-From: Per Forlin <per.forlin@linaro.org>
-To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org,
-        Nickolay Nickolaev <nicknickolaev@gmail.com>,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v8 12/12] mmc: block: add handling for two parallel block requests in issue_rw_rq
-Date: Tue, 28 Jun 2011 10:11:57 +0200
-Message-Id: <1309248717-14606-13-git-send-email-per.forlin@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1309248717-14606-1-git-send-email-per.forlin@linaro.org>
-References: <1309248717-14606-1-git-send-email-per.forlin@linaro.org>
+	Tue, 28 Jun 2011 04:25:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=OEnA0jTiIk5WWMJmrhLtUcMaAiX5tfLvTHMV34/VZsCj5MZJ8xtyjOBq6N1AnRNOmy
+         ndzdNLgvkRTPfIWI4qsXncs3cMyEKPt9Fxa427ny7r/q5fICV7cjuC6/vrnjKWUP6dyA
+         lPowgCs5wEtRo7WkST3PR6uC3u7b12kHiek40=
+Date: Tue, 28 Jun 2011 10:25:12 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Denys Vlasenko <vda.linux@googlemail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ptrace: make former thread ID available via
+ PTRACE_GETEVENTMSG after PTRACE_EVENT_EXEC stop (v.2)
+Message-ID: <20110628082512.GA3386@htj.dyndns.org>
+References: <201106262108.43011.vda.linux@googlemail.com>
+ <20110626200442.GA16293@redhat.com>
+ <20110627081139.GY30101@htj.dyndns.org>
+ <20110627134713.GB3527@redhat.com>
+ <20110627135252.GB30101@htj.dyndns.org>
+ <20110627151827.GA6223@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110627151827.GA6223@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change mmc_blk_issue_rw_rq() to become asynchronous.
-The execution flow looks like this:
-The mmc-queue calls issue_rw_rq(), which sends the request
-to the host and returns back to the mmc-queue. The mmc-queue calls
-issue_rw_rq() again with a new request. This new request is prepared,
-in isuue_rw_rq(), then it waits for the active request to complete before
-pushing it to the host. When to mmc-queue is empty it will call
-isuue_rw_rq() with req=NULL to finish off the active request
-without starting a new request.
+Hello,
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
----
- drivers/mmc/card/block.c |   80 +++++++++++++++++++++++++++++++++++++--------
- drivers/mmc/card/queue.c |   17 +++++++---
- drivers/mmc/card/queue.h |    1 +
- 3 files changed, 78 insertions(+), 20 deletions(-)
+On Mon, Jun 27, 2011 at 05:18:27PM +0200, Oleg Nesterov wrote:
+> > and the only way to discover would be either comparing kernel
+> > version or actually trying it - both aren't too nice.
+> 
+> Fortunately, currently tracehook_report_exec() zeroes ->ptrace_message.
+> At least this means that anything != 0 means it works.
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 7ed2c68..825741e 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -822,12 +822,14 @@ static inline void mmc_apply_rel_rw(struct mmc_blk_request *brq,
- 	 R1_CC_ERROR |		/* Card controller error */		\
- 	 R1_ERROR)		/* General/unknown error */
- 
--int mmc_blk_err_check(struct mmc_blk_request *brq,
--		      struct request *req,
--		      struct mmc_card *card,
--		      struct mmc_blk_data *md)
-+static int mmc_blk_err_check(struct mmc_card *card,
-+			     struct mmc_async_req *areq)
- {
--	int ret = MMC_BLK_SUCCESS;
-+	enum mmc_blk_status ret = MMC_BLK_SUCCESS;
-+	struct mmc_queue_req *mq_mrq = container_of(areq, struct mmc_queue_req,
-+						    mmc_active);
-+	struct mmc_blk_request *brq = &mq_mrq->brq;
-+	struct request *req = mq_mrq->req;
- 
- 	/*
- 	 * sbc.error indicates a problem with the set block count
-@@ -1038,24 +1040,41 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
- 		brq->data.sg_len = i;
- 	}
- 
-+	mqrq->mmc_active.mrq = &brq->mrq;
-+	mqrq->mmc_active.err_check = mmc_blk_err_check;
-+
- 	mmc_queue_bounce_pre(mqrq);
- }
- 
--static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
-+static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
- {
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
- 	struct mmc_blk_request *brq = &mq->mqrq_cur->brq;
- 	int ret = 1, disable_multi = 0, retry = 0;
- 	enum mmc_blk_status status;
-+	struct mmc_queue_req *mq_rq;
-+	struct request *req;
-+	struct mmc_async_req *areq;
- 
--	do {
--		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, disable_multi, mq);
--		mmc_wait_for_req(card->host, &brq->mrq);
-+	if (!rqc && !mq->mqrq_prev->req)
-+		return 0;
- 
--		mmc_queue_bounce_post(mq->mqrq_cur);
-+	do {
-+		if (rqc) {
-+			mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
-+			areq = &mq->mqrq_cur->mmc_active;
-+		} else
-+			areq = NULL;
-+		areq = mmc_start_req(card->host, areq, (int *) &status);
-+		if (!areq)
-+			return 0;
-+
-+		mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
-+		brq = &mq_rq->brq;
-+		req = mq_rq->req;
-+		mmc_queue_bounce_post(mq_rq);
- 
--		status = mmc_blk_err_check(brq, req, card, md);
- 		switch (status) {
- 		case MMC_BLK_SUCCESS:
- 		case MMC_BLK_PARTIAL:
-@@ -1066,6 +1085,13 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
- 			ret = __blk_end_request(req, 0,
- 						brq->data.bytes_xfered);
- 			spin_unlock_irq(&md->lock);
-+			if (status == MMC_BLK_SUCCESS && ret) {
-+				/* If this happen it is a bug */
-+				printk(KERN_ERR "%s BUG rq_tot %d d_xfer %d\n",
-+				       __func__, blk_rq_bytes(req),
-+				       brq->data.bytes_xfered);
-+				goto cmd_abort;
-+			}
- 			break;
- 		case MMC_BLK_CMD_ERR:
- 			goto cmd_err;
-@@ -1087,9 +1113,19 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
- 			ret = __blk_end_request(req, -EIO,
- 						brq->data.blksz);
- 			spin_unlock_irq(&md->lock);
-+			if (!ret)
-+				goto start_new_req;
- 			break;
- 		}
- 
-+		if (ret) {
-+			/*
-+			 * In case of a none complete request
-+			 * prepare it again and resend.
-+			 */
-+			mmc_blk_rw_rq_prep(mq_rq, card, disable_multi, mq);
-+			mmc_start_req(card->host, &mq_rq->mmc_active, NULL);
-+		}
- 	} while (ret);
- 
- 	return 1;
-@@ -1124,6 +1160,12 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
- 		ret = __blk_end_request(req, -EIO, blk_rq_cur_bytes(req));
- 	spin_unlock_irq(&md->lock);
- 
-+ start_new_req:
-+	if (rqc) {
-+		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
-+		mmc_start_req(card->host, &mq->mqrq_cur->mmc_active, NULL);
-+	}
-+
- 	return 0;
- }
- 
-@@ -1133,26 +1175,34 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
- 
--	mmc_claim_host(card->host);
-+	if (req && !mq->mqrq_prev->req)
-+		/* claim host only for the first request */
-+		mmc_claim_host(card->host);
-+
- 	ret = mmc_blk_part_switch(card, md);
- 	if (ret) {
- 		ret = 0;
- 		goto out;
- 	}
- 
--	if (req->cmd_flags & REQ_DISCARD) {
-+	if (req && req->cmd_flags & REQ_DISCARD) {
-+		/* complete ongoing async transfer before issuing discard */
-+		if (card->host->areq)
-+			mmc_blk_issue_rw_rq(mq, NULL);
- 		if (req->cmd_flags & REQ_SECURE)
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
--	} else if (req->cmd_flags & REQ_FLUSH) {
-+	} else if (req && req->cmd_flags & REQ_FLUSH) {
- 		ret = mmc_blk_issue_flush(mq, req);
- 	} else {
- 		ret = mmc_blk_issue_rw_rq(mq, req);
- 	}
- 
- out:
--	mmc_release_host(card->host);
-+	if (!req)
-+		/* release host only when there are no more requests */
-+		mmc_release_host(card->host);
- 	return ret;
- }
- 
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index d69d954..8c51a54 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -52,6 +52,7 @@ static int mmc_queue_thread(void *d)
- 	down(&mq->thread_sem);
- 	do {
- 		struct request *req = NULL;
-+		struct mmc_queue_req *tmp;
- 
- 		spin_lock_irq(q->queue_lock);
- 		set_current_state(TASK_INTERRUPTIBLE);
-@@ -59,7 +60,10 @@ static int mmc_queue_thread(void *d)
- 		mq->mqrq_cur->req = req;
- 		spin_unlock_irq(q->queue_lock);
- 
--		if (!req) {
-+		if (req || mq->mqrq_prev->req) {
-+			set_current_state(TASK_RUNNING);
-+			mq->issue_fn(mq, req);
-+		} else {
- 			if (kthread_should_stop()) {
- 				set_current_state(TASK_RUNNING);
- 				break;
-@@ -67,11 +71,14 @@ static int mmc_queue_thread(void *d)
- 			up(&mq->thread_sem);
- 			schedule();
- 			down(&mq->thread_sem);
--			continue;
- 		}
--		set_current_state(TASK_RUNNING);
- 
--		mq->issue_fn(mq, req);
-+		/* Current request becomes previous request and vice versa. */
-+		mq->mqrq_prev->brq.mrq.data = NULL;
-+		mq->mqrq_prev->req = NULL;
-+		tmp = mq->mqrq_prev;
-+		mq->mqrq_prev = mq->mqrq_cur;
-+		mq->mqrq_cur = tmp;
- 	} while (1);
- 	up(&mq->thread_sem);
- 
-@@ -97,7 +104,7 @@ static void mmc_request(struct request_queue *q)
- 		return;
- 	}
- 
--	if (!mq->mqrq_cur->req)
-+	if (!mq->mqrq_cur->req && !mq->mqrq_prev->req)
- 		wake_up_process(mq->thread);
- }
- 
-diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
-index 1a637d2..d2a1eb4 100644
---- a/drivers/mmc/card/queue.h
-+++ b/drivers/mmc/card/queue.h
-@@ -19,6 +19,7 @@ struct mmc_queue_req {
- 	char			*bounce_buf;
- 	struct scatterlist	*bounce_sg;
- 	unsigned int		bounce_sg_len;
-+	struct mmc_async_req	mmc_active;
- };
- 
- struct mmc_queue {
+Yeah, but that's a pretty silly way to do it.  If we make it depend on
+PT_SEIZED, we can simply say "if seized, EXEC reports..." but as it
+currently stands, it would go like "If the message is non-zero on
+EXEC, it indicates...  This behavior is valid since kernel version
+x.x.x".  Maybe adding a guarantee that PTRACE_SEIZE capable kernel
+always reports the old pid on EXEC but that would still seem
+unnecessarily complicated.  It isn't a bug fix.  I don't see much
+point in introducing new behavior separately.
+
+Thanks.
+
 -- 
-1.7.4.1
-
+tejun
