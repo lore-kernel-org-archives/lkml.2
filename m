@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756611Ab1F1Enx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 00:43:53 -0400
-Received: from mx.logic.tuwien.ac.at ([128.130.175.19]:56396 "EHLO
-	mx.logic.tuwien.ac.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756248Ab1F1EmV (ORCPT
+	id S1756645Ab1F1EqO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 00:46:14 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3286 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756185Ab1F1Ene convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 00:42:21 -0400
-Date: Tue, 28 Jun 2011 13:42:16 +0900
-From: Norbert Preining <preining@logic.at>
-To: "Zhong, Xin" <xin.zhong@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-btrfs@vger.kernel.org" <linux-btrfs@vger.kernel.org>
-Subject: Re: [BUG] btrfs is tearing down whole kernel when disk is
-	disconnected
-Message-ID: <20110628044216.GH6792@gamma.logic.tuwien.ac.at>
-References: <20110627014101.GA1517@gamma.logic.tuwien.ac.at> <1865303E0DED764181A9D882DEF65FB69F4CCC13B8@shsmsx502.ccr.corp.intel.com>
+	Tue, 28 Jun 2011 00:43:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=QgmAxxGnyS+3VTLz+hrtgBuh2LL/MNOvLpYMtchL2qwm8YTKGOw9E5Ong+0z+lxhhM
+         YjXzRGMTK7nHEoOex8cA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1865303E0DED764181A9D882DEF65FB69F4CCC13B8@shsmsx502.ccr.corp.intel.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1308778459.1022.63.camel@twins>
+References: <20110621071649.862846205@google.com> <20110621071700.879990875@google.com>
+ <1308778459.1022.63.camel@twins>
+From: Paul Turner <pjt@google.com>
+Date: Mon, 27 Jun 2011 21:43:00 -0700
+Message-ID: <CAPM31RLSh38tAchrapdku7yBZLyY+_NrTVCszTFTOLk+rujQ=w@mail.gmail.com>
+Subject: Re: [patch 12/16] sched: prevent interactions with throttled entities
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Zhong,
+On Wed, Jun 22, 2011 at 2:34 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2011-06-21 at 00:17 -0700, Paul Turner wrote:
+>> +       udd.cpu = rq->cpu;
+>> +       udd.now = rq->clock_task;
+>> +       walk_tg_tree_from(cfs_rq->tg, tg_unthrottle_down, tg_nop,
+>> +                         (void *)&udd);
+>
+> How about passing rq along and not using udd? :-)
+>
 
-On Mo, 27 Jun 2011, Zhong, Xin wrote:
-> We met this situation in meego too:
-> https://bugs.meego.com/show_bug.cgi?id=18156
-
-Ah, good to hear that I am not the only one.
-(Last time I was told: "It only happens to you!" until the real bug
-was found ;-)
-
-> I am now working on a patch to handle this kind of IO problem more
-> gracefully (at least for sync/umount) by using the error handling
-> API (btrfs_std_error). So far, I am still debugging my patch. Will
-> send it to mailing list for review later. 
-
-Please include me in the recipient list when sending the patch, I will
-give it a try!
-
-Thanks
-
-Norbert
-------------------------------------------------------------------------
-Norbert Preining            preining@{jaist.ac.jp, logic.at, debian.org}
-JAIST, Japan                                 TeX Live & Debian Developer
-DSA: 0x09C5B094   fp: 14DF 2E6C 0307 BE6D AD76  A9C0 D2BF 4AA3 09C5 B094
-------------------------------------------------------------------------
-SNITTERFIELD (n.)
-Office noticeboard on which snitters (q.v.), cards saying 'You don't
-have to be mad to work here, but if you are it helps !!!' and slightly
-smutty postcards from Ibiza get pinned up by snitterbies (q.v.)
-			--- Douglas Adams, The Meaning of Liff
+egads.. yes!
