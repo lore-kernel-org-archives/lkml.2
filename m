@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab1F1LCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 07:02:14 -0400
-Received: from relay.parallels.com ([195.214.232.42]:34216 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756739Ab1F1LAm (ORCPT
+	id S1757059Ab1F1LHi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 07:07:38 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:50356 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755727Ab1F1LGK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 07:00:42 -0400
-Message-ID: <4E09B457.9050800@parallels.com>
-Date: Tue, 28 Jun 2011 15:00:39 +0400
-From: Konstantin Khlebnikov <khlebnikov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>
-Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
-References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Jun 2011 07:06:10 -0400
+Subject: Re: [tip:perf/core] perf: Ignore non-sampling overflows
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "francis.moro@gmail.com" <francis.moro@gmail.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>
+In-Reply-To: <20110628105335.GA17199@erda.amd.com>
+References: <new-submission>
+	 <tip-963988262c3c8f4234f64a0dde59446a295e07bb@git.kernel.org>
+	 <20110628105335.GA17199@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 28 Jun 2011 13:05:05 +0200
+Message-ID: <1309259105.6701.210.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> This patch series seems to be working for me. I did testing for ext4 only.
-> This series is based on for-3.1/core branch of Jen's block tree.
-> Konstantin, can you please give it a try and see if it fixes your
-> issue.
+On Tue, 2011-06-28 at 12:53 +0200, Robert Richter wrote:
+> > --- a/kernel/perf_event.c
+> > +++ b/kernel/perf_event.c
+> > @@ -4240,6 +4240,13 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
+> >  	struct hw_perf_event *hwc = &event->hw;
+> >  	int ret = 0;
+> >  
+> > +	/*
+> > +	 * Non-sampling counters might still use the PMI to fold short
+> > +	 * hardware counters, ignore those.
+> > +	 */
+> > +	if (unlikely(!is_sampling_event(event)))
+> > +		return 0;
+> > +
 
-It works for me too, for ext3 and ext4, on top 3.0-rc5, after these trivial fixes:
+> do you remember the background of this change. This check silently
+> drops data of non-sampling events. I want to use perf_event_overflow()
+> to write to the buffer and want to modify the check, but don't see
+> which 'accidentally' interrupts may occur that must be ignored.
 
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -1511,7 +1519,7 @@ static void cfq_add_rq_rb(struct request *rq)
-          * if that happens, put the alias on the dispatch list
-          */
-         while ((__alias = elv_rb_add(&cfqq->sort_list, rq)) != NULL)
--               cfq_dispatch_insert(cfqd->queue, __alias);
-+               cfq_dispatch_insert(cfqd->queue, __alias, false);
+IIRC this is because we always program the interrupt bit, such that when
+the counter overflows we can account and reprogram the thing. This is
+needed because no hardware counter is in fact 64 bits wide. Therefore we
+have to program the counter to its max width and properly account the
+state and reprogram on overflow.
 
-         if (!cfq_cfqq_on_rr(cfqq))
-                 cfq_add_cfqq_rr(cfqd, cfqq);
-@@ -3797,12 +3797,11 @@ cfq_set_depends_on_task(struct request_queue *q, struct task_struct *tsk)
-          */
-         rcu_read_lock();
-         if (task_blkio_cgroup(current) == task_blkio_cgroup(tsk))
--               return;
--       rcu_read_unlock();
-+               goto out_unlock_rcu;
+Imagine a 32bit cycle counter (@1GHz), if we were not to program that as
+taking interrupts and nobody would read that counter for about 4.2
+seconds, we'd have overflowed and lost the actual count value for the
+thing.
 
-         cic = cfq_cic_lookup(cfqd, current->io_context);
-         if (!cic)
--               return;
-+               goto out_unlock_rcu;
+So what we do is program is at 31bits (so that the msb can toggle and
+trigger the interrupt), and on interrupt add to event->count, and reset
+the hardware to start counting again.
 
-         task_lock(tsk);
-         spin_lock_irq(q->queue_lock);
-@@ -3847,6 +3846,8 @@ cfq_set_depends_on_task(struct request_queue *q, struct task_struct *tsk)
-  out_unlock:
-         spin_unlock_irq(q->queue_lock);
-         task_unlock(tsk);
-+out_unlock_rcu:
-+       rcu_read_unlock();
-  }
+Now some arch/*/perf_event.c implementations unconditionally called
+perf_event_overflow() from their IRQ handler, even for such non-sampling
+counters.
+
+
