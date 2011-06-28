@@ -1,58 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759590Ab1F1RE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 13:04:56 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:61015 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758471Ab1F1RDS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 13:03:18 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH 1/2] PWM: add pwm framework support
-Date: Tue, 28 Jun 2011 19:03:05 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Ryan Mallon <ryan@bluewatersys.com>
-References: <1309255368-9775-1-git-send-email-s.hauer@pengutronix.de> <201106281427.04373.arnd@arndb.de> <20110628161842.GK6069@pengutronix.de>
-In-Reply-To: <20110628161842.GK6069@pengutronix.de>
+	id S1759696Ab1F1RHj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 13:07:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10671 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759938Ab1F1RG1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 13:06:27 -0400
+Date: Tue, 28 Jun 2011 13:06:24 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/8][V2] blk-throttle: Throttle buffered WRITEs in
+ balance_dirty_pages()
+Message-ID: <20110628170624.GA12949@redhat.com>
+References: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
+ <20110628162138.GA1544@thinkpad>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106281903.06121.arnd@arndb.de>
-X-Provags-ID: V02:K0:C99Dx9x3AdL0B0+5i3nHEVQ9PCcVrmqwZ/M/sFB+eCO
- eELoaJZ/nhrXx+IEbJih66Y4W70O8C8OinfJsko+CoX9XxMsgM
- s6whdu3g+mstvGHTuOsKLkZG9bnegjU2vkcIKCyWMyX0J+oOWx
- o85c4a4lzPd84srWbUOy7626G8NPfymjaiGyke7ylXqKrDMDOE
- 55OJVnuUD2SnWmj7r/Ekg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110628162138.GA1544@thinkpad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 June 2011, Sascha Hauer wrote:
-> > How about using idr? It provides you a fast lookup and handles giving
-> > out unique numbers.
+On Tue, Jun 28, 2011 at 06:21:38PM +0200, Andrea Righi wrote:
+> On Tue, Jun 28, 2011 at 11:35:01AM -0400, Vivek Goyal wrote:
+> > Hi,
+> > 
+> > This is V2 of the patches. First version is posted here.
+> > 
+> > https://lkml.org/lkml/2011/6/3/375
+> > 
+> > There are no changes from first version except that I have rebased it to
+> > for-3.1/core branch of Jens's block tree.
+> > 
+> > I have been trying to find ways to solve two problems with block IO controller
+> > cgroups.
+> > 
+> > - Current throttling logic in IO controller does not throttle buffered WRITES.
+> >   Well it does throttle all the WRITEs at device and by that time buffered
+> >   WRITE have lost the submitter's context and most of the IO comes in flusher
+> >   thread's context at device. Hence currently buffered write throttling is
+> >   not supported.
+> > 
+> > - All WRITEs are throttled at device level and this can easily lead to
+> >   filesystem serialization.
+> > 
+> >   One simple example is that if a process writes some pages to cache and
+> >   then does fsync(), and process gets throttled then it locks up the
+> >   filesystem. With ext4, I noticed that even a simple "ls" does not make
+> >   progress. The reason boils down to the fact that filesystems are not
+> >   aware of cgroups and one of the things which get serialized is journalling
+> >   in ordered mode.
+> > 
+> >   So even if we do something to carry submitter's cgroup information
+> >   to device and do throttling there, it will lead to serialization of
+> >   filesystems and is not a good idea.
+> > 
+> > So how to go about fixing it. There seem to be two options.
+> > 
+> > - Throttling should still be done at device level. Make filesystems aware
+> >   of cgroups so that multiple transactions can make progress in parallel
+> >   (per cgroup) and there are no shared resources across cgroups in
+> >   filesystems which can lead to serialization.
+> > 
+> > - Throttle WRITEs while they are entering the cache and not after that.
+> >   Something like balance_dirty_pages(). Direct IO is still throttled
+> >   at device level. That way, we can avoid these journalling related
+> >   serialization issues w.r.t trottling.
 > 
-> Sounds like a good idea, but is idr compatible with the pwmchip_reserve
-> function below? idr gives no guarantee that the first id is zero, but I
-> need exactly this to make the ids for the internal PWMs known at compile
-> time.
+> I think that O_DIRECT WRITEs can hit the same serialization problem if
+> we throttle them at device level.
 
-You can certainly use ida_get_new_above to guarantee that implicit
-number allocation doesn't interfere with the reserved numbers. Whether
-that guarantees that you get the reserved numbers when you ask for them,
-I don't know.
+I think it can but number of cases probably comes down significantly. One
+of the main problems seems to be sync related variants sync/fsync etc.
+And I think we do not make any gurantees for inflight requests
+(not completed yet).
 
-A possible way to deal with that would be to allocate an array of pointers
-for the reserved space but use IDR for the rest, but at that point the
-complexity is probably higher than what you have now ;-)
+So it will boil down to how dependent these sync primitives are on
+inflight direct WRITEs. I did basic testing with ext4 and it looked fine.
+On XFS, sync gets blocked behind inflight direct writes. Last time I
+raised that issue and looks like Christoph has plans to do something
+about it.
 
-Another question is whether the dynamic allocation even makes sense. How
-does a driver that wants to use a PWM find out what number to ask for
-when it's not reserved for the platform to start with. Maybe the
-answer is to just use an array or tree for the lookup and refuse to
-register multiple PWMs to the same number.
+So currently my understanding is that dependency on direct writes might
+not be a major issue in practice. (Until and unless there is more to
+it I am not aware about).
 
-	Arnd
+> 
+> Have you tried to do some tests? (i.e. create multiple cgroups with very
+> low I/O limit doing parallel O_DIRECT WRITEs, and try to run at the same
+> time "ls" or other simple commands from the root cgroup or unlimited
+> cgroup).
+
+I did. On ext4, I created a cgroup with limit 1byte per second and 
+started a direct write and did "ls", "sync" and some directory traversal
+operations in same diretory and it seems to work.
+
+> 
+> If we hit the same serialization problem I think we should do something
+> similar also for O_DIRECT WRITEs (e.g, throttle them at the VFS layer),
+> as a temporary solution.
+
+Yep, we could do that if need be. In fact I was thinking of creating
+a switch so that a user can also choose to throttle IO either at
+device level or page cache level.
+
+> 
+> The best solution is always to address this problem at the filesystem
+> layer (option 1), but it's a *huge* change, because all the filesystems
+> need to be redesigned to be cgroup-aware. For now the temporary solution
+> could help at least to avoid system lockups while doing large O_DIRECT
+> writes from I/O-limited cgroups.
+
+Yep, handling it at file system level is the best solution but so far
+I have not seen any positive response on that front from filesystem
+developers. Dave Chinner though seemed open to the idea of associating
+one allocation group to one cgroup and bring some filesystem awareness
+in filesystem. But that is just one.
+
+It is just 300 lines of simple change and we can always change it if
+filesystems ever decide to be cgroup aware and prefer write throttling
+at device level and not at page cache level.
+
+I had raised buffered write issue at LSF this year and atleast there
+feedback was that we need to throttle buffered writes at the time of
+entering page cache.
+
+Thanks
+Vivek
