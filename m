@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759986Ab1F1R0U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 13:26:20 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:48696 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759755Ab1F1RXG (ORCPT
+	id S1760159Ab1F1R3p (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 13:29:45 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:16120 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758338Ab1F1R2E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 13:23:06 -0400
-Message-ID: <4E0A0C90.2010305@gmail.com>
-Date: Tue, 28 Jun 2011 19:17:04 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+	Tue, 28 Jun 2011 13:28:04 -0400
+X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 13:28:04 EDT
+Message-ID: <4E0A0D34.2070507@hp.com>
+Date: Tue, 28 Jun 2011 10:19:48 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Sergiu Iordache <sergiu@google.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] char drivers: ramoops record_size module parameter
-References: <1309224113-21818-1-git-send-email-sergiu@chromium.org>	<1309224113-21818-4-git-send-email-sergiu@chromium.org>	<BANLkTimhEE6TXqnS+eLx863+rjJxqzu19A@mail.gmail.com> <BANLkTiniM96M16TnPC9sXNg-rhDD1RT4KOcD1HJUH-Nu+7hY2Q@mail.gmail.com>
-In-Reply-To: <BANLkTiniM96M16TnPC9sXNg-rhDD1RT4KOcD1HJUH-Nu+7hY2Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Shirley Ma <mashirle@us.ibm.com>
+CC: David Miller <davem@davemloft.net>, mst@redhat.com, eric.dumazet@gmail.com,
+        avi@redhat.com, arnd@arndb.de, netdev@vger.kernel.org,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V7 2/4 net-next] skbuff: Add userspace zero-copy	buffers
+ in skb
+References: <1306610588.5180.87.camel@localhost.localdomain>	<1309189510.21764.1.camel@localhost.localdomain>	<20110627.155426.51839633424542723.davem@davemloft.net> <1309279892.3559.6.camel@localhost.localdomain>
+In-Reply-To: <1309279892.3559.6.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il 28/06/2011 18:38, Sergiu Iordache ha scritto:
-> On Mon, Jun 27, 2011 at 11:39 PM, Marco Stornelli
-> <marco.stornelli@gmail.com>  wrote:
->> Hi,
+On 06/28/2011 09:51 AM, Shirley Ma wrote:
+> On Mon, 2011-06-27 at 15:54 -0700, David Miller wrote:
+>> From: Shirley Ma<mashirle@us.ibm.com>
+>> Date: Mon, 27 Jun 2011 08:45:10 -0700
 >>
->> 2011/6/28 Sergiu Iordache<sergiu@chromium.org>:
->>> The size of the dump is currently set using the RECORD_SIZE macro which
->>> is set to a page size. This patch makes the record size a module
->>> parameter and allows it to be set through platform data as well to allow
->>> larger dumps if needed.
->>>
->>> Change-Id: Ie6bd28a898dab476abf34decb0eecc42122f17ce
->>> Signed-off-by: Sergiu Iordache<sergiu@chromium.org>
->>> ---
+>>> To support skb zero-copy, a pointer is needed to add to skb share
+>> info.
+>>> Do you agree with this approach? If not, do you have any other
+>>> suggestions?
 >>
->> the idea can be valid, but you have to add some check to set the
->> record size. It'd be better to add a lower and upper bound and to
->> check for it's power of two.
+>> I really can't form an opinion unless I am shown the complete
+>> implementation, what this give us in return, what the impact is, etc.
 >
-> That sounds like a good idea. Since the memory size gets rounded to a
-> power of two it would probably be more consistent to round down the
-> record size as well. This way you would be sure that mem_size is a
-> multiple of record size as well. The upper bound would be the memory
-> size, which is already checked. I'm not sure whether it would be a
-> good idea to add lower bound different from record_size != 0 (I don't
-> know why someone would need to dump 8 bytes for example but is there a
-> reason to limit it?)
+> zero-copy skb buffers can save significant CPUs. Right now, I only
+> implements macvtap/vhost zero-copy between KVM guest and host. The
+> performance is as follow:
 >
-> Sergiu
+> Single TCP_STREAM 120 secs test results 2.6.39-rc3 over ixgbe 10Gb NIC
+> results:
 >
+> Message BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
+> 4K      7408.57         92.1%           22.6%           1229
+> 4K(Orig)4913.17         118.1%          84.1%           2086
+>
+> 8K      9129.90         89.3%           23.3%           1141
+> 8K(Orig)7094.55         115.9%          84.7%           2157
+>
+> 16K     9178.81         89.1%           23.3%           1139
+> 16K(Orig)8927.1         118.7%          83.4%           2262
+>
+> 64K     9171.43         88.4%           24.9%           1253
+> 64K(Orig)9085.85        115.9%          82.4%           2229
+>
+> You can see the overall CPU saved 50% w/i zero-copy.
 
-I meant to use (as at the moment) min 4k for record size and so min 4k 
-for mem_size.
+While this isn't the copy between netperf and the stack, at some point 
+you may want to enable netperf's "DIRTY" mode (./configure 
+--enable-dirty) to cause it to start either dirtying buffers before 
+send, or reading from buffers after receive.  I cannot guarantee that 
+there hasn't been bitrot in that area of netperf though :)  Particularly 
+in a TCP_MAERTS test.  The "DIRTY" mode code will not do anything in a 
+TCP_SENDFILE test.
 
-Marco
+A simple sanity check of the effect of the changes on a TCP_RR test 
+would probably be goodness as well.
+
+happy benchmarking,
+
+rick jones
+one of these days I'll have to find a good way to get accurate overall 
+CPU utilization from within a guest and teach netperf about it.
+
+>
+> The impact is every skb allocation consumed one more pointer in skb
+> share info, and a pointer check in skb release when last reference is
+> gone.
+>
+> For skb clone, skb expand private head and skb copy, it still keeps copy
+> the buffers to kernel, so we can avoid user application, like tcpdump to
+> hold the user-space buffers too long.
+>
+> Thanks
+> Shirley
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
