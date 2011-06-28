@@ -1,25 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756713Ab1F1HlO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 03:41:14 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:53159 "EHLO
+	id S1756746Ab1F1HlS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 03:41:18 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:53170 "EHLO
 	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756149Ab1F1HjY (ORCPT
+	with ESMTP id S1756675Ab1F1Hjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 03:39:24 -0400
-X-AuditID: b753bd60-a46c9ba000003bac-89-4e098529b9bd
-X-AuditID: b753bd60-a46c9ba000003bac-89-4e098529b9bd
+	Tue, 28 Jun 2011 03:39:31 -0400
+X-AuditID: b753bd60-a1ec5ba000003bac-ea-4e0985316ff8
+X-AuditID: b753bd60-a1ec5ba000003bac-ea-4e0985316ff8
 From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
-Subject: [PATCH -tip  0/4] perf script: add BTS analysis features
+Subject: [PATCH -tip 1/4] perf script: resolve DSOs and symbols for user-space
 To: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         David Ahern <dsahern@gmail.com>
 Cc: linux-kernel@vger.kernel.org,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        pp-manager@sdl.hitachi.co.jp
-Date: Tue, 28 Jun 2011 16:40:19 +0900
-Message-ID: <20110628074019.4269.32109.stgit@linux3>
+        pp-manager@sdl.hitachi.co.jp,
+        Akihiro Nagai <akihiro.nagai.hw@hitachi.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        David Ahern <dsahern@gmail.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Date: Tue, 28 Jun 2011 16:40:30 +0900
+Message-ID: <20110628074029.4269.32165.stgit@linux3>
+In-Reply-To: <20110628074019.4269.32109.stgit@linux3>
+References: <20110628074019.4269.32109.stgit@linux3>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -29,85 +38,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic, David,
+Resolve user-space DSOs and symbols.
+Latest perf-script can resolve DSOs and symbols for only kernel
+and kernel modules. This patch resolves them for other
+executable binaries.
 
-This patch series adds the functions to analyze BTS logs to perf-script and,
-makes perf-script more informative.
-The patches add the following functions.
- - Resolve DSOs and symbols for BTS's branch_from addresses
- - Resolve DSOs and symbols for user-space address
- - Show the offset of symbols with '--show-symbol-offset' option.
- - Resolve the real path of [kernel.kallsym] using
-   '--show-kernel-path' option.
-
-Usage:
-First, we get the BTS log with the following command.
-# perf record -e branches:u -c 1 -d <command>
-
-Second, analyze it.
-# perf script -f ip,addr,sym,dso [--show-symbol-offset] [--show-kernel-path]
-This command's output format is:
-<branch_to addr> <branch_to function(+offset)> <branch_to DSO> <branch_from addr> <branch_from function(+offset)> <branch_from DSO>
-
-Output sample:
-# perf record -e branches:u -c 1 -d ls
-[snip]
-# perf script -f ip,addr,sym,dso --show-symbol-offset --show-kernel-path
-301ec016b0               (/lib/modules/3.0.0-rc3-tip+/build/vmlinux) ffffffff81467612 irq_return+0x0 (/lib/modules/3.0.0-rc3-tip+/build/vmlinux)
-301ec016b0     _start+0x0 (/lib64/ld-2.14.so) ffffffff81467612 irq_return+0x0 (/lib/modules/3.0.0-rc3-tip+/build/vmlinux)
-301ec04b70  _dl_start+0x0 (/lib64/ld-2.14.so)       301ec016b3 _start+0x3 (/lib64/ld-2.14.so)
-301ec04b70  _dl_start+0x0 (/lib64/ld-2.14.so) ffffffff81467612 irq_return+0x0 (/lib/modules/3.0.0-rc3-tip+/build/vmlinux)
-301ec04b96 _dl_start+0x26 (/lib64/ld-2.14.so) ffffffff81467612 irq_return+0x0 (/lib/modules/3.0.0-rc3-tip+/build/vmlinux)
-301ec04b9d _dl_start+0x2d (/lib64/ld-2.14.so) ffffffff81467612 irq_return+0x0 (/lib/modules/3.0.0-rc3-tip+/build/vmlinux)
-301ec04c0d _dl_start+0x9d (/lib64/ld-2.14.so)       301ec04beb _dl_start+0x7b (/lib64/ld-2.14.so)
-[snip]
-401fd0                 main+0x0 (/root/bin/ls)       301f021399 __libc_start_main+0xe9 (/lib64/libc-2.14.so)
-409ad0     set_program_name+0x0 (/root/bin/ls)           401ff3 main+0x23 (/root/bin/ls)
-409ad0     set_program_name+0x0 (/root/bin/ls) ffffffff81467612 irq_return+0x0 (/lib/modules/3.0.0-rc3-tip+/build/vmlinux)
-401ca8          strrchr@plt+0x0 (/root/bin/ls)           409ade set_program_name+0xe (/root/bin/ls)
-401cae          strrchr@plt+0x6 (/root/bin/ls)           401ca8 strrchr@plt+0x0 (/root/bin/ls)
-401a38               _init+0x18 (/root/bin/ls)           401cb3 strrchr@plt+0xb (/root/bin/ls)
-301ec13840 _dl_runtime_resolve+0x0 (/lib64/ld-2.14.so)   401a3e _init+0x1e (/root/bin/ls)
-301ec0d6a0        _dl_fixup+0x0 (/lib64/ld-2.14.so)  301ec13870 _dl_runtime_resolve+0x30 (/lib64/ld-2.14.so)
+# perf script -f ip,addr,sym,dso
+7f87279646b0           ([kernel.kallsyms]) ffffffff81467612 irq_return ([kernel.kallsyms])
+7f87279646b0    _start (/lib64/ld-2.14.so) ffffffff81467612 irq_return ([kernel.kallsyms])
+7f8727967b70 _dl_start (/lib64/ld-2.14.so)     7f87279646b3 _start (/lib64/ld-2.14.so)
+7f8727967b70 _dl_start (/lib64/ld-2.14.so) ffffffff81467612 irq_return ([kernel.kallsyms])
 [snip]
 
-TODO:
- - add source code path field, line number field ...etc.
- - add record/report script to use easily and, show human-friendly output.
- - filtering kernel functions using scripts
-
-
-BTW, I couldn't run a script generated by 'perf script -g {pyton|perl}'
-with branch events. How do I make scripts analyzing branch events?
-
-# perf record -e branches:u -c 1 -d ls
-# perf script -g python
-# perf script -s perf-script.py
- in trace_begin
-   Fatal: no event_list!
-# perf script -g perl
-# perf script -s perf-script.pl
-   Fatal: no event_list!
-
-Thanks,
-
+Signed-off-by: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: David Ahern <dsahern@gmail.com>
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 ---
 
-Akihiro Nagai (4):
-      perf script: add option resolving vmlinux path
-      perf script: add the option to show the offset of symbols
-      perf script: print DSOs and symbols for BTS branch_from addr
-      perf script: resolve DSOs and symbols for user-space
+ tools/perf/builtin-script.c |    3 +++
+ tools/perf/util/event.c     |    4 ++++
+ tools/perf/util/session.c   |    2 +-
+ 3 files changed, 8 insertions(+), 1 deletions(-)
 
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 3056b45..e45433f 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -327,6 +327,9 @@ static void print_sample_addr(union perf_event *event,
+ 	thread__find_addr_map(thread, session, cpumode, MAP__FUNCTION,
+ 			      event->ip.pid, sample->addr, &al);
+ 	if (!al.map)
++		thread__find_addr_map(thread, session, PERF_RECORD_MISC_USER,
++			MAP__FUNCTION, event->ip.pid, sample->addr, &al);
++	if (!al.map)
+ 		thread__find_addr_map(thread, session, cpumode, MAP__VARIABLE,
+ 				      event->ip.pid, sample->addr, &al);
+ 
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 3c1b8a6..68e7af9 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -771,6 +771,10 @@ int perf_event__preprocess_sample(const union perf_event *event,
+ 
+ 	thread__find_addr_map(thread, session, cpumode, MAP__FUNCTION,
+ 			      event->ip.pid, event->ip.ip, al);
++	if (!al->map)
++		thread__find_addr_map(thread, session, PERF_RECORD_MISC_USER,
++				MAP__FUNCTION, event->ip.pid, event->ip.ip, al);
++
+ 	dump_printf(" ...... dso: %s\n",
+ 		    al->map ? al->map->dso->long_name :
+ 			al->level == 'H' ? "[hypervisor]" : "<not found>");
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index b723f21..632266f 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -1257,7 +1257,7 @@ void perf_session__print_ip(union perf_event *event,
+ 		}
+ 
+ 	} else {
+-		printf("%16" PRIx64, al.addr);
++		printf("%16" PRIx64, sample->ip);
+ 		if (print_sym) {
+ 			if (al.sym && al.sym->name)
+ 				symname = al.sym->name;
 
- tools/perf/Documentation/perf-script.txt |    6 ++++
- tools/perf/builtin-script.c              |   44 +++++++++++++++++++-----------
- tools/perf/util/event.c                  |    4 +++
- tools/perf/util/session.c                |   44 ++++++++++++++----------------
- tools/perf/util/session.h                |    3 +-
- tools/perf/util/symbol.c                 |   12 ++++++++
- tools/perf/util/symbol.h                 |    2 +
- 7 files changed, 74 insertions(+), 41 deletions(-)
-
--- 
-Akihiro Nagai (akihiro.nagai.hw@hitachi.com)
