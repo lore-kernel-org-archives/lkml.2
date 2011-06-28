@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759060Ab1F1Pmp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 11:42:45 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:37824 "EHLO
+	id S1759080Ab1F1Pmx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 11:42:53 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:40638 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757308Ab1F1Pjy (ORCPT
+	by vger.kernel.org with ESMTP id S1757940Ab1F1Pjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 11:39:54 -0400
-X-Sasl-enc: 7xK0DIf8fdbnYTuK35g08xCElmtx5EmHSK7WkQo2TOCH 1309275593
-Date: Tue, 28 Jun 2011 08:39:01 -0700
+	Tue, 28 Jun 2011 11:39:55 -0400
+X-Sasl-enc: FNL0TBc7krG5xk/8GAnpXrJEmmxJRvUS+4v24iaUJRkh 1309275594
+Date: Tue, 28 Jun 2011 08:39:11 -0700
 From: Greg KH <gregkh@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Subject: [GIT PATCH] more USB fixes for 3.0
-Message-ID: <20110628153901.GC32710@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] driver core fixes for 3.0
+Message-ID: <20110628153911.GD32710@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's some small fixes for your 3.0 tree.
+Here's some driver core, and other driver-core related fixes for your
+3.0 git tree.
 
-Nothing major, just the normal USB 3.0 fixes, some MAINTAINERS file
-updates, device ids added, and other various bugs fixed that were being
-reported as problems.
+Just a few minor fixes for things that people have reported, the
+connector and platform.c ones being the biggest one that has hit people
+recently.
 
 Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/ usb-linus
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/ driver-core-linus
 
-All of these have been in the linux-next tree for a while.
+All of these patches have been in the linux-next and mm trees for a
+while now.
 
-The full patches will be sent to the linux-usb mailing list, if anyone
-wants to see them.
+The patches will be sent as a follow-on to this message to lkml for
+people to see.
 
 thanks,
 
@@ -44,71 +45,35 @@ greg k-h
 
 ------------
 
- Documentation/usb/error-codes.txt     |    9 ++++++-
- MAINTAINERS                           |   12 ++++++++-
- drivers/usb/core/driver.c             |   11 ++++++++-
- drivers/usb/core/hub.c                |   16 +++++++++----
- drivers/usb/core/message.c            |   15 +++++++++++-
- drivers/usb/host/ehci-ath79.c         |   10 +++++---
- drivers/usb/host/ehci-hcd.c           |    4 +++
- drivers/usb/host/isp1760-hcd.c        |    2 +-
- drivers/usb/host/ohci-hcd.c           |    4 ++-
- drivers/usb/host/r8a66597-hcd.c       |    1 +
- drivers/usb/host/xhci-mem.c           |    2 -
- drivers/usb/host/xhci-pci.c           |    8 ++++++
- drivers/usb/host/xhci-ring.c          |   30 +++++++++++++++++++++----
- drivers/usb/host/xhci.c               |   39 +++++++++++++++++++++++++++++---
- drivers/usb/host/xhci.h               |    3 ++
- drivers/usb/musb/musb_gadget.c        |    6 +++++
- drivers/usb/musb/musb_host.c          |    2 +-
- drivers/usb/serial/ftdi_sio.c         |   19 +++++++++++----
- drivers/usb/serial/ftdi_sio.h         |    3 +-
- drivers/usb/serial/ftdi_sio_ids.h     |    1 +
- drivers/usb/serial/ti_usb_3410_5052.c |    1 +
- 21 files changed, 164 insertions(+), 34 deletions(-)
+ drivers/base/platform.c         |    2 +-
+ drivers/connector/connector.c   |    1 +
+ drivers/firmware/google/Kconfig |    1 +
+ drivers/misc/pti.c              |   11 +++++++----
+ drivers/misc/ti-st/st_core.c    |    2 +-
+ drivers/misc/ti-st/st_kim.c     |    8 ++++++--
+ include/linux/connector.h       |    2 +-
+ 7 files changed, 18 insertions(+), 9 deletions(-)
 
 ---------------
 
-Alan Stern (3):
-      USB: change maintainership of ohci-hcd and ehci-hcd
-      USB: don't let the hub driver prevent system sleep
-      USB: don't let errors prevent system sleep
+Andrew Morton (1):
+      drivers/base/platform.c: don't mark platform_device_register_resndata() as __init_or_module
 
-Alex He (2):
-      xHCI 1.0: Force Stopped Event(FSE)
-      xHCI 1.0: Incompatible Device Error
+J Freyensee (3):
+      pti: double-free security PTI fix
+      pti: ENXIO error case memory leak PTI fix.
+      pti: PTI semantics fix in pti_tty_cleanup.
 
-Arvid Brodin (1):
-      usb/isp1760: Fix bug preventing the unlinking of control urbs
+K. Y. Srinivasan (2):
+      Connector: Set the CN_NETLINK_USERS correctly
+      Connector: Correctly set the error code in case of success when dispatching receive callbacks
 
-Gabor Juhos (1):
-      USB: ehci-ath79: fix a NULL pointer dereference
+Randy Dunlap (1):
+      firmware: fix GOOGLE_SMI kconfig dependency warning
 
-Jesper Juhl (1):
-      USB: TI 3410/5052 USB Serial Driver: Fix mem leak when firmware is too big.
+Shahar Lev (1):
+      drivers:misc: ti-st: fix skipping of change remote baud
 
-Maarten Lankhorst (1):
-      xhci: Add reset on resume quirk for asrock p67 host
-
-Márton Németh (1):
-      usb: musb: host: compare status for negative error values
-
-Sarah Sharp (5):
-      xhci: Reject double add of active endpoints.
-      USB: Free bandwidth when usb_disable_device is called.
-      xhci: Don't warn about zeroed bMaxBurst descriptor field.
-      xhci: Always set urb->status to zero for isoc endpoints.
-      USB: Fix up URB error codes to reflect implementation.
-
-Uwe Bonnes (1):
-      USB: Add new FT232H chip to drivers/usb/serial/ftdi_sio.c
-
-Yauheni Kaliuta (1):
-      usb: musb: gadget: clear TXPKTRDY flag when set FLUSHFIFO
-
-Yoshihiro Shimoda (1):
-      usb: r8a66597-hcd: fix cannot detect low/full speed device
-
-matt mooney (1):
-      MAINTAINERS: add myself as maintainer of USB/IP
+Steven Rostedt (1):
+      st_kim: Handle case of no device found for ID 0
 
