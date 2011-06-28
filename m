@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752375Ab1F1WAS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 18:00:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46490 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751554Ab1F1WAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 18:00:13 -0400
-Date: Wed, 29 Jun 2011 00:00:08 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Ben Greear <greearb@candelatech.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Question on debugging use-after-free memory issues.
-In-Reply-To: <4E08C80B.9070602@candelatech.com>
-Message-ID: <alpine.LRH.2.00.1106282358450.14213@twin.jikos.cz>
-References: <4E08C80B.9070602@candelatech.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753146Ab1F1WM5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 18:12:57 -0400
+Received: from gadamer.sociales.uba.ar ([157.92.168.13]:42854 "EHLO
+	gadamer.sociales.uba.ar" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752389Ab1F1WMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 18:12:51 -0400
+Message-ID: <20110628190111.123871e6qi2qvrjb@webmail.sociales.uba.ar>
+Date: Tue, 28 Jun 2011 19:01:11 -0300
+From: BLACKBERRY 2011 EMAIL AWARDS <Info@blackberry.co.uk>
+Reply-to: www-blackberry2011@live.com
+To: undisclosed-recipients:;
+Subject: UNCLAIMED 1,650,000.00MILLION GBP  STERLINGS!
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jun 2011, Ben Greear wrote:
+Claims Agent/Lottery Attorney,
+Barr. Mike Brown,
+BlackBerry® Prize Claims Unit,
+Regent Mayfair Building,
+4th Floor, 153-155 Street,
+London W1B 4JE, UK
+Email:www-BlackBerry2011@live.com
+phone: +44-70-4573-9682
 
-> I have a case where deleted memory is being passed into an RPC callback.  
-> I enabled SLUB memory poisoning and verified that the data pointed to 
-> has 0x6b...6b value.
-> 
-> Unfortunately, the rpc code is a giant maze of callbacks and I'm having 
-> a difficult time figuring out where this data could be erroneously 
-> deleted at.
-> 
-> So first question:
-> 
-> Given a pointer to memory, and with SLUB memory debuging on (and/or 
-> other debugging options if applicable), is there a way to get any info 
-> about where the memory was last deleted?
-> 
-> Second:  Any other suggestions for how to go about debugging this?
-> 
-> I hit this problem under load after multiple hours, so just adding 
-> printks in random places may not be feasible...
+Congratulations Dear Winner from the BLACKBERRY® Management and Staff.
 
-First, this is not really a proper list for such questions. I'd propose 
-kernel newbies community next time.
+Your email address was randomly selected by the BlackBerry Smart  
+Device (RASK) from an
+Exclusive List of 21,000,000 Million internet users' e-mail addresses of
+individuals and corporate entities cutting accross the globe, on 28th  
+June, 2011.
 
-Anyway, I'd propose to start with kmemcheck (see 
-Documentation/kmemcheck.txt). It could pin-point the problemtic spot 
-immediately (or it might not).
+Your email address has been awarded the star-prize of
+1,650,000.00 Million GBP(1 Million-6-Hundred-And-Fifty-Great Britain  
+Pounds Sterlings)
+among the other consolation prize-winners.
 
--- 
-Jiri Kosina
-SUSE Labs
+Note:No tickets were sold! Your Winning No is: UK-094517-BB; Bonus NO  
+is: BB-0446-MP, Ticket No is :BB5050
+
+File for your Claims today by forwarding the below details to:  
+www-blackberry2011@live.com to process your winning funds:::
+
+Full Name.....................
+Sex...........................
+Winning Number................UK-094517-BB
+Age.......................
+Occupation....................
+Mobile No.....................
+Email Address.......
+Residential Contact...........
+Marital Status................
+State and Nationality.........
+
+...Congratulations from the BLACKBERRY® LOTTERY PRIZE PAYMENT UNIT,UK...
+...Terms and Conditions apply...
+CopyRight © 2011 BLACKBERRY® CORPORATION
+
+
+
+
+
+
+
 
