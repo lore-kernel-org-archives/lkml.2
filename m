@@ -1,74 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab1F1WKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 18:10:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46780 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab1F1WJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 18:09:57 -0400
-Date: Wed, 29 Jun 2011 00:09:55 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 03/29] gma500: Ensure the frame buffer has a linear
- virtual mapping
-In-Reply-To: <20110628230245.4cec6958@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LNX.2.00.1106290003060.11049@pobox.suse.cz>
-References: <20110616160104.6039.44019.stgit@localhost.localdomain> <20110616160642.6039.31781.stgit@localhost.localdomain> <20110628211859.GA23217@kroah.com> <20110628230245.4cec6958@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752733Ab1F1WNg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 18:13:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60776 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752392Ab1F1WNb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 18:13:31 -0400
+Date: Tue, 28 Jun 2011 15:12:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Andrea Righi <andrea@betterlinux.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        Shaohua Li <shaohua.li@intel.com>,
+        =?ISO-8859-1?Q?P?= =?ISO-8859-1?Q?=E1draig?= Brady 
+	<P@draigBrady.com>,
+        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/2] fadvise: move active pages to inactive list with
+ POSIX_FADV_DONTNEED
+Message-Id: <20110628151233.f0a279be.akpm@linux-foundation.org>
+In-Reply-To: <1309181361-14633-1-git-send-email-andrea@betterlinux.com>
+References: <1309181361-14633-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jun 2011, Alan Cox wrote:
+On Mon, 27 Jun 2011 15:29:19 +0200
+Andrea Righi <andrea@betterlinux.com> wrote:
 
-> > Is there drm changes in linux-next for this driver that I don't have?
-> > 
-> > If so, maybe we need to just start sending these patches through that tree?
+> There were some reported problems in the past about trashing page cache when a
+> backup software (i.e., rsync) touches a huge amount of pages (see for example
+> [1]).
+>     
+> This problem has been almost fixed by the Minchan Kim's patch [2] and a proper
+> use of fadvise() in the backup software. For example this patch set [3] has
+> been proposed for inclusion in rsync.
+>     
+> However, there can be still other similar trashing problems: when the backup
+> software reads all the source files, some of them may be part of the actual
+> working set of the system. When a POSIX_FADV_DONTNEED is performed _all_ pages
+> are evicted from pagecache, both the working set and the use-once pages touched
+> only by the backup software.
+>     
+> With the following solution when POSIX_FADV_DONTNEED is called for an active
+> page instead of removing it from the page cache it is added to the tail of the
+> inactive list. Otherwise, if it's already in the inactive list the page is
+> removed from the page cache. Pages mapped by other processes or unevictable
+> pages are not touched at all.
 > 
-> Not DRM - looks like more sem-random treewide damage in -next tht has yet
-> again not gone via the maintainers of subsystems.
-> 
-> e44ba033c5654dbfda53461c9b1f7dd9bd1d198f
-> 
-> 28f65c11f2ffb3957259dece647a24f8ad2e241b
-> 
-> Can you drop the bits you have merged and I'll send you a new set (which
-> will instead break the stuff Jiri has in his tree and he can fix it up)
-> 
-> Really though this sort of treewide trivial has to stop, its costing tons
-> of time and delays in real work. It should all be going via maintainers
-> of subsystems but clearly Jiri is letting stuff through that isn't
-> trivial but is in fact nuisance.
+> In this way if the backup was the only user of a page, that page will be
+> immediately removed from the page cache by calling POSIX_FADV_DONTNEED.  If the
+> page was also touched by other processes it'll be moved to the inactive list,
+> having another chance of being re-added to the working set, or simply reclaimed
+> when memory is needed.
 
-So, what I am normally doing:
+So if an application touches a page twice and then runs
+POSIX_FADV_DONTNEED, that page will now not be freed.
 
-- I usually wait several weeks (!) before I pick up patches to trivial 
-  tree that have been also sent to maintainers. Exactly to avoid this kind 
-  of situation.
-  With treewide patches, the situation is of course a little bit 
-  different in principle.
-- I reject to apply any drivers/staging bits on a regular basis. I 
-  consider drivers/staging a moving target, and I usually re-route 
-  anything  touching drivers/staging to Greg immediately. Admittedly, I 
-  have failed to do so in this case, sorry about that.
-- I consider the trivial tree to be really the 'tail' of the whole 
-  development process, so whenever there is any merge conflict in 
-  linux-next caused by anything in trivial tree, I always take the 
-  responsibility to resolve the conflict so that subsystem maintainers are 
-  not bothered
+That's a big behaviour change.  For many existing users
+POSIX_FADV_DONTNEED simply doesn't work any more!
 
-I will drop the staging bits, sorry again for missing those in the bulk.
+I'd have thought that adding a new POSIX_FADV_ANDREA would be safer
+than this.
 
-I am still wondering how come that this is causing trouble to anyone 
-though -- is anyone really developing real code on top of linux-next 
-(which should be there to cross-check merge problems between subsystems 
-and test functionality) instead of particular subsystem tree?
 
-Thanks,
-
--- 
-Jiri Kosina
-SUSE Labs
+The various POSIX_FADV_foo's are so ill-defined that it was a mistake
+to ever use them.  We should have done something overtly linux-specific
+and given userspace more explicit and direct pagecache control.
