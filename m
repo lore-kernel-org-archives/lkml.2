@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757898Ab1F1NTO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 09:19:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:34970 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757209Ab1F1NS0 (ORCPT
+	id S1757997Ab1F1NiU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 09:38:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58239 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757982Ab1F1NgR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 09:18:26 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=VR3q0FbkgwYA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=kx0-NNX2TEBHvFvXhXAA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH -tip  00/13]tracing/kprobes: Dynamic events on module
- support
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <20110627072626.6528.41792.stgit@fedora15>
-References: <20110627072626.6528.41792.stgit@fedora15>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 28 Jun 2011 09:18:25 -0400
-Message-ID: <1309267105.26417.3.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Jun 2011 09:36:17 -0400
+From: Keng-Yu Lin <kengyu@canonical.com>
+To: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: ike.pan@canonical.com, vanhoof@canonical.com, kent.lin@canonical.com,
+        sylee@canonical.com, Keng-Yu Lin <kengyu@canonical.com>
+Subject: [PATCH 1/2] ideapad-laptop: Ignore an unused VPC notification
+Date: Tue, 28 Jun 2011 14:35:53 +0100
+Message-Id: <1309268154-6872-1-git-send-email-kengyu@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-06-27 at 16:26 +0900, Masami Hiramatsu wrote:
-> Hi Steven,
-> 
-> Here, I'd like to push updates of dynamic events and perf-probe
-> for supporting dynamic events on module.
-> 
-> The main part of this series is 1-5th patches for kprobes and
-> dynamic event tracer, which allows us to add events on offline
-> kernel module. This means we can put events even on the init
-> functions of the drivers before loading. The requirement of
-> this feature comes from my recent experience of a driver
-> debugging. It had a timing bug in the initialization routine,
-> and it was hard to catch them without tracing the behavior.
-> 
-> I added some perf-probe updates (which including some resent
-> patches), And it's OK to pull only the main part (kprobes and
-> ftrace patches) without perf updates.
-> 
+BIOS fires notifications in a constant period with VPC bit 1 set when the
+power cord is unplugged.
 
-Thanks Masami,
+This event is not known yet to have any effect, but it makes the
+call to sparse_keymap_report_event() and generates many KEY_UNKNOWNs.
 
-I'll try to get to this this week. I've just been doing my main job at
-the moment ;) Which surprisingly, has nothing to do with ftrace.
+This causes the userspace (Gnome Power Manager in my case) unable
+to enter the idle mode. As the result there is no screensaver showing up,
+no dim backlight, etc.
 
--- Steve
+Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
+---
+ drivers/platform/x86/ideapad-laptop.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
+index bfdda33..820f013 100644
+--- a/drivers/platform/x86/ideapad-laptop.c
++++ b/drivers/platform/x86/ideapad-laptop.c
+@@ -463,7 +463,8 @@ static void ideapad_acpi_notify(struct acpi_device *adevice, u32 event)
+ 				ideapad_sync_rfk_state(adevice);
+ 			else if (vpc_bit == 4)
+ 				read_ec_data(handle, 0x12, &vpc2);
+-			else
++			else if (vpc_bit == 1) {
++			} else
+ 				ideapad_input_report(priv, vpc_bit);
+ 		}
+ 	}
+-- 
+1.7.4.1
 
