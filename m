@@ -1,1524 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab1F1UBf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 16:01:35 -0400
-Received: from gate.crashing.org ([63.228.1.57]:42586 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576Ab1F1UB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 16:01:28 -0400
-From: Becky Bruce <beckyb@kernel.crashing.org>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Cc: david@gibson.dropbear.id.au, galak@kernel.crashing.org, wli@holomorphy.com,
-        benh@kernel.crashing.org
-Subject: [PATCH 5/5] powerpc: Hugetlb for BookE
-Date: Tue, 28 Jun 2011 14:54:48 -0500
-Message-Id: <1309291197230-git-send-email-beckyb@kernel.crashing.org>
-X-Mailer: git-send-email 1.5.3.rc2.29.gc4640f
-In-Reply-To: <13092911313115-git-send-email-beckyb@kernel.crashing.org>
-References: <1309290888309-git-send-email-beckyb@kernel.crashing.org>
- <13092909493748-git-send-email-beckyb@kernel.crashing.org>
- <13092910103675-git-send-email-beckyb@kernel.crashing.org>
- <13092910702553-git-send-email-beckyb@kernel.crashing.org>
- <13092911313115-git-send-email-beckyb@kernel.crashing.org>
+	id S1752826Ab1F1Tzj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 15:55:39 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:55901 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751737Ab1F1Tze (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 15:55:34 -0400
+Message-ID: <4E0A31B5.409@candelatech.com>
+Date: Tue, 28 Jun 2011 12:55:33 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: lockdep splat in patched 3.0.0-rc5+ kernel.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Becky Bruce <beckyb@kernel.crashing.org>
+I don't think this has anything to do with the NFS patches I'm testing,
+but it's always possible....
 
-Enable hugepages on Freescale BookE processors.  This allows the kernel to
-use huge TLB entries to map pages, which can greatly reduce the number of
-TLB misses and the amount of TLB thrashing experienced by applications with
-large memory footprints.  Care should be taken when using this on FSL
-processors, as the number of large TLB entries supported by the core is low
-(16-64) on current processors.
+=======================================================
+[ INFO: possible circular locking dependency detected ]
+3.0.0-rc5+ #9
+-------------------------------------------------------
+btserver/22102 is trying to acquire lock:
+  (rcu_node_level_0){..-...}, at: [<ffffffff810a72ad>] rcu_report_unblock_qs_rnp+0x52/0x72
 
-The supported set of hugepage sizes include 4m, 16m, 64m, 256m, and 1g.
-Page sizes larger than the max zone size are called "gigantic" pages and
-must be allocated on the command line (and cannot be deallocated).
+but task is already holding lock:
+  (&rq->lock){-.-.-.}, at: [<ffffffff81045da5>] sched_ttwu_pending+0x34/0x58
 
-This is currently only fully implemented for Freescale 32-bit BookE
-processors, but there is some infrastructure in the code for
-64-bit BooKE.
+which lock already depends on the new lock.
 
-Signed-off-by: Becky Bruce <beckyb@kernel.crashing.org>
-Signed-off-by: David Gibson <david@gibson.dropbear.id.au>
----
- arch/powerpc/Kconfig                   |    3 +-
- arch/powerpc/include/asm/hugetlb.h     |   63 +++++-
- arch/powerpc/include/asm/mmu-book3e.h  |    7 +
- arch/powerpc/include/asm/mmu-hash64.h  |    3 +-
- arch/powerpc/include/asm/mmu.h         |   18 +-
- arch/powerpc/include/asm/page.h        |   31 +++-
- arch/powerpc/include/asm/page_64.h     |   11 -
- arch/powerpc/include/asm/pte-book3e.h  |    3 +
- arch/powerpc/kernel/head_fsl_booke.S   |  133 ++++++++++--
- arch/powerpc/mm/Makefile               |    1 +
- arch/powerpc/mm/hash_utils_64.c        |    3 -
- arch/powerpc/mm/hugetlbpage-book3e.c   |  121 ++++++++++
- arch/powerpc/mm/hugetlbpage.c          |  379 ++++++++++++++++++++++++++++----
- arch/powerpc/mm/init_32.c              |    9 +
- arch/powerpc/mm/mem.c                  |    5 +
- arch/powerpc/mm/mmu_context_nohash.c   |    5 +
- arch/powerpc/mm/pgtable.c              |    3 +-
- arch/powerpc/mm/tlb_low_64e.S          |   24 +-
- arch/powerpc/mm/tlb_nohash.c           |   46 ++++-
- arch/powerpc/platforms/Kconfig.cputype |    4 +-
- 20 files changed, 766 insertions(+), 106 deletions(-)
- create mode 100644 arch/powerpc/mm/hugetlbpage-book3e.c
 
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index 2729c66..b7af257 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -426,8 +426,7 @@ config ARCH_POPULATES_NODE_MAP
- 	def_bool y
- 
- config SYS_SUPPORTS_HUGETLBFS
--       def_bool y
--       depends on PPC_BOOK3S_64
-+	bool
- 
- source "mm/Kconfig"
- 
-diff --git a/arch/powerpc/include/asm/hugetlb.h b/arch/powerpc/include/asm/hugetlb.h
-index 5856a66..8600493 100644
---- a/arch/powerpc/include/asm/hugetlb.h
-+++ b/arch/powerpc/include/asm/hugetlb.h
-@@ -1,15 +1,60 @@
- #ifndef _ASM_POWERPC_HUGETLB_H
- #define _ASM_POWERPC_HUGETLB_H
- 
-+#ifdef CONFIG_HUGETLB_PAGE
- #include <asm/page.h>
- 
-+extern struct kmem_cache *hugepte_cache;
-+extern void __init reserve_hugetlb_gpages(void);
-+
-+static inline pte_t *hugepd_page(hugepd_t hpd)
-+{
-+	BUG_ON(!hugepd_ok(hpd));
-+	return (pte_t *)((hpd.pd & ~HUGEPD_SHIFT_MASK) | PD_HUGE);
-+}
-+
-+static inline unsigned int hugepd_shift(hugepd_t hpd)
-+{
-+	return hpd.pd & HUGEPD_SHIFT_MASK;
-+}
-+
-+static inline pte_t *hugepte_offset(hugepd_t *hpdp, unsigned long addr,
-+				    unsigned pdshift)
-+{
-+	/*
-+	 * On 32-bit, we have multiple higher-level table entries that point to
-+	 * the same hugepte.  Just use the first one since they're all
-+	 * identical.  So for that case, idx=0.
-+	 */
-+	unsigned long idx = 0;
-+
-+	pte_t *dir = hugepd_page(*hpdp);
-+#ifdef CONFIG_PPC64
-+	idx = (addr & ((1UL << pdshift) - 1)) >> hugepd_shift(*hpdp);
-+#endif
-+
-+	return dir + idx;
-+}
-+
- pte_t *huge_pte_offset_and_shift(struct mm_struct *mm,
- 				 unsigned long addr, unsigned *shift);
- 
- void flush_dcache_icache_hugepage(struct page *page);
- 
-+#if defined(CONFIG_PPC_MM_SLICES) || defined(CONFIG_PPC_SUBPAGE_PROT)
- int is_hugepage_only_range(struct mm_struct *mm, unsigned long addr,
- 			   unsigned long len);
-+#else
-+static inline int is_hugepage_only_range(struct mm_struct *mm,
-+					 unsigned long addr,
-+					 unsigned long len)
-+{
-+	return 0;
-+}
-+#endif
-+
-+void book3e_hugetlb_preload(struct mm_struct *mm, unsigned long ea, pte_t pte);
-+void flush_hugetlb_page(struct vm_area_struct *vma, unsigned long vmaddr);
- 
- void hugetlb_free_pgd_range(struct mmu_gather *tlb, unsigned long addr,
- 			    unsigned long end, unsigned long floor,
-@@ -50,8 +95,11 @@ static inline void set_huge_pte_at(struct mm_struct *mm, unsigned long addr,
- static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
- 					    unsigned long addr, pte_t *ptep)
- {
--	unsigned long old = pte_update(mm, addr, ptep, ~0UL, 1);
--	return __pte(old);
-+#ifdef CONFIG_PPC64
-+	return __pte(pte_update(mm, addr, ptep, ~0UL, 1));
-+#else
-+	return __pte(pte_update(ptep, ~0UL, 0));
-+#endif
- }
- 
- static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
-@@ -93,4 +141,15 @@ static inline void arch_release_hugepage(struct page *page)
- {
- }
- 
-+#else /* ! CONFIG_HUGETLB_PAGE */
-+static inline void reserve_hugetlb_gpages(void)
-+{
-+	pr_err("Cannot reserve gpages without hugetlb enabled\n");
-+}
-+static inline void flush_hugetlb_page(struct vm_area_struct *vma,
-+				      unsigned long vmaddr)
-+{
-+}
-+#endif
-+
- #endif /* _ASM_POWERPC_HUGETLB_H */
-diff --git a/arch/powerpc/include/asm/mmu-book3e.h b/arch/powerpc/include/asm/mmu-book3e.h
-index 3ea0f9a..0260ea5 100644
---- a/arch/powerpc/include/asm/mmu-book3e.h
-+++ b/arch/powerpc/include/asm/mmu-book3e.h
-@@ -66,6 +66,7 @@
- #define MAS2_M			0x00000004
- #define MAS2_G			0x00000002
- #define MAS2_E			0x00000001
-+#define MAS2_WIMGE_MASK		0x0000001f
- #define MAS2_EPN_MASK(size)		(~0 << (size + 10))
- #define MAS2_VAL(addr, size, flags)	((addr) & MAS2_EPN_MASK(size) | (flags))
- 
-@@ -80,6 +81,7 @@
- #define MAS3_SW			0x00000004
- #define MAS3_UR			0x00000002
- #define MAS3_SR			0x00000001
-+#define MAS3_BAP_MASK		0x0000003f
- #define MAS3_SPSIZE		0x0000003e
- #define MAS3_SPSIZE_SHIFT	1
- 
-@@ -212,6 +214,11 @@ typedef struct {
- 	unsigned int	id;
- 	unsigned int	active;
- 	unsigned long	vdso_base;
-+#ifdef CONFIG_PPC_MM_SLICES
-+	u64 low_slices_psize;   /* SLB page size encodings */
-+	u64 high_slices_psize;  /* 4 bits per slice for now */
-+	u16 user_psize;         /* page size index */
-+#endif
- } mm_context_t;
- 
- /* Page size definitions, common between 32 and 64-bit
-diff --git a/arch/powerpc/include/asm/mmu-hash64.h b/arch/powerpc/include/asm/mmu-hash64.h
-index d865bd9..9169032 100644
---- a/arch/powerpc/include/asm/mmu-hash64.h
-+++ b/arch/powerpc/include/asm/mmu-hash64.h
-@@ -256,8 +256,7 @@ extern void hash_failure_debug(unsigned long ea, unsigned long access,
- extern int htab_bolt_mapping(unsigned long vstart, unsigned long vend,
- 			     unsigned long pstart, unsigned long prot,
- 			     int psize, int ssize);
--extern void add_gpage(unsigned long addr, unsigned long page_size,
--			  unsigned long number_of_pages);
-+extern void add_gpage(u64 addr, u64 page_size, unsigned long number_of_pages);
- extern void demote_segment_4k(struct mm_struct *mm, unsigned long addr);
- 
- extern void hpte_init_native(void);
-diff --git a/arch/powerpc/include/asm/mmu.h b/arch/powerpc/include/asm/mmu.h
-index b427a55..07f7b28 100644
---- a/arch/powerpc/include/asm/mmu.h
-+++ b/arch/powerpc/include/asm/mmu.h
-@@ -170,14 +170,16 @@ extern u64 ppc64_rma_size;
- #define MMU_PAGE_64K_AP	3	/* "Admixed pages" (hash64 only) */
- #define MMU_PAGE_256K	4
- #define MMU_PAGE_1M	5
--#define MMU_PAGE_8M	6
--#define MMU_PAGE_16M	7
--#define MMU_PAGE_256M	8
--#define MMU_PAGE_1G	9
--#define MMU_PAGE_16G	10
--#define MMU_PAGE_64G	11
--#define MMU_PAGE_COUNT	12
--
-+#define MMU_PAGE_4M	6
-+#define MMU_PAGE_8M	7
-+#define MMU_PAGE_16M	8
-+#define MMU_PAGE_64M	9
-+#define MMU_PAGE_256M	10
-+#define MMU_PAGE_1G	11
-+#define MMU_PAGE_16G	12
-+#define MMU_PAGE_64G	13
-+
-+#define MMU_PAGE_COUNT	14
- 
- #if defined(CONFIG_PPC_STD_MMU_64)
- /* 64-bit classic hash table MMU */
-diff --git a/arch/powerpc/include/asm/page.h b/arch/powerpc/include/asm/page.h
-index 2cd664e..dd9c4fd 100644
---- a/arch/powerpc/include/asm/page.h
-+++ b/arch/powerpc/include/asm/page.h
-@@ -36,6 +36,18 @@
- 
- #define PAGE_SIZE		(ASM_CONST(1) << PAGE_SHIFT)
- 
-+#ifndef __ASSEMBLY__
-+#ifdef CONFIG_HUGETLB_PAGE
-+extern unsigned int HPAGE_SHIFT;
-+#else
-+#define HPAGE_SHIFT PAGE_SHIFT
-+#endif
-+#define HPAGE_SIZE		((1UL) << HPAGE_SHIFT)
-+#define HPAGE_MASK		(~(HPAGE_SIZE - 1))
-+#define HUGETLB_PAGE_ORDER	(HPAGE_SHIFT - PAGE_SHIFT)
-+#define HUGE_MAX_HSTATE		(MMU_PAGE_COUNT-1)
-+#endif
-+
- /* We do define AT_SYSINFO_EHDR but don't use the gate mechanism */
- #define __HAVE_ARCH_GATE_AREA		1
- 
-@@ -158,6 +170,24 @@ extern phys_addr_t kernstart_addr;
- #define is_kernel_addr(x)	((x) >= PAGE_OFFSET)
- #endif
- 
-+/*
-+ * Use the top bit of the higher-level page table entries to indicate whether
-+ * the entries we point to contain hugepages.  This works because we know that
-+ * the page tables live in kernel space.  If we ever decide to support having
-+ * page tables at arbitrary addresses, this breaks and will have to change.
-+ */
-+#ifdef CONFIG_PPC64
-+#define PD_HUGE 0x8000000000000000
-+#else
-+#define PD_HUGE 0x80000000
-+#endif
-+
-+/*
-+ * Some number of bits at the level of the page table that points to
-+ * a hugepte are used to encode the size.  This masks those bits.
-+ */
-+#define HUGEPD_SHIFT_MASK     0x3f
-+
- #ifndef __ASSEMBLY__
- 
- #undef STRICT_MM_TYPECHECKS
-@@ -243,7 +273,6 @@ typedef unsigned long pgprot_t;
- #endif
- 
- typedef struct { signed long pd; } hugepd_t;
--#define HUGEPD_SHIFT_MASK     0x3f
- 
- #ifdef CONFIG_HUGETLB_PAGE
- static inline int hugepd_ok(hugepd_t hpd)
-diff --git a/arch/powerpc/include/asm/page_64.h b/arch/powerpc/include/asm/page_64.h
-index 9356262..fb40ede 100644
---- a/arch/powerpc/include/asm/page_64.h
-+++ b/arch/powerpc/include/asm/page_64.h
-@@ -64,17 +64,6 @@ extern void copy_page(void *to, void *from);
- /* Log 2 of page table size */
- extern u64 ppc64_pft_size;
- 
--/* Large pages size */
--#ifdef CONFIG_HUGETLB_PAGE
--extern unsigned int HPAGE_SHIFT;
--#else
--#define HPAGE_SHIFT PAGE_SHIFT
--#endif
--#define HPAGE_SIZE		((1UL) << HPAGE_SHIFT)
--#define HPAGE_MASK		(~(HPAGE_SIZE - 1))
--#define HUGETLB_PAGE_ORDER	(HPAGE_SHIFT - PAGE_SHIFT)
--#define HUGE_MAX_HSTATE		(MMU_PAGE_COUNT-1)
--
- #endif /* __ASSEMBLY__ */
- 
- #ifdef CONFIG_PPC_MM_SLICES
-diff --git a/arch/powerpc/include/asm/pte-book3e.h b/arch/powerpc/include/asm/pte-book3e.h
-index 082d515..0156702 100644
---- a/arch/powerpc/include/asm/pte-book3e.h
-+++ b/arch/powerpc/include/asm/pte-book3e.h
-@@ -72,6 +72,9 @@
- #define	PTE_RPN_SHIFT	(24)
- #endif
- 
-+#define PTE_WIMGE_SHIFT (19)
-+#define PTE_BAP_SHIFT	(2)
-+
- /* On 32-bit, we never clear the top part of the PTE */
- #ifdef CONFIG_PPC32
- #define _PTE_NONE_MASK	0xffffffff00000000ULL
-diff --git a/arch/powerpc/kernel/head_fsl_booke.S b/arch/powerpc/kernel/head_fsl_booke.S
-index 985638d..3b3de22 100644
---- a/arch/powerpc/kernel/head_fsl_booke.S
-+++ b/arch/powerpc/kernel/head_fsl_booke.S
-@@ -236,8 +236,24 @@ _ENTRY(__early_start)
-  * if we find the pte (fall through):
-  *   r11 is low pte word
-  *   r12 is pointer to the pte
-+ *   r10 is the pshift from the PGD, if we're a hugepage
-  */
- #ifdef CONFIG_PTE_64BIT
-+#ifdef CONFIG_HUGETLB_PAGE
-+#define FIND_PTE	\
-+	rlwinm	r12, r10, 13, 19, 29;	/* Compute pgdir/pmd offset */	\
-+	lwzx	r11, r12, r11;		/* Get pgd/pmd entry */		\
-+	rlwinm.	r12, r11, 0, 0, 20;	/* Extract pt base address */	\
-+	blt	1000f;			/* Normal non-huge page */	\
-+	beq	2f;			/* Bail if no table */		\
-+	oris	r11, r11, PD_HUGE@h;	/* Put back address bit */	\
-+	andi.	r10, r11, HUGEPD_SHIFT_MASK@l; /* extract size field */	\
-+	xor	r12, r10, r11;		/* drop size bits from pointer */ \
-+	b	1001f;							\
-+1000:	rlwimi	r12, r10, 23, 20, 28;	/* Compute pte address */	\
-+	li	r10, 0;			/* clear r10 */			\
-+1001:	lwz	r11, 4(r12);		/* Get pte entry */
-+#else
- #define FIND_PTE	\
- 	rlwinm	r12, r10, 13, 19, 29;	/* Compute pgdir/pmd offset */	\
- 	lwzx	r11, r12, r11;		/* Get pgd/pmd entry */		\
-@@ -245,7 +261,8 @@ _ENTRY(__early_start)
- 	beq	2f;			/* Bail if no table */		\
- 	rlwimi	r12, r10, 23, 20, 28;	/* Compute pte address */	\
- 	lwz	r11, 4(r12);		/* Get pte entry */
--#else
-+#endif /* HUGEPAGE */
-+#else /* !PTE_64BIT */
- #define FIND_PTE	\
- 	rlwimi	r11, r10, 12, 20, 29;	/* Create L1 (pgdir/pmd) address */	\
- 	lwz	r11, 0(r11);		/* Get L1 entry */			\
-@@ -402,8 +419,8 @@ interrupt_base:
- 
- #ifdef CONFIG_PTE_64BIT
- #ifdef CONFIG_SMP
--	subf	r10,r11,r12		/* create false data dep */
--	lwzx	r13,r11,r10		/* Get upper pte bits */
-+	subf	r13,r11,r12		/* create false data dep */
-+	lwzx	r13,r11,r13		/* Get upper pte bits */
- #else
- 	lwz	r13,0(r12)		/* Get upper pte bits */
- #endif
-@@ -483,8 +500,8 @@ interrupt_base:
- 
- #ifdef CONFIG_PTE_64BIT
- #ifdef CONFIG_SMP
--	subf	r10,r11,r12		/* create false data dep */
--	lwzx	r13,r11,r10		/* Get upper pte bits */
-+	subf	r13,r11,r12		/* create false data dep */
-+	lwzx	r13,r11,r13		/* Get upper pte bits */
- #else
- 	lwz	r13,0(r12)		/* Get upper pte bits */
- #endif
-@@ -548,7 +565,7 @@ interrupt_base:
- /*
-  * Both the instruction and data TLB miss get to this
-  * point to load the TLB.
-- *	r10 - available to use
-+ *	r10 - tsize encoding (if HUGETLB_PAGE) or available to use
-  *	r11 - TLB (info from Linux PTE)
-  *	r12 - available to use
-  *	r13 - upper bits of PTE (if PTE_64BIT) or available to use
-@@ -558,21 +575,73 @@ interrupt_base:
-  *	Upon exit, we reload everything and RFI.
-  */
- finish_tlb_load:
-+#ifdef CONFIG_HUGETLB_PAGE
-+	cmpwi	6, r10, 0			/* check for huge page */
-+	beq	6, finish_tlb_load_cont    	/* !huge */
-+
-+	/* Alas, we need more scratch registers for hugepages */
-+	mfspr	r12, SPRN_SPRG_THREAD
-+	stw	r14, THREAD_NORMSAVE(4)(r12)
-+	stw	r15, THREAD_NORMSAVE(5)(r12)
-+	stw	r16, THREAD_NORMSAVE(6)(r12)
-+	stw	r17, THREAD_NORMSAVE(7)(r12)
-+
-+	/* Get the next_tlbcam_idx percpu var */
-+#ifdef CONFIG_SMP
-+	lwz	r12, THREAD_INFO-THREAD(r12)
-+	lwz	r15, TI_CPU(r12)
-+	lis     r14, __per_cpu_offset@h
-+	ori     r14, r14, __per_cpu_offset@l
-+	rlwinm  r15, r15, 2, 0, 29
-+	lwzx    r16, r14, r15
-+#else
-+	li	r16, 0
-+#endif
-+	lis     r17, next_tlbcam_idx@h
-+	ori	r17, r17, next_tlbcam_idx@l
-+	add	r17, r17, r16			/* r17 = *next_tlbcam_idx */
-+	lwz     r15, 0(r17)			/* r15 = next_tlbcam_idx */
-+
-+	lis	r14, MAS0_TLBSEL(1)@h		/* select TLB1 (TLBCAM) */
-+	rlwimi	r14, r15, 16, 4, 15		/* next_tlbcam_idx entry */
-+	mtspr	SPRN_MAS0, r14
-+
-+	/* Extract TLB1CFG(NENTRY) */
-+	mfspr	r16, SPRN_TLB1CFG
-+	andi.	r16, r16, 0xfff
-+
-+	/* Update next_tlbcam_idx, wrapping when necessary */
-+	addi	r15, r15, 1
-+	cmpw	r15, r16
-+	blt 	100f
-+	lis	r14, tlbcam_index@h
-+	ori	r14, r14, tlbcam_index@l
-+	lwz	r15, 0(r14)
-+100:	stw	r15, 0(r17)
-+
-+	/*
-+	 * Calc MAS1_TSIZE from r10 (which has pshift encoded)
-+	 * tlb_enc = (pshift - 10).
-+	 */
-+	subi	r15, r10, 10
-+	mfspr	r16, SPRN_MAS1
-+	rlwimi	r16, r15, 7, 20, 24
-+	mtspr	SPRN_MAS1, r16
-+
-+	/* copy the pshift for use later */
-+	mr	r14, r10
-+
-+	/* fall through */
-+
-+#endif /* CONFIG_HUGETLB_PAGE */
-+
- 	/*
- 	 * We set execute, because we don't have the granularity to
- 	 * properly set this at the page level (Linux problem).
- 	 * Many of these bits are software only.  Bits we don't set
- 	 * here we (properly should) assume have the appropriate value.
- 	 */
--
--	mfspr	r12, SPRN_MAS2
--#ifdef CONFIG_PTE_64BIT
--	rlwimi	r12, r11, 32-19, 27, 31	/* extract WIMGE from pte */
--#else
--	rlwimi	r12, r11, 26, 27, 31	/* extract WIMGE from pte */
--#endif
--	mtspr	SPRN_MAS2, r12
--
-+finish_tlb_load_cont:
- #ifdef CONFIG_PTE_64BIT
- 	rlwinm	r12, r11, 32-2, 26, 31	/* Move in perm bits */
- 	andi.	r10, r11, _PAGE_DIRTY
-@@ -581,22 +650,40 @@ finish_tlb_load:
- 	andc	r12, r12, r10
- 1:	rlwimi	r12, r13, 20, 0, 11	/* grab RPN[32:43] */
- 	rlwimi	r12, r11, 20, 12, 19	/* grab RPN[44:51] */
--	mtspr	SPRN_MAS3, r12
-+2:	mtspr	SPRN_MAS3, r12
- BEGIN_MMU_FTR_SECTION
- 	srwi	r10, r13, 12		/* grab RPN[12:31] */
- 	mtspr	SPRN_MAS7, r10
- END_MMU_FTR_SECTION_IFSET(MMU_FTR_BIG_PHYS)
- #else
- 	li	r10, (_PAGE_EXEC | _PAGE_PRESENT)
-+	mr	r13, r11
- 	rlwimi	r10, r11, 31, 29, 29	/* extract _PAGE_DIRTY into SW */
- 	and	r12, r11, r10
- 	andi.	r10, r11, _PAGE_USER	/* Test for _PAGE_USER */
- 	slwi	r10, r12, 1
- 	or	r10, r10, r12
- 	iseleq	r12, r12, r10
--	rlwimi	r11, r12, 0, 20, 31	/* Extract RPN from PTE and merge with perms */
--	mtspr	SPRN_MAS3, r11
-+	rlwimi	r13, r12, 0, 20, 31	/* Get RPN from PTE, merge w/ perms */
-+	mtspr	SPRN_MAS3, r13
- #endif
-+
-+	mfspr	r12, SPRN_MAS2
-+#ifdef CONFIG_PTE_64BIT
-+	rlwimi	r12, r11, 32-19, 27, 31	/* extract WIMGE from pte */
-+#else
-+	rlwimi	r12, r11, 26, 27, 31	/* extract WIMGE from pte */
-+#endif
-+#ifdef CONFIG_HUGETLB_PAGE
-+	beq	6, 3f			/* don't mask if page isn't huge */
-+	li	r13, 1
-+	slw	r13, r13, r14
-+	subi	r13, r13, 1
-+	rlwinm	r13, r13, 0, 0, 19	/* bottom bits used for WIMGE/etc */
-+	andc	r12, r12, r13		/* mask off ea bits within the page */
-+#endif
-+3:	mtspr	SPRN_MAS2, r12
-+
- #ifdef CONFIG_E200
- 	/* Round robin TLB1 entries assignment */
- 	mfspr	r12, SPRN_MAS0
-@@ -622,11 +709,19 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_BIG_PHYS)
- 	mtspr	SPRN_MAS0,r12
- #endif /* CONFIG_E200 */
- 
-+tlb_write_entry:
- 	tlbwe
- 
- 	/* Done...restore registers and get out of here.  */
- 	mfspr	r10, SPRN_SPRG_THREAD
--	lwz	r11, THREAD_NORMSAVE(3)(r10)
-+#ifdef CONFIG_HUGETLB_PAGE
-+	beq	6, 8f /* skip restore for 4k page faults */
-+	lwz	r14, THREAD_NORMSAVE(4)(r10)
-+	lwz	r15, THREAD_NORMSAVE(5)(r10)
-+	lwz	r16, THREAD_NORMSAVE(6)(r10)
-+	lwz	r17, THREAD_NORMSAVE(7)(r10)
-+#endif
-+8:	lwz	r11, THREAD_NORMSAVE(3)(r10)
- 	mtcr	r11
- 	lwz	r13, THREAD_NORMSAVE(2)(r10)
- 	lwz	r12, THREAD_NORMSAVE(1)(r10)
-diff --git a/arch/powerpc/mm/Makefile b/arch/powerpc/mm/Makefile
-index bdca46e..991ee81 100644
---- a/arch/powerpc/mm/Makefile
-+++ b/arch/powerpc/mm/Makefile
-@@ -29,6 +29,7 @@ obj-$(CONFIG_PPC_MM_SLICES)	+= slice.o
- ifeq ($(CONFIG_HUGETLB_PAGE),y)
- obj-y				+= hugetlbpage.o
- obj-$(CONFIG_PPC_STD_MMU_64)	+= hugetlbpage-hash64.o
-+obj-$(CONFIG_PPC_BOOK3E_MMU)	+= hugetlbpage-book3e.o
- endif
- obj-$(CONFIG_PPC_SUBPAGE_PROT)	+= subpage-prot.o
- obj-$(CONFIG_NOT_COHERENT_CACHE) += dma-noncoherent.o
-diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-index 26b2872..1f8b2a0 100644
---- a/arch/powerpc/mm/hash_utils_64.c
-+++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -105,9 +105,6 @@ int mmu_kernel_ssize = MMU_SEGSIZE_256M;
- int mmu_highuser_ssize = MMU_SEGSIZE_256M;
- u16 mmu_slb_size = 64;
- EXPORT_SYMBOL_GPL(mmu_slb_size);
--#ifdef CONFIG_HUGETLB_PAGE
--unsigned int HPAGE_SHIFT;
--#endif
- #ifdef CONFIG_PPC_64K_PAGES
- int mmu_ci_restrictions;
- #endif
-diff --git a/arch/powerpc/mm/hugetlbpage-book3e.c b/arch/powerpc/mm/hugetlbpage-book3e.c
-new file mode 100644
-index 0000000..1295b7c
---- /dev/null
-+++ b/arch/powerpc/mm/hugetlbpage-book3e.c
-@@ -0,0 +1,121 @@
-+/*
-+ * PPC Huge TLB Page Support for Book3E MMU
-+ *
-+ * Copyright (C) 2009 David Gibson, IBM Corporation.
-+ * Copyright (C) 2011 Becky Bruce, Freescale Semiconductor
-+ *
-+ */
-+#include <linux/mm.h>
-+#include <linux/hugetlb.h>
-+
-+static inline int mmu_get_tsize(int psize)
-+{
-+	return mmu_psize_defs[psize].enc;
-+}
-+
-+static inline int book3e_tlb_exists(unsigned long ea, unsigned long pid)
-+{
-+	int found = 0;
-+
-+	mtspr(SPRN_MAS6, pid << 16);
-+	if (mmu_has_feature(MMU_FTR_USE_TLBRSRV)) {
-+		asm volatile(
-+			"li	%0,0\n"
-+			"tlbsx.	0,%1\n"
-+			"bne	1f\n"
-+			"li	%0,1\n"
-+			"1:\n"
-+			: "=&r"(found) : "r"(ea));
-+	} else {
-+		asm volatile(
-+			"tlbsx	0,%1\n"
-+			"mfspr	%0,0x271\n"
-+			"srwi	%0,%0,31\n"
-+			: "=&r"(found) : "r"(ea));
-+	}
-+
-+	return found;
-+}
-+
-+void book3e_hugetlb_preload(struct mm_struct *mm, unsigned long ea, pte_t pte)
-+{
-+	unsigned long mas1, mas2;
-+	u64 mas7_3;
-+	unsigned long psize, tsize, shift;
-+	unsigned long flags;
-+
-+#ifdef CONFIG_PPC_FSL_BOOK3E
-+	int index, lz, ncams;
-+	struct vm_area_struct *vma;
-+#endif
-+
-+	if (unlikely(is_kernel_addr(ea)))
-+		return;
-+
-+#ifdef CONFIG_MM_SLICES
-+	psize = mmu_get_tsize(get_slice_psize(mm, ea));
-+	tsize = mmu_get_psize(psize);
-+	shift = mmu_psize_defs[psize].shift;
-+#else
-+	vma = find_vma(mm, ea);
-+	psize = vma_mmu_pagesize(vma);	/* returns actual size in bytes */
-+	asm (PPC_CNTLZL "%0,%1" : "=r" (lz) : "r" (psize));
-+	shift = 31 - lz;
-+	tsize = 21 - lz;
-+#endif
-+
-+	/*
-+	 * We can't be interrupted while we're setting up the MAS
-+	 * regusters or after we've confirmed that no tlb exists.
-+	 */
-+	local_irq_save(flags);
-+
-+	if (unlikely(book3e_tlb_exists(ea, mm->context.id))) {
-+		local_irq_restore(flags);
-+		return;
-+	}
-+
-+#ifdef CONFIG_PPC_FSL_BOOK3E
-+	ncams = mfspr(SPRN_TLB1CFG) & TLBnCFG_N_ENTRY;
-+
-+	/* We have to use the CAM(TLB1) on FSL parts for hugepages */
-+	index = __get_cpu_var(next_tlbcam_idx);
-+	mtspr(SPRN_MAS0, MAS0_ESEL(index) | MAS0_TLBSEL(1));
-+
-+	/* Just round-robin the entries and wrap when we hit the end */
-+	if (unlikely(index == ncams - 1))
-+		__get_cpu_var(next_tlbcam_idx) = tlbcam_index;
-+	else
-+		__get_cpu_var(next_tlbcam_idx)++;
-+#endif
-+	mas1 = MAS1_VALID | MAS1_TID(mm->context.id) | MAS1_TSIZE(tsize);
-+	mas2 = ea & ~((1UL << shift) - 1);
-+	mas2 |= (pte_val(pte) >> PTE_WIMGE_SHIFT) & MAS2_WIMGE_MASK;
-+	mas7_3 = (u64)pte_pfn(pte) << PAGE_SHIFT;
-+	mas7_3 |= (pte_val(pte) >> PTE_BAP_SHIFT) & MAS3_BAP_MASK;
-+	if (!pte_dirty(pte))
-+		mas7_3 &= ~(MAS3_SW|MAS3_UW);
-+
-+	mtspr(SPRN_MAS1, mas1);
-+	mtspr(SPRN_MAS2, mas2);
-+
-+	if (mmu_has_feature(MMU_FTR_USE_PAIRED_MAS)) {
-+		mtspr(SPRN_MAS7_MAS3, mas7_3);
-+	} else {
-+		mtspr(SPRN_MAS7, upper_32_bits(mas7_3));
-+		mtspr(SPRN_MAS3, lower_32_bits(mas7_3));
-+	}
-+
-+	asm volatile ("tlbwe");
-+
-+	local_irq_restore(flags);
-+}
-+
-+void flush_hugetlb_page(struct vm_area_struct *vma, unsigned long vmaddr)
-+{
-+	struct hstate *hstate = hstate_file(vma->vm_file);
-+	unsigned long tsize = huge_page_shift(hstate) - 10;
-+
-+	__flush_tlb_page(vma ? vma->vm_mm : NULL, vmaddr, tsize, 0);
-+
-+}
-diff --git a/arch/powerpc/mm/hugetlbpage.c b/arch/powerpc/mm/hugetlbpage.c
-index 0b9a5c1..3a5f59d 100644
---- a/arch/powerpc/mm/hugetlbpage.c
-+++ b/arch/powerpc/mm/hugetlbpage.c
-@@ -1,7 +1,8 @@
- /*
-- * PPC64 (POWER4) Huge TLB Page Support for Kernel.
-+ * PPC Huge TLB Page Support for Kernel.
-  *
-  * Copyright (C) 2003 David Gibson, IBM Corporation.
-+ * Copyright (C) 2011 Becky Bruce, Freescale Semiconductor
-  *
-  * Based on the IA-32 version:
-  * Copyright (C) 2002, Rohit Seth <rohit.seth@intel.com>
-@@ -11,24 +12,39 @@
- #include <linux/io.h>
- #include <linux/slab.h>
- #include <linux/hugetlb.h>
-+#include <linux/of_fdt.h>
-+#include <linux/memblock.h>
-+#include <linux/bootmem.h>
- #include <asm/pgtable.h>
- #include <asm/pgalloc.h>
- #include <asm/tlb.h>
-+#include <asm/setup.h>
- 
- #define PAGE_SHIFT_64K	16
- #define PAGE_SHIFT_16M	24
- #define PAGE_SHIFT_16G	34
- 
--#define MAX_NUMBER_GPAGES	1024
-+unsigned int HPAGE_SHIFT;
- 
--/* Tracks the 16G pages after the device tree is scanned and before the
-- * huge_boot_pages list is ready.  */
--static unsigned long gpage_freearray[MAX_NUMBER_GPAGES];
-+/*
-+ * Tracks gpages after the device tree is scanned and before the
-+ * huge_boot_pages list is ready.  On 64-bit implementations, this is
-+ * just used to track 16G pages and so is a single array.  32-bit
-+ * implementations may have more than one gpage size due to limitations
-+ * of the memory allocators, so we need multiple arrays
-+ */
-+#ifdef CONFIG_PPC64
-+#define MAX_NUMBER_GPAGES	1024
-+static u64 gpage_freearray[MAX_NUMBER_GPAGES];
- static unsigned nr_gpages;
--
--/* Flag to mark huge PD pointers.  This means pmd_bad() and pud_bad()
-- * will choke on pointers to hugepte tables, which is handy for
-- * catching screwups early. */
-+#else
-+#define MAX_NUMBER_GPAGES	128
-+struct psize_gpages {
-+	u64 gpage_list[MAX_NUMBER_GPAGES];
-+	unsigned int nr_gpages;
-+};
-+static struct psize_gpages gpage_freearray[MMU_PAGE_COUNT];
-+#endif
- 
- static inline int shift_to_mmu_psize(unsigned int shift)
- {
-@@ -49,25 +65,6 @@ static inline unsigned int mmu_psize_to_shift(unsigned int mmu_psize)
- 
- #define hugepd_none(hpd)	((hpd).pd == 0)
- 
--static inline pte_t *hugepd_page(hugepd_t hpd)
--{
--	BUG_ON(!hugepd_ok(hpd));
--	return (pte_t *)((hpd.pd & ~HUGEPD_SHIFT_MASK) | 0xc000000000000000);
--}
--
--static inline unsigned int hugepd_shift(hugepd_t hpd)
--{
--	return hpd.pd & HUGEPD_SHIFT_MASK;
--}
--
--static inline pte_t *hugepte_offset(hugepd_t *hpdp, unsigned long addr, unsigned pdshift)
--{
--	unsigned long idx = (addr & ((1UL << pdshift) - 1)) >> hugepd_shift(*hpdp);
--	pte_t *dir = hugepd_page(*hpdp);
--
--	return dir + idx;
--}
--
- pte_t *find_linux_pte_or_hugepte(pgd_t *pgdir, unsigned long ea, unsigned *shift)
- {
- 	pgd_t *pg;
-@@ -93,7 +90,7 @@ pte_t *find_linux_pte_or_hugepte(pgd_t *pgdir, unsigned long ea, unsigned *shift
- 			if (is_hugepd(pm))
- 				hpdp = (hugepd_t *)pm;
- 			else if (!pmd_none(*pm)) {
--				return pte_offset_map(pm, ea);
-+				return pte_offset_kernel(pm, ea);
- 			}
- 		}
- 	}
-@@ -114,8 +111,18 @@ pte_t *huge_pte_offset(struct mm_struct *mm, unsigned long addr)
- static int __hugepte_alloc(struct mm_struct *mm, hugepd_t *hpdp,
- 			   unsigned long address, unsigned pdshift, unsigned pshift)
- {
--	pte_t *new = kmem_cache_zalloc(PGT_CACHE(pdshift - pshift),
--				       GFP_KERNEL|__GFP_REPEAT);
-+	struct kmem_cache *cachep;
-+	pte_t *new;
-+
-+#ifdef CONFIG_PPC64
-+	cachep = PGT_CACHE(pdshift - pshift);
-+#else
-+	int i;
-+	int num_hugepd = 1 << (pshift - pdshift);
-+	cachep = hugepte_cache;
-+#endif
-+
-+	new = kmem_cache_zalloc(cachep, GFP_KERNEL|__GFP_REPEAT);
- 
- 	BUG_ON(pshift > HUGEPD_SHIFT_MASK);
- 	BUG_ON((unsigned long)new & HUGEPD_SHIFT_MASK);
-@@ -124,10 +131,31 @@ static int __hugepte_alloc(struct mm_struct *mm, hugepd_t *hpdp,
- 		return -ENOMEM;
- 
- 	spin_lock(&mm->page_table_lock);
-+#ifdef CONFIG_PPC64
- 	if (!hugepd_none(*hpdp))
--		kmem_cache_free(PGT_CACHE(pdshift - pshift), new);
-+		kmem_cache_free(cachep, new);
- 	else
--		hpdp->pd = ((unsigned long)new & ~0x8000000000000000) | pshift;
-+		hpdp->pd = ((unsigned long)new & ~PD_HUGE) | pshift;
-+#else
-+	/*
-+	 * We have multiple higher-level entries that point to the same
-+	 * actual pte location.  Fill in each as we go and backtrack on error.
-+	 * We need all of these so the DTLB pgtable walk code can find the
-+	 * right higher-level entry without knowing if it's a hugepage or not.
-+	 */
-+	for (i = 0; i < num_hugepd; i++, hpdp++) {
-+		if (unlikely(!hugepd_none(*hpdp)))
-+			break;
-+		else
-+			hpdp->pd = ((unsigned long)new & ~PD_HUGE) | pshift;
-+	}
-+	/* If we bailed from the for loop early, an error occurred, clean up */
-+	if (i < num_hugepd) {
-+		for (i = i - 1 ; i >= 0; i--, hpdp--)
-+			hpdp->pd = 0;
-+		kmem_cache_free(cachep, new);
-+	}
-+#endif
- 	spin_unlock(&mm->page_table_lock);
- 	return 0;
- }
-@@ -169,11 +197,132 @@ pte_t *huge_pte_alloc(struct mm_struct *mm, unsigned long addr, unsigned long sz
- 	return hugepte_offset(hpdp, addr, pdshift);
- }
- 
-+#ifdef CONFIG_PPC32
- /* Build list of addresses of gigantic pages.  This function is used in early
-  * boot before the buddy or bootmem allocator is setup.
-  */
--void add_gpage(unsigned long addr, unsigned long page_size,
--	unsigned long number_of_pages)
-+void add_gpage(u64 addr, u64 page_size, unsigned long number_of_pages)
-+{
-+	unsigned int idx = shift_to_mmu_psize(__ffs(page_size));
-+	int i;
-+
-+	if (addr == 0)
-+		return;
-+
-+	gpage_freearray[idx].nr_gpages = number_of_pages;
-+
-+	for (i = 0; i < number_of_pages; i++) {
-+		gpage_freearray[idx].gpage_list[i] = addr;
-+		addr += page_size;
-+	}
-+}
-+
-+/*
-+ * Moves the gigantic page addresses from the temporary list to the
-+ * huge_boot_pages list.
-+ */
-+int alloc_bootmem_huge_page(struct hstate *hstate)
-+{
-+	struct huge_bootmem_page *m;
-+	int idx = shift_to_mmu_psize(hstate->order + PAGE_SHIFT);
-+	int nr_gpages = gpage_freearray[idx].nr_gpages;
-+
-+	if (nr_gpages == 0)
-+		return 0;
-+
-+#ifdef CONFIG_HIGHMEM
-+	/*
-+	 * If gpages can be in highmem we can't use the trick of storing the
-+	 * data structure in the page; allocate space for this
-+	 */
-+	m = alloc_bootmem(sizeof(struct huge_bootmem_page));
-+	m->phys = gpage_freearray[idx].gpage_list[--nr_gpages];
-+#else
-+	m = phys_to_virt(gpage_freearray[idx].gpage_list[--nr_gpages]);
-+#endif
-+
-+	list_add(&m->list, &huge_boot_pages);
-+	gpage_freearray[idx].nr_gpages = nr_gpages;
-+	gpage_freearray[idx].gpage_list[nr_gpages] = 0;
-+	m->hstate = hstate;
-+
-+	return 1;
-+}
-+/*
-+ * Scan the command line hugepagesz= options for gigantic pages; store those in
-+ * a list that we use to allocate the memory once all options are parsed.
-+ */
-+
-+unsigned long gpage_npages[MMU_PAGE_COUNT];
-+
-+static int __init do_gpage_early_setup(char *param, char *val)
-+{
-+	static phys_addr_t size;
-+	unsigned long npages;
-+
-+	/*
-+	 * The hugepagesz and hugepages cmdline options are interleaved.  We
-+	 * use the size variable to keep track of whether or not this was done
-+	 * properly and skip over instances where it is incorrect.  Other
-+	 * command-line parsing code will issue warnings, so we don't need to.
-+	 *
-+	 */
-+	if ((strcmp(param, "default_hugepagesz") == 0) ||
-+	    (strcmp(param, "hugepagesz") == 0)) {
-+		size = memparse(val, NULL);
-+	} else if (strcmp(param, "hugepages") == 0) {
-+		if (size != 0) {
-+			if (sscanf(val, "%lu", &npages) <= 0)
-+				npages = 0;
-+			gpage_npages[shift_to_mmu_psize(__ffs(size))] = npages;
-+			size = 0;
-+		}
-+	}
-+	return 0;
-+}
-+
-+
-+/*
-+ * This function allocates physical space for pages that are larger than the
-+ * buddy allocator can handle.  We want to allocate these in highmem because
-+ * the amount of lowmem is limited.  This means that this function MUST be
-+ * called before lowmem_end_addr is set up in MMU_init() in order for the lmb
-+ * allocate to grab highmem.
-+ */
-+void __init reserve_hugetlb_gpages(void)
-+{
-+	static __initdata char cmdline[COMMAND_LINE_SIZE];
-+	phys_addr_t size, base;
-+	int i;
-+
-+	strlcpy(cmdline, boot_command_line, COMMAND_LINE_SIZE);
-+	parse_args("hugetlb gpages", cmdline, NULL, 0, &do_gpage_early_setup);
-+
-+	/*
-+	 * Walk gpage list in reverse, allocating larger page sizes first.
-+	 * Skip over unsupported sizes, or sizes that have 0 gpages allocated.
-+	 * When we reach the point in the list where pages are no longer
-+	 * considered gpages, we're done.
-+	 */
-+	for (i = MMU_PAGE_COUNT-1; i >= 0; i--) {
-+		if (mmu_psize_defs[i].shift == 0 || gpage_npages[i] == 0)
-+			continue;
-+		else if (mmu_psize_to_shift(i) < (MAX_ORDER + PAGE_SHIFT))
-+			break;
-+
-+		size = (phys_addr_t)(1ULL << mmu_psize_to_shift(i));
-+		base = memblock_alloc_base(size * gpage_npages[i], size,
-+					   MEMBLOCK_ALLOC_ANYWHERE);
-+		add_gpage(base, size, gpage_npages[i]);
-+	}
-+}
-+
-+#else /* PPC64 */
-+
-+/* Build list of addresses of gigantic pages.  This function is used in early
-+ * boot before the buddy or bootmem allocator is setup.
-+ */
-+void add_gpage(u64 addr, u64 page_size, unsigned long number_of_pages)
- {
- 	if (!addr)
- 		return;
-@@ -199,19 +348,79 @@ int alloc_bootmem_huge_page(struct hstate *hstate)
- 	m->hstate = hstate;
- 	return 1;
- }
-+#endif
- 
- int huge_pmd_unshare(struct mm_struct *mm, unsigned long *addr, pte_t *ptep)
- {
- 	return 0;
- }
- 
-+#ifdef CONFIG_PPC32
-+#define HUGEPD_FREELIST_SIZE \
-+	((PAGE_SIZE - sizeof(struct hugepd_freelist)) / sizeof(pte_t))
-+
-+struct hugepd_freelist {
-+	struct rcu_head	rcu;
-+	unsigned int index;
-+	void *ptes[0];
-+};
-+
-+static DEFINE_PER_CPU(struct hugepd_freelist *, hugepd_freelist_cur);
-+
-+static void hugepd_free_rcu_callback(struct rcu_head *head)
-+{
-+	struct hugepd_freelist *batch =
-+		container_of(head, struct hugepd_freelist, rcu);
-+	unsigned int i;
-+
-+	for (i = 0; i < batch->index; i++)
-+		kmem_cache_free(hugepte_cache, batch->ptes[i]);
-+
-+	free_page((unsigned long)batch);
-+}
-+
-+static void hugepd_free(struct mmu_gather *tlb, void *hugepte)
-+{
-+	struct hugepd_freelist **batchp;
-+
-+	batchp = &__get_cpu_var(hugepd_freelist_cur);
-+
-+	if (atomic_read(&tlb->mm->mm_users) < 2 ||
-+	    cpumask_equal(mm_cpumask(tlb->mm),
-+			  cpumask_of(smp_processor_id()))) {
-+		kmem_cache_free(hugepte_cache, hugepte);
-+		return;
-+	}
-+
-+	if (*batchp == NULL) {
-+		*batchp = (struct hugepd_freelist *)__get_free_page(GFP_ATOMIC);
-+		(*batchp)->index = 0;
-+	}
-+
-+	(*batchp)->ptes[(*batchp)->index++] = hugepte;
-+	if ((*batchp)->index == HUGEPD_FREELIST_SIZE) {
-+		call_rcu_sched(&(*batchp)->rcu, hugepd_free_rcu_callback);
-+		*batchp = NULL;
-+	}
-+}
-+#endif
-+
- static void free_hugepd_range(struct mmu_gather *tlb, hugepd_t *hpdp, int pdshift,
- 			      unsigned long start, unsigned long end,
- 			      unsigned long floor, unsigned long ceiling)
- {
- 	pte_t *hugepte = hugepd_page(*hpdp);
--	unsigned shift = hugepd_shift(*hpdp);
-+	int i;
-+
- 	unsigned long pdmask = ~((1UL << pdshift) - 1);
-+	unsigned int num_hugepd = 1;
-+
-+#ifdef CONFIG_PPC64
-+	unsigned int shift = hugepd_shift(*hpdp);
-+#else
-+	/* Note: On 32-bit the hpdp may be the first of several */
-+	num_hugepd = (1 << (hugepd_shift(*hpdp) - pdshift));
-+#endif
- 
- 	start &= pdmask;
- 	if (start < floor)
-@@ -224,9 +433,15 @@ static void free_hugepd_range(struct mmu_gather *tlb, hugepd_t *hpdp, int pdshif
- 	if (end - 1 > ceiling - 1)
- 		return;
- 
--	hpdp->pd = 0;
-+	for (i = 0; i < num_hugepd; i++, hpdp++)
-+		hpdp->pd = 0;
-+
- 	tlb->need_flush = 1;
-+#ifdef CONFIG_PPC64
- 	pgtable_free_tlb(tlb, hugepte, pdshift - shift);
-+#else
-+	hugepd_free(tlb, hugepte);
-+#endif
- }
- 
- static void hugetlb_free_pmd_range(struct mmu_gather *tlb, pud_t *pud,
-@@ -331,18 +546,27 @@ void hugetlb_free_pgd_range(struct mmu_gather *tlb,
- 	 * too.
- 	 */
- 
--	pgd = pgd_offset(tlb->mm, addr);
- 	do {
- 		next = pgd_addr_end(addr, end);
-+		pgd = pgd_offset(tlb->mm, addr);
- 		if (!is_hugepd(pgd)) {
- 			if (pgd_none_or_clear_bad(pgd))
- 				continue;
- 			hugetlb_free_pud_range(tlb, pgd, addr, next, floor, ceiling);
- 		} else {
-+#ifdef CONFIG_PPC32
-+			/*
-+			 * Increment next by the size of the huge mapping since
-+			 * on 32-bit there may be more than one entry at the pgd
-+			 * level for a single hugepage, but all of them point to
-+			 * the same kmem cache that holds the hugepte.
-+			 */
-+			next = addr + (1 << hugepd_shift(*(hugepd_t *)pgd));
-+#endif
- 			free_hugepd_range(tlb, (hugepd_t *)pgd, PGDIR_SHIFT,
- 					  addr, next, floor, ceiling);
- 		}
--	} while (pgd++, addr = next, addr != end);
-+	} while (addr = next, addr != end);
- }
- 
- struct page *
-@@ -466,17 +690,35 @@ unsigned long hugetlb_get_unmapped_area(struct file *file, unsigned long addr,
- 					unsigned long len, unsigned long pgoff,
- 					unsigned long flags)
- {
-+#ifdef CONFIG_MM_SLICES
- 	struct hstate *hstate = hstate_file(file);
- 	int mmu_psize = shift_to_mmu_psize(huge_page_shift(hstate));
- 
- 	return slice_get_unmapped_area(addr, len, flags, mmu_psize, 1, 0);
-+#else
-+	return get_unmapped_area(file, addr, len, pgoff, flags);
-+#endif
- }
- 
- unsigned long vma_mmu_pagesize(struct vm_area_struct *vma)
- {
-+#ifdef CONFIG_MM_SLICES
- 	unsigned int psize = get_slice_psize(vma->vm_mm, vma->vm_start);
- 
- 	return 1UL << mmu_psize_to_shift(psize);
-+#else
-+	if (!is_vm_hugetlb_page(vma))
-+		return PAGE_SIZE;
-+
-+	return huge_page_size(hstate_vma(vma));
-+#endif
-+}
-+
-+static inline bool is_power_of_4(unsigned long x)
-+{
-+	if (is_power_of_2(x))
-+		return (__ilog2(x) % 2) ? false : true;
-+	return false;
- }
- 
- static int __init add_huge_page_size(unsigned long long size)
-@@ -486,9 +728,14 @@ static int __init add_huge_page_size(unsigned long long size)
- 
- 	/* Check that it is a page size supported by the hardware and
- 	 * that it fits within pagetable and slice limits. */
-+#ifdef CONFIG_PPC_FSL_BOOK3E
-+	if ((size < PAGE_SIZE) || !is_power_of_4(size))
-+		return -EINVAL;
-+#else
- 	if (!is_power_of_2(size)
- 	    || (shift > SLICE_HIGH_SHIFT) || (shift <= PAGE_SHIFT))
- 		return -EINVAL;
-+#endif
- 
- 	if ((mmu_psize = shift_to_mmu_psize(shift)) < 0)
- 		return -EINVAL;
-@@ -525,6 +772,46 @@ static int __init hugepage_setup_sz(char *str)
- }
- __setup("hugepagesz=", hugepage_setup_sz);
- 
-+#ifdef CONFIG_FSL_BOOKE
-+struct kmem_cache *hugepte_cache;
-+static int __init hugetlbpage_init(void)
-+{
-+	int psize;
-+
-+	for (psize = 0; psize < MMU_PAGE_COUNT; ++psize) {
-+		unsigned shift;
-+
-+		if (!mmu_psize_defs[psize].shift)
-+			continue;
-+
-+		shift = mmu_psize_to_shift(psize);
-+
-+		/* Don't treat normal page sizes as huge... */
-+		if (shift != PAGE_SHIFT)
-+			if (add_huge_page_size(1ULL << shift) < 0)
-+				continue;
-+	}
-+
-+	/*
-+	 * Create a kmem cache for hugeptes.  The bottom bits in the pte have
-+	 * size information encoded in them, so align them to allow this
-+	 */
-+	hugepte_cache =  kmem_cache_create("hugepte-cache", sizeof(pte_t),
-+					   HUGEPD_SHIFT_MASK + 1, 0, NULL);
-+	if (hugepte_cache == NULL)
-+		panic("%s: Unable to create kmem cache for hugeptes\n",
-+		      __func__);
-+
-+	/* Default hpage size = 4M */
-+	if (mmu_psize_defs[MMU_PAGE_4M].shift)
-+		HPAGE_SHIFT = mmu_psize_defs[MMU_PAGE_4M].shift;
-+	else
-+		panic("%s: Unable to set default huge page size\n", __func__);
-+
-+
-+	return 0;
-+}
-+#else
- static int __init hugetlbpage_init(void)
- {
- 	int psize;
-@@ -567,15 +854,23 @@ static int __init hugetlbpage_init(void)
- 
- 	return 0;
- }
--
-+#endif
- module_init(hugetlbpage_init);
- 
- void flush_dcache_icache_hugepage(struct page *page)
- {
- 	int i;
-+	void *start;
- 
- 	BUG_ON(!PageCompound(page));
- 
--	for (i = 0; i < (1UL << compound_order(page)); i++)
--		__flush_dcache_icache(page_address(page+i));
-+	for (i = 0; i < (1UL << compound_order(page)); i++) {
-+		if (!PageHighMem(page)) {
-+			__flush_dcache_icache(page_address(page+i));
-+		} else {
-+			start = kmap_atomic(page+i, KM_PPC_SYNC_ICACHE);
-+			__flush_dcache_icache(start);
-+			kunmap_atomic(start, KM_PPC_SYNC_ICACHE);
-+		}
-+	}
- }
-diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
-index d65b591..3e1ba4c 100644
---- a/arch/powerpc/mm/init_32.c
-+++ b/arch/powerpc/mm/init_32.c
-@@ -32,6 +32,8 @@
- #include <linux/pagemap.h>
- #include <linux/memblock.h>
- #include <linux/gfp.h>
-+#include <linux/slab.h>
-+#include <linux/hugetlb.h>
- 
- #include <asm/pgalloc.h>
- #include <asm/prom.h>
-@@ -44,6 +46,7 @@
- #include <asm/tlb.h>
- #include <asm/sections.h>
- #include <asm/system.h>
-+#include <asm/hugetlb.h>
- 
- #include "mmu_decl.h"
- 
-@@ -123,6 +126,12 @@ void __init MMU_init(void)
- 	/* parse args from command line */
- 	MMU_setup();
- 
-+	/*
-+	 * Reserve gigantic pages for hugetlb.  This MUST occur before
-+	 * lowmem_end_addr is initialized below.
-+	 */
-+	reserve_hugetlb_gpages();
-+
- 	if (memblock.memory.cnt > 1) {
- #ifndef CONFIG_WII
- 		memblock.memory.cnt = 1;
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 7209901..9e6f3a6 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -510,4 +510,9 @@ void update_mmu_cache(struct vm_area_struct *vma, unsigned long address,
- 		return;
- 	hash_preload(vma->vm_mm, address, access, trap);
- #endif /* CONFIG_PPC_STD_MMU */
-+#if (defined(CONFIG_PPC_BOOK3E_64) || defined(CONFIG_PPC_FSL_BOOK3E)) \
-+	&& defined(CONFIG_HUGETLB_PAGE)
-+	if (is_vm_hugetlb_page(vma))
-+		book3e_hugetlb_preload(vma->vm_mm, address, *ptep);
-+#endif
- }
-diff --git a/arch/powerpc/mm/mmu_context_nohash.c b/arch/powerpc/mm/mmu_context_nohash.c
-index 336807d..5b63bd3 100644
---- a/arch/powerpc/mm/mmu_context_nohash.c
-+++ b/arch/powerpc/mm/mmu_context_nohash.c
-@@ -292,6 +292,11 @@ int init_new_context(struct task_struct *t, struct mm_struct *mm)
- 	mm->context.id = MMU_NO_CONTEXT;
- 	mm->context.active = 0;
- 
-+#ifdef CONFIG_PPC_MM_SLICES
-+	if (slice_mm_new_context(mm))
-+		slice_set_user_psize(mm, mmu_virtual_psize);
-+#endif
-+
- 	return 0;
- }
- 
-diff --git a/arch/powerpc/mm/pgtable.c b/arch/powerpc/mm/pgtable.c
-index af40c87..214130a 100644
---- a/arch/powerpc/mm/pgtable.c
-+++ b/arch/powerpc/mm/pgtable.c
-@@ -27,6 +27,7 @@
- #include <linux/init.h>
- #include <linux/percpu.h>
- #include <linux/hardirq.h>
-+#include <linux/hugetlb.h>
- #include <asm/pgalloc.h>
- #include <asm/tlbflush.h>
- #include <asm/tlb.h>
-@@ -212,7 +213,7 @@ int ptep_set_access_flags(struct vm_area_struct *vma, unsigned long address,
- 	entry = set_access_flags_filter(entry, vma, dirty);
- 	changed = !pte_same(*(ptep), entry);
- 	if (changed) {
--		if (!(vma->vm_flags & VM_HUGETLB))
-+		if (!is_vm_hugetlb_page(vma))
- 			assert_pte_locked(vma->vm_mm, address);
- 		__ptep_set_access_flags(ptep, entry);
- 		flush_tlb_page_nohash(vma, address);
-diff --git a/arch/powerpc/mm/tlb_low_64e.S b/arch/powerpc/mm/tlb_low_64e.S
-index af08922..12ae424 100644
---- a/arch/powerpc/mm/tlb_low_64e.S
-+++ b/arch/powerpc/mm/tlb_low_64e.S
-@@ -347,24 +347,24 @@ END_MMU_FTR_SECTION_IFSET(MMU_FTR_USE_TLBRSRV)
- 	rldicl	r11,r16,64-VPTE_PGD_SHIFT,64-PGD_INDEX_SIZE-3
- 	clrrdi	r10,r11,3
- 	ldx	r15,r10,r15
--	cmpldi	cr0,r15,0
--	beq	virt_page_table_tlb_miss_fault
-+	cmpdi	cr0,r15,0
-+	bge	virt_page_table_tlb_miss_fault
- 
- #ifndef CONFIG_PPC_64K_PAGES
- 	/* Get to PUD entry */
- 	rldicl	r11,r16,64-VPTE_PUD_SHIFT,64-PUD_INDEX_SIZE-3
- 	clrrdi	r10,r11,3
- 	ldx	r15,r10,r15
--	cmpldi	cr0,r15,0
--	beq	virt_page_table_tlb_miss_fault
-+	cmpdi	cr0,r15,0
-+	bge	virt_page_table_tlb_miss_fault
- #endif /* CONFIG_PPC_64K_PAGES */
- 
- 	/* Get to PMD entry */
- 	rldicl	r11,r16,64-VPTE_PMD_SHIFT,64-PMD_INDEX_SIZE-3
- 	clrrdi	r10,r11,3
- 	ldx	r15,r10,r15
--	cmpldi	cr0,r15,0
--	beq	virt_page_table_tlb_miss_fault
-+	cmpdi	cr0,r15,0
-+	bge	virt_page_table_tlb_miss_fault
- 
- 	/* Ok, we're all right, we can now create a kernel translation for
- 	 * a 4K or 64K page from r16 -> r15.
-@@ -596,24 +596,24 @@ htw_tlb_miss:
- 	rldicl	r11,r16,64-(PGDIR_SHIFT-3),64-PGD_INDEX_SIZE-3
- 	clrrdi	r10,r11,3
- 	ldx	r15,r10,r15
--	cmpldi	cr0,r15,0
--	beq	htw_tlb_miss_fault
-+	cmpdi	cr0,r15,0
-+	bge	htw_tlb_miss_fault
- 
- #ifndef CONFIG_PPC_64K_PAGES
- 	/* Get to PUD entry */
- 	rldicl	r11,r16,64-(PUD_SHIFT-3),64-PUD_INDEX_SIZE-3
- 	clrrdi	r10,r11,3
- 	ldx	r15,r10,r15
--	cmpldi	cr0,r15,0
--	beq	htw_tlb_miss_fault
-+	cmpdi	cr0,r15,0
-+	bge	htw_tlb_miss_fault
- #endif /* CONFIG_PPC_64K_PAGES */
- 
- 	/* Get to PMD entry */
- 	rldicl	r11,r16,64-(PMD_SHIFT-3),64-PMD_INDEX_SIZE-3
- 	clrrdi	r10,r11,3
- 	ldx	r15,r10,r15
--	cmpldi	cr0,r15,0
--	beq	htw_tlb_miss_fault
-+	cmpdi	cr0,r15,0
-+	bge	htw_tlb_miss_fault
- 
- 	/* Ok, we're all right, we can now create an indirect entry for
- 	 * a 1M or 256M page.
-diff --git a/arch/powerpc/mm/tlb_nohash.c b/arch/powerpc/mm/tlb_nohash.c
-index ea037ba..8a8a893 100644
---- a/arch/powerpc/mm/tlb_nohash.c
-+++ b/arch/powerpc/mm/tlb_nohash.c
-@@ -35,14 +35,49 @@
- #include <linux/preempt.h>
- #include <linux/spinlock.h>
- #include <linux/memblock.h>
-+#include <linux/hugetlb.h>
- 
- #include <asm/tlbflush.h>
- #include <asm/tlb.h>
- #include <asm/code-patching.h>
-+#include <asm/hugetlb.h>
- 
- #include "mmu_decl.h"
- 
--#ifdef CONFIG_PPC_BOOK3E
-+/*
-+ * This struct lists the sw-supported page sizes.  The hardawre MMU may support
-+ * other sizes not listed here.   The .ind field is only used on MMUs that have
-+ * indirect page table entries.
-+ */
-+#ifdef CONFIG_PPC_BOOK3E_MMU
-+#ifdef CONFIG_FSL_BOOKE
-+struct mmu_psize_def mmu_psize_defs[MMU_PAGE_COUNT] = {
-+	[MMU_PAGE_4K] = {
-+		.shift	= 12,
-+		.enc	= BOOK3E_PAGESZ_4K,
-+	},
-+	[MMU_PAGE_4M] = {
-+		.shift	= 22,
-+		.enc	= BOOK3E_PAGESZ_4M,
-+	},
-+	[MMU_PAGE_16M] = {
-+		.shift	= 24,
-+		.enc	= BOOK3E_PAGESZ_16M,
-+	},
-+	[MMU_PAGE_64M] = {
-+		.shift	= 26,
-+		.enc	= BOOK3E_PAGESZ_64M,
-+	},
-+	[MMU_PAGE_256M] = {
-+		.shift	= 28,
-+		.enc	= BOOK3E_PAGESZ_256M,
-+	},
-+	[MMU_PAGE_1G] = {
-+		.shift	= 30,
-+		.enc	= BOOK3E_PAGESZ_1GB,
-+	},
-+};
-+#else
- struct mmu_psize_def mmu_psize_defs[MMU_PAGE_COUNT] = {
- 	[MMU_PAGE_4K] = {
- 		.shift	= 12,
-@@ -76,6 +111,8 @@ struct mmu_psize_def mmu_psize_defs[MMU_PAGE_COUNT] = {
- 		.enc	= BOOK3E_PAGESZ_1GB,
- 	},
- };
-+#endif /* CONFIG_FSL_BOOKE */
-+
- static inline int mmu_get_tsize(int psize)
- {
- 	return mmu_psize_defs[psize].enc;
-@@ -86,7 +123,7 @@ static inline int mmu_get_tsize(int psize)
- 	/* This isn't used on !Book3E for now */
- 	return 0;
- }
--#endif
-+#endif /* CONFIG_PPC_BOOK3E_MMU */
- 
- /* The variables below are currently only used on 64-bit Book3E
-  * though this will probably be made common with other nohash
-@@ -265,6 +302,11 @@ void __flush_tlb_page(struct mm_struct *mm, unsigned long vmaddr,
- 
- void flush_tlb_page(struct vm_area_struct *vma, unsigned long vmaddr)
- {
-+#ifdef CONFIG_HUGETLB_PAGE
-+	if (is_vm_hugetlb_page(vma))
-+		flush_hugetlb_page(vma, vmaddr);
-+#endif
-+
- 	__flush_tlb_page(vma ? vma->vm_mm : NULL, vmaddr,
- 			 mmu_get_tsize(mmu_virtual_psize), 0);
- }
-diff --git a/arch/powerpc/platforms/Kconfig.cputype b/arch/powerpc/platforms/Kconfig.cputype
-index 2165b65..9abc655 100644
---- a/arch/powerpc/platforms/Kconfig.cputype
-+++ b/arch/powerpc/platforms/Kconfig.cputype
-@@ -69,6 +69,7 @@ choice
- config PPC_BOOK3S_64
- 	bool "Server processors"
- 	select PPC_FPU
-+	select SYS_SUPPORTS_HUGETLBFS
- 
- config PPC_BOOK3E_64
- 	bool "Embedded processors"
-@@ -173,6 +174,7 @@ config BOOKE
- config FSL_BOOKE
- 	bool
- 	depends on (E200 || E500) && PPC32
-+	select SYS_SUPPORTS_HUGETLBFS if PHYS_64BIT
- 	default y
- 
- # this is for common code between PPC32 & PPC64 FSL BOOKE
-@@ -296,7 +298,7 @@ config PPC_BOOK3E_MMU
- 
- config PPC_MM_SLICES
- 	bool
--	default y if HUGETLB_PAGE || (PPC_STD_MMU_64 && PPC_64K_PAGES)
-+	default y if (PPC64 && HUGETLB_PAGE) || (PPC_STD_MMU_64 && PPC_64K_PAGES)
- 	default n
- 
- config VIRT_CPU_ACCOUNTING
+the existing dependency chain (in reverse order) is:
+
+-> #3 (&rq->lock){-.-.-.}:
+        [<ffffffff8107b349>] lock_acquire+0xf4/0x14b
+        [<ffffffff8147e141>] _raw_spin_lock+0x36/0x45
+        [<ffffffff8103da13>] __task_rq_lock+0x5b/0x89
+        [<ffffffff81046ab6>] wake_up_new_task+0x41/0x116
+        [<ffffffff810496d5>] do_fork+0x207/0x2f1
+        [<ffffffff81010d25>] kernel_thread+0x70/0x72
+        [<ffffffff8146567d>] rest_init+0x21/0xd7
+        [<ffffffff81aa9c76>] start_kernel+0x3bd/0x3c8
+        [<ffffffff81aa92cd>] x86_64_start_reservations+0xb8/0xbc
+        [<ffffffff81aa93d2>] x86_64_start_kernel+0x101/0x110
+
+-> #2 (&p->pi_lock){-.-.-.}:
+        [<ffffffff8107b349>] lock_acquire+0xf4/0x14b
+        [<ffffffff8147e255>] _raw_spin_lock_irqsave+0x4e/0x60
+        [<ffffffff810468d0>] try_to_wake_up+0x29/0x1a0
+        [<ffffffff81046a54>] default_wake_function+0xd/0xf
+        [<ffffffff8106738e>] autoremove_wake_function+0x13/0x38
+        [<ffffffff810395d0>] __wake_up_common+0x49/0x7f
+        [<ffffffff8103c79a>] __wake_up+0x34/0x48
+        [<ffffffff810a731d>] rcu_report_exp_rnp+0x50/0x89
+        [<ffffffff810a7ea6>] __rcu_read_unlock+0x1e9/0x24e
+        [<ffffffff813d2b1b>] sk_filter+0x102/0x113
+        [<ffffffff813e3334>] netlink_dump+0x79/0x19b
+        [<ffffffff813e3685>] netlink_recvmsg+0x1c7/0x2f8
+        [<ffffffff813af348>] __sock_recvmsg_nosec+0x65/0x6e
+        [<ffffffff813b0b6a>] __sock_recvmsg+0x49/0x54
+        [<ffffffff813b10d8>] sock_recvmsg+0xa6/0xbf
+        [<ffffffff813b0e53>] __sys_recvmsg+0x147/0x21e
+        [<ffffffff813b162f>] sys_recvmsg+0x3d/0x5b
+        [<ffffffff81484a52>] system_call_fastpath+0x16/0x1b
+
+-> #1 (sync_rcu_preempt_exp_wq.lock){......}:
+        [<ffffffff8107b349>] lock_acquire+0xf4/0x14b
+        [<ffffffff8147e255>] _raw_spin_lock_irqsave+0x4e/0x60
+        [<ffffffff8103c783>] __wake_up+0x1d/0x48
+        [<ffffffff810a731d>] rcu_report_exp_rnp+0x50/0x89
+        [<ffffffff810a8aa0>] sync_rcu_preempt_exp_init.clone.0+0x3e/0x53
+        [<ffffffff810a8b90>] synchronize_rcu_expedited+0xdb/0x1c3
+        [<ffffffff813c0a13>] synchronize_net+0x25/0x2e
+        [<ffffffff813c2fe2>] rollback_registered_many+0xee/0x1e1
+        [<ffffffff813c30e9>] unregister_netdevice_many+0x14/0x55
+        [<ffffffffa0379118>] 0xffffffffa0379118
+        [<ffffffff813bd59d>] ops_exit_list+0x25/0x4e
+        [<ffffffff813bd7e9>] unregister_pernet_operations+0x5c/0x8e
+        [<ffffffff813bd882>] unregister_pernet_subsys+0x22/0x32
+        [<ffffffffa0381dac>] 0xffffffffa0381dac
+        [<ffffffff81083bba>] sys_delete_module+0x1aa/0x20e
+        [<ffffffff81484a52>] system_call_fastpath+0x16/0x1b
+
+-> #0 (rcu_node_level_0){..-...}:
+        [<ffffffff8107ab56>] __lock_acquire+0xae6/0xdd5
+        [<ffffffff8107b349>] lock_acquire+0xf4/0x14b
+        [<ffffffff8147e141>] _raw_spin_lock+0x36/0x45
+        [<ffffffff810a72ad>] rcu_report_unblock_qs_rnp+0x52/0x72
+        [<ffffffff810a7e64>] __rcu_read_unlock+0x1a7/0x24e
+        [<ffffffff8103d34d>] rcu_read_unlock+0x21/0x23
+        [<ffffffff8103d3a2>] cpuacct_charge+0x53/0x5b
+        [<ffffffff81044d04>] update_curr+0x11f/0x15a
+        [<ffffffff81045a37>] enqueue_task_fair+0x46/0x22a
+        [<ffffffff8103d2c0>] enqueue_task+0x61/0x68
+        [<ffffffff8103d2ef>] activate_task+0x28/0x30
+        [<ffffffff81040b3b>] ttwu_activate+0x12/0x34
+        [<ffffffff81045d5f>] ttwu_do_activate.clone.4+0x2d/0x3f
+        [<ffffffff81045db4>] sched_ttwu_pending+0x43/0x58
+        [<ffffffff81045dd2>] scheduler_ipi+0x9/0xb
+        [<ffffffff81021e10>] smp_reschedule_interrupt+0x25/0x27
+        [<ffffffff81485973>] reschedule_interrupt+0x13/0x20
+        [<ffffffff813fcabe>] rcu_read_unlock+0x21/0x23
+        [<ffffffff813fd1ab>] ip_queue_xmit+0x35e/0x3b1
+        [<ffffffff8140f26f>] tcp_transmit_skb+0x785/0x7c3
+        [<ffffffff81410e21>] tcp_connect+0x418/0x47a
+        [<ffffffff8141561f>] tcp_v4_connect+0x3c6/0x419
+        [<ffffffff81423cc5>] inet_stream_connect+0xa4/0x25f
+        [<ffffffff813b1f6d>] sys_connect+0x75/0x98
+        [<ffffffff81484a52>] system_call_fastpath+0x16/0x1b
+
+other info that might help us debug this:
+
+Chain exists of:
+   rcu_node_level_0 --> &p->pi_lock --> &rq->lock
+
+  Possible unsafe locking scenario:
+
+        CPU0                    CPU1
+        ----                    ----
+   lock(&rq->lock);
+                                lock(&p->pi_lock);
+                                lock(&rq->lock);
+   lock(rcu_node_level_0);
+
+  *** DEADLOCK ***
+
+2 locks held by btserver/22102:
+  #0:  (sk_lock-AF_INET){+.+.+.}, at: [<ffffffff81423c5b>] inet_stream_connect+0x3a/0x25f
+  #1:  (&rq->lock){-.-.-.}, at: [<ffffffff81045da5>] sched_ttwu_pending+0x34/0x58
+
+stack backtrace:
+Pid: 22102, comm: btserver Not tainted 3.0.0-rc5+ #9
+Call Trace:
+  <IRQ>  [<ffffffff8147e7a3>] ? _raw_spin_unlock_irqrestore+0x6b/0x79
+  [<ffffffff81079fb1>] print_circular_bug+0x1fe/0x20f
+  [<ffffffff8107ab56>] __lock_acquire+0xae6/0xdd5
+  [<ffffffff810a72ad>] ? rcu_report_unblock_qs_rnp+0x52/0x72
+  [<ffffffff8107b349>] lock_acquire+0xf4/0x14b
+  [<ffffffff810a72ad>] ? rcu_report_unblock_qs_rnp+0x52/0x72
+  [<ffffffff8147e141>] _raw_spin_lock+0x36/0x45
+  [<ffffffff810a72ad>] ? rcu_report_unblock_qs_rnp+0x52/0x72
+  [<ffffffff8147e72b>] ? _raw_spin_unlock+0x45/0x52
+  [<ffffffff810a72ad>] rcu_report_unblock_qs_rnp+0x52/0x72
+  [<ffffffff810a7d99>] ? __rcu_read_unlock+0xdc/0x24e
+  [<ffffffff810a7e64>] __rcu_read_unlock+0x1a7/0x24e
+  [<ffffffff8103d34d>] rcu_read_unlock+0x21/0x23
+  [<ffffffff8103d3a2>] cpuacct_charge+0x53/0x5b
+  [<ffffffff81044d04>] update_curr+0x11f/0x15a
+  [<ffffffff81045a37>] enqueue_task_fair+0x46/0x22a
+  [<ffffffff8103d2c0>] enqueue_task+0x61/0x68
+  [<ffffffff8103d2ef>] activate_task+0x28/0x30
+  [<ffffffff81040b3b>] ttwu_activate+0x12/0x34
+  [<ffffffff81045d5f>] ttwu_do_activate.clone.4+0x2d/0x3f
+  [<ffffffff81045db4>] sched_ttwu_pending+0x43/0x58
+  [<ffffffff81045dd2>] scheduler_ipi+0x9/0xb
+  [<ffffffff81021e10>] smp_reschedule_interrupt+0x25/0x27
+  [<ffffffff81485973>] reschedule_interrupt+0x13/0x20
+  <EOI>  [<ffffffff810a7cdd>] ? __rcu_read_unlock+0x20/0x24e
+  [<ffffffff813fda17>] ? ip_output+0xa6/0xaf
+  [<ffffffff813fcabe>] rcu_read_unlock+0x21/0x23
+  [<ffffffff813fd1ab>] ip_queue_xmit+0x35e/0x3b1
+  [<ffffffff813fce4d>] ? ip_send_reply+0x247/0x247
+  [<ffffffff8140f26f>] tcp_transmit_skb+0x785/0x7c3
+  [<ffffffff81410e21>] tcp_connect+0x418/0x47a
+  [<ffffffff812d9905>] ? secure_tcp_sequence_number+0x55/0x6f
+  [<ffffffff8141561f>] tcp_v4_connect+0x3c6/0x419
+  [<ffffffff81423c5b>] ? inet_stream_connect+0x3a/0x25f
+  [<ffffffff81423cc5>] inet_stream_connect+0xa4/0x25f
+  [<ffffffff810e62e3>] ? might_fault+0x4e/0x9e
+  [<ffffffff813af7f8>] ? copy_from_user+0x2a/0x2c
+  [<ffffffff813b1f6d>] sys_connect+0x75/0x98
+  [<ffffffff81484a8a>] ? sysret_check+0x2e/0x69
+  [<ffffffff810792be>] ? trace_hardirqs_on_caller+0x111/0x135
+  [<ffffffff8109ef15>] ? audit_syscall_entry+0x119/0x145
+  [<ffffffff8122d2ee>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+  [<ffffffff81484a52>] system_call_fastpath+0x16/0x1b
+
 -- 
-1.5.6.5
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
