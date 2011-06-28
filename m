@@ -1,177 +1,644 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab1F1HA3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 03:00:29 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63937 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755797Ab1F1HAU convert rfc822-to-8bit (ORCPT
+	id S1756620Ab1F1HIO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 03:08:14 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:33697 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755997Ab1F1HHR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 03:00:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DzpfpeaxtWKzFSKrXEHhLae/7V33jiUs4fxx7H5Kr0wq5nOqRr5/J5SAZzKVtUsxR9
-         5Yv5AZip2G/brZV0/3RRB1s4BZRLcHtmT0bXUmp6/rxuf+GUOILcQmnVqtZqvXR4Wudq
-         UvI9OVXe+KCN3MCeTssX2anUYTIc4mJN+gOcM=
-MIME-Version: 1.0
-In-Reply-To: <BANLkTinJHNztwaR44qdOpZyWg7ASrVG7vQ@mail.gmail.com>
-References: <BLU158-w332CD7657F92343D3D2D1C876A0@phx.gbl>
-	<BANLkTinr-5k3grHM-gfjVi2PA67VvvTiNg@mail.gmail.com>
-	<BANLkTinJHNztwaR44qdOpZyWg7ASrVG7vQ@mail.gmail.com>
-Date: Tue, 28 Jun 2011 12:30:18 +0530
-Message-ID: <BANLkTimGyAN2MvPsTAYqCo2LcWQO2xjXtA@mail.gmail.com>
-Subject: Re: [ath9k-devel] Patching ath9k/mac80211 to change MAC layer features
-From: Mohammed Shafi <shafi.wireless@gmail.com>
-To: Fred Matthews <fredmm@hotmail.co.uk>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        ath9k-devel@venema.h4ckr.net, ath9k-devel@lists.ath9k
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 28 Jun 2011 03:07:17 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH v3] hwmon: LM95245 driver
+Date: Tue, 28 Jun 2011 09:07:09 +0200
+Message-Id: <1309244829-12304-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <20110627202135.GA12829@ericsson.com>
+References: <20110627202135.GA12829@ericsson.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 11:07 PM, Fred Matthews <fredmm@hotmail.co.uk> wrote:
-> Hi all,
->
-> Much appreciated Mohammed Shafi, disabling aggregation works when
-> replacing those lines with
->  sc->sc_flags &= ~SC_OP_TXAGGR;
->  sc->sc_flags &= ~SC_OP_RXAGGR;
-> only issue is I must always recompile compat-wireless to
-> re-enable/disable it again. I tried to port it using debugfs to be
-> able to enable and disable at runtime but ath9k kept rebooting.
+An hwmon driver for the National Semiconductor LM95245 dual temperature
+sensors chip.
 
-I am not sure we can enable/disable aggregation via debugfs, these
-flags seem are set at initialization and based on this lot of things
-happen in tx-path, initializing TID structure, ampdu action, rate
-control  etc.
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+---
+Changes since v2:
+* Applied review notes from Guenter
+* Added Documentation/hwmon/lm95245 (Dunno if is enough though)
 
->
-> Also I would be very grateful if someone can help regarding my
-> attached patch and previous query:
->
-> ------------
->  need to patch ath9k so that I can be able to modify/fix the A-MPDU
-> aggregation frame length and other parameters such that they can be
-> configured at runtime via debugfs. I made a newbie attempt at trying
-> to change the aggregate length (attached), but I am unsure of the
-> correctness/efficiency  - when applied throughput varies with
-> different frame lengths entered but I can't be sure if its actually
-> changing the aggregation length (passes the framelen/aggr_limit).
-> Hence I would be very grateful if someone can assist in the correct
-> way of doing this (possibly directly via mac80211).
->
->
-> Also if the ampdu aggregate length is changed I believe the
-> number/length of the subframes of the aggregate stays constant (at the
-> default which is 32). I try to change this in my patch as well as the
-> maximum software retries by just changing the default definition in
-> ath9k.h, thus is there a (more) correct/better way of changing these.
-> Finally, how can I patch the driver to be able to disable Block-Acks
-> via debugfs or otherwise.
-> ---------------
->
-> Thank you very much
->
->
->
-> On Mon, Jun 20, 2011 at 9:15 AM, Mohammed Shafi
-> <shafi.wireless@gmail.com> wrote:
->> On Fri, Jun 17, 2011 at 2:09 AM, Fred Matthews <fredmm@hotmail.co.uk> wrote:
->>> Hello all,
->>>
->>>
->>> I have a query regarding patching ath9k/mac80211 to change MAC layer
->>> features and I would be most grateful if someone can assist.
->>>
->>>
->>> I need to patch ath9k so that I can be able to modify/fix the A-MPDU
->>> aggregation frame length and other parameters such that they can be
->>> configured at runtime via debugfs. I made a newbie attempt at trying to
->>> change the aggregate length (attached), but I am unsure of the
->>> correctness/efficiency  - when applied throughput varies with different
->>> frame lengths entered but I can't be sure if its actually changing the
->>> aggregation length (passes the framelen/aggr_limit). Hence I would be very
->>> grateful if someone can assist in the correct way of doing this (possibly
->>> directly via mac80211).
->>>
->>>
->>>
->>> Also if the ampdu aggregate length is changed I believe the number/length of
->>> the subframes of the aggregate stays constant (at the default which is
->>> 32). I try to change this in my patch as well as the maximum software
->>> retries by just changing the default definition in ath9k.h, thus is there a
->>> (more) correct/better way of changing these. Finally, how can I patch the
->>> driver to be able to disable Block-Acks/aggregation via debugfs or
->>> otherwise.
->>
->>
->> to disable aggregation in the driver, please try this
->> diff --git a/drivers/net/wireless/ath/ath9k/init.c
->> b/drivers/net/wireless/ath/ath9k/init.c
->> index d4b166c..e0175d0 100644
->> --- a/drivers/net/wireless/ath/ath9k/init.c
->> +++ b/drivers/net/wireless/ath/ath9k/init.c
->> @@ -524,8 +524,6 @@ static void ath9k_init_misc(struct ath_softc *sc)
->>        sc->config.txpowlimit = ATH_TXPOWER_MAX;
->>
->>        if (sc->sc_ah->caps.hw_caps & ATH9K_HW_CAP_HT) {
->> -               sc->sc_flags |= SC_OP_TXAGGR;
->> -               sc->sc_flags |= SC_OP_RXAGGR;
->>        }
->>
->>        common->tx_chainmask = sc->sc_ah->caps.tx_chainmask;
->>
->> if you want only tx-aggregation to be disabled , please comment out only that.
->> also you can completely disable HT by
->> diff --git a/drivers/net/wireless/ath/ath9k/hw.c
->> b/drivers/net/wireless/ath/ath9k/hw.c
->> index 6de2655..696b4cc 100644
->> --- a/drivers/net/wireless/ath/ath9k/hw.c
->> +++ b/drivers/net/wireless/ath/ath9k/hw.c
->> @@ -1915,10 +1915,7 @@ int ath9k_hw_fill_cap_info(struct ath_hw *ah)
->>
->>        common->crypt_caps |= ATH_CRYPT_CAP_CIPHER_AESCCM;
->>
->> -       if (ah->hw_version.devid != AR2427_DEVID_PCIE)
->> -               pCap->hw_caps |= ATH9K_HW_CAP_HT;
->> -       else
->> -               pCap->hw_caps &= ~ATH9K_HW_CAP_HT;
->> +       pCap->hw_caps &= ~ATH9K_HW_CAP_HT;
->>
->>        if (AR_SREV_9271(ah))
->>                pCap->num_gpio_pins = AR9271_NUM_GPIO;
->>
->>
->>
->>
->>>
->>>
->>>
->>> I highly appreciate, help in any of the above, as well as other advice,
->>> Many thanks
->>>
->>> _______________________________________________
->>> ath9k-devel mailing list
->>> ath9k-devel@lists.ath9k.org
->>> https://lists.ath9k.org/mailman/listinfo/ath9k-devel
->>>
->>>
->>
->>
->>
->> --
->> shafi
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
->
+Guenter,
+I skipped adding OS limits. For one point I don't understand them exactly.
+TCRIT and OS limit is indicated the same for local temperature and AFAICS
+it uses the external pin A0/OS which have to be configured. I can't test this.
 
+ Documentation/hwmon/lm95245 |   33 +++
+ drivers/hwmon/Kconfig       |    9 +
+ drivers/hwmon/Makefile      |    1 +
+ drivers/hwmon/lm95245.c     |  517 +++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 560 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/hwmon/lm95245
+ create mode 100644 drivers/hwmon/lm95245.c
 
-
+diff --git a/Documentation/hwmon/lm95245 b/Documentation/hwmon/lm95245
+new file mode 100644
+index 0000000..7472c64
+--- /dev/null
++++ b/Documentation/hwmon/lm95245
+@@ -0,0 +1,33 @@
++Kernel driver lm95245
++==================
++
++Supported chips:
++  * National Semiconductor LM95245
++    Addresses scanned: I2C 0x18, 0x19, 0x29, 0x4c, 0x4d
++    Datasheet: Publicly available at the National Semiconductor website
++               http://www.national.com/mpf/LM/LM95245.html
++
++
++Author: Alexander Stein <alexander.stein@systec-electronic.com>
++
++Description
++-----------
++
++The LM95245 is an 11-bit digital temperature sensor with a 2-wire System
++Management Bus (SMBus) interface and TruTherm technology that can monitor
++the temperature of a remote diode as well as its own temperature.
++The LM95245 can be used to very accurately monitor the temperature of
++external devices such as microprocessors.
++
++All temperature values are given in millidegrees Celsius. Local temperature
++is given within a range of -127 to +127.875 degrees. Remote temperatures are
++given within a range of -127 to +255 degrees. Resolution depends on
++temperature input and range.
++
++Each sensor has its own critical limit, but the hysteresis is common to all
++two channels.
++
++The lm95245 driver can change its update interval to a fixed set of values.
++It will round up to the next selectable interval. See the datasheet for exact
++values. Reading them more often will do no harm, but will return
++'old' values.
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 16db83c..ffabf1f 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -702,6 +702,15 @@ config SENSORS_LM95241
+ 	  This driver can also be built as a module.  If so, the module
+ 	  will be called lm95241.
+ 
++config SENSORS_LM95245
++	tristate "National Semiconductor LM95245 sensor chip"
++	depends on I2C && EXPERIMENTAL
++	help
++	  If you say yes here you get support for LM95245 sensor chip.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called lm95245.
++
+ config SENSORS_MAX1111
+ 	tristate "Maxim MAX1111 Multichannel, Serial 8-bit ADC chip"
+ 	depends on SPI_MASTER
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 28061cf..5598712 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -80,6 +80,7 @@ obj-$(CONFIG_SENSORS_LM90)	+= lm90.o
+ obj-$(CONFIG_SENSORS_LM92)	+= lm92.o
+ obj-$(CONFIG_SENSORS_LM93)	+= lm93.o
+ obj-$(CONFIG_SENSORS_LM95241)	+= lm95241.o
++obj-$(CONFIG_SENSORS_LM95245)	+= lm95245.o
+ obj-$(CONFIG_SENSORS_LTC4151)	+= ltc4151.o
+ obj-$(CONFIG_SENSORS_LTC4215)	+= ltc4215.o
+ obj-$(CONFIG_SENSORS_LTC4245)	+= ltc4245.o
+diff --git a/drivers/hwmon/lm95245.c b/drivers/hwmon/lm95245.c
+new file mode 100644
+index 0000000..014973d
+--- /dev/null
++++ b/drivers/hwmon/lm95245.c
+@@ -0,0 +1,517 @@
++/*
++ * Copyright (C) 2011 Alexander Stein <alexander.stein@systec-electronic.com>
++ *
++ * The LM95245 is a sensor chip made by National Semiconductors.
++ * It reports up to two temperatures (its own plus an external one).
++ * Complete datasheet can be obtained from National's website at:
++ *   http://www.national.com/ds.cgi/LM/LM95245.pdf
++ *
++ * This driver is based on lm95241.c
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/slab.h>
++#include <linux/jiffies.h>
++#include <linux/i2c.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/err.h>
++#include <linux/mutex.h>
++#include <linux/sysfs.h>
++
++#define DEVNAME "lm95245"
++
++static const unsigned short normal_i2c[] = {
++	0x18, 0x19, 0x29, 0x4c, 0x4d, I2C_CLIENT_END };
++
++/* LM95245 registers */
++/* general registers */
++#define LM95245_REG_RW_CONFIG1		0x03
++#define LM95245_REG_RW_CONVERS_RATE	0x04
++#define LM95245_REG_W_ONE_SHOT		0x0F
++
++/* diode configuration */
++#define LM95245_REG_RW_CONFIG2		0xBF
++#define LM95245_REG_RW_REMOTE_OFFH	0x11
++#define LM95245_REG_RW_REMOTE_OFFL	0x12
++
++/* status registers */
++#define LM95245_REG_R_STATUS1		0x02
++#define LM95245_REG_R_STATUS2		0x33
++
++/* limit registers */
++#define LM95245_REG_RW_REMOTE_OS_LIMIT		0x07
++#define LM95245_REG_RW_LOCAL_OS_TCRIT_LIMIT	0x20
++#define LM95245_REG_RW_REMOTE_TCRIT_LIMIT	0x19
++#define LM95245_REG_RW_COMMON_HYSTERESIS	0x21
++
++/* temperature signed */
++#define LM95245_REG_R_LOCAL_TEMPH_S	0x00
++#define LM95245_REG_R_LOCAL_TEMPL_S	0x30
++#define LM95245_REG_R_REMOTE_TEMPH_S	0x01
++#define LM95245_REG_R_REMOTE_TEMPL_S	0x10
++/* temperature unsigned */
++#define LM95245_REG_R_REMOTE_TEMPH_U	0x31
++#define LM95245_REG_R_REMOTE_TEMPL_U	0x32
++
++/* id registers */
++#define LM95245_REG_R_MAN_ID		0xFE
++#define LM95245_REG_R_CHIP_ID		0xFF
++
++/* LM95245 specific bitfields */
++#define CFG_STOP		0x40
++#define CFG_REMOTE_TCRIT_MASK	0x10
++#define CFG_REMOTE_OS_MASK	0x08
++#define CFG_LOCAL_TCRIT_MASK	0x04
++#define CFG_LOCAL_OS_MASK	0x02
++
++#define CFG2_OS_A0		0x40
++#define CFG2_DIODE_FAULT_OS	0x20
++#define CFG2_DIODE_FAULT_TCRIT	0x10
++#define CFG2_REMOTE_TT		0x08
++#define CFG2_REMOTE_FILTER_DIS	0x00
++#define CFG2_REMOTE_FILTER_EN	0x06
++
++/* conversation rate in ms */
++#define RATE_CR0063	0x00
++#define RATE_CR0364	0x01
++#define RATE_CR1000	0x02
++#define RATE_CR2500	0x03
++
++#define STATUS1_DIODE_FAULT	0x04
++#define STATUS1_RTCRIT		0x02
++#define STATUS1_LOC		0x01
++
++#define MANUFACTURER_ID		0x01
++#define DEFAULT_REVISION	0xB3
++
++static const u8 lm95245_reg_address[] = {
++	LM95245_REG_R_LOCAL_TEMPH_S,
++	LM95245_REG_R_LOCAL_TEMPL_S,
++	LM95245_REG_R_REMOTE_TEMPH_S,
++	LM95245_REG_R_REMOTE_TEMPL_S,
++	LM95245_REG_R_REMOTE_TEMPH_U,
++	LM95245_REG_R_REMOTE_TEMPL_U,
++	LM95245_REG_RW_LOCAL_OS_TCRIT_LIMIT,
++	LM95245_REG_RW_REMOTE_TCRIT_LIMIT,
++	LM95245_REG_RW_COMMON_HYSTERESIS,
++	LM95245_REG_R_STATUS1,
++};
++
++/* Client data (each client gets its own) */
++struct lm95245_data {
++	struct device *hwmon_dev;
++	struct mutex update_lock;
++	unsigned long last_updated;	/* in jiffies */
++	unsigned long interval;	/* in msecs */
++	char valid;		/* zero until following fields are valid */
++	/* registers values */
++	u8 regs[ARRAY_SIZE(lm95245_reg_address)];
++	u8 config1, config2;
++};
++
++/* Conversions */
++static int TempFromRegUnsigned(u8 val_h, u8 val_l)
++{
++	return val_h * 1000 + val_l * 1000 / 256;
++}
++
++static int TempFromRegSigned(u8 val_h, u8 val_l)
++{
++	if (val_h & 0x80)
++		return (val_h - 0x100) * 1000;
++	return TempFromRegUnsigned(val_h, val_l);
++}
++
++static struct lm95245_data *lm95245_update_device(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct lm95245_data *data = i2c_get_clientdata(client);
++
++	mutex_lock(&data->update_lock);
++
++	if (time_after(jiffies, data->last_updated
++		+ msecs_to_jiffies(data->interval)) || !data->valid) {
++		int i;
++
++		dev_dbg(&client->dev, "Updating lm95245 data.\n");
++		for (i = 0; i < ARRAY_SIZE(lm95245_reg_address); i++)
++			data->regs[i]
++			  = i2c_smbus_read_byte_data(client,
++						     lm95245_reg_address[i]);
++		data->last_updated = jiffies;
++		data->valid = 1;
++	}
++
++	mutex_unlock(&data->update_lock);
++
++	return data;
++}
++
++static unsigned long lm95245_set_conversion_rate(struct i2c_client *client,
++			unsigned long interval)
++{
++	int rate;
++
++	if (interval <= 63) {
++		interval = 63;
++		rate = RATE_CR0063;
++	} else if (interval <= 364) {
++		interval = 364;
++		rate = RATE_CR0364;
++	} else if (interval <= 1000) {
++		interval = 1000;
++		rate = RATE_CR1000;
++	} else {
++		interval = 2500;
++		rate = RATE_CR2500;
++	}
++
++	i2c_smbus_write_byte_data(client, LM95245_REG_RW_CONVERS_RATE, rate);
++
++	return interval;
++}
++
++/* Sysfs stuff */
++static ssize_t show_input(struct device *dev, struct device_attribute *attr,
++			  char *buf)
++{
++	struct lm95245_data *data = lm95245_update_device(dev);
++	int temp;
++	int index = to_sensor_dev_attr(attr)->index;
++
++	/*
++	 * Index 0 (Local temp) is always signed
++	 * Index 2 (Remote temp) has both signed and unsigned data
++	 * use signed calculation for remote if signed bit is set
++	 */
++	if (index == 0 || data->regs[index] & 0x80)
++		temp = TempFromRegSigned(data->regs[index],
++			    data->regs[index + 1]);
++	else
++		temp = TempFromRegUnsigned(data->regs[index + 2],
++			    data->regs[index + 3]);
++
++	return snprintf(buf, PAGE_SIZE - 1, "%d\n", temp);
++}
++
++static ssize_t show_limit(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	struct lm95245_data *data = lm95245_update_device(dev);
++	int index = to_sensor_dev_attr(attr)->index;
++
++	return snprintf(buf, PAGE_SIZE - 1, "%d\n",
++			data->regs[index] * 1000);
++}
++
++static ssize_t set_limit(struct device *dev, struct device_attribute *attr,
++			const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct lm95245_data *data = i2c_get_clientdata(client);
++	int index = to_sensor_dev_attr(attr)->index;
++	unsigned long val;
++
++	if (strict_strtoul(buf, 10, &val) < 0)
++		return -EINVAL;
++
++	val /= 1000;
++
++	val = SENSORS_LIMIT(val, 0, (index == 6 ? 127 : 255));
++
++	mutex_lock(&data->update_lock);
++
++	data->valid = 0;
++
++	i2c_smbus_write_byte_data(client, lm95245_reg_address[index], val);
++
++	mutex_unlock(&data->update_lock);
++
++	return count;
++}
++
++static ssize_t set_crit_hyst(struct device *dev, struct device_attribute *attr,
++			const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct lm95245_data *data = i2c_get_clientdata(client);
++	unsigned long val;
++
++	if (strict_strtoul(buf, 10, &val) < 0)
++		return -EINVAL;
++
++	val /= 1000;
++
++	val = SENSORS_LIMIT(val, 0, 31);
++
++	mutex_lock(&data->update_lock);
++
++	data->valid = 0;
++
++	/* shared crit hysteresis */
++	i2c_smbus_write_byte_data(client, LM95245_REG_RW_COMMON_HYSTERESIS,
++		val);
++
++	mutex_unlock(&data->update_lock);
++
++	return count;
++}
++
++static ssize_t show_type(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct lm95245_data *data = i2c_get_clientdata(client);
++
++	return snprintf(buf, PAGE_SIZE - 1,
++		data->config2 & CFG2_REMOTE_TT ? "1\n" : "2\n");
++}
++
++static ssize_t set_type(struct device *dev, struct device_attribute *attr,
++			const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct lm95245_data *data = i2c_get_clientdata(client);
++	unsigned long val;
++
++	if (strict_strtoul(buf, 10, &val) < 0)
++		return -EINVAL;
++	if (val != 1 && val != 2)
++		return -EINVAL;
++
++	mutex_lock(&data->update_lock);
++
++	if (val == 1)
++		data->config2 |= CFG2_REMOTE_TT;
++	else
++		data->config2 &= ~CFG2_REMOTE_TT;
++
++	data->valid = 0;
++
++	i2c_smbus_write_byte_data(client, LM95245_REG_RW_CONFIG2,
++				  data->config2);
++
++	mutex_unlock(&data->update_lock);
++
++	return count;
++}
++
++static ssize_t show_alarm(struct device *dev, struct device_attribute *attr,
++			 char *buf)
++{
++	struct lm95245_data *data = lm95245_update_device(dev);
++	int index = to_sensor_dev_attr(attr)->index;
++
++	return snprintf(buf, PAGE_SIZE - 1, "%d\n",
++			!!(data->regs[9] & index));
++}
++
++static ssize_t show_interval(struct device *dev, struct device_attribute *attr,
++			     char *buf)
++{
++	struct lm95245_data *data = lm95245_update_device(dev);
++
++	return snprintf(buf, PAGE_SIZE - 1, "%lu\n", data->interval);
++}
++
++static ssize_t set_interval(struct device *dev, struct device_attribute *attr,
++			    const char *buf, size_t count)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct lm95245_data *data = i2c_get_clientdata(client);
++	unsigned long val;
++
++	if (strict_strtoul(buf, 10, &val) < 0)
++		return -EINVAL;
++
++	mutex_lock(&data->update_lock);
++
++	data->interval = lm95245_set_conversion_rate(client, val);
++
++	mutex_unlock(&data->update_lock);
++
++	return count;
++}
++
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_input, NULL, 0);
++static SENSOR_DEVICE_ATTR(temp1_crit, S_IWUSR | S_IRUGO, show_limit,
++		set_limit, 6);
++static SENSOR_DEVICE_ATTR(temp1_crit_hyst, S_IWUSR | S_IRUGO, show_limit,
++		set_crit_hyst, 8);
++static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO, show_alarm, NULL,
++		STATUS1_LOC);
++
++static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_input, NULL, 2);
++static SENSOR_DEVICE_ATTR(temp2_crit, S_IWUSR | S_IRUGO, show_limit,
++		set_limit, 7);
++static SENSOR_DEVICE_ATTR(temp2_crit_hyst, S_IWUSR | S_IRUGO, show_limit,
++		set_crit_hyst, 8);
++static SENSOR_DEVICE_ATTR(temp2_crit_alarm, S_IRUGO, show_alarm, NULL,
++		STATUS1_RTCRIT);
++static SENSOR_DEVICE_ATTR(temp2_type, S_IWUSR | S_IRUGO, show_type,
++		set_type, 0);
++static SENSOR_DEVICE_ATTR(temp2_fault, S_IRUGO, show_alarm, NULL,
++		STATUS1_DIODE_FAULT);
++
++static DEVICE_ATTR(update_interval, S_IWUSR | S_IRUGO, show_interval,
++		set_interval);
++
++static struct attribute *lm95245_attributes[] = {
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit_hyst.dev_attr.attr,
++	&sensor_dev_attr_temp1_crit_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp2_input.dev_attr.attr,
++	&sensor_dev_attr_temp2_crit.dev_attr.attr,
++	&sensor_dev_attr_temp2_crit_hyst.dev_attr.attr,
++	&sensor_dev_attr_temp2_crit_alarm.dev_attr.attr,
++	&sensor_dev_attr_temp2_type.dev_attr.attr,
++	&sensor_dev_attr_temp2_fault.dev_attr.attr,
++	&dev_attr_update_interval.attr,
++	NULL
++};
++
++static const struct attribute_group lm95245_group = {
++	.attrs = lm95245_attributes,
++};
++
++/* Return 0 if detection is successful, -ENODEV otherwise */
++static int lm95245_detect(struct i2c_client *new_client,
++			  struct i2c_board_info *info)
++{
++	struct i2c_adapter *adapter = new_client->adapter;
++
++	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
++		return -ENODEV;
++
++	if (i2c_smbus_read_byte_data(new_client, LM95245_REG_R_MAN_ID)
++			!= MANUFACTURER_ID
++		|| i2c_smbus_read_byte_data(new_client, LM95245_REG_R_CHIP_ID)
++			!= DEFAULT_REVISION)
++		return -ENODEV;
++
++	strlcpy(info->type, DEVNAME, I2C_NAME_SIZE);
++	return 0;
++}
++
++static void lm95245_init_client(struct i2c_client *client)
++{
++	struct lm95245_data *data = i2c_get_clientdata(client);
++
++	data->interval = 1000;	/* 1 sec default */
++	data->valid = 0;
++
++	data->config1 = i2c_smbus_read_byte_data(client,
++		LM95245_REG_RW_CONFIG1);
++	data->config2 = i2c_smbus_read_byte_data(client,
++		LM95245_REG_RW_CONFIG2);
++
++	/* Clear the standby bit */
++	data->config1 &= ~CFG_STOP;
++
++	i2c_smbus_write_byte_data(client, LM95245_REG_RW_CONFIG1,
++		data->config1);
++	lm95245_set_conversion_rate(client, data->interval);
++}
++
++static int lm95245_probe(struct i2c_client *new_client,
++			 const struct i2c_device_id *id)
++{
++	struct lm95245_data *data;
++	int err;
++
++	data = kzalloc(sizeof(struct lm95245_data), GFP_KERNEL);
++	if (!data) {
++		err = -ENOMEM;
++		goto exit;
++	}
++
++	i2c_set_clientdata(new_client, data);
++	mutex_init(&data->update_lock);
++
++	/* Initialize the LM95245 chip */
++	lm95245_init_client(new_client);
++
++	/* Register sysfs hooks */
++	err = sysfs_create_group(&new_client->dev.kobj, &lm95245_group);
++	if (err)
++		goto exit_free;
++
++	data->hwmon_dev = hwmon_device_register(&new_client->dev);
++	if (IS_ERR(data->hwmon_dev)) {
++		err = PTR_ERR(data->hwmon_dev);
++		goto exit_remove_files;
++	}
++
++	return 0;
++
++exit_remove_files:
++	sysfs_remove_group(&new_client->dev.kobj, &lm95245_group);
++exit_free:
++	kfree(data);
++exit:
++	return err;
++}
++
++static int lm95245_remove(struct i2c_client *client)
++{
++	struct lm95245_data *data = i2c_get_clientdata(client);
++
++	hwmon_device_unregister(data->hwmon_dev);
++	sysfs_remove_group(&client->dev.kobj, &lm95245_group);
++
++	kfree(data);
++	return 0;
++}
++
++/* Driver data (common to all clients) */
++static const struct i2c_device_id lm95245_id[] = {
++	{ DEVNAME, 0 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, lm95245_id);
++
++static struct i2c_driver lm95245_driver = {
++	.class		= I2C_CLASS_HWMON,
++	.driver = {
++		.name	= DEVNAME,
++	},
++	.probe		= lm95245_probe,
++	.remove		= lm95245_remove,
++	.id_table	= lm95245_id,
++	.detect		= lm95245_detect,
++	.address_list	= normal_i2c,
++};
++
++static int __init sensors_lm95245_init(void)
++{
++	return i2c_add_driver(&lm95245_driver);
++}
++
++static void __exit sensors_lm95245_exit(void)
++{
++	i2c_del_driver(&lm95245_driver);
++}
++
++MODULE_AUTHOR("Alexander Stein <alexander.stein@systec-electronic.com>");
++MODULE_DESCRIPTION("LM95245 sensor driver");
++MODULE_LICENSE("GPL");
++
++module_init(sensors_lm95245_init);
++module_exit(sensors_lm95245_exit);
 -- 
-shafi
+1.7.3.4
+
