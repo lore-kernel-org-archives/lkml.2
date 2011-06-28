@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756563Ab1F1Ns7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 09:48:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55026 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755971Ab1F1Nrz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 09:47:55 -0400
-Date: Tue, 28 Jun 2011 09:47:27 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Bastian Blank <waldi@debian.org>, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] Re: [PATCH 2/2] xen: Add alias to autoload backend
- drivers
-Message-ID: <20110628134727.GD7777@dumpdata.com>
-References: <20110624215155.GB4735@wavehammer.waldi.eu.org>
- <20110627161327.GO6978@dumpdata.com>
- <20110627163728.GA23028@wavehammer.waldi.eu.org>
- <20110627165109.GB13335@dumpdata.com>
- <20110627165711.GA2201@dumpdata.com>
- <20110627172305.GC23028@wavehammer.waldi.eu.org>
- <20110627173447.GD2430@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110627173447.GD2430@dumpdata.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090209.4E09DB7D.00DE:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+	id S1758202Ab1F1N7k (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 09:59:40 -0400
+Received: from mfo10.iij4u.or.jp ([210.138.174.80]:34627 "EHLO mfo.iij4u.or.jp"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756146Ab1F1N5b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 09:57:31 -0400
+X-Greylist: delayed 582 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 09:57:30 EDT
+Date: Tue, 28 Jun 2011 22:47:43 +0900 (JST)
+Message-Id: <20110628.224743.75173118873131581.masm.nn@mbox.iij4u.or.jp>
+To: linux-kernel@vger.kernel.org
+Subject: a file of wireshark corrupted when installation.
+From: Yuuki Harano <masm@flowernet.gr.jp>
+Organization: Personal User of IIJ4U.
+X-Mailer: Mew version 6.3 on Emacs 23.3 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 01:34:47PM -0400, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jun 27, 2011 at 07:23:05PM +0200, Bastian Blank wrote:
-> > On Mon, Jun 27, 2011 at 12:57:11PM -0400, Konrad Rzeszutek Wilk wrote:
-> > > Ugh actually no I can't.
-> > 
-> > Why? It does not actually change things.
+Hello,
 
-There are two ways of doing this:
+I don't subscribe to this list, so please CC to me.
 
-1). Split the patch in three b/c:
+When I install wireshark on kernel 2.6.39.*, libwiretap.so is filled by 0.
+libwiretap.so in compilation work is no problem.
+When 2.6.38.*, no problem. And when I make and installed libwiretap.so
+on 2.6.39.* slowly by hands, also no problem.
 
-The backends are owned by different maintainers. The xen-netback
-is owned by David Miller and he is the one that will take the patch and send
-it to Linus during the next merge window. The xen-blkback is the same thing -
-Jens will take it (or I can stick it in my #stable/for-jens branch and ask
-him to pull everything there). Either way, for both backends, those two
-folks are the ones that Linus will take the patch from - not me.
+thinkpad x61
+slackware64 13.37
+gcc 4.5.2
+glibc 2.13
+wireshark 1.4.5-1.6.0
+ginstall
+ install (GNU coreutils) 8.11
 
-I am going to take the xenbus patches and ask Linus to pull them.
+GNU ld (Linux/GNU Binutils) 2.21.51.0.6.20110118
+  Supported emulations:
+   elf_x86_64
+   elf32_x86_64
+   elf_i386
+   i386linux
+   elf_l1om
 
-In other words, this last patch crosses three different maintainers - hence
-you can either split the patch in three parts.
+od -tx1 of broken libwiretap.so.0.0.1:
+ 0000000 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+ *
+ 4103360
 
-2). Ask each of the maintainers (David, Jens) to give you an Ack so that
-this patch has both of them and then I can send it directly to Linus.
-
+-- masm
