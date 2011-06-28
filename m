@@ -1,85 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756166Ab1F1C1C (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 22:27:02 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34210 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756000Ab1F1CZf (ORCPT
+	id S1756193Ab1F1Cfa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 22:35:30 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:32253 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab1F1CdT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 22:25:35 -0400
+	Mon, 27 Jun 2011 22:33:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=BlshM1mBozRe4whIfu6nR/xKJtkjVWmywPQoGnJ2Z69rt+8JfS48j3ajfr8T9KGusW
-         UvSlJDr0x+opdWtM82nBnBW8jgCSzaJJt4EpvB2IfXy2BAd6EWYKY/0rW2NUluMSuV8D
-         Kem3H17QqNZK1fe8Twa5B6hXxIOgQ96yeSjqc=
+        d=google.com; s=beta;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SCU9ii//qj2jHGiNlL8xgT0QvunHZdmyYqGC8X7rbqDcj45AD1SM1R64e5eAFEVAZf
+         QQ9iRmBxiSVNz/YjzAWQ==
 MIME-Version: 1.0
-In-Reply-To: <20110430173905.GA25641@tty.gr>
-References: <20110428082625.GA23293@pcnci.linuxbox.cz>
-	<20110428183434.GG30645@1wt.eu>
-	<20110429100200.GB23293@pcnci.linuxbox.cz>
-	<20110430093605.GA10529@1wt.eu>
-	<20110430173905.GA25641@tty.gr>
-Date: Mon, 27 Jun 2011 19:25:31 -0700
-X-Google-Sender-Auth: t8XuTXaEShGG39DIcb7dTvK-nwA
-Message-ID: <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
-Subject: Re: 2.6.32.21 - uptime related crashes?
-From: john stultz <johnstul@us.ibm.com>
-To: Faidon Liambotis <paravoid@debian.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-        Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
-        seto.hidetoshi@jp.fujitsu.com,
-        =?ISO-8859-1?Q?Herv=E9_Commowick?= <hcommowick@exosec.fr>,
-        Willy Tarreau <w@1wt.eu>, Randy Dunlap <rdunlap@xenotime.net>,
-        Greg KH <greg@kroah.com>, Ben Hutchings <ben@decadent.org.uk>,
-        Apollon Oikonomopoulos <apoikos@gmail.com>
+In-Reply-To: <532cc290-4b9c-4eb2-91d4-aa66c01bb3a0@glegroupsg2000goo.googlegroups.com>
+References: <fa.fHPNPTsllvyE/7DxrKwiwgVbVww@ifi.uio.no>
+	<532cc290-4b9c-4eb2-91d4-aa66c01bb3a0@glegroupsg2000goo.googlegroups.com>
+Date: Mon, 27 Jun 2011 19:33:12 -0700
+Message-ID: <BANLkTik3mEJGXLrf_XtssfdRypm3NxBKvkhcnUpK=YXV6ux=Ag@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+From: Craig Bergstrom <craigb@google.com>
+To: fa.linux.kernel@googlegroups.com
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Stefan Assmann <sassmann@kpanic.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "rick@vanrein.org" <rick@vanrein.org>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Apr 30, 2011 at 10:39 AM, Faidon Liambotis <paravoid@debian.org> wrote:
-> We too experienced problems with just the G6 blades at near 215 days uptime
-> (on the 19th of April), all at the same time. From our investigation, it
-> seems that their cpu_clocks jumped suddenly far in the future and then
-> almost immediately rolled over due to wrapping around 64-bits.
+Hi All,
+
+Just a quick update regarding the outstanding request for the
+submission of Google's BadRAM patch.
+
+I'm still making some final changes to Google's e820-based BadRAM
+patch and plan to send it as an RFC patch to LKML soon (most likely
+tomorrow).
+
+Some folks had mentioned that they're interested in details about what
+we've learned about bad ram from our fleet of machines.  I suspect
+that you need ACM portal access to read this, but for those folks an
+interesting read can be found at the link shown below.  My sincere
+apologies that I cannot post a world-readable copy.
+
+http://portal.acm.org/citation.cfm?id=1555372
+
+Cheers,
+CraigB
+
+On Fri, Jun 24, 2011 at 2:10 PM, Shane Nay <snay@google.com> wrote:
 >
-> Although all of their (G6s) clocks wrapped around *at the same time*, only
-> one
-> of them actually crashed at the time, with a second one crashing just a few
-> days later, on the 28th.
+>> > For those with a lot of ranges,
+>> > like Google, the command line is insufficient.
+>>
+>> Not if you recognise that there is a pattern :-)
+>>
+>> Google does not seem to have realised that, and is simply listing
+>> the pages that are defected.  IMHO, but being the BadRAM author I
+>> can hardly be called objective, this is the added value of BadRAM,
+>> that it understands the nature of the problem and solves it with
+>> an elegant concept at the right level of abstraction.
 >
-> Three of them had the following on their logs:
-> Apr 18 20:56:07 hn-05 kernel: [17966378.581971] tap0: no IPv6 routers
-> present
-> Apr 19 10:15:42 hn-05 kernel: [18446743935.365550] BUG: soft lockup - CPU#4
-> stuck for 17163091968s! [kvm:25913]
-
-So, did this issue ever get any traction or get resolved?
-
->From the softlockup message, I suspect we hit a multiply overflow in
-the underlying sched_clock() implementation.
-
-Because the goal of  sched_clock is to be very fast, lightweight and
-safe from locking issues (so it can be called anywhere) handling
-transient corner cases internally has been avoided as they would
-require costly locking and extra overhead. Because of this,
-sched_clock users should be cautious to be robust in the face of
-transient errors.
-
-Peter: I wonder if the soft lockup code should be using the
-(hopefully) more robust timekeeping code (ie: get_seconds) for its
-get_timestamp function? I'd worry that you might have issues catching
-cases where the system was locked up so the timekeeping accounting
-code didn't get to run,  but you have the same problem in the jiffies
-based sched_clock code as well (since timekeeping increments jiffies
-in most cases).
-
-That said, I didn't see from any of the backtraces in this thread why
-the system actually crashed.  The softlockup message on its own
-shouldn't do that, so I suspect there's still a related issue
-somewhere else here.
-
-thanks
--john
+> No, we have realized patterns when there is one.  It depends on the specific defect that is at play.  There are several different defect types, and incidence rate with respect to the defect being observed.  We do observe "classic" failures of the type you are describing, where with the physical addressing information (bank, row, column), we can reproducibly cause errors to occur along that path.
+>
+> One problem is that badram syntax doesn't cleanly mesh with all modern systems.  For instance, not all chipsets have power-of-two bank interleave.  Holes in addressing also create trouble on some systems.
+>
+> Other defects look like white noise, these are typically indicative of manufacturing process defects.
+>
+> When we find a crisp-pattern in the data, it's not always the entirety of that bit-maskable pattern which is effected.  There can be interleaved subtractions from the underlying pattern orthogonal to interleave.
+>
+> IMHO, badram is a good tool for it's intended purpose.  They aren't really mutually exclusive anyway.  We're cleaning up our existing patches to send out early next week.  However, we had at one time had a way of inserting badram syntax generated e820's from command line along with passed in e820's, and extended versions.  That bit isn't in our tree right now, but it's possible, and we're looking to see if we can make it work with the existing code.
+>
+>
+>> s (and
+>> living by them) for failing memory pages.  One property of BadRAM,
+>> namely that it does not slow down your system (you have less
+>> pages on hand, but that's all) may or may not apply to an e820-based
+>> approach.  I don't know if e820 is ever consulted after boot?
+>>
+>> > How common are nontrivial patterns on real hardware?  This would be
+>> > interesting to hear from Google or another large user.
+>>
+>> Yes.  And "non-trivial" would mean that the patterns waste more space
+>> than fair, *because of* the generalisation to patterns.
+>>
+>> If you plug 10 DIMMs into your machine, and each has a faulty row
+>> somewhere, then you will get into trouble if you stick to 5 patterns.
+>> But if you happen to run into a faulty DIMM from time to time, the
+>> patterns should be your way out.
+>>
+>> > I have to say I think Google's point that truncating the list is
+>> > unacceptable...
+>>
+>> Of course, that is true.  This is why memmap=... does not work.
+>> It has nothing to do with BadRAM however, there will never be more
+>> than 5 patterns.
+>>
+>> > that would mean running in a known-bad configuration,
+>> > and even a hard crash would be better.
+>>
+>> ..which is so sensible that it was of course taken into account in
+>> the BadRAM design!
+>>
+>>
+>> Cheers,
+>>  -Rick
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majo...@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
