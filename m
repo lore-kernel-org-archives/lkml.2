@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759465Ab1F1Qev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 12:34:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64067 "EHLO mx1.redhat.com"
+	id S1759030Ab1F1QfI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 12:35:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32845 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757309Ab1F1QcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 12:32:01 -0400
-Date: Mon, 27 Jun 2011 23:17:28 -0300
+	id S1758740Ab1F1QcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 12:32:03 -0400
+Date: Mon, 27 Jun 2011 23:17:29 -0300
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCHv2 06/13] [media] et61x251: Use LINUX_VERSION_CODE for
+Subject: [PATCHv2 07/13] [media] pvrusb2: Use LINUX_VERSION_CODE for
  VIDIOC_QUERYCAP
-Message-ID: <20110627231728.2e895fa7@pedra>
+Message-ID: <20110627231729.16f15ce6@pedra>
 In-Reply-To: <cover.1309226359.git.mchehab@redhat.com>
 References: <cover.1309226359.git.mchehab@redhat.com>
 Mime-Version: 1.0
@@ -23,56 +23,38 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-et61x251 doesn't use vidioc_ioctl2. As the API is changing to use
+pvrusb2 doesn't use vidioc_ioctl2. As the API is changing to use
 a common version for all drivers, we need to expliticly fix this
 driver.
 
 Acked-by: Hans Verkuil <hans.verkuil@cisco.com>
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-diff --git a/drivers/media/video/et61x251/et61x251.h b/drivers/media/video/et61x251/et61x251.h
-index bf66189..14bb907 100644
---- a/drivers/media/video/et61x251/et61x251.h
-+++ b/drivers/media/video/et61x251/et61x251.h
-@@ -21,7 +21,6 @@
- #ifndef _ET61X251_H_
- #define _ET61X251_H_
+diff --git a/drivers/media/video/pvrusb2/pvrusb2-main.c b/drivers/media/video/pvrusb2/pvrusb2-main.c
+index 2254194..c1d9bb6 100644
+--- a/drivers/media/video/pvrusb2/pvrusb2-main.c
++++ b/drivers/media/video/pvrusb2/pvrusb2-main.c
+@@ -168,6 +168,7 @@ module_exit(pvr_exit);
+ MODULE_AUTHOR(DRIVER_AUTHOR);
+ MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_LICENSE("GPL");
++MODULE_VERSION("0.9.1");
  
--#include <linux/version.h>
- #include <linux/usb.h>
- #include <linux/videodev2.h>
- #include <media/v4l2-common.h>
-diff --git a/drivers/media/video/et61x251/et61x251_core.c b/drivers/media/video/et61x251/et61x251_core.c
-index a982750..d7efb33 100644
---- a/drivers/media/video/et61x251/et61x251_core.c
-+++ b/drivers/media/video/et61x251/et61x251_core.c
-@@ -18,6 +18,7 @@
-  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.               *
-  ***************************************************************************/
  
-+#include <linux/version.h>
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/kernel.h>
-@@ -48,8 +49,7 @@
- #define ET61X251_MODULE_AUTHOR  "(C) 2006-2007 Luca Risolia"
- #define ET61X251_AUTHOR_EMAIL   "<luca.risolia@studio.unibo.it>"
- #define ET61X251_MODULE_LICENSE "GPL"
--#define ET61X251_MODULE_VERSION "1:1.09"
--#define ET61X251_MODULE_VERSION_CODE  KERNEL_VERSION(1, 1, 9)
-+#define ET61X251_MODULE_VERSION "1.1.10"
- 
- /*****************************************************************************/
- 
-@@ -1579,7 +1579,7 @@ et61x251_vidioc_querycap(struct et61x251_device* cam, void __user * arg)
- {
- 	struct v4l2_capability cap = {
- 		.driver = "et61x251",
--		.version = ET61X251_MODULE_VERSION_CODE,
-+		.version = LINUX_VERSION_CODE,
- 		.capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_READWRITE |
- 				V4L2_CAP_STREAMING,
- 	};
+ /*
+diff --git a/drivers/media/video/pvrusb2/pvrusb2-v4l2.c b/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
+index 3876114..573749a 100644
+--- a/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
++++ b/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
+@@ -91,7 +91,7 @@ static struct v4l2_capability pvr_capability ={
+ 	.driver         = "pvrusb2",
+ 	.card           = "Hauppauge WinTV pvr-usb2",
+ 	.bus_info       = "usb",
+-	.version        = KERNEL_VERSION(0, 9, 0),
++	.version        = LINUX_VERSION_CODE,
+ 	.capabilities   = (V4L2_CAP_VIDEO_CAPTURE |
+ 			   V4L2_CAP_TUNER | V4L2_CAP_AUDIO | V4L2_CAP_RADIO |
+ 			   V4L2_CAP_READWRITE),
 -- 
 1.7.1
 
