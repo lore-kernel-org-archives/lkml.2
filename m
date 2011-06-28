@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756720Ab1F1KrR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 06:47:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:52879 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756988Ab1F1KpZ (ORCPT
+	id S1757070Ab1F1KuQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 06:50:16 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:36930 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755439Ab1F1Ksx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 06:45:25 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] modules: add default loader hook implementations
-Date: Tue, 28 Jun 2011 12:45:19 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Jonas Bonn <jonas@southpole.se>,
-        Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, monstr@monstr.eu, cmetcalf@tilera.com,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-References: <1308987512-6583-1-git-send-email-jonas@southpole.se> <201106271305.44746.arnd@arndb.de> <87mxh2lpey.fsf@rustcorp.com.au>
-In-Reply-To: <87mxh2lpey.fsf@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106281245.19457.arnd@arndb.de>
-X-Provags-ID: V02:K0:SybRHI1piUORQRPBvLBFynfHtYnuOJzGIoyKDr6+uMQ
- e9VmyKYbX7wZvyBA+Lu3NYws5ZQtdN40Ahuo9CAYTwrca5nKP/
- bxoDzzHfDECSloQHUY3vCNMp2RZPoBcTP7A2dn2VcMq85jKvWu
- Cjf766v+R+mcKOUyidbb/N2md+uRaPGMwniScFK/woblBdSPDb
- GACc5xin/EhQoux1bD2Zw==
+	Tue, 28 Jun 2011 06:48:53 -0400
+Subject: Re: [PATCH] perf: removed a non-existent event
+ "L1-icache-prefetches" for AMD processors
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Zhengyu He <zhengyuh@google.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>, tglx@linutronix.de,
+        hpa@zytor.com, x86@kernel.org, Stephane Eranian <eranian@google.com>,
+        Venkatesh Pallipadi <venki@google.com>, linux-kernel@vger.kernel.org,
+        Robert Richter <robert.richter@amd.com>,
+        Andre Przywara <andre.przywara@amd.com>
+In-Reply-To: <1309211910-2803-1-git-send-email-zhengyuh@google.com>
+References: <1309211910-2803-1-git-send-email-zhengyuh@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 28 Jun 2011 12:47:43 +0200
+Message-ID: <1309258063.6701.198.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 June 2011, Rusty Russell wrote:
-> To avoid more bikeshedding, smallest patch wins.  That's __weak, right?
+On Mon, 2011-06-27 at 14:58 -0700, Zhengyu He wrote:
+> According to AMD's "BIOS and Kernel Developer's Guide for AMD NPT Family
+> 0Fh Processors"
+> (http://support.amd.com/us/Processor_TechDocs/32559.pdf), 0x4B is for
+> prefetch instructions dispatched, and 0x14B is for the load prefetch
+> instructions including Pretech and PrefetchT0/T1/T2. No event for the
+> instructions preteched into L1I cache is found.
+> 
+> Signed-off-by: Zhengyu He <zhengyuh@google.com>
 
-Sounds fine to me. Jonas, can you send that patch?
+Hmm, indeed, its prefetch instructions issues, but not instruction
+prefetches, Robert, Andre agreed?
 
-	Arnd
+> ---
+>  arch/x86/kernel/cpu/perf_event_amd.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+> index fe29c1d..3b7f21d 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> @@ -29,7 +29,7 @@ static __initconst const u64 amd_hw_cache_event_ids
+>  		[ C(RESULT_MISS)   ] = -1,
+>  	},
+>  	[ C(OP_PREFETCH) ] = {
+> -		[ C(RESULT_ACCESS) ] = 0x014B, /* Prefetch Instructions :Load */
+> +		[ C(RESULT_ACCESS) ] = 0,
+>  		[ C(RESULT_MISS)   ] = 0,
+>  	},
+>   },
+
