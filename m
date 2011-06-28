@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752865Ab1F1WFM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 18:05:12 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35050 "EHLO
+	id S1752932Ab1F1WFZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 18:05:25 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:35053 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752452Ab1F1WFH (ORCPT
+	with ESMTP id S1752883Ab1F1WFU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 18:05:07 -0400
+	Tue, 28 Jun 2011 18:05:20 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 07/29] gma500: Do sane FB cleanup
+Subject: [PATCH 08/29] gma500: trim some of the debug
 To: linux-kernel@vger.kernel.org, greg@kroah.com
-Date: Tue, 28 Jun 2011 23:04:43 +0100
-Message-ID: <20110628220441.898.94170.stgit@bob.linux.org.uk>
+Date: Tue, 28 Jun 2011 23:04:55 +0100
+Message-ID: <20110628220453.898.81145.stgit@bob.linux.org.uk>
 In-Reply-To: <20110628220151.898.15775.stgit@bob.linux.org.uk>
 References: <20110628220151.898.15775.stgit@bob.linux.org.uk>
 User-Agent: StGIT/0.14.3
@@ -24,129 +24,113 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-If we get a user frame buffer destroyed which is being displayed then clean
-up the mess nicely. We can now run a slightly modified modetest including setting
-modes, and handling crashes.
-
-Modetest still blows up but this is because libdrm 2.4.25 is busted.
-
-
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/psb_fb.c            |   24 +++++++++++++++++++++++-
- drivers/staging/gma500/psb_intel_display.c |   22 +++++++++++++---------
- 2 files changed, 36 insertions(+), 10 deletions(-)
+ drivers/staging/gma500/psb_fb.c  |    6 +-----
+ drivers/staging/gma500/psb_gem.c |   11 -----------
+ drivers/staging/gma500/psb_gtt.c |    2 --
+ 3 files changed, 1 insertions(+), 18 deletions(-)
 
 
 diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index 5977add..d005025 100644
+index d005025..156f8ad 100644
 --- a/drivers/staging/gma500/psb_fb.c
 +++ b/drivers/staging/gma500/psb_fb.c
-@@ -719,16 +719,38 @@ static void psb_user_framebuffer_destroy(struct drm_framebuffer *fb)
- {
- 	struct psb_framebuffer *psbfb = to_psb_fb(fb);
- 	struct gtt_range *r = psbfb->gtt;
-+	struct drm_device *dev = fb->dev;
-+	struct drm_psb_private *dev_priv = dev->dev_private;
-+	struct psb_fbdev *fbdev = dev_priv->fbdev;
-+	struct drm_crtc *crtc;
-+	int reset = 0;
+@@ -727,17 +727,13 @@ static void psb_user_framebuffer_destroy(struct drm_framebuffer *fb)
  
  	/* Should never get stolen memory for a user fb */
  	WARN_ON(r->stolen);
- 	pr_err("user framebuffer destroy %p, fbdev %p\n",
- 						psbfb, psbfb->fbdev);
-+	/* Check if we are erroneously live */
-+	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
-+		if (crtc->fb == fb)
-+			reset = 1;
+-	pr_err("user framebuffer destroy %p, fbdev %p\n",
+-						psbfb, psbfb->fbdev);
 +
-+	if (reset)
-+		pr_err("DRM: gma500, forcing reset\n");
-+
-+	if (reset)
-+		/* 
-+		 * Now force a sane response before we permit the DRM crc layer to
-+		 * do stupid things like blank the display. Instead we reset this
-+		 * framebuffer as if the user had forced a reset. We must do this
-+		 * before the cleanup so that the DRM layer doesn't get a chance
-+		 * to stick its oar in where it isn't wanted.
-+		 */
-+		drm_fb_helper_restore_fbdev_mode(&fbdev->psb_fb_helper);
-+
-         /* Let DRM do its clean up */
- 	drm_framebuffer_cleanup(fb);
- 	/*  We are no longer using the resource in GEM */
- 	drm_gem_object_unreference_unlocked(&r->gem);
+ 	/* Check if we are erroneously live */
+ 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+ 		if (crtc->fb == fb)
+ 			reset = 1;
+ 
+ 	if (reset)
+-		pr_err("DRM: gma500, forcing reset\n");
 -
- 	kfree(fb);
+-	if (reset)
+ 		/* 
+ 		 * Now force a sane response before we permit the DRM crc layer to
+ 		 * do stupid things like blank the display. Instead we reset this
+diff --git a/drivers/staging/gma500/psb_gem.c b/drivers/staging/gma500/psb_gem.c
+index b24b964..125ea6b 100644
+--- a/drivers/staging/gma500/psb_gem.c
++++ b/drivers/staging/gma500/psb_gem.c
+@@ -51,7 +51,6 @@ void psb_gem_free_object(struct drm_gem_object *obj)
+ 	}
+ 	drm_gem_object_release(obj);
+ 	/* This must occur last as it frees up the memory of the GEM object */
+-	pr_err("GEM destroyed %p, %p\n", gtt, obj);
+ 	psb_gtt_free_range(obj->dev, gtt);
  }
  
-diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
-index a99271d..c7c55b1 100644
---- a/drivers/staging/gma500/psb_intel_display.c
-+++ b/drivers/staging/gma500/psb_intel_display.c
-@@ -352,15 +352,15 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
+@@ -177,8 +176,6 @@ static int psb_gem_create(struct drm_file *file,
  
- 	PSB_DEBUG_ENTRY("\n");
+ 	size = roundup(size, PAGE_SIZE);
  
-+	if (!gma_power_begin(dev, true))
-+		return 0;
-+
- 	/* no fb bound */
- 	if (!crtc->fb) {
- 		DRM_DEBUG("No FB bound\n");
--		return 0;
-+		goto psb_intel_pipe_cleaner;
- 	}
- 
--	if (!gma_power_begin(dev, true))
--		return 0;
+-	dev_err(dev->dev, "GEM creating %lld\n", size);
 -
- 	/* We are displaying this buffer, make sure it is actually loaded
- 	   into the GTT */
- 	ret = psb_gtt_pin(psbfb->gtt);
-@@ -409,6 +409,7 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
- 		REG_READ(dspbase);
+ 	/* Allocate our object - for now a direct gtt range which is not 
+ 	   stolen memory backed */
+ 	r = psb_gtt_alloc_range(dev, size, "gem", 0);
+@@ -206,8 +203,6 @@ static int psb_gem_create(struct drm_file *file,
+ 	/* We have the initial and handle reference but need only one now */
+ 	drm_gem_object_unreference(&r->gem);
+ 	*handlep = handle;
+-	dev_err(dev->dev, "GEM handle %x for %p OK\n",
+-				handle, &r->gem);
+ 	return 0;
+ }
+ 
+@@ -283,12 +278,9 @@ int psb_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	   something from beneath our feet */
+ 	mutex_lock(&dev->struct_mutex);
+ 
+-	dev_err(dev->dev, "Fault on GTT %p\n", r);
+-
+ 	/* For now the mmap pins the object and it stays pinned. As things
+ 	   stand that will do us no harm */
+ 	if (r->mmapping == 0) {
+-		dev_err(dev->dev, "Need to pin %p\n", r);
+ 		ret = psb_gtt_pin(r);
+ 		if (ret < 0) {
+ 		        DRM_ERROR("gma500: pin failed: %d\n", ret);
+@@ -302,13 +294,10 @@ int psb_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	page_offset = ((unsigned long) vmf->virtual_address - vma->vm_start)
+ 				>> PAGE_SHIFT;
+ 
+-	dev_err(dev->dev, "Page offset %p %d\n", r, (int)page_offset);
+         /* CPU view of the page, don't go via the GART for CPU writes */
+ 	pfn = page_to_phys(r->pages[page_offset]) >> PAGE_SHIFT;
+ 	ret = vm_insert_pfn(vma, (unsigned long)vmf->virtual_address, pfn);
+ 
+-	dev_err(dev->dev, "PFN %ld for VA %p = %d\n", pfn, vmf->virtual_address, ret);
+-
+ fail:
+         mutex_unlock(&dev->struct_mutex);
+ 	switch (ret) {
+diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
+index c6a7492..5a296e1 100644
+--- a/drivers/staging/gma500/psb_gtt.c
++++ b/drivers/staging/gma500/psb_gtt.c
+@@ -314,7 +314,6 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
+ 				len, start, end, PAGE_SIZE, NULL, NULL);
+ 	if (ret == 0) {
+ 		gt->offset = gt->resource.start - r->start;
+-		dev_err(dev->dev, "GTT new %p, %d\n", gt, gt->stolen);
+ 		return gt;
  	}
- 
-+psb_intel_pipe_cleaner:
- 	/* If there was a previous display we can now unpin it */
- 	if (old_fb)
- 		psb_gtt_unpin(to_psb_fb(old_fb)->gtt);
-@@ -588,6 +589,7 @@ static int psb_intel_crtc_mode_set(struct drm_crtc *crtc,
- {
- 	struct drm_device *dev = crtc->dev;
- 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
-+	struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
- 	int pipe = psb_intel_crtc->pipe;
- 	int fp_reg = (pipe == 0) ? FPA0 : FPB0;
- 	int dpll_reg = (pipe == 0) ? DPLL_A : DPLL_B;
-@@ -610,6 +612,12 @@ static int psb_intel_crtc_mode_set(struct drm_crtc *crtc,
- 	struct drm_mode_config *mode_config = &dev->mode_config;
- 	struct drm_connector *connector;
- 
-+	/* No scan out no play */
-+	if (crtc->fb == NULL) {
-+	        crtc_funcs->mode_set_base(crtc, x, y, old_fb);
-+                return 0;
-+        }
-+
- 	list_for_each_entry(connector, &mode_config->connector_list, head) {
- 		struct psb_intel_output *psb_intel_output =
- 		    to_psb_intel_output(connector);
-@@ -786,11 +794,7 @@ static int psb_intel_crtc_mode_set(struct drm_crtc *crtc,
- 	REG_WRITE(dspcntr_reg, dspcntr);
- 
- 	/* Flush the plane changes */
--	{
--		struct drm_crtc_helper_funcs *crtc_funcs =
--		    crtc->helper_private;
--		crtc_funcs->mode_set_base(crtc, x, y, old_fb);
--	}
-+	crtc_funcs->mode_set_base(crtc, x, y, old_fb);
- 
- 	psb_intel_wait_for_vblank(dev);
+ 	kfree(gt);
+@@ -341,7 +340,6 @@ static void psb_gtt_destroy(struct kref *kref)
+ 	}
+ 	WARN_ON(gt->in_gart && !gt->stolen);
+ 	release_resource(&gt->resource);
+-	pr_err("GTT destroyed %p, %d\n", gt, gt->stolen);
+ 	kfree(gt);
+ }
  
 
