@@ -1,114 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753065Ab1F1TSY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 15:18:24 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33934 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab1F1TSS convert rfc822-to-8bit (ORCPT
+	id S1752863Ab1F1Tgu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 15:36:50 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59974 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751060Ab1F1Tgn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 15:18:18 -0400
+	Tue, 28 Jun 2011 15:36:43 -0400
 MIME-Version: 1.0
-In-Reply-To: <1309244992-2305-10-git-send-email-jim.cromie@gmail.com>
-References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com> <1309244992-2305-10-git-send-email-jim.cromie@gmail.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Tue, 28 Jun 2011 13:17:48 -0600
-Message-ID: <BANLkTinwwaD=O2nFEN8G+U2eWBPMUM9Ovg@mail.gmail.com>
-Subject: Re: [PATCH 09/11] dynamic_debug: add_to_pending() saves non-matching
- queries for later.
-To: linux-kernel@vger.kernel.org
-Cc: gnb@fmeh.org, jbaron@redhat.com, bvanassche@acm.org, gregkh@suse.de,
-        Jim Cromie <jim.cromie@gmail.com>
+In-Reply-To: <20110627183829.GA16033@albatros>
+References: <20110623152137.GA2536@albatros> <20110626103915.GB11093@elte.hu>
+ <20110626165409.GA2584@albatros> <20110626182628.GA20158@elte.hu>
+ <20110626190622.GB4217@albatros> <20110626194618.GA21740@elte.hu>
+ <20110626202518.GA4915@albatros> <20110626220126.GA24004@elte.hu>
+ <20110627083633.GA5846@albatros> <20110627104058.45e93c41@pyx> <20110627183829.GA16033@albatros>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Tue, 28 Jun 2011 12:30:14 -0700
+Message-ID: <BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com>
+Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in printk()
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 1:09 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> When a query/rule doesnt match, call add_to_pending(new function)
-> to copy the query off the stack, into a (new) struct pending_query,
-> and add to pending_queries (new) list.
+On Mon, Jun 27, 2011 at 11:38 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
 >
-> Patch adds: /sys/module/dynamic_debug/parameters/
->  verbose - rw, added previously, here for completeness
->  pending_ct - ro, shows current count of pending queries
->  pending_max - rw, set max pending, further pending queries are rejected
->
-> With this and previous patches, queries added on the boot-line which
-> do not match (because module is not built-in, and thus not present yet)
-> are added to pending_queries.
->
-> IE, with these boot-line additions:
->  dynamic_debug.verbose=1 ddebug_query="module scx200_hrt +p"
->
-> Kernel will log the following:
->
-> ddebug_exec_queries: query 0: "module scx200_hrt +p"
-> ddebug_tokenize: split into words: "module" "scx200_hrt" "+p"
-> ddebug_parse_query: parsed q->function="(null)" q->filename="(null)" q->module="scx200_hrt" q->format="(null)" q->lineno=0-0
-> ddebug_parse_flags: op='+'
-> ddebug_parse_flags: flags=0x1
-> ddebug_parse_flags: *flagsp=0x1 *maskp=0xffffffff
-> ddebug_exec_query: nfound 0 on q->function="(null)" q->filename="(null)" q->module="scx200_hrt" q->format="(null)" q->lineno=0-0
-> ddebug_add_to_pending: add to pending: q->function="(null)" q->filename="(null)" q->module="scx200_hrt" q->format="(null)" q->lineno=0-0
-> ddebug_add_to_pending: ddebug: query saved as pending 1
->
-> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> ---
->  lib/dynamic_debug.c |   78 +++++++++++++++++++++++++++++++++++++++++++++++----
->  1 files changed, 72 insertions(+), 6 deletions(-)
->
-> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> index 9b8b1e8..37d0275 100644
-> --- a/lib/dynamic_debug.c
-> +++ b/lib/dynamic_debug.c
-> @@ -53,6 +53,16 @@ struct ddebug_query {
->        unsigned int first_lineno, last_lineno;
->  };
->
-> +struct pending_query {
-> +       struct list_head link;
-> +       struct ddebug_query query;
-> +       char filename[100];
-> +       char module[30];
-> +       char function[50];
-> +       char format[200];
-> +       unsigned int flags, mask;
-> +};
-> +
->  struct ddebug_iter {
->        struct ddebug_table *table;
->        unsigned int idx;
-> @@ -61,7 +71,13 @@ struct ddebug_iter {
->  static DEFINE_MUTEX(ddebug_lock);
->  static LIST_HEAD(ddebug_tables);
->  static int verbose = 0;
-> -module_param(verbose, int, 0744);
-> +module_param(verbose, int, 0644);
-> +
-> +/* legal but inapplicable queries, save and test against new modules */
-> +static LIST_HEAD(pending_queries);
-> +static int pending_ct, pending_max = 100;
-> +module_param(pending_ct, int, 0444);
-> +module_param(pending_max, int, 0644);
->
->  /* Return the last part of a pathname */
->  static inline const char *basename(const char *path)
-> @@ -96,6 +112,56 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
->        return buf;
->  }
->
-> +static char prbuf_query[300];
-> +
-> +static char *show_ddebug_query(const struct ddebug_query *q)
-> +{
+> Sure, I don't propose it anymore (v2 goes without it).
 
+What point would you like to filter things at?
 
-this part (the static fixed-length var)
-gives me some heartburn.
+I really think that user space should do its own filtering - nobody
+does a plain 'cat' on dmesg. Or if they do, they really have
+themselves to blame.
 
-I almost went with macros using pr_info to replace the
- 2 show_*_query fns, but a <debugfs/dynamic_debug/pending file
-might want to use show_pending_query
+And afaik, we don't do any escape sequence handling at the console
+level either, so you cannot mess up the console with control
+characters.
 
-advice ?
+And the most dangerous character seems to be one that you don't
+filter: the one we really do react to is '\n', and you could possibly
+make confusing log messages by embedding a newline in your string and
+then trying to make the rest look like something bad (say, an oops).
+
+So I'm not entirely convinced about this filtering at all.
+
+                     Linus
