@@ -1,47 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752189Ab1F1Vzw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 17:55:52 -0400
-Received: from mail.perches.com ([173.55.12.10]:3278 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab1F1Vzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 17:55:43 -0400
-Subject: Re: [PATCH] net/core: Convert to current logging forms
-From: Joe Perches <joe@perches.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Ben Hutchings <bhutchings@solarflare.com>, netdev@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20110628144923.2bdac9f9@nehalam.ftrdhcpuser.net>
-References: <385ebf7e98e377e6e6c384beb961b65d4a95fb18.1309289792.git.joe@perches.com>
-	 <1309292501.2771.48.camel@bwh-desktop>
-	 <1309293068.29598.14.camel@Joe-Laptop>
-	 <1309293416.2771.50.camel@bwh-desktop>
-	 <1309297068.29598.26.camel@Joe-Laptop>
-	 <20110628144923.2bdac9f9@nehalam.ftrdhcpuser.net>
+	id S1751650Ab1F1V4S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 17:56:18 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:39961 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751149Ab1F1V4O (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 17:56:14 -0400
+Subject: [PULL] ecryptfs-keys: please pull for security-testing next
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: James Morris <jmorris@namei.org>
+Cc: linux-security-module@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Roberto Sassu <roberto.sassu@polito.it>,
+        Tyler Hicks <tyhicks@linux.vnet.ibm.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Jun 2011 14:55:40 -0700
-Message-ID: <1309298140.29598.31.camel@Joe-Laptop>
+Date: Tue, 28 Jun 2011 17:56:02 -0400
+Message-ID: <1309298162.2760.33.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-28 at 14:49 -0700, Stephen Hemminger wrote:
-> Does this actually create useful benefit or just create more bug possibilities?
+Hi James,
 
-Probably not the bug possibilities.
-It's pretty trivial.
+Please pull the ecryptfs encrypted key extension patches.
 
-> Those messages are mostly self explanatory as is.
+The following changes since commit 4d67431f80b1b822f0286afc9123ee453eac7334:
 
-It also has some utility for the cases in drivers
-between the alloc_netdev and register_netdev[ice]
-where printk/pr_<level> currently has to be used.
+  KEYS: Don't return EAGAIN to keyctl_assume_authority() (2011-06-14 15:03:29 +1000)
 
-Beyond that, (foolish?) consistency only.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/zohar/ima-2.6.git next-ecryptfs-keys
 
-cheers, Joe
+Roberto Sassu (7):
+      encrypted_keys: avoid dumping the master key if the request fails
+      encrypted-keys: fixed valid_master_desc() function description
+      encrypted-keys: added additional debug messages
+      encrypted-keys: add key format support
+      eCryptfs: export global eCryptfs definitions to include/linux/ecryptfs.h
+      encrypted-keys: add ecryptfs format support
+      eCryptfs: added support for the encrypted key type
+
+thanks,
+
+Mimi
 
