@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752789Ab1F1UVb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 16:21:31 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:57526 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751118Ab1F1UVY (ORCPT
+	id S1752735Ab1F1UVw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 16:21:52 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:10293 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752169Ab1F1UVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 16:21:24 -0400
-X-Sasl-enc: acm8WJ9BooH5oFjhuj1PY/VMYaASnyZmt0Oan46KEPTR 1309292483
-Date: Tue, 28 Jun 2011 13:06:56 -0700
-From: Greg KH <greg@kroah.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: driverdevel <devel@driverdev.osuosl.org>, gregkh@suse.de,
-        linux-next@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        "Luis R. Rodriguez" <mcgrof@gmail.com>, Joe Perches <joe@perches.com>,
-        Naveen Singh <nsingh@atheros.com>
-Subject: Re: staging: fix ath6kl build when CFG80211 is not enabled
-Message-ID: <20110628200656.GA7992@kroah.com>
-References: <20110527130321.18a51d63.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110527130321.18a51d63.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 Jun 2011 16:21:45 -0400
+Subject: Re: [PATCH] net/core: Convert to current logging forms
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Joe Perches <joe@perches.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <385ebf7e98e377e6e6c384beb961b65d4a95fb18.1309289792.git.joe@perches.com>
+References: <385ebf7e98e377e6e6c384beb961b65d4a95fb18.1309289792.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Tue, 28 Jun 2011 21:21:41 +0100
+Message-ID: <1309292501.2771.48.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 Jun 2011 20:21:44.0411 (UTC) FILETIME=[FF91B2B0:01CC35D0]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18226.005
+X-TM-AS-Result: No--4.966700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 27, 2011 at 01:03:21PM -0700, Randy Dunlap wrote:
+On Tue, 2011-06-28 at 12:40 -0700, Joe Perches wrote:
+> Use pr_fmt, pr_<level>, and netdev_<level> as appropriate.
 > 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Fix build errors when CONFIG_CFG80211 is not enabled:
-> 
-> drivers/built-in.o: In function `ar6k_cfg80211_deinit':
-> (.text+0x189b71): undefined reference to `cfg80211_scan_done'
-> drivers/built-in.o: In function `ar6k_cfg80211_deinit':
-> (.text+0x189b86): undefined reference to `wiphy_unregister'
-> drivers/built-in.o: In function `ar6k_cfg80211_deinit':
-> (.text+0x189b8d): undefined reference to `wiphy_free'
-> drivers/built-in.o: In function `ar6k_cfg80211_init':
-> (.text+0x18add7): undefined reference to `wiphy_new'
-> drivers/built-in.o: In function `ar6k_cfg80211_init':
-> (.text+0x18ae48): undefined reference to `wiphy_register'
-> drivers/built-in.o: In function `ar6k_cfg80211_tkip_micerr_event':
-> (.text+0x18ae95): undefined reference to `cfg80211_michael_mic_failure'
-> drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
-> (.text+0x18afb5): undefined reference to `__ieee80211_get_channel'
-> drivers/built-in.o: In function `ar6k_cfg80211_scan_node':
-> (.text+0x18afd2): undefined reference to `cfg80211_inform_bss_frame'
-> drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
-> (.text+0x18b046): undefined reference to `cfg80211_ibss_joined'
-> drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
-> (.text+0x18b176): undefined reference to `cfg80211_connect_result'
-> drivers/built-in.o: In function `ar6k_cfg80211_disconnect_event':
-> (.text+0x18b190): undefined reference to `cfg80211_disconnected'
-> drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
-> (.text+0x18b291): undefined reference to `cfg80211_get_bss'
-> drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
-> (.text+0x18b457): undefined reference to `cfg80211_put_bss'
-> drivers/built-in.o: In function `ar6k_cfg80211_connect_event':
-> (.text+0x18b4fa): undefined reference to `cfg80211_roamed'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Cc: Luis R. Rodriguez <mcgrof@gmail.com>
-> Cc: Joe Perches <joe@perches.com>
-> Cc: Naveen Singh <nsingh@atheros.com>
-> ---
->  drivers/staging/ath6kl/Kconfig |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> --- linux-next-20110517.orig/drivers/staging/ath6kl/Kconfig
-> +++ linux-next-20110517/drivers/staging/ath6kl/Kconfig
-> @@ -1,6 +1,7 @@
->  config ATH6K_LEGACY
->  	tristate "Atheros AR6003 support (non mac80211)"
->          depends on MMC && WLAN
-> +	depends on CFG80211
+> Coalesce long formats.
+[...]
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -72,6 +72,8 @@
+>   *				        - netif_rx() feedback
+>   */
+>  
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+[...]
 
-Is this still needed in the next linux-next release?
+KBUILD_MODNAME is presumably going to be "dev".  That's not very
+meaningful.
 
-confused,
+Ben.
 
-greg k-h
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
