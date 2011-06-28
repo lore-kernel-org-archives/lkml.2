@@ -1,120 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756392Ab1F1Ctz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 22:49:55 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:2731 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755616Ab1F1CsG (ORCPT
+	id S1756253Ab1F1CtS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 22:49:18 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:5461 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756302Ab1F1Crn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 22:48:06 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=Lj/JRjyWV1gEh8JKHZEa2Xl8fAHtuBMz5LKwn6wkp7fXqgsybPJWyzYxrVl3j0vzK
-	iNPAZ0NRXSDBAZyzWkxAg==
-From: Todd Poynor <toddpoynor@google.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Todd Poynor <toddpoynor@google.com>
-Subject: [PATCH 3/3] ARM: Move leds idle start/stop calls to idle notifiers
-Date: Mon, 27 Jun 2011 19:46:30 -0700
-Message-Id: <1309229190-25006-4-git-send-email-toddpoynor@google.com>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1309229190-25006-1-git-send-email-toddpoynor@google.com>
-References: <1309229190-25006-1-git-send-email-toddpoynor@google.com>
+	Mon, 27 Jun 2011 22:47:43 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AtECAFBACU55LChDgWdsb2JhbABSpzkVAQEWJiXKcA6GIgSbQ4Z5
+Date: Tue, 28 Jun 2011 12:47:38 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        khlebnikov@openvz.org, jmoyer@redhat.com
+Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
+Message-ID: <20110628024738.GJ32466@dastard>
+References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change-Id: I5d8e4e85b17bbab7992ecb477f0bdb5e4138b166
-Signed-off-by: Todd Poynor <toddpoynor@google.com>
----
- arch/arm/kernel/leds.c    |   27 ++++++++++++++++++++++++++-
- arch/arm/kernel/process.c |    3 ---
- 2 files changed, 26 insertions(+), 4 deletions(-)
+On Mon, Jun 27, 2011 at 04:17:41PM -0400, Vivek Goyal wrote:
+> Hi,
+> 
+> Konstantin reported that fsync is very slow with ext4 if fsyncing process
+> is in a separate cgroup and one is using CFQ IO scheduler.
+> 
+> https://lkml.org/lkml/2011/6/23/269
+> 
+> Issue seems to be that fsync process is in a separate cgroup and journalling
+> thread is in root cgroup. After every IO from fsync, CFQ idles on fysnc
+> process queue waiting for more requests to come. But this process is now
+> waiting for IO to finish from journaling thread. After waiting for 8ms
+> fsync's queue gives way to jbd's queue. Then we start idling on jbd
+> thread and new IO from fsync is sitting in a separate queue in a separate
+> group.
+> 
+> Bottom line, that after every IO we end up idling on fysnc and jbd thread
+> so much that if somebody is doing fsync after every 4K of IO, throughput
+> nose dives.
+> 
+> Similar issue had issue come up with-in same cgroup also when "fsync"
+> and "jbd" thread were being queued on differnt service trees and idling
+> was killing. At that point of time two solutions were proposed. One
+> from Jeff Moyer and one from Corrado Zoccolo.
+> 
+> Jeff came up with the idea of coming with block layer API to yield the
+> queue if explicitly told by file system, hence cutting down on idling.
+> 
+> https://lkml.org/lkml/2010/7/2/277
+> 
+> Corrado, came up with a simpler approach of keeping jbd and fsync processes
+> on same service tree by parsing RQ_NOIDLE flag. By queuing on same service
+> tree, one queue preempts other queue hence cutting down on idling time.
+> Upstream went ahead with simpler approach to fix the issue.
+> 
+> commit 749ef9f8423054e326f3a246327ed2db4b6d395f
+> Author: Corrado Zoccolo <czoccolo@gmail.com>
+> Date:   Mon Sep 20 15:24:50 2010 +0200
+> 
+>     cfq: improve fsync performance for small files
+> 
+> 
+> Now with cgroups, same problem resurfaces but this time we can not queue
+> both the processes on same service tree and take advantage of preemption
+> as separate cgroups have separate service trees and both processes
+> belong to separate cgroups. We do not allow cross cgroup preemption 
+> as that wil break down the isolation between groups.
+> 
+> So this patch series resurrects Jeff's solution of file system specifying
+> the IO dependencies between threads explicitly to the block layer/ioscheduler.
+> One ioscheduler knows that current queue we are idling on is dependent on
+> IO from some other queue, CFQ allows dispatch of requests from that other
+> queue in the context of current active queue.
 
-diff --git a/arch/arm/kernel/leds.c b/arch/arm/kernel/leds.c
-index 0f107dc..136e837 100644
---- a/arch/arm/kernel/leds.c
-+++ b/arch/arm/kernel/leds.c
-@@ -9,6 +9,8 @@
-  */
- #include <linux/module.h>
- #include <linux/init.h>
-+#include <linux/notifier.h>
-+#include <linux/cpu.h>
- #include <linux/sysdev.h>
- #include <linux/syscore_ops.h>
- 
-@@ -101,6 +103,25 @@ static struct syscore_ops leds_syscore_ops = {
- 	.resume		= leds_resume,
- };
- 
-+static int leds_idle_notifier(struct notifier_block *nb, unsigned long val,
-+                                void *data)
-+{
-+	switch (val) {
-+	case IDLE_START:
-+		leds_event(led_idle_start);
-+		break;
-+	case IDLE_END:
-+		leds_event(led_idle_end);
-+		break;
-+	}
-+
-+	return 0;
-+}
-+
-+static struct notifier_block leds_idle_nb = {
-+	.notifier_call = leds_idle_notifier,
-+};
-+
- static int __init leds_init(void)
- {
- 	int ret;
-@@ -109,8 +130,12 @@ static int __init leds_init(void)
- 		ret = sysdev_register(&leds_device);
- 	if (ret == 0)
- 		ret = sysdev_create_file(&leds_device, &attr_event);
--	if (ret == 0)
-+
-+	if (ret == 0) {
- 		register_syscore_ops(&leds_syscore_ops);
-+		idle_notifier_register(&leds_idle_nb);
-+	}
-+
- 	return ret;
- }
- 
-diff --git a/arch/arm/kernel/process.c b/arch/arm/kernel/process.c
-index 1b9101e..6adf53f 100644
---- a/arch/arm/kernel/process.c
-+++ b/arch/arm/kernel/process.c
-@@ -32,7 +32,6 @@
- #include <linux/hw_breakpoint.h>
- 
- #include <asm/cacheflush.h>
--#include <asm/leds.h>
- #include <asm/processor.h>
- #include <asm/system.h>
- #include <asm/thread_notify.h>
-@@ -183,7 +182,6 @@ void cpu_idle(void)
- 	/* endless idle loop with no priority at all */
- 	while (1) {
- 		tick_nohz_stop_sched_tick(1);
--		leds_event(led_idle_start);
- 		idle_notifier_call_chain(IDLE_START);
- 		while (!need_resched()) {
- #ifdef CONFIG_HOTPLUG_CPU
-@@ -208,7 +206,6 @@ void cpu_idle(void)
- 				local_irq_enable();
- 			}
- 		}
--		leds_event(led_idle_end);
- 		idle_notifier_call_chain(IDLE_END);
- 		tick_nohz_restart_sched_tick();
- 		preempt_enable_no_resched();
+Vivek, I'm not sure this is a general solution. If we hand journal
+IO off to a workqueue, then we've got no idea what the "dependent
+task" is.
+
+I bring this up as I have a current patchset that moves all the XFS
+journal IO out of process context into a workqueue to solve
+process-visible operation latency (e.g. 1000 mkdir syscalls run at
+1ms each, the 1001st triggers a journal checkpoint and takes 500ms)
+and background checkpoint submission races.  This effectively means
+that XFS will trigger the same bad CFQ behaviour on fsync, but have
+no means of avoiding it because we don't have a specific task to
+yield to.
+
+And FWIW, we're going to be using workqueues more and more in XFS
+for asynchronous processing of operations. I'm looking to use WQs
+for speculative readahead of inodes, all our delayed metadata
+writeback, log IO submission, free space allocation requests,
+background inode allocation, background inode freeing, background
+EOF truncation, etc to process as much work asynchronously outside
+syscall context as possible (let's use all those CPU cores we
+have!).
+
+All of these things will push potentially dependent IO operations
+outside of the bounds of the process actually doing the operation,
+so some general solution to the "dependent IO in an undefined thread
+context" problem really needs to be solved sooner rather than
+later...
+
+As it is, I don't have any good ideas of how to solve this, but I
+thought it is worth bringing to your attention while you are trying
+to solve a similar issue.
+
+Cheers,
+
+Dave.
 -- 
-1.7.3.1
-
+Dave Chinner
+david@fromorbit.com
