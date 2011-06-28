@@ -1,49 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758562Ab1F1PBG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 11:01:06 -0400
-Received: from casper.infradead.org ([85.118.1.10]:44611 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758556Ab1F1PAi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 11:00:38 -0400
-Subject: Re: power increase issue on light load
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: "ncrao@google.com" <ncrao@google.com>, "mingo@elte.hu" <mingo@elte.hu>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        len.brown@intel.com
-In-Reply-To: <1309219329.14604.11.camel@debian>
-References: <1308797024.23204.95.camel@debian>
-	 <1308819748.1022.69.camel@twins>  <1308876099.23204.124.camel@debian>
-	 <1309219329.14604.11.camel@debian>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 28 Jun 2011 16:59:40 +0200
-Message-ID: <1309273180.6701.213.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1758646Ab1F1Pag (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 11:30:36 -0400
+Received: from forward.atmel.no ([194.19.124.53]:60042 "EHLO forward.atmel.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757312Ab1F1P1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 11:27:50 -0400
+X-Greylist: delayed 2001 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 11:27:50 EDT
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+Subject: [PATCH] misc: update author email for atmel-ssc
+Date: Tue, 28 Jun 2011 17:00:21 +0200
+Message-Id: <1309273221-8729-1-git-send-email-hans-christian.egtvedt@atmel.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-28 at 08:02 +0800, Alex,Shi wrote:
-> > > 
-> > > What happens if you try something like the below. Increased imbalance
-> > > might lead to more load-balance action, which might lead to more task
-> > > migration/waking up of cpus etc.
-> > > 
-> > > If the below makes any difference, Nikhil's changes have a funny that
-> > > needs to be caught.
-> > 
-> > Yes, it most remove the commit effect, So the power recovered. 
-> > 
-> > In fact the only suspicious I found is large imbalance, but that is
-> > the commit want ...
-> 
-> Any further comments for this? 
+This patch updates the email address of the atmel-ssc driver supported by me to
+an email account I will use on a more regular basis in the future.
 
-I had a look over all that stuff, but I couldn't find an obvious unit
-mis-match in any of the imbalance code. Nikhil any clue?
+Signed-off-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+---
+ drivers/misc/atmel-ssc.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/misc/atmel-ssc.c b/drivers/misc/atmel-ssc.c
+index 4afffe6..4701626 100644
+--- a/drivers/misc/atmel-ssc.c
++++ b/drivers/misc/atmel-ssc.c
+@@ -170,7 +170,7 @@ static void __exit ssc_exit(void)
+ }
+ module_exit(ssc_exit);
+ 
+-MODULE_AUTHOR("Hans-Christian Egtvedt <hcegtvedt@atmel.com>");
++MODULE_AUTHOR("Hans-Christian Egtvedt <egtvedt@samfundet.no>");
+ MODULE_DESCRIPTION("SSC driver for Atmel AVR32 and AT91");
+ MODULE_LICENSE("GPL");
+ MODULE_ALIAS("platform:ssc");
+-- 
+1.7.4.1
+
