@@ -1,226 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757119Ab1F1KuV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 06:50:21 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:59277 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756712Ab1F1KtG (ORCPT
+	id S1755160Ab1F1Kf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 06:35:27 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:24959 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755448Ab1F1Kek (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 06:49:06 -0400
-X-Greylist: delayed 1240 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 06:49:05 EDT
-Message-ID: <19977.44219.214485.118656@ipc1.ka-ro>
-Date: Tue, 28 Jun 2011 12:28:11 +0200
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Ryan Mallon <ryan@bluewatersys.com>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH 2/2] pwm: Add a i.MX23/28 pwm driver
-In-Reply-To: <1309255368-9775-3-git-send-email-s.hauer@pengutronix.de>
-References: <1309255368-9775-1-git-send-email-s.hauer@pengutronix.de>
-	<1309255368-9775-3-git-send-email-s.hauer@pengutronix.de>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	Tue, 28 Jun 2011 06:34:40 -0400
+Message-ID: <4E09AE3A.8050306@dsn.okisemi.com>
+Date: Tue, 28 Jun 2011 19:34:34 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: "Wang, Yong Y" <yong.y.wang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        "Wang, Qi" <qi.wang@intel.com>,
+        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>
+Subject: Re: [PATCH] pch_dma: Fix channel locking
+References: <1308755133-8605-1-git-send-email-alexander.stein@systec-electronic.com> <201106230942.24105.alexander.stein@systec-electronic.com> <4E04206C.5000008@dsn.okisemi.com> <201106271622.52763.alexander.stein@systec-electronic.com>
+In-Reply-To: <201106271622.52763.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-just some nitpicks...
-
-Sascha Hauer writes:
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
-> ---
->  drivers/pwm/mxs-pwm.c |  275 +++++++++++++++++++++++++++++++++++++++++++++++++
->  1 files changed, 275 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/pwm/mxs-pwm.c
+(2011/06/27 23:22), Alexander Stein wrote:
+> Ok. I have a 2.6.39 kernel with the following patches:
+> pch_phub: Don't panic if dmi_get_system_info returns NULL
+> drivers/tty/serial/pch_uart.c: don't oops if dmi_get_system_info returns NULL
+> pch_uart: Add console support
 > 
-> diff --git a/drivers/pwm/mxs-pwm.c b/drivers/pwm/mxs-pwm.c
-> new file mode 100644
-> index 0000000..052cb0c
-> --- /dev/null
-> +++ b/drivers/pwm/mxs-pwm.c
-> @@ -0,0 +1,275 @@
-> +/*
-> + * Copyright (C) 2011 Pengutronix
-> + * Sascha Hauer <s.hauer@pengutronix.de>
-> + *
-> + * simple driver for PWM (Pulse Width Modulator) controller
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License version 2 as
-> + * published by the Free Software Foundation.
-> + *
-> + * Derived from pxa PWM driver by eric miao <eric.miao@marvell.com>
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/kernel.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/slab.h>
-> +#include <linux/err.h>
-> +#include <linux/clk.h>
-> +#include <linux/delay.h>
-> +#include <linux/io.h>
-> +#include <linux/pwm.h>
-> +#include <mach/hardware.h>
-> +#include <mach/mxs.h>
-> +#include <mach/mx23.h>
-> +#include <mach/mx28.h>
-> +#include <asm/div64.h>
-> +
-> +struct mxs_pwm_device {
-> +	struct device		*dev;
-> +
-> +	struct clk	*clk;
-> +
-> +	int		enabled;
-> +	void __iomem	*mmio_base;
-> +
-> +	unsigned int	pwm_id;
-> +
-> +	u32		val_active;
-> +	u32		val_period;
-> +	int		period_us;
-> +	struct pwm_chip chip;
-> +};
-> +
-> +/* common register space */
-> +static void __iomem *pwm_base_common;
-> +#define REG_PWM_CTRL	0x0
-> +#define PWM_SFTRST	(1 << 31)
-> +#define PWM_CLKGATE	(1 << 30)
-> +#define PWM_ENABLE(p)	(1 << (p))
-> +
-> +/* per pwm register space */
-> +#define REG_ACTIVE	0x0
-> +#define REG_PERIOD	0x10
-> +
-> +#define PERIOD_PERIOD(p)	((p) & 0xffff)
-> +#define PERIOD_ACTIVE_HIGH	(3 << 16)
-> +#define PERIOD_INACTIVE_LOW	(2 << 18)
-> +#define PERIOD_CDIV(div)	(((div) & 0x7) << 20)
-> +
-[...]
-> +static int __devinit mxs_pwm_probe(struct platform_device *pdev)
-> +{
-> +	struct mxs_pwm_device *pwm;
-> +	struct resource *r;
-> +	int ret = 0;
-> +
-> +	pwm = devm_kzalloc(&pdev->dev, sizeof(struct mxs_pwm_device), GFP_KERNEL);
-> +	if (pwm == NULL) {
-> +		dev_err(&pdev->dev, "failed to allocate memory\n");
-> +		return -ENOMEM;
-> +	}
-> +
-> +	pwm->clk = clk_get(&pdev->dev, NULL);
-> +
-> +	if (IS_ERR(pwm->clk)) {
-Why an empty line here, but not in other similar places?
+> I need these to get a booting board with console support on pch_uart.
+> After boot (dma and pch_uart compiled into kernel), I do
+> * setserial /dev/ttyPCH0 ^low_latency
+> * ./raise_dma_fault
+> <- Here I get the message
 
-> +		ret = PTR_ERR(pwm->clk);
-> +		goto err_free;
-> +	}
-> +
-> +	pwm->chip.ops = &mxs_pwm_ops;
-> +
-> +	pwm->enabled = 0;
-is already 0 due to kzalloc().
+Thank you for your information.
+I could see the kernel message.
+However using your patch, it seems the message remains to be seen.
 
-> +
-> +	pwm->chip.pwm_id = pdev->id;
-> +	pwm->chip.owner = THIS_MODULE;
-> +
-> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (r == NULL) {
-> +		dev_err(&pdev->dev, "no memory resource defined\n");
-> +		ret = -ENODEV;
-> +		goto err_free_clk;
-> +	}
-> +
-> +	r = request_mem_region(r->start, resource_size(r), pdev->name);
-> +	if (r == NULL) {
-> +		dev_err(&pdev->dev, "failed to request memory resource\n");
-> +		ret = -EBUSY;
-> +		goto err_free_clk;
-> +	}
-> +
-> +	pwm->mmio_base = ioremap(r->start, resource_size(r));
-> +	if (pwm->mmio_base == NULL) {
-> +		dev_err(&pdev->dev, "failed to ioremap() registers\n");
-> +		ret = -ENODEV;
--ENOMEM?.
+[  142.401597] pch_uart 0000:02:0a.1: PCH UART : Use DMA Mode
+[  148.011410]
+[  148.011415] =================================
+[  148.011428] [ INFO: inconsistent lock state ]
+[  148.011439] 2.6.39.2+ #5
+[  148.011446] ---------------------------------
+[  148.011455] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
+[  148.011467] gnome-terminal/1759 [HC1[1]:SC0[0]:HE0:SE1] takes:
+[  148.011477]  (&(&pd_chan->lock)->rlock){?.....}, at: [<c0710cc5>]
+pd_prep_slave_sg+0x92/0x26d
+[  148.011509] {HARDIRQ-ON-W} state was registered at:
+[  148.011516]   [<c04618a1>] __lock_acquire+0x2d9/0xbcc
+[  148.011533]   [<c0462594>] lock_acquire+0x94/0xb7
+[  148.011546]   [<c07cec85>] _raw_spin_lock_bh+0x25/0x34
+[  148.011561]   [<c07110d0>] pd_alloc_chan_resources+0xb2/0x165
+[  148.011577]   [<c070f447>] dma_chan_get+0x63/0xbb
+[  148.011591]   [<c070f7a0>] __dma_request_channel+0x168/0x246
+[  148.011606]   [<c0655ff4>] pch_uart_startup+0x16b/0x2c4
+[  148.011622]   [<c064f2df>] uart_startup+0x8b/0x158
+[  148.011636]   [<c0650149>] uart_open+0x13f/0x168
+[  148.011649]   [<c063b561>] tty_open+0x2c2/0x3cc
+[  148.011663]   [<c04e8113>] chrdev_open+0xf4/0x118
+[  148.011678]   [<c04e3a68>] __dentry_open+0x167/0x255
+[  148.011694]   [<c04e477b>] nameidata_to_filp+0x4a/0x58
+[  148.011708]   [<c04ee74b>] do_last+0x45d/0x573
+[  148.011722]   [<c04ef75c>] path_openat+0x9b/0x2b5
+[  148.011735]   [<c04ef99c>] do_filp_open+0x26/0x62
+[  148.011749]   [<c04e47e2>] do_sys_open+0x59/0xd2
+[  148.011762]   [<c04e487e>] sys_open+0x23/0x2b
+[  148.011775]   [<c07d4bdf>] sysenter_do_call+0x12/0x38
+[  148.011791] irq event stamp: 485514
+[  148.011799] hardirqs last  enabled at (485513): [<c07d4c59>]
+sysexit_audit+0x11/0x50
+[  148.011815] hardirqs last disabled at (485514): [<c07d51ae>]
+common_interrupt+0x2e/0x3c
+[  148.011832] softirqs last  enabled at (485398): [<c043f585>]
+__do_softirq+0x153/0x162
+[  148.011849] softirqs last disabled at (485375): [<c040430a>]
+do_softirq+0x65/0xba
+[  148.011866]
+[  148.011869] other info that might help us debug this:
+[  148.011879] 1 lock held by gnome-terminal/1759:
+[  148.011886]  #0:  (&port_lock_key){-.-...}, at: [<c06555ab>]
+pch_uart_interrupt+0x19/0x804
+[  148.011912]
+[  148.011915] stack backtrace:
+[  148.011926] Pid: 1759, comm: gnome-terminal Not tainted 2.6.39.2+ #5
+[  148.011934] Call Trace:
+[  148.011949]  [<c07ccca4>] ? printk+0x25/0x29
+[  148.011962]  [<c0461407>] valid_state+0x133/0x141
+[  148.011976]  [<c04614e4>] mark_lock+0xcf/0x1b3
+[  148.011990]  [<c0460e57>] ? print_irq_inversion_bug+0xe9/0xe9
+[  148.012004]  [<c046182d>] __lock_acquire+0x265/0xbcc
+[  148.012019]  [<c0461af7>] ? __lock_acquire+0x52f/0xbcc
+[  148.012034]  [<c0710cc5>] ? pd_prep_slave_sg+0x92/0x26d
+[  148.012047]  [<c0462594>] lock_acquire+0x94/0xb7
+[  148.012061]  [<c0710cc5>] ? pd_prep_slave_sg+0x92/0x26d
+[  148.012076]  [<c07ceacb>] _raw_spin_lock+0x20/0x2f
+[  148.012090]  [<c0710cc5>] ? pd_prep_slave_sg+0x92/0x26d
+[  148.012104]  [<c0710cc5>] pd_prep_slave_sg+0x92/0x26d
+[  148.012120]  [<c0655af2>] pch_uart_interrupt+0x560/0x804
+[  148.012138]  [<c04894fa>] handle_irq_event_percpu+0x53/0x174
+[  148.012153]  [<c048964c>] handle_irq_event+0x31/0x49
+[  148.012167]  [<c048b160>] ? handle_simple_irq+0x59/0x59
+[  148.012180]  [<c048b1cb>] handle_fasteoi_irq+0x6b/0x89
+[  148.012189]  <IRQ>  [<c0404028>] ? do_IRQ+0x3c/0x87
+[  148.012213]  [<c07d51b5>] ? common_interrupt+0x35/0x3c
+[  148.012219]  [<c043007b>] ? enqueue_task_fair+0x319/0x4cd
+[  148.012219]  [<c04f4a12>] ? dput+0xc5/0xca
+[  148.012219]  [<c04ecacc>] ? path_put+0x13/0x1d
+[  148.012219]  [<c047e0e2>] ? audit_free_names+0x45/0x5e
+[  148.012219]  [<c047e985>] ? audit_syscall_exit+0x96/0x114
+[  148.012219]  [<c07d4c71>] ? sysexit_audit+0x29/0x50
 
-> +	if (ret)
-> +		goto err_free_mem;
-> +
-> +	platform_set_drvdata(pdev, pwm);
-> +	return 0;
-> +
-> +err_free_mem:
-> +	release_mem_region(r->start, resource_size(r));
-> +err_free_clk:
-> +	clk_put(pwm->clk);
-> +err_free:
-> +	kfree(pwm);
-> +	return ret;
-> +}
-> +
-> +static int __devexit mxs_pwm_remove(struct platform_device *pdev)
-> +{
-> +	struct mxs_pwm_device *pwm;
-> +	struct resource *r;
-> +	int ret;
-> +
-> +	pwm = platform_get_drvdata(pdev);
-> +
-> +	ret = pwmchip_remove(&pwm->chip);
-> +	if (ret)
-> +		return ret;
-> +
-> +	iounmap(pwm->mmio_base);
-> +
-> +	r = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	release_mem_region(r->start, resource_size(r));
-> +
-> +	clk_put(pwm->clk);
-> +
-> +	return 0;
-> +}
-> +
-> +static struct platform_driver mxs_pwm_driver = {
-> +	.driver		= {
-> +		.name	= "mxs-pwm",
-> +	},
-> +	.probe		= mxs_pwm_probe,
-> +	.remove		= __devexit_p(mxs_pwm_remove),
-> +};
-> +
-> +static int __init mxs_pwm_init(void)
-> +{
-> +	if (cpu_is_mx28())
-> +		pwm_base_common = MX28_IO_ADDRESS(MX28_PWM_BASE_ADDR);
-> +	else
-> +		pwm_base_common = MX23_IO_ADDRESS(MX23_PWM_BASE_ADDR);
-> +
-> +	__mxs_clrl(PWM_SFTRST | PWM_CLKGATE, pwm_base_common + REG_PWM_CTRL);
-> +
-Shouldn't CLKGATE be set again in the remove() function?
-
-
-
-Lothar Waßmann
--- 
-___________________________________________________________
-
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Best Regards,
+tomoya
