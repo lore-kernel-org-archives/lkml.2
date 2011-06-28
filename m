@@ -1,114 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab1F1FPt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 01:15:49 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:55773 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756525Ab1F1FOn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 01:14:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=cRjQeGhQQo3wBqGQ60MNGFjueOyyyLhmGSkhSwoAmZvInEmLwxGlYSfkCNXGgP+1zc
-         9vCULQk5ShFLhV6k84xzBbERzMVpjEGlqaJ8UI+vuWV2C+aTP9BUwKlu6P3G+MahZVED
-         ZBX6SpsNzePDMB67Tv4QN5ZH7QbTJg4uRRCYA=
-MIME-Version: 1.0
-In-Reply-To: <87oc1q8vnj.fsf@rustcorp.com.au>
-References: <20110621102605.1382.90232.sendpatchset@t400s>
-	<87oc1q8vnj.fsf@rustcorp.com.au>
-Date: Tue, 28 Jun 2011 14:14:36 +0900
-Message-ID: <BANLkTi==EpA8s4+F5EtetWsqWVaJcKD8kA@mail.gmail.com>
-Subject: Re: [PATCH 00/02][RESEND] virtio: Virtio platform driver
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, vapier@gentoo.org, linux-sh@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, horms@verge.net.au,
-        mst@redhat.com, iws@ovro.caltech.edu,
-        Christian Borntraeger <borntraeger@de.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756609Ab1F1FTX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 01:19:23 -0400
+Received: from 1wt.eu ([62.212.114.60]:37269 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754430Ab1F1FTN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 01:19:13 -0400
+Date: Tue, 28 Jun 2011 07:17:32 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: john stultz <johnstul@us.ibm.com>
+Cc: Faidon Liambotis <paravoid@debian.org>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Nikola Ciprich <nikola.ciprich@linuxbox.cz>,
+        seto.hidetoshi@jp.fujitsu.com,
+        =?iso-8859-1?Q?Herv=E9?= Commowick <hcommowick@exosec.fr>,
+        Randy Dunlap <rdunlap@xenotime.net>, Greg KH <greg@kroah.com>,
+        Ben Hutchings <ben@decadent.org.uk>,
+        Apollon Oikonomopoulos <apoikos@gmail.com>
+Subject: Re: 2.6.32.21 - uptime related crashes?
+Message-ID: <20110628051732.GB15699@1wt.eu>
+References: <20110428082625.GA23293@pcnci.linuxbox.cz> <20110428183434.GG30645@1wt.eu> <20110429100200.GB23293@pcnci.linuxbox.cz> <20110430093605.GA10529@1wt.eu> <20110430173905.GA25641@tty.gr> <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTi=22QFrJ4vO7-3VuHU=9Cg39bxJ4Q@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 22, 2011 at 11:09 AM, Rusty Russell <rusty@rustcorp.com.au> wrote:
-> On Tue, 21 Jun 2011 19:26:05 +0900, Magnus Damm <magnus.damm@gmail.com> wrote:
->> virtio: Virtio platform driver
->>
->> [PATCH 01/02] virtio: Break out lguest virtio code to virtio_lguest.c
->> [PATCH 02/02] virtio: Add virtio platform driver
->>
->> These patches add a virtio platform driver to the Linux kernel. This
->> platform driver has the same role as the virtio_pci driver, but instead
->> of building on top of emulated PCI this driver is making use of the
->> platform bus together with driver specific callbacks.
->>
->> The virtio platform driver can be seen as a reusable implementation of
->> the lguest virtio driver - in fact, most code is just taken directly
->> from lguest_device.c and reworked to fit the platform device driver
->> abstraction. The first patch breaks out code that can be shared between
->> lguest and the virtio platform driver.
->>
->> This code has been used to implement a mailbox interface between the
->> two processor cores included in the sh7372 SoC. The sh7372 contains
->> one ARM Cortex-A8 and one SH4AL-DSP core, and in the prototype two
->> Linux kernels are running in parallel on the same chip. Virtio serves
->> as a communication link between the two cores.
+On Mon, Jun 27, 2011 at 07:25:31PM -0700, john stultz wrote:
+> On Sat, Apr 30, 2011 at 10:39 AM, Faidon Liambotis <paravoid@debian.org> wrote:
+> > We too experienced problems with just the G6 blades at near 215 days uptime
+> > (on the 19th of April), all at the same time. From our investigation, it
+> > seems that their cpu_clocks jumped suddenly far in the future and then
+> > almost immediately rolled over due to wrapping around 64-bits.
+> >
+> > Although all of their (G6s) clocks wrapped around *at the same time*, only
+> > one
+> > of them actually crashed at the time, with a second one crashing just a few
+> > days later, on the 28th.
+> >
+> > Three of them had the following on their logs:
+> > Apr 18 20:56:07 hn-05 kernel: [17966378.581971] tap0: no IPv6 routers
+> > present
+> > Apr 19 10:15:42 hn-05 kernel: [18446743935.365550] BUG: soft lockup - CPU#4
+> > stuck for 17163091968s! [kvm:25913]
+> 
+> So, did this issue ever get any traction or get resolved?
 
-Hi Rusty,
+I'm not aware of any news on the subject unfortunately. We asked our customer
+to reboot both machines one week apart so that in 6 months they don't crash at
+the same time :-/
 
-Thanks for your comments!
+(...)
+> That said, I didn't see from any of the backtraces in this thread why
+> the system actually crashed.  The softlockup message on its own
+> shouldn't do that, so I suspect there's still a related issue
+> somewhere else here.
 
-> OK, this seems pretty neat, but I have three questions before we nail this
-> down (note that lguest doesn't have an ABI, so we can change it as much
-> as we want).
->
-> 1) The lguest bus is dumb, and I never thought about device hotplug, for
->   example.  It would be nice to handle that somehow.  Is it possible?
->   Is this something you care about?
+One of the traces clearly showed that the kernel's uptime had wrapped
+or jumped, because the uptime suddenly jumped forwards to something
+like 2^32/HZ seconds IIRC.
 
-I would most likely use device hotplug if it already existed, but my
-goal with this patch and the rest of the sh7372 AMP code is to show
-that virtio exists and that there is no need for people to invent
-their own IPC software mechanism. So I don't care that much about
-device hotplug.
+Thus it is possible that we have two bugs, one on the clock making it
+jump forwards and one somewhere else causing an overflow when the clock
+jumps too far.
 
-I do however care about ABI and a non-GPL licensed virtio library to
-allow people to tie in commercial RTOS with virtio. To prevent them
-from rolling their own. It's pretty low priority though, I am quite
-happy as-is staying in proof-of-concept-land running two instances of
-Linux.
+Regards,
+Willy
 
-> 2) Have you seen the '[RFC 0/8] Introducing a generic AMP/IPC framework'
->   patches?  Seems to overlap with what you're doing after these patches.
-
-Yes, there is clearly overlap, but surprisingly little. I believe
-we're trying to solve different sides of the same problem.
-
-Lguest system (Linux + Linux):
-Host: lguest.c (user space) talks to /dev/lguest
-Guest: lguest_device.c ties in virtio devices
-
-SH Core Linux system (Linux + Linux):
-Host: SoC-specific rtcpu-loader.c (user space) talks to /dev/uioX
-Slave: SoC-specific code chats to virtio_platform.c that ties in virtio devices
-
-"generic AMP/IPC framework" (Linux + DSP/RTOS):
-Host: "remoteproc" and "rpmsg" run in the kernel
-Slave: ?? (not covered by the patches I believe)
-
-So while the "generic AMP/IPC framework" looks great for the host,
-this patch tries to make something reusable on the slave/guest side.
-
-> 3) The S/390 layout is identical, except their struct kvm_vqconfig is a
->   bit different.  Perhaps we should just use theirs (they use a 64-bit
->   token instead of an interrupt number).
-
-I don't mind so much, but alignment wise I find it odd that the s390
-version chose to use u64 + u64 + u16.
-
-Thanks,
-
-/ magnus
