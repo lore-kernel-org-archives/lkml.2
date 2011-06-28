@@ -1,97 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752001Ab1F1W45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 18:56:57 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:53481 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab1F1W4v (ORCPT
+	id S1752245Ab1F1W6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 18:58:18 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:63424 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751237Ab1F1W6M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 18:56:51 -0400
-Date: Wed, 29 Jun 2011 00:56:45 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Theodore Tso <tytso@mit.edu>,
-        Shaohua Li <shaohua.li@intel.com>,
-        =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
-        linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/2] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-Message-ID: <20110628225645.GB2274@thinkpad>
-References: <1309181361-14633-1-git-send-email-andrea@betterlinux.com>
- <20110628151233.f0a279be.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110628151233.f0a279be.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 28 Jun 2011 18:58:12 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, nico@fluxnic.net,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [RFC PATCH 0/4] ARM: make mach/hardware.h optional
+Date: Tue, 28 Jun 2011 17:57:35 -0500
+Message-Id: <1309301859-17651-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 03:12:33PM -0700, Andrew Morton wrote:
-> On Mon, 27 Jun 2011 15:29:19 +0200
-> Andrea Righi <andrea@betterlinux.com> wrote:
-> 
-> > There were some reported problems in the past about trashing page cache when a
-> > backup software (i.e., rsync) touches a huge amount of pages (see for example
-> > [1]).
-> >     
-> > This problem has been almost fixed by the Minchan Kim's patch [2] and a proper
-> > use of fadvise() in the backup software. For example this patch set [3] has
-> > been proposed for inclusion in rsync.
-> >     
-> > However, there can be still other similar trashing problems: when the backup
-> > software reads all the source files, some of them may be part of the actual
-> > working set of the system. When a POSIX_FADV_DONTNEED is performed _all_ pages
-> > are evicted from pagecache, both the working set and the use-once pages touched
-> > only by the backup software.
-> >     
-> > With the following solution when POSIX_FADV_DONTNEED is called for an active
-> > page instead of removing it from the page cache it is added to the tail of the
-> > inactive list. Otherwise, if it's already in the inactive list the page is
-> > removed from the page cache. Pages mapped by other processes or unevictable
-> > pages are not touched at all.
-> > 
-> > In this way if the backup was the only user of a page, that page will be
-> > immediately removed from the page cache by calling POSIX_FADV_DONTNEED.  If the
-> > page was also touched by other processes it'll be moved to the inactive list,
-> > having another chance of being re-added to the working set, or simply reclaimed
-> > when memory is needed.
-> 
-> So if an application touches a page twice and then runs
-> POSIX_FADV_DONTNEED, that page will now not be freed.
-> 
-> That's a big behaviour change.  For many existing users
-> POSIX_FADV_DONTNEED simply doesn't work any more!
+From: Rob Herring <rob.herring@calxeda.com>
 
-Yes. This is the main concern that was raised by Pádraig.
+Currently, all ARM platforms must have a mach/hardware.h include. This is
+because it is ultimately included by linux/pci.h which is included in many
+places even for !CONFIG_PCI.
 
-> 
-> I'd have thought that adding a new POSIX_FADV_ANDREA would be safer
-> than this.
+This could be fixed simply with an ifdef around the include of mach/hardware.h
+in asm/pci.h. However, in the interest of fixing this for single kernel
+binary builds, this series removes the include of mach/hardware.h outside of
+mach-* and plat-*. What's used from hardware.h is a couple of PCI defines. 
+Converting them to variables allows each platform to set the values as needed.
 
-Actually Jerry (in cc) proposed
-POSIX_FADV_IDONTNEEDTHISBUTIFSOMEBODYELSEDOESTHENDONTTOUCHIT in a
-private email. :)
+This does not address the inclusion of mach/hardware.h under drivers/*. This
+appears to be mostly older platforms. There could also be some indirect
+inclusions from other mach/* headers.
 
-> 
-> 
-> The various POSIX_FADV_foo's are so ill-defined that it was a mistake
-> to ever use them.  We should have done something overtly linux-specific
-> and given userspace more explicit and direct pagecache control.
+I've compile tested on most affected platforms.
 
-That would give us the possibility to implement a wide range of
-different operations (drop, drop if used once, add to the active list,
-add to the inactive list, etc..). Some users always complain that they
-would like to have a better control over the page cache from userspace.
+Rob
 
--Andrea
+Rob Herring (4):
+  microblaze: move pci flag functions into asm-generic
+  ARM: remove unnecessary mach/hardware.h includes
+  ARM: pci: make pcibios_assign_all_busses use pci_has_flag
+  ARM: convert PCI defines to variables
+
+ arch/arm/include/asm/pci.h                       |   16 +++++-
+ arch/arm/include/asm/vga.h                       |    2 +-
+ arch/arm/kernel/ecard.c                          |    1 -
+ arch/arm/lib/ecard.S                             |    1 -
+ arch/arm/lib/io-readsw-armv3.S                   |    1 -
+ arch/arm/lib/io-writesw-armv3.S                  |    1 -
+ arch/arm/mach-bcmring/include/mach/hardware.h    |    2 -
+ arch/arm/mach-cns3xxx/cns3420vb.c                |    1 -
+ arch/arm/mach-cns3xxx/include/mach/hardware.h    |   22 --------
+ arch/arm/mach-dove/include/mach/hardware.h       |    7 ---
+ arch/arm/mach-dove/pcie.c                        |    4 ++
+ arch/arm/mach-ep93xx/include/mach/hardware.h     |    2 -
+ arch/arm/mach-footbridge/common.c                |    4 +-
+ arch/arm/mach-footbridge/dc21285.c               |    4 ++
+ arch/arm/mach-footbridge/include/mach/hardware.h |    7 +--
+ arch/arm/mach-integrator/include/mach/hardware.h |    7 ---
+ arch/arm/mach-integrator/pci_v3.c                |    4 ++
+ arch/arm/mach-iop13xx/include/mach/hardware.h    |    7 ---
+ arch/arm/mach-iop13xx/pci.c                      |    4 +-
+ arch/arm/mach-iop32x/include/mach/hardware.h     |    3 -
+ arch/arm/mach-iop33x/include/mach/hardware.h     |    3 -
+ arch/arm/mach-ixp2000/include/mach/hardware.h    |    8 ---
+ arch/arm/mach-ixp2000/pci.c                      |    2 +
+ arch/arm/mach-ixp23xx/include/mach/hardware.h    |    4 --
+ arch/arm/mach-ixp23xx/pci.c                      |    4 ++
+ arch/arm/mach-ixp4xx/common-pci.c                |    6 ++
+ arch/arm/mach-ixp4xx/include/mach/hardware.h     |    5 --
+ arch/arm/mach-kirkwood/include/mach/hardware.h   |    7 ---
+ arch/arm/mach-kirkwood/pcie.c                    |    4 ++
+ arch/arm/mach-ks8695/include/mach/hardware.h     |    9 ---
+ arch/arm/mach-mv78xx0/include/mach/hardware.h    |    7 ---
+ arch/arm/mach-mv78xx0/pcie.c                     |    4 ++
+ arch/arm/mach-orion5x/include/mach/hardware.h    |    7 ---
+ arch/arm/mach-orion5x/pci.c                      |    4 ++
+ arch/arm/mach-pxa/include/mach/hardware.h        |    3 -
+ arch/arm/mach-sa1100/include/mach/hardware.h     |    8 ---
+ arch/arm/mach-shark/include/mach/hardware.h      |    6 --
+ arch/arm/mach-shark/pci.c                        |   11 +++-
+ arch/arm/mach-tegra/include/mach/hardware.h      |   28 ----------
+ arch/arm/mach-tegra/include/mach/system.h        |    1 -
+ arch/arm/mach-tegra/io.c                         |    1 -
+ arch/arm/mach-tegra/pcie.c                       |    2 +
+ arch/arm/mach-tegra/platsmp.c                    |    1 -
+ arch/arm/mach-versatile/include/mach/hardware.h  |    6 --
+ arch/arm/mach-versatile/pci.c                    |    3 +
+ arch/arm/mm/iomap.c                              |   12 ++++
+ arch/arm/mm/proc-xsc3.S                          |    1 -
+ arch/microblaze/include/asm/pci-bridge.h         |   36 +------------
+ include/asm-generic/pci-bridge.h                 |   62 ++++++++++++++++++++++
+ 49 files changed, 144 insertions(+), 211 deletions(-)
+ delete mode 100644 arch/arm/mach-cns3xxx/include/mach/hardware.h
+ delete mode 100644 arch/arm/mach-tegra/include/mach/hardware.h
+ create mode 100644 include/asm-generic/pci-bridge.h
+
+-- 
+1.7.4.1
+
