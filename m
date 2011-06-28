@@ -1,49 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757345Ab1F1L1G (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 07:27:06 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:45146 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755976Ab1F1L0X (ORCPT
+	id S1757387Ab1F1LaP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 07:30:15 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64706 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757318Ab1F1L3W convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 07:26:23 -0400
+	Tue, 28 Jun 2011 07:29:22 -0400
 MIME-Version: 1.0
-X-Originating-IP: [93.172.33.137]
-In-Reply-To: <FFF198FBBF957F4393BA834040FEFFA202EDA3@DFLE35.ent.ti.com>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
- <4E04F0B0.4030408@codeaurora.org> <BANLkTi=sFtwam29i4TZdi=RO7BoytTTdrw@mail.gmail.com>
- <FFF198FBBF957F4393BA834040FEFFA202EDA3@DFLE35.ent.ti.com>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Tue, 28 Jun 2011 14:26:01 +0300
-Message-ID: <BANLkTiniBEuHKnmhoJEaVELpMefZ=Xk=bA@mail.gmail.com>
-Subject: Re: [RFC 0/8] Introducing a generic AMP/IPC framework
-To: "Grosen, Mark" <mgrosen@ti.com>
-Cc: Stephen Boyd <sboyd@codeaurora.org>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
+In-Reply-To: <1309211120-2803-3-git-send-email-arnd@arndb.de>
+References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
+	<1309211120-2803-3-git-send-email-arnd@arndb.de>
+Date: Tue, 28 Jun 2011 13:29:19 +0200
+Message-ID: <BANLkTin9=5Yp6W8S6hSuUZ8w08eUhRxxQw@mail.gmail.com>
+Subject: Re: [PATCH 2/7] serial/8250: move alchemy I/O handler to platform code
+From: Manuel Lauss <manuel.lauss@googlemail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>, linux-serial@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 12:22 AM, Grosen, Mark <mgrosen@ti.com> wrote:
-> 2. We added a special section (resource table) that is interpreted as part
-> of the loading process. The tool that generates our simple format just
-> recognizes a named section (".resource_table"), so perhaps that could be
-> done with the PIL ELF loader.
+On Mon, Jun 27, 2011 at 11:45 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> Only one platform ever sets the UPIO_AU iotype, so it's
+> cleaner to define the handlers in the code that actually
+> requires it, rather than building the same logic into
+> every 8250 driver.
+>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Ralf Baechle <ralf@linux-mips.org>
+> Cc: Manuel Lauss <manuel.lauss@googlemail.com>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: linux-serial@vger.kernel.org
+> ---
+>  arch/mips/alchemy/common/platform.c |   50 ++++++++++++++++++++++++++++++
+>  drivers/tty/serial/8250.c           |   58 -----------------------------------
+>  2 files changed, 50 insertions(+), 58 deletions(-)
+>
+> diff --git a/arch/mips/alchemy/common/platform.c b/arch/mips/alchemy/common/platform.c
+> index 3b2c18b..750441f 100644
+> --- a/arch/mips/alchemy/common/platform.c
+> +++ b/arch/mips/alchemy/common/platform.c
+[...]
+> @@ -55,6 +103,8 @@ static void alchemy_8250_pm(struct uart_port *port, unsigned int state,
+>                                  UPF_FIXED_TYPE,               \
+>                .type           = PORT_16550A,                  \
+>                .pm             = alchemy_8250_pm,              \
+> +               .serial_in      = au_serial_in,                 \
+> +               .serial_out     = au_serial_out                 \
+>        }
 
-I hope that DT will completely replace that "resource table" section
-eventually. We still need to try it out (as soon as DT materializes on
-ARM/pandaboard) and see how it all fits together, but in general it
-looks like DT could provide all the necessary static resource
-configuration, and then we just need to expose it to the remote
-processor.
+This is very strange:  Just this part alone (leaving 8250.c intact)
+screws everything up.
+The assembly for au_serial_in/out is identical in both 8250.o and
+arch/mips/alchemy/common/platform.o (renamed the functions here obviously)
+I have no idea what's wrong...
+
+Manuel
