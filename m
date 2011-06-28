@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752735Ab1F1UVw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 16:21:52 -0400
-Received: from mail.solarflare.com ([216.237.3.220]:10293 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752169Ab1F1UVp (ORCPT
+	id S1752989Ab1F1UXu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 16:23:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:65058 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751118Ab1F1UXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 16:21:45 -0400
-Subject: Re: [PATCH] net/core: Convert to current logging forms
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        Neil Horman <nhorman@tuxdriver.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <385ebf7e98e377e6e6c384beb961b65d4a95fb18.1309289792.git.joe@perches.com>
-References: <385ebf7e98e377e6e6c384beb961b65d4a95fb18.1309289792.git.joe@perches.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Solarflare Communications
-Date: Tue, 28 Jun 2011 21:21:41 +0100
-Message-ID: <1309292501.2771.48.camel@bwh-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	Tue, 28 Jun 2011 16:23:44 -0400
+From: Martin <marogge@onlinehome.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #37752] Kernel Panic in drm_vblank_put+0x13/0x50 on P4 HT machine with 82915G/GV/910GL Integrated Graphics Controller
+Date: Tue, 28 Jun 2011 22:23:40 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.39.1-ck2; KDE/4.5.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Florian Mickler <florian@mickler.org>
+References: <fvHbBUhG0PD.A.IGE.HM7BOB@chimera> <Rm1pgFxEGUF.A._PE.UM7BOB@chimera>
+In-Reply-To: <Rm1pgFxEGUF.A._PE.UM7BOB@chimera>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 Jun 2011 20:21:44.0411 (UTC) FILETIME=[FF91B2B0:01CC35D0]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18226.005
-X-TM-AS-Result: No--4.966700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+Message-Id: <201106282223.40536.marogge@onlinehome.de>
+X-Provags-ID: V02:K0:Y4D2HCKt5xV+kmYNeOGCJCxghPcl4hVmL84FMlTk1K3
+ HBhnJgX6nTrsakaHBhoSYgEntlt5URqfh2wnWNXl3hKbIGGsTb
+ 1WjawGlNDW8O3/RoyXzRXXVnLT5kJMC/pVcOaMCScHwHZnwMNl
+ iDhKgwDgcCTqqAVxHEa8VcZI8TrubX37ZT2/hHva+Uu/YfNev5
+ 9bm359toDZl/PUNwFwYlQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-28 at 12:40 -0700, Joe Perches wrote:
-> Use pr_fmt, pr_<level>, and netdev_<level> as appropriate.
+On Monday 27 June 2011 00:35:16 Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.38 and 2.6.39.
 > 
-> Coalesce long formats.
-[...]
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -72,6 +72,8 @@
->   *				        - netif_rx() feedback
->   */
->  
-> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-> +
-[...]
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.38 and 2.6.39.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37752
+> Subject		: Kernel Panic in drm_vblank_put+0x13/0x50 on P4 HT machine 
+with
+> 82915G/GV/910GL Integrated Graphics Controller Submitter	: Martin Rogge
+> <marogge@onlinehome.de>
+> Date		: 2011-06-17 13:02 (10 days old)
 
-KBUILD_MODNAME is presumably going to be "dev".  That's not very
-meaningful.
+As far as I can see the bug is still present in the 2.6.39 line. However. I 
+have good news. Out of a whim I've been trying 3.0-rc4 and the panic has not 
+occurred in a few days.
 
-Ben.
+I can try and bisect which commit fixed the issue. I guess I have to reverse 
+the semantics of good and bad for this one. Don't tell the clergy.
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+Anyway, since it takes a while to establish the absence of a panic, don't 
+expect any results soon.
 
+Martin
