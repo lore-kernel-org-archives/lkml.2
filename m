@@ -1,134 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759740Ab1F1Rkj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 13:40:39 -0400
-Received: from na3sys009aog120.obsmtp.com ([74.125.149.140]:49684 "EHLO
-	na3sys009aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760328Ab1F1Riy (ORCPT
+	id S1758704Ab1F1RlR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 13:41:17 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:55668 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760395Ab1F1RjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 13:38:54 -0400
-Date: Tue, 28 Jun 2011 12:38:41 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        eric.dumazet@gmail.com, david@rgmadvisors.com,
-        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
-        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [PATCH v3] futex: Fix regression with read only mappings
-Message-ID: <20110628173841.GA2089@BohrerMBP.rgmadvisors.com>
-References: <4E08F893.10103@linux.intel.com>
- <1309213375-31471-1-git-send-email-sbohrer@rgmadvisors.com>
- <1309258475.6701.200.camel@twins>
- <4E09EA96.5080005@linux.intel.com>
+	Tue, 28 Jun 2011 13:39:11 -0400
+Date: Tue, 28 Jun 2011 19:39:01 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 0/8][V2] blk-throttle: Throttle buffered WRITEs in
+ balance_dirty_pages()
+Message-ID: <20110628173901.GC1544@thinkpad>
+References: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
+ <20110628162138.GA1544@thinkpad>
+ <20110628170624.GA12949@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E09EA96.5080005@linux.intel.com>
+In-Reply-To: <20110628170624.GA12949@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 07:52:06AM -0700, Darren Hart wrote:
-> 
-> 
-> On 06/28/2011 03:54 AM, Peter Zijlstra wrote:
-> > On Mon, 2011-06-27 at 17:22 -0500, Shawn Bohrer wrote:
-> >> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
-> >> parameter from get_futex_key()) in 2.6.33 introduced a user-mode
-> >> regression in that it additionally prevented futex operations on a
-> >> region within a read only memory mapped file.  For example this breaks
-> >> workloads that have one or more reader processes doing a FUTEX_WAIT on a
-> >> futex within a read only shared mapping, and a writer processes that has
-> >> a writable mapping issuing the FUTEX_WAKE.
-> >>
-> >> This fixes the regression for futex operations that should be valid on
-> >> RO mappings by trying a RO get_user_pages_fast() when the RW
-> >> get_user_pages_fast() fails so as not to slow down the common path of
-> >> writable anonymous maps and bailing when we used the RO path on
-> >> anonymous memory.
-> >>
-> >> While fixing the regression this patch opens up two possible bad
-> >> scenarios as identified by KOSAKI Motohiro:
-> >>
-> >> 1) This patch also allows FUTEX_WAIT on RO private mappings which have
-> >> the following corner case.
-> >>
-> >>   Thread-A: call futex(FUTEX_WAIT, memory-region-A).
-> >>             get_futex_key() return inode based key.
-> >>             sleep on the key
-> >>   Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
-> >>   Thread-B: write memory-region-A.
-> >>             COW happen. This process's memory-region-A become related
-> >>             to new COWed private (ie PageAnon=1) page.
-> >>   Thread-B: call futex(FUETX_WAKE, memory-region-A).
-> >>             get_futex_key() return mm based key.
-> >>             IOW, we fail to wake up Thread-A.
-> >>
-> >> 2) Current futex code doesn't handle zero page properly.
-> >>
-> >>   Read mode get_user_pages() can return zero page, but current futex
-> >>   code doesn't handle it at all. Then, zero page makes infinite loop
-> >>   internally.
-> >>
-> >> This Patch is based on Peter Zijlstra's initial patch with modifications to
-> >> only allow RO mappings for futex operations that need VERIFY_READ access.
-> >>
-> >> Reported-by: David Oliver <david@rgmadvisors.com>
-> >> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+On Tue, Jun 28, 2011 at 01:06:24PM -0400, Vivek Goyal wrote:
+> On Tue, Jun 28, 2011 at 06:21:38PM +0200, Andrea Righi wrote:
+> > On Tue, Jun 28, 2011 at 11:35:01AM -0400, Vivek Goyal wrote:
+> > > Hi,
+> > > 
+> > > This is V2 of the patches. First version is posted here.
+> > > 
+> > > https://lkml.org/lkml/2011/6/3/375
+> > > 
+> > > There are no changes from first version except that I have rebased it to
+> > > for-3.1/core branch of Jens's block tree.
+> > > 
+> > > I have been trying to find ways to solve two problems with block IO controller
+> > > cgroups.
+> > > 
+> > > - Current throttling logic in IO controller does not throttle buffered WRITES.
+> > >   Well it does throttle all the WRITEs at device and by that time buffered
+> > >   WRITE have lost the submitter's context and most of the IO comes in flusher
+> > >   thread's context at device. Hence currently buffered write throttling is
+> > >   not supported.
+> > > 
+> > > - All WRITEs are throttled at device level and this can easily lead to
+> > >   filesystem serialization.
+> > > 
+> > >   One simple example is that if a process writes some pages to cache and
+> > >   then does fsync(), and process gets throttled then it locks up the
+> > >   filesystem. With ext4, I noticed that even a simple "ls" does not make
+> > >   progress. The reason boils down to the fact that filesystems are not
+> > >   aware of cgroups and one of the things which get serialized is journalling
+> > >   in ordered mode.
+> > > 
+> > >   So even if we do something to carry submitter's cgroup information
+> > >   to device and do throttling there, it will lead to serialization of
+> > >   filesystems and is not a good idea.
+> > > 
+> > > So how to go about fixing it. There seem to be two options.
+> > > 
+> > > - Throttling should still be done at device level. Make filesystems aware
+> > >   of cgroups so that multiple transactions can make progress in parallel
+> > >   (per cgroup) and there are no shared resources across cgroups in
+> > >   filesystems which can lead to serialization.
+> > > 
+> > > - Throttle WRITEs while they are entering the cache and not after that.
+> > >   Something like balance_dirty_pages(). Direct IO is still throttled
+> > >   at device level. That way, we can avoid these journalling related
+> > >   serialization issues w.r.t trottling.
 > > 
-> > Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > I think that O_DIRECT WRITEs can hit the same serialization problem if
+> > we throttle them at device level.
 > 
-> I think we need to address #2 above first.
-
-I believe the following contrived case triggers the zero page problem:
-
-#include <errno.h>
-#include <fcntl.h>
-#include <stdint.h>
-#include <linux/futex.h>
-#include <sys/mman.h>
-#include <sys/syscall.h>
-#include <unistd.h>
-#include <stdio.h>
-
-
-int main(int argc, char *argv[])
-{
-        int fd, *futex, rc, val = 42;
-        struct timespec ts = {.tv_sec = 2, .tv_nsec = 0 };
-
-        fd = open("/tmp/futex_test", O_RDWR|O_CREAT, 0644);
-        write(fd, &val, 4);
-        futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-        rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, &ts, 0, 0);
-        printf("rc=%d errno=%d\n", rc, errno);
-}
-
-Running the program above with my patch applied will spin in the
-kernel at 100% CPU usage.
-
-> 1) Is the loop killable?
-
-Yes, SIGINT causes the program to return.
-
-> 2) If not, and we try to catch zero_page scenario, we need to ensure RO
->    sparse file mapping work. Peter notes that these are probably fine,
->    filemap.c doesn't seem to use the zero page - but we need to test.
+> I think it can but number of cases probably comes down significantly. One
+> of the main problems seems to be sync related variants sync/fsync etc.
+> And I think we do not make any gurantees for inflight requests
+> (not completed yet).
 > 
-> It's agreed, I believe, between myself, Peter, and Shawn that we will
-> document Private RW mappings as unsupported.
+> So it will boil down to how dependent these sync primitives are on
+> inflight direct WRITEs. I did basic testing with ext4 and it looked fine.
+> On XFS, sync gets blocked behind inflight direct writes. Last time I
+> raised that issue and looks like Christoph has plans to do something
+> about it.
 > 
-> -- 
-> Darren Hart
-> Intel Open Source Technology Center
-> Yocto Project - Linux Kernel
+> So currently my understanding is that dependency on direct writes might
+> not be a major issue in practice. (Until and unless there is more to
+> it I am not aware about).
 
+OK, I was asking because I remember to have seen some problems with my
+old io-throttle controller in presence of many O_DIRECT writes.
 
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+I'll repeat the tests also with this patch set.
 
+> 
+> > 
+> > Have you tried to do some tests? (i.e. create multiple cgroups with very
+> > low I/O limit doing parallel O_DIRECT WRITEs, and try to run at the same
+> > time "ls" or other simple commands from the root cgroup or unlimited
+> > cgroup).
+> 
+> I did. On ext4, I created a cgroup with limit 1byte per second and 
+> started a direct write and did "ls", "sync" and some directory traversal
+> operations in same diretory and it seems to work.
+
+Good.
+
+> 
+> > 
+> > If we hit the same serialization problem I think we should do something
+> > similar also for O_DIRECT WRITEs (e.g, throttle them at the VFS layer),
+> > as a temporary solution.
+> 
+> Yep, we could do that if need be. In fact I was thinking of creating
+> a switch so that a user can also choose to throttle IO either at
+> device level or page cache level.
+
+I think it would be great to have this switch.
+
+Throttling at VFS would have probably "granularity" problems. If a task
+performs a large WRITE the only thing we can do is to put the task to
+sleep for a large amount of time. And when the timer expires the large
+WRITE will be submitted to the block layer all at once. Something like
+the I/O spike issue with writeback I/O...
+
+> 
+> > 
+> > The best solution is always to address this problem at the filesystem
+> > layer (option 1), but it's a *huge* change, because all the filesystems
+> > need to be redesigned to be cgroup-aware. For now the temporary solution
+> > could help at least to avoid system lockups while doing large O_DIRECT
+> > writes from I/O-limited cgroups.
+> 
+> Yep, handling it at file system level is the best solution but so far
+> I have not seen any positive response on that front from filesystem
+> developers. Dave Chinner though seemed open to the idea of associating
+> one allocation group to one cgroup and bring some filesystem awareness
+> in filesystem. But that is just one.
+> 
+> It is just 300 lines of simple change and we can always change it if
+> filesystems ever decide to be cgroup aware and prefer write throttling
+> at device level and not at page cache level.
+> 
+> I had raised buffered write issue at LSF this year and atleast there
+> feedback was that we need to throttle buffered writes at the time of
+> entering page cache.
+
+Yes, it seems the best option right now.
+
+-Andrea
