@@ -1,43 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756090Ab1F1Bmg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 27 Jun 2011 21:42:36 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:35138 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754792Ab1F1Blz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 27 Jun 2011 21:41:55 -0400
-Date: Mon, 27 Jun 2011 18:38:44 -0700 (PDT)
-Message-Id: <20110627.183844.146129637361136342.davem@davemloft.net>
-To: magnus.damm@gmail.com
-Cc: ralf@linux-mips.org, eric.y.miao@gmail.com, linux@arm.linux.org.uk,
-        ben-linux@fluff.org, lethal@linux-sh.org, jeff@garzik.org,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-sh@vger.kernel.org, netdev@vger.kernel.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH v2] NET: AX88796: Tighten up Kconfig dependencies
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <BANLkTikDxsOJKpiJs0NpMXbjVOFMHL7RZw@mail.gmail.com>
-References: <20110627111259.GA13620@linux-mips.org>
-	<BANLkTikDxsOJKpiJs0NpMXbjVOFMHL7RZw@mail.gmail.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 27 Jun 2011 18:38:58 -0700 (PDT)
+	id S1755378Ab1F1BlX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 27 Jun 2011 21:41:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5410 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755942Ab1F1Bko (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 27 Jun 2011 21:40:44 -0400
+Date: Mon, 27 Jun 2011 21:40:39 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "khlebnikov@openvz.org" <khlebnikov@openvz.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
+Message-ID: <20110628014039.GA15850@redhat.com>
+References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+ <1309223932.15392.186.camel@sli10-conroe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309223932.15392.186.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <magnus.damm@gmail.com>
-Date: Tue, 28 Jun 2011 09:40:56 +0900
+On Tue, Jun 28, 2011 at 09:18:52AM +0800, Shaohua Li wrote:
+> On Tue, 2011-06-28 at 04:17 +0800, Vivek Goyal wrote:
+> > Hi,
+> > 
+> > Konstantin reported that fsync is very slow with ext4 if fsyncing process
+> > is in a separate cgroup and one is using CFQ IO scheduler.
+> > 
+> > https://lkml.org/lkml/2011/6/23/269
+> > 
+> > Issue seems to be that fsync process is in a separate cgroup and journalling
+> > thread is in root cgroup. After every IO from fsync, CFQ idles on fysnc
+> > process queue waiting for more requests to come. But this process is now
+> > waiting for IO to finish from journaling thread. After waiting for 8ms
+> > fsync's queue gives way to jbd's queue. Then we start idling on jbd
+> > thread and new IO from fsync is sitting in a separate queue in a separate
+> > group.
+> > 
+> > Bottom line, that after every IO we end up idling on fysnc and jbd thread
+> > so much that if somebody is doing fsync after every 4K of IO, throughput
+> > nose dives.
+> > 
+> > Similar issue had issue come up with-in same cgroup also when "fsync"
+> > and "jbd" thread were being queued on differnt service trees and idling
+> > was killing. At that point of time two solutions were proposed. One
+> > from Jeff Moyer and one from Corrado Zoccolo.
+> > 
+> > Jeff came up with the idea of coming with block layer API to yield the
+> > queue if explicitly told by file system, hence cutting down on idling.
+> > 
+> > https://lkml.org/lkml/2010/7/2/277
+> > 
+> > Corrado, came up with a simpler approach of keeping jbd and fsync processes
+> > on same service tree by parsing RQ_NOIDLE flag. By queuing on same service
+> > tree, one queue preempts other queue hence cutting down on idling time.
+> > Upstream went ahead with simpler approach to fix the issue.
+> > 
+> > commit 749ef9f8423054e326f3a246327ed2db4b6d395f
+> > Author: Corrado Zoccolo <czoccolo@gmail.com>
+> > Date:   Mon Sep 20 15:24:50 2010 +0200
+> > 
+> >     cfq: improve fsync performance for small files
+> > 
+> > 
+> > Now with cgroups, same problem resurfaces but this time we can not queue
+> > both the processes on same service tree and take advantage of preemption
+> > as separate cgroups have separate service trees and both processes
+> > belong to separate cgroups. We do not allow cross cgroup preemption 
+> > as that wil break down the isolation between groups.
+> > 
+> > So this patch series resurrects Jeff's solution of file system specifying
+> > the IO dependencies between threads explicitly to the block layer/ioscheduler.
+> > One ioscheduler knows that current queue we are idling on is dependent on
+> > IO from some other queue, CFQ allows dispatch of requests from that other
+> > queue in the context of current active queue.
+> > 
+> > So if fysnc thread specifies the dependency on journalling thread, then
+> > when time slice of fsync thread is running, it allows dispatch from
+> > jbd in the time slice of fsync thread. Hence cutting down on idling.
+> > 
+> > This patch series seems to be working for me. I did testing for ext4 only.
+> > This series is based on for-3.1/core branch of Jen's block tree.
+> > Konstantin, can you please give it a try and see if it fixes your
+> > issue.
+> > 
+> > Any feedback on how to solve this issue is appreciated.
+> Hi Vivek,
+> can we introduce a group think time check in cfq? say in a group the
+> last queue is backed for the group and the queue is a non-idle queue, if
+> the group think time is big, we don't allow the group idle and preempt
+> could happen. The fsync thread is a non-idle queue with Corrado's patch,
+> this allows fast group switch.
 
-> As for SH and SH-Mobile ARM, unless explicitly requested we usually
-> don't restrict our platform drivers. Allowing them to build on any
-> system helps to catch compile errors.
+In this case regular queue idle is hitting and not group idle. So some
+kind of think time stats probably might be useful for group idle check
+but not necessarily for queue idle.
 
-I totally agree with Magnus, drivers should build on as many systems
-as possible.  Even on those for which the hardware never appears.
+Secondly, for this case think time will change. If you stop idling on
+fsync and jbd threads, both will be dispatching IOs fast and both will
+have small thinktime. We will think that thinktime is small so we
+will enable idle. Then there think time will increase as both will
+get blocked behind each other. And then we will removing idling. So
+looks like we will be oscillating between enabling and disabling
+think time.
 
-Ralf, unless these drivers have unfixable build errors on MIPS I
-do not want to add the new restrictions.
+If we don't allow idling on sync-no-idle queues, then basic CFQ will
+be broken.
+
+Actually in your statement there are multiple suggestions and I might
+have actually missed the gist of it.
+
+Thanks
+Vivek
