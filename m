@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759654Ab1F1Qj3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 12:39:29 -0400
-Received: from 14.98.mail-out.ovh.net ([188.165.39.104]:39534 "EHLO
-	98.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756138Ab1F1Qh1 (ORCPT
+	id S1758270Ab1F1QHX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 12:07:23 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:37927 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1759281Ab1F1QFl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 12:37:27 -0400
-Date: Tue, 28 Jun 2011 18:03:17 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        avictor.za@gmail.com
-Subject: Re: [PATCH] AT91: add AT91SAM9X5 dummy configuration variable
-Message-ID: <20110628160317.GR17355@game.jcrosoft.org>
-References: <1309260927-11411-1-git-send-email-nicolas.ferre@atmel.com>
+	Tue, 28 Jun 2011 12:05:41 -0400
+Date: Tue, 28 Jun 2011 17:05:38 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: ashishj3 <ashish.jangam@kpitcummins.com>
+Cc: Dajun <dajun.chen@diasemi.com>, linaro-dev@lists.linaro.org,
+        lrg@slimlogic.co.uk, linux-kernel@vger.kernel.org
+Subject: Re: [Patch 5/11] Regulator: DA9052 regulator support v1
+Message-ID: <20110628154115.GA20501@opensource.wolfsonmicro.com>
+References: <1309164157.5620.13.camel@L-0532.kpit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1309260927-11411-1-git-send-email-nicolas.ferre@atmel.com>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 18358360932146522988
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -200
-X-VR-SPAMCAUSE: Vade Retro 01.322.25 AV+AS Profile: OVH; Bailout: 300; @!Recipients (-100); (-100)
+In-Reply-To: <1309164157.5620.13.camel@L-0532.kpit.com>
+X-Cookie: Beware of Bigfoot!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13:35 Tue 28 Jun     , Nicolas Ferre wrote:
-> Add this Kconfig variable to ease the submission of this chip support.
-> As this chip/board inclusion is dealayed due to deep consolidation of
-> arm/mach-at91 sources, we include this dummy configuration variable to allow
-> submission of SAM9x5 related drivers in other subsystems.
-> 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Acked-by: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+On Mon, Jun 27, 2011 at 02:12:37PM +0530, ashishj3 wrote:
 
-Best Regards,
-J.
+> +static int da9052_dcdc_set_current_limit(struct regulator_dev *rdev, int min_uA,
+> +					  int max_uA)
+> +{
+> +	struct da9052_regulator *regulator = rdev_get_drvdata(rdev);
+> +	int offset = rdev_get_id(rdev);
+> +	int reg_val;
+> +
+> +	if (min_uA > 1200000 || max_uA > 1200000)
+> +		return -EINVAL;
+> +
+> +	if (min_uA == 700)
+> +		reg_val = DA9052_BUCK_CURRENT_LIMIT_700mA;
+> +	else if (min_uA <= 800)
+> +		reg_val = DA9052_BUCK_CURRENT_LIMIT_800mA;
+> +	else if (min_uA <= 1000)
+> +		reg_val = DA9052_BUCK_CURRENT_LIMIT_1000mA;
+> +	else if (min_uA <= 1200)
+> +		reg_val = DA9052_BUCK_CURRENT_LIMIT_1200mA;
+
+What if min_uA is less than 700?
+
+Otherwise this looks reasonable - very much better!
