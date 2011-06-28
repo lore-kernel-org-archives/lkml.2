@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756326Ab1F1GZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 02:25:36 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52859 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756443Ab1F1GXg (ORCPT
+	id S1756225Ab1F1IHp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 04:07:45 -0400
+Received: from r4linuxserver.com.br ([200.250.45.70]:48915 "EHLO
+	servidor.r4linuxserver.com.br" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755958Ab1F1IGj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 02:23:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=djXX3jrthGdmqYBeI+hiPZn6inRjRWrbxxHMn0xfy4xMeL3VIXzG8M0jun8VXP5scZ
-         rfsTr3YC0+Z5WdHEZxrlsSOL+Xw/JbLh0zwZbBdOAsRtTNsE7DjcKS8FxPG6aL7FAVdY
-         S5iNuWJ01KNQeaAqsbXwr3+03Qt72XE1vMbco=
-Date: Tue, 28 Jun 2011 09:22:35 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: "Nicholas A. Bellinger" <nab@linux-iscsi.org>,
-        James Bottomley <jbottomley@parallels.com>,
-        Christoph Hellwig <hch@lst.de>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH][Resend] SCSI, target, loopback: Fix memory leak in
- tcm_loop_make_scsi_hba()
-Message-ID: <20110628062235.GB14591@shale.localdomain>
-References: <alpine.LNX.2.00.1106272351520.30245@swampdragon.chaosbits.net>
- <20110627222526.GA14591@shale.localdomain>
- <alpine.LNX.2.00.1106280029150.30245@swampdragon.chaosbits.net>
+	Tue, 28 Jun 2011 04:06:39 -0400
+X-Greylist: delayed 5776 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 04:06:38 EDT
+Message-ID: <3812.120.141.191.225.1309242195.squirrel@teracom.com.br>
+Date: Tue, 28 Jun 2011 03:23:15 -0300 (BRT)
+Subject: The Google-UK 12th Anniversary Giveaway ( FINAL NOTIFICATION! )
+From: winners.googleonlinelotto@london.com
+User-Agent: SquirrelMail/1.4.6-rc1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1106280029150.30245@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - servidor.r4linuxserver.com.br
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - london.com
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 12:30:17AM +0200, Jesper Juhl wrote:
-> 
-> You mean like this - right?
 
-Yeah.
 
-Acked-by: Dan Carpenter <error27@gmail.com>
 
-regards,
-dan carpenter
+We urgently wish to inform you again that your e-mail w o n £850,000 UK
+Pounds {with L u c k y # :12-12-23-35-40-41(12) & T i c k e t # :008 695
+757 336 64} in our on-going 12th Anniversary Online Giveaway draws .
+For further information to be provided, you have to reply this notice
+immediately to confirm this email account is still active.
+
+Sincerely!
+Giveaway Online Announcer
+
 
