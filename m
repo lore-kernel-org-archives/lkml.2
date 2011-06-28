@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757067Ab1F1Kzv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 06:55:51 -0400
-Received: from db3ehsobe006.messaging.microsoft.com ([213.199.154.144]:43976
-	"EHLO DB3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757181Ab1F1Kxo (ORCPT
+	id S1757218Ab1F1K4o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 06:56:44 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:37951 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756874Ab1F1Kzl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 06:53:44 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz4015L1432N98dKzz1202hzz8275bh8275dhz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNHY9D-01-1X0-02
-X-M-MSG: 
-Date: Tue, 28 Jun 2011 12:53:35 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "francis.moro@gmail.com" <francis.moro@gmail.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [tip:perf/core] perf: Ignore non-sampling overflows
-Message-ID: <20110628105335.GA17199@erda.amd.com>
-References: <new-submission>
- <tip-963988262c3c8f4234f64a0dde59446a295e07bb@git.kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <tip-963988262c3c8f4234f64a0dde59446a295e07bb@git.kernel.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Tue, 28 Jun 2011 06:55:41 -0400
+Subject: Re: [PATCH v3] futex: Fix regression with read only mappings
+From: Peter Zijlstra <peterz@infradead.org>
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+Cc: Darren Hart <dvhart@linux.intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1309213375-31471-1-git-send-email-sbohrer@rgmadvisors.com>
+References: <4E08F893.10103@linux.intel.com>
+	 <1309213375-31471-1-git-send-email-sbohrer@rgmadvisors.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 28 Jun 2011 12:54:35 +0200
+Message-ID: <1309258475.6701.200.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.11.10 10:04:56, tip-bot for Peter Zijlstra wrote:
-> Commit-ID:  963988262c3c8f4234f64a0dde59446a295e07bb
-> Gitweb:     http://git.kernel.org/tip/963988262c3c8f4234f64a0dde59446a295e07bb
-> Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-> AuthorDate: Wed, 24 Nov 2010 18:55:29 +0100
-> Committer:  Ingo Molnar <mingo@elte.hu>
-> CommitDate: Fri, 26 Nov 2010 15:14:55 +0100
+On Mon, 2011-06-27 at 17:22 -0500, Shawn Bohrer wrote:
+> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+> parameter from get_futex_key()) in 2.6.33 introduced a user-mode
+> regression in that it additionally prevented futex operations on a
+> region within a read only memory mapped file.  For example this breaks
+> workloads that have one or more reader processes doing a FUTEX_WAIT on a
+> futex within a read only shared mapping, and a writer processes that has
+> a writable mapping issuing the FUTEX_WAKE.
 > 
-> perf: Ignore non-sampling overflows
+> This fixes the regression for futex operations that should be valid on
+> RO mappings by trying a RO get_user_pages_fast() when the RW
+> get_user_pages_fast() fails so as not to slow down the common path of
+> writable anonymous maps and bailing when we used the RO path on
+> anonymous memory.
 > 
-> Some arch implementations call perf_event_overflow() by 'accident',
-> ignore this.
+> While fixing the regression this patch opens up two possible bad
+> scenarios as identified by KOSAKI Motohiro:
 > 
-> Reported-by: Francis Moreau <francis.moro@gmail.com>
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> LKML-Reference: <new-submission>
-> Signed-off-by: Ingo Molnar <mingo@elte.hu>
-> ---
->  kernel/perf_event.c |    7 +++++++
->  1 files changed, 7 insertions(+), 0 deletions(-)
+> 1) This patch also allows FUTEX_WAIT on RO private mappings which have
+> the following corner case.
 > 
-> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> index 98c5549..af1e63f 100644
-> --- a/kernel/perf_event.c
-> +++ b/kernel/perf_event.c
-> @@ -4240,6 +4240,13 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
->  	struct hw_perf_event *hwc = &event->hw;
->  	int ret = 0;
->  
-> +	/*
-> +	 * Non-sampling counters might still use the PMI to fold short
-> +	 * hardware counters, ignore those.
-> +	 */
-> +	if (unlikely(!is_sampling_event(event)))
-> +		return 0;
-> +
-
-Peter,
-
-do you remember the background of this change. This check silently
-drops data of non-sampling events. I want to use perf_event_overflow()
-to write to the buffer and want to modify the check, but don't see
-which 'accidentally' interrupts may occur that must be ignored.
-
-I was thinking of modifying the check to something like:
-
-static inline bool is_sampling_event(struct perf_event *event)
-{
-        return event->attr.sample_type != 0;
-}
-
-or
-
-	if (unlikely(!is_sampling_event(event) && !event->attr.sample_type))
-		...
-
-Thanks,
-
--Robert
-
->  	if (!throttle) {
->  		hwc->interrupts++;
->  	} else {
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>   Thread-A: call futex(FUTEX_WAIT, memory-region-A).
+>             get_futex_key() return inode based key.
+>             sleep on the key
+>   Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
+>   Thread-B: write memory-region-A.
+>             COW happen. This process's memory-region-A become related
+>             to new COWed private (ie PageAnon=1) page.
+>   Thread-B: call futex(FUETX_WAKE, memory-region-A).
+>             get_futex_key() return mm based key.
+>             IOW, we fail to wake up Thread-A.
 > 
+> 2) Current futex code doesn't handle zero page properly.
+> 
+>   Read mode get_user_pages() can return zero page, but current futex
+>   code doesn't handle it at all. Then, zero page makes infinite loop
+>   internally.
+> 
+> This Patch is based on Peter Zijlstra's initial patch with modifications to
+> only allow RO mappings for futex operations that need VERIFY_READ access.
+> 
+> Reported-by: David Oliver <david@rgmadvisors.com>
+> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
