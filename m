@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab1F1Nr0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 09:47:26 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:50452 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757917Ab1F1NpO (ORCPT
+	id S1756563Ab1F1Ns7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 09:48:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55026 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755971Ab1F1Nrz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 09:45:14 -0400
-Subject: [PATCH] drivers/vidfeo/backlight: ld9040 cleanups
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Donghwa Lee <dh09.lee@samsung.com>, Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 28 Jun 2011 21:45:04 +0800
-Message-ID: <1309268704.5925.2.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Jun 2011 09:47:55 -0400
+Date: Tue, 28 Jun 2011 09:47:27 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Bastian Blank <waldi@debian.org>, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: [PATCH 2/2] xen: Add alias to autoload backend
+ drivers
+Message-ID: <20110628134727.GD7777@dumpdata.com>
+References: <20110624215155.GB4735@wavehammer.waldi.eu.org>
+ <20110627161327.GO6978@dumpdata.com>
+ <20110627163728.GA23028@wavehammer.waldi.eu.org>
+ <20110627165109.GB13335@dumpdata.com>
+ <20110627165711.GA2201@dumpdata.com>
+ <20110627172305.GC23028@wavehammer.waldi.eu.org>
+ <20110627173447.GD2430@dumpdata.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110627173447.GD2430@dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090209.4E09DB7D.00DE:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes below fixes:
-1. Fix checking wrong return value for backlight_device_register.
-2. Properly free allocated resources in ld9040_probe() error path
-   and ld9040_remove().
+On Mon, Jun 27, 2011 at 01:34:47PM -0400, Konrad Rzeszutek Wilk wrote:
+> On Mon, Jun 27, 2011 at 07:23:05PM +0200, Bastian Blank wrote:
+> > On Mon, Jun 27, 2011 at 12:57:11PM -0400, Konrad Rzeszutek Wilk wrote:
+> > > Ugh actually no I can't.
+> > 
+> > Why? It does not actually change things.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/video/backlight/ld9040.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+There are two ways of doing this:
 
-diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
-index 7281b25..62bcde3 100644
---- a/drivers/video/backlight/ld9040.c
-+++ b/drivers/video/backlight/ld9040.c
-@@ -701,9 +701,9 @@ static int ld9040_probe(struct spi_device *spi)
- 
- 	bd = backlight_device_register("ld9040-bl", &spi->dev,
- 		lcd, &ld9040_backlight_ops, NULL);
--	if (IS_ERR(ld)) {
--		ret = PTR_ERR(ld);
--		goto out_free_lcd;
-+	if (IS_ERR(bd)) {
-+		ret = PTR_ERR(bd);
-+		goto out_unregister_lcd;
- 	}
- 
- 	bd->props.max_brightness = MAX_BRIGHTNESS;
-@@ -731,6 +731,8 @@ static int ld9040_probe(struct spi_device *spi)
- 	dev_info(&spi->dev, "ld9040 panel driver has been probed.\n");
- 	return 0;
- 
-+out_unregister_lcd:
-+	lcd_device_unregister(lcd->ld);
- out_free_lcd:
- 	kfree(lcd);
- 	return ret;
-@@ -741,6 +743,7 @@ static int __devexit ld9040_remove(struct spi_device *spi)
- 	struct ld9040 *lcd = dev_get_drvdata(&spi->dev);
- 
- 	ld9040_power(lcd, FB_BLANK_POWERDOWN);
-+	backlight_device_unregister(lcd->bd);
- 	lcd_device_unregister(lcd->ld);
- 	kfree(lcd);
- 
--- 
-1.7.4.1
+1). Split the patch in three b/c:
 
+The backends are owned by different maintainers. The xen-netback
+is owned by David Miller and he is the one that will take the patch and send
+it to Linus during the next merge window. The xen-blkback is the same thing -
+Jens will take it (or I can stick it in my #stable/for-jens branch and ask
+him to pull everything there). Either way, for both backends, those two
+folks are the ones that Linus will take the patch from - not me.
 
+I am going to take the xenbus patches and ask Linus to pull them.
+
+In other words, this last patch crosses three different maintainers - hence
+you can either split the patch in three parts.
+
+2). Ask each of the maintainers (David, Jens) to give you an Ack so that
+this patch has both of them and then I can send it directly to Linus.
 
