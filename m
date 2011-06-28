@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758117Ab1F1Pfu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 11:35:50 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:33476 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757706Ab1F1Pbs (ORCPT
+	id S1754835Ab1F1Pgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 11:36:39 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:19924 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758634Ab1F1Pca convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 11:31:48 -0400
-Message-ID: <4E09F3F1.7080109@free-electrons.com>
-Date: Tue, 28 Jun 2011 17:32:01 +0200
-From: David Wagner <david.wagner@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 28 Jun 2011 11:32:30 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=Wnq+W+De1EaO3455UrksqafD8Slz7X3Ip02TFOyu3L7JxcMnhECMeli0ZUY5H+vJC
+	pnVBiOk5RE8vKeOWk7zNg==
 MIME-Version: 1.0
-To: Matthieu CASTET <matthieu.castet@parrot.com>
-CC: "dedekind1@gmail.com" <dedekind1@gmail.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-mtd@lists.infradead.org" <linux-mtd@lists.infradead.org>
-Subject: Re: [PATCH] UBI: new module ubiblk: block layer on top of UBI
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>	<1308922482-14967-2-git-send-email-david.wagner@free-electrons.com>	<1309202771.24805.11.camel@koala> <4E09EA52.8090006@parrot.com>
-In-Reply-To: <4E09EA52.8090006@parrot.com>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <20110628152827.GE1159@sun>
+References: <20110623124918.GC13050@sun>
+	<20110627190358.GQ3765@redhat.com>
+	<20110627193201.GB1159@sun>
+	<CABPqkBTE_6ma70ZQbbz1NnznCGB7YO74kmL+=fP66qFVvVFLBw@mail.gmail.com>
+	<20110628152827.GE1159@sun>
+Date: Tue, 28 Jun 2011 17:32:27 +0200
+Message-ID: <CABPqkBQSWFa0eSTdx+DeOERaT2wA+2tYbUPereztL7FznF4j7g@mail.gmail.com>
+Subject: Re: [PATCH] perf, x86: Add hw_watchdog_set_attr() in a sake of
+ nmi-watchdog on P4
+From: Stephane Eranian <eranian@google.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2011 04:50 PM, Matthieu CASTET wrote:
-> Hi,
+On Tue, Jun 28, 2011 at 5:28 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Tue, Jun 28, 2011 at 05:24:36PM +0200, Stephane Eranian wrote:
+> ...
+>> >
+>> > Yeah, not the _best_ place. Not sure too where to put it, patches are welcome ;)
+>> >
+>> No matter what, this file has to remain in a file that's common to all arch.
 >
-[...]
-> Also what are the advantage against gluebi + mtdblock_ro ?
+> well, hard to say, Stephane, nmi-watchdog is x86 specific as far as I know.
+>
+Sorry I was talking about the weak function() not the file.
 
-The main advantage is a reduced number of layers ; I must say I cannot
-see much more for now.  I could add that the Kconfig help of gluebi
-advises not to use it except when needed by legacy software.
-
--- 
-David Wagner, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+>        Cyrill
+>
