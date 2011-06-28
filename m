@@ -1,63 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751721Ab1F1VpR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 17:45:17 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37879 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751052Ab1F1VpO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 17:45:14 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Martin <marogge@onlinehome.de>
-Subject: Re: [Bug #37752] Kernel Panic in drm_vblank_put+0x13/0x50 on P4 HT machine with 82915G/GV/910GL Integrated Graphics Controller
-Date: Tue, 28 Jun 2011 23:46:16 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4+; KDE/4.6.0; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>
-References: <fvHbBUhG0PD.A.IGE.HM7BOB@chimera> <Rm1pgFxEGUF.A._PE.UM7BOB@chimera> <201106282223.40536.marogge@onlinehome.de>
-In-Reply-To: <201106282223.40536.marogge@onlinehome.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106282346.17074.rjw@sisk.pl>
+	id S1752065Ab1F1Vty (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 17:49:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51732 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751154Ab1F1Vtu convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 17:49:50 -0400
+Date: Tue, 28 Jun 2011 14:49:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: =?ISO-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andrew Lutomirski <luto@mit.edu>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] mm: vmscan: Correct check for kswapd sleeping in
+ sleeping_prematurely
+Message-Id: <20110628144900.b33412c6.akpm@linux-foundation.org>
+In-Reply-To: <1308926697-22475-2-git-send-email-mgorman@suse.de>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+	<1308926697-22475-2-git-send-email-mgorman@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, June 28, 2011, Martin wrote:
-> On Monday 27 June 2011 00:35:16 Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a report
-> > of regressions introduced between 2.6.38 and 2.6.39.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > introduced between 2.6.38 and 2.6.39.  Please verify if it still should
-> > be listed and let the tracking team know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37752
-> > Subject		: Kernel Panic in drm_vblank_put+0x13/0x50 on P4 HT machine 
-> with
-> > 82915G/GV/910GL Integrated Graphics Controller Submitter	: Martin Rogge
-> > <marogge@onlinehome.de>
-> > Date		: 2011-06-17 13:02 (10 days old)
-> 
-> As far as I can see the bug is still present in the 2.6.39 line. However. I 
-> have good news. Out of a whim I've been trying 3.0-rc4 and the panic has not 
-> occurred in a few days.
-> 
-> I can try and bisect which commit fixed the issue. I guess I have to reverse 
-> the semantics of good and bad for this one. Don't tell the clergy.
-> 
-> Anyway, since it takes a while to establish the absence of a panic, don't 
-> expect any results soon.
+On Fri, 24 Jun 2011 15:44:54 +0100
+Mel Gorman <mgorman@suse.de> wrote:
 
-Well, we have a policy to close regression bugs that have been fixed in the
-Linus' tree or don't appear in there at all, so I'll close this one too.
+> During allocator-intensive workloads, kswapd will be woken frequently
+> causing free memory to oscillate between the high and min watermark.
+> This is expected behaviour.
+> 
+> A problem occurs if the highest zone is small.  balance_pgdat()
+> only considers unreclaimable zones when priority is DEF_PRIORITY
+> but sleeping_prematurely considers all zones. It's possible for this
+> sequence to occur
+> 
+>   1. kswapd wakes up and enters balance_pgdat()
+>   2. At DEF_PRIORITY, marks highest zone unreclaimable
+>   3. At DEF_PRIORITY-1, ignores highest zone setting end_zone
+>   4. At DEF_PRIORITY-1, calls shrink_slab freeing memory from
+>         highest zone, clearing all_unreclaimable. Highest zone
+>         is still unbalanced
+>   5. kswapd returns and calls sleeping_prematurely
+>   6. sleeping_prematurely looks at *all* zones, not just the ones
+>      being considered by balance_pgdat. The highest small zone
+>      has all_unreclaimable cleared but but the zone is not
+>      balanced. all_zones_ok is false so kswapd stays awake
+> 
+> This patch corrects the behaviour of sleeping_prematurely to check
+> the zones balance_pgdat() checked.
 
-I you're able to identify the fix, please let the -stable maintainers know
-about it.
+But kswapd is making progress: it's reclaiming slab.  Eventually that
+won't work any more and all_unreclaimable will not be cleared and the
+condition will fix itself up?
 
-Thanks,
-Rafael
+
+
+btw,
+
+	if (!sleeping_prematurely(...))
+		sleep();
+
+hurts my brain.  My brain would prefer
+
+	if (kswapd_should_sleep(...))
+		sleep();
+
+no?
+
+> Reported-and-tested-by: Pádraig Brady <P@draigBrady.com>
+
+But what were the before-and-after observations?  I don't understand
+how this can cause a permanent cpuchew by kswapd.
+
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2323,7 +2323,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
+>  		return true;
+>  
+>  	/* Check the watermark levels */
+> -	for (i = 0; i < pgdat->nr_zones; i++) {
+> +	for (i = 0; i <= classzone_idx; i++) {
+>  		struct zone *zone = pgdat->node_zones + i;
+>  
+>  		if (!populated_zone(zone))
+
+The patch looks sensible.
