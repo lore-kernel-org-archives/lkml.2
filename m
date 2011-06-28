@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758028Ab1F1QLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 12:11:00 -0400
-Received: from 8bytes.org ([88.198.83.132]:51577 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758855Ab1F1QKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 12:10:03 -0400
-Date: Tue, 28 Jun 2011 18:10:00 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Joerg Roedel <joerg.roedel@amd.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [PATCH 0/5] perf support for amd guest/host-only bits v2
-Message-ID: <20110628161000.GF29299@8bytes.org>
-References: <1308317854-27398-1-git-send-email-joerg.roedel@amd.com>
+	id S1758904Ab1F1QN6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 12:13:58 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:58469 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759295Ab1F1QLa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 12:11:30 -0400
+Date: Tue, 28 Jun 2011 20:11:10 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf, x86: Add hw_watchdog_set_attr() in a sake of
+ nmi-watchdog on P4
+Message-ID: <20110628161110.GJ1159@sun>
+References: <20110623124918.GC13050@sun>
+ <20110627190358.GQ3765@redhat.com>
+ <20110627193201.GB1159@sun>
+ <CABPqkBTE_6ma70ZQbbz1NnznCGB7YO74kmL+=fP66qFVvVFLBw@mail.gmail.com>
+ <20110628152827.GE1159@sun>
+ <20110628153731.GY3765@redhat.com>
+ <20110628154422.GG1159@sun>
+ <20110628154646.GH1159@sun>
+ <CABPqkBS4ukQ-asVD68MR_Bb_E89+EcHOcMP3Vv=RMJ9RnuYBSw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1308317854-27398-1-git-send-email-joerg.roedel@amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <CABPqkBS4ukQ-asVD68MR_Bb_E89+EcHOcMP3Vv=RMJ9RnuYBSw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 03:37:29PM +0200, Joerg Roedel wrote:
-> this is the second version of the patch-set to support the AMD
-> guest-/host only bits in the performance counter MSRs. Due to lack of
-> time I havn't looked into emulating support for this feature on Intel or
-> other architectures, but the other comments should be worked in. The
-> changes to v1 include:
+On Tue, Jun 28, 2011 at 05:53:31PM +0200, Stephane Eranian wrote:
+> Cyrill,
 > 
-> 	* Rebased patches to v3.0-rc3
-> 	* Allow exclude_guest and exclude_host set at the same time
-> 	* Reworked event-parse logic for the new exclude-bits
-> 	* Only count guest-events per default from perf-kvm
+> #ifdef CONFIG_HARDLOCKUP_DETECTOR
+> +void __weak hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr) { }
+> 
+> The weak function has to remain inside the #ifdef. Remember it's just an
+> override in case you cannot using the generic cycle event. It is only needed
+> when you have the HARDLOCK detector, i.e., are using the PMU to detect
+> deadlocks.
+> 
+> I suspect P4 may be the only one so far which exhibited a problem there.
+> 
 
-Hi Peter, Ingo,
+heh ;) Guys, maybe we're talking about different things? Don, when you said
+"Though I do wonder about this call in the watchdog" you meant the 
 
-have you had a chance to look at this patch-set? Are any changes
-required?
+ 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
+-->	hw_nmi_watchdog_set_attr(wd_attr);
 
-Regards,
-	Joerg
+itself? Ie you suspect some different point where to call it?
 
+When I said not a "best place" I meant about __weak function bare implementation
+placed that near to call (which is looked somehow suspicious for me from overall
+code structure), but I didn't mean the call sequence itself ;)
+
+	Cyrill
