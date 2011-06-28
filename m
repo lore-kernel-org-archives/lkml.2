@@ -1,42 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757850Ab1F1NFZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 09:05:25 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34597 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757115Ab1F1ND5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 09:03:57 -0400
-Date: Tue, 28 Jun 2011 18:33:32 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH -tip 03/13] kprobes: Return -ENOENT if probe point
-	doesn't exist
-Message-ID: <20110628130332.GA11208@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <20110627072626.6528.41792.stgit@fedora15> <20110627072650.6528.67329.stgit@fedora15>
+	id S1757894Ab1F1NGR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 09:06:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61428 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757630Ab1F1NFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 09:05:01 -0400
+Date: Tue, 28 Jun 2011 09:04:57 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "khlebnikov@openvz.org" <khlebnikov@openvz.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
+Message-ID: <20110628130457.GA17552@redhat.com>
+References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+ <1309223932.15392.186.camel@sli10-conroe>
+ <20110628014039.GA15850@redhat.com>
+ <1309226634.15392.197.camel@sli10-conroe>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110627072650.6528.67329.stgit@fedora15>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <1309226634.15392.197.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 04:26:50PM +0900, Masami Hiramatsu wrote:
-> Return -ENOENT if probe point doesn't exist, but still returns
-> -EINVAL if both of kprobe->addr and kprobe->symbol_name are
-> specified or both are not specified.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+On Tue, Jun 28, 2011 at 10:03:54AM +0800, Shaohua Li wrote:
 
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+[..]
+> > > > Any feedback on how to solve this issue is appreciated.
+> > > Hi Vivek,
+> > > can we introduce a group think time check in cfq? say in a group the
+> > > last queue is backed for the group and the queue is a non-idle queue, if
+> > > the group think time is big, we don't allow the group idle and preempt
+> > > could happen. The fsync thread is a non-idle queue with Corrado's patch,
+> > > this allows fast group switch.
+> > 
+> > In this case regular queue idle is hitting and not group idle. So some
+> > kind of think time stats probably might be useful for group idle check
+> > but not necessarily for queue idle.
+> I thought your problem is group idle issue. fsync uses WRITE_SYNC, which
+> will make the queue be sync-non-idle because REQ_NOIDLE is set. This is
+> exactly what Corrado's patch for. a fsync queue itself isn't idle unless
+> it's the last queue in a group. Am I missing anything?
+
+We idle on last queue on sync-noidle tree. So we idle on fysnc queue as
+it is last queue on sync-noidle tree. That's how we provide protection
+to all sync-noidle queues against sync-idle queues. Instead of idling
+on individual quues we do idling in group and that is on service tree.
+
+> 
+> > Secondly, for this case think time will change. If you stop idling on
+> > fsync and jbd threads, both will be dispatching IOs fast and both will
+> > have small thinktime. We will think that thinktime is small so we
+> > will enable idle. Then there think time will increase as both will
+> > get blocked behind each other. And then we will removing idling. So
+> > looks like we will be oscillating between enabling and disabling
+> > think time.
+> That is possible, the think time check (even for queues) always has such
+> issue. Not sure how severe the issue is. Assume jbd will dispatch
+> several requests and this will make fsync thread think time big.
+> 
+> > If we don't allow idling on sync-no-idle queues, then basic CFQ will
+> > be broken.
+> Hmm, CFQ only allows idling on sync queues, sync-no-idle queue isn't
+> allowed idling.
+
+See above.
+
+Thanks
+Vivek
