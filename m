@@ -1,57 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758736Ab1F1QlP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 12:41:15 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43735 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759678Ab1F1QkN (ORCPT
+	id S1759708Ab1F1Qx6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 12:53:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51798 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758944Ab1F1QxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 12:40:13 -0400
-Date: Tue, 28 Jun 2011 17:42:23 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Hans Verkuil <hverkuil@xs4all.nl>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        Sakari Ailus <sakari.ailus@iki.fi>, Arnd Bergmann <arnd@arndb.de>,
-        Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [media] v4l2 core: return -ENOIOCTLCMD if an ioctl
- doesn't exist
-Message-ID: <20110628174223.3d78ca4c@lxorguk.ukuu.org.uk>
-In-Reply-To: <BANLkTi=6W0quy1M71UapwKDe97E67b4EiA@mail.gmail.com>
-References: <4E0519B7.3000304@redhat.com>
-	<201106271907.59067.hverkuil@xs4all.nl>
-	<BANLkTin=PTbTwBR2s+owMLy+GmKigeoYvg@mail.gmail.com>
-	<201106280804.48742.hverkuil@xs4all.nl>
-	<BANLkTi=6W0quy1M71UapwKDe97E67b4EiA@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 28 Jun 2011 12:53:06 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=vhdKIqpQuCYA:10 a=Z4Z000109gIA:10 a=5SG0PmZfjMsA:10 a=bbbx4UPp9XUA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=lNTr_St70bKISO6vLx4A:9 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Message-Id: <20110628164750.281686775@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Tue, 28 Jun 2011 12:47:50 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 0/2] mm: Clean up and document fault and RETRY mmap_sem
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> (In fact, the _correct_ thing to do would probably be to just do
-> 
->    #define ENOIOCTLCMD ENOTTY
-> 
-> and get rid of any translation - just giving ENOTTY a more appropriate
-> name and less chance for confusion)
+On IRC, Russell King noticed that the code in arch/x86/mm/fault.c
+looked buggy with the retry loop and retaking the mmap_sem. But
+with further investigation it seems to be correct, but now
+handle_mm_fault() has subtle locking with the mmap_sem depending
+on what flags are set.
 
-Some code uses the two to separate 'the driver specific helper code
-doesn't handle this' and 'does handle this'. In that situation you take
-away the ability of a driver to override a midlayer ioctl with -ENOTTY to
-say "I don't support this even if most people do"
+Unfortunately, there's no good comments about what is going on in the
+code. Doing various git blame, git show, I dug up the history
+and cleaned up the RETRY_NOWAIT and added documentation to the
+handle_mm_fault().
 
-> There may be applications out there that really break when they get
-> ENOTTY instead of EINVAL. But most cases that check for errors from
-> ioctl's tend to just say "did this succeed or not" rather than "did
-> this return EINVAL". That's *doubly* true since the error code has
-> been ambiguous, so checking for the exact error code has always been
-> pretty pointless.
 
-Chances are if anything is busted its busted the other way on Linux and
-expects -ENOTTY. Certainly the large number I've been fixing over time
-haven't shown up any problems.
+Steven Rostedt (2):
+      mm: Remove use of ALLOW_RETRY when RETRY_NOWAIT is set
+      mm: Document handle_mm_fault()
+
+----
+ include/linux/mm.h |    4 ++--
+ mm/filemap.c       |   14 +++++++-------
+ mm/memory.c        |   24 +++++++++++++++++++++---
+ 3 files changed, 30 insertions(+), 12 deletions(-)
