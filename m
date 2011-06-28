@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755709Ab1F1MJU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 08:09:20 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:52058 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757185Ab1F1MHv (ORCPT
+	id S1756793Ab1F1MPB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 08:15:01 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:38159 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757032Ab1F1MN5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 08:07:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 6/7] serial/8250: sanitize fourport handling
-Date: Tue, 28 Jun 2011 14:07:40 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-References: <1309211120-2803-1-git-send-email-arnd@arndb.de> <1309211120-2803-7-git-send-email-arnd@arndb.de> <20110628111035.7bd69c0d@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110628111035.7bd69c0d@lxorguk.ukuu.org.uk>
+	Tue, 28 Jun 2011 08:13:57 -0400
+Message-ID: <4E09C573.2030607@atmel.com>
+Date: Tue, 28 Jun 2011 14:13:39 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: balbi@ti.com
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        plagnioj@jcrosoft.com, avictor.za@gmail.com
+Subject: Re: [PATCH] AT91: add AT91SAM9X5 dummy configuration variable
+References: <1309260927-11411-1-git-send-email-nicolas.ferre@atmel.com> <20110628103549.GG2612@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110628103549.GG2612@legolas.emea.dhcp.ti.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106281407.40446.arnd@arndb.de>
-X-Provags-ID: V02:K0:V0vpDzrrOxXDjgQADiJXkVXbxtG0LB3wjE0o6O83TIP
- J9w0s2j5qE+Z4ptTs1fYHrpbYtP/gSEaBCSp3j1Ql4YZwp8pUb
- a1BntiYTPTwkVSNNginXaER2f0TXhOkJCHC+3Z7BR7ypOTO9io
- CeOswVzz3B7rcDaIj4lOFlE8e8YnIBRDfmSoC4AAnTfZ+7ZWrW
- Le860OC/JBxilSWJsoTvg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 June 2011, Alan Cox wrote:
-> On Mon, 27 Jun 2011 23:45:19 +0200
-> Arnd Bergmann <arnd@arndb.de> wrote:
+Le 28/06/2011 12:35, Felipe Balbi :
+> On Tue, Jun 28, 2011 at 01:35:27PM +0200, Nicolas Ferre wrote:
+>> Add this Kconfig variable to ease the submission of this chip support.
+>> As this chip/board inclusion is dealayed due to deep consolidation of
+>> arm/mach-at91 sources, we include this dummy configuration variable to allow
+>> submission of SAM9x5 related drivers in other subsystems.
 > 
-> > Support for AST fourport cards is always built into
-> > the 8250 driver, even if CONFIG_SERIAL_8250_FOURPORT
-> > is disabled. This introduces a set of macros for
-> > accessing the special interrupt control register on
-> > the fourport card, so that support is left out
-> > when the option is disabled, without adding more #ifdef
-> > lines to the driver itself.
-> 
-> Why not just leave it in - it seems to take almost no code and your
-> changes mean people setting the fourport flag are going to get strange
-> behaviour when it isn't compiled in.
+> Why are the drivers even depending on this ? They should be portable
+> enough. Can you share a few drivers so we have a look ?
 
-Mostly to avoid the inb/outb when fourport is disabled. The regular
-I/O can be handled using the indirect serial_in/out functions, but
-the fourport handling requires some address calculations.
+Yes sure. The dependence is only on the Kconfig side: I plan to make
+some drivers dependent on this configuration variable.
+The goal is to submit the final driver addition without having to send
+again a correction to the Kconfig after the chip/board support is merged.
 
-Also, now that you mention users toggling the fourport flag, I can't
-see where that would ever do something good. On anything but a real
-fourport card, it will lead to writing to ports you shouldn't write
-to (0x1f on mmio based uarts, 18 bytes after the requested region
-for regular ports).
+This will ease the submission process at the cost of a two lines dummy
+patch and will remove interdependence between subsystem trees: it worth
+it, is not it?
 
-If you have an actual AST fourport card, you won't be able to use
-it unless you load the 8250_fourport driver that registers the correct
-addresses, and disabling the fourport flag will then cause the
-uart to stop getting interrupts.
+> IMHO, the whole idea of the consolidation is beyond arch/arm, drivers
+> should be affected too.
 
-	Arnd
+Yes sure, I also understood like this.
+I will not spread ARCH_AT91SAM9X5 ifdef in driver code...
+
+Best regards,
+-- 
+Nicolas Ferre
+
