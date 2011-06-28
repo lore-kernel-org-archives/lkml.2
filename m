@@ -1,112 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab1F1WHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 18:07:18 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:40983 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753145Ab1F1WHD (ORCPT
+	id S1753068Ab1F1WHK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 18:07:10 -0400
+Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:50784 "HELO
+	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752524Ab1F1WGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 18:07:03 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 15/29] gma500: Use the GEM tweaks to provide a GEM frame buffer
-To: linux-kernel@vger.kernel.org, greg@kroah.com
-Date: Tue, 28 Jun 2011 23:06:39 +0100
-Message-ID: <20110628220637.898.36502.stgit@bob.linux.org.uk>
-In-Reply-To: <20110628220151.898.15775.stgit@bob.linux.org.uk>
-References: <20110628220151.898.15775.stgit@bob.linux.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Tue, 28 Jun 2011 18:06:55 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=tfDu8Fbs+xbCfGsYjLBivkKQCBMNcsGDmcr0/yUv1VBaC+qXrP1uoob1NcXLqmbpBOG3xO5kLyzOge+Xhh29QYJ6Xo1FN1NOoxGRtQv5TLuPCnd+wVtasjutMCAqPTro;
+Date: Tue, 28 Jun 2011 15:06:44 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Olaf Freyer <aaron667@gmx.net>
+Cc: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
+        Chris Wilson <chris@chris-wilson.co.uk>,
+        Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org
+Subject: Re: Erroneous package power limit notification since kernel 2.6.39
+Message-ID: <20110628150644.14805e83@jbarnes-desktop>
+In-Reply-To: <4E0A4F56.90806@gmx.net>
+References: <4DD9092A.4080507@gmx.net>
+	<loom.20110525T172412-101@post.gmane.org>
+	<20110626182725.3f2eac8d@schatten.dmk.lab>
+	<4E0A3DB1.8000202@gmx.net>
+	<20110628135936.297293b4@jbarnes-desktop>
+	<4E0A4319.6040309@gmx.net>
+	<20110628141831.55502d76@jbarnes-desktop>
+	<4E0A4F56.90806@gmx.net>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Wed, 29 Jun 2011 00:01:58 +0200
+Olaf Freyer <aaron667@gmx.net> wrote:
 
-We can now make our system frame buffer a GEM object.
+> Am 28.06.2011 23:18, schrieb Jesse Barnes:
+> > On Tue, 28 Jun 2011 23:09:45 +0200
+> > Olaf Freyer <aaron667@gmx.net> wrote:
+> >>>>> I'd guess ccab5c82759e2ace74b2e84f82d1e0eedd932571 could be the
+> >>>>> cause. Can you check if the appended revert of that commit makes
+> >>>>> things disappear? 
+> >>>> It seems like you guessed perfectly correct - reverting the commit makes
+> >>>> those notifications go away at once.
+> >>>>
+> >>> Without this reverted you see messages?  I missed the earlier stuff,
+> >>> what message are you seeing?
+> >>>
+> >> Since 2.6.39 I saw those as soon as I start up the xserver:
+> >>
+> >> May 22 14:41:34 localhost kernel: [   57.525848] CPU0: Package power
+> >> limit notification (total events = 1)
+> >> May 22 14:41:34 localhost kernel: [   57.536904] CPU0: Package power
+> >> limit normal
+> > Ok interesting, didn't realize X startup was so GPU intensive. :)
+> >
+> > The patch you reverted will definitely cause the GPU to ramp up its
+> > frequency much faster than before, but it sounds like on your system
+> > you might also see it with the revert if you run something GPU
+> > intensive like nexuiz.
+> >
+> > The CPU (and by extension the GPU) will take care of itself though; if
+> > things get too hot or over power, it will clock throttle to keep itself
+> > in a safe range.
+> I also see the message alot during my daily average usage of my computer
+> (just using Firefox, Thunderbird and IntelliJ) - seeing things like
+> CPU3: Package power limit notification (total events = 90809)
+> after a normal day in the office became normal since 2.6.39.
+> 
+> I just gave nexuiz a try for about 30 minutes with the reversal patch
+> applied -
+> and not a single message appeared in my logs.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+Sounds like with the patch reverted we can't drive your GPU and CPU
+hard enough to generate the messages.  Not sure if that's a good thing
+or a bad thing though...
 
- drivers/staging/gma500/psb_fb.c  |   11 +++++++----
- drivers/staging/gma500/psb_gem.c |   11 ++++++++---
- 2 files changed, 15 insertions(+), 7 deletions(-)
-
-
-diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index fb75aba..400dbee 100644
---- a/drivers/staging/gma500/psb_fb.c
-+++ b/drivers/staging/gma500/psb_fb.c
-@@ -186,6 +186,8 @@ static int psbfb_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	struct psb_framebuffer *psbfb = vma->vm_private_data;
- 	struct drm_device *dev = psbfb->base.dev;
- 	struct drm_psb_private *dev_priv = dev->dev_private;
-+
-+	/* FIXME: assumes fb at stolen base which may not be true */
- 	unsigned long phys_addr = (unsigned long)dev_priv->stolen_base;
- 
- 	page_num = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
-@@ -381,8 +383,11 @@ static struct gtt_range *psbfb_alloc(struct drm_device *dev, int aligned_size)
- 	struct gtt_range *backing;
- 	/* Begin by trying to use stolen memory backing */
- 	backing = psb_gtt_alloc_range(dev, aligned_size, "fb", 1);
--	if (backing)
--		return backing;
-+	if (backing) {
-+	        if (drm_gem_private_object_init(dev, &backing->gem, aligned_size) == 0)
-+        		return backing;
-+                psb_gtt_free_range(dev, backing);
-+        }
- 	/* Next try using GEM host memory */
- 	backing = psb_gtt_alloc_range(dev, aligned_size, "fb(gem)", 0);
- 	if (backing == NULL)
-@@ -683,8 +688,6 @@ static int psb_user_framebuffer_create_handle(struct drm_framebuffer *fb,
- {
-         struct psb_framebuffer *psbfb = to_psb_fb(fb);
-         struct gtt_range *r = psbfb->gtt;
--        if (r->stolen)
--                return -EOPNOTSUPP;
-         return drm_gem_handle_create(file_priv, &r->gem, handle);
- }
- 
-diff --git a/drivers/staging/gma500/psb_gem.c b/drivers/staging/gma500/psb_gem.c
-index 7f6f479..4aec38c 100644
---- a/drivers/staging/gma500/psb_gem.c
-+++ b/drivers/staging/gma500/psb_gem.c
-@@ -49,7 +49,7 @@ void psb_gem_free_object(struct drm_gem_object *obj)
- 		kfree(list->map);
- 		list->map = NULL;
- 	}
--	drm_gem_object_release(obj);
-+	drm_gem_object_release_wrap(obj);
- 	/* This must occur last as it frees up the memory of the GEM object */
- 	psb_gtt_free_range(obj->dev, gtt);
- }
-@@ -268,9 +268,11 @@ int psb_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	unsigned long pfn;
- 	pgoff_t page_offset;
- 	struct drm_device *dev;
-+	struct drm_psb_private *dev_priv;
- 
- 	obj = vma->vm_private_data;	/* GEM object */
- 	dev = obj->dev;
-+	dev_priv = dev->dev_private;
- 
- 	r = container_of(obj, struct gtt_range, gem);	/* Get the gtt range */
- 
-@@ -294,8 +296,11 @@ int psb_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	page_offset = ((unsigned long) vmf->virtual_address - vma->vm_start)
- 				>> PAGE_SHIFT;
- 
--        /* CPU view of the page, don't go via the GART for CPU writes */
--	pfn = page_to_phys(r->pages[page_offset]) >> PAGE_SHIFT;
-+	/* CPU view of the page, don't go via the GART for CPU writes */
-+	if (r->stolen)
-+		pfn = (dev_priv->stolen_base + r->offset) >> PAGE_SHIFT;
-+	else
-+		pfn = page_to_pfn(r->pages[page_offset]);
- 	ret = vm_insert_pfn(vma, (unsigned long)vmf->virtual_address, pfn);
- 
- fail:
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
