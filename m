@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab1F1MPB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 08:15:01 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:38159 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757032Ab1F1MN5 (ORCPT
+	id S1756048Ab1F1MPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 08:15:12 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43047 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755322Ab1F1MOb convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 08:13:57 -0400
-Message-ID: <4E09C573.2030607@atmel.com>
-Date: Tue, 28 Jun 2011 14:13:39 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	Tue, 28 Jun 2011 08:14:31 -0400
 MIME-Version: 1.0
-To: balbi@ti.com
-CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        plagnioj@jcrosoft.com, avictor.za@gmail.com
-Subject: Re: [PATCH] AT91: add AT91SAM9X5 dummy configuration variable
-References: <1309260927-11411-1-git-send-email-nicolas.ferre@atmel.com> <20110628103549.GG2612@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110628103549.GG2612@legolas.emea.dhcp.ti.com>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <BANLkTimGyAN2MvPsTAYqCo2LcWQO2xjXtA@mail.gmail.com>
+References: <BLU158-w332CD7657F92343D3D2D1C876A0@phx.gbl>
+	<BANLkTinr-5k3grHM-gfjVi2PA67VvvTiNg@mail.gmail.com>
+	<BANLkTinJHNztwaR44qdOpZyWg7ASrVG7vQ@mail.gmail.com>
+	<BANLkTimGyAN2MvPsTAYqCo2LcWQO2xjXtA@mail.gmail.com>
+Date: Tue, 28 Jun 2011 08:14:30 -0400
+Message-ID: <BANLkTimBVMm34qBWv7bxKwRL17UnLHcazA@mail.gmail.com>
+Subject: Re: [ath9k-devel] Patching ath9k/mac80211 to change MAC layer features
+From: Daniel Smith <viscous.liquid@gmail.com>
+To: Fred Matthews <fredmm@hotmail.co.uk>
+Cc: Mohammed Shafi <shafi.wireless@gmail.com>, ath9k-devel@venema.h4ckr.net,
+        linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ath9k-devel@lists.ath9k
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 28/06/2011 12:35, Felipe Balbi :
-> On Tue, Jun 28, 2011 at 01:35:27PM +0200, Nicolas Ferre wrote:
->> Add this Kconfig variable to ease the submission of this chip support.
->> As this chip/board inclusion is dealayed due to deep consolidation of
->> arm/mach-at91 sources, we include this dummy configuration variable to allow
->> submission of SAM9x5 related drivers in other subsystems.
-> 
-> Why are the drivers even depending on this ? They should be portable
-> enough. Can you share a few drivers so we have a look ?
+On Tue, Jun 28, 2011 at 3:00 AM, Mohammed Shafi
+<shafi.wireless@gmail.com> wrote:
+> On Mon, Jun 27, 2011 at 11:07 PM, Fred Matthews <fredmm@hotmail.co.uk> wrote:
+>> Hi all,
+>>
+>> Much appreciated Mohammed Shafi, disabling aggregation works when
+>> replacing those lines with
+>>  sc->sc_flags &= ~SC_OP_TXAGGR;
+>>  sc->sc_flags &= ~SC_OP_RXAGGR;
+>> only issue is I must always recompile compat-wireless to
+>> re-enable/disable it again. I tried to port it using debugfs to be
+>> able to enable and disable at runtime but ath9k kept rebooting.
+>
+> I am not sure we can enable/disable aggregation via debugfs, these
+> flags seem are set at initialization and based on this lot of things
+> happen in tx-path, initializing TID structure, ampdu action, rate
+> control  etc.
+>
 
-Yes sure. The dependence is only on the Kconfig side: I plan to make
-some drivers dependent on this configuration variable.
-The goal is to submit the final driver addition without having to send
-again a correction to the Kconfig after the chip/board support is merged.
+The project I am on we have to deal with a situation where we change
+the hardware environment and thus have to change some of the
+initialization parameters. Obviously the environment is a little
+unique, but I believe this should work for you. Before the changes are
+made we do a
 
-This will ease the submission process at the cost of a two lines dummy
-patch and will remove interdependence between subsystem trees: it worth
-it, is not it?
+                if (sc->nvifs > 0) {
+                        printk(KERN_INFO "ath9k:card has an open interface\n");
+                        return -EBUSY;
+                }
 
-> IMHO, the whole idea of the consolidation is beyond arch/arm, drivers
-> should be affected too.
+                pdev = to_pci_dev(sc->dev);
+                pdev->driver->remove(pdev);
 
-Yes sure, I also understood like this.
-I will not spread ARCH_AT91SAM9X5 ifdef in driver code...
+then we make our hardware change and  then do a
 
-Best regards,
--- 
-Nicolas Ferre
+                pci_id = pci_match_id(pdev->driver->id_table, pdev);
+                err = pdev->driver->probe(pdev, pci_id);
 
+which gives us a re-initialized instance of ath_hw and ath_softc for the radio
+
+Hope this helps!
+
+V/r,
+Daniel P. Smith
