@@ -1,644 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab1F1HIO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 03:08:14 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:33697 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755997Ab1F1HHR (ORCPT
+	id S1754754Ab1F1HKQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 03:10:16 -0400
+Received: from 207-126-122-235.ip.openhosting.com ([207.126.122.235]:55442
+	"EHLO drepperk.user.openhosting.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755735Ab1F1HJE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 03:07:17 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH v3] hwmon: LM95245 driver
-Date: Tue, 28 Jun 2011 09:07:09 +0200
-Message-Id: <1309244829-12304-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <20110627202135.GA12829@ericsson.com>
-References: <20110627202135.GA12829@ericsson.com>
+	Tue, 28 Jun 2011 03:09:04 -0400
+Message-ID: <4E097DCE.1090004@akkadia.org>
+Date: Tue, 28 Jun 2011 03:07:58 -0400
+From: Ulrich Drepper <drepper@akkadia.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        rientjes@google.com, torvalds@linux-foundation.org,
+        viro@zeniv.linux.org.uk, wilsons@start.ca, linux-man@vger.kernel.org,
+        Yoshinori Sato <ysato@users.sourceforge.jp>,
+        Geert Uytterhoeven <geert@linux-m68k.org>,
+        Chris Zankel <chris@zankel.net>
+Subject: Re: [PATCH] Add cloexec information to fdinfo
+References: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com> <20110620143131.9c6e040c.akpm@linux-foundation.org>
+In-Reply-To: <20110620143131.9c6e040c.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig9A9705871A68BA8FF54D72F8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An hwmon driver for the National Semiconductor LM95245 dual temperature
-sensors chip.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig9A9705871A68BA8FF54D72F8
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
-Changes since v2:
-* Applied review notes from Guenter
-* Added Documentation/hwmon/lm95245 (Dunno if is enough though)
+On 06/20/2011 05:31 PM, Andrew Morton wrote:
+> Does FD_ISSET return 0 or 1?  Or 0 or non-zero?
+>=20
+> For x86 it's the former.
+>=20
+> <checks the architectures>
+>=20
+> arch/h8300/include/asm/posix_types.h: busted
+> #define __FD_ISSET(d, set)      ((set)->fds_bits[__FDELT(d)] & __FDMASK=
+(d))
+>=20
+> arch/m68k/include/asm/posix_types.h: busted
+> #define __FD_ISSET(d, set)      ((set)->fds_bits[__FDELT(d)] & __FDMASK=
+(d))
+>=20
+> arch/xtensa/include/asm/posix_types.h: busted
+> #define __FD_ISSET(d, set)      ((set)->fds_bits[__FDELT(d)] & __FDMASK=
+(d))
 
-Guenter,
-I skipped adding OS limits. For one point I don't understand them exactly.
-TCRIT and OS limit is indicated the same for local temperature and AFAICS
-it uses the external pin A0/OS which have to be configured. I can't test this.
+I agree, this is an issue.  Existing code works around this.  We should
+use the attached patch on top of the existing one.
 
- Documentation/hwmon/lm95245 |   33 +++
- drivers/hwmon/Kconfig       |    9 +
- drivers/hwmon/Makefile      |    1 +
- drivers/hwmon/lm95245.c     |  517 +++++++++++++++++++++++++++++++++++++++++++
- 4 files changed, 560 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/hwmon/lm95245
- create mode 100644 drivers/hwmon/lm95245.c
 
-diff --git a/Documentation/hwmon/lm95245 b/Documentation/hwmon/lm95245
-new file mode 100644
-index 0000000..7472c64
---- /dev/null
-+++ b/Documentation/hwmon/lm95245
-@@ -0,0 +1,33 @@
-+Kernel driver lm95245
-+==================
-+
-+Supported chips:
-+  * National Semiconductor LM95245
-+    Addresses scanned: I2C 0x18, 0x19, 0x29, 0x4c, 0x4d
-+    Datasheet: Publicly available at the National Semiconductor website
-+               http://www.national.com/mpf/LM/LM95245.html
-+
-+
-+Author: Alexander Stein <alexander.stein@systec-electronic.com>
-+
-+Description
-+-----------
-+
-+The LM95245 is an 11-bit digital temperature sensor with a 2-wire System
-+Management Bus (SMBus) interface and TruTherm technology that can monitor
-+the temperature of a remote diode as well as its own temperature.
-+The LM95245 can be used to very accurately monitor the temperature of
-+external devices such as microprocessors.
-+
-+All temperature values are given in millidegrees Celsius. Local temperature
-+is given within a range of -127 to +127.875 degrees. Remote temperatures are
-+given within a range of -127 to +255 degrees. Resolution depends on
-+temperature input and range.
-+
-+Each sensor has its own critical limit, but the hysteresis is common to all
-+two channels.
-+
-+The lm95245 driver can change its update interval to a fixed set of values.
-+It will round up to the next selectable interval. See the datasheet for exact
-+values. Reading them more often will do no harm, but will return
-+'old' values.
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index 16db83c..ffabf1f 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -702,6 +702,15 @@ config SENSORS_LM95241
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called lm95241.
- 
-+config SENSORS_LM95245
-+	tristate "National Semiconductor LM95245 sensor chip"
-+	depends on I2C && EXPERIMENTAL
-+	help
-+	  If you say yes here you get support for LM95245 sensor chip.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called lm95245.
-+
- config SENSORS_MAX1111
- 	tristate "Maxim MAX1111 Multichannel, Serial 8-bit ADC chip"
- 	depends on SPI_MASTER
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 28061cf..5598712 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -80,6 +80,7 @@ obj-$(CONFIG_SENSORS_LM90)	+= lm90.o
- obj-$(CONFIG_SENSORS_LM92)	+= lm92.o
- obj-$(CONFIG_SENSORS_LM93)	+= lm93.o
- obj-$(CONFIG_SENSORS_LM95241)	+= lm95241.o
-+obj-$(CONFIG_SENSORS_LM95245)	+= lm95245.o
- obj-$(CONFIG_SENSORS_LTC4151)	+= ltc4151.o
- obj-$(CONFIG_SENSORS_LTC4215)	+= ltc4215.o
- obj-$(CONFIG_SENSORS_LTC4245)	+= ltc4245.o
-diff --git a/drivers/hwmon/lm95245.c b/drivers/hwmon/lm95245.c
-new file mode 100644
-index 0000000..014973d
---- /dev/null
-+++ b/drivers/hwmon/lm95245.c
-@@ -0,0 +1,517 @@
-+/*
-+ * Copyright (C) 2011 Alexander Stein <alexander.stein@systec-electronic.com>
-+ *
-+ * The LM95245 is a sensor chip made by National Semiconductors.
-+ * It reports up to two temperatures (its own plus an external one).
-+ * Complete datasheet can be obtained from National's website at:
-+ *   http://www.national.com/ds.cgi/LM/LM95245.pdf
-+ *
-+ * This driver is based on lm95241.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/slab.h>
-+#include <linux/jiffies.h>
-+#include <linux/i2c.h>
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
-+#include <linux/err.h>
-+#include <linux/mutex.h>
-+#include <linux/sysfs.h>
-+
-+#define DEVNAME "lm95245"
-+
-+static const unsigned short normal_i2c[] = {
-+	0x18, 0x19, 0x29, 0x4c, 0x4d, I2C_CLIENT_END };
-+
-+/* LM95245 registers */
-+/* general registers */
-+#define LM95245_REG_RW_CONFIG1		0x03
-+#define LM95245_REG_RW_CONVERS_RATE	0x04
-+#define LM95245_REG_W_ONE_SHOT		0x0F
-+
-+/* diode configuration */
-+#define LM95245_REG_RW_CONFIG2		0xBF
-+#define LM95245_REG_RW_REMOTE_OFFH	0x11
-+#define LM95245_REG_RW_REMOTE_OFFL	0x12
-+
-+/* status registers */
-+#define LM95245_REG_R_STATUS1		0x02
-+#define LM95245_REG_R_STATUS2		0x33
-+
-+/* limit registers */
-+#define LM95245_REG_RW_REMOTE_OS_LIMIT		0x07
-+#define LM95245_REG_RW_LOCAL_OS_TCRIT_LIMIT	0x20
-+#define LM95245_REG_RW_REMOTE_TCRIT_LIMIT	0x19
-+#define LM95245_REG_RW_COMMON_HYSTERESIS	0x21
-+
-+/* temperature signed */
-+#define LM95245_REG_R_LOCAL_TEMPH_S	0x00
-+#define LM95245_REG_R_LOCAL_TEMPL_S	0x30
-+#define LM95245_REG_R_REMOTE_TEMPH_S	0x01
-+#define LM95245_REG_R_REMOTE_TEMPL_S	0x10
-+/* temperature unsigned */
-+#define LM95245_REG_R_REMOTE_TEMPH_U	0x31
-+#define LM95245_REG_R_REMOTE_TEMPL_U	0x32
-+
-+/* id registers */
-+#define LM95245_REG_R_MAN_ID		0xFE
-+#define LM95245_REG_R_CHIP_ID		0xFF
-+
-+/* LM95245 specific bitfields */
-+#define CFG_STOP		0x40
-+#define CFG_REMOTE_TCRIT_MASK	0x10
-+#define CFG_REMOTE_OS_MASK	0x08
-+#define CFG_LOCAL_TCRIT_MASK	0x04
-+#define CFG_LOCAL_OS_MASK	0x02
-+
-+#define CFG2_OS_A0		0x40
-+#define CFG2_DIODE_FAULT_OS	0x20
-+#define CFG2_DIODE_FAULT_TCRIT	0x10
-+#define CFG2_REMOTE_TT		0x08
-+#define CFG2_REMOTE_FILTER_DIS	0x00
-+#define CFG2_REMOTE_FILTER_EN	0x06
-+
-+/* conversation rate in ms */
-+#define RATE_CR0063	0x00
-+#define RATE_CR0364	0x01
-+#define RATE_CR1000	0x02
-+#define RATE_CR2500	0x03
-+
-+#define STATUS1_DIODE_FAULT	0x04
-+#define STATUS1_RTCRIT		0x02
-+#define STATUS1_LOC		0x01
-+
-+#define MANUFACTURER_ID		0x01
-+#define DEFAULT_REVISION	0xB3
-+
-+static const u8 lm95245_reg_address[] = {
-+	LM95245_REG_R_LOCAL_TEMPH_S,
-+	LM95245_REG_R_LOCAL_TEMPL_S,
-+	LM95245_REG_R_REMOTE_TEMPH_S,
-+	LM95245_REG_R_REMOTE_TEMPL_S,
-+	LM95245_REG_R_REMOTE_TEMPH_U,
-+	LM95245_REG_R_REMOTE_TEMPL_U,
-+	LM95245_REG_RW_LOCAL_OS_TCRIT_LIMIT,
-+	LM95245_REG_RW_REMOTE_TCRIT_LIMIT,
-+	LM95245_REG_RW_COMMON_HYSTERESIS,
-+	LM95245_REG_R_STATUS1,
-+};
-+
-+/* Client data (each client gets its own) */
-+struct lm95245_data {
-+	struct device *hwmon_dev;
-+	struct mutex update_lock;
-+	unsigned long last_updated;	/* in jiffies */
-+	unsigned long interval;	/* in msecs */
-+	char valid;		/* zero until following fields are valid */
-+	/* registers values */
-+	u8 regs[ARRAY_SIZE(lm95245_reg_address)];
-+	u8 config1, config2;
-+};
-+
-+/* Conversions */
-+static int TempFromRegUnsigned(u8 val_h, u8 val_l)
-+{
-+	return val_h * 1000 + val_l * 1000 / 256;
-+}
-+
-+static int TempFromRegSigned(u8 val_h, u8 val_l)
-+{
-+	if (val_h & 0x80)
-+		return (val_h - 0x100) * 1000;
-+	return TempFromRegUnsigned(val_h, val_l);
-+}
-+
-+static struct lm95245_data *lm95245_update_device(struct device *dev)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct lm95245_data *data = i2c_get_clientdata(client);
-+
-+	mutex_lock(&data->update_lock);
-+
-+	if (time_after(jiffies, data->last_updated
-+		+ msecs_to_jiffies(data->interval)) || !data->valid) {
-+		int i;
-+
-+		dev_dbg(&client->dev, "Updating lm95245 data.\n");
-+		for (i = 0; i < ARRAY_SIZE(lm95245_reg_address); i++)
-+			data->regs[i]
-+			  = i2c_smbus_read_byte_data(client,
-+						     lm95245_reg_address[i]);
-+		data->last_updated = jiffies;
-+		data->valid = 1;
-+	}
-+
-+	mutex_unlock(&data->update_lock);
-+
-+	return data;
-+}
-+
-+static unsigned long lm95245_set_conversion_rate(struct i2c_client *client,
-+			unsigned long interval)
-+{
-+	int rate;
-+
-+	if (interval <= 63) {
-+		interval = 63;
-+		rate = RATE_CR0063;
-+	} else if (interval <= 364) {
-+		interval = 364;
-+		rate = RATE_CR0364;
-+	} else if (interval <= 1000) {
-+		interval = 1000;
-+		rate = RATE_CR1000;
-+	} else {
-+		interval = 2500;
-+		rate = RATE_CR2500;
-+	}
-+
-+	i2c_smbus_write_byte_data(client, LM95245_REG_RW_CONVERS_RATE, rate);
-+
-+	return interval;
-+}
-+
-+/* Sysfs stuff */
-+static ssize_t show_input(struct device *dev, struct device_attribute *attr,
-+			  char *buf)
-+{
-+	struct lm95245_data *data = lm95245_update_device(dev);
-+	int temp;
-+	int index = to_sensor_dev_attr(attr)->index;
-+
-+	/*
-+	 * Index 0 (Local temp) is always signed
-+	 * Index 2 (Remote temp) has both signed and unsigned data
-+	 * use signed calculation for remote if signed bit is set
-+	 */
-+	if (index == 0 || data->regs[index] & 0x80)
-+		temp = TempFromRegSigned(data->regs[index],
-+			    data->regs[index + 1]);
-+	else
-+		temp = TempFromRegUnsigned(data->regs[index + 2],
-+			    data->regs[index + 3]);
-+
-+	return snprintf(buf, PAGE_SIZE - 1, "%d\n", temp);
-+}
-+
-+static ssize_t show_limit(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
-+{
-+	struct lm95245_data *data = lm95245_update_device(dev);
-+	int index = to_sensor_dev_attr(attr)->index;
-+
-+	return snprintf(buf, PAGE_SIZE - 1, "%d\n",
-+			data->regs[index] * 1000);
-+}
-+
-+static ssize_t set_limit(struct device *dev, struct device_attribute *attr,
-+			const char *buf, size_t count)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct lm95245_data *data = i2c_get_clientdata(client);
-+	int index = to_sensor_dev_attr(attr)->index;
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 10, &val) < 0)
-+		return -EINVAL;
-+
-+	val /= 1000;
-+
-+	val = SENSORS_LIMIT(val, 0, (index == 6 ? 127 : 255));
-+
-+	mutex_lock(&data->update_lock);
-+
-+	data->valid = 0;
-+
-+	i2c_smbus_write_byte_data(client, lm95245_reg_address[index], val);
-+
-+	mutex_unlock(&data->update_lock);
-+
-+	return count;
-+}
-+
-+static ssize_t set_crit_hyst(struct device *dev, struct device_attribute *attr,
-+			const char *buf, size_t count)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct lm95245_data *data = i2c_get_clientdata(client);
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 10, &val) < 0)
-+		return -EINVAL;
-+
-+	val /= 1000;
-+
-+	val = SENSORS_LIMIT(val, 0, 31);
-+
-+	mutex_lock(&data->update_lock);
-+
-+	data->valid = 0;
-+
-+	/* shared crit hysteresis */
-+	i2c_smbus_write_byte_data(client, LM95245_REG_RW_COMMON_HYSTERESIS,
-+		val);
-+
-+	mutex_unlock(&data->update_lock);
-+
-+	return count;
-+}
-+
-+static ssize_t show_type(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct lm95245_data *data = i2c_get_clientdata(client);
-+
-+	return snprintf(buf, PAGE_SIZE - 1,
-+		data->config2 & CFG2_REMOTE_TT ? "1\n" : "2\n");
-+}
-+
-+static ssize_t set_type(struct device *dev, struct device_attribute *attr,
-+			const char *buf, size_t count)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct lm95245_data *data = i2c_get_clientdata(client);
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 10, &val) < 0)
-+		return -EINVAL;
-+	if (val != 1 && val != 2)
-+		return -EINVAL;
-+
-+	mutex_lock(&data->update_lock);
-+
-+	if (val == 1)
-+		data->config2 |= CFG2_REMOTE_TT;
-+	else
-+		data->config2 &= ~CFG2_REMOTE_TT;
-+
-+	data->valid = 0;
-+
-+	i2c_smbus_write_byte_data(client, LM95245_REG_RW_CONFIG2,
-+				  data->config2);
-+
-+	mutex_unlock(&data->update_lock);
-+
-+	return count;
-+}
-+
-+static ssize_t show_alarm(struct device *dev, struct device_attribute *attr,
-+			 char *buf)
-+{
-+	struct lm95245_data *data = lm95245_update_device(dev);
-+	int index = to_sensor_dev_attr(attr)->index;
-+
-+	return snprintf(buf, PAGE_SIZE - 1, "%d\n",
-+			!!(data->regs[9] & index));
-+}
-+
-+static ssize_t show_interval(struct device *dev, struct device_attribute *attr,
-+			     char *buf)
-+{
-+	struct lm95245_data *data = lm95245_update_device(dev);
-+
-+	return snprintf(buf, PAGE_SIZE - 1, "%lu\n", data->interval);
-+}
-+
-+static ssize_t set_interval(struct device *dev, struct device_attribute *attr,
-+			    const char *buf, size_t count)
-+{
-+	struct i2c_client *client = to_i2c_client(dev);
-+	struct lm95245_data *data = i2c_get_clientdata(client);
-+	unsigned long val;
-+
-+	if (strict_strtoul(buf, 10, &val) < 0)
-+		return -EINVAL;
-+
-+	mutex_lock(&data->update_lock);
-+
-+	data->interval = lm95245_set_conversion_rate(client, val);
-+
-+	mutex_unlock(&data->update_lock);
-+
-+	return count;
-+}
-+
-+static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_input, NULL, 0);
-+static SENSOR_DEVICE_ATTR(temp1_crit, S_IWUSR | S_IRUGO, show_limit,
-+		set_limit, 6);
-+static SENSOR_DEVICE_ATTR(temp1_crit_hyst, S_IWUSR | S_IRUGO, show_limit,
-+		set_crit_hyst, 8);
-+static SENSOR_DEVICE_ATTR(temp1_crit_alarm, S_IRUGO, show_alarm, NULL,
-+		STATUS1_LOC);
-+
-+static SENSOR_DEVICE_ATTR(temp2_input, S_IRUGO, show_input, NULL, 2);
-+static SENSOR_DEVICE_ATTR(temp2_crit, S_IWUSR | S_IRUGO, show_limit,
-+		set_limit, 7);
-+static SENSOR_DEVICE_ATTR(temp2_crit_hyst, S_IWUSR | S_IRUGO, show_limit,
-+		set_crit_hyst, 8);
-+static SENSOR_DEVICE_ATTR(temp2_crit_alarm, S_IRUGO, show_alarm, NULL,
-+		STATUS1_RTCRIT);
-+static SENSOR_DEVICE_ATTR(temp2_type, S_IWUSR | S_IRUGO, show_type,
-+		set_type, 0);
-+static SENSOR_DEVICE_ATTR(temp2_fault, S_IRUGO, show_alarm, NULL,
-+		STATUS1_DIODE_FAULT);
-+
-+static DEVICE_ATTR(update_interval, S_IWUSR | S_IRUGO, show_interval,
-+		set_interval);
-+
-+static struct attribute *lm95245_attributes[] = {
-+	&sensor_dev_attr_temp1_input.dev_attr.attr,
-+	&sensor_dev_attr_temp1_crit.dev_attr.attr,
-+	&sensor_dev_attr_temp1_crit_hyst.dev_attr.attr,
-+	&sensor_dev_attr_temp1_crit_alarm.dev_attr.attr,
-+	&sensor_dev_attr_temp2_input.dev_attr.attr,
-+	&sensor_dev_attr_temp2_crit.dev_attr.attr,
-+	&sensor_dev_attr_temp2_crit_hyst.dev_attr.attr,
-+	&sensor_dev_attr_temp2_crit_alarm.dev_attr.attr,
-+	&sensor_dev_attr_temp2_type.dev_attr.attr,
-+	&sensor_dev_attr_temp2_fault.dev_attr.attr,
-+	&dev_attr_update_interval.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group lm95245_group = {
-+	.attrs = lm95245_attributes,
-+};
-+
-+/* Return 0 if detection is successful, -ENODEV otherwise */
-+static int lm95245_detect(struct i2c_client *new_client,
-+			  struct i2c_board_info *info)
-+{
-+	struct i2c_adapter *adapter = new_client->adapter;
-+
-+	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA))
-+		return -ENODEV;
-+
-+	if (i2c_smbus_read_byte_data(new_client, LM95245_REG_R_MAN_ID)
-+			!= MANUFACTURER_ID
-+		|| i2c_smbus_read_byte_data(new_client, LM95245_REG_R_CHIP_ID)
-+			!= DEFAULT_REVISION)
-+		return -ENODEV;
-+
-+	strlcpy(info->type, DEVNAME, I2C_NAME_SIZE);
-+	return 0;
-+}
-+
-+static void lm95245_init_client(struct i2c_client *client)
-+{
-+	struct lm95245_data *data = i2c_get_clientdata(client);
-+
-+	data->interval = 1000;	/* 1 sec default */
-+	data->valid = 0;
-+
-+	data->config1 = i2c_smbus_read_byte_data(client,
-+		LM95245_REG_RW_CONFIG1);
-+	data->config2 = i2c_smbus_read_byte_data(client,
-+		LM95245_REG_RW_CONFIG2);
-+
-+	/* Clear the standby bit */
-+	data->config1 &= ~CFG_STOP;
-+
-+	i2c_smbus_write_byte_data(client, LM95245_REG_RW_CONFIG1,
-+		data->config1);
-+	lm95245_set_conversion_rate(client, data->interval);
-+}
-+
-+static int lm95245_probe(struct i2c_client *new_client,
-+			 const struct i2c_device_id *id)
-+{
-+	struct lm95245_data *data;
-+	int err;
-+
-+	data = kzalloc(sizeof(struct lm95245_data), GFP_KERNEL);
-+	if (!data) {
-+		err = -ENOMEM;
-+		goto exit;
-+	}
-+
-+	i2c_set_clientdata(new_client, data);
-+	mutex_init(&data->update_lock);
-+
-+	/* Initialize the LM95245 chip */
-+	lm95245_init_client(new_client);
-+
-+	/* Register sysfs hooks */
-+	err = sysfs_create_group(&new_client->dev.kobj, &lm95245_group);
-+	if (err)
-+		goto exit_free;
-+
-+	data->hwmon_dev = hwmon_device_register(&new_client->dev);
-+	if (IS_ERR(data->hwmon_dev)) {
-+		err = PTR_ERR(data->hwmon_dev);
-+		goto exit_remove_files;
-+	}
-+
-+	return 0;
-+
-+exit_remove_files:
-+	sysfs_remove_group(&new_client->dev.kobj, &lm95245_group);
-+exit_free:
-+	kfree(data);
-+exit:
-+	return err;
-+}
-+
-+static int lm95245_remove(struct i2c_client *client)
-+{
-+	struct lm95245_data *data = i2c_get_clientdata(client);
-+
-+	hwmon_device_unregister(data->hwmon_dev);
-+	sysfs_remove_group(&client->dev.kobj, &lm95245_group);
-+
-+	kfree(data);
-+	return 0;
-+}
-+
-+/* Driver data (common to all clients) */
-+static const struct i2c_device_id lm95245_id[] = {
-+	{ DEVNAME, 0 },
-+	{ }
-+};
-+MODULE_DEVICE_TABLE(i2c, lm95245_id);
-+
-+static struct i2c_driver lm95245_driver = {
-+	.class		= I2C_CLASS_HWMON,
-+	.driver = {
-+		.name	= DEVNAME,
-+	},
-+	.probe		= lm95245_probe,
-+	.remove		= lm95245_remove,
-+	.id_table	= lm95245_id,
-+	.detect		= lm95245_detect,
-+	.address_list	= normal_i2c,
-+};
-+
-+static int __init sensors_lm95245_init(void)
-+{
-+	return i2c_add_driver(&lm95245_driver);
-+}
-+
-+static void __exit sensors_lm95245_exit(void)
-+{
-+	i2c_del_driver(&lm95245_driver);
-+}
-+
-+MODULE_AUTHOR("Alexander Stein <alexander.stein@systec-electronic.com>");
-+MODULE_DESCRIPTION("LM95245 sensor driver");
-+MODULE_LICENSE("GPL");
-+
-+module_init(sensors_lm95245_init);
-+module_exit(sensors_lm95245_exit);
--- 
-1.7.3.4
+This doesn't invalidate your patch to harmonize the architectures but
+the above is what existing code does.  I didn't use a tab in the output
+since the initial string is long enough to force the subsequent text in
+a new column.  Using a single space seemed more visually pleasing.
 
+
+
+Signed-off-by: Ulrich Drepper <drepper@gmail.com>
+
+--- a/fs/proc/base.c	2011-06-28 02:54:01.888793757 -0400
++++ b/fs/proc/base.c	2011-06-28 02:54:30.668664335 -0400
+@@ -1939,7 +1939,7 @@
+ 					 "cloexec:\t%d\n",
+ 					 (long long) file->f_pos,
+ 					 file->f_flags,
+-					 cloexec);
++					 cloexec ? FD_CLOEXEC : 0);
+ 			}
+ 			spin_unlock(&files->file_lock);
+ 			put_files_struct(files);
+
+
+--------------enig9A9705871A68BA8FF54D72F8
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
+
+iEYEARECAAYFAk4Jfc4ACgkQ2ijCOnn/RHQ05gCgu4yikszRPlgoAIDnhuhVzyA4
+v4EAmwURz4ww9sirtln/5ELsYayqV2fD
+=Xsaa
+-----END PGP SIGNATURE-----
+
+--------------enig9A9705871A68BA8FF54D72F8--
