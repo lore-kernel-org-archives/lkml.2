@@ -1,28 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab1F1I3k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 04:29:40 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40115 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755420Ab1F1I0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 04:26:05 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,436,1304319600"; 
-   d="scan'208";a="19149638"
-Date: Tue, 28 Jun 2011 09:25:40 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org
-Subject: Re: [PATCH 10/12] SERIAL: SC26xx: Fix link error.
-Message-ID: <20110628092540.61c94bf9@bob.linux.org.uk>
-In-Reply-To: <f0b3d9a91be8dba5c45c14efebaa9c7800694f15.1309182743.git.ralf@linux-mips.org>
-References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
-	<f0b3d9a91be8dba5c45c14efebaa9c7800694f15.1309182743.git.ralf@linux-mips.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
+	id S1757170Ab1F1Ill (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 04:41:41 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:34849 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756142Ab1F1Ij4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 04:39:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 28 Jun 2011 17:31:22 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Michal Hocko <mhocko@suse.cz>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [FIX][PATCH 0/3] memcg: 3 fixes for memory cgroup's memory reclaim
+Message-Id: <20110628173122.9e5aecdf.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -30,19 +26,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jun 2011 14:26:56 +0100
-Ralf Baechle <ralf@linux-mips.org> wrote:
 
-> Kconfig allows enabling console support for the SC26xx driver even
-> when it's configured as a module resulting in a:
-> 
-> ERROR: "uart_console_device" [drivers/tty/serial/sc26xx.ko] undefined!
-> 
-> modpost error since the driver was merged in
-> eea63e0e8a60d00485b47fb6e75d9aa2566b989b [SC26XX: New serial driver
-> for SC2681 uarts] in 2.6.25.  Fixed by only allowing console support
-> to be enabled if the driver is builtin.
-> 
-> Signed-off-by: Ralf Baechle <ralf@linux-mips.org>
+This series contains 3 fixes for memcg in Linus's git tree.
+All of them were posted in the last week. I cut out and refreshed
+and post it here because I think all pathces has obvious benfits, I think.
 
-Acked-by: Alan Cox <alan@linux.intel.com>
+All of patches are independent from each other but you may see
+some dependency between 1 and 2.
+
+1/3 .... fix memory cgroup reclaimable check.
+2/3 .... fix memory cgroup numascan update by events
+3/3 .... fix lock_page() trouble when using memcg.
+
+Because 3/3 is a patch to change behavior of __do_fault(), I'd like
+to get review of mm specialists.
+
+Thanks,
+-Kame
+
