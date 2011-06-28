@@ -1,58 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758080Ab1F1NiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 09:38:25 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58885 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757517Ab1F1NgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 09:36:21 -0400
-From: Keng-Yu Lin <kengyu@canonical.com>
-To: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: ike.pan@canonical.com, vanhoof@canonical.com, kent.lin@canonical.com,
-        sylee@canonical.com, Keng-Yu Lin <kengyu@canonical.com>
-Subject: [PATCH 2/2] ideapad-laptop: Handle the App-controlled RF event
-Date: Tue, 28 Jun 2011 14:35:54 +0100
-Message-Id: <1309268154-6872-2-git-send-email-kengyu@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1309268154-6872-1-git-send-email-kengyu@canonical.com>
-References: <1309268154-6872-1-git-send-email-kengyu@canonical.com>
+	id S1757480Ab1F1NhV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 09:37:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62976 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756719Ab1F1NgD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 09:36:03 -0400
+Date: Tue, 28 Jun 2011 09:35:58 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        khlebnikov@openvz.org, jmoyer@redhat.com
+Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
+Message-ID: <20110628133557.GB17552@redhat.com>
+References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+ <20110628024738.GJ32466@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110628024738.GJ32466@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Notification with VPC2 bit 5 set is generated when the wireless
-hotkey is pressed. BIOS fires this to notify a Windows
-application to handle the RF switch.
+On Tue, Jun 28, 2011 at 12:47:38PM +1000, Dave Chinner wrote:
+> 
+> Vivek, I'm not sure this is a general solution. If we hand journal
+> IO off to a workqueue, then we've got no idea what the "dependent
+> task" is.
+> 
+> I bring this up as I have a current patchset that moves all the XFS
+> journal IO out of process context into a workqueue to solve
+> process-visible operation latency (e.g. 1000 mkdir syscalls run at
+> 1ms each, the 1001st triggers a journal checkpoint and takes 500ms)
+> and background checkpoint submission races.  This effectively means
+> that XFS will trigger the same bad CFQ behaviour on fsync, but have
+> no means of avoiding it because we don't have a specific task to
+> yield to.
+> 
+> And FWIW, we're going to be using workqueues more and more in XFS
+> for asynchronous processing of operations. I'm looking to use WQs
+> for speculative readahead of inodes, all our delayed metadata
+> writeback, log IO submission, free space allocation requests,
+> background inode allocation, background inode freeing, background
+> EOF truncation, etc to process as much work asynchronously outside
+> syscall context as possible (let's use all those CPU cores we
+> have!).
+> 
+> All of these things will push potentially dependent IO operations
+> outside of the bounds of the process actually doing the operation,
+> so some general solution to the "dependent IO in an undefined thread
+> context" problem really needs to be solved sooner rather than
+> later...
+> 
+> As it is, I don't have any good ideas of how to solve this, but I
+> thought it is worth bringing to your attention while you are trying
+> to solve a similar issue.
 
-On Linux, there is no such application. This patch implements
-a toggle for all RF devices through accessing the EC I/O ports.
+Dave,
 
-Without the explicit EC commands, the wifi LED is always on.
+Coule of thoughts.
 
-Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
----
- drivers/platform/x86/ideapad-laptop.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+- We can introduce anohter block layer call were dependencies are setup
+  from worker thread context. So when the process schedules the work, it can
+  save the task information somewhere and when the worker thread actually
+  calls the specified funciton, that function can setup the dependency
+  between worker thread and submitting task.
 
-diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
-index 820f013..5e1e971 100644
---- a/drivers/platform/x86/ideapad-laptop.c
-+++ b/drivers/platform/x86/ideapad-laptop.c
-@@ -461,7 +461,11 @@ static void ideapad_acpi_notify(struct acpi_device *adevice, u32 event)
- 		if (test_bit(vpc_bit, &vpc1)) {
- 			if (vpc_bit == 9)
- 				ideapad_sync_rfk_state(adevice);
--			else if (vpc_bit == 4)
-+			else if (vpc_bit == 13) {
-+				read_ec_data(handle, 0x23, &vpc2);
-+				write_ec_cmd(handle, 0x24, !vpc2);
-+				ideapad_sync_rfk_state(adevice);
-+			} else if (vpc_bit == 4)
- 				read_ec_data(handle, 0x12, &vpc2);
- 			else if (vpc_bit == 1) {
- 			} else
--- 
-1.7.4.1
+  Probably original process can tear down the dependency connection
+  when IO is done. I am assuming that IO submitting process is waiting
+  for all IO to finish.
 
+  In current framework one can specify multiple processes being dependent
+  on one thread but not vice-a-versa. I think we should be able to 
+  handle that by maintaining a linked list of dependent queues instead
+  of single pointer. So if a process submits a bunch of jobs with help
+  of bunch of worker threads from multiple cpus, I think that case is
+  manageable with some extension to current patches.
+
+- Or we can also try to do something more exotic and that when we schedule
+  a work, one should be able to tell which cgroup the worker should run in.
+  When the worker actually runs, it can migrate itself to destination
+  destination cgroup and submit IO. This does not take care of cases like
+  journalling thread where multiple processes are dependent on single
+  kernel thread. In that case above dependent queue solution should work
+  well.
+
+So I think above API can be extended to handle the case of work queues
+also or we could look into migrating worker in user specified cgroup if
+that turns out to be a better solution. 
+
+Thanks
+Vivek
