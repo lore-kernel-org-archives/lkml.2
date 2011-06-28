@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752654Ab1F1Wv3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 18:51:29 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65112 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750948Ab1F1WvV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 18:51:21 -0400
+	id S1751721Ab1F1Wyt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 18:54:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48479 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750821Ab1F1Wyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 18:54:43 -0400
+Date: Wed, 29 Jun 2011 00:54:41 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 03/29] gma500: Ensure the frame buffer has a linear
+ virtual mapping
+In-Reply-To: <20110628234235.35cbc7bd@lxorguk.ukuu.org.uk>
+Message-ID: <alpine.LNX.2.00.1106290047190.11049@pobox.suse.cz>
+References: <20110616160104.6039.44019.stgit@localhost.localdomain> <20110616160642.6039.31781.stgit@localhost.localdomain> <20110628211859.GA23217@kroah.com> <20110628230245.4cec6958@lxorguk.ukuu.org.uk> <alpine.LNX.2.00.1106290003060.11049@pobox.suse.cz>
+ <alpine.LNX.2.00.1106290013350.11049@pobox.suse.cz> <20110628234235.35cbc7bd@lxorguk.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikt08CDJiKNxGF2mKmOhyxHfv21_g@mail.gmail.com>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
- <1308640714-17961-8-git-send-email-ohad@wizery.com> <20110627222121.GD20865@ponder.secretlab.ca>
- <BANLkTikt08CDJiKNxGF2mKmOhyxHfv21_g@mail.gmail.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 28 Jun 2011 16:51:01 -0600
-X-Google-Sender-Auth: g4lUJkP6-I0gKbv_7cS3Q6TJpuw
-Message-ID: <BANLkTim+CemMz7A3J94e1UywCNd0r1SABQ@mail.gmail.com>
-Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
-To: Ohad Ben-Cohen <ohad@wizery.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Rusty Russell <rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 4:46 PM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
-> Hi Grant,
->
-> On Tue, Jun 28, 2011 at 1:21 AM, Grant Likely <grant.likely@secretlab.ca> wrote:
->>> +static int rpmsg_remove_device(struct device *dev, void *data)
->>> +{
->>> +     struct rpmsg_channel *rpdev = to_rpmsg_channel(dev);
->>> +
->>> +     device_unregister(dev);
->>> +
->>> +     kfree(rpdev);
->>
->> put_device() I think.
->
-> Don't think so, we get the device handle from device_for_each_child
-> here, which doesn't call get_device (unlike device_find_child).
+On Tue, 28 Jun 2011, Alan Cox wrote:
 
-It's not the device_for_each_child() that you're 'putting' back from
-here.  Its the original kref initialization when the device was
-created.  Once a device is initialized, it must never be directly
-kfree()'d.
+> > I am still wondering how come that this is causing trouble to anyone 
+> > though -- is anyone really developing real code on top of linux-next 
+> > (which should be there to cross-check merge problems between subsystems 
+> > and test functionality) instead of particular subsystem tree?
+> 
+> I run -next on a regular basis. I'm actually doing a lot of Linux mid
+> development on it because I need bits going via various trees from x86 to
+> staging to input together.
 
-g.
+Yes, cross-tree development is definitely a mode in which I can imagine 
+linux-next could be used as a base for actual code development (and 
+probably the only one which is justifiable).
+
+> I'm not btw saying your approach is wrong - in fact I imagine its the 
+> only way to make it managable for some things but in the gma500 case at 
+> least and I suspect much of staging it tends to cause merge problems. It 
+> would be helpful if you route any gma500 bits via me because of the 
+> amount of change in that subtree.
+
+Yeah, thanks.
+
+As said already -- normally I don't accept staging bits at all (for a 
+reason), that was a mistake. Sorry for that.
+
+On Tue, 28 Jun 2011, Alan Cox wrote:
+
+> > I can either drop the gma500 bits I have queued now (and stop applying 
+> > anything touching it, hard rule), or you rebasing on top of Greg's staging 
+> > tree instead of linux-next (and I sorting out the merge conflict later).
+> 
+> If you can drop the gma500 bits and send them my way I'll merge them via
+> the gma500 pile.
+
+Sure. I have already pushed out a tree with those reverted and will be 
+sending you the patches separately in a second.
+
+-- 
+Jiri Kosina
+SUSE Labs
