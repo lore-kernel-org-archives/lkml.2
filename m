@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760159Ab1F1R3p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 13:29:45 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:16120 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758338Ab1F1R2E (ORCPT
+	id S1759943Ab1F1RZh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 13:25:37 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35381 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932100Ab1F1RWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 13:28:04 -0400
-X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 13:28:04 EDT
-Message-ID: <4E0A0D34.2070507@hp.com>
-Date: Tue, 28 Jun 2011 10:19:48 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Shirley Ma <mashirle@us.ibm.com>
-CC: David Miller <davem@davemloft.net>, mst@redhat.com, eric.dumazet@gmail.com,
-        avi@redhat.com, arnd@arndb.de, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V7 2/4 net-next] skbuff: Add userspace zero-copy	buffers
- in skb
-References: <1306610588.5180.87.camel@localhost.localdomain>	<1309189510.21764.1.camel@localhost.localdomain>	<20110627.155426.51839633424542723.davem@davemloft.net> <1309279892.3559.6.camel@localhost.localdomain>
-In-Reply-To: <1309279892.3559.6.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Tue, 28 Jun 2011 13:22:10 -0400
+X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=zgHg_0SvolMA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=GbAfmPTXV3RS_HMMXYkA:9 a=qhbCNLylPjER_c_1xJoA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 2/2] mm: Document handle_mm_fault()
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Gleb Natapov <gleb@redhat.com>,
+        Hugh Dickins <hughd@google.com>, Rik van Riel <riel@redhat.com>,
+        Michel Lespinasse <walken@google.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+In-Reply-To: <BANLkTikgxKNx1eyR1m6NpVA5Ykfduzq-Mw@mail.gmail.com>
+References: <20110628164750.281686775@goodmis.org>
+	 <20110628165303.010143380@goodmis.org>
+	 <BANLkTikgxKNx1eyR1m6NpVA5Ykfduzq-Mw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 28 Jun 2011 13:22:09 -0400
+Message-ID: <1309281729.26417.14.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2011 09:51 AM, Shirley Ma wrote:
-> On Mon, 2011-06-27 at 15:54 -0700, David Miller wrote:
->> From: Shirley Ma<mashirle@us.ibm.com>
->> Date: Mon, 27 Jun 2011 08:45:10 -0700
->>
->>> To support skb zero-copy, a pointer is needed to add to skb share
->> info.
->>> Do you agree with this approach? If not, do you have any other
->>> suggestions?
->>
->> I really can't form an opinion unless I am shown the complete
->> implementation, what this give us in return, what the impact is, etc.
->
-> zero-copy skb buffers can save significant CPUs. Right now, I only
-> implements macvtap/vhost zero-copy between KVM guest and host. The
-> performance is as follow:
->
-> Single TCP_STREAM 120 secs test results 2.6.39-rc3 over ixgbe 10Gb NIC
-> results:
->
-> Message BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
-> 4K      7408.57         92.1%           22.6%           1229
-> 4K(Orig)4913.17         118.1%          84.1%           2086
->
-> 8K      9129.90         89.3%           23.3%           1141
-> 8K(Orig)7094.55         115.9%          84.7%           2157
->
-> 16K     9178.81         89.1%           23.3%           1139
-> 16K(Orig)8927.1         118.7%          83.4%           2262
->
-> 64K     9171.43         88.4%           24.9%           1253
-> 64K(Orig)9085.85        115.9%          82.4%           2229
->
-> You can see the overall CPU saved 50% w/i zero-copy.
+On Tue, 2011-06-28 at 10:02 -0700, Linus Torvalds wrote:
+> On Tue, Jun 28, 2011 at 9:47 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> > + * Note: if @flags has FAULT_FLAG_ALLOW_RETRY set then the mmap_sem
+> > + *       may be released if it failed to arquire the page_lock. If the
+> > + *       mmap_sem is released then it will return VM_FAULT_RETRY set.
+> > + *       This is to keep the time mmap_sem is held when the page_lock
+> > + *       is taken for IO.
+> 
+> So I know what that flag does, but I knew it without the comment.
+> 
+> WITH the comment, I'm just confused. "This is to keep the time
+> mmap_sem is held when the page_lock is taken for IO."
+> 
+> Sounds like a google translation from swahili. "keep the time" what?
 
-While this isn't the copy between netperf and the stack, at some point 
-you may want to enable netperf's "DIRTY" mode (./configure 
---enable-dirty) to cause it to start either dirtying buffers before 
-send, or reading from buffers after receive.  I cannot guarantee that 
-there hasn't been bitrot in that area of netperf though :)  Particularly 
-in a TCP_MAERTS test.  The "DIRTY" mode code will not do anything in a 
-TCP_SENDFILE test.
+"When people ask me what language is my mother tongue, I simply reply C"
 
-A simple sanity check of the effect of the changes on a TCP_RR test 
-would probably be goodness as well.
+Google translate from C -> english is worse than swahily -> english :p
 
-happy benchmarking,
+> 
+> Maybe "keep" -> "minimize"? Or just "This is to avoid holding mmap_sem
+> while waiting for IO"
 
-rick jones
-one of these days I'll have to find a good way to get accurate overall 
-CPU utilization from within a guest and teach netperf about it.
+OK, that sounds better. Thanks.
 
->
-> The impact is every skb allocation consumed one more pointer in skb
-> share info, and a pointer check in skb release when last reference is
-> gone.
->
-> For skb clone, skb expand private head and skb copy, it still keeps copy
-> the buffers to kernel, so we can avoid user application, like tcpdump to
-> hold the user-space buffers too long.
->
-> Thanks
-> Shirley
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+I'll go to cut a v2, but I'll wait a day or so for others to comment.
+
+-- Steve
+
 
