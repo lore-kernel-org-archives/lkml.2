@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757343Ab1F1LzA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 07:55:00 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:56709 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757402Ab1F1LxI convert rfc822-to-8bit (ORCPT
+	id S1757233Ab1F1L54 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 07:57:56 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37724 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754481Ab1F1L4E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 07:53:08 -0400
+	Tue, 28 Jun 2011 07:56:04 -0400
 MIME-Version: 1.0
-In-Reply-To: <BANLkTikpMdakfTU+RRsXQVnpO4-KGkOGJQ@mail.gmail.com>
-References: <1307695731-28018-1-git-send-email-linus.walleij@stericsson.com>
-	<BANLkTinxptCJRETreCpUoV-nU2K4fuFcmQ@mail.gmail.com>
-	<BANLkTimMSChGFUSnFWFHv3nNUca_Fyawaw@mail.gmail.com>
-	<20110627120256.GA19531@opensource.wolfsonmicro.com>
-	<BANLkTikpMdakfTU+RRsXQVnpO4-KGkOGJQ@mail.gmail.com>
-Date: Tue, 28 Jun 2011 13:53:07 +0200
-Message-ID: <BANLkTinWmdWgGD9ui+WVV7DyCzy73S5AkQ@mail.gmail.com>
-Subject: Re: [PATCH 0/2] RFC: gpio: driver-local pin configuration
-From: Stijn Devriendt <highguy@gmail.com>
-To: Linus Walleij <linus.walleij@linaro.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Lee Jones <lee.jones@linaro.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-        Kyungmin Park <kmpark@infradead.org>,
-        Kurt Van Dijck <kurt.van.dijck@eia.be>,
-        Ben Nizette <bn@niasdigital.com>,
-        Haojian Zhuang <haojian.zhuang@gmail.com>,
-        Rohit Vaswani <rvaswani@codeaurora.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        H Hartley Sweeten <hartleys@visionengravers.com>
+In-Reply-To: <1309259105.6701.210.camel@twins>
+References: <tip-963988262c3c8f4234f64a0dde59446a295e07bb@git.kernel.org>
+	<20110628105335.GA17199@erda.amd.com>
+	<1309259105.6701.210.camel@twins>
+Date: Tue, 28 Jun 2011 13:56:03 +0200
+Message-ID: <BANLkTimcxGWasWqgem=5EYDKGAM+dq26xQ@mail.gmail.com>
+Subject: Re: [tip:perf/core] perf: Ignore non-sampling overflows
+From: Francis Moreau <francis.moro@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Robert Richter <robert.richter@amd.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 2:37 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
-> On Mon, Jun 27, 2011 at 2:02 PM, Mark Brown
-> <broonie@opensource.wolfsonmicro.com> wrote:
->> On Mon, Jun 27, 2011 at 01:44:43PM +0200, Linus Walleij wrote:
->>
->>> Yes. To make the driver platform neutral, it needs to for example
->>> provide a callback in the platform data like (* set_pin_bias) or so,
->>> and then your platform has to implement this biasing.
->>
->>> In this specific case that kind of stuff would likely be preferable
->>> to have in the platform anyway, but I understand what you mean.
->>
->> How about device tree usage?  I guess there we'd end up doing it by
->> putting the configuration on the GPIO end of things rather than on the
->> GPIO user side?
+On Tue, Jun 28, 2011 at 1:05 PM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Tue, 2011-06-28 at 12:53 +0200, Robert Richter wrote:
+>> > --- a/kernel/perf_event.c
+>> > +++ b/kernel/perf_event.c
+>> > @@ -4240,6 +4240,13 @@ static int __perf_event_overflow(struct perf_event *event, int nmi,
+>> >     struct hw_perf_event *hwc = &event->hw;
+>> >     int ret = 0;
+>> >
+>> > +   /*
+>> > +    * Non-sampling counters might still use the PMI to fold short
+>> > +    * hardware counters, ignore those.
+>> > +    */
+>> > +   if (unlikely(!is_sampling_event(event)))
+>> > +           return 0;
+>> > +
 >
-> Sorry I can't quite understand that, please elaborate!
+>> do you remember the background of this change. This check silently
+>> drops data of non-sampling events. I want to use perf_event_overflow()
+>> to write to the buffer and want to modify the check, but don't see
+>> which 'accidentally' interrupts may occur that must be ignored.
 >
+> IIRC this is because we always program the interrupt bit, such that when
+> the counter overflows we can account and reprogram the thing. This is
+> needed because no hardware counter is in fact 64 bits wide. Therefore we
+> have to program the counter to its max width and properly account the
+> state and reprogram on overflow.
+>
+> Imagine a 32bit cycle counter (@1GHz), if we were not to program that as
+> taking interrupts and nobody would read that counter for about 4.2
+> seconds, we'd have overflowed and lost the actual count value for the
+> thing.
+>
+> So what we do is program is at 31bits (so that the msb can toggle and
+> trigger the interrupt), and on interrupt add to event->count, and reset
+> the hardware to start counting again.
+>
+> Now some arch/*/perf_event.c implementations unconditionally called
+> perf_event_overflow() from their IRQ handler, even for such non-sampling
+> counters.
 
-I have some code doing this as well (in a very limited fashion):
+Yes that's what I recall too.
 
-int of_request_gpio(..., int* remaining_flags)
-{
-  of_get_gpio_flags(of_dev, i, remaining_flags)
-  if (flags & bias_X) {
-     gpio_set_bias(gpio, ...)
-     flags &= ~bias_X
-  }
-  // interpret all generic flags here
-};
-
-So drivers need not worry about all gpio flags and special things.
-They just request the pin; what they receive is a fully configured
-pin (with the exception of unknown flags passed out via
-remaining_flags).
-
-Regards,
-Stijn
+-- 
+Francis
