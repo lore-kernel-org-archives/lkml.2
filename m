@@ -1,46 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760266Ab1F1Rbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 13:31:46 -0400
-Received: from jaguar.mail.utk.edu ([160.36.0.84]:47942 "EHLO
-	jaguar.mail.utk.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757123Ab1F1RbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 13:31:09 -0400
-Date: Tue, 28 Jun 2011 13:30:57 -0400 (EDT)
-From: Vince Weaver <vweaver1@eecs.utk.edu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@gmail.com>
-Subject: Re: perf: is PERF_COUNT_SW_CONTEXT_SWITCHES a kernel or user
- event?
-In-Reply-To: <20110627185933.GA3726@somewhere>
-Message-ID: <alpine.DEB.2.00.1106281326190.7766@cl320.eecs.utk.edu>
-References: <alpine.DEB.2.00.1106241658420.23095@cl320.eecs.utk.edu> <1309171403.6701.77.camel@twins> <20110627185933.GA3726@somewhere>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758874Ab1F1Rhz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 13:37:55 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:60482 "EHLO imr4.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759950Ab1F1Rgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 13:36:43 -0400
+Subject: Re: [PATCH 6/11] HWMON: DA9052 hwmon driver v1
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+Reply-To: guenter.roeck@ericsson.com
+To: "ashish.jangam@kpitcummins.com" <ashish.jangam@kpitcummins.com>
+CC: "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "dchen@diasemi.com" <dchen@diasemi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+In-Reply-To: <1309271069.376.236.camel@L-0532.kpit.com>
+References: <1309271069.376.236.camel@L-0532.kpit.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Ericsson
+Date: Tue, 28 Jun 2011 10:35:54 -0700
+Message-ID: <1309282554.2612.7.camel@groeck-laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jun 2011, Frederic Weisbecker wrote:
+On Tue, 2011-06-28 at 10:24 -0400, ashishj3 wrote:
+> The DA9052 PMIC provides an Analogue to Digital Converter with 10 bits
+> resolution and 10 channels.
 > 
-> If you consider the strict meaning of exclude_user/exclude_kernel, they exclude
-> events that _happen_ in user/kernel space. And context switches happen in kernel
-> space.
+> This patch montiors the DA9052 PMIC's ADC channels mostly for battery parameters
+> like battery temperature, junction temperature, battery current etc.
+> 
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 
-I can see that it's somewhat arbitrary how context switches are 
-classified.
+[ ... ]
 
-I just want some assurances that now that it's moved to being
-a kernel event it stays that way.
+> +static ssize_t da9052_read_vddout(struct device *dev,
+> +                                  struct device_attribute *devattr, char *buf)
+> +{
+> +       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
+> +       int ret, vdd = -1;
+> +
+> +       mutex_lock(&hwmon->hwmon_lock);
+> +
+> +       ret = da9052_enable_vddout_channel(hwmon->da9052);
+> +       if (ret < 0)
+> +               goto hwmon_err;
+> +
+> +       ret = da9052_reg_read(hwmon->da9052, DA9052_VDD_RES_REG);
+> +       if (ret < 0)
+> +               pr_err("failed to read VDD_RES_REG\n");
+> +       else
+> +               vdd = ret;
+> +
+> +       ret = da9052_disable_vddout_channel(hwmon->da9052);
+> +       if (ret < 0)
+> +               goto hwmon_err;
+> +
+> +       if (vdd >= 0) {
+> +               mutex_unlock(&hwmon->hwmon_lock);
+> +               return sprintf(buf, "%d\n", vdd);
+> +       }
+> +
+> +hwmon_err:
+> +       mutex_unlock(&hwmon->hwmon_lock);
+> +       return ret;
+> +}
 
-As it is, people upgrading from 2.6.32 to 2.6.34 and using the "cs:u"
-event will suddently start getting "0" results.  
+This function still produces a bad result if the call to
+da9052_reg_read() fails and the call to da9052_disable_vddout_channel()
+doesn't. 
 
-Possibly perf_events should just ignore exclude_kernel/exclude_user on an 
-event like this where there is no real distinction.
+I would suggest to replace pr_err() with "goto hwmon_err". If you do
+that, you don't need to initialize vdd, you don't need the else case for
+its assignment, and you don't need "if (vdd >= 0)" either.
 
-Vince
-vweaver1@eecs.utk.edu
+Guenter
+
+
