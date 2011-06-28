@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab1F1KA6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 06:00:58 -0400
-Received: from nm19.bullet.mail.ird.yahoo.com ([77.238.189.76]:46776 "HELO
-	nm19.bullet.mail.ird.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756261Ab1F1J7y convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 05:59:54 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 932138.43791.bm@omp1027.mail.ird.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=X-YMail-OSG:Received:X-Mailer:Message-ID:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=Ma3wvAHVJIa8pl/0jPr+zkQPFkeukUcpfKhf4hPh1EjkBwHm7Sp/4EVgMkrJlH6XEhlBcwKUzXMhR/O9bzgHdHo2luzhQsx2YwwRSjUYXlvPRl4boaDrNqVwAGNLUlDWqU5YGqIY+TLxHUgj2iwAzhzp+nx2AcX7OHygIssC9vc=;
-X-YMail-OSG: 5mekTXUVM1mwWTgfWYWYxCrbA2dotA8YMQi0EhnLnkZDNoz
- GQeg6rDE0pb9LMrXx05URxhWkttTzvjVdSRepIfnHuHHO21VnRjO1Gh6CjJK
- _htpzkABLM2DBExMbbYlXo0zzoQkNFYp4i2k_zXSU_nXwTyUw.tAf5_GU0GE
- rj60RtAVdxopVu28EEQs9bIj0T4wX_Wr0VqMsiXciNpybR0CGKPdgmGSRYfW
- jfIZAU22Ol0clumo5MP2I1hut3VN0_MtJw9FRgxkPTRBJIPuz3EUXJ3X.2kw
- F8RevLI2T2Sgc12q0C4nvJzLGP6dUhj94oqHClV32KMdqDdUsUAA2dKXH7H7
- zIw73OTKeP1cQQZZGDu52VJdkjrE-
-X-Mailer: YahooMailClassic/14.0.3 YahooMailWebService/0.8.112.307740
-Message-ID: <1309255192.86313.YahooMailClassic@web29002.mail.ird.yahoo.com>
-Date: Tue, 28 Jun 2011 10:59:52 +0100 (BST)
-From: Paul Parsons <lost.distance@yahoo.com>
-Subject: Re: [PATCH] w1: ds1wm: add a reset recovery parameter
-To: linux-kernel@vger.kernel.org,
-        =?iso-8859-1?Q?Jean-Fran=E7ois_Dagenais?= <dagenaisj@sonatest.com>
-Cc: johnpol@2ka.mipt.ru
-In-Reply-To: <4D9136CA-90AC-4DBB-9AD1-44062FFCF9D4@sonatest.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	id S1756687Ab1F1KF7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 06:05:59 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:38150 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755808Ab1F1KC7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 06:02:59 -0400
+Subject: Re: [patch 15/16] sched: return unused runtime on voluntary sleep
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+In-Reply-To: <CAPM31RLtNnJqX00vTQ6PbUcGRhNufbvb1OdGkXs4i2+=4=A5eA@mail.gmail.com>
+References: <20110621071649.862846205@google.com>
+	 <20110621071701.165027089@google.com> <1308842778.1022.136.camel@twins>
+	 <CAPM31RLtNnJqX00vTQ6PbUcGRhNufbvb1OdGkXs4i2+=4=A5eA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Tue, 28 Jun 2011 12:01:50 +0200
+Message-ID: <1309255310.6701.186.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Jean-François; that patch set has resolved the problem.
+On Mon, 2011-06-27 at 18:42 -0700, Paul Turner wrote:
 
-Tested-by: Paul Parsons <lost.distance@yahoo.com>
+> - The aesthetics of releasing rq->lock in the put path.  Quick
+> inspection suggests it should actually be safe to do at that point,
+> and we do similar for idle_balance().
+> 
+> Given consideration the above two factors are not requirements, this
+> could be moved out of a timer and into the put_path directly (with the
+> fact that we drop rq->lock strongly commented).  I have no strong
+> preference between either choice.
 
---- On Mon, 27/6/11, Jean-François Dagenais <dagenaisj@sonatest.com> wrote:
+Argh, ok I see, distribute_cfs_runtime() wants that. Dropping rq->lock
+is very fragile esp from the put path, you can only do that _before_ the
+put path updates rq->curr etc.. So I'd rather you didn't, just keep the
+timer crap and add some comments there.
 
-> From: Jean-François Dagenais <dagenaisj@sonatest.com>
-> Subject: [PATCH] w1: ds1wm: add a reset recovery parameter
-> To: linux-kernel@vger.kernel.org
-> Cc: johnpol@2ka.mipt.ru, "Paul Parsons" <lost.distance@yahoo.com>
-> Date: Monday, 27 June, 2011, 14:17
-> This follows the regression on 3.0
-> reported by Paul Parsons regarding
-> the removal of the msleep(1) in the ds1wm_reset() function.
-> This
-> sleep should not be required on normal circuitry provided
-> the
-> pull-ups on the bus are correctly adapted to the slaves.
-> Unfortunately, this is not always the case. The sleep is
-> restored
-> but as a parameter to the probe function in the pdata.
-> ---
->  drivers/mfd/asic3.c        | 
->   1 +
->  drivers/mfd/htc-pasic3.c   |    1
-> +
->  drivers/w1/masters/ds1wm.c |    5 +++++
->  include/linux/mfd/ds1wm.h  |    7 +++++++
->  4 files changed, 14 insertions(+), 0 deletions(-)
+And we need that distribute_cfs_runtime() muck because that's what
+unthrottles rqs when more runtime is available.. bah.
+
 
