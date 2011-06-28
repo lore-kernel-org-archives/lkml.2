@@ -1,147 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758839Ab1F1PhV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 11:37:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26392 "EHLO mx1.redhat.com"
+	id S1757568Ab1F1Pht (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 11:37:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22111 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758219Ab1F1PfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 11:35:12 -0400
+	id S1758672Ab1F1PfN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 11:35:13 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
         linux-fsdevel@vger.kernel.org
 Cc: andrea@betterlinux.com, vgoyal@redhat.com
-Subject: [PATCH 0/8][V2] blk-throttle: Throttle buffered WRITEs in balance_dirty_pages()
-Date: Tue, 28 Jun 2011 11:35:01 -0400
-Message-Id: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 1/8] blk-throttle: convert wait routines to return jiffies to wait
+Date: Tue, 28 Jun 2011 11:35:02 -0400
+Message-Id: <1309275309-12889-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
+References: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Currently we return jiffies to wait for in a function parameter.
+A cleaner way would be to return it as return value. Value 0 would mean
+that there is no need to wait and anything > 0 means number of jiffies
+to wait before bio can be dispatched.
 
-This is V2 of the patches. First version is posted here.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/blk-throttle.c |   72 +++++++++++++++++++++-----------------------------
+ 1 files changed, 30 insertions(+), 42 deletions(-)
 
-https://lkml.org/lkml/2011/6/3/375
-
-There are no changes from first version except that I have rebased it to
-for-3.1/core branch of Jens's block tree.
-
-I have been trying to find ways to solve two problems with block IO controller
-cgroups.
-
-- Current throttling logic in IO controller does not throttle buffered WRITES.
-  Well it does throttle all the WRITEs at device and by that time buffered
-  WRITE have lost the submitter's context and most of the IO comes in flusher
-  thread's context at device. Hence currently buffered write throttling is
-  not supported.
-
-- All WRITEs are throttled at device level and this can easily lead to
-  filesystem serialization.
-
-  One simple example is that if a process writes some pages to cache and
-  then does fsync(), and process gets throttled then it locks up the
-  filesystem. With ext4, I noticed that even a simple "ls" does not make
-  progress. The reason boils down to the fact that filesystems are not
-  aware of cgroups and one of the things which get serialized is journalling
-  in ordered mode.
-
-  So even if we do something to carry submitter's cgroup information
-  to device and do throttling there, it will lead to serialization of
-  filesystems and is not a good idea.
-
-So how to go about fixing it. There seem to be two options.
-
-- Throttling should still be done at device level. Make filesystems aware
-  of cgroups so that multiple transactions can make progress in parallel
-  (per cgroup) and there are no shared resources across cgroups in
-  filesystems which can lead to serialization.
-
-- Throttle WRITEs while they are entering the cache and not after that.
-  Something like balance_dirty_pages(). Direct IO is still throttled
-  at device level. That way, we can avoid these journalling related
-  serialization issues w.r.t trottling.
-
-  But the big issue with this approach is that we control the IO rate
-  entering into the cache and not IO rate at the device. That way it
-  can happen that flusher later submits lots of WRITEs to device and
-  we will see a periodic IO spike on end node.
-
-  So this mechanism helps a bit but is not the complete solution. It
-  can primarily help those folks which have the system resources and
-  plenty of IO bandwidth available but they don't want to give it to
-  customer because it is not a premium customer etc.
-
-Option 1 seem to be really hard to fix. Filesystems have not been written
-keeping cgroups in mind. So I am really skeptical that I can convince file
-system designers to make fundamental changes in filesystems and journalling
-code to make them cgroup aware.
-
-Hence with this patch series I have implemented option 2. Option 2 is not
-the best solution but atleast it gives us some control then not having any
-control on buffered writes. Andrea Righi did similar patches in the past
-here.
-
-https://lkml.org/lkml/2011/2/28/115
-
-This patch series had issues w.r.t to interaction between bio and task
-throttling, so I redid it.
-
-Design
-------
-
-IO controller already has the capability to keep track of IO rates of
-a group and enqueue the bio in internal queues if group exceeds the
-rate and dispatch these bios later.
-
-This patch series also introduce the capability to throttle a dirtying
-task in balance_dirty_pages_ratelimited_nr(). Now no WRITES except
-direct WRITES will be throttled at device level. If a dirtying task
-exceeds its configured IO rate, it is put on a group wait queue and
-woken up when it can dirty more pages.
-
-No new interface has been introduced and both direct IO as well as buffered
-IO make use of common IO rate limit.
-
-How To
-=====
-- Create a cgroup and limit it to 1MB/s for writes.
-  echo "8:16 1024000" > /cgroup/blk/test1/blkio.throttle.write_bps_device
-
-- Launch dd thread in the cgroup
-  dd if=/dev/zero of=zerofile bs=4K count=1K
-
- 1024+0 records in
- 1024+0 records out
- 4194304 bytes (4.2 MB) copied, 4.00428 s, 1.0 MB/s
-
-Any feedback is welcome.
-
-Thanks
-Vivek
-
-Vivek Goyal (8):
-  blk-throttle: convert wait routines to return jiffies to wait
-  blk-throttle: do not enforce first queued bio check in
-    tg_wait_dispatch
-  blk-throttle: use io size and direction as parameters to wait
-    routines
-  blk-throttle: specify number of ios during dispatch update
-  blk-throttle: get rid of extend slice trace message
-  blk-throttle: core logic to throttle task while dirtying pages
-  blk-throttle: do not throttle writes at device level except direct io
-  blk-throttle: enable throttling of task while dirtying pages
-
- block/blk-cgroup.c        |    6 +-
- block/blk-cgroup.h        |    2 +-
- block/blk-throttle.c      |  506 +++++++++++++++++++++++++++++++++++---------
- block/cfq-iosched.c       |    2 +-
- block/cfq.h               |    6 +-
- fs/direct-io.c            |    1 +
- include/linux/blk_types.h |    2 +
- include/linux/blkdev.h    |    5 +
- mm/page-writeback.c       |    3 +
- 9 files changed, 421 insertions(+), 112 deletions(-)
-
+diff --git a/block/blk-throttle.c b/block/blk-throttle.c
+index f6a7941..d76717a 100644
+--- a/block/blk-throttle.c
++++ b/block/blk-throttle.c
+@@ -590,8 +590,8 @@ throtl_trim_slice(struct throtl_data *td, struct throtl_grp *tg, bool rw)
+ 			tg->slice_start[rw], tg->slice_end[rw], jiffies);
+ }
+ 
+-static bool tg_with_in_iops_limit(struct throtl_data *td, struct throtl_grp *tg,
+-		struct bio *bio, unsigned long *wait)
++static unsigned long tg_wait_iops_limit(struct throtl_data *td,
++			struct throtl_grp *tg, struct bio *bio)
+ {
+ 	bool rw = bio_data_dir(bio);
+ 	unsigned int io_allowed;
+@@ -621,11 +621,8 @@ static bool tg_with_in_iops_limit(struct throtl_data *td, struct throtl_grp *tg,
+ 	else
+ 		io_allowed = tmp;
+ 
+-	if (tg->io_disp[rw] + 1 <= io_allowed) {
+-		if (wait)
+-			*wait = 0;
+-		return 1;
+-	}
++	if (tg->io_disp[rw] + 1 <= io_allowed)
++		return 0;
+ 
+ 	/* Calc approx time to dispatch */
+ 	jiffy_wait = ((tg->io_disp[rw] + 1) * HZ)/tg->iops[rw] + 1;
+@@ -635,13 +632,15 @@ static bool tg_with_in_iops_limit(struct throtl_data *td, struct throtl_grp *tg,
+ 	else
+ 		jiffy_wait = 1;
+ 
+-	if (wait)
+-		*wait = jiffy_wait;
+-	return 0;
++	return jiffy_wait;
+ }
+ 
+-static bool tg_with_in_bps_limit(struct throtl_data *td, struct throtl_grp *tg,
+-		struct bio *bio, unsigned long *wait)
++/*
++ * Returns number of jiffies to wait to before IO can be dispatched according
++ * to bps limit.
++ */
++static unsigned long tg_wait_bps_limit(struct throtl_data *td,
++			struct throtl_grp *tg, struct bio *bio)
+ {
+ 	bool rw = bio_data_dir(bio);
+ 	u64 bytes_allowed, extra_bytes, tmp;
+@@ -659,11 +658,8 @@ static bool tg_with_in_bps_limit(struct throtl_data *td, struct throtl_grp *tg,
+ 	do_div(tmp, HZ);
+ 	bytes_allowed = tmp;
+ 
+-	if (tg->bytes_disp[rw] + bio->bi_size <= bytes_allowed) {
+-		if (wait)
+-			*wait = 0;
+-		return 1;
+-	}
++	if (tg->bytes_disp[rw] + bio->bi_size <= bytes_allowed)
++		return 0;
+ 
+ 	/* Calc approx time to dispatch */
+ 	extra_bytes = tg->bytes_disp[rw] + bio->bi_size - bytes_allowed;
+@@ -677,9 +673,8 @@ static bool tg_with_in_bps_limit(struct throtl_data *td, struct throtl_grp *tg,
+ 	 * up we did. Add that time also.
+ 	 */
+ 	jiffy_wait = jiffy_wait + (jiffy_elapsed_rnd - jiffy_elapsed);
+-	if (wait)
+-		*wait = jiffy_wait;
+-	return 0;
++
++	return jiffy_wait;
+ }
+ 
+ static bool tg_no_rule_group(struct throtl_grp *tg, bool rw) {
+@@ -691,9 +686,12 @@ static bool tg_no_rule_group(struct throtl_grp *tg, bool rw) {
+ /*
+  * Returns whether one can dispatch a bio or not. Also returns approx number
+  * of jiffies to wait before this bio is with-in IO rate and can be dispatched
++ *
++ * Retruns the number of jiffies one needs to wait before IO can be dispatched.
++ * 0 means, IO can be dispatched now.
+  */
+-static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+-				struct bio *bio, unsigned long *wait)
++static unsigned long
++tg_wait_dispatch(struct throtl_data *td, struct throtl_grp *tg, struct bio *bio)
+ {
+ 	bool rw = bio_data_dir(bio);
+ 	unsigned long bps_wait = 0, iops_wait = 0, max_wait = 0;
+@@ -707,11 +705,8 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+ 	BUG_ON(tg->nr_queued[rw] && bio != bio_list_peek(&tg->bio_lists[rw]));
+ 
+ 	/* If tg->bps = -1, then BW is unlimited */
+-	if (tg->bps[rw] == -1 && tg->iops[rw] == -1) {
+-		if (wait)
+-			*wait = 0;
+-		return 1;
+-	}
++	if (tg->bps[rw] == -1 && tg->iops[rw] == -1)
++		return 0;
+ 
+ 	/*
+ 	 * If previous slice expired, start a new one otherwise renew/extend
+@@ -725,22 +720,15 @@ static bool tg_may_dispatch(struct throtl_data *td, struct throtl_grp *tg,
+ 			throtl_extend_slice(td, tg, rw, jiffies + throtl_slice);
+ 	}
+ 
+-	if (tg_with_in_bps_limit(td, tg, bio, &bps_wait)
+-	    && tg_with_in_iops_limit(td, tg, bio, &iops_wait)) {
+-		if (wait)
+-			*wait = 0;
+-		return 1;
+-	}
++	bps_wait = tg_wait_bps_limit(td, tg, bio);
++	iops_wait = tg_wait_iops_limit(td, tg, bio);
+ 
+ 	max_wait = max(bps_wait, iops_wait);
+ 
+-	if (wait)
+-		*wait = max_wait;
+-
+ 	if (time_before(tg->slice_end[rw], jiffies + max_wait))
+ 		throtl_extend_slice(td, tg, rw, jiffies + max_wait);
+ 
+-	return 0;
++	return max_wait;
+ }
+ 
+ static void throtl_charge_bio(struct throtl_grp *tg, struct bio *bio)
+@@ -774,10 +762,10 @@ static void tg_update_disptime(struct throtl_data *td, struct throtl_grp *tg)
+ 	struct bio *bio;
+ 
+ 	if ((bio = bio_list_peek(&tg->bio_lists[READ])))
+-		tg_may_dispatch(td, tg, bio, &read_wait);
++		read_wait = tg_wait_dispatch(td, tg, bio);
+ 
+ 	if ((bio = bio_list_peek(&tg->bio_lists[WRITE])))
+-		tg_may_dispatch(td, tg, bio, &write_wait);
++		write_wait = tg_wait_dispatch(td, tg, bio);
+ 
+ 	min_wait = min(read_wait, write_wait);
+ 	disptime = jiffies + min_wait;
+@@ -819,7 +807,7 @@ static int throtl_dispatch_tg(struct throtl_data *td, struct throtl_grp *tg,
+ 	/* Try to dispatch 75% READS and 25% WRITES */
+ 
+ 	while ((bio = bio_list_peek(&tg->bio_lists[READ]))
+-		&& tg_may_dispatch(td, tg, bio, NULL)) {
++		&& !tg_wait_dispatch(td, tg, bio)) {
+ 
+ 		tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
+ 		nr_reads++;
+@@ -829,7 +817,7 @@ static int throtl_dispatch_tg(struct throtl_data *td, struct throtl_grp *tg,
+ 	}
+ 
+ 	while ((bio = bio_list_peek(&tg->bio_lists[WRITE]))
+-		&& tg_may_dispatch(td, tg, bio, NULL)) {
++		&& !tg_wait_dispatch(td, tg, bio)) {
+ 
+ 		tg_dispatch_one_bio(td, tg, bio_data_dir(bio), bl);
+ 		nr_writes++;
+@@ -1185,7 +1173,7 @@ int blk_throtl_bio(struct request_queue *q, struct bio **biop)
+ 	}
+ 
+ 	/* Bio is with-in rate limit of group */
+-	if (tg_may_dispatch(td, tg, bio, NULL)) {
++	if (!tg_wait_dispatch(td, tg, bio)) {
+ 		throtl_charge_bio(tg, bio);
+ 
+ 		/*
 -- 
 1.7.4.4
 
