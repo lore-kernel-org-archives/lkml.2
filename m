@@ -1,85 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab1F1Rhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 13:37:55 -0400
-Received: from imr4.ericy.com ([198.24.6.8]:60482 "EHLO imr4.ericy.com"
+	id S1760500Ab1F1RqS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 13:46:18 -0400
+Received: from lo.gmane.org ([80.91.229.12]:47305 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759950Ab1F1Rgn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 13:36:43 -0400
-Subject: Re: [PATCH 6/11] HWMON: DA9052 hwmon driver v1
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-Reply-To: guenter.roeck@ericsson.com
-To: "ashish.jangam@kpitcummins.com" <ashish.jangam@kpitcummins.com>
-CC: "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "dchen@diasemi.com" <dchen@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-In-Reply-To: <1309271069.376.236.camel@L-0532.kpit.com>
-References: <1309271069.376.236.camel@L-0532.kpit.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Ericsson
-Date: Tue, 28 Jun 2011 10:35:54 -0700
-Message-ID: <1309282554.2612.7.camel@groeck-laptop>
-MIME-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1760424Ab1F1RpI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 13:45:08 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Aditya Kali <adityakali@google.com>
+Subject: Re: [RFC PATCH 4/4] cgroups: Add an rlimit subsystem
+Date: Tue, 28 Jun 2011 17:37:17 +0000 (UTC)
+Message-ID: <loom.20110628T193035-346@post.gmane.org>
+References: <1308527474-20704-1-git-send-email-fweisbec@gmail.com> <1308527474-20704-5-git-send-email-fweisbec@gmail.com> <BANLkTin_MA+Yc7=q=cK5s2CbCfu_xmqTAQ@mail.gmail.com> <20110623134759.GC8058@somewhere.redhat.com> <BANLkTimiQBkDZ=L9UR-yGMATw9o-3JVtMEaMP36zey=_9pxL9Q@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 216.239.45.4 (Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/534.30 (KHTML, like Gecko) Chrome/12.0.742.77 Safari/534.30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-28 at 10:24 -0400, ashishj3 wrote:
-> The DA9052 PMIC provides an Analogue to Digital Converter with 10 bits
-> resolution and 10 channels.
+Paul Menage <menage <at> google.com> writes:
+> What we need is a res_counter_move_charge(A, B, amount) function which will:
 > 
-> This patch montiors the DA9052 PMIC's ADC channels mostly for battery parameters
-> like battery temperature, junction temperature, battery current etc.
+> - locate C, the nearest common ancestor of A and B
+> - lock up the chain from B up to but not including C, adding the new charge
+> - unlock up the chain from B to C
+> - uncharge along the chain from A up to but not including C (not sure
+> how much locking is needed there since there's no need for roll back).
 > 
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> Paul
+> 
 
-[ ... ]
+Another alternative is to use the 'attach' callback in struct cgroup_subsys which
+gets both the old cgroup and the new cgroup as parameters and do
+rlim_remove_proc(old_cgrp) and res_counter_charge(new_cgrp) in this same
+function under the protection of a spinlock.
+It would be good to add a return value to the 'attach' callback too.
 
-> +static ssize_t da9052_read_vddout(struct device *dev,
-> +                                  struct device_attribute *devattr, char *buf)
-> +{
-> +       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-> +       int ret, vdd = -1;
-> +
-> +       mutex_lock(&hwmon->hwmon_lock);
-> +
-> +       ret = da9052_enable_vddout_channel(hwmon->da9052);
-> +       if (ret < 0)
-> +               goto hwmon_err;
-> +
-> +       ret = da9052_reg_read(hwmon->da9052, DA9052_VDD_RES_REG);
-> +       if (ret < 0)
-> +               pr_err("failed to read VDD_RES_REG\n");
-> +       else
-> +               vdd = ret;
-> +
-> +       ret = da9052_disable_vddout_channel(hwmon->da9052);
-> +       if (ret < 0)
-> +               goto hwmon_err;
-> +
-> +       if (vdd >= 0) {
-> +               mutex_unlock(&hwmon->hwmon_lock);
-> +               return sprintf(buf, "%d\n", vdd);
-> +       }
-> +
-> +hwmon_err:
-> +       mutex_unlock(&hwmon->hwmon_lock);
-> +       return ret;
-> +}
-
-This function still produces a bad result if the call to
-da9052_reg_read() fails and the call to da9052_disable_vddout_channel()
-doesn't. 
-
-I would suggest to replace pr_err() with "goto hwmon_err". If you do
-that, you don't need to initialize vdd, you don't need the else case for
-its assignment, and you don't need "if (vdd >= 0)" either.
-
-Guenter
 
 
