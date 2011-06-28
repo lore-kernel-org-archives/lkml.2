@@ -1,52 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab1F1XY3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 19:24:29 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:9386 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab1F1XYX (ORCPT
+	id S1752627Ab1F1XYs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 19:24:48 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:56818 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab1F1XYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 19:24:23 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Tue, 28 Jun 2011 19:24:22 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
+	Tue, 28 Jun 2011 19:24:43 -0400
+Date: Wed, 29 Jun 2011 00:24:29 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Rob Herring <robherring2@gmail.com>
 Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Michal Simek <monstr@monstr.eu>, Rob Herring <rob.herring@calxeda.com>
-Subject: Re: [RFC PATCH 0/4] ARM: make mach/hardware.h optional
-In-reply-to: <1309301859-17651-1-git-send-email-robherring2@gmail.com>
-Message-id: <alpine.LFD.2.00.1106281919310.2142@xanadu.home>
-References: <1309301859-17651-1-git-send-email-robherring2@gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+        Michal Simek <monstr@monstr.eu>, Rob Herring <rob.herring@calxeda.com>,
+        nico@fluxnic.net
+Subject: Re: [PATCH 2/4] ARM: remove unnecessary mach/hardware.h includes
+Message-ID: <20110628232429.GI21898@n2100.arm.linux.org.uk>
+References: <1309301859-17651-1-git-send-email-robherring2@gmail.com> <1309301859-17651-3-git-send-email-robherring2@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309301859-17651-3-git-send-email-robherring2@gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jun 2011, Rob Herring wrote:
-
+On Tue, Jun 28, 2011 at 05:57:37PM -0500, Rob Herring wrote:
 > From: Rob Herring <rob.herring@calxeda.com>
 > 
-> Currently, all ARM platforms must have a mach/hardware.h include. This is
-> because it is ultimately included by linux/pci.h which is included in many
-> places even for !CONFIG_PCI.
-> 
-> This could be fixed simply with an ifdef around the include of mach/hardware.h
-> in asm/pci.h. However, in the interest of fixing this for single kernel
-> binary builds, this series removes the include of mach/hardware.h outside of
-> mach-* and plat-*. What's used from hardware.h is a couple of PCI defines. 
-> Converting them to variables allows each platform to set the values as needed.
+> Remove some includes of mach/hardware.h which are not needed. hardware.h will
+> be removed completely for tegra and cns3xxx in follow on patch.
 
-Excellent !  This is certainly moving things in the right direction.
+At least this one is incorrect:
 
-For the 4 patches, you can add:
+arch/arm/mach-rpc/include/mach/hardware.h:#define IO_EC_MEMC_BASE              0x80000000
+arch/arm/kernel/ecard.c:                    address = IO_EC_MEMC_BASE + (slot << 12);
 
-Acked-by: Nicolas Pitre <nicolas.pitre@linaro.org>
+That's just one of the defines that ecard.c uses from mach/hardare.h.
 
-Obviously for patch 1/4 it would be nice to have the opinion of the PCI 
-maintainer as well.
-
-
-Nicolas
