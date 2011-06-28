@@ -1,79 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759080Ab1F1Pmx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 11:42:53 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:40638 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757940Ab1F1Pjz (ORCPT
+	id S1759098Ab1F1PnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 11:43:00 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:42732 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932112Ab1F1Pks (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 11:39:55 -0400
-X-Sasl-enc: FNL0TBc7krG5xk/8GAnpXrJEmmxJRvUS+4v24iaUJRkh 1309275594
-Date: Tue, 28 Jun 2011 08:39:11 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] driver core fixes for 3.0
-Message-ID: <20110628153911.GD32710@kroah.com>
+	Tue, 28 Jun 2011 11:40:48 -0400
+Date: Tue, 28 Jun 2011 19:40:44 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@redhat.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] perf, x86: Add hw_watchdog_set_attr() in a sake of
+ nmi-watchdog on P4
+Message-ID: <20110628154044.GF1159@sun>
+References: <20110623124918.GC13050@sun>
+ <20110627190358.GQ3765@redhat.com>
+ <20110627193201.GB1159@sun>
+ <CABPqkBTE_6ma70ZQbbz1NnznCGB7YO74kmL+=fP66qFVvVFLBw@mail.gmail.com>
+ <20110628152827.GE1159@sun>
+ <CABPqkBQSWFa0eSTdx+DeOERaT2wA+2tYbUPereztL7FznF4j7g@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <CABPqkBQSWFa0eSTdx+DeOERaT2wA+2tYbUPereztL7FznF4j7g@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's some driver core, and other driver-core related fixes for your
-3.0 git tree.
+On Tue, Jun 28, 2011 at 05:32:27PM +0200, Stephane Eranian wrote:
+> On Tue, Jun 28, 2011 at 5:28 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> > On Tue, Jun 28, 2011 at 05:24:36PM +0200, Stephane Eranian wrote:
+> > ...
+> >> >
+> >> > Yeah, not the _best_ place. Not sure too where to put it, patches are welcome ;)
+> >> >
+> >> No matter what, this file has to remain in a file that's common to all arch.
+> >
+> > well, hard to say, Stephane, nmi-watchdog is x86 specific as far as I know.
+> >
+> Sorry I was talking about the weak function() not the file.
+> 
 
-Just a few minor fixes for things that people have reported, the
-connector and platform.c ones being the biggest one that has hit people
-recently.
+Yes, I get it ;) I mean that this __weak function is always called from x86 site
+and outside of CONFIG_HARDLOCKUP_DETECTOR doesn't make much sense that is why I
+placed it there in first place. Though it look somehow... maybe "strange"
+I would say, that's why I agreed with Don it's not the best place.
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/ driver-core-linus
-
-All of these patches have been in the linux-next and mm trees for a
-while now.
-
-The patches will be sent as a follow-on to this message to lkml for
-people to see.
-
-thanks,
-
-greg k-h
-
-------------
-
- drivers/base/platform.c         |    2 +-
- drivers/connector/connector.c   |    1 +
- drivers/firmware/google/Kconfig |    1 +
- drivers/misc/pti.c              |   11 +++++++----
- drivers/misc/ti-st/st_core.c    |    2 +-
- drivers/misc/ti-st/st_kim.c     |    8 ++++++--
- include/linux/connector.h       |    2 +-
- 7 files changed, 18 insertions(+), 9 deletions(-)
-
----------------
-
-Andrew Morton (1):
-      drivers/base/platform.c: don't mark platform_device_register_resndata() as __init_or_module
-
-J Freyensee (3):
-      pti: double-free security PTI fix
-      pti: ENXIO error case memory leak PTI fix.
-      pti: PTI semantics fix in pti_tty_cleanup.
-
-K. Y. Srinivasan (2):
-      Connector: Set the CN_NETLINK_USERS correctly
-      Connector: Correctly set the error code in case of success when dispatching receive callbacks
-
-Randy Dunlap (1):
-      firmware: fix GOOGLE_SMI kconfig dependency warning
-
-Shahar Lev (1):
-      drivers:misc: ti-st: fix skipping of change remote baud
-
-Steven Rostedt (1):
-      st_kim: Handle case of no device found for ID 0
-
+	Cyrill
