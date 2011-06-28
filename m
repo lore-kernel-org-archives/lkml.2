@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752474Ab1F1V4r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 17:56:47 -0400
-Received: from mail.pripojeni.net ([178.22.112.14]:51069 "EHLO
+	id S1752555Ab1F1V4y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 17:56:54 -0400
+Received: from mail.pripojeni.net ([178.22.112.14]:51067 "EHLO
 	smtp.pripojeni.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752074Ab1F1V4l (ORCPT
+	with ESMTP id S1752168Ab1F1V4l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 28 Jun 2011 17:56:41 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: akpm@linux-foundation.org
-Cc: oleg@redhat.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>, Al Viro <viro@zeniv.linux.org.uk>,
-        Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH -resend v2 2/3] coredump: escape / in hostname and comm
-Date: Tue, 28 Jun 2011 23:56:24 +0200
-Message-Id: <1309298185-31434-2-git-send-email-jslaby@suse.cz>
+Cc: oleg@redhat.com, linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: [PATCH -resend v2 3/3] do_coredump: fix the "ispipe" error check
+Date: Tue, 28 Jun 2011 23:56:25 +0200
+Message-Id: <1309298185-31434-3-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1309298185-31434-1-git-send-email-jslaby@suse.cz>
 References: <1309298185-31434-1-git-send-email-jslaby@suse.cz>
@@ -22,94 +20,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change every occurence of / in comm and hostname to !. If the process
-changes its name to contain /, the core is not dumped (if the
-directory tree doesn't exist like that). The same with hostname being
-something like myhost/3. Fix this behaviour by using the escape loop
-used in %E. (We extract it to a separate function.)
+From: Oleg Nesterov <oleg@redhat.com>
 
-Now both with comm == myprocess/1 and hostname == myhost/1, the core
-is dumped like (kernel.core_pattern='core.%p.%e.%h):
-core.2349.myprocess!1.myhost!1
+do_coredump() assumes that if format_corename() fails it should
+return -ENOMEM. This is not true, for example cn_print_exe_file()
+can propagate the error from d_path. Even if it was true, this is
+too fragile. Change the code to check "ispipe < 0".
 
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Andi Kleen <andi@firstfloor.org>
+Reviewed-by: Neil Horman <nhorman@tuxdriver.com>
 ---
- fs/exec.c |   31 +++++++++++++++++++++++--------
- 1 files changed, 23 insertions(+), 8 deletions(-)
+ fs/exec.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
 diff --git a/fs/exec.c b/fs/exec.c
-index 4da1d95..424ec9d 100644
+index 424ec9d..549b7dc 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
-@@ -1628,15 +1628,26 @@ expand_fail:
- 	return ret;
- }
+@@ -2112,16 +2112,16 @@ void do_coredump(long signr, int exit_code, struct pt_regs *regs)
  
-+static void cn_escape(char *str)
-+{
-+	for (; *str; str++)
-+		if (*str == '/')
-+			*str = '!';
-+}
+ 	ispipe = format_corename(&cn, signr);
+ 
+-	if (ispipe == -ENOMEM) {
+-		printk(KERN_WARNING "format_corename failed\n");
+-		printk(KERN_WARNING "Aborting core\n");
+-		goto fail_corename;
+-	}
+-
+  	if (ispipe) {
+ 		int dump_count;
+ 		char **helper_argv;
+ 
++		if (ispipe < 0) {
++			printk(KERN_WARNING "format_corename failed\n");
++			printk(KERN_WARNING "Aborting core\n");
++			goto fail_corename;
++		}
 +
- static int cn_print_exe_file(struct core_name *cn)
- {
- 	struct file *exe_file;
--	char *pathbuf, *path, *p;
-+	char *pathbuf, *path;
- 	int ret;
- 
- 	exe_file = get_mm_exe_file(current->mm);
--	if (!exe_file)
--		return cn_printf(cn, "%s (path unknown)", current->comm);
-+	if (!exe_file) {
-+		char *commstart = cn->corename + cn->used;
-+		ret = cn_printf(cn, "%s (path unknown)", current->comm);
-+		cn_escape(commstart);
-+		return ret;
-+	}
- 
- 	pathbuf = kmalloc(PATH_MAX, GFP_TEMPORARY);
- 	if (!pathbuf) {
-@@ -1650,9 +1661,7 @@ static int cn_print_exe_file(struct core_name *cn)
- 		goto free_buf;
- 	}
- 
--	for (p = path; *p; p++)
--		if (*p == '/')
--			*p = '!';
-+	cn_escape(path);
- 
- 	ret = cn_printf(cn, "%s", path);
- 
-@@ -1724,16 +1733,22 @@ static int format_corename(struct core_name *cn, long signr)
- 				break;
- 			}
- 			/* hostname */
--			case 'h':
-+			case 'h': {
-+				char *namestart = cn->corename + cn->used;
- 				down_read(&uts_sem);
- 				err = cn_printf(cn, "%s",
- 					      utsname()->nodename);
- 				up_read(&uts_sem);
-+				cn_escape(namestart);
- 				break;
-+			}
- 			/* executable */
--			case 'e':
-+			case 'e': {
-+				char *commstart = cn->corename + cn->used;
- 				err = cn_printf(cn, "%s", current->comm);
-+				cn_escape(commstart);
- 				break;
-+			}
- 			case 'E':
- 				err = cn_print_exe_file(cn);
- 				break;
+ 		if (cprm.limit == 1) {
+ 			/*
+ 			 * Normally core limits are irrelevant to pipes, since
 -- 
 1.7.6
 
