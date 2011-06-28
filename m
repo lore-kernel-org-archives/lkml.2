@@ -1,68 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760918Ab1F1TAO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 15:00:14 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44364 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760785Ab1F1S7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 14:59:08 -0400
-Message-ID: <4E0A2479.4060809@kernel.dk>
-Date: Tue, 28 Jun 2011 20:59:05 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1753065Ab1F1TSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 15:18:24 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33934 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab1F1TSS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 15:18:18 -0400
 MIME-Version: 1.0
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cfq: Suspicious rcu_dereference_check() usage at  __cfq_exit_single_io_context()
-References: <20110628111853.GA3189@swordfish.minsk.epam.com>
-In-Reply-To: <20110628111853.GA3189@swordfish.minsk.epam.com>
+In-Reply-To: <1309244992-2305-10-git-send-email-jim.cromie@gmail.com>
+References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com> <1309244992-2305-10-git-send-email-jim.cromie@gmail.com>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Tue, 28 Jun 2011 13:17:48 -0600
+Message-ID: <BANLkTinwwaD=O2nFEN8G+U2eWBPMUM9Ovg@mail.gmail.com>
+Subject: Re: [PATCH 09/11] dynamic_debug: add_to_pending() saves non-matching
+ queries for later.
+To: linux-kernel@vger.kernel.org
+Cc: gnb@fmeh.org, jbaron@redhat.com, bvanassche@acm.org, gregkh@suse.de,
+        Jim Cromie <jim.cromie@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-06-28 13:18, Sergey Senozhatsky wrote:
-> Protect __cfq_exit_single_io_context() call with rcu_read_lock(), since it 
-> modifies RCU pointer ioc->ioc_data.
-> 
-> [ 1349.369446] rcu_scheduler_active = 1, debug_locks = 0
-> [ 1349.369451] 3 locks held by scsi_scan_4/5203:
-> [ 1349.369454]  #0:  (&shost->scan_mutex){+.+.+.}, at: [<ffffffff81392768>] scsi_scan_host_selected+0xba/0x18c
-> [ 1349.369473]  #1:  (&eq->sysfs_lock){+.+...}, at: [<ffffffff8121f3cb>] elevator_exit+0x18/0x49
-> [ 1349.369489]  #2:  (&(&q->__queue_lock)->rlock){-.-...}, at: [<ffffffff812354b1>] cfq_exit_queue+0x42/0x171
-> [ 1349.369503] 
-> [ 1349.369504] stack backtrace:
-> [ 1349.369510] Pid: 5203, comm: scsi_scan_4 Not tainted 3.0.0-rc5-dbg-00479-gbe4a634 #629
-> [ 1349.369515] Call Trace:
-> [ 1349.369526]  [<ffffffff8106e5a6>] lockdep_rcu_dereference+0xa7/0xaf
-> [ 1349.369534]  [<ffffffff812353b6>] __cfq_exit_single_io_context+0x85/0xe1
-> [ 1349.369541]  [<ffffffff812354d5>] cfq_exit_queue+0x66/0x171
-> [ 1349.369548]  [<ffffffff8121f3df>] elevator_exit+0x2c/0x49
-> [ 1349.369556]  [<ffffffff81223a34>] blk_cleanup_queue+0x4a/0x63
-> [ 1349.369563]  [<ffffffff81390614>] scsi_free_queue+0x9/0xb
-> [ 1349.369571]  [<ffffffff81393d39>] __scsi_remove_device+0xa7/0xb4
-> [ 1349.369577]  [<ffffffff81391ca2>] scsi_probe_and_add_lun+0xa78/0xab5
-> [ 1349.369586]  [<ffffffff813923fc>] __scsi_scan_target+0x5d3/0x625
-> [ 1349.369594]  [<ffffffff8138470f>] ? __pm_runtime_resume+0x2f/0x59
-> [ 1349.369603]  [<ffffffff81071d17>] ? mark_held_locks+0x4b/0x6d
-> [ 1349.369613]  [<ffffffff8147ce16>] ? _raw_spin_unlock_irqrestore+0x42/0x74
-> [ 1349.369622]  [<ffffffff81033899>] ? get_parent_ip+0xf/0x40
-> [ 1349.369630]  [<ffffffff8147ff09>] ? sub_preempt_count+0x8f/0xa3
-> [ 1349.369637]  [<ffffffff813924a0>] scsi_scan_channel.part.8+0x52/0x6d
-> [ 1349.369645]  [<ffffffff813927b2>] scsi_scan_host_selected+0x104/0x18c
-> [ 1349.369652]  [<ffffffff813928aa>] ? do_scsi_scan_host+0x70/0x70
-> [ 1349.369658]  [<ffffffff813928a5>] do_scsi_scan_host+0x6b/0x70
-> [ 1349.369665]  [<ffffffff813928c7>] do_scan_async+0x1d/0x15d
-> [ 1349.369671]  [<ffffffff813928aa>] ? do_scsi_scan_host+0x70/0x70
-> [ 1349.369680]  [<ffffffff8105cdfa>] kthread+0x9a/0xa2
-> [ 1349.369689]  [<ffffffff81483ee4>] kernel_thread_helper+0x4/0x10
-> [ 1349.369696]  [<ffffffff8102d70f>] ? finish_task_switch+0x76/0xf0
-> [ 1349.369703]  [<ffffffff8147d318>] ? retint_restore_args+0x13/0x13
-> [ 1349.369710]  [<ffffffff8105cd60>] ? __init_kthread_worker+0x53/0x53
-> [ 1349.369717]  [<ffffffff81483ee0>] ? gs_change+0x13/0x13
+On Tue, Jun 28, 2011 at 1:09 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
+> When a query/rule doesnt match, call add_to_pending(new function)
+> to copy the query off the stack, into a (new) struct pending_query,
+> and add to pending_queries (new) list.
+>
+> Patch adds: /sys/module/dynamic_debug/parameters/
+>  verbose - rw, added previously, here for completeness
+>  pending_ct - ro, shows current count of pending queries
+>  pending_max - rw, set max pending, further pending queries are rejected
+>
+> With this and previous patches, queries added on the boot-line which
+> do not match (because module is not built-in, and thus not present yet)
+> are added to pending_queries.
+>
+> IE, with these boot-line additions:
+>  dynamic_debug.verbose=1 ddebug_query="module scx200_hrt +p"
+>
+> Kernel will log the following:
+>
+> ddebug_exec_queries: query 0: "module scx200_hrt +p"
+> ddebug_tokenize: split into words: "module" "scx200_hrt" "+p"
+> ddebug_parse_query: parsed q->function="(null)" q->filename="(null)" q->module="scx200_hrt" q->format="(null)" q->lineno=0-0
+> ddebug_parse_flags: op='+'
+> ddebug_parse_flags: flags=0x1
+> ddebug_parse_flags: *flagsp=0x1 *maskp=0xffffffff
+> ddebug_exec_query: nfound 0 on q->function="(null)" q->filename="(null)" q->module="scx200_hrt" q->format="(null)" q->lineno=0-0
+> ddebug_add_to_pending: add to pending: q->function="(null)" q->filename="(null)" q->module="scx200_hrt" q->format="(null)" q->lineno=0-0
+> ddebug_add_to_pending: ddebug: query saved as pending 1
+>
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> ---
+>  lib/dynamic_debug.c |   78 +++++++++++++++++++++++++++++++++++++++++++++++----
+>  1 files changed, 72 insertions(+), 6 deletions(-)
+>
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+> index 9b8b1e8..37d0275 100644
+> --- a/lib/dynamic_debug.c
+> +++ b/lib/dynamic_debug.c
+> @@ -53,6 +53,16 @@ struct ddebug_query {
+>        unsigned int first_lineno, last_lineno;
+>  };
+>
+> +struct pending_query {
+> +       struct list_head link;
+> +       struct ddebug_query query;
+> +       char filename[100];
+> +       char module[30];
+> +       char function[50];
+> +       char format[200];
+> +       unsigned int flags, mask;
+> +};
+> +
+>  struct ddebug_iter {
+>        struct ddebug_table *table;
+>        unsigned int idx;
+> @@ -61,7 +71,13 @@ struct ddebug_iter {
+>  static DEFINE_MUTEX(ddebug_lock);
+>  static LIST_HEAD(ddebug_tables);
+>  static int verbose = 0;
+> -module_param(verbose, int, 0744);
+> +module_param(verbose, int, 0644);
+> +
+> +/* legal but inapplicable queries, save and test against new modules */
+> +static LIST_HEAD(pending_queries);
+> +static int pending_ct, pending_max = 100;
+> +module_param(pending_ct, int, 0444);
+> +module_param(pending_max, int, 0644);
+>
+>  /* Return the last part of a pathname */
+>  static inline const char *basename(const char *path)
+> @@ -96,6 +112,56 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
+>        return buf;
+>  }
+>
+> +static char prbuf_query[300];
+> +
+> +static char *show_ddebug_query(const struct ddebug_query *q)
+> +{
 
-Thanks, I already have a patch queued up to fix this.
 
--- 
-Jens Axboe
+this part (the static fixed-length var)
+gives me some heartburn.
 
+I almost went with macros using pr_info to replace the
+ 2 show_*_query fns, but a <debugfs/dynamic_debug/pending file
+might want to use show_pending_query
+
+advice ?
