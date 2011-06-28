@@ -1,84 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752316Ab1F1Tra (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 15:47:30 -0400
-Received: from claw.goop.org ([74.207.240.146]:59512 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab1F1TrW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 15:47:22 -0400
-Message-ID: <4E0A2FC7.6020109@goop.org>
-Date: Tue, 28 Jun 2011 20:47:19 +0100
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: linux-bluetooth@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 3.0-rc4: regression reconnecting bluetooth headset (A2DP
- fails)
-References: <4E03DA75.2080606@goop.org> <20110628182117.GD23183@joana>
-In-Reply-To: <20110628182117.GD23183@joana>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752259Ab1F1TsZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 15:48:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:43765 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751242Ab1F1TsT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 15:48:19 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=d-8w2qbBBTkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=VwQbUJbxAAAA:8 a=RCX_K2eM31QDpUA67AkA:9 a=1_isnZN5hSK4UoIEI2MA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH 00/16 v2] [GIT PULL] tracing: various fixes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+In-Reply-To: <20110616140050.GA4822@elte.hu>
+References: <20110615134841.767565350@goodmis.org>
+	 <20110616140050.GA4822@elte.hu>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 28 Jun 2011 15:48:16 -0400
+Message-ID: <1309290496.26417.16.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2011 07:21 PM, Gustavo F. Padovan wrote:
-> Hi Jeremy,
->
-> * Jeremy Fitzhardinge <jeremy@goop.org> [2011-06-23 17:29:41 -0700]:
->
->> I have a Nokia BH-905i headset.  With a stock F15 kernel, it all works
->> well. With current linux-2.6.git, it fails to reconnect properly.
->>
->> On connection, the headphones only beep once, whereas they normally beep
->> twice; I think this is one beep per profile, and its only connecting HSP
->> and failing A2DP.  In the sound control panel, it either comes up with
->> "profile: off" or with the HSP/HFP (Telephony) profile rather than A2DP,
->> and it fails to switch if I try to change profiles via the sound control
->> panel.
->>
->> However, if I re-pair the device from scratch each time I use it, it
->> connects properly and it all works fine.
->>
->> pactl list shows:
->>
->> Card #2
->> 	Name: bluez_card.00_0B_E4_A6_6C_0D
->> 	Driver: module-bluetooth-device.c
->> 	Owner Module: 23
->> 	Properties:
->> 		device.description = "Nokia BH-905i"
->> 		device.string = "00:0B:E4:A6:6C:0D"
->> 		device.api = "bluez"
->> 		device.class = "sound"
->> 		device.bus = "bluetooth"
->> 		device.form_factor = "headset"
->> 		bluez.path = "/org/bluez/843/hci0/dev_00_0B_E4_A6_6C_0D"
->> 		bluez.class = "0x240404"
->> 		bluez.name = "Nokia BH-905i"
->> 		device.icon_name = "audio-headset-bluetooth"
->> 		device.intended_roles = "phone"
->> 	Profiles:
->> 		a2dp: High Fidelity Playback (A2DP) (sinks: 1, sources: 0, priority. 10)
->> 		hsp: Telephony Duplex (HSP/HFP) (sinks: 1, sources: 1, priority. 20)
->> 		off: Off (sinks: 0, sources: 0, priority. 0)
->> 	Active Profile: hsp
->>
->> If I try to switch profiles on the command line it says:
->> $ pactl set-card-profile 2 a2dp
->> Failure: Input/Output error
->>
->> and /var/log/messages shows:
->> module-bluetooth-device.c: A2DP is not connected, refused to switch profile
->>
->> Why isn't A2DP connecting?  How can I debug this further?
-> Can you send the output of hcidump with F15 kernel and with linux-2.6.git
-> kernel?
+On Thu, 2011-06-16 at 16:00 +0200, Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > Ingo,
+> > 
+> > I went through the patches and addressed your comments. I fixed the line
+> > break issues (no need to have the original author resubmit for whitespace
+> > clean ups), and I fixed the change logs that had the whacky tags caused
+> > by my script.
+> > 
+> > I replaced the one patch by Vaibhav that added the ioctl with the original
+> > patch he sent that adds the free_buffer file to do the same thing. I also
+> > added a patch to make it optional whether or not freeing the buffer disables
+> > tracing.
+> > 
+> > Please pull the latest tip/perf/core-2 tree, which can be found at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> > tip/perf/core-2
+> > 
+> > Head SHA1: 1fd8df2c3970c9e7e4e262354154ee39e58bdd7c
+> > 
+> > 
+> > Jiri Olsa (5):
+> >       tracing, function_graph: Remove dependency of abstime and duration fields on latency
+> >       tracing, function_graph: Merge overhead and duration display functions
+> >       tracing, function: Fix trace header to follow context-info option
+> >       tracing, function_graph: Remove lock-depth from latency trace
+> >       tracing, function_graph: Add context-info support for function_graph tracer
+> > 
+> > Masami Hiramatsu (3):
+> >       x86: Swap save_stack_trace_regs parameters
+> >       stack_trace: Add weak save_stack_trace_regs()
+> >       tracing/kprobes: Fix kprobe-tracer to support stack trace
+> > 
+> > Paul McQuade (2):
+> >       ftrace: Fixed an include coding style issue
+> >       async: Fixed an include coding style issue
+> > 
+> > Peter Huewe (1):
+> >       tracing: Convert to kstrtoul_from_user
+> > 
+> > Steven Rostedt (1):
+> >       tracing: Add disable_on_free option
+> > 
+> > Vaibhav Nagarnaik (4):
+> >       tracing: Schedule a delayed work to call wakeup()
+> >       tracing: Use NUMA allocation for per-cpu ring buffer pages
+> >       tracing: Add a proc file to stop tracing and free buffer
+> >       ring-buffer: Set __GFP_NORETRY flag for ring buffer allocating process
+> > 
+> > ----
+> >  arch/x86/kernel/stacktrace.c         |    2 +-
+> >  arch/x86/mm/kmemcheck/error.c        |    2 +-
+> >  include/linux/ftrace_event.h         |    4 +
+> >  include/linux/ring_buffer.h          |    2 +-
+> >  include/linux/stacktrace.h           |    4 +-
+> >  kernel/async.c                       |   12 +-
+> >  kernel/stacktrace.c                  |   12 ++-
+> >  kernel/trace/ftrace.c                |   20 +---
+> >  kernel/trace/ring_buffer.c           |   66 +++++----
+> >  kernel/trace/ring_buffer_benchmark.c |    2 +-
+> >  kernel/trace/trace.c                 |  242 ++++++++++++++++++---------------
+> >  kernel/trace/trace.h                 |   10 ++
+> >  kernel/trace/trace_events.c          |   26 +---
+> >  kernel/trace/trace_functions_graph.c |  223 +++++++++++++++----------------
+> >  kernel/trace/trace_irqsoff.c         |    4 +-
+> >  kernel/trace/trace_kprobe.c          |    6 +-
+> >  kernel/trace/trace_sched_wakeup.c    |    4 +-
+> >  kernel/trace/trace_stack.c           |   13 +--
+> >  18 files changed, 333 insertions(+), 321 deletions(-)
+> 
+> Pulled, thanks a lot Steve!
+> 
 
-This is already fixed in
-git://git.kernel.org/pub/scm/linux/kernel/git/padovan/bluetooth-2.6.git
+Hi Ingo,
+
+Was there an issue with this pull request? I don't see it in tip. I was
+about to add a fix for Thomas and noticed that this pull wasn't in.
 
 Thanks,
-    J
+
+-- Steve
+
+
