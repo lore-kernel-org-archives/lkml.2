@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756777Ab1F1Gld (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 02:41:33 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:42446 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753934Ab1F1Gj3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 02:39:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=NGXJJUxzVKfVQcev3ibTV0VWfgTR3VY8vWXnt5RXjIIwMk8UQm6vkkteq98OS8Jhxr
-         Emh1aUNfMYjc91SwIn9jxwfEy3jn1W+e9YJEMrdvTxpnwUGHNodxMJtc/KI505SzZ5kz
-         Ln6JalQV0qcOz51NE+qHsJgjSS17bm7l0hACQ=
-MIME-Version: 1.0
-In-Reply-To: <1309224113-21818-4-git-send-email-sergiu@chromium.org>
-References: <1309224113-21818-1-git-send-email-sergiu@chromium.org>
-	<1309224113-21818-4-git-send-email-sergiu@chromium.org>
-Date: Tue, 28 Jun 2011 08:39:28 +0200
-Message-ID: <BANLkTimhEE6TXqnS+eLx863+rjJxqzu19A@mail.gmail.com>
-Subject: Re: [PATCH 3/3] char drivers: ramoops record_size module parameter
-From: Marco Stornelli <marco.stornelli@gmail.com>
-To: Sergiu Iordache <sergiu@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756619Ab1F1Gmw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 02:42:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54393 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756261Ab1F1GkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 02:40:25 -0400
+Date: Tue, 28 Jun 2011 16:40:14 +1000
+From: NeilBrown <neilb@suse.de>
+To: Namhyung Kim <namhyung@gmail.com>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] md/raid5: fix possible NULL pointer dereference in
+ debug routine
+Message-ID: <20110628164014.4a916b68@notabene.brown>
+In-Reply-To: <1308891840-5683-1-git-send-email-namhyung@gmail.com>
+References: <1308891840-5683-1-git-send-email-namhyung@gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 24 Jun 2011 14:04:00 +0900 Namhyung Kim <namhyung@gmail.com> wrote:
 
-2011/6/28 Sergiu Iordache <sergiu@chromium.org>:
-> The size of the dump is currently set using the RECORD_SIZE macro which
-> is set to a page size. This patch makes the record size a module
-> parameter and allows it to be set through platform data as well to allow
-> larger dumps if needed.
->
-> Change-Id: Ie6bd28a898dab476abf34decb0eecc42122f17ce
-> Signed-off-by: Sergiu Iordache <sergiu@chromium.org>
+> When I ran dynamic debug, I encountered a NULL pointer dereference
+> bug in add_stripe_bio(). Prior to second call to pr_debug(), @bi
+> was reused in order to check whether the request is partial write
+> or not, and it could lead to set @bi to NULL.
+> 
+> Since we save original @bi pointer into local variable 'bip', use
+> it instead of NULL-able @bi.
+> 
+> Also changed confusing 'bh' to 'bi' in the first message.
+> 
+> Signed-off-by: Namhyung Kim <namhyung@gmail.com>
 > ---
+>  drivers/md/raid5.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/md/raid5.c b/drivers/md/raid5.c
+> index 82c07fb38961..c814a6075c79 100644
+> --- a/drivers/md/raid5.c
+> +++ b/drivers/md/raid5.c
+> @@ -2139,7 +2139,7 @@ static int add_stripe_bio(struct stripe_head *sh, struct bio *bi, int dd_idx, in
+>  	raid5_conf_t *conf = sh->raid_conf;
+>  	int firstwrite=0;
+>  
+> -	pr_debug("adding bh b#%llu to stripe s#%llu\n",
+> +	pr_debug("adding bi b#%llu to stripe s#%llu\n",
+>  		(unsigned long long)bi->bi_sector,
+>  		(unsigned long long)sh->sector);
+>  
+> @@ -2181,7 +2181,7 @@ static int add_stripe_bio(struct stripe_head *sh, struct bio *bi, int dd_idx, in
+>  	spin_unlock_irq(&conf->device_lock);
+>  
+>  	pr_debug("added bi b#%llu to stripe s#%llu, disk %d.\n",
+> -		(unsigned long long)bi->bi_sector,
+> +		(unsigned long long)(*bip)->bi_sector,
+>  		(unsigned long long)sh->sector, dd_idx);
+>  
+>  	if (conf->mddev->bitmap && firstwrite) {
 
-the idea can be valid, but you have to add some check to set the
-record size. It'd be better to add a lower and upper bound and to
-check for it's power of two.
 
-Marco
+Applied, thanks.
+
+NeilBrown
