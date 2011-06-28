@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab1F1Lfh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 07:35:37 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:45008 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757143Ab1F1LfW (ORCPT
+	id S1757409Ab1F1LhR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 07:37:17 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:5708 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755651Ab1F1Lgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 07:35:22 -0400
-Message-ID: <4E09BC89.40306@free-electrons.com>
-Date: Tue, 28 Jun 2011 13:35:37 +0200
-From: David Wagner <david.wagner@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	Tue, 28 Jun 2011 07:36:53 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=NLfXP0ZiU3hJH4gXvNFOVA7gzypVtVqMQLN+OtPWStaN6ADsCxg4zPTEGIsrGgwRL
+	M1bi8mx4JNewB+FJjwRpQ==
 MIME-Version: 1.0
-To: dedekind1@gmail.com
-CC: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] UBI: new module ubiblk: block layer on top of UBI
-References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>	<1308922482-14967-2-git-send-email-david.wagner@free-electrons.com> <1309202771.24805.11.camel@koala>
-In-Reply-To: <1309202771.24805.11.camel@koala>
-X-Enigmail-Version: 1.1.2
+In-Reply-To: <BANLkTiniBEuHKnmhoJEaVELpMefZ=Xk=bA@mail.gmail.com>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+	<4E04F0B0.4030408@codeaurora.org>
+	<BANLkTi=sFtwam29i4TZdi=RO7BoytTTdrw@mail.gmail.com>
+	<FFF198FBBF957F4393BA834040FEFFA202EDA3@DFLE35.ent.ti.com>
+	<BANLkTiniBEuHKnmhoJEaVELpMefZ=Xk=bA@mail.gmail.com>
+Date: Tue, 28 Jun 2011 04:36:46 -0700
+Message-ID: <CANqkERATQbXU7ooHkUX+qieEejMAejRRvSRr606e5mF2d_qtbA@mail.gmail.com>
+Subject: Re: [RFC 0/8] Introducing a generic AMP/IPC framework
+From: Brian Swetland <swetland@google.com>
+To: Ohad Ben-Cohen <ohad@wizery.com>
+Cc: "Grosen, Mark" <mgrosen@ti.com>, Stephen Boyd <sboyd@codeaurora.org>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jun 28, 2011 at 4:26 AM, Ohad Ben-Cohen <ohad@wizery.com> wrote:
+> On Tue, Jun 28, 2011 at 12:22 AM, Grosen, Mark <mgrosen@ti.com> wrote:
+>> 2. We added a special section (resource table) that is interpreted as part
+>> of the loading process. The tool that generates our simple format just
+>> recognizes a named section (".resource_table"), so perhaps that could be
+>> done with the PIL ELF loader.
+>
+> I hope that DT will completely replace that "resource table" section
+> eventually. We still need to try it out (as soon as DT materializes on
+> ARM/pandaboard) and see how it all fits together, but in general it
+> looks like DT could provide all the necessary static resource
+> configuration, and then we just need to expose it to the remote
+> processor.
 
-On 06/27/2011 09:26 PM, Artem Bityutskiy wrote:
-> On Fri, 2011-06-24 at 15:34 +0200, david.wagner@free-electrons.com
-> wrote:
->> +	/* Stolen from mtd_blkdevs.c */
->> +	/* Create processing thread */
->> +	dev->thread = kthread_run(ubi_ubiblk_thread, dev, "%s%d_%d",
->> +				  "kubiblkd", dev->ubi_num, dev->vol_id);
->> +	if (IS_ERR(dev->thread)) {
->> +		ret = PTR_ERR(dev->thread);
->> +		goto out_thread;
->> +	}
-> 
-> Why we need a kernel thread? Could you please describe when exactly it
-> is needed and why we cannot avoid having it?
+I'm not sure I see the benefit to pulling the resource information out
+of the firmware image.  The resource information is a description of
+what resources the firmware requires to work properly (it needs
+certain amounts of working memory, timers, peripheral interfaces like
+i2c to control camera hw, etc), which will be specific to a given
+firmware build.  Pulling that information out into another place adds
+new ways for things to break as the firmware and its resource
+requirements are now separate and could get out of sync, etc.
 
-Do you mean that there could be another/better way ?
-I read that workqueues could be used for that but since they seem to
-internally use kthreads, I don't see the advantage yet. Simpler API ?
-
-I also tried without a kthread altogether (and call do_ubiblk_request
-directly within the callback registered with blk_init_queue) but got
-lost in locks/context debugging ...
-
-It seems that do_ubiblk_request needs to be in process context because
-there are thousands causes for blocking (locking, page fault, for
-instance, are the one I encountered). And on the other hand,
-blk_run_queue must not block ; So we need to wake the thread up and
-return (what ubi_ubiblk_request does).
-So, would this be a sufficient justification ?
-
-
-It's probably possible, however, to have only one thread for the whole
-module instead of having one for each volume ; but that seemed good
-enough on first approach.
-
-
-I fixed the read errors issue with filesystems != SquashFS, so they
-should all work, now.
-I'll send the next iteration, probably later today.
-
--- 
-David Wagner, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+Brian
