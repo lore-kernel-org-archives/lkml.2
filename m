@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751987Ab1F1W6g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 18:58:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38243 "EHLO
+	id S1753083Ab1F1W65 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 18:58:57 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:49988 "EHLO
 	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751874Ab1F1W6O (ORCPT
+	with ESMTP id S1751711Ab1F1W6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 18:58:14 -0400
+	Tue, 28 Jun 2011 18:58:16 -0400
 From: Rob Herring <robherring2@gmail.com>
 To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
 Cc: Michal Simek <monstr@monstr.eu>, nico@fluxnic.net,
         Rob Herring <rob.herring@calxeda.com>
-Subject: [PATCH 2/4] ARM: remove unnecessary mach/hardware.h includes
-Date: Tue, 28 Jun 2011 17:57:37 -0500
-Message-Id: <1309301859-17651-3-git-send-email-robherring2@gmail.com>
+Subject: [PATCH 3/4] ARM: pci: make pcibios_assign_all_busses use pci_has_flag
+Date: Tue, 28 Jun 2011 17:57:38 -0500
+Message-Id: <1309301859-17651-4-git-send-email-robherring2@gmail.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309301859-17651-1-git-send-email-robherring2@gmail.com>
 References: <1309301859-17651-1-git-send-email-robherring2@gmail.com>
@@ -23,130 +23,380 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rob Herring <rob.herring@calxeda.com>
 
-Remove some includes of mach/hardware.h which are not needed. hardware.h will
-be removed completely for tegra and cns3xxx in follow on patch.
+Convert pcibios_assign_all_busses from a define to inline so platforms can
+control this setting.
 
 Signed-off-by: Rob Herring <rob.herring@calxeda.com>
 ---
- arch/arm/kernel/ecard.c                   |    1 -
- arch/arm/lib/ecard.S                      |    1 -
- arch/arm/lib/io-readsw-armv3.S            |    1 -
- arch/arm/lib/io-writesw-armv3.S           |    1 -
- arch/arm/mach-cns3xxx/cns3420vb.c         |    1 -
- arch/arm/mach-tegra/include/mach/system.h |    1 -
- arch/arm/mach-tegra/io.c                  |    1 -
- arch/arm/mach-tegra/platsmp.c             |    1 -
- arch/arm/mm/proc-xsc3.S                   |    1 -
- 9 files changed, 0 insertions(+), 9 deletions(-)
+ arch/arm/include/asm/pci.h                       |    8 +++++++-
+ arch/arm/mach-bcmring/include/mach/hardware.h    |    2 --
+ arch/arm/mach-cns3xxx/include/mach/hardware.h    |    1 -
+ arch/arm/mach-dove/include/mach/hardware.h       |    2 --
+ arch/arm/mach-ep93xx/include/mach/hardware.h     |    2 --
+ arch/arm/mach-footbridge/include/mach/hardware.h |    2 --
+ arch/arm/mach-integrator/include/mach/hardware.h |    2 --
+ arch/arm/mach-iop13xx/include/mach/hardware.h    |    2 --
+ arch/arm/mach-iop32x/include/mach/hardware.h     |    1 -
+ arch/arm/mach-iop33x/include/mach/hardware.h     |    1 -
+ arch/arm/mach-ixp2000/include/mach/hardware.h    |    2 --
+ arch/arm/mach-ixp2000/pci.c                      |    2 ++
+ arch/arm/mach-ixp23xx/include/mach/hardware.h    |    2 --
+ arch/arm/mach-ixp23xx/pci.c                      |    2 ++
+ arch/arm/mach-ixp4xx/include/mach/hardware.h     |    2 --
+ arch/arm/mach-kirkwood/include/mach/hardware.h   |    3 ---
+ arch/arm/mach-ks8695/include/mach/hardware.h     |    2 --
+ arch/arm/mach-mv78xx0/include/mach/hardware.h    |    2 --
+ arch/arm/mach-orion5x/include/mach/hardware.h    |    2 --
+ arch/arm/mach-pxa/include/mach/hardware.h        |    1 -
+ arch/arm/mach-sa1100/include/mach/hardware.h     |    1 -
+ arch/arm/mach-shark/include/mach/hardware.h      |    2 --
+ arch/arm/mach-tegra/include/mach/hardware.h      |    1 -
+ arch/arm/mach-versatile/include/mach/hardware.h  |    2 --
+ arch/arm/mm/iomap.c                              |    4 ++++
+ 25 files changed, 15 insertions(+), 38 deletions(-)
 
-diff --git a/arch/arm/kernel/ecard.c b/arch/arm/kernel/ecard.c
-index d165001..04b06c1 100644
---- a/arch/arm/kernel/ecard.c
-+++ b/arch/arm/kernel/ecard.c
-@@ -46,7 +46,6 @@
+diff --git a/arch/arm/include/asm/pci.h b/arch/arm/include/asm/pci.h
+index 92e2a83..6719178 100644
+--- a/arch/arm/include/asm/pci.h
++++ b/arch/arm/include/asm/pci.h
+@@ -3,10 +3,16 @@
  
- #include <asm/dma.h>
- #include <asm/ecard.h>
--#include <mach/hardware.h>
- #include <asm/irq.h>
- #include <asm/mmu_context.h>
- #include <asm/mach/irq.h>
-diff --git a/arch/arm/lib/ecard.S b/arch/arm/lib/ecard.S
-index 8678eb2..e6057fa 100644
---- a/arch/arm/lib/ecard.S
-+++ b/arch/arm/lib/ecard.S
-@@ -12,7 +12,6 @@
+ #ifdef __KERNEL__
+ #include <asm-generic/pci-dma-compat.h>
++#include <asm-generic/pci-bridge.h>
+ 
+ #include <asm/mach/pci.h> /* for pci_sys_data */
+ #include <mach/hardware.h> /* for PCIBIOS_MIN_* */
+ 
++static inline int pcibios_assign_all_busses(void)
++{
++	return pci_has_flag(PCI_REASSIGN_ALL_RSRC);
++}
++
+ #ifdef CONFIG_PCI_DOMAINS
+ static inline int pci_domain_nr(struct pci_bus *bus)
+ {
+@@ -76,5 +82,5 @@ static inline int pci_get_legacy_ide_irq(struct pci_dev *dev, int channel)
+ }
+ 
+ #endif /* __KERNEL__ */
+- 
++
+ #endif
+diff --git a/arch/arm/mach-bcmring/include/mach/hardware.h b/arch/arm/mach-bcmring/include/mach/hardware.h
+index 8bf3564..ed78aab 100644
+--- a/arch/arm/mach-bcmring/include/mach/hardware.h
++++ b/arch/arm/mach-bcmring/include/mach/hardware.h
+@@ -36,8 +36,6 @@
+ #define RAM_SIZE                (CFG_GLOBAL_RAM_SIZE-CFG_GLOBAL_RAM_SIZE_RESERVED)
+ #define RAM_BASE                PAGE_OFFSET
+ 
+-#define pcibios_assign_all_busses()	1
+-
+ /* Macros to make managing spinlocks a bit more controlled in terms of naming. */
+ /* See reg_gpio.h, reg_irq.h, arch.c, gpio.c for example usage. */
+ #if defined(__KERNEL__)
+diff --git a/arch/arm/mach-cns3xxx/include/mach/hardware.h b/arch/arm/mach-cns3xxx/include/mach/hardware.h
+index 57e0983..82a0d4e 100644
+--- a/arch/arm/mach-cns3xxx/include/mach/hardware.h
++++ b/arch/arm/mach-cns3xxx/include/mach/hardware.h
+@@ -17,6 +17,5 @@
+ /* macro to get at IO space when running virtually */
+ #define PCIBIOS_MIN_IO		0x00000000
+ #define PCIBIOS_MIN_MEM		0x00000000
+-#define pcibios_assign_all_busses()	1
+ 
+ #endif
+diff --git a/arch/arm/mach-dove/include/mach/hardware.h b/arch/arm/mach-dove/include/mach/hardware.h
+index 32b0826..f619fb9 100644
+--- a/arch/arm/mach-dove/include/mach/hardware.h
++++ b/arch/arm/mach-dove/include/mach/hardware.h
+@@ -11,8 +11,6 @@
+ 
+ #include "dove.h"
+ 
+-#define pcibios_assign_all_busses()	1
+-
+ #define PCIBIOS_MIN_IO			0x1000
+ #define PCIBIOS_MIN_MEM			0x01000000
+ #define PCIMEM_BASE			DOVE_PCIE0_MEM_PHYS_BASE
+diff --git a/arch/arm/mach-ep93xx/include/mach/hardware.h b/arch/arm/mach-ep93xx/include/mach/hardware.h
+index 5a3ce02..4df8428 100644
+--- a/arch/arm/mach-ep93xx/include/mach/hardware.h
++++ b/arch/arm/mach-ep93xx/include/mach/hardware.h
+@@ -8,8 +8,6 @@
+ #include <mach/ep93xx-regs.h>
+ #include <mach/platform.h>
+ 
+-#define pcibios_assign_all_busses()	0
+-
+ /*
+  * The EP93xx has two external crystal oscillators.  To generate the
+  * required high-frequency clocks, the processor uses two phase-locked-
+diff --git a/arch/arm/mach-footbridge/include/mach/hardware.h b/arch/arm/mach-footbridge/include/mach/hardware.h
+index b6fdf23..082e6ce 100644
+--- a/arch/arm/mach-footbridge/include/mach/hardware.h
++++ b/arch/arm/mach-footbridge/include/mach/hardware.h
+@@ -100,8 +100,6 @@ extern unsigned int nw_gpio_read(void);
+ extern void nw_cpld_modify(unsigned int mask, unsigned int set);
+ #endif
+ 
+-#define pcibios_assign_all_busses()	1
+-
+ #define PCIBIOS_MIN_IO		0x1000
+ #define PCIBIOS_MIN_MEM 	0x81000000
+ 
+diff --git a/arch/arm/mach-integrator/include/mach/hardware.h b/arch/arm/mach-integrator/include/mach/hardware.h
+index 57f51ba..37323ea 100644
+--- a/arch/arm/mach-integrator/include/mach/hardware.h
++++ b/arch/arm/mach-integrator/include/mach/hardware.h
+@@ -34,8 +34,6 @@
+ 
+ #define PCIMEM_BASE		PCI_MEMORY_VADDR
+ 
+-#define pcibios_assign_all_busses()	1
+-
+ #define PCIBIOS_MIN_IO		0x6000
+ #define PCIBIOS_MIN_MEM 	0x00100000
+ 
+diff --git a/arch/arm/mach-iop13xx/include/mach/hardware.h b/arch/arm/mach-iop13xx/include/mach/hardware.h
+index 8e1d562..ba81e50 100644
+--- a/arch/arm/mach-iop13xx/include/mach/hardware.h
++++ b/arch/arm/mach-iop13xx/include/mach/hardware.h
+@@ -2,8 +2,6 @@
+ #define __ASM_ARCH_HARDWARE_H
+ #include <asm/types.h>
+ 
+-#define pcibios_assign_all_busses() 1
+-
+ #ifndef __ASSEMBLY__
+ extern unsigned long iop13xx_pcibios_min_io;
+ extern unsigned long iop13xx_pcibios_min_mem;
+diff --git a/arch/arm/mach-iop32x/include/mach/hardware.h b/arch/arm/mach-iop32x/include/mach/hardware.h
+index d559c4e..e68bf97 100644
+--- a/arch/arm/mach-iop32x/include/mach/hardware.h
++++ b/arch/arm/mach-iop32x/include/mach/hardware.h
+@@ -18,7 +18,6 @@
+  * but when we read them, we convert them to virtual addresses. See
+  * arch/arm/plat-iop/pci.c.
   */
- #include <linux/linkage.h>
- #include <asm/assembler.h>
--#include <mach/hardware.h>
+-#define pcibios_assign_all_busses() 1
+ #define PCIBIOS_MIN_IO		0x00000000
+ #define PCIBIOS_MIN_MEM		0x00000000
  
- #define CPSR2SPSR(rt) \
- 		mrs	rt, cpsr; \
-diff --git a/arch/arm/lib/io-readsw-armv3.S b/arch/arm/lib/io-readsw-armv3.S
-index 9aaf7c7..88487c8 100644
---- a/arch/arm/lib/io-readsw-armv3.S
-+++ b/arch/arm/lib/io-readsw-armv3.S
-@@ -9,7 +9,6 @@
+diff --git a/arch/arm/mach-iop33x/include/mach/hardware.h b/arch/arm/mach-iop33x/include/mach/hardware.h
+index 8c10e43..215065b 100644
+--- a/arch/arm/mach-iop33x/include/mach/hardware.h
++++ b/arch/arm/mach-iop33x/include/mach/hardware.h
+@@ -18,7 +18,6 @@
+  * but when we read them, we convert them to virtual addresses.  See
+  * arch/arm/mach-iop3xx/iop3xx-pci.c
   */
- #include <linux/linkage.h>
- #include <asm/assembler.h>
--#include <mach/hardware.h>
+-#define pcibios_assign_all_busses()	1
+ #define PCIBIOS_MIN_IO		0x00000000
+ #define PCIBIOS_MIN_MEM		0x00000000
  
- .Linsw_bad_alignment:
- 		adr	r0, .Linsw_bad_align_msg
-diff --git a/arch/arm/lib/io-writesw-armv3.S b/arch/arm/lib/io-writesw-armv3.S
-index cd34503..49b8004 100644
---- a/arch/arm/lib/io-writesw-armv3.S
-+++ b/arch/arm/lib/io-writesw-armv3.S
-@@ -9,7 +9,6 @@
+diff --git a/arch/arm/mach-ixp2000/include/mach/hardware.h b/arch/arm/mach-ixp2000/include/mach/hardware.h
+index f033de4..6c92008 100644
+--- a/arch/arm/mach-ixp2000/include/mach/hardware.h
++++ b/arch/arm/mach-ixp2000/include/mach/hardware.h
+@@ -27,8 +27,6 @@
+ 
+ #include "ixp2000-regs.h"	/* Chipset Registers */
+ 
+-#define pcibios_assign_all_busses() 0
+-
+ /*
+  * Platform helper functions
   */
- #include <linux/linkage.h>
- #include <asm/assembler.h>
--#include <mach/hardware.h>
+diff --git a/arch/arm/mach-ixp2000/pci.c b/arch/arm/mach-ixp2000/pci.c
+index f797c5f..8888ed9 100644
+--- a/arch/arm/mach-ixp2000/pci.c
++++ b/arch/arm/mach-ixp2000/pci.c
+@@ -196,6 +196,8 @@ clear_master_aborts(void)
+ void __init
+ ixp2000_pci_preinit(void)
+ {
++	pci_set_flags(0);
++
+ #ifndef CONFIG_IXP2000_SUPPORT_BROKEN_PCI_IO
+ 	/*
+ 	 * Configure the PCI unit to properly byteswap I/O transactions,
+diff --git a/arch/arm/mach-ixp23xx/include/mach/hardware.h b/arch/arm/mach-ixp23xx/include/mach/hardware.h
+index 57b508b..b8bb781 100644
+--- a/arch/arm/mach-ixp23xx/include/mach/hardware.h
++++ b/arch/arm/mach-ixp23xx/include/mach/hardware.h
+@@ -20,8 +20,6 @@
  
- .Loutsw_bad_alignment:
- 		adr	r0, .Loutsw_bad_align_msg
-diff --git a/arch/arm/mach-cns3xxx/cns3420vb.c b/arch/arm/mach-cns3xxx/cns3420vb.c
-index 08e5c87..85e6390 100644
---- a/arch/arm/mach-cns3xxx/cns3420vb.c
-+++ b/arch/arm/mach-cns3xxx/cns3420vb.c
-@@ -29,7 +29,6 @@
- #include <asm/mach/arch.h>
- #include <asm/mach/map.h>
- #include <asm/mach/time.h>
--#include <mach/hardware.h>
- #include <mach/cns3xxx.h>
- #include <mach/irqs.h>
- #include "core.h"
-diff --git a/arch/arm/mach-tegra/include/mach/system.h b/arch/arm/mach-tegra/include/mach/system.h
-index d0183d8..027c421 100644
---- a/arch/arm/mach-tegra/include/mach/system.h
-+++ b/arch/arm/mach-tegra/include/mach/system.h
-@@ -21,7 +21,6 @@
- #ifndef __MACH_TEGRA_SYSTEM_H
- #define __MACH_TEGRA_SYSTEM_H
+ #include "ixp23xx.h"
  
--#include <mach/hardware.h>
- #include <mach/iomap.h>
+-#define pcibios_assign_all_busses()	0
+-
+ /*
+  * Platform helper functions
+  */
+diff --git a/arch/arm/mach-ixp23xx/pci.c b/arch/arm/mach-ixp23xx/pci.c
+index 563819a..72d145a 100644
+--- a/arch/arm/mach-ixp23xx/pci.c
++++ b/arch/arm/mach-ixp23xx/pci.c
+@@ -227,6 +227,8 @@ static void __init ixp23xx_pci_common_init(void)
  
- extern void (*arch_reset)(char mode, const char *cmd);
-diff --git a/arch/arm/mach-tegra/io.c b/arch/arm/mach-tegra/io.c
-index 31848a9..ea50fe2 100644
---- a/arch/arm/mach-tegra/io.c
-+++ b/arch/arm/mach-tegra/io.c
-@@ -24,7 +24,6 @@
- #include <linux/mm.h>
+ void __init ixp23xx_pci_preinit(void)
+ {
++	pci_set_flags(0);
++
+ 	ixp23xx_pci_common_init();
+ 
+ 	hook_fault_code(16+6, ixp23xx_pci_abort_handler, SIGBUS, 0,
+diff --git a/arch/arm/mach-ixp4xx/include/mach/hardware.h b/arch/arm/mach-ixp4xx/include/mach/hardware.h
+index 8138371..163e506 100644
+--- a/arch/arm/mach-ixp4xx/include/mach/hardware.h
++++ b/arch/arm/mach-ixp4xx/include/mach/hardware.h
+@@ -28,8 +28,6 @@
+ 
+ #define ARCH_HAS_DMA_SET_COHERENT_MASK
+ 
+-#define pcibios_assign_all_busses()	1
+-
+ /* Register locations and bits */
+ #include "ixp4xx-regs.h"
+ 
+diff --git a/arch/arm/mach-kirkwood/include/mach/hardware.h b/arch/arm/mach-kirkwood/include/mach/hardware.h
+index cde8528..31b81fe 100644
+--- a/arch/arm/mach-kirkwood/include/mach/hardware.h
++++ b/arch/arm/mach-kirkwood/include/mach/hardware.h
+@@ -11,9 +11,6 @@
+ 
+ #include "kirkwood.h"
+ 
+-#define pcibios_assign_all_busses()	1
+-
+-#define PCIBIOS_MIN_IO			0x00001000
+ #define PCIBIOS_MIN_MEM			0x01000000
+ #define PCIMEM_BASE			KIRKWOOD_PCIE_MEM_PHYS_BASE /* mem base for VGA */
+ 
+diff --git a/arch/arm/mach-ks8695/include/mach/hardware.h b/arch/arm/mach-ks8695/include/mach/hardware.h
+index e0f911d..a46be88 100644
+--- a/arch/arm/mach-ks8695/include/mach/hardware.h
++++ b/arch/arm/mach-ks8695/include/mach/hardware.h
+@@ -46,8 +46,6 @@
+ /*
+  * PCI support
+  */
+-#define pcibios_assign_all_busses()	1
+-
+ #define PCIBIOS_MIN_IO		0
+ #define PCIBIOS_MIN_MEM		0
+ 
+diff --git a/arch/arm/mach-mv78xx0/include/mach/hardware.h b/arch/arm/mach-mv78xx0/include/mach/hardware.h
+index 5d88755..c76b93f 100644
+--- a/arch/arm/mach-mv78xx0/include/mach/hardware.h
++++ b/arch/arm/mach-mv78xx0/include/mach/hardware.h
+@@ -11,8 +11,6 @@
+ 
+ #include "mv78xx0.h"
+ 
+-#define pcibios_assign_all_busses()	1
+-
+ #define PCIBIOS_MIN_IO			0x00001000
+ #define PCIBIOS_MIN_MEM			0x01000000
+ #define PCIMEM_BASE			MV78XX0_PCIE_MEM_PHYS_BASE /* mem base for VGA */
+diff --git a/arch/arm/mach-orion5x/include/mach/hardware.h b/arch/arm/mach-orion5x/include/mach/hardware.h
+index e51aaf4..a42b743 100644
+--- a/arch/arm/mach-orion5x/include/mach/hardware.h
++++ b/arch/arm/mach-orion5x/include/mach/hardware.h
+@@ -11,8 +11,6 @@
+ 
+ #include "orion5x.h"
+ 
+-#define pcibios_assign_all_busses()	1
+-
+ #define PCIBIOS_MIN_IO		0x00001000
+ #define PCIBIOS_MIN_MEM		0x01000000
+ #define PCIMEM_BASE		ORION5X_PCIE_MEM_PHYS_BASE
+diff --git a/arch/arm/mach-pxa/include/mach/hardware.h b/arch/arm/mach-pxa/include/mach/hardware.h
+index 6957ba5..b4ea392 100644
+--- a/arch/arm/mach-pxa/include/mach/hardware.h
++++ b/arch/arm/mach-pxa/include/mach/hardware.h
+@@ -339,7 +339,6 @@ extern unsigned long get_clock_tick_rate(void);
+ #if defined(CONFIG_MACH_ARMCORE) && defined(CONFIG_PCI)
+ #define PCIBIOS_MIN_IO		0
+ #define PCIBIOS_MIN_MEM		0
+-#define pcibios_assign_all_busses()	1
+ #define ARCH_HAS_DMA_SET_COHERENT_MASK
+ #endif
+ 
+diff --git a/arch/arm/mach-sa1100/include/mach/hardware.h b/arch/arm/mach-sa1100/include/mach/hardware.h
+index 967ae76..5946af2 100644
+--- a/arch/arm/mach-sa1100/include/mach/hardware.h
++++ b/arch/arm/mach-sa1100/include/mach/hardware.h
+@@ -79,7 +79,6 @@ static inline unsigned long get_clock_tick_rate(void)
+ #if defined(CONFIG_ARCH_SA1100) && defined(CONFIG_PCI)
+ #define PCIBIOS_MIN_IO		0
+ #define PCIBIOS_MIN_MEM		0
+-#define pcibios_assign_all_busses()	1
+ #define HAVE_ARCH_PCI_SET_DMA_MASK	1
+ #endif
+ 
+diff --git a/arch/arm/mach-shark/include/mach/hardware.h b/arch/arm/mach-shark/include/mach/hardware.h
+index 94d84b2..24639ce 100644
+--- a/arch/arm/mach-shark/include/mach/hardware.h
++++ b/arch/arm/mach-shark/include/mach/hardware.h
+@@ -12,8 +12,6 @@
+ 
+ #define UNCACHEABLE_ADDR        0xdf010000
+ 
+-#define pcibios_assign_all_busses()     1
+-
+ #define PCIBIOS_MIN_IO          0x6000
+ #define PCIBIOS_MIN_MEM         0x50000000
+ #define PCIMEM_BASE		0xe8000000
+diff --git a/arch/arm/mach-tegra/include/mach/hardware.h b/arch/arm/mach-tegra/include/mach/hardware.h
+index 56e43b3..84c2658 100644
+--- a/arch/arm/mach-tegra/include/mach/hardware.h
++++ b/arch/arm/mach-tegra/include/mach/hardware.h
+@@ -23,6 +23,5 @@
+ 
+ #define PCIBIOS_MIN_IO			0x1000
+ #define PCIBIOS_MIN_MEM			0
+-#define pcibios_assign_all_busses()	1
+ 
+ #endif
+diff --git a/arch/arm/mach-versatile/include/mach/hardware.h b/arch/arm/mach-versatile/include/mach/hardware.h
+index 6911e1f..8f60e94 100644
+--- a/arch/arm/mach-versatile/include/mach/hardware.h
++++ b/arch/arm/mach-versatile/include/mach/hardware.h
+@@ -34,8 +34,6 @@
+ #define PCIBIOS_MIN_IO			0x44000000
+ #define PCIBIOS_MIN_MEM			0x50000000
+ 
+-#define pcibios_assign_all_busses()     1
+-
+ /* macro to get at IO space when running virtually */
+ #define IO_ADDRESS(x)		(((x) & 0x0fffffff) + (((x) >> 4) & 0x0f000000) + 0xf0000000)
+ 
+diff --git a/arch/arm/mm/iomap.c b/arch/arm/mm/iomap.c
+index ffad039..ad41414 100644
+--- a/arch/arm/mm/iomap.c
++++ b/arch/arm/mm/iomap.c
+@@ -8,6 +8,7 @@
+ #include <linux/pci.h>
+ #include <linux/ioport.h>
  #include <linux/io.h>
++#include <asm/pci.h>
  
--#include <mach/hardware.h>
- #include <asm/page.h>
- #include <asm/mach/map.h>
+ #ifdef __io
+ void __iomem *ioport_map(unsigned long port, unsigned int nr)
+@@ -23,6 +24,9 @@ EXPORT_SYMBOL(ioport_unmap);
+ #endif
  
-diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-index b8ae3c9..deb3851 100644
---- a/arch/arm/mach-tegra/platsmp.c
-+++ b/arch/arm/mach-tegra/platsmp.c
-@@ -21,7 +21,6 @@
- 
- #include <asm/cacheflush.h>
- #include <asm/hardware/gic.h>
--#include <mach/hardware.h>
- #include <asm/mach-types.h>
- #include <asm/smp_scu.h>
- 
-diff --git a/arch/arm/mm/proc-xsc3.S b/arch/arm/mm/proc-xsc3.S
-index 5962136..9ab25b4 100644
---- a/arch/arm/mm/proc-xsc3.S
-+++ b/arch/arm/mm/proc-xsc3.S
-@@ -28,7 +28,6 @@
- #include <linux/init.h>
- #include <asm/assembler.h>
- #include <asm/hwcap.h>
--#include <mach/hardware.h>
- #include <asm/pgtable.h>
- #include <asm/pgtable-hwdef.h>
- #include <asm/page.h>
+ #ifdef CONFIG_PCI
++unsigned int pci_flags = PCI_REASSIGN_ALL_RSRC;
++EXPORT_SYMBOL(pci_flags);
++
+ void __iomem *pci_iomap(struct pci_dev *dev, int bar, unsigned long maxlen)
+ {
+ 	resource_size_t start = pci_resource_start(dev, bar);
 -- 
 1.7.4.1
 
