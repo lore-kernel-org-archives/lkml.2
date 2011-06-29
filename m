@@ -1,93 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755466Ab1F2OMU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 10:12:20 -0400
-Received: from mail.tmr.com ([64.65.253.246]:51854 "EHLO partygirl.tmr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751518Ab1F2OMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 10:12:17 -0400
-X-Greylist: delayed 3844 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Jun 2011 10:12:16 EDT
-Message-ID: <4E0B23AE.4070703@tmr.com>
-Date: Wed, 29 Jun 2011 09:07:58 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.19) Gecko/20110420 Lightning/1.0b2 SeaMonkey/2.0.14
+	id S1756260Ab1F2NKn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 09:10:43 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:56412 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755867Ab1F2NKl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 09:10:41 -0400
+Message-ID: <4E0B2427.9020202@atmel.com>
+Date: Wed, 29 Jun 2011 15:09:59 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Linux Kernel mailing List <linux-kernel@vger.kernel.org>
-CC: Marc MERLIN <marc@merlins.org>
-Subject: Re: All kinds of irq 16: nobody cared with Sandy Bridge Asus P8H67-M
- MB and multiple drivers
-References: <20110626170345.GA26430@merlins.org>
-In-Reply-To: <20110626170345.GA26430@merlins.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        hong.xu@atmel.com, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] MTD: atmel_nand: optimize read/write buffer	functions
+References: <1309261856-27402-1-git-send-email-nicolas.ferre@atmel.com> <20110628111043.GH6588@pengutronix.de> <20110628145937.GG21898@n2100.arm.linux.org.uk>
+In-Reply-To: <20110628145937.GG21898@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marc MERLIN wrote:
-> [please Cc me on replies so that I can see them faster]
->
-> I've found various reports on the net, but usually they are one driver
-> or one card that's not doing the right thing.
->
-> In my case, it happens with multiple cards and drivers and I'm wondering if
-> it can be a motherboard bug somehow, and if there are linux kernel options
-> other than irqpoll which does not help, that can shed some light on this.
->
-> I just bought a new Sandy Bridge board:
->          Manufacturer: ASUSTeK Computer INC.
-> 	        Product Name: P8H67-M PRO
->          Vendor: American Megatrends Inc.
-> 	        Version: 1003
-> 		Release Date: 05/10/2011
->
-> I suppose the onboard pata could be problematic, but if so why would it only
-> fail when some special combination of cards share its irq?
-> 03:00.0 IDE interface: VIA Technologies, Inc. Unknown device 0415
-> pata_via 0000:03:00.0: version 0.3.4
-> pata_via 0000:03:00.0: PCI INT A ->  GSI 16 (level, low) ->  IRQ 16
-> pata_via 0000:03:00.0: setting latency timer to 64
->
-> I started with 2.6.36 and now have the same problems with 2.6.39.1.
-> The MB has 2 PCIe slots, and 2 PCI slots.
-> 3 slots get force routed on irq 16, and the last PCI slot is irq 19.
-> The onboard IDE is also irq 16.
->
-> I have tried 6 different PCI and PCIe cards:
-> - tg3 (gige)
-> - rtl8169 (gige)
-> - e100
-> - CMI8738-MC6
-> - sata_sil24 (sil 3132)
-> - sata_mv (marvell)
->
-> Pretty much all combinations where I have more than one PCI card plugged
-> in a slot routed to irq16 causes
->
-> irq 16: nobody cared (try booting with the "irqpoll" option)
-> (...)
-> handlers:
-> [<c037171b>] (ata_bmdma_interrupt+0x0/0x170)
-> [<f8450f1f>] (sil24_interrupt+0x0/0x443 [sata_sil24])
-> [<f8449d7a>] (e100_intr+0x0/0xa2 [e100])
-> Disabling IRQ #16
->
-> irqpoll makes no difference.
->
-> Moving the cards around helps if I only use 2 cards, one in the slot
-> with irq19 (currently sound card) and one in the slot with irq16.
->
-> Putting more than one card on irq 16 (not counting onboard pata) pretty
-> much always causes the dreaded message.
->
-> I however got one very puzzling error with an e100 in the separate irq19
-> slot once too:
-> kernel: irq 19: nobody cared (try booting with the "irqpoll" option)
-> kernel: Pid: 0, comm: swapper Tainted: G        W   2.6.36.0-core2smp-volpreempt-noide-hm64-20100724 #1
+Le 28/06/2011 16:59, Russell King - ARM Linux :
+> On Tue, Jun 28, 2011 at 01:10:43PM +0200, Uwe Kleine-König wrote:
+>>> @@ -265,33 +234,53 @@ err_buf:
+>>>  static void atmel_read_buf(struct mtd_info *mtd, u8 *buf, int len)
+>>>  {
+>>>  	struct nand_chip *chip = mtd->priv;
+>>> -	struct atmel_nand_host *host = chip->priv;
+>>> +	u32 align;
+>>> +	u8 *pbuf;
+>>>  
+>>>  	if (use_dma && len > mtd->oobsize)
+>>>  		/* only use DMA for bigger than oob size: better performances */
+>>>  		if (atmel_nand_dma_op(mtd, buf, len, 1) == 0)
+>>>  			return;
+>>>  
+>>> -	if (host->board->bus_width_16)
+>>> -		atmel_read_buf16(mtd, buf, len);
+>>> -	else
+>>> -		atmel_read_buf8(mtd, buf, len);
+>>> +	/* if no DMA operation possible, use PIO */
+>>> +	pbuf = buf;
+>>> +	align = 0x03 & ((unsigned)pbuf);
+>>> +
+>>> +	if (align) {
+>>> +		u32 align_len = 4 - align;
+>>> +
+>>> +		/* non aligned buffer: re-align to next word boundary */
+>>> +		ioread8_rep(chip->IO_ADDR_R, pbuf, align_len);
+>>> +		pbuf += align_len;
+>>> +		len -= align_len;
+>>> +	}
+>>> +	memcpy((void *)pbuf, chip->IO_ADDR_R, len);
+>> I think you don't need to cast to (void *). I think you need to cast the
+>> 2nd parameter instead because sparse don't like you passing an void
+>> __iomem *.
+>> Is it correct to read from chip->IO_ADDR_R, don't you need
+>> chip->IO_ADDR_R + align_len? Taking this into account, does it really
+>> help to align pbuf?
+> 
+> I think you need to read Documentation/bus-virt-phys-mapping.txt,
+> particularly the part after "NOTE NOTE NOTE".
+> 
+> Dereferencing ioremap'd memory is not permitted.  That includes passing
+> it to memcpy.  Even with a cast.
 
-Does this happen with an untainted kernel?
+So that means that I should use memcpy_fromio() even if the code if far
+less optimized.
 
+Shouldn't I re-implement some kind of IO copying function to deal with
+this IO memory so that I could take advantage of 8 words bursts?
+
+Best regards,
 -- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
+Nicolas Ferre
+
