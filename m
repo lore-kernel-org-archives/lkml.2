@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754332Ab1F2JaO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 05:30:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752379Ab1F2JaJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 05:30:09 -0400
-Message-ID: <4E0AF091.9030301@redhat.com>
-Date: Wed, 29 Jun 2011 10:29:53 +0100
-From: Ric Wheeler <rwheeler@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754389Ab1F2Jap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:30:45 -0400
+Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:55591 "EHLO
+	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752379Ab1F2Jaj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 05:30:39 -0400
+Date: Wed, 29 Jun 2011 12:30:34 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
+Cc: Felipe Balbi <balbi@ti.com>, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        avictor.za@gmail.com
+Subject: Re: [PATCH] AT91: add AT91SAM9X5 dummy configuration variable
+Message-ID: <20110629093033.GB2760@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1309260927-11411-1-git-send-email-nicolas.ferre@atmel.com>
+ <20110628103549.GG2612@legolas.emea.dhcp.ti.com>
+ <4E09C573.2030607@atmel.com>
+ <20110628122650.GK2612@legolas.emea.dhcp.ti.com>
+ <20110628160252.GQ17355@game.jcrosoft.org>
 MIME-Version: 1.0
-To: NeilBrown <neilb@suse.de>
-CC: Nico Schottelius <nico-lkml-20110623@schottelius.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Chris Mason <chris.mason@oracle.com>,
-        linux-btrfs <linux-btrfs@vger.kernel.org>,
-        Alasdair G Kergon <agk@redhat.com>
-Subject: Re: Mis-Design of Btrfs?
-References: <20110623105337.GD3753@ethz.ch> <20110627164637.377314e2@notabene.brown>
-In-Reply-To: <20110627164637.377314e2@notabene.brown>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="mvpLiMfbWzRoNl4x"
+Content-Disposition: inline
+In-Reply-To: <20110628160252.GQ17355@game.jcrosoft.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/27/2011 07:46 AM, NeilBrown wrote:
-> On Thu, 23 Jun 2011 12:53:37 +0200 Nico Schottelius
-> <nico-lkml-20110623@schottelius.org>  wrote:
->
->> Good morning devs,
->>
->> I'm wondering whether the raid- and volume-management-builtin of btrfs is
->> actually a sane idea or not.
->> Currently we do have md/device-mapper support for raid
->> already, btrfs lacks raid5 support and re-implements stuff that
->> has already been done.
->>
->> I'm aware of the fact that it is very useful to know on which devices
->> we are in a filesystem. But I'm wondering, whether it wouldn't be
->> smarter to generalise the information exposure through the VFS layer
->> instead of replicating functionality:
->>
->> Physical:   USB-HD   SSD   USB-Flash          | Exposes information to
->> Raid:       Raid1, Raid5, Raid10, etc.        | higher levels
->> Crypto:     Luks                              |
->> LVM:        Groups/Volumes                    |
->> FS:         xfs/jfs/reiser/ext3               v
->>
->> Thus a filesystem like ext3 could be aware that it is running
->> on a USB HD, enable -o sync be default or have the filesystem
->> to rewrite blocks when running on crypto or optimise for an SSD, ...
-> I would certainly agree that exposing information to higher levels is a good
-> idea.  To some extent we do.  But it isn't always as easy as it might sound.
-> Choosing exactly what information to expose is the challenge.  If you lack
-> sufficient foresight you might expose something which turns out to be
-> very specific to just one device, so all those upper levels which make use of
-> the information find they are really special-casing one specific device,
-> which isn't a good idea.
->
->
-> However it doesn't follow that RAID5 should not be implemented in BTRFS.
-> The levels that you have drawn are just one perspective.  While that has
-> value, it may not be universal.
-> I could easily argue that the LVM layer is a mistake and that filesystems
-> should provide that functionality directly.
-> I could almost argue the same for crypto.
-> RAID1 can make a lot of sense to be tightly integrated with the FS.
-> RAID5 ... I'm less convinced, but then I have a vested interest there so that
-> isn't an objective assessment.
->
-> Part of "the way Linux works" is that s/he who writes the code gets to make
-> the design decisions.   The BTRFS developers might create something truly
-> awesome, or might end up having to support a RAID feature that they
-> subsequently think is a bad idea.  But it really is their decision to make.
->
-> NeilBrown
->
 
-One more thing to add here is that I think that we still have a chance to 
-increase the sharing between btrfs and the MD stack if we can get those changes 
-made. No one likes to duplicate code, but we will need a richer interface 
-between the block and file system layer to help close that gap.
+--mvpLiMfbWzRoNl4x
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Ric
+Hi,
 
+On Tue, Jun 28, 2011 at 06:02:52PM +0200, Jean-Christophe PLAGNIOL-VILLARD =
+wrote:
+> > yet you will prevent the driver from being easily used by other
+> > architectures. What will happen is that a certain amount of:
+> >=20
+> > depends on (ARCH_AT91SAM9X5 || ARCH_FOO || ARCH_BAR || ARCH_BAZ)
+> no I disagree this is done to allow only the drivers on proper arch
+>=20
+> and we do not need the multiple depend we usally create a HAVE_xxx config
+> that the ARCH select and we just depend on it
 
+I still think it isn't good enough. Ideally, drivers will always be
+portable without any arch dependency or the HAVE_XXX trick. Still, it's
+not worth to continue this discussion, I rather look at a driver which
+now depends on ARCH_AT91SAM9X5.
+
+--=20
+balbi
+
+--mvpLiMfbWzRoNl4x
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOCvC5AAoJEAv8Txj19kN1whgH/jyYq0PqnyCdL7xeYx57sq1E
+DF1umABxAkxelJ3JixMoEGPZhYoxLqI3AEfd7iat3+jL1JWdEZkg8Vji/0INeCKa
+jSniFGFYzGtyUrELCLVwJC620m6HM0AGw/x9U+uT89cIZ2g9j1IcwVvuHyfsVFlw
+HweQvcWqALn6J3s/rpLokflps+Ql1p6ewu2L3LSGq/aGyWUWXZZ3F1S/oelzO916
+Kl0eLlysSMPPP1COeCq75QmsVI+r82M2gMz8jhwWZWztDCMRRyAiueBbFJu7/dT7
+9krNrXTSfV/gS85sRCfL9Hfjd7KJ3TmnQv8ARXX4mE3Mn4MvFjaXsosuZKgZN2w=
+=PmYq
+-----END PGP SIGNATURE-----
+
+--mvpLiMfbWzRoNl4x--
