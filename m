@@ -1,45 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab1F2R3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 13:29:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19480 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752701Ab1F2R3p (ORCPT
+	id S1756990Ab1F2Rdc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 13:33:32 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:60671 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754854Ab1F2Rd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 13:29:45 -0400
-Message-ID: <4E0B60DE.50908@oracle.com>
-Date: Wed, 29 Jun 2011 10:29:02 -0700
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+	Wed, 29 Jun 2011 13:33:28 -0400
+Date: Wed, 29 Jun 2011 13:33:28 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Munegowda, Keshava" <keshava_mgowda@ti.com>
+cc: Kevin Hilman <khilman@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <balbi@ti.com>, <gadiyar@ti.com>, <sameo@linux.intel.com>,
+        <parthab@india.ti.com>, <tony@atomide.com>, <b-cousson@ti.com>,
+        <paul@pwsan.com>
+Subject: Re: [PATCH 4/4] mfd: global Suspend and resume support of ehci and
+ ohci
+In-Reply-To: <BANLkTi=pKL6RDBTDBStv+uhxVKp3-bwXbg@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1106291331300.2064-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-CC: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110629065306.GC1026@dastard> <20110629074021.GA26086@infradead.org> <4E0B019E.8080800@draigBrady.com>
-In-Reply-To: <4E0B019E.8080800@draigBrady.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090209.4E0B60F5.014F:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2011 03:42 AM, Pádraig Brady wrote:
-> There is the argument, that if this interface can distinguish
-> these dirty unwritten extents, then why can't the fiemap interface too?
-> The advantage of the fiemap interface is that it can distinguish
-> empty extents vs holes. Empty extents will become increasingly common
-> I think, given the fragmentation and space guarantee benefits they give.
-> It would be cool for cp for example to be able to efficiently copy
-> empty extents from source to dest.
+On Wed, 29 Jun 2011, Munegowda, Keshava wrote:
 
-I'm not too sure about that. Atleast not enabled by default. Most users
-use cp to backup data. Not empty space. In this case, this empty extent
-may not even be de-dupable.
+> for usb host case , I am seeing that the pm_runtime_get_sync
+> 
+> 
+> static int rpm_resume(struct device *dev, int rpmflags)
+> {
+>   ............
+>  ..........
+> 	if (dev->pwr_domain) {
+> 		callback = dev->pwr_domain->ops.runtime_resume;
+> 		if(!strcmp(dev_name(dev),"usbhs_omap"))
+> 			 pr_err("dev->pwr_domain->ops.runtime_resume");
+> 	}	
+> 	else if (dev->type && dev->type->pm) {
+> 		callback = dev->type->pm->runtime_resume;
+> 		if(!strcmp(dev_name(dev),"usbhs_omap"))
+> 			 pr_err("dev->type->pm->runtime_resume");
+> 	}	
+> 	else if (dev->class && dev->class->pm) {
+> 		callback = dev->class->pm->runtime_resume;
+> 		if(!strcmp(dev_name(dev),"usbhs_omap"))
+> 			 pr_err("ev->class->pm->runtime_resume");
+> 	}	
+> 	else if (dev->bus && dev->bus->pm) {
+> 		callback = dev->bus->pm->runtime_resume;
+> 	if(!strcmp(dev_name(dev),"usbhs_omap"))
+> 		 pr_err("dev->bus->pm->runtime_resume");
+> 	}	
+> 	else
+> 		callback = NULL;
+> }
+> 
+> 
+> I am seeing that below if statement was hitting true:
+> 
+> 	if (dev->pwr_domain) {
+> 		callback = dev->pwr_domain->ops.runtime_resume;
+> 		if(!strcmp(dev_name(dev),"usbhs_omap"))
+> 			 pr_err("dev->pwr_domain->ops.runtime_resume");
+> 
+> 
+> due to this; the driver->runtime_resume was not getting called.
+> 
+> Any idea on why I am seeing only the dev->pwr_domain is set not
+> dev->bus && dev->bus->pm is hitting here?
 
-Frankly I'd be happier of cp started to exploited fallocate() to create larger
-extents before copying data into them. Atleast for the large files.
+Because the PM domain takes precedence over the subsystem for PM 
+callbacks.  If the subsystem routine should be called then the PM 
+domain code has to call it.
+
+Alan Stern
+
