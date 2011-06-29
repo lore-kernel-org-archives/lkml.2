@@ -1,78 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab1F2Tep (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 15:34:45 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:40986 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757640Ab1F2Ten (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 15:34:43 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [PATCH 3/3] PM: Limit race conditions between runtime PM and system sleep
-Date: Wed, 29 Jun 2011 21:35:46 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Ming Lei <tom.leiming@gmail.com>,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        linux-scsi@vger.kernel.org
-References: <Pine.LNX.4.44L0.1106291004180.2064-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106291004180.2064-100000@iolanthe.rowland.org>
+	id S932124Ab1F2Tg3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 15:36:29 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:13315 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757637Ab1F2Tg1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 15:36:27 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 29 Jun 2011 12:36:24 -0700
+From: Andrew Chew <AChew@nvidia.com>
+To: "'Laurent Pinchart'" <laurent.pinchart@ideasonboard.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-media@vger.kernel.org" <linux-media@vger.kernel.org>,
+        "g.liakhovetski@gmx.de" <g.liakhovetski@gmx.de>,
+        "mchehab@redhat.com" <mchehab@redhat.com>,
+        "olof@lixom.net" <olof@lixom.net>
+Date: Wed, 29 Jun 2011 12:36:23 -0700
+Subject: RE: [PATCH 4/6 v3] [media] ov9740: Remove hardcoded resolution regs
+Thread-Topic: [PATCH 4/6 v3] [media] ov9740: Remove hardcoded resolution regs
+Thread-Index: Acw2Qij1jeck8n1YSHqzjBUs5xiW8wAUYhxA
+Message-ID: <643E69AA4436674C8F39DCC2C05F76382A76C764BD@HQMAIL03.nvidia.com>
+References: <1308871184-6307-1-git-send-email-achew@nvidia.com>
+ <1308871184-6307-4-git-send-email-achew@nvidia.com>
+ <201106291152.00992.laurent.pinchart@ideasonboard.com>
+In-Reply-To: <201106291152.00992.laurent.pinchart@ideasonboard.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106292135.47147.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 29, 2011, Alan Stern wrote:
-> On Tue, 28 Jun 2011, Rafael J. Wysocki wrote:
+> > +	ret = ov9740_reg_write(client, OV9740_ISP_CTRL1E, 
+> scale_input_x >> 8);
+> > +	if (ret)
+> > +		goto done;
+> > +	ret = ov9740_reg_write(client, OV9740_ISP_CTRL1F, 
+> scale_input_x & 0xff);
+> > +	if (ret)
+> > +		goto done;
+> > +	ret = ov9740_reg_write(client, OV9740_ISP_CTRL20, 
+> scale_input_y >> 8);
+> > +	if (ret)
+> > +		goto done;
+> > +	ret = ov9740_reg_write(client, OV9740_ISP_CTRL21, 
+> scale_input_y & 0xff);
+> > +	if (ret)
+> > +		goto done;
 > 
-> > On Tuesday, June 28, 2011, Ming Lei wrote:
-> > > 
-> > > Hi Rafael,
-> > > 
-> > > On Sun, 26 Jun 2011 00:56:31 +0200
-> > > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > > 
-> > > > Index: linux-2.6/Documentation/power/runtime_pm.txt
-> > > > ===================================================================
-> > > > --- linux-2.6.orig/Documentation/power/runtime_pm.txt
-> > > > +++ linux-2.6/Documentation/power/runtime_pm.txt
-> > > > @@ -567,6 +567,11 @@ this is:
-> > > >  	pm_runtime_set_active(dev);
-> > > >  	pm_runtime_enable(dev);
-> > > >  
-> > > > +The PM core always increments the run-time usage counter before calling the
-> > > > +->suspend() callback and decrements it after calling the ->resume() callback.
-> > > > +Hence disabling run-time PM temporarily like this will not cause any run-time
-> > > > +suspend callbacks to be lost.
-> > > 
-> > > Could you explain why the above is that "this will not cause any run-time suspend
-> > > callbacks to be lost"? 
-> > > 
-> > > Looks like it should be "this will not cause any run-time suspend callbacks to
-> > > be called", but not sure.
-> > 
-> > You're right the wording is not perfect.  The problem is that if it's done
-> > this way without incrementing the usage counter beforehand, the status may
-> > change to "suspended" right before the pm_runtime_set_active() and then the
-> > new status will not reflect the actual state of the device.
-> > 
-> > So, it may be better to say "Hence disabling runtime PM temporarily like this
-> > will not cause the runtime PM status of the device to conflict with the actual
-> > device state".
-> > 
-> > Alan, what do you think?
-> 
-> How about: "... will not cause any runtime suspend attempts to be 
-> permanently lost.  If the usage count goes to zero following the return 
-> of the ->resume() callback, the ->runtime_idle() callback will be 
-> invoked as usual."
+> Now that we know what control registers 1e to 21 are for, 
+> what about renaming 
+> them ? Are they called CTRL1E to CTRL21 in the vendor documentation ?
 
-That's better, thanks!
-
-Rafael
+Yes, that's what they're called in the vendor documentation, so I'd rather not make something up.
