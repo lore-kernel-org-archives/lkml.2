@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757709Ab1F2UKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 16:10:46 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:55701 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756912Ab1F2UKm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 16:10:42 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=b/uVXlVzAOb3oU4pw9mg43ifeGKe1dbuBDyvoQ7dj6PUvgA9L4/gf2VjWCDe8lTNF
-	8/tqGlq4Do1zffH6jk45w==
+	id S1757650Ab1F2UM0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 16:12:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1979 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754734Ab1F2UMZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 16:12:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,445,1304319600"; 
+   d="scan'208";a="19829011"
+From: Andi Kleen <andi@firstfloor.org>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        thomas.abraham@linaro.org,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory Power Management
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+	<20110629130038.GA7909@in.ibm.com> <1309367184.11430.594.camel@nimitz>
+	<20110629174220.GA9152@in.ibm.com> <1309370342.11430.604.camel@nimitz>
+Date: Wed, 29 Jun 2011 13:11:00 -0700
+In-Reply-To: <1309370342.11430.604.camel@nimitz> (Dave Hansen's message of
+	"Wed, 29 Jun 2011 10:59:02 -0700")
+Message-ID: <m2y60k1jqj.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1309377708.26417.41.camel@gandalf.stny.rr.com>
-References: <1309376033-32005-1-git-send-email-dima@android.com>
-	<1309377708.26417.41.camel@gandalf.stny.rr.com>
-Date: Wed, 29 Jun 2011 13:10:39 -0700
-X-Google-Sender-Auth: PMIrwg-r-EikJ3WOoqwehFEyGrI
-Message-ID: <CAPz4a6BzYdwH-fTdP=tC-AcC4x_bMtu4YHa80rcTUy6ZV4JEfA@mail.gmail.com>
-Subject: Re: [PATCH] plist: add mutex to the blessed lock type for plists
-From: Dima Zavin <dima@android.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 1:01 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Wed, 2011-06-29 at 12:33 -0700, Dima Zavin wrote:
+Dave Hansen <dave@linux.vnet.ibm.com> writes:
 >
->> +#include <linux/mutex.h>
->>  #include <linux/plist.h>
->>  #include <linux/spinlock.h>
->>
->> @@ -56,11 +57,14 @@ static void plist_check_list(struct list_head *top)
->>
->>  static void plist_check_head(struct plist_head *head)
->>  {
->> -     WARN_ON(head != &test_head && !head->rawlock && !head->spinlock);
->> +     WARN_ON(head != &test_head && !head->rawlock && !head->spinlock &&
->> +             !head->mutex);
->>       if (head->rawlock)
->>               WARN_ON_SMP(!raw_spin_is_locked(head->rawlock));
->>       if (head->spinlock)
->>               WARN_ON_SMP(!spin_is_locked(head->spinlock));
->> +     if (head->mutex)
->> +             WARN_ON_SMP(!mutex_is_locked(head->mutex));
->
-> Spin locks are NOPs on SMP, but mutexes are not. Are you sure you want
-> this as WARN_ON_SMP()?
+> It's also going to be a pain to track kernel references.  On x86, our
 
-Doh. Copy-pasty-itis.. Will switch to plain WARN_ON.
+Even if you tracked them what would you do with them?
 
---Dima
+It's quite hard to stop using arbitary kernel memory (see all the dancing
+memory-failure does) 
 
+You need to track the direct accesses to user data which happens
+to be accessed through the direct mapping.
 
->
-> -- Steve
->
->>       if (!plist_head_empty(head))
->>               plist_check_list(&plist_first(head)->prio_list);
->>       plist_check_list(&head->node_list);
->
->
->
+Also it will be always unreliable because this all won't track DMA.
+For that you would also need to track in the dma_* infrastructure,
+which will likely get seriously expensive.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only
