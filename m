@@ -1,90 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754513Ab1F2Jjs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 05:39:48 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:46493 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098Ab1F2Jjn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 05:39:43 -0400
+	id S1754505Ab1F2JqQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:46:16 -0400
+Received: from swan.madduck.net ([80.68.90.58]:45810 "EHLO swan.madduck.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753880Ab1F2JqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 05:46:14 -0400
+X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Jun 2011 05:46:14 EDT
+Date: Wed, 29 Jun 2011 11:40:18 +0200
+From: martin f krafft <madduck@madduck.net>
+To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: nested block devices (partitioned RAID with LVM): where Linux
+ sucks ;-)
+Message-ID: <20110629094017.GA12692@albatross.gern.madduck.net>
+Mail-Followup-To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>,
+	linux-kernel@vger.kernel.org
+References: <4E0AED02020000A100006458@gwsmtp1.uni-regensburg.de>
 MIME-Version: 1.0
-In-Reply-To: <4E0AE36B.9010500@redhat.com>
-References: <1504884387.187692.1307716550265.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
-	<4DF71E28.6070009@suse.de>
-	<4E0AE36B.9010500@redhat.com>
-Date: Wed, 29 Jun 2011 10:39:42 +0100
-Message-ID: <BANLkTik2AXXkWvV23OP1eDdLirP2N0PC3A@mail.gmail.com>
-Subject: Re: virtio scsi host draft specification, v3
-From: Stefan Hajnoczi <stefanha@gmail.com>
-To: Paolo Bonzini <pbonzini@redhat.com>
-Cc: Hannes Reinecke <hare@suse.de>, Christoph Hellwig <chellwig@redhat.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=pgp-sha512;
+	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Disposition: inline
+In-Reply-To: <4E0AED02020000A100006458@gwsmtp1.uni-regensburg.de>
+X-Motto: Keep the good times rollin'
+X-OS: Debian GNU/Linux wheezy/sid kernel 3.0.0-rc3-amd64 x86_64
+X-Spamtrap: madduck.bogus@madduck.net
+X-Subliminal-Message: debian/rules!
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 9:33 AM, Paolo Bonzini <pbonzini@redhat.com> wrote:
-> On 06/14/2011 10:39 AM, Hannes Reinecke wrote:
->> If, however, we decide to expose some details about the backend, we
->> could be using the values from the backend directly.
->> EG we could be forwarding the SCSI target port identifier here
->> (if backed by real hardware) or creating our own SAS-type
->> identifier when backed by qemu block. Then we could just query
->> the backend via a new command on the controlq
->> (eg 'list target ports') and wouldn't have to worry about any protocol
->> specific details here.
->
-> Besides the controlq command, which I can certainly add, this is
-> actually quite similar to what I had in mind (though my plan likely
-> would not have worked because I was expecting hierarchical LUNs used
-> uniformly).  So, "list target ports" would return a set of LUN values to
-> which you can send REPORT LUNS, or something like that?
 
-I think we're missing a level of addressing.  We need the ability to
-talk to multiple target ports in order for "list target ports" to make
-sense.  Right now there is one implicit target that handles all
-commands.  That means there is one fixed I_T Nexus.
+--MGYHOYXEY6WxJCY8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-If we introduce "list target ports" we also need a way to say "This
-CDB is destined for target port #0".  Then it is possible to enumerate
-target ports and address targets independently of the LUN field in the
-CDB.
+also sprach Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de> [2011.06.29.09=
+14 +0200]:
+> 1) The original error message of mdadm about a wrong UUID is
+> completely wrong ("device busy" would have been correct)
 
-I'm pretty sure this is also how SAS and other transports work.  In
-their framing they include the target port.
+Correct. It would be nice if you could file a bug about this in your
+distro's bug tracker (or Debian's).
 
-The question is whether we really need to support multiple targets on
-a virtio-scsi adapter or not.  If you are selectively mapping LUNs
-that the guest may access, then multiple targets are not necessary.
-If we want to do pass-through of the entire SCSI bus then we need
-multiple targets but I'm not sure if there are other challenges like
-dependencies on the transport (Fibre Channel, SAS, etc) which make it
-impossible to pass through bus-level access?
+> 2) partitions on unassembled raid legs are activated before the
+> RAID is assembled, effectively preventing a RAID assembly (I could
+> not find out how to fix/prevent this)
 
-> If I understand it correctly, it should remain possible to use a single
-> host for both pass-through and emulated targets.
+I think you will find that LVM snatched the PV before mdadm had
+a chance, hence it was busy. This is a common problem with LVM and
+RAID1, because LVM (also) scans all devices and because RAID1 is
+merely a mirroring setup, LVM can use either of the components just
+as well.
 
-Yes.
+The solution? I thought that there was a patch to LVM that prevented
+it from using RAID members. But if there isn't, then exclude the
+devices from its scan.
 
->> Of course, when doing so we would be lose the ability to freely remap
->> LUNs. But then remapping LUNs doesn't gain you much imho.
->> Plus you could always use qemu block backend here if you want
->> to hide the details.
->
-> And you could always use the QEMU block backend with scsi-generic if you
-> want to remap LUNs, instead of true passthrough via the kernel target.
+=E2=80=A6 and before you claim that Linux sucks, consider how a computer
+should do it differently. I think you will find that every
+implementation has to make certain hard assumptions (for it lacks
+human abstraction and combination abilities), and your current
+griefs make you feel like Linux does it worst of all. Rest assured:
+it doesn't. It makes assumptions, but you will find that they are
+quite sensible.
 
-IIUC the in-kernel target always does remapping.  It passes through
-individual LUNs rather than entire targets and you pick LU Numbers to
-map to the backing storage (which may or may not be a SCSI
-pass-through device).  Nicholas Bellinger can confirm whether this is
-correct.
+> I haven't studied the block data structures, but obviously the
+> RAID metadata is not at the start of the devices. If they were,
+> a partition table would not be found, and the RAID could have been
+> assembled without a problem.
 
-Stefan
+You are right, the metadata are not at the start. This is by design.
+
+> I'm sending this message to make developers aware of the problem,
+
+(in which case it might be wise to avoid exclaiming things like
+"linux sucks"=E2=80=A6)
+
+> P.S. Novell Support was not able to provide a solution for this problem i=
+n time
+
+News at 11=E2=80=A6
+
+--=20
+martin | http://madduck.net/ | http://two.sentenc.es/
+=20
+"no, 'eureka' is greek for 'this bath is too hot.'"
+                                                            -- dr. who
+=20
+spamtraps: madduck.bogus@madduck.net
+
+--MGYHOYXEY6WxJCY8
+Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
+Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQLvBAEBCgDZBQJOCvMBwBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
+aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
+bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
+NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
+MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xKFN
+EACx/O9AKVVDWNQ/2iNBIG3hQWEqiz5aLkuBnQTp74MhkM4vHwkzVFCRb38NOjB6
+PewPFqxhUROohGAU+qwPI8BRwbkgzUzknrPrnhVi0yw8NNttWLzf5xvJreetdeKU
+uaZ0MTJ2ONHyRKk3rSUo5ot4MpRv5EAca6tEwVBK74Gh+KyT495nRbYTi1IUKQHn
+kmT0olgLYnYPdM1MkEpKP/1JQLPqKZMkz9qG2PJK52rG9WOIRE71uYs/Q+4h/XxH
+7Xdfz1O5Jz9Rb/8eNy1nDOHg2rFIGkA1qIdHfIb6TeJBcDdq1d2/FFKZrIkJgU5m
+9Km/LbpV3VRrQhHTrDr8fZt7WIyAckX8MWf8IOAkt32jzJdWdTuZBJnQH7CG5o77
+v3M2JyJQs+wuTfg+vRNIBIkxzBKDrM68b3ysvgfMU73EGbCahXdHMv9OPqklj5mk
+2L8G9KSTfoo3aqCb1sqPSszPjtihy68vpiCM+NUUKsDJwXT9pjZ27vS4TvEe9yKL
+uDcGoVlXTsepFRL3LmXz6N04l19B4jtP6FTFrV1FqVwQffcvCkKnDDCerXhnWD/2
++uVvX8ZxTS2+McFwSgg/XldJNC10DjKj0pQoBUoRDXvXWjknAFMn/dKxLV/1iJzb
+zFhHdFshBdNjwyXEbWB1Igi0in2peNM2IR/Yay2SIX55zg==
+=tR+X
+-----END PGP SIGNATURE-----
+
+--MGYHOYXEY6WxJCY8--
+
