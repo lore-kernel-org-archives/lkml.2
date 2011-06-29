@@ -1,98 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753702Ab1F2G2g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 02:28:36 -0400
-Received: from mailout2.samsung.com ([203.254.224.25]:35161 "EHLO
-	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab1F2G2a (ORCPT
+	id S1753682Ab1F2GbD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 02:31:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:44730 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750974Ab1F2Ga7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 02:28:30 -0400
-X-AuditID: cbfee61a-b7c53ae000002dc1-49-4e0ac60c54f0
-Date: Wed, 29 Jun 2011 15:28:24 +0900
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH] tty: serial: samsung.c remove legacy PM code.
-To: linux-serial@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com
-Message-id: <1309328904-19267-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 29 Jun 2011 06:28:43.0323 (UTC)
- FILETIME=[CAEEA8B0:01CC3625]
-X-Brightmail-Tracker: AAAAAA==
+	Wed, 29 Jun 2011 02:30:59 -0400
+MIME-Version: 1.0
+X-Originating-IP: [46.116.136.221]
+In-Reply-To: <20110628164453.aa85c85c.rdunlap@xenotime.net>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+ <1308640714-17961-8-git-send-email-ohad@wizery.com> <20110628164453.aa85c85c.rdunlap@xenotime.net>
+From: Ohad Ben-Cohen <ohad@wizery.com>
+Date: Wed, 29 Jun 2011 09:30:38 +0300
+Message-ID: <BANLkTinDX9ETcqZ=hvSGaao2s=ZcM-JsAg@mail.gmail.com>
+Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
+To: Randy Dunlap <rdunlap@xenotime.net>, Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
+        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch "modernize" tty/serial/samsung.c to use non-legacy code for
-suspend/resume.
+Hi Randy,
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
----
- drivers/tty/serial/samsung.c |   27 ++++++++++++++-------------
- 1 files changed, 14 insertions(+), 13 deletions(-)
+Thanks for your comments !
 
-diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
-index f66f648..34b8afe 100644
---- a/drivers/tty/serial/samsung.c
-+++ b/drivers/tty/serial/samsung.c
-@@ -1194,12 +1194,10 @@ int __devexit s3c24xx_serial_remove(struct platform_device *dev)
- EXPORT_SYMBOL_GPL(s3c24xx_serial_remove);
- 
- /* UART power management code */
--
--#ifdef CONFIG_PM
--
--static int s3c24xx_serial_suspend(struct platform_device *dev, pm_message_t state)
-+#ifdef CONFIG_PM_SLEEP
-+static int s3c24xx_serial_suspend(struct device *dev)
- {
--	struct uart_port *port = s3c24xx_dev_to_port(&dev->dev);
-+	struct uart_port *port = s3c24xx_dev_to_port(dev);
- 
- 	if (port)
- 		uart_suspend_port(&s3c24xx_uart_drv, port);
-@@ -1207,9 +1205,9 @@ static int s3c24xx_serial_suspend(struct platform_device *dev, pm_message_t stat
- 	return 0;
- }
- 
--static int s3c24xx_serial_resume(struct platform_device *dev)
-+static int s3c24xx_serial_resume(struct device *dev)
- {
--	struct uart_port *port = s3c24xx_dev_to_port(&dev->dev);
-+	struct uart_port *port = s3c24xx_dev_to_port(dev);
- 	struct s3c24xx_uart_port *ourport = to_ourport(port);
- 
- 	if (port) {
-@@ -1222,17 +1220,20 @@ static int s3c24xx_serial_resume(struct platform_device *dev)
- 
- 	return 0;
- }
--#endif
-+
-+static const struct dev_pm_ops s3c24xx_serial_pm_ops = {
-+	.suspend = s3c24xx_serial_suspend,
-+	.resume = s3c24xx_serial_resume,
-+};
-+#else /* !CONFIG_PM_SLEEP */
-+#define s3c24xx_serial_pm_ops	NULL
-+#endif /* CONFIG_PM_SLEEP */
- 
- int s3c24xx_serial_init(struct platform_driver *drv,
- 			struct s3c24xx_uart_info *info)
- {
- 	dbg("s3c24xx_serial_init(%p,%p)\n", drv, info);
--
--#ifdef CONFIG_PM
--	drv->suspend = s3c24xx_serial_suspend;
--	drv->resume = s3c24xx_serial_resume;
--#endif
-+	drv->driver.pm = &s3c24xx_serial_pm_ops;
- 
- 	return platform_driver_register(drv);
- }
--- 
-1.7.4.1
+On Wed, Jun 29, 2011 at 2:44 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
+>> +hardware accelerators, and therefore are often used to offload cpu-intensive
+>
+> prefer:                                                           CPU-
+> throughout.
 
+Isn't that changing the meaning a bit ? Let's stick with the original
+version, I think it's more clear.
+
+>> +system's physical memory and/or other sensitive hardware resources (e.g. on
+>> +OMAP4, remote cores (/hardware accelerators) may have direct access to the
+>> +physical memory, gpio banks, dma controllers, i2c bus, gptimers, mailbox
+>> +devices, hwspinlocks, etc..). Moreover, those remote processors might be
+>> +running RTOS where every task can access the entire memory/devices exposed
+>> +to the processor. To minimize the risks of rogue (/buggy) userland code
+>
+> What is with the leading / here and above (/hardware) and below?
+
+/ here means "or". You can read the sentence twice, either without the
+(/ ..) options or with them, and then you get two (different)
+examples.
+
+Any idea how to make it more readable ? I prefer not to drop the
+second example, as it's adding information.
+
+>> +if RPMSG
+>> +
+>> +# OK, it's a little counter-intuitive to do this, but it puts it neatly under
+>> +# the rpmsg menu (and it's the approach preferred by the virtio folks).
+>> +
+>> +source "drivers/virtio/Kconfig"
+>
+> It seems odd to have that Kconfig file sourced in multiple places.
+> Are the kconfig tools happy with that?
+
+They are, probably because these places are mutually exclusive today:
+
+$ git grep "drivers/virtio/Kconfig"
+arch/ia64/kvm/Kconfig:source drivers/virtio/Kconfig
+arch/mips/Kconfig:source drivers/virtio/Kconfig
+arch/powerpc/kvm/Kconfig:source drivers/virtio/Kconfig
+arch/s390/kvm/Kconfig:source drivers/virtio/Kconfig
+arch/sh/Kconfig:source drivers/virtio/Kconfig
+arch/tile/kvm/Kconfig:source drivers/virtio/Kconfig
+arch/x86/kvm/Kconfig:source drivers/virtio/Kconfig
+
+Now that we start using virtio for inter-processor communications,
+too, we might soon bump into a situation where virtio will be sourced
+twice.
+
+Probably the solution is to move 'source "drivers/virtio/Kconfig"'
+into drivers/Kconfig, and remove all other instances.
+
+Rusty, are you ok with that ?
+
+Thanks,
+Ohad.
+
+> Sorry about the delay.  I had most of this in my drafts folder and
+> forgot about it...
+
+Np, thanks a lot !
+
+Ohad.
