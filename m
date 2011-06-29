@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757807Ab1F2XfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 19:35:20 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:58062 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab1F2XeY (ORCPT
+	id S1757304Ab1F2Xex (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 19:34:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:45463 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754874Ab1F2Xe0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 19:34:24 -0400
+	Wed, 29 Jun 2011 19:34:26 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -15,9 +15,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
         Sam Liao <phyomh@gmail.com>
-Subject: [PATCH 5/6] perf tools: Allow sort dimensions to be registered more than once
-Date: Thu, 30 Jun 2011 01:34:07 +0200
-Message-Id: <1309390448-9160-6-git-send-email-fweisbec@gmail.com>
+Subject: [PATCH 6/6] perf tools: Only display parent field if explictly sorted
+Date: Thu, 30 Jun 2011 01:34:08 +0200
+Message-Id: <1309390448-9160-7-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1309390448-9160-1-git-send-email-fweisbec@gmail.com>
 References: <1309390448-9160-1-git-send-email-fweisbec@gmail.com>
@@ -25,15 +25,73 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So that the parent sort dimension can be registered twice: once
-if we add it as an explicit sort dimension (-s parent) and twice
-if we request a parent filter (-p foo).
+We don't need to display the parent field if the parent
+sorting machinery is only used for parent filtering
+(as in "-p foo").
 
-We'll have only one parent sort dimension in the end but this
-allows to override the default parent filter with we gave in "-p"
-option. The goal of this is to prepare to allow the use of
-"-s parent" and "-p foo" at the same time, ie: sort by filtered
-parent.
+However if parent filtering is used in combination with
+explicit parent sorting ( -s parent), we want to
+display it.
+
+Result with:
+
+  perf report -p kernel_thread -s parent
+
+Before:
+
+ # Overhead  Parent symbol
+ # ........  .............
+ #
+     0.07%
+            |
+            --- ioread8
+                ata_sff_check_status
+                ata_sff_tf_load
+                ata_sff_qc_issue
+                ata_bmdma_qc_issue
+                ata_qc_issue
+                ata_scsi_translate
+                ata_scsi_queuecmd
+                scsi_dispatch_cmd
+                scsi_request_fn
+                __blk_run_queue
+                __make_request
+                generic_make_request
+                submit_bio
+                submit_bh
+                journal_submit_commit_record
+                jbd2_journal_commit_transaction
+                kjournald2
+                kthread
+                kernel_thread_helpe
+
+After:
+
+ # Overhead  Parent symbol
+ # ........  .............
+ #
+     0.07%  kernel_thread_helper
+            |
+            --- ioread8
+                ata_sff_check_status
+                ata_sff_tf_load
+                ata_sff_qc_issue
+                ata_bmdma_qc_issue
+                ata_qc_issue
+                ata_scsi_translate
+                ata_scsi_queuecmd
+                scsi_dispatch_cmd
+                scsi_request_fn
+                __blk_run_queue
+                __make_request
+                generic_make_request
+                submit_bio
+                submit_bh
+                journal_submit_commit_record
+                jbd2_journal_commit_transaction
+                kjournald2
+                kthread
+                kernel_thread_helper
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
@@ -43,42 +101,29 @@ Cc: Stephane Eranian <eranian@google.com>
 Cc: David Ahern <dsahern@gmail.com>
 Cc: Sam Liao <phyomh@gmail.com>
 ---
- tools/perf/util/sort.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ tools/perf/builtin-report.c |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
 
-diff --git a/tools/perf/util/sort.c b/tools/perf/util/sort.c
-index f5dba56..401e220 100644
---- a/tools/perf/util/sort.c
-+++ b/tools/perf/util/sort.c
-@@ -260,15 +260,9 @@ int sort_dimension__add(const char *tok)
- 	for (i = 0; i < ARRAY_SIZE(sort_dimensions); i++) {
- 		struct sort_dimension *sd = &sort_dimensions[i];
- 
--		if (sd->taken)
--			continue;
--
- 		if (strncasecmp(tok, sd->name, strlen(tok)))
- 			continue;
- 
--		if (sd->entry->se_collapse)
--			sort__need_collapse = 1;
--
- 		if (sd->entry == &sort_parent) {
- 			int ret = regcomp(&parent_regex, parent_pattern, REG_EXTENDED);
- 			if (ret) {
-@@ -281,6 +275,12 @@ int sort_dimension__add(const char *tok)
- 			sort__has_parent = 1;
- 		}
- 
-+		if (sd->taken)
-+			return 0;
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 271e252..5d43d01 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -525,7 +525,14 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ 	if (parent_pattern != default_parent_pattern) {
+ 		if (sort_dimension__add("parent") < 0)
+ 			return -1;
+-		sort_parent.elide = 1;
 +
-+		if (sd->entry->se_collapse)
-+			sort__need_collapse = 1;
-+
- 		if (list_empty(&hist_entry__sort_list)) {
- 			if (!strcmp(sd->name, "pid"))
- 				sort__first_dimension = SORT_PID;
++		/*
++		 * Only show the parent fields if we explicitly
++		 * sort that way. If we only use parent machinery
++		 * for filtering, we don't want it.
++		 */
++		if (!strstr(sort_order, "parent"))
++			sort_parent.elide = 1;
+ 	} else
+ 		symbol_conf.exclude_other = false;
+ 
 -- 
 1.7.5.4
 
