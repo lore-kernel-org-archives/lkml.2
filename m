@@ -1,148 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757654Ab1F2TeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 15:34:19 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:38150 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757178Ab1F2TeP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 15:34:15 -0400
-From: Dima Zavin <dima@android.com>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Dima Zavin <dima@android.com>
-Subject: [PATCH] plist: add mutex to the blessed lock type for plists
-Date: Wed, 29 Jun 2011 12:33:53 -0700
-Message-Id: <1309376033-32005-1-git-send-email-dima@android.com>
-X-Mailer: git-send-email 1.7.3.1
-X-System-Of-Record: true
+	id S932116Ab1F2Tep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 15:34:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:40986 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757640Ab1F2Ten (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 15:34:43 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 3/3] PM: Limit race conditions between runtime PM and system sleep
+Date: Wed, 29 Jun 2011 21:35:46 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Ming Lei <tom.leiming@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        linux-scsi@vger.kernel.org
+References: <Pine.LNX.4.44L0.1106291004180.2064-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1106291004180.2064-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106292135.47147.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, plist debugging "enforces" that the plist is locked
-with either a raw_spinlock or a spinlock. The plist data structure
-is useful in other places, where spinlocks are unnecessary.
+On Wednesday, June 29, 2011, Alan Stern wrote:
+> On Tue, 28 Jun 2011, Rafael J. Wysocki wrote:
+> 
+> > On Tuesday, June 28, 2011, Ming Lei wrote:
+> > > 
+> > > Hi Rafael,
+> > > 
+> > > On Sun, 26 Jun 2011 00:56:31 +0200
+> > > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> > > 
+> > > > Index: linux-2.6/Documentation/power/runtime_pm.txt
+> > > > ===================================================================
+> > > > --- linux-2.6.orig/Documentation/power/runtime_pm.txt
+> > > > +++ linux-2.6/Documentation/power/runtime_pm.txt
+> > > > @@ -567,6 +567,11 @@ this is:
+> > > >  	pm_runtime_set_active(dev);
+> > > >  	pm_runtime_enable(dev);
+> > > >  
+> > > > +The PM core always increments the run-time usage counter before calling the
+> > > > +->suspend() callback and decrements it after calling the ->resume() callback.
+> > > > +Hence disabling run-time PM temporarily like this will not cause any run-time
+> > > > +suspend callbacks to be lost.
+> > > 
+> > > Could you explain why the above is that "this will not cause any run-time suspend
+> > > callbacks to be lost"? 
+> > > 
+> > > Looks like it should be "this will not cause any run-time suspend callbacks to
+> > > be called", but not sure.
+> > 
+> > You're right the wording is not perfect.  The problem is that if it's done
+> > this way without incrementing the usage counter beforehand, the status may
+> > change to "suspended" right before the pm_runtime_set_active() and then the
+> > new status will not reflect the actual state of the device.
+> > 
+> > So, it may be better to say "Hence disabling runtime PM temporarily like this
+> > will not cause the runtime PM status of the device to conflict with the actual
+> > device state".
+> > 
+> > Alan, what do you think?
+> 
+> How about: "... will not cause any runtime suspend attempts to be 
+> permanently lost.  If the usage count goes to zero following the return 
+> of the ->resume() callback, the ->runtime_idle() callback will be 
+> invoked as usual."
 
-Extend the plist initializers and debug checks to allow the plist
-to be protected by a mutex
+That's better, thanks!
 
-Signed-off-by: Dima Zavin <dima@android.com>
----
- include/linux/plist.h |   33 +++++++++++++++++++++++++++++++++
- lib/plist.c           |    6 +++++-
- 2 files changed, 38 insertions(+), 1 deletions(-)
-
-diff --git a/include/linux/plist.h b/include/linux/plist.h
-index c9b9f32..bd670f6 100644
---- a/include/linux/plist.h
-+++ b/include/linux/plist.h
-@@ -77,6 +77,7 @@
- 
- #include <linux/kernel.h>
- #include <linux/list.h>
-+#include <linux/mutex.h>
- #include <linux/spinlock_types.h>
- 
- struct plist_head {
-@@ -84,6 +85,7 @@ struct plist_head {
- #ifdef CONFIG_DEBUG_PI_LIST
- 	raw_spinlock_t *rawlock;
- 	spinlock_t *spinlock;
-+	struct mutex *mutex;
- #endif
- };
- 
-@@ -96,9 +98,11 @@ struct plist_node {
- #ifdef CONFIG_DEBUG_PI_LIST
- # define PLIST_HEAD_LOCK_INIT(_lock)		.spinlock = _lock
- # define PLIST_HEAD_LOCK_INIT_RAW(_lock)	.rawlock = _lock
-+# define PLIST_HEAD_LOCK_INIT_MUTEX(_lock)	.mutex = _lock
- #else
- # define PLIST_HEAD_LOCK_INIT(_lock)
- # define PLIST_HEAD_LOCK_INIT_RAW(_lock)
-+# define PLIST_HEAD_LOCK_INIT_MUTEX(_lock)
- #endif
- 
- #define _PLIST_HEAD_INIT(head)				\
-@@ -127,6 +131,17 @@ struct plist_node {
- }
- 
- /**
-+ * PLIST_HEAD_INIT_MUTEX - static struct plist_head initializer
-+ * @head:	struct plist_head variable name
-+ * @_lock:	lock to initialize for this list
-+ */
-+#define PLIST_HEAD_INIT_MUTEX(head, _lock)		\
-+{							\
-+	_PLIST_HEAD_INIT(head),				\
-+	PLIST_HEAD_LOCK_INIT_MUTEX(&(_lock))		\
-+}
-+
-+/**
-  * PLIST_NODE_INIT - static struct plist_node initializer
-  * @node:	struct plist_node variable name
-  * @__prio:	initial node priority
-@@ -150,6 +165,7 @@ plist_head_init(struct plist_head *head, spinlock_t *lock)
- #ifdef CONFIG_DEBUG_PI_LIST
- 	head->spinlock = lock;
- 	head->rawlock = NULL;
-+	head->mutex = NULL;
- #endif
- }
- 
-@@ -165,6 +181,23 @@ plist_head_init_raw(struct plist_head *head, raw_spinlock_t *lock)
- #ifdef CONFIG_DEBUG_PI_LIST
- 	head->rawlock = lock;
- 	head->spinlock = NULL;
-+	head->mutex = NULL;
-+#endif
-+}
-+
-+/**
-+ * plist_head_init_mutex - dynamic struct plist_head initializer
-+ * @head:	&struct plist_head pointer
-+ * @lock:	mutex protecting the list (debugging)
-+ */
-+static inline void
-+plist_head_init_mutex(struct plist_head *head, struct mutex *lock)
-+{
-+	INIT_LIST_HEAD(&head->node_list);
-+#ifdef CONFIG_DEBUG_PI_LIST
-+	head->mutex = lock;
-+	head->rawlock = NULL;
-+	head->spinlock = NULL;
- #endif
- }
- 
-diff --git a/lib/plist.c b/lib/plist.c
-index 0ae7e64..64bd937 100644
---- a/lib/plist.c
-+++ b/lib/plist.c
-@@ -23,6 +23,7 @@
-  * information.
-  */
- 
-+#include <linux/mutex.h>
- #include <linux/plist.h>
- #include <linux/spinlock.h>
- 
-@@ -56,11 +57,14 @@ static void plist_check_list(struct list_head *top)
- 
- static void plist_check_head(struct plist_head *head)
- {
--	WARN_ON(head != &test_head && !head->rawlock && !head->spinlock);
-+	WARN_ON(head != &test_head && !head->rawlock && !head->spinlock &&
-+		!head->mutex);
- 	if (head->rawlock)
- 		WARN_ON_SMP(!raw_spin_is_locked(head->rawlock));
- 	if (head->spinlock)
- 		WARN_ON_SMP(!spin_is_locked(head->spinlock));
-+	if (head->mutex)
-+		WARN_ON_SMP(!mutex_is_locked(head->mutex));
- 	if (!plist_head_empty(head))
- 		plist_check_list(&plist_first(head)->prio_list);
- 	plist_check_list(&head->node_list);
--- 
-1.7.3.1
-
+Rafael
