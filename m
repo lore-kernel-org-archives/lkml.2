@@ -1,84 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab1F2EQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 00:16:59 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:62892 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750942Ab1F2EQx (ORCPT
+	id S1751598Ab1F2E1q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 00:27:46 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45679 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750942Ab1F2E1k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 00:16:53 -0400
-X-Nat-Received: from [202.181.97.72]:56945 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1309320999.26386
-To: sfr@canb.auug.org.au, jmorris@namei.org
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        penguin-kernel@I-love.SAKURA.ne.jp
-Subject: Re: linux-next: build failure after merge of the security-testing tree
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <20110629134800.9ee0d5b7.sfr@canb.auug.org.au>
-In-Reply-To: <20110629134800.9ee0d5b7.sfr@canb.auug.org.au>
-Message-Id: <201106291316.CDF48413.JtQVLOFSFOOFMH@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Wed, 29 Jun 2011 13:16:35 +0900
-Mime-Version: 1.0
+	Wed, 29 Jun 2011 00:27:40 -0400
+X-Sasl-enc: HIczV/R9VEOkCwFPxZdtX2f776C0P7jsk/Y9AMBgzrsF 1309321659
+Date: Tue, 28 Jun 2011 21:21:24 -0700
+From: Greg KH <greg@kroah.com>
+To: Marin Mitov <mitov@issp.bas.bg>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] staging: use videobuf2 framework for
+ drivers/staging/dt3155v4l driver
+Message-ID: <20110629042124.GA18344@kroah.com>
+References: <201105282145.27809.mitov@issp.bas.bg>
+ <20110628202515.GA9177@kroah.com>
+ <201106290646.02960.mitov@issp.bas.bg>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 29062011 #5685539, status: clean
+Content-Disposition: inline
+In-Reply-To: <201106290646.02960.mitov@issp.bas.bg>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> Hi James,
+On Wed, Jun 29, 2011 at 06:46:02AM +0300, Marin Mitov wrote:
+> On Tuesday, June 28, 2011 11:25:15 pm Greg KH wrote:
+> > On Sat, May 28, 2011 at 09:45:27PM +0300, Marin Mitov wrote:
+> > > This patch transforms drivers/staging/dt3155v4l driver to use videobuf2 framework.
+> > > Tested and works with "xawtv -f".
+> > > 
+> > > Either streaming API or read method should be selected during kernel configuration.
+> > 
+> > I've applied this, but why would you ever not want to use the streaming
+> > api?
 > 
-> After merging the security-testing tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> security/built-in.o: In function `tomoyo_bprm_set_creds':
-> tomoyo.c:(.text+0x4698e): undefined reference to `tomoyo_load_policy'
-> 
-Sorry. I forgot to add #ifndef there.
-It is for embedded systems where running userspace policy loader is difficult.
-Below patch fixes the error.
+> There are no reasons for that, sure, but for now xawtv do not work if both are
+> specified in the driver. I have to debug it.
 
-Regards.
----
- From 262f32874cd073fe2684e07dc838381f1dd01fd4 Mon Sep 17 00:00:00 2001
- From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Date: Wed, 29 Jun 2011 13:07:52 +0900
-Subject: [PATCH] TOMOYO: Fix build error with CONFIG_SECURITY_TOMOYO_OMIT_USERSPACE_LOADER=y .
+Ok, but why not just remove the read method then?  Or do some userspace
+programs still require it?
 
-I forgot to add #ifndef in commit 0e4ae0e0 "TOMOYO: Make several options
-configurable.", resulting
-
-  security/built-in.o: In function `tomoyo_bprm_set_creds':
-  tomoyo.c:(.text+0x4698e): undefined reference to `tomoyo_load_policy'
-
-error.
-
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
- security/tomoyo/tomoyo.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/security/tomoyo/tomoyo.c b/security/tomoyo/tomoyo.c
-index 2615c7d..d6f68a0 100644
---- a/security/tomoyo/tomoyo.c
-+++ b/security/tomoyo/tomoyo.c
-@@ -51,12 +51,14 @@ static int tomoyo_bprm_set_creds(struct linux_binprm *bprm)
- 	 */
- 	if (bprm->cred_prepared)
- 		return 0;
-+#ifndef CONFIG_SECURITY_TOMOYO_OMIT_USERSPACE_LOADER
- 	/*
- 	 * Load policy if /sbin/tomoyo-init exists and /sbin/init is requested
- 	 * for the first time.
- 	 */
- 	if (!tomoyo_policy_loaded)
- 		tomoyo_load_policy(bprm->filename);
-+#endif
- 	/*
- 	 * Release reference to "struct tomoyo_domain_info" stored inside
- 	 * "bprm->cred->security". New reference to "struct tomoyo_domain_info"
--- 
-1.6.1
+greg k-h
