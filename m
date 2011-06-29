@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab1F2R7k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 13:59:40 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:50184 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752313Ab1F2R7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 13:59:37 -0400
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Ankita Garg <ankita@in.ibm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arjan van de Ven <arjan@infradead.org>
-In-Reply-To: <20110629174220.GA9152@in.ibm.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
-	 <20110629130038.GA7909@in.ibm.com> <1309367184.11430.594.camel@nimitz>
-	 <20110629174220.GA9152@in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Jun 2011 10:59:02 -0700
-Message-ID: <1309370342.11430.604.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1757863Ab1F2U5o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 16:57:44 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:56737 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753126Ab1F2U5l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 16:57:41 -0400
+Date: Wed, 29 Jun 2011 10:59:09 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: alsa-devel@alsa-project.org, lrg@ti.com,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 4/5] ASoC: atmel_ssc_dai/atmel-pcm: adapt to dmaengine
+ usage
+Message-ID: <20110629175905.GC13051@opensource.wolfsonmicro.com>
+References: <7fd26c605d5cfa422d0fc37a7b790fb9a837d7e3.1309368631.git.nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <7fd26c605d5cfa422d0fc37a7b790fb9a837d7e3.1309368631.git.nicolas.ferre@atmel.com>
+X-Cookie: Chicken Little was right.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-29 at 23:12 +0530, Ankita Garg wrote:
-> 	4. The kernel must have a mechanism to maintain utilization
-> 	   statistics pertaining to a piece of hardware, so that it can
-> 	   trigger the hardware to power it off
+On Wed, Jun 29, 2011 at 08:00:18PM +0200, Nicolas Ferre wrote:
 
-Having statistics like this would certainly be nice, but how important
-_is_ it?  Is it really a show-stopper?  There's some stuff today, like
-the NPT/EPT support in KVM where we don't even have visibility in to
-when a given page is referenced.
+> +static const struct snd_pcm_hardware atmel_pcm_dma_hardware = {
+> +	.info			= SNDRV_PCM_INFO_MMAP |
+> +				  SNDRV_PCM_INFO_MMAP_VALID |
 
-It's also going to be a pain to track kernel references.  On x86, our
-kernel linear mapping uses 1GB pages when it can, and those are greater
-than the 512MB granularity that we've been talking about here.  It's
-even larger on powerpc.  I'm also pretty sure we don't even _look_ at
-the referenced bits in the kernel page tables.  We'll definitely need
-some infrastructure to do that.
+The naming here looks a bit undescriptive but I'm not sure what a better
+name would be - obviously both DMA controllers are DMA controllers.  It
+feels like it would be more sensible to just write a separate DMA driver
+as I'm not sure how much code actually ends up being shared here but it
+looks pretty small from the diff...
 
-> 	5. Being able to group these pieces of hardware for purpose of
-> 	   higher savings. 
+> +static bool filter(struct dma_chan *chan, void *slave)
+> +{
+> +	struct	at_dma_slave		*sl = slave;
+> +
 
-Do you really mean group, or do you mean "turn as many off as possible"?
+Odd whitespace here.
 
--- Dave
+> +static int atmel_pcm_dma_alloc(struct snd_pcm_substream *substream,
+> +	struct snd_pcm_hw_params *params)
+> +{
+> +	struct snd_pcm_runtime *runtime = substream->runtime;
+> +	struct atmel_runtime_data *prtd = runtime->private_data;
+> +	struct ssc_device *ssc = prtd->params->ssc;
+> +	struct at_dma_slave *sdata = NULL;
+> +
+> +	if (ssc->pdev)
+> +		sdata = ssc->pdev->dev.platform_data;
 
+Why wouldn't we have a device, and why is there a separate copy of the
+device?
+
+> +	if (!prtd->dma_chan) {
+> +		pr_err("atmel-pcm: "
+> +			"DMA channel not available, unable to use SSC-audio\n");
+> +		return -EBUSY;
+
+dev_err() and don't split strings over lines.
+
+> +	switch (prtd->params->data_xfer_size) {
+> +	case 1:
+> +		buswidth = DMA_SLAVE_BUSWIDTH_1_BYTE;
+> +		break;
+> +	case 2:
+> +		buswidth = DMA_SLAVE_BUSWIDTH_2_BYTES;
+> +		break;
+> +	case 4:
+> +		buswidth = DMA_SLAVE_BUSWIDTH_4_BYTES;
+> +		break;
+> +	default:
+> +		return;
+> +	}
+
+It strikes me that this mapping of bytes to DMA_SLAVE_ is likely to be
+quite common and might be nice as a helper in dmaengine.
+
+I'd also expect to see something complain (even if just with BUG()) if we
+hit the default case.
