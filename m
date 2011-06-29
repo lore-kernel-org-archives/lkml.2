@@ -1,74 +1,241 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755490Ab1F2MGE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 08:06:04 -0400
-Received: from ozlabs.org ([203.10.76.45]:48203 "EHLO ozlabs.org"
+	id S1755499Ab1F2MJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 08:09:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:49473 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754645Ab1F2MGC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 08:06:02 -0400
-Date: Wed, 29 Jun 2011 22:05:47 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Joerg Roedel <joro@8bytes.org>, Joerg Roedel <joerg.roedel@amd.com>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Avi Kiviti <avi@redhat.com>
-Subject: Re: [PATCH 0/5] perf support for amd guest/host-only bits v2
-Message-ID: <20110629120547.GS25406@bloggs.ozlabs.ibm.com>
-References: <1308317854-27398-1-git-send-email-joerg.roedel@amd.com>
- <20110628161000.GF29299@8bytes.org>
- <1309338174.6701.929.camel@twins>
+	id S1755172Ab1F2MJG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 08:09:06 -0400
+Date: Wed, 29 Jun 2011 14:09:03 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: akpm@linux-foundation.org
+Cc: kamezawa.hiroyu@jp.fujitsu.com, hannes@cmpxchg.org, lvml@5t9.de,
+        nishimura@mxp.nes.nec.co.jp, yinghan@google.com,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: + mm-preallocate-page-before-lock_page-at-filemap-cow.patch
+ added to -mm tree
+Message-ID: <20110629120902.GE19166@tiehlicka.suse.cz>
+References: <201106290017.p5T0HKC3016797@imap1.linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1309338174.6701.929.camel@twins>
+In-Reply-To: <201106290017.p5T0HKC3016797@imap1.linux-foundation.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 11:02:54AM +0200, Peter Zijlstra wrote:
-> On Tue, 2011-06-28 at 18:10 +0200, Joerg Roedel wrote:
-> > On Fri, Jun 17, 2011 at 03:37:29PM +0200, Joerg Roedel wrote:
-> > > this is the second version of the patch-set to support the AMD
-> > > guest-/host only bits in the performance counter MSRs. Due to lack of
-> > > time I havn't looked into emulating support for this feature on Intel or
-> > > other architectures, but the other comments should be worked in. The
-> > > changes to v1 include:
-> > > 
-> > > 	* Rebased patches to v3.0-rc3
-> > > 	* Allow exclude_guest and exclude_host set at the same time
-> > > 	* Reworked event-parse logic for the new exclude-bits
-> > > 	* Only count guest-events per default from perf-kvm
-> > 
-> > Hi Peter, Ingo,
-> > 
-> > have you had a chance to look at this patch-set? Are any changes
-> > required?
+Shouldn't we discuss unlock, charge, unlock&recheck_mapping approach
+as well before this gets merged? There are some concerns expressed
+during discussion - https://lkml.org/lkml/2011/6/23/135.
+The full thread is at https://lkml.org/lkml/2011/6/22/163
+
+I do not mind which bugfix is used in the end I would just be happier if
+they would get some more review.
+
+On Tue 28-06-11 17:17:20, Andrew Morton wrote:
+> ------------------------------------------------------
+> Subject: mm: preallocate page before lock_page() at filemap COW
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> I would feel a lot more comfortable by having it implemented on all of
-> x86 as well as at least one !x86 platform. Avi graciously volunteered
-> for the Intel bits.  
+> Currently we are keeping faulted page locked throughout whole __do_fault
+> call (except for page_mkwrite code path) after calling file system's fault
+> code.  If we do early COW, we allocate a new page which has to be charged
+> for a memcg (mem_cgroup_newpage_charge).
 > 
-> Paulus, I hear from benh that you're also responsible for the ppc-kvm
-> bits, could you possibly find some time to implement this feature for
-> ppc?
+> This function, however, might block for unbounded amount of time if memcg
+> oom killer is disabled or fork-bomb is running because the only way out of
+> the OOM situation is either an external event or OOM-situation fix.
+> 
+> In the end we are keeping the faulted page locked and blocking other
+> processes from faulting it in which is not good at all because we are
+> basically punishing potentially an unrelated process for OOM condition in
+> a different group (I have seen stuck system because of ld-2.11.1.so being
+> locked).
+> 
+> We can do test easily.
+> 
+>  % cgcreate -g memory:A
+>  % cgset -r memory.limit_in_bytes=64M A
+>  % cgset -r memory.memsw.limit_in_bytes=64M A
+>  % cd kernel_dir; cgexec -g memory:A make -j
+> 
+> Then, the whole system will live-locked until you kill 'make -j'
+> by hands (or push reboot...) This is because some important page in a
+> a shared library are locked.
+> 
+> Considering again, the new page is not necessary to be allocated
+> with lock_page() held. And usual page allocation may dive into
+> long memory reclaim loop with holding lock_page() and can cause
+> very long latency.
+> 
+> There are 3 ways.
+>   1. do allocation/charge before lock_page()
+>      Pros. - simple and can handle page allocation in the same manner.
+>              This will reduce holding time of lock_page() in general.
+>      Cons. - we do page allocation even if ->fault() returns error.
+> 
+>   2. do charge after unlock_page(). Even if charge fails, it's just OOM.
+>      Pros. - no impact to non-memcg path.
+>      Cons. - implemenation requires special cares of LRU and we need to modify
+>              page_add_new_anon_rmap()...
+> 
+>   3. do unlock->charge->lock again method.
+>      Pros. - no impact to non-memcg path.
+>      Cons. - This may kill LOCK_PAGE_RETRY optimization. We need to release
+>              lock and get it again...
+> 
+> This patch moves "charge" and memory allocation for COW page
+> before lock_page(). Then, we can avoid scanning LRU with holding
+> a lock on a page and latency under lock_page() will be reduced.
+> 
+> Then, above livelock disappears.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Reported-by: Lutz Vieweg <lvml@5t9.de>
+> Original-idea-by: Michal Hocko <mhocko@suse.cz>
+> Cc: Michal Hocko <mhocko@suse.cz>
+> Cc: Ying Han <yinghan@google.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  mm/memory.c |   56 ++++++++++++++++++++++++++++++--------------------
+>  1 file changed, 34 insertions(+), 22 deletions(-)
+> 
+> diff -puN mm/memory.c~mm-preallocate-page-before-lock_page-at-filemap-cow mm/memory.c
+> --- a/mm/memory.c~mm-preallocate-page-before-lock_page-at-filemap-cow
+> +++ a/mm/memory.c
+> @@ -3104,14 +3104,34 @@ static int __do_fault(struct mm_struct *
+>  	pte_t *page_table;
+>  	spinlock_t *ptl;
+>  	struct page *page;
+> +	struct page *cow_page;
+>  	pte_t entry;
+>  	int anon = 0;
+> -	int charged = 0;
+>  	struct page *dirty_page = NULL;
+>  	struct vm_fault vmf;
+>  	int ret;
+>  	int page_mkwrite = 0;
+>  
+> +	/*
+> +	 * If we do COW later, allocate page befor taking lock_page()
+> +	 * on the file cache page. This will reduce lock holding time.
+> +	 */
+> +	if ((flags & FAULT_FLAG_WRITE) && !(vma->vm_flags & VM_SHARED)) {
+> +
+> +		if (unlikely(anon_vma_prepare(vma)))
+> +			return  VM_FAULT_OOM;
+> +
+> +		cow_page = alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);
+> +		if (!cow_page)
+> +			return VM_FAULT_OOM;
+> +
+> +		if (mem_cgroup_newpage_charge(cow_page, mm, GFP_KERNEL)) {
+> +			page_cache_release(cow_page);
+> +			return VM_FAULT_OOM;
+> +		}
+> +	} else
+> +		cow_page = NULL;
+> +
+>  	vmf.virtual_address = (void __user *)(address & PAGE_MASK);
+>  	vmf.pgoff = pgoff;
+>  	vmf.flags = flags;
+> @@ -3120,12 +3140,13 @@ static int __do_fault(struct mm_struct *
+>  	ret = vma->vm_ops->fault(vma, &vmf);
+>  	if (unlikely(ret & (VM_FAULT_ERROR | VM_FAULT_NOPAGE |
+>  			    VM_FAULT_RETRY)))
+> -		return ret;
+> +		goto uncharge_out;
+>  
+>  	if (unlikely(PageHWPoison(vmf.page))) {
+>  		if (ret & VM_FAULT_LOCKED)
+>  			unlock_page(vmf.page);
+> -		return VM_FAULT_HWPOISON;
+> +		ret = VM_FAULT_HWPOISON;
+> +		goto uncharge_out;
+>  	}
+>  
+>  	/*
+> @@ -3143,23 +3164,8 @@ static int __do_fault(struct mm_struct *
+>  	page = vmf.page;
+>  	if (flags & FAULT_FLAG_WRITE) {
+>  		if (!(vma->vm_flags & VM_SHARED)) {
+> +			page = cow_page;
+>  			anon = 1;
+> -			if (unlikely(anon_vma_prepare(vma))) {
+> -				ret = VM_FAULT_OOM;
+> -				goto out;
+> -			}
+> -			page = alloc_page_vma(GFP_HIGHUSER_MOVABLE,
+> -						vma, address);
+> -			if (!page) {
+> -				ret = VM_FAULT_OOM;
+> -				goto out;
+> -			}
+> -			if (mem_cgroup_newpage_charge(page, mm, GFP_KERNEL)) {
+> -				ret = VM_FAULT_OOM;
+> -				page_cache_release(page);
+> -				goto out;
+> -			}
+> -			charged = 1;
+>  			copy_user_highpage(page, vmf.page, address, vma);
+>  			__SetPageUptodate(page);
+>  		} else {
+> @@ -3228,8 +3234,8 @@ static int __do_fault(struct mm_struct *
+>  		/* no need to invalidate: a not-present page won't be cached */
+>  		update_mmu_cache(vma, address, page_table);
+>  	} else {
+> -		if (charged)
+> -			mem_cgroup_uncharge_page(page);
+> +		if (cow_page)
+> +			mem_cgroup_uncharge_page(cow_page);
+>  		if (anon)
+>  			page_cache_release(page);
+>  		else
+> @@ -3238,7 +3244,6 @@ static int __do_fault(struct mm_struct *
+>  
+>  	pte_unmap_unlock(page_table, ptl);
+>  
+> -out:
+>  	if (dirty_page) {
+>  		struct address_space *mapping = page->mapping;
+>  
+> @@ -3268,6 +3273,13 @@ out:
+>  unwritable_page:
+>  	page_cache_release(page);
+>  	return ret;
+> +uncharge_out:
+> +	/* fs's fault handler get error */
+> +	if (cow_page) {
+> +		mem_cgroup_uncharge_page(cow_page);
+> +		page_cache_release(cow_page);
+> +	}
+> +	return ret;
+>  }
+>  
+>  static int do_linear_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+> _
+> 
+> Patches currently in -mm which might be from kamezawa.hiroyu@jp.fujitsu.com are
+> 
+> memcg-fix-reclaimable-lru-check-in-memcg.patch
+> memcg-fix-reclaimable-lru-check-in-memcg-checkpatch-fixes.patch
+> memcg-fix-reclaimable-lru-check-in-memcg-fix.patch
+> memcg-fix-numa-scan-information-update-to-be-triggered-by-memory-event.patch
+> memcg-fix-numa-scan-information-update-to-be-triggered-by-memory-event-fix.patch
+> mm-preallocate-page-before-lock_page-at-filemap-cow.patch
+> mm-preallocate-page-before-lock_page-at-filemap-cow-fix.patch
+> mm-page_cgroupc-simplify-code-by-using-section_align_up-and-section_align_down-macros.patch
+> memcg-do-not-expose-uninitialized-mem_cgroup_per_node-to-world.patch
+> 
 
-I'll have a look at it, but I don't know how quickly I'll be able to
-produce a patch.
-
-We have two styles of KVM on PowerPC (at least as far as server
-processors are concerned), one where the guest runs entirely in
-usermode and the privileged facilities are emulated, and another that
-uses hypervisor mode in the host and can allow the guest to use
-supervisor mode.  In the latter case, the PMU is considered a guest
-resource, that is, the hardware allows the guest to manipulate the PMU
-directly, and PMU interrupts go directly to the guest.  In that mode
-it's not really possible to count or profile guest activity from the
-host.  There are some hypervisor-only counters in the PMU but they
-have limited event selection compared to the counters available to the
-guest.
-
-Paul.
-
+-- 
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
