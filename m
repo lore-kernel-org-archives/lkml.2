@@ -1,449 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753532Ab1F2IFI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 04:05:08 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:61005 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752071Ab1F2IEx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 04:04:53 -0400
+	id S1753316Ab1F2IIg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 04:08:36 -0400
+Received: from openfortress.nl ([213.189.19.244]:49348 "EHLO fame.vanrein.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751132Ab1F2IIb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 04:08:31 -0400
+Date: Wed, 29 Jun 2011 08:08:27 +0000
+From: Rick van Rein <rick@vanrein.org>
+To: Craig Bergstrom <craigb@google.com>
+Cc: fa.linux.kernel@googlegroups.com, "H. Peter Anvin" <hpa@zytor.com>,
+        Stefan Assmann <sassmann@kpanic.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "rick@vanrein.org" <rick@vanrein.org>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+Message-ID: <20110629080827.GA975@phantom.vanrein.org>
+References: <fa.fHPNPTsllvyE/7DxrKwiwgVbVww@ifi.uio.no> <532cc290-4b9c-4eb2-91d4-aa66c01bb3a0@glegroupsg2000goo.googlegroups.com> <BANLkTik3mEJGXLrf_XtssfdRypm3NxBKvkhcnUpK=YXV6ux=Ag@mail.gmail.com>
 MIME-Version: 1.0
-Reply-To: DChang@novell.com
-In-Reply-To: <4E097A32.1000504@freemail.hu>
-References: <4DDBF8BD.3000603@freemail.hu>
-	<20110524183448.GA18511@kroah.com>
-	<4DDC142E.6070003@freemail.hu>
-	<20110525031222.GB14290@haskell.muteddisk.com>
-	<4DDC93D5.9070607@freemail.hu>
-	<4DDDFDA7.6030900@freemail.hu>
-	<4E097A32.1000504@freemail.hu>
-Date: Wed, 29 Jun 2011 16:04:51 +0800
-X-Google-Sender-Auth: 59Oj5oftzgX7badwhelAvEUk28Y
-Message-ID: <BANLkTimG_kWr_YPVMasUr+7+KRFPnnbjNw@mail.gmail.com>
-Subject: Re: [PATCH, RFC] USBIP protocol documentation
-From: David Chang <dchang@novell.com>
-To: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-Cc: Greg KH <greg@kroah.com>, Matthew Wilcox <matthew@wil.cx>,
-        Max Vozeler <max@vozeler.com>, Matt Mooney <mfm@muteddisk.com>,
-        Joe Perches <joe@perches.com>, linux-usb@vger.kernel.org,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTik3mEJGXLrf_XtssfdRypm3NxBKvkhcnUpK=YXV6ux=Ag@mail.gmail.com>
+X-My-Coolest-Hack: http://rick.vanrein.org/linux/badram -> Exploit broken RAM
+User-Agent: Mutt/1.5.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello Craig,
 
-Thanks for your great effort.
-Just a little comment on UNLINK pdu size.
+> Some folks had mentioned that they're interested in details about what
+> we've learned about bad ram from our fleet of machines.  I suspect
+> that you need ACM portal access to read this,
 
-2011/6/28 Németh Márton <nm127@freemail.hu>:
-> From: Márton Németh <nm127@freemail.hu>
->
-> USBIP v1.0.0 protocol documentation.
->
-> Signed-off-by: Márton Németh <nm127@freemail.hu>
-> ---
->
-> Hi,
->
-> I tried to document the USBIP protocol as implemented in the Linux kernel 3.0-rc2.
->
-> The description is a preliminary draft only, it may contain mistakes. I tried
-> to document what I have understand from the source code and from the actual
-> captured network traffic when the USBIP is in action. Please review it, correct it,
-> point out the missing parts.
->
-> During I have documented the protocol a question came into my mind: why do we
-> have two different type of package when the URB completition handler is called,
-> namely USB_RET_SUBMIT and USBIP_RET_UNLINK? As far as I can see this causes race
-> condition because for one URB the completition handler is only called once. If
-> the one URB is sent in with USB_CMD_SUBMIT and then unlinked with USB_CMD_UNLINK
-> the completition handler is called only once. In the protocol, however, we have
-> two different type of packets: USB_RET_SUBMIT and USBIP_RET_UNLINK. The status
-> field of these messages may contain anything in this case depending on the timing.
->
-> Regards,
->
->        Márton Németh
-> ---
-> diff -uprN staging-2.6.orig/drivers/staging/usbip/usbip_protocol.txt staging-2.6/drivers/staging/usbip/usbip_protocol.txt
-> --- staging-2.6.orig/drivers/staging/usbip/usbip_protocol.txt   1970-01-01 01:00:00.000000000 +0100
-> +++ staging-2.6/drivers/staging/usbip/usbip_protocol.txt        2011-06-28 08:30:04.000000000 +0200
-> @@ -0,0 +1,352 @@
-> +PRELIMINARY DRAFT, MAY CONTAIN MISTAKES!
-> +28 Jun 2011
-> +
-> +The USB/IP protocol follows a server/client architecture. The server exports the
-> +USB devices and the clients imports them. The device driver for the exported
-> +USB device runs on the client machine.
-> +
-> +The client may ask for the list of the exported USB devices. To get the list the
-> +client opens a TCP/IP connection towards the server, and sends an OP_REQ_DEVLIST
-> +packet on top of the TCP/IP connection (so the actual OP_REQ_DEVLIST may be sent
-> +in one or more pieces at the low level transport layer). The server sends back
-> +the OP_REP_DEVLIST packet which lists the exported USB devices. Finally the
-> +TCP/IP connection is closed.
-> +
-> + virtual host controller                                 usb host
-> +      "client"                                           "server"
-> +  (imports USB devices)                             (exports USB devices)
-> +          |                                                 |
-> +          |                  OP_REQ_DEVLIST                 |
-> +          | ----------------------------------------------> |
-> +          |                                                 |
-> +          |                  OP_REP_DEVLIST                 |
-> +          | <---------------------------------------------- |
-> +          |                                                 |
-> +
-> +Once the client knows the list of exported USB devices it may decide to use one
-> +of them. First the client opens a TCP/IP connection towards the server and
-> +sends an OP_REQ_IMPORT packet. The server replies with OP_REP_IMPORT. If the
-> +import was successful the TCP/IP connection remains open and will be used
-> +to trasfer the URB traffic between the client and the server. The client may
-> +send two types of packets: the USBIP_CMD_SUBMIT to submit an URB, and
-> +USBIP_CMD_UNLINK to unlink a previously submitted URB. The answers of the
-> +server may be USBIP_RET_SUBMIT and USBIP_RET_UNLINK respectively.
-> +
-> + virtual host controller                                 usb host
-> +      "client"                                           "server"
-> +  (imports USB devices)                             (exports USB devices)
-> +          |                                                 |
-> +          |                  OP_REQ_IMPORT                  |
-> +          | ----------------------------------------------> |
-> +          |                                                 |
-> +          |                  OP_REP_IMPORT                  |
-> +          | <---------------------------------------------- |
-> +          |                                                 |
-> +          |                                                 |
-> +          |            USBIP_CMD_SUBMIT(seqnum = n)         |
-> +          | ----------------------------------------------> |
-> +          |                                                 |
-> +          |            USBIP_RET_SUBMIT(seqnum = n)         |
-> +          | <---------------------------------------------- |
-> +          |                        .                        |
-> +          |                        :                        |
-> +          |                                                 |
-> +          |            USBIP_CMD_SUBMIT(seqnum = m)         |
-> +          | ----------------------------------------------> |
-> +          |                                                 |
-> +          |            USBIP_CMD_SUBMIT(seqnum = m+1)       |
-> +          | ----------------------------------------------> |
-> +          |                                                 |
-> +          |            USBIP_CMD_SUBMIT(seqnum = m+2)       |
-> +          | ----------------------------------------------> |
-> +          |                                                 |
-> +          |            USBIP_RET_SUBMIT(seqnum = m)         |
-> +          | <---------------------------------------------- |
-> +          |                                                 |
-> +          |            USBIP_CMD_SUBMIT(seqnum = m+3)       |
-> +          | ----------------------------------------------> |
-> +          |                                                 |
-> +          |            USBIP_RET_SUBMIT(seqnum = m+1)       |
-> +          | <---------------------------------------------- |
-> +          |                                                 |
-> +          |            USBIP_CMD_SUBMIT(seqnum = m+4)       |
-> +          | ----------------------------------------------> |
-> +          |                                                 |
-> +          |            USBIP_RET_SUBMIT(seqnum = m+2)       |
-> +          | <---------------------------------------------- |
-> +          |                        .                        |
-> +          |                        :                        |
-> +          |                                                 |
-> +          |               USBIP_CMD_UNLINK                  |
-> +          | ----------------------------------------------> |
-> +          |                                                 |
-> +          |               USBIP_RET_UNLINK                  |
-> +          | <---------------------------------------------- |
-> +          |                                                 |
-> +
-> +The fields are in network (big endian) byte order meaning that the most significant
-> +byte (MSB) is stored at the lowest address.
-> +
-> +
-> +OP_REQ_DEVLIST: Retrieve the list of exported USB devices.
-> +
-> + Offset    | Length | Value      | Meaning
-> +-----------+--------+------------+---------------------------------------------------
-> + 0         | 2      | 0x0100     | Binary-coded decimal USBIP version number: v1.0.0
-> +-----------+--------+------------+---------------------------------------------------
-> + 2         | 2      | 0x8005     | Command code: Retrieve the list of exported USB
-> +           |        |            |   devices.
-> +-----------+--------+------------+---------------------------------------------------
-> + 4         | 4      | 0x00000000 | Status: unused, shall be set to 0
-> +
-> +OP_REP_DEVLIST: Reply with the list of exported USB devices.
-> +
-> + Offset    | Length | Value      | Meaning
-> +-----------+--------+------------+---------------------------------------------------
-> + 0         | 2      | 0x0100     | Binary-coded decimal USBIP version number: v1.0.0.
-> +-----------+--------+------------+---------------------------------------------------
-> + 2         | 2      | 0x0005     | Reply code: The list of exported USB devices.
-> +-----------+--------+------------+---------------------------------------------------
-> + 4         | 4      | 0x00000000 | Status: 0 for OK
-> +-----------+--------+------------+---------------------------------------------------
-> + 8         | 4      | n          | Number of exported devices: 0 means no exported
-> +           |        |            |   devices.
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x0C      |        |            | From now on the exported n devices are described,
-> +           |        |            |   if any. If no devices are exported the message
-> +           |        |            |   ends with the previous "number of exported
-> +           |        |            |   devices" field.
-> +-----------+--------+------------+---------------------------------------------------
-> +           | 256    |            | path: Path of the device on the host exporting the
-> +           |        |            |   USB device, string closed with zero byte, e.g.
-> +           |        |            |   "/sys/devices/pci0000:00/0000:00:1d.1/usb3/3-2"
-> +           |        |            |   The unused bytes shall be filled with zero
-> +           |        |            |   bytes.
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x10C     | 32     |            | busid: Bus ID of the exported device, string
-> +           |        |            |   closed with zero byte, e.g. "3-2". The unused
-> +           |        |            |   bytes shall be filled with zero bytes.
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x12C     | 4      |            | busnum
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x130     | 4      |            | devnum
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x134     | 4      |            | speed
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x138     | 2      |            | idVendor
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x13A     | 2      |            | idProduct
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x13C     | 2      |            | bcdDevice
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x13E     | 1      |            | bDeviceClass
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x13F     | 1      |            | bDeviceSubClass
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x140     | 1      |            | bDeviceProtocol
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x141     | 1      |            | bConfigurationValue
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x142     | 1      |            | bNumConfigurations
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x143     | 1      |            | bNumInterfaces
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x144     |        | m_0        | From now on each interface is described, all
-> +           |        |            |   together bNumInterfaces times, with the
-> +           |        |            |   the following 4 fields:
-> +-----------+--------+------------+---------------------------------------------------
-> +           | 1      |            | bInterfaceClass
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x145     | 1      |            | bInterfaceSubClass
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x146     | 1      |            | bInterfaceProtocol
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x147     | 1      |            | padding byte for alignment, shall be set to zero
-> +-----------+--------+------------+---------------------------------------------------
-> + 0xC +     |        |            | The second exported USB device starts at i=1
-> + i*0x138 + |        |            | with the busid field.
-> + m_(i-1)*4 |        |            |
-> +
-> +OP_REQ_IMPORT: Request to import (attach) a remote USB device.
-> +
-> + Offset    | Length | Value      | Meaning
-> +-----------+--------+------------+---------------------------------------------------
-> + 0         | 2      | 0x0100     | Binary-coded decimal USBIP version number: v1.0.0
-> +-----------+--------+------------+---------------------------------------------------
-> + 2         | 2      | 0x8003     | Command code: import a remote USB device.
-> +-----------+--------+------------+---------------------------------------------------
-> + 4         | 4      | 0x00000000 | Status: unused, shall be set to 0
-> +-----------+--------+------------+---------------------------------------------------
-> + 8         | 32     |            | busid: the busid of the exported device on the
-> +           |        |            |   remote host. The possible values are taken
-> +           |        |            |   from the message field OP_REP_DEVLIST.busid.
-> +           |        |            |   A string closed with zero, the unused bytes
-> +           |        |            |   shall be filled with zeros.
-> +-----------+--------+------------+---------------------------------------------------
-> +
-> +OP_REP_IMPORT: Reply to import (attach) a remote USB device.
-> +
-> + Offset    | Length | Value      | Meaning
-> +-----------+--------+------------+---------------------------------------------------
-> + 0         | 2      | 0x0100     | Binary-coded decimal USBIP version number: v1.0.0
-> +-----------+--------+------------+---------------------------------------------------
-> + 2         | 2      | 0x0003     | Reply code: Reply to import.
-> +-----------+--------+------------+---------------------------------------------------
-> + 4         | 4      | 0x00000000 | Status: 0 for OK
-> +           |        |            |         1 for error
-> +-----------+--------+------------+---------------------------------------------------
-> + 8         |        |            | From now on comes the details of the imported
-> +           |        |            |   device, if the previous status field was OK (0),
-> +           |        |            |   otherwise the reply ends with the status field.
-> +-----------+--------+------------+---------------------------------------------------
-> +           | 256    |            | path: Path of the device on the host exporting the
-> +           |        |            |   USB device, string closed with zero byte, e.g.
-> +           |        |            |   "/sys/devices/pci0000:00/0000:00:1d.1/usb3/3-2"
-> +           |        |            |   The unused bytes shall be filled with zero
-> +           |        |            |   bytes.
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x108     | 32     |            | busid: Bus ID of the exported device, string
-> +           |        |            |   closed with zero byte, e.g. "3-2". The unused
-> +           |        |            |   bytes shall be filled with zero bytes.
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x128     | 4      |            | busnum
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x12C     | 4      |            | devnum
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x130     | 4      |            | speed
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x134     | 2      |            | idVendor
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x136     | 2      |            | idProduct
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x138     | 2      |            | bcdDevice
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x139     | 1      |            | bDeviceClass
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x13A     | 1      |            | bDeviceSubClass
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x13B     | 1      |            | bDeviceProtocol
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x13C     | 1      |            | bConfigurationValue
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x13D     | 1      |            | bNumConfigurations
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x13E     | 1      |            | bNumInterfaces
-> +
-> +USBIP_CMD_SUBMIT: Submit an URB
-> +
-> + Offset    | Length | Value      | Meaning
-> +-----------+--------+------------+---------------------------------------------------
-> + 0         | 4      | 0x00000001 | command: Submit an URB
-> +-----------+--------+------------+---------------------------------------------------
-> + 4         | 4      |            | seqnum: the sequence number of the URB to submit
-> +-----------+--------+------------+---------------------------------------------------
-> + 8         | 4      |            | devid
-> +-----------+--------+------------+---------------------------------------------------
-> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
-> +           |        |            |            1: USBIP_DIR_OUT
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x10      | 4      |            | ep: endpoint number, possible values are: 0...15
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x14      | 4      |            | transfer_flags: possible values depend on the
-> +           |        |            |   URB transfer type, see below
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x18      | 4      |            | transfer_buffer_length
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x1C      | 4      |            | start_frame: specify the selected frame to
-> +           |        |            |   transmit an ISO frame, ignored if URB_ISO_ASAP
-> +           |        |            |   is specified at transfer_flags
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x20      | 4      |            | number_of_packets: number of ISO packets
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x24      | 4      |            | interval: maximum time for the request on the
-> +           |        |            |   server-side host controller
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x28      | 8      |            | setup: data bytes for USB setup, filled with
-> +           |        |            |   zeros if not used
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x30      |        |            | URB data. For ISO transfers the padding between
-> +           |        |            |   each ISO packets is not transmitted.
-> +
-> +
-> +  Allowed transfer_flags  | value      | control | interrupt | bulk     | isochronous
-> + -------------------------+------------+---------+-----------+----------+-------------
-> +  URB_SHORT_NOT_OK        | 0x00000001 | only in | only in   | only in  | no
-> +  URB_ISO_ASAP            | 0x00000002 | no      | no        | no       | yes
-> +  URB_NO_TRANSFER_DMA_MAP | 0x00000004 | yes     | yes       | yes      | yes
-> +  URB_NO_FSBR             | 0x00000020 | yes     | no        | no       | no
-> +  URB_ZERO_PACKET         | 0x00000040 | no      | no        | only out | no
-> +  URB_NO_INTERRUPT        | 0x00000080 | yes     | yes       | yes      | yes
-> +  URB_FREE_BUFFER         | 0x00000100 | yes     | yes       | yes      | yes
-> +  URB_DIR_MASK            | 0x00000200 | yes     | yes       | yes      | yes
-> +
-> +
-> +USBIP_RET_SUBMIT: Reply for submitting an URB
-> +
-> + Offset    | Length | Value      | Meaning
-> +-----------+--------+------------+---------------------------------------------------
-> + 0         | 4      | 0x00000002 | command
-> +-----------+--------+------------+---------------------------------------------------
-> + 4         | 4      |            | seqnum: URB sequence number
-> +-----------+--------+------------+---------------------------------------------------
-> + 8         | 4      |            | devid
-> +-----------+--------+------------+---------------------------------------------------
-> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
-> +           |        |            |            1: USBIP_DIR_OUT
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x10      | 4      |            | ep: endpoint number
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x14      | 4      |            | status: zero for successful URB transaction,
-> +           |        |            |   otherwise some kind of error happened.
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x18      | 4      | n          | actual_length: number of URB data bytes
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x1C      | 4      |            | start_frame: for an ISO frame the actually
-> +           |        |            |   selected frame for transmit.
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x20      | 4      |            | number_of_packets
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x24      | 4      |            | error_count
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x28      | 8      |            | setup: data bytes for USB setup, filled with
-> +           |        |            |   zeros if not used
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x30      | n      |            | URB data bytes. For ISO transfers the padding
-> +           |        |            |   between each ISO packets is not transmitted.
-> +
-> +USBIP_CMD_UNLINK: Unlink an URB
-> +
-> + Offset    | Length | Value      | Meaning
-> +-----------+--------+------------+---------------------------------------------------
-> + 0         | 4      | 0x00000003 | command: URB unlink command
-> +-----------+--------+------------+---------------------------------------------------
-> + 4         | 4      |            | seqnum: URB sequence number to unlink: FIXME: is this so?
-> +-----------+--------+------------+---------------------------------------------------
-> + 8         | 4      |            | devid
-> +-----------+--------+------------+---------------------------------------------------
-> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
-> +           |        |            |            1: USBIP_DIR_OUT
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x10      | 4      |            | ep: endpoint number: zero
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x14      | 4      |            | seqnum: the URB sequence number given previously
-> +           |        |            |   at USBIP_CMD_SUBMIT.seqnum field
------------+--------+------------+---------------------------------------------------
-0x30       | n        |                 | URB data bytes. For ISO
-transfers the padding
-              |           |                 |   between each ISO
-packets is not transmitted.
-
-> +
-> +USBIP_RET_UNLINK: Reply for URB unlink
-> +
-> + Offset    | Length | Value      | Meaning
-> +-----------+--------+------------+---------------------------------------------------
-> + 0         | 4      | 0x00000004 | command: reply for the URB unlink command
-> +-----------+--------+------------+---------------------------------------------------
-> + 4         | 4      |            | seqnum: the unlinked URB sequence number
-> +-----------+--------+------------+---------------------------------------------------
-> + 8         | 4      |            | devid
-> +-----------+--------+------------+---------------------------------------------------
-> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
-> +           |        |            |            1: USBIP_DIR_OUT
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x10      | 4      |            | ep: endpoint number
-> +-----------+--------+------------+---------------------------------------------------
-> + 0x14      | 4      |            | status: This is the value contained in the
-> +           |        |            |   urb->status in the URB completition handler.
-> +           |        |            |   FIXME: a better explanation needed.
------------+--------+------------+---------------------------------------------------
-0x30       | n        |                 | URB data bytes. For ISO
-transfers the padding
-              |           |                 |   between each ISO
-packets is not transmitted.
+I'm happy that this didn't cause a flame, but clearly this is not the
+right response in an open environment.  ACM may have copyright on the
+*form* in which you present your knowledge, but could you please poor
+the knowledge in another form that bypasses their copyright so the
+knowledge is made available to all?
 
 
-Regards,
-David Chang
-
->
-> _______________________________________________
-> devel mailing list
-> devel@linuxdriverproject.org
-> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
->
+Thanks,
+ -Rick
