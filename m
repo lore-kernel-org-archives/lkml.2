@@ -1,102 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757480Ab1F2Qsr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 12:48:47 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57460 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757242Ab1F2Qsk convert rfc822-to-8bit (ORCPT
+	id S1757439Ab1F2Qtz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 12:49:55 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:38968 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756818Ab1F2Qtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 12:48:40 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=tgKTl+VZzX1ZfW7eDOSuEIJF5VvPF9zZ2LuMHQ93Y/Tju5bV8JtnKtaYMzWeuw9jh
-	eFqtW+iSNuAqSEXbmX7rA==
+	Wed, 29 Jun 2011 12:49:52 -0400
+Date: Wed, 29 Jun 2011 11:49:44 -0500
+From: Shawn Bohrer <sbohrer@rgmadvisors.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: High IRQ usage on CPU 0
+Message-ID: <20110629164943.GC2215@BohrerMBP.rgmadvisors.com>
+References: <20110624190441.GA2164@BohrerMBP.rgmadvisors.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinX-mkjQ=qMXra5GLeMK+cb9w+9_Q@mail.gmail.com>
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
- <1309324042-22943-4-git-send-email-djkurtz@chromium.org> <BANLkTinX-mkjQ=qMXra5GLeMK+cb9w+9_Q@mail.gmail.com>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Thu, 30 Jun 2011 00:48:17 +0800
-X-Google-Sender-Auth: 20rWbLaN8mcOX_lGDHJ1jFq6eKI
-Message-ID: <CAGS+omCXmc-4WXJDeQKY3uo8h7xBgqfZi=rmDHg2xwWK2OQxMg@mail.gmail.com>
-Subject: Re: [PATCH 03/12] Input: synaptics - fix minimum reported ABS_TOOL_WIDTH
-To: Chris Bagwell <chris@cnpbagwell.com>
-Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se,
-        chase.douglas@canonical.com, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
-        olofj@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110624190441.GA2164@BohrerMBP.rgmadvisors.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Fri, Jun 24, 2011 at 02:04:41PM -0500, Shawn Bohrer wrote:
+> Running 3.0.0-rc4+ I noticed I'm seeing the following on an idle Dell
+> r610 system:
+> 
+> Cpu0  :  0.0%us,  0.0%sy,  0.0%ni, 64.3%id,  0.0%wa, 35.7%hi,  0.0%si,  0.0%st
+> Cpu1  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+> Cpu2  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+> Cpu3  :  0.0%us,  0.0%sy,  0.0%ni, 99.3%id,  0.0%wa,  0.3%hi,  0.3%si,  0.0%st
+> Cpu4  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+> Cpu5  :  0.0%us,  0.0%sy,  0.0%ni, 99.3%id,  0.0%wa,  0.3%hi,  0.3%si,  0.0%st
+> Cpu6  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+> Cpu7  :  0.0%us,  0.0%sy,  0.0%ni,100.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
+> Cpu8  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+> Cpu9  :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+> Cpu10 :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+> Cpu11 :  0.0%us,  0.0%sy,  0.0%ni,100.0%id,  0.0%wa,  0.0%hi,  0.0%si,  0.0%st
+> Cpu12 :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+> Cpu13 :  0.0%us,  0.0%sy,  0.0%ni, 99.3%id,  0.0%wa,  0.3%hi,  0.3%si,  0.0%st
+> Cpu14 :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.0%hi,  0.3%si,  0.0%st
+> Cpu15 :  0.0%us,  0.0%sy,  0.0%ni, 99.7%id,  0.0%wa,  0.3%hi,  0.0%si,  0.0%st
+> 
+> Watching /proc/interrupts it looks like most of the interrupts on CPU0
+> are on IRQ 0 from "IO-APIC-edge      timer".
+> 
+> perf top -C 0 shows:
+> 
+> ---------------------------------------------------------------------
+> PerfTop:    1024 irqs/sec  kernel:100.0%  exact:  0.0% [1000Hz cycles],  (all, CPU: 0)
+> ---------------------------------------------------------------------
+> 
+>              samples  pcnt function                            DSO
+>              _______ _____ ___________________________________ _______
+> 
+>             11648.00 83.6% default_send_IPI_mask_sequence_phys vmlinux
+>              1548.00 11.1% _raw_spin_lock_irqsave              vmlinux
+>               530.00  3.8% intel_idle                          vmlinux
+>                36.00  0.3% hpet_legacy_next_event              vmlinux
+>                28.00  0.2% tick_handle_oneshot_broadcast       vmlinux
+>                20.00  0.1% find_next_bit                       vmlinux
+>                16.00  0.1% find_busiest_group                  vmlinux
+>                15.00  0.1% _raw_spin_unlock_irqrestore         vmlinux
+>                13.00  0.1% cpuidle_idle_call                   vmlinux
+>                10.00  0.1% _raw_spin_lock                      vmlinux
+>                 9.00  0.1% tick_broadcast_oneshot_control      vmlinux
+>                 8.00  0.1% notifier_call_chain                 vmlinux
+>                 7.00  0.1% leave_mm                            vmlinux
+> 
+> For some reason 'perf record -C 0 -g sleep 5' doesn't record anything,
+> but here is the top functions from a 'perf record -a -g sleep 5':
+> 
+> # Events: 77K cycles
+> #
+> # Overhead          Command       Shared Object                               Symbol
+> # ........  ...............  ..................  ...................................
+> #
+>     80.22%          swapper  [kernel.kallsyms]   [k] _raw_spin_lock_irqsave
+>                     |
+>                     --- _raw_spin_lock_irqsave
+>                        |          
+>                        |--89.92%-- clockevents_notify
+>                        |          intel_idle
+>                        |          cpuidle_idle_call
+>                        |          cpu_idle
+>                        |          |          
+>                        |          |--98.67%-- start_secondary
+>                        |          |          
+>                        |           --1.33%-- rest_init
+>                        |                     start_kernel
+>                        |                     x86_64_start_reservations
+>                        |                     x86_64_start_kernel
+>                        |          
+>                        |--10.03%-- tick_broadcast_oneshot_control
+>                        |          tick_notify
+>                        |          notifier_call_chain
+>                        |          raw_notifier_call_chain
+>                        |          clockevents_notify
+>                        |          intel_idle
+>                        |          cpuidle_idle_call
+>                        |          cpu_idle
+>                        |          |          
+>                        |          |--99.97%-- start_secondary
+>                        |           --0.03%-- [...]
+>                         --0.05%-- [...]
+> 
+>      9.32%          swapper  [kernel.kallsyms]   [k] default_send_IPI_mask_sequence_phys
+>                     |
+>                     --- default_send_IPI_mask_sequence_phys
+>                         physflat_send_IPI_mask
+>                         lapic_timer_broadcast
+>                         tick_do_broadcast
+>                         tick_handle_oneshot_broadcast
+>                         timer_interrupt
+>                         handle_irq_event_percpu
+>                         handle_irq_event
+>                         handle_edge_irq
+>                         handle_irq
+>                         do_IRQ
+>                         common_interrupt
+>                        |          
+>                        |--99.91%-- cpuidle_idle_call
+>                        |          cpu_idle
+>                        |          rest_init
+>                        |          start_kernel
+>                        |          x86_64_start_reservations
+>                        |          x86_64_start_kernel
+>                         --0.09%-- [...]
+> 
+>      5.83%          swapper  [kernel.kallsyms]   [k] intel_idle
+>                     |
+>                     --- intel_idle
+>                        |          
+>                        |--99.67%-- cpuidle_idle_call
+>                        |          cpu_idle
+>                        |          |          
+>                        |          |--94.19%-- start_secondary
+>                        |          |          
+>                        |           --5.81%-- rest_init
+>                        |                     start_kernel
+>                        |                     x86_64_start_reservations
+>                        |                     x86_64_start_kernel
+>                         --0.33%-- [...]
+> 
+> I'm not sure what other information would be useful here.  Please let
+> me know if you need anything else.
 
-Thanks for taking a look!
+The above info was taken with CONFIG_INTEL_IDLE=y, unsetting this
+config option makes the problem go away.
 
-On Wed, Jun 29, 2011 at 9:28 PM, Chris Bagwell <chris@cnpbagwell.com> wrote:
-> On Wed, Jun 29, 2011 at 12:07 AM,  <djkurtz@chromium.org> wrote:
->> From: Daniel Kurtz <djkurtz@chromium.org>
->>
->> Synaptics touchpads report a 'w' value in each data report.
->> For touchpads that support palm detection, when there is a single finger
->> on the pad, the 'w' value reports its width in the range 4 to 15.
->> Thus, the minimum valid width is 4.
->
-> FYI: I had debated on this as well.  When driver was first modified to
-> report min/max width, the min width of zero was chosen because when
-> not touching the pad a value of zero is forced by driver to user.  So
-> the range is 0, 4-15.
+Here is some more info about the system that may be relevant.
 
-Yup, good catch.  I now see that this is true for the legacy single-touch case.
-For consistency with the existing implementation, I'm ok to drop this patch.
+$ cat /proc/cpuinfo | grep model | sort -u
+model: 26
+model name: Intel(R) Xeon(R) CPU           X5570  @ 2.93GHz
 
-I think we can still keep the range 4-15 for the ABS_MT_TOUCH_MAJOR
-axis, though, right?
-A pure-mt userspace app can get the correct width range, and deduce 0
-fingers from the fact that all MT-B slots have tracking_id == -1.
+$ dmesg | grep command
+Kernel command line: ro root=/dev/sda2 selinux=0 audit=0 processor.max_cstate=0 crashkernel=128M
 
--Dan
+$ sudo omreport chassis biossetup
+BIOS Setup
 
->>
->> Note: Other values of 'w' are used to report special conditions:
->>  w=0: 2 fingers are on the pad
->>  w=1: 3 or more fingers are on the pad
->>  w=2: the packet contains "Advanced Gesture Mode" data.
->>
->> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->> ---
->>  drivers/input/mouse/synaptics.c |    2 +-
->>  1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
->> index f6d0c04..a4b7801 100644
->> --- a/drivers/input/mouse/synaptics.c
->> +++ b/drivers/input/mouse/synaptics.c
->> @@ -706,7 +706,7 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
->>        }
->>
->>        if (SYN_CAP_PALMDETECT(priv->capabilities))
->> -               input_set_abs_params(dev, ABS_TOOL_WIDTH, 0, 15, 0, 0);
->> +               input_set_abs_params(dev, ABS_TOOL_WIDTH, 4, 15, 0, 0);
->>
->>        __set_bit(EV_KEY, dev->evbit);
->>        __set_bit(BTN_TOUCH, dev->keybit);
->> --
->> 1.7.3.1
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-input" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-input" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+General
+Boot Sequence                                : Hard drive C:
+Num Lock                                     : On
+User Accessible USB Ports                    : All Ports On
+Processor Virtualization Technology          : Disabled
+Processor Logical Processor (HyperThreading) : Enabled
+AC Power Recovery Mode                       : On
+Embedded SATA Controller                     : Off
+SATA Port 0                                  : Off
+Dual NIC (1/2)                               : Enabled with 1st NIC PXE and 2nd NIC None
+Dual NIC (3/4)                               : Enabled with 1st NIC None and 2nd NIC None
+TPM Security                                 : Off
+Internal USB Port                            : Enabled
+OS Watchdog Timer                            : Disabled
+Processor Core Based Turbo Mode              : Enabled
+Node Interleaving                            : Disabled
+Processor Execute Disable                    : Enabled
+Processor CMP                                : 4
+Boot Mode                                    : BIOS
+Processor C State Control                    : Enabled
+Processor C1-E                               : Disabled
+
+Serial Communications
+Serial Communications                  : On without Console Redirection
+Console Redirection After Boot         : Enabled
+External Serial Connector              : Serial Device1
+Console Redirection Failsafe BAUD Rate : 115200
+Serial Address Select                  : Serial Device1=COM1, Serial Device2=COM2
+
+--
+Shawn
+
+
+
+---------------------------------------------------------------
+This email, along with any attachments, is confidential. If you 
+believe you received this message in error, please contact the 
+sender immediately and delete all copies of the message.  
+Thank you.
+
