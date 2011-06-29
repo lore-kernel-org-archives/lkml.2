@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab1F2V41 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 17:56:27 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43251 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757952Ab1F2V4Y (ORCPT
+	id S1758053Ab1F2V4i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 17:56:38 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:57157 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757952Ab1F2V4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 17:56:24 -0400
-Date: Wed, 29 Jun 2011 17:56:21 -0400
+	Wed, 29 Jun 2011 17:56:36 -0400
+Date: Wed, 29 Jun 2011 17:56:32 -0400
 From: Eric B Munson <emunson@mgebm.net>
 To: Glauber Costa <glommer@redhat.com>
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -15,22 +15,22 @@ Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
         Anthony Liguori <aliguori@us.ibm.com>
-Subject: Re: [PATCH v3 3/9] KVM-HDR: KVM Steal time implementation
-Message-ID: <20110629215621.GB3557@mgebm.net>
+Subject: Re: [PATCH v3 4/9] KVM-HV: KVM Steal time implementation
+Message-ID: <20110629215632.GC3557@mgebm.net>
 References: <1309361388-30163-1-git-send-email-glommer@redhat.com>
- <1309361388-30163-4-git-send-email-glommer@redhat.com>
+ <1309361388-30163-5-git-send-email-glommer@redhat.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+pHx0qQiF2pBVqBT"
+	protocol="application/pgp-signature"; boundary="WplhKdTI2c8ulnbP"
 Content-Disposition: inline
-In-Reply-To: <1309361388-30163-4-git-send-email-glommer@redhat.com>
+In-Reply-To: <1309361388-30163-5-git-send-email-glommer@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---+pHx0qQiF2pBVqBT
+--WplhKdTI2c8ulnbP
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
@@ -46,10 +46,11 @@ tion
 > In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
 > holds the memory area address containing information about steal time
 >=20
-> This patch contains the headers for it. I am keeping it separate to facil=
-itate
-> backports to people who wants to backport the kernel part but not the
-> hypervisor, or the other way around.
+> This patch contains the hypervisor part for it. I am keeping it separate =
+=66rom
+> the headers to facilitate backports to people who wants to backport the k=
+ernel
+> part but not the hypervisor, or the other way around.
 >=20
 > Signed-off-by: Glauber Costa <glommer@redhat.com>
 > CC: Rik van Riel <riel@redhat.com>
@@ -62,20 +63,20 @@ itate
 Tested-by: Eric B Munson <emunson@mgebm.net>
 
 
---+pHx0qQiF2pBVqBT
+--WplhKdTI2c8ulnbP
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOC5+FAAoJEH65iIruGRnNHGEIAKrF5di1MSDvf6nMEaW+piCl
-KQAZXSE99IB1l3fH0SXf40gS8QTd475lf7WQEy1UnWnmRoBHyB/n8UNwnJF0PLWl
-niwxZr5OCbeolTgDJs60RB8w28km3kbz9aFABwMgmpXodowEkkqxG1rZGLf09r1Q
-adcfQTbewPi6m4WLHYnUE87jKTROzN12k4wJRT4IgMtDfFvPK6PKHosKb4D/qWkJ
-Pkf+9jW7HZJgmo7U2dYJ2YkHcz8T8uneGZ/HLdPDo6qew+w8zAAq/46JXXww24Dz
-gOf48QwxKNfisBfqJECvO3d0Z+TVYraD6YiuigCl4Z28MmdnhHB5WpIn2GZukt8=
-=IMYj
+iQEcBAEBAgAGBQJOC5+QAAoJEH65iIruGRnNA5YH/0GMsB2KK8VHucsSvAqO7vId
+ZmkccGKSwe273p3ooKDQGuwC0NC9NES3dnkkItPWEdDUdxU8hrDl4dTcUXeZJLGw
+YPXkFEltVPT8lG68zyO4ODreIWwEuDhNpPmGO9jpt5VT67Ypo1Tn0+B9FA9AjBNH
+gkTFHqrUuzli+P6EZUsnQB+eRvQcr2F3U+fp0WQvxEygGxnonRPlMIg03gIzBtL3
+Vw/6QBc/JOrcDlyxy4OZGy5ToSZp65CwnCrKu3nOtxLfftg/qVSy3Fb4z5UVE7es
+Gb1CR+cSZtUxPEpzyI06BrF7BKP3bsB7bLayoWThlfoiE/T+oPQ4dQG6E/GU8Bg=
+=TKoS
 -----END PGP SIGNATURE-----
 
---+pHx0qQiF2pBVqBT--
+--WplhKdTI2c8ulnbP--
