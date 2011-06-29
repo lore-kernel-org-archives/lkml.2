@@ -1,244 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756945Ab1F2QFn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 12:05:43 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:40983 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754402Ab1F2QFk (ORCPT
+	id S1757156Ab1F2QGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 12:06:22 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:2988 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756143Ab1F2QGU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 12:05:40 -0400
-Date: Wed, 29 Jun 2011 18:05:32 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 0/8][V2] blk-throttle: Throttle buffered WRITEs in
- balance_dirty_pages()
-Message-ID: <20110629160532.GA1255@thinkpad>
-References: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
- <20110628162138.GA1544@thinkpad>
- <20110628170624.GA12949@redhat.com>
+	Wed, 29 Jun 2011 12:06:20 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=XbLGClb6jmaBUPGm5d1KrIurKhytp8x1oe5YxzEcKJ+sdGCC2Rc7ejjgFPkNBcqfv
+	7vK4E3D10Nmp4ChJagiFg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110628170624.GA12949@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTikw9bnrurUo8n-6yUwwQ0zOv5iAOBDt=T6Nm6nkUd7vLA@mail.gmail.com>
+References: <fa.fHPNPTsllvyE/7DxrKwiwgVbVww@ifi.uio.no>
+	<532cc290-4b9c-4eb2-91d4-aa66c01bb3a0@glegroupsg2000goo.googlegroups.com>
+	<BANLkTik3mEJGXLrf_XtssfdRypm3NxBKvkhcnUpK=YXV6ux=Ag@mail.gmail.com>
+	<20110629080827.GA975@phantom.vanrein.org>
+	<BANLkTikw9bnrurUo8n-6yUwwQ0zOv5iAOBDt=T6Nm6nkUd7vLA@mail.gmail.com>
+Date: Wed, 29 Jun 2011 09:06:11 -0700
+Message-ID: <BANLkTi=2ZMmrwMrnyEyEZAEsCUQNnd5n1j8J0xzSEF=ahrJmLw@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+From: Craig Bergstrom <craigb@google.com>
+To: linux-kernel@vger.kernel.org, fa.linux.kernel@googlegroups.com
+Cc: Rick van Rein <rick@vanrein.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stefan Assmann <sassmann@kpanic.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "Luck, Tony" <tony.luck@intel.com>, Andi Kleen <andi@firstfloor.org>,
+        "mingo@elte.hu" <mingo@elte.hu>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 01:06:24PM -0400, Vivek Goyal wrote:
-> On Tue, Jun 28, 2011 at 06:21:38PM +0200, Andrea Righi wrote:
-> > On Tue, Jun 28, 2011 at 11:35:01AM -0400, Vivek Goyal wrote:
-> > > Hi,
-> > > 
-> > > This is V2 of the patches. First version is posted here.
-> > > 
-> > > https://lkml.org/lkml/2011/6/3/375
-> > > 
-> > > There are no changes from first version except that I have rebased it to
-> > > for-3.1/core branch of Jens's block tree.
-> > > 
-> > > I have been trying to find ways to solve two problems with block IO controller
-> > > cgroups.
-> > > 
-> > > - Current throttling logic in IO controller does not throttle buffered WRITES.
-> > >   Well it does throttle all the WRITEs at device and by that time buffered
-> > >   WRITE have lost the submitter's context and most of the IO comes in flusher
-> > >   thread's context at device. Hence currently buffered write throttling is
-> > >   not supported.
-> > > 
-> > > - All WRITEs are throttled at device level and this can easily lead to
-> > >   filesystem serialization.
-> > > 
-> > >   One simple example is that if a process writes some pages to cache and
-> > >   then does fsync(), and process gets throttled then it locks up the
-> > >   filesystem. With ext4, I noticed that even a simple "ls" does not make
-> > >   progress. The reason boils down to the fact that filesystems are not
-> > >   aware of cgroups and one of the things which get serialized is journalling
-> > >   in ordered mode.
-> > > 
-> > >   So even if we do something to carry submitter's cgroup information
-> > >   to device and do throttling there, it will lead to serialization of
-> > >   filesystems and is not a good idea.
-> > > 
-> > > So how to go about fixing it. There seem to be two options.
-> > > 
-> > > - Throttling should still be done at device level. Make filesystems aware
-> > >   of cgroups so that multiple transactions can make progress in parallel
-> > >   (per cgroup) and there are no shared resources across cgroups in
-> > >   filesystems which can lead to serialization.
-> > > 
-> > > - Throttle WRITEs while they are entering the cache and not after that.
-> > >   Something like balance_dirty_pages(). Direct IO is still throttled
-> > >   at device level. That way, we can avoid these journalling related
-> > >   serialization issues w.r.t trottling.
-> > 
-> > I think that O_DIRECT WRITEs can hit the same serialization problem if
-> > we throttle them at device level.
-> 
-> I think it can but number of cases probably comes down significantly. One
-> of the main problems seems to be sync related variants sync/fsync etc.
-> And I think we do not make any gurantees for inflight requests
-> (not completed yet).
-> 
-> So it will boil down to how dependent these sync primitives are on
-> inflight direct WRITEs. I did basic testing with ext4 and it looked fine.
-> On XFS, sync gets blocked behind inflight direct writes. Last time I
-> raised that issue and looks like Christoph has plans to do something
-> about it.
-> 
-> So currently my understanding is that dependency on direct writes might
-> not be a major issue in practice. (Until and unless there is more to
-> it I am not aware about).
-> 
-> > 
-> > Have you tried to do some tests? (i.e. create multiple cgroups with very
-> > low I/O limit doing parallel O_DIRECT WRITEs, and try to run at the same
-> > time "ls" or other simple commands from the root cgroup or unlimited
-> > cgroup).
-> 
-> I did. On ext4, I created a cgroup with limit 1byte per second and 
-> started a direct write and did "ls", "sync" and some directory traversal
-> operations in same diretory and it seems to work.
+My apologies, I send this initial reply from the wrong address. Please
+reply to this @google.com address.
 
-Confirm. Everything seems to work fine also on my side.
+Cheers,
+CraigB
 
-Tested-by: Andrea Righi <andrea@betterlinux.com>
-
-FYI, I've used the following script to test it if you're interested.
-I tested both with O_DIRECT=1 and O_DIRECT=0.
-
--Andrea
-
----
-#!/bin/bash
-#
-# blkio.throttle unit test
-#
-# This script creates many cgroups and spawns many parallel IO workers inside
-# each cgroup.
-
-# cgroupfs mount point
-CGROUP_MP=/sys/fs/cgroup/blkio
-# temporary directory used to generate IO
-TMPDIR=/tmp
-
-# how many cgroups?
-CGROUPS=16
-# how many IO workers per cgroup?
-WORKERS=16
-# max IO bandwidth of each cgroup
-BW_MAX=$((1 * 1024 * 1024))
-# max IO operations per second of each cgroup
-IOPS_MAX=0
-
-# IO block size
-IO_BLOCK_SIZE=$((1 * 1024 * 1024))
-# how many blocks to read/write (for each worker)
-IO_BLOCK_NUM=4
-# how many times each worker have to repeat the IO operation?
-IO_COUNT=16
-
-# enable O_DIRECT?
-O_DIRECT=0
-
-# timeout to consider a task blocked for too much time and dump a
-# message in the kernel log (set to 0 to disable this check)
-HUNG_TASK_TIMEOUT=60
-
-cleanup_handler() {
- 	pkill sleep
-	pkill dd
-	echo "terminating..."
-	sleep 10
-	rmdir $CGROUP_MP/grp_*
-	rm -rf $TMPDIR/grp_*
-	sleep 1
-	exit 1
-}
-
-worker() {
-	out=$1
-
-	if [ "z$O_DIRECT" = "z1" ]; then
-		out_flags=oflag=direct
-		in_flags=iflag=direct
-	else
-		out_flag=
-		in_flag=
-	fi
-	sleep 5
-	for i in `seq 1 16`; do
-		dd if=/dev/zero of=$out \
-			bs=$IO_BLOCK_SIZE count=$IO_BLOCK_NUM \
-			$out_flags 2>/dev/null
-	done
-	for i in `seq 1 16`; do
-		dd if=$out of=/dev/null \
-			bs=$IO_BLOCK_SIZE count=$IO_BLOCK_NUM \
-			$in_flags 2>/dev/null
-	done
-	rm -f $out
-	unset out
-}
-
-spawn_workers() {
-	grp=$1
-	device=`df $TMPDIR | sed '1d' | awk '{print $1}' | sed 's/[0-9]$//'`
-	devnum=`grep $(basename $device)$ /proc/partitions | awk '{print $1":"$2}'`
-
-	mkdir $CGROUP_MP/$grp
-
-	echo $devnum $BW_MAX > $CGROUP_MP/$grp/blkio.throttle.read_bps_device
-	echo $devnum $BW_MAX > $CGROUP_MP/$grp/blkio.throttle.write_bps_device
-
-	echo $devnum $IOPS_MAX > $CGROUP_MP/$grp/blkio.throttle.read_iops_device
-	echo $devnum $IOPS_MAX > $CGROUP_MP/$grp/blkio.throttle.write_iops_device
-
-	mkdir -p $TMPDIR/$grp
-	for i in `seq 1 $WORKERS`; do
-		worker $TMPDIR/$grp/zero$i &
-		echo $! > $CGROUP_MP/$grp/tasks
-	done
-	for i in `seq 1 $WORKERS`; do
-		wait
-	done
-	rmdir $TMPDIR/$grp
-	rmdir $CGROUP_MP/$grp
-	unset grp
-}
-
-# mount cgroupfs
-mount -t cgroup -o blkio none $CGROUP_MP
-
-# set hung task check timeout (help to catch system-wide lockups)
-echo $HUNG_TASK_TIMEOUT > /proc/sys/kernel/hung_task_timeout_secs
-
-# invalidate page cache
-sync
-echo 3 > /proc/sys/vm/drop_caches
-
-# show expected bandwidth
-bw=$(($CGROUPS * $BW_MAX / 1024))
-space=$(($CGROUPS * $WORKERS * $IO_BLOCK_SIZE * $IO_BLOCK_NUM / 1024 / 1024))
-echo -ne "\n\n"
-echo creating $CGROUPS cgroups, $WORKERS tasks per cgroup, bw=$BW_MAX
-echo required disk space: $space MiB
-echo expected average bandwith: $bw MiB/s
-echo -ne "\n\n"
-
-# trap SIGINT and SIGTERM to quit cleanly
-trap cleanup_handler SIGINT SIGTERM
-
-# run workers
-for i in `seq 1 $CGROUPS`; do
-	spawn_workers grp_$i &
-done
-
-# wait the completion of the workers
-for i in `seq 1 $CGROUPS`; do
-	wait
-done
-
-echo "test completed."
+On Wed, Jun 29, 2011 at 8:28 AM, craig lkml <craig.lkml@gmail.com> wrote:
+> Hi Rick,
+> Thanks for your response.  My sincere apologies for not posting the work
+> directly.
+> My intention is to point interested parties to contributions that Google has
+> made to this space through known and respected channels.  The cited research
+> is not my research but the research of my colleagues.  As a result, I
+> hesitate to paraphrase the work as I will likely get the details wrong.  In
+> any case, Shane's points are the most relevant for the discussion here.
+>  Please refer to his post in this thread.
+> In an attempt to contribute to the community as much as I can, I have
+> prepared and mailed our BadRAM patch as requested.  In case it is not
+> otherwise clear, my belief is that the ideal solution for the upstream
+> kernel is a hybrid of our approaches.
+> Thank you,
+> CraigB
+>
+> On Wed, Jun 29, 2011 at 1:08 AM, Rick van Rein <rick@vanrein.org> wrote:
+>>
+>> Hello Craig,
+>>
+>> > Some folks had mentioned that they're interested in details about what
+>> > we've learned about bad ram from our fleet of machines.  I suspect
+>> > that you need ACM portal access to read this,
+>>
+>> I'm happy that this didn't cause a flame, but clearly this is not the
+>> right response in an open environment.  ACM may have copyright on the
+>> *form* in which you present your knowledge, but could you please poor
+>> the knowledge in another form that bypasses their copyright so the
+>> knowledge is made available to all?
+>>
+>>
+>> Thanks,
+>>  -Rick
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
