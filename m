@@ -1,81 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab1F2N6Y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 09:58:24 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50702 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752182Ab1F2N6X (ORCPT
+	id S1754622Ab1F2OFH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 10:05:07 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:43334 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752279Ab1F2OFD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 09:58:23 -0400
-Subject: Re: [PATCH 00/12] Fix various section mismatches and build errors.
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: David Miller <davem@davemloft.net>, akpm@linux-foundation.org,
-        alan@linux.intel.com, bcasavan@sgi.com, airlied@linux.ie,
-        grundler@parisc-linux.org, perex@perex.cz, rpurdie@rpsys.net,
-        klassert@mathematik.tu-chemnitz.de, tj@kernel.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-scsi@vger.kernel.org,
-        linux-serial@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <20110629130711.GA15649@linux-mips.org>
-References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
-	 <20110627.221257.1290251511587162468.davem@davemloft.net>
-	 <20110629130711.GA15649@linux-mips.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Jun 2011 08:58:19 -0500
-Message-ID: <1309355899.2551.4.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	Wed, 29 Jun 2011 10:05:03 -0400
+Date: Wed, 29 Jun 2011 16:04:53 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Hugh Dickins <hughd@google.com>,
+        Jerry James <jamesjer@betterlinux.com>,
+        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Rik van Riel <riel@redhat.com>, Theodore Tso <tytso@mit.edu>,
+        Shaohua Li <shaohua.li@intel.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v4 0/2] fadvise: move active pages to inactive list with
+ POSIX_FADV_DONTNEED
+Message-ID: <20110629140453.GA13456@thinkpad>
+References: <1309181361-14633-1-git-send-email-andrea@betterlinux.com>
+ <20110628151233.f0a279be.akpm@linux-foundation.org>
+ <20110628225645.GB2274@thinkpad>
+ <20110628160347.a5ffcc26.akpm@linux-foundation.org>
+ <4E0B0A76.5010204@draigBrady.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E0B0A76.5010204@draigBrady.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-29 at 14:07 +0100, Ralf Baechle wrote:
-> On Mon, Jun 27, 2011 at 10:12:57PM -0700, David Miller wrote:
-> 
-> > commit 948252cb9e01d65a89ecadf67be5018351eee15e
-> > Author: David S. Miller <davem@davemloft.net>
-> > Date:   Tue May 31 19:27:48 2011 -0700
+On Wed, Jun 29, 2011 at 12:20:22PM +0100, Pádraig Brady wrote:
+> On 29/06/11 00:03, Andrew Morton wrote:
+> > On Wed, 29 Jun 2011 00:56:45 +0200
+> > Andrea Righi <andrea@betterlinux.com> wrote:
 > > 
-> >     Revert "net: fix section mismatches"
-> >     
-> >     This reverts commit e5cb966c0838e4da43a3b0751bdcac7fe719f7b4.
-> >     
-> >     It causes new build regressions with gcc-4.2 which is
-> >     pretty common on non-x86 platforms.
-> >     
-> >     Reported-by: James Bottomley <James.Bottomley@HansenPartnership.com>
-> >     Signed-off-by: David S. Miller <davem@davemloft.net>
+> >>>>
+> >>>> In this way if the backup was the only user of a page, that page will be
+> >>>> immediately removed from the page cache by calling POSIX_FADV_DONTNEED.  If the
+> >>>> page was also touched by other processes it'll be moved to the inactive list,
+> >>>> having another chance of being re-added to the working set, or simply reclaimed
+> >>>> when memory is needed.
+> >>>
+> >>> So if an application touches a page twice and then runs
+> >>> POSIX_FADV_DONTNEED, that page will now not be freed.
+> >>>
+> >>> That's a big behaviour change.  For many existing users
+> >>> POSIX_FADV_DONTNEED simply doesn't work any more!
+> >>
+> >> Yes. This is the main concern that was raised by P__draig.
+> >>
+> >>>
+> >>> I'd have thought that adding a new POSIX_FADV_ANDREA would be safer
+> >>> than this.
+> >>
+> >> Actually Jerry (in cc) proposed
+> >> POSIX_FADV_IDONTNEEDTHISBUTIFSOMEBODYELSEDOESTHENDONTTOUCHIT in a
+> >> private email. :)
 > > 
-> > and postings that led to this revert including:
+> > Sounds good.  Needs more underscores though.
 > > 
-> > http://marc.info/?l=linux-netdev&m=130653748205263&w=2
+> >>>
+> >>>
+> >>> The various POSIX_FADV_foo's are so ill-defined that it was a mistake
+> >>> to ever use them.  We should have done something overtly linux-specific
+> >>> and given userspace more explicit and direct pagecache control.
+> >>
+> >> That would give us the possibility to implement a wide range of
+> >> different operations (drop, drop if used once, add to the active list,
+> >> add to the inactive list, etc..). Some users always complain that they
+> >> would like to have a better control over the page cache from userspace.
+> > 
+> > Well, I'd listen to proposals ;)
+> > 
+> > One thing we must be careful about is to not expose things like "active
+> > list" to userspace.  linux-4.5 may not _have_ an active list, and its
+> > implementors would hate us and would have to jump through hoops to
+> > implement vaguely compatible behaviour in the new scheme.
+> > 
+> > So any primitives which are exposed should be easily implementable and
+> > should *make sense* within any future scheme...
 > 
-> Thanks for the pointers; I looked into it a bit deeper and found that the
-> construct which hppa64-linux-gcc 4.2.4 doesn't like is the combination of
-> const and __devinitconst __devinitdata.
+> Agreed.
 > 
-> My patches are minimalistic and don't do any constification and seem to
-> work fine for PA-RISC.
+> In fairness to posix_fadvise(), I think it's designed to
+> specify hints for the current process' use of data
+> so that it can get at it more efficiently and also be
+> allow the system to manipulate cache more efficiently.
+> I.E. it's not meant for direct control of the cache.
 > 
-> A possible alternative to allow the use of MichaÅ‚'s reverted patch would
-> be to conditionalize the definition of __devinitconst.  There is no
-> user of __devexitconst so I left that unchanged.
+> That being said, existing use has allowed this,
+> and it would be nice not to change without consideration.
+> 
+> I've mentioned how high level cache control functions
+> might map to the existing FADV knobs here:
+> 
+> http://marc.info/?l=linux-kernel&m=130917619416123&w=2
+> 
+> cheers,
+> Pádraig.
 
-To be honest, my own take on this is that, apart from the compiler
-cockups trying to do read only annotations, which affect various
-versions of gcc not just the parisc ones, the _devX annotations are
-pretty pointless.  They only really do something in the non-hotplug
-case, so since 95% of the world seems to use hotplug now and the other
-5% doesn't care that much about the odd page of memory (which you rarely
-get, since modules sections are accumulated per module, not aggregate),
-I'd just favour stripping __init and __exit where there's a problem.
+OK, your proposal seems a good start to implement a better cache control
+interface.
 
-I think we should simply concentrate on __init and __exit; that's where
-most of the discard value lies and stop expending huge efforts on the
-__devX stuff which adds huge complexity for no real gain.
+Basically you're proposing to provide the following operations:
+ 1. DROP
+ 2. DROP if used once
+ 3. ADD
+ 4. ADD if there's space
 
-James
+I would also add for sure:
+ 5. ADD and will use once
 
+Some of them are already implemented by the available fadvise()
+operations, like 1 (POSIX_FADV_DONTNEED) and 3 (POSIX_FADV_WILLNEED).
+Option 5 can be mapped to POSIX_FADV_NOREUSE, but it's not yet
+implemented.
 
+I need to think a little bit more about all of this. I'll try to post a
+new RFC, proposing the list of high-level operations to implement the
+better page cache control from userspace.
+
+Suggestions, comments, ideas are always welcome.
+
+Thanks,
+-Andrea
