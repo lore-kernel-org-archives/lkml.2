@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753810Ab1F2Hdv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 03:33:51 -0400
-Received: from mail.free-electrons.com ([88.190.12.23]:34342 "EHLO
-	mail.free-electrons.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751736Ab1F2Hdp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 03:33:45 -0400
-Message-ID: <4E0AD550.5010700@free-electrons.com>
-Date: Wed, 29 Jun 2011 09:33:36 +0200
-From: Maxime Ripard <maxime.ripard@free-electrons.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Matthew Garrett <mjg@redhat.com>
-CC: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com,
+	id S1753841Ab1F2Hg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 03:36:26 -0400
+Received: from tundra.namei.org ([65.99.196.166]:47233 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751736Ab1F2HgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 03:36:18 -0400
+Date: Wed, 29 Jun 2011 17:36:05 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Make Dell Latitude E6320 use reboot=pci
-References: <1309269451-4966-1-git-send-email-maxime.ripard@free-electrons.com> <20110628174137.GA18115@srcf.ucam.org> <4E0A2D0C.6030701@free-electrons.com> <20110628200319.GA22487@srcf.ucam.org>
-In-Reply-To: <20110628200319.GA22487@srcf.ucam.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Subject: Re: linux-next: build failure after merge of the security-testing
+ tree
+In-Reply-To: <201106291316.CDF48413.JtQVLOFSFOOFMH@I-love.SAKURA.ne.jp>
+Message-ID: <alpine.LRH.2.00.1106291735410.5093@tundra.namei.org>
+References: <20110629134800.9ee0d5b7.sfr@canb.auug.org.au> <201106291316.CDF48413.JtQVLOFSFOOFMH@I-love.SAKURA.ne.jp>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/2011 22:03, Matthew Garrett wrote:
-> On Tue, Jun 28, 2011 at 09:35:40PM +0200, Maxime Ripard wrote:
->> On 28/06/2011 19:41, Matthew Garrett wrote:
->>> On Tue, Jun 28, 2011 at 03:57:31PM +0200, Maxime Ripard wrote:
->>>> The Dell Latitude E6320 doesn't reboot unless reboot=pci is set.
->>>
->>> On which kernel versions?
->>
->> All the versions from 2.6.38 to 3.0-rc5.
+On Wed, 29 Jun 2011, Tetsuo Handa wrote:
+
+>  From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> Date: Wed, 29 Jun 2011 13:07:52 +0900
+> Subject: [PATCH] TOMOYO: Fix build error with CONFIG_SECURITY_TOMOYO_OMIT_USERSPACE_LOADER=y .
 > 
-> Could you provide the acpidump output for the system?
+> I forgot to add #ifndef in commit 0e4ae0e0 "TOMOYO: Make several options
+> configurable.", resulting
+> 
+>   security/built-in.o: In function `tomoyo_bprm_set_creds':
+>   tomoyo.c:(.text+0x4698e): undefined reference to `tomoyo_load_policy'
 > 
 
-Sure, here it is :
-http://free-electrons.com/~maxime/pub/acpidumb-e6320.log
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
 
 -- 
-Maxime Ripard, Free Electrons
-Kernel, drivers, real-time and embedded Linux
-development, consulting, training and support.
-http://free-electrons.com
+James Morris
+<jmorris@namei.org>
