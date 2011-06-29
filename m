@@ -1,43 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757404Ab1F2SJm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 14:09:42 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:47099
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753291Ab1F2SJk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 14:09:40 -0400
-Date: Wed, 29 Jun 2011 14:09:39 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, hch@infradead.org, viro@zeniv.linux.org.uk,
-        jack@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] fs: push i_mutex and filemap_write_and_wait down into
- ->fsync() handlers
-Message-ID: <20110629180939.GA9934@infradead.org>
-References: <1309370716-12235-1-git-send-email-josef@redhat.com>
+	id S1757399Ab1F2SOj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 14:14:39 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:47467 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753291Ab1F2SOg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 14:14:36 -0400
+Message-ID: <4E0B6B85.5090202@kernel.dk>
+Date: Wed, 29 Jun 2011 20:14:29 +0200
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309370716-12235-1-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Philipp Reisner <philipp.reisner@linbit.com>
+CC: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+Subject: Re: [GIT PULL] DRBD minor fixes for 3.0-rc6
+References: <201106291714.57384.philipp.reisner@linbit.com>
+In-Reply-To: <201106291714.57384.philipp.reisner@linbit.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -int blkdev_fsync(struct file *filp, int datasync)
-> +int blkdev_fsync(struct file *filp, loff_t start, loff_t end, int datasync)
->  {
->  	struct inode *bd_inode = filp->f_mapping->host;
->  	struct block_device *bdev = I_BDEV(bd_inode);
-> @@ -389,14 +389,10 @@ int blkdev_fsync(struct file *filp, int datasync)
->  	 * i_mutex and doing so causes performance issues with concurrent
->  	 * O_SYNC writers to a block device.
->  	 */
-> -	mutex_unlock(&bd_inode->i_mutex);
-> -
+On 2011-06-29 17:14, Philipp Reisner wrote:
+> The following changes since commit a1c15c59feee36267c43142a41152fbf7402afb6:
+> 
+>   loop: handle on-demand devices correctly (2011-05-24 16:48:55 +0200)
+> 
+> are available in the git repository at:
+>   git://git.drbd.org/linux-2.6-drbd.git for-jens
 
-Now that i_mutex on entry isn't held the comment above can be removed.
+This looks way too big for -rc6. Take another look at the list and
+re-send with what is absolutely crucial this late in the cycle, please.
+
+-- 
+Jens Axboe
 
