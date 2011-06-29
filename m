@@ -1,100 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754910Ab1F2K63 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 06:58:29 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:2951 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754034Ab1F2K61 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 06:58:27 -0400
-Message-ID: <4E0B052C.7000500@draigBrady.com>
-Date: Wed, 29 Jun 2011 11:57:48 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1754880Ab1F2K5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 06:57:07 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57799 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753037Ab1F2K5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 06:57:05 -0400
+Message-ID: <4E0B0574.4010008@cn.fujitsu.com>
+Date: Wed, 29 Jun 2011 18:59:00 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Mel Gorman <mgorman@suse.de>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andrew Lutomirski <luto@mit.edu>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] mm: vmscan: Correct check for kswapd sleeping in
- sleeping_prematurely
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>	<1308926697-22475-2-git-send-email-mgorman@suse.de> <20110628144900.b33412c6.akpm@linux-foundation.org>
-In-Reply-To: <20110628144900.b33412c6.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 05/22] KVM: x86: abstract the operation for read/write
+ emulation
+References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FC78.6060000@cn.fujitsu.com> <4E0AE457.7010507@redhat.com>
+In-Reply-To: <4E0AE457.7010507@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-29 18:56:31,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-29 18:56:32,
+	Serialize complete at 2011-06-29 18:56:32
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/11 22:49, Andrew Morton wrote:
-> On Fri, 24 Jun 2011 15:44:54 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
->> During allocator-intensive workloads, kswapd will be woken frequently
->> causing free memory to oscillate between the high and min watermark.
->> This is expected behaviour.
->>
->> A problem occurs if the highest zone is small.  balance_pgdat()
->> only considers unreclaimable zones when priority is DEF_PRIORITY
->> but sleeping_prematurely considers all zones. It's possible for this
->> sequence to occur
->>
->>   1. kswapd wakes up and enters balance_pgdat()
->>   2. At DEF_PRIORITY, marks highest zone unreclaimable
->>   3. At DEF_PRIORITY-1, ignores highest zone setting end_zone
->>   4. At DEF_PRIORITY-1, calls shrink_slab freeing memory from
->>         highest zone, clearing all_unreclaimable. Highest zone
->>         is still unbalanced
->>   5. kswapd returns and calls sleeping_prematurely
->>   6. sleeping_prematurely looks at *all* zones, not just the ones
->>      being considered by balance_pgdat. The highest small zone
->>      has all_unreclaimable cleared but but the zone is not
->>      balanced. all_zones_ok is false so kswapd stays awake
->>
->> This patch corrects the behaviour of sleeping_prematurely to check
->> the zones balance_pgdat() checked.
-> 
-> But kswapd is making progress: it's reclaiming slab.  Eventually that
-> won't work any more and all_unreclaimable will not be cleared and the
-> condition will fix itself up?
-> 
-> 
-> 
-> btw,
-> 
-> 	if (!sleeping_prematurely(...))
-> 		sleep();
-> 
-> hurts my brain.  My brain would prefer
-> 
-> 	if (kswapd_should_sleep(...))
-> 		sleep();
-> 
-> no?
-> 
->> Reported-and-tested-by: Pádraig Brady <P@draigBrady.com>
-> 
-> But what were the before-and-after observations?  I don't understand
-> how this can cause a permanent cpuchew by kswapd.
+On 06/29/2011 04:37 PM, Avi Kivity wrote:
 
-Context:
-  http://marc.info/?t=130865025500001&r=1&w=2
-  https://bugzilla.redhat.com/show_bug.cgi?id=712019
+>> +struct read_write_emulator_ops {
+>> +    int (*read_write_prepare)(struct kvm_vcpu *vcpu, void *val,
+>> +                  int bytes);
+>> +    int (*read_write_emulate)(struct kvm_vcpu *vcpu, gpa_t gpa,
+>> +                  void *val, int bytes);
+>> +    int (*read_write_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
+>> +                   int bytes, void *val);
+>> +    int (*read_write_exit_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
+>> +                    void *val, int bytes);
+>> +    bool write;
+>> +};
+> 
+> 
+> Interesting!
+> 
+> This structure combines two unrelated operations, though.  One is the internals of the iteration on a virtual address that is split to various physical addresses.  The other is the interaction with userspace on mmio exits.  They should be split, but I think it's fine to do it in a later patch.  This series is long enough already.
+> 
+> I was also annoyed by the duplication.  They way I thought of fixing it is having gva_to_gpa() return two gpas, and having the access function accept gpa vectors.  The reason was so that we can implemented locked cross-page operations (which we now emulate as unlocked writes).
+> 
+> But I think we can do without it, and instead emulated locked cross-page ops by stalling all other vcpus while we write, or by unmapping the pages involved.  It isn't pretty but it doesn't need to be fast since it's a very rare operation.  So I think we can go with your approach.
+> 
 
-Summary:
-
-This will spin kswapd0 on my SNB laptop with 3GB RAM (with small normal zone):
-
-    dd bs=1M count=3000 if=/dev/zero of=spin.test
-
-Basically once a certain amount of data is cached,
-kswapd0 will start spinning, until the data
-is removed from cache (by `rm spin.test` for example).
-
-cheers,
-Pádraig.
+OK, i'll post it in the separate patchset, thanks, Avi.
