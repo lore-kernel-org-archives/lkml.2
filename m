@@ -1,71 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755556Ab1F2M3s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 08:29:48 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57409 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751912Ab1F2M3o convert rfc822-to-8bit (ORCPT
+	id S1755619Ab1F2Mas (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 08:30:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58681 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751912Ab1F2Mao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 08:29:44 -0400
+	Wed, 29 Jun 2011 08:30:44 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Johannes Stezenbach <js@sig21.net>
+Subject: Re: missing compat-ioctl for CDROM_DRIVE_STATUS + FDGETPRM
+Date: Wed, 29 Jun 2011 14:30:42 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20110617090424.GA19345@sig21.net> <201106171502.39445.arnd@arndb.de> <20110629113834.GA4227@sig21.net>
+In-Reply-To: <20110629113834.GA4227@sig21.net>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.172.9]
-In-Reply-To: <201106291359.14026.arnd@arndb.de>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
- <20110628164453.aa85c85c.rdunlap@xenotime.net> <BANLkTinDX9ETcqZ=hvSGaao2s=ZcM-JsAg@mail.gmail.com>
- <201106291359.14026.arnd@arndb.de>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 29 Jun 2011 15:29:23 +0300
-Message-ID: <BANLkTiki0fZuVB4it1mOVbEYVZ8tUx0BTA@mail.gmail.com>
-Subject: Re: [RFC 7/8] drivers: introduce rpmsg, a remote-processor messaging bus
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Rusty Russell <rusty@rustcorp.com.au>,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106291430.43102.arnd@arndb.de>
+X-Provags-ID: V02:K0:R92N3CH6ObQZ9hMR79gM33ZLCMiQJ/1/9IzElmHF9bS
+ 6plO5HuNn8s2AD4yH3uAfV7q/yXuAU8ih4UxtQQBELVU1lgQNg
+ JylNX9cZMj7DHncUjEtAOOR1MZEZym9QiZq47IMw+IpuEDTWCQ
+ fQt1CZCdHqn/iuhz4oJ2rHarEJ3SMFAluOTmwou8iyj1Df9cT1
+ Etv67Bnidgv8trQwgYNoA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 2:59 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Wednesday 29 June 2011, Ohad Ben-Cohen wrote:
->> On Wed, Jun 29, 2011 at 2:44 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
->> >> +hardware accelerators, and therefore are often used to offload cpu-intensive
->> >
->> > prefer:                                                           CPU-
->> > throughout.
->>
->> Isn't that changing the meaning a bit ? Let's stick with the original
->> version, I think it's more clear.
->
-> I think you misunderstood Randy, he meant you should do 's/cpu/CPU/' globally,
+On Wednesday 29 June 2011, Johannes Stezenbach wrote:
+> Sorry for very slow reply.  I think qemu's use of these ioctls
+> to probe if the device is a cdrom or floppy is valid, so instead
+> of adding a stat() call to check for block device in qemu, I think
+> it is better to silence the warning in the kernel.
 
-Oh, sorry, Randy. For some reason I thought you meant
-s/cpu-intensive/CPU-throughout/ which didn't make a lot of sense to me
-:)
+Well, correct or not, it will keep causing annoying messages on
+old kernels, so why not do both?
 
-s/cpu/CPU/ is of course nicer. thanks !
+> Do I get it right that just adding two IGNORE_IOCTL() to
+> the ioctl_pointer array in linux/fs/compat_ioctl.c is sufficient,
+> like in commit 3f001711?
 
-> The easiest way would be to replace it with 'or', as in
->
-> ... remote cores (or hardware accelerators) may have ...
+Yes.
 
-yeah, i'll do it, thanks.
+> I.e. these ioctls are handled for block devices earlier
+> in compat_sys_ioctl()?
 
-It's a bit harder to get rid of the parentheses in the second
-sentence, but I'll think of something too.
+Right. We always first ask the driver, and then search the lookup table
+when the driver does not know how to handle it in compat mode.
 
->> Probably the solution is to move 'source "drivers/virtio/Kconfig"'
->> into drivers/Kconfig, and remove all other instances.
->
-> I think changing that would be good. However, you need to at least
-> restructure the contents, or they will show up in the main driver menu.
-
-I'll do that.
-
-Thanks,
-Ohad.
+	Arnd
