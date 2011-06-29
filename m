@@ -1,49 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754673Ab1F2Xi5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 19:38:57 -0400
-Received: from www.linutronix.de ([62.245.132.108]:51610 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752570Ab1F2Xix (ORCPT
+	id S1756644Ab1F2Xmk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 19:42:40 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46798 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab1F2Xma (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 19:38:53 -0400
-Date: Thu, 30 Jun 2011 01:38:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Shawn Bohrer <sbohrer@rgmadvisors.com>
-cc: Darren Hart <dvhart@linux.intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
-        eric.dumazet@gmail.com, david@rgmadvisors.com,
-        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
-        hughd@google.com, mingo@elte.hu
-Subject: Re: [PATCH v4] futex: Fix regression with read only mappings
-In-Reply-To: <1309360644-24079-1-git-send-email-sbohrer@rgmadvisors.com>
-Message-ID: <alpine.LFD.2.02.1106300129130.2917@ionos>
-References: <4E0A6A0F.9020004@linux.intel.com> <1309360644-24079-1-git-send-email-sbohrer@rgmadvisors.com>
-User-Agent: Alpine 2.02 (LFD 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Wed, 29 Jun 2011 19:42:30 -0400
+Subject: Re: [PATCH v7 00/16] EVM
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>
+In-Reply-To: <BANLkTinSsqBqX7=jzwbw_=RfXeQz29h_+A@mail.gmail.com>
+References: <1309377038-4550-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <BANLkTinSsqBqX7=jzwbw_=RfXeQz29h_+A@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Jun 2011 19:42:21 -0400
+Message-ID: <1309390941.3205.22.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011, Shawn Bohrer wrote:
+On Wed, 2011-06-29 at 16:53 -0400, Kyle Moffett wrote:
+> On Wed, Jun 29, 2011 at 15:50, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
+> > Discretionary Access Control(DAC) and Mandatory Access Control(MAC) can
+> > protect the integrity of a running system from unauthorized changes. When
+> > these protections are not running, such as when booting a malicious OS,
+> > mounting the disk under a different operating system, or physically moving
+> > the disk to another system, an "offline" attack is free to read and write
+> > file data/metadata.
+> >
+> > Extended Verification Module(EVM) detects offline tampering of the security
+> > extended attributes (e.g. security.selinux, security.SMACK64, security.ima),
+> > which is the basis for LSM permission decisions and, with the IMA-appraisal
+> > patchset, integrity appraisal decisions. This patchset provides the framework
+> > and an initial method to detect offline tampering of the security extended
+> > attributes.  The initial method maintains an HMAC-sha1 across a set of
+> > security extended attributes, storing the HMAC as the extended attribute
+> > 'security.evm'. To verify the integrity of an extended attribute, EVM exports
+> > evm_verifyxattr(), which re-calculates the HMAC and compares it with the
+> > version stored in 'security.evm'.  Other methods of validating the integrity
+> > of a file's metadata will be posted separately (eg. EVM-digital-signatures).
 > 
-> While fixing the regression this patch opens up a possible bad
-> scenarios as identified by KOSAKI Motohiro:
+> Hmm, I'm not sure that this design actually provides the protection that
+> you claim it does.
 > 
-> This patch also allows FUTEX_WAIT on RO private mappings which have
-> the following corner case.
+> Specifically, you don't actually protect the on-disk data-structures that
+> are far more vulnerable to malicious modification than the actual *values*
+> of the extended attributes themselves.
 
-These two sentences make no sense at all. We really need a very
-accurate description of this change. That code is subtle and we really
-want to have a very clear and understandable changelog.
+True, EVM only protects the file metadata. The patch description says,
 
-Your changelog fails the basic test by mentioning "corner case" simply
-because the whole futex code consists only of corner cases.
+        While this patchset does authenticate the security xattrs, and
+        cryptographically binds them to the inode, coming extensions
+        will bind other directory and inode metadata for more complete
+        protection.
 
-Thanks,
+It should have said, "bind other directory, inode data and inode
+metadata."
 
-	tglx
+In particular, IMA-appraisal stores the file data's hash as the
+security.ima xattr, which is EVM protected. Other methods, such as
+digital signatures, could be used instead of the file's hash, to
+additionally provide authenticity.
+
+thanks,
+
+Mimi
+
