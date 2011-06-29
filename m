@@ -1,199 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754590Ab1F2O47 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 10:56:59 -0400
-Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:34841 "EHLO
-	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751996Ab1F2O44 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 10:56:56 -0400
-Date: Wed, 29 Jun 2011 09:56:46 -0500
-From: Shawn Bohrer <sbohrer@rgmadvisors.com>
-To: Darren Hart <dvhart@linux.intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        eric.dumazet@gmail.com, david@rgmadvisors.com,
-        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
-        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
-Subject: Re: [PATCH v3] futex: Fix regression with read only mappings
-Message-ID: <20110629145646.GA2215@BohrerMBP.rgmadvisors.com>
-References: <4E08F893.10103@linux.intel.com>
- <1309213375-31471-1-git-send-email-sbohrer@rgmadvisors.com>
- <1309258475.6701.200.camel@twins>
- <4E09EA96.5080005@linux.intel.com>
- <20110628173841.GA2089@BohrerMBP.rgmadvisors.com>
- <4E0A6A0F.9020004@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E0A6A0F.9020004@linux.intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1754754Ab1F2O5T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 10:57:19 -0400
+Received: from mail.perches.com ([173.55.12.10]:3315 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751996Ab1F2O5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 10:57:17 -0400
+Subject: Re: [PATCH] net/core: Convert to current logging forms
+From: Joe Perches <joe@perches.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Ben Hutchings <bhutchings@solarflare.com>
+In-Reply-To: <20110629111109.GA1613@hmsreliant.think-freely.org>
+References: <385ebf7e98e377e6e6c384beb961b65d4a95fb18.1309289792.git.joe@perches.com>
+	 <20110629111109.GA1613@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Jun 2011 07:57:15 -0700
+Message-ID: <1309359435.29598.72.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 04:55:59PM -0700, Darren Hart wrote:
-> 
-> 
-> On 06/28/2011 10:38 AM, Shawn Bohrer wrote:
-> > On Tue, Jun 28, 2011 at 07:52:06AM -0700, Darren Hart wrote:
-> >>
-> >>
-> >> On 06/28/2011 03:54 AM, Peter Zijlstra wrote:
-> >>> On Mon, 2011-06-27 at 17:22 -0500, Shawn Bohrer wrote:
-> >>>> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
-> >>>> parameter from get_futex_key()) in 2.6.33 introduced a user-mode
-> >>>> regression in that it additionally prevented futex operations on a
-> >>>> region within a read only memory mapped file.  For example this breaks
-> >>>> workloads that have one or more reader processes doing a FUTEX_WAIT on a
-> >>>> futex within a read only shared mapping, and a writer processes that has
-> >>>> a writable mapping issuing the FUTEX_WAKE.
-> >>>>
-> >>>> This fixes the regression for futex operations that should be valid on
-> >>>> RO mappings by trying a RO get_user_pages_fast() when the RW
-> >>>> get_user_pages_fast() fails so as not to slow down the common path of
-> >>>> writable anonymous maps and bailing when we used the RO path on
-> >>>> anonymous memory.
-> >>>>
-> >>>> While fixing the regression this patch opens up two possible bad
-> >>>> scenarios as identified by KOSAKI Motohiro:
-> >>>>
-> >>>> 1) This patch also allows FUTEX_WAIT on RO private mappings which have
-> >>>> the following corner case.
-> >>>>
-> >>>>   Thread-A: call futex(FUTEX_WAIT, memory-region-A).
-> >>>>             get_futex_key() return inode based key.
-> >>>>             sleep on the key
-> >>>>   Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
-> >>>>   Thread-B: write memory-region-A.
-> >>>>             COW happen. This process's memory-region-A become related
-> >>>>             to new COWed private (ie PageAnon=1) page.
-> >>>>   Thread-B: call futex(FUETX_WAKE, memory-region-A).
-> >>>>             get_futex_key() return mm based key.
-> >>>>             IOW, we fail to wake up Thread-A.
-> >>>>
-> >>>> 2) Current futex code doesn't handle zero page properly.
-> >>>>
-> >>>>   Read mode get_user_pages() can return zero page, but current futex
-> >>>>   code doesn't handle it at all. Then, zero page makes infinite loop
-> >>>>   internally.
-> >>>>
-> >>>> This Patch is based on Peter Zijlstra's initial patch with modifications to
-> >>>> only allow RO mappings for futex operations that need VERIFY_READ access.
-> >>>>
-> >>>> Reported-by: David Oliver <david@rgmadvisors.com>
-> >>>> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
-> >>>
-> >>> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >>
-> >> I think we need to address #2 above first.
-> > 
-> > I believe the following contrived case triggers the zero page problem:
-> > 
-> > #include <errno.h>
-> > #include <fcntl.h>
-> > #include <stdint.h>
-> > #include <linux/futex.h>
-> > #include <sys/mman.h>
-> > #include <sys/syscall.h>
-> > #include <unistd.h>
-> > #include <stdio.h>
-> > 
-> > 
-> > int main(int argc, char *argv[])
-> > {
-> >         int fd, *futex, rc, val = 42;
-> >         struct timespec ts = {.tv_sec = 2, .tv_nsec = 0 };
-> > 
-> >         fd = open("/tmp/futex_test", O_RDWR|O_CREAT, 0644);
-> >         write(fd, &val, 4);
-> >         futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-> >         rc = syscall(SYS_futex, futex, FUTEX_WAIT, val, &ts, 0, 0);
-> >         printf("rc=%d errno=%d\n", rc, errno);
-> > }
-> > 
-> > Running the program above with my patch applied will spin in the
-> > kernel at 100% CPU usage.
-> > 
-> >> 1) Is the loop killable?
-> > 
-> > Yes, SIGINT causes the program to return.
-> 
-> OK, so while it is killable... I'd really rather not introduce a busy loop in the
-> kernel. Especially not after we removed it with:
-> 
-> http://lkml.org/lkml/2010/1/13/136
-> 
-> How about adding something like this. I _think_ the only way to get a ZERO_PAGE
-> here now is with the contrived testcase below.
-> 
-> $ git diff
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index 1737a66..a5417c2 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -316,6 +316,13 @@ again:
->         if (!page_head->mapping) {
->                 unlock_page(page_head);
->                 put_page(page_head);
-> +               /*
-> +                * ZERO_PAGE pages don't have a mapping. Avoid a busy loop
-> +                * trying to find one. RW mapping would have COW'd (and thus
-> +                * have a mapping) so this page is RO and won't ever change.
-> +                */
-> +               if ((page_head == ZERO_PAGE(address)))
-> +                       return -EFAULT;
->                 goto again;
->         }
->  
-> 
-> This returns EFAULT for the following testcase which spun in get_futex_key with
-> your V3 patch.
- 
-I've tested and confirmed this as well.  I can send a v4 patch with
-this included.
+On Wed, 2011-06-29 at 07:11 -0400, Neil Horman wrote:
+> On Tue, Jun 28, 2011 at 12:40:10PM -0700, Joe Perches wrote:
+> > Use pr_fmt, pr_<level>, and netdev_<level> as appropriate.
+> > Coalesce long formats.
+[]
+> > diff --git a/net/core/dev.c b/net/core/dev.c
+[]
+> > @@ -5397,8 +5380,8 @@ static int netif_alloc_netdev_queues(struct net_device *dev)
+> >  
+> >  	tx = kcalloc(count, sizeof(struct netdev_queue), GFP_KERNEL);
+> >  	if (!tx) {
+> > -		pr_err("netdev: Unable to allocate %u tx queues.\n",
+> > -		       count);
+> > +		netdev_err(dev, "netdev: Unable to allocate %u tx queues\n",
+> > +			   count);
+> >  		return -ENOMEM;
+> >  	}
+> Don't all of these get called prior to device registration?  This change will
+> have us printing out unregistered net device: ... rather than netdev: ... on
+> these errors.
 
-> 
-> #include <errno.h>
-> #include <fcntl.h>
-> #include <stdint.h>
-> #include <linux/futex.h>
-> #include <sys/mman.h>
-> #include <sys/syscall.h>
-> #include <unistd.h>
-> #include <stdio.h>
-> 
-> 
-> int main(int argc, char *argv[])
-> {
->         int fd, *futex, rc;
->         struct timespec ts = {.tv_sec = 2, .tv_nsec = 0 };
-> 
->         futex = (int *)mmap(0, sizeof(int), PROT_READ, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
-> 	printf("futex @ %p\n", futex);
->         rc = syscall(SYS_futex, futex, FUTEX_WAIT, 0, &ts, 0, 0);
->         printf("rc=%d errno=%d\n", rc, errno);
-> }
-> 
-> Thanks,
-> 
-> Darren
-> 
-> > 
-> >> 2) If not, and we try to catch zero_page scenario, we need to ensure RO
-> >>    sparse file mapping work. Peter notes that these are probably fine,
-> >>    filemap.c doesn't seem to use the zero page - but we need to test.
-> >>
-> >> It's agreed, I believe, between myself, Peter, and Shawn that we will
-> >> document Private RW mappings as unsupported.
+True, that's not particularly good.
 
---
-Shawn
+> Not tragic, but I rather think its nicer to just say netdev:...
 
+If the second suggested patch is also applied,
+it shows the "devicename (unregistered)".
 
----------------------------------------------------------------
-This email, along with any attachments, is confidential. If you 
-believe you received this message in error, please contact the 
-sender immediately and delete all copies of the message.  
-Thank you.
+I think that's appropriate.
+
+> Ditto on the unregistered net device thing.
+
+ditto back.
+
+[]
+> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+[]
+> >   */
+> >  static void skb_over_panic(struct sk_buff *skb, int sz, void *here)
+> >  {
+> > -	printk(KERN_EMERG "skb_over_panic: text:%p len:%d put:%d head:%p "
+> > -			  "data:%p tail:%#lx end:%#lx dev:%s\n",
+> > -	       here, skb->len, sz, skb->head, skb->data,
+> > -	       (unsigned long)skb->tail, (unsigned long)skb->end,
+> > -	       skb->dev ? skb->dev->name : "<NULL>");
+> > +	netdev_emerg(skb->dev, "skb_over_panic: text:%p len:%d put:%d head:%p data:%p tail:%#lx end:%#lx\n",
+> > +		     here, skb->len, sz, skb->head, skb->data,
+> > +		     (unsigned long)skb->tail, (unsigned long)skb->end);
+> >  	BUG();
+> >  }
+> Are you guaranteed to have skb->dev be non-null here?
+
+I think not.
+
+> netdev_printk handles
+> that, but flaggin the fact that we have a NULL net device when thats not really
+> an issue seems like it would destract from the purpose of this printk.  Same
+> with the others in this file below
+
+With the skb_<foo>_panics, I think rearranging the
+message output may actually help a _very_ little bit.
+The next bit is a BUG which dumps stack and stops the
+system anyway so it's not much of an issue.
+
+[]
+
+> > @@ -3061,9 +3057,8 @@ bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off)
+> >  	if (unlikely(start > skb_headlen(skb)) ||
+> >  	    unlikely((int)start + off > skb_headlen(skb) - 2)) {
+> >  		if (net_ratelimit())
+> > -			printk(KERN_WARNING
+> > -			       "bad partial csum: csum=%u/%u len=%u\n",
+> > -			       start, off, skb_headlen(skb));
+> > +			netdev_warn(skb->dev, "bad partial csum: csum=%u/%u len=%u\n",
+> > +				    start, off, skb_headlen(skb));
+> >  		return false;
+> >  	}
+> >  	skb->ip_summed = CHECKSUM_PARTIAL;
+
+I think netdev_warn is an improvement here.
+
+> > @@ -3076,7 +3071,6 @@ EXPORT_SYMBOL_GPL(skb_partial_csum_set);
+> >  void __skb_warn_lro_forwarding(const struct sk_buff *skb)
+> >  {
+> >  	if (net_ratelimit())
+> > -		pr_warning("%s: received packets cannot be forwarded"
+> > -			   " while LRO is enabled\n", skb->dev->name);
+> > +		netdev_warn(skb->dev, "received packets cannot be forwarded while LRO is enabled\n");
+> >  }
+> >  EXPORT_SYMBOL(__skb_warn_lro_forwarding);
+
+and not a change here.
+
+I'll reorder the patches to do netdev_name changes
+first and resubmit if there aren't more comments
+in awhile.
+
+cheers, Joe
 
