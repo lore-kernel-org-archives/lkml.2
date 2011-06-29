@@ -1,41 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757703Ab1F2X65 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 19:58:57 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:37968 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753228Ab1F2X6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 19:58:52 -0400
-Date: Wed, 29 Jun 2011 12:06:42 -0700
-From: Greg KH <gregkh@suse.de>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>
-Subject: Re: [PATCH 1/1] Staging: hv: Integrate the time source driver with
- Hyper-V detection code
-Message-ID: <20110629190642.GA19698@suse.de>
-References: <1309374364-23528-1-git-send-email-kys@microsoft.com>
+	id S1756644Ab1F2TNP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 15:13:15 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64897 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752531Ab1F2TNJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 15:13:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309374364-23528-1-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>
+References: <1308875813-20122-1-git-send-email-wad@chromium.org>
+	<1308875813-20122-5-git-send-email-wad@chromium.org>
+	<BANLkTimtYUyXbZjWhjK61B_1WBXE4MoAeA@mail.gmail.com>
+	<alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>
+Date: Wed, 29 Jun 2011 14:13:09 -0500
+Message-ID: <BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
+Subject: Re: [PATCH v9 05/13] seccomp_filter: Document what seccomp_filter is
+ and how it works.
+From: Will Drewry <wad@chromium.org>
+To: James Morris <jmorris@namei.org>
+Cc: Chris Evans <scarybeasts@gmail.com>, linux-kernel@vger.kernel.org,
+        torvalds@linux-foundation.org, djm@mindrot.org, segoon@openwall.com,
+        kees.cook@canonical.com, mingo@elte.hu, rostedt@goodmis.org,
+        fweisbec@gmail.com, tglx@linutronix.de,
+        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 12:06:04PM -0700, K. Y. Srinivasan wrote:
-> The Hyper-V timesource driver is best integrated with Hyper-V detection code
-> since: (a) Linux guests running on Hyper-V need this timesource and (b)
-> by integrating with Hyper-V detection, we could minimize the code in the 
-> timesource driver. Greg, you had  helped me initially in getting the Hyper-V
-> detection code into the kernel (mshyperv.c). I am hoping you can take
-> this patch. 
+On Sun, Jun 26, 2011 at 6:20 PM, James Morris <jmorris@namei.org> wrote:
+> On Fri, 24 Jun 2011, Chris Evans wrote:
+>
+>> With patches like these, there can be the concern: will anyone actually use
+>> it??
+>
+> It's likely to be used by kvm/qemu to help protect against vm break-outs.
 
-Nope, it needs to go through the x86 maintainers, please resend it to
-them.  The scripts/get_maintainer.pl file should have told you this,
-right?
+Since it seems that there'll be consumers (openssh, vsftpd, kvm/qemu,
+chromium, chromium os) and feedback quieted down, what are the next
+steps to get this to a pull/no-pull decision points (or at least some
+Ack's or Nack's)?  I know this patch series crosses a number of
+maintainers, and I never know exactly what's next when the feedback
+slows down.
 
-thanks,
-
-greg k-h
+Thanks!
+will
