@@ -1,97 +1,206 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757506Ab1F2SH4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 14:07:56 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:32768 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753291Ab1F2SHo (ORCPT
+	id S1757342Ab1F2SHp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 14:07:45 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:38288 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753254Ab1F2SHn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 14:07:44 -0400
-Date: Wed, 29 Jun 2011 23:37:33 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-Cc: Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, thomas.abraham@linaro.org,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110629180733.GF3646@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <20110629130038.GA7909@in.ibm.com>
- <1309367184.11430.594.camel@nimitz>
+	Wed, 29 Jun 2011 14:07:43 -0400
+Message-ID: <4E0B69EC.70009@gmail.com>
+Date: Wed, 29 Jun 2011 12:07:40 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1309367184.11430.594.camel@nimitz>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Anton Blanchard <anton@samba.org>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf report/annotate: Add option to specify a CPU range
+References: <20110629150739.49b25604@kryten>
+In-Reply-To: <20110629150739.49b25604@kryten>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Dave Hansen <dave@linux.vnet.ibm.com> [2011-06-29 10:06:24]:
 
-> I was kinda hoping for something a bit simpler than that.  I'd boil down
-> what you were saying to this:
+
+On 06/28/2011 11:07 PM, Anton Blanchard wrote:
 > 
->      1. The kernel must be aware of how the pieces of hardware are
->         mapped in to the system's physical address space
->      2. The kernel must have a mechanism in place to minimize access to
->         specific pieces of hardware 
-          (mainly by controlling allocations and reclaim)
-                
+> Add an option to perf report and perf annotate to specify which CPUs
 
->      3. For destructive power-down operations, the kernel should have a
->         mechanism in place to ensure that no valuable data is contained
->         in the memory to be powered down.
+What about perf-script?
+
+> to operate on. This enables us to take a single system wide profile
+> and analyse each CPU (or group of CPUs) in isolation.
 > 
-> Is that complete?
-
-At a high level these are the main requirements, except that different
-operations/features can happen at different/higher granularity.  The
-infrastructure should be able to related groups of regions and act
-upon for a specific optimization.  Like granularity for (2) may be
-512MB, while (3) could be a pair of 512MB blocks. This is relatively
-a minor issue to solve.
-
-> On Wed, 2011-06-29 at 18:30 +0530, Ankita Garg wrote:
-> > 1) Dynamic Power Transition: The memory controller can have the ability
-> > to automatically transition regions of memory into lower power states
-> > when they are devoid of references for a pre-defined threshold amount of
-> > time. Memory contents are preserved in the low power states and accessing
-> > memory that is at a low power state takes a latency hit.
-> > 
-> > 2) Dynamic Power Off: If a region is free/unallocated, the software can
-> > indicate to the controller to completely turn off power to a certain
-> > region. Memory contents are lost and hence the software has to be
-> > absolutely sure about the usage statistics of the particular region. This
-> > is a runtime capability, where the required amount of memory can be
-> > powered 'ON' to match the workload demands.
-> > 
-> > 3) Partial Array Self-Refresh (PASR): If a certain regions of memory is
-> > free/unallocated, the software can indicate to the controller to not
-> > refresh that region when the system goes to suspend-to-ram state and
-> > thereby save standby power consumption.
+> This was useful when profiling a multiprocess workload where the
+> bottleneck was on one CPU but this was hidden in the overall profile.
+> Per process and per thread breakdowns didn't help because multiple
+> processes were running on each CPU and no single process consumed
+> an entire CPU.
 > 
-> (3) is simply a subset of (2), but with the additional restriction that
-> the power off can only occur during a suspend operation.  
+> The patch converts the list of CPUs returned by cpu_map__new into a
+> bitmap for fast lookup. I wanted to use -C to be consistent with perf
+> top/record/stat, but unfortunately perf report already uses -C <comms>.
 > 
-> Let's say we fully implemented support for (2).  What would be missing
-> to support PASR?
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+> ---
+> 
+> I capped it at MAX_NR_CPUS to avoid having to dynamically allocate
+> cpu_bitmap, but we could do that if the extra complexity is worth it.
+> 
+> Index: linux-2.6-tip/tools/perf/builtin-report.c
+> ===================================================================
+> --- linux-2.6-tip.orig/tools/perf/builtin-report.c	2011-06-29 09:01:46.209676867 +1000
+> +++ linux-2.6-tip/tools/perf/builtin-report.c	2011-06-29 14:53:26.131226181 +1000
+> @@ -33,6 +33,9 @@
+>  #include "util/sort.h"
+>  #include "util/hist.h"
+>  
+> +#include <linux/bitmap.h>
+> +#include "util/cpumap.h"
+> +
+>  static char		const *input_name = "perf.data";
+>  
+>  static bool		force, use_tui, use_stdio;
+> @@ -48,6 +51,9 @@ static const char	*pretty_printing_style
+>  static char		callchain_default_opt[] = "fractal,0.5";
+>  static symbol_filter_t	annotate_init;
+>  
+> +static const char	*cpu_list;
+> +static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+> +
+>  static int perf_session__add_hist_entry(struct perf_session *session,
+>  					struct addr_location *al,
+>  					struct perf_sample *sample,
+> @@ -116,6 +122,9 @@ static int process_sample_event(union pe
+>  	if (al.filtered || (hide_unresolved && al.sym == NULL))
+>  		return 0;
+>  
+> +	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+> +		return 0;
+> +
 
-The similarity between (2) and (3) here is the need for accurate
-statistics to know allocation status. The difference is the
-actuation/trigger part... in case of (2) the trigger would happen
-during allocation/free while in case of (3) it happens only at suspend
-time.  Also the granularity could be different, generally PASR is very
-fine grain as compared for power-off at controller level.
+Need to check that the SAMPLE_CPU attribute is set for the event for
+which the sample is generated; see builtin-script.c,
+perf_evsel__check_attr().
 
-We can combine them and look at just how to track allocations at
-different (or multiple) physical boundaries.
+>  	if (al.map != NULL)
+>  		al.map->dso->hit = 1;
+>  
+> @@ -455,6 +464,7 @@ static const struct option options[] = {
+>  		    "Only display entries resolved to a symbol"),
+>  	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+>  		    "Look for files with symbols relative to this directory"),
+> +	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
 
---Vaidy
+This option should be added to the Documentation file,
+Documentation/perf-report.txt
 
+Same comments for perf-annotate changes below.
+
+David
+
+
+>  	OPT_END()
+>  };
+>  
+> @@ -501,6 +511,23 @@ int cmd_report(int argc, const char **ar
+>  
+>  	setup_sorting(report_usage, options);
+>  
+> +	if (cpu_list) {
+> +		int i;
+> +		struct cpu_map *map = cpu_map__new(cpu_list);
+> +
+> +		for (i = 0; i < map->nr; i++) {
+> +			int cpu = map->map[i];
+> +
+> +			if (cpu >= MAX_NR_CPUS) {
+> +				fprintf(stderr, "Requested CPU %d too large, "
+> +					"consider raising MAX_NR_CPUS\n", cpu);
+> +				return -1;
+> +			}
+> +
+> +			set_bit(cpu, cpu_bitmap);
+> +		}
+> +	}
+> +
+>  	if (parent_pattern != default_parent_pattern) {
+>  		if (sort_dimension__add("parent") < 0)
+>  			return -1;
+> Index: linux-2.6-tip/tools/perf/builtin-annotate.c
+> ===================================================================
+> --- linux-2.6-tip.orig/tools/perf/builtin-annotate.c	2011-06-29 09:01:46.199676692 +1000
+> +++ linux-2.6-tip/tools/perf/builtin-annotate.c	2011-06-29 09:01:56.519857004 +1000
+> @@ -28,6 +28,9 @@
+>  #include "util/hist.h"
+>  #include "util/session.h"
+>  
+> +#include <linux/bitmap.h>
+> +#include "util/cpumap.h"
+> +
+>  static char		const *input_name = "perf.data";
+>  
+>  static bool		force, use_tui, use_stdio;
+> @@ -38,6 +41,9 @@ static bool		print_line;
+>  
+>  static const char *sym_hist_filter;
+>  
+> +static const char	*cpu_list;
+> +static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+> +
+>  static int perf_evlist__add_sample(struct perf_evlist *evlist,
+>  				   struct perf_sample *sample,
+>  				   struct perf_evsel *evsel,
+> @@ -90,6 +96,9 @@ static int process_sample_event(union pe
+>  		return -1;
+>  	}
+>  
+> +	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
+> +		return 0;
+> +
+>  	if (!al.filtered &&
+>  	    perf_evlist__add_sample(session->evlist, sample, evsel, &al)) {
+>  		pr_warning("problem incrementing symbol count, "
+> @@ -252,6 +261,7 @@ static const struct option options[] = {
+>  		    "print matching source lines (may be slow)"),
+>  	OPT_BOOLEAN('P', "full-paths", &full_paths,
+>  		    "Don't shorten the displayed pathnames"),
+> +	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+>  	OPT_END()
+>  };
+>  
+> @@ -274,6 +284,23 @@ int cmd_annotate(int argc, const char **
+>  
+>  	setup_sorting(annotate_usage, options);
+>  
+> +	if (cpu_list) {
+> +		int i;
+> +		struct cpu_map *map = cpu_map__new(cpu_list);
+> +
+> +		for (i = 0; i < map->nr; i++) {
+> +			int cpu = map->map[i];
+> +
+> +			if (cpu >= MAX_NR_CPUS) {
+> +				fprintf(stderr, "Requested CPU %d too large, "
+> +					"consider raising MAX_NR_CPUS\n", cpu);
+> +				return -1;
+> +			}
+> +
+> +			set_bit(cpu, cpu_bitmap);
+> +		}
+> +	}
+> +
+>  	if (argc) {
+>  		/*
+>  		 * Special case: if there's an argument left then assume tha
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
