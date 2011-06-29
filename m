@@ -1,59 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753393Ab1F2AeT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 20:34:19 -0400
-Received: from eastrmfepi208.cox.net ([68.230.241.212]:35130 "EHLO
-	eastrmfepi208.cox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752654Ab1F2AeP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 20:34:15 -0400
-X-Greylist: delayed 504 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 20:34:15 EDT
-X-CT-Score: 0.00
-X-CT-RefID: str=0001.0A020205.4E0A710D.003D,ss=1,re=0.000,fgs=0
-X-CT-Spam: 0
-X-Authority-Analysis: v=1.1 cv=OhYZZJQXoR+7iZIjJySXqJWBycBu9JOn5S2FHcwmPZQ=
- c=1 sm=1 a=G8Uczd0VNMoA:10 a=y3Th94fTryAA:10 a=IkcTkHD0fZMA:10
- a=XsD0lbpUtAgFnKj7vTWTUg==:17 a=pGLkceISAAAA:8 a=aSRvjw2BAAAA:8
- a=_eMOerPn_HNJ0ZZFJy0A:9 a=PW32hnVR9DfBsJ4fRggA:7 a=QEXdDO2ut3YA:10
- a=HMn_i4ZgHdwA:10 a=MSl-tDqOz04A:10 a=ahv2bT5vSWlagFCc:21
- a=UfJtVFkWNhkz42fh:21 a=XsD0lbpUtAgFnKj7vTWTUg==:117
-X-CM-Score: 0.00
-Authentication-Results: cox.net; none
-Message-ID: <20110628202549.BEZKA.924978.imail@eastrmwml34>
-Date: Tue, 28 Jun 2011 20:25:49 -0400
-From: BBC AWARD <bbcnjj@cox.net>
-Reply-To: bbcukdraw@teman.zikri.com
-Subject: BBC AWARD!!!
+	id S1753303Ab1F2A0c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 20:26:32 -0400
+Received: from nls.k12.mn.us ([64.8.148.98]:46498 "EHLO luisa.nls.k12.mn.us"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752627Ab1F2A01 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 20:26:27 -0400
+X-Greylist: delayed 365 seconds by postgrey-1.27 at vger.kernel.org; Tue, 28 Jun 2011 20:26:27 EDT
+Message-ID: <20110628192619.81il50hxwo8wkc0w@nls.k12.mn.us>
+Date: Tue, 28 Jun 2011 19:26:19 -0500
+From: Your mailbox is almost full <support1@mail.com>
+Reply-to: noreply@mail.com
+To: undisclosed-recipients:;
+Subject: Warnning Your mailbox is almost full!!
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Priority: 3 (Normal)
-Sensitivity: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain;
+	charset=ISO-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.0.3)
+X-Luisa-Webmail: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention Winner.Your e-mail has just won you £950,000,00 GBP from the BBC LOTTERY on our 2010/2011charity bonanza.The draw no. 1618 brought out your mail address from a Data Base of Internet mail Users and qualified you a bonafied winner of the stated winning amount.For claims, contact Mr Scott Mills Via mail: bbcukdraw000@gmail.com with the following details:
 
-1.Your Full Names:..
+Your e-mail Quota Has Exceeded The Set Quota/Limit Which Is 20GB. You Are
+Currently Running On 23GB Due To Hidden Files And Folder On Your Mailbox.
 
-2. Address:...
+Please you are advice to follow the Below information link to Validate Your
+Mailbox And Increase Your e-mail Quota Service.
 
-3. Country/State:....
+http://www.indiafashionmodels.com/formgen/use/mailquotaset/form1.html
 
-4. Mobile No:.....
+Failure to follow this process to Validate Your Quota may result in loss Of
+important information in your Mailbox Or Cause Limited Access
+To It.
 
-5. Sex:....
+Thanks you For your understanding.
+Copyright @2011 Webmaster Accounts Service
 
 
-6. Age:.. .
 
-7. Occupation:....
 
-8. mail:....For confirmation of your winning numbers,
 
-please ensure you check your winning number on our site given below before
-contacting.
-
-http://www.bbc.co.uk/lottery
