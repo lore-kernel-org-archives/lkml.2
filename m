@@ -1,110 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932379Ab1F2TyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 15:54:00 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:44873 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932320Ab1F2Tws (ORCPT
+	id S932291Ab1F2TzX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 15:55:23 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:43863 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932217Ab1F2TzR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 15:52:48 -0400
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: linux-security-module@vger.kernel.org
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>,
-        Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v7 16/16] evm: add evm_inode_setattr to prevent updating an invalid security.evm
-Date: Wed, 29 Jun 2011 15:50:38 -0400
-Message-Id: <1309377038-4550-17-git-send-email-zohar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1309377038-4550-1-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1309377038-4550-1-git-send-email-zohar@linux.vnet.ibm.com>
+	Wed, 29 Jun 2011 15:55:17 -0400
+Date: Wed, 29 Jun 2011 12:55:10 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: alsa-devel@alsa-project.org
+Cc: linux-kernel@vger.kernel.org, Takashi Iwai <tiwai@suse.de>
+Subject: [PATCH] ALSA: hda-intel - add position_fix quirk for Gateway NV53A
+Message-ID: <20110629195509.GA18895@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Permit changing of security.evm only when valid, unless in fixmode.
+Without this option internal microphone does not seem to be working.
 
-Reported-by: Roberto Sassu <roberto.sassu@polito.it>
-Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
+$ lspci -vvnn | grep -A10 Audio
+00:14.2 Audio device [0403]: ATI Technologies Inc SBx00 Azalia (Intel HDA) [1002:4383] (rev 40)
+	Subsystem: Acer Incorporated [ALI] Device [1025:036e]
+	Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=slow >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 64, Cache Line Size: 64 bytes
+	Interrupt: pin ? routed to IRQ 16
+	Region 0: Memory at d2300000 (64-bit, non-prefetchable) [size=16K]
+	Capabilities: [50] Power Management version 2
+		Flags: PMEClk- DSI- D1- D2- AuxCurrent=55mA PME(D0+,D1-,D2-,D3hot+,D3cold+)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Kernel driver in use: HDA Intel
+--
+01:05.1 Audio device [0403]: ATI Technologies Inc RS880 Audio Device [Radeon HD 4200] [1002:970f]
+	Subsystem: Acer Incorporated [ALI] Device [1025:036e]
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 64 bytes
+	Interrupt: pin B routed to IRQ 19
+	Region 0: Memory at d2210000 (32-bit, non-prefetchable) [size=16K]
+	Capabilities: [50] Power Management version 3
+		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit+
+
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 ---
- include/linux/evm.h               |    6 ++++++
- security/integrity/evm/evm_main.c |   15 +++++++++++++++
- security/security.c               |    7 ++++++-
- 3 files changed, 27 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-index 6d4e89b..db5556d 100644
---- a/include/linux/evm.h
-+++ b/include/linux/evm.h
-@@ -19,6 +19,7 @@ extern enum integrity_status evm_verifyxattr(struct dentry *dentry,
- 					     void *xattr_value,
- 					     size_t xattr_value_len,
- 					     struct integrity_iint_cache *iint);
-+extern int evm_inode_setattr(struct dentry *dentry, struct iattr *attr);
- extern void evm_inode_post_setattr(struct dentry *dentry, int ia_valid);
- extern int evm_inode_setxattr(struct dentry *dentry, const char *name,
- 			      const void *value, size_t size);
-@@ -44,6 +45,11 @@ static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
- }
- #endif
- 
-+static int evm_inode_setattr(struct dentry *dentry, struct iattr *attr)
-+{
-+	return 0;
-+}
-+
- static inline void evm_inode_post_setattr(struct dentry *dentry, int ia_valid)
- {
- 	return;
-diff --git a/security/integrity/evm/evm_main.c b/security/integrity/evm/evm_main.c
-index 94d66af..8fc5b5d 100644
---- a/security/integrity/evm/evm_main.c
-+++ b/security/integrity/evm/evm_main.c
-@@ -278,6 +278,21 @@ void evm_inode_post_removexattr(struct dentry *dentry, const char *xattr_name)
- }
- 
- /**
-+ * evm_inode_setattr - prevent updating an invalid EVM extended attribute
-+ * @dentry: pointer to the affected dentry
-+ */
-+int evm_inode_setattr(struct dentry *dentry, struct iattr *attr)
-+{
-+	unsigned int ia_valid = attr->ia_valid;
-+	enum integrity_status evm_status;
-+
-+	if (ia_valid & ~(ATTR_MODE | ATTR_UID | ATTR_GID))
-+		return 0;
-+	evm_status = evm_verify_current_integrity(dentry);
-+	return evm_status == INTEGRITY_PASS ? 0 : -EPERM;
-+}
-+
-+/**
-  * evm_inode_post_setattr - update 'security.evm' after modifying metadata
-  * @dentry: pointer to the affected dentry
-  * @ia_valid: for the UID and GID status
-diff --git a/security/security.c b/security/security.c
-index 181990a..19251cc 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -571,9 +571,14 @@ int security_inode_exec_permission(struct inode *inode, unsigned int flags)
- 
- int security_inode_setattr(struct dentry *dentry, struct iattr *attr)
- {
-+	int ret;
-+
- 	if (unlikely(IS_PRIVATE(dentry->d_inode)))
- 		return 0;
--	return security_ops->inode_setattr(dentry, attr);
-+	ret = security_ops->inode_setattr(dentry, attr);
-+	if (ret)
-+		return ret;
-+	return evm_inode_setattr(dentry, attr);
- }
- EXPORT_SYMBOL_GPL(security_inode_setattr);
- 
--- 
-1.7.3.4
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+
+diff --git a/sound/pci/hda/hda_intel.c b/sound/pci/hda/hda_intel.c
+index 486f6de..4fbcea6 100644
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2349,6 +2349,7 @@ static int azx_dev_free(struct snd_device *device)
+ static struct snd_pci_quirk position_fix_list[] __devinitdata = {
+ 	SND_PCI_QUIRK(0x1025, 0x009f, "Acer Aspire 5110", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1025, 0x026f, "Acer Aspire 5538", POS_FIX_LPIB),
++	SND_PCI_QUIRK(0x1025, 0x036e, "Gateway NV53A", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1028, 0x01cc, "Dell D820", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1028, 0x01de, "Dell Precision 390", POS_FIX_LPIB),
+ 	SND_PCI_QUIRK(0x1028, 0x01f6, "Dell Latitude 131L", POS_FIX_LPIB),
