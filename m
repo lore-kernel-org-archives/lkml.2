@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757995Ab1F2Vam (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 17:30:42 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:8910 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757529Ab1F2Vai (ORCPT
+	id S1757952Ab1F2VaW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 17:30:22 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3743 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752734Ab1F2VaU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 17:30:38 -0400
-Message-ID: <4E0B9955.3040905@draigBrady.com>
-Date: Wed, 29 Jun 2011 22:29:57 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	Wed, 29 Jun 2011 17:30:20 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=YS9a7LnYeFuWMAglpolAV7xmjpLcqiWtfbaMYMS14Inb3PGKX0N5hLtQqfM1b/3lf
+	1V7B93ow6vVEOkgotrNeQ==
 MIME-Version: 1.0
-To: Sunil Mushran <sunil.mushran@oracle.com>
-CC: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110629065306.GC1026@dastard> <20110629074021.GA26086@infradead.org> <4E0B019E.8080800@draigBrady.com> <4E0B60DE.50908@oracle.com>
-In-Reply-To: <4E0B60DE.50908@oracle.com>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <20110629180010.GB32236@infradead.org>
+References: <1309304616-8657-1-git-send-email-curtw@google.com>
+	<20110629005422.GQ32466@dastard>
+	<BANLkTimKtwVZo3D+w9AB2-C83d08YROcMw@mail.gmail.com>
+	<20110629081155.GA5558@infradead.org>
+	<BANLkTinoFOnQoo3k3KiDgqd7+uBH6shNesxhmVRo9wWr0WCkEw@mail.gmail.com>
+	<20110629180010.GB32236@infradead.org>
+Date: Wed, 29 Jun 2011 14:30:17 -0700
+Message-ID: <BANLkTi=5Jgrb_wQ_AKn3LJOYERTcTix01BCGPYnjGi4iJZhxgA@mail.gmail.com>
+Subject: Re: [PATCH] writeback: Don't wait for completion in writeback_inodes_sb_nr
+From: Curt Wohlgemuth <curtw@google.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/06/11 18:29, Sunil Mushran wrote:
-> On 06/29/2011 03:42 AM, Pádraig Brady wrote:
->> There is the argument, that if this interface can distinguish
->> these dirty unwritten extents, then why can't the fiemap interface too?
->> The advantage of the fiemap interface is that it can distinguish
->> empty extents vs holes. Empty extents will become increasingly common
->> I think, given the fragmentation and space guarantee benefits they give.
->> It would be cool for cp for example to be able to efficiently copy
->> empty extents from source to dest.
-> 
-> I'm not too sure about that. Atleast not enabled by default. Most users
-> use cp to backup data. Not empty space. In this case, this empty extent
-> may not even be de-dupable.
+On Wed, Jun 29, 2011 at 11:00 AM, Christoph Hellwig <hch@infradead.org> wrote:
+> On Wed, Jun 29, 2011 at 10:26:33AM -0700, Curt Wohlgemuth wrote:
+>> The semantics did change between 2.6.34 and 2.6.35 though.  When the
+>> work item queue was introduced in 2.6.32, the semantics changed from
+>> what you describe above to what's present through 2.6.34:
+>> writeback_inodes_sb() would enqueue a work item, and return.  Your
+>> commit 83ba7b07 ("writeback: simplify the write back thread queue")
+>> added the wait_for_completion() call, putting the semantics back to
+>> where they were pre-2.6.32.
+>
+> Yes.  The kernels inbetween had that nasty writeback vs umount races
+> that we could trigger quite often.
 
-That's a fair point. On the other hand if
-you wanted to start working with the backup copy,
-you might want it allocated to avoid fragmentation and ENOSPC issues.
-What we were going with was empty -> hole with cp --sparse=always
-and empty -> empty otherwise. If empty and hole can not be
-distinguished though, then this process will be impacted.
+My apologies for not being aware of these races (I tried to search
+mailing lists) -- how did they manifest themselves?  I don't see
+anything about it in your commit message of 83ba7b07.  I do see that
+we are not taking s_umount for sys_sync any longer (only in
+sync_filesystem(), e.g., for sys_syncfs)...
 
-> 
-> Frankly I'd be happier of cp started to exploited fallocate() to create
-> larger
-> extents before copying data into them. Atleast for the large files.
+>> Though one additional change between the old way (pre-2.6.32) and
+>> today:  with the old kernel, the pdflush thread would operate
+>> concurrently with the first (and second?) sync path through writeback.
+>>  Today of course, they're *all* serialized.  So really a call to
+>> sys_sync() will enqueue 3 work items -- one from
+>> wakeup_flusher_threads(), one from writeback_inodes_sb(), and one from
+>> sync_inodes_sb().
+>
+> Yes.  And having WB_SYNC_NONE items from both wakeup_flusher_threads vs
+> writeback_inodes_sb is plain stupid.  The initial conversion to the
+> new sync_filesystem scheme had removed the wakeup_flusher_threads
+> call, but that caused a huge regression in some benchmark.
+>
+> As mentioned before Wu was working on some code to introduce tagging
+> so that the WB_SYNC_ALL call won't start writing pages dirtied after
+> the sync call, which should help with your issue.  Although to
+> completely solve it we really need to get down to just two passes.
 
-Yes we definitely will start doing that.
-That will help fragmentation and give early ENOSPC.
-We can't use fiemap for this at the moment
-(on XSF or ext4 (without a sync))
-but the seek_data interface should allow us
-to do this to some extent (pardon the pun).
+I can definitely see how tagging with the start of sync would be
+helpful; also how going from three to two passes seems like a
+no-brainer.
 
-cheers,
-Pádraig.
+But what's the real point of doing even two passes -- one SYNC_NONE
+followed by one SYNC_ALL?  Is it try to get through as many inodes as
+possible before we potentially lock up by waiting on an inode on an
+unavailable device?
+
+Thanks,
+Curt
