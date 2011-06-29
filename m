@@ -1,63 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753376Ab1F2Hz0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 03:55:26 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57220 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751132Ab1F2HzV (ORCPT
+	id S1753021Ab1F2H6L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 03:58:11 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:48994 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751132Ab1F2H6C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 03:55:21 -0400
-Message-ID: <4E0ADA66.9070004@canonical.com>
-Date: Wed, 29 Jun 2011 08:55:18 +0100
-From: John Johansen <john.johansen@canonical.com>
-Organization: Canonical
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2/2] AppArmor: Fix masking of capabilities in complain
- mode
-References: <1309311874-23262-1-git-send-email-john.johansen@canonical.com> <1309311874-23262-3-git-send-email-john.johansen@canonical.com> <20110629042440.GC18344@kroah.com>
-In-Reply-To: <20110629042440.GC18344@kroah.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 29 Jun 2011 03:58:02 -0400
+Subject: [PATCH] firmware: gsmi: remove sysfs entries when unload the module
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Mike Waychison <mikew@google.com>, Duncan Laurie <dlaurie@google.com>,
+        Aaron Durbin <adurbin@google.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Jun 2011 15:57:53 +0800
+Message-ID: <1309334273.6368.1.camel@phoenix>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2011 05:24 AM, Greg KH wrote:
-> On Wed, Jun 29, 2011 at 02:44:34AM +0100, John Johansen wrote:
->> AppArmor is masking the capabilities returned by capget against the
->> capabilities mask in the profile.  This is wrong, in complain mode the
->> profile has effectively all capabilities, as the profile restrictions are
->> not being enforced, merely tested against to determine if an access is
->> known by the profile.
->>
->> This can result in the wrong behavior of security conscience applications
->> like sshd which examine their capability set, and change their behavior
->> accordingly.  In this case because of the masked capability set being
->> returned sshd fails due to DAC checks, even when the profile is in complain
->> mode.
->>
->> Kernels affected: 2.6.36 - 3.0.
->>
->> Signed-off-by: John Johansen <john.johansen@canonical.com>
->> ---
-> 
-> You say that multiple kernels are affected, then why not also include
-> stable@kernel.org here as well?
-> 
-> confused,
-> 
-Sorry I should have elaborated, I think its a borderline case for stable
-release, and was as much a note to my self as anything.
+This patch removes sysfs entries in gsmi_exit() and gsmi_init() error path.
 
-The bug doesn't affect the enforcement of policy, only learning mode used
-for generating policy, and it is something we can work around in userspace.
-for already released kernels.
+Also move the driver successfully loaded message to the end of gsmi_init()
+and return proper error if register_efivars() fails.
 
-I can resend with a Cc: stable if you would like
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/firmware/google/gsmi.c |   19 +++++++++++++------
+ 1 files changed, 13 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/firmware/google/gsmi.c b/drivers/firmware/google/gsmi.c
+index fa7f0b3..68810fd 100644
+--- a/drivers/firmware/google/gsmi.c
++++ b/drivers/firmware/google/gsmi.c
+@@ -869,8 +869,6 @@ static __init int gsmi_init(void)
+ 		goto out_err;
+ 	}
+ 
+-	printk(KERN_INFO "gsmi version " DRIVER_VERSION " loaded\n");
+-
+ 	/* Register in the firmware directory */
+ 	ret = -ENOMEM;
+ 	gsmi_kobj = kobject_create_and_add("gsmi", firmware_kobj);
+@@ -890,12 +888,13 @@ static __init int gsmi_init(void)
+ 	ret = sysfs_create_files(gsmi_kobj, gsmi_attrs);
+ 	if (ret) {
+ 		printk(KERN_INFO "gsmi: Failed to add attrs");
+-		goto out_err;
++		goto out_remove_bin_file;
+ 	}
+ 
+-	if (register_efivars(&efivars, &efivar_ops, gsmi_kobj)) {
++	ret = register_efivars(&efivars, &efivar_ops, gsmi_kobj);
++	if (ret) {
+ 		printk(KERN_INFO "gsmi: Failed to register efivars\n");
+-		goto out_err;
++		goto out_remove_sysfs_files;
+ 	}
+ 
+ 	register_reboot_notifier(&gsmi_reboot_notifier);
+@@ -903,9 +902,15 @@ static __init int gsmi_init(void)
+ 	atomic_notifier_chain_register(&panic_notifier_list,
+ 				       &gsmi_panic_notifier);
+ 
++	printk(KERN_INFO "gsmi version " DRIVER_VERSION " loaded\n");
++
+ 	return 0;
+ 
+- out_err:
++out_remove_sysfs_files:
++	sysfs_remove_files(gsmi_kobj, gsmi_attrs);
++out_remove_bin_file:
++	sysfs_remove_bin_file(gsmi_kobj, &eventlog_bin_attr);
++out_err:
+ 	kobject_put(gsmi_kobj);
+ 	gsmi_buf_free(gsmi_dev.param_buf);
+ 	gsmi_buf_free(gsmi_dev.data_buf);
+@@ -925,6 +930,8 @@ static void __exit gsmi_exit(void)
+ 					 &gsmi_panic_notifier);
+ 	unregister_efivars(&efivars);
+ 
++	sysfs_remove_files(gsmi_kobj, gsmi_attrs);
++	sysfs_remove_bin_file(gsmi_kobj, &eventlog_bin_attr);
+ 	kobject_put(gsmi_kobj);
+ 	gsmi_buf_free(gsmi_dev.param_buf);
+ 	gsmi_buf_free(gsmi_dev.data_buf);
+-- 
+1.7.4.1
 
 
 
