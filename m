@@ -1,52 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751938Ab1F2E14 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 00:27:56 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51342 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751269Ab1F2E1n (ORCPT
+	id S1751213Ab1F2EZx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 00:25:53 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38256 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750905Ab1F2EZq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 00:27:43 -0400
-X-Sasl-enc: bg0FV64zwwhZJ3SbGQewB7R/pli6ULcKnBAvYEyQuh7U 1309321662
-Date: Tue, 28 Jun 2011 21:24:40 -0700
-From: Greg KH <greg@kroah.com>
-To: John Johansen <john.johansen@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2/2] AppArmor: Fix masking of capabilities in complain
- mode
-Message-ID: <20110629042440.GC18344@kroah.com>
-References: <1309311874-23262-1-git-send-email-john.johansen@canonical.com>
- <1309311874-23262-3-git-send-email-john.johansen@canonical.com>
+	Wed, 29 Jun 2011 00:25:46 -0400
+Message-ID: <4E0AA947.3060201@dsn.okisemi.com>
+Date: Wed, 29 Jun 2011 13:25:43 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309311874-23262-3-git-send-email-john.johansen@canonical.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Alexander Stein <alexander.stein@systec-electronic.com>
+CC: "Wang, Yong Y" <yong.y.wang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
+        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        "Wang, Qi" <qi.wang@intel.com>,
+        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>
+Subject: Re: [PATCH] pch_dma: Fix channel locking
+References: <1308755133-8605-1-git-send-email-alexander.stein@systec-electronic.com> <201106271622.52763.alexander.stein@systec-electronic.com> <4E09AE3A.8050306@dsn.okisemi.com> <201106281314.51722.alexander.stein@systec-electronic.com> <4E0AA451.5040506@dsn.okisemi.com>
+In-Reply-To: <4E0AA451.5040506@dsn.okisemi.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 02:44:34AM +0100, John Johansen wrote:
-> AppArmor is masking the capabilities returned by capget against the
-> capabilities mask in the profile.  This is wrong, in complain mode the
-> profile has effectively all capabilities, as the profile restrictions are
-> not being enforced, merely tested against to determine if an access is
-> known by the profile.
+(2011/06/29 13:04), Tomoya MORINAGA wrote:
+> Hi Alexander,
 > 
-> This can result in the wrong behavior of security conscience applications
-> like sshd which examine their capability set, and change their behavior
-> accordingly.  In this case because of the masked capability set being
-> returned sshd fails due to DAC checks, even when the profile is in complain
-> mode.
+> (2011/06/28 20:14), Alexander Stein wrote:
+>> Odd. What does addr2line report for 0xc0710cc5 and for 0xc07110d0?
+>>
 > 
-> Kernels affected: 2.6.36 - 3.0.
+> addr2line -e a.out 0xc0710cc5 0xc07110d0
+> ??:0
+> ??:0
 > 
-> Signed-off-by: John Johansen <john.johansen@canonical.com>
-> ---
+> Is the above command true ?
+> If not, could you tell me how to use addr2line ?
+> 
 
-You say that multiple kernels are affected, then why not also include
-stable@kernel.org here as well?
+I can get the information.
+[root@localhost morinaga]# addr2line -e vmlinux 0xc0710cc5 0xc07110d0
+/home/morinaga/KORG/linux-2.6.39.y/drivers/dma/pch_dma.c:409
+/home/morinaga/KORG/linux-2.6.39.y/include/linux/list.h:188
 
-confused,
-
-greg k-h
+Best Regards,
+-- 
+tomoya
+OKI SEMICONDUCTOR CO., LTD.
