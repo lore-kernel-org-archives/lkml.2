@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751213Ab1F2EZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 00:25:53 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38256 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750905Ab1F2EZq (ORCPT
+	id S1751911Ab1F2E3E (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 00:29:04 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:46818 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751322Ab1F2E3A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 00:25:46 -0400
-Message-ID: <4E0AA947.3060201@dsn.okisemi.com>
-Date: Wed, 29 Jun 2011 13:25:43 +0900
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Alexander Stein <alexander.stein@systec-electronic.com>
-CC: "Wang, Yong Y" <yong.y.wang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        "Wang, Qi" <qi.wang@intel.com>,
-        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>
-Subject: Re: [PATCH] pch_dma: Fix channel locking
-References: <1308755133-8605-1-git-send-email-alexander.stein@systec-electronic.com> <201106271622.52763.alexander.stein@systec-electronic.com> <4E09AE3A.8050306@dsn.okisemi.com> <201106281314.51722.alexander.stein@systec-electronic.com> <4E0AA451.5040506@dsn.okisemi.com>
-In-Reply-To: <4E0AA451.5040506@dsn.okisemi.com>
-Content-Type: text/plain; charset=ISO-2022-JP
+	Wed, 29 Jun 2011 00:29:00 -0400
+Subject: Re: [PATCH V7 2/4 net-next] skbuff: Add userspace zero-copy
+ buffers in skb
+From: Shirley Ma <mashirle@us.ibm.com>
+To: David Miller <davem@davemloft.net>
+Cc: mst@redhat.com, eric.dumazet@gmail.com, avi@redhat.com, arnd@arndb.de,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110628.163508.222352070705159851.davem@davemloft.net>
+References: <1309189510.21764.1.camel@localhost.localdomain>
+	 <20110627.155426.51839633424542723.davem@davemloft.net>
+	 <1309279892.3559.6.camel@localhost.localdomain>
+	 <20110628.163508.222352070705159851.davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 28 Jun 2011 21:28:54 -0700
+Message-ID: <1309321734.3559.20.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/29 13:04), Tomoya MORINAGA wrote:
-> Hi Alexander,
-> 
-> (2011/06/28 20:14), Alexander Stein wrote:
->> Odd. What does addr2line report for 0xc0710cc5 and for 0xc07110d0?
->>
-> 
-> addr2line -e a.out 0xc0710cc5 0xc07110d0
-> ??:0
-> ??:0
-> 
-> Is the above command true ?
-> If not, could you tell me how to use addr2line ?
-> 
+I have submitted this patchset from Version 1 to Version 7 already in
+the past few months.
+Here is the link to the patchset:
 
-I can get the information.
-[root@localhost morinaga]# addr2line -e vmlinux 0xc0710cc5 0xc07110d0
-/home/morinaga/KORG/linux-2.6.39.y/drivers/dma/pch_dma.c:409
-/home/morinaga/KORG/linux-2.6.39.y/include/linux/list.h:188
+http://lists.openwall.net/netdev/2011/05/28/
 
-Best Regards,
--- 
-tomoya
-OKI SEMICONDUCTOR CO., LTD.
+I am working on V8 now.
+
+Thanks
+Shirley
+
+
+On Tue, 2011-06-28 at 16:35 -0700, David Miller wrote:
+> From: Shirley Ma <mashirle@us.ibm.com>
+> Date: Tue, 28 Jun 2011 09:51:32 -0700
+> 
+> > On Mon, 2011-06-27 at 15:54 -0700, David Miller wrote:
+> >> From: Shirley Ma <mashirle@us.ibm.com>
+> >> Date: Mon, 27 Jun 2011 08:45:10 -0700
+> >> 
+> >> > To support skb zero-copy, a pointer is needed to add to skb share
+> >> info.
+> >> > Do you agree with this approach? If not, do you have any other
+> >> > suggestions?
+> >> 
+> >> I really can't form an opinion unless I am shown the complete
+> >> implementation, what this give us in return, what the impact is,
+> etc. 
+>  ..
+> > You can see the overall CPU saved 50% w/i zero-copy.
+> > 
+> > The impact is every skb allocation consumed one more pointer in skb
+> > share info, and a pointer check in skb release when last reference
+> is
+> > gone.
+> > 
+> > For skb clone, skb expand private head and skb copy, it still keeps
+> copy
+> > the buffers to kernel, so we can avoid user application, like
+> tcpdump to
+> > hold the user-space buffers too long.
+> 
+> Ok, now show me the "complete implementation".  I'm as interested in
+> the code as I am in the numbers, that's why I asked for both. 
+
