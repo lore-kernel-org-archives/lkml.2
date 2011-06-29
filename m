@@ -1,46 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753661Ab1F2XZD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 19:25:03 -0400
-Received: from 64-186-171-137.static-ip.telepacific.net ([64.186.171.137]:60466
-	"EHLO l.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752348Ab1F2XY5 (ORCPT
+	id S1753496Ab1F2X1d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 19:27:33 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:58440 "EHLO mail.vyatta.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751584Ab1F2X10 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 19:24:57 -0400
-X-Greylist: delayed 1782 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Jun 2011 19:24:57 EDT
-Message-ID: <4E0BAD16.5020701@chelsio.com>
-Date: Wed, 29 Jun 2011 15:54:14 -0700
-From: Divy Le Ray <divy@chelsio.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.15) Gecko/20110419 Thunderbird/3.1.9
-MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-CC: linux-kernel@vger.kernel.org, Dimitris Michailidis <dm@chelsio.com>,
-        Neil Horman <nhorman@tuxdrivers.com>
-Subject: [PATCH] linux-firmware: update cxgb4 firmware
-References: <4DAF5497.9070404@chelsio.com>
-In-Reply-To: <4DAF5497.9070404@chelsio.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 29 Jun 2011 19:27:26 -0400
+Date: Wed, 29 Jun 2011 16:27:22 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] iproute2 2.6.39
+Message-ID: <20110629162722.2db2a8cd@nehalam.ftrdhcpuser.net>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+This version of iproute2 utilities intended for use with 2.6.39 or
+later kernel, but should be backward compatible with older releases.
+It is mostly small bug fixes, but there is also support for the
+new queuing disciplines in 2.6.39.
 
-Can you please pull from git://git.chelsio.net/pub/git/linux-firmware.git?
+Source: (note old developer.osdl.org address works as well)
+  http://devresources.linuxfoundation.org/dev/iproute2/download/iproute2-2.6.39.tar.gz
 
-It contains the following commit, updating the firmware file for the 
-cxgb4 ethernet driver:
+Repository:
+  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
-commit 6af51ebf350148bde17c73bacb3c59d8c3e2461a
-Author: Divy Le Ray <divy@chelsio.com>
-Date:   Wed Jun 29 14:18:16 2011 -0700
+For more info on iproute2 see:
+  http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2
 
-     linux-firmware: Update cxgb4 firmware
+Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
 
-     Update cxgb4 firmware to revision 1.3.10.0
+Changelog:
+Brandon Philips (2):
+      ip: fix memory leak in ipmaddr.c
+      doc: add pdf targets
 
-     Signed-off-by: Divy Le Ray <divy@chelsio.com>
+Diego Elio Pettenò (1):
+      Remove -L flags from link
 
-Cheers,
-Divy
+Eric Dumazet (3):
+      sfq: add divisor support
+      ip: Support IFLA_TXQLEN in ip link command
+      ss: fix autobound filter
+
+Gerrit Renker (6):
+      utils: get_jiffies always uses base=0
+      iproute: fix unit conversion of rtt/rttvar/rto_min
+      iproute: rename 'get_jiffies' since it uses msecs
+      utils: get_jiffies always uses base=0
+      iproute: fix unit conversion of rtt/rttvar/rto_min
+      iproute: rename 'get_jiffies' since it uses msecs
+
+Jiri Pirko (1):
+      iplink: implement setting of master devic
+
+John Fastabend (2):
+      iproute2: tc add mqprio qdisc support
+      iproute2: improve mqprio inputs for queue offsets and counts
+
+Joy Latten (6):
+      xfrm security context support
+      xfrm security context support
+      xfrm security context support
+      xfrm security context support
+      xfrm security context support
+      xfrm security context support
+
+Juliusz Chroboczek (1):
+      tc : SFB flow scheduler
+
+Nicolas Dichtel (3):
+      iproute2: allow to specify truncation bits on auth algo
+      iproute2: add support of flag XFRM_STATE_ALIGN4
+      iproute2: allow to specify truncation bits on auth algo
+
+Sridhar Samudrala (1):
+      macvlan/macvtap: support 'passthru' mode
+
+Stephen Hemminger (26):
+      CHOKe scheduler
+      Merge branch 'master' into choke
+      update to net-next (2.6.39) headers
+      Merge branch 'choke' into net-next
+      Remove #ifdef's
+      v2.6.38.1
+      update to 2.6.39-rc3 headers
+      Add no-strict-aliasing to genl
+      Add checks for fgets() when reading proc
+      Fix snprintf with non format
+      Fix warning in u32 from assignment in conditional
+      Update email address of netem
+      Add README.devel
+      Update README information
+      Use INIT_NETDEV_GROUP
+      Merge branch 'for-2.6.39' of /home/shemminger/iproute2-net-next
+      tc filter: fix dport/sport in pretty print output
+      ip: addrlabel fix set never used warning
+      ip: iproute fix set never used warning
+      tc: fix set never used warning in red
+      libnetlink: fix set never used warning
+      Fix set-never-used warning in ifstat
+      ss: check result of readlink
+      skbedit: fix set-never-used warning
+      xt match: fix set-never-used warning
+      v2.6.39
+
+Ulrich Weber (1):
+      iproute2: parse flag XFRM_POLICY_ICMP
+
+Vlad Dogaru (6):
+      iproute2: support listing devices by group
+      iproute2: support device group semantics
+      iproute2: support device group semantics
+      iproute2: fix man page whitespace
+      iproute2: fix man page whitespace
+      iproute2: support listing devices by group
+
