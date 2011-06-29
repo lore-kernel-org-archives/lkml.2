@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab1F2IQe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 04:16:34 -0400
-Received: from 207-126-122-235.ip.openhosting.com ([207.126.122.235]:39004
-	"EHLO drepperk.user.openhosting.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752359Ab1F2IQW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 04:16:22 -0400
-Message-ID: <4E0ADF27.5070805@akkadia.org>
-Date: Wed, 29 Jun 2011 04:15:35 -0400
-From: Ulrich Drepper <drepper@akkadia.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org, rientjes@google.com,
-        viro@zeniv.linux.org.uk, wilsons@start.ca
-Subject: Re: [PATCH] Add cloexec information to fdinfo
-References: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com> <BANLkTin7wm6m5bN4CfQzhJZuhy3bUrS80A@mail.gmail.com>
-In-Reply-To: <BANLkTin7wm6m5bN4CfQzhJZuhy3bUrS80A@mail.gmail.com>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigAD4141DD6EDCDB9C02DD6DE1"
+	id S1753845Ab1F2IUZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 04:20:25 -0400
+Received: from sh.osrg.net ([192.16.179.4]:58873 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752958Ab1F2IUU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 04:20:20 -0400
+Date: Wed, 29 Jun 2011 17:19:50 +0900
+To: nacc@us.ibm.com
+Cc: miltonm@bga.com, linuxppc-dev@lists.ozlabs.org,
+        linux-kernel@vger.kernel.org, benh@kernel.crashing.org,
+        vinod.koul@intel.com, dan.j.williams@intel.com
+Subject: Re: [PATCH 2/4] dma-mapping: add get_required_mask if arch
+ overrides default
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1308942325-4813-3-git-send-email-nacc@us.ibm.com>
+References: <1308942325-4813-1-git-send-email-nacc@us.ibm.com>
+	<1308942325-4813-3-git-send-email-nacc@us.ibm.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20110629171304B.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 29 Jun 2011 17:19:52 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigAD4141DD6EDCDB9C02DD6DE1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Fri, 24 Jun 2011 12:05:23 -0700
+Nishanth Aravamudan <nacc@us.ibm.com> wrote:
 
-On 06/28/2011 01:23 PM, Linus Torvalds wrote:
-> The description makes no mention of why this would be needed?
+> From: Milton Miller <miltonm@bga.com>
+> 
+> If an architecture sets ARCH_HAS_DMA_GET_REQUIRED_MASK and has settable
+> dma_map_ops, the required mask may change by the ops implementation.
+> For example, a system that always has an mmu inline may only require 32
+> bits while a swiotlb would desire bits to cover all of memory.
+> 
+> Therefore add the field if the architecture does not use the generic
+> definition of dma_get_required_mask. The first use will by by powerpc.
+> Note that this does add some dependency on the order in which files are
+> visible here.
+> 
+> Signed-off-by:  Milton Miller <miltonm@bga.com>
+> Signed-off-by: Nishanth Aravamudan <nacc@us.ibm.com>
+> Cc: linuxppc-dev@lists.ozlabs.org
+> Cc: linux-kernel@vger.kernel.org
+> Cc: benh@kernel.crashing.org
+> ---
+>  include/linux/dma-mapping.h |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index ba8319a..d0e023b 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -49,6 +49,9 @@ struct dma_map_ops {
+>  	int (*mapping_error)(struct device *dev, dma_addr_t dma_addr);
+>  	int (*dma_supported)(struct device *dev, u64 mask);
+>  	int (*set_dma_mask)(struct device *dev, u64 mask);
+> +#ifdef ARCH_HAS_DMA_GET_REQUIRED_MASK
+> +	u64 (*get_required_mask)(struct device *dev);
+> +#endif
+>  	int is_phys;
+>  };
 
-In this specific case I was trying to re-implement the pfiles program.
-For normal file descriptors (not sockets) this was the last piece of
-information which wasn't available.  This is all part of my "give
-Solaris users no reason to not switch" effort.  I intend to offer the
-code to the util-linux-ng maintainers.
-
-
-> Also, it's by no means the only thing not visible in /proc. Things
-> like file locking status, leases, file descriptor ownership, signal
-> number associated with the setown etc.
-
-True, and maybe that will be useful as well.
-
-I might actually have some more patches to get to socket information but
-I haven't fully checked out yet what is available.
-
-
---------------enigAD4141DD6EDCDB9C02DD6DE1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEARECAAYFAk4K3ycACgkQ2ijCOnn/RHTnmgCfeG7LyFoArwj7FCI0UG53jYd8
-jMAAn1QkgZmxocMDBU4aWkOboOaZzbeC
-=6bG5
------END PGP SIGNATURE-----
-
---------------enigAD4141DD6EDCDB9C02DD6DE1--
+If you add get_required_mask to dma_map_ops, we should clean up ia64
+too and implement the generic proper version in
+dma-mapping-common.h. Then we kill ARCH_HAS_DMA_GET_REQUIRED_MASK
+ifdef hack. Otherwise, I don't think it makes sense to add this to
+dma_map_ops.
