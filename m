@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab1F2Vfr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 17:35:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41294 "EHLO ogre.sisk.pl"
+	id S1758134Ab1F2Vgp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 17:36:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41295 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757925Ab1F2Vf2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 17:35:28 -0400
+	id S1757937Ab1F2Vf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 17:35:29 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 2/6 v2] PM / Runtime: Return special error code if runtime PM is disabled
-Date: Wed, 29 Jun 2011 23:32:34 +0200
+Subject: [PATCH 3/6 v2] PCI / PM: Detect early wakeup in pci_pm_prepare()
+Date: Wed, 29 Jun 2011 23:33:17 +0200
 User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
 Cc: Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
         Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
@@ -21,115 +21,69 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201106292332.35170.rjw@sisk.pl>
+Message-Id: <201106292333.17308.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-Some callers of pm_runtime_get_sync() and other runtime PM helper
-functions, scsi_autopm_get_host() and scsi_autopm_get_device() in
-particular, need to distinguish error codes returned when runtime PM
-is disabled (i.e. power.disable_depth is nonzero for the given
-device) from error codes returned in other situations.  For this
-reason, make the runtime PM helper functions return -EACCES when
-power.disable_depth is nonzero and ensure that this error code
-won't be returned by them in any other circumstances.  Modify
-scsi_autopm_get_host() and scsi_autopm_get_device() to check the
-error code returned by pm_runtime_get_sync() and ignore -EACCES.
+A subsequent patch is going to move the invocation of
+pm_runtime_barrier() from dpm_prepare() to __device_suspend().
+Consequently, early wakeup events resulting from runtime resume
+requests for wakeup devices queued up right before system suspend
+will only be detected after all of the subsystem-level .prepare()
+callbacks have run.  However, the PCI bus type calls
+pm_runtime_get_sync() from its pci_pm_prepare() callback routine,
+so it would destroy the early wakeup events information regarding PCI
+devices.  To prevent this from happening add an early wakeup
+detection mechanism, analogous to the one currently in dpm_prepare(),
+to pci_pm_prepare().
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- Documentation/power/runtime_pm.txt |    6 ++++--
- drivers/base/power/runtime.c       |    9 +++++----
- drivers/scsi/scsi_pm.c             |    8 ++++----
- 3 files changed, 13 insertions(+), 10 deletions(-)
+ drivers/pci/pci-driver.c |   16 +++++++++++++++-
+ 1 file changed, 15 insertions(+), 1 deletion(-)
 
-Index: linux-2.6/drivers/base/power/runtime.c
+Index: linux-2.6/drivers/pci/pci-driver.c
 ===================================================================
---- linux-2.6.orig/drivers/base/power/runtime.c
-+++ linux-2.6/drivers/base/power/runtime.c
-@@ -135,8 +135,9 @@ static int rpm_check_suspend_allowed(str
+--- linux-2.6.orig/drivers/pci/pci-driver.c
++++ linux-2.6/drivers/pci/pci-driver.c
+@@ -18,6 +18,7 @@
+ #include <linux/sched.h>
+ #include <linux/cpu.h>
+ #include <linux/pm_runtime.h>
++#include <linux/suspend.h>
+ #include "pci.h"
  
- 	if (dev->power.runtime_error)
- 		retval = -EINVAL;
--	else if (atomic_read(&dev->power.usage_count) > 0
--	    || dev->power.disable_depth > 0)
-+	else if (dev->power.disable_depth > 0)
-+		retval = -EACCES;
-+	else if (atomic_read(&dev->power.usage_count) > 0)
- 		retval = -EAGAIN;
- 	else if (!pm_children_suspended(dev))
- 		retval = -EBUSY;
-@@ -262,7 +263,7 @@ static int rpm_callback(int (*cb)(struct
- 		spin_lock_irq(&dev->power.lock);
- 	}
- 	dev->power.runtime_error = retval;
--	return retval;
-+	return retval != -EACCES ? retval : -EIO;
- }
+ struct pci_dynid {
+@@ -616,6 +617,19 @@ static int pci_pm_prepare(struct device
+ 	int error = 0;
  
- /**
-@@ -458,7 +459,7 @@ static int rpm_resume(struct device *dev
- 	if (dev->power.runtime_error)
- 		retval = -EINVAL;
- 	else if (dev->power.disable_depth > 0)
--		retval = -EAGAIN;
-+		retval = -EACCES;
- 	if (retval)
- 		goto out;
+ 	/*
++	 * If a PCI device configured to wake up the system from sleep states
++	 * has been suspended at run time and there's a resume request pending
++	 * for it, this is equivalent to the device signaling wakeup, so the
++	 * system suspend operation should be aborted.
++	 */
++	pm_runtime_get_noresume(dev);
++	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
++		pm_wakeup_event(dev, 0);
++
++	if (pm_wakeup_pending())
++		return -EBUSY;
++
++	/*
+ 	 * PCI devices suspended at run time need to be resumed at this
+ 	 * point, because in general it is necessary to reconfigure them for
+ 	 * system suspend.  Namely, if the device is supposed to wake up the
+@@ -624,7 +638,7 @@ static int pci_pm_prepare(struct device
+ 	 * system from the sleep state, we'll have to prevent it from signaling
+ 	 * wake-up.
+ 	 */
+-	pm_runtime_get_sync(dev);
++	pm_runtime_resume(dev);
  
-Index: linux-2.6/drivers/scsi/scsi_pm.c
-===================================================================
---- linux-2.6.orig/drivers/scsi/scsi_pm.c
-+++ linux-2.6/drivers/scsi/scsi_pm.c
-@@ -144,9 +144,9 @@ int scsi_autopm_get_device(struct scsi_d
- 	int	err;
- 
- 	err = pm_runtime_get_sync(&sdev->sdev_gendev);
--	if (err < 0)
-+	if (err < 0 && err !=-EACCES)
- 		pm_runtime_put_sync(&sdev->sdev_gendev);
--	else if (err > 0)
-+	else
- 		err = 0;
- 	return err;
- }
-@@ -173,9 +173,9 @@ int scsi_autopm_get_host(struct Scsi_Hos
- 	int	err;
- 
- 	err = pm_runtime_get_sync(&shost->shost_gendev);
--	if (err < 0)
-+	if (err < 0 && err !=-EACCES)
- 		pm_runtime_put_sync(&shost->shost_gendev);
--	else if (err > 0)
-+	else
- 		err = 0;
- 	return err;
- }
-Index: linux-2.6/Documentation/power/runtime_pm.txt
-===================================================================
---- linux-2.6.orig/Documentation/power/runtime_pm.txt
-+++ linux-2.6/Documentation/power/runtime_pm.txt
-@@ -291,7 +291,8 @@ drivers/base/power/runtime.c and include
-     - execute the subsystem-level suspend callback for the device; returns 0 on
-       success, 1 if the device's run-time PM status was already 'suspended', or
-       error code on failure, where -EAGAIN or -EBUSY means it is safe to attempt
--      to suspend the device again in future
-+      to suspend the device again in future and -EACCES means that
-+      'power.disable_depth' is different from 0
- 
-   int pm_runtime_autosuspend(struct device *dev);
-     - same as pm_runtime_suspend() except that the autosuspend delay is taken
-@@ -304,7 +305,8 @@ drivers/base/power/runtime.c and include
-       success, 1 if the device's run-time PM status was already 'active' or
-       error code on failure, where -EAGAIN means it may be safe to attempt to
-       resume the device again in future, but 'power.runtime_error' should be
--      checked additionally
-+      checked additionally, and -EACCES means that 'power.disable_depth' is
-+      different from 0
- 
-   int pm_request_idle(struct device *dev);
-     - submit a request to execute the subsystem-level idle callback for the
+ 	if (drv && drv->pm && drv->pm->prepare)
+ 		error = drv->pm->prepare(dev);
 
