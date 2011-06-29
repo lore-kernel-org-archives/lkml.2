@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754605Ab1F2Jvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 05:51:37 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:3282 "EHLO
-	VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754456Ab1F2Jvb (ORCPT
+	id S1754475Ab1F2Jic (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:38:32 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:3249 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754451Ab1F2JiY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 05:51:31 -0400
-X-Greylist: delayed 903 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Jun 2011 05:51:31 EDT
-X-SpamScore: -21
-X-BigFish: VPS-21(zz936eK1432N98dKzz1202hzz15d4Rz32i668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNJPCC-01-BFQ-02
-X-M-MSG: 
-Date: Wed, 29 Jun 2011 11:36:10 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Joerg Roedel <joro@8bytes.org>, Paul Mackerras <paulus@samba.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Avi Kiviti <avi@redhat.com>
-Subject: Re: [PATCH 0/5] perf support for amd guest/host-only bits v2
-Message-ID: <20110629093610.GL13255@amd.com>
-References: <1308317854-27398-1-git-send-email-joerg.roedel@amd.com>
- <20110628161000.GF29299@8bytes.org>
- <1309338174.6701.929.camel@twins>
+	Wed, 29 Jun 2011 05:38:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=QQA/TA4cCUYQNRJlKmlrV0LK4G5YDJKEQf46yc6ZDQYPThim8k+XbsqCaMeTp/qPo
+	KS/2K6BJsc/xubjMBtpqQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1309338174.6701.929.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <20110628165302.706740714@goodmis.org>
+References: <20110628164750.281686775@goodmis.org>
+	<20110628165302.706740714@goodmis.org>
+Date: Wed, 29 Jun 2011 02:38:20 -0700
+Message-ID: <CANN689E0ckbGBZZfk-BMdyR=_E6eN2oQb5uhij3ARPVCicqGrQ@mail.gmail.com>
+Subject: Re: [PATCH 1/2] mm: Remove use of ALLOW_RETRY when RETRY_NOWAIT is set
+From: Michel Lespinasse <walken@google.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Hugh Dickins <hughd@google.com>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 05:02:54AM -0400, Peter Zijlstra wrote:
-> On Tue, 2011-06-28 at 18:10 +0200, Joerg Roedel wrote:
-> > On Fri, Jun 17, 2011 at 03:37:29PM +0200, Joerg Roedel wrote:
-> > > this is the second version of the patch-set to support the AMD
-> > > guest-/host only bits in the performance counter MSRs. Due to lack of
-> > > time I havn't looked into emulating support for this feature on Intel or
-> > > other architectures, but the other comments should be worked in. The
-> > > changes to v1 include:
-> > > 
-> > > 	* Rebased patches to v3.0-rc3
-> > > 	* Allow exclude_guest and exclude_host set at the same time
-> > > 	* Reworked event-parse logic for the new exclude-bits
-> > > 	* Only count guest-events per default from perf-kvm
-> > 
-> > Hi Peter, Ingo,
-> > 
-> > have you had a chance to look at this patch-set? Are any changes
-> > required?
-> 
-> I would feel a lot more comfortable by having it implemented on all of
-> x86 as well as at least one !x86 platform. Avi graciously volunteered
-> for the Intel bits.
+On Tue, Jun 28, 2011 at 9:47 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
+>
+> The only user of FAULT_FLAG_RETRY_NOWAIT also sets the
+> FAULT_FLAG_ALLOW_RETRY flag. This makes the check in the
+> __lock_page_or_retry redundant as it checks the RETRY_NOWAIT
+> just after checking ALLOW_RETRY and then returns if it is
+> set.  The FAULT_FLAG_ALLOW_RETRY does not make any other
+> difference in this path.
+>
+> Setting both and then ignoring one is quite confusing,
+> especially since this code has very subtle locking issues
+> when it comes to the mmap_sem.
+>
+> Only set the RETRY_WAIT flag and have that do the necessary
+> work instead of confusing reviewers of this code by setting
+> ALLOW_RETRY and not releasing the mmap_sem.
+>
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -151,8 +151,8 @@ extern pgprot_t protection_map[16];
+>  #define FAULT_FLAG_WRITE       0x01    /* Fault was a write access */
+>  #define FAULT_FLAG_NONLINEAR   0x02    /* Fault was via a nonlinear mapping */
+>  #define FAULT_FLAG_MKWRITE     0x04    /* Fault was mkwrite of existing pte */
+> -#define FAULT_FLAG_ALLOW_RETRY 0x08    /* Retry fault if blocking */
+> -#define FAULT_FLAG_RETRY_NOWAIT        0x10    /* Don't drop mmap_sem and wait when retrying */
+> +#define FAULT_FLAG_ALLOW_RETRY 0x08    /* Retry fault if blocking (drops mmap_sem) */
+> +#define FAULT_FLAG_RETRY_NOWAIT        0x10    /* Wait when retrying (don't drop mmap_sem) */
 
-Ok, since no changes are required from my side then, how about adding
-support for more hardware successively like it was done for perf-kvm?
+You want to say "DONT wait when retrying" here...
 
-	Joerg
+Also - you argued higher up that having both flags set at once is
+confusing, but I find it equally confusing to pass a flag to specify
+you don't want to wait on retry if the flag that allows retry is not
+set. I think the confusion comes from the way the nowait semantics got
+bolted on the retry code for virtualization, even though (if I
+understand the virtualization use case correctly) they dont actually
+want to retry there, they just want to give up without blocking.
+
+
+Would the following proposal make more sense to you ?
+
+FAULT_FLAG_ALLOW_ASYNC: allow returning a VM_FAULT_ASYNC error code if
+the page can't be obtained immediately (major fault).
+FAULT_FLAG_ASYNC_WAIT: before returning VM_FAULT_ASYNC, drop the
+mmap_sem and wait for major fault to complete.
+
+existing uses of FAULT_FLAG_ALLOW_RETRY | FAULT_FLAG_RETRY_NOWAIT
+become FAULT_FLAG_ASYNC
+existing uses of FAULT_FLAG_ALLOW_RETRY alone become FAULT_FLAG_ASYNC
+| FAULT_FLAG_ASYNC_WAIT
+existing uses of VM_FAULT_RETRY become VM_FAULT_ASYNC
+
+This may also help your documentation proposal since the flags would
+now work together rather than having one be an exception to the other.
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
