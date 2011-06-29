@@ -1,148 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753726Ab1F2Glu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 02:41:50 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:33100 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751323Ab1F2Glp (ORCPT
+	id S1753678Ab1F2GmW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 02:42:22 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:42628
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751759Ab1F2GmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 02:41:45 -0400
+	Wed, 29 Jun 2011 02:42:16 -0400
+Date: Wed, 29 Jun 2011 02:42:11 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Curt Wohlgemuth <curtw@google.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] writeback: Don't wait for completion in
+ writeback_inodes_sb_nr
+Message-ID: <20110629064210.GA18469@infradead.org>
+References: <1309304616-8657-1-git-send-email-curtw@google.com>
+ <20110629005422.GQ32466@dastard>
 MIME-Version: 1.0
-In-Reply-To: <20110628104128.GA4310@in.ibm.com>
-References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com>
-	<1308911347.531.56.camel@gandalf.stny.rr.com>
-	<4E074671.7060100@hitachi.com>
-	<20110627100104.GA24705@in.ibm.com>
-	<20110628104128.GA4310@in.ibm.com>
-Date: Wed, 29 Jun 2011 14:41:44 +0800
-Message-ID: <BANLkTikqXYWBzj9LgrRrN=iGhtAU0xzvXg@mail.gmail.com>
-Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
- lead to system crash/freeze
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: ananth@in.ibm.com
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, paulus@samba.org,
-        yrl.pp-manager.tt@hitachi.com, linuxppc-dev@lists.ozlabs.org,
-        galak@kernel.crashing.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110629005422.GQ32466@dastard>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 6:41 PM, Ananth N Mavinakayanahalli
-<ananth@in.ibm.com> wrote:
->
-> My access to a 32bit powerpc box is very limited. Also, embedded powerpc
-> has had issues with gcc-4.6 while gcc-4.5 worked fine.
+On Wed, Jun 29, 2011 at 10:54:22AM +1000, Dave Chinner wrote:
+> The comment says it does not wait for IO to be -completed-.
+> 
+> The function as implemented waits for IO to be *submitted*.
+> 
+> This provides the callers with same blocking semantics (i.e. request
+> queue full) as if the caller submitted the IO themselves. The code
+> that uses this function rely on this blocking to delay the next set
+> of operations they do until after IO has been started, so removing
+> the completion will change their behaviour significantly.
 
-I think I can do some test if you have any ideas :)
+The real importance is for locking.  If we don't wait for completion
+we may still do writebacks in the flushers thread while we're already
+unlocked s_umount.  That will give us back the nasty writeback vs
+umount races that this scheme fixed.  The commit logs that added
+it should explain it in more detail (at least I usually write detailed
+changelogs)
 
->
->> > > I'm not sure if x86 had a similar issue.
->> > >
->> > > Masami, have any ideas to why this happened?
->> >
->> > No, I don't familiar with ppc implementation. I guess
->> > that single-step resume code failed to emulate the
->> > instruction, but it strongly depends on ppc arch.
->> > Maybe IBM people may know what happened.
->> >
->> > Ananth, Jim, would you have any ideas?
->>
->> On powerpc, we emulate sstep whenever possible. Only recently support to
->> emulate loads and stores got added. I don't have access to a powerpc box
->> today... but will try to recreate the problem ASAP and see what could be
->> happening in the presence of mcount.
->
-> I tried to recreate this problem on a 64-bit pSeries box without
-> success. Every one of the instructions in the stream at .do_fork are
-> emulated and work fine there -- no hangs/crashes with or without
-> function tracer.
->
-> Yong,
-> I am copying Kumar to see if he knows of any issues with 32-bit kprobes
-> (he wrote it) or with the function tracer, or with the toolchain itself.
->
-> You may want to check if, in the failure case, the instruction in
-> question is single-stepped or emulated (print out the value of
-> kprobe->ainsn.boostable in the post_handler)
-
-It's emulated:
-root@unknown:/root> insmod kprobe_example.ko func=show_interrupts
-Planted kprobe at c009be18
-root@unknown:/root> cat /proc/interrupts
-pre_handler: p->addr = 0xc009be18, nip = 0xc009be18, msr = 0x29000
-post_handler: p->addr = 0xc009be18, msr = 0x29000,boostable = 1
-
-Since commit 0016a4cf5582415849fafbf9f019dd9530824789 almost all
-of the instructions are emulated.
-
-But if we disable the emulation of stwu(so let single-stepped take it) like
-below:
-diff --git a/arch/powerpc/lib/sstep.c b/arch/powerpc/lib/sstep.c
-index 9a52349..07f0d4a 100644
---- a/arch/powerpc/lib/sstep.c
-+++ b/arch/powerpc/lib/sstep.c
-@@ -1486,7 +1486,7 @@ int __kprobes emulate_step(struct pt_regs *regs,
-unsigned int instr)
- 		goto ldst_done;
-
- 	case 36:	/* stw */
--	case 37:	/* stwu */
-+	//case 37:	/* stwu */
- 		val = regs->gpr[rd];
- 		err = write_mem(val, dform_ea(instr, regs), 4, regs);
- 		goto ldst_done;
-
-The system will crash after single-step(looks
-like the stack is currupted from the preempt_count value of
-'cat/617/0x0000020a'):
-
-pre_handler: p->addr = 0xc00ab12c, nip = 0xc00ab12c, msr = 0x29000
-post_handler: p->addr = 0xc00ab12c, msr = 0x1000,boostable = -1
-pre_handler: p->addr = 0xc00ab12c, nip = 0xc00ab12c, msr = 0x29000
-post_handler: p->addr = 0xc00ab12c, msr = 0x1000,boostable = -1
-BUG: scheduling while atomic: cat/617/0x0000020a
-Modules linked in: kprobe_example [last unloaded: kprobe_example]
-Call Trace:
-[df157e90] [c00087c0] show_stack+0x98/0x1e4 (unreliable)
-[df157ee0] [c0008938] dump_stack+0x2c/0x44
-[df157ef0] [c00377c0] __schedule_bug+0x6c/0x84
-[df157f00] [c060a364] schedule+0x398/0x48c
-[df157f40] [c00107f4] recheck+0x0/0x24
---- Exception: c01 at 0xff1bbb8
-    LR = 0x1000310c
-Page fault in user mode with in_atomic() = 1 mm = df01c700
-NIP = ff29314  MSR = 2d000
-Oops: Weird page fault, sig: 11 [#1]
-PREEMPT MPC8536 DS
-Modules linked in: kprobe_example [last unloaded: kprobe_example]
-NIP: 0ff29314 LR: 10001944 CTR: 0ff29314
-REGS: df157f50 TRAP: 0401   Tainted: G        W
-(3.0.0-rc4-00001-ge8ffcca-dirty)
-MSR: 0002d000 <EE,PR,ME,CE>  CR: 88202682  XER: 20000000
-TASK = df237190[617] 'cat' THREAD: df156000
-GPR00: 100018b4 bfb5c060 48007ee0 00000000 0000000e 10004354 bfb5ccde 0ff1af28
-GPR08: 0202d000 48000ee8 00000000 0ff29314 1000192c
-NIP [0ff29314] 0xff29314
-LR [10001944] 0x10001944
-Call Trace:
-Kernel panic - not syncing: Fatal exception in interrupt
-Call Trace:
-[df157da0] [c00087c0] show_stack+0x98/0x1e4 (unreliable)
-[df157df0] [c0008938] dump_stack+0x2c/0x44
-[df157e00] [c0042a80] panic+0xc4/0x1f4
-[df157e60] [c000c4e0] die+0x1fc/0x22c
-[df157e90] [c060e4a4] do_page_fault+0x130/0x4c4
-[df157f40] [c00100fc] handle_page_fault+0xc/0x80
---- Exception: 401 at 0xff29314
-    LR = 0x10001944
-
-Thanks,
-Yong
-
-
--- 
-Only stand for myself
