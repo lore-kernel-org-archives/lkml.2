@@ -1,132 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752358Ab1F2GXg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 02:23:36 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:52444 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1F2GXa convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 02:23:30 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110627100104.GA24705@in.ibm.com>
-References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com>
-	<1308911347.531.56.camel@gandalf.stny.rr.com>
-	<4E074671.7060100@hitachi.com>
-	<20110627100104.GA24705@in.ibm.com>
-Date: Wed, 29 Jun 2011 14:23:28 +0800
-Message-ID: <BANLkTimYej4_dmBqvPBCLej=JA5atLrZVA@mail.gmail.com>
-Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
- lead to system crash/freeze
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: ananth@in.ibm.com
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, paulus@samba.org,
-        galak@kernel.crashing.org, yrl.pp-manager.tt@hitachi.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753615Ab1F2GZL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 02:25:11 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56461 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752811Ab1F2GZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 02:25:04 -0400
+Date: Wed, 29 Jun 2011 16:24:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 29
+Message-Id: <20110629162454.e2326fcf.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__29_Jun_2011_16_24_54_+1000_LU0/qR/vGqpeEtJ7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 6:01 PM, Ananth N Mavinakayanahalli
-<ananth@in.ibm.com> wrote:
-> On Sun, Jun 26, 2011 at 11:47:13PM +0900, Masami Hiramatsu wrote:
->> (2011/06/24 19:29), Steven Rostedt wrote:
->> > On Fri, 2011-06-24 at 17:21 +0800, Yong Zhang wrote:
->> >> Hi,
->> >>
->> >> When I use kprobe to do something, I found some wired thing.
->> >>
->> >> When CONFIG_FUNCTION_TRACER is disabled:
->> >> (gdb) disassemble do_fork
->> >> Dump of assembler code for function do_fork:
->> >>    0xc0037390 <+0>:        mflr    r0
->> >>    0xc0037394 <+4>:        stwu    r1,-64(r1)
->> >>    0xc0037398 <+8>:        mfcr    r12
->> >>    0xc003739c <+12>:       stmw    r27,44(r1)
->> >>
->> >> Then I:
->> >> modprobe kprobe_example func=do_fork offset=4
->> >> ls
->> >> Things works well.
->> >>
->> >> But when CONFIG_FUNCTION_TRACER is enabled:
->> >> (gdb) disassemble do_fork
->> >> Dump of assembler code for function do_fork:
->> >>    0xc0040334 <+0>:        mflr    r0
->> >>    0xc0040338 <+4>:        stw     r0,4(r1)
->> >>    0xc004033c <+8>:        bl      0xc00109d4 <mcount>
->> >>    0xc0040340 <+12>:       stwu    r1,-80(r1)
->> >>    0xc0040344 <+16>:       mflr    r0
->> >>    0xc0040348 <+20>:       stw     r0,84(r1)
->> >>    0xc004034c <+24>:       mfcr    r12
->> >> Then I:
->> >> modprobe kprobe_example func=do_fork offset=12
->> >> ls
->> >> 'ls' will never retrun. system freeze.
->> >
->> > I'm not sure if x86 had a similar issue.
->> >
->> > Masami, have any ideas to why this happened?
->>
->> No, I don't familiar with ppc implementation. I guess
->> that single-step resume code failed to emulate the
->> instruction, but it strongly depends on ppc arch.
->> Maybe IBM people may know what happened.
->>
->> Ananth, Jim, would you have any ideas?
->
-> On powerpc, we emulate sstep whenever possible. Only recently support to
-> emulate loads and stores got added. I don't have access to a powerpc box
-> today... but will try to recreate the problem ASAP and see what could be
-> happening in the presence of mcount.
+--Signature=_Wed__29_Jun_2011_16_24_54_+1000_LU0/qR/vGqpeEtJ7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-After taking more testing on it, it looks like the issue doesn't
-depend on mcount
-(AKA. CONFIG_FUNCTION_TRACER)
+Hi all,
 
-As I said in the first email, with eldk-5.0 CONFIG_FUNCTION_TRACER=n
-will work well.
+Changes since 20110628:
 
-But when I'm using eldk-4.2[1], both will fail. But the funny thing is when I
-set kprobe at several functions some works fine but some will fail. For example,
-at this time do_fork() works well, but show_interrupt() will crash.
+My fixes tree is empty again (the early part of mmotm-2011-06-22-13-05 is
+mostly now included in Linus' tree and the experiment failed anyway :-))
 
-root@unknown:/root> insmod kprobe_example.ko func=show_interrupts
-Planted kprobe at c009be18
-root@unknown:/root> cat /proc/interrupts
-pre_handler: p->addr = 0xc009be18, nip = 0xc009be18, msr = 0x29000
-post_handler: p->addr = 0xc009be18, msr = 0x29000,boostable = 1
-Oops: Exception in kernel mode, sig: 11 [#1]
-PREEMPT MPC8536 DS
-Modules linked in: kprobe_example
-NIP: df159e74 LR: c0106f40 CTR: c009be18
-REGS: df159d90 TRAP: 0700   Not tainted  (3.0.0-rc4-00001-ge8ffcca-dirty)
-MSR: 00029000 <EE,ME,CE>  CR: 20202688  XER: 00000000
-TASK = dfaa5340[613] 'cat' THREAD: df158000
-GPR00: fffff000 df159e40 dfaa5340 df024a00 df159e78 00000000 df159f20 00000001
-GPR08: c10060d0 c009be18 00029000 df159e70 00000000 1001ca74 1ffb5f00 100a01cc
-GPR16: 00000000 00000000 00000000 00000000 df024a28 df159f20 00000000 dfbff080
-GPR24: 10016000 00001000 df159f20 df159e78 dfbff080 df159e78 df024a00 df159e70
-NIP [df159e74] 0xdf159e74
-LR [c0106f40] seq_read+0x2a4/0x568
-Call Trace:
-[df159e40] [00029000] 0x29000 (unreliable)
-[df159e74] [00000000]   (null)
-Instruction dump:
-XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX
-XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX
----[ end trace 60026bfc1fe79aed ]---
-Segmentation fault
+The powerpc allyesconfig builds as much as expected again.
 
-Thanks,
-Yong
+The net tree still has its 2 build failures for which I have applied
+patches.
 
-[1]: http://ftp.denx.de/pub/eldk/4.2/
+The wireless tree has a build failure for which I have applied a patch.
 
--- 
-Only stand for myself
+The sound tree lost its build failure.
+
+The security-testing tree gained a build failure so I used the version
+from next-20110628.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 194 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging arm-lpae/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
+CONFLICT (content): Merge conflict in arch/arm/mm/context.c
+CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
+CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+CONFLICT (content): Merge conflict in arch/arm/plat-mxc/devices/platform-im=
+x-dma.c
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+CONFLICT (content): Merge conflict in fs/ceph/export.c
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging of-pci/of-pci
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-tx.c
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging l2-mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in block/blk-throttle.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
+mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
+e.c left in tree.
+$ git rm -f drivers/mmc/host/sdhci-of-core.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+$ git reset --hard HEAD^
+Merging refs/next/20110628/security-testing
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (delete/modify): arch/arm/mach-ep93xx/dma-m2p.c deleted in HEAD an=
+d modified in trivial/for-next. Version trivial/for-next of arch/arm/mach-e=
+p93xx/dma-m2p.c left in tree.
+CONFLICT (content): Merge conflict in drivers/mtd/maps/pxa2xx-flash.c
+$ git rm -f arch/arm/mach-ep93xx/dma-m2p.c
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/Makefile
+CONFLICT (content): Merge conflict in drivers/gpio/Makefile
+CONFLICT (content): Merge conflict in drivers/gpio/gpio-ep93xx.c
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging kvm/linux-next
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/Kconfig
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
+d_linux.c
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
+d_sdio.c
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_cfg80211.h
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_iw.c
+CONFLICT (content): Merge conflict in drivers/staging/usbip/userspace/src/u=
+tils.h
+Merging bkl-config/config
+Merging tmem/linux-next
+Merging writeback/next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+Applying: net: include io.h in for iounmap etc
+Applying: net: include dma-mapping.h for dma_map_single etc
+Applying: rtlwifi: rtl8192de: Fix build errors when using allyes configurat=
+ion
+
+--Signature=_Wed__29_Jun_2011_16_24_54_+1000_LU0/qR/vGqpeEtJ7
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOCsU2AAoJEDMEi1NhKgbsWYoH/RxW3QNVd8euCbGaGlz6pqM/
+m3vr9L0AlUQDVIloYd9bNQ85ahHbPO34mNMVDdlMj+U6slIkDAXbeGZaNN4WfmKN
+qaFgSmdzXvG9K6DKEijLblq0uYk/rwCokbIsWrAs0gUvqbvymL4zWTIj2tYVcYu2
+Uh/SkM/F8osimVQoiDViTC7pit8zU1kRgb73BRivmjm3DGE2D28lp2MJqEUUs9Gp
+qZ90hgjp68hLhPG4jhSJQfgZ4mhtd41P31CV0YwTGy7f5HqYbAu7ef7TZgT9axAU
+Yuuekbwpk3NBxkGbf6eqvScintc8c+/WhopRWLt/nwSqr4uO2S1APeIJllmp4hA=
+=2Rx2
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__29_Jun_2011_16_24_54_+1000_LU0/qR/vGqpeEtJ7--
