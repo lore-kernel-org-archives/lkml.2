@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755254Ab1F2RLy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 13:11:54 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:40162 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752147Ab1F2RLx (ORCPT
+	id S1754144Ab1F2RYm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 13:24:42 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:47645 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751889Ab1F2RYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 13:11:53 -0400
-Date: Wed, 29 Jun 2011 10:11:49 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: alsa-devel@alsa-project.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 1/5] ASoC: wm8731: rework power management
-Message-ID: <20110629171148.GB10798@opensource.wolfsonmicro.com>
-References: <1309370419-22810-1-git-send-email-nicolas.ferre@atmel.com>
- <ccd4b125244271af7978948689cf1dcef37bc06b.1309368631.git.nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ccd4b125244271af7978948689cf1dcef37bc06b.1309368631.git.nicolas.ferre@atmel.com>
-X-Cookie: Courage is your greatest present need.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Jun 2011 13:24:41 -0400
+Subject: Re: [PATCH 00/12] Fix various section mismatches and build errors.
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: Greg KH <greg@kroah.com>, David Miller <davem@davemloft.net>,
+        akpm@linux-foundation.org, alan@linux.intel.com, bcasavan@sgi.com,
+        airlied@linux.ie, grundler@parisc-linux.org, perex@perex.cz,
+        rpurdie@rpsys.net, klassert@mathematik.tu-chemnitz.de, tj@kernel.org,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, linux-scsi@vger.kernel.org,
+        linux-serial@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <20110629161921.GA25833@linux-mips.org>
+References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
+	 <20110627.221257.1290251511587162468.davem@davemloft.net>
+	 <20110629130711.GA15649@linux-mips.org> <1309355899.2551.4.camel@mulgrave>
+	 <20110629151424.GD18023@kroah.com>  <20110629161921.GA25833@linux-mips.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Jun 2011 12:24:36 -0500
+Message-ID: <1309368276.13937.2.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 08:00:15PM +0200, Nicolas Ferre wrote:
+On Wed, 2011-06-29 at 17:19 +0100, Ralf Baechle wrote:
+> On Wed, Jun 29, 2011 at 08:14:24AM -0700, Greg KH wrote:
+> 
+> > 
+> > On Wed, Jun 29, 2011 at 08:58:19AM -0500, James Bottomley wrote:
+> > > I think we should simply concentrate on __init and __exit; that's where
+> > > most of the discard value lies and stop expending huge efforts on the
+> > > __devX stuff which adds huge complexity for no real gain.
+> > 
+> > I have long felt that those __devX markings should just go away as they
+> > cause nothing but problems and have no real gain as you point out.
+> 
+> The suggestion to do that has been floated around before but seems to
+> have missed sufficient thrust.  I'm all for it; the manual tagging with
+> __devX has not been very efficient on developer time.  I just want to see
+> meaningful warnings again over all that noise the current mechanisn may
+> produce.
 
-Don't mix multiple changes into a single patch!  There's no perceptible
-code overlap between these so I don't understand why you've merged them,
-it just makes review harder and the changelog less descriptive.
+For me, just go ahead and fix the actual problems: so _init sections and
+_exit sections that are used from the main body, just strip the
+annotations, don't try to change them for _devX ones.
 
-> - preserve crystal oscillator across suspend/resume sequence:
->   enabled by default, it should be kept enabled on resume.
+Thanks,
 
-This isn't what your code does...
+James
 
-> - if codec is in active state: set the active bit at resume time.
 
-Your changelog doesn't explain what the actual problem is here...  I can
-see it by studying the diff but the changelog makes me think the change
-is bad as the subsystem shuts everything down before it enters CODEC
-suspend...
-
->  		snd_soc_write(codec, WM8731_ACTIVE, 0x0);
-> -		snd_soc_write(codec, WM8731_PWR, 0xffff);
-> +		/* standby: keep crystal oscillator enabled */
-> +		snd_soc_write(codec, WM8731_PWR, 0x00df);
-
-This doesn't keep the crystal oscillator enabled, this forces it on in
-suspend (and without looking at the datasheet it also changes way more
-than the one register bit I'd expect to be changed).  If the system
-isn't using the oscillator then that's not good.
-
-I'd expect to see a change to using snd_soc_update_bits() based on your
-description, or more likely something more involved.
-
-> @@ -533,6 +534,8 @@ static int wm8731_suspend(struct snd_soc_codec *codec, pm_message_t state)
->  static int wm8731_resume(struct snd_soc_codec *codec)
->  {
->  	wm8731_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-> +	if (codec->active)
-> +		snd_soc_write(codec, WM8731_ACTIVE, 0x0001);
-
-This should be handled as part of the bias level managemnent and cache
-sync, if the disable happens in bias level management so should the
-restore.
