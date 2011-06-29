@@ -1,41 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757380Ab1F2Rkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 13:40:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41579 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab1F2Rkm (ORCPT
+	id S1757433Ab1F2RnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 13:43:10 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:16876 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756746Ab1F2RnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 13:40:42 -0400
-Message-ID: <4E0B6371.3000104@oracle.com>
-Date: Wed, 29 Jun 2011 10:40:01 -0700
-From: Sunil Mushran <sunil.mushran@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: P?draig Brady <P@draigBrady.com>, Dave Chinner <david@fromorbit.com>,
-        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-        viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110629065306.GC1026@dastard> <20110629074021.GA26086@infradead.org> <4E0B019E.8080800@draigBrady.com> <4E0B60DE.50908@oracle.com> <20110629173648.GA22293@infradead.org>
-In-Reply-To: <20110629173648.GA22293@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 29 Jun 2011 13:43:08 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp05.nvidia.com on Wed, 29 Jun 2011 10:42:55 -0700
+Subject: Re: [PATCH v2] light sensor: Add a calibscale file to the isl29018
+ light sensor driver.
+From: Rhyland Klein <rklein@nvidia.com>
+To: Bryan Freed <bfreed@chromium.org>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "gregkh@suse.de" <gregkh@suse.de>,
+        "arnd@arndb.de" <arnd@arndb.de>
+In-Reply-To: <1309304793-21886-1-git-send-email-bfreed@chromium.org>
+References: <1309304793-21886-1-git-send-email-bfreed@chromium.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Jun 2011 10:40:45 -0700
+Message-ID: <1309369245.10209.21.camel@rklein-linux2>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090203.4E0B638B.0121:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2011 10:36 AM, Christoph Hellwig wrote:
-> On Wed, Jun 29, 2011 at 10:29:02AM -0700, Sunil Mushran wrote:
->> I'm not too sure about that. Atleast not enabled by default. Most users
->> use cp to backup data. Not empty space. In this case, this empty extent
->> may not even be de-dupable.
->>
->> Frankly I'd be happier of cp started to exploited fallocate() to create larger
->> extents before copying data into them. Atleast for the large files.
-> That's what delayed allocation is for.
+On Tue, 2011-06-28 at 16:46 -0700, Bryan Freed wrote:
+> Defaulting to 1, this gives a way to amplify the lux value before being
+> reduced by the programmed adc_bit shift.
+> Only support whole numbers right now.  When this driver is converted to the new
+> IIO_CHAN framework, it will be easy to support the framework's pseudo float.
+> 
+> Add illuminance0_calibscale documentation to sysfs-bus-iio-light.
+> 
+> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+> ---
+>  .../staging/iio/Documentation/sysfs-bus-iio-light  |    8 ++++
+>  drivers/staging/iio/light/isl29018.c               |   35 +++++++++++++++++++-
+>  2 files changed, 42 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+> index 21d2774..edbf470 100644
+> --- a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
+> @@ -75,3 +75,11 @@ KernelVersion:	2.6.37
+>  Contact:	linux-iio@vger.kernel.org
+>  Description:
+>  		This property gets/sets the sensors ADC analog integration time.
+> +
+> +What:		/sys/bus/iio/devices/device[n]/illuminance0_calibscale
+> +KernelVersion:	2.6.37
+> +Contact:	linux-iio@vger.kernel.org
+> +Description:
+> +		Hardware or software applied calibration scale factor assumed
+> +		to account for attenuation due to industrial design (glass
+> +		filters or aperture holes).
+> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
+> index 4794ffd..cd88311 100644
+> --- a/drivers/staging/iio/light/isl29018.c
+> +++ b/drivers/staging/iio/light/isl29018.c
+> @@ -57,6 +57,7 @@ struct isl29018_chip {
+>  	struct iio_dev		*indio_dev;
+>  	struct i2c_client	*client;
+>  	struct mutex		lock;
+> +	unsigned int		lux_scale;
+>  	unsigned int		range;
+>  	unsigned int		adc_bit;
+>  	int			prox_scheme;
+> @@ -166,7 +167,7 @@ static int isl29018_read_lux(struct i2c_client *client, int *lux)
+>  	if (lux_data < 0)
+>  		return lux_data;
+>  
+> -	*lux = (lux_data * chip->range) >> chip->adc_bit;
+> +	*lux = (lux_data * chip->range * chip->lux_scale) >> chip->adc_bit;
+>  
+>  	return 0;
+>  }
+> @@ -264,6 +265,34 @@ static ssize_t get_sensor_data(struct device *dev, char *buf, int mode)
+>  }
+>  
+>  /* Sysfs interface */
+> +/* lux_scale */
+> +static ssize_t show_lux_scale(struct device *dev,
+> +			struct device_attribute *attr, char *buf)
+> +{
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct isl29018_chip *chip = indio_dev->dev_data;
+> +
+> +	return sprintf(buf, "%d\n", chip->lux_scale);
+> +}
+> +
+> +static ssize_t store_lux_scale(struct device *dev,
+> +		struct device_attribute *attr, const char *buf, size_t count)
+> +{
+> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+> +	struct isl29018_chip *chip = indio_dev->dev_data;
+> +	unsigned long lval;
+> +
+> +	lval = simple_strtoul(buf, NULL, 10);
+> +	if (lval == 0)
+> +		return -EINVAL;
+> +
+> +	mutex_lock(&chip->lock);
+> +	chip->lux_scale = lval;
+> +	mutex_unlock(&chip->lock);
+> +
+> +	return count;
+> +}
+> +
+>  /* range */
+>  static ssize_t show_range(struct device *dev,
+>  			struct device_attribute *attr, char *buf)
+> @@ -412,6 +441,8 @@ static IIO_DEVICE_ATTR(proximity_on_chip_ambient_infrared_supression,
+>  					show_prox_infrared_supression,
+>  					store_prox_infrared_supression, 0);
+>  static IIO_DEVICE_ATTR(illuminance0_input, S_IRUGO, show_lux, NULL, 0);
+> +static IIO_DEVICE_ATTR(illuminance0_calibscale, S_IRUGO | S_IWUSR,
+> +					show_lux_scale, store_lux_scale, 0);
+>  static IIO_DEVICE_ATTR(intensity_infrared_raw, S_IRUGO, show_ir, NULL, 0);
+>  static IIO_DEVICE_ATTR(proximity_raw, S_IRUGO, show_proxim_ir, NULL, 0);
+>  
+> @@ -424,6 +455,7 @@ static struct attribute *isl29018_attributes[] = {
+>  	ISL29018_CONST_ATTR(adc_resolution_available),
+>  	ISL29018_DEV_ATTR(proximity_on_chip_ambient_infrared_supression),
+>  	ISL29018_DEV_ATTR(illuminance0_input),
+> +	ISL29018_DEV_ATTR(illuminance0_calibscale),
+>  	ISL29018_DEV_ATTR(intensity_infrared_raw),
+>  	ISL29018_DEV_ATTR(proximity_raw),
+>  	NULL
+> @@ -478,6 +510,7 @@ static int __devinit isl29018_probe(struct i2c_client *client,
+>  
+>  	mutex_init(&chip->lock);
+>  
+> +	chip->lux_scale = 1;
+>  	chip->range = 1000;
+>  	chip->adc_bit = 16;
+>  
 
-A feature fewer file systems support than fallocate(). ;)
+Seems fine with me.
+
+Acked-by: Rhyland Klein <rklein@nvidia.com>
+
