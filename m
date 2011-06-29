@@ -1,47 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751598Ab1F2E1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 00:27:46 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:45679 "EHLO
+	id S1751938Ab1F2E14 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 00:27:56 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:51342 "EHLO
 	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750942Ab1F2E1k (ORCPT
+	by vger.kernel.org with ESMTP id S1751269Ab1F2E1n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 00:27:40 -0400
-X-Sasl-enc: HIczV/R9VEOkCwFPxZdtX2f776C0P7jsk/Y9AMBgzrsF 1309321659
-Date: Tue, 28 Jun 2011 21:21:24 -0700
+	Wed, 29 Jun 2011 00:27:43 -0400
+X-Sasl-enc: bg0FV64zwwhZJ3SbGQewB7R/pli6ULcKnBAvYEyQuh7U 1309321662
+Date: Tue, 28 Jun 2011 21:24:40 -0700
 From: Greg KH <greg@kroah.com>
-To: Marin Mitov <mitov@issp.bas.bg>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: use videobuf2 framework for
- drivers/staging/dt3155v4l driver
-Message-ID: <20110629042124.GA18344@kroah.com>
-References: <201105282145.27809.mitov@issp.bas.bg>
- <20110628202515.GA9177@kroah.com>
- <201106290646.02960.mitov@issp.bas.bg>
+To: John Johansen <john.johansen@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 2/2] AppArmor: Fix masking of capabilities in complain
+ mode
+Message-ID: <20110629042440.GC18344@kroah.com>
+References: <1309311874-23262-1-git-send-email-john.johansen@canonical.com>
+ <1309311874-23262-3-git-send-email-john.johansen@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106290646.02960.mitov@issp.bas.bg>
+In-Reply-To: <1309311874-23262-3-git-send-email-john.johansen@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 06:46:02AM +0300, Marin Mitov wrote:
-> On Tuesday, June 28, 2011 11:25:15 pm Greg KH wrote:
-> > On Sat, May 28, 2011 at 09:45:27PM +0300, Marin Mitov wrote:
-> > > This patch transforms drivers/staging/dt3155v4l driver to use videobuf2 framework.
-> > > Tested and works with "xawtv -f".
-> > > 
-> > > Either streaming API or read method should be selected during kernel configuration.
-> > 
-> > I've applied this, but why would you ever not want to use the streaming
-> > api?
+On Wed, Jun 29, 2011 at 02:44:34AM +0100, John Johansen wrote:
+> AppArmor is masking the capabilities returned by capget against the
+> capabilities mask in the profile.  This is wrong, in complain mode the
+> profile has effectively all capabilities, as the profile restrictions are
+> not being enforced, merely tested against to determine if an access is
+> known by the profile.
 > 
-> There are no reasons for that, sure, but for now xawtv do not work if both are
-> specified in the driver. I have to debug it.
+> This can result in the wrong behavior of security conscience applications
+> like sshd which examine their capability set, and change their behavior
+> accordingly.  In this case because of the masked capability set being
+> returned sshd fails due to DAC checks, even when the profile is in complain
+> mode.
+> 
+> Kernels affected: 2.6.36 - 3.0.
+> 
+> Signed-off-by: John Johansen <john.johansen@canonical.com>
+> ---
 
-Ok, but why not just remove the read method then?  Or do some userspace
-programs still require it?
+You say that multiple kernels are affected, then why not also include
+stable@kernel.org here as well?
+
+confused,
 
 greg k-h
