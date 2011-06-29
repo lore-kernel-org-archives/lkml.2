@@ -1,56 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab1F2PhA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 11:37:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:56865 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab1F2Pg5 (ORCPT
+	id S1757192Ab1F2Pk1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 11:40:27 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51698 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756620Ab1F2Ph4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 11:36:57 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Johannes Stezenbach <js@sig21.net>
-Subject: Re: missing compat-ioctl for CDROM_DRIVE_STATUS + FDGETPRM
-Date: Wed, 29 Jun 2011 17:36:53 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20110617090424.GA19345@sig21.net> <20110629125117.GA5739@sig21.net> <20110629150907.GA3412@sig21.net>
-In-Reply-To: <20110629150907.GA3412@sig21.net>
+	Wed, 29 Jun 2011 11:37:56 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106291736.53864.arnd@arndb.de>
-X-Provags-ID: V02:K0:1nfWDRMY7MggVZOK+DHnivO+/7g/tlb6LkLvlKFnfMs
- 7F+aUKGthTp4rAUcCF97hjuWugnTRWmZIDAqZnVnAFpqGTD8U7
- SQ2yss3brE1Fnu42oIuDzuPl1YVuHmQy7ehEi0Hd3LzWw/VYKB
- BBCjuvQjM9xwHgrys/Jn7Euf+FhaG8xdFF+HZuJT71vk08qlFE
- 9YHvIIdoo8ypT+0dI1rmg==
+In-Reply-To: <1309212931-19772-1-git-send-email-richard@nod.at>
+References: <1309212931-19772-1-git-send-email-richard@nod.at>
+Date: Wed, 29 Jun 2011 18:37:54 +0300
+Message-ID: <BANLkTikauFJtuCo5E3=tb_=cwVS3sF35zw@mail.gmail.com>
+Subject: Re: [PATCH 1/4] um: Fix _FORTIFY_SOURCE=2 support for kernel modules
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 June 2011, Johannes Stezenbach wrote:
-> On Wed, Jun 29, 2011 at 02:51:17PM +0200, Johannes Stezenbach wrote:
-> > On Wed, Jun 29, 2011 at 02:30:42PM +0200, Arnd Bergmann wrote:
-> > > On Wednesday 29 June 2011, Johannes Stezenbach wrote:
-> > > > Do I get it right that just adding two IGNORE_IOCTL() to
-> > > > the ioctl_pointer array in linux/fs/compat_ioctl.c is sufficient,
-> > > > like in commit 3f001711?
-> > > 
-> > > Yes.
-> 
-> Hm, it only works for CDROM_DRIVE_STATUS, but I still get
-> the warning for FDGETPRM (801c0204).  Could you give
-> me a hint how to address this?
-> 
-> (tested with both 2.6.39.2 and 3.0-rc5-63-g0d72c6f)
+On Tue, Jun 28, 2011 at 1:15 AM, Richard Weinberger <richard@nod.at> wrote:
+> When UML is compiled with _FORTIFY_SOURCE we have to
+> export all _chk() functions which are used in modules.
+> For now it's only the case for __sprintf_chk().
+>
+> Tested-by: Florian Fainelli <florian@openwrt.org>
+> Reported-by: Florian Fainelli <florian@openwrt.org>
+> Signed-off-by: Richard Weinberger <richard@nod.at>
+> ---
+>  arch/um/os-Linux/user_syms.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/um/os-Linux/user_syms.c b/arch/um/os-Linux/user_syms.c
+> index 05f5ea8..45ffe46 100644
+> --- a/arch/um/os-Linux/user_syms.c
+> +++ b/arch/um/os-Linux/user_syms.c
+> @@ -113,3 +113,8 @@ EXPORT_SYMBOL(__stack_smash_handler);
+>
+>  extern long __guard __attribute__((weak));
+>  EXPORT_SYMBOL(__guard);
+> +
+> +#ifdef _FORTIFY_SOURCE
+> +extern int __sprintf_chk(char *str, int flag, size_t strlen, const char *format);
+> +EXPORT_SYMBOL(__sprintf_chk);
+> +#endif
+> --
 
-FDGETPRM is incompatible in multiple ways: it uses a different
-structure and a different command number on 32 bits, because
-the structure has a different size.
+Can you please clarify why it's needed? I use FORTIFY_SOURCES on
+Linus' tree UML on Ubuntu w/ no problems and w/o this patch...
 
-You will actually need to add FDGETPRM32 to fs/compat_ioctl.h.
-This is locally defined in block/compat_ioctl.c, so you may have
-to move the definition to include/linux/fd.h.
-
-	Arnd
+Thanks,
+Vitaliy
