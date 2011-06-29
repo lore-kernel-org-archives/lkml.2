@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756221Ab1F2R1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 13:27:30 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:46839 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab1F2R11 (ORCPT
+	id S1756129Ab1F2R3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 13:29:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19480 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752701Ab1F2R3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 13:27:27 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6392"; a="100867848"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: <balbi@ti.com>
-Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1309350899-23868-1-git-send-email-tlinder@codeaurora.org> <1309350899-23868-2-git-send-email-tlinder@codeaurora.org> <20110629123826.GQ2760@legolas.emea.dhcp.ti.com> <051801cc365a$73187140$594953c0$@org> <20110629124822.GS2760@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110629124822.GS2760@legolas.emea.dhcp.ti.com>
-Subject: RE: [PATCH v2 1/2] usb: gadget: add max_speed to usb_composite_driver
-Date: Wed, 29 Jun 2011 20:27:17 +0300
-Message-ID: <055801cc3681$d080ba00$71822e00$@org>
+	Wed, 29 Jun 2011 13:29:45 -0400
+Message-ID: <4E0B60DE.50908@oracle.com>
+Date: Wed, 29 Jun 2011 10:29:02 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acw2WtjZMpsx3XRXSvef+KIETelDNQAJjrqw
-Content-Language: he
+To: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+CC: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110629065306.GC1026@dastard> <20110629074021.GA26086@infradead.org> <4E0B019E.8080800@draigBrady.com>
+In-Reply-To: <4E0B019E.8080800@draigBrady.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090209.4E0B60F5.014F:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/29/2011 03:42 AM, Pádraig Brady wrote:
+> There is the argument, that if this interface can distinguish
+> these dirty unwritten extents, then why can't the fiemap interface too?
+> The advantage of the fiemap interface is that it can distinguish
+> empty extents vs holes. Empty extents will become increasingly common
+> I think, given the fragmentation and space guarantee benefits they give.
+> It would be cool for cp for example to be able to efficiently copy
+> empty extents from source to dest.
 
-> it might take a while for kernel.org to replicate things, maybe that's
-> why you didn't see before ;-)
-> 
-> give it a few more minutes and check my gadget branch to see if it's
-> all good, I'm going to test it again on beagleboard to be sure nothing
-> is broken.
-> 
+I'm not too sure about that. Atleast not enabled by default. Most users
+use cp to backup data. Not empty space. In this case, this empty extent
+may not even be de-dupable.
 
-Hi Felipe
-
-I went over the emails and all is ok. Thanks!
-One question: Greg/Alan mentioned that the compilation warning should be
-fixed by __maybe_unused. I wasn't aware such thing existed. Just looked it
-up. 
-Do you want me to send you a patch that fixes that or have you done it
-already and I missed it again :) ?
-
-
-Thanks,
-Tanya Brokhman
----
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
-
-
-
-
+Frankly I'd be happier of cp started to exploited fallocate() to create larger
+extents before copying data into them. Atleast for the large files.
