@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754032Ab1F2Iax (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 04:30:53 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:62066 "EHLO multi.imgtec.com"
+	id S1753993Ab1F2IeJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 04:34:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22969 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752497Ab1F2Iau (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 04:30:50 -0400
-Message-ID: <4E0AE2B7.3020006@imgtec.com>
-Date: Wed, 29 Jun 2011 09:30:47 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1751428Ab1F2IeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 04:34:06 -0400
+Message-ID: <4E0AE36B.9010500@redhat.com>
+Date: Wed, 29 Jun 2011 10:33:47 +0200
+From: Paolo Bonzini <pbonzini@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Mnenhy/0.8.3 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: Chris Ball <cjb@laptop.org>, Will <will.newton@imgtec.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] mmc: dw_mmc: reset FIFO after an error
-References: <4E0AE1FC.3070201@imgtec.com>
-In-Reply-To: <4E0AE1FC.3070201@imgtec.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Hannes Reinecke <hare@suse.de>
+CC: Linux Virtualization <virtualization@lists.linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        qemu-devel <qemu-devel@nongnu.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+        Christoph Hellwig <chellwig@redhat.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
+Subject: Re: virtio scsi host draft specification, v3
+References: <1504884387.187692.1307716550265.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com> <4DF71E28.6070009@suse.de>
+In-Reply-To: <4DF71E28.6070009@suse.de>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 29 Jun 2011 08:30:48.0103 (UTC) FILETIME=[D8D76370:01CC3636]
-X-SEF-Processed: 7_3_0_01158__2011_06_29_09_30_48
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an error occurs mid way through a transaction (such as a missing CRC
-status response after the 2nd block written out of 3), then the FIFO may
-still contain data which will interfere with the next transaction.
-Therefore after an error has been detected, reset the fifo using the
-CTRL register.
+On 06/14/2011 10:39 AM, Hannes Reinecke wrote:
+> If, however, we decide to expose some details about the backend, we
+> could be using the values from the backend directly.
+> EG we could be forwarding the SCSI target port identifier here
+> (if backed by real hardware) or creating our own SAS-type
+> identifier when backed by qemu block. Then we could just query
+> the backend via a new command on the controlq
+> (eg 'list target ports') and wouldn't have to worry about any protocol
+> specific details here.
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
----
- drivers/mmc/host/dw_mmc.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+Besides the controlq command, which I can certainly add, this is 
+actually quite similar to what I had in mind (though my plan likely 
+would not have worked because I was expecting hierarchical LUNs used 
+uniformly).  So, "list target ports" would return a set of LUN values to 
+which you can send REPORT LUNS, or something like that?  I suppose that 
+if you're using real hardware as the backing storage the in-kernel 
+target can provide that.
 
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 0dac397..0c839d3 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -849,7 +849,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 	struct mmc_command *cmd;
- 	enum dw_mci_state state;
- 	enum dw_mci_state prev_state;
--	u32 status;
-+	u32 status, ctrl;
- 
- 	spin_lock(&host->lock);
- 
-@@ -929,6 +929,16 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 						status);
- 					data->error = -EIO;
- 				}
-+				/*
-+				 * After an error, there may be data lingering
-+				 * in the FIFO, so reset it - doing so
-+				 * generates a block interrupt, hence setting
-+				 * the scatter-gather pointer to NULL.
-+				 */
-+				host->sg = NULL;
-+				ctrl = mci_readl(host, CTRL);
-+				ctrl |= SDMMC_CTRL_FIFO_RESET;
-+				mci_writel(host, CTRL, ctrl);
- 			} else {
- 				data->bytes_xfered = data->blocks * data->blksz;
- 				data->error = 0;
--- 
-1.7.2.3
+For the QEMU backend I'd keep hierarchical LUNs, though of course one 
+could add a FC or SAS bus to QEMU, each implementing its own identifier 
+scheme.
 
+If I understand it correctly, it should remain possible to use a single 
+host for both pass-through and emulated targets.
 
+Would you draft the command structure, so I can incorporate it into the 
+spec?
+
+> Of course, when doing so we would be lose the ability to freely remap
+> LUNs. But then remapping LUNs doesn't gain you much imho.
+> Plus you could always use qemu block backend here if you want
+> to hide the details.
+
+And you could always use the QEMU block backend with scsi-generic if you 
+want to remap LUNs, instead of true passthrough via the kernel target.
+
+Paolo
