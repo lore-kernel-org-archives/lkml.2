@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab1F2Klm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 06:41:42 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64686 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753037Ab1F2Klj convert rfc822-to-8bit (ORCPT
+	id S1754883Ab1F2KnT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 06:43:19 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:12206 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754846Ab1F2KnS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 06:41:39 -0400
+	Wed, 29 Jun 2011 06:43:18 -0400
+Message-ID: <4E0B019E.8080800@draigBrady.com>
+Date: Wed, 29 Jun 2011 11:42:38 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-In-Reply-To: <1309244992-2305-2-git-send-email-jim.cromie@gmail.com>
-References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com> <1309244992-2305-2-git-send-email-jim.cromie@gmail.com>
-From: Bart Van Assche <bvanassche@acm.org>
-Date: Wed, 29 Jun 2011 12:41:18 +0200
-X-Google-Sender-Auth: dFPGTKImSyDB0g8tndKZhMwW2G0
-Message-ID: <BANLkTin-t=OTpOMsZDxokbPrYeOH4iQ6vA@mail.gmail.com>
-Subject: Re: [PATCH 01/11] dynamic_debug: allow changing of dynamic_debug
- verbosity any time
-To: Jim Cromie <jim.cromie@gmail.com>
-Cc: linux-kernel@vger.kernel.org, gnb@fmeh.org, jbaron@redhat.com,
-        gregkh@suse.de
+To: Christoph Hellwig <hch@infradead.org>
+CC: Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
+        linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        xfs@oss.sgi.com
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110629065306.GC1026@dastard> <20110629074021.GA26086@infradead.org>
+In-Reply-To: <20110629074021.GA26086@infradead.org>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 9:09 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
-> allow changing dynamic_debug verbosity
-> at boot-time, with: dynamic_debug.verbose=1
-> or at runtime with:
-> root@voyage:~# echo 1 > /sys/module/dynamic_debug/parameters/verbose
->
-> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
-> ---
->  lib/dynamic_debug.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
->
-> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-> index 75ca78f..a3b08d5 100644
-> --- a/lib/dynamic_debug.c
-> +++ b/lib/dynamic_debug.c
-> @@ -58,6 +58,7 @@ struct ddebug_iter {
->  static DEFINE_MUTEX(ddebug_lock);
->  static LIST_HEAD(ddebug_tables);
->  static int verbose = 0;
-> +module_param(verbose, int, 0744);
+On 29/06/11 08:40, Christoph Hellwig wrote:
+> On Wed, Jun 29, 2011 at 04:53:07PM +1000, Dave Chinner wrote:
+>> On Tue, Jun 28, 2011 at 11:33:19AM -0400, Josef Bacik wrote:
+>>> This is a test to make sure seek_data/seek_hole is acting like it does on
+>>> Solaris.  It will check to see if the fs supports finding a hole or not and will
+>>> adjust as necessary.
+>>
+>> So I just looked at this with an eye to validating an XFS
+>> implementation, and I came up with this list of stuff that the test
+>> does not cover that I'd need to test in some way:
+>>
+>> 	- files with clean unwritten extents. Are they a hole or
+>> 	  data? What's SEEK_DATA supposed to return on layout like
+>> 	  hole-unwritten-data? i.e. needs to add fallocate to the
+>> 	  picture...
+>>
+>> 	- files with dirty unwritten extents (i.e. dirty in memory,
+>> 	  not on disk). They are most definitely data, and most
+>> 	  filesystems will need a separate lookup path to detect
+>> 	  dirty unwritten ranges because the state is kept
+>> 	  separately (page cache vs extent cache).  Plenty of scope
+>> 	  for filesystem specific bugs here so needs a roubust test.
+> 
+> The discussion leading up to the resurrection of SEEK_HOLE/SEEK_DATA
+> was pretty much about that point.  The conclusion based on the Sun
+> documentation and common sense was that SEEK_DATA may only consider
+> unwritten extents as hole if the filesystem has a way to distinguish
+> plain unwritten extents and those that have been dirtied.  Else it
+> should be considered data.
+> 
+> Testing for making sure dirty preallocated areas aren't wrongly
+> reported sounds relatively easy, the rest falls into implementation
+> details, which imho is fine.  Not reporting preallocated extents
+> as holes just is a quality of implementation issue and not a bug.
 
-Why 0744 and not 0644 ? Why to set the 'executable' bit ?
+There is the argument, that if this interface can distinguish
+these dirty unwritten extents, then why can't the fiemap interface too?
+The advantage of the fiemap interface is that it can distinguish
+empty extents vs holes. Empty extents will become increasingly common
+I think, given the fragmentation and space guarantee benefits they give.
+It would be cool for cp for example to be able to efficiently copy
+empty extents from source to dest.
 
-Bart.
+cheers,
+Pádraig.
