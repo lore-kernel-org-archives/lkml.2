@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754778Ab1F2KvI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 06:51:08 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53317 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753277Ab1F2KvG (ORCPT
+	id S1754764Ab1F2Kv7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 06:51:59 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:3248 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753277Ab1F2Kv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 06:51:06 -0400
-Date: Wed, 29 Jun 2011 12:51:01 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Hans Rosenfeld <hans.rosenfeld@amd.com>
-Cc: Conny Seidel <conny.seidel@amd.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 32bit NUMA and fakeNUMA broken for AMD CPUs
-Message-ID: <20110629105101.GK3386@htj.dyndns.org>
-References: <20110621174131.054f0422.conny.seidel_amd.com@marah.osrc.amd.com>
- <20110626102235.GC12200@mtj.dyndns.org>
- <20110626223807.47cef5c6.conny.seidel_amd.com@marah.osrc.amd.com>
- <20110628174613.GP478@escobedo.osrc.amd.com>
- <20110629094451.GJ3386@htj.dyndns.org>
+	Wed, 29 Jun 2011 06:51:57 -0400
+Message-ID: <4E0B03A5.7020207@draigBrady.com>
+Date: Wed, 29 Jun 2011 11:51:17 +0100
+From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110629094451.GJ3386@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Ulrich Drepper <drepper@akkadia.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>, akpm@linux-foundation.org,
+        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+        rientjes@google.com, viro@zeniv.linux.org.uk, wilsons@start.ca
+Subject: Re: [PATCH] Add cloexec information to fdinfo
+References: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com> <BANLkTin7wm6m5bN4CfQzhJZuhy3bUrS80A@mail.gmail.com> <4E0ADF27.5070805@akkadia.org>
+In-Reply-To: <4E0ADF27.5070805@akkadia.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 11:44:51AM +0200, Tejun Heo wrote:
-> Hmmm... I can't see how it would have worked before.  amdtopology used
-> ulong for @end and would simply have been zero.  Maybe NUMA config
-> failed and it booted as flatmem instead?  Can you please post boot log
-> before the patch?
+On 29/06/11 09:15, Ulrich Drepper wrote:
+> On 06/28/2011 01:23 PM, Linus Torvalds wrote:
+>> The description makes no mention of why this would be needed?
+> 
+> In this specific case I was trying to re-implement the pfiles program.
+> For normal file descriptors (not sockets) this was the last piece of
+> information which wasn't available.  This is all part of my "give
+> Solaris users no reason to not switch" effort.  I intend to offer the
+> code to the util-linux-ng maintainers.
 
-Ooh, please forget about this one.  I got confused and thought that
-amdtopology was for 32bit only and then converted to apply to both 32
-and 64.  It was the other way around, so the machine didn't use to get
-NUMA configuration at all.
+For the curious (me):
 
--- 
-tejun
+solaris:~ > pfiles $$
+8418:   -bash
+  Current rlimit: 256 file descriptors
+   0: S_IFCHR mode:0620 dev:349,28 ino:130202 uid:11003 gid:7 rdev:24,116
+      O_RDWR|O_NOCTTY|O_LARGEFILE
+      /dev/pts/116
+   1: S_IFCHR mode:0620 dev:349,28 ino:130202 uid:11003 gid:7 rdev:24,116
+      O_RDWR|O_NOCTTY|O_LARGEFILE
+      /dev/pts/116
+   2: S_IFCHR mode:0620 dev:349,28 ino:130202 uid:11003 gid:7 rdev:24,116
+      O_RDWR|O_NOCTTY|O_LARGEFILE
+      /dev/pts/116
+   3: S_IFDOOR mode:0444 dev:347,0 ino:189 uid:0 gid:0 size:0
+      O_RDONLY|O_LARGEFILE FD_CLOEXEC  door to nscd[11276]
+      /var/run/name_service_door
+ 255: S_IFCHR mode:0620 dev:349,28 ino:130202 uid:11003 gid:7 rdev:24,116
+      O_RDWR|O_NOCTTY|O_LARGEFILE FD_CLOEXEC
+      /dev/pts/116
+
+I guess `lsof +f g` could be suitably embellished as well.
+
+cheers,
+Pádraig.
