@@ -1,87 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755462Ab1F2LrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 07:47:05 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:9707 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab1F2LrD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 07:47:03 -0400
-X-SpamScore: -14
-X-BigFish: VPS-14(zz936eK1102K1432N98dKzz1202hzzz32i2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:203.197.93.240;KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
-Subject: Re: [PATCH 6/11] HWMON: DA9052 hwmon driver v1
-From: Ashish Jangam <ashish.jangam@kpitcummins.com>
-To: "guenter.roeck@ericsson.com" <guenter.roeck@ericsson.com>
-CC: "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "dchen@diasemi.com" <dchen@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-In-Reply-To: <1309282554.2612.7.camel@groeck-laptop>
-References: <1309271069.376.236.camel@L-0532.kpit.com>
-	 <1309282554.2612.7.camel@groeck-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Jun 2011 17:14:08 +0530
-Message-ID: <1309347848.4210.14.camel@dhruva>
+	id S1755466Ab1F2LtA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 07:49:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35782 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754439Ab1F2Lsz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 07:48:55 -0400
+Date: Wed, 29 Jun 2011 14:48:50 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 04/22] KVM: x86: introduce vcpu_gva_to_gpa to cleanup
+ the code
+Message-ID: <20110629114850.GS491@redhat.com>
+References: <4E01FBC9.3020009@cn.fujitsu.com>
+ <4E01FC5B.9040809@cn.fujitsu.com>
+ <4E0AE129.1070200@redhat.com>
+ <4E0B04F1.1010807@cn.fujitsu.com>
+ <4E0B0800.6030609@redhat.com>
+ <4E0B0BCA.5050103@cn.fujitsu.com>
+ <4E0B0BD6.4030609@redhat.com>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-OriginatorOrg: kpitcummins.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E0B0BD6.4030609@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-28 at 23:05 +0530, Guenter Roeck wrote:
-> On Tue, 2011-06-28 at 10:24 -0400, ashish jangam wrote:
-> > +static ssize_t da9052_read_vddout(struct device *dev,
-> > +                                  struct device_attribute *devattr, char *buf)
-> > +{
-> > +       struct da9052_hwmon *hwmon = dev_get_drvdata(dev);
-> > +       int ret, vdd = -1;
-> > +
-> > +       mutex_lock(&hwmon->hwmon_lock);
-> > +
-> > +       ret = da9052_enable_vddout_channel(hwmon->da9052);
-> > +       if (ret < 0)
-> > +               goto hwmon_err;
-> > +
-> > +       ret = da9052_reg_read(hwmon->da9052, DA9052_VDD_RES_REG);
-> > +       if (ret < 0)
-> > +               pr_err("failed to read VDD_RES_REG\n");
-> > +       else
-> > +               vdd = ret;
-> > +
-> > +       ret = da9052_disable_vddout_channel(hwmon->da9052);
-> > +       if (ret < 0)
-> > +               goto hwmon_err;
-> > +
-> > +       if (vdd >= 0) {
-> > +               mutex_unlock(&hwmon->hwmon_lock);
-> > +               return sprintf(buf, "%d\n", vdd);
-> > +       }
-> > +
-> > +hwmon_err:
-> > +       mutex_unlock(&hwmon->hwmon_lock);
-> > +       return ret;
-> > +}
+On Wed, Jun 29, 2011 at 02:26:14PM +0300, Avi Kivity wrote:
+> On 06/29/2011 02:26 PM, Xiao Guangrong wrote:
+> >On 06/29/2011 07:09 PM, Avi Kivity wrote:
+> >>  On 06/29/2011 01:56 PM, Xiao Guangrong wrote:
+> >>>  On 06/29/2011 04:24 PM, Avi Kivity wrote:
+> >>>
+> >>>  >>   +static int vcpu_gva_to_gpa(struct kvm_vcpu *vcpu, unsigned long gva,
+> >>>  >>   +               gpa_t *gpa, struct x86_exception *exception,
+> >>>  >>   +               bool write)
+> >>>  >>   +{
+> >>>  >>   +    u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
+> >>>  >>   +
+> >>>  >>   +    if (write)
+> >>>  >>   +        access |= PFERR_WRITE_MASK;
+> >>>  >
+> >>>  >   Needs fetch as well so NX/SMEP can work.
+> >>>  >
+> >>>
+> >>>  This function is only used by read/write emulator, execute permission is
+> >>>  not needed for read/write, no?
+> >>
+> >>  It's not good to have a function which only implements the functionality partially.  It can later be misused.
+> >>
+> >>  You can pass the page-fault-error-code instead of the write parameter, I think it will be simpler.
+> >>
+> >
+> >Actually, we will get the cache mmio info in this function, i think it is pure waste for other
+> >access execpt mmio, what about change the function name to vcpu_gva_to_gpa_mmio?
 > 
-> This function still produces a bad result if the call to
-> da9052_reg_read() fails and the call to da9052_disable_vddout_channel()
-> doesn't. 
-Thanks much for comments and patience. When vddout channel is enabled
-and then read from this channel fails then, in this case should vddout
-channel get disabled? Is this correct understanding.
+> Not too happy, but ok.
 > 
-> I would suggest to replace pr_err() with "goto hwmon_err". If you do
-> that, you don't need to initialize vdd, you don't need the else case for
-> its assignment, and you don't need "if (vdd >= 0)" either.
-Will take care of this. Thanks...Ashish
-> 
-> Guenter
-> 
-> 
-> 
+I do plan to add fetching from MMIO.
 
-
+--
+			Gleb.
