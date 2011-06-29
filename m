@@ -1,138 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab1F2OFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 10:05:07 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:43334 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752279Ab1F2OFD (ORCPT
+	id S1754715Ab1F2OGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 10:06:52 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:6271 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752358Ab1F2OGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 10:05:03 -0400
-Date: Wed, 29 Jun 2011 16:04:53 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: =?iso-8859-1?Q?P=E1draig?= Brady <P@draigBrady.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Theodore Tso <tytso@mit.edu>,
-        Shaohua Li <shaohua.li@intel.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/2] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-Message-ID: <20110629140453.GA13456@thinkpad>
-References: <1309181361-14633-1-git-send-email-andrea@betterlinux.com>
- <20110628151233.f0a279be.akpm@linux-foundation.org>
- <20110628225645.GB2274@thinkpad>
- <20110628160347.a5ffcc26.akpm@linux-foundation.org>
- <4E0B0A76.5010204@draigBrady.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E0B0A76.5010204@draigBrady.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Jun 2011 10:06:50 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Wed, 29 Jun 2011 07:06:49 -0700
+From: Jin Park <jinyoungp@nvidia.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Richard Purdie <rpurdie@rpsys.net>, Liam Girdwood <lrg@ti.com>,
+        linux-kernel@vger.kernel.org, Jin Park <jinyoungp@nvidia.com>
+Subject: Re: [PATCH 0/3] aat2870: Adding mfd, backlight and regulator drivers
+Date: Wed, 29 Jun 2011 23:06:49 +0900
+Message-Id: <1309356412-23881-1-git-send-email-jinyoungp@nvidia.com>
+X-Mailer: git-send-email 1.7.1
+X-NVConfidentiality: public
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 12:20:22PM +0100, Pádraig Brady wrote:
-> On 29/06/11 00:03, Andrew Morton wrote:
-> > On Wed, 29 Jun 2011 00:56:45 +0200
-> > Andrea Righi <andrea@betterlinux.com> wrote:
-> > 
-> >>>>
-> >>>> In this way if the backup was the only user of a page, that page will be
-> >>>> immediately removed from the page cache by calling POSIX_FADV_DONTNEED.  If the
-> >>>> page was also touched by other processes it'll be moved to the inactive list,
-> >>>> having another chance of being re-added to the working set, or simply reclaimed
-> >>>> when memory is needed.
-> >>>
-> >>> So if an application touches a page twice and then runs
-> >>> POSIX_FADV_DONTNEED, that page will now not be freed.
-> >>>
-> >>> That's a big behaviour change.  For many existing users
-> >>> POSIX_FADV_DONTNEED simply doesn't work any more!
-> >>
-> >> Yes. This is the main concern that was raised by P__draig.
-> >>
-> >>>
-> >>> I'd have thought that adding a new POSIX_FADV_ANDREA would be safer
-> >>> than this.
-> >>
-> >> Actually Jerry (in cc) proposed
-> >> POSIX_FADV_IDONTNEEDTHISBUTIFSOMEBODYELSEDOESTHENDONTTOUCHIT in a
-> >> private email. :)
-> > 
-> > Sounds good.  Needs more underscores though.
-> > 
-> >>>
-> >>>
-> >>> The various POSIX_FADV_foo's are so ill-defined that it was a mistake
-> >>> to ever use them.  We should have done something overtly linux-specific
-> >>> and given userspace more explicit and direct pagecache control.
-> >>
-> >> That would give us the possibility to implement a wide range of
-> >> different operations (drop, drop if used once, add to the active list,
-> >> add to the inactive list, etc..). Some users always complain that they
-> >> would like to have a better control over the page cache from userspace.
-> > 
-> > Well, I'd listen to proposals ;)
-> > 
-> > One thing we must be careful about is to not expose things like "active
-> > list" to userspace.  linux-4.5 may not _have_ an active list, and its
-> > implementors would hate us and would have to jump through hoops to
-> > implement vaguely compatible behaviour in the new scheme.
-> > 
-> > So any primitives which are exposed should be easily implementable and
-> > should *make sense* within any future scheme...
-> 
-> Agreed.
-> 
-> In fairness to posix_fadvise(), I think it's designed to
-> specify hints for the current process' use of data
-> so that it can get at it more efficiently and also be
-> allow the system to manipulate cache more efficiently.
-> I.E. it's not meant for direct control of the cache.
-> 
-> That being said, existing use has allowed this,
-> and it would be nice not to change without consideration.
-> 
-> I've mentioned how high level cache control functions
-> might map to the existing FADV knobs here:
-> 
-> http://marc.info/?l=linux-kernel&m=130917619416123&w=2
-> 
-> cheers,
-> Pádraig.
+Changing subject because the patch was separated.
+Adding relevant maintainers for backlight and regulator.
 
-OK, your proposal seems a good start to implement a better cache control
-interface.
+Hi Samuel,
 
-Basically you're proposing to provide the following operations:
- 1. DROP
- 2. DROP if used once
- 3. ADD
- 4. ADD if there's space
+> Before reviewing this patch, could you please do the following:
+> 
+> 1) Split it into 3 actual patches: the MFD one, the regulator one and the
+> backlight one.
+I have separated the patch to mfd, backlight and regulator.
 
-I would also add for sure:
- 5. ADD and will use once
+> 2) Add the relevant maintainers (See MAINTAINERS) if you want to get a proper
+> regulator and backlight driver review.
+I submitting the patches with relevant maintainers.
 
-Some of them are already implemented by the available fadvise()
-operations, like 1 (POSIX_FADV_DONTNEED) and 3 (POSIX_FADV_WILLNEED).
-Option 5 can be mapped to POSIX_FADV_NOREUSE, but it's not yet
-implemented.
-
-I need to think a little bit more about all of this. I'll try to post a
-new RFC, proposing the list of high-level operations to implement the
-better page cache control from userspace.
-
-Suggestions, comments, ideas are always welcome.
+> You also need to take the io_lock mutex here, to prevent someone else to write
+> a different value to your register between your read and write.
+> So what you typically want is an unlocked version of aat2870_[read|write]
+> (let's say we call it __aat2870_[read|write]). Then your aat2870_[read|write]
+> become wrappers around the __aat2870_[read|write] with the lock taken. And
+> your update_bits routine can use __aat2870_[read|write] with the lock taken
+> from the beginning.
+I have modified mfd driver according to your comment.
 
 Thanks,
--Andrea
+Jin.
+
+Jin Park (3):
+  mfd: aat2870: Add AAT2870 mfd driver
+  backlight: aat2870: Add AAT2870 backlight driver
+  regulator: aat2870: Add AAT2870 regulator driver
+
+ drivers/mfd/Kconfig                   |   10 +
+ drivers/mfd/Makefile                  |    1 +
+ drivers/mfd/aat2870-core.c            |  534 +++++++++++++++++++++++++++++++++
+ drivers/regulator/Kconfig             |    7 +
+ drivers/regulator/Makefile            |    1 +
+ drivers/regulator/aat2870-regulator.c |  264 ++++++++++++++++
+ drivers/video/backlight/Kconfig       |    7 +
+ drivers/video/backlight/Makefile      |    1 +
+ drivers/video/backlight/aat2870_bl.c  |  246 +++++++++++++++
+ include/linux/mfd/aat2870.h           |  181 +++++++++++
+ 10 files changed, 1252 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/mfd/aat2870-core.c
+ create mode 100644 drivers/regulator/aat2870-regulator.c
+ create mode 100644 drivers/video/backlight/aat2870_bl.c
+ create mode 100644 include/linux/mfd/aat2870.h
+
