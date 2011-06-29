@@ -1,55 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab1F2Svp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 14:51:45 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49352 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752921Ab1F2Svn (ORCPT
+	id S1757399Ab1F2Sx5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 14:53:57 -0400
+Received: from qmta06.emeryville.ca.mail.comcast.net ([76.96.30.56]:56185 "EHLO
+	qmta06.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752849Ab1F2Sx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 14:51:43 -0400
-Date: Wed, 29 Jun 2011 14:51:42 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Kirill Smelkov <kirr@mns.spb.ru>
-cc: matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] USB: EHCI: Move sysfs related bits into ehci-sysfs.c
-In-Reply-To: <20110629180359.GA12511@tugrik.mns.mnsspb.ru>
-Message-ID: <Pine.LNX.4.44L0.1106291448010.2064-100000@iolanthe.rowland.org>
+	Wed, 29 Jun 2011 14:53:56 -0400
+Date: Wed, 29 Jun 2011 18:53:51 +0000 (UTC)
+From: johnlinn@comcast.net
+To: linux-kernel@vger.kernel.org
+Message-ID: <409519530.22419.1309373631423.JavaMail.root@sz0140a.emeryville.ca.mail.comcast.net>
+Subject: using a single sysfs show function for multiple device attributes
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [149.199.62.254]
+X-Mailer: Zimbra 6.0.10_GA_2704 (ZimbraWebClient - IE8 (Win)/6.0.10_GA_2697)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011, Kirill Smelkov wrote:
+In a platform driver, I'm trying to use a single function for multiple device attributes and use the attr input to ID which attribute.
 
-> Yes, but still it would be good to always keep the invariant
-> 
->     allocated <= uframe_periodic_max
-> 
-> and that debug is there to catch when this breaks.
+After the driver is up and running, the sysfs attributes exist.  In my show function getting a device_attribute as an input, I never see the device attribute (attr) having anything in it (all 0s).  I see the attr pointer be valid, but pointing to all 0's.  
 
-Then perhaps it should print out the maximum number of microseconds
-already allocated for any uframe, instead of stopping as soon as it
-finds something above the new limit.
+I don't see others using the attr input, but it seems like the way to ID which attribute is being accessed so that one show function can be used for many attributes.
 
-> > Can you make that check conditional on DEBUG being set?
-> 
-> Yes I can, but it seems to me we are starting to complicate the code.
-> 
-> What's the problem with returning error on setting uframe_periodic_max <
-> already allocated usb bandwith?
+I'm sure it's obvious, but I don't see what I'm doing wrong.
 
-No problem, really.
-
-> The checking is not a priority for me here, so if you think it's better not
-> to check or do it under #ifdef - let's do it. Though of course we all
-> have our preferences :)
-
-Yes, it's just a matter of taste.  I prefer to add as little code as 
-possible for a feature that won't be used much.
-
-Alan Stern
-
+Thanks,
+John
