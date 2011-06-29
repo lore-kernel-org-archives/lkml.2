@@ -1,126 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab1F2X1d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 19:27:33 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:58440 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751584Ab1F2X10 convert rfc822-to-8bit (ORCPT
+	id S1754704Ab1F2XeY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 19:34:24 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:58062 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751584Ab1F2XeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 19:27:26 -0400
-Date: Wed, 29 Jun 2011 16:27:22 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute2 2.6.39
-Message-ID: <20110629162722.2db2a8cd@nehalam.ftrdhcpuser.net>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Jun 2011 19:34:17 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Stephane Eranian <eranian@google.com>, David Ahern <dsahern@gmail.com>,
+        Sam Liao <phyomh@gmail.com>
+Subject: [GIT PULL] perf tools updates
+Date: Thu, 30 Jun 2011 01:34:02 +0200
+Message-Id: <1309390448-9160-1-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This version of iproute2 utilities intended for use with 2.6.39 or
-later kernel, but should be backward compatible with older releases.
-It is mostly small bug fixes, but there is also support for the
-new queuing disciplines in 2.6.39.
+Ingo,
 
-Source: (note old developer.osdl.org address works as well)
-  http://devresources.linuxfoundation.org/dev/iproute2/download/iproute2-2.6.39.tar.gz
+Please pull the perf/core branch that can be found at:
 
-Repository:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/core
 
-For more info on iproute2 see:
-  http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2
+It adds the inverted callchains support and let one use
+parent filtering with parent sorting at the same time, because
+it appears to me that inverted callchains sorted by filtered
+parents is pretty useful, and extendable to more cool things.
 
-Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
+Anyway inverted callchains used with some different sorting combination
+in general can provide some interesting analysis flavours.
 
-Changelog:
-Brandon Philips (2):
-      ip: fix memory leak in ipmaddr.c
-      doc: add pdf targets
+Having played with it a bit. It seems to me the callee point
+of view (traditional -g callchains) is better suited to
+find the precise zoomed-in places where cpu time is most
+spent. Spot contention places, etc...
 
-Diego Elio Pettenò (1):
-      Remove -L flags from link
+OTOH, caller point of view (-G, inverted callchain), is
+for zoomed out observation, of course. It's more suited for
+global profiling. To get a big overview of where the hot bulk
+of a program is executing for example.
 
-Eric Dumazet (3):
-      sfq: add divisor support
-      ip: Support IFLA_TXQLEN in ip link command
-      ss: fix autobound filter
+Examples:
 
-Gerrit Renker (6):
-      utils: get_jiffies always uses base=0
-      iproute: fix unit conversion of rtt/rttvar/rto_min
-      iproute: rename 'get_jiffies' since it uses msecs
-      utils: get_jiffies always uses base=0
-      iproute: fix unit conversion of rtt/rttvar/rto_min
-      iproute: rename 'get_jiffies' since it uses msecs
+- look at the hottest tree of call of a program.
 
-Jiri Pirko (1):
-      iplink: implement setting of master devic
+	./perf report -G -s pid --stdio
+	
+     5.73%               perf:11933
+            |
+            --- __libc_start_main
+               |          
+               |--99.18%-- main
+               |          run_builtin
+               |          cmd_bench
+               |          |          
+               |          |--89.68%-- bench_sched_messaging
+               |          |          |          
+               |          |          |--96.11%-- create_worker
+               |          |          |          |          
+               |          |          |          |--95.10%-- __libc_fork
+               |          |          |          |          |          
+               |          |          |          |          |--93.99%-- stub_clone
+               |          |          |          |          |          sys_clone
+               |          |          |          |          |          do_fork
+               |          |          |          |          |          |          
+               |          |          |          |          |          |--99.09%-- copy_process
+               |          |          |          |          |          |          |          
+               |          |          |          |          |          |          |--91.62%-- dup_mm
 
-John Fastabend (2):
-      iproute2: tc add mqprio qdisc support
-      iproute2: improve mqprio inputs for queue offsets and counts
+- look at where kernel threads spend their time
 
-Joy Latten (6):
-      xfrm security context support
-      xfrm security context support
-      xfrm security context support
-      xfrm security context support
-      xfrm security context support
-      xfrm security context support
+	perf report -G -p kernel_thread -s parent --stdio
+	
+# Overhead  Parent symbol
+# ........  .............
+#
+     0.07%  kernel_thread_helper
+            |
+            --- kernel_thread_helper
+                kthread
+               |          
+               |--50.00%-- kjournald2
+               |          jbd2_journal_commit_transaction
+               |          journal_submit_commit_record
+               |          submit_bh
+               |          submit_bio
+               |          generic_make_request
+               |          __make_request
+               |          __blk_run_queue
+               |          scsi_request_fn
+               |          scsi_dispatch_cmd
+               |          ata_scsi_queuecmd
+               |          ata_scsi_translate
+               |          ata_qc_issue
+               |          ata_bmdma_qc_issue
+               |          ata_sff_qc_issue
+               |          ata_sff_tf_load
+               |          ata_sff_check_status
+               |          ioread8
+               |          
+                --50.00%-- rcu_kthread
+                          rcu_process_callbacks
+                          delayed_put_task_struct
+                          __put_task_struct
+                          free_task
+                          free_thread_info
+                          free_thread_xstate
+                          kmem_cache_free
+                          __slab_free
+                          add_partial
+                          _raw_spin_lock
+                          lock_acquire
+                          
+etc...
 
-Juliusz Chroboczek (1):
-      tc : SFB flow scheduler
+We could extend that by applying some cut in the callchains.
+For example stop a callchain on a given dso and you can profile
+which exported function is most called in it.
 
-Nicolas Dichtel (3):
-      iproute2: allow to specify truncation bits on auth algo
-      iproute2: add support of flag XFRM_STATE_ALIGN4
-      iproute2: allow to specify truncation bits on auth algo
+Anyway, this has some nice potential.
 
-Sridhar Samudrala (1):
-      macvlan/macvtap: support 'passthru' mode
 
-Stephen Hemminger (26):
-      CHOKe scheduler
-      Merge branch 'master' into choke
-      update to net-next (2.6.39) headers
-      Merge branch 'choke' into net-next
-      Remove #ifdef's
-      v2.6.38.1
-      update to 2.6.39-rc3 headers
-      Add no-strict-aliasing to genl
-      Add checks for fgets() when reading proc
-      Fix snprintf with non format
-      Fix warning in u32 from assignment in conditional
-      Update email address of netem
-      Add README.devel
-      Update README information
-      Use INIT_NETDEV_GROUP
-      Merge branch 'for-2.6.39' of /home/shemminger/iproute2-net-next
-      tc filter: fix dport/sport in pretty print output
-      ip: addrlabel fix set never used warning
-      ip: iproute fix set never used warning
-      tc: fix set never used warning in red
-      libnetlink: fix set never used warning
-      Fix set-never-used warning in ifstat
-      ss: check result of readlink
-      skbedit: fix set-never-used warning
-      xt match: fix set-never-used warning
-      v2.6.39
+Thanks,
+	Frederic
+---
 
-Ulrich Weber (1):
-      iproute2: parse flag XFRM_POLICY_ICMP
+Frederic Weisbecker (5):
+      perf tools: Make sort operations static
+      perf tools: Remove sort print helpers declarations
+      perf tools: Don't display ignored entries on stdio ui
+      perf tools: Allow sort dimensions to be registered more than once
+      perf tools: Only display parent field if explictly sorted
 
-Vlad Dogaru (6):
-      iproute2: support listing devices by group
-      iproute2: support device group semantics
-      iproute2: support device group semantics
-      iproute2: fix man page whitespace
-      iproute2: fix man page whitespace
-      iproute2: support listing devices by group
+Sam Liao (1):
+      perf tools: Add inverted call graph report support.
 
+
+ tools/perf/Documentation/perf-report.txt |   15 ++-
+ tools/perf/builtin-report.c              |   42 +++++-
+ tools/perf/util/callchain.h              |    6 +
+ tools/perf/util/hist.c                   |    6 +-
+ tools/perf/util/session.c                |    7 +-
+ tools/perf/util/sort.c                   |  223 ++++++++++++++----------------
+ tools/perf/util/sort.h                   |   14 --
+ 7 files changed, 169 insertions(+), 144 deletions(-)
