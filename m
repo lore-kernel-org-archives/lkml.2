@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab1F2JRI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 05:17:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22092 "EHLO mx1.redhat.com"
+	id S1754272Ab1F2JVl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:21:41 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:41244 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752784Ab1F2JRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 05:17:00 -0400
-Message-ID: <4E0AED86.2060908@redhat.com>
-Date: Wed, 29 Jun 2011 12:16:54 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754144Ab1F2JVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 05:21:36 -0400
+Date: Wed, 29 Jun 2011 13:20:01 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] USB: EHCI: Move sysfs related bits into
+	ehci-sysfs.c
+Message-ID: <20110629092001.GC10219@tugrik.mns.mnsspb.ru>
+References: <2a537d4dffef27cc7839eb19889eaa035edd44f9.1308933456.git.kirr@mns.spb.ru> <Pine.LNX.4.44L0.1106250807270.1039-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 19/22] KVM: MMU: lockless walking shadow page table
-References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FDB4.60306@cn.fujitsu.com>
-In-Reply-To: <4E01FDB4.60306@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1106250807270.1039-100000@netrider.rowland.org>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2011 05:35 PM, Xiao Guangrong wrote:
-> Use rcu to protect shadow pages table to be freed, so we can safely walk it,
-> it should run fastly and is needed by mmio page fault
->
+On Sat, Jun 25, 2011 at 08:10:52AM -0400, Alan Stern wrote:
+> On Fri, 24 Jun 2011, Kirill Smelkov wrote:
+> 
+> > The only sysfs attr implemented so far is "companion" from ehci-hub.c,
+> > but in the next patch we are going to add another sysfs file, so prior
+> > to that let's structure things and move already-in-there sysfs code to
+> > separate file.
+> > 
+> > Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+> > diff --git a/drivers/usb/host/ehci-sysfs.c b/drivers/usb/host/ehci-sysfs.c
+> > new file mode 100644
+> > index 0000000..347c8cb
+> > --- /dev/null
+> > +++ b/drivers/usb/host/ehci-sysfs.c
+> > @@ -0,0 +1,94 @@
+> > +/*
+> > + * Copyright (C) 2001-2004 by David Brownell
+> 
+> One little note...  It's understandable that you put this line here,
+> but it isn't really appropriate.  All the code you're moving into this
+> new file was written by me.
 
->   static void kvm_mmu_commit_zap_page(struct kvm *kvm,
->   				    struct list_head *invalid_list)
->   {
-> @@ -1767,6 +1874,14 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
->
->   	kvm_flush_remote_tlbs(kvm);
->
-> +	if (atomic_read(&kvm->arch.reader_counter)) {
-> +		kvm_mmu_isolate_pages(invalid_list);
-> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
-> +		list_del_init(invalid_list);
-> +		call_rcu(&sp->rcu, free_pages_rcu);
-> +		return;
-> +	}
-> +
+Now I see, yes, in 57e06c11 (EHCI: force high-speed devices to run at
+full speed; Jan 16 2007).
 
-I think we should do this unconditionally.  The cost of ping-ponging the 
-shared cache line containing reader_counter will increase with large smp 
-counts.  On the other hand, zap_page is very rare, so it can be a little 
-slower.  Also, less code paths = easier to understand.
+> Apart from that one issue,
+> 
+> Acked-off-by: Alan Stern <stern@rowland.harvard.edu>
 
--- 
-error compiling committee.c: too many arguments to function
+Thanks.
 
+What should we do with this patch now? Should I put
+
+
+    Copyright (C) 2007 by Alan Stern
+
+there? Or something else?
+
+Or maybe drop that copyright notice altogether becase usually it gets
+outdated very quickly, and who made what is visible through git
+log/blame?
+
+
+I'm ok with any case, please just tell me how to proceed.
+
+
+And what about main "[PATCH v2 2/2] USB: EHCI: Allow users to override
+80% max periodic bandwidth"?
+
+Was it Acked together with this one, or not and review is pending?
+Curious because I'm new here...
+
+
+Thanks,
+Kirill
