@@ -1,189 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab1F2Gxg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 02:53:36 -0400
-Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:62661 "EHLO
-	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751702Ab1F2Gxa (ORCPT
+	id S1753863Ab1F2Gxt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 02:53:49 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36217 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753797Ab1F2Gxl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 02:53:30 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AjYDAILLCk55LChDgWdsb2JhbABShEmjBxUBARYmJbhDkQEOgR2DeYEMBJokiC4
-Date: Wed, 29 Jun 2011 16:53:07 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com, viro@ZenIV.linux.org.uk
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-Message-ID: <20110629065306.GC1026@dastard>
-References: <1309275199-10801-1-git-send-email-josef@redhat.com>
- <1309275199-10801-5-git-send-email-josef@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	Wed, 29 Jun 2011 02:53:41 -0400
+Subject: Re: [RFC PATCHv2] UBI: new module ubiblk: block layer on top of UBI
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: david.wagner@free-electrons.com
+Cc: linux-mtd@lists.infradead.org, dwmw2@infradead.org,
+        linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
+        tim.bird@am.sony.com
+Date: Wed, 29 Jun 2011 09:54:31 +0300
+In-Reply-To: <1309274691-4898-1-git-send-email-david.wagner@free-electrons.com>
+References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
+	 <1309274691-4898-1-git-send-email-david.wagner@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1309275199-10801-5-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-ID: <1309330476.23597.124.camel@sauron>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 11:33:19AM -0400, Josef Bacik wrote:
-> This is a test to make sure seek_data/seek_hole is acting like it does on
-> Solaris.  It will check to see if the fs supports finding a hole or not and will
-> adjust as necessary.
+On Tue, 2011-06-28 at 17:24 +0200, david.wagner@free-electrons.com
+wrote:
+> + * Author: David Wagner
+> + * Some code taken from gluebi.c (Artem Bityutskiy (Битюцкий Артём),
+> + *                                Joern Engel)
+> + * Some code taken from mtd_blkdevs.c (David Woodhouse) 
 
-So I just looked at this with an eye to validating an XFS
-implementation, and I came up with this list of stuff that the test
-does not cover that I'd need to test in some way:
-
-	- files with clean unwritten extents. Are they a hole or
-	  data? What's SEEK_DATA supposed to return on layout like
-	  hole-unwritten-data? i.e. needs to add fallocate to the
-	  picture...
-
-	- files with dirty unwritten extents (i.e. dirty in memory,
-	  not on disk). They are most definitely data, and most
-	  filesystems will need a separate lookup path to detect
-	  dirty unwritten ranges because the state is kept
-	  separately (page cache vs extent cache).  Plenty of scope
-	  for filesystem specific bugs here so needs a roubust test.
-
-	- cold cache behaviour - all dirty data ranges the test
-	  creates are hot in cache and not even forced to disk, so
-	  it is not testing the no-page-cache-over-the-data-range
-	  case. i.e. it tests delalloc state tracking but not
-	  data-extent-already exists lookups during a seek.
-
-	- assumes that allocation size is the block size and that
-	  holes follows block size alignment. We already know that
-	  ext4 does not follow that rule when doing small sparse
-	  writes close together in a file, and XFS is also known to
-	  fill holes when doing sparse writes past EOF.
-
-	- only tests single block data extents ѕo doesn't cover
-	  corner cases like skipping over multiple fragmented data
-	  extents to the next hole.
-
-Some more comments in line....
-
-> +_cleanup()
-> +{
-> +    rm -f $tmp.*
-> +}
-> +
-> +trap "_cleanup ; exit \$status" 0 1 2 3 15
-> +
-> +# get standard environment, filters and checks
-> +. ./common.rc
-> +. ./common.filter
-> +
-> +# real QA test starts here
-> +_supported_fs generic
-> +_supported_os Linux
-> +
-> +testfile=$TEST_DIR/seek_test.$$
-> +logfile=$TEST_DIR/seek_test.$$.log
-
-The log file is usually named $seq.full, and doesn't get placed in
-the filesystem being tested. It gets saved in the xfstests directory
-along side $seq.out.bad for analysis whenteh test fails...
-
-> +[ -x $here/src/seek-tester ] || _notrun "seek-tester not built"
-> +
-> +_cleanup()
-> +{
-> +	rm -f $testfile
-> +	rm -f $logfile
-> +}
-> +trap "_cleanup; exit \$status" 0 1 2 3 15
-> +
-> +echo "Silence is golden"
-> +$here/src/seek-tester -q $testfile 2>&1 | tee -a $logfile
-
-Personally I'd prefer the test to be a bit noisy about what it is
-running, especially when there are so many subtests the single
-invocation is running. It makes no difference to the run time ofthe
-test, or the output when something fails, but it at least allows you
-to run the test manually and see what it is doing easily...
-
-> +
-> +if grep -q "SEEK_HOLE is not supported" $logfile; then
-> +	_notrun "SEEK_HOLE/SEEK_DATA not supported by this kernel"
-> +fi
-> +
-> +rm -f $logfile
-> +rm -f $testfile
-> +
-> +status=0 ; exit
-> diff --git a/255.out b/255.out
-> new file mode 100644
-> index 0000000..7eefb82
-> --- /dev/null
-> +++ b/255.out
-> @@ -0,0 +1,2 @@
-> +QA output created by 255
-> +Silence is golden
-> diff --git a/group b/group
-> index 1f86075..c045e70 100644
-> --- a/group
-> +++ b/group
-> @@ -368,3 +368,4 @@ deprecated
->  252 auto quick prealloc
->  253 auto quick
->  254 auto quick
-> +255 auto quick
-
-I'd suggest that rw and prealloc (once unwritten extent
-testing is added) groups should also be defined for this test.
-
-Otherwise, the test code looks ok if a bit over-engineered....
-
-> +struct testrec {
-> +	int	test_num;
-> +	int	(*test_func)(int fd, int testnum);
-> +	char	*test_desc;
-> +};
-> +
-> +struct testrec seek_tests[] = {
-> +	{  1, test01, "Test basic support" },
-> +	{  2, test02, "Test an empty file" },
-> +	{  3, test03, "Test a full file" },
-> +	{  4, test04, "Test file hole at beg, data at end" },
-> +	{  5, test05, "Test file data at beg, hole at end" },
-> +	{  6, test06, "Test file hole data hole data" },
-
-So, to take from the hole punch test matrix, it covers a bunch more
-file state transitions and cases that are just as relevant to
-SEEK_HOLE/SEEK_DATA. Those cases are:
-
-#       1. into a hole
-#       2. into allocated space
-#       3. into unwritten space
-#       4. hole -> data
-#       5. hole -> unwritten
-#       6. data -> hole
-#       7. data -> unwritten
-#       8. unwritten -> hole
-#       9. unwritten -> data
-#       10. hole -> data -> hole
-#       11. data -> hole -> data
-#       12. unwritten -> data -> unwritten
-#       13. data -> unwritten -> data
-#       14. data -> hole @ EOF
-#       15. data -> hole @ 0
-#       16. data -> cache cold ->hole
-#       17. data -> hole in single block file
-
-I thikn we also need to cover most of these same cases, right?  And
-SEEK_HOLE/SEEK data also need to explicitly separate the unwritten
-tests into "clean unwritten" and "dirty unwritten" and cover the
-transitions between regions of those states as well, right?
-
-Cheers,
-
-Dave.
+It is important to preserve Copyrights, because it has to do with legal
+stuff.
 
 -- 
-Dave Chinner
-david@fromorbit.com
+Best Regards,
+Artem Bityutskiy
+
