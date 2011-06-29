@@ -1,167 +1,616 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752043Ab1F2FzH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 01:55:07 -0400
-Received: from relay01.digicable.hu ([92.249.128.189]:49778 "EHLO
-	relay01.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1F2FzE (ORCPT
+	id S1753465Ab1F2GDQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 02:03:16 -0400
+Received: from com02.servicemail24.de ([84.17.184.247]:51459 "EHLO
+	com02.servicemail24.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750892Ab1F2GDM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 01:55:04 -0400
-Message-ID: <4E0ABDFE.6080009@freemail.hu>
-Date: Wed, 29 Jun 2011 07:54:06 +0200
-From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+	Wed, 29 Jun 2011 02:03:12 -0400
+Date: Wed, 29 Jun 2011 08:00:09 +0200 (CEST)
+From: ALDI Newsletter <noreply@aldi.us>
+Reply-To: ALDI Newsletter <noreply@aldi.us>
+To: linux-kernel@vger.kernel.org
+Message-ID: <INX.1138ceb236a161155e0e02ba56f.2d2a5d.2af525.2cac.130d9fbb5f5.gginx05@emarketing.servicemail24.de>
+Subject: =?ISO-8859-1?Q?Get_more_stars,_stripes_and_savings_this_july_4?=
+ =?ISO-8859-1?Q?th_at_ALDI_=96_hurry,_limited_quantities_in_store?=
 MIME-Version: 1.0
-To: David Chang <dchang@novell.com>, Greg KH <greg@kroah.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
-        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        Himanshu Chauhan <hschauhan@nulltrace.org>,
-        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbip: handle length at sysfs show() functions
-References: <4DE5CA9F.6010303@freemail.hu> <20110607213418.GB11102@kroah.com> <4DEF0822.7070500@freemail.hu> <20110608160931.GB21645@kroah.com> <4DEFE938.70408@freemail.hu> <20110608221655.GA27576@kroah.com> <BANLkTikokYys2srX3+5r+fkdaaX5V2zxUg@mail.gmail.com> <20110629024528.GA37164@haskell.muteddisk.com>
-In-Reply-To: <20110629024528.GA37164@haskell.muteddisk.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
-X-Original: 94.21.97.208
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Inxmail EE 3.5, build 070618
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-matt mooney írta:
-> On 18:28 Mon 27 Jun     , David Chang wrote:
->> Hi,
->>
->> 2011/6/9 Greg KH <greg@kroah.com>
->>
->>> On Wed, Jun 08, 2011 at 11:27:20PM +0200, N?meth M?rton wrote:
->>>>> Ick, I doubt it as there are lots of tools that parse that file
->>> already.
->>>> usbip is still part of the staging directory. In dmesg the following
->>> appear:
->>>> | usbip_common_mod: module is from the staging directory, the quality is
->>> unknown, you have been warned.
->>>> | usbip_common_mod: usbip common driver1.0
->>>> | vhci_hcd: module is from the staging directory, the quality is unknown,
->>> you have been warned.
->>>> so this means that usbip is a work-in-progress, it might be changed
->>> anytime. On
->>>> the other hand we can do this nice way: a new entry in
->>>  Documentation/feature-removal-schedule.txt
->>>> for /sys/devices/platform/vhci_hcd/status file removal, let's say it will
->>> be
->>>> removed before the usbip goes to mainline. In parallel the new interface
->>>> can be developed.
->>> Or we can just fix it properly, as we have the userspace tools in the
->>> kernel now as well, and the interface is obviously broken.  That's what
->>> being in the staging tree allows us to do.
->>>
->>>
->>>
->>>> But yes, you are correct, this should not be in sysfs at all.
->>>>> What's the use for this file?  Who uses it?  Is it just debugging
->>>>> output?  Information for people to gaze at if they feel like it?
->>>>> Something else?
->>>> Based on the user space source code at drivers/staging/usbip/userspace/
->>>> I can identify the following usages:
->>>>
->>>> libsrc/vhci_driver.c::get_nports():
->>>>  - finding out how many ports the VHCI has
->>> Is that really necessary as they are just "virtual" ports :)
->>> We can put that in a single sysfs file if needed.
->>>
->>>> libsrc/vhci_driver.c::parse_status():
->>>>  - VHCI port number to identify virtual ports
->>>>  - fetching the status of each VHCI ports whether it is
->>>>      - vdev does not connect a remote device: (status = VDEV_ST_NULL =
->>> 4):
->>>>        "Port Available"
->>>>      - vdev is used, but the USB address is not assigned yet (status =
->>>>        VDEV_ST_NOTASSIGNED = 5): "Port Initializing"
->>>>      - used (status = VDEV_ST_USED = 6): "Port in Use"
->>>>      - error (VDEV_ST_ERROR = 7): "Port Error"
->>>>  - the speed can be unknown/low/full/high/variable
->>>>  - it looks like the bus column was merged with the device column but I
->>>>    currently cannot find when
->>>>  - the device ID is splited to the upper 16bits: bus number, and lower
->>>>    16bits: device number
->>>>  - based on local_busid the usb device file can be found in /sys using
->>>>    sysfs_open_device()
->>> All of those can be placed in individual files under the different port
->>> directories, so we should be fine.
->>>
->> I would like to help on this. :)
->>
->> And I just want to make sure that I understand your discussion.
->>
->> 1. remove current port status table file (
->> /sys/devices/platform/vhci_hcd/status )
->> 2. create each port in path "/sys/devices/platform/vhci-hcd" as a directory
->> ( /sys/devices/platform/vhci_hcd/ports/[0][0-7] )
->> 3. put the port info/status files into each port directory (
->> /sys/devices/platform/vhci_hcd/ports/*/status )
->>
->> Any suggestions are welcome, thanks!
->>
-> 
-> I think it seems like ../ports/.. is unnecessary. We should use
-> ../vhci_hcd/*-*/status as suggested by Nemeth. I do believe that we will
-> probably need to encode the vhci-hcd port number in there somewhere to allow
-> remote devices on different machines but same busid to be imported.
-> 
-> Nemeth are you already working on this?
+################### ALDI Newsletter ###################
+___________________________________________________________
 
-No, I'm not.
+special buys: week of june 29
+___________________________________________________________
+ 
 
-> I need to add the `usbip port' command. I will add a template with some basic
-> functionality but will wait on the actual port access.
-> 
-> -mfm
-> 
->> Regards,
->> David Chang
->>
->>
->>>> Note that the socket parameter is only printed out as a debug
->>> information: it
->>>> is not used anywhere.
->>>>
->>>> Maybe most of the file content is redundant, because:
->>>>
->>>>  - we have /sys/bus/usb/devices/usb*/maxchild which is "number of ports
->>> if hub"
->>>>    according to linux/usb.h:410 ;
->>> Yes.
->>>
->>>>  - we have /sys/bus/usb/devices/*-*/speed to identify the device speed;
->>> Yes.
->>>
->>>>  - We have already bus number at /sys/bus/usb/devices/usb*/busnum or at
->>>>    /sys/bus/usb/devices/*-*/busnum ;
->>> Yes.
->>>
->>>>  - we also have /sys/bus/usb/devices/*-*/devnum ;
->>>>  - it is possbile to collect all the devices from
->>> /sys/bus/usb/devices/*-*
->>>>    filtering to the first number to /sys/bus/usb/devices/usb*/busnum .
->>>>
->>>> The only thing which is special for VHCI is the status for each port:
->>>> DEV_ST_NULL/VDEV_ST_NOTASSIGNED/VDEV_ST_USED/VDEV_ST_ERROR .
->>> So we add a status file and we are set.
->>>
->>> Anyone care to send patches to fix this all up?
->>>
->>> thanks,
->>>
->>> greg k-h
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>> Please read the FAQ at  http://www.tux.org/lkml/
->>>
-> 
-> 
 
+frozen foods
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14539_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Season's Choice
+Corn On The Cob
+
+
+$ 1.29 each
+
+
+- six mini ears
+
+http://www.aldi.us/us/html/offers/2827_14606_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Season's Choice
+Sweet Potato Fries
+
+
+$ 1.89 each
+
+
+- 15 oz.
+
+http://www.aldi.us/us/html/offers/2827_14632_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Mama Cozzi's Pizza Kitchen
+Mega Pizza Rolls
+
+
+$ 2.49 each
+
+
+- pepperoni or combination
+- 17 oz.
+
+http://www.aldi.us/us/html/offers/2827_14634_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Sundae Shoppe Big Kahuna
+Ice Cream Sandwiches
+
+
+99¢ each
+
+
+- 8 oz.
+
+http://www.aldi.us/us/html/offers/2827_14642_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Sundae Shoppe Chocolate Cookie Ice Cream Sandwiches
+
+
+$ 2.99 each
+
+
+- 20 oz.
+
+http://www.aldi.us/us/html/offers/2827_14641_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Sundae Shoppe
+Just Dipped Sundae Cones
+
+
+$ 2.99 each
+
+
+- 32 oz.
+
+http://www.aldi.us/us/html/offers/2827_14640_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Edy's Antioxidant
+Fruit Bars
+
+
+$ 3.29 each
+
+
+- 18 oz.
+
+http://www.aldi.us/us/html/offers/2827_14637_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Belmont French Silk
+or Banana Cream Pie
+
+
+$ 5.29 each
+
+
+- thaw and serve
+- 24-35 oz.
+
+http://www.aldi.us/us/html/offers/2827_14645_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+pantry
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14540_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Burman's All Purpose Sauce
+or Bold & Spicy Steak Sauce
+
+
+$ 1.19 each
+
+
+- 10 oz.
+
+http://www.aldi.us/us/html/offers/2827_14624_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Stonemill Essentials
+4-in-1 BBQ Seasonings
+
+
+$ 3.99 each
+
+
+- assorted varieties
+- 4.8-5.3 oz.
+
+http://www.aldi.us/us/html/offers/2827_14623_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Tuscan Garden
+Dressings
+
+
+$ 1.29 each
+
+
+- bacon ranch or red wine vinaigrette
+- 16 oz.
+
+http://www.aldi.us/us/html/offers/2827_14630_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Sweet Baby Ray's
+BBQ Sauce
+
+
+$ 1.99 each
+
+
+- 28 oz.
+
+http://www.aldi.us/us/html/offers/2827_14627_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Kraft
+Miracle Whip Squeeze
+
+
+$ 1.79 each
+
+
+- 12 oz.
+
+http://www.aldi.us/us/html/offers/2827_14626_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Kellogg's
+Crunchy Nut Cereal
+
+
+$ 2.79 each
+
+
+- assorted varieties
+- 10.8-14.1 oz.
+
+http://www.aldi.us/us/html/offers/2827_14636_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Millville
+Cocoa Spheres Cereal
+
+
+$ 1.59 each
+
+
+- 11.8 oz.
+
+http://www.aldi.us/us/html/offers/2827_14633_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Baker's Corner
+Blueberry Pie Filling
+
+
+$ 1.99 each
+
+
+- made with real american-grown blueberries
+- no artificial flavors
+- 21 oz.
+
+http://www.aldi.us/us/html/offers/2827_14644_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+snacks & sweets
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14556_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Clancy's
+Bagel Chips
+
+
+$ 1.79 each
+
+
+- sea salt or roasted garlic
+- 6 oz.
+
+http://www.aldi.us/us/html/offers/2827_14608_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Clancy's
+Tortilla Chips
+
+
+$ 1.99 each
+
+
+- guacamole or spicy salsa
+- 12 oz.
+
+http://www.aldi.us/us/html/offers/2827_14622_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Clancy's Butter
+or Cheese Puffed Corn
+
+
+$ 1.19 each
+
+
+- 8 oz.
+
+http://www.aldi.us/us/html/offers/2827_14621_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Clancy's
+Big Dipper Corn Chips
+
+
+$ 1.19 each
+
+
+- 12 oz.
+
+http://www.aldi.us/us/html/offers/2827_14620_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Grandessa Signature
+Vegetable Chips
+
+
+$ 2.99 each
+
+
+- 7.5 oz.
+
+http://www.aldi.us/us/html/offers/2827_14619_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Baker's Corner 6-in-1
+Ice Cream Sprinkle Jar
+
+
+$ 2.99 each
+
+
+- assorted sprinkles
+- 6.23-6.89 oz.
+
+http://www.aldi.us/us/html/offers/2827_14639_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Joy Chocolatey
+Dipped Cake Cups
+
+
+$ 1.69 each
+
+
+- 3.5 oz.
+
+http://www.aldi.us/us/html/offers/2827_14638_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+JELL-O No Bake
+Dessert Mix Assortment
+
+
+$ 2.29 each
+
+
+- cherry cheesecake, oreo or peanut butter cup dessert
+- 12.6-17.8 oz.
+
+http://www.aldi.us/us/html/offers/2827_14646_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Sweet's
+Salt Water Taffy
+
+
+
+$ 1.79 each
+
+
+- ten assorted flavors
+- 16 oz.
+
+http://www.aldi.us/us/html/offers/2827_14643_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+household
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14538_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Sealtite
+Beverage Containers
+
+
+$ 4.99 each
+
+
+- 2-gallon beverage or 1.25-gallon fridge stack
+
+http://www.aldi.us/us/html/offers/2827_14648_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Boulder Decorated
+Print Clear Cups
+
+
+$ 1.69 each
+
+
+- twenty 16-oz. cups
+
+http://www.aldi.us/us/html/offers/2827_14650_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Boulder
+Decorated Napkins
+
+
+99¢ each
+
+
+- 30 count
+
+http://www.aldi.us/us/html/offers/2827_14649_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Boulder 37.5'
+Heavy Duty Aluminum Foil
+
+
+$ 1.89 each
+
+
+
+http://www.aldi.us/us/html/offers/2827_14647_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+other
+
+
+ 
+
+
+
+http://www.aldi.us/us/html/offers/2827_14541_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Sea Queen
+Stuffed Clams
+
+
+$ 2.99 each
+
+
+- 20 oz.
+
+http://www.aldi.us/us/html/offers/2827_14635_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Grandessa Signature
+Premium Dips
+
+
+$ 2.69 each
+
+
+- mediterranean olive, spinach artichoke or artichoke feta
+- 12 oz.
+
+http://www.aldi.us/us/html/offers/2827_14607_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+edenVale Blue Marble
+Jack Sliced Cheese
+
+
+$ 2.99 each
+
+
+- 8 oz.
+
+http://www.aldi.us/us/html/offers/2827_14631_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Oscar Mayer
+Classic Wieners
+
+
+$ 1.49 each
+
+
+- 16 oz.
+
+http://www.aldi.us/us/html/offers/2827_14603_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Arizona
+Tea
+
+
+99¢ each
+
+
+- Arnold Palmer lite half & half tea
+- 34 oz.
+
+http://www.aldi.us/us/html/offers/2827_14625_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Jilong Fishman 200
+Two-Person Inflatable Boat
+
+
+$ 24.99 each
+
+
+- 86" x 43" x 14"
+- includes oars
+- holds up to 385 lb.
+
+http://www.aldi.us/us/html/offers/2827_14652_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+Crane Sports
+Snorkel Set
+
+
+$ 14.99 each
+
+
+- assorted colors and sizes
+
+http://www.aldi.us/us/html/offers/2827_14651_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+-----------------------------------------------------------
+
+
+further information and offers
+http://www.aldi.us/us/html/offers/offers_06_29_2011_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23
+
+
+___________________________________________________________
+
+special buys: week of june 29
+___________________________________________________________
+ 
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------------------------------
+
+
+further information and offers
+http://www.aldi.us/us/html/offers/offers_06_29_2011_ENU_HTML.htm?WT.mc_id=
+
+
+
+***********************************************************
+
+Available while quantities last. All products may not be available in all stores.
+Prices and labels may vary by location. We welcome cash, EBT and most debit cards. No checks please.
+
+This is an e-mail advertisement. ALDI INC. is very serious about protecting your privacy and is committed to avoiding
+any abuse of your e-mail address. View our Privacy Policy. (http://www.aldi.us/us/html/privacy_policy_ENU_HTML.htm)
+
+If you wish to stop receiving this newsletter, please click here to unsubscribe.
+(http://www.aldi.us/us/html/service/newsletter_ENU_HTML.htm?WT.mc_id=2011-06-28-22-23)
+
+Copyright 2011 ALDI INC. All Rights Reserved.
+
+ALDI Inc.,1200 N. Kirk Rd., Batavia, IL 60510
+http://www.aldi.us/?WT.mc_id=2011-06-28-22-23
+
+***********************************************************
