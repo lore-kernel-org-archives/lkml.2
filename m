@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab1F2NAr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 09:00:47 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:64792 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752009Ab1F2NAp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 09:00:45 -0400
+	id S1756134Ab1F2NBc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 09:01:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752009Ab1F2NBa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 09:01:30 -0400
+Message-ID: <4E0B2220.3050602@redhat.com>
+Date: Wed, 29 Jun 2011 16:01:20 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 29 Jun 2011 18:30:44 +0530
-Message-ID: <BANLkTikavaLfBxHnpVQYwnHjJn-Sa_UD0w@mail.gmail.com>
-Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
-From: Balbir Singh <bsingharora@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 19/22] KVM: MMU: lockless walking shadow page table
+References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FDB4.60306@cn.fujitsu.com> <4E0AED86.2060908@redhat.com> <4E0B0997.4090206@cn.fujitsu.com> <4E0B09EA.1040304@redhat.com> <4E0B1191.6040100@cn.fujitsu.com> <4E0B182C.1090402@redhat.com> <4E0B1A75.4070705@cn.fujitsu.com> <4E0B1A4E.2030301@redhat.com> <4E0B1CE8.2060803@cn.fujitsu.com>
+In-Reply-To: <4E0B1CE8.2060803@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 3:33 PM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> This is onto 3 patches I posted yesterday.
-> I'm sorry I once got Acks in v1 but refleshed totally.
-> ==
-> From fda72071ee473be1caee163920da0f5c397c95e8 Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Wed, 29 Jun 2011 18:24:49 +0900
-> Subject: [PATCH] export memory cgroup's swappines
+On 06/29/2011 03:39 PM, Xiao Guangrong wrote:
+> >
+> >  Ok.  Let's drop the two paths, and put this improvement on the TODO instead.
+> >
 >
-> Each memory cgroup has 'swappiness' value and it can be accessed by
-> get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
-> and swappiness is passed by argument. It's propagated by scan_control.
->
-> get_swappiness is static function but some planned updates will need to
-> get swappiness from files other than memcontrol.c
-> This patch exports get_swappiness() as mem_cgroup_swappiness().
-> By this, we can remove the argument of swapiness from try_to_free...
-> and drop swappiness from scan_control. only memcg uses it.
->
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Good refactoring
+> Avi, i am sorry, i do not understand it clearly, it means keep the patch as the
+> original way and do the improvement after it merged?
 
-Acked-by: Balbir Singh <bsingharora@gmail.com>
+I mean, do all freeing using RCU and improve fork detection after 
+merge.  I don't like the extra complexity and the extra atomic ops.
 
-Thanks,
-Balbir Singh
+-- 
+error compiling committee.c: too many arguments to function
+
