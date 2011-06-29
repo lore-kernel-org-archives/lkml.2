@@ -1,109 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753659Ab1F2Gqw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 02:46:52 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56295 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751118Ab1F2Gqt (ORCPT
+	id S1753807Ab1F2GvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 02:51:16 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64489 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751727Ab1F2GvK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 02:46:49 -0400
-Date: Wed, 29 Jun 2011 12:16:35 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Yong Zhang <yong.zhang0@gmail.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        linuxppc-dev@lists.ozlabs.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>, paulus@samba.org,
-        galak@kernel.crashing.org, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
-	lead to system crash/freeze
-Message-ID: <20110629064635.GB678@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com> <1308911347.531.56.camel@gandalf.stny.rr.com> <4E074671.7060100@hitachi.com> <20110627100104.GA24705@in.ibm.com> <BANLkTimYej4_dmBqvPBCLej=JA5atLrZVA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <BANLkTimYej4_dmBqvPBCLej=JA5atLrZVA@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	Wed, 29 Jun 2011 02:51:10 -0400
+Subject: Re: [PATCH] UBI: new module ubiblk: block layer on top of UBI
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: David Wagner <david.wagner@free-electrons.com>
+Cc: dwmw2@infradead.org, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Date: Wed, 29 Jun 2011 09:52:01 +0300
+In-Reply-To: <4E09BC89.40306@free-electrons.com>
+References: <1308922482-14967-1-git-send-email-david.wagner@free-electrons.com>
+		<1308922482-14967-2-git-send-email-david.wagner@free-electrons.com>
+	 <1309202771.24805.11.camel@koala> <4E09BC89.40306@free-electrons.com>
+Content-Type: text/plain; charset="UTF-8"
+X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
+Content-Transfer-Encoding: 7bit
+Message-ID: <1309330325.23597.123.camel@sauron>
+Mime-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 02:23:28PM +0800, Yong Zhang wrote:
-> On Mon, Jun 27, 2011 at 6:01 PM, Ananth N Mavinakayanahalli
-> <ananth@in.ibm.com> wrote:
-> > On Sun, Jun 26, 2011 at 11:47:13PM +0900, Masami Hiramatsu wrote:
-> >> (2011/06/24 19:29), Steven Rostedt wrote:
-> >> > On Fri, 2011-06-24 at 17:21 +0800, Yong Zhang wrote:
-> >> >> Hi,
-> >> >>
-> >> >> When I use kprobe to do something, I found some wired thing.
-> >> >>
-> >> >> When CONFIG_FUNCTION_TRACER is disabled:
-> >> >> (gdb) disassemble do_fork
-> >> >> Dump of assembler code for function do_fork:
-> >> >>    0xc0037390 <+0>:        mflr    r0
-> >> >>    0xc0037394 <+4>:        stwu    r1,-64(r1)
-> >> >>    0xc0037398 <+8>:        mfcr    r12
-> >> >>    0xc003739c <+12>:       stmw    r27,44(r1)
-> >> >>
-> >> >> Then I:
-> >> >> modprobe kprobe_example func=do_fork offset=4
-> >> >> ls
-> >> >> Things works well.
-> >> >>
-> >> >> But when CONFIG_FUNCTION_TRACER is enabled:
-> >> >> (gdb) disassemble do_fork
-> >> >> Dump of assembler code for function do_fork:
-> >> >>    0xc0040334 <+0>:        mflr    r0
-> >> >>    0xc0040338 <+4>:        stw     r0,4(r1)
-> >> >>    0xc004033c <+8>:        bl      0xc00109d4 <mcount>
-> >> >>    0xc0040340 <+12>:       stwu    r1,-80(r1)
-> >> >>    0xc0040344 <+16>:       mflr    r0
-> >> >>    0xc0040348 <+20>:       stw     r0,84(r1)
-> >> >>    0xc004034c <+24>:       mfcr    r12
-> >> >> Then I:
-> >> >> modprobe kprobe_example func=do_fork offset=12
-> >> >> ls
-> >> >> 'ls' will never retrun. system freeze.
-> >> >
-> >> > I'm not sure if x86 had a similar issue.
-> >> >
-> >> > Masami, have any ideas to why this happened?
-> >>
-> >> No, I don't familiar with ppc implementation. I guess
-> >> that single-step resume code failed to emulate the
-> >> instruction, but it strongly depends on ppc arch.
-> >> Maybe IBM people may know what happened.
-> >>
-> >> Ananth, Jim, would you have any ideas?
-> >
-> > On powerpc, we emulate sstep whenever possible. Only recently support to
-> > emulate loads and stores got added. I don't have access to a powerpc box
-> > today... but will try to recreate the problem ASAP and see what could be
-> > happening in the presence of mcount.
+On Tue, 2011-06-28 at 13:35 +0200, David Wagner wrote:
+> Hi,
 > 
-> After taking more testing on it, it looks like the issue doesn't
-> depend on mcount
-> (AKA. CONFIG_FUNCTION_TRACER)
+> On 06/27/2011 09:26 PM, Artem Bityutskiy wrote:
+> > On Fri, 2011-06-24 at 15:34 +0200, david.wagner@free-electrons.com
+> > wrote:
+> >> +	/* Stolen from mtd_blkdevs.c */
+> >> +	/* Create processing thread */
+> >> +	dev->thread = kthread_run(ubi_ubiblk_thread, dev, "%s%d_%d",
+> >> +				  "kubiblkd", dev->ubi_num, dev->vol_id);
+> >> +	if (IS_ERR(dev->thread)) {
+> >> +		ret = PTR_ERR(dev->thread);
+> >> +		goto out_thread;
+> >> +	}
+> > 
+> > Why we need a kernel thread? Could you please describe when exactly it
+> > is needed and why we cannot avoid having it?
 > 
-> As I said in the first email, with eldk-5.0 CONFIG_FUNCTION_TRACER=n
-> will work well.
-> 
-> But when I'm using eldk-4.2[1], both will fail. But the funny thing is when I
-> set kprobe at several functions some works fine but some will fail. For example,
-> at this time do_fork() works well, but show_interrupt() will crash.
+> Do you mean that there could be another/better way ?
 
-Certain functions are off limits for probing -- look for __kprobe
-annotations in the kernel. Some such functions are arch specific, but
-show_interrupts() would definitely not be one of them. It works fine on
-my (64bit) test box.
+No, I just do not understand why it is there. I think this is juts block
+layer's design, but I wanted you to explain this - the design, how block
+requests are handled, and where exactly the thread is needed. I expected
+you just have the explanation.
 
-At this time, I think your best bet is to work with the eldk folks to
-narrow down the problem. Given the current set of data, I am inclined to
-think it could be an eldk bug, not a kernel one.
+-- 
+Best Regards,
+Artem Bityutskiy
 
-Ananth
