@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753841Ab1F2Hg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 03:36:26 -0400
-Received: from tundra.namei.org ([65.99.196.166]:47233 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751736Ab1F2HgS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 03:36:18 -0400
-Date: Wed, 29 Jun 2011 17:36:05 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-cc: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the security-testing
- tree
-In-Reply-To: <201106291316.CDF48413.JtQVLOFSFOOFMH@I-love.SAKURA.ne.jp>
-Message-ID: <alpine.LRH.2.00.1106291735410.5093@tundra.namei.org>
-References: <20110629134800.9ee0d5b7.sfr@canb.auug.org.au> <201106291316.CDF48413.JtQVLOFSFOOFMH@I-love.SAKURA.ne.jp>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753062Ab1F2Hjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 03:39:54 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:59877 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751463Ab1F2Hjr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 03:39:47 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <BANLkTikkxkDBOgQpGr9ZGzqFeHLmWGg+GQ@mail.gmail.com>
+References: <1307695731-28018-1-git-send-email-linus.walleij@stericsson.com>
+	<BANLkTinxptCJRETreCpUoV-nU2K4fuFcmQ@mail.gmail.com>
+	<BANLkTimMSChGFUSnFWFHv3nNUca_Fyawaw@mail.gmail.com>
+	<20110627120256.GA19531@opensource.wolfsonmicro.com>
+	<BANLkTikpMdakfTU+RRsXQVnpO4-KGkOGJQ@mail.gmail.com>
+	<BANLkTinWmdWgGD9ui+WVV7DyCzy73S5AkQ@mail.gmail.com>
+	<BANLkTikkxkDBOgQpGr9ZGzqFeHLmWGg+GQ@mail.gmail.com>
+Date: Wed, 29 Jun 2011 09:39:46 +0200
+Message-ID: <BANLkTikxn6QQ5DF5xq7+SvKQ--F4ka0ZLg@mail.gmail.com>
+Subject: Re: [PATCH 0/2] RFC: gpio: driver-local pin configuration
+From: Stijn Devriendt <highguy@gmail.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+Cc: Kyungmin Park <kmpark@infradead.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org,
+        Haojian Zhuang <haojian.zhuang@gmail.com>,
+        Rohit Vaswani <rvaswani@codeaurora.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>,
+        Russell King <linux@arm.linux.org.uk>,
+        Ben Nizette <bn@niasdigital.com>, Lee Jones <lee.jones@linaro.org>,
+        H Hartley Sweeten <hartleys@visionengravers.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Kurt Van Dijck <kurt.van.dijck@eia.be>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011, Tetsuo Handa wrote:
+On Wed, Jun 29, 2011 at 8:18 AM, Linus Walleij <linus.walleij@linaro.org> wrote:
+> 2011/6/28 Stijn Devriendt <highguy@gmail.com>:
+>> On Mon, Jun 27, 2011 at 2:37 PM, Linus Walleij <linus.walleij@linaro.org> wrote:
+>>> On Mon, Jun 27, 2011 at 2:02 PM, Mark Brown
+>>>> How about device tree usage?  I guess there we'd end up doing it by
+>>>> putting the configuration on the GPIO end of things rather than on the
+>>>> GPIO user side?
+>>>
+>>> Sorry I can't quite understand that, please elaborate!
+>>>
+>>
+>> I have some code doing this as well (in a very limited fashion):
+>>
+>> int of_request_gpio(..., int* remaining_flags)
+>> {
+>>  of_get_gpio_flags(of_dev, i, remaining_flags)
+>>  if (flags & bias_X) {
+>>     gpio_set_bias(gpio, ...)
+>>     flags &= ~bias_X
+>>  }
+>>  // interpret all generic flags here
+>> };
+>>
+>> So drivers need not worry about all gpio flags and special things.
+>> They just request the pin; what they receive is a fully configured
+>> pin (with the exception of unknown flags passed out via
+>> remaining_flags).
+>
+> Sorry there is something I don't get here or there is something you
+> assume, maybe.
+>
+> How does this kind of design account for the case where you need
+> to change the biasing at runtime?
+>
+You're right, it doesn't. It only accounts for preconfiguring pins from
+device-tree of platform data.
 
->  From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> Date: Wed, 29 Jun 2011 13:07:52 +0900
-> Subject: [PATCH] TOMOYO: Fix build error with CONFIG_SECURITY_TOMOYO_OMIT_USERSPACE_LOADER=y .
-> 
-> I forgot to add #ifndef in commit 0e4ae0e0 "TOMOYO: Make several options
-> configurable.", resulting
-> 
->   security/built-in.o: In function `tomoyo_bprm_set_creds':
->   tomoyo.c:(.text+0x4698e): undefined reference to `tomoyo_load_policy'
-> 
-
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
-
--- 
-James Morris
-<jmorris@namei.org>
+Regards,
+Stijn
