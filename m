@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755339Ab1F2Lip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 07:38:45 -0400
-Received: from bar.sig21.net ([80.81.252.164]:36327 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754439Ab1F2Lin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 07:38:43 -0400
-Date: Wed, 29 Jun 2011 13:38:34 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: missing compat-ioctl for CDROM_DRIVE_STATUS + FDGETPRM
-Message-ID: <20110629113834.GA4227@sig21.net>
-References: <20110617090424.GA19345@sig21.net>
- <201106171502.39445.arnd@arndb.de>
+	id S1755300Ab1F2Lkn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 07:40:43 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54312 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751769Ab1F2Lkj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 07:40:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106171502.39445.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -3.8 (---)
-X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.648,BAYES_00=-2.599 autolearn=no
+In-Reply-To: <4E0AF2BA.2040706@gmail.com>
+References: <1302756608.2854.10.camel@perseus.themaw.net> <BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
+ <4DA4B6A8.7030804@gmail.com> <BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
+ <4DA5DCB8.3040101@gmail.com> <BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
+ <4DA5F569.9020309@gmail.com> <BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
+ <24792.1302808448@redhat.com> <4E0AF2BA.2040706@gmail.com>
+From: Michal Suchanek <hramrach@centrum.cz>
+Date: Wed, 29 Jun 2011 13:40:19 +0200
+X-Google-Sender-Auth: 6FiMDak1uZ_k8Z2Mc0gYjkcvYY4
+Message-ID: <BANLkTikeurm0KbmVQKi_OkTs5ZbqOvmdcQ@mail.gmail.com>
+Subject: Re: Union mount and overlayfs bake off?
+To: Ric Wheeler <ricwheeler@gmail.com>
+Cc: David Howells <dhowells@redhat.com>, Alexander Viro <aviro@redhat.com>,
+        Ian Kent <ikent@redhat.com>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Jeff Moyer <jmoyer@redhat.com>,
+        miklos@szeredi.hu, Christoph Hellwig <hch@infradead.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 17, 2011 at 03:02:39PM +0200, Arnd Bergmann wrote:
-> On Friday 17 June 2011 11:04:24 Johannes Stezenbach wrote:
-> > running even a simple "qemu-img create -f qcow2 some.img 1G" causes
-> > the following in dmesg on a Linux host with linux-2.6.39.1 x86_64 kernel
-> > and 32bit userspace:
-> > 
-> > ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(00005326){t:'S';sz:0} arg(7fffffff) on some.img
-> > ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(801c0204){t:02;sz:28} arg(fff77350) on some.img
-> > 
-> > (The same happens when starting a qemu or kvm vm.)
-> > 
-> > ioctl 00005326 seems to be CDROM_DRIVE_STATUS,
-> > ioctl 801c0204 is FDGETPRM.  Both are used in
-> > qemu/block/raw-posix.c in cdrom_probe_device()
-> > and floppy_probe_device() respectively.
-> > 
-> > FWIW, I'm using qemu/kvm from Debian unstable
-> > (qemu-0.14.0+dfsg-5.1, qemu-kvm-0.14.1+dfsg-1)
-> 
-> Both are handled by the kernel for block devices, but not for regular
-> files. The messages may be annoying but they are harmless. We could
-> silence them either by checking if the file is actually a block device in
-> qemu-img, or by adding a nop handler to the kernel for regular files.
+On 29 June 2011 11:39, Ric Wheeler <ricwheeler@gmail.com> wrote:
+>
+> I think that it has been a while since David reposted the refreshed patch
+> set for union mounts & know that overlayfs has recent updates as well.
+>
+> Despite that, I have not seen a lot of feedback from reviewers or testers.
+>
 
-Sorry for very slow reply.  I think qemu's use of these ioctls
-to probe if the device is a cdrom or floppy is valid, so instead
-of adding a stat() call to check for block device in qemu, I think
-it is better to silence the warning in the kernel.
+I can only attest that I can build working live CD on top of either
+overlayfs or unionmount.
 
-Do I get it right that just adding two IGNORE_IOCTL() to
-the ioctl_pointer array in linux/fs/compat_ioctl.c is sufficient,
-like in commit 3f001711?
-I.e. these ioctls are handled for block devices earlier
-in compat_sys_ioctl()?
+This is not a good metric for reliability because issues were found
+with both solutions after the live CDs were working fine already.
 
+However, it is an usability metric in that both solutions are from the
+alpha stage in which crucial features were missing or broken way into
+the beta stage  in which corner case issues are discovered but the
+solution is generally working.
 
-Thanks,
-Johannes
+Somebody was running racer on top of overlayfs which uncovered some
+problems with overlayfs itself and linux vfs in general. Unionmount
+has supposedly its own testsuite but I have never seen that.
+
+There are some issues with neither creating full emulation of a
+traditional filesystem and the cost of hiding more effects of the
+union from userspace to make the filesystem look more traditional.
+
+With something touching VFS, however, it is important to decide how
+(and if) these corner case issues should be resolved because they
+could possibly affect unrelated parts of the system. Reviewing all
+raised concerns is unfortunately taking quite some time, and then
+addressing them in code will probably require more.
+
+Thanks
+
+Michal
