@@ -1,284 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754081Ab1F2ImT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 04:42:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23699 "EHLO mx1.redhat.com"
+	id S1754110Ab1F2Inu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 04:43:50 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:44888 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753762Ab1F2ImL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 04:42:11 -0400
-Date: Wed, 29 Jun 2011 11:42:06 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tom Lendacky <tahm@linux.vnet.ibm.com>
-Cc: Krishna Kumar2 <krkumar2@in.ibm.com>,
-        Christian Borntraeger <borntraeger@de.ibm.com>,
-        Carsten Otte <cotte@de.ibm.com>, habanero@linux.vnet.ibm.com,
-        Heiko Carstens <heiko.carstens@de.ibm.com>, kvm@vger.kernel.org,
-        lguest@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux390@de.ibm.com,
-        netdev@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        Martin Schwidefsky <schwidefsky@de.ibm.com>, steved@us.ibm.com,
-        virtualization@lists.linux-foundation.org, Shirley Ma <xma@us.ibm.com>,
-        roprabhu@cisco.com
-Subject: Re: RFT: virtio_net: limit xmit polling
-Message-ID: <20110629084206.GA14627@redhat.com>
-References: <20110619102700.GA11198@redhat.com>
- <201106281108.09285.tahm@linux.vnet.ibm.com>
+	id S1753762Ab1F2Ine (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 04:43:34 -0400
+Date: Wed, 29 Jun 2011 12:42:38 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: "Winkler, Tomas" <tomas.winkler@intel.com>
+Cc: Dan Carpenter <error27@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+        Mike Thomas <rmthomas@sciolus.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
+Message-ID: <20110629084238.GB10219@tugrik.mns.mnsspb.ru>
+References: <cover.1307967011.git.kirr@mns.spb.ru> <bcbeb6b7c5ab7624ea59b072f74347fa8e6a6350.1307967011.git.kirr@mns.spb.ru> <6F5C1D715B2DA5498A628E6B9C124F0401AD319280@hasmsx504.ger.corp.intel.com> <cover.1307967011.git.kirr@mns.spb.ru> <bcbeb6b7c5ab7624ea59b072f74347fa8e6a6350.1307967011.git.kirr@mns.spb.ru> <20110613123659.GG3583@shale.localdomain> <20110614163707.GA29015@tugrik.mns.mnsspb.ru> <6F5C1D715B2DA5498A628E6B9C124F0401AD3648B4@hasmsx504.ger.corp.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201106281108.09285.tahm@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <6F5C1D715B2DA5498A628E6B9C124F0401AD3648B4@hasmsx504.ger.corp.intel.com>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 11:08:07AM -0500, Tom Lendacky wrote:
-> On Sunday, June 19, 2011 05:27:00 AM Michael S. Tsirkin wrote:
-> > OK, different people seem to test different trees.  In the hope to get
-> > everyone on the same page, I created several variants of this patch so
-> > they can be compared. Whoever's interested, please check out the
-> > following, and tell me how these compare:
+On Wed, Jun 15, 2011 at 12:01:57AM +0300, Winkler, Tomas wrote:
+> 
+> 
+> > -----Original Message-----
+> > From: Kirill Smelkov [mailto:kirr@mns.spb.ru]
+> > Sent: Tuesday, June 14, 2011 7:37 PM
+> > To: Dan Carpenter; Winkler, Tomas
+> > Cc: Greg Kroah-Hartman; devel@driverdev.osuosl.org; Mike Thomas; linux-
+> > kernel@vger.kernel.org
+> > Subject: Re: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
 > > 
-> > kernel:
+> > On Mon, Jun 13, 2011 at 04:23:45PM +0300, Winkler, Tomas wrote:
+> > >
+> > >
+> > > > -----Original Message-----
+> > > > From: Kirill Smelkov [mailto:kirr@mns.spb.ru]
+> > > > Sent: Monday, June 13, 2011 3:19 PM
+> > > > To: Greg Kroah-Hartman
+> > > > Cc: Winkler, Tomas; Mike Thomas; devel@driverdev.osuosl.org; linux-
+> > > > kernel@vger.kernel.org; Kirill Smelkov
+> > > > Subject: [PATCH 5/5] staging/easycap: Fix bytesperline calculation
+> > > >
+> > > > As described above fillin_formats()
+> > > >
+> > > > """
+> > > >     /*
+> > > >      *  THE 16-BIT easycap_format.mask HAS MEANING:
+> > > >      *    (least significant) BIT  0:     0 => PAL, 25 FPS;   1 => NTSC, 30 FPS
+> > > >      *                        BITS 2-4:   RESERVED FOR DIFFERENTIATING STANDARDS
+> > > >      *                        BITS 5-7:   NUMBER OF BYTES PER PIXEL
+> > > >      *                        BIT  8:     0 => NATIVE BYTE ORDER;  1 => SWAPPED
+> > > >      *                        BITS 9-10:  RESERVED FOR OTHER BYTE PERMUTATIONS
+> > > >      *                        BIT 11:     0 => UNDECIMATED;    1 => DECIMATED
+> > > >      *                        BIT 12:     0 => OFFER FRAMES;   1 => OFFER FIELDS
+> > > >      *                        BIT 13:     0 => FULL FRAMERATE; 1 => REDUCED
+> > > >      *     (most significant) BITS 14-15: RESERVED FOR OTHER FIELD/FRAME
+> > > > OPTIONS
+> > > >      *  IT FOLLOWS THAT:
+> > > >      *     bytesperpixel IS         ((0x00E0 & easycap_format.mask) >> 5)
+> > > >      *     byteswaporder IS true IF (0 != (0x0100 & easycap_format.mask))
+> > > >      *
+> > > >      *     decimatepixel IS true IF (0 != (0x0800 & easycap_format.mask))
+> > > >      *
+> > > >      *       offerfields IS true IF (0 != (0x1000 & easycap_format.mask))
+> > > >      */
+> > > > """
+> > > >
+> > > > bytes-per-pixel is stored in bits 5-7 of calculated mask.
+> > > >
+> > > > But when calculating bytes-per-line we were extracting wrong value
+> > > > instead of bytes-per-pixel, which was usually 2 times bigger -- e.g.
+> > > > for PAL YUV 422 I was getting ((mask3 & 0x00F0) >> 4) = 4 bytes instead of
+> > 2.
+> > > >
+> > > > The error here is that even in comments there is a line saying
+> > > >
+> > > >      *     bytesperpixel IS         ((0x00E0 & easycap_format.mask) >> 5)
+> > > >
+> > > > but we were using
+> > > >                                     ((0x00F0 & easycap_format.mask)
+> > > > >> 4)
+> > > >
+> > > > With 2 times bigger bytesperpixel and automatically bytesperline,
+> > > > the video was shown halfheight'ed, which is understandable if we
+> > > > look at video- memory layout:
+> > > >
+> > > >     <------- bytesperline -------->
+> > > >     <- real bpl ->
+> > > >
+> > > >     x0----------y0  x1-----------y1
+> > > >     x2----------y2  x3-----------y3
+> > > >
+> > > >     xn----------yn  xn-----------yn
+> > > >     <garbage>
+> > > >
+> > > > for each line, we should display width pixels, then move to next
+> > > > line with bytesperline, and oops, if bytesperline =
+> > > > 2*real-bytesperlin, we'll skip one line and move to next-next line, and so
+> > only half lines will be shown.
+> > > >
+> > > > Initially I've debugged the problem with my video application[1],
+> > > > but I've checked that after this patch both rawv (mine app) and
+> > > > tvtime work correctly.
+> > > >
+> > > > [1] http://repo.or.cz/w/rawv.git
+> > > >
+> > > > P.S. why at all we use those mask/shifts? Why not use bitfields?
+> > >
+> > > First of all  I have feeling this code history beyond this driver.
+> > > Second there possible issues with bit fields related to endianity and
+> > > efficiency. I'm not sure it applies also in this driver
 > > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git
+> > I'd agree about endianity, but if I see it correctly, in this driver
+> > easycap_format.mask is used only as internal driver flags not writtent to
+> > hardware registers. So endianity should be out of scope here.
 > > 
-> > virtio-net-limit-xmit-polling/base - this is net-next baseline to test
-> > against virtio-net-limit-xmit-polling/v0 - fixes checks on out of capacity
-> > virtio-net-limit-xmit-polling/v1 - previous revision of the patch
-> > 		this does xmit,free,xmit,2*free,free
-> > virtio-net-limit-xmit-polling/v2 - new revision of the patch
-> > 		this does free,xmit,2*free,free
+> > As to efficiency, in essence the compiler generates almost the same shifts
+> > and masks for accessing bitfields as a human would do, so there should be no
+> > difference, especially when we are not talking about hot-path code.
+> > 
+> > And also, if endianity matters, there is always possibility to do something like
+> > this (from drivers/atm/fore200e.h):
+> > 
+> >     /* bitfields endian games */
+> > 
+> >     #if defined(__LITTLE_ENDIAN_BITFIELD)
+> >     #define BITFIELD2(b1, b2)                    b1; b2;
+> >     #define BITFIELD3(b1, b2, b3)                b1; b2; b3;
+> >     #define BITFIELD4(b1, b2, b3, b4)            b1; b2; b3; b4;
+> >     #define BITFIELD5(b1, b2, b3, b4, b5)        b1; b2; b3; b4; b5;
+> >     #define BITFIELD6(b1, b2, b3, b4, b5, b6)    b1; b2; b3; b4; b5; b6;
+> >     #elif defined(__BIG_ENDIAN_BITFIELD)
+> >     #define BITFIELD2(b1, b2)                                    b2; b1;
+> >     #define BITFIELD3(b1, b2, b3)                            b3; b2; b1;
+> >     #define BITFIELD4(b1, b2, b3, b4)                    b4; b3; b2; b1;
+> >     #define BITFIELD5(b1, b2, b3, b4, b5)            b5; b4; b3; b2; b1;
+> >     #define BITFIELD6(b1, b2, b3, b4, b5, b6)    b6; b5; b4; b3; b2; b1;
+> >     #else
+> >     #error unknown bitfield endianess
+> >     #endif
+> > 
+> > 
+> >     /* ATM cell header (minus HEC byte) */
+> > 
+> >     typedef struct atm_header {
+> >         BITFIELD5(
+> >             u32 clp :  1,    /* cell loss priority         */
+> >             u32 plt :  3,    /* payload type               */
+> >             u32 vci : 16,    /* virtual channel identifier */
+> >             u32 vpi :  8,    /* virtual path identifier    */
+> >             u32 gfc :  4     /* generic flow control       */
+> >        )
+> >     } atm_header_t;
+> > 
+> > 
+> > to me, it's the sanest approach to C bitfields and endianity. Only we'd better
+> > have those BITFIELDX in include/linux/bitfield.h
 > > 
 > 
-> Here's a summary of the results.  I've also attached an ODS format spreadsheet
-> (30 KB in size) that might be easier to analyze and also has some pinned VM
-> results data.  I broke the tests down into a local guest-to-guest scenario
-> and a remote host-to-guest scenario.
-> 
-> Within the local guest-to-guest scenario I ran:
->   - TCP_RR tests using two different messsage sizes and four different
->     instance counts among 1 pair of VMs and 2 pairs of VMs.
->   - TCP_STREAM tests using four different message sizes and two different
->     instance counts among 1 pair of VMs and 2 pairs of VMs.
-> 
-> Within the remote host-to-guest scenario I ran:
->   - TCP_RR tests using two different messsage sizes and four different
->     instance counts to 1 VM and 4 VMs.
->   - TCP_STREAM and TCP_MAERTS tests using four different message sizes and
->     two different instance counts to 1 VM and 4 VMs.
-> over a 10GbE link.
+> Still I don't like these macro templates either but that's probably personal taste only I wouldn't  NACK it.
 
-roprabhu, Tom,
-
-Thanks very much for the testing. So on the first glance
-one seems to see a significant performance gain in V0 here,
-and a slightly less significant in V2, with V1
-being worse than base. But I'm afraid that's not the
-whole story, and we'll need to work some more to
-know what really goes on, please see below.
+Yes, we'd better have something like
+__attribute__(le_bitfiels/be_bitfields), but up to date this macro is
+less ugliest one.
 
 
-Some comments on the results: I found out that V0 because of mistake
-on my part was actually almost identical to base.
-I pushed out virtio-net-limit-xmit-polling/v1a instead that
-actually does what I intended to check. However,
-the fact we get such a huge distribution in the results by Tom
-most likely means that the noise factor is very large.
+Though I'm not engaging to refactor bitfilds in the kernel now.
 
 
->From my experience one way to get stable results is to
-divide the throughput by the host CPU utilization
-(measured by something like mpstat).
-Sometimes throughput doesn't increase (e.g. guest-host)
-by CPU utilization does decrease. So it's interesting.
-
-
-Another issue is that we are trying to improve the latency
-of a busy queue here. However STREAM/MAERTS tests ignore the latency
-(more or less) while TCP_RR by default runs a single packet per queue.
-Without arguing about whether these are practically interesting
-workloads, these results are thus unlikely to be significantly affected
-by the optimization in question.
-
-What we are interested in, thus, is either TCP_RR with a -b flag
-(configure with  --enable-burst) or multiple concurrent
-TCP_RRs.
-
-
-
-> *** Local Guest-to-Guest ***
-> 
-> Here's the local guest-to-guest summary for 1 VM pair doing TCP_RR with
-> 256/256 request/response message size in transactions per second:
-> 
-> Instances	Base		V0		V1		V2
-> 1		 8,151.56	 8,460.72	 8,439.16	 9,990.37
-> 25		48,761.74	51,032.62	51,103.25	49,533.52
-> 50		55,687.38	55,974.18	56,854.10	54,888.65
-> 100		58,255.06	58,255.86	60,380.90	59,308.36
-> 
-> Here's the local guest-to-guest summary for 2 VM pairs doing TCP_RR with
-> 256/256 request/response message size in transactions per second:
-> 
-> Instances	Base		V0		V1		V2
-> 1		18,758.48	19,112.50	18,597.07	19,252.04
-> 25		80,500.50	78,801.78	80,590.68	78,782.07
-> 50		80,594.20	77,985.44	80,431.72	77,246.90
-> 100		82,023.23	81,325.96	81,303.32	81,727.54
-> 
-> Here's the local guest-to-guest summary for 1 VM pair doing TCP_STREAM with
-> 256, 1K, 4K and 16K message size in Mbps:
-> 
-> 256:
-> Instances	Base		V0		V1		V2
-> 1		   961.78	 1,115.92	   794.02	   740.37
-> 4		 2,498.33	 2,541.82	 2,441.60	 2,308.26
-> 
-> 1K:					
-> 1		 3,476.61	 3,522.02	 2,170.86	 1,395.57
-> 4		 6,344.30	 7,056.57	 7,275.16	 7,174.09
-> 
-> 4K:					
-> 1		 9,213.57	10,647.44	 9,883.42	 9,007.29
-> 4		11,070.66	11,300.37	11,001.02	12,103.72
-> 
-> 16K:
-> 1		12,065.94	 9,437.78	11,710.60	 6,989.93
-> 4		12,755.28	13,050.78	12,518.06	13,227.33
-> 
-> Here's the local guest-to-guest summary for 2 VM pairs doing TCP_STREAM with
-> 256, 1K, 4K and 16K message size in Mbps:
-> 
-> 256:
-> Instances	Base		V0		V1		V2
-> 1		 2,434.98	 2,403.23	 2,308.69	 2,261.35
-> 4		 5,973.82	 5,729.48	 5,956.76	 5,831.86
-> 
-> 1K:
-> 1		 5,305.99	 5,148.72	 4,960.67	 5,067.76
-> 4		10,628.38	10,649.49	10,098.90	10,380.09
-> 
-> 4K:
-> 1		11,577.03	10,710.33	11,700.53	10,304.09
-> 4		14,580.66	14,881.38	14,551.17	15,053.02
-> 
-> 16K:
-> 1		16,801.46	16,072.50	15,773.78	15,835.66
-> 4		17,194.00	17,294.02	17,319.78	17,121.09
-> 
-> 
-> *** Remote Host-to-Guest ***
-> 
-> Here's the remote host-to-guest summary for 1 VM doing TCP_RR with
-> 256/256 request/response message size in transactions per second:
-> 
-> Instances	Base		V0		V1		V2
-> 1		 9,732.99	10,307.98	10,529.82	 8,889.28
-> 25		43,976.18	49,480.50	46,536.66	45,682.38
-> 50		63,031.33	67,127.15	60,073.34	65,748.62
-> 100		64,778.43	65,338.07	66,774.12	69,391.22
-> 
-> Here's the remote host-to-guest summary for 4 VMs doing TCP_RR with
-> 256/256 request/response message size in transactions per second:
-> 
-> Instances	Base		V0		V1		V2
-> 1		 39,270.42	 38,253.60	 39,353.10	 39,566.33
-> 25		207,120.91	207,964.50	211,539.70	213,882.21
-> 50		218,801.54	221,490.56	220,529.48	223,594.25
-> 100		218,432.62	215,061.44	222,011.61	223,480.47
-> 
-> Here's the remote host-to-guest summary for 1 VM doing TCP_STREAM with
-> 256, 1K, 4K and 16K message size in Mbps:
-> 
-> 256:
-> Instances	Base		V0		V1		V2
-> 1		2,274.74	2,220.38	2,245.26	2,212.30
-> 4		5,689.66	5,953.86	5,984.80	5,827.94
-> 
-> 1K:
-> 1		7,804.38	7,236.29	6,716.58	7,485.09
-> 4		7,722.42	8,070.38	7,700.45	7,856.76
-> 
-> 4K:
-> 1		8,976.14	9,026.77	9,147.32	9,095.58
-> 4		7,532.25	7,410.80	7,683.81	7,524.94
-> 
-> 16K:
-> 1		8,991.61	9,045.10	9,124.58	9,238.34
-> 4		7,406.10	7,626.81	7,711.62	7,345.37
-> 
-> Here's the remote host-to-guest summary for 1 VM doing TCP_MAERTS with
-> 256, 1K, 4K and 16K message size in Mbps:
-> 
-> 256:
-> Instances	Base		V0		V1		V2
-> 1		1,165.69	1,181.92	1,152.20	1,104.68
-> 4		2,580.46	2,545.22	2,436.30	2,601.74
-> 
-> 1K:
-> 1		2,393.34	2,457.22	2,128.86	2,258.92
-> 4		7,152.57	7,606.60	8,004.64	7,576.85
-> 
-> 4K:
-> 1		9,258.93	8,505.06	9,309.78	9,215.05
-> 4		9,374.20	9,363.48	9,372.53	9,352.00
-> 
-> 16K:
-> 1		9,244.70	9,287.72	9,298.60	9,322.28
-> 4		9,380.02	9,347.50	9,377.46	9,372.98
-> 
-> Here's the remote host-to-guest summary for 4 VMs doing TCP_STREAM with
-> 256, 1K, 4K and 16K message size in Mbps:
-> 
-> 256:
-> Instances	Base		V0		V1		V2
-> 1		9,392.37	9,390.74	9,395.58	9,392.46
-> 4		9,394.24	9,394.46	9,395.42	9,394.05
-> 
-> 1K:
-> 1		9,396.34	9,397.46	9,396.64	9,443.26
-> 4		9,397.14	9,402.25	9,398.67	9,391.09
-> 
-> 4K:
-> 1		9,397.16	9,398.07	9,397.30	9,396.33
-> 4		9,395.64	9,400.25	9,397.54	9,397.75
-> 
-> 16K:
-> 1		9,396.58	9,397.01	9,397.58	9,397.70
-> 4		9,399.15	9,400.02	9,399.66	9,400.16
-> 
-> 
-> Here's the remote host-to-guest summary for 4 VMs doing TCP_MAERTS with
-> 256, 1K, 4K and 16K message size in Mbps:
-> 
-> 256:
-> Instances	Base		V0		V1		V2
-> 1		5,048.66	5,007.26	5,074.98	4,974.86
-> 4		9,217.23	9,245.14	9,263.97	9,294.23
-> 
-> 1K:
-> 1		9,378.32	9,387.12	9,386.21	9,361.55
-> 4		9,384.42	9,384.02	9,385.50	9,385.55
-> 
-> 4K:
-> 1		9,391.10	9,390.28	9,389.70	9,391.02
-> 4		9,384.38	9,383.39	9,384.74	9,384.19
-> 
-> 16K:
-> 1		9,390.77	9,389.62	9,388.07	9,388.19
-> 4		9,381.86	9,382.37	9,385.54	9,383.88
-> 
-> 
-> Tom
-> 
-> > There's also this on top:
-> > virtio-net-limit-xmit-polling/v3 -> don't delay avail index update
-> > I don't think it's important to test this one, yet
+> > > context and I agree it looks ugly here , yet I personally usually avoid using
+> > bit fields.
+> > >
+> > > >
+> > > > Cc: Tomas Winkler <tomas.winkler@intel.com>
+> > > > Cc: Mike Thomas <rmthomas@sciolus.org>
+> > > > Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+> > >
+> > >
+> > > Acked-by:  Tomas Winkler <tomas.winkler@intel.com>
 > > 
-> > Userspace to use: event index work is not yet merged upstream
-> > so the revision to use is still this:
-> > git://git.kernel.org/pub/scm/linux/kernel/git/mst/qemu-kvm.git
-> > virtio-net-event-idx-v3
+> > Did you try running it? How come this bug was undiscovered for so long?
+> 
+> There is a lot of cleanups to be done in this area.  So far I've cleaned up mostly 
+> the basic code styling and next it would be to rewrite the USB handling and then
+> to fit this somehow to new linux-media framework including video quality fixing
+
+And thanks a lot for doing this.
+
+With bytesperline fix I've made my easycap work, but the video was
+coming with visaully seen jitter and because of very tight schedule to
+get my particular task done, I've also tried em28xx based card which
+worked without jitter.
 
 
+> Currently I'm more busy with my real life so it is going slower :)
+
+Same here and s/life/work/ :)
+
+> I'm really glad that you are also interested in fixing this driver. It quite affordable  HW and does its work.
+
+Yes, easycap was 2 times cheaper than em28xx based card. I still have
+both of them and interested in getting easycap into shape, because
+besides everything else, physically easycap dongle is significantly
+smaller and compact.
+
+
+Thanks again for your work on easycap, Tomas and Mike,
+
+Kirill
