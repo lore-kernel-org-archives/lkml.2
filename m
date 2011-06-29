@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab1F2Phq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 11:37:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38770 "EHLO mx1.redhat.com"
+	id S1756773Ab1F2Ph5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 11:37:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10490 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754795Ab1F2Pho (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 11:37:44 -0400
+	id S1756048Ab1F2Php (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 11:37:45 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH v3 0/9] Steal time for KVM
-Date: Wed, 29 Jun 2011 11:29:39 -0400
-Message-Id: <1309361388-30163-1-git-send-email-glommer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Gleb Natapov <gleb@redhat.com>
+Subject: [PATCH v3 1/9] introduce kvm_read_guest_cached
+Date: Wed, 29 Jun 2011 11:29:40 -0400
+Message-Id: <1309361388-30163-2-git-send-email-glommer@redhat.com>
+In-Reply-To: <1309361388-30163-1-git-send-email-glommer@redhat.com>
+References: <1309361388-30163-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset adds on the previous one, merging the suggestions
-made mainly by Gleb, Peter and Marcelo.
+From: Gleb Natapov <gleb@redhat.com>
 
-SCHEDSTATS is now used when available to provide information about
-time spent on the runqueue for the cpu threads. Information to/from
-the guest is obtained using *_cached() functions, as suggested by Gleb.
+Introduce kvm_read_guest_cached() function in addition to write one we
+already have.
 
-On the guest side, the two "prev_steal_time" variables are colapsed
-into a single one. Steal time accounting is also done inside
-update_rq_clock().
+[ by glauber: export function signature in kvm header ]
 
-Glauber Costa (8):
-  KVM-HDR Add constant to represent KVM MSRs enabled bit
-  KVM-HDR: KVM Steal time implementation
-  KVM-HV: KVM Steal time implementation
-  KVM-HV: use schedstats to calculate steal time
-  KVM-GST: Add a pv_ops stub for steal time
-  KVM-GST: KVM Steal time accounting
-  KVM-GST: adjust scheduler cpu power
-  KVM-GST: KVM Steal time registration
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+Signed-off-by: Glauber Costa <glommer@redhat.com>
+---
+ include/linux/kvm_host.h |    2 ++
+ virt/kvm/kvm_main.c      |   20 ++++++++++++++++++++
+ 2 files changed, 22 insertions(+), 0 deletions(-)
 
-Gleb Natapov (1):
-  introduce kvm_read_guest_cached
-
- Documentation/kernel-parameters.txt   |    4 ++
- Documentation/virtual/kvm/msr.txt     |   33 ++++++++++++
- arch/x86/Kconfig                      |   12 ++++
- arch/x86/include/asm/kvm_host.h       |    8 +++
- arch/x86/include/asm/kvm_para.h       |   15 +++++
- arch/x86/include/asm/paravirt.h       |    9 +++
- arch/x86/include/asm/paravirt_types.h |    1 +
- arch/x86/kernel/kvm.c                 |   73 +++++++++++++++++++++++++
- arch/x86/kernel/kvmclock.c            |    2 +
- arch/x86/kernel/paravirt.c            |    9 +++
- arch/x86/kvm/x86.c                    |   67 ++++++++++++++++++++++-
- include/linux/kvm_host.h              |    2 +
- kernel/sched.c                        |   94 +++++++++++++++++++++++++++++---
- kernel/sched_features.h               |    4 +-
- virt/kvm/kvm_main.c                   |   20 +++++++
- 15 files changed, 339 insertions(+), 14 deletions(-)
-
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 31ebb59..f7df0a3 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -381,6 +381,8 @@ int kvm_read_guest_page(struct kvm *kvm, gfn_t gfn, void *data, int offset,
+ int kvm_read_guest_atomic(struct kvm *kvm, gpa_t gpa, void *data,
+ 			  unsigned long len);
+ int kvm_read_guest(struct kvm *kvm, gpa_t gpa, void *data, unsigned long len);
++int kvm_read_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
++			   void *data, unsigned long len);
+ int kvm_write_guest_page(struct kvm *kvm, gfn_t gfn, const void *data,
+ 			 int offset, int len);
+ int kvm_write_guest(struct kvm *kvm, gpa_t gpa, const void *data,
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 11d2783..d5ef9eb 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -1418,6 +1418,26 @@ int kvm_write_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
+ }
+ EXPORT_SYMBOL_GPL(kvm_write_guest_cached);
+ 
++int kvm_read_guest_cached(struct kvm *kvm, struct gfn_to_hva_cache *ghc,
++			   void *data, unsigned long len)
++{
++	struct kvm_memslots *slots = kvm_memslots(kvm);
++	int r;
++
++	if (slots->generation != ghc->generation)
++		kvm_gfn_to_hva_cache_init(kvm, ghc, ghc->gpa);
++
++	if (kvm_is_error_hva(ghc->hva))
++		return -EFAULT;
++
++	r = __copy_from_user(data, (void __user *)ghc->hva, len);
++	if (r)
++		return -EFAULT;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(kvm_read_guest_cached);
++
+ int kvm_clear_guest_page(struct kvm *kvm, gfn_t gfn, int offset, int len)
+ {
+ 	return kvm_write_guest_page(kvm, gfn, (const void *) empty_zero_page,
 -- 
 1.7.3.4
 
