@@ -1,42 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab1F2Mz0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 08:55:26 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22823 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755978Ab1F2MzV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 08:55:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,443,1304319600"; 
-   d="scan'208";a="21880305"
-Date: Wed, 29 Jun 2011 13:55:02 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: MyungJoo Ham <myungjoo.ham@samsung.com>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Kroah-Hartman <gregkh@suse.de>, kyungmin.park@samsung.com,
-        myungjoo.ham@gmail.com
-Subject: Re: [PATCH] tty: serial: samsung.c remove legacy PM code.
-Message-ID: <20110629135502.2261f9e8@bob.linux.org.uk>
-In-Reply-To: <1309328904-19267-1-git-send-email-myungjoo.ham@samsung.com>
-References: <1309328904-19267-1-git-send-email-myungjoo.ham@samsung.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756044Ab1F2MzY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 08:55:24 -0400
+Received: from ch1ehsobe005.messaging.microsoft.com ([216.32.181.185]:33676
+	"EHLO CH1EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755976Ab1F2MzS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 08:55:18 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LNJYJZ-01-LWD-02
+X-M-MSG: 
+Date: Wed, 29 Jun 2011 14:55:08 +0200
+From: Hans Rosenfeld <hans.rosenfeld@amd.com>
+To: Tejun Heo <tj@kernel.org>
+CC: "Seidel, Conny" <Conny.Seidel@amd.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 32bit NUMA and fakeNUMA broken for AMD CPUs
+Message-ID: <20110629125507.GQ478@escobedo.osrc.amd.com>
+References: <20110621174131.054f0422.conny.seidel_amd.com@marah.osrc.amd.com>
+ <20110626102235.GC12200@mtj.dyndns.org>
+ <20110626223807.47cef5c6.conny.seidel_amd.com@marah.osrc.amd.com>
+ <20110628174613.GP478@escobedo.osrc.amd.com>
+ <20110629094451.GJ3386@htj.dyndns.org>
+ <20110629123409.GL3386@htj.dyndns.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110629123409.GL3386@htj.dyndns.org>
+Organization: Advanced Micro Devices GmbH, Einsteinring 24, 85609 Dornach b.
+ Muenchen; Geschaeftsfuehrer: Andrew Bowd, Alberto Bozzo; Sitz: Dornach,
+ Gemeinde Aschheim, Landkreis Muenchen; Registergericht Muenchen, HRB Nr.
+ 43632
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011 15:28:24 +0900
-MyungJoo Ham <myungjoo.ham@samsung.com> wrote:
-
-> This patch "modernize" tty/serial/samsung.c to use non-legacy code for
-> suspend/resume.
+On Wed, Jun 29, 2011 at 08:34:09AM -0400, Tejun Heo wrote:
+> So, mminit_verify_page_links() detects it while the last 512MiB
+> highmem chunk of node 0 is being initialized and freaks out.
 > 
-> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
+> We definitely need a safe guard to check NUMA node alignment and
+> disable NUMA if it requires finer granuality than supported by the
+> memory model.  If you use DISCONTIGMEM, which has 64MiB granuality,
+> instead, it works, right?
 
-Looks fine to me - no tty/serial bits involved though
+I had DISCONTIGMEM enabled in the kernel config, it does not work.
+
+Hans
+
+
+-- 
+%SYSTEM-F-ANARCHISM, The operating system has been overthrown
+
