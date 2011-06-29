@@ -1,134 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756860Ab1F2QBT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 12:01:19 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:47487 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754128Ab1F2QBR (ORCPT
+	id S1757303Ab1F2QJD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 12:09:03 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:52016 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756687Ab1F2QI7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 12:01:17 -0400
-Date: Wed, 29 Jun 2011 19:01:11 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: cjb@laptop.org, linux-mmc@vger.kernel.org,
-        hans-christian.egtvedt@atmel.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@avr32linux.org,
-        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 1/2] MMC: PM: add suspend/resume in atmel-mci
-Message-ID: <20110629160110.GD2760@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1ef60c032bc39531302c1603bfcb841d2d437ccc.1309366360.git.nicolas.ferre@atmel.com>
+	Wed, 29 Jun 2011 12:08:59 -0400
+Message-ID: <4E0B4C95.6080409@candelatech.com>
+Date: Wed, 29 Jun 2011 09:02:29 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="GOYy6nE9rVgTbVLg"
-Content-Disposition: inline
-In-Reply-To: <1ef60c032bc39531302c1603bfcb841d2d437ccc.1309366360.git.nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Tejun Heo <tj@kernel.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: workqueue question.
+References: <4E0A23E7.1000606@candelatech.com> <20110629084329.GI3386@htj.dyndns.org>
+In-Reply-To: <20110629084329.GI3386@htj.dyndns.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/29/2011 01:43 AM, Tejun Heo wrote:
+> Hello,
+>
+> On Tue, Jun 28, 2011 at 11:56:39AM -0700, Ben Greear wrote:
+>> Is it OK to call INIT_WORK(&foo, bar)
+>> if we are currently being called by the work-queue
+>> using foo?
+>
+> Yes, but if flush_work*() races with it, flushing can finish before
+> execution is complete.
 
---GOYy6nE9rVgTbVLg
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+It appears that the code just wants to (re)add itself to the
+work queue with a different callback method:
 
-Hi,
+static void rpc_final_put_task(struct rpc_task *task,
+		struct workqueue_struct *q)
+{
+	if (q != NULL) {
+		INIT_WORK(&task->u.tk_work, rpc_async_release);
+		queue_work(q, &task->u.tk_work);
+	} else
+		rpc_free_task(task);
+}
 
-On Wed, Jun 29, 2011 at 06:54:19PM +0200, Nicolas Ferre wrote:
-> Take care of slots while going to suspend state.
->=20
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Signed-off-by: Uwe Kleine-K=F6nig <u.kleine-koenig@pengutronix.de>
-> ---
->  drivers/mmc/host/atmel-mci.c |   51 ++++++++++++++++++++++++++++++++++++=
-++++++
->  1 files changed, 51 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-> index aa8039f..c414ebe 100644
-> --- a/drivers/mmc/host/atmel-mci.c
-> +++ b/drivers/mmc/host/atmel-mci.c
-> @@ -1878,8 +1878,59 @@ static int __exit atmci_remove(struct platform_dev=
-ice *pdev)
->  	return 0;
->  }
-> =20
-> +#ifdef CONFIG_PM
-> +static int atmci_suspend(struct platform_device *pdev, pm_message_t mesg)
-> +{
-> +	struct atmel_mci *host =3D platform_get_drvdata(pdev);
-> +	struct atmel_mci_slot *slot;
-> +	int i, ret;
-> +
-> +	 for (i =3D 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-> +		slot =3D host->slot[i];
-> +		if (!slot)
-> +			continue;
-> +		ret =3D mmc_suspend_host(slot->mmc);
-> +		if (ret < 0) {
-> +			while (--i >=3D 0) {
-> +				slot =3D host->slot[i];
-> +				if (slot)
-> +					mmc_resume_host(host->slot[i]->mmc);
-> +			}
-> +			return ret;
-> +		}
-> +	}
-> +
-> +	return 0;
-> +}
-> +
-> +static int atmci_resume(struct platform_device *pdev)
-> +{
-> +	struct atmel_mci *host =3D platform_get_drvdata(pdev);
-> +	struct atmel_mci_slot *slot;
-> +	int i, ret;
-> +
-> +	for (i =3D 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-> +		slot =3D host->slot[i];
-> +		if (!slot)
-> +			continue;
-> +		ret =3D mmc_resume_host(slot->mmc);
-> +		if (ret < 0)
-> +			return ret;
-> +	}
-> +
-> +	return 0;
-> +}
-> +#else
-> +#define atmci_suspend	NULL
-> +#define atmci_resume	NULL
-> +#endif
-> +
-> +
-> +
->  static struct platform_driver atmci_driver =3D {
->  	.remove		=3D __exit_p(atmci_remove),
-> +	.suspend	=3D atmci_suspend,
-> +	.resume		=3D atmci_resume,
+My debugging leads me to believe that the rpc_async_release
+is (very rarely) called on a task object that has already been logically
+freed.
 
-should this be using dev_pm_ops instead ?
+Is there a better way to queue this up that might have less chance
+of some strange race?
 
---=20
-balbi
+>
+>> Also, is it valid to free the memory containing foo
+>> in a workqueue callback?
+>
+> Yeap.
 
---GOYy6nE9rVgTbVLg
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Is there a method that can be called from a workqueue callback
+to verify that the item has not been re-added to the work-queue?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+I tried doing a cancel, but that caused recursive locking issues.
 
-iQEcBAEBAgAGBQJOC0xGAAoJEAv8Txj19kN1WrAH/jSeJzlVXCg18esFXGnVTjir
-1iDCvpbPNMbIBITEzCYH09Jgfud218tu86leFPPy/fn5a08xWJfp/F9DtqPgGiGW
-b+Wj1Tkbq81oK5Nt1/BOLVL2eXaDUm76o0+pZMauC24HaVMJobmbidvfa9vAIFsf
-WGKpQT2DMplOkJ7LXd/BaZOC965zxLbBhejd9L1yap7MIY0k9OxTEcVn0NYTdu0R
-8AQyFiCgq7WfLS5ZWoC23DSMB+QkEvUZffxOuWxZwljzRONNuuR9S1hDnXy4feIz
-3CkTSn91Cb7mx2fun1SWmh0StMReXa1tyFpP7ttAZc6SJ9NfJnnyqq0+rUIjqe8=
-=1YFL
------END PGP SIGNATURE-----
+I'd like to call this right before freeing the object and BUG_ON()
+if the object is actually still on on a work-queue.
 
---GOYy6nE9rVgTbVLg--
+Thanks,
+Ben
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
