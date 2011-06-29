@@ -1,73 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab1F2QuF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 12:50:05 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48934 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756818Ab1F2QuD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 12:50:03 -0400
-Date: Thu, 30 Jun 2011 02:49:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 29
-Message-Id: <20110630024953.de9c84af.sfr@canb.auug.org.au>
-In-Reply-To: <20110629141806.GB16986@kroah.com>
-References: <20110629162454.e2326fcf.sfr@canb.auug.org.au>
-	<20110629141806.GB16986@kroah.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__30_Jun_2011_02_49_53_+1000_hbgx0X3SVzl_yiO3"
+	id S1756873Ab1F2PwY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 11:52:24 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:17703 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756687Ab1F2PwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 11:52:21 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: cjb@laptop.org, linux-mmc@vger.kernel.org,
+        hans-christian.egtvedt@atmel.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@avr32linux.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 1/2] MMC: PM: add suspend/resume in atmel-mci
+Date: Wed, 29 Jun 2011 18:54:19 +0200
+Message-Id: <1ef60c032bc39531302c1603bfcb841d2d437ccc.1309366360.git.nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__30_Jun_2011_02_49_53_+1000_hbgx0X3SVzl_yiO3
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Take care of slots while going to suspend state.
 
-Hi Greg,
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+ drivers/mmc/host/atmel-mci.c |   51 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 51 insertions(+), 0 deletions(-)
 
-On Wed, 29 Jun 2011 07:18:06 -0700 Greg KH <greg@kroah.com> wrote:
->
-> On Wed, Jun 29, 2011 at 04:24:54PM +1000, Stephen Rothwell wrote:
-> > Hi all,
-> >=20
-> > Changes since 20110628:
-> >=20
-> > My fixes tree is empty again (the early part of mmotm-2011-06-22-13-05 =
-is
-> > mostly now included in Linus' tree and the experiment failed anyway :-))
->=20
-> Did it fail?  I thought it at least solved the build errors that people
-> were seeing in the staging tree in other arches, allowing them to move
-> on to other, "real" issues that they had.
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index aa8039f..c414ebe 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1878,8 +1878,59 @@ static int __exit atmci_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int atmci_suspend(struct platform_device *pdev, pm_message_t mesg)
++{
++	struct atmel_mci *host = platform_get_drvdata(pdev);
++	struct atmel_mci_slot *slot;
++	int i, ret;
++
++	 for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
++		slot = host->slot[i];
++		if (!slot)
++			continue;
++		ret = mmc_suspend_host(slot->mmc);
++		if (ret < 0) {
++			while (--i >= 0) {
++				slot = host->slot[i];
++				if (slot)
++					mmc_resume_host(host->slot[i]->mmc);
++			}
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
++static int atmci_resume(struct platform_device *pdev)
++{
++	struct atmel_mci *host = platform_get_drvdata(pdev);
++	struct atmel_mci_slot *slot;
++	int i, ret;
++
++	for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
++		slot = host->slot[i];
++		if (!slot)
++			continue;
++		ret = mmc_resume_host(slot->mmc);
++		if (ret < 0)
++			return ret;
++	}
++
++	return 0;
++}
++#else
++#define atmci_suspend	NULL
++#define atmci_resume	NULL
++#endif
++
++
++
+ static struct platform_driver atmci_driver = {
+ 	.remove		= __exit_p(atmci_remove),
++	.suspend	= atmci_suspend,
++	.resume		= atmci_resume,
+ 	.driver		= {
+ 		.name		= "atmel_mci",
+ 	},
+-- 
+1.7.3
 
-The experiment was the start of getting parts of Andrew's tree into
-linux-next - the fix patches were a side effect (they are now in Linus'
-tree).  Hopefully, the experiment will continue in another fashion soon.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__30_Jun_2011_02_49_53_+1000_hbgx0X3SVzl_yiO3
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOC1exAAoJEDMEi1NhKgbsSZMIAIes0sFCkQmcIWZdsqWBWfD1
-psC31/xl9kYZxITukVFkctRF2Rh1II618LM1MYKby8/UddXnQiHyRdeVSwZdCWiH
-QrelgW8LO+2F3mEBwpKzBBw6V/HhRpN0ErGt3vhpYWGMQVofvd42jFflUb7WNdiR
-SUibBlTsQKE7CIxkwb/znEqTgbTPLFUy8HP12gh30w+vqJdd/IXCPIgkrVvqXq94
-/GXWdJK7PvYDmEEV4OWumkd88037tWxVT+/byaU/kVMDjk2RomXdZjyDLc2wB24r
-ddLzxqTUMcJvLdT7PdWm4coLa3gkUqiqOVsuGpqFp7Wx0jiw5LTaoWAHzR6uH4A=
-=yi3S
------END PGP SIGNATURE-----
-
---Signature=_Thu__30_Jun_2011_02_49_53_+1000_hbgx0X3SVzl_yiO3--
