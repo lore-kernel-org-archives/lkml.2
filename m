@@ -1,43 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab1F2NDm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 09:03:42 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64540 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755535Ab1F2NDk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 09:03:40 -0400
-Message-ID: <4E0B231B.4070808@cn.fujitsu.com>
-Date: Wed, 29 Jun 2011 21:05:31 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 19/22] KVM: MMU: lockless walking shadow page table
-References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FDB4.60306@cn.fujitsu.com> <4E0AED86.2060908@redhat.com> <4E0B0997.4090206@cn.fujitsu.com> <4E0B09EA.1040304@redhat.com> <4E0B1191.6040100@cn.fujitsu.com> <4E0B182C.1090402@redhat.com> <4E0B1A75.4070705@cn.fujitsu.com> <4E0B1A4E.2030301@redhat.com> <4E0B1CE8.2060803@cn.fujitsu.com> <4E0B2220.3050602@redhat.com>
-In-Reply-To: <4E0B2220.3050602@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-29 21:03:01,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-29 21:03:02,
-	Serialize complete at 2011-06-29 21:03:02
+	id S1756185Ab1F2NHZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 09:07:25 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38729 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755481Ab1F2NHX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 09:07:23 -0400
+Date: Wed, 29 Jun 2011 06:07:04 -0700 (PDT)
+Message-Id: <20110629.060704.2274470091326141358.davem@davemloft.net>
+To: Michael.Hennerich@analog.com
+Cc: vapier@gentoo.org, uclinux-dist-devel@blackfin.uclinux.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] MAINTAINERS: drop Michael from bfin_mac driver
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <544AC56F16B56944AEC3BD4E3D5917713EA0AEEA8C@LIMKCMBX1.ad.analog.com>
+References: <1309199047-18843-1-git-send-email-vapier@gentoo.org>
+	<544AC56F16B56944AEC3BD4E3D5917713EA0AEEA8C@LIMKCMBX1.ad.analog.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Wed, 29 Jun 2011 06:07:06 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2011 09:01 PM, Avi Kivity wrote:
-> On 06/29/2011 03:39 PM, Xiao Guangrong wrote:
->> >
->> >  Ok.  Let's drop the two paths, and put this improvement on the TODO instead.
->> >
->>
->> Avi, i am sorry, i do not understand it clearly, it means keep the patch as the
->> original way and do the improvement after it merged?
-> 
-> I mean, do all freeing using RCU and improve fork detection after merge.  I don't like the extra complexity and the extra atomic ops.
-> 
+From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
+Date: Mon, 27 Jun 2011 19:28:11 +0100
 
-Oh, i see, thanks! :-)
+> Mike Frysinger wrote on 2011-06-27:
+>> We want people to just use the list now rather than hitting up people
+>> who are no longer responsible for it.
+>>
+>> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+ ...
+> Acked-by: Michael Hennerich <michael.hennerich@analog.com>
+
+Applied, thanks.
