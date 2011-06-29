@@ -1,106 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab1F2LVF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 07:21:05 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:6803 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753403Ab1F2LVC (ORCPT
+	id S1755209Ab1F2LU6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 07:20:58 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:42291 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab1F2LUy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 07:21:02 -0400
-Message-ID: <4E0B0A76.5010204@draigBrady.com>
-Date: Wed, 29 Jun 2011 12:20:22 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	Wed, 29 Jun 2011 07:20:54 -0400
+Date: Wed, 29 Jun 2011 15:20:45 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, balbir@linux.vnet.ibm.com,
+        akpm@linux-foundation.org, viro@zeniv.linux.org.uk,
+        rientjes@google.com, wilsons@start.ca, security@kernel.org,
+        eparis@redhat.com, kernel-hardening@lists.openwall.com,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 1/2] proc: restrict access to /proc/PID/io
+Message-ID: <20110629112045.GA29011@albatros>
+References: <1308917318-4749-1-git-send-email-segoon@openwall.com>
+ <4E07F1C0.2070305@jp.fujitsu.com>
+ <20110627070300.GA4463@albatros>
+ <4E08324D.9040605@jp.fujitsu.com>
+ <20110627085242.GA6635@albatros>
+ <BANLkTimFkb1TK_u+Xqp6LnRgzMAv21jFHg@mail.gmail.com>
+ <20110628075053.GA4009@albatros>
+ <BANLkTimBMz8onkYDsz6D_An7q0k0wZVyUw@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Andrea Righi <andrea@betterlinux.com>, Minchan Kim <minchan.kim@gmail.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Hugh Dickins <hughd@google.com>,
-        Jerry James <jamesjer@betterlinux.com>,
-        Marcus Sorensen <marcus@bluehost.com>, Matt Heaton <matt@bluehost.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Rik van Riel <riel@redhat.com>, Theodore Tso <tytso@mit.edu>,
-        Shaohua Li <shaohua.li@intel.com>, linux-mm <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v4 0/2] fadvise: move active pages to inactive list with
- POSIX_FADV_DONTNEED
-References: <1309181361-14633-1-git-send-email-andrea@betterlinux.com>	<20110628151233.f0a279be.akpm@linux-foundation.org>	<20110628225645.GB2274@thinkpad> <20110628160347.a5ffcc26.akpm@linux-foundation.org>
-In-Reply-To: <20110628160347.a5ffcc26.akpm@linux-foundation.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTimBMz8onkYDsz6D_An7q0k0wZVyUw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/06/11 00:03, Andrew Morton wrote:
-> On Wed, 29 Jun 2011 00:56:45 +0200
-> Andrea Righi <andrea@betterlinux.com> wrote:
+On Wed, Jun 29, 2011 at 06:46 +0530, Balbir Singh wrote:
+> On Tue, Jun 28, 2011 at 1:20 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> > On Tue, Jun 28, 2011 at 06:54 +0530, Balbir Singh wrote:
+> >> > As to rounding - this is a workaround, not a fix.  What if some program
+> >> > reads one byte from tty and then do some io activity exactly of 1kb-1?
+> >> > Then you just measure kbs and get original tty activity.  (just a crazy
+> >> > example to show that it is not a full solution.)
+> >> >
+> >>
+> >> That would happen with a probability of 1/1024
+> >
+> > I'd not claim about probability here, but anyway rounding would be not
+> > a fix, just a workaround.  Also note that the random value is program
+> > dependent, it is not chosen at the program start time or anything
+> > similar.  IOW, if the program is vulnerable, it is vulnerable with 100%
+> > probability.
+> >
 > 
->>>>
->>>> In this way if the backup was the only user of a page, that page will be
->>>> immediately removed from the page cache by calling POSIX_FADV_DONTNEED.  If the
->>>> page was also touched by other processes it'll be moved to the inactive list,
->>>> having another chance of being re-added to the working set, or simply reclaimed
->>>> when memory is needed.
->>>
->>> So if an application touches a page twice and then runs
->>> POSIX_FADV_DONTNEED, that page will now not be freed.
->>>
->>> That's a big behaviour change.  For many existing users
->>> POSIX_FADV_DONTNEED simply doesn't work any more!
->>
->> Yes. This is the main concern that was raised by P__draig.
->>
->>>
->>> I'd have thought that adding a new POSIX_FADV_ANDREA would be safer
->>> than this.
->>
->> Actually Jerry (in cc) proposed
->> POSIX_FADV_IDONTNEEDTHISBUTIFSOMEBODYELSEDOESTHENDONTTOUCHIT in a
->> private email. :)
-> 
-> Sounds good.  Needs more underscores though.
-> 
->>>
->>>
->>> The various POSIX_FADV_foo's are so ill-defined that it was a mistake
->>> to ever use them.  We should have done something overtly linux-specific
->>> and given userspace more explicit and direct pagecache control.
->>
->> That would give us the possibility to implement a wide range of
->> different operations (drop, drop if used once, add to the active list,
->> add to the inactive list, etc..). Some users always complain that they
->> would like to have a better control over the page cache from userspace.
-> 
-> Well, I'd listen to proposals ;)
-> 
-> One thing we must be careful about is to not expose things like "active
-> list" to userspace.  linux-4.5 may not _have_ an active list, and its
-> implementors would hate us and would have to jump through hoops to
-> implement vaguely compatible behaviour in the new scheme.
-> 
-> So any primitives which are exposed should be easily implementable and
-> should *make sense* within any future scheme...
+> I was thinking along ASLR lines, ASLR reduces the probability of
+> malware finding specific address in code, but does not eliminate it
+> completely.
 
-Agreed.
+You confuse a bug fix with a prevention of an exploitation technique
+here.  ASLR doesn't fix anything, it tries to break exploits that use
+bugs like arbitrary writes/reads.  If there is arbitrary write bug,
+almost always the game is over; that's why such probabilistic measure is
+acceptable.  On the contrary, /proc/*/io leak is a bug, which is fairly
+fixable by restricting an access (breaking programs, though).  So, from
+the security point of view these cases are not comparable.
 
-In fairness to posix_fadvise(), I think it's designed to
-specify hints for the current process' use of data
-so that it can get at it more efficiently and also be
-allow the system to manipulate cache more efficiently.
-I.E. it's not meant for direct control of the cache.
 
-That being said, existing use has allowed this,
-and it would be nice not to change without consideration.
+> In the worst case as you suggest may
+> be the statistics would be available only to root, but that is the
+> final drop down scenario.
 
-I've mentioned how high level cache control functions
-might map to the existing FADV knobs here:
+Yes, it breaks iotop, but it is a full solution.
 
-http://marc.info/?l=linux-kernel&m=130917619416123&w=2
 
-cheers,
-Pádraig.
+> No we don't clear taskstats info on credential changes.
+
+If taskstats info is allowed to travel through credential changes, it
+exposes the similar private information.
+
+
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
