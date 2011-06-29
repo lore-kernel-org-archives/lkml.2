@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753685Ab1F2IPU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 04:15:20 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:43499 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab1F2IPO convert rfc822-to-8bit (ORCPT
+	id S1753897Ab1F2IQe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 04:16:34 -0400
+Received: from 207-126-122-235.ip.openhosting.com ([207.126.122.235]:39004
+	"EHLO drepperk.user.openhosting.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752359Ab1F2IQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 04:15:14 -0400
+	Wed, 29 Jun 2011 04:16:22 -0400
+Message-ID: <4E0ADF27.5070805@akkadia.org>
+Date: Wed, 29 Jun 2011 04:15:35 -0400
+From: Ulrich Drepper <drepper@akkadia.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Reply-To: royalscotland@live.co.uk
-Date: Wed, 29 Jun 2011 09:15:06 +0100
-Message-ID: <BANLkTi=H=QghQBRftxU_n4JP434NCF7LHA@mail.gmail.com>
-Subject: GRATULUJEME! Vyhrali ste 750.000 eur
-From: SWISS-LOTTO INC <proffcharles@googlemail.com>
-To: undisclosed-recipients:;
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
+        linux-kernel@vger.kernel.org, rientjes@google.com,
+        viro@zeniv.linux.org.uk, wilsons@start.ca
+Subject: Re: [PATCH] Add cloexec information to fdinfo
+References: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com> <BANLkTin7wm6m5bN4CfQzhJZuhy3bUrS80A@mail.gmail.com>
+In-Reply-To: <BANLkTin7wm6m5bN4CfQzhJZuhy3bUrS80A@mail.gmail.com>
+X-Enigmail-Version: 1.1.2
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enigAD4141DD6EDCDB9C02DD6DE1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SWISS-Lotto NIZOZEMSKO
-FRANCOSTRAAT 40,
-3067DV, LAIDEN.
-NIZOZEMSKO
-https:/ / www.swisslotto.ch
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enigAD4141DD6EDCDB9C02DD6DE1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+On 06/28/2011 01:23 PM, Linus Torvalds wrote:
+> The description makes no mention of why this would be needed?
+
+In this specific case I was trying to re-implement the pfiles program.
+For normal file descriptors (not sockets) this was the last piece of
+information which wasn't available.  This is all part of my "give
+Solaris users no reason to not switch" effort.  I intend to offer the
+code to the util-linux-ng maintainers.
 
 
-GRATULUJEME! Vyhráli jste 750.000 eur
+> Also, it's by no means the only thing not visible in /proc. Things
+> like file locking status, leases, file descriptor ownership, signal
+> number associated with the setown etc.
 
-Ty byly zadány èástku 750.000 eur na ¹výcarsko-LOTTO
-Satelitní Software email loterie, ve kterém e-mailové adresy jsou zachyceny
-náhodnì Software pohánìná internet prostøednictvím celosvìtové
-internetových stránkách.
+True, and maybe that will be useful as well.
 
-Va¹e e-mailová adresa byla mezi tìmi, zvolil letos
-SWISS-Lotto Satelitní loterie. A tento propagaèní program je hrdì
-sponzorované ¹výcarskou-Lotto organizace.
-
-Va¹e e-mailová adresa pøipojeného k poctu Ref.. 5, 7, 14, 17, 18, 43 s
-Sériové 10, a následnì vyhrála v loterii v kategorie "A". vy
-Proto byly schváleny pau¹ální èástku zaplatit z 750.000 eur.
-Císlo 1979-1912 kreslil ¹tìstí.
+I might actually have some more patches to get to socket information but
+I haven't fully checked out yet what is available.
 
 
-Pokud chcete soubor pro vá¹ nárok, kontaktujte prosím na¹e dùvìrník agent:
+--------------enigAD4141DD6EDCDB9C02DD6DE1
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
 
-Pan Dr. Fred Godwin
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.16 (GNU/Linux)
 
-Royal Bank Scotland
+iEYEARECAAYFAk4K3ycACgkQ2ijCOnn/RHTnmgCfeG7LyFoArwj7FCI0UG53jYd8
+jMAAn1QkgZmxocMDBU4aWkOboOaZzbeC
+=6bG5
+-----END PGP SIGNATURE-----
 
-Email: royalscotland@live.co.uk
-
-Tel: +44-7024096580
-
-
-Poskytovat mu informace, jak je uvedeno ní¾e:
-(1) Název:
-(2) Adresa:
-(3) Rodinný:
-(4) Vìk:
-(5) Sex:
-(6) Státní pøíslu¹nost:
-(7) zemi:
-(8) Zamìstnání:
-(9) Telefonní císlo:
-(10) Fax:
-(11) Nerozhodnì vý¹e uvedené císlo:
-
-Tyto údaje usnadnit øádný proces a uvolòování výhry
-aby se zabránilo zbyteèným prùtahùm a komplikacím pøi zpracovávání
-Va¹e výhry. Gratulujeme je¹tì jednou od v¹ech èlenù a zamìstnancù
-tento program.
-
-
-
-S pozdravem,
-Paní Sarah Van Norris
-Online hry øeditele
-SWISS-Lotto NIZOZEMSKO
-FRANCOSTRAAT 40,
-3067DV, LAIDEN.
-NIZOZEMSKO
-https:/ / www.swisslotto.ch
+--------------enigAD4141DD6EDCDB9C02DD6DE1--
