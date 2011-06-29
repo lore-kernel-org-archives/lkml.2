@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758053Ab1F2V4i (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 17:56:38 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57157 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757952Ab1F2V4g (ORCPT
+	id S1758092Ab1F2V4t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 17:56:49 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:42876 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753951Ab1F2V4q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 17:56:36 -0400
-Date: Wed, 29 Jun 2011 17:56:32 -0400
+	Wed, 29 Jun 2011 17:56:46 -0400
+Date: Wed, 29 Jun 2011 17:56:42 -0400
 From: Eric B Munson <emunson@mgebm.net>
 To: Glauber Costa <glommer@redhat.com>
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Rik van Riel <riel@redhat.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>
-Subject: Re: [PATCH v3 4/9] KVM-HV: KVM Steal time implementation
-Message-ID: <20110629215632.GC3557@mgebm.net>
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH v3 5/9] KVM-HV: use schedstats to calculate steal time
+Message-ID: <20110629215642.GD3557@mgebm.net>
 References: <1309361388-30163-1-git-send-email-glommer@redhat.com>
- <1309361388-30163-5-git-send-email-glommer@redhat.com>
+ <1309361388-30163-6-git-send-email-glommer@redhat.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="WplhKdTI2c8ulnbP"
+	protocol="application/pgp-signature"; boundary="VMt1DrMGOVs3KQwf"
 Content-Disposition: inline
-In-Reply-To: <1309361388-30163-5-git-send-email-glommer@redhat.com>
+In-Reply-To: <1309361388-30163-6-git-send-email-glommer@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---WplhKdTI2c8ulnbP
+--VMt1DrMGOVs3KQwf
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 On Wed, 29 Jun 2011, Glauber Costa wrote:
 
-> To implement steal time, we need the hypervisor to pass the guest informa=
-tion
-> about how much time was spent running other processes outside the VM.
-> This is per-vcpu, and using the kvmclock structure for that is an abuse
-> we decided not to make.
+> SCHEDSTATS provide a precise source of information about time tasks
+> spent on a runqueue, but not running (among other things). It is
+> specially useful for the steal time implementation, because it doesn't
+> record halt time at all.
 >=20
-> In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
-> holds the memory area address containing information about steal time
->=20
-> This patch contains the hypervisor part for it. I am keeping it separate =
-=66rom
-> the headers to facilitate backports to people who wants to backport the k=
-ernel
-> part but not the hypervisor, or the other way around.
+> To avoid a hard dependency on schedstats, since it is possible one won't
+> want to record statistics about all processes running, the previous method
+> of time measurement on put/load vcpu is kept  for !SCHEDSTATS.
 >=20
 > Signed-off-by: Glauber Costa <glommer@redhat.com>
 > CC: Rik van Riel <riel@redhat.com>
@@ -59,24 +54,25 @@ ernel
 > CC: Avi Kivity <avi@redhat.com>
 > CC: Anthony Liguori <aliguori@us.ibm.com>
 > CC: Eric B Munson <emunson@mgebm.net>
+> CC: Marcelo Tosatti <mtosatti@redhat.com>
 
 Tested-by: Eric B Munson <emunson@mgebm.net>
 
 
---WplhKdTI2c8ulnbP
+--VMt1DrMGOVs3KQwf
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOC5+QAAoJEH65iIruGRnNA5YH/0GMsB2KK8VHucsSvAqO7vId
-ZmkccGKSwe273p3ooKDQGuwC0NC9NES3dnkkItPWEdDUdxU8hrDl4dTcUXeZJLGw
-YPXkFEltVPT8lG68zyO4ODreIWwEuDhNpPmGO9jpt5VT67Ypo1Tn0+B9FA9AjBNH
-gkTFHqrUuzli+P6EZUsnQB+eRvQcr2F3U+fp0WQvxEygGxnonRPlMIg03gIzBtL3
-Vw/6QBc/JOrcDlyxy4OZGy5ToSZp65CwnCrKu3nOtxLfftg/qVSy3Fb4z5UVE7es
-Gb1CR+cSZtUxPEpzyI06BrF7BKP3bsB7bLayoWThlfoiE/T+oPQ4dQG6E/GU8Bg=
-=TKoS
+iQEcBAEBAgAGBQJOC5+aAAoJEH65iIruGRnNfRMIAKWSlVoHt3m1V/3SoT/KJ+Zi
+vwKn9Rz9UkY2p/XkqNu12Y0HuqSzTgHTql0xsZ1EpfBtudSDq+6QqP4ryMH/ulwH
+jLBKm/FLwK0/888lHoIjzOwnQzbuLcQdHjGjZ2rbjqtRstmy/jO50vu8faI3EDAq
+tycF1aUGwexzOGM0wWIaFylyunoEg89lpmlut6ieDpApCAHlyqRbftZgMubzM1yi
+HxTexqRvlBiPmmbnXPsAyZJOdFhZscWG6SCQs+STbGgmMY+YviendDnzwC5IXbf2
+EU/EOINcicYSx1AxDfn0+EjMZrj7ReZFJI2fmNM2dRN1eZ7HL4W6LifctSJuTP0=
+=BFMH
 -----END PGP SIGNATURE-----
 
---WplhKdTI2c8ulnbP--
+--VMt1DrMGOVs3KQwf--
