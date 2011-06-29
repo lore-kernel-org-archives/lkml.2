@@ -1,122 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1F2OLJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 10:11:09 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:2277 "EHLO
-	TX2EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752279Ab1F2OLE (ORCPT
+	id S1755379Ab1F2OLf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 10:11:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59182 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752279Ab1F2OLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 10:11:04 -0400
-X-SpamScore: -20
-X-BigFish: VPS-20(zz936eK146fK179dN1432N98dKzz1202hzz8275dhz32i668h839h62h)
-X-Spam-TCS-SCL: 1:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNK229-02-435-02
-X-M-MSG: 
-Date: Wed, 29 Jun 2011 16:10:56 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Francis Moreau <francis.moro@gmail.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>
-Subject: Re: [tip:perf/core] perf: Ignore non-sampling overflows
-Message-ID: <20110629141056.GN4590@erda.amd.com>
-References: <tip-963988262c3c8f4234f64a0dde59446a295e07bb@git.kernel.org>
- <20110628105335.GA17199@erda.amd.com>
- <1309259105.6701.210.camel@twins>
- <BANLkTimcxGWasWqgem=5EYDKGAM+dq26xQ@mail.gmail.com>
- <20110629103714.GM4590@erda.amd.com>
- <1309344655.6701.1054.camel@twins>
+	Wed, 29 Jun 2011 10:11:34 -0400
+Date: Wed, 29 Jun 2011 10:11:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Ming Lei <tom.leiming@gmail.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        Tejun Heo <tj@kernel.org>, Greg KH <greg@kroah.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        <linux-scsi@vger.kernel.org>
+Subject: Re: [PATCH 3/3] PM: Limit race conditions between runtime PM and
+ system sleep
+In-Reply-To: <201106282342.25003.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1106291004180.2064-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1309344655.6701.1054.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29.06.11 06:50:55, Peter Zijlstra wrote:
-> On Wed, 2011-06-29 at 12:37 +0200, Robert Richter wrote:
-> 
-> > I looked at the interrupt handlers. The events are always determined
-> > from a per-cpu array:
+On Tue, 28 Jun 2011, Rafael J. Wysocki wrote:
+
+> On Tuesday, June 28, 2011, Ming Lei wrote:
 > > 
-> > 	cpuc = &__get_cpu_var(cpu_hw_events);
-> > 	...
-> > 	event = cpuc->events[idx];
+> > Hi Rafael,
 > > 
-> > In case of interrupts the event should then always be a hw event (or
-> > uninitialized).  Even if the interrupt was triggered by a different
-> > source, it would always be mapped to the same event and the check
-> > is_sampling_event() would be meaningless.
-> 
-> I'm probably not quite getting what you mean, but how is
-> is_sampling_event() meaningless? the INT bit is enabled for _all_
-> events, whether they were configured as a sampling event or not.
-
-Aren't all events that are mapped to counters via cpu_hw_events always
-sampling events? Then, when calling perf_event_overflow() from an
-interrupt handler there are no other events than sampling events.
-
-> 
-> Its just that for !sampling events we shouldn't attempt to generate any
-> output.
-
-If attr.sample_type is null, there is no output to generate. Better
-use this instead of attr.sample_type in is_sampling_event()?
-perf_event_overflow() could be used then to generate output also for
-samples where no period is specified.
-
-> 
-> > There are other occurrences of perf_event_overflow() in
-> > kernel/events/core.c for events of type PERF_TYPE_SOFTWARE. These
-> > events are initialized with sample_period set and a check would always
-> > be true too.
-> 
-> I'm failing to see what you mean, where do we always set
-> event->attr.sample_period for software events?
-
-Hmm, I read the code wrong and the check in perf_event_overflow()
-might be needed for swevents.
-
-> 
-> > For both cases I stil don't see a reason for the check.
-> 
-> You're going to have to spell things out for me, I'm really not getting
-> your argument.
-
-I was thinking about to change this check and haven't seen cases for
-that the check is for. What would happen if the check isn't there and
-perf_event_overflow() is called from the interrupt handler?
-
-> 
-> > Anyway, would the following extentension of the check above ok?
+> > On Sun, 26 Jun 2011 00:56:31 +0200
+> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > > 
-> > 	if (unlikely(!is_sampling_event(event) && !event->attr.sample_type))
-> > 		...
+> > > Index: linux-2.6/Documentation/power/runtime_pm.txt
+> > > ===================================================================
+> > > --- linux-2.6.orig/Documentation/power/runtime_pm.txt
+> > > +++ linux-2.6/Documentation/power/runtime_pm.txt
+> > > @@ -567,6 +567,11 @@ this is:
+> > >  	pm_runtime_set_active(dev);
+> > >  	pm_runtime_enable(dev);
+> > >  
+> > > +The PM core always increments the run-time usage counter before calling the
+> > > +->suspend() callback and decrements it after calling the ->resume() callback.
+> > > +Hence disabling run-time PM temporarily like this will not cause any run-time
+> > > +suspend callbacks to be lost.
 > > 
-> > With no bits set in attr.sample_type the sample would be empty and
-> > nothing to report. Now, with this change, samples that have data to
-> > report wouldn't be dropped anymore.
+> > Could you explain why the above is that "this will not cause any run-time suspend
+> > callbacks to be lost"? 
+> > 
+> > Looks like it should be "this will not cause any run-time suspend callbacks to
+> > be called", but not sure.
 > 
-> Also, could you explain in what way data is dropped? Where do
-> non-sampling events need to write sample data?
+> You're right the wording is not perfect.  The problem is that if it's done
+> this way without incrementing the usage counter beforehand, the status may
+> change to "suspended" right before the pm_runtime_set_active() and then the
+> new status will not reflect the actual state of the device.
+> 
+> So, it may be better to say "Hence disabling runtime PM temporarily like this
+> will not cause the runtime PM status of the device to conflict with the actual
+> device state".
+> 
+> Alan, what do you think?
 
-I stumbled over this while rebasing my perf ibs patches:
+How about: "... will not cause any runtime suspend attempts to be 
+permanently lost.  If the usage count goes to zero following the return 
+of the ->resume() callback, the ->runtime_idle() callback will be 
+invoked as usual."
 
- http://git.kernel.org/?p=linux/kernel/git/rric/oprofile.git;a=shortlog;h=refs/heads/perf-ibs
-
-Hope I could explain this to you better now.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Alan Stern
 
