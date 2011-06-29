@@ -1,83 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753571Ab1F2VVK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 17:21:10 -0400
-Received: from oproxy1-pub.bluehost.com ([66.147.249.253]:59912 "HELO
-	oproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751199Ab1F2VVJ (ORCPT
+	id S1755324Ab1F2VXU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 17:23:20 -0400
+Received: from hqemgate03.nvidia.com ([216.228.121.140]:7856 "EHLO
+	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752088Ab1F2VXT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 17:21:09 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Rd7Z6PjPllRtqaCIoqe2v8rnBBOuKiRHG1EXJIevpXeRGK0lGDdD1hIqYGIFouY7dgyvQdVIxHK9zrOJdl0Bc4jypPGT+G2+bWVIWkDI/seH3vCZp+hUDX5X8c4GgBEc;
-Date: Wed, 29 Jun 2011 14:21:06 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Geert Uytterhoeven <geert@linux-m68k.org>, xfs-masters@oss.sgi.com
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-cris-kernel@axis.com
-Subject: Re: Build regressions/improvements in v3.0-rc5 (xfs on cris)
-Message-Id: <20110629142106.447393a5.rdunlap@xenotime.net>
-In-Reply-To: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
-References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 29 Jun 2011 17:23:19 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 29 Jun 2011 14:23:12 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: Linus Walleij <linus.walleij@linaro.org>
+CC: Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Lee Jones <lee.jones@linaro.org>, Joe Perches <joe@perches.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Linaro Dev <linaro-dev@lists.linaro.org>
+Date: Wed, 29 Jun 2011 14:23:12 -0700
+Subject: RE: [PATCH 1/2] drivers: create a pinmux subsystem v3
+Thread-Topic: [PATCH 1/2] drivers: create a pinmux subsystem v3
+Thread-Index: Acw012Oi9tpuljpcQMqTMMtbvrXQVAByLpIA
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049E21B833@HQMAIL01.nvidia.com>
+References: <1307984291-9774-1-git-send-email-linus.walleij@stericsson.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04992C02AC@HQMAIL01.nvidia.com>
+	<BANLkTinNmPVEM4Eu4efxkuwrCU_FVWFaAg@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04992C049D@HQMAIL01.nvidia.com>
+	<BANLkTikFLbU70uJO0yrf8HipcVEwbUHgsw@mail.gmail.com>
+	<74CDBE0F657A3D45AFBB94109FB122FF04992C07E1@HQMAIL01.nvidia.com>
+ <BANLkTinXKgdcsGPxGUbS7sv71mQi8eL_bQ@mail.gmail.com>
+In-Reply-To: <BANLkTinXKgdcsGPxGUbS7sv71mQi8eL_bQ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011 10:13:17 +0200 (CEST) Geert Uytterhoeven wrote:
+Linus Walleij wrote at Monday, June 27, 2011 8:35 AM:
+> On Thu, Jun 16, 2011 at 9:10 PM, Stephen Warren <swarren@nvidia.com> wrote:
 
-> *** ERRORS ***
+...
+> > Now, we can have multiple entries with the same .map_name:
+> >
+> > static struct pinmux_map pmx_mapping[] = {
+> >       {
+> >               .dev_name = "tegra-sdhci.0",
+> >               .map_name = "4 bit", # Note this is 4 now
+> >               .function = "mmc0-1:0",
+> >       },
+> >       {
+> >               .dev_name = "tegra-sdhci.0",
+> >               .map_name = "4 bit",
+> >               .function = "mmc0-3:2",
+> >       },
+> >
+> > This means that if a client request map name "4 bit", then both functions
+> > "mmc0-1:0" and "mmc0-3:2" are part of that mapping.
 > 
-> 698 regressions:
+> (...)
+> 
+> > In terms of implementation, this is still pretty easy; all we do when
+> > reserving or activating a given mapping is to walk the entire list, find
+> > *all* entries that match the client's search terms, and operate on all of
+> > them, instead of stopping at the first one.
+> 
+> So:
+> pmx = pinmux_get(dev, "4 bit");
+> 
+> in this case would reserve pins for two functions on pinmux_get() and
+> activate two different functions after one another when
+> we pinmux_enable(pmx) on this, "mmc0-1:0" and "mmc0-3:2" in some
+> undefined order (inferenced across namespace).
+> 
+> I don't think it's as simple as you say, this gets hairy pretty quickly:
+> 
+> Since my previous pinmux_get() would create a struct pinmux * cookie
+> for each map entry, assuming a 1:1 relationship between map entries
+> and pinmuxes, we now break this, and you need to introduce
+> more complex logic to search through the pinmux_list and dynamically
+> add more functions to each entry with a matching map_name.
 
->   + fs/xfs/xfs_log.c: error: 'head' undeclared (first use in this function):  => 104, 130, 837
->   + fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_grant_reserve_head':  => 1204
->   + fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_grant_write_head':  => 3436
->   + fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_iclog_bak':  => 3410, 3409
->   + fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_last_sync_lsn':  => 806, 1232
->   + fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_tail_lsn':  => 808, 3437, 1218, 838
->   + fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_grant_reserve_head':  => 2591, 2564, 2761, 1019, 2748, 717, 1338, 2807
->   + fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_grant_reserve_lock':  => 2551, 2578, 2601, 1023, 2566, 716, 2536, 3709, 2587, 2585, 3706, 730, 2598, 2533
->   + fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_grant_write_head':  => 2750, 1020, 697, 2808, 2708, 2592, 1339, 2682, 2653
->   + fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_grant_write_lock':  => 2704, 2652, 1024, 2684, 3711, 3714, 696, 2672, 2695, 708, 2718, 2715, 2702, 2675
->   + fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_iclog_bak':  => 1100
->   + fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_last_sync_lsn':  => 2223, 685, 2221, 1017
->   + fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_reserveq':  => 718, 3707, 2535, 711, 2568, 2539, 2532, 1021
->   + fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_tail_lsn':  => 689, 1016
->   + fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_writeq':  => 2666, 2649, 2654, 1022, 2663, 2686, 691, 3712, 698
->   + fs/xfs/xfs_log.c: error: (Each undeclared identifier is reported only once:  => 104
->   + fs/xfs/xfs_log.c: error: expected declaration specifiers or '...' before 'atomic64_t':  => 127, 50, 101, 829
->   + fs/xfs/xfs_log.c: error: for each function it appears in.):  => 104
->   + fs/xfs/xfs_log.c: error: implicit declaration of function 'atomic64_cmpxchg':  => 120
->   + fs/xfs/xfs_log.c: error: implicit declaration of function 'atomic64_read':  => 104
->   + fs/xfs/xfs_log.c: error: implicit declaration of function 'atomic64_set':  => 689
->   + fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_assign_atomic_lsn':  => 1016
->   + fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_assign_grant_head':  => 1019
->   + fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_crack_atomic_lsn':  => 838
->   + fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_crack_grant_head':  => 837
->   + fs/xfs/xfs_log.c: error: too many arguments to function 'xlog_grant_add_space':  => 2591, 2708, 2762, 1339, 2592, 1338
->   + fs/xfs/xfs_log.c: error: too many arguments to function 'xlog_grant_sub_space':  => 2808, 2751, 2749, 2807
->   + fs/xfs/xfs_log.c: error: too many arguments to function 'xlog_space_left':  => 697, 2564, 1204, 2682, 717, 2653
->   + fs/xfs/xfs_log_recover.c: error: 'xlog_t' has no member named 'l_grant_reserve_head':  => 970
->   + fs/xfs/xfs_log_recover.c: error: 'xlog_t' has no member named 'l_grant_write_head':  => 972
->   + fs/xfs/xfs_log_recover.c: error: 'xlog_t' has no member named 'l_last_sync_lsn':  => 1020, 969
->   + fs/xfs/xfs_log_recover.c: error: 'xlog_t' has no member named 'l_tail_lsn':  => 968, 1003, 1018
->   + fs/xfs/xfs_log_recover.c: error: implicit declaration of function 'atomic64_read':  => 1003
->   + fs/xfs/xfs_log_recover.c: error: implicit declaration of function 'atomic64_set':  => 968
->   + fs/xfs/xfs_log_recover.c: error: implicit declaration of function 'xlog_assign_atomic_lsn':  => 1018
->   + fs/xfs/xfs_log_recover.c: error: implicit declaration of function 'xlog_assign_grant_head':  => 970
+In the patch you posted, pinmux_get looked up a single specific
+pinmux_map* and stored it in the struct pinmux. You're right that
+continuing to do something similar means needing to store an array of
+pinmux_map* in the struct pinmux, and dynamically adding more and more
+entries as you search through the mapping table. A bit painful.
 
+However, if instead of that, you store the original parameters to
+pinmux_get() in struct pinmux, there's nothing to dynamically store
+there. Instead, the implementation of pinmux_get and pinmux_enable is
+very roughly:
 
-Looks like arch/cris does not support atomic64_t.  (?)
+pinmux_get:
 
-Should we prevent xfs from being built on arch/cris?
+Allocate struct pinmux, fill it in:
+list_for_each_entry(mapping table)
+    if (matches search terms)
+        check_not_already_in_use
+        acquire_pins()
+        // Note: no break here
 
+pinmux_enable:
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+// Note we redo the whole search here based on the original terms
+// rather than having pinmux_get pre-calculate the search result
+list_for_each_entry(mapping table)
+    if (matches search terms)
+        ops->enable()
+
+In fact, I'd imagine that the list_for_each_entry call above could be
+placed into a utility function that implements the searching logic, to
+keep the code in one place, with a function parameter:
+
+pinmux_search(terms, callback):
+
+list_for_each_entry(mapping table)
+    if (matches search terms)
+        callback()
+
+pinmux_get_body():
+    check_not_already_in_use
+    acquire_pins()
+
+pinmux_get(terms):
+
+Allocate struct pinmux, fill it in:
+pinmux_search(terms, pinmux_get_body)
+
+pinmux_enable_body():
+    ops->enable()
+
+pinmux_enable():
+
+pinmux_search(terms, pinmux_enable_body)
+
+Alternatively, each map entry contains a list node that's set up.
+The list is set up by pinmux_get, and contains all mapping entries
+associated with the original search terms. Struct pinmux points at
+the head of the list. pinmux_enable then just needs to iterate over
+that list, not the whole mapping array, and doesn't need to implement
+the search algorithm. That might actually be simpler. Since each
+mapping entry would only be get'd once, there'd be no conflicts with
+multiple things trying to use the one list node at once.
+
+> Then you need to take care of the case where acquiring pins for
+> one of the functions fail: then you need to go back and free the
+> already acquired pins in the error path.
+
+That's not that hard; just iterate over the whole list again, applying
+a function that undoes what you did before. It's just like the error
+handling code that already exists in acquire_pins for example. The only
+hard part might be stopping when you get to the point you already got
+to in the first loop, but actually that's just a matter of passing in
+a "stop at this index" parameter to the pinmux_search() I mentioned
+above.
+
+> I tried quickly to see if I could code this up, and it got very complex
+> real quick, sadly. Maybe if I can just get to iterate a v4 first, I
+> could venture down this track.
+> 
+> But if you can code up the patch for this, I'm pretty much game for
+> it!
+
+Sure, I can add the extra looping to the code if you want. It'd be easiest
+if you set up the data structures in the initial patch such that all the
+fields exist in the mapping table (i.e. how I showed in the concept header
+files I posted). That way, there'd be no type or semantic changes in my
+patch, just support for acting on N instead of just 1 mapping entry at a
+time.
+
+...
+> > * The same point, but think about a SW bit-banged bus consisting of 8
+> > GPIOs for the bus and 100 pins on the device. Each permutation of 8 out
+> > of 100 is scary... I'd love a board to be able to represent a single
+> > mapping for a particular board's set of GPIOs in this case, but not for
+> > the pinmux driver to expose all possibilities!
+> 
+> Is this a real world problem or a theoretical one? Seems like the
+> latter, and as stated in the documentation this subsystem is not about
+> solving discrete maths permutation spaces, but practical enumerations.
+
+That's theoretical in terms of the boards/code I'm currently dealing with.
+However, solving this seems pretty simple, and I can't imagine nobody will
+ever want to do that.
+
+-- 
+nvpublic
+
