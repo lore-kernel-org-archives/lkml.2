@@ -1,100 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757877Ab1F2Uvg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 16:51:36 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:18701 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757834Ab1F2Uvf (ORCPT
+	id S1757856Ab1F2Unr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 16:43:47 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63722 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757714Ab1F2Unn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 16:51:35 -0400
-Date: Wed, 29 Jun 2011 22:42:25 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Luciano Coelho <coelho@ti.com>
-cc: Johannes Berg <johannes@sipsolutions.net>, linux-wireless@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "David S. Miller" <davem@davemloft.net>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [PATCH] net, wireless: Don't return uninitialized in
- __cfg80211_stop_sched_scan()
-In-Reply-To: <1309379630.1514.122.camel@cumari>
-Message-ID: <alpine.LNX.2.00.1106292241230.3747@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106292212110.3747@swampdragon.chaosbits.net>  <1309379244.4071.7.camel@jlt3.sipsolutions.net> <1309379630.1514.122.camel@cumari>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 29 Jun 2011 16:43:43 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=yGV206oZUtoA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=TApWS8Kj85K4CGVL43AA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH] plist: add mutex to the blessed lock type for plists
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dima Zavin <dima@android.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
+        Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <CAPz4a6CbzEm3QJZ-5wsaiSH1H9g7tgo7E7-HyRB8Fv5=NfGDRQ@mail.gmail.com>
+References: <1309376033-32005-1-git-send-email-dima@android.com>
+	 <m2tyb81jml.fsf@firstfloor.org>
+	 <CAPz4a6CbzEm3QJZ-5wsaiSH1H9g7tgo7E7-HyRB8Fv5=NfGDRQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 29 Jun 2011 16:43:41 -0400
+Message-ID: <1309380221.26417.50.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011, Luciano Coelho wrote:
+On Wed, 2011-06-29 at 13:34 -0700, Dima Zavin wrote:
 
-> On Wed, 2011-06-29 at 22:27 +0200, Johannes Berg wrote: 
-> > On Wed, 2011-06-29 at 22:13 +0200, Jesper Juhl wrote:
-> > > If the 'driver_initiated' function argument to
-> > > __cfg80211_stop_sched_scan() is not 0 then we'll return an
-> > > uninitialized 'ret' from the function.
-> > 
-> > 'err'. I also dislike the initialisation, can we just replace the
-> > "return err;" at the end of the function with "return 0;" instead?
-> 
-> Luckily we were never using the return value when passing
-> driver_initiate =- false.
-> 
-> And I agree with you, there's no use to return err at the end.  Better
-> to simply return 0.
-> 
-Ok, so how about this?
+> The whole enforcement of locking inside this code is awkward anyway.
+> We don't enforce locking on rb_trees, or on list_head, etc. Why
+> plists? The funny part is that the test code in plist.c itself has a
+> hack to skip the lock check.
 
->From 606ee120df85dbd5205996878f50e51b8b7cd4a3 Mon Sep 17 00:00:00 2001
-From: Jesper Juhl <jj@chaosbits.net>
-Date: Wed, 29 Jun 2011 22:49:33 +0200
-Subject: [PATCH] net, wireless: Don't return uninitialized in
- __cfg80211_stop_sched_scan()
+It's a legacy from the -rt tree. With the development there, there was
+always a case where a plist was added without the proper locking, and we
+spent days debugging it. This test proved very useful. As plists came to
+mainline, we kept the tests.
 
-If the 'driver_initiated' function argument to
-__cfg80211_stop_sched_scan() is not 0 then we'll return an
-uninitialized 'err' from the function.
+Now, getting rid of them maybe the thing to do. I'm not sure how useful
+they are today.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- net/wireless/scan.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+-- Steve
 
-diff --git a/net/wireless/scan.c b/net/wireless/scan.c
-index 7a6c676..5d23503 100644
---- a/net/wireless/scan.c
-+++ b/net/wireless/scan.c
-@@ -132,7 +132,6 @@ EXPORT_SYMBOL(cfg80211_sched_scan_stopped);
- int __cfg80211_stop_sched_scan(struct cfg80211_registered_device *rdev,
- 			       bool driver_initiated)
- {
--	int err;
- 	struct net_device *dev;
- 
- 	ASSERT_RDEV_LOCK(rdev);
-@@ -143,7 +142,7 @@ int __cfg80211_stop_sched_scan(struct cfg80211_registered_device *rdev,
- 	dev = rdev->sched_scan_req->dev;
- 
- 	if (!driver_initiated) {
--		err = rdev->ops->sched_scan_stop(&rdev->wiphy, dev);
-+		int err = rdev->ops->sched_scan_stop(&rdev->wiphy, dev);
- 		if (err)
- 			return err;
- 	}
-@@ -153,7 +152,7 @@ int __cfg80211_stop_sched_scan(struct cfg80211_registered_device *rdev,
- 	kfree(rdev->sched_scan_req);
- 	rdev->sched_scan_req = NULL;
- 
--	return err;
-+	return 0;
- }
- 
- static void bss_release(struct kref *ref)
--- 
-1.7.6
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
 
