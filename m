@@ -1,38 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab1F2JDo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 05:03:44 -0400
-Received: from mail-pz0-f51.google.com ([209.85.210.51]:58376 "EHLO
-	mail-pz0-f51.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753750Ab1F2JDi (ORCPT
+	id S1754222Ab1F2JGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:06:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39741 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753541Ab1F2JGD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 05:03:38 -0400
+	Wed, 29 Jun 2011 05:06:03 -0400
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary physical addresses
+Date: Wed, 29 Jun 2011 11:05:59 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.5-default; KDE/4.6.0; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <201106171038.25988.ptesarik@suse.cz> <20110617093032.GA19235@elte.hu>
+In-Reply-To: <20110617093032.GA19235@elte.hu>
 MIME-Version: 1.0
-Date: Wed, 29 Jun 2011 14:33:38 +0530
-Message-ID: <BANLkTikYFMoJOSuCiNx+L8fvf+v-xeHN+A@mail.gmail.com>
-Subject: bluetooth Object Push Profile
-From: ranjith kumar <ranjithproxy@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: "linux.kernel" <linux.kernel@googlegroups.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201106291106.00070.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Dne Pá 17. června 2011 11:30:32 Ingo Molnar napsal(a):
+> * Petr Tesarik <ptesarik@suse.cz> wrote:
+> > This patch series enhances /dev/mem, so that read and write is
+> > possible at any address. The patchset includes actual
+> > implementation for x86.
+> 
+> This series lacks a description of why this is desired.
+>[...]
+> 
+> Are you aware of any legitimate usecases?
 
-Plese tell me if the "blue tooth---- Object Push Profile(OPP)" is
-implemented in side the linux kernel.
-If so, please tell me in which file that code is implemented.
+Looking back at the mail tread, I'd say there are people who have legitimate 
+usecases. However, this may not be the most important question. At the moment, 
+the /dev/mem interface is broken (it doesn't implement the specification 
+correctly), and my patchset fixes it.
 
-Not only that profile, are all the profiles defined by the blue tooth
-SIG are implemented inside the kernel?
+If there are no technical objections, I'd like to ask for an Acked-by from all 
+involved people.
 
-I am new to bluetooth protocols. I have a doubt related to OPP
-profile. I read " OPP profile is a profile for sending "objects" such
-as pictures, virtual business cards, or appointment details."  I have
-a laptop with bluetooth and mobile with blue tooth which contain
-pictures. If I copy the picture from mobile to laptop, is it copying
-using OPP profile??
+@Ingo: you can also send a patchset that rips off the /dev/mem driver 
+completely if you believe that would get through. I'm completely fine with 
+that, because then the /dev/crash driver will no longer be a semi-broken re-
+implementation of an existing in-kernel driver, so I'll be able to post it as 
+a new driver.
 
-Thanks
+But please make a decision either way.
+
+Petr Tesarik
