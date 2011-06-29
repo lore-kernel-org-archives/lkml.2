@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753993Ab1F2IeJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 04:34:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22969 "EHLO mx1.redhat.com"
+	id S1753987Ab1F2Igh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 04:36:37 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:58213 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751428Ab1F2IeG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 04:34:06 -0400
-Message-ID: <4E0AE36B.9010500@redhat.com>
-Date: Wed, 29 Jun 2011 10:33:47 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Mnenhy/0.8.3 Thunderbird/3.1.10
+	id S1753762Ab1F2Iga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 04:36:30 -0400
+Date: Wed, 29 Jun 2011 12:35:28 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Dan Carpenter <error27@gmail.com>, Tomas Winkler <tomas.winkler@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+        Mike Thomas <rmthomas@sciolus.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] staging/easycap: Fix thinko in "bars" module
+	option description
+Message-ID: <20110629083528.GA10219@tugrik.mns.mnsspb.ru>
+References: <cover.1307967011.git.kirr@mns.spb.ru> <14c0e4d0bb7ef1a05b9dcc14b2b51c706f844655.1307967011.git.kirr@mns.spb.ru> <20110613122717.GF3583@shale.localdomain> <20110614164649.GB29015@tugrik.mns.mnsspb.ru> <20110614171619.GB23739@shale.localdomain>
 MIME-Version: 1.0
-To: Hannes Reinecke <hare@suse.de>
-CC: Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-        Christoph Hellwig <chellwig@redhat.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>, kvm@vger.kernel.org
-Subject: Re: virtio scsi host draft specification, v3
-References: <1504884387.187692.1307716550265.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com> <4DF71E28.6070009@suse.de>
-In-Reply-To: <4DF71E28.6070009@suse.de>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110614171619.GB23739@shale.localdomain>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/14/2011 10:39 AM, Hannes Reinecke wrote:
-> If, however, we decide to expose some details about the backend, we
-> could be using the values from the backend directly.
-> EG we could be forwarding the SCSI target port identifier here
-> (if backed by real hardware) or creating our own SAS-type
-> identifier when backed by qemu block. Then we could just query
-> the backend via a new command on the controlq
-> (eg 'list target ports') and wouldn't have to worry about any protocol
-> specific details here.
+On Tue, Jun 14, 2011 at 08:16:19PM +0300, Dan Carpenter wrote:
+> On Tue, Jun 14, 2011 at 08:46:49PM +0400, Kirill Smelkov wrote:
+> > On Mon, Jun 13, 2011 at 03:27:17PM +0300, Dan Carpenter wrote:
+> > > On Mon, Jun 13, 2011 at 04:18:29PM +0400, Kirill Smelkov wrote:
+> > > > Both bars=0 and bars=1 were described as meaning to display bars on
+> > > > signal lost. Actually bars=1 means "display bars", but bars=0 means
+> > > > display raw source as is (usually black screen).
+> > > 
+> > > Your description up here is much better than the one in the README.
+> > > Maybe just include yours and delete the original.
+> > 
+> > Thanks for head ups. Something like this:
+> >
+> 
+> I like it.  :)
 
-Besides the controlq command, which I can certainly add, this is 
-actually quite similar to what I had in mind (though my plan likely 
-would not have worked because I was expecting hierarchical LUNs used 
-uniformly).  So, "list target ports" would return a set of LUN values to 
-which you can send REPORT LUNS, or something like that?  I suppose that 
-if you're using real hardware as the backing storage the in-kernel 
-target can provide that.
+Thanks. So I assume this version is better to go in. Tomas, may I add
+your ACK to this one, or maybe there is some issue with it?
 
-For the QEMU backend I'd keep hierarchical LUNs, though of course one 
-could add a FC or SAS bus to QEMU, each implementing its own identifier 
-scheme.
 
-If I understand it correctly, it should remain possible to use a single 
-host for both pass-through and emulated targets.
+Thanks,
+Kirill
 
-Would you draft the command structure, so I can incorporate it into the 
-spec?
 
-> Of course, when doing so we would be lose the ability to freely remap
-> LUNs. But then remapping LUNs doesn't gain you much imho.
-> Plus you could always use qemu block backend here if you want
-> to hide the details.
-
-And you could always use the QEMU block backend with scsi-generic if you 
-want to remap LUNs, instead of true passthrough via the kernel target.
-
-Paolo
+P.S. By the way, how should we proceed to get this merged into staging
+tree? Will Greg just pick it up or should I repost the whole series?
