@@ -1,86 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753620Ab1F2CNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 22:13:45 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:51384 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750974Ab1F2CNm (ORCPT
+	id S1752184Ab1F2CYP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 22:24:15 -0400
+Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:54001 "EHLO
+	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751289Ab1F2CYJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 22:13:42 -0400
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>
-Subject: [PATCHv4] ptrace: make former thread ID available via PTRACE_GETEVENTMSG after PTRACE_EVENT_EXEC stop
-Date: Wed, 29 Jun 2011 04:13:39 +0200
-User-Agent: KMail/1.8.2
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
+	Tue, 28 Jun 2011 22:24:09 -0400
+Date: Tue, 28 Jun 2011 19:23:21 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: N?meth M?rton <nm127@freemail.hu>
+Cc: Greg KH <greg@kroah.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
+        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
+        David Chang <dchang@novell.com>,
+        Himanshu Chauhan <hschauhan@nulltrace.org>,
+        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] usbip: handle length at sysfs show() functions
+Message-ID: <20110629022321.GA52889@haskell.muteddisk.com>
+Mail-Followup-To: N?meth M?rton <nm127@freemail.hu>,
+	Greg KH <greg@kroah.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+	Kulikov Vasiliy <segooon@gmail.com>,
+	Endre Kollar <taxy443@gmail.com>, Arjan Mels <arjan.mels@gmx.net>,
+	Ilia Mirkin <imirkin@alum.mit.edu>, David Chang <dchang@novell.com>,
+	Himanshu Chauhan <hschauhan@nulltrace.org>,
+	Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
+	usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+	LKML <linux-kernel@vger.kernel.org>
+References: <4DE5CA9F.6010303@freemail.hu> <20110607213418.GB11102@kroah.com> <4DEF0822.7070500@freemail.hu> <20110608160931.GB21645@kroah.com> <4DEFE938.70408@freemail.hu>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201106290413.39429.vda.linux@googlemail.com>
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4DEFE938.70408@freemail.hu>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Oleg,
+On 23:27 Wed 08 Jun     , N?meth M?rton wrote:
+> Greg KH wrote:
+> > On Wed, Jun 08, 2011 at 07:26:58AM +0200, N?meth M?rton wrote:
+> >> Greg KH wrote:
+> >>> On Wed, Jun 01, 2011 at 07:14:07AM +0200, N?meth M?rton wrote:
+> >>>> The sysfs show() functions shall return the actual content length of
+> >>>> the result buffer. According to Documentation/filesystems/sysfs.txt:215
+> >>>> the scnprintf() function is preferred.
+> >>>>
+> >>>> See also the article titled "snprintf() confusion" at
+> >>>> http://lwn.net/Articles/69419/ .
+> >>> [...]
+> >>>
+> >>> Here we are doing lots of work to try to put more than one value in the
+> >>> sysfs file, and return the proper data to the kernel about how big the
+> >>> buffer we used.
+> >>>
+> >>> That's wrong, and violates the "one value per file" sysfs rule, so that
+> >>> should be fixed instead of trying to change the sprintf() call.
+> >> As I understand there is a need to change the design here. Currently I
+> >> get the following content when vhci-hcd is loaded but not yet used:
+> >>
+> >> $ cat /sys/devices/platform/vhci_hcd/status
+> >> prt sta spd bus dev socket           local_busid
+> >> 000 004 000 000 000 0000000000000000 0-0
+> >> 001 004 000 000 000 0000000000000000 0-0
+> >> 002 004 000 000 000 0000000000000000 0-0
+> >> 003 004 000 000 000 0000000000000000 0-0
+> >> 004 004 000 000 000 0000000000000000 0-0
+> >> 005 004 000 000 000 0000000000000000 0-0
+> >> 006 004 000 000 000 0000000000000000 0-0
+> >> 007 004 000 000 000 0000000000000000 0-0
+> >>
+> >> The fields are: port, status, speed, device ID, socket pointer and
+> >> local busid name. This is too complex for sysfs. Maybe we could extend
+> >> the devices file of usbfs with some new rows?
+> > 
+> > Ick, I doubt it as there are lots of tools that parse that file already.
+> 
+> usbip is still part of the staging directory. In dmesg the following appear:
+> 
+> | usbip_common_mod: module is from the staging directory, the quality is unknown, you have been warned.
+> | usbip_common_mod: usbip common driver1.0
+> | vhci_hcd: module is from the staging directory, the quality is unknown, you have been warned.
+> 
+> so this means that usbip is a work-in-progress, it might be changed anytime. On
+> the other hand we can do this nice way: a new entry in  Documentation/feature-removal-schedule.txt
+> for /sys/devices/platform/vhci_hcd/status file removal, let's say it will be
+> removed before the usbip goes to mainline. In parallel the new interface
+> can be developed.
+> 
+> > But yes, you are correct, this should not be in sysfs at all.
+> >
+> > What's the use for this file?  Who uses it?  Is it just debugging
+> > output?  Information for people to gaze at if they feel like it?
+> > Something else?
+> 
+> Based on the user space source code at drivers/staging/usbip/userspace/
+> I can identify the following usages:
+> 
+> libsrc/vhci_driver.c::get_nports():
+>  - finding out how many ports the VHCI has
+> 
+> libsrc/vhci_driver.c::parse_status():
+>  - VHCI port number to identify virtual ports
+>  - fetching the status of each VHCI ports whether it is
+>      - vdev does not connect a remote device: (status = VDEV_ST_NULL = 4):
+>        "Port Available"
+>      - vdev is used, but the USB address is not assigned yet (status =
+>        VDEV_ST_NOTASSIGNED = 5): "Port Initializing"
+>      - used (status = VDEV_ST_USED = 6): "Port in Use"
+>      - error (VDEV_ST_ERROR = 7): "Port Error"
+>  - the speed can be unknown/low/full/high/variable
+>  - it looks like the bus column was merged with the device column but I
+>    currently cannot find when
+>  - the device ID is splited to the upper 16bits: bus number, and lower
+>    16bits: device number
+>  - based on local_busid the usb device file can be found in /sys using
+>    sysfs_open_device()
+> 
+> Note that the socket parameter is only printed out as a debug information: it
+> is not used anywhere.
+> 
+> Maybe most of the file content is redundant, because:
+> 
+>  - we have /sys/bus/usb/devices/usb*/maxchild which is "number of ports if hub"
+>    according to linux/usb.h:410 ;
+>  - we have /sys/bus/usb/devices/*-*/speed to identify the device speed;
+>  - We have already bus number at /sys/bus/usb/devices/usb*/busnum or at
+>    /sys/bus/usb/devices/*-*/busnum ;
+>  - we also have /sys/bus/usb/devices/*-*/devnum ;
+>  - it is possbile to collect all the devices from /sys/bus/usb/devices/*-*
+>    filtering to the first number to /sys/bus/usb/devices/usb*/busnum .
+> 
+> The only thing which is special for VHCI is the status for each port:
+> DEV_ST_NULL/VDEV_ST_NOTASSIGNED/VDEV_ST_USED/VDEV_ST_ERROR .
+> 
+> > Once we figure that out, then we can determine where it should go
+> > (debugfs, sysfs in a different file format, usbfs, etc.)
+> 
+> Maybe the status could fit under /sys/devices/platform/vhci_hcd/*-*/status .
+> This file could contain only one number showing the status of that single
+> device.
 
-Please take a look at version 4 of this patch.
+This is something I have been meaning to get to. So yes, I agree we should
+eliminate the bulk of that sysfs file and use the ../vhci_hcd/*-*/status
+structure.
 
-When multithreaded program execs under ptrace,
-all traced threads report WIFEXITED status, except for
-thread group leader and the thread which execs.
-
-Unless tracer tracks thread group relationship between tracees,
-which is a nontrivial task, it will not detect that
-execed thread no longer exists.
-
-This patch allows tracer to figure out which thread
-performed this exec, by requesting PTRACE_GETEVENTMSG
-in PTRACE_EVENT_EXEC stop.
-
-Another, samller problem which is solved by this patch
-is that tracer now can figure out which of the several
-concurrent execs in multithreaded program succeeded.
-
-Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
-
--- 
-vda
-
-
-diff --git a/fs/exec.c b/fs/exec.c
-index 8dca45b..55819be 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1357,6 +1357,7 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 	unsigned int depth = bprm->recursion_depth;
- 	int try,retval;
- 	struct linux_binfmt *fmt;
-+	pid_t old_pid;
- 
- 	retval = security_bprm_check(bprm);
- 	if (retval)
-@@ -1370,6 +1371,11 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 	if (retval)
- 		return retval;
- 
-+	/* Need to fetch pid before load_binary changes it */
-+	rcu_read_lock();
-+	old_pid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
-+	rcu_read_unlock();
-+
- 	retval = -ENOENT;
- 	for (try=0; try<2; try++) {
- 		read_lock(&binfmt_lock);
-@@ -1389,7 +1395,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 			bprm->recursion_depth = depth;
- 			if (retval >= 0) {
- 				if (depth == 0)
--					ptrace_event(PTRACE_EVENT_EXEC, 0);
-+					ptrace_event(PTRACE_EVENT_EXEC,
-+							old_pid);
- 				put_binfmt(fmt);
- 				allow_write_access(bprm->file);
- 				if (bprm->file)
-
+-mfm
