@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab1F2Dnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 23:43:46 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:41169 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751711Ab1F2Dnk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 23:43:40 -0400
-Subject: [PATCH] platform-drivers-x86: set backlight type to
- BACKLIGHT_PLATFORM
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Corentin Chary <corentincj@iksaif.net>,
-        Yin Kangkai <kangkai.yin@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        acpi4asus-user@lists.sourceforge.net,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Jun 2011 11:43:30 +0800
-Message-ID: <1309319010.17370.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1753418Ab1F2DrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 23:47:25 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:35367 "EHLO mail.issp.bas.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751711Ab1F2DrU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 23:47:20 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] staging: use videobuf2 framework for drivers/staging/dt3155v4l driver
+Date: Wed, 29 Jun 2011 06:46:02 +0300
+User-Agent: KMail/1.13.6 (Linux/2.6.39; KDE/4.5.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201105282145.27809.mitov@issp.bas.bg> <20110628202515.GA9177@kroah.com>
+In-Reply-To: <20110628202515.GA9177@kroah.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106290646.02960.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some newly added drivers do not set backlight type, as a result
-/sys/class/backlight/<backlight>/type shows incorrect backlight type.
+On Tuesday, June 28, 2011 11:25:15 pm Greg KH wrote:
+> On Sat, May 28, 2011 at 09:45:27PM +0300, Marin Mitov wrote:
+> > This patch transforms drivers/staging/dt3155v4l driver to use videobuf2 framework.
+> > Tested and works with "xawtv -f".
+> > 
+> > Either streaming API or read method should be selected during kernel configuration.
+> 
+> I've applied this, but why would you ever not want to use the streaming
+> api?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Corentin Chary <corentin.chary@gmail.com>
-Cc: Yin Kangkai <kangkai.yin@intel.com>
----
- drivers/platform/x86/asus-wmi.c       |    1 +
- drivers/platform/x86/intel_oaktrail.c |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+There are no reasons for that, sure, but for now xawtv do not work if both are
+specified in the driver. I have to debug it.
 
-diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
-index 00460cb..3c7857c7 100644
---- a/drivers/platform/x86/asus-wmi.c
-+++ b/drivers/platform/x86/asus-wmi.c
-@@ -1025,6 +1025,7 @@ static int asus_wmi_backlight_init(struct asus_wmi *asus)
- 		return power;
- 
- 	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.type = BACKLIGHT_PLATFORM;
- 	props.max_brightness = max;
- 	bd = backlight_device_register(asus->driver->name,
- 				       &asus->platform_device->dev, asus,
-diff --git a/drivers/platform/x86/intel_oaktrail.c b/drivers/platform/x86/intel_oaktrail.c
-index e936364..7f88c79 100644
---- a/drivers/platform/x86/intel_oaktrail.c
-+++ b/drivers/platform/x86/intel_oaktrail.c
-@@ -250,6 +250,7 @@ static int oaktrail_backlight_init(void)
- 	struct backlight_properties props;
- 
- 	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.type = BACKLIGHT_PLATFORM;
- 	props.max_brightness = OT_EC_BL_BRIGHTNESS_MAX;
- 	bd = backlight_device_register(DRIVER_NAME,
- 				       &oaktrail_device->dev, NULL,
--- 
-1.7.4.1
+Regards.
 
+Marin Mitov
 
-
+> 
+> thanks,
+> 
+> greg k-h
+> 
