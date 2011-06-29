@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757935Ab1F2WAQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 18:00:16 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:19427 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754721Ab1F2WAL (ORCPT
+	id S1757889Ab1F2V4Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 17:56:16 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:43251 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab1F2V4N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 18:00:11 -0400
-Date: Wed, 29 Jun 2011 23:51:00 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: David Teigland <teigland@redhat.com>
-cc: linux-kernel@vger.kernel.org, cluster-devel@redhat.com,
-        Christine Caulfield <ccaulfie@redhat.com>
-Subject: Re: [PATCH] fs, dlm: Don't leak, don't do pointless NULL checks and
- use kzalloc
-In-Reply-To: <20110629214056.GA11350@redhat.com>
-Message-ID: <alpine.LNX.2.00.1106292344110.3747@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1106292304380.3747@swampdragon.chaosbits.net> <20110629214056.GA11350@redhat.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Wed, 29 Jun 2011 17:56:13 -0400
+Date: Wed, 29 Jun 2011 17:56:08 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>
+Subject: Re: [PATCH v3 2/9] KVM-HDR Add constant to represent KVM MSRs
+ enabled bit
+Message-ID: <20110629215608.GA3557@mgebm.net>
+References: <1309361388-30163-1-git-send-email-glommer@redhat.com>
+ <1309361388-30163-3-git-send-email-glommer@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IJpNTDwzlM2Ie8A6"
+Content-Disposition: inline
+In-Reply-To: <1309361388-30163-3-git-send-email-glommer@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011, David Teigland wrote:
 
-> On Wed, Jun 29, 2011 at 11:09:27PM +0200, Jesper Juhl wrote:
-> > In fs/dlm/lock.c in the dlm_scan_waiters() function there are 3 small
-> > issues:
-> > 
-> > 1) first time through the loop we allocate memory for 'warned', if we
-> > then (in the loop) don't take the "if (!warned)" path and loop again,
-> > the second time through the loop we'll allocate memory again and store
-> > it to 'warned' without freeing the previous allocation - this leaks
-> > memory.
-> 
-> I don't think so; num_nodes won't be set to zero.
-> 
+--IJpNTDwzlM2Ie8A6
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Hmm. How so?  Maybe I'm missing something obvious, but;
-num_nodes is initialized to zero at the beginning of the function, which 
-means that we'll definately do the first allocation in the loop.
-We then set num_nodes equal to ls->ls_num_nodes - what guarantees that 
-this will not be zero so we won't do a second allocation (and leak) the 
-second time through the loop?
+On Wed, 29 Jun 2011, Glauber Costa wrote:
 
-> > 2) There's no need to test the return value of the allocation and do a
-> > memset if is succeedes. Just use kzalloc() to obtain zeroed memory.
-> 
-> fine
-> 
-> > 3) Since kfree() handles NULL pointers gracefully, the test of
-> > 'warned' against NULL before the kfree() after the loop is completely
-> > pointless. Remove it.
-> 
-> fine
-> 
-> ack if you want to push those two out yourself.
-> Dave
+> This patch is simple, put in a different commit so it can be more easily
+> shared between guest and hypervisor. It just defines a named constant
+> to indicate the enable bit for KVM-specific MSRs.
+>=20
+> Signed-off-by: Glauber Costa <glommer@redhat.com>
+> CC: Rik van Riel <riel@redhat.com>
+> CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Avi Kivity <avi@redhat.com>
+> CC: Anthony Liguori <aliguori@us.ibm.com>
+> CC: Eric B Munson <emunson@mgebm.net>
 
-Ok. I can resend a patch (tomorrow) with just those two changes and will 
-add your Acked-by:
+My mail provider seems to have dropped patch 1 of the series so I can't rep=
+ly
+directly to it, please add my Tested-by there as well.
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+Tested-by: Eric B Munson <emunson@mgebm.net>
 
+--IJpNTDwzlM2Ie8A6
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOC594AAoJEH65iIruGRnNPOsH/jvr6q/z02tWCnhVD9It3Pa8
+6PYzW1avB4d0F+koFt0YTcaJ8preqIfVafJSdupkgirpZETtDUZmiYeJDb0YR83p
+EyUDIeFET+oAF2Mk6LQekPeC6PNQuDZYRc17jrObYADWhl00bAkni1kupLuMoluh
+sC6B0K0fCFfbOTldW0aCCqqyeFvneMLbLWHQtivOFUvcN8P27Q325CWxuA/aDn+Y
+zhYLHq3BLhEDDjzskxVO5F9CNAIUVTfB+Bb9aHN/DFVyDSvtWkZqDdJ5uGzlBZgH
+oh+YWFd+wnfwLmFWpeHEEhdpPr2iBnPQGeUXDX/6iGfdnJzxmNtERrA6003cnRk=
+=Zi7p
+-----END PGP SIGNATURE-----
+
+--IJpNTDwzlM2Ie8A6--
