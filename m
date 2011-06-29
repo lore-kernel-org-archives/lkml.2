@@ -1,67 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753600Ab1F2G2S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 02:28:18 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:52947 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab1F2G2O (ORCPT
+	id S1753702Ab1F2G2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 02:28:36 -0400
+Received: from mailout2.samsung.com ([203.254.224.25]:35161 "EHLO
+	mailout2.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab1F2G2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 02:28:14 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: [PATCH] pch_dma: Fix channel locking
-Date: Wed, 29 Jun 2011 08:28:02 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
-Cc: "Wang, Yong Y" <yong.y.wang@intel.com>, Vinod Koul <vinod.koul@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
-        "Wang, Qi" <qi.wang@intel.com>,
-        "toshiharu-linux@dsn.okisemi.com" <toshiharu-linux@dsn.okisemi.com>
-References: <1308755133-8605-1-git-send-email-alexander.stein@systec-electronic.com> <201106271622.52763.alexander.stein@systec-electronic.com> <4E09AE3A.8050306@dsn.okisemi.com>
-In-Reply-To: <4E09AE3A.8050306@dsn.okisemi.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-2022-jp"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106290828.06508.alexander.stein@systec-electronic.com>
+	Wed, 29 Jun 2011 02:28:30 -0400
+X-AuditID: cbfee61a-b7c53ae000002dc1-49-4e0ac60c54f0
+Date: Wed, 29 Jun 2011 15:28:24 +0900
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH] tty: serial: samsung.c remove legacy PM code.
+To: linux-serial@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@linux.intel.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, kyungmin.park@samsung.com,
+        myungjoo.ham@gmail.com
+Message-id: <1309328904-19267-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 29 Jun 2011 06:28:43.0323 (UTC)
+ FILETIME=[CAEEA8B0:01CC3625]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 June 2011 12:34:34 Tomoya MORINAGA wrote:
-> (2011/06/27 23:22), Alexander Stein wrote:
-> > Ok. I have a 2.6.39 kernel with the following patches:
-> > pch_phub: Don't panic if dmi_get_system_info returns NULL
-> > drivers/tty/serial/pch_uart.c: don't oops if dmi_get_system_info returns
-> > NULL pch_uart: Add console support
-> > 
-> > I need these to get a booting board with console support on pch_uart.
-> > After boot (dma and pch_uart compiled into kernel), I do
-> > * setserial /dev/ttyPCH0 ^low_latency
-> > * ./raise_dma_fault
-> > <- Here I get the message
-> 
-> Thank you for your information.
-> I could see the kernel message.
-> However using your patch, it seems the message remains to be seen.
-> 
-> [  142.401597] pch_uart 0000:02:0a.1: PCH UART : Use DMA Mode
-> [  148.011410]
-> [  148.011415] =================================
-> [  148.011428] [ INFO: inconsistent lock state ]
-> [  148.011439] 2.6.39.2+ #5
-> [  148.011446] ---------------------------------
-> [  148.011455] inconsistent {HARDIRQ-ON-W} -> {IN-HARDIRQ-W} usage.
-> [  148.011467] gnome-terminal/1759 [HC1[1]:SC0[0]:HE0:SE1] takes:
-> [  148.011477]  (&(&pd_chan->lock)->rlock){?.....}, at: [<c0710cc5>]
-> pd_prep_slave_sg+0x92/0x26d
-> [  148.011509] {HARDIRQ-ON-W} state was registered at:
-> [  148.011516]   [<c04618a1>] __lock_acquire+0x2d9/0xbcc
-> [  148.011533]   [<c0462594>] lock_acquire+0x94/0xb7
-> [  148.011546]   [<c07cec85>] _raw_spin_lock_bh+0x25/0x34
-> [  148.011561]   [<c07110d0>] pd_alloc_chan_resources+0xb2/0x165
+This patch "modernize" tty/serial/samsung.c to use non-legacy code for
+suspend/resume.
 
-Are you sure you applied the patch? There shouldn't be a _raw_spin_lock_bh 
-here.
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
+---
+ drivers/tty/serial/samsung.c |   27 ++++++++++++++-------------
+ 1 files changed, 14 insertions(+), 13 deletions(-)
 
-Regards,
-Alexander
+diff --git a/drivers/tty/serial/samsung.c b/drivers/tty/serial/samsung.c
+index f66f648..34b8afe 100644
+--- a/drivers/tty/serial/samsung.c
++++ b/drivers/tty/serial/samsung.c
+@@ -1194,12 +1194,10 @@ int __devexit s3c24xx_serial_remove(struct platform_device *dev)
+ EXPORT_SYMBOL_GPL(s3c24xx_serial_remove);
+ 
+ /* UART power management code */
+-
+-#ifdef CONFIG_PM
+-
+-static int s3c24xx_serial_suspend(struct platform_device *dev, pm_message_t state)
++#ifdef CONFIG_PM_SLEEP
++static int s3c24xx_serial_suspend(struct device *dev)
+ {
+-	struct uart_port *port = s3c24xx_dev_to_port(&dev->dev);
++	struct uart_port *port = s3c24xx_dev_to_port(dev);
+ 
+ 	if (port)
+ 		uart_suspend_port(&s3c24xx_uart_drv, port);
+@@ -1207,9 +1205,9 @@ static int s3c24xx_serial_suspend(struct platform_device *dev, pm_message_t stat
+ 	return 0;
+ }
+ 
+-static int s3c24xx_serial_resume(struct platform_device *dev)
++static int s3c24xx_serial_resume(struct device *dev)
+ {
+-	struct uart_port *port = s3c24xx_dev_to_port(&dev->dev);
++	struct uart_port *port = s3c24xx_dev_to_port(dev);
+ 	struct s3c24xx_uart_port *ourport = to_ourport(port);
+ 
+ 	if (port) {
+@@ -1222,17 +1220,20 @@ static int s3c24xx_serial_resume(struct platform_device *dev)
+ 
+ 	return 0;
+ }
+-#endif
++
++static const struct dev_pm_ops s3c24xx_serial_pm_ops = {
++	.suspend = s3c24xx_serial_suspend,
++	.resume = s3c24xx_serial_resume,
++};
++#else /* !CONFIG_PM_SLEEP */
++#define s3c24xx_serial_pm_ops	NULL
++#endif /* CONFIG_PM_SLEEP */
+ 
+ int s3c24xx_serial_init(struct platform_driver *drv,
+ 			struct s3c24xx_uart_info *info)
+ {
+ 	dbg("s3c24xx_serial_init(%p,%p)\n", drv, info);
+-
+-#ifdef CONFIG_PM
+-	drv->suspend = s3c24xx_serial_suspend;
+-	drv->resume = s3c24xx_serial_resume;
+-#endif
++	drv->driver.pm = &s3c24xx_serial_pm_ops;
+ 
+ 	return platform_driver_register(drv);
+ }
+-- 
+1.7.4.1
+
