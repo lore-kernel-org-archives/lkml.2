@@ -1,67 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab1F2C3l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 22:29:41 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:38939 "EHLO
+	id S1753058Ab1F2Cas (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 22:30:48 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:39240 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751289Ab1F2C3g convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751289Ab1F2Cal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 22:29:36 -0400
+	Tue, 28 Jun 2011 22:30:41 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=tarH1e+60l/QFfLRllC2qHeU39e18I3OGvSCwm4HASrotDITSKkN5MUbtIEhMlpP7
-	RQHE8heEbrnmNxmYUgeVQ==
+	message-id:subject:to:cc:content-type:x-system-of-record;
+	b=av3nrx4S7Xjo4bf2k7TKekNEGy8QOgZ2aXUYlp8PL670v8OcC6TghmXsguDNBy49H
+	+REnv8ricYWsdxjnznFHQ==
 MIME-Version: 1.0
-In-Reply-To: <CAPM31RK7O3Fk5nb+ApiOBjeN5texNodCNibAbLLLxbwXtaCoog@mail.gmail.com>
-References: <20110621071649.862846205@google.com> <20110621071700.395400025@google.com>
- <1308757658.1022.50.camel@twins> <CAPM31RK7O3Fk5nb+ApiOBjeN5texNodCNibAbLLLxbwXtaCoog@mail.gmail.com>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 28 Jun 2011 19:29:03 -0700
-Message-ID: <CAPM31RKsOoKMBVFCHC=1D+XGgdNbYXLA2Cur1vOzJ9RX=pbs2g@mail.gmail.com>
-Subject: Re: [patch 07/16] sched: expire invalid runtime
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <BANLkTi=KvKZtjFuDNxfKKAxysWUw4CiJecG8wnckYPvv9BzNrA@mail.gmail.com>
+References: <1308797024.23204.95.camel@debian> <1308819748.1022.69.camel@twins>
+ <1308876099.23204.124.camel@debian> <1309219329.14604.11.camel@debian>
+ <1309273180.6701.213.camel@twins> <BANLkTi=KvKZtjFuDNxfKKAxysWUw4CiJecG8wnckYPvv9BzNrA@mail.gmail.com>
+From: Nikhil Rao <ncrao@google.com>
+Date: Tue, 28 Jun 2011 19:30:19 -0700
+Message-ID: <CAOM-RdPBc2kcWDtUvTDe9PqQMq=u5qcEprDbC9guVi+wX+9bRg@mail.gmail.com>
+Subject: Re: power increase issue on light load
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Alex, Shi" <alex.shi@intel.com>, "mingo@elte.hu" <mingo@elte.hu>,
+        "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        len.brown@intel.com
+Content-Type: text/plain; charset=UTF-8
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 9:42 PM, Paul Turner <pjt@google.com> wrote:
-> On Wed, Jun 22, 2011 at 8:47 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
->> On Tue, 2011-06-21 at 00:16 -0700, Paul Turner wrote:
+On Tue, Jun 28, 2011 at 10:13 AM, Nikhil Rao <ncrao@google.com> wrote:
+> On Tue, Jun 28, 2011 at 7:59 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> On Tue, 2011-06-28 at 08:02 +0800, Alex,Shi wrote:
+>>> > >
+>>> > > What happens if you try something like the below. Increased imbalance
+>>> > > might lead to more load-balance action, which might lead to more task
+>>> > > migration/waking up of cpus etc.
+>>> > >
+>>> > > If the below makes any difference, Nikhil's changes have a funny that
+>>> > > needs to be caught.
+>>> >
+>>> > Yes, it most remove the commit effect, So the power recovered.
+>>> >
+>>> > In fact the only suspicious I found is large imbalance, but that is
+>>> > the commit want ...
+>>>
+>>> Any further comments for this?
 >>
->>> +     now = sched_clock_cpu(smp_processor_id());
->>> +     cfs_b->runtime_expires = now + ktime_to_ns(cfs_b->period);
->>
->>> +     if ((s64)(rq->clock - cfs_rq->runtime_expires) < 0)
->>
->> Is there a good reason to mix these two (related) time sources?
+>> I had a look over all that stuff, but I couldn't find an obvious unit
+>> mis-match in any of the imbalance code. Nikhil any clue?
 >>
 >
-> It does make sense to remove the (current) aliasing dependency, will
-> use rq->clock for setting expiration.
+> Sorry for the late reply. My mailbox filters failed me :-(
+>
+> Alex -- I'm looking into this issue. Will get back to you soon.
 >
 
-So looking more closely at this I think i prefer the "mix" after all.
+Looking at the schedstat data Alex posted:
+- Distribution of load balances across cores looks about the same.
+- Load balancer does more idle balances on 3.0-rc4 as compared to
+2.6.39 on SMT and NUMA domains. Busy and newidle balances are a mixed
+bag.
+- I see far fewer affine wakeups on 3.0-rc4 as compared to 2.6.39.
+About half as many affine wakeups on SMT and about a quarter as many
+on NUMA.
 
-Using rq->clock within __refill_cfs_bandwidth_runtime adds the requirement
-of taking rq->lock on the current cpu within the period timer so that
-we can update rq->clock (which then just gets set to sched_clock
-anyway).
+I'm investigating the impact of the load resolution patchset on
+effective load and wake affine calculations. This seems to be the most
+obvious difference from the schedstat data.
 
-Expiration logic is already dependent on the fact that rq->clock
-snapshots sched_clock (the 2ms bound on clock-to-clock drift).  Given
-that this is an infrequent (once/period) operation I think it's better
-to leave it as an explicit sched_clock_cpu call, with an explanatory
-comment.
+Alex -- I have a couple of questions about your test setup and results.
+- What is the impact on throughput of these benchmarks?
+- Would it be possible to get a "perf sched" trace on these two kernels?
+- I'm assuming the three sched domains are SMT, MC and NUMA. Is that
+right? Do you have any powersavings balance or special sched domain
+flags enabled?
+- Are you using group scheduling? If so, what does your setup look like?
+
+-Thanks,
+Nikhil
