@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab1F2JQS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 05:16:18 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58266 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752784Ab1F2JQJ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 05:16:09 -0400
+	id S1754238Ab1F2JRI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:17:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22092 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752784Ab1F2JRA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 05:17:00 -0400
+Message-ID: <4E0AED86.2060908@redhat.com>
+Date: Wed, 29 Jun 2011 12:16:54 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <4E0AE1FC.3070201@imgtec.com>
-References: <4E0AE1FC.3070201@imgtec.com>
-Date: Wed, 29 Jun 2011 10:16:09 +0100
-Message-ID: <BANLkTimAwoDybg8TdbMa6rjFY9H9vzGnHg@mail.gmail.com>
-Subject: Re: [PATCH 0/4] mmc: dw_mmc: mmc_test related fixes
-From: Will Newton <will.newton@gmail.com>
-To: James Hogan <james.hogan@imgtec.com>
-Cc: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 19/22] KVM: MMU: lockless walking shadow page table
+References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FDB4.60306@cn.fujitsu.com>
+In-Reply-To: <4E01FDB4.60306@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 9:27 AM, James Hogan <james.hogan@imgtec.com> wrote:
-> More improvements and fixes for the Synopsys DesignWare MCI driver so
-> that it passes the mmc_test suite:
+On 06/22/2011 05:35 PM, Xiao Guangrong wrote:
+> Use rcu to protect shadow pages table to be freed, so we can safely walk it,
+> it should run fastly and is needed by mmio page fault
 >
-> [PATCH 1/4] mmc: dw_mmc: fix stop when fallen back to PIO
->        Fixes a hang after an error/timeout in PIO mode.
-> [PATCH 2/4] mmc: dw_mmc: remove unnecessary error messages
->        Removes some dev_err's since an errno is sufficient.
-> [PATCH 3/4] mmc: dw_mmc: handle "no CRC status" error
->        Fixes "Correct xfer_size at write" tests.
-> [PATCH 4/4] mmc: dw_mmc: reset FIFO after an error
->        Fixes modified "Correct xfer_size at write" tests (3 blocks
->        instead of 2).
+
+>   static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+>   				    struct list_head *invalid_list)
+>   {
+> @@ -1767,6 +1874,14 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
 >
->  drivers/mmc/host/dw_mmc.c  |   41 +++++++++++++++++++++++++++++++----------
->  include/linux/mmc/dw_mmc.h |    2 ++
->  2 files changed, 33 insertions(+), 10 deletions(-)
+>   	kvm_flush_remote_tlbs(kvm);
+>
+> +	if (atomic_read(&kvm->arch.reader_counter)) {
+> +		kvm_mmu_isolate_pages(invalid_list);
+> +		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
+> +		list_del_init(invalid_list);
+> +		call_rcu(&sp->rcu, free_pages_rcu);
+> +		return;
+> +	}
+> +
 
-These all look good to me.
+I think we should do this unconditionally.  The cost of ping-ponging the 
+shared cache line containing reader_counter will increase with large smp 
+counts.  On the other hand, zap_page is very rare, so it can be a little 
+slower.  Also, less code paths = easier to understand.
 
-Acked-by: Will Newton <will.newton@imgtec.com>
+-- 
+error compiling committee.c: too many arguments to function
+
