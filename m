@@ -1,58 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab1F2NeI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 09:34:08 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38164 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719Ab1F2NeF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 09:34:05 -0400
-Subject: [PATCH] mach-ux500: fix build error due to unknown 'regulator_en'
- field
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Jun 2011 21:33:57 +0800
-Message-ID: <1309354437.10872.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753914Ab1F2NlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 09:41:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57139 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753532Ab1F2NlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 09:41:04 -0400
+Date: Wed, 29 Jun 2011 15:40:59 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/3] memcg: fix reclaimable lru check in memcg.
+Message-ID: <20110629134059.GD24262@tiehlicka.suse.cz>
+References: <20110628173122.9e5aecdf.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110628173958.4f213b26.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110628173958.4f213b26.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix below build error:
+On Tue 28-06-11 17:39:58, KAMEZAWA Hiroyuki wrote:
+> From b52bcd09843e903e5f184d0ee499909d072f3c8d Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Tue, 28 Jun 2011 15:45:38 +0900
+> Subject: [PATCH 1/3] memcg: fix reclaimable lru check in memcg.
+> 
+> Now, in mem_cgroup_hierarchical_reclaim(), mem_cgroup_local_usage()
+> is used for checking whether the memcg contains reclaimable pages
+> or not. If no pages in it, the routine skips it.
+> 
+> But, mem_cgroup_local_usage() contains Unevictable pages and cannot
+> handle "noswap" condition correctly. This doesn't work on a swapless
+> system.
+> 
+> This patch adds test_mem_cgroup_reclaimable() and replaces
+> mem_cgroup_local_usage(). test_mem_cgroup_reclaimable() see LRU
+> counter and returns correct answer to the caller.
+> And this new function has "noswap" argument and can see only
+> FILE LRU if necessary.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-  CC      arch/arm/mach-ux500/board-mop500-u8500uib.o
-arch/arm/mach-ux500/board-mop500-u8500uib.c:35: error: unknown field 'regulator_en' specified in initializer
-arch/arm/mach-ux500/board-mop500-u8500uib.c:35: warning: excess elements in struct initializer
-arch/arm/mach-ux500/board-mop500-u8500uib.c:35: warning: (near initialization for 'rmi4_i2c_dev_platformdata')
-make[1]: *** [arch/arm/mach-ux500/board-mop500-u8500uib.o] Error 1
-make: *** [arch/arm/mach-ux500] Error 2
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- arch/arm/mach-ux500/board-mop500-u8500uib.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+except for !CONFIG_NUMA issue - see bellow.
 
-diff --git a/arch/arm/mach-ux500/board-mop500-u8500uib.c b/arch/arm/mach-ux500/board-mop500-u8500uib.c
-index d8a8734..1af7228 100644
---- a/arch/arm/mach-ux500/board-mop500-u8500uib.c
-+++ b/arch/arm/mach-ux500/board-mop500-u8500uib.c
-@@ -32,7 +32,6 @@ static struct synaptics_rmi4_platform_data rmi4_i2c_dev_platformdata = {
- 	.irq_type       = (IRQF_TRIGGER_FALLING | IRQF_SHARED),
- 	.x_flip		= false,
- 	.y_flip		= true,
--	.regulator_en   = false,
- };
- 
- static struct i2c_board_info __initdata mop500_i2c3_devices_u8500[] = {
+> @@ -1559,6 +1550,27 @@ mem_cgroup_select_victim(struct mem_cgroup *root_mem)
+>  	return ret;
+>  }
+>  
+> +/** test_mem_cgroup_node_reclaimable
+> + * @mem: the target memcg
+> + * @nid: the node ID to be checked.
+> + * @noswap : specify true here if the user wants flle only information.
+> + *
+> + * This function returns whether the specified memcg contains any
+> + * reclaimable pages on a node. Returns true if there are any reclaimable
+> + * pages in the node.
+> + */
+> +static bool test_mem_cgroup_node_reclaimable(struct mem_cgroup *mem,
+> +		int nid, bool noswap)
+> +{
+> +	if (mem_cgroup_node_nr_file_lru_pages(mem, nid))
+> +		return true;
+
+I do not see definition of mem_cgroup_node_nr_file_lru_pages for
+!MAX_NUMNODES==1 (resp. !CONFIG_NUMA) and you are calling this function
+also from that context.
+
+>  #if MAX_NUMNODES > 1
+>  
+>  /*
+> @@ -1580,15 +1592,8 @@ static void mem_cgroup_may_update_nodemask(struct mem_cgroup *mem)
+>  
+>  	for_each_node_mask(nid, node_states[N_HIGH_MEMORY]) {
+>  
+> -		if (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_FILE) ||
+> -		    mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_FILE))
+> -			continue;
+> -
+> -		if (total_swap_pages &&
+> -		    (mem_cgroup_get_zonestat_node(mem, nid, LRU_INACTIVE_ANON) ||
+> -		     mem_cgroup_get_zonestat_node(mem, nid, LRU_ACTIVE_ANON)))
+> -			continue;
+> -		node_clear(nid, mem->scan_nodes);
+> +		if (!test_mem_cgroup_node_reclaimable(mem, nid, false))
+> +			node_clear(nid, mem->scan_nodes);
+
+Nice clean up.
+
+> @@ -1627,11 +1632,51 @@ int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
+>  	return node;
+>  }
+>  
+> +/*
+> + * Check all nodes whether it contains reclaimable pages or not.
+> + * For quick scan, we make use of scan_nodes. This will allow us to skip
+> + * unused nodes. But scan_nodes is lazily updated and may not cotain
+> + * enough new information. We need to do double check.
+> + */
+> +bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
+> +{
+> +	int nid;
+> +
+> +	/*
+> +	 * quick check...making use of scan_node.
+> +	 * We can skip unused nodes.
+> +	 */
+> +	if (!nodes_empty(mem->scan_nodes)) {
+> +		for (nid = first_node(mem->scan_nodes);
+> +		     nid < MAX_NUMNODES;
+> +		     nid = next_node(nid, mem->scan_nodes)) {
+> +
+> +			if (test_mem_cgroup_node_reclaimable(mem, nid, noswap))
+> +				return true;
+> +		}
+> +	}
+> +	/*
+> + 	 * Check rest of nodes.
+> + 	 */
+> +	for_each_node_state(nid, N_HIGH_MEMORY) {
+> +		if (node_isset(nid, mem->scan_nodes))
+> +			continue;
+> +		if (test_mem_cgroup_node_reclaimable(mem, nid, noswap))
+> +			return true;	
+> +	}
+> +	return false;
+> +}
+> +
+>  #else
+
+This is #else if MAX_NUMNODES == 1 AFAICS
+
+>  int mem_cgroup_select_victim_node(struct mem_cgroup *mem)
+>  {
+>  	return 0;
+>  }
+> +
+> +bool mem_cgroup_reclaimable(struct mem_cgroup *mem, bool noswap)
+> +{
+> +	return test_mem_cgroup_node_reclaimable(mem, 0, noswap);
+> +}
+>  #endif
+
 -- 
-1.7.4.1
-
-
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
