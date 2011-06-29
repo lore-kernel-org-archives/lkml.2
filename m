@@ -1,122 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab1F2JqQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 05:46:16 -0400
-Received: from swan.madduck.net ([80.68.90.58]:45810 "EHLO swan.madduck.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753880Ab1F2JqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 05:46:14 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Jun 2011 05:46:14 EDT
-Date: Wed, 29 Jun 2011 11:40:18 +0200
-From: martin f krafft <madduck@madduck.net>
-To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: nested block devices (partitioned RAID with LVM): where Linux
- sucks ;-)
-Message-ID: <20110629094017.GA12692@albatross.gern.madduck.net>
-Mail-Followup-To: Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de>,
-	linux-kernel@vger.kernel.org
-References: <4E0AED02020000A100006458@gwsmtp1.uni-regensburg.de>
+	id S1754469Ab1F2Jo6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:44:58 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:38022 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753603Ab1F2Jo4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 05:44:56 -0400
+Date: Wed, 29 Jun 2011 11:44:51 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Cc: Conny Seidel <conny.seidel@amd.com>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: 32bit NUMA and fakeNUMA broken for AMD CPUs
+Message-ID: <20110629094451.GJ3386@htj.dyndns.org>
+References: <20110621174131.054f0422.conny.seidel_amd.com@marah.osrc.amd.com>
+ <20110626102235.GC12200@mtj.dyndns.org>
+ <20110626223807.47cef5c6.conny.seidel_amd.com@marah.osrc.amd.com>
+ <20110628174613.GP478@escobedo.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha512;
-	protocol="application/pgp-signature"; boundary="MGYHOYXEY6WxJCY8"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E0AED02020000A100006458@gwsmtp1.uni-regensburg.de>
-X-Motto: Keep the good times rollin'
-X-OS: Debian GNU/Linux wheezy/sid kernel 3.0.0-rc3-amd64 x86_64
-X-Spamtrap: madduck.bogus@madduck.net
-X-Subliminal-Message: debian/rules!
+In-Reply-To: <20110628174613.GP478@escobedo.osrc.amd.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(cc'ing x86 and lkml.  Please keep them cc'd on x86 related issues).
 
---MGYHOYXEY6WxJCY8
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello,
 
-also sprach Ulrich Windl <Ulrich.Windl@rz.uni-regensburg.de> [2011.06.29.09=
-14 +0200]:
-> 1) The original error message of mdadm about a wrong UUID is
-> completely wrong ("device busy" would have been correct)
+On Tue, Jun 28, 2011 at 07:46:14PM +0200, Hans Rosenfeld wrote:
+> We found another related but different panic on a 4-socket 8-node system,
+> caused by this commit:
+> 
+>     commit 2706a0bf7b02693ed88752df877f10c2206292ff
+>     Author: Tejun Heo <tj@kernel.org>
+>     Date:   Mon May 2 17:24:48 2011 +0200
+> 
+>     x86, NUMA: Enable CONFIG_AMD_NUMA on 32bit too
+>     
+>     Now that NUMA init path is unified, amdtopology can be enabled on
+>     32bit.  Make amdtopology.c safe on 32bit by explicitly using u64 and
+>     drop X86_64 dependency from Kconfig.
+>     
+>     Inclusion of bootmem.h is added for max_pfn declaration.
+>     
+>     Signed-off-by: Tejun Heo <tj@kernel.org>
+>     Cc: Ingo Molnar <mingo@redhat.com>
+>     Cc: Yinghai Lu <yinghai@kernel.org>
+>     Cc: David Rientjes <rientjes@google.com>
+>     Cc: Thomas Gleixner <tglx@linutronix.de>
+>     Cc: "H. Peter Anvin" <hpa@zytor.com>
+> 
+> 
+> The fix for the other panic does not fix this one.
+> Full bootlog and config are attached.
 
-Correct. It would be nice if you could file a bug about this in your
-distro's bug tracker (or Debian's).
+Hmmm, interesting.
 
-> 2) partitions on unassembled raid legs are activated before the
-> RAID is assembled, effectively preventing a RAID assembly (I could
-> not find out how to fix/prevent this)
+> [    0.000000] BIOS-provided physical RAM map:
+> [    0.000000]  BIOS-e820: 0000000000000000 - 0000000000087800 (usable)
+> [    0.000000]  BIOS-e820: 0000000000087800 - 00000000000a0000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000000cc000 - 0000000000100000 (reserved)
+> [    0.000000]  BIOS-e820: 0000000000100000 - 00000000c7e70000 (usable)
+> [    0.000000]  BIOS-e820: 00000000c7e70000 - 00000000c7e8c000 (ACPI data)
+> [    0.000000]  BIOS-e820: 00000000c7e8c000 - 00000000c7e8e000 (ACPI NVS)
+> [    0.000000]  BIOS-e820: 00000000c7e8e000 - 00000000c8000000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000fec00000 - 00000000fec10000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fee01000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000fff00000 - 0000000100000000 (reserved)
+> [    0.000000]  BIOS-e820: 0000000100000000 - 0000001838000000 (usable)
 
-I think you will find that LVM snatched the PV before mdadm had
-a chance, hence it was busy. This is a common problem with LVM and
-RAID1, because LVM (also) scans all devices and because RAID1 is
-merely a mirroring setup, LVM can use either of the components just
-as well.
+Okay, a fairly large machine.  Memory goes over PAE limit.
 
-The solution? I thought that there was a patch to LVM that prevented
-it from using RAID members. But if there isn't, then exclude the
-devices from its scan.
+> [    0.000000] Scanning NUMA topology in Northbridge 24
+> [    0.000000] Number of physical nodes 8
+> [    0.000000] Node 0 MemBase 0000000000000000 Limit 0000000238000000
+> [    0.000000] Node 1 MemBase 0000000238000000 Limit 0000000638000000
+> [    0.000000] Node 2 MemBase 0000000638000000 Limit 0000000838000000
+> [    0.000000] Node 3 MemBase 0000000838000000 Limit 0000000c38000000
+> [    0.000000] Node 4 MemBase 0000000c38000000 Limit 0000000e38000000
+> [    0.000000] Node 5 MemBase 0000000e38000000 Limit 0000001000000000
+> [    0.000000] Node 6 bogus settings 1238000000-1000000000.
+> [    0.000000] Node 7 bogus settings 1438000000-1000000000.
 
-=E2=80=A6 and before you claim that Linux sucks, consider how a computer
-should do it differently. I think you will find that every
-implementation has to make certain hard assumptions (for it lacks
-human abstraction and combination abilities), and your current
-griefs make you feel like Linux does it worst of all. Rest assured:
-it doesn't. It makes assumptions, but you will find that they are
-quite sensible.
+amdtopology code behaved correctly.  It trimmed node 5 which spans
+over the PAE limit and squashed nodes above that.
 
-> I haven't studied the block data structures, but obviously the
-> RAID metadata is not at the start of the devices. If they were,
-> a partition table would not be found, and the RAID could have been
-> assembled without a problem.
+> [    0.000000] BUG: Int 6: CR2   (null)
+> [    0.000000]      EDI   (null)  ESI 00000002  EBP 00000002  ESP c1543ecc
+> [    0.000000]      EBX f2400000  EDX 00000006  ECX   (null)  EAX 00000001
+> [    0.000000]      err   (null)  EIP c16209aa   CS 00000060  flg 00010002
+> [    0.000000] Stack: f2400000 00220000 f7200800 c1620613 00220000 01000000 04400000 00238000
+> [    0.000000]          (null) f7200000 00000002 f7200b58 f7200800 c1620929 000375fe   (null)
+> [    0.000000]        f7200b80 c16395f0 00200a02 f7200a80   (null) 000375fe 00000002   (null)
+> [    0.000000] Pid: 0, comm: swapper Not tainted 2.6.39-rc5-00181-g2706a0b #17
+> [    0.000000] Call Trace:
+> [    0.000000]  [<c136b1e5>] ? early_fault+0x2e/0x2e
+> [    0.000000]  [<c16209aa>] ? mminit_verify_page_links+0x12/0x42
+> [    0.000000]  [<c1620613>] ? memmap_init_zone+0xaf/0x10c
+> [    0.000000]  [<c1620929>] ? free_area_init_node+0x2b9/0x2e3
+> [    0.000000]  [<c1607e99>] ? free_area_init_nodes+0x3f2/0x451
+> [    0.000000]  [<c1601d80>] ? paging_init+0x112/0x118
+> [    0.000000]  [<c15f578d>] ? setup_arch+0x791/0x82f
+> [    0.000000]  [<c15f43d9>] ? start_kernel+0x6a/0x257
 
-You are right, the metadata are not at the start. This is by design.
+But it later tripped in mminit_verify_page_links().  Maybe
+page_to_nid() doesn't match?
 
-> I'm sending this message to make developers aware of the problem,
+Hmmm... I can't see how it would have worked before.  amdtopology used
+ulong for @end and would simply have been zero.  Maybe NUMA config
+failed and it booted as flatmem instead?  Can you please post boot log
+before the patch?
 
-(in which case it might be wise to avoid exclaiming things like
-"linux sucks"=E2=80=A6)
+Also, can you please apply the following patch, reproduce the boot
+failure and post the log?  Thank you.
 
-> P.S. Novell Support was not able to provide a solution for this problem i=
-n time
 
-News at 11=E2=80=A6
-
---=20
-martin | http://madduck.net/ | http://two.sentenc.es/
-=20
-"no, 'eureka' is greek for 'this bath is too hot.'"
-                                                            -- dr. who
-=20
-spamtraps: madduck.bogus@madduck.net
-
---MGYHOYXEY6WxJCY8
-Content-Type: application/pgp-signature; name="digital_signature_gpg.asc"
-Content-Description: Digital signature (see http://martin-krafft.net/gpg/sig-policy/999bbcc4/current)
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQLvBAEBCgDZBQJOCvMBwBEaaHR0cDovL21hcnRpbi1rcmFmZnQubmV0L2dwZy9z
-aWctcG9saWN5LzU1Yzk4ODJkOTk5YmJjYzQvMjAxMTAxMjQxMTI1P3NoYTUxMnN1
-bT0xY2FkOTZmZDI3ZDMyMzNmNTNlMjI4NDk1MzM2NDgxMDdlNWVlOGQ1YmU2NTUy
-NTFkNzRjOGYxYzVjM2JjNDJmMjMwNGZhNTE1MTUwZjdiZDRkZDA1ZTk4MTk5MjRm
-MDQ5NTEzZWU5OTYyY2E3MTcwOWY4MWQ5NDUxNTg1MmJkOAAKCRBVyYgtmZu8xKFN
-EACx/O9AKVVDWNQ/2iNBIG3hQWEqiz5aLkuBnQTp74MhkM4vHwkzVFCRb38NOjB6
-PewPFqxhUROohGAU+qwPI8BRwbkgzUzknrPrnhVi0yw8NNttWLzf5xvJreetdeKU
-uaZ0MTJ2ONHyRKk3rSUo5ot4MpRv5EAca6tEwVBK74Gh+KyT495nRbYTi1IUKQHn
-kmT0olgLYnYPdM1MkEpKP/1JQLPqKZMkz9qG2PJK52rG9WOIRE71uYs/Q+4h/XxH
-7Xdfz1O5Jz9Rb/8eNy1nDOHg2rFIGkA1qIdHfIb6TeJBcDdq1d2/FFKZrIkJgU5m
-9Km/LbpV3VRrQhHTrDr8fZt7WIyAckX8MWf8IOAkt32jzJdWdTuZBJnQH7CG5o77
-v3M2JyJQs+wuTfg+vRNIBIkxzBKDrM68b3ysvgfMU73EGbCahXdHMv9OPqklj5mk
-2L8G9KSTfoo3aqCb1sqPSszPjtihy68vpiCM+NUUKsDJwXT9pjZ27vS4TvEe9yKL
-uDcGoVlXTsepFRL3LmXz6N04l19B4jtP6FTFrV1FqVwQffcvCkKnDDCerXhnWD/2
-+uVvX8ZxTS2+McFwSgg/XldJNC10DjKj0pQoBUoRDXvXWjknAFMn/dKxLV/1iJzb
-zFhHdFshBdNjwyXEbWB1Igi0in2peNM2IR/Yay2SIX55zg==
-=tR+X
------END PGP SIGNATURE-----
-
---MGYHOYXEY6WxJCY8--
-
+diff --git a/mm/mm_init.c b/mm/mm_init.c
+index 4e0e265..cb230bf 100644
+--- a/mm/mm_init.c
++++ b/mm/mm_init.c
+@@ -124,6 +124,12 @@ void __init mminit_verify_pageflags_layout(void)
+ void __meminit mminit_verify_page_links(struct page *page, enum zone_type zone,
+ 			unsigned long nid, unsigned long pfn)
+ {
++	if (page_to_nid(page) != nid || page_zonenum(page) != zone ||
++	    page_to_pfn(page) != pfn)
++		printk(KERN_CRIT "mminit_verify_page_links: nid=%lu/%lu zone=%d/%d pfn=0x%lx/0x%lx\n",
++		       page_to_nid(page), nid, page_zonenum(page), zone,
++		       page_to_pfn(page), pfn);
++
+ 	BUG_ON(page_to_nid(page) != nid);
+ 	BUG_ON(page_zonenum(page) != zone);
+ 	BUG_ON(page_to_pfn(page) != pfn);
