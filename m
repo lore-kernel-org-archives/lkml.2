@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab1F2O07 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 10:26:59 -0400
-Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42845
-	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
+	id S1756681Ab1F2OZu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 10:25:50 -0400
+Received: from p3plsmtps2ded02.prod.phx3.secureserver.net ([208.109.80.59]:51212
+	"HELO p3plsmtps2ded02-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755988Ab1F2OWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 10:22:55 -0400
+	id S1756130Ab1F2OW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 10:22:56 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
         virtualization@lists.osdl.org
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 33/40] Staging: hv: storvsc: Cleanup storvsc_drv.c after adding the contents of storvsc.c
-Date: Wed, 29 Jun 2011 07:39:30 -0700
-Message-Id: <1309358377-8537-33-git-send-email-kys@microsoft.com>
+Subject: [PATCH 34/40] Staging: hv: storvsc: Add the contents of hyperv_storage.h to storvsc_drv.c
+Date: Wed, 29 Jun 2011 07:39:31 -0700
+Message-Id: <1309358377-8537-34-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309358377-8537-1-git-send-email-kys@microsoft.com>
 References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
@@ -25,42 +25,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, cleanup storvsc_drv.c after adding the contents of storvsc.c
+Add the contents of hyperv_storage.h to storvsc_drv.c and cleanup storvsc_drv.c.n
+
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/storvsc_drv.c |  105 +++-----------------------------------
- 1 files changed, 7 insertions(+), 98 deletions(-)
+ drivers/staging/hv/hyperv_storage.h |  355 -----------------------------------
+ drivers/staging/hv/storvsc_drv.c    |  314 ++++++++++++++++++++++++++++++-
+ 2 files changed, 313 insertions(+), 356 deletions(-)
+ delete mode 100644 drivers/staging/hv/hyperv_storage.h
 
-diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
-index f460741..0702dc0 100644
---- a/drivers/staging/hv/storvsc_drv.c
-+++ b/drivers/staging/hv/storvsc_drv.c
-@@ -19,8 +19,15 @@
-  *   Hank Janssen  <hjanssen@microsoft.com>
-  *   K. Y. Srinivasan <kys@microsoft.com>
-  */
-+
-+#include <linux/kernel.h>
-+#include <linux/sched.h>
-+#include <linux/completion.h>
-+#include <linux/string.h>
- #include <linux/init.h>
- #include <linux/slab.h>
-+#include <linux/mm.h>
-+#include <linux/delay.h>
- #include <linux/module.h>
- #include <linux/device.h>
- #include <linux/blkdev.h>
-@@ -41,39 +48,6 @@ static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
- module_param(storvsc_ringbuffer_size, int, S_IRUGO);
- MODULE_PARM_DESC(storvsc_ringbuffer_size, "Ring buffer size (bytes)");
- 
+diff --git a/drivers/staging/hv/hyperv_storage.h b/drivers/staging/hv/hyperv_storage.h
+deleted file mode 100644
+index 865ede1..0000000
+--- a/drivers/staging/hv/hyperv_storage.h
++++ /dev/null
+@@ -1,355 +0,0 @@
 -/*
-- * Copyright (c) 2009, Microsoft Corporation.
+- *
+- * Copyright (c) 2011, Microsoft Corporation.
 - *
 - * This program is free software; you can redistribute it and/or modify it
 - * under the terms and conditions of the GNU General Public License,
@@ -81,92 +67,670 @@ index f460741..0702dc0 100644
 - *   K. Y. Srinivasan <kys@microsoft.com>
 - *
 - */
--#include <linux/kernel.h>
--#include <linux/sched.h>
--#include <linux/completion.h>
--#include <linux/string.h>
--#include <linux/slab.h>
--#include <linux/mm.h>
--#include <linux/delay.h>
 -
--#include "hyperv.h"
--#include "hyperv_storage.h"
+-#ifndef _HYPERV_STORAGE_H
+-#define _HYPERV_STORAGE_H
 -
- 
- static inline struct storvsc_device *alloc_stor_device(struct hv_device *device)
- {
-@@ -504,71 +478,6 @@ int storvsc_do_io(struct hv_device *device,
- 	return ret;
- }
- 
 -/*
-- * The channel properties uniquely specify how the device is to be
-- * presented to the guest. Map this information for use by the block
-- * driver. For Linux guests on Hyper-V, we emulate a scsi HBA in the guest
-- * (storvsc_drv) and so scsi devices in the guest  are handled by
-- * native upper level Linux drivers. Consequently, Hyper-V
-- * block driver, while being a generic block driver, presently does not
-- * deal with anything other than devices that would need to be presented
-- * to the guest as an IDE disk.
-- *
-- * This function maps the channel properties as embedded in the input
-- * parameter device_info onto information necessary to register the
-- * corresponding block device.
-- *
-- * Currently, there is no way to stop the emulation of the block device
-- * on the host side. And so, to prevent the native IDE drivers in Linux
-- * from taking over these devices (to be managedby Hyper-V block
-- * driver), we will take over if need be the major of the IDE controllers.
-- *
+- * We want to manage the IDE devices using standard Linux SCSI drivers
+- * using the storvsc driver.
+- * Define special channels to support this.
 - */
 -
--int storvsc_get_major_info(struct storvsc_device_info *device_info,
--			    struct storvsc_major_info *major_info)
--{
--	static bool ide0_registered;
--	static bool ide1_registered;
+-#define HV_MAX_IDE_DEVICES	4
+-#define HV_IDE_BASE_CHANNEL	10
+-#define HV_IDE0_DEV1		HV_IDE_BASE_CHANNEL
+-#define HV_IDE0_DEV2		(HV_IDE_BASE_CHANNEL + 1)
+-#define HV_IDE1_DEV1		(HV_IDE_BASE_CHANNEL + 2)
+-#define HV_IDE1_DEV2		(HV_IDE_BASE_CHANNEL + 3)
+-
+-
+-/* vstorage.w revision number.  This is used in the case of a version match, */
+-/* to alert the user that structure sizes may be mismatched even though the */
+-/* protocol versions match. */
+-
+-
+-#define REVISION_STRING(REVISION_) #REVISION_
+-#define FILL_VMSTOR_REVISION(RESULT_LVALUE_)				\
+-	do {								\
+-		char *revision_string					\
+-			= REVISION_STRING($Rev : 6 $) + 6;		\
+-		RESULT_LVALUE_ = 0;					\
+-		while (*revision_string >= '0'				\
+-			&& *revision_string <= '9') {			\
+-			RESULT_LVALUE_ *= 10;				\
+-			RESULT_LVALUE_ += *revision_string - '0';	\
+-			revision_string++;				\
+-		}							\
+-	} while (0)
+-
+-/* Major/minor macros.  Minor version is in LSB, meaning that earlier flat */
+-/* version numbers will be interpreted as "0.x" (i.e., 1 becomes 0.1). */
+-#define VMSTOR_PROTOCOL_MAJOR(VERSION_)		(((VERSION_) >> 8) & 0xff)
+-#define VMSTOR_PROTOCOL_MINOR(VERSION_)		(((VERSION_))      & 0xff)
+-#define VMSTOR_PROTOCOL_VERSION(MAJOR_, MINOR_)	((((MAJOR_) & 0xff) << 8) | \
+-						 (((MINOR_) & 0xff)))
+-#define VMSTOR_INVALID_PROTOCOL_VERSION		(-1)
+-
+-/* Version history: */
+-/* V1 Beta                    0.1 */
+-/* V1 RC < 2008/1/31          1.0 */
+-/* V1 RC > 2008/1/31          2.0 */
+-#define VMSTOR_PROTOCOL_VERSION_CURRENT VMSTOR_PROTOCOL_VERSION(2, 0)
+-
+-
+-
+-
+-/*  This will get replaced with the max transfer length that is possible on */
+-/*  the host adapter. */
+-/*  The max transfer length will be published when we offer a vmbus channel. */
+-#define MAX_TRANSFER_LENGTH	0x40000
+-#define DEFAULT_PACKET_SIZE (sizeof(struct vmdata_gpa_direct) +	\
+-			sizeof(struct vstor_packet) +		\
+-			sizesizeof(u64) * (MAX_TRANSFER_LENGTH / PAGE_SIZE)))
+-
+-
+-/*  Packet structure describing virtual storage requests. */
+-enum vstor_packet_operation {
+-	VSTOR_OPERATION_COMPLETE_IO		= 1,
+-	VSTOR_OPERATION_REMOVE_DEVICE		= 2,
+-	VSTOR_OPERATION_EXECUTE_SRB		= 3,
+-	VSTOR_OPERATION_RESET_LUN		= 4,
+-	VSTOR_OPERATION_RESET_ADAPTER		= 5,
+-	VSTOR_OPERATION_RESET_BUS		= 6,
+-	VSTOR_OPERATION_BEGIN_INITIALIZATION	= 7,
+-	VSTOR_OPERATION_END_INITIALIZATION	= 8,
+-	VSTOR_OPERATION_QUERY_PROTOCOL_VERSION	= 9,
+-	VSTOR_OPERATION_QUERY_PROPERTIES	= 10,
+-	VSTOR_OPERATION_MAXIMUM			= 10
+-};
+-
+-/*
+- * Platform neutral description of a scsi request -
+- * this remains the same across the write regardless of 32/64 bit
+- * note: it's patterned off the SCSI_PASS_THROUGH structure
+- */
+-#define CDB16GENERIC_LENGTH			0x10
+-
+-#ifndef SENSE_BUFFER_SIZE
+-#define SENSE_BUFFER_SIZE			0x12
+-#endif
+-
+-#define MAX_DATA_BUF_LEN_WITH_PADDING		0x14
+-
+-struct vmscsi_request {
+-	unsigned short length;
+-	unsigned char srb_status;
+-	unsigned char scsi_status;
+-
+-	unsigned char port_number;
+-	unsigned char path_id;
+-	unsigned char target_id;
+-	unsigned char lun;
+-
+-	unsigned char cdb_length;
+-	unsigned char sense_info_length;
+-	unsigned char data_in;
+-	unsigned char reserved;
+-
+-	unsigned int data_transfer_length;
+-
+-	union {
+-		unsigned char cdb[CDB16GENERIC_LENGTH];
+-		unsigned char sense_data[SENSE_BUFFER_SIZE];
+-		unsigned char reserved_array[MAX_DATA_BUF_LEN_WITH_PADDING];
+-	};
+-} __attribute((packed));
+-
+-
+-/*
+- * This structure is sent during the intialization phase to get the different
+- * properties of the channel.
+- */
+-struct vmstorage_channel_properties {
+-	unsigned short protocol_version;
+-	unsigned char path_id;
+-	unsigned char target_id;
+-
+-	/* Note: port number is only really known on the client side */
+-	unsigned int port_number;
+-	unsigned int flags;
+-	unsigned int max_transfer_bytes;
+-
+-	/*  This id is unique for each channel and will correspond with */
+-	/*  vendor specific data in the inquirydata */
+-	unsigned long long unique_id;
+-} __packed;
+-
+-/*  This structure is sent during the storage protocol negotiations. */
+-struct vmstorage_protocol_version {
+-	/* Major (MSW) and minor (LSW) version numbers. */
+-	unsigned short major_minor;
 -
 -	/*
--	 * For now we only support IDE disks.
+-	 * Revision number is auto-incremented whenever this file is changed
+-	 * (See FILL_VMSTOR_REVISION macro above).  Mismatch does not
+-	 * definitely indicate incompatibility--but it does indicate mismatched
+-	 * builds.
 -	 */
--	major_info->devname = "ide";
--	major_info->diskname = "hd";
+-	unsigned short revision;
+-} __packed;
 -
--	if (device_info->path_id) {
--		major_info->major = 22;
--		if (!ide1_registered) {
--			major_info->do_register = true;
--			ide1_registered = true;
--		} else
--			major_info->do_register = false;
+-/* Channel Property Flags */
+-#define STORAGE_CHANNEL_REMOVABLE_FLAG		0x1
+-#define STORAGE_CHANNEL_EMULATED_IDE_FLAG	0x2
 -
--		if (device_info->target_id)
--			major_info->index = 3;
--		else
--			major_info->index = 2;
+-struct vstor_packet {
+-	/* Requested operation type */
+-	enum vstor_packet_operation operation;
 -
--		return 0;
--	} else {
--		major_info->major = 3;
--		if (!ide0_registered) {
--			major_info->do_register = true;
--			ide0_registered = true;
--		} else
--			major_info->do_register = false;
+-	/*  Flags - see below for values */
+-	unsigned int flags;
 -
--		if (device_info->target_id)
--			major_info->index = 1;
--		else
--			major_info->index = 0;
+-	/* Status of the request returned from the server side. */
+-	unsigned int status;
 -
--		return 0;
--	}
+-	/* Data payload area */
+-	union {
+-		/*
+-		 * Structure used to forward SCSI commands from the
+-		 * client to the server.
+-		 */
+-		struct vmscsi_request vm_srb;
 -
--	return -ENODEV;
+-		/* Structure used to query channel properties. */
+-		struct vmstorage_channel_properties storage_channel_properties;
+-
+-		/* Used during version negotiations. */
+-		struct vmstorage_protocol_version version;
+-	};
+-} __packed;
+-
+-/* Packet flags */
+-/*
+- * This flag indicates that the server should send back a completion for this
+- * packet.
+- */
+-#define REQUEST_COMPLETION_FLAG	0x1
+-
+-/*  This is the set of flags that the vsc can set in any packets it sends */
+-#define VSC_LEGAL_FLAGS		(REQUEST_COMPLETION_FLAG)
+-
+-
+-#include <linux/kernel.h>
+-#include <linux/wait.h>
+-#include "hyperv_storage.h"
+-#include "hyperv.h"
+-
+-/* Defines */
+-#define STORVSC_RING_BUFFER_SIZE			(20*PAGE_SIZE)
+-#define BLKVSC_RING_BUFFER_SIZE				(20*PAGE_SIZE)
+-
+-#define STORVSC_MAX_IO_REQUESTS				128
+-
+-/*
+- * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
+- * reality, the path/target is not used (ie always set to 0) so our
+- * scsi host adapter essentially has 1 bus with 1 target that contains
+- * up to 256 luns.
+- */
+-#define STORVSC_MAX_LUNS_PER_TARGET			64
+-#define STORVSC_MAX_TARGETS				1
+-#define STORVSC_MAX_CHANNELS				1
+-
+-struct hv_storvsc_request;
+-
+-/* Matches Windows-end */
+-enum storvsc_request_type {
+-	WRITE_TYPE,
+-	READ_TYPE,
+-	UNKNOWN_TYPE,
+-};
+-
+-
+-struct hv_storvsc_request {
+-	struct hv_storvsc_request *request;
+-	struct hv_device *device;
+-
+-	/* Synchronize the request/response if needed */
+-	struct completion wait_event;
+-
+-	unsigned char *sense_buffer;
+-	void *context;
+-	void (*on_io_completion)(struct hv_storvsc_request *request);
+-	struct hv_multipage_buffer data_buffer;
+-
+-	struct vstor_packet vstor_packet;
+-};
+-
+-
+-struct storvsc_device_info {
+-	u32 ring_buffer_size;
+-	unsigned int port_number;
+-	unsigned char path_id;
+-	unsigned char target_id;
+-};
+-
+-struct storvsc_major_info {
+-	int major;
+-	int index;
+-	bool do_register;
+-	char *devname;
+-	char *diskname;
+-};
+-
+-/* A storvsc device is a device object that contains a vmbus channel */
+-struct storvsc_device {
+-	struct hv_device *device;
+-
+-	/* 0 indicates the device is being destroyed */
+-	int	 ref_count;
+-	bool	 destroy;
+-	bool	 drain_notify;
+-	bool	 hba_owner;
+-	atomic_t num_outstanding_req;
+-
+-	wait_queue_head_t waiting_to_drain;
+-
+-	/*
+-	 * Each unique Port/Path/Target represents 1 channel ie scsi
+-	 * controller. In reality, the pathid, targetid is always 0
+-	 * and the port is set by us
+-	 */
+-	unsigned int port_number;
+-	unsigned char path_id;
+-	unsigned char target_id;
+-
+-	/* Used for vsc/vsp channel reset process */
+-	struct hv_storvsc_request init_request;
+-	struct hv_storvsc_request reset_request;
+-};
+-
+-
+-static inline struct storvsc_device *get_out_stor_device(
+-					struct hv_device *device)
+-{
+-	struct storvsc_device *stor_device;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&device->ext_lock, flags);
+-	stor_device = (struct storvsc_device *)device->ext;
+-	if (stor_device && (stor_device->ref_count) &&
+-		!stor_device->destroy)
+-		stor_device->ref_count++;
+-	else
+-		stor_device = NULL;
+-	spin_unlock_irqrestore(&device->ext_lock, flags);
+-
+-	return stor_device;
 -}
- static const char *driver_name = "storvsc";
+-
+-
+-static inline void put_stor_device(struct hv_device *device)
+-{
+-	struct storvsc_device *stor_device;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&device->ext_lock, flags);
+-	stor_device = (struct storvsc_device *)device->ext;
+-
+-	stor_device->ref_count--;
+-	spin_unlock_irqrestore(&device->ext_lock, flags);
+-}
+-
+-static inline void storvsc_wait_to_drain(struct storvsc_device *dev)
+-{
+-	dev->drain_notify = true;
+-	wait_event(dev->waiting_to_drain,
+-		   atomic_read(&dev->num_outstanding_req) == 0);
+-	dev->drain_notify = false;
+-}
+-
+-/* Interface */
+-
+-int storvsc_dev_add(struct hv_device *device,
+-				void *additional_info);
+-int storvsc_dev_remove(struct hv_device *device);
+-
+-int storvsc_do_io(struct hv_device *device,
+-				struct hv_storvsc_request *request);
+-
+-int storvsc_get_major_info(struct storvsc_device_info *device_info,
+-				struct storvsc_major_info *major_info);
+-
+-#endif /* _HYPERV_STORAGE_H */
+diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+index 0702dc0..f54f013 100644
+--- a/drivers/staging/hv/storvsc_drv.c
++++ b/drivers/staging/hv/storvsc_drv.c
+@@ -21,6 +21,7 @@
+  */
  
- struct hv_host_device {
+ #include <linux/kernel.h>
++#include <linux/wait.h>
+ #include <linux/sched.h>
+ #include <linux/completion.h>
+ #include <linux/string.h>
+@@ -41,7 +42,318 @@
+ #include <scsi/scsi_dbg.h>
+ 
+ #include "hyperv.h"
+-#include "hyperv_storage.h"
++
++
++/*
++ * We want to manage the IDE devices using standard Linux SCSI drivers
++ * using the storvsc driver.
++ * Define special channels to support this.
++ */
++
++#define HV_MAX_IDE_DEVICES	4
++#define HV_IDE_BASE_CHANNEL	10
++#define HV_IDE0_DEV1		HV_IDE_BASE_CHANNEL
++#define HV_IDE0_DEV2		(HV_IDE_BASE_CHANNEL + 1)
++#define HV_IDE1_DEV1		(HV_IDE_BASE_CHANNEL + 2)
++#define HV_IDE1_DEV2		(HV_IDE_BASE_CHANNEL + 3)
++
++
++/* vstorage.w revision number.  This is used in the case of a version match, */
++/* to alert the user that structure sizes may be mismatched even though the */
++/* protocol versions match. */
++
++
++#define REVISION_STRING(REVISION_) #REVISION_
++#define FILL_VMSTOR_REVISION(RESULT_LVALUE_)				\
++	do {								\
++		char *revision_string					\
++			= REVISION_STRING($Rev : 6 $) + 6;		\
++		RESULT_LVALUE_ = 0;					\
++		while (*revision_string >= '0'				\
++			&& *revision_string <= '9') {			\
++			RESULT_LVALUE_ *= 10;				\
++			RESULT_LVALUE_ += *revision_string - '0';	\
++			revision_string++;				\
++		}							\
++	} while (0)
++
++/* Major/minor macros.  Minor version is in LSB, meaning that earlier flat */
++/* version numbers will be interpreted as "0.x" (i.e., 1 becomes 0.1). */
++#define VMSTOR_PROTOCOL_MAJOR(VERSION_)		(((VERSION_) >> 8) & 0xff)
++#define VMSTOR_PROTOCOL_MINOR(VERSION_)		(((VERSION_))      & 0xff)
++#define VMSTOR_PROTOCOL_VERSION(MAJOR_, MINOR_)	((((MAJOR_) & 0xff) << 8) | \
++						 (((MINOR_) & 0xff)))
++#define VMSTOR_INVALID_PROTOCOL_VERSION		(-1)
++
++/* Version history: */
++/* V1 Beta                    0.1 */
++/* V1 RC < 2008/1/31          1.0 */
++/* V1 RC > 2008/1/31          2.0 */
++#define VMSTOR_PROTOCOL_VERSION_CURRENT VMSTOR_PROTOCOL_VERSION(2, 0)
++
++
++
++
++/*  This will get replaced with the max transfer length that is possible on */
++/*  the host adapter. */
++/*  The max transfer length will be published when we offer a vmbus channel. */
++#define MAX_TRANSFER_LENGTH	0x40000
++#define DEFAULT_PACKET_SIZE (sizeof(struct vmdata_gpa_direct) +	\
++			sizeof(struct vstor_packet) +		\
++			sizesizeof(u64) * (MAX_TRANSFER_LENGTH / PAGE_SIZE)))
++
++
++/*  Packet structure describing virtual storage requests. */
++enum vstor_packet_operation {
++	VSTOR_OPERATION_COMPLETE_IO		= 1,
++	VSTOR_OPERATION_REMOVE_DEVICE		= 2,
++	VSTOR_OPERATION_EXECUTE_SRB		= 3,
++	VSTOR_OPERATION_RESET_LUN		= 4,
++	VSTOR_OPERATION_RESET_ADAPTER		= 5,
++	VSTOR_OPERATION_RESET_BUS		= 6,
++	VSTOR_OPERATION_BEGIN_INITIALIZATION	= 7,
++	VSTOR_OPERATION_END_INITIALIZATION	= 8,
++	VSTOR_OPERATION_QUERY_PROTOCOL_VERSION	= 9,
++	VSTOR_OPERATION_QUERY_PROPERTIES	= 10,
++	VSTOR_OPERATION_MAXIMUM			= 10
++};
++
++/*
++ * Platform neutral description of a scsi request -
++ * this remains the same across the write regardless of 32/64 bit
++ * note: it's patterned off the SCSI_PASS_THROUGH structure
++ */
++#define CDB16GENERIC_LENGTH			0x10
++
++#ifndef SENSE_BUFFER_SIZE
++#define SENSE_BUFFER_SIZE			0x12
++#endif
++
++#define MAX_DATA_BUF_LEN_WITH_PADDING		0x14
++
++struct vmscsi_request {
++	unsigned short length;
++	unsigned char srb_status;
++	unsigned char scsi_status;
++
++	unsigned char port_number;
++	unsigned char path_id;
++	unsigned char target_id;
++	unsigned char lun;
++
++	unsigned char cdb_length;
++	unsigned char sense_info_length;
++	unsigned char data_in;
++	unsigned char reserved;
++
++	unsigned int data_transfer_length;
++
++	union {
++		unsigned char cdb[CDB16GENERIC_LENGTH];
++		unsigned char sense_data[SENSE_BUFFER_SIZE];
++		unsigned char reserved_array[MAX_DATA_BUF_LEN_WITH_PADDING];
++	};
++} __attribute((packed));
++
++
++/*
++ * This structure is sent during the intialization phase to get the different
++ * properties of the channel.
++ */
++struct vmstorage_channel_properties {
++	unsigned short protocol_version;
++	unsigned char path_id;
++	unsigned char target_id;
++
++	/* Note: port number is only really known on the client side */
++	unsigned int port_number;
++	unsigned int flags;
++	unsigned int max_transfer_bytes;
++
++	/*  This id is unique for each channel and will correspond with */
++	/*  vendor specific data in the inquirydata */
++	unsigned long long unique_id;
++} __packed;
++
++/*  This structure is sent during the storage protocol negotiations. */
++struct vmstorage_protocol_version {
++	/* Major (MSW) and minor (LSW) version numbers. */
++	unsigned short major_minor;
++
++	/*
++	 * Revision number is auto-incremented whenever this file is changed
++	 * (See FILL_VMSTOR_REVISION macro above).  Mismatch does not
++	 * definitely indicate incompatibility--but it does indicate mismatched
++	 * builds.
++	 */
++	unsigned short revision;
++} __packed;
++
++/* Channel Property Flags */
++#define STORAGE_CHANNEL_REMOVABLE_FLAG		0x1
++#define STORAGE_CHANNEL_EMULATED_IDE_FLAG	0x2
++
++struct vstor_packet {
++	/* Requested operation type */
++	enum vstor_packet_operation operation;
++
++	/*  Flags - see below for values */
++	unsigned int flags;
++
++	/* Status of the request returned from the server side. */
++	unsigned int status;
++
++	/* Data payload area */
++	union {
++		/*
++		 * Structure used to forward SCSI commands from the
++		 * client to the server.
++		 */
++		struct vmscsi_request vm_srb;
++
++		/* Structure used to query channel properties. */
++		struct vmstorage_channel_properties storage_channel_properties;
++
++		/* Used during version negotiations. */
++		struct vmstorage_protocol_version version;
++	};
++} __packed;
++
++/* Packet flags */
++/*
++ * This flag indicates that the server should send back a completion for this
++ * packet.
++ */
++#define REQUEST_COMPLETION_FLAG	0x1
++
++/*  This is the set of flags that the vsc can set in any packets it sends */
++#define VSC_LEGAL_FLAGS		(REQUEST_COMPLETION_FLAG)
++
++
++/* Defines */
++#define STORVSC_RING_BUFFER_SIZE			(20*PAGE_SIZE)
++#define BLKVSC_RING_BUFFER_SIZE				(20*PAGE_SIZE)
++
++#define STORVSC_MAX_IO_REQUESTS				128
++
++/*
++ * In Hyper-V, each port/path/target maps to 1 scsi host adapter.  In
++ * reality, the path/target is not used (ie always set to 0) so our
++ * scsi host adapter essentially has 1 bus with 1 target that contains
++ * up to 256 luns.
++ */
++#define STORVSC_MAX_LUNS_PER_TARGET			64
++#define STORVSC_MAX_TARGETS				1
++#define STORVSC_MAX_CHANNELS				1
++
++struct hv_storvsc_request;
++
++/* Matches Windows-end */
++enum storvsc_request_type {
++	WRITE_TYPE,
++	READ_TYPE,
++	UNKNOWN_TYPE,
++};
++
++
++struct hv_storvsc_request {
++	struct hv_storvsc_request *request;
++	struct hv_device *device;
++
++	/* Synchronize the request/response if needed */
++	struct completion wait_event;
++
++	unsigned char *sense_buffer;
++	void *context;
++	void (*on_io_completion)(struct hv_storvsc_request *request);
++	struct hv_multipage_buffer data_buffer;
++
++	struct vstor_packet vstor_packet;
++};
++
++
++struct storvsc_device_info {
++	u32 ring_buffer_size;
++	unsigned int port_number;
++	unsigned char path_id;
++	unsigned char target_id;
++};
++
++struct storvsc_major_info {
++	int major;
++	int index;
++	bool do_register;
++	char *devname;
++	char *diskname;
++};
++
++/* A storvsc device is a device object that contains a vmbus channel */
++struct storvsc_device {
++	struct hv_device *device;
++
++	/* 0 indicates the device is being destroyed */
++	int	 ref_count;
++	bool	 destroy;
++	bool	 drain_notify;
++	bool	 hba_owner;
++	atomic_t num_outstanding_req;
++
++	wait_queue_head_t waiting_to_drain;
++
++	/*
++	 * Each unique Port/Path/Target represents 1 channel ie scsi
++	 * controller. In reality, the pathid, targetid is always 0
++	 * and the port is set by us
++	 */
++	unsigned int port_number;
++	unsigned char path_id;
++	unsigned char target_id;
++
++	/* Used for vsc/vsp channel reset process */
++	struct hv_storvsc_request init_request;
++	struct hv_storvsc_request reset_request;
++};
++
++
++static inline struct storvsc_device *get_out_stor_device(
++					struct hv_device *device)
++{
++	struct storvsc_device *stor_device;
++	unsigned long flags;
++
++	spin_lock_irqsave(&device->ext_lock, flags);
++	stor_device = (struct storvsc_device *)device->ext;
++	if (stor_device && (stor_device->ref_count) &&
++		!stor_device->destroy)
++		stor_device->ref_count++;
++	else
++		stor_device = NULL;
++	spin_unlock_irqrestore(&device->ext_lock, flags);
++
++	return stor_device;
++}
++
++
++static inline void put_stor_device(struct hv_device *device)
++{
++	struct storvsc_device *stor_device;
++	unsigned long flags;
++
++	spin_lock_irqsave(&device->ext_lock, flags);
++	stor_device = (struct storvsc_device *)device->ext;
++
++	stor_device->ref_count--;
++	spin_unlock_irqrestore(&device->ext_lock, flags);
++}
++
++static inline void storvsc_wait_to_drain(struct storvsc_device *dev)
++{
++	dev->drain_notify = true;
++	wait_event(dev->waiting_to_drain,
++		   atomic_read(&dev->num_outstanding_req) == 0);
++	dev->drain_notify = false;
++}
++
+ 
+ static int storvsc_ringbuffer_size = STORVSC_RING_BUFFER_SIZE;
+ 
 -- 
 1.7.4.1
 
