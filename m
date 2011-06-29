@@ -1,150 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752184Ab1F2CYP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 22:24:15 -0400
-Received: from qmta02.emeryville.ca.mail.comcast.net ([76.96.30.24]:54001 "EHLO
-	qmta02.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751289Ab1F2CYJ (ORCPT
+	id S1752136Ab1F2C3l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 22:29:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:38939 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab1F2C3g convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 22:24:09 -0400
-Date: Tue, 28 Jun 2011 19:23:21 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: N?meth M?rton <nm127@freemail.hu>
-Cc: Greg KH <greg@kroah.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Kulikov Vasiliy <segooon@gmail.com>, Endre Kollar <taxy443@gmail.com>,
-        Arjan Mels <arjan.mels@gmx.net>, Ilia Mirkin <imirkin@alum.mit.edu>,
-        David Chang <dchang@novell.com>,
-        Himanshu Chauhan <hschauhan@nulltrace.org>,
-        Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] usbip: handle length at sysfs show() functions
-Message-ID: <20110629022321.GA52889@haskell.muteddisk.com>
-Mail-Followup-To: N?meth M?rton <nm127@freemail.hu>,
-	Greg KH <greg@kroah.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-	Kulikov Vasiliy <segooon@gmail.com>,
-	Endre Kollar <taxy443@gmail.com>, Arjan Mels <arjan.mels@gmx.net>,
-	Ilia Mirkin <imirkin@alum.mit.edu>, David Chang <dchang@novell.com>,
-	Himanshu Chauhan <hschauhan@nulltrace.org>,
-	Max Vozeler <max@vozeler.com>, Arnd Bergmann <arnd@arndb.de>,
-	usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-	LKML <linux-kernel@vger.kernel.org>
-References: <4DE5CA9F.6010303@freemail.hu> <20110607213418.GB11102@kroah.com> <4DEF0822.7070500@freemail.hu> <20110608160931.GB21645@kroah.com> <4DEFE938.70408@freemail.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4DEFE938.70408@freemail.hu>
-User-Agent: Mutt/1.4.2.3i
+	Tue, 28 Jun 2011 22:29:36 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=tarH1e+60l/QFfLRllC2qHeU39e18I3OGvSCwm4HASrotDITSKkN5MUbtIEhMlpP7
+	RQHE8heEbrnmNxmYUgeVQ==
+MIME-Version: 1.0
+In-Reply-To: <CAPM31RK7O3Fk5nb+ApiOBjeN5texNodCNibAbLLLxbwXtaCoog@mail.gmail.com>
+References: <20110621071649.862846205@google.com> <20110621071700.395400025@google.com>
+ <1308757658.1022.50.camel@twins> <CAPM31RK7O3Fk5nb+ApiOBjeN5texNodCNibAbLLLxbwXtaCoog@mail.gmail.com>
+From: Paul Turner <pjt@google.com>
+Date: Tue, 28 Jun 2011 19:29:03 -0700
+Message-ID: <CAPM31RKsOoKMBVFCHC=1D+XGgdNbYXLA2Cur1vOzJ9RX=pbs2g@mail.gmail.com>
+Subject: Re: [patch 07/16] sched: expire invalid runtime
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23:27 Wed 08 Jun     , N?meth M?rton wrote:
-> Greg KH wrote:
-> > On Wed, Jun 08, 2011 at 07:26:58AM +0200, N?meth M?rton wrote:
-> >> Greg KH wrote:
-> >>> On Wed, Jun 01, 2011 at 07:14:07AM +0200, N?meth M?rton wrote:
-> >>>> The sysfs show() functions shall return the actual content length of
-> >>>> the result buffer. According to Documentation/filesystems/sysfs.txt:215
-> >>>> the scnprintf() function is preferred.
-> >>>>
-> >>>> See also the article titled "snprintf() confusion" at
-> >>>> http://lwn.net/Articles/69419/ .
-> >>> [...]
-> >>>
-> >>> Here we are doing lots of work to try to put more than one value in the
-> >>> sysfs file, and return the proper data to the kernel about how big the
-> >>> buffer we used.
-> >>>
-> >>> That's wrong, and violates the "one value per file" sysfs rule, so that
-> >>> should be fixed instead of trying to change the sprintf() call.
-> >> As I understand there is a need to change the design here. Currently I
-> >> get the following content when vhci-hcd is loaded but not yet used:
-> >>
-> >> $ cat /sys/devices/platform/vhci_hcd/status
-> >> prt sta spd bus dev socket           local_busid
-> >> 000 004 000 000 000 0000000000000000 0-0
-> >> 001 004 000 000 000 0000000000000000 0-0
-> >> 002 004 000 000 000 0000000000000000 0-0
-> >> 003 004 000 000 000 0000000000000000 0-0
-> >> 004 004 000 000 000 0000000000000000 0-0
-> >> 005 004 000 000 000 0000000000000000 0-0
-> >> 006 004 000 000 000 0000000000000000 0-0
-> >> 007 004 000 000 000 0000000000000000 0-0
-> >>
-> >> The fields are: port, status, speed, device ID, socket pointer and
-> >> local busid name. This is too complex for sysfs. Maybe we could extend
-> >> the devices file of usbfs with some new rows?
-> > 
-> > Ick, I doubt it as there are lots of tools that parse that file already.
-> 
-> usbip is still part of the staging directory. In dmesg the following appear:
-> 
-> | usbip_common_mod: module is from the staging directory, the quality is unknown, you have been warned.
-> | usbip_common_mod: usbip common driver1.0
-> | vhci_hcd: module is from the staging directory, the quality is unknown, you have been warned.
-> 
-> so this means that usbip is a work-in-progress, it might be changed anytime. On
-> the other hand we can do this nice way: a new entry in  Documentation/feature-removal-schedule.txt
-> for /sys/devices/platform/vhci_hcd/status file removal, let's say it will be
-> removed before the usbip goes to mainline. In parallel the new interface
-> can be developed.
-> 
-> > But yes, you are correct, this should not be in sysfs at all.
-> >
-> > What's the use for this file?  Who uses it?  Is it just debugging
-> > output?  Information for people to gaze at if they feel like it?
-> > Something else?
-> 
-> Based on the user space source code at drivers/staging/usbip/userspace/
-> I can identify the following usages:
-> 
-> libsrc/vhci_driver.c::get_nports():
->  - finding out how many ports the VHCI has
-> 
-> libsrc/vhci_driver.c::parse_status():
->  - VHCI port number to identify virtual ports
->  - fetching the status of each VHCI ports whether it is
->      - vdev does not connect a remote device: (status = VDEV_ST_NULL = 4):
->        "Port Available"
->      - vdev is used, but the USB address is not assigned yet (status =
->        VDEV_ST_NOTASSIGNED = 5): "Port Initializing"
->      - used (status = VDEV_ST_USED = 6): "Port in Use"
->      - error (VDEV_ST_ERROR = 7): "Port Error"
->  - the speed can be unknown/low/full/high/variable
->  - it looks like the bus column was merged with the device column but I
->    currently cannot find when
->  - the device ID is splited to the upper 16bits: bus number, and lower
->    16bits: device number
->  - based on local_busid the usb device file can be found in /sys using
->    sysfs_open_device()
-> 
-> Note that the socket parameter is only printed out as a debug information: it
-> is not used anywhere.
-> 
-> Maybe most of the file content is redundant, because:
-> 
->  - we have /sys/bus/usb/devices/usb*/maxchild which is "number of ports if hub"
->    according to linux/usb.h:410 ;
->  - we have /sys/bus/usb/devices/*-*/speed to identify the device speed;
->  - We have already bus number at /sys/bus/usb/devices/usb*/busnum or at
->    /sys/bus/usb/devices/*-*/busnum ;
->  - we also have /sys/bus/usb/devices/*-*/devnum ;
->  - it is possbile to collect all the devices from /sys/bus/usb/devices/*-*
->    filtering to the first number to /sys/bus/usb/devices/usb*/busnum .
-> 
-> The only thing which is special for VHCI is the status for each port:
-> DEV_ST_NULL/VDEV_ST_NOTASSIGNED/VDEV_ST_USED/VDEV_ST_ERROR .
-> 
-> > Once we figure that out, then we can determine where it should go
-> > (debugfs, sysfs in a different file format, usbfs, etc.)
-> 
-> Maybe the status could fit under /sys/devices/platform/vhci_hcd/*-*/status .
-> This file could contain only one number showing the status of that single
-> device.
+On Mon, Jun 27, 2011 at 9:42 PM, Paul Turner <pjt@google.com> wrote:
+> On Wed, Jun 22, 2011 at 8:47 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+>> On Tue, 2011-06-21 at 00:16 -0700, Paul Turner wrote:
+>>
+>>> +     now = sched_clock_cpu(smp_processor_id());
+>>> +     cfs_b->runtime_expires = now + ktime_to_ns(cfs_b->period);
+>>
+>>> +     if ((s64)(rq->clock - cfs_rq->runtime_expires) < 0)
+>>
+>> Is there a good reason to mix these two (related) time sources?
+>>
+>
+> It does make sense to remove the (current) aliasing dependency, will
+> use rq->clock for setting expiration.
+>
 
-This is something I have been meaning to get to. So yes, I agree we should
-eliminate the bulk of that sysfs file and use the ../vhci_hcd/*-*/status
-structure.
+So looking more closely at this I think i prefer the "mix" after all.
 
--mfm
+Using rq->clock within __refill_cfs_bandwidth_runtime adds the requirement
+of taking rq->lock on the current cpu within the period timer so that
+we can update rq->clock (which then just gets set to sched_clock
+anyway).
+
+Expiration logic is already dependent on the fact that rq->clock
+snapshots sched_clock (the 2ms bound on clock-to-clock drift).  Given
+that this is an infrequent (once/period) operation I think it's better
+to leave it as an explicit sched_clock_cpu call, with an explanatory
+comment.
