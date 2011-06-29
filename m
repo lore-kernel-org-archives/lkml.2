@@ -1,84 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753199Ab1F2BaE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 21:30:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54992 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab1F2B36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 21:29:58 -0400
-Date: Tue, 28 Jun 2011 21:29:55 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-        "khlebnikov@openvz.org" <khlebnikov@openvz.org>,
-        "jmoyer@redhat.com" <jmoyer@redhat.com>
-Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
-Message-ID: <20110629012955.GA19041@redhat.com>
-References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
- <1309223932.15392.186.camel@sli10-conroe>
- <20110628014039.GA15850@redhat.com>
- <1309226634.15392.197.camel@sli10-conroe>
- <20110628130457.GA17552@redhat.com>
- <1309309495.15392.213.camel@sli10-conroe>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309309495.15392.213.camel@sli10-conroe>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753311Ab1F2Boo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 21:44:44 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:39446 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab1F2Bok (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 21:44:40 -0400
+From: John Johansen <john.johansen@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-security-module@vger.kernel.org
+Subject: [Patch v2 0/2] Fix for masking of complain mode, and rcu protected ref
+Date: Wed, 29 Jun 2011 02:44:32 +0100
+Message-Id: <1309311874-23262-1-git-send-email-john.johansen@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 09:04:55AM +0800, Shaohua Li wrote:
+A couple of outstanding fixes for apparmor
+v2 - added Cc: to stable
+   - updated commit message wording
 
-[..]
-> > We idle on last queue on sync-noidle tree. So we idle on fysnc queue as
-> > it is last queue on sync-noidle tree. That's how we provide protection
-> > to all sync-noidle queues against sync-idle queues. Instead of idling
-> > on individual quues we do idling in group and that is on service tree.
-> Ok. but this looks silly. We are idling in a noidle service tree or a
-> group (backed by the last queue of the tree or group) because we assume
-> the tree or group can dispatch a request soon. But if the think time of
-> the tree or group is big, the assumption isn't true. Doing idle here is
-> blind. I thought we can extend the think time check for both service
-> tree and group.
+The following changes since commit b0af8dfdd67699e25083478c63eedef2e72ebd85:
 
-We can implement the thinktime for noidle service tree and group idle as
-well. That's not a problem, though I am yet to be convinced that thinktime
-still makes sense for the group. I guess it will just mean that in the
-past have you done a bunch of IO with gap between IO less than 8ms. If
-yes, then we expect you to do more IO in future. Frankly speaking, I am
-not too sure that how past IO pattern predicts the future IO pattern
-of the group.
+  Linux 3.0-rc5 (2011-06-27 19:12:22 -0700)
 
-But anyway, the point is, even if you we implement it, it will not solve
-the fsync issue at hand. The reason I explained in previous mail. We 
-will be oscillating between high think time and low thinktime depending
-on whether we are idling or not. There is no correlation between think
-time of fsync thread and idling here.
+are available in the git repository at:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jj/apparmor-dev.git for-security
 
-I think you are banking on the fact that after fsync, journaling thread
-IO can take more than 8ms hence delaying next IO to fsync thread, pushing
-its thinktim more than 8ms hence we will not idle on fsync thread at
-all. It is just one corner case and I think it is broken in multiple
-cases.
+John Johansen (2):
+      AppArmor: Fix reference to rcu protected pointer outside of rcu_read_lock
+      AppArmor: Fix masking of capabilities in complain mode
 
-- If filesystem barriers are disabled or backend storage has battery
-  backup then journal IO most likely will go in cache and barriers
-  will be ignored. In that case write will finish almost instantly
-  and we will get next IO from fsync thread very soon hence pushing
-  down thinktime of fsync thread which will enable idling and we will
-  be back to the problem we are trying to solve.
+ security/apparmor/domain.c |    2 +-
+ security/apparmor/lsm.c    |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-- Fsync thread might be submitting string of IOs (say 10-12) before it
-  moves to journal thread to commit meta data. In that case we might
-  have lowered thinktime of fsync hence enable idle. 
-
-So implementing think time for service tree/group might be a good idea
-in general but it will not solve this IO dependecny issue across cgroups.
-
-Thanks
-Vivek
