@@ -1,147 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757360Ab1F2Qh0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 12:37:26 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:56734 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756818Ab1F2QhZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 12:37:25 -0400
+	id S1757369Ab1F2Qia (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 12:38:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:44698 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756818Ab1F2Qi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 12:38:28 -0400
+Date: Wed, 29 Jun 2011 18:38:25 +0200
+From: Jan Kara <jack@suse.cz>
+To: Josef Bacik <josef@redhat.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk, hch@infradead.org
+Subject: Re: [PATCH] fs: push i_mutex and filemap_write_and_wait down into
+ ->fsync() handlers
+Message-ID: <20110629163825.GE17590@quack.suse.cz>
+References: <1309275310-10987-1-git-send-email-josef@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTim43pAKe1o-aFmgh79bNqSyZmW_Fg@mail.gmail.com>
-References: <1306934847-6098-1-git-send-email-keshava_mgowda@ti.com>
-	<1306934847-6098-2-git-send-email-keshava_mgowda@ti.com>
-	<1306934847-6098-3-git-send-email-keshava_mgowda@ti.com>
-	<1306934847-6098-4-git-send-email-keshava_mgowda@ti.com>
-	<1306934847-6098-5-git-send-email-keshava_mgowda@ti.com>
-	<87d3ix5c6y.fsf@ti.com>
-	<BANLkTim43pAKe1o-aFmgh79bNqSyZmW_Fg@mail.gmail.com>
-Date: Wed, 29 Jun 2011 22:07:21 +0530
-Message-ID: <BANLkTi=pKL6RDBTDBStv+uhxVKp3-bwXbg@mail.gmail.com>
-Subject: Re: [PATCH 4/4] mfd: global Suspend and resume support of ehci and ohci
-From: "Munegowda, Keshava" <keshava_mgowda@ti.com>
-To: Kevin Hilman <khilman@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, balbi@ti.com, gadiyar@ti.com,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        b-cousson@ti.com, paul@pwsan.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309275310-10987-1-git-send-email-josef@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 8:52 PM, Munegowda, Keshava
-<keshava_mgowda@ti.com> wrote:
-> On Thu, Jun 2, 2011 at 5:36 AM, Kevin Hilman <khilman@ti.com> wrote:
->> Keshava Munegowda <keshava_mgowda@ti.com> writes:
->>
->>> From: Keshava Munegowda <Keshava_mgowda@ti.com>
->>>
->>> The global suspend and resume functions for usbhs core driver
->>> are implemented.These routine are called when the global suspend
->>> and resume occurs. Before calling these functions, the
->>> bus suspend and resume of ehci and ohci drivers are called
->>> from runtime pm.
->>>
->>> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->>
->> First, from what I can see, this is only a partial implementation of
->> runtime PM.  What I mean is that the runtime PM methods are used only
->> during the suspend path.  The rest of the time the USB host IP block is
->> left enabled, even when nothing is connected.
->>
->> I tested this on my 3530/Overo board, and verified that indeed the
->> usbhost powerdomain hits retention on suspend, but while idle, when
->> nothing is connected, I would expect the driver could be clever enough
->> to use runtime PM (probably using autosuspend timeouts) to disable the
->> hardware as well.
->>
->>> ---
->>>  drivers/mfd/omap-usb-host.c |  103 +++++++++++++++++++++++++++++++++++++++++++
->>>  1 files changed, 103 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/mfd/omap-usb-host.c b/drivers/mfd/omap-usb-host.c
->>> index 43de12a..32d19e2 100644
->>> --- a/drivers/mfd/omap-usb-host.c
->>> +++ b/drivers/mfd/omap-usb-host.c
->>> @@ -146,6 +146,10 @@
->>>  #define is_ehci_hsic_mode(x) (x == OMAP_EHCI_PORT_MODE_HSIC)
->>>
->>>
->>> +/* USBHS state bits */
->>> +#define OMAP_USBHS_INIT              0
->>> +#define OMAP_USBHS_SUSPEND   4
->>
->> These additional state bits don't seem to be necessary.
->>
->> For suspend, just check 'pm_runtime_is_suspended()'
->>
->> The init flag is only used in the suspend/resume hooks, but the need for
->> it is a side effect of not correctly using the runtime PM callbacks.
->>
->> Remember that the runtime PM get/put hooks have usage counting.  Only
->> when the usage count transitions to/from zero is the actual
->> hardware-level enable/disable (via omap_hwmod) being done.
->>
->> The current code is making the assumption that every call to get/put is
->> going to result in an enable/disable of the hardware.
->>
->> Instead, all of the code that needs to be run only upon actual
->> enable/disable of the hardware should be done in the driver's
->> runtime_suspend/runtime_resume callbacks.  These are only called when
->> the hardware actually changes state.
->>
->> Not knowing that much about the EHCI block, upon first glance, it looks
->> like mmuch of what is done in usbhs_enable() should actually be done in
->> the ->runtime_resume() callback, and similarily, much of what is done in
->> usbhs_disable() should be done in the ->runtime_suspend() callback.
->
-> Kevin,
->   do you mean driver->runtime_resume and driver->runtime_resume call backs.
-> are these call backs from pm_runtime_get_sync and pm_runtime_put_sync?
+On Tue 28-06-11 11:35:10, Josef Bacik wrote:
+> Btrfs needs to be able to control how filemap_write_and_wait_range() is called
+> in fsync to make it less of a painful operation, so push down taking i_mutex and
+> the calling of filemap_write_and_wait() down into the ->fsync() handlers.  Some
+> file systems can drop taking the i_mutex altogether it seems, like ext3 and
+> ocfs2.  For correctness sake I just pushed everything down in all cases to make
+> sure that we keep the current behavior the same for everybody, and then each
+> individual fs maintainer can make up their mind about what to do from there.
+> Thanks,
+> 
+> Signed-off-by: Josef Bacik <josef@redhat.com>
+...
+> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+> index 1921392..fa44df8 100644
+> --- a/fs/ext4/ext4.h
+> +++ b/fs/ext4/ext4.h
+> @@ -1758,7 +1758,7 @@ extern int ext4_htree_store_dirent(struct file *dir_file, __u32 hash,
+>  extern void ext4_htree_free_dir_info(struct dir_private_info *p);
+>  
+>  /* fsync.c */
+> -extern int ext4_sync_file(struct file *, int);
+> +extern int ext4_sync_file(struct file *, loff_t, loff_t, int);
+>  extern int ext4_flush_completed_IO(struct inode *);
+>  
+>  /* hash.c */
+> diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+> index ce66d2f..afab2e4 100644
+> --- a/fs/ext4/fsync.c
+> +++ b/fs/ext4/fsync.c
+> @@ -165,7 +165,7 @@ static int ext4_sync_parent(struct inode *inode)
+>   * i_mutex lock is held when entering and exiting this function
+>   */
+>  
+> -int ext4_sync_file(struct file *file, int datasync)
+> +int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+>  {
+>  	struct inode *inode = file->f_mapping->host;
+>  	struct ext4_inode_info *ei = EXT4_I(inode);
+> @@ -178,15 +178,22 @@ int ext4_sync_file(struct file *file, int datasync)
+>  
+>  	trace_ext4_sync_file_enter(file, datasync);
+>  
+> +	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
+> +	if (ret)
+> +		return ret;
+> +	mutex_lock(&inode->i_mutex);
+> +
+>  	if (inode->i_sb->s_flags & MS_RDONLY)
+> -		return 0;
+> +		goto out;
+>  
+>  	ret = ext4_flush_completed_IO(inode);
+>  	if (ret < 0)
+>  		goto out;
+>  
+>  	if (!journal) {
+> -		ret = generic_file_fsync(file, datasync);
+> +		if (inode->i_state & I_DIRTY ||
+> +		    (datasync && (inode->i_state & I_DIRTY_DATASYNC)))
+> +			ret = sync_inode_metadata(inode, 1);
+  Umm, how did you get to this change? It is actually wrong - ext4 in
+nojournal mode really seems to need to call generic_file_fsync() (so that
+sync_buffers_list() is called).
 
-for usb host case , I am seeing that the pm_runtime_get_sync
+>  		if (!ret && !list_empty(&inode->i_dentry))
+>  			ret = ext4_sync_parent(inode);
+>  		goto out;
+> @@ -220,6 +227,7 @@ int ext4_sync_file(struct file *file, int datasync)
+>  	if (needs_barrier)
+>  		blkdev_issue_flush(inode->i_sb->s_bdev, GFP_KERNEL, NULL);
+>   out:
+> +	mutex_unlock(&inode->i_mutex);
+>  	trace_ext4_sync_file_exit(inode, ret);
+>  	return ret;
+>  }
 
-
-static int rpm_resume(struct device *dev, int rpmflags)
-{
-  ............
- ..........
-	if (dev->pwr_domain) {
-		callback = dev->pwr_domain->ops.runtime_resume;
-		if(!strcmp(dev_name(dev),"usbhs_omap"))
-			 pr_err("dev->pwr_domain->ops.runtime_resume");
-	}	
-	else if (dev->type && dev->type->pm) {
-		callback = dev->type->pm->runtime_resume;
-		if(!strcmp(dev_name(dev),"usbhs_omap"))
-			 pr_err("dev->type->pm->runtime_resume");
-	}	
-	else if (dev->class && dev->class->pm) {
-		callback = dev->class->pm->runtime_resume;
-		if(!strcmp(dev_name(dev),"usbhs_omap"))
-			 pr_err("ev->class->pm->runtime_resume");
-	}	
-	else if (dev->bus && dev->bus->pm) {
-		callback = dev->bus->pm->runtime_resume;
-	if(!strcmp(dev_name(dev),"usbhs_omap"))
-		 pr_err("dev->bus->pm->runtime_resume");
-	}	
-	else
-		callback = NULL;
-}
-
-
-I am seeing that below if statement was hitting true:
-
-	if (dev->pwr_domain) {
-		callback = dev->pwr_domain->ops.runtime_resume;
-		if(!strcmp(dev_name(dev),"usbhs_omap"))
-			 pr_err("dev->pwr_domain->ops.runtime_resume");
-
-
-due to this; the driver->runtime_resume was not getting called.
-
-Any idea on why I am seeing only the dev->pwr_domain is set not
-dev->bus && dev->bus->pm is hitting here?
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
