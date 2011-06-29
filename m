@@ -1,83 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1F2JOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 05:14:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43629 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752134Ab1F2JOp (ORCPT
+	id S1754197Ab1F2JQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:16:18 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58266 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752784Ab1F2JQJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 05:14:45 -0400
-Date: Wed, 29 Jun 2011 11:14:41 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Pratyush ANAND <pratyush.anand@st.com>,
-        Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-        Bhupesh SHARMA <bhupesh.sharma@st.com>,
-        Armando VISCONTI <armando.visconti@st.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
-        Amit VIRDI <Amit.VIRDI@st.com>,
-        Vipul Kumar SAMAR <vipulkumar.samar@st.com>,
-        "viresh.linux@gmail.com" <viresh.linux@gmail.com>,
-        Deepak SIKRI <deepak.sikri@st.com>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH V2 0/3] Add drivers/pwm and drivers/pwm/st_pwm.c
-Message-ID: <20110629091441.GA9349@pengutronix.de>
-References: <cover.1306831238.git.viresh.kumar@st.com>
- <201106271526.12848.arnd@arndb.de>
- <20110628100438.GI6069@pengutronix.de>
- <201106281713.16099.arnd@arndb.de>
+	Wed, 29 Jun 2011 05:16:09 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106281713.16099.arnd@arndb.de>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 11:08:40 up 7 days, 14:55, 32 users,  load average: 0.44, 0.66, 1.99
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <4E0AE1FC.3070201@imgtec.com>
+References: <4E0AE1FC.3070201@imgtec.com>
+Date: Wed, 29 Jun 2011 10:16:09 +0100
+Message-ID: <BANLkTimAwoDybg8TdbMa6rjFY9H9vzGnHg@mail.gmail.com>
+Subject: Re: [PATCH 0/4] mmc: dw_mmc: mmc_test related fixes
+From: Will Newton <will.newton@gmail.com>
+To: James Hogan <james.hogan@imgtec.com>
+Cc: Chris Ball <cjb@laptop.org>, Jaehoon Chung <jh80.chung@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 05:13:15PM +0200, Arnd Bergmann wrote:
-> On Tuesday 28 June 2011, Sascha Hauer wrote:
-> > > 
-> > > Good question. If Sascha is able to come up with the patch to introduce
-> > > the generic layer, I think it would be good to have it go though him.
-> > 
-> > Just posted a rebased and documented series again. Let's see what
-> > happens. The time seems good to finally get this into the kernel.
-> 
-> I'd say let's go forward with your framework. The two patches currently
-> because they both add Makefile/Kconfig files in drivers/pwm.
-> 
-> Maybe you can add Viresh's patch to your series, and wait for him
-> to follow up with a patch to convert it?
-> 
-> I've tried to blindly do the conversion myself, but got stuck with the
-> definition of the platform device that has multiple pwms in it.
-> I wonder if it would be better to change the st-pwm platform
-> interface to define one platform_device for each of them.
+On Wed, Jun 29, 2011 at 9:27 AM, James Hogan <james.hogan@imgtec.com> wrote:
+> More improvements and fixes for the Synopsys DesignWare MCI driver so
+> that it passes the mmc_test suite:
+>
+> [PATCH 1/4] mmc: dw_mmc: fix stop when fallen back to PIO
+>        Fixes a hang after an error/timeout in PIO mode.
+> [PATCH 2/4] mmc: dw_mmc: remove unnecessary error messages
+>        Removes some dev_err's since an errno is sufficient.
+> [PATCH 3/4] mmc: dw_mmc: handle "no CRC status" error
+>        Fixes "Correct xfer_size at write" tests.
+> [PATCH 4/4] mmc: dw_mmc: reset FIFO after an error
+>        Fixes modified "Correct xfer_size at write" tests (3 blocks
+>        instead of 2).
+>
+>  drivers/mmc/host/dw_mmc.c  |   41 +++++++++++++++++++++++++++++++----------
+>  include/linux/mmc/dw_mmc.h |    2 ++
+>  2 files changed, 33 insertions(+), 10 deletions(-)
 
-Definitely. From a quick look at the driver it seems the pwms all have
-a seperate register space.
+These all look good to me.
 
-I can add Viresh's patch to my series once we agree on the base patch.
-In the meantime maybe Viresh starts converting it ;)
-
-Sascha
-
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+Acked-by: Will Newton <will.newton@imgtec.com>
