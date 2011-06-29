@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755198Ab1F2PJI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 11:09:08 -0400
+	id S1756413Ab1F2PL2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 11:11:28 -0400
 Received: from mga11.intel.com ([192.55.52.93]:22128 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754682Ab1F2PJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754745Ab1F2PJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Jun 2011 11:09:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,443,1304319600"; 
-   d="scan'208";a="21923333"
-Message-Id: <20110629145554.168078193@intel.com>
+   d="scan'208";a="21923330"
+Message-Id: <20110629145554.294330838@intel.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 29 Jun 2011 22:52:50 +0800
+Date: Wed, 29 Jun 2011 22:52:51 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: <linux-fsdevel@vger.kernel.org>
 CC: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
@@ -19,86 +19,196 @@ CC: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Wu Fengguang <fengguang.wu@intel.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/9] writeback: consolidate variable names in balance_dirty_pages()
+Subject: [PATCH 6/9] writeback: introduce smoothed global dirty limit
 References: <20110629145245.835998321@intel.com>
-Content-Disposition: inline; filename=writeback-cleanup-name-merge.patch
+Content-Disposition: inline; filename=writeback-dirty-thresh-limit.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce
+The start of a heavy weight application (ie. KVM) may instantly knock
+down determine_dirtyable_memory() if the swap is not enabled or full.
+global_dirty_limits() and bdi_dirty_limit() will in turn get global/bdi
+dirty thresholds that are _much_ lower than the global/bdi dirty pages.
 
-	nr_dirty = NR_FILE_DIRTY + NR_WRITEBACK + NR_UNSTABLE_NFS
+balance_dirty_pages() will then heavily throttle all dirtiers including
+the light ones, until the dirty pages drop below the new dirty thresholds.
+During this _deep_ dirty-exceeded state, the system may appear rather
+unresponsive to the users.
 
-in order to simplify many tests in the following patches.
+About "deep" dirty-exceeded: task_dirty_limit() assigns 1/8 lower dirty
+threshold to heavy dirtiers than light ones, and the dirty pages will
+be throttled around the heavy dirtiers' dirty threshold and reasonably
+below the light dirtiers' dirty threshold. In this state, only the heavy
+dirtiers will be throttled and the dirty pages are carefully controlled
+to not exceed the light dirtiers' dirty threshold. However if the
+threshold itself suddenly drops below the number of dirty pages, the
+light dirtiers will get heavily throttled.
 
-balance_dirty_pages() will eventually care only about the dirty sums
-besides nr_writeback.
+So introduce global_dirty_limit for tracking the global dirty threshold
+with policies
+
+- follow downwards slowly
+- follow up in one shot
+
+global_dirty_limit can effectively mask out the impact of sudden drop of
+dirtyable memory. It will be used in the next patch for two new type of
+dirty limits. Note that the new dirty limits are not going to avoid
+throttling the light dirtiers, but could limit their sleep time to 200ms.
 
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/page-writeback.c |   21 +++++++++++----------
- 1 file changed, 11 insertions(+), 10 deletions(-)
+ fs/fs-writeback.c         |    2 -
+ include/linux/writeback.h |    5 ++
+ mm/page-writeback.c       |   72 +++++++++++++++++++++++++++++++++++-
+ 3 files changed, 76 insertions(+), 3 deletions(-)
 
---- linux-next.orig/mm/page-writeback.c	2011-06-20 00:16:58.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-06-20 00:17:06.000000000 +0800
-@@ -560,8 +560,9 @@ static void bdi_update_bandwidth(struct 
- static void balance_dirty_pages(struct address_space *mapping,
- 				unsigned long write_chunk)
+--- linux-next.orig/include/linux/writeback.h	2011-06-20 00:23:59.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-06-22 20:43:13.000000000 +0800
+@@ -84,6 +84,8 @@ static inline void laptop_sync_completio
+ #endif
+ void throttle_vm_writeout(gfp_t gfp_mask);
+ 
++extern unsigned long global_dirty_limit;
++
+ /* These are exported to sysctl. */
+ extern int dirty_background_ratio;
+ extern unsigned long dirty_background_bytes;
+@@ -119,6 +121,9 @@ unsigned long bdi_dirty_limit(struct bac
+ 			       unsigned long dirty);
+ 
+ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
++			    unsigned long thresh,
++			    unsigned long dirty,
++			    unsigned long bdi_dirty,
+ 			    unsigned long start_time);
+ 
+ void page_writeback_init(void);
+--- linux-next.orig/mm/page-writeback.c	2011-06-20 00:23:59.000000000 +0800
++++ linux-next/mm/page-writeback.c	2011-06-22 22:06:29.000000000 +0800
+@@ -116,6 +116,7 @@ EXPORT_SYMBOL(laptop_mode);
+ 
+ /* End of sysctl-exported parameters */
+ 
++unsigned long global_dirty_limit;
+ 
+ /*
+  * Scale the writeback cache size proportional to the relative writeout speeds.
+@@ -510,7 +511,66 @@ static void bdi_update_write_bandwidth(s
+ 	bdi->avg_write_bandwidth = avg;
+ }
+ 
++/*
++ * The global dirtyable memory and dirty threshold could be suddenly knocked
++ * down by a large amount (eg. on the startup of KVM in a swapless system).
++ * This may throw the system into deep dirty exceeded state and throttle
++ * heavy/light dirtiers alike. To retain good responsiveness, maintain
++ * global_dirty_limit for tracking slowly down to the knocked down dirty
++ * threshold.
++ */
++static void update_dirty_limit(unsigned long thresh, unsigned long dirty)
++{
++	unsigned long limit = global_dirty_limit;
++
++	/*
++	 * Follow up in one step.
++	 */
++	if (limit < thresh) {
++		limit = thresh;
++		goto update;
++	}
++
++	/*
++	 * Follow down slowly. Use the higher one as the target, because thresh
++	 * may drop below dirty. This is exactly the reason to introduce
++	 * global_dirty_limit which is guaranteed to lie above the dirty pages.
++	 */
++	thresh = max(thresh, dirty);
++	if (limit > thresh) {
++		limit -= (limit - thresh) >> 5;
++		goto update;
++	}
++	return;
++update:
++	global_dirty_limit = limit;
++}
++
++static void global_update_bandwidth(unsigned long thresh,
++				    unsigned long dirty,
++				    unsigned long now)
++{
++	static DEFINE_SPINLOCK(dirty_lock);
++	static unsigned long update_time;
++
++	/*
++	 * Do a lockless check first to optimize away locking for most time.
++	 */
++	if (now - update_time < MAX_PAUSE)
++		return;
++
++	spin_lock(&dirty_lock);
++	if (now - update_time >= MAX_PAUSE) {
++		update_dirty_limit(thresh, dirty);
++		update_time = now;
++	}
++	spin_unlock(&dirty_lock);
++}
++
+ void __bdi_update_bandwidth(struct backing_dev_info *bdi,
++			    unsigned long thresh,
++			    unsigned long dirty,
++			    unsigned long bdi_dirty,
+ 			    unsigned long start_time)
  {
--	long nr_reclaimable, bdi_nr_reclaimable;
--	long nr_writeback, bdi_nr_writeback;
-+	unsigned long nr_reclaimable, bdi_nr_reclaimable;
-+	unsigned long nr_dirty;  /* = file_dirty + writeback + unstable_nfs */
-+	unsigned long bdi_dirty;
- 	unsigned long background_thresh;
- 	unsigned long dirty_thresh;
- 	unsigned long bdi_thresh;
-@@ -574,7 +575,7 @@ static void balance_dirty_pages(struct a
- 	for (;;) {
- 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
- 					global_page_state(NR_UNSTABLE_NFS);
--		nr_writeback = global_page_state(NR_WRITEBACK);
-+		nr_dirty = nr_reclaimable + global_page_state(NR_WRITEBACK);
+ 	unsigned long now = jiffies;
+@@ -532,6 +592,9 @@ void __bdi_update_bandwidth(struct backi
+ 	if (elapsed > HZ && time_before(bdi->bw_time_stamp, start_time))
+ 		goto snapshot;
  
- 		global_dirty_limits(&background_thresh, &dirty_thresh);
++	if (thresh)
++		global_update_bandwidth(thresh, dirty, now);
++
+ 	bdi_update_write_bandwidth(bdi, elapsed, written);
  
-@@ -583,8 +584,7 @@ static void balance_dirty_pages(struct a
- 		 * catch-up. This avoids (excessively) small writeouts
- 		 * when the bdi limits are ramping up.
- 		 */
--		if (nr_reclaimable + nr_writeback <=
--				(background_thresh + dirty_thresh) / 2)
-+		if (nr_dirty <= (background_thresh + dirty_thresh) / 2)
- 			break;
+ snapshot:
+@@ -540,12 +603,16 @@ snapshot:
+ }
  
- 		bdi_thresh = bdi_dirty_limit(bdi, dirty_thresh);
-@@ -602,10 +602,12 @@ static void balance_dirty_pages(struct a
- 		 */
- 		if (bdi_thresh < 2*bdi_stat_error(bdi)) {
- 			bdi_nr_reclaimable = bdi_stat_sum(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat_sum(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_nr_reclaimable +
-+				    bdi_stat_sum(bdi, BDI_WRITEBACK);
- 		} else {
- 			bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
--			bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
-+			bdi_dirty = bdi_nr_reclaimable +
-+				    bdi_stat(bdi, BDI_WRITEBACK);
- 		}
+ static void bdi_update_bandwidth(struct backing_dev_info *bdi,
++				 unsigned long thresh,
++				 unsigned long dirty,
++				 unsigned long bdi_dirty,
+ 				 unsigned long start_time)
+ {
+ 	if (jiffies - bdi->bw_time_stamp <= MAX_PAUSE + MAX_PAUSE / 10)
+ 		return;
+ 	if (spin_trylock(&bdi->wb.list_lock)) {
+-		__bdi_update_bandwidth(bdi, start_time);
++		__bdi_update_bandwidth(bdi, thresh, dirty, bdi_dirty,
++				       start_time);
+ 		spin_unlock(&bdi->wb.list_lock);
+ 	}
+ }
+@@ -625,7 +692,8 @@ static void balance_dirty_pages(struct a
+ 		if (!bdi->dirty_exceeded)
+ 			bdi->dirty_exceeded = 1;
  
- 		/*
-@@ -614,9 +616,8 @@ static void balance_dirty_pages(struct a
- 		 * bdi or process from holding back light ones; The latter is
- 		 * the last resort safeguard.
- 		 */
--		dirty_exceeded =
--			(bdi_nr_reclaimable + bdi_nr_writeback > bdi_thresh)
--			|| (nr_reclaimable + nr_writeback > dirty_thresh);
-+		dirty_exceeded = (bdi_dirty > bdi_thresh) ||
-+				  (nr_dirty > dirty_thresh);
+-		bdi_update_bandwidth(bdi, start_time);
++		bdi_update_bandwidth(bdi, dirty_thresh, nr_dirty, bdi_dirty,
++				     start_time);
  
- 		if (!dirty_exceeded)
- 			break;
+ 		/* Note: nr_reclaimable denotes nr_dirty + nr_unstable.
+ 		 * Unstable writes are a feature of certain networked
+--- linux-next.orig/fs/fs-writeback.c	2011-06-20 00:23:59.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-06-22 20:43:12.000000000 +0800
+@@ -699,7 +699,7 @@ static inline bool over_bground_thresh(v
+ static void wb_update_bandwidth(struct bdi_writeback *wb,
+ 				unsigned long start_time)
+ {
+-	__bdi_update_bandwidth(wb->bdi, start_time);
++	__bdi_update_bandwidth(wb->bdi, 0, 0, 0, start_time);
+ }
+ 
+ /*
 
 
