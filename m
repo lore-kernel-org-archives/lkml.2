@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753918Ab1F2MTF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 08:19:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29846 "EHLO mx1.redhat.com"
+	id S1754875Ab1F2MUh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 08:20:37 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50815 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751123Ab1F2MS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 08:18:59 -0400
-Message-ID: <4E0B182C.1090402@redhat.com>
-Date: Wed, 29 Jun 2011 15:18:52 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753222Ab1F2MUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 08:20:35 -0400
+Date: Wed, 29 Jun 2011 14:20:34 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Ying Han <yinghan@google.com>
+Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
+Message-ID: <20110629122034.GA24262@tiehlicka.suse.cz>
+References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 19/22] KVM: MMU: lockless walking shadow page table
-References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FDB4.60306@cn.fujitsu.com> <4E0AED86.2060908@redhat.com> <4E0B0997.4090206@cn.fujitsu.com> <4E0B09EA.1040304@redhat.com> <4E0B1191.6040100@cn.fujitsu.com>
-In-Reply-To: <4E0B1191.6040100@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2011 02:50 PM, Xiao Guangrong wrote:
-> >>  >
-> >>  >   I think we should do this unconditionally.  The cost of ping-ponging the shared cache line containing reader_counter will increase with large smp counts.  On the other hand, zap_page is very rare, so it can be a little slower.  Also, less code paths = easier to understand.
-> >>  >
-> >>
-> >>  On soft mmu, zap_page is very frequently, it can cause performance regression in my test.
-> >
-> >  Any idea what the cause of the regression is?  It seems to me that simply deferring freeing shouldn't have a large impact.
-> >
->
-> I guess it is because the page is freed too frequently, i have done the test, it shows
-> about 3219 pages is freed per second
->
-> Kernbench performance comparing:
->
-> the origin way: 3m27.723
-> free all shadow page in rcu context: 3m30.519
+On Wed 29-06-11 19:03:25, KAMEZAWA Hiroyuki wrote:
+> This is onto 3 patches I posted yesterday.
+> I'm sorry I once got Acks in v1 but refleshed totally. 
+> ==
+> From fda72071ee473be1caee163920da0f5c397c95e8 Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Wed, 29 Jun 2011 18:24:49 +0900
+> Subject: [PATCH] export memory cgroup's swappines
+> 
+> Each memory cgroup has 'swappiness' value and it can be accessed by
+> get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
+> and swappiness is passed by argument. It's propagated by scan_control.
+> 
+> get_swappiness is static function but some planned updates will need to
+> get swappiness from files other than memcontrol.c
+> This patch exports get_swappiness() as mem_cgroup_swappiness().
+> By this, we can remove the argument of swapiness from try_to_free...
+> and drop swappiness from scan_control. only memcg uses it.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-I don't recall seeing such a high free rate.  Who is doing all this zapping?
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-You may be able to find out with the function tracer + call graph.
+> 
+> Changelog:
+>   - drop swappiness from scan_control
+
+Yes, this is even better.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
