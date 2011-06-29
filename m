@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab1F2Vfd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 17:35:33 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41289 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757877Ab1F2Vf0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 17:35:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [PATCH 0/6 v2] PM: Fix up interactions between system suspend/resume and runtime PM
-Date: Wed, 29 Jun 2011 23:29:03 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
-        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-References: <201106260054.20578.rjw@sisk.pl>
-In-Reply-To: <201106260054.20578.rjw@sisk.pl>
+	id S1757995Ab1F2Vam (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 17:30:42 -0400
+Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:8910 "HELO
+	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757529Ab1F2Vai (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 17:30:38 -0400
+Message-ID: <4E0B9955.3040905@draigBrady.com>
+Date: Wed, 29 Jun 2011 22:29:57 +0100
+From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106292329.04163.rjw@sisk.pl>
+To: Sunil Mushran <sunil.mushran@oracle.com>
+CC: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
+        Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, xfs@oss.sgi.com
+Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
+References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110629065306.GC1026@dastard> <20110629074021.GA26086@infradead.org> <4E0B019E.8080800@draigBrady.com> <4E0B60DE.50908@oracle.com>
+In-Reply-To: <4E0B60DE.50908@oracle.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-The majority of the patches in the series have been updated and I prepared
-two documentation-only patches that are related to this series (posted
-previously) and a PCI patch that I thought would be needed for 3.0, but is
-only relevant along with [4/6].
-
-On Sunday, June 26, 2011, Rafael J. Wysocki wrote:
-> Hi,
+On 29/06/11 18:29, Sunil Mushran wrote:
+> On 06/29/2011 03:42 AM, Pádraig Brady wrote:
+>> There is the argument, that if this interface can distinguish
+>> these dirty unwritten extents, then why can't the fiemap interface too?
+>> The advantage of the fiemap interface is that it can distinguish
+>> empty extents vs holes. Empty extents will become increasingly common
+>> I think, given the fragmentation and space guarantee benefits they give.
+>> It would be cool for cp for example to be able to efficiently copy
+>> empty extents from source to dest.
 > 
-> The patches in this series are related to the interactions between system
-> suspend/resume and the I/O runtime PM framework.  We've had quite some
-> confusion and uncertainty in that area recently, so I'd like to clean it
-> up once and for all, so that everyone knows what the rules are and why
-> they are what they are.
- 
-[1/6] - Update documentation describing interactions between runtime PM and
-        system suspend/resume.
+> I'm not too sure about that. Atleast not enabled by default. Most users
+> use cp to backup data. Not empty space. In this case, this empty extent
+> may not even be de-dupable.
 
-[2/6] - Return special error code from runtime PM helers if runtime PM is
-        disabled and make the SCSI error handling code take it into account.
+That's a fair point. On the other hand if
+you wanted to start working with the backup copy,
+you might want it allocated to avoid fragmentation and ENOSPC issues.
+What we were going with was empty -> hole with cp --sparse=always
+and empty -> empty otherwise. If empty and hole can not be
+distinguished though, then this process will be impacted.
 
-[3/6] - Add early wakeup events detection to the PCI bus type.
+> 
+> Frankly I'd be happier of cp started to exploited fallocate() to create
+> larger
+> extents before copying data into them. Atleast for the large files.
 
-[4/6] - Limit race conditions between runtime PM and system suspend/resume.
+Yes we definitely will start doing that.
+That will help fragmentation and give early ENOSPC.
+We can't use fiemap for this at the moment
+(on XSF or ext4 (without a sync))
+but the seek_data interface should allow us
+to do this to some extent (pardon the pun).
 
-[5/6] - Fix descriptions of pm_runtime_enable/disable() and add a description
-        of pm_runtime_barrier() to the runtime PM documentation.
-
-[6/6] - Replace "run-time" with "runtime" everywhere in the runtime PM
-        documentation and kerneldoc comments.
-
-The patches are on top of the PM domains patchset I've just posted, which is
-available from the git branch at:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-domains
-
-They are regarded as 3.1 material.
-
-Thanks,
-Rafael
+cheers,
+Pádraig.
