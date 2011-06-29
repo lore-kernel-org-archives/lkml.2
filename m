@@ -1,65 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755710Ab1F2MhL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 08:37:11 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:64248 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755407Ab1F2MhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 08:37:09 -0400
-Message-ID: <4E0B1CE8.2060803@cn.fujitsu.com>
-Date: Wed, 29 Jun 2011 20:39:04 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1755793Ab1F2Mjd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 08:39:33 -0400
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:53605 "EHLO
+	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab1F2Mja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 08:39:30 -0400
+Date: Wed, 29 Jun 2011 14:39:26 +0200
+From: Bastian Blank <waldi@debian.org>
+To: xen-devel@lists.xensource.com, virtualization@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] xen: Populate xenbus device attributes
+Message-ID: <20110629123926.GA31038@wavehammer.waldi.eu.org>
+Mail-Followup-To: Bastian Blank <waldi@debian.org>,
+	xen-devel@lists.xensource.com,
+	virtualization@lists.linux-foundation.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 19/22] KVM: MMU: lockless walking shadow page table
-References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FDB4.60306@cn.fujitsu.com> <4E0AED86.2060908@redhat.com> <4E0B0997.4090206@cn.fujitsu.com> <4E0B09EA.1040304@redhat.com> <4E0B1191.6040100@cn.fujitsu.com> <4E0B182C.1090402@redhat.com> <4E0B1A75.4070705@cn.fujitsu.com> <4E0B1A4E.2030301@redhat.com>
-In-Reply-To: <4E0B1A4E.2030301@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-29 20:36:35,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-29 20:36:35,
-	Serialize complete at 2011-06-29 20:36:35
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2011 08:27 PM, Avi Kivity wrote:
-> On 06/29/2011 03:28 PM, Xiao Guangrong wrote:
->> On 06/29/2011 08:18 PM, Avi Kivity wrote:
->> >  On 06/29/2011 02:50 PM, Xiao Guangrong wrote:
->> >>  >>   >
->> >>  >>   >    I think we should do this unconditionally.  The cost of ping-ponging the shared cache line containing reader_counter will increase with large smp counts.  On the other hand, zap_page is very rare, so it can be a little slower.  Also, less code paths = easier to understand.
->> >>  >>   >
->> >>  >>
->> >>  >>   On soft mmu, zap_page is very frequently, it can cause performance regression in my test.
->> >>  >
->> >>  >   Any idea what the cause of the regression is?  It seems to me that simply deferring freeing shouldn't have a large impact.
->> >>  >
->> >>
->> >>  I guess it is because the page is freed too frequently, i have done the test, it shows
->> >>  about 3219 pages is freed per second
->> >>
->> >>  Kernbench performance comparing:
->> >>
->> >>  the origin way: 3m27.723
->> >>  free all shadow page in rcu context: 3m30.519
->> >
->> >  I don't recall seeing such a high free rate.  Who is doing all this zapping?
->> >
->> >  You may be able to find out with the function tracer + call graph.
->> >
->>
->> I looked into it before, it is caused by "write flood" detected, i also noticed
->> some pages are zapped and allocation again and again, maybe we need to improve
->> the algorithm of detecting "write flood".
-> 
-> Ok.  Let's drop the two paths, and put this improvement on the TODO instead.
-> 
+The xenbus bus type uses device_create_file to assign all used device
+attributes. However it does not remove them when the device goes away.
 
-Avi, i am sorry, i do not understand it clearly, it means keep the patch as the
-original way and do the improvement after it merged?
+This patch uses the dev_attrs field of the bus type to specify default
+attributes for all devices.
+
+Signed-off-by: Bastian Blank <waldi@debian.org>
+Acked-by: Ian Campbell <ian.campbell@citrix.com>
+Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+---
+ drivers/xen/xenbus/xenbus_probe.c          |   41 +++++++++------------------
+ drivers/xen/xenbus/xenbus_probe.h          |    2 +
+ drivers/xen/xenbus/xenbus_probe_backend.c  |    6 +---
+ drivers/xen/xenbus/xenbus_probe_frontend.c |    6 +---
+ 4 files changed, 18 insertions(+), 37 deletions(-)
+
+diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+index 7397695..2ed0b04 100644
+--- a/drivers/xen/xenbus/xenbus_probe.c
++++ b/drivers/xen/xenbus/xenbus_probe.c
+@@ -378,26 +378,31 @@ static void xenbus_dev_release(struct device *dev)
+ 		kfree(to_xenbus_device(dev));
+ }
+ 
+-static ssize_t xendev_show_nodename(struct device *dev,
+-				    struct device_attribute *attr, char *buf)
++static ssize_t nodename_show(struct device *dev,
++			     struct device_attribute *attr, char *buf)
+ {
+ 	return sprintf(buf, "%s\n", to_xenbus_device(dev)->nodename);
+ }
+-static DEVICE_ATTR(nodename, S_IRUSR | S_IRGRP | S_IROTH, xendev_show_nodename, NULL);
+ 
+-static ssize_t xendev_show_devtype(struct device *dev,
+-				   struct device_attribute *attr, char *buf)
++static ssize_t devtype_show(struct device *dev,
++			    struct device_attribute *attr, char *buf)
+ {
+ 	return sprintf(buf, "%s\n", to_xenbus_device(dev)->devicetype);
+ }
+-static DEVICE_ATTR(devtype, S_IRUSR | S_IRGRP | S_IROTH, xendev_show_devtype, NULL);
+ 
+-static ssize_t xendev_show_modalias(struct device *dev,
+-				    struct device_attribute *attr, char *buf)
++static ssize_t modalias_show(struct device *dev,
++			     struct device_attribute *attr, char *buf)
+ {
+ 	return sprintf(buf, "xen:%s\n", to_xenbus_device(dev)->devicetype);
+ }
+-static DEVICE_ATTR(modalias, S_IRUSR | S_IRGRP | S_IROTH, xendev_show_modalias, NULL);
++
++struct device_attribute xenbus_dev_attrs[] = {
++	__ATTR_RO(nodename),
++	__ATTR_RO(devtype),
++	__ATTR_RO(modalias),
++	__ATTR_NULL
++};
++EXPORT_SYMBOL_GPL(xenbus_dev_attrs);
+ 
+ int xenbus_probe_node(struct xen_bus_type *bus,
+ 		      const char *type,
+@@ -449,25 +454,7 @@ int xenbus_probe_node(struct xen_bus_type *bus,
+ 	if (err)
+ 		goto fail;
+ 
+-	err = device_create_file(&xendev->dev, &dev_attr_nodename);
+-	if (err)
+-		goto fail_unregister;
+-
+-	err = device_create_file(&xendev->dev, &dev_attr_devtype);
+-	if (err)
+-		goto fail_remove_nodename;
+-
+-	err = device_create_file(&xendev->dev, &dev_attr_modalias);
+-	if (err)
+-		goto fail_remove_devtype;
+-
+ 	return 0;
+-fail_remove_devtype:
+-	device_remove_file(&xendev->dev, &dev_attr_devtype);
+-fail_remove_nodename:
+-	device_remove_file(&xendev->dev, &dev_attr_nodename);
+-fail_unregister:
+-	device_unregister(&xendev->dev);
+ fail:
+ 	kfree(xendev);
+ 	return err;
+diff --git a/drivers/xen/xenbus/xenbus_probe.h b/drivers/xen/xenbus/xenbus_probe.h
+index 888b990..b814935 100644
+--- a/drivers/xen/xenbus/xenbus_probe.h
++++ b/drivers/xen/xenbus/xenbus_probe.h
+@@ -48,6 +48,8 @@ struct xen_bus_type
+ 	struct bus_type bus;
+ };
+ 
++extern struct device_attribute xenbus_dev_attrs[];
++
+ extern int xenbus_match(struct device *_dev, struct device_driver *_drv);
+ extern int xenbus_dev_probe(struct device *_dev);
+ extern int xenbus_dev_remove(struct device *_dev);
+diff --git a/drivers/xen/xenbus/xenbus_probe_backend.c b/drivers/xen/xenbus/xenbus_probe_backend.c
+index 6cf467b..ec510e5 100644
+--- a/drivers/xen/xenbus/xenbus_probe_backend.c
++++ b/drivers/xen/xenbus/xenbus_probe_backend.c
+@@ -183,10 +183,6 @@ static void frontend_changed(struct xenbus_watch *watch,
+ 	xenbus_otherend_changed(watch, vec, len, 0);
+ }
+ 
+-static struct device_attribute xenbus_backend_dev_attrs[] = {
+-	__ATTR_NULL
+-};
+-
+ static struct xen_bus_type xenbus_backend = {
+ 	.root = "backend",
+ 	.levels = 3,		/* backend/type/<frontend>/<id> */
+@@ -200,7 +196,7 @@ static struct xen_bus_type xenbus_backend = {
+ 		.probe		= xenbus_dev_probe,
+ 		.remove		= xenbus_dev_remove,
+ 		.shutdown	= xenbus_dev_shutdown,
+-		.dev_attrs	= xenbus_backend_dev_attrs,
++		.dev_attrs	= xenbus_dev_attrs,
+ 	},
+ };
+ 
+diff --git a/drivers/xen/xenbus/xenbus_probe_frontend.c b/drivers/xen/xenbus/xenbus_probe_frontend.c
+index b6a2690..ed2ba47 100644
+--- a/drivers/xen/xenbus/xenbus_probe_frontend.c
++++ b/drivers/xen/xenbus/xenbus_probe_frontend.c
+@@ -81,10 +81,6 @@ static void backend_changed(struct xenbus_watch *watch,
+ 	xenbus_otherend_changed(watch, vec, len, 1);
+ }
+ 
+-static struct device_attribute xenbus_frontend_dev_attrs[] = {
+-	__ATTR_NULL
+-};
+-
+ static const struct dev_pm_ops xenbus_pm_ops = {
+ 	.suspend	= xenbus_dev_suspend,
+ 	.resume		= xenbus_dev_resume,
+@@ -106,7 +102,7 @@ static struct xen_bus_type xenbus_frontend = {
+ 		.probe		= xenbus_dev_probe,
+ 		.remove		= xenbus_dev_remove,
+ 		.shutdown	= xenbus_dev_shutdown,
+-		.dev_attrs	= xenbus_frontend_dev_attrs,
++		.dev_attrs	= xenbus_dev_attrs,
+ 
+ 		.pm		= &xenbus_pm_ops,
+ 	},
+-- 
+1.7.5.4
