@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752910Ab1F2DnQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 23:43:16 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:60136 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751645Ab1F2DnI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 23:43:08 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=rWBhs9dUHHOTqMW/B0ZEOPzwGfMmz+7Fgec3D4JHDH6h1yDWbT36PWEMZVeCpmNNk
-	1V/EJ7AhGaVEQggeBLUFw==
-MIME-Version: 1.0
-In-Reply-To: <1309252313.6701.177.camel@twins>
-References: <20110621071649.862846205@google.com> <20110621071700.599897751@google.com>
- <1308763751.1022.60.camel@twins> <CAPM31RLbngLP-EuK6TwRCh11RHJMsh1+5vBNisVEvupkJ4q4ng@mail.gmail.com>
- <1309252313.6701.177.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Tue, 28 Jun 2011 20:37:19 -0700
-Message-ID: <CAPM31RJMiK5Omhgx3nm219x8BBPdhrBwU8s7fi4q8NXroZgL9w@mail.gmail.com>
-Subject: Re: [patch 09/16] sched: unthrottle cfs_rq(s) who ran out of quota at
- period refresh
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Nikhil Rao <ncrao@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1753017Ab1F2DlM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 23:41:12 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55011 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751862Ab1F2DlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 28 Jun 2011 23:41:05 -0400
+Subject: Re: [PATCH 1/2] mm: Move definition of MIN_MEMORY_BLOCK_SIZE to a
+ header
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+In-Reply-To: <1308013070.2874.784.camel@pasglop>
+References: <1308013070.2874.784.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 29 Jun 2011 13:40:40 +1000
+Message-ID: <1309318840.32158.522.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 2:11 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Mon, 2011-06-27 at 21:40 -0700, Paul Turner wrote:
->> >> +       if (unlikely(runtime_expires != cfs_b->runtime_expires))
->> >> +               goto out_unlock;
->> >
->> > it might help to explain how, runtime_expires is taken from cfs_b after
->> > calling __refill_cfs_bandwidth_runtime, and we're in the replenishment
->> > timer, so nobody is going to be adding new runtime.
->> >
->>
->> Good idea -- thanks
->
-> Aside from being a good idea, I'm genuinely puzzled by that part and
-> would love having it explained :-)
->
+On Tue, 2011-06-14 at 10:57 +1000, Benjamin Herrenschmidt wrote:
+> The macro MIN_MEMORY_BLOCK_SIZE is currently defined twice in two .c
+> files, and I need it in a third one to fix a powerpc bug, so let's
+> first move it into a header
+> 
+> Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> ---
+> 
+> Ingo, Thomas: Who needs to ack the x86 bit ? I'd like to send that
+> to Linus asap with the powerpc fix.
 
-It's all the users fault!
+Anybody ? Allo ?
 
-While we were busy doing this they might have set some new bandwidth
-limit (since we drop cfs_b->lock to distribute) via cgroupfs, in which
-case we need to make sure we:
+I'm happy to send that to Linus myself but I'd like at least on or two
+acks :-)
 
-a) stop since setting the new runtime will have unthrottled everyone anyway
-b) don't put our runtime in cfs_b->runtime as at this point we'd be
-over-writing the new-runtime just set by tg_set_cfs_bandwidth
+Cheers,
+Ben.
 
-We can catch this happening however, since tg_set_cfs_bandwidth sets a
-new expiration' which is what the check above enforces.
+> diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+> index d865c4a..bbaaa00 100644
+> --- a/arch/x86/mm/init_64.c
+> +++ b/arch/x86/mm/init_64.c
+> @@ -28,6 +28,7 @@
+>  #include <linux/poison.h>
+>  #include <linux/dma-mapping.h>
+>  #include <linux/module.h>
+> +#include <linux/memory.h>
+>  #include <linux/memory_hotplug.h>
+>  #include <linux/nmi.h>
+>  #include <linux/gfp.h>
+> @@ -895,8 +896,6 @@ const char *arch_vma_name(struct vm_area_struct *vma)
+>  }
+>  
+>  #ifdef CONFIG_X86_UV
+> -#define MIN_MEMORY_BLOCK_SIZE   (1 << SECTION_SIZE_BITS)
+> -
+>  unsigned long memory_block_size_bytes(void)
+>  {
+>  	if (is_uv_system()) {
+> diff --git a/drivers/base/memory.c b/drivers/base/memory.c
+> index 9f9b235..45d7c8f 100644
+> --- a/drivers/base/memory.c
+> +++ b/drivers/base/memory.c
+> @@ -30,7 +30,6 @@
+>  static DEFINE_MUTEX(mem_sysfs_mutex);
+>  
+>  #define MEMORY_CLASS_NAME	"memory"
+> -#define MIN_MEMORY_BLOCK_SIZE	(1 << SECTION_SIZE_BITS)
+>  
+>  static int sections_per_block;
+>  
+> diff --git a/include/linux/memory.h b/include/linux/memory.h
+> index e1e3b2b..935699b 100644
+> --- a/include/linux/memory.h
+> +++ b/include/linux/memory.h
+> @@ -20,6 +20,8 @@
+>  #include <linux/compiler.h>
+>  #include <linux/mutex.h>
+>  
+> +#define MIN_MEMORY_BLOCK_SIZE     (1 << SECTION_SIZE_BITS)
+> +
+>  struct memory_block {
+>  	unsigned long start_section_nr;
+>  	unsigned long end_section_nr;
+> 
+
+
