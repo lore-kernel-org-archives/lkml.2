@@ -1,101 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab1F2I66 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 04:58:58 -0400
-Received: from service87.mimecast.com ([94.185.240.25]:37300 "HELO
-	service87.mimecast.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753750Ab1F2I6x convert rfc822-to-8bit (ORCPT
+	id S1754107Ab1F2JE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:04:26 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:48775 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754162Ab1F2JEK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 04:58:53 -0400
-Message-ID: <4E0AE94A.7000306@arm.com>
-Date: Wed, 29 Jun 2011 09:58:50 +0100
-From: Marc Zyngier <marc.zyngier@arm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: "paulmck@linux.vnet.ibm.com" <paulmck@linux.vnet.ibm.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: [next][bug] rcu_dyntick_kick_cpu() kills ARM SMP.
-References: <4E09EE75.9040204@arm.com> <20110628172513.GB2294@linux.vnet.ibm.com>
-In-Reply-To: <20110628172513.GB2294@linux.vnet.ibm.com>
-X-Enigmail-Version: 1.1.2
-X-OriginalArrivalTime: 29 Jun 2011 08:58:49.0831 (UTC) FILETIME=[C33AB770:01CC363A]
-X-MC-Unique: 111062909585101001
-Content-Type: text/plain; charset=WINDOWS-1252
+	Wed, 29 Jun 2011 05:04:10 -0400
+Subject: Re: [PATCH 0/5] perf support for amd guest/host-only bits v2
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Joerg Roedel <joerg.roedel@amd.com>, Paul Mackerras <paulus@samba.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Avi Kiviti <avi@redhat.com>
+In-Reply-To: <20110628161000.GF29299@8bytes.org>
+References: <1308317854-27398-1-git-send-email-joerg.roedel@amd.com>
+	 <20110628161000.GF29299@8bytes.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Wed, 29 Jun 2011 11:02:54 +0200
+Message-ID: <1309338174.6701.929.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28/06/11 18:25, Paul E. McKenney wrote:
-> On Tue, Jun 28, 2011 at 04:08:37PM +0100, Marc Zyngier wrote:
->> Paul,
->>
->> I've updated my -next tree (to next-20110628) today, and discovered 
->> that my favorite ARM board wouldn't boot anymore:
->>
->> [...]
->> Hierarchical RCU implementation.
->> NR_IRQS:128 nr_irqs:128 128
->> Console: colour dummy device 80x30
->> Calibrating delay loop... 83.35 BogoMIPS (lpj=416768)
->> pid_max: default: 32768 minimum: 301
->> Mount-cache hash table entries: 512
->> CPU: Testing write buffer coherency: ok
->> Calibrating local timer... 104.04MHz.
->> CPU1: Booted secondary processor
->> CPU1: Unknown IPI message 0x1
->> CPU2: Booted secondary processor
->> CPU2: Unknown IPI message 0x1
->> CPU3: Booted secondary processor
->> CPU3: Unknown IPI message 0x1
->> Brought up 4 CPUs
->> SMP: Total of 4 processors activated (333.92 BogoMIPS).
->> ------------[ cut here ]------------
->> WARNING: at kernel/smp.c:320 smp_call_function_single+0xe4/0x1c0()
->> NET: Registered protocol family 16
->> Modules linked in:
->> [<c00415d4>] (unwind_backtrace+0x0/0xf4) from [<c0056184>] (warn_slowpath_common+0x4c/0x64)
->> [<c0056184>] (warn_slowpath_common+0x4c/0x64) from [<c00561b8>] (warn_slowpath_null+0x1c/0x24)
->> [<c00561b8>] (warn_slowpath_null+0x1c/0x24) from [<c0088218>] (smp_call_function_single+0xe4/0x1c0)
->> [<c0088218>] (smp_call_function_single+0xe4/0x1c0) from [<c0094804>] (rcu_start_gp+0x184/0x310)
->> [<c0094804>] (rcu_start_gp+0x184/0x310) from [<c00955b0>] (__rcu_process_callbacks+0x274/0x398)
->> [<c00955b0>] (__rcu_process_callbacks+0x274/0x398) from [<c0095708>] (rcu_process_callbacks+0x34/0x5c)
->> [<c0095708>] (rcu_process_callbacks+0x34/0x5c) from [<c005c964>] (__do_softirq+0xa4/0x16c)
->> [<c005c964>] (__do_softirq+0xa4/0x16c) from [<c005cc0c>] (irq_exit+0x80/0x9c)
->> [<c005cc0c>] (irq_exit+0x80/0x9c) from [<c00353cc>] (do_local_timer+0x54/0x70)
->> [<c00353cc>] (do_local_timer+0x54/0x70) from [<c003b618>] (__irq_svc+0x38/0xc0)
->> Exception stack(0xdf467f90 to 0xdf467fd8)
->> 7f80:                                     df466000 00000000 df467fd8 00000000
->> 7fa0: df466000 c045dd24 c034f6cc 00000000 c0445514 410fb020 70409ddc 00000000
->> 7fc0: 00000000 df467fd8 c003c4ac c003c4b0 60000013 ffffffff
->> [<c003b618>] (__irq_svc+0x38/0xc0) from [<c003c4b0>] (default_idle+0x24/0x28)
->> [<c003c4b0>] (default_idle+0x24/0x28) from [<c003ccd0>] (cpu_idle+0x9c/0xdc)
->> [<c003ccd0>] (cpu_idle+0x9c/0xdc) from [<70348734>] (0x70348734)
->> ---[ end trace 1b75b31a2719ed1c ]---
->>
->> ... and here it dies.
->>
->> The offending commit is b983032b7 (rcu: Avoid grace-period overflow for 
->> long dyntick-idle periods). rcu_dyntick_kick_cpu() tries to do a CPU 
->> cross-call with interrupts disabled, which kills the box. Reverting this
->> patch results in a working system.
+On Tue, 2011-06-28 at 18:10 +0200, Joerg Roedel wrote:
+> On Fri, Jun 17, 2011 at 03:37:29PM +0200, Joerg Roedel wrote:
+> > this is the second version of the patch-set to support the AMD
+> > guest-/host only bits in the performance counter MSRs. Due to lack of
+> > time I havn't looked into emulating support for this feature on Intel or
+> > other architectures, but the other comments should be worked in. The
+> > changes to v1 include:
+> > 
+> > 	* Rebased patches to v3.0-rc3
+> > 	* Allow exclude_guest and exclude_host set at the same time
+> > 	* Reworked event-parse logic for the new exclude-bits
+> > 	* Only count guest-events per default from perf-kvm
 > 
-> That does sound problematic...
+> Hi Peter, Ingo,
 > 
->> My RCU-foo being rather low, I haven't dug deeper into this. Please let
->> me know if you want me to test anything.
-> 
-> I will put together a patch to defer the actual cross-call until irqs
-> are enabled.  The call would be from softirq -- that is OK, correct?
+> have you had a chance to look at this patch-set? Are any changes
+> required?
 
-That should indeed fix the problem, as interrupts are normally enabled
-in softirq.
+I would feel a lot more comfortable by having it implemented on all of
+x86 as well as at least one !x86 platform. Avi graciously volunteered
+for the Intel bits.  
 
-Cheers,
-
-	M.
--- 
-Jazz is not dead. It just smells funny...
-
+Paulus, I hear from benh that you're also responsible for the ppc-kvm
+bits, could you possibly find some time to implement this feature for
+ppc?
