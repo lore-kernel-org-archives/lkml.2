@@ -1,83 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab1F2JVl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 05:21:41 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:41244 "EHLO mail.mnsspb.ru"
+	id S1754298Ab1F2JXL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 05:23:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49470 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754144Ab1F2JVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 05:21:36 -0400
-Date: Wed, 29 Jun 2011 13:20:01 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] USB: EHCI: Move sysfs related bits into
-	ehci-sysfs.c
-Message-ID: <20110629092001.GC10219@tugrik.mns.mnsspb.ru>
-References: <2a537d4dffef27cc7839eb19889eaa035edd44f9.1308933456.git.kirr@mns.spb.ru> <Pine.LNX.4.44L0.1106250807270.1039-100000@netrider.rowland.org>
+	id S1752134Ab1F2JW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 05:22:59 -0400
+Message-ID: <4E0AEEED.7020509@redhat.com>
+Date: Wed, 29 Jun 2011 12:22:53 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1106250807270.1039-100000@netrider.rowland.org>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 21/22] KVM: MMU: mmio page fault support
+References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FDE0.5080800@cn.fujitsu.com>
+In-Reply-To: <4E01FDE0.5080800@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 25, 2011 at 08:10:52AM -0400, Alan Stern wrote:
-> On Fri, 24 Jun 2011, Kirill Smelkov wrote:
-> 
-> > The only sysfs attr implemented so far is "companion" from ehci-hub.c,
-> > but in the next patch we are going to add another sysfs file, so prior
-> > to that let's structure things and move already-in-there sysfs code to
-> > separate file.
-> > 
-> > Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
-> > diff --git a/drivers/usb/host/ehci-sysfs.c b/drivers/usb/host/ehci-sysfs.c
-> > new file mode 100644
-> > index 0000000..347c8cb
-> > --- /dev/null
-> > +++ b/drivers/usb/host/ehci-sysfs.c
-> > @@ -0,0 +1,94 @@
-> > +/*
-> > + * Copyright (C) 2001-2004 by David Brownell
-> 
-> One little note...  It's understandable that you put this line here,
-> but it isn't really appropriate.  All the code you're moving into this
-> new file was written by me.
+On 06/22/2011 05:36 PM, Xiao Guangrong wrote:
+> The idea is from Avi:
+>
+> | We could cache the result of a miss in an spte by using a reserved bit, and
+> | checking the page fault error code (or seeing if we get an ept violation or
+> | ept misconfiguration), so if we get repeated mmio on a page, we don't need to
+> | search the slot list/tree.
+> | (https://lkml.org/lkml/2011/2/22/221)
+>
+> When the page fault is caused by mmio, we cache the info in the shadow page
+> table, and also set the reserved bits in the shadow page table, so if the mmio
+> is caused again, we can quickly identify it and emulate it directly
+>
+> Searching mmio gfn in memslots is heavy since we need to walk all memeslots, it
+> can be reduced by this feature, and also avoid walking guest page table for
+> soft mmu.
+>
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index 1319050..e69a47a 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -197,6 +197,41 @@ static u64 __read_mostly shadow_x_mask;	/* mutual exclusive with nx_mask */
+>   static u64 __read_mostly shadow_user_mask;
+>   static u64 __read_mostly shadow_accessed_mask;
+>   static u64 __read_mostly shadow_dirty_mask;
+> +static u64 __read_mostly shadow_mmio_mask = (0xffull<<  49 | 1ULL);
 
-Now I see, yes, in 57e06c11 (EHCI: force high-speed devices to run at
-full speed; Jan 16 2007).
+One bit is shifted out.   And it will fail with 52-bit MAXPHYADDR.
 
-> Apart from that one issue,
-> 
-> Acked-off-by: Alan Stern <stern@rowland.harvard.edu>
+Please in addition, set the xwr bits to an invalid pattern on EPT (there 
+is an MSR which specifies which patterns are valid; for example 
+execute-only or write-only are invalid).  If all patterns are valid AND 
+MAXPHYADDR == 52, then just set the mask to 0 and it the optimization 
+will be disabled.
 
-Thanks.
+-- 
+error compiling committee.c: too many arguments to function
 
-What should we do with this patch now? Should I put
-
-
-    Copyright (C) 2007 by Alan Stern
-
-there? Or something else?
-
-Or maybe drop that copyright notice altogether becase usually it gets
-outdated very quickly, and who made what is visible through git
-log/blame?
-
-
-I'm ok with any case, please just tell me how to proceed.
-
-
-And what about main "[PATCH v2 2/2] USB: EHCI: Allow users to override
-80% max periodic bandwidth"?
-
-Was it Acked together with this one, or not and review is pending?
-Curious because I'm new here...
-
-
-Thanks,
-Kirill
