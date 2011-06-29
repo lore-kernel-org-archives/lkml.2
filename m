@@ -1,58 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab1F2PFA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 11:05:00 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41285 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab1F2PE6 convert rfc822-to-8bit (ORCPT
+	id S1754957Ab1F2PQJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 11:16:09 -0400
+Received: from out4.smtp.messagingengine.com ([66.111.4.28]:47863 "EHLO
+	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752043Ab1F2PQI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 11:04:58 -0400
+	Wed, 29 Jun 2011 11:16:08 -0400
+X-Sasl-enc: MFZlGeuk9YbJ3pZf5019xq39tmloq+NiVnU81Ewsxk6K 1309360566
+Date: Wed, 29 Jun 2011 08:05:54 -0700
+From: Greg KH <greg@kroah.com>
+To: John Johansen <john.johansen@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 2/2] AppArmor: Fix masking of capabilities in complain
+ mode
+Message-ID: <20110629150554.GA18023@kroah.com>
+References: <1309311874-23262-1-git-send-email-john.johansen@canonical.com>
+ <1309311874-23262-3-git-send-email-john.johansen@canonical.com>
+ <20110629042440.GC18344@kroah.com>
+ <4E0ADA66.9070004@canonical.com>
 MIME-Version: 1.0
-X-Originating-IP: [93.172.172.9]
-In-Reply-To: <20110627210007.GC20865@ponder.secretlab.ca>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
- <1308640714-17961-3-git-send-email-ohad@wizery.com> <20110627210007.GC20865@ponder.secretlab.ca>
-From: Ohad Ben-Cohen <ohad@wizery.com>
-Date: Wed, 29 Jun 2011 18:04:37 +0300
-Message-ID: <BANLkTi=4Pp1UYWFsBywRvLL1n=ggCZgAeA@mail.gmail.com>
-Subject: Re: [RFC 2/8] remoteproc: add omap implementation
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, akpm@linux-foundation.org,
-        Brian Swetland <swetland@google.com>, Arnd Bergmann <arnd@arndb.de>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E0ADA66.9070004@canonical.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 12:00 AM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
-> Very little for me to comment on here.  However, something I just
-> noticed.  Why is it necessary to pass in THIS_MODULE to the
-> rproc_register function?  Having a reference to the pdev gives you the
-> pointer to the driver, which has the THIS_MODULE value in it.  That
-> should be sufficient.
+On Wed, Jun 29, 2011 at 08:55:18AM +0100, John Johansen wrote:
+> On 06/29/2011 05:24 AM, Greg KH wrote:
+> > On Wed, Jun 29, 2011 at 02:44:34AM +0100, John Johansen wrote:
+> >> AppArmor is masking the capabilities returned by capget against the
+> >> capabilities mask in the profile.  This is wrong, in complain mode the
+> >> profile has effectively all capabilities, as the profile restrictions are
+> >> not being enforced, merely tested against to determine if an access is
+> >> known by the profile.
+> >>
+> >> This can result in the wrong behavior of security conscience applications
+> >> like sshd which examine their capability set, and change their behavior
+> >> accordingly.  In this case because of the masked capability set being
+> >> returned sshd fails due to DAC checks, even when the profile is in complain
+> >> mode.
+> >>
+> >> Kernels affected: 2.6.36 - 3.0.
+> >>
+> >> Signed-off-by: John Johansen <john.johansen@canonical.com>
+> >> ---
+> > 
+> > You say that multiple kernels are affected, then why not also include
+> > stable@kernel.org here as well?
+> > 
+> > confused,
+> > 
+> Sorry I should have elaborated, I think its a borderline case for stable
+> release, and was as much a note to my self as anything.
 
-Nice one, thanks !
+Notes to self probably shouldn't be in kernel changelog entries :)
 
-> /me also isn't sure if incrementing the refcount on the module is the
-> best way to prevent the rproc from going away, but I haven't dug into
-> the details in the driver code to find out.  Drivers can get unbound
-> from devices without the driver being unloaded, so I imagine there is
-> an in-use count on the device itself that would prevent driver
-> unbinding.
+> The bug doesn't affect the enforcement of policy, only learning mode used
+> for generating policy, and it is something we can work around in userspace.
+> for already released kernels.
+> 
+> I can resend with a Cc: stable if you would like
 
-Yes, increasing the module refcount is necessary to prevent the user
-from removing the driver when the rproc is used.
+If you don't think it should be in the stable kernel releases, that's
+fine, you are the maintainer of the code.  I just found it odd that you
+said it affected older kernels and yet didn't want it applied there as
+well.
 
-If the underlying device goes away while rproc is used, then
-rproc_unregister should return -EBUSY, which would fail the underlying
-driver's ->remove() handler (gpiolib is doing something very similar).
-I have forgotten to add this check, and will add it now.
-
-Thanks !
+greg k-h
