@@ -1,96 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab1F2Ii1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 04:38:27 -0400
-Received: from mga09.intel.com ([134.134.136.24]:9427 "EHLO mga09.intel.com"
+	id S1754043Ab1F2Ihz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 04:37:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6289 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753936Ab1F2IiV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 04:38:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,442,1304319600"; 
-   d="scan'208";a="21407782"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Kirill Smelkov <kirr@mns.spb.ru>, Dan Carpenter <error27@gmail.com>
-CC: Greg Kroah-Hartman <gregkh@suse.de>,
-        "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-        Mike Thomas <rmthomas@sciolus.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Wed, 29 Jun 2011 11:37:42 +0300
-Subject: RE: [PATCH 2/5] staging/easycap: Fix thinko in "bars" module	option
- description
-Thread-Topic: [PATCH 2/5] staging/easycap: Fix thinko in "bars" module
-	option description
-Thread-Index: Acw2N6X1eOYet5YnT6a/PIwfV3u7xwAAAi5g
-Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401C6F4030B@hasmsx504.ger.corp.intel.com>
-References: <cover.1307967011.git.kirr@mns.spb.ru>
- <14c0e4d0bb7ef1a05b9dcc14b2b51c706f844655.1307967011.git.kirr@mns.spb.ru>
- <20110613122717.GF3583@shale.localdomain>
- <20110614164649.GB29015@tugrik.mns.mnsspb.ru>
- <20110614171619.GB23739@shale.localdomain>
- <20110629083528.GA10219@tugrik.mns.mnsspb.ru>
-In-Reply-To: <20110629083528.GA10219@tugrik.mns.mnsspb.ru>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	id S1751428Ab1F2Ihu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 04:37:50 -0400
+Message-ID: <4E0AE457.7010507@redhat.com>
+Date: Wed, 29 Jun 2011 11:37:43 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 05/22] KVM: x86: abstract the operation for read/write
+ emulation
+References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FC78.6060000@cn.fujitsu.com>
+In-Reply-To: <4E01FC78.6060000@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/22/2011 05:30 PM, Xiao Guangrong wrote:
+> The operations of read emulation and write emulation are very similar, so we
+> can abstract the operation of them, in larter patch, it is used to cleanup the
+> same code
+>
+> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+> ---
+>   arch/x86/kvm/x86.c |   72 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+>   1 files changed, 72 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+> index c29ef96..887714f 100644
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -4056,6 +4056,78 @@ int emulator_write_phys(struct kvm_vcpu *vcpu, gpa_t gpa,
+>   	return 1;
+>   }
+>
+> +struct read_write_emulator_ops {
+> +	int (*read_write_prepare)(struct kvm_vcpu *vcpu, void *val,
+> +				  int bytes);
+> +	int (*read_write_emulate)(struct kvm_vcpu *vcpu, gpa_t gpa,
+> +				  void *val, int bytes);
+> +	int (*read_write_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
+> +			       int bytes, void *val);
+> +	int (*read_write_exit_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
+> +				    void *val, int bytes);
+> +	bool write;
+> +};
 
 
-> -----Original Message-----
-> From: Kirill Smelkov [mailto:kirr@mns.spb.ru]
-> Sent: Wednesday, June 29, 2011 11:35 AM
-> To: Dan Carpenter; Winkler, Tomas
-> Cc: Greg Kroah-Hartman; devel@driverdev.osuosl.org; Mike Thomas; linux-
-> kernel@vger.kernel.org
-> Subject: Re: [PATCH 2/5] staging/easycap: Fix thinko in "bars" module option
-> description
-> 
-> On Tue, Jun 14, 2011 at 08:16:19PM +0300, Dan Carpenter wrote:
-> > On Tue, Jun 14, 2011 at 08:46:49PM +0400, Kirill Smelkov wrote:
-> > > On Mon, Jun 13, 2011 at 03:27:17PM +0300, Dan Carpenter wrote:
-> > > > On Mon, Jun 13, 2011 at 04:18:29PM +0400, Kirill Smelkov wrote:
-> > > > > Both bars=0 and bars=1 were described as meaning to display bars
-> > > > > on signal lost. Actually bars=1 means "display bars", but bars=0
-> > > > > means display raw source as is (usually black screen).
-> > > >
-> > > > Your description up here is much better than the one in the README.
-> > > > Maybe just include yours and delete the original.
-> > >
-> > > Thanks for head ups. Something like this:
-> > >
-> >
-> > I like it.  :)
-> 
-> Thanks. So I assume this version is better to go in. Tomas, may I add your ACK
-> to this one, or maybe there is some issue with it?
+Interesting!
 
-Sure, ACK
+This structure combines two unrelated operations, though.  One is the 
+internals of the iteration on a virtual address that is split to various 
+physical addresses.  The other is the interaction with userspace on mmio 
+exits.  They should be split, but I think it's fine to do it in a later 
+patch.  This series is long enough already.
 
-> 
-> 
-> Thanks,
-> Kirill
-> 
-> 
-> P.S. By the way, how should we proceed to get this merged into staging
-> tree? Will Greg just pick it up or should I repost the whole series?
+I was also annoyed by the duplication.  They way I thought of fixing it 
+is having gva_to_gpa() return two gpas, and having the access function 
+accept gpa vectors.  The reason was so that we can implemented locked 
+cross-page operations (which we now emulate as unlocked writes).
 
-Thanks
-Tomas
+But I think we can do without it, and instead emulated locked cross-page 
+ops by stalling all other vcpus while we write, or by unmapping the 
+pages involved.  It isn't pretty but it doesn't need to be fast since 
+it's a very rare operation.  So I think we can go with your approach.
 
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+-- 
+error compiling committee.c: too many arguments to function
 
