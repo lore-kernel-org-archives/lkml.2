@@ -1,71 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab1F2V51 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 17:57:27 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:57157 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753493Ab1F2V5X (ORCPT
+	id S1757229Ab1F2WPD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 18:15:03 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57126 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753571Ab1F2WO7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 17:57:23 -0400
-Date: Wed, 29 Jun 2011 17:57:20 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>
-Subject: Re: [PATCH v3 9/9] KVM-GST: KVM Steal time registration
-Message-ID: <20110629215720.GH3557@mgebm.net>
-References: <1309361388-30163-1-git-send-email-glommer@redhat.com>
- <1309361388-30163-10-git-send-email-glommer@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="K1n7F7fSdjvFAEnM"
-Content-Disposition: inline
-In-Reply-To: <1309361388-30163-10-git-send-email-glommer@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 29 Jun 2011 18:14:59 -0400
+Date: Wed, 29 Jun 2011 15:14:36 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: kernel-hardening@lists.openwall.com, Randy Dunlap <rdunlap@xenotime.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [RFC] ipc: introduce shm_rmid_forced sysctl
+Message-Id: <20110629151436.9be479fb.akpm@linux-foundation.org>
+In-Reply-To: <20110622152514.GA9521@albatros>
+References: <20110622152514.GA9521@albatros>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 22 Jun 2011 19:25:14 +0400
+Vasiliy Kulikov <segoon@openwall.com> wrote:
 
---K1n7F7fSdjvFAEnM
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> This patch adds support for shm_rmid_forced sysctl.  If set to 1, all
+> shared memory objects in current ipc namespace will be automatically
+> forced to use IPC_RMID.  POSIX way of handling shmem allows to create
+> shm objects and call shmdt() leaving shm object associated with no
+> process, thus consuming memory not counted via rlimits.  With
+> shm_rmid_forced=1 the shared memory object is counted at least for one
+> process, so OOM killer may effectively kill the fat process holding
+> the shared memory.
+> 
+> It obviously breaks POSIX, some programs relying on the feature would
+> stop working.  So, set shm_rmid_forced=1 only if you're sure nobody uses
+> "orphaned" memory.  shm_rmid_forced=0 by default for compatability
+> reasons.
+> 
+> The feature was previously impemented in -ow as a configure option.
+> 
 
-On Wed, 29 Jun 2011, Glauber Costa wrote:
+What a horrid patch.  But given the POSIX (mis?)feature I don't see a
+better way, and the feature seems desirable.  Sigh.
 
-> Register steal time within KVM. Everytime we sample the steal time
-> information, we update a local variable that tells what was the
-> last time read. We then account the difference.
->=20
-> Signed-off-by: Glauber Costa <glommer@redhat.com>
-> CC: Rik van Riel <riel@redhat.com>
-> CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-> CC: Peter Zijlstra <peterz@infradead.org>
-> CC: Avi Kivity <avi@redhat.com>
-> CC: Anthony Liguori <aliguori@us.ibm.com>
-> CC: Eric B Munson <emunson@mgebm.net>
+What sort of users would want to turn this on, and why?
 
-Tested-by: Eric B Munson <emunson@mgebm.net>
+> --- a/include/linux/ipc_namespace.h
+> +++ b/include/linux/ipc_namespace.h
+> @@ -44,6 +44,7 @@ struct ipc_namespace {
+>  	size_t		shm_ctlall;
+>  	int		shm_ctlmni;
+>  	int		shm_tot;
+> +	int		shm_rmid_forced;
+>  
+>  	struct notifier_block ipcns_nb;
+
+Please send a patch which adds a nice comment to this field.
+
+Perhaps shm_rmid_forced should have had bool type.
+
+> --- a/ipc/shm.c
+> +++ b/ipc/shm.c
+> @@ -74,6 +74,7 @@ void shm_init_ns(struct ipc_namespace *ns)
+>  	ns->shm_ctlmax = SHMMAX;
+>  	ns->shm_ctlall = SHMALL;
+>  	ns->shm_ctlmni = SHMMNI;
+> +	ns->shm_rmid_forced = 0;
+>  	ns->shm_tot = 0;
+>  	ipc_init_ids(&shm_ids(ns));
+>  }
+
+The problem is that nobody will test your feature.  So for testing
+purposes, let's enable the feature by default.  I assume this:
+
+--- a/ipc/shm.c~ipc-introduce-shm_rmid_forced-sysctl-ipc-introduce-shm_rmid_forced-sysctl-testing
++++ a/ipc/shm.c
+@@ -74,7 +74,7 @@ void shm_init_ns(struct ipc_namespace *n
+ 	ns->shm_ctlmax = SHMMAX;
+ 	ns->shm_ctlall = SHMALL;
+ 	ns->shm_ctlmni = SHMMNI;
+-	ns->shm_rmid_forced = 0;
++	ns->shm_rmid_forced = 1;
+ 	ns->shm_tot = 0;
+ 	ipc_init_ids(&shm_ids(ns));
+ }
+
+will do that?
+
+> +static bool shm_may_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp)
+> +{
+> +	return (shp->shm_nattch == 0) &&
+> +	       (ns->shm_rmid_forced ||
+> +		(shp->shm_perm.mode & SHM_DEST));
+> +}
+
+Just because the existing code is crappily documented doesn't mean that
+we have to copy that ;)
 
 
---K1n7F7fSdjvFAEnM
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOC5/AAAoJEH65iIruGRnNd5QIAIN3v52zqVtDHgo5KrCjhJ1z
-V7dgvdnxMmZGr+IP/XCl+AwfffHByRvh8jjs0bBnzXKWmLphripfmQIRDlchIpbK
-GaYJn6E7Qldy76to244BuDE/EmGSeF1RuWxNvoxlBYjarmnzNqbr0u5ySR3WAwHm
-qG21TPXskPSkBPGdjFEHEGJW+b4p2cH/7a9TdfoJ0MgfnRBrMaQxkeO79Vmezqvb
-7TVsvZgJ7N4qK+EioI7BRL2ZtrW1mHThDxj7S2g/VOeSW3F4p4/7tLVbUpjxre94
-v+GVl85bmtSkf2cb0iVroEqxNEcDnJMGRnA/VoRr63O0rPgwZz92nXuuc24bYc4=
-=mVna
------END PGP SIGNATURE-----
-
---K1n7F7fSdjvFAEnM--
