@@ -1,127 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754754Ab1F2O5T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 10:57:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:3315 "EHLO mail.perches.com"
+	id S1754011Ab1F2PCI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 11:02:08 -0400
+Received: from mail.tmr.com ([64.65.253.246]:58863 "EHLO partygirl.tmr.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751996Ab1F2O5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 10:57:17 -0400
-Subject: Re: [PATCH] net/core: Convert to current logging forms
-From: Joe Perches <joe@perches.com>
-To: Neil Horman <nhorman@tuxdriver.com>
-Cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Ben Hutchings <bhutchings@solarflare.com>
-In-Reply-To: <20110629111109.GA1613@hmsreliant.think-freely.org>
-References: <385ebf7e98e377e6e6c384beb961b65d4a95fb18.1309289792.git.joe@perches.com>
-	 <20110629111109.GA1613@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Jun 2011 07:57:15 -0700
-Message-ID: <1309359435.29598.72.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1752081Ab1F2PCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 11:02:06 -0400
+Message-ID: <4E0B3E61.3090308@tmr.com>
+Date: Wed, 29 Jun 2011 11:01:53 -0400
+From: Bill Davidsen <davidsen@tmr.com>
+Organization: TMR Associates Inc, Schenectady NY
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.19) Gecko/20110420 Lightning/1.0b2 SeaMonkey/2.0.14
+MIME-Version: 1.0
+To: Marc MERLIN <marc@merlins.org>
+CC: Linux Kernel mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: All kinds of irq 16: nobody cared with Sandy Bridge Asus P8H67-M
+ MB and multiple drivers
+References: <20110626170345.GA26430@merlins.org> <4E0B23AE.4070703@tmr.com> <20110629144704.GF10580@merlins.org>
+In-Reply-To: <20110629144704.GF10580@merlins.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-06-29 at 07:11 -0400, Neil Horman wrote:
-> On Tue, Jun 28, 2011 at 12:40:10PM -0700, Joe Perches wrote:
-> > Use pr_fmt, pr_<level>, and netdev_<level> as appropriate.
-> > Coalesce long formats.
-[]
-> > diff --git a/net/core/dev.c b/net/core/dev.c
-[]
-> > @@ -5397,8 +5380,8 @@ static int netif_alloc_netdev_queues(struct net_device *dev)
-> >  
-> >  	tx = kcalloc(count, sizeof(struct netdev_queue), GFP_KERNEL);
-> >  	if (!tx) {
-> > -		pr_err("netdev: Unable to allocate %u tx queues.\n",
-> > -		       count);
-> > +		netdev_err(dev, "netdev: Unable to allocate %u tx queues\n",
-> > +			   count);
-> >  		return -ENOMEM;
-> >  	}
-> Don't all of these get called prior to device registration?  This change will
-> have us printing out unregistered net device: ... rather than netdev: ... on
-> these errors.
+Marc MERLIN wrote:
+> I'll put the summary at the top:
+> Apparently upgrading the MB's bios seems to have mostly fixed my problem.
+>
+> On Wed, Jun 29, 2011 at 09:07:58AM -0400, Bill Davidsen wrote:
+>    
+>> Does this happen with an untainted kernel?
+>>      
+>
+> I'm confused as to why the kernel is tainted.
+>
+> I have no binary modules and with 2.6.39.1 compiled from kernel.org source
+> with no patches, I still got:
+> Jun 25 20:05:41 gargamel kernel: irq 16: nobody cared (try booting with the "irqpoll" option)
+> Jun 25 20:05:41 gargamel kernel: Pid: 0, comm: swapper Tainted: G        W 2.6.39.1-core2-volpreempt-noide-hm64-20110620 #2
+>
+> Just to be clear, I am not running vmware.
+>
+> I checked a recent boot, and saw it went from not tainted to tainted
+> after an apparent minor problem in the sata_mv driver (from kernel.org).
+> Would that make sense?
+>
+> Jun 28 21:59:30 gargamel kernel: Modules linked in: keyspan ati_remote visor pl2303 ftdi_sio pci_hotplug soundcore backlight option processor usb_wwan rtc_cmos thermal_sys rtc_core hwmon parport_pc button snd_page_alloc parport usbserial wmi i2c_i801 evdev rtc_lib sata_mv pcspkr intel_agp intel_gtt agpgart tpm_tis r8169 iTCO_wdt iTCO_vendor_support xhci_hcd ehci_hcd usbcore
+> Jun 28 21:59:30 gargamel kernel: Pid: 1636, comm: scsi_eh_9 Not tainted 2.6.39.1-core2-volpreempt-noide-hm64-20110620 #2
+> (...)
+> Jun 28 21:59:30 gargamel kernel: Modules linked in: keyspan ati_remote visor pl2303 ftdi_sio pci_hotplug soundcore backlight option processor usb_wwan rtc_cmos thermal_sys rtc_core hwmon parport_pc button snd_page_alloc parport usbserial wmi i2c_i801 evdev rtc_lib sata_mv pcspkr intel_agp intel_gtt agpgart tpm_tis r8169 iTCO_wdt iTCO_vendor_support xhci_hcd ehci_hcd usbcore
+> Jun 28 21:59:30 gargamel kernel: Pid: 1636, comm: scsi_eh_9 Tainted: G W   2.6.39.1-core2-volpreempt-noide-hm64-20110620 #2
+>
+>    
+Sounds as if some module isn't properly labeled? Do you load any custom 
+firmware or something like that.
+Most puzzling.
 
-True, that's not particularly good.
+> But back to the original question, it looks like a bios upgrade of the
+> motherboard mostly fixed the problem. The system boots and works fine with
+> multiple drivers using irq16 (using the same cards that were failing when
+> used together days ago).
+>
+>    
+Glad the BIOS upgrade fixed it. The problem below is probably caused by 
+a driver for the irq going away with an int pending.
+Again, "or something like that."  ;-)
 
-> Not tragic, but I rather think its nicer to just say netdev:...
+> What's interesting though is that at shutdown time, I do see this on the
+> console:
+> Stopping domain name service...: bind9 waiting for pid 3967 to die.
+> Stopping kernel log daemon....
+> Stopping system log daemon....
+> Asking all remaining processes to terminate...done.
+> irq 19: nobody cared (try booting with the "irqpoll" option)
+> handlers: [<f8ab1213>] (snd_cmipci_interrupt+0x0/0xe5 [snd_cmipci])
+> Disabling IRQ #19
+> All processes ended within 4 seconds....done.
+>
+> And I only have one card using irq19:
+>   19:          0          0          0          0   IO-APIC-fasteoi   CMI8738-MC6
+>
+> This does not happen while I use the card when the system is running.
+>
+> Marc
+>    
 
-If the second suggested patch is also applied,
-it shows the "devicename (unregistered)".
 
-I think that's appropriate.
+-- 
+Bill Davidsen<davidsen@tmr.com>
+   We are not out of the woods yet, but we know the direction and have
+taken the first step. The steps are many, but finite in number, and if
+we persevere we will reach our destination.  -me, 2010
 
-> Ditto on the unregistered net device thing.
 
-ditto back.
-
-[]
-> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-[]
-> >   */
-> >  static void skb_over_panic(struct sk_buff *skb, int sz, void *here)
-> >  {
-> > -	printk(KERN_EMERG "skb_over_panic: text:%p len:%d put:%d head:%p "
-> > -			  "data:%p tail:%#lx end:%#lx dev:%s\n",
-> > -	       here, skb->len, sz, skb->head, skb->data,
-> > -	       (unsigned long)skb->tail, (unsigned long)skb->end,
-> > -	       skb->dev ? skb->dev->name : "<NULL>");
-> > +	netdev_emerg(skb->dev, "skb_over_panic: text:%p len:%d put:%d head:%p data:%p tail:%#lx end:%#lx\n",
-> > +		     here, skb->len, sz, skb->head, skb->data,
-> > +		     (unsigned long)skb->tail, (unsigned long)skb->end);
-> >  	BUG();
-> >  }
-> Are you guaranteed to have skb->dev be non-null here?
-
-I think not.
-
-> netdev_printk handles
-> that, but flaggin the fact that we have a NULL net device when thats not really
-> an issue seems like it would destract from the purpose of this printk.  Same
-> with the others in this file below
-
-With the skb_<foo>_panics, I think rearranging the
-message output may actually help a _very_ little bit.
-The next bit is a BUG which dumps stack and stops the
-system anyway so it's not much of an issue.
-
-[]
-
-> > @@ -3061,9 +3057,8 @@ bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off)
-> >  	if (unlikely(start > skb_headlen(skb)) ||
-> >  	    unlikely((int)start + off > skb_headlen(skb) - 2)) {
-> >  		if (net_ratelimit())
-> > -			printk(KERN_WARNING
-> > -			       "bad partial csum: csum=%u/%u len=%u\n",
-> > -			       start, off, skb_headlen(skb));
-> > +			netdev_warn(skb->dev, "bad partial csum: csum=%u/%u len=%u\n",
-> > +				    start, off, skb_headlen(skb));
-> >  		return false;
-> >  	}
-> >  	skb->ip_summed = CHECKSUM_PARTIAL;
-
-I think netdev_warn is an improvement here.
-
-> > @@ -3076,7 +3071,6 @@ EXPORT_SYMBOL_GPL(skb_partial_csum_set);
-> >  void __skb_warn_lro_forwarding(const struct sk_buff *skb)
-> >  {
-> >  	if (net_ratelimit())
-> > -		pr_warning("%s: received packets cannot be forwarded"
-> > -			   " while LRO is enabled\n", skb->dev->name);
-> > +		netdev_warn(skb->dev, "received packets cannot be forwarded while LRO is enabled\n");
-> >  }
-> >  EXPORT_SYMBOL(__skb_warn_lro_forwarding);
-
-and not a change here.
-
-I'll reorder the patches to do netdev_name changes
-first and resubmit if there aren't more comments
-in awhile.
-
-cheers, Joe
 
