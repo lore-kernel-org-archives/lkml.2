@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab1F2OaQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 10:30:16 -0400
-Received: from p3plsmtps2ded01.prod.phx3.secureserver.net ([208.109.80.58]:48328
-	"HELO p3plsmtps2ded01-02.prod.phx3.secureserver.net"
+	id S1756679Ab1F2OaL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 10:30:11 -0400
+Received: from p3plsmtps2ded03.prod.phx3.secureserver.net ([208.109.80.60]:42802
+	"HELO p3plsmtps2ded03-01.prod.phx3.secureserver.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755883Ab1F2OWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755885Ab1F2OWy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 29 Jun 2011 10:22:54 -0400
 From: "K. Y. Srinivasan" <kys@microsoft.com>
 To: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
@@ -14,9 +14,9 @@ Cc: "K. Y. Srinivasan" <kys@microsoft.com>,
         Haiyang Zhang <haiyangz@microsoft.com>,
         Abhishek Kane <v-abkane@microsoft.com>,
         Hank Janssen <hjanssen@microsoft.com>
-Subject: [PATCH 16/40] Staging: hv: netvsc: Introduce state to manage the lifecycle of net device
-Date: Wed, 29 Jun 2011 07:39:13 -0700
-Message-Id: <1309358377-8537-16-git-send-email-kys@microsoft.com>
+Subject: [PATCH 17/40] Staging: hv: netvsc:  Use the newly introduced lock in accessing ext field
+Date: Wed, 29 Jun 2011 07:39:14 -0700
+Message-Id: <1309358377-8537-17-git-send-email-kys@microsoft.com>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309358377-8537-1-git-send-email-kys@microsoft.com>
 References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
@@ -25,50 +25,112 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In preparation for cleaning up reference counts, introduce state to manage
-the lifecycle of net device.
+The current reference counting mechanism is broken; use the newly introduced
+lock to access the net_device pointer in struct hv_device.
 
 Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
 Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
 Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
 Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 ---
- drivers/staging/hv/hyperv_net.h |    1 +
- drivers/staging/hv/netvsc.c     |    2 ++
- 2 files changed, 3 insertions(+), 0 deletions(-)
+ drivers/staging/hv/netvsc.c |   24 ++++++++++++++++++++++--
+ 1 files changed, 22 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/hv/hyperv_net.h b/drivers/staging/hv/hyperv_net.h
-index b5bee9e..c6836be 100644
---- a/drivers/staging/hv/hyperv_net.h
-+++ b/drivers/staging/hv/hyperv_net.h
-@@ -371,6 +371,7 @@ struct netvsc_device {
- 
- 	atomic_t refcnt;
- 	atomic_t num_outstanding_sends;
-+	bool destroy;
- 	bool drain_notify;
- 	wait_queue_head_t waiting_to_drain;
- 	/*
 diff --git a/drivers/staging/hv/netvsc.c b/drivers/staging/hv/netvsc.c
-index 56749ca..f03018c 100644
+index f03018c..531de63 100644
 --- a/drivers/staging/hv/netvsc.c
 +++ b/drivers/staging/hv/netvsc.c
-@@ -43,6 +43,7 @@ static struct netvsc_device *alloc_net_device(struct hv_device *device)
- 	/* Set to 2 to allow both inbound and outbound traffic */
- 	atomic_set(&net_device->refcnt, 2);
- 	net_device->drain_notify = false;
-+	net_device->destroy = false;
- 	init_waitqueue_head(&net_device->waiting_to_drain);
+@@ -56,12 +56,15 @@ static struct netvsc_device *alloc_net_device(struct hv_device *device)
+ static struct netvsc_device *get_outbound_net_device(struct hv_device *device)
+ {
+ 	struct netvsc_device *net_device;
++	unsigned long flags;
  
- 	net_device->dev = device;
-@@ -409,6 +410,7 @@ int netvsc_device_remove(struct hv_device *device)
- 		netdev_err(ndev, "No net device present!!\n");
- 		return -ENODEV;
- 	}
-+	net_device->destroy = true;
++	spin_lock_irqsave(&device->ext_lock, flags);
+ 	net_device = device->ext;
+ 	if (net_device && atomic_read(&net_device->refcnt) > 1)
+ 		atomic_inc(&net_device->refcnt);
+ 	else
+ 		net_device = NULL;
++	spin_unlock_irqrestore(&device->ext_lock, flags);
  
- 	/* Wait for all send completions */
- 	while (atomic_read(&net_device->num_outstanding_sends)) {
+ 	return net_device;
+ }
+@@ -70,38 +73,50 @@ static struct netvsc_device *get_outbound_net_device(struct hv_device *device)
+ static struct netvsc_device *get_inbound_net_device(struct hv_device *device)
+ {
+ 	struct netvsc_device *net_device;
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&device->ext_lock, flags);
+ 	net_device = device->ext;
+ 	if (net_device && atomic_read(&net_device->refcnt))
+ 		atomic_inc(&net_device->refcnt);
+ 	else
+ 		net_device = NULL;
+ 
++	spin_unlock_irqrestore(&device->ext_lock, flags);
+ 	return net_device;
+ }
+ 
+ static void put_net_device(struct hv_device *device)
+ {
+ 	struct netvsc_device *net_device;
++	unsigned long flags;
++
++	spin_lock_irqsave(&device->ext_lock, flags);
+ 
+ 	net_device = device->ext;
+ 
+ 	atomic_dec(&net_device->refcnt);
++	spin_unlock_irqrestore(&device->ext_lock, flags);
+ }
+ 
+ static struct netvsc_device *release_outbound_net_device(
+ 		struct hv_device *device)
+ {
+ 	struct netvsc_device *net_device;
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&device->ext_lock, flags);
+ 	net_device = device->ext;
+-	if (net_device == NULL)
++	if (net_device == NULL) {
++		spin_unlock_irqrestore(&device->ext_lock, flags);
+ 		return NULL;
++	}
+ 
+ 	/* Busy wait until the ref drop to 2, then set it to 1 */
+ 	while (atomic_cmpxchg(&net_device->refcnt, 2, 1) != 2)
+ 		udelay(100);
+ 
++	spin_unlock_irqrestore(&device->ext_lock, flags);
+ 	return net_device;
+ }
+ 
+@@ -109,16 +124,21 @@ static struct netvsc_device *release_inbound_net_device(
+ 		struct hv_device *device)
+ {
+ 	struct netvsc_device *net_device;
++	unsigned long flags;
+ 
++	spin_lock_irqsave(&device->ext_lock, flags);
+ 	net_device = device->ext;
+-	if (net_device == NULL)
++	if (net_device == NULL) {
++		spin_unlock_irqrestore(&device->ext_lock, flags);
+ 		return NULL;
++	}
+ 
+ 	/* Busy wait until the ref drop to 1, then set it to 0 */
+ 	while (atomic_cmpxchg(&net_device->refcnt, 1, 0) != 1)
+ 		udelay(100);
+ 
+ 	device->ext = NULL;
++	spin_unlock_irqrestore(&device->ext_lock, flags);
+ 	return net_device;
+ }
+ 
 -- 
 1.7.4.1
 
