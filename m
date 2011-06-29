@@ -1,74 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab1F2KnT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 06:43:19 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:12206 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754846Ab1F2KnS (ORCPT
+	id S1754741Ab1F2Kup (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 06:50:45 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:59568 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753037Ab1F2Kuo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 06:43:18 -0400
-Message-ID: <4E0B019E.8080800@draigBrady.com>
-Date: Wed, 29 Jun 2011 11:42:38 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	Wed, 29 Jun 2011 06:50:44 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
-        linux-fsdevel@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        xfs@oss.sgi.com
-Subject: Re: [PATCH] xfstests 255: add a seek_data/seek_hole tester
-References: <1309275199-10801-1-git-send-email-josef@redhat.com> <1309275199-10801-5-git-send-email-josef@redhat.com> <20110629065306.GC1026@dastard> <20110629074021.GA26086@infradead.org>
-In-Reply-To: <20110629074021.GA26086@infradead.org>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <1309244992-2305-4-git-send-email-jim.cromie@gmail.com>
+References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com> <1309244992-2305-4-git-send-email-jim.cromie@gmail.com>
+From: Bart Van Assche <bvanassche@acm.org>
+Date: Wed, 29 Jun 2011 12:50:23 +0200
+X-Google-Sender-Auth: R3LyVKyD8l-vuCTh3qnGLnviKqQ
+Message-ID: <BANLkTim2Q93LhBvGODVvEnvJiowtOk=DsA@mail.gmail.com>
+Subject: Re: [PATCH 03/11] dynamic_debug: process multiple commands on a line
+To: Jim Cromie <jim.cromie@gmail.com>
+Cc: linux-kernel@vger.kernel.org, gnb@fmeh.org, jbaron@redhat.com,
+        gregkh@suse.de
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/06/11 08:40, Christoph Hellwig wrote:
-> On Wed, Jun 29, 2011 at 04:53:07PM +1000, Dave Chinner wrote:
->> On Tue, Jun 28, 2011 at 11:33:19AM -0400, Josef Bacik wrote:
->>> This is a test to make sure seek_data/seek_hole is acting like it does on
->>> Solaris.  It will check to see if the fs supports finding a hole or not and will
->>> adjust as necessary.
->>
->> So I just looked at this with an eye to validating an XFS
->> implementation, and I came up with this list of stuff that the test
->> does not cover that I'd need to test in some way:
->>
->> 	- files with clean unwritten extents. Are they a hole or
->> 	  data? What's SEEK_DATA supposed to return on layout like
->> 	  hole-unwritten-data? i.e. needs to add fallocate to the
->> 	  picture...
->>
->> 	- files with dirty unwritten extents (i.e. dirty in memory,
->> 	  not on disk). They are most definitely data, and most
->> 	  filesystems will need a separate lookup path to detect
->> 	  dirty unwritten ranges because the state is kept
->> 	  separately (page cache vs extent cache).  Plenty of scope
->> 	  for filesystem specific bugs here so needs a roubust test.
-> 
-> The discussion leading up to the resurrection of SEEK_HOLE/SEEK_DATA
-> was pretty much about that point.  The conclusion based on the Sun
-> documentation and common sense was that SEEK_DATA may only consider
-> unwritten extents as hole if the filesystem has a way to distinguish
-> plain unwritten extents and those that have been dirtied.  Else it
-> should be considered data.
-> 
-> Testing for making sure dirty preallocated areas aren't wrongly
-> reported sounds relatively easy, the rest falls into implementation
-> details, which imho is fine.  Not reporting preallocated extents
-> as holes just is a quality of implementation issue and not a bug.
+On Tue, Jun 28, 2011 at 9:09 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
+> Process multiple commands per line, separated by ';'.  All commands are
+> processed, independent of errors, allowing individual commands to fail,
+> for example when a module is not installed.  Last error code is returned.
+> With this, extensive command sets can be given on the boot-line.
+>
+> Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> ---
+>  Documentation/dynamic-debug-howto.txt |   14 ++++++++++-
+>  lib/dynamic_debug.c                   |   39 +++++++++++++++++++++++++++++++-
+>  2 files changed, 49 insertions(+), 4 deletions(-)
+>
+> diff --git a/Documentation/dynamic-debug-howto.txt b/Documentation/dynamic-debug-howto.txt
+> index f959909..d0faf98 100644
+> --- a/Documentation/dynamic-debug-howto.txt
+> +++ b/Documentation/dynamic-debug-howto.txt
+> @@ -92,8 +92,18 @@ nullarbor:~ # echo -c 'file svcsock.c\nline 1603 +p' >
+>  nullarbor:~ # echo -n 'file svcsock.c line 1603 +p' >
+>                                <debugfs>/dynamic_debug/control
+>
+> -Commands are bounded by a write() system call.  If you want to do
+> -multiple commands you need to do a separate "echo" for each, like:
+> +Commands are bounded by a write() system call.  Subject to this limit
+> +(or 1024 for boot-line parameter) you can send multiple commands,
+> +separated by ';'
+> +
+> +foo:~ # echo "module nsc_gpio +p ; module pc8736x_gpio +p ; " \
+> + "module scx200_gpio +p " > /dbg/dynamic_debug/control
+> +
+> +Multiple commands are processed independently, this allows you to send
+> +commands which may fail, for example if a module is not present.  The
+> +last failing command returns its error.
+> +
+> +Or you can do an "echo" for each, like:
+>
+>  nullarbor:~ # echo 'file svcsock.c line 1603 +p' > /proc/dprintk ;\
+>  > echo 'file svcsock.c line 1563 +p' > /proc/dprintk
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+> index eb08a2f..0e567ad 100644
+> --- a/lib/dynamic_debug.c
+> +++ b/lib/dynamic_debug.c
+> @@ -428,6 +428,41 @@ static int ddebug_exec_query(char *query_string)
+>        return 0;
+>  }
+>
+> +/* handle multiple queries, continue on error, return last error */
+> +static int ddebug_exec_queries(char *query)
+> +{
+> +       char *split = query;
+> +       int i, errs = 0, exitcode = 0, rc;
+> +
+> +       if (verbose)
+> +               /* clean up for logging */
+> +               for (; (split = strpbrk(split, "\t\n")); split++)
+> +                       *split = ' ';
 
-There is the argument, that if this interface can distinguish
-these dirty unwritten extents, then why can't the fiemap interface too?
-The advantage of the fiemap interface is that it can distinguish
-empty extents vs holes. Empty extents will become increasingly common
-I think, given the fragmentation and space guarantee benefits they give.
-It would be cool for cp for example to be able to efficiently copy
-empty extents from source to dest.
+The above will join multiple lines into a single line and hence will
+cause a shell statement like the one below to be interpret as a single
+query:
 
-cheers,
-Pádraig.
+printf "module nsc_gpio +p\n module pc8736x_gpio +p\n" > /proc/dprintk
+
+Are you sure that's how things should work ?
+
+> +       for (i = 0; query; query = split, i++) {
+> +
+
+No blank line past "for" please.
+
+> +               split = strchr(query, ';');
+> +               if (split)
+> +                       *split++ = '\0';
+> +
+> +               if (verbose)
+> +                       printk(KERN_INFO "%s: query %d: \"%s\"",
+> +                               __func__, i, query);
+> +
+> +               rc = ddebug_exec_query(query);
+> +               if (rc) {
+> +                       errs++;
+> +                       exitcode = rc;
+> +               }
+> +       }
+> +       if (verbose)
+> +               printk(KERN_INFO
+> +                       "%s: processed %d queries, with %d errs",
+> +                       __func__, i, errs);
+> +
+> +       return exitcode;
+> +}
+> +
+>  int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+>  {
+>        va_list args;
+> @@ -492,7 +527,7 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+>                printk(KERN_INFO "%s: read %d bytes from userspace\n",
+>                        __func__, (int)len);
+>
+> -       ret = ddebug_exec_query(tmpbuf);
+> +       ret = ddebug_exec_queries(tmpbuf);
+>        if (ret)
+>                return ret;
+>
+> @@ -804,7 +839,7 @@ static int __init dynamic_debug_init(void)
+>
+>        /* ddebug_query boot param got passed -> set it up */
+>        if (ddebug_setup_string[0] != '\0') {
+> -               ret = ddebug_exec_query(ddebug_setup_string);
+> +               ret = ddebug_exec_queries(ddebug_setup_string);
+>                if (ret)
+>                        pr_warning("Invalid ddebug boot param %s",
+>                                   ddebug_setup_string);
+> --
+> 1.7.4.1
+>
+>
