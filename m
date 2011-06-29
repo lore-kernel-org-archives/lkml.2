@@ -1,39 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1F2GEu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 02:04:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43370 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750884Ab1F2GEn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 02:04:43 -0400
-Subject: Re: [PATCH] jffs2: use mutex_is_locked() in __jffs2_flush_wbuf()
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Alexey Khoroshilov <khoroshilov@ispras.ru>
-Cc: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Date: Wed, 29 Jun 2011 09:05:34 +0300
-In-Reply-To: <1309206090-2805-1-git-send-email-khoroshilov@ispras.ru>
-References: <1309206090-2805-1-git-send-email-khoroshilov@ispras.ru>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1309327538.23597.97.camel@sauron>
+	id S1753498Ab1F2GJJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 02:09:09 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37764 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751097Ab1F2GJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 02:09:05 -0400
+Date: Wed, 29 Jun 2011 16:09:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the final tree (net
+ tree related)
+Message-Id: <20110629160901.2d3cd6da.sfr@canb.auug.org.au>
+In-Reply-To: <20110627152927.943c34dc.sfr@canb.auug.org.au>
+References: <20110623152920.31b28b00.sfr@canb.auug.org.au>
+	<BANLkTin+iCahNVJGKc-_26pb9zEERTc8_A@mail.gmail.com>
+	<20110627152927.943c34dc.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-28 at 00:21 +0400, Alexey Khoroshilov wrote:
-> Use a helper to test if a mutex is held instead of a hack with
-> mutex_trylock().
-> 
-> Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Hi all,
 
-Pushed to l2-mtd-2.6.git, thanks.
+On Mon, 27 Jun 2011 15:29:27 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> On Thu, 23 Jun 2011 16:04:13 +0300 Alexey Dobriyan <adobriyan@gmail.com> wrote:
+> >
+> > On Thu, Jun 23, 2011 at 8:29 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> > > After merging the final tree, today's linux-next build (powerpc
+> > > allyesconfig) failed like this:
+> > 
+> > I build on all powerpc defconfigs, somehow this driver is not pinned
+> > by any of them :^)
+> 
+> Well, yes, but an allmodconfig or allyesconfig build will get the error.
+> 
+> > > drivers/net/ll_temac_main.c:209:4: error: implicit declaration of function 'dma_unmap_single'
+> 
+> Is there a fix?
+
+Again, this has taken some time to fix ...
+
+Dave, I think you have raised my expectations too far ;-)
+
+I have added the following patch for today:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Wed, 29 Jun 2011 16:03:18 +1000
+Subject: [PATCH] net: include dma-mapping.h for dma_map_single etc
+
+fixes thses build errors:
+
+drivers/net/ll_temac_main.c: In function 'temac_dma_bd_release':
+drivers/net/ll_temac_main.c:209:4: error: implicit declaration of function 'dma_unmap_single'
+drivers/net/ll_temac_main.c:215:3: error: implicit declaration of function 'dma_free_coherent'
+drivers/net/ll_temac_main.c: In function 'temac_dma_bd_init':
+drivers/net/ll_temac_main.c:243:2: error: implicit declaration of function 'dma_alloc_coherent'
+drivers/net/ll_temac_main.c:243:14: warning: assignment makes pointer from integer without a cast
+drivers/net/ll_temac_main.c:251:14: warning: assignment makes pointer from integer without a cast
+drivers/net/ll_temac_main.c:280:3: error: implicit declaration of function 'dma_map_single'
+drivers/net/ll_temac_main.c: In function 'temac_start_xmit_done':
+drivers/net/ll_temac_main.c:628:22: warning: cast to pointer from integer of different size
+
+Caused by commit commit b7f080cfe223 ("net: remove mm.h inclusion from
+netdevice.h").
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ drivers/net/ll_temac_main.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/ll_temac_main.c b/drivers/net/ll_temac_main.c
+index e3f1925..728fe41 100644
+--- a/drivers/net/ll_temac_main.c
++++ b/drivers/net/ll_temac_main.c
+@@ -49,6 +49,7 @@
+ #include <linux/ip.h>
+ #include <linux/slab.h>
+ #include <linux/interrupt.h>
++#include <linux/dma-mapping.h>
+ 
+ #include "ll_temac.h"
+ 
+-- 
+1.7.5.4
 
 -- 
-Best Regards,
-Artem Bityutskiy
-
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
