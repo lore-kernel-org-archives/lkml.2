@@ -1,71 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab1F2KH7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 06:07:59 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39828
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753857Ab1F2KH5 (ORCPT
+	id S1754462Ab1F2KPL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 06:15:11 -0400
+Received: from iota.hadesian.co.uk ([93.93.131.154]:38620 "EHLO
+	iota.hadesian.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752672Ab1F2KPH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 06:07:57 -0400
-Date: Wed, 29 Jun 2011 06:07:52 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Stefan Hajnoczi <stefanha@gmail.com>
-Cc: Paolo Bonzini <pbonzini@redhat.com>, Hannes Reinecke <hare@suse.de>,
-        Christoph Hellwig <chellwig@redhat.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: virtio scsi host draft specification, v3
-Message-ID: <20110629100752.GA27744@infradead.org>
-References: <1504884387.187692.1307716550265.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
- <4DF71E28.6070009@suse.de>
- <4E0AE36B.9010500@redhat.com>
- <BANLkTik2AXXkWvV23OP1eDdLirP2N0PC3A@mail.gmail.com>
+	Wed, 29 Jun 2011 06:15:07 -0400
+X-Greylist: delayed 426 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Jun 2011 06:15:07 EDT
+Date: Wed, 29 Jun 2011 11:07:59 +0100
+From: Daniel Stone <daniel@fooishbar.org>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: djkurtz@chromium.org, dmitry.torokhov@gmail.com, rydberg@euromail.se,
+        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
+        daniel.stone@collabora.co.uk, olofj@chromium.org
+Subject: Re: [PATCH 10/12] Input: synaptics - decode AGM packet types
+Message-ID: <20110629100759.GE2403@fooishbar.org>
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
+ <1309324042-22943-11-git-send-email-djkurtz@chromium.org>
+ <4E0AF84D.6050702@canonical.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <BANLkTik2AXXkWvV23OP1eDdLirP2N0PC3A@mail.gmail.com>
+In-Reply-To: <4E0AF84D.6050702@canonical.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 10:39:42AM +0100, Stefan Hajnoczi wrote:
-> I think we're missing a level of addressing.  We need the ability to
-> talk to multiple target ports in order for "list target ports" to make
-> sense.  Right now there is one implicit target that handles all
-> commands.  That means there is one fixed I_T Nexus.
-> 
-> If we introduce "list target ports" we also need a way to say "This
-> CDB is destined for target port #0".  Then it is possible to enumerate
-> target ports and address targets independently of the LUN field in the
-> CDB.
-> 
-> I'm pretty sure this is also how SAS and other transports work.  In
-> their framing they include the target port.
+Hi Chase,
 
-Yes, exactly.  Hierachial LUNs are a nasty fringe feature that we should
-avoid as much as possible, that is for everything but IBM vSCSI which is
-braindead enough to force them.
+On Wed, Jun 29, 2011 at 11:02:53AM +0100, Chase Douglas wrote:
+> In the older "profile" devices, we got essentially the bounding box of
+> all touches. This allows us to detect pinch gestures between the two
+> most extreme touches when there are three touches on the touchpad.
 
-> The question is whether we really need to support multiple targets on
-> a virtio-scsi adapter or not.  If you are selectively mapping LUNs
-> that the guest may access, then multiple targets are not necessary.
-> If we want to do pass-through of the entire SCSI bus then we need
-> multiple targets but I'm not sure if there are other challenges like
-> dependencies on the transport (Fibre Channel, SAS, etc) which make it
-> impossible to pass through bus-level access?
+This isn't necessarily true for all pads.  If you look at Derek's
+patchset from a couple of weeks ago, it was for a profile sensor which
+had the same reporting behaviour.  Internally, the touchpad could track
+many fingers, but would always report the first (in SGM packet) and most
+recent (in AGM packet) fingers.  You could fake a bounding-box
+calculation, but it would be the bounding box of fingers 0 and n, rather
+than the bounding box of all fingers.
 
-I don't think bus-level pass through is either easily possible nor
-desirable.  What multiple targets are useful for is allowing more
-virtual disks than we have virtual PCI slots.  We could do this by
-supporting multiple LUNs, but given that many SCSI ressources are
-target-based doing multiple targets most likely is the more scabale
-and more logical variant.  E.g. we could much more easily have one
-virtqueue per target than per LUN.
+> The above description makes it sound like we will no longer have a
+> bounding box of touches. According to the description, if I put four
+> fingers down in a square formation and then touch a fifth finger in the
+> middle of the square, I will only see the locations of one corner and
+> the middle of the square. This would make meaningful gesture detection
+> beyond two touches nearly impossible. Is this really how the touchpad
+> works, or is the above description not quite right?
 
+Yes, I believe that's how the touchpad works.  It would be nice to get
+all fingers, but unfortunately PS/2 doesn't give us enough bandwidth to
+do that.
+
+Cheers,
+Daniel
