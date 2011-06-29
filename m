@@ -1,44 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab1F2PQQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 11:16:16 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:52517 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755346Ab1F2PQM (ORCPT
+	id S1755858Ab1F2PWv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 11:22:51 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:44447 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753919Ab1F2PWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 11:16:12 -0400
-X-Sasl-enc: C3n4suUnpkPll4jXuQApfWmpEhj7Kj49wvoYlhH88sOP 1309360571
-Date: Wed, 29 Jun 2011 08:14:24 -0700
-From: Greg KH <greg@kroah.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Ralf Baechle <ralf@linux-mips.org>, David Miller <davem@davemloft.net>,
-        akpm@linux-foundation.org, alan@linux.intel.com, bcasavan@sgi.com,
-        airlied@linux.ie, grundler@parisc-linux.org, perex@perex.cz,
-        rpurdie@rpsys.net, klassert@mathematik.tu-chemnitz.de, tj@kernel.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        linux-mips@linux-mips.org, linux-scsi@vger.kernel.org,
-        linux-serial@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 00/12] Fix various section mismatches and build errors.
-Message-ID: <20110629151424.GD18023@kroah.com>
-References: <17dd5038b15d7135791aadbe80464a13c80758d3.1309182742.git.ralf@linux-mips.org>
- <20110627.221257.1290251511587162468.davem@davemloft.net>
- <20110629130711.GA15649@linux-mips.org>
- <1309355899.2551.4.camel@mulgrave>
+	Wed, 29 Jun 2011 11:22:48 -0400
+X-Greylist: delayed 468 seconds by postgrey-1.27 at vger.kernel.org; Wed, 29 Jun 2011 11:22:47 EDT
+From: Philipp Reisner <philipp.reisner@linbit.com>
+Organization: LINBIT
+To: Jens Axboe <axboe@kernel.dk>
+Subject: [GIT PULL] DRBD minor fixes for 3.0-rc6
+Date: Wed, 29 Jun 2011 17:14:56 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.38-8-generic; KDE/4.6.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, drbd-dev@lists.linbit.com
+X-OTRS-FollowUp-SenderType: agent
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309355899.2551.4.camel@mulgrave>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106291714.57384.philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 08:58:19AM -0500, James Bottomley wrote:
-> I think we should simply concentrate on __init and __exit; that's where
-> most of the discard value lies and stop expending huge efforts on the
-> __devX stuff which adds huge complexity for no real gain.
+The following changes since commit a1c15c59feee36267c43142a41152fbf7402afb6:
 
-I have long felt that those __devX markings should just go away as they
-cause nothing but problems and have no real gain as you point out.
+  loop: handle on-demand devices correctly (2011-05-24 16:48:55 +0200)
 
-greg k-h
+are available in the git repository at:
+  git://git.drbd.org/linux-2.6-drbd.git for-jens
+
+David Howells (1):
+      DRBD: Fix comparison always false warning due to long/long long compare
+
+Lars Ellenberg (10):
+      drbd: cosmetic: fix accidental division instead of modulo when pretty printing
+      drbd: add missing spinlock to bitmap receive
+      drbd: don't cond_resched_lock with IRQs disabled
+      drbd: spelling fix: too small
+      drbd: account bitmap IO during resync as resync-(related-)-io
+      drbd: when receive times out on meta socket, also check last receive time on data socket
+      drbd: allow ping-timeout of up to 30 seconds
+      drbd: downgraded error printk to info
+      drbd: fix limit define, we support 1 PiByte now
+      drbd: we should write meta data updates with FLUSH FUA
+
+Philipp Reisner (3):
+      drbd: Lower log priority for an event that is definitely not an error
+      drbd: Use the correct max_bio_size when creating resync requests
+      drbd: Only print sanitize state's warnings, if the state change happens
+
+ drivers/block/drbd/drbd_actlog.c   |    2 +-
+ drivers/block/drbd/drbd_bitmap.c   |   37 +++++++++++++--------
+ drivers/block/drbd/drbd_int.h      |    2 +-
+ drivers/block/drbd/drbd_main.c     |   61 ++++++++++++++++++++++++-----------
+ drivers/block/drbd/drbd_nl.c       |    8 ++--
+ drivers/block/drbd/drbd_proc.c     |    2 +-
+ drivers/block/drbd/drbd_receiver.c |    8 ++++-
+ drivers/block/drbd/drbd_worker.c   |    7 +---
+ include/linux/drbd.h               |    4 +-
+ include/linux/drbd_limits.h        |    6 ++--
+ 10 files changed, 85 insertions(+), 52 deletions(-)
+-- 
+: Dipl-Ing Philipp Reisner
+: LINBIT | Your Way to High Availability
+: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
+: http://www.linbit.com
+
+DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
