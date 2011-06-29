@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754957Ab1F2PQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 11:16:09 -0400
-Received: from out4.smtp.messagingengine.com ([66.111.4.28]:47863 "EHLO
-	out4.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752043Ab1F2PQI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 11:16:08 -0400
-X-Sasl-enc: MFZlGeuk9YbJ3pZf5019xq39tmloq+NiVnU81Ewsxk6K 1309360566
-Date: Wed, 29 Jun 2011 08:05:54 -0700
-From: Greg KH <greg@kroah.com>
-To: John Johansen <john.johansen@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 2/2] AppArmor: Fix masking of capabilities in complain
- mode
-Message-ID: <20110629150554.GA18023@kroah.com>
-References: <1309311874-23262-1-git-send-email-john.johansen@canonical.com>
- <1309311874-23262-3-git-send-email-john.johansen@canonical.com>
- <20110629042440.GC18344@kroah.com>
- <4E0ADA66.9070004@canonical.com>
+	id S1755899Ab1F2PJT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 11:09:19 -0400
+Received: from bar.sig21.net ([80.81.252.164]:40829 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755238Ab1F2PJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 11:09:10 -0400
+Date: Wed, 29 Jun 2011 17:09:07 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: missing compat-ioctl for CDROM_DRIVE_STATUS + FDGETPRM
+Message-ID: <20110629150907.GA3412@sig21.net>
+References: <20110617090424.GA19345@sig21.net>
+ <201106171502.39445.arnd@arndb.de>
+ <20110629113834.GA4227@sig21.net>
+ <201106291430.43102.arnd@arndb.de>
+ <20110629125117.GA5739@sig21.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E0ADA66.9070004@canonical.com>
+In-Reply-To: <20110629125117.GA5739@sig21.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -3.8 (---)
+X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.643,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 08:55:18AM +0100, John Johansen wrote:
-> On 06/29/2011 05:24 AM, Greg KH wrote:
-> > On Wed, Jun 29, 2011 at 02:44:34AM +0100, John Johansen wrote:
-> >> AppArmor is masking the capabilities returned by capget against the
-> >> capabilities mask in the profile.  This is wrong, in complain mode the
-> >> profile has effectively all capabilities, as the profile restrictions are
-> >> not being enforced, merely tested against to determine if an access is
-> >> known by the profile.
-> >>
-> >> This can result in the wrong behavior of security conscience applications
-> >> like sshd which examine their capability set, and change their behavior
-> >> accordingly.  In this case because of the masked capability set being
-> >> returned sshd fails due to DAC checks, even when the profile is in complain
-> >> mode.
-> >>
-> >> Kernels affected: 2.6.36 - 3.0.
-> >>
-> >> Signed-off-by: John Johansen <john.johansen@canonical.com>
-> >> ---
+On Wed, Jun 29, 2011 at 02:51:17PM +0200, Johannes Stezenbach wrote:
+> On Wed, Jun 29, 2011 at 02:30:42PM +0200, Arnd Bergmann wrote:
+> > On Wednesday 29 June 2011, Johannes Stezenbach wrote:
+> > > Do I get it right that just adding two IGNORE_IOCTL() to
+> > > the ioctl_pointer array in linux/fs/compat_ioctl.c is sufficient,
+> > > like in commit 3f001711?
 > > 
-> > You say that multiple kernels are affected, then why not also include
-> > stable@kernel.org here as well?
-> > 
-> > confused,
-> > 
-> Sorry I should have elaborated, I think its a borderline case for stable
-> release, and was as much a note to my self as anything.
+> > Yes.
 
-Notes to self probably shouldn't be in kernel changelog entries :)
+Hm, it only works for CDROM_DRIVE_STATUS, but I still get
+the warning for FDGETPRM (801c0204).  Could you give
+me a hint how to address this?
 
-> The bug doesn't affect the enforcement of policy, only learning mode used
-> for generating policy, and it is something we can work around in userspace.
-> for already released kernels.
-> 
-> I can resend with a Cc: stable if you would like
+(tested with both 2.6.39.2 and 3.0-rc5-63-g0d72c6f)
 
-If you don't think it should be in the stable kernel releases, that's
-fine, you are the maintainer of the code.  I just found it odd that you
-said it affected older kernels and yet didn't want it applied there as
-well.
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index 61abb63..ae24aba 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -68,6 +68,8 @@
+ 
+ #ifdef CONFIG_BLOCK
+ #include <linux/loop.h>
++#include <linux/cdrom.h>
++#include <linux/fd.h>
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_ioctl.h>
+ #include <scsi/sg.h>
+@@ -944,6 +946,9 @@ COMPATIBLE_IOCTL(FIOQSIZE)
+ IGNORE_IOCTL(LOOP_CLR_FD)
+ /* md calls this on random blockdevs */
+ IGNORE_IOCTL(RAID_VERSION)
++/* qemu/qemu-img might calls these two on plain files for probing */
++IGNORE_IOCTL(CDROM_DRIVE_STATUS)
++IGNORE_IOCTL(FDGETPRM)
+ /* SG stuff */
+ COMPATIBLE_IOCTL(SG_SET_TIMEOUT)
+ COMPATIBLE_IOCTL(SG_GET_TIMEOUT)
 
-greg k-h
+
+Thanks,
+Johannes
