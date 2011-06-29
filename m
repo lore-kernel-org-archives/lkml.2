@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757952Ab1F2VaW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 17:30:22 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:3743 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab1F2VaU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 17:30:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=YS9a7LnYeFuWMAglpolAV7xmjpLcqiWtfbaMYMS14Inb3PGKX0N5hLtQqfM1b/3lf
-	1V7B93ow6vVEOkgotrNeQ==
+	id S1758018Ab1F2Vfa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 17:35:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:41290 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757960Ab1F2Vf1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 17:35:27 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
+Subject: [PATCH 1/6 v2] PM / Runtime: Update documentation of interactions with system sleep
+Date: Wed, 29 Jun 2011 23:31:52 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
+        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
+        Magnus Damm <magnus.damm@gmail.com>, Kevin Hilman <khilman@ti.com>,
+        linux-scsi@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+References: <201106260054.20578.rjw@sisk.pl> <201106292329.04163.rjw@sisk.pl>
+In-Reply-To: <201106292329.04163.rjw@sisk.pl>
 MIME-Version: 1.0
-In-Reply-To: <20110629180010.GB32236@infradead.org>
-References: <1309304616-8657-1-git-send-email-curtw@google.com>
-	<20110629005422.GQ32466@dastard>
-	<BANLkTimKtwVZo3D+w9AB2-C83d08YROcMw@mail.gmail.com>
-	<20110629081155.GA5558@infradead.org>
-	<BANLkTinoFOnQoo3k3KiDgqd7+uBH6shNesxhmVRo9wWr0WCkEw@mail.gmail.com>
-	<20110629180010.GB32236@infradead.org>
-Date: Wed, 29 Jun 2011 14:30:17 -0700
-Message-ID: <BANLkTi=5Jgrb_wQ_AKn3LJOYERTcTix01BCGPYnjGi4iJZhxgA@mail.gmail.com>
-Subject: Re: [PATCH] writeback: Don't wait for completion in writeback_inodes_sb_nr
-From: Curt Wohlgemuth <curtw@google.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106292331.53324.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 11:00 AM, Christoph Hellwig <hch@infradead.org> wrote:
-> On Wed, Jun 29, 2011 at 10:26:33AM -0700, Curt Wohlgemuth wrote:
->> The semantics did change between 2.6.34 and 2.6.35 though.  When the
->> work item queue was introduced in 2.6.32, the semantics changed from
->> what you describe above to what's present through 2.6.34:
->> writeback_inodes_sb() would enqueue a work item, and return.  Your
->> commit 83ba7b07 ("writeback: simplify the write back thread queue")
->> added the wait_for_completion() call, putting the semantics back to
->> where they were pre-2.6.32.
->
-> Yes.  The kernels inbetween had that nasty writeback vs umount races
-> that we could trigger quite often.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-My apologies for not being aware of these races (I tried to search
-mailing lists) -- how did they manifest themselves?  I don't see
-anything about it in your commit message of 83ba7b07.  I do see that
-we are not taking s_umount for sys_sync any longer (only in
-sync_filesystem(), e.g., for sys_syncfs)...
+The documents describing the interactions between runtime PM and
+system sleep generally refer to the model in which the system sleep
+state is entered through a global firmware or hardware operation.
+As a result, some recommendations given in there are not entirely
+suitable for systems in which this is not the case.  Update the
+documentation to take the existence of those systems into account.
 
->> Though one additional change between the old way (pre-2.6.32) and
->> today:  with the old kernel, the pdflush thread would operate
->> concurrently with the first (and second?) sync path through writeback.
->>  Today of course, they're *all* serialized.  So really a call to
->> sys_sync() will enqueue 3 work items -- one from
->> wakeup_flusher_threads(), one from writeback_inodes_sb(), and one from
->> sync_inodes_sb().
->
-> Yes.  And having WB_SYNC_NONE items from both wakeup_flusher_threads vs
-> writeback_inodes_sb is plain stupid.  The initial conversion to the
-> new sync_filesystem scheme had removed the wakeup_flusher_threads
-> call, but that caused a huge regression in some benchmark.
->
-> As mentioned before Wu was working on some code to introduce tagging
-> so that the WB_SYNC_ALL call won't start writing pages dirtied after
-> the sync call, which should help with your issue.  Although to
-> completely solve it we really need to get down to just two passes.
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reviewed-by: Kevin Hilman <khilman@ti.com>
+---
+ Documentation/power/devices.txt    |    6 +++---
+ Documentation/power/runtime_pm.txt |   27 +++++++++++++++++++--------
+ 2 files changed, 22 insertions(+), 11 deletions(-)
 
-I can definitely see how tagging with the start of sync would be
-helpful; also how going from three to two passes seems like a
-no-brainer.
+Index: linux-2.6/Documentation/power/runtime_pm.txt
+===================================================================
+--- linux-2.6.orig/Documentation/power/runtime_pm.txt
++++ linux-2.6/Documentation/power/runtime_pm.txt
+@@ -537,9 +537,9 @@ suspend routine).  It may be necessary t
+ in order to do so.  The same is true if the driver uses different power levels
+ or other settings for run-time suspend and system sleep.
+ 
+-During system resume, devices generally should be brought back to full power,
+-even if they were suspended before the system sleep began.  There are several
+-reasons for this, including:
++During system resume, the simplest approach is to bring all devices back to full
++power, even if they had been suspended before the system suspend began.  There
++are several reasons for this, including:
+ 
+   * The device might need to switch power levels, wake-up settings, etc.
+ 
+@@ -556,16 +556,27 @@ reasons for this, including:
+   * Even though the device was suspended, if its usage counter was > 0 then most
+     likely it would need a run-time resume in the near future anyway.
+ 
+-  * Always going back to full power is simplest.
+-
+-If the device was suspended before the sleep began, then its run-time PM status
+-will have to be updated to reflect the actual post-system sleep status.  The way
+-to do this is:
++If the device had been suspended before the system suspend began and it's
++brought back to full power during resume, then its run-time PM status will have
++to be updated to reflect the actual post-system sleep status.  The way to do
++this is:
+ 
+ 	pm_runtime_disable(dev);
+ 	pm_runtime_set_active(dev);
+ 	pm_runtime_enable(dev);
+ 
++On some systems, however, system sleep is not entered through a global firmware
++or hardware operation.  Instead, all hardware components are put into low-power
++states directly by the kernel in a coordinated way.  Then, the system sleep
++state effectively follows from the states the hardware components end up in
++and the system is woken up from that state by a hardware interrupt or a similar
++mechanism entirely under the kernel's control.  As a result, the kernel never
++gives control away and the states of all devices during resume are precisely
++known to it.  If that is the case and none of the situations listed above takes
++place (in particular, if the system is not waking up from hibernation), it may
++be more efficient to leave the devices that had been suspended before the system
++suspend began in the suspended state.
++
+ 7. Generic subsystem callbacks
+ 
+ Subsystems may wish to conserve code space by using the set of generic power
+Index: linux-2.6/Documentation/power/devices.txt
+===================================================================
+--- linux-2.6.orig/Documentation/power/devices.txt
++++ linux-2.6/Documentation/power/devices.txt
+@@ -604,7 +604,7 @@ state temporarily, for example so that i
+ disabled.  This all depends on the hardware and the design of the subsystem and
+ device driver in question.
+ 
+-During system-wide resume from a sleep state it's best to put devices into the
+-full-power state, as explained in Documentation/power/runtime_pm.txt.  Refer to
+-that document for more information regarding this particular issue as well as
++During system-wide resume from a sleep state it's easiest to put devices into
++the full-power state, as explained in Documentation/power/runtime_pm.txt.  Refer
++to that document for more information regarding this particular issue as well as
+ for information on the device runtime power management framework in general.
 
-But what's the real point of doing even two passes -- one SYNC_NONE
-followed by one SYNC_ALL?  Is it try to get through as many inodes as
-possible before we potentially lock up by waiting on an inode on an
-unavailable device?
-
-Thanks,
-Curt
