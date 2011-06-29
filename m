@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab1F2Kv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 06:51:59 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:3248 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753277Ab1F2Kv5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 06:51:57 -0400
-Message-ID: <4E0B03A5.7020207@draigBrady.com>
-Date: Wed, 29 Jun 2011 11:51:17 +0100
-From: =?UTF-8?B?UMOhZHJhaWcgQnJhZHk=?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
+	id S1754870Ab1F2KwJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 06:52:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63361 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754812Ab1F2KwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 06:52:04 -0400
+Message-ID: <4E0B0447.9030003@cn.fujitsu.com>
+Date: Wed, 29 Jun 2011 18:53:59 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Ulrich Drepper <drepper@akkadia.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>, akpm@linux-foundation.org,
-        kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
-        rientjes@google.com, viro@zeniv.linux.org.uk, wilsons@start.ca
-Subject: Re: [PATCH] Add cloexec information to fdinfo
-References: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com> <BANLkTin7wm6m5bN4CfQzhJZuhy3bUrS80A@mail.gmail.com> <4E0ADF27.5070805@akkadia.org>
-In-Reply-To: <4E0ADF27.5070805@akkadia.org>
-X-Enigmail-Version: 1.0.1
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 03/22] KVM: x86: fix broken read emulation spans a
+ page boundary
+References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FC39.2080709@cn.fujitsu.com> <4E0AE088.2070703@redhat.com>
+In-Reply-To: <4E0AE088.2070703@redhat.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-29 18:51:30,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-29 18:51:30,
+	Serialize complete at 2011-06-29 18:51:30
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 29/06/11 09:15, Ulrich Drepper wrote:
-> On 06/28/2011 01:23 PM, Linus Torvalds wrote:
->> The description makes no mention of why this would be needed?
+On 06/29/2011 04:21 PM, Avi Kivity wrote:
+
+>>
+>> -    if (kvm_read_guest_virt(ctxt, addr, val, bytes, exception)
+>> -        == X86EMUL_CONTINUE)
+>> +    if (!kvm_read_guest(vcpu->kvm, gpa, val, bytes))
+>>           return X86EMUL_CONTINUE;
 > 
-> In this specific case I was trying to re-implement the pfiles program.
-> For normal file descriptors (not sockets) this was the last piece of
-> information which wasn't available.  This is all part of my "give
-> Solaris users no reason to not switch" effort.  I intend to offer the
-> code to the util-linux-ng maintainers.
+> This doesn't perform the cpl check.
+> 
 
-For the curious (me):
+Firstly, it calls kvm_mmu_gva_to_gpa_read to translate gva to gpa, and cpl
+is checked in this function, it is not enough?
 
-solaris:~ > pfiles $$
-8418:   -bash
-  Current rlimit: 256 file descriptors
-   0: S_IFCHR mode:0620 dev:349,28 ino:130202 uid:11003 gid:7 rdev:24,116
-      O_RDWR|O_NOCTTY|O_LARGEFILE
-      /dev/pts/116
-   1: S_IFCHR mode:0620 dev:349,28 ino:130202 uid:11003 gid:7 rdev:24,116
-      O_RDWR|O_NOCTTY|O_LARGEFILE
-      /dev/pts/116
-   2: S_IFCHR mode:0620 dev:349,28 ino:130202 uid:11003 gid:7 rdev:24,116
-      O_RDWR|O_NOCTTY|O_LARGEFILE
-      /dev/pts/116
-   3: S_IFDOOR mode:0444 dev:347,0 ino:189 uid:0 gid:0 size:0
-      O_RDONLY|O_LARGEFILE FD_CLOEXEC  door to nscd[11276]
-      /var/run/name_service_door
- 255: S_IFCHR mode:0620 dev:349,28 ino:130202 uid:11003 gid:7 rdev:24,116
-      O_RDWR|O_NOCTTY|O_LARGEFILE FD_CLOEXEC
-      /dev/pts/116
+> I suggest dropping this part for now and doing it later.
+> 
 
-I guess `lsof +f g` could be suitably embellished as well.
-
-cheers,
-Pádraig.
+OK, i will post this part in the separate patchset. :-)
