@@ -1,158 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756251Ab1F2PLY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 11:11:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:4262 "EHLO mga09.intel.com"
+	id S1755989Ab1F2PJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 11:09:21 -0400
+Received: from mga11.intel.com ([192.55.52.93]:10680 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754704Ab1F2PJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 11:09:05 -0400
+	id S1755319Ab1F2PJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 11:09:10 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,443,1304319600"; 
-   d="scan'208";a="19718759"
-Message-Id: <20110629145554.419192597@intel.com>
+   d="scan'208";a="24301024"
+Message-Id: <20110629145554.548899246@intel.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 29 Jun 2011 22:52:52 +0800
+Date: Wed, 29 Jun 2011 22:52:53 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: <linux-fsdevel@vger.kernel.org>
 CC: Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
         Christoph Hellwig <hch@infradead.org>,
         Andrew Morton <akpm@linux-foundation.org>,
+        Theodore Tso <tytso@mit.edu>, Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Wu Fengguang <fengguang.wu@intel.com>
 Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 7/9] writeback: introduce max-pause and pass-good dirty limits
+Subject: [PATCH 8/9] writeback: scale IO chunk size up to half device bandwidth
 References: <20110629145245.835998321@intel.com>
-Content-Disposition: inline; filename=writeback-dirty-limits
+Content-Disposition: inline; filename=writeback-128M-MAX_WRITEBACK_PAGES.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The max-pause limit helps to keep the sleep time inside
-balance_dirty_pages() within MAX_PAUSE=200ms. The 200ms max sleep means
-per task rate limit of 8pages/200ms=160KB/s when dirty exceeded, which
-normally is enough to stop dirtiers from continue pushing the dirty
-pages high, unless there are a sufficient large number of slow dirtiers
-(eg. 500 tasks doing 160KB/s will still sum up to 80MB/s, exceeding the
-write bandwidth of a slow disk and hence accumulating more and more dirty
-pages).
+Originally, MAX_WRITEBACK_PAGES was hard-coded to 1024 because of a
+concern of not holding I_SYNC for too long.  (At least, that was the
+comment previously.)  This doesn't make sense now because the only
+time we wait for I_SYNC is if we are calling sync or fsync, and in
+that case we need to write out all of the data anyway.  Previously
+there may have been other code paths that waited on I_SYNC, but not
+any more.					    -- Theodore Ts'o
 
-The pass-good limit helps to let go of the good bdi's in the presence of
-a blocked bdi (ie. NFS server not responding) or slow USB disk which for
-some reason build up a large number of initial dirty pages that refuse
-to go away anytime soon.
+So remove the MAX_WRITEBACK_PAGES constraint. The writeback pages
+will adapt to as large as the storage device can write within 500ms.
 
-For example, given two bdi's A and B and the initial state
+XFS is observed to do IO completions in a batch, and the batch size is
+equal to the write chunk size. To avoid dirty pages to suddenly drop
+out of balance_dirty_pages()'s dirty control scope and create large
+fluctuations, the chunk size is also limited to half the control scope.
 
-	bdi_thresh_A = dirty_thresh / 2
-	bdi_thresh_B = dirty_thresh / 2
-	bdi_dirty_A  = dirty_thresh / 2
-	bdi_dirty_B  = dirty_thresh / 2
+The balance_dirty_pages() control scrope is
 
-Then A get blocked, after a dozen seconds
+	[(background_thresh + dirty_thresh) / 2, dirty_thresh]
 
-	bdi_thresh_A = 0
-	bdi_thresh_B = dirty_thresh
-	bdi_dirty_A  = dirty_thresh / 2
-	bdi_dirty_B  = dirty_thresh / 2
+which is by default [15%, 20%] of global dirty pages, whose range size
+is dirty_thresh / DIRTY_FULL_SCOPE.
 
-The (bdi_dirty_B < bdi_thresh_B) test is now useless and the dirty pages
-will be effectively throttled by condition (nr_dirty < dirty_thresh).
-This has two problems:
-(1) we lose the protections for light dirtiers
-(2) balance_dirty_pages() effectively becomes IO-less because the
-    (bdi_nr_reclaimable > bdi_thresh) test won't be true. This is good
-    for IO, but balance_dirty_pages() loses an important way to break
-    out of the loop which leads to more spread out throttle delays.
+The adpative write chunk size will be rounded to the nearest 4MB
+boundary.
 
-DIRTY_PASSGOOD_AREA can eliminate the above issues. The only problem is,
-DIRTY_PASSGOOD_AREA needs to be defined as 2 to fully cover the above
-example while this patch uses the more conservative value 8 so as not to
-surprise people with too many dirty pages than expected.
+http://bugzilla.kernel.org/show_bug.cgi?id=13930
 
-The max-pause limit won't noticeably impact the speed dirty pages are
-knocked down when there is a sudden drop of global/bdi dirty thresholds.
-Because the heavy dirties will be throttled below 160KB/s which is slow
-enough. It does help to avoid long dirty throttle delays and especially
-will make light dirtiers more responsive.
-
+CC: Theodore Ts'o <tytso@mit.edu>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Chris Mason <chris.mason@oracle.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- include/linux/writeback.h |   21 +++++++++++++++++++++
- mm/page-writeback.c       |   28 ++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+)
+ fs/fs-writeback.c         |   23 ++++++++++-------------
+ include/linux/writeback.h |   11 +++++++++++
+ 2 files changed, 21 insertions(+), 13 deletions(-)
 
---- linux-next.orig/include/linux/writeback.h	2011-06-23 10:31:40.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2011-06-23 10:31:40.000000000 +0800
-@@ -7,6 +7,27 @@
- #include <linux/sched.h>
+--- linux-next.orig/include/linux/writeback.h	2011-06-22 22:15:36.000000000 +0800
++++ linux-next/include/linux/writeback.h	2011-06-23 10:08:24.000000000 +0800
+@@ -8,6 +8,10 @@
  #include <linux/fs.h>
  
+ /*
++ * The 1/4 region under the global dirty thresh is for smooth dirty throttling:
++ *
++ *	(thresh - thresh/DIRTY_FULL_SCOPE, thresh)
++ *
+  * The 1/16 region above the global dirty limit will be put to maximum pauses:
+  *
+  *	(limit, limit + limit/DIRTY_MAXPAUSE_AREA)
+@@ -25,9 +29,16 @@
+  * knocks down the global dirty threshold quickly, in which case the global
+  * dirty limit will follow down slowly to prevent livelocking all dirtier tasks.
+  */
++#define DIRTY_SCOPE		8
++#define DIRTY_FULL_SCOPE	(DIRTY_SCOPE / 2)
+ #define DIRTY_MAXPAUSE_AREA		16
+ #define DIRTY_PASSGOOD_AREA		8
+ 
 +/*
-+ * The 1/16 region above the global dirty limit will be put to maximum pauses:
-+ *
-+ *	(limit, limit + limit/DIRTY_MAXPAUSE_AREA)
-+ *
-+ * The 1/16 region above the max-pause region, dirty exceeded bdi's will be put
-+ * to loops:
-+ *
-+ *	(limit + limit/DIRTY_MAXPAUSE_AREA, limit + limit/DIRTY_PASSGOOD_AREA)
-+ *
-+ * Further beyond, all dirtier tasks will enter a loop waiting (possibly long
-+ * time) for the dirty pages to drop, unless written enough pages.
-+ *
-+ * The global dirty threshold is normally equal to the global dirty limit,
-+ * except when the system suddenly allocates a lot of anonymous memory and
-+ * knocks down the global dirty threshold quickly, in which case the global
-+ * dirty limit will follow down slowly to prevent livelocking all dirtier tasks.
++ * 4MB minimal write chunk size
 + */
-+#define DIRTY_MAXPAUSE_AREA		16
-+#define DIRTY_PASSGOOD_AREA		8
++#define MIN_WRITEBACK_PAGES	(4096UL >> (PAGE_CACHE_SHIFT - 10))
 +
  struct backing_dev_info;
  
  /*
---- linux-next.orig/mm/page-writeback.c	2011-06-23 10:31:40.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2011-06-23 10:59:47.000000000 +0800
-@@ -399,6 +399,11 @@ unsigned long determine_dirtyable_memory
- 	return x + 1;	/* Ensure that we never return 0 */
+--- linux-next.orig/fs/fs-writeback.c	2011-06-22 20:43:12.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2011-06-23 10:08:01.000000000 +0800
+@@ -30,15 +30,6 @@
+ #include "internal.h"
+ 
+ /*
+- * The maximum number of pages to writeout in a single bdi flush/kupdate
+- * operation.  We do this so we don't hold I_SYNC against an inode for
+- * enormous amounts of time, which would block a userspace task which has
+- * been forced to throttle against that inode.  Also, the code reevaluates
+- * the dirty each time it has written this many pages.
+- */
+-#define MAX_WRITEBACK_PAGES     1024L
+-
+-/*
+  * Passed into wb_writeback(), essentially a subset of writeback_control
+  */
+ struct wb_writeback_work {
+@@ -515,7 +506,8 @@ static bool pin_sb_for_writeback(struct 
+ 	return false;
  }
  
-+static unsigned long hard_dirty_limit(unsigned long thresh)
-+{
-+	return max(thresh, global_dirty_limit);
-+}
-+
- /*
-  * global_dirty_limits - background-writeback and dirty-throttling thresholds
-  *
-@@ -716,6 +721,29 @@ static void balance_dirty_pages(struct a
- 		io_schedule_timeout(pause);
- 		trace_balance_dirty_wait(bdi);
+-static long writeback_chunk_size(struct wb_writeback_work *work)
++static long writeback_chunk_size(struct backing_dev_info *bdi,
++				 struct wb_writeback_work *work)
+ {
+ 	long pages;
  
-+		dirty_thresh = hard_dirty_limit(dirty_thresh);
-+		/*
-+		 * max-pause area. If dirty exceeded but still within this
-+		 * area, no need to sleep for more than 200ms: (a) 8 pages per
-+		 * 200ms is typically more than enough to curb heavy dirtiers;
-+		 * (b) the pause time limit makes the dirtiers more responsive.
-+		 */
-+		if (nr_dirty < dirty_thresh +
-+			       dirty_thresh / DIRTY_MAXPAUSE_AREA &&
-+		    time_after(jiffies, start_time + MAX_PAUSE))
-+			break;
-+		/*
-+		 * pass-good area. When some bdi gets blocked (eg. NFS server
-+		 * not responding), or write bandwidth dropped dramatically due
-+		 * to concurrent reads, or dirty threshold suddenly dropped and
-+		 * the dirty pages cannot be brought down anytime soon (eg. on
-+		 * slow USB stick), at least let go of the good bdi's.
-+		 */
-+		if (nr_dirty < dirty_thresh +
-+			       dirty_thresh / DIRTY_PASSGOOD_AREA &&
-+		    bdi_dirty < bdi_thresh)
-+			break;
-+
- 		/*
- 		 * Increase the delay for each loop, up to our previous
- 		 * default of taking a 100ms nap.
+@@ -534,8 +526,13 @@ static long writeback_chunk_size(struct 
+ 	 */
+ 	if (work->sync_mode == WB_SYNC_ALL || work->tagged_writepages)
+ 		pages = LONG_MAX;
+-	else
+-		pages = min(MAX_WRITEBACK_PAGES, work->nr_pages);
++	else {
++		pages = min(bdi->avg_write_bandwidth / 2,
++			    global_dirty_limit / DIRTY_SCOPE);
++		pages = min(pages, work->nr_pages);
++		pages = round_down(pages + MIN_WRITEBACK_PAGES,
++				   MIN_WRITEBACK_PAGES);
++	}
+ 
+ 	return pages;
+ }
+@@ -600,7 +597,7 @@ static long writeback_sb_inodes(struct s
+ 			continue;
+ 		}
+ 		__iget(inode);
+-		write_chunk = writeback_chunk_size(work);
++		write_chunk = writeback_chunk_size(wb->bdi, work);
+ 		wbc.nr_to_write = write_chunk;
+ 		wbc.pages_skipped = 0;
+ 
 
 
