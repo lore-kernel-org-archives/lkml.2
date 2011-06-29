@@ -1,37 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab1F2VYa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 17:24:30 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44100
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752263Ab1F2VY2 (ORCPT
+	id S1757966Ab1F2VYp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 17:24:45 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:52185 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752263Ab1F2VYn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 17:24:28 -0400
-Date: Wed, 29 Jun 2011 17:24:20 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>, xfs-masters@oss.sgi.com,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-cris-kernel@axis.com
-Subject: Re: Build regressions/improvements in v3.0-rc5 (xfs on cris)
-Message-ID: <20110629212420.GA9822@infradead.org>
-References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
- <20110629142106.447393a5.rdunlap@xenotime.net>
+	Wed, 29 Jun 2011 17:24:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110629142106.447393a5.rdunlap@xenotime.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <BANLkTi=2ZMmrwMrnyEyEZAEsCUQNnd5n1j8J0xzSEF=ahrJmLw@mail.gmail.com>
+References: <fa.fHPNPTsllvyE/7DxrKwiwgVbVww@ifi.uio.no>
+	<532cc290-4b9c-4eb2-91d4-aa66c01bb3a0@glegroupsg2000goo.googlegroups.com>
+	<BANLkTik3mEJGXLrf_XtssfdRypm3NxBKvkhcnUpK=YXV6ux=Ag@mail.gmail.com>
+	<20110629080827.GA975@phantom.vanrein.org>
+	<BANLkTikw9bnrurUo8n-6yUwwQ0zOv5iAOBDt=T6Nm6nkUd7vLA@mail.gmail.com>
+	<BANLkTi=2ZMmrwMrnyEyEZAEsCUQNnd5n1j8J0xzSEF=ahrJmLw@mail.gmail.com>
+Date: Wed, 29 Jun 2011 14:24:41 -0700
+X-Google-Sender-Auth: 7zJLqAvrzV3j-Jv4nSjGZ8w26Go
+Message-ID: <BANLkTinN0EOH=OMQ8idG7Xt5OufU-6Rn3A@mail.gmail.com>
+Subject: Re: [PATCH v2 0/3] support for broken memory modules (BadRAM)
+From: Tony Luck <tony.luck@intel.com>
+To: Craig Bergstrom <craigb@google.com>
+Cc: linux-kernel@vger.kernel.org, fa.linux.kernel@googlegroups.com,
+        Rick van Rein <rick@vanrein.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Stefan Assmann <sassmann@kpanic.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, "mingo@elte.hu" <mingo@elte.hu>,
+        "rdunlap@xenotime.net" <rdunlap@xenotime.net>,
+        Nancy Yuen <yuenn@google.com>, Michael Ditto <mditto@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 02:21:06PM -0700, Randy Dunlap wrote:
-> Looks like arch/cris does not support atomic64_t.  (?)
-> 
-> Should we prevent xfs from being built on arch/cris?
+One extra consideration for this whole proposal ...
 
-Or nuke cris until it's able to at least include an asm-generic header?
+Is the "physical address" a stable enough representation of the location
+of the faulty memory cells?
 
+On high end systems I can see a number of ways where the mapping
+from cells to physical address may change across reboot:
+
+1) System support redundant memory (rank sparing or mirroring)
+2) BIOS self test removes some memory from use
+3) A multi-node system elects a different node to be boot-meister,
+which results in reshuffling of the address map.
+
+If any of these can happen: then it doesn't matter whether we have
+a list of addresses, or a pattern that expands to a list of addresses.
+We'll still mark some innocent memory as bad, and allow some known
+bad memory to be used - because our "addresses" no longer correspond
+to the bad memory cells.
+
+-Tony
