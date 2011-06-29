@@ -1,716 +1,480 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753799Ab1F2Gs3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 02:48:29 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:49390 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752637Ab1F2GsX (ORCPT
+	id S1753749Ab1F2GkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 02:40:05 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:46571 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751323Ab1F2GkA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 02:48:23 -0400
-From: Jingoo Han <jg1.han@samsung.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Inki Dae <inki.dae@samsung.com>,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: [PATCH V2] backlight: add ams369fg06 amoled driver
-Date: Wed, 29 Jun 2011 15:37:04 +0900
-Message-Id: <1309329424-21748-1-git-send-email-jg1.han@samsung.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 29 Jun 2011 02:40:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110627215955.GA23027@freya.fluff.org>
+References: <1308032369-1615-1-git-send-email-ratbert.chuang@gmail.com> <20110627215955.GA23027@freya.fluff.org>
+From: Po-Yu Chuang <ratbert.chuang@gmail.com>
+Date: Wed, 29 Jun 2011 14:39:38 +0800
+Message-ID: <BANLkTinHsg1FWRdAE2dxsJ6Shxrh7+HUeA@mail.gmail.com>
+Subject: Re: [PATCH] i2c: add Faraday FTIIC010 I2C controller support
+To: Ben Dooks <ben-i2c@fluff.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+        khali@linux-fr.org, ben-linux@fluff.org,
+        Po-Yu Chuang <ratbert@faraday-tech.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ams369fg06 amoled panel driver. The ams369fg06
-amoled panel (480 x 800) driver uses 3-wired SPI inteface.
-The brightness can be controlled by gamma setting of amoled panel.
+Hi Ben,
 
-Signed-off-by: Jingoo Han <jg1.han@samsung.com>
----
- drivers/video/backlight/Kconfig      |    8 +
- drivers/video/backlight/Makefile     |    1 +
- drivers/video/backlight/ams369fg06.c |  642 ++++++++++++++++++++++++++++++++++
- 3 files changed, 651 insertions(+), 0 deletions(-)
- create mode 100644 drivers/video/backlight/ams369fg06.c
+On Tue, Jun 28, 2011 at 5:59 AM, Ben Dooks <ben-i2c@fluff.org> wrote:
+> On Tue, Jun 14, 2011 at 02:19:29PM +0800, Po-Yu Chuang wrote:
+>> From: Po-Yu Chuang <ratbert@faraday-tech.com>
+>>
+>> Support for Faraday FTIIC010 I2C controller. It is used on
+>> Faraday A320, A369 and some other ARM SoC's.
+>>
+>> Signed-off-by: Po-Yu Chuang <ratbert@faraday-tech.com>
+>> ---
+>>  drivers/i2c/busses/Kconfig        |    7 +
+>>  drivers/i2c/busses/Makefile       |    1 +
+>>  drivers/i2c/busses/i2c-ftiic010.c |  434 +++++++++++++++++++++++++++++++++++++
+>>  drivers/i2c/busses/i2c-ftiic010.h |  155 +++++++++++++
+>>  4 files changed, 597 insertions(+), 0 deletions(-)
+>>  create mode 100644 drivers/i2c/busses/i2c-ftiic010.c
+>>  create mode 100644 drivers/i2c/busses/i2c-ftiic010.h
+>>
+>> diff --git a/drivers/i2c/busses/Kconfig b/drivers/i2c/busses/Kconfig
+>> index 326652f..612c2b1 100644
+>> --- a/drivers/i2c/busses/Kconfig
+>> +++ b/drivers/i2c/busses/Kconfig
+>> @@ -358,6 +358,13 @@ config I2C_DESIGNWARE
+>>         This driver can also be built as a module.  If so, the module
+>>         will be called i2c-designware.
+>>
+>> +config I2C_FTIIC010
+>> +     tristate "Faraday FTIIC010 I2C controller"
+>> +     depends on HAVE_CLK
+>> +     help
+>> +       Support for Faraday FTIIC010 I2C controller. It is used on
+>> +       Faraday A320, A369 and some other ARM SoC's.
+>> +
+>
+> is there a better depends line for this? is there an ARCH_xxx or some
+> other way of ensuring this doesn't get shown for all systems that
+> happen to support CLK?
 
-diff --git a/drivers/video/backlight/Kconfig b/drivers/video/backlight/Kconfig
-index 2d93c8d..1e54b8b 100644
---- a/drivers/video/backlight/Kconfig
-+++ b/drivers/video/backlight/Kconfig
-@@ -117,6 +117,14 @@ config LCD_LD9040
- 	  If you have an LD9040 Panel, say Y to enable its
- 	  control driver.
- 
-+config LCD_AMS369FG06
-+	tristate "AMS369FG06 AMOLED LCD Driver"
-+	depends on SPI && BACKLIGHT_CLASS_DEVICE
-+	default n
-+	help
-+	  If you have an AMS369FG06 AMOLED Panel, say Y to enable its
-+	  LCD control driver.
-+
- endif # LCD_CLASS_DEVICE
- 
- #
-diff --git a/drivers/video/backlight/Makefile b/drivers/video/backlight/Makefile
-index ee72adb..bf1dd92 100644
---- a/drivers/video/backlight/Makefile
-+++ b/drivers/video/backlight/Makefile
-@@ -13,6 +13,7 @@ obj-$(CONFIG_LCD_TDO24M)	   += tdo24m.o
- obj-$(CONFIG_LCD_TOSA)		   += tosa_lcd.o
- obj-$(CONFIG_LCD_S6E63M0)	+= s6e63m0.o
- obj-$(CONFIG_LCD_LD9040)	+= ld9040.o
-+obj-$(CONFIG_LCD_AMS369FG06)	+= ams369fg06.o
- 
- obj-$(CONFIG_BACKLIGHT_CLASS_DEVICE) += backlight.o
- obj-$(CONFIG_BACKLIGHT_ATMEL_PWM)    += atmel-pwm-bl.o
-diff --git a/drivers/video/backlight/ams369fg06.c b/drivers/video/backlight/ams369fg06.c
-new file mode 100644
-index 0000000..86a7daf
---- /dev/null
-+++ b/drivers/video/backlight/ams369fg06.c
-@@ -0,0 +1,642 @@
-+/*
-+ * ams369fg06 AMOLED LCD panel driver.
-+ *
-+ * Copyright (c) 2011 Samsung Electronics Co., Ltd.
-+ * Author: Jingoo Han  <jg1.han@samsung.com>
-+ *
-+ * Derived from drivers/video/s6e63m0.c
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License as published by the
-+ * Free Software Foundation; either version 2 of the License, or (at your
-+ * option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful, but
-+ * WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-+ * General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along
-+ * with this program; if not, write to the Free Software Foundation, Inc.,
-+ * 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-+ */
-+
-+#include <linux/wait.h>
-+#include <linux/fb.h>
-+#include <linux/delay.h>
-+#include <linux/gpio.h>
-+#include <linux/spi/spi.h>
-+#include <linux/lcd.h>
-+#include <linux/backlight.h>
-+
-+#define SLEEPMSEC		0x1000
-+#define ENDDEF			0x2000
-+#define	DEFMASK			0xFF00
-+#define COMMAND_ONLY		0xFE
-+#define DATA_ONLY		0xFF
-+
-+#define MAX_GAMMA_LEVEL		5
-+#define GAMMA_TABLE_COUNT	21
-+
-+#define MIN_BRIGHTNESS		0
-+#define MAX_BRIGHTNESS		255
-+#define DEFAULT_BRIGHTNESS	150
-+
-+struct ams369fg06 {
-+	struct device			*dev;
-+	struct spi_device		*spi;
-+	unsigned int			power;
-+	struct lcd_device		*ld;
-+	struct backlight_device		*bd;
-+	struct lcd_platform_data	*lcd_pd;
-+};
-+
-+static const unsigned short seq_display_on[] = {
-+	0x14, 0x03,
-+	ENDDEF, 0x0000
-+};
-+
-+static const unsigned short seq_display_off[] = {
-+	0x14, 0x00,
-+	ENDDEF, 0x0000
-+};
-+
-+static const unsigned short seq_stand_by_on[] = {
-+	0x1D, 0xA1,
-+	SLEEPMSEC, 200,
-+	ENDDEF, 0x0000
-+};
-+
-+static const unsigned short seq_stand_by_off[] = {
-+	0x1D, 0xA0,
-+	SLEEPMSEC, 250,
-+	ENDDEF, 0x0000
-+};
-+
-+static const unsigned short seq_setting[] = {
-+	0x31, 0x08,
-+	0x32, 0x14,
-+	0x30, 0x02,
-+	0x27, 0x01,
-+	0x12, 0x08,
-+	0x13, 0x08,
-+	0x15, 0x00,
-+	0x16, 0x00,
-+
-+	0xef, 0xd0,
-+	DATA_ONLY, 0xe8,
-+
-+	0x39, 0x44,
-+	0x40, 0x00,
-+	0x41, 0x3f,
-+	0x42, 0x2a,
-+	0x43, 0x27,
-+	0x44, 0x27,
-+	0x45, 0x1f,
-+	0x46, 0x44,
-+	0x50, 0x00,
-+	0x51, 0x00,
-+	0x52, 0x17,
-+	0x53, 0x24,
-+	0x54, 0x26,
-+	0x55, 0x1f,
-+	0x56, 0x43,
-+	0x60, 0x00,
-+	0x61, 0x3f,
-+	0x62, 0x2a,
-+	0x63, 0x25,
-+	0x64, 0x24,
-+	0x65, 0x1b,
-+	0x66, 0x5c,
-+
-+	0x17, 0x22,
-+	0x18, 0x33,
-+	0x19, 0x03,
-+	0x1a, 0x01,
-+	0x22, 0xa4,
-+	0x23, 0x00,
-+	0x26, 0xa0,
-+
-+	0x1d, 0xa0,
-+	SLEEPMSEC, 300,
-+
-+	0x14, 0x03,
-+
-+	ENDDEF, 0x0000
-+};
-+
-+/* gamma value: 2.2 */
-+static const unsigned int ams369fg06_22_250[] = {
-+	0x00, 0x3f, 0x2a, 0x27, 0x27, 0x1f, 0x44,
-+	0x00, 0x00, 0x17, 0x24, 0x26, 0x1f, 0x43,
-+	0x00, 0x3f, 0x2a, 0x25, 0x24, 0x1b, 0x5c,
-+};
-+
-+static const unsigned int ams369fg06_22_200[] = {
-+	0x00, 0x3f, 0x28, 0x29, 0x27, 0x21, 0x3e,
-+	0x00, 0x00, 0x10, 0x25, 0x27, 0x20, 0x3d,
-+	0x00, 0x3f, 0x28, 0x27, 0x25, 0x1d, 0x53,
-+};
-+
-+static const unsigned int ams369fg06_22_150[] = {
-+	0x00, 0x3f, 0x2d, 0x29, 0x28, 0x23, 0x37,
-+	0x00, 0x00, 0x0b, 0x25, 0x28, 0x22, 0x36,
-+	0x00, 0x3f, 0x2b, 0x28, 0x26, 0x1f, 0x4a,
-+};
-+
-+static const unsigned int ams369fg06_22_100[] = {
-+	0x00, 0x3f, 0x30, 0x2a, 0x2b, 0x24, 0x2f,
-+	0x00, 0x00, 0x00, 0x25, 0x29, 0x24, 0x2e,
-+	0x00, 0x3f, 0x2f, 0x29, 0x29, 0x21, 0x3f,
-+};
-+
-+static const unsigned int ams369fg06_22_50[] = {
-+	0x00, 0x3f, 0x3c, 0x2c, 0x2d, 0x27, 0x24,
-+	0x00, 0x00, 0x00, 0x22, 0x2a, 0x27, 0x23,
-+	0x00, 0x3f, 0x3b, 0x2c, 0x2b, 0x24, 0x31,
-+};
-+
-+struct ams369fg06_gamma {
-+	unsigned int *gamma_22_table[MAX_GAMMA_LEVEL];
-+};
-+
-+static struct ams369fg06_gamma gamma_table = {
-+	.gamma_22_table[0] = (unsigned int *)&ams369fg06_22_50,
-+	.gamma_22_table[1] = (unsigned int *)&ams369fg06_22_100,
-+	.gamma_22_table[2] = (unsigned int *)&ams369fg06_22_150,
-+	.gamma_22_table[3] = (unsigned int *)&ams369fg06_22_200,
-+	.gamma_22_table[4] = (unsigned int *)&ams369fg06_22_250,
-+};
-+
-+static int ams369fg06_spi_write_byte(struct ams369fg06 *lcd, int addr, int data)
-+{
-+	u16 buf[1];
-+	struct spi_message msg;
-+
-+	struct spi_transfer xfer = {
-+		.len		= 2,
-+		.tx_buf		= buf,
-+	};
-+
-+	buf[0] = (addr << 8) | data;
-+
-+	spi_message_init(&msg);
-+	spi_message_add_tail(&xfer, &msg);
-+
-+	return spi_sync(lcd->spi, &msg);
-+}
-+
-+static int ams369fg06_spi_write(struct ams369fg06 *lcd, unsigned char address,
-+	unsigned char command)
-+{
-+	int ret = 0;
-+
-+	if (address != DATA_ONLY)
-+		ret = ams369fg06_spi_write_byte(lcd, 0x70, address);
-+	if (command != COMMAND_ONLY)
-+		ret = ams369fg06_spi_write_byte(lcd, 0x72, command);
-+
-+	return ret;
-+}
-+
-+static int ams369fg06_panel_send_sequence(struct ams369fg06 *lcd,
-+	const unsigned short *wbuf)
-+{
-+	int ret = 0, i = 0;
-+
-+	while ((wbuf[i] & DEFMASK) != ENDDEF) {
-+		if ((wbuf[i] & DEFMASK) != SLEEPMSEC) {
-+			ret = ams369fg06_spi_write(lcd, wbuf[i], wbuf[i+1]);
-+			if (ret)
-+				break;
-+		} else
-+			mdelay(wbuf[i+1]);
-+		i += 2;
-+	}
-+
-+	return ret;
-+}
-+
-+static int _ams369fg06_gamma_ctl(struct ams369fg06 *lcd,
-+	const unsigned int *gamma)
-+{
-+	unsigned int i = 0;
-+	int ret = 0;
-+
-+	for (i = 0 ; i < GAMMA_TABLE_COUNT / 3; i++) {
-+		ret = ams369fg06_spi_write(lcd, 0x40 + i, gamma[i]);
-+		ret = ams369fg06_spi_write(lcd, 0x50 + i, gamma[i+7*1]);
-+		ret = ams369fg06_spi_write(lcd, 0x60 + i, gamma[i+7*2]);
-+		if (ret) {
-+			dev_err(lcd->dev, "failed to set gamma table.\n");
-+			goto gamma_err;
-+		}
-+	}
-+
-+gamma_err:
-+	return ret;
-+}
-+
-+static int ams369fg06_gamma_ctl(struct ams369fg06 *lcd, int brightness)
-+{
-+	int ret = 0;
-+	int gamma = 0;
-+
-+	if ((brightness >= 0) && (brightness <= 50))
-+		gamma = 0;
-+	else if ((brightness > 50) && (brightness <= 100))
-+		gamma = 1;
-+	else if ((brightness > 100) && (brightness <= 150))
-+		gamma = 2;
-+	else if ((brightness > 150) && (brightness <= 200))
-+		gamma = 3;
-+	else if ((brightness > 200) && (brightness <= 255))
-+		gamma = 4;
-+
-+	ret = _ams369fg06_gamma_ctl(lcd, gamma_table.gamma_22_table[gamma]);
-+
-+	return ret;
-+}
-+
-+static int ams369fg06_ldi_init(struct ams369fg06 *lcd)
-+{
-+	int ret, i;
-+	static const unsigned short *init_seq[] = {
-+		seq_setting,
-+		seq_stand_by_off,
-+	};
-+
-+	for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
-+		ret = ams369fg06_panel_send_sequence(lcd, init_seq[i]);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+static int ams369fg06_ldi_enable(struct ams369fg06 *lcd)
-+{
-+	int ret, i;
-+	static const unsigned short *init_seq[] = {
-+		seq_stand_by_off,
-+		seq_display_on,
-+	};
-+
-+	for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
-+		ret = ams369fg06_panel_send_sequence(lcd, init_seq[i]);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+static int ams369fg06_ldi_disable(struct ams369fg06 *lcd)
-+{
-+	int ret, i;
-+
-+	static const unsigned short *init_seq[] = {
-+		seq_display_off,
-+		seq_stand_by_on,
-+	};
-+
-+	for (i = 0; i < ARRAY_SIZE(init_seq); i++) {
-+		ret = ams369fg06_panel_send_sequence(lcd, init_seq[i]);
-+		if (ret)
-+			break;
-+	}
-+
-+	return ret;
-+}
-+
-+static int ams369fg06_power_is_on(int power)
-+{
-+	return ((power) <= FB_BLANK_NORMAL);
-+}
-+
-+static int ams369fg06_power_on(struct ams369fg06 *lcd)
-+{
-+	int ret = 0;
-+	struct lcd_platform_data *pd = NULL;
-+	struct backlight_device *bd = NULL;
-+
-+	pd = lcd->lcd_pd;
-+	if (!pd) {
-+		dev_err(lcd->dev, "platform data is NULL.\n");
-+		return -EFAULT;
-+	}
-+
-+	bd = lcd->bd;
-+	if (!bd) {
-+		dev_err(lcd->dev, "backlight device is NULL.\n");
-+		return -EFAULT;
-+	}
-+
-+	if (!pd->power_on) {
-+		dev_err(lcd->dev, "power_on is NULL.\n");
-+		return -EFAULT;
-+	} else {
-+		pd->power_on(lcd->ld, 1);
-+		mdelay(pd->power_on_delay);
-+	}
-+
-+	if (!pd->reset) {
-+		dev_err(lcd->dev, "reset is NULL.\n");
-+		return -EFAULT;
-+	} else {
-+		pd->reset(lcd->ld);
-+		mdelay(pd->reset_delay);
-+	}
-+
-+	ret = ams369fg06_ldi_init(lcd);
-+	if (ret) {
-+		dev_err(lcd->dev, "failed to initialize ldi.\n");
-+		return ret;
-+	}
-+
-+	ret = ams369fg06_ldi_enable(lcd);
-+	if (ret) {
-+		dev_err(lcd->dev, "failed to enable ldi.\n");
-+		return ret;
-+	}
-+
-+	/* set brightness to current value after power on or resume. */
-+	ret = ams369fg06_gamma_ctl(lcd, bd->props.brightness);
-+	if (ret) {
-+		dev_err(lcd->dev, "lcd gamma setting failed.\n");
-+		return ret;
-+	}
-+
-+	return 0;
-+}
-+
-+static int ams369fg06_power_off(struct ams369fg06 *lcd)
-+{
-+	int ret = 0;
-+	struct lcd_platform_data *pd = NULL;
-+
-+	pd = lcd->lcd_pd;
-+	if (!pd) {
-+		dev_err(lcd->dev, "platform data is NULL\n");
-+		return -EFAULT;
-+	}
-+
-+	ret = ams369fg06_ldi_disable(lcd);
-+	if (ret) {
-+		dev_err(lcd->dev, "lcd setting failed.\n");
-+		return -EIO;
-+	}
-+
-+	mdelay(pd->power_off_delay);
-+
-+	if (!pd->power_on) {
-+		dev_err(lcd->dev, "power_on is NULL.\n");
-+		return -EFAULT;
-+	} else
-+		pd->power_on(lcd->ld, 0);
-+
-+	return 0;
-+}
-+
-+static int ams369fg06_power(struct ams369fg06 *lcd, int power)
-+{
-+	int ret = 0;
-+
-+	if (ams369fg06_power_is_on(power) &&
-+		!ams369fg06_power_is_on(lcd->power))
-+		ret = ams369fg06_power_on(lcd);
-+	else if (!ams369fg06_power_is_on(power) &&
-+		ams369fg06_power_is_on(lcd->power))
-+		ret = ams369fg06_power_off(lcd);
-+
-+	if (!ret)
-+		lcd->power = power;
-+
-+	return ret;
-+}
-+
-+static int ams369fg06_get_power(struct lcd_device *ld)
-+{
-+	struct ams369fg06 *lcd = lcd_get_data(ld);
-+
-+	return lcd->power;
-+}
-+
-+static int ams369fg06_set_power(struct lcd_device *ld, int power)
-+{
-+	struct ams369fg06 *lcd = lcd_get_data(ld);
-+
-+	if (power != FB_BLANK_UNBLANK && power != FB_BLANK_POWERDOWN &&
-+		power != FB_BLANK_NORMAL) {
-+		dev_err(lcd->dev, "power value should be 0, 1 or 4.\n");
-+		return -EINVAL;
-+	}
-+
-+	return ams369fg06_power(lcd, power);
-+}
-+
-+static int ams369fg06_get_brightness(struct backlight_device *bd)
-+{
-+	return bd->props.brightness;
-+}
-+
-+static int ams369fg06_set_brightness(struct backlight_device *bd)
-+{
-+	int ret = 0;
-+	int brightness = bd->props.brightness;
-+	struct ams369fg06 *lcd = dev_get_drvdata(&bd->dev);
-+
-+	if (brightness < MIN_BRIGHTNESS ||
-+		brightness > bd->props.max_brightness) {
-+		dev_err(&bd->dev, "lcd brightness should be %d to %d.\n",
-+			MIN_BRIGHTNESS, MAX_BRIGHTNESS);
-+		return -EINVAL;
-+	}
-+
-+	ret = ams369fg06_gamma_ctl(lcd, bd->props.brightness);
-+	if (ret) {
-+		dev_err(&bd->dev, "lcd brightness setting failed.\n");
-+		return -EIO;
-+	}
-+
-+	return ret;
-+}
-+
-+static struct lcd_ops ams369fg06_lcd_ops = {
-+	.get_power = ams369fg06_get_power,
-+	.set_power = ams369fg06_set_power,
-+};
-+
-+static const struct backlight_ops ams369fg06_backlight_ops = {
-+	.get_brightness = ams369fg06_get_brightness,
-+	.update_status = ams369fg06_set_brightness,
-+};
-+
-+static int __init ams369fg06_probe(struct spi_device *spi)
-+{
-+	int ret = 0;
-+	struct ams369fg06 *lcd = NULL;
-+	struct lcd_device *ld = NULL;
-+	struct backlight_device *bd = NULL;
-+
-+	lcd = kzalloc(sizeof(struct ams369fg06), GFP_KERNEL);
-+	if (!lcd)
-+		return -ENOMEM;
-+
-+	/* ams369fg06 lcd panel uses 3-wire 16bits SPI Mode. */
-+	spi->bits_per_word = 16;
-+
-+	ret = spi_setup(spi);
-+	if (ret < 0) {
-+		dev_err(&spi->dev, "spi setup failed.\n");
-+		goto out_free_lcd;
-+	}
-+
-+	lcd->spi = spi;
-+	lcd->dev = &spi->dev;
-+
-+	lcd->lcd_pd = spi->dev.platform_data;
-+	if (!lcd->lcd_pd) {
-+		dev_err(&spi->dev, "platform data is NULL\n");
-+		goto out_free_lcd;
-+	}
-+
-+	ld = lcd_device_register("ams369fg06", &spi->dev, lcd,
-+		&ams369fg06_lcd_ops);
-+	if (IS_ERR(ld)) {
-+		ret = PTR_ERR(ld);
-+		goto out_free_lcd;
-+	}
-+
-+	lcd->ld = ld;
-+
-+	bd = backlight_device_register("ams369fg06-bl", &spi->dev, lcd,
-+		&ams369fg06_backlight_ops, NULL);
-+	if (IS_ERR(bd)) {
-+		ret =  PTR_ERR(bd);
-+		goto out_lcd_unregister;
-+	}
-+
-+	bd->props.max_brightness = MAX_BRIGHTNESS;
-+	bd->props.brightness = DEFAULT_BRIGHTNESS;
-+	bd->props.type = BACKLIGHT_RAW;
-+	lcd->bd = bd;
-+
-+	if (!lcd->lcd_pd->lcd_enabled) {
-+		/*
-+		 * if lcd panel was off from bootloader then
-+		 * current lcd status is powerdown and then
-+		 * it enables lcd panel.
-+		 */
-+		lcd->power = FB_BLANK_POWERDOWN;
-+
-+		ams369fg06_power(lcd, FB_BLANK_UNBLANK);
-+	} else
-+		lcd->power = FB_BLANK_UNBLANK;
-+
-+	dev_set_drvdata(&spi->dev, lcd);
-+
-+	dev_info(&spi->dev, "ams369fg06 panel driver has been probed.\n");
-+
-+	return 0;
-+
-+out_lcd_unregister:
-+	lcd_device_unregister(ld);
-+out_free_lcd:
-+	kfree(lcd);
-+	return ret;
-+}
-+
-+static int __devexit ams369fg06_remove(struct spi_device *spi)
-+{
-+	struct ams369fg06 *lcd = dev_get_drvdata(&spi->dev);
-+
-+	ams369fg06_power(lcd, FB_BLANK_POWERDOWN);
-+	lcd_device_unregister(lcd->ld);
-+	kfree(lcd);
-+
-+	return 0;
-+}
-+
-+#if defined(CONFIG_PM)
-+unsigned int before_power;
-+
-+static int ams369fg06_suspend(struct spi_device *spi, pm_message_t mesg)
-+{
-+	int ret = 0;
-+	struct ams369fg06 *lcd = dev_get_drvdata(&spi->dev);
-+
-+	dev_dbg(&spi->dev, "lcd->power = %d\n", lcd->power);
-+
-+	before_power = lcd->power;
-+
-+	/*
-+	 * when lcd panel is suspend, lcd panel becomes off
-+	 * regardless of status.
-+	 */
-+	ret = ams369fg06_power(lcd, FB_BLANK_POWERDOWN);
-+
-+	return ret;
-+}
-+
-+static int ams369fg06_resume(struct spi_device *spi)
-+{
-+	int ret = 0;
-+	struct ams369fg06 *lcd = dev_get_drvdata(&spi->dev);
-+
-+	/*
-+	 * after suspended, if lcd panel status is FB_BLANK_UNBLANK
-+	 * (at that time, before_power is FB_BLANK_UNBLANK) then
-+	 * it changes that status to FB_BLANK_POWERDOWN to get lcd on.
-+	 */
-+	if (before_power == FB_BLANK_UNBLANK)
-+		lcd->power = FB_BLANK_POWERDOWN;
-+
-+	dev_dbg(&spi->dev, "before_power = %d\n", before_power);
-+
-+	ret = ams369fg06_power(lcd, before_power);
-+
-+	return ret;
-+}
-+#else
-+#define ams369fg06_suspend	NULL
-+#define ams369fg06_resume	NULL
-+#endif
-+
-+void ams369fg06_shutdown(struct spi_device *spi)
-+{
-+	struct ams369fg06 *lcd = dev_get_drvdata(&spi->dev);
-+
-+	ams369fg06_power(lcd, FB_BLANK_POWERDOWN);
-+}
-+
-+static struct spi_driver ams369fg06_driver = {
-+	.driver = {
-+		.name	= "ams369fg06",
-+		.bus	= &spi_bus_type,
-+		.owner	= THIS_MODULE,
-+	},
-+	.probe		= ams369fg06_probe,
-+	.remove		= __devexit_p(ams369fg06_remove),
-+	.shutdown	= ams369fg06_shutdown,
-+	.suspend	= ams369fg06_suspend,
-+	.resume		= ams369fg06_resume,
-+};
-+
-+static int __init ams369fg06_init(void)
-+{
-+	return spi_register_driver(&ams369fg06_driver);
-+}
-+
-+static void __exit ams369fg06_exit(void)
-+{
-+	spi_unregister_driver(&ams369fg06_driver);
-+}
-+
-+module_init(ams369fg06_init);
-+module_exit(ams369fg06_exit);
-+
-+MODULE_AUTHOR("Jingoo Han <jg1.han@samsung.com>");
-+MODULE_DESCRIPTION("ams369fg06 LCD Driver");
-+MODULE_LICENSE("GPL");
--- 
-1.7.1
+OK, will fix this.
 
+>
+>>  config I2C_GPIO
+>>       tristate "GPIO-based bitbanging I2C"
+>>       depends on GENERIC_GPIO
+>> diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+>> index e6cf294..c49570d 100644
+>> --- a/drivers/i2c/busses/Makefile
+>> +++ b/drivers/i2c/busses/Makefile
+>> @@ -34,6 +34,7 @@ obj-$(CONFIG_I2C_BLACKFIN_TWI)      += i2c-bfin-twi.o
+>>  obj-$(CONFIG_I2C_CPM)                += i2c-cpm.o
+>>  obj-$(CONFIG_I2C_DAVINCI)    += i2c-davinci.o
+>>  obj-$(CONFIG_I2C_DESIGNWARE) += i2c-designware.o
+>> +obj-$(CONFIG_I2C_FTIIC010)   += i2c-ftiic010.o
+>>  obj-$(CONFIG_I2C_GPIO)               += i2c-gpio.o
+>>  obj-$(CONFIG_I2C_HIGHLANDER) += i2c-highlander.o
+>>  obj-$(CONFIG_I2C_IBM_IIC)    += i2c-ibm_iic.o
+>> diff --git a/drivers/i2c/busses/i2c-ftiic010.c b/drivers/i2c/busses/i2c-ftiic010.c
+>> new file mode 100644
+>> index 0000000..ed86f06
+>> --- /dev/null
+>> +++ b/drivers/i2c/busses/i2c-ftiic010.c
+>> @@ -0,0 +1,434 @@
+>> +/*
+>> + * Faraday FTIIC010 I2C Controller
+>> + *
+>> + * (C) Copyright 2010-2011 Faraday Technology
+>> + * Po-Yu Chuang <ratbert@faraday-tech.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify
+>> + * it under the terms of the GNU General Public License as published by
+>> + * the Free Software Foundation; either version 2 of the License, or
+>> + * (at your option) any later version.
+>> + *
+>> + * This program is distributed in the hope that it will be useful,
+>> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+>> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+>> + * GNU General Public License for more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License
+>> + * along with this program; if not, write to the Free Software
+>> + * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+>> + */
+>> +
+>> +#include <linux/clk.h>
+>> +#include <linux/delay.h>
+>> +#include <linux/i2c.h>
+>> +#include <linux/interrupt.h>
+>> +#include <linux/io.h>
+>> +#include <linux/module.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/slab.h>
+>> +
+>> +#include "i2c-ftiic010.h"
+>> +
+>> +#define SCL_SPEED    (100 * 1000)
+>> +#define MAX_RETRY    1000
+>> +
+>> +#define GSR  5
+>> +#define TSR  5
+>> +
+>> +struct ftiic010 {
+>> +     struct resource *res;
+>> +     void __iomem *base;
+>> +     int irq;
+>> +     struct clk *clk;
+>> +     struct i2c_adapter adapter;
+>> +};
+>> +
+>> +/******************************************************************************
+>> + * internal functions
+>> + *****************************************************************************/
+>> +static void ftiic010_reset(struct ftiic010 *ftiic010)
+>> +{
+>> +     int cr = FTIIC010_CR_I2C_RST;
+>> +
+>> +     iowrite32(cr, ftiic010->base + FTIIC010_OFFSET_CR);
+>> +
+>> +     /* wait until reset bit cleared by hw */
+>> +     while (ioread32(ftiic010->base + FTIIC010_OFFSET_CR) & FTIIC010_CR_I2C_RST)
+>> +             ;
+>
+> how about calls to cpu_relax() during these loops?
+> also, do we ever expect timeout?
+
+OK, will fix this.
+
+>
+>> +}
+>
+> I think iowrite32/ioread32 are ok on these.
+
+Not sure what do you mean here.
+
+>> +
+>> +static void ftiic010_set_clock_speed(struct ftiic010 *ftiic010, int hz)
+>> +{
+>> +     unsigned long pclk;
+>> +     int cdr;
+>> +
+>> +     pclk = clk_get_rate(ftiic010->clk);
+>> +
+>> +     cdr = (pclk / hz - GSR) / 2 - 2;
+>> +     cdr &= FTIIC010_CDR_MASK;
+>> +
+>> +     dev_dbg(&ftiic010->adapter.dev, "  [CDR] = %08x\n", cdr);
+>> +     iowrite32(cdr, ftiic010->base + FTIIC010_OFFSET_CDR);
+>> +}
+>> +
+>> +static void ftiic010_set_tgsr(struct ftiic010 *ftiic010, int tsr, int gsr)
+>> +{
+>> +     int tgsr;
+>> +
+>> +     tgsr = FTIIC010_TGSR_TSR(tsr);
+>> +     tgsr |= FTIIC010_TGSR_GSR(gsr);
+>> +
+>> +     dev_dbg(&ftiic010->adapter.dev, "  [TGSR] = %08x\n", tgsr);
+>> +     iowrite32(tgsr, ftiic010->base + FTIIC010_OFFSET_TGSR);
+>> +}
+>> +
+>> +static void ftiic010_hw_init(struct ftiic010 *ftiic010)
+>> +{
+>> +     ftiic010_reset(ftiic010);
+>> +     ftiic010_set_tgsr(ftiic010, TSR, GSR);
+>> +     ftiic010_set_clock_speed(ftiic010, SCL_SPEED);
+>> +}
+>> +
+>> +static inline void ftiic010_set_cr(struct ftiic010 *ftiic010, int start,
+>> +             int stop, int nak)
+>> +{
+>> +     int cr;
+>> +
+>> +     cr = FTIIC010_CR_I2C_EN
+>> +        | FTIIC010_CR_SCL_EN
+>> +        | FTIIC010_CR_TB_EN
+>> +        | FTIIC010_CR_BERRI_EN
+>> +        | FTIIC010_CR_ALI_EN;
+>> +
+>> +     if (start)
+>> +             cr |= FTIIC010_CR_START;
+>> +
+>> +     if (stop)
+>> +             cr |= FTIIC010_CR_STOP;
+>> +
+>> +     if (nak)
+>> +             cr |= FTIIC010_CR_NAK;
+>> +
+>> +     iowrite32(cr, ftiic010->base + FTIIC010_OFFSET_CR);
+>> +}
+>> +
+>> +static int ftiic010_tx_byte(struct ftiic010 *ftiic010, __u8 data, int start,
+>> +             int stop)
+>> +{
+>> +     struct i2c_adapter *adapter = &ftiic010->adapter;
+>> +     int i;
+>> +
+>> +     iowrite32(data, ftiic010->base + FTIIC010_OFFSET_DR);
+>> +     ftiic010_set_cr(ftiic010, start, stop, 0);
+>> +
+>> +     for (i = 0; i < MAX_RETRY; i++) {
+>> +             unsigned int status;
+>> +
+>> +             status = ioread32(ftiic010->base + FTIIC010_OFFSET_SR);
+>> +             if (status & FTIIC010_SR_DT)
+>> +                     return 0;
+>> +
+>> +             udelay(1);
+>> +     }
+>> +
+>> +     dev_err(&adapter->dev, "Failed to transmit\n");
+>> +     ftiic010_reset(ftiic010);
+>> +     return -EIO;
+>> +}
+>> +
+>> +static int ftiic010_rx_byte(struct ftiic010 *ftiic010, int stop, int nak)
+>> +{
+>> +     struct i2c_adapter *adapter = &ftiic010->adapter;
+>> +     int i;
+>> +
+>> +     ftiic010_set_cr(ftiic010, 0, stop, nak);
+>> +
+>> +     for (i = 0; i < MAX_RETRY; i++) {
+>> +             unsigned int status;
+>> +
+>> +             status = ioread32(ftiic010->base + FTIIC010_OFFSET_SR);
+>> +             if (status & FTIIC010_SR_DR) {
+>> +                     return ioread32(ftiic010->base + FTIIC010_OFFSET_DR)
+>> +                             & FTIIC010_DR_MASK;
+>> +             }
+>> +
+>> +             udelay(1);
+>> +     }
+>> +
+>> +     dev_err(&adapter->dev, "Failed to receive\n");
+>> +     ftiic010_reset(ftiic010);
+>> +     return -EIO;
+>> +}
+>> +
+>> +static int ftiic010_tx_msg(struct ftiic010 *ftiic010,
+>> +             struct i2c_msg *msg, int last)
+>> +{
+>> +     __u8 data;
+>> +     int ret;
+>> +     int i;
+>> +
+>> +     data = (msg->addr & 0x7f) << 1;
+>> +     ret = ftiic010_tx_byte(ftiic010, data, 1, 0);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     for (i = 0; i < msg->len; i++) {
+>> +             int stop = 0;
+>> +
+>> +             if (last && i + 1 == msg->len)
+>> +                     stop = 1;
+>> +
+>> +             ret = ftiic010_tx_byte(ftiic010, msg->buf[i], 0, stop);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int ftiic010_rx_msg(struct ftiic010 *ftiic010,
+>> +             struct i2c_msg *msg, int last)
+>> +{
+>> +     __u8 data;
+>> +     int ret;
+>> +     int i;
+>> +
+>> +     data = (msg->addr & 0x7f) << 1 | 1;
+>> +     ret = ftiic010_tx_byte(ftiic010, data, 1, 0);
+>> +     if (ret < 0)
+>> +             return ret;
+>> +
+>> +     for (i = 0; i < msg->len; i++) {
+>> +             int nak = 0;
+>> +
+>> +             if (i + 1 == msg->len)
+>> +                     nak = 1;
+>> +
+>> +             ret = ftiic010_rx_byte(ftiic010, last, nak);
+>> +             if (ret < 0)
+>> +                     return ret;
+>> +
+>> +             msg->buf[i] = ret;
+>> +     }
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static int ftiic010_do_msg(struct ftiic010 *ftiic010,
+>> +             struct i2c_msg *msg, int last)
+>> +{
+>> +     if (msg->flags & I2C_M_RD)
+>> +             return ftiic010_rx_msg(ftiic010, msg, last);
+>> +     else
+>> +             return ftiic010_tx_msg(ftiic010, msg, last);
+>> +}
+>
+> maybe this could be merged into the parent.
+
+Do you mean merge the content of this function into ftiic010_master_xfer?
+Well, I prefer the current small function.
+
+>
+> is there any way of using the interrupt handler to do the
+> actual transfers, this seems to involve a lot of busy-waiting
+> for the hardware.
+
+Originally I used interrupt-driven data transfer, but some users told me that
+the latency of interrupt handling is too long for their application.
+That's why I use polling now...
+
+>
+>> +/******************************************************************************
+>> + * interrupt handler
+>> + *****************************************************************************/
+>> +static irqreturn_t ftiic010_interrupt(int irq, void *dev_id)
+>> +{
+>> +     struct ftiic010 *ftiic010 = dev_id;
+>> +     struct i2c_adapter *adapter = &ftiic010->adapter;
+>> +     int sr;
+>> +
+>> +     sr = ioread32(ftiic010->base + FTIIC010_OFFSET_SR);
+>> +
+>> +     if (sr & FTIIC010_SR_BERR) {
+>> +             dev_err(&adapter->dev, "NAK!\n");
+>> +             ftiic010_reset(ftiic010);
+>> +     }
+>> +
+>> +     if (sr & FTIIC010_SR_AL) {
+>> +             dev_err(&adapter->dev, "arbitration lost!\n");
+>> +             ftiic010_reset(ftiic010);
+>> +     }
+>> +
+>> +     return IRQ_HANDLED;
+>> +}
+>> +
+>> +/******************************************************************************
+>> + * struct i2c_algorithm functions
+>> + *****************************************************************************/
+>> +static int ftiic010_master_xfer(struct i2c_adapter *adapter,
+>> +             struct i2c_msg *msgs, int num)
+>> +{
+>> +     struct ftiic010 *ftiic010 = i2c_get_adapdata(adapter);
+>> +     int i;
+>> +
+>> +     for (i = 0; i < num; i++) {
+>> +             int last = 0;
+>> +             int ret;
+>> +
+>> +             if (i == num - 1)
+>> +                     last = 1;
+>> +
+>> +             ret = ftiic010_do_msg(ftiic010, &msgs[i], last);
+>> +             if (ret)
+>> +                     return ret;
+>> +     }
+>> +
+>> +     return num;
+>> +}
+>> +
+>> +static u32 ftiic010_functionality(struct i2c_adapter *adapter)
+>> +{
+>> +     return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+>> +}
+>> +
+>> +static struct i2c_algorithm ftiic010_algorithm = {
+>> +     .master_xfer    = ftiic010_master_xfer,
+>> +     .functionality  = ftiic010_functionality,
+>> +};
+>> +
+>> +/******************************************************************************
+>> + * struct platform_driver functions
+>> + *****************************************************************************/
+>> +static int ftiic010_probe(struct platform_device *pdev)
+>> +{
+>> +     struct ftiic010 *ftiic010;
+>> +     struct resource *res;
+>> +     struct clk *clk;
+>> +     int irq;
+>> +     int ret;
+>> +
+>> +     res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+>> +     if (!res)
+>> +             return -ENXIO;
+>
+> error message, -ENXIO IIRC gets silently discarded by the bus
+> layer.
+
+OK, will add it.
+
+>
+>> +
+>> +     irq = platform_get_irq(pdev, 0);
+>> +     if (irq < 0)
+>> +             return irq;
+>
+> error print would be useful.
+
+OK
+
+>
+>> +     ftiic010 = kzalloc(sizeof(*ftiic010), GFP_KERNEL);
+>> +     if (!ftiic010) {
+>> +             dev_err(&pdev->dev, "Could not allocate private data\n");
+>> +             ret = -ENOMEM;
+>> +             goto err_alloc;
+>> +     }
+>> +
+>> +     ftiic010->res = request_mem_region(res->start, resource_size(res),
+>> +                                        dev_name(&pdev->dev));
+>> +     if (!ftiic010->res) {
+>> +             dev_err(&pdev->dev, "Could not reserve memory region\n");
+>> +             ret = -ENOMEM;
+>> +             goto err_req_mem;
+>> +     }
+>> +
+>> +     ftiic010->base = ioremap(res->start, resource_size(res));
+>> +     if (!ftiic010->base) {
+>> +             dev_err(&pdev->dev, "Failed to ioremap\n");
+>> +             ret = -ENOMEM;
+>> +             goto err_ioremap;
+>> +     }
+>> +
+>> +     ret = request_irq(irq, ftiic010_interrupt, IRQF_SHARED, pdev->name,
+>> +                       ftiic010);
+>> +     if (ret) {
+>> +             dev_err(&pdev->dev, "Failed to request irq %d\n", irq);
+>> +             goto err_req_irq;
+>> +     }
+>> +
+>> +     ftiic010->irq = irq;
+>> +
+>> +     clk = clk_get(NULL, "pclk");
+>> +     if (!clk) {
+>> +             dev_err(&pdev->dev, "Failed to get pclk\n");
+>> +             goto err_clk;
+>> +     }
+>
+> do you really need a named clock? sounds like the clk_ usage on
+> this platform needs some work to it.
+
+Let me think about this.
+
+[snip]
+
+Thanks for your review.
+I will fix the mentioned issues and resubmit later.
+
+Best regards,
+Po-Yu Chuang
