@@ -1,64 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab1F2Q1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 12:27:50 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:51311 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754842Ab1F2Q1t (ORCPT
+	id S1757342Ab1F2Qdh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 12:33:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:63785 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756860Ab1F2Qdf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 12:27:49 -0400
-Date: Wed, 29 Jun 2011 17:27:25 +0100
-From: Will Deacon <will.deacon@arm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-Message-ID: <20110629162725.GH15521@e102144-lin.cambridge.arm.com>
-References: <1309362157-6596-1-git-send-email-avi@redhat.com>
- <1309362157-6596-2-git-send-email-avi@redhat.com>
- <20110629160841.GA2032@somewhere>
+	Wed, 29 Jun 2011 12:33:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110629160841.GA2032@somewhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201106291742.24137.richard@nod.at>
+References: <1309212931-19772-1-git-send-email-richard@nod.at>
+	<BANLkTikauFJtuCo5E3=tb_=cwVS3sF35zw@mail.gmail.com>
+	<201106291742.24137.richard@nod.at>
+Date: Wed, 29 Jun 2011 19:33:34 +0300
+Message-ID: <BANLkTimg1djQt+wVvvZVL_DPMYhabD08_A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] um: Fix _FORTIFY_SOURCE=2 support for kernel modules
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        user-mode-linux-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederic,
+On Wed, Jun 29, 2011 at 6:42 PM, Richard Weinberger <richard@nod.at> wrote:
+> Am Mittwoch 29 Juni 2011, 17:37:54 schrieb Vitaliy Ivanov:
+>> On Tue, Jun 28, 2011 at 1:15 AM, Richard Weinberger <richard@nod.at> wrote:
+>> > When UML is compiled with _FORTIFY_SOURCE we have to
+>> > export all _chk() functions which are used in modules.
+>> > For now it's only the case for __sprintf_chk().
+>> >
+>> > Tested-by: Florian Fainelli <florian@openwrt.org>
+>> > Reported-by: Florian Fainelli <florian@openwrt.org>
+>> > Signed-off-by: Richard Weinberger <richard@nod.at>
+>> > ---
+>> >  arch/um/os-Linux/user_syms.c |    5 +++++
+>> >  1 files changed, 5 insertions(+), 0 deletions(-)
+>> >
+>> > diff --git a/arch/um/os-Linux/user_syms.c b/arch/um/os-Linux/user_syms.c
+>> > index 05f5ea8..45ffe46 100644
+>> > --- a/arch/um/os-Linux/user_syms.c
+>> > +++ b/arch/um/os-Linux/user_syms.c
+>> > @@ -113,3 +113,8 @@ EXPORT_SYMBOL(__stack_smash_handler);
+>> >
+>> >  extern long __guard __attribute__((weak));
+>> >  EXPORT_SYMBOL(__guard);
+>> > +
+>> > +#ifdef _FORTIFY_SOURCE
+>> > +extern int __sprintf_chk(char *str, int flag, size_t strlen, const char
+>> > *format); +EXPORT_SYMBOL(__sprintf_chk);
+>> > +#endif
+>> > --
+>>
+>> Can you please clarify why it's needed? I use FORTIFY_SOURCES on
+>> Linus' tree UML on Ubuntu w/ no problems and w/o this patch...
+>
+> The problem appears only when a UML kernel module is using sprintf().
+> E.g: CONFIG_UML_WATCHDOG.
+> Then loading the module will fail because of the missing symbol __sprintf_chk().
 
-Thanks for including me on CC.
+Thanks.
 
-On Wed, Jun 29, 2011 at 05:08:45PM +0100, Frederic Weisbecker wrote:
-> On Wed, Jun 29, 2011 at 06:42:35PM +0300, Avi Kivity wrote:
-> > The perf_event overflow handler does not receive any caller-derived
-> > argument, so many callers need to resort to looking up the perf_event
-> > in their local data structure.  This is ugly and doesn't scale if a
-> > single callback services many perf_events.
-> >
-> > Fix by adding a context parameter to perf_event_create_kernel_counter()
-> > (and derived hardware breakpoints APIs) and storing it in the perf_event.
-> > The field can be accessed from the callback as event->overflow_handler_context.
-> > All callers are updated.
-> >
-> > Signed-off-by: Avi Kivity <avi@redhat.com>
-> 
-> I believe it can micro-optimize ptrace through register_user_hw_breakpoint() because
-> we could store the index of the breakpoint that way, instead of iterating through 4 slots.
-> 
-> Perhaps it can help in arm too, adding Will in Cc.
-
-Yes, we could store the breakpoint index in there and it would save us
-walking over the breakpoints when one fires. Not sure this helps us for
-anything else though. My main gripe with the ptrace interface to
-hw_breakpoints is that we have to convert all the breakpoint information
-from ARM_BREAKPOINT_* to HW_BREAKPOINT_* and then convert it all back again
-in the hw_breakpoint code. Yuck!
-
-Will
+Acked-by: Vitaliy Ivanov <vitalivanov@gmail.com>
