@@ -1,111 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab1F2Asb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 28 Jun 2011 20:48:31 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:49685 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753196Ab1F2AsX (ORCPT
+	id S1753518Ab1F2Aym (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 28 Jun 2011 20:54:42 -0400
+Received: from ipmail05.adl6.internode.on.net ([150.101.137.143]:26059 "EHLO
+	ipmail05.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753128Ab1F2Ayf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 28 Jun 2011 20:48:23 -0400
-From: greearb@candelatech.com
-To: penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org
-Cc: Ben Greear <greearb@candelatech.com>
-Subject: [PATCH v2 2/2] slub:  Add method to verify memory is not freed.
-Date: Tue, 28 Jun 2011 17:47:42 -0700
-Message-Id: <1309308462-20124-3-git-send-email-greearb@candelatech.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1309308462-20124-1-git-send-email-greearb@candelatech.com>
-References: <1309308462-20124-1-git-send-email-greearb@candelatech.com>
+	Tue, 28 Jun 2011 20:54:35 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Al0DAIN3Ck55LChDgWdsb2JhbABSp0IVAQEWJiXJew6GIgSaF4gs
+Date: Wed, 29 Jun 2011 10:54:22 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Curt Wohlgemuth <curtw@google.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] writeback: Don't wait for completion in
+ writeback_inodes_sb_nr
+Message-ID: <20110629005422.GQ32466@dastard>
+References: <1309304616-8657-1-git-send-email-curtw@google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309304616-8657-1-git-send-email-curtw@google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Greear <greearb@candelatech.com>
+On Tue, Jun 28, 2011 at 04:43:35PM -0700, Curt Wohlgemuth wrote:
+> Contrary to the comment block atop writeback_inodes_sb_nr(),
+> we *were* calling
+> 
+>         wait_for_completion(&done);
+> 
+> which should not be done, as this is not called for data
+> integrity sync.
+> 
+> Signed-off-by: Curt Wohlgemuth <curtw@google.com>
 
-This is for tracking down suspect memory usage.
+The comment says it does not wait for IO to be -completed-.
 
-Signed-off-by: Ben Greear <greearb@candelatech.com>
----
+The function as implemented waits for IO to be *submitted*.
 
-v2:  Fix issues brought up in review.
+This provides the callers with same blocking semantics (i.e. request
+queue full) as if the caller submitted the IO themselves. The code
+that uses this function rely on this blocking to delay the next set
+of operations they do until after IO has been started, so removing
+the completion will change their behaviour significantly.
 
-:100644 100644 ad4dd1c... 916ce0f... M	include/linux/slab.h
-:100644 100644 3477ce5... f64caca... M	mm/slub.c
- include/linux/slab.h |   13 +++++++++++++
- mm/slub.c            |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+), 0 deletions(-)
+Cheers,
 
-diff --git a/include/linux/slab.h b/include/linux/slab.h
-index ad4dd1c..916ce0f 100644
---- a/include/linux/slab.h
-+++ b/include/linux/slab.h
-@@ -302,6 +302,19 @@ extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
- 
- #endif /* CONFIG_NUMA */
- 
-+/**
-+ * Calling this on allocated memory will check that the memory
-+ * is expected to be in use, and print warnings if not.
-+ */
-+#if defined(CONFIG_SLUB) && defined(CONFIG_SLUB_DEBUG)
-+extern bool verify_mem_not_deleted(const void *x);
-+#else
-+static inline bool verify_mem_not_deleted(const void *x)
-+{
-+	return true;
-+}
-+#endif
-+
- /*
-  * Shortcuts
-  */
-diff --git a/mm/slub.c b/mm/slub.c
-index 3477ce5..f64caca 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2958,6 +2958,42 @@ size_t ksize(const void *object)
- }
- EXPORT_SYMBOL(ksize);
- 
-+#ifdef CONFIG_SLUB_DEBUG
-+bool verify_mem_not_deleted(const void *x)
-+{
-+	struct page *page;
-+	void *object = (void *)x;
-+	unsigned long flags;
-+	bool rv;
-+
-+	if (unlikely(ZERO_OR_NULL_PTR(x)))
-+		return false;
-+
-+	local_irq_save(flags);
-+
-+	page = virt_to_head_page(x);
-+	if (unlikely(!PageSlab(page))) {
-+		/* maybe it was from stack? */
-+		rv = true;
-+		goto out_unlock;
-+	}
-+
-+	slab_lock(page);
-+	if (on_freelist(page->slab, page, object)) {
-+		object_err(page->slab, page, object, "Object is on free-list");
-+		rv = false;
-+	} else {
-+		rv = true;
-+	}
-+	slab_unlock(page);
-+
-+out_unlock:
-+	local_irq_restore(flags);
-+	return rv;
-+}
-+EXPORT_SYMBOL(verify_mem_not_deleted);
-+#endif
-+
- void kfree(const void *x)
- {
- 	struct page *page;
+Dave.
 -- 
-1.7.3.4
-
+Dave Chinner
+david@fromorbit.com
