@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753550Ab1F2FIi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 01:08:38 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:32789 "EHLO
+	id S1753651Ab1F2FJE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 01:09:04 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:60273 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751862Ab1F2FIE (ORCPT
+	with ESMTP id S1751727Ab1F2FID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 01:08:04 -0400
+	Wed, 29 Jun 2011 01:08:03 -0400
 From: djkurtz@chromium.org
 To: dmitry.torokhov@gmail.com, rydberg@euromail.se,
         chase.douglas@canonical.com, rubini@cvml.unipv.it
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
         olofj@chromium.org, Daniel Kurtz <djkurtz@chromium.org>
-Subject: [PATCH 07/12] Input: synaptics - rename synaptics_data.mt to agm
-Date: Wed, 29 Jun 2011 13:07:17 +0800
-Message-Id: <1309324042-22943-8-git-send-email-djkurtz@chromium.org>
+Subject: [PATCH 08/12] Input: synaptics - rename set_slot to be more descriptive
+Date: Wed, 29 Jun 2011 13:07:18 +0800
+Message-Id: <1309324042-22943-9-git-send-email-djkurtz@chromium.org>
 X-Mailer: git-send-email 1.7.3.1
 In-Reply-To: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
 References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
@@ -26,62 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Daniel Kurtz <djkurtz@chromium.org>
 
-Rename the synaptics_data.mt field to priv->agm to indicate it is the
-hardware state reported in a synaptics AGM packet.
-
-When a Synaptics touchpad is in "AGM" mode, and multiple fingers are
-detected, the touchpad sends alternating "Advanced Gesture Mode" (AGM) and
-"Simple Gesture Mode" (SGM) packets.
-  The AGM packets have w=2, and contain reduced resolution finger data.
-  The SGM packets have w={0,1} and contain full resolution finger data.
-
 Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 ---
- drivers/input/mouse/synaptics.c |    9 +++++----
- drivers/input/mouse/synaptics.h |    2 +-
- 2 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/input/mouse/synaptics.c |   17 ++++++++++-------
+ 1 files changed, 10 insertions(+), 7 deletions(-)
 
 diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-index dc54675..4e5e454 100644
+index 4e5e454..0a51b0ba 100644
 --- a/drivers/input/mouse/synaptics.c
 +++ b/drivers/input/mouse/synaptics.c
-@@ -436,10 +436,10 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+@@ -489,7 +489,8 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+ 	return 0;
+ }
  
- 		if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
- 			/* Gesture packet: (x, y, z) at half resolution */
--			priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
--			priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
-+			priv->agm.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
-+			priv->agm.y = INVERT_Y((((buf[4] & 0xf0) << 4)
- 					      | buf[2]) << 1);
--			priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
-+			priv->agm.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
- 			return 1;
- 		} else {
- 			hw->x = (((buf[3] & 0x10) << 8) |
-@@ -576,7 +576,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
+-static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
++static void synaptics_report_semi_mt_slot(struct input_dev *dev, int slot,
++					  bool active, int x, int y)
+ {
+ 	input_mt_slot(dev, slot);
+ 	input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
+@@ -505,14 +506,16 @@ static void synaptics_report_semi_mt_data(struct input_dev *dev,
+ 					  int num_fingers)
+ {
+ 	if (num_fingers >= 2) {
+-		set_slot(dev, 0, true, min(a->x, b->x), min(a->y, b->y));
+-		set_slot(dev, 1, true, max(a->x, b->x), max(a->y, b->y));
++		synaptics_report_semi_mt_slot(dev, 0, true, min(a->x, b->x),
++					      min(a->y, b->y));
++		synaptics_report_semi_mt_slot(dev, 1, true, max(a->x, b->x),
++					      max(a->y, b->y));
+ 	} else if (num_fingers == 1) {
+-		set_slot(dev, 0, true, a->x, a->y);
+-		set_slot(dev, 1, false, 0, 0);
++		synaptics_report_semi_mt_slot(dev, 0, true, a->x, a->y);
++		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
+ 	} else {
+-		set_slot(dev, 0, false, 0, 0);
+-		set_slot(dev, 1, false, 0, 0);
++		synaptics_report_semi_mt_slot(dev, 0, false, 0, 0);
++		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
  	}
+ }
  
- 	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c))
--		synaptics_report_semi_mt_data(dev, &hw, &priv->mt, num_fingers);
-+		synaptics_report_semi_mt_data(dev, &hw, &priv->agm,
-+					      num_fingers);
- 
- 	/* Post events
- 	 * BTN_TOUCH has to be first as mousedev relies on it when doing
-diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-index 8a68e66..e367239 100644
---- a/drivers/input/mouse/synaptics.h
-+++ b/drivers/input/mouse/synaptics.h
-@@ -147,7 +147,7 @@ struct synaptics_data {
- 
- 	struct serio *pt_port;			/* Pass-through serio port */
- 
--	struct synaptics_hw_state mt;		/* current gesture packet */
-+	struct synaptics_hw_state agm;		/* last AGM packet */
- };
- 
- void synaptics_module_init(void);
 -- 
 1.7.3.1
 
