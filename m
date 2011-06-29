@@ -1,232 +1,267 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757559Ab1F2Sbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 14:31:47 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:10970 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab1F2Sbp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 14:31:45 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6392"; a="100887102"
-From: Stephen Boyd <sboyd@codeaurora.org>
-To: Russell King <linux@arm.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH] arm: platsmp: Allow secondary cpu hotplug with maxcpus=1
-Date: Wed, 29 Jun 2011 11:31:39 -0700
-Message-Id: <1309372300-28911-1-git-send-email-sboyd@codeaurora.org>
-X-Mailer: git-send-email 1.7.6
+	id S1757506Ab1F2Sld (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 14:41:33 -0400
+Received: from mga02.intel.com ([134.134.136.20]:44654 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752272Ab1F2Slb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 14:41:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,444,1304319600"; 
+   d="scan'208";a="19802114"
+Message-ID: <4E0B71D5.9010204@linux.intel.com>
+Date: Wed, 29 Jun 2011 11:41:25 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Shawn Bohrer <sbohrer@rgmadvisors.com>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
+        eric.dumazet@gmail.com, david@rgmadvisors.com,
+        linux-kernel@vger.kernel.org, zvonler@rgmadvisors.com,
+        hughd@google.com, tglx@linutronix.de, mingo@elte.hu
+Subject: Re: [PATCH v4] futex: Fix regression with read only mappings
+References: <4E0A6A0F.9020004@linux.intel.com> <1309360644-24079-1-git-send-email-sbohrer@rgmadvisors.com>
+In-Reply-To: <1309360644-24079-1-git-send-email-sbohrer@rgmadvisors.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an ARM system has multiple cpus in the same socket and the
-kernel is booted with maxcpus=1, secondary cpus are possible but
-not present due to how platform_smp_prepare_cpus() is called.
-Fix this by always calling platform_smp_prepare_cpus() as long as
-max_cpus is non-zero (0 means no SMP) to allow platform code to
-decide if any non-boot cpus are present in the system. Since
-all current platform code doesn't support physical hotplug we
-have a situation where possible == present and thus we can
-simply copy the possible map to the present map.
 
-With this patch it's possible to boot an ARM system with
-maxcpus=1 on the command line and then hotplug in secondary cpus
-via sysfs. This is more in line with how x86 works with maxcpus=1
-on the command line.
 
-Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
----
+On 06/29/2011 08:17 AM, Shawn Bohrer wrote:
+> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+> parameter from get_futex_key()) in 2.6.33 introduced a user-mode
+> regression in that it additionally prevented futex operations on a
+> region within a read only memory mapped file.  For example this breaks
+> workloads that have one or more reader processes doing a FUTEX_WAIT on a
+> futex within a read only shared mapping, and a writer processes that has
+> a writable mapping issuing the FUTEX_WAKE.
+> 
+> This fixes the regression for futex operations that should be valid on
+> RO mappings by trying a RO get_user_pages_fast() when the RW
+> get_user_pages_fast() fails so as not to slow down the common path of
+> writable anonymous maps and bailing when we used the RO path on
+> anonymous memory.
+> 
+> While fixing the regression this patch opens up a possible bad
+> scenarios as identified by KOSAKI Motohiro:
+> 
+> This patch also allows FUTEX_WAIT on RO private mappings which have
+> the following corner case.
+> 
+>   Thread-A: call futex(FUTEX_WAIT, memory-region-A).
+>             get_futex_key() return inode based key.
+>             sleep on the key
+>   Thread-B: call mprotect(PROT_READ|PROT_WRITE, memory-region-A)
+>   Thread-B: write memory-region-A.
+>             COW happen. This process's memory-region-A become related
+>             to new COWed private (ie PageAnon=1) page.
+>   Thread-B: call futex(FUETX_WAKE, memory-region-A).
+>             get_futex_key() return mm based key.
+>             IOW, we fail to wake up Thread-A.
+> 
+> This Patch is based on Peter Zijlstra's initial patch with modifications to
+> only allow RO mappings for futex operations that need VERIFY_READ access.
+> 
+> Reported-by: David Oliver <david@rgmadvisors.com>
+> Signed-off-by: Shawn Bohrer <sbohrer@rgmadvisors.com>
+> Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+> 
+> Included Darren Hart's fix to infinite loop in kernel on zero page.
 
-This patch was tested along with an MSM patch:
 
-  https://lkml.org/lkml/2011/4/7/354
+Thanks for sticking with it Shawn!
 
-I don't have any non-MSM hardware to test on so Acks and
-tested-bys are welcome.
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
 
- arch/arm/kernel/smp.c             |    3 +--
- arch/arm/mach-exynos4/platsmp.c   |    5 +----
- arch/arm/mach-msm/platsmp.c       |    5 +----
- arch/arm/mach-omap2/omap-smp.c    |    5 +----
- arch/arm/mach-realview/platsmp.c  |    5 +----
- arch/arm/mach-shmobile/platsmp.c  |    5 +----
- arch/arm/mach-tegra/platsmp.c     |    5 +----
- arch/arm/mach-ux500/platsmp.c     |    5 +----
- arch/arm/mach-vexpress/ct-ca9x4.c |    5 +----
- 9 files changed, 9 insertions(+), 34 deletions(-)
 
-diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
-index e7f92a4..fbaa24a 100644
---- a/arch/arm/kernel/smp.c
-+++ b/arch/arm/kernel/smp.c
-@@ -365,8 +365,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
- 	 */
- 	if (max_cpus > ncores)
- 		max_cpus = ncores;
--
--	if (max_cpus > 1) {
-+	if (ncores > 1 && max_cpus) {
- 		/*
- 		 * Enable the local timer or broadcast device for the
- 		 * boot CPU, but only if we have more than one CPU.
-diff --git a/arch/arm/mach-exynos4/platsmp.c b/arch/arm/mach-exynos4/platsmp.c
-index c5e65a0..3f870d2 100644
---- a/arch/arm/mach-exynos4/platsmp.c
-+++ b/arch/arm/mach-exynos4/platsmp.c
-@@ -154,14 +154,11 @@ void __init smp_init_cpus(void)
- 
- void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- {
--	int i;
--
- 	/*
- 	 * Initialise the present map, which describes the set of CPUs
- 	 * actually populated at the present time.
- 	 */
--	for (i = 0; i < max_cpus; i++)
--		set_cpu_present(i, true);
-+	init_cpu_present(&cpu_possible_map);
- 
- 	scu_enable(scu_base_addr());
- 
-diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
-index 2034098..84e293f 100644
---- a/arch/arm/mach-msm/platsmp.c
-+++ b/arch/arm/mach-msm/platsmp.c
-@@ -157,12 +157,9 @@ void __init smp_init_cpus(void)
- 
- void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- {
--	int i;
--
- 	/*
- 	 * Initialise the present map, which describes the set of CPUs
- 	 * actually populated at the present time.
- 	 */
--	for (i = 0; i < max_cpus; i++)
--		set_cpu_present(i, true);
-+	init_cpu_present(&cpu_possible_map);
- }
-diff --git a/arch/arm/mach-omap2/omap-smp.c b/arch/arm/mach-omap2/omap-smp.c
-index ecfe93c..5895d19 100644
---- a/arch/arm/mach-omap2/omap-smp.c
-+++ b/arch/arm/mach-omap2/omap-smp.c
-@@ -125,14 +125,11 @@ void __init smp_init_cpus(void)
- 
- void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- {
--	int i;
--
- 	/*
- 	 * Initialise the present map, which describes the set of CPUs
- 	 * actually populated at the present time.
- 	 */
--	for (i = 0; i < max_cpus; i++)
--		set_cpu_present(i, true);
-+	init_cpu_present(&cpu_possible_map);
- 
- 	/*
- 	 * Initialise the SCU and wake up the secondary core using
-diff --git a/arch/arm/mach-realview/platsmp.c b/arch/arm/mach-realview/platsmp.c
-index 963bf0d..00666be 100644
---- a/arch/arm/mach-realview/platsmp.c
-+++ b/arch/arm/mach-realview/platsmp.c
-@@ -68,14 +68,11 @@ void __init smp_init_cpus(void)
- 
- void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- {
--	int i;
--
- 	/*
- 	 * Initialise the present map, which describes the set of CPUs
- 	 * actually populated at the present time.
- 	 */
--	for (i = 0; i < max_cpus; i++)
--		set_cpu_present(i, true);
-+	init_cpu_present(&cpu_possible_map);
- 
- 	scu_enable(scu_base_addr());
- 
-diff --git a/arch/arm/mach-shmobile/platsmp.c b/arch/arm/mach-shmobile/platsmp.c
-index f3888fe..ca5b523 100644
---- a/arch/arm/mach-shmobile/platsmp.c
-+++ b/arch/arm/mach-shmobile/platsmp.c
-@@ -64,10 +64,7 @@ void __init smp_init_cpus(void)
- 
- void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- {
--	int i;
--
--	for (i = 0; i < max_cpus; i++)
--		set_cpu_present(i, true);
-+	init_cpu_present(&cpu_possible_map);
- 
- 	shmobile_smp_prepare_cpus();
- }
-diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
-index b8ae3c9..f11426a 100644
---- a/arch/arm/mach-tegra/platsmp.c
-+++ b/arch/arm/mach-tegra/platsmp.c
-@@ -129,14 +129,11 @@ void __init smp_init_cpus(void)
- 
- void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- {
--	int i;
--
- 	/*
- 	 * Initialise the present map, which describes the set of CPUs
- 	 * actually populated at the present time.
- 	 */
--	for (i = 0; i < max_cpus; i++)
--		set_cpu_present(i, true);
-+	init_cpu_present(&cpu_possible_map);
- 
- 	scu_enable(scu_base);
- }
-diff --git a/arch/arm/mach-ux500/platsmp.c b/arch/arm/mach-ux500/platsmp.c
-index 0c527fe..4509b7d 100644
---- a/arch/arm/mach-ux500/platsmp.c
-+++ b/arch/arm/mach-ux500/platsmp.c
-@@ -172,14 +172,11 @@ void __init smp_init_cpus(void)
- 
- void __init platform_smp_prepare_cpus(unsigned int max_cpus)
- {
--	int i;
--
- 	/*
- 	 * Initialise the present map, which describes the set of CPUs
- 	 * actually populated at the present time.
- 	 */
--	for (i = 0; i < max_cpus; i++)
--		set_cpu_present(i, true);
-+	init_cpu_present(&cpu_possible_map);
- 
- 	scu_enable(scu_base_addr());
- 	wakeup_secondary();
-diff --git a/arch/arm/mach-vexpress/ct-ca9x4.c b/arch/arm/mach-vexpress/ct-ca9x4.c
-index 765a71f..c7cd438 100644
---- a/arch/arm/mach-vexpress/ct-ca9x4.c
-+++ b/arch/arm/mach-vexpress/ct-ca9x4.c
-@@ -229,10 +229,7 @@ static void ct_ca9x4_init_cpu_map(void)
- 
- static void ct_ca9x4_smp_enable(unsigned int max_cpus)
- {
--	int i;
--	for (i = 0; i < max_cpus; i++)
--		set_cpu_present(i, true);
--
-+	init_cpu_present(&cpu_possible_map);
- 	scu_enable(MMIO_P2V(A9_MPCORE_SCU));
- }
- #endif
+>  kernel/futex.c |   57 ++++++++++++++++++++++++++++++++++++++++++-------------
+>  1 files changed, 43 insertions(+), 14 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index fe28dc2..d919cc0 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -75,6 +75,7 @@ int __read_mostly futex_cmpxchg_enabled;
+>  #define FLAGS_SHARED		0x01
+>  #define FLAGS_CLOCKRT		0x02
+>  #define FLAGS_HAS_TIMEOUT	0x04
+> +#define FLAGS_RO		0x08
+>  
+>  /*
+>   * Priority Inheritance state:
+> @@ -216,7 +217,7 @@ static void drop_futex_key_refs(union futex_key *key)
+>  /**
+>   * get_futex_key() - Get parameters which are the keys for a futex
+>   * @uaddr:	virtual address of the futex
+> - * @fshared:	0 for a PROCESS_PRIVATE futex, 1 for PROCESS_SHARED
+> + * @flags:	futex flags: FLAGS_SHARED and FLAGS_RO are valid.
+>   * @key:	address where result is stored.
+>   *
+>   * Returns a negative error code or 0
+> @@ -229,12 +230,12 @@ static void drop_futex_key_refs(union futex_key *key)
+>   * lock_page() might sleep, the caller should not hold a spinlock.
+>   */
+>  static int
+> -get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+> +get_futex_key(u32 __user *uaddr, unsigned int flags, union futex_key *key)
+>  {
+>  	unsigned long address = (unsigned long)uaddr;
+>  	struct mm_struct *mm = current->mm;
+>  	struct page *page, *page_head;
+> -	int err;
+> +	int err, ro = 0;
+>  
+>  	/*
+>  	 * The futex address must be "naturally" aligned.
+> @@ -251,7 +252,7 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+>  	 * Note : We do have to check 'uaddr' is a valid user address,
+>  	 *        but access_ok() should be faster than find_vma()
+>  	 */
+> -	if (!fshared) {
+> +	if (!(flags & FLAGS_SHARED)) {
+>  		if (unlikely(!access_ok(VERIFY_WRITE, uaddr, sizeof(u32))))
+>  			return -EFAULT;
+>  		key->private.mm = mm;
+> @@ -262,8 +263,18 @@ get_futex_key(u32 __user *uaddr, int fshared, union futex_key *key)
+>  
+>  again:
+>  	err = get_user_pages_fast(address, 1, 1, &page);
+> +        /*
+> +         * If write access is not required (eg. FUTEX_WAIT), try
+> +         * and get read-only access.
+> +         */
+> +	if (err == -EFAULT && flags & FLAGS_RO) {
+> +		err = get_user_pages_fast(address, 1, 0, &page);
+> +		ro = 1;
+> +	}
+>  	if (err < 0)
+>  		return err;
+> +	else
+> +		err = 0;
+>  
+>  #ifdef CONFIG_TRANSPARENT_HUGEPAGE
+>  	page_head = page;
+> @@ -305,6 +316,13 @@ again:
+>  	if (!page_head->mapping) {
+>  		unlock_page(page_head);
+>  		put_page(page_head);
+> +		/*
+> +		* ZERO_PAGE pages don't have a mapping. Avoid a busy loop
+> +		* trying to find one. RW mapping would have COW'd (and thus
+> +		* have a mapping) so this page is RO and won't ever change.
+> +		*/
+> +		if ((page_head == ZERO_PAGE(address)))
+> +			return -EFAULT;
+>  		goto again;
+>  	}
+>  
+> @@ -316,6 +334,15 @@ again:
+>  	 * the object not the particular process.
+>  	 */
+>  	if (PageAnon(page_head)) {
+> +		/*
+> +		 * A RO anonymous page will never change and thus doesn't make
+> +		 * sense for futex operations.
+> +		 */
+> +		if (ro) {
+> +			err = -EFAULT;
+> +			goto out;
+> +		}
+> +
+>  		key->both.offset |= FUT_OFF_MMSHARED; /* ref taken on mm */
+>  		key->private.mm = mm;
+>  		key->private.address = address;
+> @@ -327,9 +354,10 @@ again:
+>  
+>  	get_futex_key_refs(key);
+>  
+> +out:
+>  	unlock_page(page_head);
+>  	put_page(page_head);
+> -	return 0;
+> +	return err;
+>  }
+>  
+>  static inline void put_futex_key(union futex_key *key)
+> @@ -940,7 +968,7 @@ futex_wake(u32 __user *uaddr, unsigned int flags, int nr_wake, u32 bitset)
+>  	if (!bitset)
+>  		return -EINVAL;
+>  
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
+> +	ret = get_futex_key(uaddr, flags | FLAGS_RO, &key);
+
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+> @@ -986,10 +1014,10 @@ futex_wake_op(u32 __user *uaddr1, unsigned int flags, u32 __user *uaddr2,
+>  	int ret, op_ret;
+>  
+>  retry:
+> -	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
+> +	ret = get_futex_key(uaddr1, flags | FLAGS_RO, &key1);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+> +	ret = get_futex_key(uaddr2, flags, &key2);
+>  	if (unlikely(ret != 0))
+>  		goto out_put_key1;
+>  
+> @@ -1243,10 +1271,11 @@ retry:
+>  		pi_state = NULL;
+>  	}
+>  
+> -	ret = get_futex_key(uaddr1, flags & FLAGS_SHARED, &key1);
+> +	ret = get_futex_key(uaddr1, flags | FLAGS_RO, &key1);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+> +	ret = get_futex_key(uaddr2, requeue_pi ? flags : flags | FLAGS_RO,
+> +	                    &key2);
+>  	if (unlikely(ret != 0))
+>  		goto out_put_key1;
+>  
+> @@ -1790,7 +1819,7 @@ static int futex_wait_setup(u32 __user *uaddr, u32 val, unsigned int flags,
+>  	 * while the syscall executes.
+>  	 */
+>  retry:
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q->key);
+> +	ret = get_futex_key(uaddr, flags | FLAGS_RO, &q->key);
+>  	if (unlikely(ret != 0))
+>  		return ret;
+>  
+> @@ -1941,7 +1970,7 @@ static int futex_lock_pi(u32 __user *uaddr, unsigned int flags, int detect,
+>  	}
+>  
+>  retry:
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &q.key);
+> +	ret = get_futex_key(uaddr, flags, &q.key);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+> @@ -2060,7 +2089,7 @@ retry:
+>  	if ((uval & FUTEX_TID_MASK) != vpid)
+>  		return -EPERM;
+>  
+> -	ret = get_futex_key(uaddr, flags & FLAGS_SHARED, &key);
+> +	ret = get_futex_key(uaddr, flags, &key);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+> @@ -2249,7 +2278,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, unsigned int flags,
+>  	debug_rt_mutex_init_waiter(&rt_waiter);
+>  	rt_waiter.task = NULL;
+>  
+> -	ret = get_futex_key(uaddr2, flags & FLAGS_SHARED, &key2);
+> +	ret = get_futex_key(uaddr2, flags, &key2);
+>  	if (unlikely(ret != 0))
+>  		goto out;
+>  
+
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
