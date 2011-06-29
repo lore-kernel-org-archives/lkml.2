@@ -1,147 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757433Ab1F2RnK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 13:43:10 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:16876 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756746Ab1F2RnI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 13:43:08 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp05.nvidia.com on Wed, 29 Jun 2011 10:42:55 -0700
-Subject: Re: [PATCH v2] light sensor: Add a calibscale file to the isl29018
- light sensor driver.
-From: Rhyland Klein <rklein@nvidia.com>
-To: Bryan Freed <bfreed@chromium.org>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        "jic23@cam.ac.uk" <jic23@cam.ac.uk>, "gregkh@suse.de" <gregkh@suse.de>,
-        "arnd@arndb.de" <arnd@arndb.de>
-In-Reply-To: <1309304793-21886-1-git-send-email-bfreed@chromium.org>
-References: <1309304793-21886-1-git-send-email-bfreed@chromium.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Jun 2011 10:40:45 -0700
-Message-ID: <1309369245.10209.21.camel@rklein-linux2>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757410Ab1F2Rlp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 13:41:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756873Ab1F2Rll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 13:41:41 -0400
+Message-ID: <4E0B63B5.5070404@redhat.com>
+Date: Wed, 29 Jun 2011 13:41:09 -0400
+From: Josef Bacik <josef@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Jan Kara <jack@suse.cz>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk, hch@infradead.org
+Subject: Re: [PATCH] fs: push i_mutex and filemap_write_and_wait down into
+ ->fsync() handlers
+References: <1309275310-10987-1-git-send-email-josef@redhat.com> <20110629163825.GE17590@quack.suse.cz>
+In-Reply-To: <20110629163825.GE17590@quack.suse.cz>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-28 at 16:46 -0700, Bryan Freed wrote:
-> Defaulting to 1, this gives a way to amplify the lux value before being
-> reduced by the programmed adc_bit shift.
-> Only support whole numbers right now.  When this driver is converted to the new
-> IIO_CHAN framework, it will be easy to support the framework's pseudo float.
+On 06/29/2011 12:38 PM, Jan Kara wrote:
+> On Tue 28-06-11 11:35:10, Josef Bacik wrote:
+>> Btrfs needs to be able to control how filemap_write_and_wait_range() is called
+>> in fsync to make it less of a painful operation, so push down taking i_mutex and
+>> the calling of filemap_write_and_wait() down into the ->fsync() handlers.  Some
+>> file systems can drop taking the i_mutex altogether it seems, like ext3 and
+>> ocfs2.  For correctness sake I just pushed everything down in all cases to make
+>> sure that we keep the current behavior the same for everybody, and then each
+>> individual fs maintainer can make up their mind about what to do from there.
+>> Thanks,
+>>
+>> Signed-off-by: Josef Bacik <josef@redhat.com>
+> ...
+>> diff --git a/fs/ext4/ext4.h b/fs/ext4/ext4.h
+>> index 1921392..fa44df8 100644
+>> --- a/fs/ext4/ext4.h
+>> +++ b/fs/ext4/ext4.h
+>> @@ -1758,7 +1758,7 @@ extern int ext4_htree_store_dirent(struct file *dir_file, __u32 hash,
+>>  extern void ext4_htree_free_dir_info(struct dir_private_info *p);
+>>  
+>>  /* fsync.c */
+>> -extern int ext4_sync_file(struct file *, int);
+>> +extern int ext4_sync_file(struct file *, loff_t, loff_t, int);
+>>  extern int ext4_flush_completed_IO(struct inode *);
+>>  
+>>  /* hash.c */
+>> diff --git a/fs/ext4/fsync.c b/fs/ext4/fsync.c
+>> index ce66d2f..afab2e4 100644
+>> --- a/fs/ext4/fsync.c
+>> +++ b/fs/ext4/fsync.c
+>> @@ -165,7 +165,7 @@ static int ext4_sync_parent(struct inode *inode)
+>>   * i_mutex lock is held when entering and exiting this function
+>>   */
+>>  
+>> -int ext4_sync_file(struct file *file, int datasync)
+>> +int ext4_sync_file(struct file *file, loff_t start, loff_t end, int datasync)
+>>  {
+>>  	struct inode *inode = file->f_mapping->host;
+>>  	struct ext4_inode_info *ei = EXT4_I(inode);
+>> @@ -178,15 +178,22 @@ int ext4_sync_file(struct file *file, int datasync)
+>>  
+>>  	trace_ext4_sync_file_enter(file, datasync);
+>>  
+>> +	ret = filemap_write_and_wait_range(inode->i_mapping, start, end);
+>> +	if (ret)
+>> +		return ret;
+>> +	mutex_lock(&inode->i_mutex);
+>> +
+>>  	if (inode->i_sb->s_flags & MS_RDONLY)
+>> -		return 0;
+>> +		goto out;
+>>  
+>>  	ret = ext4_flush_completed_IO(inode);
+>>  	if (ret < 0)
+>>  		goto out;
+>>  
+>>  	if (!journal) {
+>> -		ret = generic_file_fsync(file, datasync);
+>> +		if (inode->i_state & I_DIRTY ||
+>> +		    (datasync && (inode->i_state & I_DIRTY_DATASYNC)))
+>> +			ret = sync_inode_metadata(inode, 1);
+>   Umm, how did you get to this change? It is actually wrong - ext4 in
+> nojournal mode really seems to need to call generic_file_fsync() (so that
+> sync_buffers_list() is called).
 > 
-> Add illuminance0_calibscale documentation to sysfs-bus-iio-light.
-> 
-> Signed-off-by: Bryan Freed <bfreed@chromium.org>
-> ---
->  .../staging/iio/Documentation/sysfs-bus-iio-light  |    8 ++++
->  drivers/staging/iio/light/isl29018.c               |   35 +++++++++++++++++++-
->  2 files changed, 42 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/iio/Documentation/sysfs-bus-iio-light b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> index 21d2774..edbf470 100644
-> --- a/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> +++ b/drivers/staging/iio/Documentation/sysfs-bus-iio-light
-> @@ -75,3 +75,11 @@ KernelVersion:	2.6.37
->  Contact:	linux-iio@vger.kernel.org
->  Description:
->  		This property gets/sets the sensors ADC analog integration time.
-> +
-> +What:		/sys/bus/iio/devices/device[n]/illuminance0_calibscale
-> +KernelVersion:	2.6.37
-> +Contact:	linux-iio@vger.kernel.org
-> +Description:
-> +		Hardware or software applied calibration scale factor assumed
-> +		to account for attenuation due to industrial design (glass
-> +		filters or aperture holes).
-> diff --git a/drivers/staging/iio/light/isl29018.c b/drivers/staging/iio/light/isl29018.c
-> index 4794ffd..cd88311 100644
-> --- a/drivers/staging/iio/light/isl29018.c
-> +++ b/drivers/staging/iio/light/isl29018.c
-> @@ -57,6 +57,7 @@ struct isl29018_chip {
->  	struct iio_dev		*indio_dev;
->  	struct i2c_client	*client;
->  	struct mutex		lock;
-> +	unsigned int		lux_scale;
->  	unsigned int		range;
->  	unsigned int		adc_bit;
->  	int			prox_scheme;
-> @@ -166,7 +167,7 @@ static int isl29018_read_lux(struct i2c_client *client, int *lux)
->  	if (lux_data < 0)
->  		return lux_data;
->  
-> -	*lux = (lux_data * chip->range) >> chip->adc_bit;
-> +	*lux = (lux_data * chip->range * chip->lux_scale) >> chip->adc_bit;
->  
->  	return 0;
->  }
-> @@ -264,6 +265,34 @@ static ssize_t get_sensor_data(struct device *dev, char *buf, int mode)
->  }
->  
->  /* Sysfs interface */
-> +/* lux_scale */
-> +static ssize_t show_lux_scale(struct device *dev,
-> +			struct device_attribute *attr, char *buf)
-> +{
-> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +	struct isl29018_chip *chip = indio_dev->dev_data;
-> +
-> +	return sprintf(buf, "%d\n", chip->lux_scale);
-> +}
-> +
-> +static ssize_t store_lux_scale(struct device *dev,
-> +		struct device_attribute *attr, const char *buf, size_t count)
-> +{
-> +	struct iio_dev *indio_dev = dev_get_drvdata(dev);
-> +	struct isl29018_chip *chip = indio_dev->dev_data;
-> +	unsigned long lval;
-> +
-> +	lval = simple_strtoul(buf, NULL, 10);
-> +	if (lval == 0)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&chip->lock);
-> +	chip->lux_scale = lval;
-> +	mutex_unlock(&chip->lock);
-> +
-> +	return count;
-> +}
-> +
->  /* range */
->  static ssize_t show_range(struct device *dev,
->  			struct device_attribute *attr, char *buf)
-> @@ -412,6 +441,8 @@ static IIO_DEVICE_ATTR(proximity_on_chip_ambient_infrared_supression,
->  					show_prox_infrared_supression,
->  					store_prox_infrared_supression, 0);
->  static IIO_DEVICE_ATTR(illuminance0_input, S_IRUGO, show_lux, NULL, 0);
-> +static IIO_DEVICE_ATTR(illuminance0_calibscale, S_IRUGO | S_IWUSR,
-> +					show_lux_scale, store_lux_scale, 0);
->  static IIO_DEVICE_ATTR(intensity_infrared_raw, S_IRUGO, show_ir, NULL, 0);
->  static IIO_DEVICE_ATTR(proximity_raw, S_IRUGO, show_proxim_ir, NULL, 0);
->  
-> @@ -424,6 +455,7 @@ static struct attribute *isl29018_attributes[] = {
->  	ISL29018_CONST_ATTR(adc_resolution_available),
->  	ISL29018_DEV_ATTR(proximity_on_chip_ambient_infrared_supression),
->  	ISL29018_DEV_ATTR(illuminance0_input),
-> +	ISL29018_DEV_ATTR(illuminance0_calibscale),
->  	ISL29018_DEV_ATTR(intensity_infrared_raw),
->  	ISL29018_DEV_ATTR(proximity_raw),
->  	NULL
-> @@ -478,6 +510,7 @@ static int __devinit isl29018_probe(struct i2c_client *client,
->  
->  	mutex_init(&chip->lock);
->  
-> +	chip->lux_scale = 1;
->  	chip->range = 1000;
->  	chip->adc_bit = 16;
->  
 
-Seems fine with me.
+Ah oops sorry about that, I will fix that, I was trying to be clever and
+encapsulate generic_file_fsync()'s behavior into here but I missed the
+sync_mapping_buffers() call.  Thanks,
 
-Acked-by: Rhyland Klein <rklein@nvidia.com>
-
+Josef
