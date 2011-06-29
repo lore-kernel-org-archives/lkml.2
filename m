@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756659Ab1F2PwR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 11:52:17 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:1322 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753919Ab1F2PwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 11:52:14 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org,
-        hans-christian.egtvedt@atmel.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@avr32linux.org, Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH 2/2] MMC: remove EXPERIMENTAL from the DMA selection of atmel-mci
-Date: Wed, 29 Jun 2011 18:54:20 +0200
-Message-Id: <580de99c35694febc25e516ead3e3bdd9e041dfa.1309366360.git.nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1ef60c032bc39531302c1603bfcb841d2d437ccc.1309366360.git.nicolas.ferre@atmel.com>
-References: <1ef60c032bc39531302c1603bfcb841d2d437ccc.1309366360.git.nicolas.ferre@atmel.com>
-In-Reply-To: <1ef60c032bc39531302c1603bfcb841d2d437ccc.1309366360.git.nicolas.ferre@atmel.com>
-References: <1ef60c032bc39531302c1603bfcb841d2d437ccc.1309366360.git.nicolas.ferre@atmel.com>
+	id S1757575Ab1F2Qyw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 12:54:52 -0400
+Received: from oproxy5-pub.bluehost.com ([67.222.38.55]:57699 "HELO
+	oproxy5-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754951Ab1F2Qyt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 12:54:49 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Q+rE3RedpX1FniA4k2fPAJPZtnti2JmnOJo8QClVacYGwb9yEs2AZ1R1pbN6dmPCCz/8LqL4SMma/28chQ9BCEkvj6FhNiPYRIuMMTid+xqvUPXblUEY/7gdOY/7yNXH;
+Date: Wed, 29 Jun 2011 09:54:36 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Rob Herring <robherring2@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Michal Simek <monstr@monstr.eu>, nico@fluxnic.net,
+        Rob Herring <rob.herring@calxeda.com>, Ram Pai <linuxram@us.ibm.com>
+Subject: Re: [PATCH 1/6] microblaze: move pci flag functions into
+ asm-generic
+Message-ID: <20110629095436.154cff94@jbarnes-desktop>
+In-Reply-To: <1309366019-24379-2-git-send-email-robherring2@gmail.com>
+References: <1309366019-24379-1-git-send-email-robherring2@gmail.com>
+	<1309366019-24379-2-git-send-email-robherring2@gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver has been used for years with this option enabled.
+On Wed, 29 Jun 2011 11:46:54 -0500
+Rob Herring <robherring2@gmail.com> wrote:
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
- drivers/mmc/host/Kconfig |    7 +++----
- 1 files changed, 3 insertions(+), 4 deletions(-)
+> From: Rob Herring <rob.herring@calxeda.com>
+> 
+> Move pci_set_flags, pci_add_flags, and pci_has_flag into
+> asm-generic/pci-bridge.h so other archs can use them.
 
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index 56dbf3f..d459948 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -281,13 +281,12 @@ config MMC_ATMELMCI
- endchoice
- 
- config MMC_ATMELMCI_DMA
--	bool "Atmel MCI DMA support (EXPERIMENTAL)"
--	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE && EXPERIMENTAL
-+	bool "Atmel MCI DMA support"
-+	depends on MMC_ATMELMCI && (AVR32 || ARCH_AT91SAM9G45) && DMA_ENGINE
- 	help
- 	  Say Y here to have the Atmel MCI driver use a DMA engine to
- 	  do data transfers and thus increase the throughput and
--	  reduce the CPU utilization. Note that this is highly
--	  experimental and may cause the driver to lock up.
-+	  reduce the CPU utilization.
- 
- 	  If unsure, say N.
- 
+Looks like something Ram may be able to re-use when adding resource
+alloc behavior flags for the new bridge realloc code.
+
 -- 
-1.7.3
-
+Jesse Barnes, Intel Open Source Technology Center
