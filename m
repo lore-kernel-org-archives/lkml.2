@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754880Ab1F2K5H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 06:57:07 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57799 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753037Ab1F2K5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 06:57:05 -0400
-Message-ID: <4E0B0574.4010008@cn.fujitsu.com>
-Date: Wed, 29 Jun 2011 18:59:00 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754929Ab1F2LA4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 07:00:56 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52463 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752796Ab1F2LAy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 07:00:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 1/2] PWM: add pwm framework support
+Date: Wed, 29 Jun 2011 13:00:28 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Ryan Mallon <ryan@bluewatersys.com>
+References: <1309255368-9775-1-git-send-email-s.hauer@pengutronix.de> <201106281903.06121.arnd@arndb.de> <20110629085046.GM6069@pengutronix.de>
+In-Reply-To: <20110629085046.GM6069@pengutronix.de>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 05/22] KVM: x86: abstract the operation for read/write
- emulation
-References: <4E01FBC9.3020009@cn.fujitsu.com> <4E01FC78.6060000@cn.fujitsu.com> <4E0AE457.7010507@redhat.com>
-In-Reply-To: <4E0AE457.7010507@redhat.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-29 18:56:31,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-29 18:56:32,
-	Serialize complete at 2011-06-29 18:56:32
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <201106291300.28533.arnd@arndb.de>
+X-Provags-ID: V02:K0:Aw7C3Lpynui4yfYUG92QqDboPtjk/b/X7eoZX7zdrQN
+ X2B2Ut2nlS3rAyRHYCCB773gHbinOzYkVTY+Zt2nad1q3UhfZm
+ kSqRNIWeToYClzS0dYi4LyG38ClbHyr8IF9KWV8vQGD31lUBBH
+ 7KzrcecECnHo6batAAkhF9Wvf0YI4IN09Z1CVXO7wQ0fC24U/v
+ Zzwg3muANdIv7FnBR/uCw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2011 04:37 PM, Avi Kivity wrote:
+On Wednesday 29 June 2011, Sascha Hauer wrote:
+> The other type is some mfd drivers which implement the pwm API themselves
+> right now. These are currently incompatible with the pwm framework anyway.
+> If a board wants to connect the mfd pwm to its backlight, the current
+> pwm_request based on an integer id is not suitable anymore. We need
+> a (struct device *dev, char *id) based pwm_request function then.
+> So my plan is to change the pwm API once we have all in tree drivers
+> in drivers/pwm.
 
->> +struct read_write_emulator_ops {
->> +    int (*read_write_prepare)(struct kvm_vcpu *vcpu, void *val,
->> +                  int bytes);
->> +    int (*read_write_emulate)(struct kvm_vcpu *vcpu, gpa_t gpa,
->> +                  void *val, int bytes);
->> +    int (*read_write_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
->> +                   int bytes, void *val);
->> +    int (*read_write_exit_mmio)(struct kvm_vcpu *vcpu, gpa_t gpa,
->> +                    void *val, int bytes);
->> +    bool write;
->> +};
-> 
-> 
-> Interesting!
-> 
-> This structure combines two unrelated operations, though.  One is the internals of the iteration on a virtual address that is split to various physical addresses.  The other is the interaction with userspace on mmio exits.  They should be split, but I think it's fine to do it in a later patch.  This series is long enough already.
-> 
-> I was also annoyed by the duplication.  They way I thought of fixing it is having gva_to_gpa() return two gpas, and having the access function accept gpa vectors.  The reason was so that we can implemented locked cross-page operations (which we now emulate as unlocked writes).
-> 
-> But I think we can do without it, and instead emulated locked cross-page ops by stalling all other vcpus while we write, or by unmapping the pages involved.  It isn't pretty but it doesn't need to be fast since it's a very rare operation.  So I think we can go with your approach.
-> 
+Ok, sounds good. I don't much like the idea of using a string identifier
+for this, but let's discuss that when we get there. Using fixed numbers
+for the first version seems totally reasonable, as it keeps the existing
+API.
 
-OK, i'll post it in the separate patchset, thanks, Avi.
+	Arnd
