@@ -1,95 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab1F2Qmq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 12:42:46 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:64397 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757184Ab1F2Qmo convert rfc822-to-8bit (ORCPT
+	id S1757410Ab1F2Qrs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 12:47:48 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:41910 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757364Ab1F2Qrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 12:42:44 -0400
-MIME-Version: 1.0
-In-Reply-To: <201106291742.24137.richard@nod.at>
-References: <1309212931-19772-1-git-send-email-richard@nod.at>
-	<BANLkTikauFJtuCo5E3=tb_=cwVS3sF35zw@mail.gmail.com>
-	<201106291742.24137.richard@nod.at>
-Date: Wed, 29 Jun 2011 18:42:43 +0200
-X-Google-Sender-Auth: 7XXnXbUqny5eXlhn-TYv0fRSuQw
-Message-ID: <BANLkTikLEPgtK+Z6jD1r18TySkzNbLQJjg@mail.gmail.com>
-Subject: Re: [PATCH 1/4] um: Fix _FORTIFY_SOURCE=2 support for kernel modules
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Richard Weinberger <richard@nod.at>
-Cc: Vitaliy Ivanov <vitalivanov@gmail.com>, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        user-mode-linux-devel@lists.sourceforge.net,
-        Florian Fainelli <florian@openwrt.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Wed, 29 Jun 2011 12:47:45 -0400
+From: Rob Herring <robherring2@gmail.com>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Cc: Michal Simek <monstr@monstr.eu>, nico@fluxnic.net,
+        Rob Herring <rob.herring@calxeda.com>
+Subject: [PATCH v2 0/6] ARM: make mach/hardware.h optional
+Date: Wed, 29 Jun 2011 11:46:53 -0500
+Message-Id: <1309366019-24379-1-git-send-email-robherring2@gmail.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 17:42, Richard Weinberger <richard@nod.at> wrote:
-> Am Mittwoch 29 Juni 2011, 17:37:54 schrieb Vitaliy Ivanov:
->> On Tue, Jun 28, 2011 at 1:15 AM, Richard Weinberger <richard@nod.at> wrote:
->> > When UML is compiled with _FORTIFY_SOURCE we have to
->> > export all _chk() functions which are used in modules.
->> > For now it's only the case for __sprintf_chk().
->> >
->> > Tested-by: Florian Fainelli <florian@openwrt.org>
->> > Reported-by: Florian Fainelli <florian@openwrt.org>
->> > Signed-off-by: Richard Weinberger <richard@nod.at>
->> > ---
->> >  arch/um/os-Linux/user_syms.c |    5 +++++
->> >  1 files changed, 5 insertions(+), 0 deletions(-)
->> >
->> > diff --git a/arch/um/os-Linux/user_syms.c b/arch/um/os-Linux/user_syms.c
->> > index 05f5ea8..45ffe46 100644
->> > --- a/arch/um/os-Linux/user_syms.c
->> > +++ b/arch/um/os-Linux/user_syms.c
->> > @@ -113,3 +113,8 @@ EXPORT_SYMBOL(__stack_smash_handler);
->> >
->> >  extern long __guard __attribute__((weak));
->> >  EXPORT_SYMBOL(__guard);
->> > +
->> > +#ifdef _FORTIFY_SOURCE
->> > +extern int __sprintf_chk(char *str, int flag, size_t strlen, const char
->> > *format); +EXPORT_SYMBOL(__sprintf_chk);
->> > +#endif
->> > --
->>
->> Can you please clarify why it's needed? I use FORTIFY_SOURCES on
->> Linus' tree UML on Ubuntu w/ no problems and w/o this patch...
->
-> The problem appears only when a UML kernel module is using sprintf().
-> E.g: CONFIG_UML_WATCHDOG.
-> Then loading the module will fail because of the missing symbol __sprintf_chk().
+From: Rob Herring <rob.herring@calxeda.com>
 
-What about changing harddog_user.c to not use sprintf(), but snprintf()?
+Currently, all ARM platforms must have a mach/hardware.h include. This is
+because it is ultimately included by linux/pci.h which is included in many
+places even for !CONFIG_PCI.
 
-Besides, the code does look fishy to me:
+This could be fixed simply with an ifdef around the include of mach/hardware.h
+in asm/pci.h. However, in the interest of fixing this for single kernel
+binary builds, this series removes the include of mach/hardware.h outside of
+mach-* and plat-*. What's used from hardware.h is a couple of PCI defines. 
+Converting them to variables allows each platform to set the values as needed.
 
-    char pid_buf[sizeof("nnnnn\0")];
-    sprintf(pid_buf, "%d", os_getpid());
+This does not address the inclusion of mach/hardware.h under drivers/*. This
+appears to be mostly older platforms. There could also be some indirect
+inclusions from other mach/* headers.
 
-os_getpid() returns int:
+I've compile tested on most affected platforms.
 
-    int os_getpid(void)
-    {
-            return syscall(__NR_getpid);
-    }
+Changes from v1:
+- Added patch 2 to move ARCH_HAS_DMA_SET_COHERENT_MASK defines into memory.h.
+- Separated VGA changes and renamed to vga_base.
+- Reverted mach/hardware.h removal from ecard.c. It's getting implicitly
+  included anyway.
 
-but sys_getpid() returns long.
+Rob
 
-So we truncate a (possibly 64-bit number) to 32-bit, and format it
-in a buffer that has space for 5 chars only...
+Rob Herring (6):
+  microblaze: move pci flag functions into asm-generic
+  ARM: move ARCH_HAS_DMA_SET_COHERENT_MASK into memory.h
+  ARM: remove unnecessary mach/hardware.h includes
+  ARM: pci: make pcibios_assign_all_busses use pci_has_flag
+  ARM: convert PCI defines to variables
+  ARM: set vga memory base at run-time
 
-Gr{oetje,eeting}s,
+ arch/arm/include/asm/pci.h                       |   12 ++++-
+ arch/arm/include/asm/vga.h                       |    5 +-
+ arch/arm/lib/ecard.S                             |    1 -
+ arch/arm/lib/io-readsw-armv3.S                   |    1 -
+ arch/arm/lib/io-writesw-armv3.S                  |    1 -
+ arch/arm/mach-bcmring/include/mach/hardware.h    |    2 -
+ arch/arm/mach-cns3xxx/cns3420vb.c                |    1 -
+ arch/arm/mach-cns3xxx/include/mach/hardware.h    |   22 --------
+ arch/arm/mach-dove/include/mach/hardware.h       |    7 ---
+ arch/arm/mach-dove/pcie.c                        |    5 ++
+ arch/arm/mach-ep93xx/include/mach/hardware.h     |    2 -
+ arch/arm/mach-footbridge/dc21285.c               |    4 ++
+ arch/arm/mach-footbridge/include/mach/hardware.h |    5 --
+ arch/arm/mach-integrator/include/mach/hardware.h |    7 ---
+ arch/arm/mach-integrator/pci_v3.c                |    5 ++
+ arch/arm/mach-iop13xx/include/mach/hardware.h    |    7 ---
+ arch/arm/mach-iop13xx/pci.c                      |    4 +-
+ arch/arm/mach-iop32x/include/mach/hardware.h     |    3 -
+ arch/arm/mach-iop33x/include/mach/hardware.h     |    3 -
+ arch/arm/mach-ixp2000/include/mach/hardware.h    |    8 ---
+ arch/arm/mach-ixp2000/pci.c                      |    2 +
+ arch/arm/mach-ixp23xx/include/mach/hardware.h    |    4 --
+ arch/arm/mach-ixp23xx/pci.c                      |    4 ++
+ arch/arm/mach-ixp4xx/common-pci.c                |    6 ++
+ arch/arm/mach-ixp4xx/include/mach/hardware.h     |    7 ---
+ arch/arm/mach-ixp4xx/include/mach/memory.h       |    1 +
+ arch/arm/mach-kirkwood/include/mach/hardware.h   |    7 ---
+ arch/arm/mach-kirkwood/pcie.c                    |    5 ++
+ arch/arm/mach-ks8695/include/mach/hardware.h     |    9 ---
+ arch/arm/mach-mv78xx0/include/mach/hardware.h    |    7 ---
+ arch/arm/mach-mv78xx0/pcie.c                     |    5 ++
+ arch/arm/mach-orion5x/include/mach/hardware.h    |    7 ---
+ arch/arm/mach-orion5x/pci.c                      |    4 ++
+ arch/arm/mach-pxa/include/mach/hardware.h        |    7 ---
+ arch/arm/mach-pxa/include/mach/memory.h          |    1 +
+ arch/arm/mach-sa1100/include/mach/hardware.h     |    8 ---
+ arch/arm/mach-shark/include/mach/hardware.h      |    6 --
+ arch/arm/mach-shark/pci.c                        |   12 ++++-
+ arch/arm/mach-tegra/include/mach/hardware.h      |   28 ----------
+ arch/arm/mach-tegra/include/mach/system.h        |    1 -
+ arch/arm/mach-tegra/io.c                         |    1 -
+ arch/arm/mach-tegra/pcie.c                       |    2 +
+ arch/arm/mach-tegra/platsmp.c                    |    1 -
+ arch/arm/mach-versatile/include/mach/hardware.h  |    6 --
+ arch/arm/mach-versatile/pci.c                    |    3 +
+ arch/arm/mm/iomap.c                              |   12 ++++
+ arch/arm/mm/proc-xsc3.S                          |    1 -
+ arch/microblaze/include/asm/pci-bridge.h         |   36 +------------
+ include/asm-generic/pci-bridge.h                 |   62 ++++++++++++++++++++++
+ 49 files changed, 147 insertions(+), 213 deletions(-)
+ delete mode 100644 arch/arm/mach-cns3xxx/include/mach/hardware.h
+ delete mode 100644 arch/arm/mach-tegra/include/mach/hardware.h
+ create mode 100644 include/asm-generic/pci-bridge.h
 
-                        Geert
+-- 
+1.7.4.1
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
