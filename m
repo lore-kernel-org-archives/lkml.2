@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab1F3GBn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 02:01:43 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54312 "EHLO
+	id S1758385Ab1F3GBN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 02:01:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54311 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754229Ab1F3GAs (ORCPT
+	by vger.kernel.org with ESMTP id S1753612Ab1F3GAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Jun 2011 02:00:48 -0400
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
@@ -14,9 +14,9 @@ Cc: Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
         Lars-Peter Clausen <lars@metafoo.de>,
         Graeme Gregory <gg@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [PATCH 4/8] ASoC: Use new register map API for ASoC generic physical I/O
-Date: Wed, 29 Jun 2011 23:00:32 -0700
-Message-Id: <1309413636-1169-4-git-send-email-broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 5/8] mfd: Convert WM831x to use regmap API
+Date: Wed, 29 Jun 2011 23:00:33 -0700
+Message-Id: <1309413636-1169-5-git-send-email-broonie@opensource.wolfsonmicro.com>
 X-Mailer: git-send-email 1.7.5.4
 In-Reply-To: <1309413636-1169-1-git-send-email-broonie@opensource.wolfsonmicro.com>
 References: <20110630055844.GC796@opensource.wolfsonmicro.com>
@@ -25,428 +25,442 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove all the ASoC specific physical I/O code and replace it with calls
-into the regmap API. The bulk write code can only be used safely if all
-regmap calls are locked with the CODEC lock, we need to add bulk support
-to the regmap API or replace the code with an open coded loop (though
-currently it has no users...).
+Factor out the register read/write code to use the register map API.  We
+still need some wm831x specific code and locking in place to check that
+the user key is handled correctly but only on the write side, reads are
+not affected by the key.
 
 Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 ---
- include/sound/soc.h |    2 +
- sound/soc/Kconfig   |    1 +
- sound/soc/soc-io.c  |  316 ++++-----------------------------------------------
- 3 files changed, 28 insertions(+), 291 deletions(-)
+ drivers/mfd/Kconfig             |    2 +
+ drivers/mfd/wm831x-core.c       |   97 ++++++++++++++------------------------
+ drivers/mfd/wm831x-i2c.c        |   56 ----------------------
+ drivers/mfd/wm831x-spi.c        |   48 -------------------
+ include/linux/mfd/wm831x/core.h |    7 +--
+ 5 files changed, 40 insertions(+), 170 deletions(-)
 
-diff --git a/include/sound/soc.h b/include/sound/soc.h
-index 6424b10..40436b8 100644
---- a/include/sound/soc.h
-+++ b/include/sound/soc.h
-@@ -19,6 +19,7 @@
- #include <linux/workqueue.h>
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
-+#include <linux/regmap.h>
- #include <sound/core.h>
- #include <sound/pcm.h>
- #include <sound/control.h>
-@@ -570,6 +571,7 @@ struct snd_soc_codec {
- 	const void *reg_def_copy;
- 	const struct snd_soc_cache_ops *cache_ops;
- 	struct mutex cache_rw_mutex;
-+	int val_bytes;
- 
- 	/* dapm */
- 	struct snd_soc_dapm_context dapm;
-diff --git a/sound/soc/Kconfig b/sound/soc/Kconfig
-index 8224db5..32e5fd4 100644
---- a/sound/soc/Kconfig
-+++ b/sound/soc/Kconfig
-@@ -7,6 +7,7 @@ menuconfig SND_SOC
- 	select SND_PCM
- 	select AC97_BUS if SND_SOC_AC97_BUS
- 	select SND_JACK if INPUT=y || INPUT=SND
+diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+index 6b0babc..9782296 100644
+--- a/drivers/mfd/Kconfig
++++ b/drivers/mfd/Kconfig
+@@ -389,6 +389,7 @@ config MFD_WM831X_I2C
+ 	bool "Support Wolfson Microelectronics WM831x/2x PMICs with I2C"
+ 	select MFD_CORE
+ 	select MFD_WM831X
 +	select REGMAP
- 	---help---
+ 	depends on I2C=y && GENERIC_HARDIRQS
+ 	help
+ 	  Support for the Wolfson Microelecronics WM831x and WM832x PMICs
+@@ -400,6 +401,7 @@ config MFD_WM831X_SPI
+ 	bool "Support Wolfson Microelectronics WM831x/2x PMICs with SPI"
+ 	select MFD_CORE
+ 	select MFD_WM831X
++	select REGMAP
+ 	depends on SPI_MASTER && GENERIC_HARDIRQS
+ 	help
+ 	  Support for the Wolfson Microelecronics WM831x and WM832x PMICs
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index 282e76a..f25c339 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -18,6 +18,7 @@
+ #include <linux/delay.h>
+ #include <linux/mfd/core.h>
+ #include <linux/slab.h>
++#include <linux/err.h>
  
- 	  If you want ASoC support, you should say Y here and also to the
-diff --git a/sound/soc/soc-io.c b/sound/soc/soc-io.c
-index cca490c..5607cb6 100644
---- a/sound/soc/soc-io.c
-+++ b/sound/soc/soc-io.c
-@@ -13,26 +13,13 @@
- 
- #include <linux/i2c.h>
- #include <linux/spi/spi.h>
-+#include <linux/regmap.h>
- #include <sound/soc.h>
- 
- #include <trace/events/asoc.h>
- 
--#ifdef CONFIG_SPI_MASTER
--static int do_spi_write(void *control, const char *data, int len)
--{
--	struct spi_device *spi = control;
--	int ret;
--
--	ret = spi_write(spi, data, len);
--	if (ret < 0)
--		return ret;
--
--	return len;
--}
--#endif
--
--static int do_hw_write(struct snd_soc_codec *codec, unsigned int reg,
--		       unsigned int value, const void *data, int len)
-+static int hw_write(struct snd_soc_codec *codec, unsigned int reg,
-+		    unsigned int value)
- {
- 	int ret;
- 
-@@ -49,13 +36,7 @@ static int do_hw_write(struct snd_soc_codec *codec, unsigned int reg,
- 		return 0;
- 	}
- 
--	ret = codec->hw_write(codec->control_data, data, len);
--	if (ret == len)
--		return 0;
--	if (ret < 0)
--		return ret;
--	else
--		return -EIO;
-+	return regmap_write(codec->control_data, reg, value);
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/mfd/wm831x/pdata.h>
+@@ -160,29 +161,6 @@ int wm831x_reg_unlock(struct wm831x *wm831x)
  }
+ EXPORT_SYMBOL_GPL(wm831x_reg_unlock);
  
- static unsigned int hw_read(struct snd_soc_codec *codec, unsigned int reg)
-@@ -69,8 +50,11 @@ static unsigned int hw_read(struct snd_soc_codec *codec, unsigned int reg)
- 		if (codec->cache_only)
- 			return -1;
- 
--		BUG_ON(!codec->hw_read);
--		return codec->hw_read(codec, reg);
-+		ret = regmap_read(codec->control_data, reg, &val);
-+		if (ret == 0)
-+			return val;
-+		else
-+			return ret;
- 	}
- 
- 	ret = snd_soc_cache_read(codec, reg, &val);
-@@ -79,183 +63,18 @@ static unsigned int hw_read(struct snd_soc_codec *codec, unsigned int reg)
- 	return val;
- }
- 
--static int snd_soc_4_12_write(struct snd_soc_codec *codec, unsigned int reg,
--			      unsigned int value)
+-static int wm831x_read(struct wm831x *wm831x, unsigned short reg,
+-		       int bytes, void *dest)
 -{
--	u16 data;
+-	int ret, i;
+-	u16 *buf = dest;
 -
--	data = cpu_to_be16((reg << 12) | (value & 0xffffff));
+-	BUG_ON(bytes % 2);
+-	BUG_ON(bytes <= 0);
 -
--	return do_hw_write(codec, reg, value, &data, 2);
--}
--
--static int snd_soc_7_9_write(struct snd_soc_codec *codec, unsigned int reg,
--			     unsigned int value)
--{
--	u16 data;
--
--	data = cpu_to_be16((reg << 9) | (value & 0x1ff));
--
--	return do_hw_write(codec, reg, value, &data, 2);
--}
--
--static int snd_soc_8_8_write(struct snd_soc_codec *codec, unsigned int reg,
--			     unsigned int value)
--{
--	u8 data[2];
--
--	reg &= 0xff;
--	data[0] = reg;
--	data[1] = value & 0xff;
--
--	return do_hw_write(codec, reg, value, data, 2);
--}
--
--static int snd_soc_8_16_write(struct snd_soc_codec *codec, unsigned int reg,
--			      unsigned int value)
--{
--	u8 data[3];
--	u16 val = cpu_to_be16(value);
--
--	data[0] = reg;
--	memcpy(&data[1], &val, sizeof(val));
--
--	return do_hw_write(codec, reg, value, data, 3);
--}
--
--#if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
--static unsigned int do_i2c_read(struct snd_soc_codec *codec,
--				void *reg, int reglen,
--				void *data, int datalen)
--{
--	struct i2c_msg xfer[2];
--	int ret;
--	struct i2c_client *client = codec->control_data;
--
--	/* Write register */
--	xfer[0].addr = client->addr;
--	xfer[0].flags = 0;
--	xfer[0].len = reglen;
--	xfer[0].buf = reg;
--
--	/* Read data */
--	xfer[1].addr = client->addr;
--	xfer[1].flags = I2C_M_RD;
--	xfer[1].len = datalen;
--	xfer[1].buf = data;
--
--	ret = i2c_transfer(client->adapter, xfer, 2);
--	if (ret == 2)
--		return 0;
--	else if (ret < 0)
+-	ret = wm831x->read_dev(wm831x, reg, bytes, dest);
+-	if (ret < 0)
 -		return ret;
--	else
--		return -EIO;
--}
--#endif
 -
--#if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
--static unsigned int snd_soc_8_8_read_i2c(struct snd_soc_codec *codec,
--					 unsigned int r)
--{
--	u8 reg = r;
--	u8 data;
--	int ret;
+-	for (i = 0; i < bytes / 2; i++) {
+-		buf[i] = be16_to_cpu(buf[i]);
 -
--	ret = do_i2c_read(codec, &reg, 1, &data, 1);
--	if (ret < 0)
--		return 0;
--	return data;
--}
--#else
--#define snd_soc_8_8_read_i2c NULL
--#endif
--
--#if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
--static unsigned int snd_soc_8_16_read_i2c(struct snd_soc_codec *codec,
--					  unsigned int r)
--{
--	u8 reg = r;
--	u16 data;
--	int ret;
--
--	ret = do_i2c_read(codec, &reg, 1, &data, 2);
--	if (ret < 0)
--		return 0;
--	return (data >> 8) | ((data & 0xff) << 8);
--}
--#else
--#define snd_soc_8_16_read_i2c NULL
--#endif
--
--#if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
--static unsigned int snd_soc_16_8_read_i2c(struct snd_soc_codec *codec,
--					  unsigned int r)
--{
--	u16 reg = r;
--	u8 data;
--	int ret;
--
--	ret = do_i2c_read(codec, &reg, 2, &data, 1);
--	if (ret < 0)
--		return 0;
--	return data;
--}
--#else
--#define snd_soc_16_8_read_i2c NULL
--#endif
--
--static int snd_soc_16_8_write(struct snd_soc_codec *codec, unsigned int reg,
--			      unsigned int value)
--{
--	u8 data[3];
--	u16 rval = cpu_to_be16(reg);
--
--	memcpy(data, &rval, sizeof(rval));
--	data[2] = value;
--
--	return do_hw_write(codec, reg, value, data, 3);
--}
--
--#if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
--static unsigned int snd_soc_16_16_read_i2c(struct snd_soc_codec *codec,
--					   unsigned int r)
--{
--	u16 reg = cpu_to_be16(r);
--	u16 data;
--	int ret;
--
--	ret = do_i2c_read(codec, &reg, 2, &data, 2);
--	if (ret < 0)
--		return 0;
--	return be16_to_cpu(data);
--}
--#else
--#define snd_soc_16_16_read_i2c NULL
--#endif
--
--static int snd_soc_16_16_write(struct snd_soc_codec *codec, unsigned int reg,
--			       unsigned int value)
--{
--	u16 data[2];
--
--	data[0] = cpu_to_be16(reg);
--	data[1] = cpu_to_be16(value);
--
--	return do_hw_write(codec, reg, value, data, sizeof(data));
--}
--
- /* Primitive bulk write support for soc-cache.  The data pointed to by
-- * `data' needs to already be in the form the hardware expects
-- * including any leading register specific data.  Any data written
-- * through this function will not go through the cache as it only
-- * handles writing to volatile or out of bounds registers.
-+ * `data' needs to already be in the form the hardware expects.  Any
-+ * data written through this function will not go through the cache as
-+ * it only handles writing to volatile or out of bounds registers.
-+ *
-+ * This is currently only supported for devices using the regmap API
-+ * wrappers.
-  */
--static int snd_soc_hw_bulk_write_raw(struct snd_soc_codec *codec, unsigned int reg,
-+static int snd_soc_hw_bulk_write_raw(struct snd_soc_codec *codec,
-+				     unsigned int reg,
- 				     const void *data, size_t len)
- {
--	int ret;
--
- 	/* To ensure that we don't get out of sync with the cache, check
- 	 * whether the base register is volatile or if we've directly asked
- 	 * to bypass the cache.  Out of bounds registers are considered
-@@ -266,66 +85,9 @@ static int snd_soc_hw_bulk_write_raw(struct snd_soc_codec *codec, unsigned int r
- 	    && reg < codec->driver->reg_cache_size)
- 		return -EINVAL;
- 
--	switch (codec->control_type) {
--#if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
--	case SND_SOC_I2C:
--		ret = i2c_master_send(to_i2c_client(codec->dev), data, len);
--		break;
--#endif
--#if defined(CONFIG_SPI_MASTER)
--	case SND_SOC_SPI:
--		ret = spi_write(to_spi_device(codec->dev), data, len);
--		break;
--#endif
--	default:
--		BUG();
+-		dev_vdbg(wm831x->dev, "Read %04x from R%d(0x%x)\n",
+-			 buf[i], reg + i, reg + i);
 -	}
 -
--	if (ret == len)
--		return 0;
--	if (ret < 0)
--		return ret;
--	else
--		return -EIO;
-+	return regmap_raw_write(codec->control_data, reg, data, len);
- }
- 
--static struct {
--	int addr_bits;
--	int data_bits;
--	int (*write)(struct snd_soc_codec *codec, unsigned int, unsigned int);
--	unsigned int (*read)(struct snd_soc_codec *, unsigned int);
--	unsigned int (*i2c_read)(struct snd_soc_codec *, unsigned int);
--} io_types[] = {
--	{
--		.addr_bits = 4, .data_bits = 12,
--		.write = snd_soc_4_12_write,
--	},
--	{
--		.addr_bits = 7, .data_bits = 9,
--		.write = snd_soc_7_9_write,
--	},
--	{
--		.addr_bits = 8, .data_bits = 8,
--		.write = snd_soc_8_8_write,
--		.i2c_read = snd_soc_8_8_read_i2c,
--	},
--	{
--		.addr_bits = 8, .data_bits = 16,
--		.write = snd_soc_8_16_write,
--		.i2c_read = snd_soc_8_16_read_i2c,
--	},
--	{
--		.addr_bits = 16, .data_bits = 8,
--		.write = snd_soc_16_8_write,
--		.i2c_read = snd_soc_16_8_read_i2c,
--	},
--	{
--		.addr_bits = 16, .data_bits = 16,
--		.write = snd_soc_16_16_write,
--		.i2c_read = snd_soc_16_16_read_i2c,
--	},
--};
+-	return 0;
+-}
 -
  /**
-  * snd_soc_codec_set_cache_io: Set up standard I/O functions.
+  * wm831x_reg_read: Read a single WM831x register.
   *
-@@ -349,46 +111,18 @@ int snd_soc_codec_set_cache_io(struct snd_soc_codec *codec,
- 			       int addr_bits, int data_bits,
- 			       enum snd_soc_control_type control)
+@@ -191,14 +169,10 @@ static int wm831x_read(struct wm831x *wm831x, unsigned short reg,
+  */
+ int wm831x_reg_read(struct wm831x *wm831x, unsigned short reg)
  {
--	int i;
-+	struct regmap_config config;
+-	unsigned short val;
++	unsigned int val;
+ 	int ret;
  
--	for (i = 0; i < ARRAY_SIZE(io_types); i++)
--		if (io_types[i].addr_bits == addr_bits &&
--		    io_types[i].data_bits == data_bits)
--			break;
--	if (i == ARRAY_SIZE(io_types)) {
--		printk(KERN_ERR
--		       "No I/O functions for %d bit address %d bit data\n",
--		       addr_bits, data_bits);
--		return -EINVAL;
--	}
+-	mutex_lock(&wm831x->io_lock);
 -
--	codec->write = io_types[i].write;
-+	codec->write = hw_write;
- 	codec->read = hw_read;
- 	codec->bulk_write_raw = snd_soc_hw_bulk_write_raw;
- 
--	switch (control) {
--	case SND_SOC_I2C:
--#if defined(CONFIG_I2C) || (defined(CONFIG_I2C_MODULE) && defined(MODULE))
--		codec->hw_write = (hw_write_t)i2c_master_send;
--#endif
--		if (io_types[i].i2c_read)
--			codec->hw_read = io_types[i].i2c_read;
+-	ret = wm831x_read(wm831x, reg, 2, &val);
 -
--		codec->control_data = container_of(codec->dev,
--						   struct i2c_client,
--						   dev);
--		break;
-+	config.reg_bits = addr_bits;
-+	config.val_bits = data_bits;
+-	mutex_unlock(&wm831x->io_lock);
++	ret = regmap_read(wm831x->regmap, reg, &val);
  
--	case SND_SOC_SPI:
--#ifdef CONFIG_SPI_MASTER
--		codec->hw_write = do_spi_write;
--#endif
+ 	if (ret < 0)
+ 		return ret;
+@@ -218,15 +192,7 @@ EXPORT_SYMBOL_GPL(wm831x_reg_read);
+ int wm831x_bulk_read(struct wm831x *wm831x, unsigned short reg,
+ 		     int count, u16 *buf)
+ {
+-	int ret;
 -
--		codec->control_data = container_of(codec->dev,
--						   struct spi_device,
--						   dev);
--		break;
--	}
-+	codec->control_data = regmap_init(codec->dev, &config);
-+	if (IS_ERR(codec->control_data))
-+		return PTR_ERR(codec->control_data);
- 
- 	return 0;
+-	mutex_lock(&wm831x->io_lock);
+-
+-	ret = wm831x_read(wm831x, reg, count * 2, buf);
+-
+-	mutex_unlock(&wm831x->io_lock);
+-
+-	return ret;
++	return regmap_bulk_read(wm831x->regmap, reg, buf, count);
  }
+ EXPORT_SYMBOL_GPL(wm831x_bulk_read);
+ 
+@@ -234,7 +200,7 @@ static int wm831x_write(struct wm831x *wm831x, unsigned short reg,
+ 			int bytes, void *src)
+ {
+ 	u16 *buf = src;
+-	int i;
++	int i, ret;
+ 
+ 	BUG_ON(bytes % 2);
+ 	BUG_ON(bytes <= 0);
+@@ -245,11 +211,10 @@ static int wm831x_write(struct wm831x *wm831x, unsigned short reg,
+ 
+ 		dev_vdbg(wm831x->dev, "Write %04x to R%d(0x%x)\n",
+ 			 buf[i], reg + i, reg + i);
+-
+-		buf[i] = cpu_to_be16(buf[i]);
++		ret = regmap_write(wm831x->regmap, reg + i, buf[i]);
+ 	}
+ 
+-	return wm831x->write_dev(wm831x, reg, bytes, src);
++	return 0;
+ }
+ 
+ /**
+@@ -286,20 +251,14 @@ int wm831x_set_bits(struct wm831x *wm831x, unsigned short reg,
+ 		    unsigned short mask, unsigned short val)
+ {
+ 	int ret;
+-	u16 r;
+ 
+ 	mutex_lock(&wm831x->io_lock);
+ 
+-	ret = wm831x_read(wm831x, reg, 2, &r);
+-	if (ret < 0)
+-		goto out;
+-
+-	r &= ~mask;
+-	r |= val & mask;
+-
+-	ret = wm831x_write(wm831x, reg, 2, &r);
++	if (!wm831x_reg_locked(wm831x, reg))
++		ret = regmap_update_bits(wm831x->regmap, reg, mask, val);
++	else
++		ret = -EPERM;
+ 
+-out:
+ 	mutex_unlock(&wm831x->io_lock);
+ 
+ 	return ret;
+@@ -1292,6 +1251,11 @@ static struct mfd_cell backlight_devs[] = {
+ 	},
+ };
+ 
++static struct regmap_config wm831x_regmap_config = {
++	.reg_bits = 16,
++	.val_bits = 16,
++};
++
+ /*
+  * Instantiate the generic non-control parts of the device.
+  */
+@@ -1306,10 +1270,18 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 	mutex_init(&wm831x->key_lock);
+ 	dev_set_drvdata(wm831x->dev, wm831x);
+ 
++	wm831x->regmap = regmap_init(wm831x->dev, &wm831x_regmap_config);
++	if (IS_ERR(wm831x->regmap)) {
++		ret = PTR_ERR(wm831x->regmap);
++		dev_err(wm831x->dev, "Failed to allocate register map: %d\n",
++			ret);
++		goto err;
++	}
++
+ 	ret = wm831x_reg_read(wm831x, WM831X_PARENT_ID);
+ 	if (ret < 0) {
+ 		dev_err(wm831x->dev, "Failed to read parent ID: %d\n", ret);
+-		goto err;
++		goto err_regmap;
+ 	}
+ 	switch (ret) {
+ 	case 0x6204:
+@@ -1318,20 +1290,20 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 	default:
+ 		dev_err(wm831x->dev, "Device is not a WM831x: ID %x\n", ret);
+ 		ret = -EINVAL;
+-		goto err;
++		goto err_regmap;
+ 	}
+ 
+ 	ret = wm831x_reg_read(wm831x, WM831X_REVISION);
+ 	if (ret < 0) {
+ 		dev_err(wm831x->dev, "Failed to read revision: %d\n", ret);
+-		goto err;
++		goto err_regmap;
+ 	}
+ 	rev = (ret & WM831X_PARENT_REV_MASK) >> WM831X_PARENT_REV_SHIFT;
+ 
+ 	ret = wm831x_reg_read(wm831x, WM831X_RESET_ID);
+ 	if (ret < 0) {
+ 		dev_err(wm831x->dev, "Failed to read device ID: %d\n", ret);
+-		goto err;
++		goto err_regmap;
+ 	}
+ 
+ 	/* Some engineering samples do not have the ID set, rely on
+@@ -1406,7 +1378,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 	default:
+ 		dev_err(wm831x->dev, "Unknown WM831x device %04x\n", ret);
+ 		ret = -EINVAL;
+-		goto err;
++		goto err_regmap;
+ 	}
+ 
+ 	/* This will need revisiting in future but is OK for all
+@@ -1420,7 +1392,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 	ret = wm831x_reg_read(wm831x, WM831X_SECURITY_KEY);
+ 	if (ret < 0) {
+ 		dev_err(wm831x->dev, "Failed to read security key: %d\n", ret);
+-		goto err;
++		goto err_regmap;
+ 	}
+ 	if (ret != 0) {
+ 		dev_warn(wm831x->dev, "Security key had non-zero value %x\n",
+@@ -1433,7 +1405,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 		ret = pdata->pre_init(wm831x);
+ 		if (ret != 0) {
+ 			dev_err(wm831x->dev, "pre_init() failed: %d\n", ret);
+-			goto err;
++			goto err_regmap;
+ 		}
+ 	}
+ 
+@@ -1456,7 +1428,7 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 
+ 	ret = wm831x_irq_init(wm831x, irq);
+ 	if (ret != 0)
+-		goto err;
++		goto err_regmap;
+ 
+ 	wm831x_auxadc_init(wm831x);
+ 
+@@ -1552,8 +1524,10 @@ int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 
+ err_irq:
+ 	wm831x_irq_exit(wm831x);
+-err:
++err_regmap:
+ 	mfd_remove_devices(wm831x->dev);
++	regmap_exit(wm831x->regmap);
++err:
+ 	kfree(wm831x);
+ 	return ret;
+ }
+@@ -1565,6 +1539,7 @@ void wm831x_device_exit(struct wm831x *wm831x)
+ 	if (wm831x->irq_base)
+ 		free_irq(wm831x->irq_base + WM831X_IRQ_AUXADC_DATA, wm831x);
+ 	wm831x_irq_exit(wm831x);
++	regmap_exit(wm831x->regmap);
+ 	kfree(wm831x);
+ }
+ 
+diff --git a/drivers/mfd/wm831x-i2c.c b/drivers/mfd/wm831x-i2c.c
+index a06cbc7..4e16462 100644
+--- a/drivers/mfd/wm831x-i2c.c
++++ b/drivers/mfd/wm831x-i2c.c
+@@ -22,59 +22,6 @@
+ #include <linux/mfd/wm831x/core.h>
+ #include <linux/mfd/wm831x/pdata.h>
+ 
+-static int wm831x_i2c_read_device(struct wm831x *wm831x, unsigned short reg,
+-				  int bytes, void *dest)
+-{
+-	struct i2c_client *i2c = wm831x->control_data;
+-	int ret;
+-	u16 r = cpu_to_be16(reg);
+-
+-	ret = i2c_master_send(i2c, (unsigned char *)&r, 2);
+-	if (ret < 0)
+-		return ret;
+-	if (ret != 2)
+-		return -EIO;
+-
+-	ret = i2c_master_recv(i2c, dest, bytes);
+-	if (ret < 0)
+-		return ret;
+-	if (ret != bytes)
+-		return -EIO;
+-	return 0;
+-}
+-
+-/* Currently we allocate the write buffer on the stack; this is OK for
+- * small writes - if we need to do large writes this will need to be
+- * revised.
+- */
+-static int wm831x_i2c_write_device(struct wm831x *wm831x, unsigned short reg,
+-				   int bytes, void *src)
+-{
+-	struct i2c_client *i2c = wm831x->control_data;
+-	struct i2c_msg xfer[2];
+-	int ret;
+-
+-	reg = cpu_to_be16(reg);
+-
+-	xfer[0].addr = i2c->addr;
+-	xfer[0].flags = 0;
+-	xfer[0].len = 2;
+-	xfer[0].buf = (char *)&reg;
+-
+-	xfer[1].addr = i2c->addr;
+-	xfer[1].flags = I2C_M_NOSTART;
+-	xfer[1].len = bytes;
+-	xfer[1].buf = (char *)src;
+-
+-	ret = i2c_transfer(i2c->adapter, xfer, 2);
+-	if (ret < 0)
+-		return ret;
+-	if (ret != 2)
+-		return -EIO;
+-
+-	return 0;
+-}
+-
+ static int wm831x_i2c_probe(struct i2c_client *i2c,
+ 			    const struct i2c_device_id *id)
+ {
+@@ -86,9 +33,6 @@ static int wm831x_i2c_probe(struct i2c_client *i2c,
+ 
+ 	i2c_set_clientdata(i2c, wm831x);
+ 	wm831x->dev = &i2c->dev;
+-	wm831x->control_data = i2c;
+-	wm831x->read_dev = wm831x_i2c_read_device;
+-	wm831x->write_dev = wm831x_i2c_write_device;
+ 
+ 	return wm831x_device_init(wm831x, id->driver_data, i2c->irq);
+ }
+diff --git a/drivers/mfd/wm831x-spi.c b/drivers/mfd/wm831x-spi.c
+index eed8e4f..0b0730d 100644
+--- a/drivers/mfd/wm831x-spi.c
++++ b/drivers/mfd/wm831x-spi.c
+@@ -19,51 +19,6 @@
+ 
+ #include <linux/mfd/wm831x/core.h>
+ 
+-static int wm831x_spi_read_device(struct wm831x *wm831x, unsigned short reg,
+-				  int bytes, void *dest)
+-{
+-	u16 tx_val;
+-	u16 *d = dest;
+-	int r, ret;
+-
+-	/* Go register at a time */
+-	for (r = reg; r < reg + (bytes / 2); r++) {
+-		tx_val = r | 0x8000;
+-
+-		ret = spi_write_then_read(wm831x->control_data,
+-					  (u8 *)&tx_val, 2, (u8 *)d, 2);
+-		if (ret != 0)
+-			return ret;
+-
+-		*d = be16_to_cpu(*d);
+-
+-		d++;
+-	}
+-
+-	return 0;
+-}
+-
+-static int wm831x_spi_write_device(struct wm831x *wm831x, unsigned short reg,
+-				   int bytes, void *src)
+-{
+-	struct spi_device *spi = wm831x->control_data;
+-	u16 *s = src;
+-	u16 data[2];
+-	int ret, r;
+-
+-	/* Go register at a time */
+-	for (r = reg; r < reg + (bytes / 2); r++) {
+-		data[0] = r;
+-		data[1] = *s++;
+-
+-		ret = spi_write(spi, (char *)&data, sizeof(data));
+-		if (ret != 0)
+-			return ret;
+-	}
+-
+-	return 0;
+-}
+-
+ static int __devinit wm831x_spi_probe(struct spi_device *spi)
+ {
+ 	struct wm831x *wm831x;
+@@ -98,9 +53,6 @@ static int __devinit wm831x_spi_probe(struct spi_device *spi)
+ 
+ 	dev_set_drvdata(&spi->dev, wm831x);
+ 	wm831x->dev = &spi->dev;
+-	wm831x->control_data = spi;
+-	wm831x->read_dev = wm831x_spi_read_device;
+-	wm831x->write_dev = wm831x_spi_write_device;
+ 
+ 	return wm831x_device_init(wm831x, type, spi->irq);
+ }
+diff --git a/include/linux/mfd/wm831x/core.h b/include/linux/mfd/wm831x/core.h
+index 8dda8de..bd0615b 100644
+--- a/include/linux/mfd/wm831x/core.h
++++ b/include/linux/mfd/wm831x/core.h
+@@ -18,6 +18,7 @@
+ #include <linux/completion.h>
+ #include <linux/interrupt.h>
+ #include <linux/list.h>
++#include <linux/regmap.h>
+ 
+ /*
+  * Register values.
+@@ -361,12 +362,8 @@ struct wm831x {
+ 	struct mutex io_lock;
+ 
+ 	struct device *dev;
+-	int (*read_dev)(struct wm831x *wm831x, unsigned short reg,
+-			int bytes, void *dest);
+-	int (*write_dev)(struct wm831x *wm831x, unsigned short reg,
+-			 int bytes, void *src);
+ 
+-	void *control_data;
++	struct regmap *regmap;
+ 
+ 	int irq;  /* Our chip IRQ */
+ 	struct mutex irq_lock;
 -- 
 1.7.5.4
 
