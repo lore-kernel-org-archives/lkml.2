@@ -1,89 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752523Ab1F3PEc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 11:04:32 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:18135 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab1F3PEb (ORCPT
+	id S1752668Ab1F3PGS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 11:06:18 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:59830 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab1F3PGP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 11:04:31 -0400
-Message-ID: <4E0C9062.4010901@atmel.com>
-Date: Thu, 30 Jun 2011 17:04:02 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	Thu, 30 Jun 2011 11:06:15 -0400
+Date: Thu, 30 Jun 2011 17:06:08 +0200
+From: Andrea Righi <andrea@betterlinux.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 8/8] blk-throttle: enable throttling of task while
+ dirtying pages
+Message-ID: <20110630150608.GA2068@thinkpad>
+References: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
+ <1309275309-12889-9-git-send-email-vgoyal@redhat.com>
+ <20110630145229.GA1655@thinkpad>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        alsa-devel@alsa-project.org
-CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        lrg@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [PATCH 1/5] ASoC: wm8731: rework power management
-References: <1309370419-22810-1-git-send-email-nicolas.ferre@atmel.com>	<ccd4b125244271af7978948689cf1dcef37bc06b.1309368631.git.nicolas.ferre@atmel.com>	<20110629171148.GB10798@opensource.wolfsonmicro.com> <4E0C80B8.7030006@atmel.com>
-In-Reply-To: <4E0C80B8.7030006@atmel.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110630145229.GA1655@thinkpad>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 30/06/2011 15:57, Nicolas Ferre :
-> Le 29/06/2011 19:11, Mark Brown :
->> On Wed, Jun 29, 2011 at 08:00:15PM +0200, Nicolas Ferre wrote:
->>
->> Don't mix multiple changes into a single patch!  There's no perceptible
->> code overlap between these so I don't understand why you've merged them,
->> it just makes review harder and the changelog less descriptive.
+On Thu, Jun 30, 2011 at 04:52:29PM +0200, Andrea Righi wrote:
+> On Tue, Jun 28, 2011 at 11:35:09AM -0400, Vivek Goyal wrote:
+> > Put the blk_throtl_dirty_pages() hook in
+> > balance_dirty_pages_ratelimited_nr() to enable task throttling.
+> > 
+> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> > ---
+> >  include/linux/blkdev.h |    5 +++++
+> >  mm/page-writeback.c    |    3 +++
+> >  2 files changed, 8 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+> > index 4ce6e68..5d4a57e 100644
+> > --- a/include/linux/blkdev.h
+> > +++ b/include/linux/blkdev.h
+> > @@ -1180,12 +1180,17 @@ static inline uint64_t rq_io_start_time_ns(struct request *req)
+> >  extern int blk_throtl_init(struct request_queue *q);
+> >  extern void blk_throtl_exit(struct request_queue *q);
+> >  extern int blk_throtl_bio(struct request_queue *q, struct bio **bio);
+> > +extern void blk_throtl_dirty_pages(struct address_space *mapping,
+> > +				unsigned long nr_dirty);
+> >  #else /* CONFIG_BLK_DEV_THROTTLING */
+> >  static inline int blk_throtl_bio(struct request_queue *q, struct bio **bio)
+> >  {
+> >  	return 0;
+> >  }
+> >  
+> > +static inline void blk_throtl_dirty_pages(struct address_space *mapping,
+> > +				unsigned long nr_dirty) {}
+> > +
+> >  static inline int blk_throtl_init(struct request_queue *q) { return 0; }
+> >  static inline int blk_throtl_exit(struct request_queue *q) { return 0; }
+> >  #endif /* CONFIG_BLK_DEV_THROTTLING */
+> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> > index 31f6988..943e551 100644
+> > --- a/mm/page-writeback.c
+> > +++ b/mm/page-writeback.c
+> > @@ -629,6 +629,9 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
+> >  	unsigned long ratelimit;
+> >  	unsigned long *p;
+> >  
+> > +	/* Subject writes to IO controller throttling */
+> > +	blk_throtl_dirty_pages(mapping, nr_pages_dirtied);
+> > +
 > 
-> Ok.
+> mmmh.. in this way we throttle also tasks that are re-writing dirty pages
+> multiple times.
 > 
->>> - preserve crystal oscillator across suspend/resume sequence:
->>>   enabled by default, it should be kept enabled on resume.
->>
->> This isn't what your code does...
->>
->>>  		snd_soc_write(codec, WM8731_ACTIVE, 0x0);
->>> -		snd_soc_write(codec, WM8731_PWR, 0xffff);
->>> +		/* standby: keep crystal oscillator enabled */
->>> +		snd_soc_write(codec, WM8731_PWR, 0x00df);
->>
->> This doesn't keep the crystal oscillator enabled, this forces it on in
->> suspend (and without looking at the datasheet it also changes way more
->> than the one register bit I'd expect to be changed).  If the system
->> isn't using the oscillator then that's not good.
->>
->> I'd expect to see a change to using snd_soc_update_bits() based on your
->> description, or more likely something more involved.
+> From the controller perspective what is actually generating I/O on block
+> devices is the generation of _new_ dirty pages. Multiple re-writes in page
+> cache should never be throttled IMHO.
 > 
-> First of all, I experienced issues while not having OSC enabled during suspend/resume cycle. Am I right supposing that, if using oscillator to clock the codec, I have to keep it running during a suspend/resume cycle?
+> I would re-write this patch in the following way. What do you think?
 > 
-> Is something like this sounds like an acceptable option or we need something more sophisticated?
+> Thanks,
+> -Andrea
 > 
-> @@ -481,7 +481,10 @@ static int wm8731_set_bias_level(struct snd_soc_codec *codec,
->                 break;
->         case SND_SOC_BIAS_OFF:
->                 snd_soc_write(codec, WM8731_ACTIVE, 0x0);
-> -               snd_soc_write(codec, WM8731_PWR, 0xffff);
-> +               reg = 0xdf;
-> +               if (wm8731->sysclk_type == WM8731_SYSCLK_XTAL)
+> ---
+> Subject: [PATCH 8/8] blk-throttle: enable throttling of task while dirtying pages
+> 
+> From: Andrea Righi <andrea@betterlinux.com>
+> 
+> Put the blk_throtl_dirty_pages() hook in balance_dirty_pages_ratelimited_nr()
+> to enable task throttling.
+> 
+> Moreover, modify balance_dirty_pages_ratelimited_nr() to accept the additional
+> parameter "redirty". This parameter can be used to notify if the pages have
+> been dirtied for the first time or re-dirtied.
+> 
+> This information can be used by the blkio.throttle controller to distinguish
+> between a WRITE in the page cache, that will eventually generates I/O activity
+> on block device by the writeback code, and a re-WRITE operation that most of
+> the time will not generate additional I/O activity.
+> 
+> This means that a task that re-writes multiple times the same blocks of a file
+> is affected by the blkio limitations only for the actual I/O that will be
+> performed to the underlying block devices during the writeback process.
+> 
+> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 
-Actually it is: if... != WM8731_SYSCLK_XTAL
+A simple test (see rewrite.c below):
 
-> +                               reg |= 1 << 0x5;
-> +               snd_soc_update_bits(codec, WM8731_PWR, 0x00ff, reg);
+ # echo 8:0 1000000 > /sys/fs/cgroup/blkio/foo/blkio.throttle.write_bps_device
 
-And maybe here a simple snd_soc_write() is sufficient...
+- before:
 
->                 regulator_bulk_disable(ARRAY_SIZE(wm8731->supplies),
->                                        wm8731->supplies);
->                 break;
-> 
-> And, yes, there is only 8 bits dedicated to power down control in this register.
-> 
-> Best regards,
+ $ ./rewrite 
+ 0: 4s <-- first write
+ 1: 4s \
+ 2: 4s |
+ 3: 5s |
+ 4: 4s |
+ 5: 4s | <-- re-writes (not generating additional I/O)
+ 6: 4s |
+ 7: 4s |
+ 8: 5s |
+ 9: 4s /
 
--- 
-Nicolas Ferre
+- after:
 
+ $ ./rewrite 
+ 0: 4s <-- first write
+ 1: 0s \
+ 2: 0s |
+ 3: 0s |
+ 4: 0s |
+ 5: 0s | <-- re-writes (not generating additional I/O)
+ 6: 0s |
+ 7: 0s |
+ 8: 0s |
+ 9: 0s /
+
+-Andrea
+
+---
+/*
+ * rewrite.c
+ */
+
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <time.h>
+#include <fcntl.h>
+#include <sys/types.h>
+
+static char buf[4 * 1024 * 1024];
+
+int main(int argc, char **argv)
+{
+	int fd, i;
+
+	fd = open("junk", O_WRONLY | O_CREAT, 0600);
+	if (fd < 0) {
+		perror("open");
+		exit(1);
+	}
+	for (i = 0; i < 10; i++) {
+		time_t start, end;
+
+		lseek(fd, 0, SEEK_SET);
+		start = time(NULL);
+		if (write(fd, buf, sizeof(buf)) < 0) {
+			perror("write");
+			exit(1);
+		}
+		end = time(NULL);
+
+		printf("%d: %zus\n", i, end - start);
+		fflush(stdout);
+	}
+	unlink("junk");
+	return 0;
+}
