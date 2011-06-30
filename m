@@ -1,73 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753496Ab1F3WyC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 18:54:02 -0400
-Received: from webbox4.loswebos.de ([213.187.93.205]:55771 "EHLO
-	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab1F3WyA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 18:54:00 -0400
-Date: Fri, 1 Jul 2011 00:53:52 +0200
-From: Marc Koschewski <marc@osknowledge.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: Re: [REGRESSION] suspend/resume broken on T510
-Message-ID: <20110630225351.GA17981@marc.osknowledge.org>
-References: <20110630220050.GB30291@marc.osknowledge.org>
- <201107010007.27588.rjw@sisk.pl>
+	id S1753930Ab1F3Wyh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 18:54:37 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44761 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753456Ab1F3Wyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 18:54:33 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [PATCH 7/10 v6] PM / Domains: Don't stop wakeup devices during system sleep transitions
+Date: Fri, 1 Jul 2011 00:55:26 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+References: <201106112223.04972.rjw@sisk.pl> <201106302137.23801.rjw@sisk.pl> <878vsjdjpx.fsf@ti.com>
+In-Reply-To: <878vsjdjpx.fsf@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201107010007.27588.rjw@sisk.pl>
-X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E 38C9 5ECF E5BD 3430 ABF5
-X-PGP-Key: http://www.kosik.org/pubkey.asc
-X-Blog: http://www.kosik.org/blog/
-X-Operating-System: Linux marc 2.6.39-dezzy
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107010055.26952.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Rafael J. Wysocki <rjw@sisk.pl> [2011-07-01 00:07:27 +0200]:
+On Friday, July 01, 2011, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> 
+> > On Thursday, June 30, 2011, Kevin Hilman wrote:
+> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> >> 
+> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >> >
+> >> > Devices that are set up to wake up the system from sleep states
+> >> > should not be stopped and power should not be removed from them
+> >> > when the system goes into a sleep state.  
+> >> 
+> >> I don't think this belongs in the generic layer since the two
+> >> assumptions above are not generally true on embedded systems, and would
+> >> result in rather significant power consumption unnecessarily.
+> >
+> > As to whether or not this belongs to the generic layer, I don't quite agree
+> > (see below), but the changelog seems to be a bit inaccurate.
+> >
+> >> First, whether the device should be stopped on device_may_wakeup():
+> >> b
+> >> Some IP blocks (at least on OMAP) have "asynchronous" wakeups.  Meaning
+> >> that they can generate wakeups even when they're not clocked (a.k.a
+> >> stopped).  So in this case, even after a ->stop_device (which clock
+> >> gates the IP), it can still generate wakeups.
+> >> 
+> >> Second, whether the device should be powered off if device_may_wakeup():
+> >> 
+> >> Embedded SoCs have other ways to wakeup than device-level wakeups.
+> >> 
+> >> For example, on OMAP, every pad on the SoC can be configured as a wakeup
+> >> source So, for example, you could completely power down the UART IP
+> >> blocks (and the enclosing power domain), configure the UART RX pad as a
+> >> wakeup source, and still wakeup the system on UART activity.  The OMAP
+> >> docs call these IO pad wakeups.
+> >> 
+> >> On OMAP in fact, this is the common, default behavior when we enable
+> >> "off-mode" in idle and/or suspend, since most of the IPs are powered off
+> >> but can still wake up the system.
+> >> 
+> >> So in summary, even if device_may_wakeup() is true, many devices (with
+> >> additional SoC magic) can still generate wakeups even when stopped and
+> >> powered off.
+> >
+> > Well, on the other hand, on some SoCs there are devices that can't be
+> > powered off (or "declocked") if they are supposed to generate wakeups.
+> 
+> Correct.
+> 
+> > Also, I'm sure there are cases in which wakeups can be generated for devices
+> > with their clocks off, but only if power is present.  
+> 
+> Yes.
+> 
+> > So there are multiple
+> > cases, but not so many overall.  So, IMO, it makes sense to handle that at
+> > the generic level, although not necessarily in such a simplistic way.
+> >
+> > Now, at this point, I want to do something very simple, which I think is
+> > done by this patch. 
+> >
+> > Is this optimal power comsumption-wise for every potential
+> > user of the framework?  
+> 
+> Well, sub-optimal would be an understatement.  I would consider this a
+> major regression since if we were to use this for OMAP, we would never
+> hit the full-chip low-power states if *any* device had wakeups enabled,
+> whereas today we can.
+> 
+> > No, but certainly for some it's sufficient.  Is it
+> > going to work in general?  I think it is.
+> >
+> > Of course, there's the question how to handle that more accurately and I have
+> > some ideas.  If you have any, please let me know.
+> >
+> > In the meantime, I'm going to modify the changelog so that it's clear that
+> > it's a "first approximation" thing, like in the patch below.
+> >
+> > Thanks,
+> > Rafael
+> >
+> > ---
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> > Subject: PM / Domains: Don't stop wakeup devices during system sleep transitions
+> >
+> > There is the problem how to handle devices set up to wake up the
+> > system from sleep states during system-wide power transitions.
+> > In some cases, those devices can be turned off entirely, because the
+> > wakeup signals will be generated on their behalf anyway.  In some
+> > other cases, they will generate wakeup signals if their clocks are
+> > stopped, but only if power is not removed from them.  Finally, in
+> > some cases, they can only generate wakeup signals if power is not
+> > removed from them and their clocks are enabled.
+> 
+> That's a good summary.
+> 
+> > In the future, it will be necessary to take all of the above
+> > situations into account, but for starters it is possible to use
+> > the observation that if all wakeup devices are treated like the
+> > last group (i.e. their clocks are enabled and power in not removed
+> > from them during system suspend transitions), they all will be able
+> > to generate wakeups, although power consumption in the resulting
+> > system sleep state may not be optimal in some cases.
+> 
+> I'm not opposed to this kind of check happening.  I'm only opposed to it
+> happening in this "generic" layer because..., well, it's not generic.
+> 
+> Not only is it not generic, it would be a major regression in power
+> consumption for anyone moving to this layer that has the various
+> different wakeup capabilities already described.
+> 
+> The decision of whether or not to clock gate and/or power gate based on
+> wakeup capabilies has to be made somewhere (and in fact is already made
+> by existing code.)  But IMO, that decision should only be made where
+> wakeup capabilies are known, so that sensible decisions (for power
+> management) can be made.
+> 
+> Until there is a way in the generic code to distinguish between the
+> various ways a device can wakeup, this decision should be left up to the
+> code that knows how.
 
-Hi,
+OK, so I suppose your suggestion is to drop the patch and let the
+.stop_device() and .power_off() PM domain callbacks to hand that, is this
+correct?
 
-here's the bug: https://bugzilla.kernel.org/show_bug.cgi?id=38582
-
-> Hi,
-> 
-> On Friday, July 01, 2011, Marc Koschewski wrote:
-> > Hi guys,
-> > 
-> > I just thought to wait some what longer than -rc3 to report: suspend/resume is
-> > broken in the current git. I blacklisted the 'mei' module so the suspend worked
-> > as of rc4 (last 'first tested and working' version) with knowledge of the
-> > mei-bug.
-> > 
-> > However, my system does not resume anymore on my T510. After suspend the 'moon'
-> > turns on as usual on 3.0.0-git and the box sleeps. After opening the lid it somehow
-> > wakes up but doesn't boot/resume. It just stalls after some HDD activity.
-> > 
-> > If have no idea what it could be - and I unfortunately cannot bisect it down to
-> > anything > 2.6.39. I left out rc1 and rc2 this time due to having no time to
-> > experiment this month. However, my .config is attached if anyone needs it...
-> 
-> Well, perhaps let us know the hardware configuration (attach dmesg?).
-> 
-> Anyway, I'm not sure if there's anyone who can figure out what _may_ be wrong
-> on the basis of your description alone.  It would be good if you could file
-> a bug in http://bugzilla.kernel.org and let me know its number.
-> 
-> Thanks,
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-
--- 
-Marc Koschewski
+Rafael
