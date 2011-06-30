@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751946Ab1F3Lkr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 07:40:47 -0400
-Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:7372
-	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751361Ab1F3Lkm (ORCPT
+	id S1751884Ab1F3Lms (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 07:42:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:55954 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751361Ab1F3Lmn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 07:40:42 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zz9371M542M1432N98dKzz1202hzzz32i2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:203.197.93.240;KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: "jic23@cam.ac.uk" <jic23@cam.ac.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dajun <dajun.chen@diasemi.com>,
-        "grant@secretlab.ca" <grant@secretlab.ca>
-Date: Thu, 30 Jun 2011 17:10:31 +0530
-Subject: RE: [PATCH 02/11] GPIO: DA9052 GPIO module v1
-Thread-Topic: [PATCH 02/11] GPIO: DA9052 GPIO module v1
-Thread-Index: Acw26DOFy0nYiIvFQ6ytHGMNrhzvLAAMOoRw
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D152EB8925D@KCINPUNHJCMS01.kpit.com>
-References: <1309355591.2344.4.camel@L-0532.kpit.com>
- <20110630053711.GB796@opensource.wolfsonmicro.com>
-In-Reply-To: <20110630053711.GB796@opensource.wolfsonmicro.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Thu, 30 Jun 2011 07:42:43 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH 3/3] pwm: Add a i.MX23/28 pwm driver
+Date: Thu, 30 Jun 2011 13:42:35 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Ryan Mallon <ryan@bluewatersys.com>
+References: <1309430517-23821-1-git-send-email-s.hauer@pengutronix.de> <1309430517-23821-4-git-send-email-s.hauer@pengutronix.de>
+In-Reply-To: <1309430517-23821-4-git-send-email-s.hauer@pengutronix.de>
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106301342.36088.arnd@arndb.de>
+X-Provags-ID: V02:K0:lt0SwOsmY4qIHYAM96sADkOFVxTBqZt71DSvBNJqCJR
+ Rn/cNZP/4//fFjUW05zn6hc0aPICO8LA8sLx04j1mawWpirQ0m
+ TIPbLEvpiFtw7mCo3VErs2Bf/pXDfrSDJ4wAlGIsptY0gyE006
+ v1Pnn0nCfTeIziub44QK4jv6LkuY9W2Z0SP1THxrCPnLCd5Ze1
+ adYZbHiTwm9dZN2gfbgoQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5UBetxg028378
 
-> -----Original Message-----
-> From: Mark Brown [mailto:broonie@opensource.wolfsonmicro.com]
-> Sent: Thursday, June 30, 2011 11:07 AM
-> To: Ashish Jangam
-> Cc: jic23@cam.ac.uk; linux-kernel@vger.kernel.org; Dajun; grant@secretlab.ca
-> Subject: Re: [PATCH 02/11] GPIO: DA9052 GPIO module v1
-> 
-> On Wed, Jun 29, 2011 at 07:23:11PM +0530, ashishj3 wrote:
-> 
-> > DA9052 PMIC has 16 bit GPIO bus for peripheral control.
-> >
-> > This patch add support for the GPIO pins on the DA9052.
-> 
-> > +	gpio->da9052 = dev_get_drvdata(pdev->dev.parent);
-> > +	pdata = gpio->da9052->dev->platform_data;
-> > +
-> > +	if (pdata == NULL) {
-> > +		dev_err(&pdev->dev, "Failed no platform data for GPIO\n");
-> > +		ret = -ENOMEM;
-> > +		goto err_mem;
-> > +	}
-> 
-> Why insist on platform data?  gpiolib can dynamically allocate a GPIO
-> range to the device.
-Do you mean to use gpiochip_reserve() in machine file and not to have ngpio 
-and base defined in GPIO platform driver but, this will fail the call to gpiochip_add()?
-Can you elaborate on it?
+On Thursday 30 June 2011, Sascha Hauer wrote:
+> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 
+Hi Sascha,
 
+The probing looks good to me now. I would have added extra code to avoid
+ioremapping the same page multiple times, but I see this as a matter of
+different preferences, so I'm fine with that.
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+You are still missing a description of the driver, both in the changelog
+above and in the Kconfig patch. A small sentence to spell out PWM
+in the changelog and to list the devices that will use this driver
+would be helpful to the causal reader.
+
+Provided that you add that:
+
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+
+> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> index 93c1052..5694574 100644
+> --- a/drivers/pwm/Kconfig
+> +++ b/drivers/pwm/Kconfig
+> @@ -2,11 +2,15 @@ menuconfig PWM
+>  	bool "PWM Support"
+>  	help
+>  	  This enables PWM support through the generic PWM framework.
+> -	  You only need to enable this, if you also want to enable
+> +	  You only need to enable this if you also want to enable
+>  	  one or more of the PWM drivers below.
+>  
+>  	  If unsure, say N.
+>  
+
+I think this hunk should have been in the other first patch.
+
+	Arnd
