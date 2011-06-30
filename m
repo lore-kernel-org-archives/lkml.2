@@ -1,88 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab1F3QNd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 12:13:33 -0400
-Received: from ns.penguin.cz ([84.21.108.25]:57539 "EHLO ns.penguin.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751242Ab1F3QNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 12:13:32 -0400
-Subject: Re: kernel panic in spi_complete() on spitz (PXA270)
-From: Stanislav Brabec <utx@penguin.cz>
-To: Igor Grinberg <grinberg@compulab.co.il>
-Cc: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        zaurus-devel@www.linuxtogo.org,
-        spi-devel-general@lists.sourceforge.net, vapier@gentoo.org,
-        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org, pavel@ucw.cz,
-        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
-        akpm@linux-foundation.org, broonie@opensource.wolfsonmicro.com
-In-Reply-To: <4E0C957F.8080807@compulab.co.il>
-References: <1308845380.4533.54.camel@oct.suse.cz>
-	 <201106301352.21684.marek.vasut@gmail.com>
-	 <1309445118.4406.47.camel@oct.suse.cz>  <4E0C957F.8080807@compulab.co.il>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Jun 2011 18:13:26 +0200
-Message-ID: <1309450406.4406.59.camel@oct.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1751687Ab1F3QOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 12:14:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:43418 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751050Ab1F3QOr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 12:14:47 -0400
+Date: Thu, 30 Jun 2011 18:14:42 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC][PATCH] kprobes: Add separate preempt_disabling for kprobes
+Message-ID: <20110630161439.GA8508@somewhere>
+References: <1309440213.26417.76.camel@gandalf.stny.rr.com>
+ <1309449117.26417.90.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309449117.26417.90.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Igor Grinberg wrote:
-> On 06/30/11 17:45, Stanislav Brabec wrote:
-> I want to
-> > add .needs_regulator bool to ads7846.c and send the patch again to the
-> > list.
+On Thu, Jun 30, 2011 at 11:51:57AM -0400, Steven Rostedt wrote:
+> Kprobes requires preemption to be disabled as it single steps the code
+> it replaced with a breakpoint. But because the code that is single
+> stepped could be reading the preempt count, the kprobe disabling of the
+> preempt count can cause the wrong value to end up as a result. Here's an
+> example:
 > 
-> Please, don't...
-> I thought we've finished discussing the regulator issue...
+> If we add a kprobe on a inc_preempt_count() call:
+> 
+> 	[ preempt_count = 0 ]
+> 
+> 	ld preempt_count, %eax	<<--- trap
+> 
+> 		<trap>
+> 		preempt_disable();
+> 		[ preempt_count = 1]
+> 		setup_singlestep();
+> 		<trap return>
+> 
+> 	[ preempt_count = 1 ]
+> 
+> 	ld preempt_count, %eax
+> 
+> 	[ %eax = 1 ]
+> 
+> 		<trap>
+> 		post_kprobe_handler()
+> 			preempt_enable_no_resched();
+> 			[ preempt_count = 0 ]
+> 		<trap return>
+> 
+> 	[ %eax = 1 ]
+> 
+> 	add %eax,1
+> 
+> 	[ %eax = 2 ]
+> 
+> 	st %eax, preempt_count
+> 
+> 	[ preempt_count = 2 ]
+> 
+> 
+> We just caused preempt count to increment twice when it should have only
+> incremented once, and this screws everything else up.
+> 
+> To solve this, I've added a per_cpu variable called
+> kprobe_preempt_disabled, that is set by the kprobe code. If it is set,
+> the preempt_schedule() will not preempt the code.
+> 
+> I did not update task_struct for a separate variable for kprobes to test
+> because it would just bloat that structure with one more test. Adding a
+> flag per cpu is much better than adding one per task. The kprobes are
+> slow anyway, so causing it to do a little bit more work is not a
+> problem.
+> 
+> I tested this code against the probes that caused my previous crashes,
+> and it works fine.
 
-The discussion ended without a fix (at least for spitz). I seen two
-proposals:
-- As ADS7846 hardware does not require dedicated regulator, don't
-  require it in driver and fail only on platforms that have a dedicated
-  regulator.
-- Use dummy regulators for all platforms without dedicated ADS7846
-  regulator.
+That's a bit sad we need to bloat preempt_schedule() with a new test, especially
+as kprobes should not add overhead in the off case and then I guess many distros
+enable kprobes by default, so it's probably not just enabled on some debug kernel.
 
->1) add regulator definition for ads7846 into the board file
-There is no dedicated regulator on spitz, ADS7846 uses common always-on
-power supply.
+Another idea could be to turn current_thread_info()->preempt_count into a local_t
+var which ensures a single incrementation is performed in a single instruction.
 
->2) enable the CONFIG_REGULATOR_DUMMY in your kernel configuration
->3) use regulator_use_dummy_regulator() call in the board file.
+Well, in the hope that every arch can do something like:
 
-OK, I will do 2 or 3. In the new kernel spitz has a regulator, but it is
-not related to ADS7846. And it is actually broken:
+inc (mem_addr)
 
-I2C: i2c-0: PXA I2C adapter
-Resetting I2C Controller Unit
- (null): i2c_pxa_abort: called in slave mode
-i2c i2c-1: adapter [pxa_i2c-i2c.1] registered
-i2c 1-000c: uevent
-isl6271a 1-000c: probe
-i2c i2c-1: master_xfer[0] R, addr=0x0c, len=1
-i2c i2c-1: setting to bus master
-i2c i2c-1: state:i2c_pxa_handler:981: ISR=00000442, ICR=000007e0, IBMR=03
-i2c i2c-1: state:i2c_pxa_irq_txempty:932: ISR=00000002, ICR=000007e0, IBMR=03
-i2c i2c-1: Retrying transmission
-i2c i2c-1: setting to bus master
-i2c i2c-1: state:i2c_pxa_handler:981: ISR=00000045, ICR=000007e1, IBMR=00
-i2c i2c-1: state:i2c_pxa_irq_txempty:932: ISR=00000005, ICR=000017ee, IBMR=00
-i2c i2c-1: state:i2c_pxa_handler:981: ISR=00000087, ICR=000017e6, IBMR=00
-print_constraints: vcc_core range: 850 <--> 1600 mV at 1350 mV 
-print_constraints: vcc_core range: 1100 mV 
-isl6271a 1-000c: Failed to set supply vcc_core
-isl6271a 1-000c: failed to register isl6271a
-isl6271a: probe of 1-000c failed with error -16
-i2c i2c-1: client [isl6271a] registered with bus id 1-000c
-I2C: i2c-1: PXA I2C adapter
-...
-cpufreq: Didn't find vcc_core regulator
+IIRC, I believe arm can't... And the default local_inc is probably not helpful
+in our case...
 
--- 
-Stanislav Brabec
-http://www.penguin.cz/~utx
-
+> 
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+> index f1a6244..2ed67e6 100644
+> --- a/arch/x86/kernel/kprobes.c
+> +++ b/arch/x86/kernel/kprobes.c
+> @@ -475,7 +475,7 @@ static void __kprobes setup_singlestep(struct kprobe *p, struct pt_regs *regs,
+>  		 * stepping.
+>  		 */
+>  		regs->ip = (unsigned long)p->ainsn.insn;
+> -		preempt_enable_no_resched();
+> +		kprobe_preempt_enable();
+>  		return;
+>  	}
+>  #endif
+> @@ -547,7 +547,7 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+>  	 * re-enable preemption at the end of this function,
+>  	 * and also in reenter_kprobe() and setup_singlestep().
+>  	 */
+> -	preempt_disable();
+> +	kprobe_preempt_disable();
+>  
+>  	kcb = get_kprobe_ctlblk();
+>  	p = get_kprobe(addr);
+> @@ -583,7 +583,7 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+>  		 * the original instruction.
+>  		 */
+>  		regs->ip = (unsigned long)addr;
+> -		preempt_enable_no_resched();
+> +		kprobe_preempt_enable();
+>  		return 1;
+>  	} else if (kprobe_running()) {
+>  		p = __this_cpu_read(current_kprobe);
+> @@ -593,7 +593,7 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+>  		}
+>  	} /* else: not a kprobe fault; let the kernel handle it */
+>  
+> -	preempt_enable_no_resched();
+> +	kprobe_preempt_enable();
+>  	return 0;
+>  }
+>  
+> @@ -917,7 +917,7 @@ static int __kprobes post_kprobe_handler(struct pt_regs *regs)
+>  	}
+>  	reset_current_kprobe();
+>  out:
+> -	preempt_enable_no_resched();
+> +	kprobe_preempt_enable();
+>  
+>  	/*
+>  	 * if somebody else is singlestepping across a probe point, flags
+> @@ -951,7 +951,7 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
+>  			restore_previous_kprobe(kcb);
+>  		else
+>  			reset_current_kprobe();
+> -		preempt_enable_no_resched();
+> +		kprobe_preempt_enable();
+>  		break;
+>  	case KPROBE_HIT_ACTIVE:
+>  	case KPROBE_HIT_SSDONE:
+> @@ -1098,7 +1098,7 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
+>  		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
+>  		       kcb->jprobes_stack,
+>  		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
+> -		preempt_enable_no_resched();
+> +		kprobe_preempt_enable();
+>  		return 1;
+>  	}
+>  	return 0;
+> @@ -1530,7 +1530,7 @@ static int  __kprobes setup_detour_execution(struct kprobe *p,
+>  		regs->ip = (unsigned long)op->optinsn.insn + TMPL_END_IDX;
+>  		if (!reenter)
+>  			reset_current_kprobe();
+> -		preempt_enable_no_resched();
+> +		kprobe_preempt_enable();
+>  		return 1;
+>  	}
+>  	return 0;
+> diff --git a/include/linux/sched.h b/include/linux/sched.h
+> index a837b20..c7c423e 100644
+> --- a/include/linux/sched.h
+> +++ b/include/linux/sched.h
+> @@ -258,6 +258,24 @@ extern spinlock_t mmlist_lock;
+>  
+>  struct task_struct;
+>  
+> +#ifdef CONFIG_KPROBES
+> +DECLARE_PER_CPU(int, kprobe_preempt_disabled);
+> +
+> +static inline void kprobe_preempt_disable(void)
+> +{
+> +	preempt_disable();
+> +	__get_cpu_var(kprobe_preempt_disabled) = 1;
+> +	preempt_enable_no_resched();
+> +}
+> +
+> +static inline void kprobe_preempt_enable(void)
+> +{
+> +	preempt_disable();
+> +	__get_cpu_var(kprobe_preempt_disabled) = 0;
+> +	preempt_enable_no_resched();
+> +}
+> +#endif
+> +
+>  #ifdef CONFIG_PROVE_RCU
+>  extern int lockdep_tasklist_lock_is_held(void);
+>  #endif /* #ifdef CONFIG_PROVE_RCU */
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 3f2e502..990d53d 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -443,6 +443,30 @@ static struct root_domain def_root_domain;
+>  
+>  #endif /* CONFIG_SMP */
+>  
+> +#ifdef CONFIG_KPROBES
+> +/*
+> + * Kprobes can not disable preempting with the preempt_count.
+> + * If it does, and it single steps kernel code that modifies
+> + * the preempt_count, it will corrupt the result.
+> + *
+> + * Since kprobes is slow anyways, we do not need to bloat the
+> + * task_struct or thread_struct with another variable to test.
+> + * Simply use a per_cpu variable and require the kprobe code
+> + * to disable preemption normally to set it.
+> + */
+> +DEFINE_PER_CPU(int, kprobe_preempt_disabled);
+> +
+> +static inline int preempt_disabled_kprobe(void)
+> +{
+> +	return __get_cpu_var(kprobe_preempt_disabled);
+> +}
+> +#else
+> +static inline int preempt_disabled_kprobe(void)
+> +{
+> +	return 0;
+> +}
+> +#endif
+> +
+>  /*
+>   * This is the main, per-CPU runqueue data structure.
+>   *
+> @@ -4106,7 +4130,7 @@ void __kprobes add_preempt_count(int val)
+>  	DEBUG_LOCKS_WARN_ON((preempt_count() & PREEMPT_MASK) >=
+>  				PREEMPT_MASK - 10);
+>  #endif
+> -	if (preempt_count() == val)
+> +	if (preempt_count() == val && !preempt_disabled_kprobe())
+>  		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+>  }
+>  EXPORT_SYMBOL(add_preempt_count);
+> @@ -4127,7 +4151,7 @@ void __kprobes sub_preempt_count(int val)
+>  		return;
+>  #endif
+>  
+> -	if (preempt_count() == val)
+> +	if (preempt_count() == val && !preempt_disabled_kprobe())
+>  		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
+>  	preempt_count() -= val;
+>  }
+> @@ -4373,6 +4397,10 @@ asmlinkage void __sched notrace preempt_schedule(void)
+>  
+>  	do {
+>  		add_preempt_count_notrace(PREEMPT_ACTIVE);
+> +		if (unlikely(preempt_disabled_kprobe())) {
+> +			sub_preempt_count_notrace(PREEMPT_ACTIVE);
+> +			break;
+> +		}
+>  		schedule();
+>  		sub_preempt_count_notrace(PREEMPT_ACTIVE);
+>  
+> 
+> 
