@@ -1,384 +1,761 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758365Ab1F3GxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 02:53:17 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42364 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752512Ab1F3GxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 02:53:11 -0400
-Date: Thu, 30 Jun 2011 16:53:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for June 30
-Message-Id: <20110630165302.12ee1bd0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__30_Jun_2011_16_53_02_+1000_GxcdRh6nIsmNp_1g"
+	id S1758420Ab1F3Gy5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 02:54:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62172 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754227Ab1F3Gyu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 02:54:50 -0400
+MIME-Version: 1.0
+In-Reply-To: <4E0C1015.3020300@freemail.hu>
+References: <4DDBF8BD.3000603@freemail.hu>
+	<20110524183448.GA18511@kroah.com>
+	<4DDC142E.6070003@freemail.hu>
+	<20110525031222.GB14290@haskell.muteddisk.com>
+	<4DDC93D5.9070607@freemail.hu>
+	<4DDDFDA7.6030900@freemail.hu>
+	<4E097A32.1000504@freemail.hu>
+	<20110629233435.GB37164@haskell.muteddisk.com>
+	<BANLkTi=qXgnapyrsSANJ0XZuE=kz7QgsvA@mail.gmail.com>
+	<4E0C1015.3020300@freemail.hu>
+Date: Thu, 30 Jun 2011 14:54:47 +0800
+X-Google-Sender-Auth: J8k6Ojndey6ibmYCrDwNHovWg-k
+Message-ID: <BANLkTinkOApeyeniirchn0gPApzdwHY5ww@mail.gmail.com>
+Subject: Re: [PATCH, RFC] USBIP protocol documentation
+From: Matt Chen <machen@novell.com>
+To: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+Cc: Greg KH <greg@kroah.com>, Matthew Wilcox <matthew@wil.cx>,
+        Max Vozeler <max@vozeler.com>, Joe Perches <joe@perches.com>,
+        David Chang <dchang@novell.com>, linux-usb@vger.kernel.org,
+        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__30_Jun_2011_16_53_02_+1000_GxcdRh6nIsmNp_1g
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Németh and Matt,
+We are also working on reviewing protocol here. We were wondering if
+you are available for letting us know which part you've already done.
+Then we can save the time for doing the same parts.
+And also we would like to follow your suggesting format to work on it.
+Then it would make it work much faster.
+Any suggestion ?
 
-Hi all,
+2011/6/30 Németh Márton <nm127@freemail.hu>
+>
+> Matt Chen wrote:
+> > Hi Matt,
+> >
+> >
+> > 2011/6/30 matt mooney <mfm@muteddisk.com <mailto:mfm@muteddisk.com>>:
+> >> On 08:52 Tue 28 Jun     , N??meth M??rton wrote:
+> >>> From: M??rton N??meth <nm127@freemail.hu <mailto:nm127@freemail.hu>>
+> >>>
+> >>> USBIP v1.0.0 protocol documentation.
+> >>>
+> >>> Signed-off-by: M??rton N??meth <nm127@freemail.hu
+> > <mailto:nm127@freemail.hu>>
+> >>> ---
+> >>>
+> >>> Hi,
+> >>>
+> >>> I tried to document the USBIP protocol as implemented in the Linux
+> > kernel 3.0-rc2.
+> >>
+> >> Yeah, thanks for doing this. I am also documenting the protocol but am not
+> >> finished yet. We can use yours as the base if you would like although
+> > I have a
+> >> few suggestions.
+> >>
+> >> For one, the grammar needs to be cleaned up, but instead of me
+> > pointing out all
+> >> of the needed corrections, I will send in a grammar corrections patch
+> > on top of
+>
+> Please go on with the corrections. I really started documenting the
+> current USBIP protocol because I think digging in the source code is
+> not the right way to describe a protocol. I'm happy that the review
+> of the USBIP protocol description started. Once we have documented the current
+> USBIP protocol I think we'll see more clearly its weaknesses.
+>
+> What I think important to include in the protocol description is to
+> identify the unused fields and specify an exact value (usually zero) to
+> use for these fields. This makes possible future extension of the protocol
+> easy.
+>
+> One more random thing which came to my mind is that I tend to think that
+> the current implementation is buggy when ISO packets are transmitted.
+> I have a hama AC-150 webcam which is not working well with USBIP. This
+> webcam usually sends smaller ISO packets so there is a gap between
+> the ISO packets in one single URB. The problem came up already in case
+> of usbmon, see https://bugzilla.kernel.org/show_bug.cgi?id=22182 and
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=b17ea167c5fb50dcd5dce5b874a467f04eec886d
+> .
+>
+> >> the finished document. I like that you did a time sequence diagram,
+> > which is
+> >> something I had neglected to include myself; however, I am not a big
+> > fan of how
+> >> you laid out the messages. I was planning on using packet diagrams.
+> > IMHO, it
+> >> makes understanding the message composition much easier allowing more
+> > insight to
+> >> be gathered from a cursory glance.
+> >>
+> >>
+> >>    Message Format
+> >>    --------------
+> >>         0               1               2               3
+> >>        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+> >>        |            Version            |            Opcode             |
+> >>        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+> >>        |                            Status                             |
+> >>        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+> >>        .                                                               .
+> >>        .                             Data                              .
+> >>        .                                                               .
+> >>        +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+> >>
+> >>    Version: 16 bit
+> >>        Binary-coded decimal version number of the usbip-utils package from
+> >>        which the program was built.
+> >>
+> >>    Opcode: 16 bits
+> >>        ...
+> >>
+> > So as you mentioned, the message format is looked like below:
+> >
+> > OP_REQ_DEVLIST Message Format
+> >
+> >          0                 1               2
+> > 3                 4
+> >         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+> >         | 0000 0000 1000 0000 | 1000 0000 0000 0101 |
+> >         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+> >         | 0000 0000 0000 0000   0000 0000 0000 0000 |
+> >         +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+> >
+> > Is this correct ?
+> >
+> > Personally, I like this way to describe the protocol.  ;-)
+>
+> This layout format what is used in other RFCs, too, is really a better
+> way to show the messages. I think, however, that we don't need to put
+> the values in binary format, we could just put one hexadecimal number
+> in the gaps, like this:
+>
+>  OP_REQ_DEVLIST Message Format
+>
+>
+>     0               1               2               3
+>    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+>    |            0x0100             |            0x8005             |
+>    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+>    |                          0x00000000                           |
+>    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+>
+> >> As you may or may not see, I was going to take a more generic approach
+> > and then
+> >> describe the fields on a per-op basis. Of course, the main point here
+> > is that
+> >> the protocol is documented, so I am not opposed to a different style
+> > being used.
+> >>
+> >> But if you insist on the current layout, do not put a value for the
+> > version
+> >> because it is not constant (and in fact no longer at 1.0.0). And the
+> > "Meaning"
+> >> header should be "Description" or something better.
+> >>
+> >> Hmm, taking another look the layout just seems to busy... I really do
+> > think we
+> >> should find a different way to format the information.
+> >>
+> >> Thanks,
+> >> matt
+> >>
+> >>> The description is a preliminary draft only, it may contain mistakes.
+> > I tried
+> >>> to document what I have understand from the source code and from the
+> > actual
+> >>> captured network traffic when the USBIP is in action. Please review
+> > it, correct it,
+> >>> point out the missing parts.
+> >>>
+> >>> During I have documented the protocol a question came into my mind:
+> > why do we
+> >>> have two different type of package when the URB completition handler
+> > is called,
+> >>> namely USB_RET_SUBMIT and USBIP_RET_UNLINK? As far as I can see this
+> > causes race
+> >>> condition because for one URB the completition handler is only called
+> > once. If
+> >>> the one URB is sent in with USB_CMD_SUBMIT and then unlinked with
+> > USB_CMD_UNLINK
+> >>> the completition handler is called only once. In the protocol,
+> > however, we have
+> >>> two different type of packets: USB_RET_SUBMIT and USBIP_RET_UNLINK.
+> > The status
+> >>> field of these messages may contain anything in this case depending
+> > on the timing.
+> >>>
+> >>> Regards,
+> >>>
+> >>>       M??rton N??meth
+> >>> ---
+> >>> diff -uprN staging-2.6.orig/drivers/staging/usbip/usbip_protocol.txt
+> > staging-2.6/drivers/staging/usbip/usbip_protocol.txt
+> >>> --- staging-2.6.orig/drivers/staging/usbip/usbip_protocol.txt
+> > 1970-01-01 01:00:00.000000000 +0100
+> >>> +++ staging-2.6/drivers/staging/usbip/usbip_protocol.txt
+> >  2011-06-28 08:30:04.000000000 +0200
+> >>> @@ -0,0 +1,352 @@
+> >>> +PRELIMINARY DRAFT, MAY CONTAIN MISTAKES!
+> >>> +28 Jun 2011
+> >>> +
+> >>> +The USB/IP protocol follows a server/client architecture. The server
+> > exports the
+> >>> +USB devices and the clients imports them. The device driver for the
+> > exported
+> >>> +USB device runs on the client machine.
+> >>> +
+> >>> +The client may ask for the list of the exported USB devices. To get
+> > the list the
+> >>> +client opens a TCP/IP connection towards the server, and sends an
+> > OP_REQ_DEVLIST
+> >>> +packet on top of the TCP/IP connection (so the actual OP_REQ_DEVLIST
+> > may be sent
+> >>> +in one or more pieces at the low level transport layer). The server
+> > sends back
+> >>> +the OP_REP_DEVLIST packet which lists the exported USB devices.
+> > Finally the
+> >>> +TCP/IP connection is closed.
+> >>> +
+> >>> + virtual host controller                                 usb host
+> >>> +      "client"                                           "server"
+> >>> +  (imports USB devices)                             (exports USB
+> > devices)
+> >>> +          |                                                 |
+> >>> +          |                  OP_REQ_DEVLIST                 |
+> >>> +          | ----------------------------------------------> |
+> >>> +          |                                                 |
+> >>> +          |                  OP_REP_DEVLIST                 |
+> >>> +          | <---------------------------------------------- |
+> >>> +          |                                                 |
+> >>> +
+> >>> +Once the client knows the list of exported USB devices it may decide
+> > to use one
+> >>> +of them. First the client opens a TCP/IP connection towards the
+> > server and
+> >>> +sends an OP_REQ_IMPORT packet. The server replies with
+> > OP_REP_IMPORT. If the
+> >>> +import was successful the TCP/IP connection remains open and will be
+> > used
+> >>> +to trasfer the URB traffic between the client and the server. The
+> > client may
+> >>> +send two types of packets: the USBIP_CMD_SUBMIT to submit an URB, and
+> >>> +USBIP_CMD_UNLINK to unlink a previously submitted URB. The answers
+> > of the
+> >>> +server may be USBIP_RET_SUBMIT and USBIP_RET_UNLINK respectively.
+> >>> +
+> >>> + virtual host controller                                 usb host
+> >>> +      "client"                                           "server"
+> >>> +  (imports USB devices)                             (exports USB
+> > devices)
+> >>> +          |                                                 |
+> >>> +          |                  OP_REQ_IMPORT                  |
+> >>> +          | ----------------------------------------------> |
+> >>> +          |                                                 |
+> >>> +          |                  OP_REP_IMPORT                  |
+> >>> +          | <---------------------------------------------- |
+> >>> +          |                                                 |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_CMD_SUBMIT(seqnum = n)         |
+> >>> +          | ----------------------------------------------> |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_RET_SUBMIT(seqnum = n)         |
+> >>> +          | <---------------------------------------------- |
+> >>> +          |                        .                        |
+> >>> +          |                        :                        |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_CMD_SUBMIT(seqnum = m)         |
+> >>> +          | ----------------------------------------------> |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_CMD_SUBMIT(seqnum = m+1)       |
+> >>> +          | ----------------------------------------------> |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_CMD_SUBMIT(seqnum = m+2)       |
+> >>> +          | ----------------------------------------------> |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_RET_SUBMIT(seqnum = m)         |
+> >>> +          | <---------------------------------------------- |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_CMD_SUBMIT(seqnum = m+3)       |
+> >>> +          | ----------------------------------------------> |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_RET_SUBMIT(seqnum = m+1)       |
+> >>> +          | <---------------------------------------------- |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_CMD_SUBMIT(seqnum = m+4)       |
+> >>> +          | ----------------------------------------------> |
+> >>> +          |                                                 |
+> >>> +          |            USBIP_RET_SUBMIT(seqnum = m+2)       |
+> >>> +          | <---------------------------------------------- |
+> >>> +          |                        .                        |
+> >>> +          |                        :                        |
+> >>> +          |                                                 |
+> >>> +          |               USBIP_CMD_UNLINK                  |
+> >>> +          | ----------------------------------------------> |
+> >>> +          |                                                 |
+> >>> +          |               USBIP_RET_UNLINK                  |
+> >>> +          | <---------------------------------------------- |
+> >>> +          |                                                 |
+> >>> +
+> >>> +The fields are in network (big endian) byte order meaning that the
+> > most significant
+> >>> +byte (MSB) is stored at the lowest address.
+> >>> +
+> >>> +
+> >>> +OP_REQ_DEVLIST: Retrieve the list of exported USB devices.
+> >>> +
+> >>> + Offset    | Length | Value      | Meaning
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0         | 2      | 0x0100     | Binary-coded decimal USBIP
+> > version number: v1.0.0
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 2         | 2      | 0x8005     | Command code: Retrieve the list
+> > of exported USB
+> >>> +           |        |            |   devices.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 4         | 4      | 0x00000000 | Status: unused, shall be set to 0
+> >>> +
+> >>> +OP_REP_DEVLIST: Reply with the list of exported USB devices.
+> >>> +
+> >>> + Offset    | Length | Value      | Meaning
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0         | 2      | 0x0100     | Binary-coded decimal USBIP
+> > version number: v1.0.0.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 2         | 2      | 0x0005     | Reply code: The list of exported
+> > USB devices.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 4         | 4      | 0x00000000 | Status: 0 for OK
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 8         | 4      | n          | Number of exported devices: 0
+> > means no exported
+> >>> +           |        |            |   devices.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x0C      |        |            | From now on the exported n
+> > devices are described,
+> >>> +           |        |            |   if any. If no devices are
+> > exported the message
+> >>> +           |        |            |   ends with the previous "number
+> > of exported
+> >>> +           |        |            |   devices" field.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> +           | 256    |            | path: Path of the device on the
+> > host exporting the
+> >>> +           |        |            |   USB device, string closed with
+> > zero byte, e.g.
+> >>> +           |        |            |
+> > "/sys/devices/pci0000:00/0000:00:1d.1/usb3/3-2"
+> >>> +           |        |            |   The unused bytes shall be
+> > filled with zero
+> >>> +           |        |            |   bytes.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x10C     | 32     |            | busid: Bus ID of the exported
+> > device, string
+> >>> +           |        |            |   closed with zero byte, e.g.
+> > "3-2". The unused
+> >>> +           |        |            |   bytes shall be filled with zero
+> > bytes.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x12C     | 4      |            | busnum
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x130     | 4      |            | devnum
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x134     | 4      |            | speed
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x138     | 2      |            | idVendor
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x13A     | 2      |            | idProduct
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x13C     | 2      |            | bcdDevice
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x13E     | 1      |            | bDeviceClass
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x13F     | 1      |            | bDeviceSubClass
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x140     | 1      |            | bDeviceProtocol
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x141     | 1      |            | bConfigurationValue
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x142     | 1      |            | bNumConfigurations
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x143     | 1      |            | bNumInterfaces
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x144     |        | m_0        | From now on each interface is
+> > described, all
+> >>> +           |        |            |   together bNumInterfaces times,
+> > with the
+> >>> +           |        |            |   the following 4 fields:
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> +           | 1      |            | bInterfaceClass
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x145     | 1      |            | bInterfaceSubClass
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x146     | 1      |            | bInterfaceProtocol
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x147     | 1      |            | padding byte for alignment, shall
+> > be set to zero
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0xC +     |        |            | The second exported USB device
+> > starts at i=1
+> >>> + i*0x138 + |        |            | with the busid field.
+> >>> + m_(i-1)*4 |        |            |
+> >>> +
+> >>> +OP_REQ_IMPORT: Request to import (attach) a remote USB device.
+> >>> +
+> >>> + Offset    | Length | Value      | Meaning
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0         | 2      | 0x0100     | Binary-coded decimal USBIP
+> > version number: v1.0.0
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 2         | 2      | 0x8003     | Command code: import a remote USB
+> > device.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 4         | 4      | 0x00000000 | Status: unused, shall be set to 0
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 8         | 32     |            | busid: the busid of the exported
+> > device on the
+> >>> +           |        |            |   remote host. The possible
+> > values are taken
+> >>> +           |        |            |   from the message field
+> > OP_REP_DEVLIST.busid.
+> >>> +           |        |            |   A string closed with zero, the
+> > unused bytes
+> >>> +           |        |            |   shall be filled with zeros.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> +
+> >>> +OP_REP_IMPORT: Reply to import (attach) a remote USB device.
+> >>> +
+> >>> + Offset    | Length | Value      | Meaning
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0         | 2      | 0x0100     | Binary-coded decimal USBIP
+> > version number: v1.0.0
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 2         | 2      | 0x0003     | Reply code: Reply to import.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 4         | 4      | 0x00000000 | Status: 0 for OK
+> >>> +           |        |            |         1 for error
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 8         |        |            | From now on comes the details of
+> > the imported
+> >>> +           |        |            |   device, if the previous status
+> > field was OK (0),
+> >>> +           |        |            |   otherwise the reply ends with
+> > the status field.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> +           | 256    |            | path: Path of the device on the
+> > host exporting the
+> >>> +           |        |            |   USB device, string closed with
+> > zero byte, e.g.
+> >>> +           |        |            |
+> > "/sys/devices/pci0000:00/0000:00:1d.1/usb3/3-2"
+> >>> +           |        |            |   The unused bytes shall be
+> > filled with zero
+> >>> +           |        |            |   bytes.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x108     | 32     |            | busid: Bus ID of the exported
+> > device, string
+> >>> +           |        |            |   closed with zero byte, e.g.
+> > "3-2". The unused
+> >>> +           |        |            |   bytes shall be filled with zero
+> > bytes.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x128     | 4      |            | busnum
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x12C     | 4      |            | devnum
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x130     | 4      |            | speed
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x134     | 2      |            | idVendor
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x136     | 2      |            | idProduct
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x138     | 2      |            | bcdDevice
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x139     | 1      |            | bDeviceClass
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x13A     | 1      |            | bDeviceSubClass
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x13B     | 1      |            | bDeviceProtocol
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x13C     | 1      |            | bConfigurationValue
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x13D     | 1      |            | bNumConfigurations
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x13E     | 1      |            | bNumInterfaces
+> >>> +
+> >>> +USBIP_CMD_SUBMIT: Submit an URB
+> >>> +
+> >>> + Offset    | Length | Value      | Meaning
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0         | 4      | 0x00000001 | command: Submit an URB
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 4         | 4      |            | seqnum: the sequence number of
+> > the URB to submit
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 8         | 4      |            | devid
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
+> >>> +           |        |            |            1: USBIP_DIR_OUT
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x10      | 4      |            | ep: endpoint number, possible
+> > values are: 0...15
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x14      | 4      |            | transfer_flags: possible values
+> > depend on the
+> >>> +           |        |            |   URB transfer type, see below
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x18      | 4      |            | transfer_buffer_length
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x1C      | 4      |            | start_frame: specify the selected
+> > frame to
+> >>> +           |        |            |   transmit an ISO frame, ignored
+> > if URB_ISO_ASAP
+> >>> +           |        |            |   is specified at transfer_flags
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x20      | 4      |            | number_of_packets: number of ISO
+> > packets
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x24      | 4      |            | interval: maximum time for the
+> > request on the
+> >>> +           |        |            |   server-side host controller
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x28      | 8      |            | setup: data bytes for USB setup,
+> > filled with
+> >>> +           |        |            |   zeros if not used
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x30      |        |            | URB data. For ISO transfers the
+> > padding between
+> >>> +           |        |            |   each ISO packets is not
+> > transmitted.
+> >>> +
+> >>> +
+> >>> +  Allowed transfer_flags  | value      | control | interrupt | bulk
+> >     | isochronous
+> >>> +
+> > -------------------------+------------+---------+-----------+----------+-------------
+> >>> +  URB_SHORT_NOT_OK        | 0x00000001 | only in | only in   | only
+> > in  | no
+> >>> +  URB_ISO_ASAP            | 0x00000002 | no      | no        | no
+> >     | yes
+> >>> +  URB_NO_TRANSFER_DMA_MAP | 0x00000004 | yes     | yes       | yes
+> >    | yes
+> >>> +  URB_NO_FSBR             | 0x00000020 | yes     | no        | no
+> >     | no
+> >>> +  URB_ZERO_PACKET         | 0x00000040 | no      | no        | only
+> > out | no
+> >>> +  URB_NO_INTERRUPT        | 0x00000080 | yes     | yes       | yes
+> >    | yes
+> >>> +  URB_FREE_BUFFER         | 0x00000100 | yes     | yes       | yes
+> >    | yes
+> >>> +  URB_DIR_MASK            | 0x00000200 | yes     | yes       | yes
+> >    | yes
+> >>> +
+> >>> +
+> >>> +USBIP_RET_SUBMIT: Reply for submitting an URB
+> >>> +
+> >>> + Offset    | Length | Value      | Meaning
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0         | 4      | 0x00000002 | command
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 4         | 4      |            | seqnum: URB sequence number
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 8         | 4      |            | devid
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
+> >>> +           |        |            |            1: USBIP_DIR_OUT
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x10      | 4      |            | ep: endpoint number
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x14      | 4      |            | status: zero for successful URB
+> > transaction,
+> >>> +           |        |            |   otherwise some kind of error
+> > happened.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x18      | 4      | n          | actual_length: number of URB data
+> > bytes
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x1C      | 4      |            | start_frame: for an ISO frame the
+> > actually
+> >>> +           |        |            |   selected frame for transmit.
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x20      | 4      |            | number_of_packets
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x24      | 4      |            | error_count
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x28      | 8      |            | setup: data bytes for USB setup,
+> > filled with
+> >>> +           |        |            |   zeros if not used
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x30      | n      |            | URB data bytes. For ISO transfers
+> > the padding
+> >>> +           |        |            |   between each ISO packets is not
+> > transmitted.
+> >>> +
+> >>> +USBIP_CMD_UNLINK: Unlink an URB
+> >>> +
+> >>> + Offset    | Length | Value      | Meaning
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0         | 4      | 0x00000003 | command: URB unlink command
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 4         | 4      |            | seqnum: URB sequence number to
+> > unlink: FIXME: is this so?
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 8         | 4      |            | devid
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
+> >>> +           |        |            |            1: USBIP_DIR_OUT
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x10      | 4      |            | ep: endpoint number: zero
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x14      | 4      |            | seqnum: the URB sequence number
+> > given previously
+> >>> +           |        |            |   at USBIP_CMD_SUBMIT.seqnum field
+> >>> +
+> >>> +USBIP_RET_UNLINK: Reply for URB unlink
+> >>> +
+> >>> + Offset    | Length | Value      | Meaning
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0         | 4      | 0x00000004 | command: reply for the URB unlink
+> > command
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 4         | 4      |            | seqnum: the unlinked URB sequence
+> > number
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 8         | 4      |            | devid
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
+> >>> +           |        |            |            1: USBIP_DIR_OUT
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x10      | 4      |            | ep: endpoint number
+> >>>
+> > +-----------+--------+------------+---------------------------------------------------
+> >>> + 0x14      | 4      |            | status: This is the value
+> > contained in the
+> >>> +           |        |            |   urb->status in the URB
+> > completition handler.
+> >>> +           |        |            |   FIXME: a better explanation needed.
+> >>>
+> >> _______________________________________________
+> >> devel mailing list
+> >> devel@linuxdriverproject.org <mailto:devel@linuxdriverproject.org>
+> >> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+> >>
+> >
+> >
+> >
+> > --
+> > Thanks ~
+> > Matt Chen
+> >
+> >
+> >
+>
 
-Changes since 20110629:
 
-The powerpc tree gained a build failure for which I reverted a commit.
 
-The libata tree gained a conflict against Linus' tree.
-
-The net tree lost its 2 build failures but gained conflicts agains the
-scsi tree.
-
-The wireless tree lost its build failure.
-
-The security-testing tree lost its build failure, but produced a very
-conflicted merge result so I used the version from next-20110628.
-
-The kvm tree gained a conflict agains Linus' tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 194 trees (counting Linus' and 28 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Randy Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging kbuild-current/rc-fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging 52xx-and-virtex-current/powerpc/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging driver-core.current/driver-core-linus
-Merging tty.current/tty-linus
-Merging usb.current/usb-linus
-Merging staging.current/staging-linus
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging sh-current/sh-fixes-for-linus
-Merging rmobile-current/rmobile-fixes-for-linus
-Merging fbdev-current/fbdev-fixes-for-linus
-Merging devicetree-current/devicetree/merge
-Merging spi-current/spi/merge
-Merging arm/for-next
-Merging arm-lpae/for-next
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
-CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
-CONFLICT (content): Merge conflict in arch/arm/mm/context.c
-CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
-CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
-Merging at91/at91-next
-Merging davinci/davinci-next
-Merging i.MX/for-next
-CONFLICT (content): Merge conflict in arch/arm/plat-mxc/devices/platform-im=
-x-dma.c
-Merging linux-spec/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-Merging ux500-core/ux500-core
-Merging xilinx/arm-next
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/for-next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/powerpc/next
-Merging galak/next
-Merging s390/features
-Merging sh/sh-latest
-Merging rmobile/rmobile-latest
-Merging sparc/master
-Merging tile/master
-Merging unicore32/unicore32
-Merging xtensa/master
-CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
-Merging ceph/for-next
-CONFLICT (content): Merge conflict in fs/ceph/export.c
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/dev
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging hfsplus/for-next
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging vfs-scale/vfs-scale-working
-Merging pci/linux-next
-Merging of-pci/of-pci
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-Merging quilt/jdelvare-hwmon
-Merging hwmon-staging/hwmon-next
-Merging quilt/kernel-doc
-Merging docs/docs-move
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-CONFLICT (content): Merge conflict in drivers/ata/libahci.c
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
-Merging powertools/tools-test
-Merging cpupowerutils/master
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging dlm/next
-Merging swiotlb/master
-Merging ibft/master
-Merging scsi/master
-Merging slave-dma/next
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-tx.c
-CONFLICT (content): Merge conflict in drivers/scsi/bnx2fc/bnx2fc.h
-CONFLICT (content): Merge conflict in drivers/scsi/bnx2fc/bnx2fc_fcoe.c
-Merging wireless/master
-Merging bluetooth/master
-Merging mtd/master
-Merging l2-mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging sound-asoc/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging input/next
-Merging input-mt/next
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in block/blk-throttle.c
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-CONFLICT (content): Merge conflict in drivers/leds/Kconfig
-Merging backlight/for-mm
-Merging mmc/mmc-next
-CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
-mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
-e.c left in tree.
-$ git rm -f drivers/mmc/host/sdhci-of-core.c
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging fbdev/master
-Merging viafb/viafb-next
-Merging omap_dss2/for-next
-Merging voltage/for-next
-Merging security-testing/next
-CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/board-ag5evm.c
-CONFLICT (content): Merge conflict in arch/arm/mm/context.c
-CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
-CONFLICT (content): Merge conflict in arch/arm/plat-mxc/devices/platform-im=
-x-dma.c
-CONFLICT (content): Merge conflict in arch/arm/plat-s5p/include/plat/map-s5=
-p.h
-CONFLICT (content): Merge conflict in arch/m68k/Kconfig.nommu
-CONFLICT (content): Merge conflict in block/blk-throttle.c
-CONFLICT (content): Merge conflict in drivers/gpu/drm/nouveau/nouveau_fence=
-.c
-CONFLICT (delete/modify): drivers/net/usb/kalmia.c deleted in security-test=
-ing/next and modified in HEAD. Version HEAD of drivers/net/usb/kalmia.c lef=
-t in tree.
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlegacy/iwl-dev=
-.h
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlegacy/iwl4965=
--base.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn-=
-rxon.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
-CONFLICT (delete/modify): drivers/video/backlight/adp8870_bl.c deleted in s=
-ecurity-testing/next and modified in HEAD. Version HEAD of drivers/video/ba=
-cklight/adp8870_bl.c left in tree.
-CONFLICT (content): Merge conflict in fs/namei.c
-CONFLICT (content): Merge conflict in fs/nfs/nfs4proc.c
-CONFLICT (content): Merge conflict in fs/nfs/pnfs.c
-CONFLICT (content): Merge conflict in fs/proc/base.c
-CONFLICT (content): Merge conflict in net/bluetooth/rfcomm/sock.c
-CONFLICT (content): Merge conflict in net/ipv4/ip_output.c
-CONFLICT (content): Merge conflict in net/netfilter/ipvs/ip_vs_core.c
-CONFLICT (content): Merge conflict in sound/pci/hda/patch_via.c
-CONFLICT (content): Merge conflict in sound/soc/codecs/ad1836.h
-CONFLICT (content): Merge conflict in sound/soc/soc-cache.c
-$ git reset --hard
-Merging refs/next/20110628/security-testing
-Merging selinux/master
-Merging lblnet/master
-Merging agp/agp-next
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-CONFLICT (delete/modify): arch/arm/mach-ep93xx/dma-m2p.c deleted in HEAD an=
-d modified in trivial/for-next. Version trivial/for-next of arch/arm/mach-e=
-p93xx/dma-m2p.c left in tree.
-CONFLICT (content): Merge conflict in drivers/mtd/maps/pxa2xx-flash.c
-$ git rm -f arch/arm/mach-ep93xx/dma-m2p.c
-Merging audit/for-next
-Merging suspend/linux-next
-Merging apm/for-next
-Merging fsnotify/for-next
-Merging irda/for-next
-Merging i7core_edac/linux_next
-Merging i7300_edac/linux_next
-Merging devicetree/devicetree/next
-Merging spi/spi/next
-Merging gpio/gpio/next
-CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/Makefile
-CONFLICT (content): Merge conflict in drivers/gpio/Makefile
-CONFLICT (content): Merge conflict in drivers/gpio/gpio-ep93xx.c
-Merging tip/auto-latest
-Merging rcu/rcu/next
-Merging kvm/linux-next
-CONFLICT (content): Merge conflict in arch/x86/kvm/emulate.c
-Merging oprofile/for-next
-Merging ptrace/ptrace
-Merging xen/upstream/xen
-Merging xen-two/linux-next
-Merging xen-pvhvm/linux-next
-Merging edac-amd/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging namespace/master
-Merging driver-core/driver-core-next
-Merging tty/tty-next
-Merging usb/usb-next
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-Merging staging/staging-next
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/Kconfig
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
-d_linux.c
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
-d_sdio.c
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
-_cfg80211.h
-CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
-_iw.c
-CONFLICT (content): Merge conflict in drivers/staging/usbip/userspace/src/u=
-tils.h
-Merging bkl-config/config
-Merging tmem/linux-next
-Merging writeback/next
-Merging arm-dt/devicetree/arm-next
-Merging scsi-post-merge/merge-base:master
-[master f724ed5] Revert "powerpc/pseries: Move hvsi support into a library"
-
---Signature=_Thu__30_Jun_2011_16_53_02_+1000_GxcdRh6nIsmNp_1g
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJODB1OAAoJEDMEi1NhKgbsPn4H/RKus8MebfNkC1p/w/EGRKb6
-3Iz/Y/f2EXfCF3V3OmhftjRG1ixSaDh2oS1+Id2dS7BOuvbMo7s6GA9XxXPwEGj6
-zbeXOH+i7a50oMDOt3bSqcz8lyNGI7JRgOvTSuopIRfX/pRRhXjsQM2JL6gaZIy2
-PH3AzETVq9bVfkesGn4Tvkhpb2zQXPsXWV1vF3Rl2I1C1bvQoU7wfa4AMTGRaDq3
-gW6VN/a1okqL3WGAWaV08/o6kMPH18flCxv4rme/S7NAvcOHu5gB05igHaBNp64B
-RviJibNHZlg7bULHc7wJZZlLKbrOYiUKDAc+QhS1XDQbXmu21qh1LUTMSjZ8B1I=
-=+sbc
------END PGP SIGNATURE-----
-
---Signature=_Thu__30_Jun_2011_16_53_02_+1000_GxcdRh6nIsmNp_1g--
+--
+Thanks ~
+Matt Chen
