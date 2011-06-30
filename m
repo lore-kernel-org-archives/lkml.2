@@ -1,92 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755439Ab1F3A0l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 20:26:41 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:4050 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab1F3A0e convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 20:26:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=pq4krO27a+vSS5jaiDpyv4QfSEmcPKkdzkwTmmAFgiFdOmXtzrdfT41bEbb+9OMKF
-	CZfqeqHopyCexM+Qr5HjA==
+	id S1757681Ab1F3A3q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 20:29:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:63451 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751584Ab1F3A3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 20:29:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,446,1304319600"; 
+   d="scan'208";a="22117189"
+Date: Thu, 30 Jun 2011 08:29:22 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "jaxboe@fusionio.com" <jaxboe@fusionio.com>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
+        "khlebnikov@openvz.org" <khlebnikov@openvz.org>,
+        "jmoyer@redhat.com" <jmoyer@redhat.com>
+Subject: Re: [RFC PATCH 0/3] block: Fix fsync slowness with CFQ cgroups
+Message-ID: <20110630002922.GB31352@sli10-conroe.sh.intel.com>
+References: <1309205864-13124-1-git-send-email-vgoyal@redhat.com>
+ <1309223932.15392.186.camel@sli10-conroe>
+ <20110628014039.GA15850@redhat.com>
+ <1309226634.15392.197.camel@sli10-conroe>
+ <20110628130457.GA17552@redhat.com>
+ <1309309495.15392.213.camel@sli10-conroe>
+ <20110629012955.GA19041@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <1309330546.14604.97.camel@debian>
-References: <1308797024.23204.95.camel@debian> <1308819748.1022.69.camel@twins>
- <1308876099.23204.124.camel@debian> <1309219329.14604.11.camel@debian>
- <1309273180.6701.213.camel@twins> <BANLkTi=KvKZtjFuDNxfKKAxysWUw4CiJecG8wnckYPvv9BzNrA@mail.gmail.com>
- <CAOM-RdPBc2kcWDtUvTDe9PqQMq=u5qcEprDbC9guVi+wX+9bRg@mail.gmail.com>
- <1309317764.14604.92.camel@debian> <1309330546.14604.97.camel@debian>
-From: Nikhil Rao <ncrao@google.com>
-Date: Wed, 29 Jun 2011 17:26:12 -0700
-Message-ID: <CAOM-RdP3PiZTzS3+RQ4aorH8r8hDhgsst-LLb1BrbZ4y07vi0w@mail.gmail.com>
-Subject: Re: power increase issue on light load
-To: "Alex,Shi" <alex.shi@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Brown, Len" <len.brown@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110629012955.GA19041@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 11:55 PM, Alex,Shi <alex.shi@intel.com> wrote:
->> > - Would it be possible to get a "perf sched" trace on these two kernels?
->
-> I tried the 'perf sched record' and then 'perf sched trace' as usage
-> show. but in fact, the 'perf sched' doesn't support 'trace' command now.
+On Wed, Jun 29, 2011 at 09:29:55AM +0800, Vivek Goyal wrote:
+> On Wed, Jun 29, 2011 at 09:04:55AM +0800, Shaohua Li wrote:
+> 
+> [..]
+> > > We idle on last queue on sync-noidle tree. So we idle on fysnc queue as
+> > > it is last queue on sync-noidle tree. That's how we provide protection
+> > > to all sync-noidle queues against sync-idle queues. Instead of idling
+> > > on individual quues we do idling in group and that is on service tree.
+> > Ok. but this looks silly. We are idling in a noidle service tree or a
+> > group (backed by the last queue of the tree or group) because we assume
+> > the tree or group can dispatch a request soon. But if the think time of
+> > the tree or group is big, the assumption isn't true. Doing idle here is
+> > blind. I thought we can extend the think time check for both service
+> > tree and group.
+> 
+> We can implement the thinktime for noidle service tree and group idle as
+> well. That's not a problem, though I am yet to be convinced that thinktime
+> still makes sense for the group. I guess it will just mean that in the
+> past have you done a bunch of IO with gap between IO less than 8ms. If
+> yes, then we expect you to do more IO in future. Frankly speaking, I am
+> not too sure that how past IO pattern predicts the future IO pattern
+> of the group.
+> 
+> But anyway, the point is, even if you we implement it, it will not solve
+> the fsync issue at hand. The reason I explained in previous mail. We 
+> will be oscillating between high think time and low thinktime depending
+> on whether we are idling or not. There is no correlation between think
+> time of fsync thread and idling here.
+> 
+> I think you are banking on the fact that after fsync, journaling thread
+> IO can take more than 8ms hence delaying next IO to fsync thread, pushing
+> its thinktim more than 8ms hence we will not idle on fsync thread at
+> all. It is just one corner case and I think it is broken in multiple
+> cases.
+> 
+> - If filesystem barriers are disabled or backend storage has battery
+>   backup then journal IO most likely will go in cache and barriers
+>   will be ignored. In that case write will finish almost instantly
+>   and we will get next IO from fsync thread very soon hence pushing
+>   down thinktime of fsync thread which will enable idling and we will
+>   be back to the problem we are trying to solve.
+> 
+> - Fsync thread might be submitting string of IOs (say 10-12) before it
+>   moves to journal thread to commit meta data. In that case we might
+>   have lowered thinktime of fsync hence enable idle. 
+> 
+> So implementing think time for service tree/group might be a good idea
+> in general but it will not solve this IO dependecny issue across cgroups.
+Ok, fair enough. I'll give a try and check how things change with the fsync workload.
 
-I believe this was renamed to "perf script" in
-133dc4c39c57eeef2577ca5b4ed24765b7a78ce2.
-
-> since the 'perf sched record' is using 'perf record -e sched:xxx' to do
-> record. I used 'perf record' directly. The follow info collected in 300'
-> on my NHM-EP for benchmark bltk-office.
->
-> [alexs@lkp-ne01 ~]$ grep -e Events.*sched
-> linux-2.6/perf-report-3.0.0-rc5
-> # Events: 11K sched:sched_wakeup
-> # Events: 1K sched:sched_wakeup_new
-> # Events: 24K sched:sched_switch
-> # Events: 3K sched:sched_migrate_task
-> # Events: 851  sched:sched_process_free
-> # Events: 1K sched:sched_process_exit
-> # Events: 1K sched:sched_process_wait
-> # Events: 1K sched:sched_process_fork
-> # Events: 12K sched:sched_stat_wait
-> # Events: 9K sched:sched_stat_sleep
-> # Events: 452  sched:sched_stat_iowait
-> # Events: 16K sched:sched_stat_runtime
-> [alexs@lkp-ne01 ~]$
-> [alexs@lkp-ne01 ~]$
-> [alexs@lkp-ne01 ~]$ grep -e
-> Events.*sched /mnt/linux-2.6.39/perf-report-2.6.39
-> # Events: 5K sched:sched_wakeup
-> # Events: 615  sched:sched_wakeup_new
-> # Events: 11K sched:sched_switch
-> # Events: 2K sched:sched_migrate_task
-> # Events: 541  sched:sched_process_free
-> # Events: 692  sched:sched_process_exit
-> # Events: 1K sched:sched_process_wait
-> # Events: 615  sched:sched_process_fork
-> # Events: 6K sched:sched_stat_wait
-> # Events: 4K sched:sched_stat_sleep
-> # Events: 178  sched:sched_stat_iowait
-> # Events: 9K sched:sched_stat_runtime
->
->
-
-Thanks for the data but these raw counts are not very useful. Can you
-please send either the binary file or the ascii trace output for the
-two kernels? Also -- a 300s trace might be too much; about 30s should
-be sufficient.
-
--Thanks,
-Nikhil
+Thanks,
+Shaohua
