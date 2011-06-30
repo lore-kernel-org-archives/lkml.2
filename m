@@ -1,101 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758227Ab1F3Chu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 22:37:50 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44429 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730Ab1F3Chp (ORCPT
+	id S1758259Ab1F3DXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 23:23:38 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:50391 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753655Ab1F3DXd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 22:37:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E0BE164.7080505@jp.fujitsu.com>
-Date: Thu, 30 Jun 2011 11:37:24 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: mgorman@suse.de
-CC: akpm@linux-foundation.org, P@draigBrady.com,
-        James.Bottomley@HansenPartnership.com, colin.king@canonical.com,
-        minchan.kim@gmail.com, luto@mit.edu, riel@redhat.com,
-        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm: vmscan: Do not apply pressure to slab if we are
- not applying pressure to zone
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de> <1308926697-22475-3-git-send-email-mgorman@suse.de>
-In-Reply-To: <1308926697-22475-3-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Wed, 29 Jun 2011 23:23:33 -0400
+From: Seungwon Jeon <tgih.jun@samsung.com>
+To: linux-mmc@vger.kernel.org, cjb@laptop.org
+Cc: linux-kernel@vger.kernel.org, Seungwon Jeon <tgih.jun@samsung.com>
+Subject: [PATCH] mmc: dw_mmc: Supply clocks for both host and card.
+Date: Thu, 30 Jun 2011 11:54:57 +0900
+Message-Id: <1309402497-29191-1-git-send-email-tgih.jun@samsung.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/24 23:44), Mel Gorman wrote:
-> During allocator-intensive workloads, kswapd will be woken frequently
-> causing free memory to oscillate between the high and min watermark.
-> This is expected behaviour.
-> 
-> When kswapd applies pressure to zones during node balancing, it checks
-> if the zone is above a high+balance_gap threshold. If it is, it does
-> not apply pressure but it unconditionally shrinks slab on a global
-> basis which is excessive. In the event kswapd is being kept awake due to
-> a high small unreclaimable zone, it skips zone shrinking but still
-> calls shrink_slab().
-> 
-> Once pressure has been applied, the check for zone being unreclaimable
-> is being made before the check is made if all_unreclaimable should be
-> set. This miss of unreclaimable can cause has_under_min_watermark_zone
-> to be set due to an unreclaimable zone preventing kswapd backing off
-> on congestion_wait().
-> 
-> Reported-and-tested-by: Pádraig Brady <P@draigBrady.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  mm/vmscan.c |   23 +++++++++++++----------
->  1 files changed, 13 insertions(+), 10 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 841e3bf..9cebed1 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2507,18 +2507,18 @@ loop_again:
->  				KSWAPD_ZONE_BALANCE_GAP_RATIO);
->  			if (!zone_watermark_ok_safe(zone, order,
->  					high_wmark_pages(zone) + balance_gap,
-> -					end_zone, 0))
-> +					end_zone, 0)) {
->  				shrink_zone(priority, zone, &sc);
-> -			reclaim_state->reclaimed_slab = 0;
-> -			nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
-> -			sc.nr_reclaimed += reclaim_state->reclaimed_slab;
-> -			total_scanned += sc.nr_scanned;
->  
-> -			if (zone->all_unreclaimable)
-> -				continue;
-> -			if (nr_slab == 0 &&
-> -			    !zone_reclaimable(zone))
-> -				zone->all_unreclaimable = 1;
-> +				reclaim_state->reclaimed_slab = 0;
-> +				nr_slab = shrink_slab(&shrink, sc.nr_scanned, lru_pages);
-> +				sc.nr_reclaimed += reclaim_state->reclaimed_slab;
-> +				total_scanned += sc.nr_scanned;
-> +
-> +				if (nr_slab == 0 && !zone_reclaimable(zone))
-> +					zone->all_unreclaimable = 1;
-> +			}
-> +
->  			/*
->  			 * If we've done a decent amount of scanning and
->  			 * the reclaim ratio is low, start doing writepage
-> @@ -2528,6 +2528,9 @@ loop_again:
->  			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
->  				sc.may_writepage = 1;
->  
-> +			if (zone->all_unreclaimable)
-> +				continue;
-> +
->  			if (!zone_watermark_ok_safe(zone, order,
->  					high_wmark_pages(zone), end_zone, 0)) {
->  				all_zones_ok = 0;
+Add enabling clocks for both host controller and card.
 
-Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+---
+ drivers/mmc/host/dw_mmc.c  |   33 ++++++++++++++++++++++++++++++++-
+ include/linux/mmc/dw_mmc.h |    7 +++++++
+ 2 files changed, 39 insertions(+), 1 deletions(-)
 
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 10b6979..a524416 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -1797,6 +1797,24 @@ static int dw_mci_probe(struct platform_device *pdev)
+ 		goto err_freehost;
+ 	}
+
++	host->hclk = clk_get(&pdev->dev, pdata->hclk_name);
++	if (IS_ERR(host->hclk)) {
++		dev_err(&pdev->dev,
++			"Failed to get hclk\n");
++		ret = PTR_ERR(host->hclk);
++		goto err_freehost;
++	}
++	clk_enable(host->hclk);
++
++	host->cclk = clk_get(&pdev->dev, pdata->cclk_name);
++	if (IS_ERR(host->cclk)) {
++		dev_err(&pdev->dev,
++			"Failed to get cclk\n");
++		ret = PTR_ERR(host->cclk);
++		goto err_free_hclk;
++	}
++	clk_enable(host->cclk);
++
+ 	host->bus_hz = pdata->bus_hz;
+ 	host->quirks = pdata->quirks;
+
+@@ -1806,7 +1824,7 @@ static int dw_mci_probe(struct platform_device *pdev)
+ 	ret = -ENOMEM;
+ 	host->regs = ioremap(regs->start, regs->end - regs->start + 1);
+ 	if (!host->regs)
+-		goto err_freehost;
++		goto err_free_cclk;
+
+ 	host->dma_ops = pdata->dma_ops;
+ 	dw_mci_init_dma(host);
+@@ -1945,6 +1963,13 @@ err_dmaunmap:
+ 		regulator_put(host->vmmc);
+ 	}
+
++err_free_cclk:
++	clk_disable(host->cclk);
++	clk_put(host->cclk);
++
++err_free_hclk:
++	clk_disable(host->hclk);
++	clk_put(host->hclk);
+
+ err_freehost:
+ 	kfree(host);
+@@ -1983,6 +2008,12 @@ static int __exit dw_mci_remove(struct platform_device *pdev)
+ 		regulator_put(host->vmmc);
+ 	}
+
++	clk_disable(host->cclk);
++	clk_put(host->cclk);
++
++	clk_disable(host->hclk);
++	clk_put(host->hclk);
++
+ 	iounmap(host->regs);
+
+ 	kfree(host);
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index f3f68ee..56b3f27 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -47,6 +47,8 @@ struct mmc_data;
+  * @cmd: The command currently being sent to the card, or NULL.
+  * @data: The data currently being transferred, or NULL if no data
+  *	transfer is in progress.
++ * @hclk: Clock for host.
++ * @cclk: Clock for card.
+  * @use_dma: Whether DMA channel is initialized or not.
+  * @sg_dma: Bus address of DMA buffer.
+  * @sg_cpu: Virtual address of DMA buffer.
+@@ -118,6 +120,8 @@ struct dw_mci {
+ 	struct mmc_request	*mrq;
+ 	struct mmc_command	*cmd;
+ 	struct mmc_data		*data;
++	struct clk		*hclk;
++	struct clk		*cclk;
+
+ 	/* DMA interface members*/
+ 	int			use_dma;
+@@ -218,6 +222,9 @@ struct dw_mci_board {
+ 	/* delay in mS before detecting cards after interrupt */
+ 	u32 detect_delay_ms;
+
++	char *hclk_name;
++	char *cclk_name;
++
+ 	int (*init)(u32 slot_id, irq_handler_t , void *);
+ 	int (*get_ro)(u32 slot_id);
+ 	int (*get_cd)(u32 slot_id);
+--
+1.7.0.4
 
