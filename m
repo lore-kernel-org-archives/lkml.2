@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754035Ab1F3WGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 18:06:09 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:54382 "EHLO
+	id S1753850Ab1F3WGI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 18:06:08 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:46909 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753321Ab1F3WES (ORCPT
+	with ESMTP id S1753486Ab1F3WES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Jun 2011 18:04:18 -0400
 From: Ondrej Zary <linux@rainbow-software.org>
 To: "Greg Kroah-Hartman" <greg@kroah.com>
 Cc: Marek Belisko <marek.belisko@gmail.com>,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 14/28] staging: ft1000-pcmcia: delete unused DPRAM_BLK typedefs
-Date: Fri,  1 Jul 2011 00:03:43 +0200
-Message-Id: <1309471437-12633-15-git-send-email-linux@rainbow-software.org>
+Subject: [PATCH 27/28] staging: ft1000-pcmcia: remove PSEUDOSZ, use sizeof(struct pseudo_hdr) instead
+Date: Fri,  1 Jul 2011 00:03:56 +0200
+Message-Id: <1309471437-12633-28-git-send-email-linux@rainbow-software.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
 References: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
@@ -21,29 +21,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete unused DPRAM_BLK typedefs.
+PSEUDOSZ seems to define struct pseudo_hdr size.
+Remove it and use sizeof(struct pseudo_hdr) directly.
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
- drivers/staging/ft1000/ft1000-pcmcia/ft1000.h |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000.h    |    2 --
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c |    8 ++++----
+ 2 files changed, 4 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-index 5fc64f3..810038a 100644
+index e1aa528..ba6f87d 100644
 --- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
 +++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-@@ -370,11 +370,6 @@ struct ft1000_info {
- 	char netdevname[IFNAMSIZ];
- };
+@@ -202,8 +202,6 @@ struct pseudo_hdr {
+ #define MAX_DSP_SESS_REC	1024
  
--typedef struct _DPRAM_BLK {
--    struct list_head list;
--    u16 *pbuffer;
--} __attribute__ ((packed)) DPRAM_BLK, *PDPRAM_BLK;
--
- extern u16 ft1000_read_dpram (struct net_device *dev, int offset);
- extern void card_bootload(struct net_device *dev);
- extern u16 ft1000_read_dpram_mag_16 (struct net_device *dev, int offset, int Index);
+ #define DSP_QID_OFFSET	4
+-#define PSEUDOSZ	16
+-#define PSEUDOSZWRD	8
+ 
+ /* Maximum number of occurrence of pseudo header errors before resetting PC Card. */
+ #define MAX_PH_ERR	300
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index 23854e0..990b2af 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -795,7 +795,7 @@ void ft1000_send_cmd (struct net_device *dev, u16 *ptempbuffer, int size, u16 qt
+ 	u16 tempword;
+ 	unsigned long flags;
+ 
+-	size += PSEUDOSZ;
++	size += sizeof(struct pseudo_hdr);
+ 	// check for odd byte and increment to 16-bit word align value
+ 	if ((size & 0x0001)) {
+ 		size++;
+@@ -883,12 +883,12 @@ bool ft1000_receive_cmd(struct net_device *dev, u16 * pbuffer, int maxsz, u16 *p
+ 	unsigned long flags;
+ 
+ 	if (info->AsicID == ELECTRABUZZ_ID) {
+-		size = ( ft1000_read_dpram(dev, *pnxtph) ) + PSEUDOSZ;
++		size = ( ft1000_read_dpram(dev, *pnxtph) ) + sizeof(struct pseudo_hdr);
+ 	} else {
+ 		size =
+ 			ntohs(ft1000_read_dpram_mag_16
+ 			  (dev, FT1000_MAG_PH_LEN,
+-			   FT1000_MAG_PH_LEN_INDX)) + PSEUDOSZ;
++			   FT1000_MAG_PH_LEN_INDX)) + sizeof(struct pseudo_hdr);
+ 	}
+ 	if (size > maxsz) {
+ 		DEBUG(1,
+@@ -1317,7 +1317,7 @@ int ft1000_parse_dpram_msg(struct net_device *dev)
+ 		}
+ 		DEBUG(1, "FT1000:ft1000_parse_dpram_msg:total length = %d\n",
+ 			  total_len);
+-		if ((total_len < MAX_CMD_SQSIZE) && (total_len > PSEUDOSZ)) {
++		if ((total_len < MAX_CMD_SQSIZE) && (total_len > sizeof(struct pseudo_hdr))) {
+             total_len += nxtph;
+             cnt = 0;
+             // ft1000_read_reg will return a value that needs to be byteswap
 -- 
 Ondrej Zary
 
