@@ -1,66 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758825Ab1F3IXN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 04:23:13 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:50634 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758530Ab1F3IXF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 04:23:05 -0400
+	id S1758793Ab1F3IVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:21:22 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56486 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758739Ab1F3IVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 04:21:17 -0400
+Message-ID: <4E0C326E.5070604@cn.fujitsu.com>
+Date: Thu, 30 Jun 2011 16:23:10 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <20110629140619.744da8ea.rdunlap@xenotime.net>
-References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
-	<20110629140619.744da8ea.rdunlap@xenotime.net>
-Date: Thu, 30 Jun 2011 16:23:04 +0800
-Message-ID: <BANLkTi=Gwjoe9LdPZJ-vqwdNjz=Gj1v5-g@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.0-rc5 (arch/cris)
-From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-cris-kernel@axis.com
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v3 09/19] KVM: MMU: split kvm_mmu_free_page
+References: <4E0C3178.2080603@cn.fujitsu.com>
+In-Reply-To: <4E0C3178.2080603@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-30 16:20:42,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-30 16:20:44,
+	Serialize complete at 2011-06-30 16:20:44
+Content-Transfer-Encoding: 7bit
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 5:06 AM, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Wed, 29 Jun 2011 10:13:17 +0200 (CEST) Geert Uytterhoeven wrote:
->
->> *** ERRORS ***
->>
->> 698 regressions:
->
->>   + net/mac80211/led.c: error: 'struct led_classdev' has no member named 'trig_list':  => 213, 277
->>   + net/mac80211/led.c: error: dereferencing pointer to incomplete type:  => 73, 91, 100, 82
->>   + net/mac80211/led.c: error: implicit declaration of function 'led_trigger_register':  => 74
->>   + net/mac80211/led.c: error: implicit declaration of function 'led_trigger_unregister':  => 118
->>   + net/mac80211/led.c: error: invalid application of 'sizeof' to incomplete type 'struct led_trigger' :  => 98, 71, 89, 80
->
->
-> I think that this is what Andrew would call a cockup, or at least I would.
->
-> These errors shouldn't be possible since net/mac80211/Kconfig says:
->
-> config MAC80211_LEDS
->        bool "Enable LED triggers"
->        depends on MAC80211
->        depends on LEDS_CLASS
->        select LEDS_TRIGGERS
->
->
->
-> Preferably arch/cris/Kconfig would source drivers/Kconfig instead of sourcing
-> individual drivers/foobar/Kconfig.
->
-> Second option is for arch/cris/Kconfig to source drivers/leds/Kconfig
-> unless there is some reason to avoid this (?).
->
-> Or we should just prevent this particular driver from being built,
-> but that's the least desirable choice here.
+Split kvm_mmu_free_page to kvm_mmu_isolate_page and
+kvm_mmu_free_page
 
-For me, net/mac80211/Kconfig should source drivers/leds/Kconfig
-since it uses a Kconfig defined there...
+One is used to remove the page from cache under mmu lock and the other is
+used to free page table out of mmu lock
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   21 ++++++++++++++++++---
+ 1 files changed, 18 insertions(+), 3 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 91d3069..2f8543c 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1039,14 +1039,28 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
+ 	percpu_counter_add(&kvm_total_used_mmu_pages, nr);
+ }
+ 
+-static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
++/*
++ * Remove the sp from shadow page cache, after call it,
++ * we can not find this sp from the cache, and the shadow
++ * page table is still valid.
++ * It should be under the protection of mmu lock.
++ */
++static void kvm_mmu_isolate_page(struct kvm_mmu_page *sp)
+ {
+ 	ASSERT(is_empty_shadow_page(sp->spt));
+ 	hlist_del(&sp->hash_link);
+-	list_del(&sp->link);
+-	free_page((unsigned long)sp->spt);
+ 	if (!sp->role.direct)
+ 		free_page((unsigned long)sp->gfns);
++}
++
++/*
++ * Free the shadow page table and the sp, we can do it
++ * out of the protection of mmu lock.
++ */
++static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
++{
++	list_del(&sp->link);
++	free_page((unsigned long)sp->spt);
+ 	kmem_cache_free(mmu_page_header_cache, sp);
+ }
+ 
+@@ -1678,6 +1692,7 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
+ 	do {
+ 		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
+ 		WARN_ON(!sp->role.invalid || sp->root_count);
++		kvm_mmu_isolate_page(sp);
+ 		kvm_mmu_free_page(sp);
+ 	} while (!list_empty(invalid_list));
+ 
+-- 
+1.7.5.4
+
