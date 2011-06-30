@@ -1,109 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757681Ab1F3BJu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 21:09:50 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:28398 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753089Ab1F3BJp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 21:09:45 -0400
-X-AuditID: cbfee61b-b7bfdae000006d51-e9-4e0bccd5d3e5
-Date: Thu, 30 Jun 2011 10:09:40 +0900
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH] power: MAX8903 Charger: allow platform data to be __initdata
-To: linux-kernel@vger.kernel.org
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>, myungjoo.ham@gmail.com
-Message-id: <1309396180-23094-1-git-send-email-myungjoo.ham@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 30 Jun 2011 01:09:55.0698 (UTC)
- FILETIME=[6C647520:01CC36C2]
-X-Brightmail-Tracker: AAAAAA==
+	id S1757952Ab1F3BS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 21:18:58 -0400
+Received: from mail.perches.com ([173.55.12.10]:3334 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754673Ab1F3BSx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 21:18:53 -0400
+From: Joe Perches <joe@perches.com>
+To: Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH 0/2] bluetooth: Use current logging styles
+Date: Wed, 29 Jun 2011 18:18:28 -0700
+Message-Id: <cover.1309396408.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.rc1
+In-Reply-To: <1309370457.2208.48.camel@aeonflux>
+References: <1309370457.2208.48.camel@aeonflux>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Platform files may have declared 8903 platform data as __initdata. This
-patch removes the dependency on pdata pointer so that using __initdata
-on pdata will not incur errors. Note that such error does not incur SECTION
-MISMATCH warning in (at least some) compilers.
+On Wed, 2011-06-29 at 11:00 -0700, Marcel Holtmann wrote:
+> I did not know that. Then we might should go ahead and also cleanup the
+> Bluetooth subsystem.
+> 
+> We do use an implied "Bluetooth: " prefix when calling BT_INFO, but that
+> can be easily changed to bt_info() as well since I do not care about
+> that part. 
+> 
+> The Bluetooth subsystem has a Linux 2.4 legacy history and a lot of
+> things can be done a lot nicer these days.
 
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/power/max8903_charger.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+Here you go Marcel.
 
-diff --git a/drivers/power/max8903_charger.c b/drivers/power/max8903_charger.c
-index 33ff0e3..a9b0209 100644
---- a/drivers/power/max8903_charger.c
-+++ b/drivers/power/max8903_charger.c
-@@ -28,7 +28,7 @@
- #include <linux/power/max8903_charger.h>
+It reduces code/text a couple/few percent too.
  
- struct max8903_data {
--	struct max8903_pdata *pdata;
-+	struct max8903_pdata pdata;
- 	struct device *dev;
- 	struct power_supply psy;
- 	bool fault;
-@@ -52,8 +52,8 @@ static int max8903_get_property(struct power_supply *psy,
- 	switch (psp) {
- 	case POWER_SUPPLY_PROP_STATUS:
- 		val->intval = POWER_SUPPLY_STATUS_UNKNOWN;
--		if (data->pdata->chg) {
--			if (gpio_get_value(data->pdata->chg) == 0)
-+		if (data->pdata.chg) {
-+			if (gpio_get_value(data->pdata.chg) == 0)
- 				val->intval = POWER_SUPPLY_STATUS_CHARGING;
- 			else if (data->usb_in || data->ta_in)
- 				val->intval = POWER_SUPPLY_STATUS_NOT_CHARGING;
-@@ -80,7 +80,7 @@ static int max8903_get_property(struct power_supply *psy,
- static irqreturn_t max8903_dcin(int irq, void *_data)
- {
- 	struct max8903_data *data = _data;
--	struct max8903_pdata *pdata = data->pdata;
-+	struct max8903_pdata *pdata = &data->pdata;
- 	bool ta_in;
- 	enum power_supply_type old_type;
- 
-@@ -121,7 +121,7 @@ static irqreturn_t max8903_dcin(int irq, void *_data)
- static irqreturn_t max8903_usbin(int irq, void *_data)
- {
- 	struct max8903_data *data = _data;
--	struct max8903_pdata *pdata = data->pdata;
-+	struct max8903_pdata *pdata = &data->pdata;
- 	bool usb_in;
- 	enum power_supply_type old_type;
- 
-@@ -160,7 +160,7 @@ static irqreturn_t max8903_usbin(int irq, void *_data)
- static irqreturn_t max8903_fault(int irq, void *_data)
- {
- 	struct max8903_data *data = _data;
--	struct max8903_pdata *pdata = data->pdata;
-+	struct max8903_pdata *pdata = &data->pdata;
- 	bool fault;
- 
- 	fault = gpio_get_value(pdata->flt) ? false : true;
-@@ -193,7 +193,7 @@ static __devinit int max8903_probe(struct platform_device *pdev)
- 		dev_err(dev, "Cannot allocate memory.\n");
- 		return -ENOMEM;
- 	}
--	data->pdata = pdata;
-+	memcpy(&data->pdata, pdata, sizeof(struct max8903_pdata));
- 	data->dev = dev;
- 	platform_set_drvdata(pdev, data);
- 
-@@ -349,7 +349,7 @@ static __devexit int max8903_remove(struct platform_device *pdev)
- 	struct max8903_data *data = platform_get_drvdata(pdev);
- 
- 	if (data) {
--		struct max8903_pdata *pdata = data->pdata;
-+		struct max8903_pdata *pdata = &data->pdata;
- 
- 		if (pdata->flt)
- 			free_irq(gpio_to_irq(pdata->flt), data);
+Joe Perches (2):
+  bluetooth: Rename function bt_err to bt_to_errno
+  bluetooth: Add bt_printk, convert logging macros to lower case
+
+ drivers/bluetooth/ath3k.c          |   48 ++++----
+ drivers/bluetooth/bcm203x.c        |   38 +++---
+ drivers/bluetooth/bfusb.c          |   94 +++++++-------
+ drivers/bluetooth/bluecard_cs.c    |   18 ++--
+ drivers/bluetooth/bpa10x.c         |   38 +++---
+ drivers/bluetooth/bt3c_cs.c        |   34 +++---
+ drivers/bluetooth/btmrvl_debugfs.c |    2 +-
+ drivers/bluetooth/btmrvl_main.c    |   74 ++++++------
+ drivers/bluetooth/btmrvl_sdio.c    |  112 +++++++++---------
+ drivers/bluetooth/btsdio.c         |   26 ++--
+ drivers/bluetooth/btuart_cs.c      |   24 ++--
+ drivers/bluetooth/btusb.c          |   64 +++++-----
+ drivers/bluetooth/btwilink.c       |   34 +++---
+ drivers/bluetooth/dtl1_cs.c        |   20 ++--
+ drivers/bluetooth/hci_ath.c        |   14 +-
+ drivers/bluetooth/hci_bcsp.c       |   58 +++++-----
+ drivers/bluetooth/hci_h4.c         |   18 ++--
+ drivers/bluetooth/hci_ldisc.c      |   36 +++---
+ drivers/bluetooth/hci_ll.c         |   76 ++++++------
+ drivers/bluetooth/hci_vhci.c       |    8 +-
+ include/net/bluetooth/bluetooth.h  |   11 +-
+ net/bluetooth/af_bluetooth.c       |   20 ++--
+ net/bluetooth/bnep/core.c          |   26 ++--
+ net/bluetooth/bnep/netdev.c        |   14 +-
+ net/bluetooth/bnep/sock.c          |   10 +-
+ net/bluetooth/cmtp/capi.c          |   46 ++++----
+ net/bluetooth/cmtp/core.c          |   30 +++---
+ net/bluetooth/cmtp/sock.c          |   10 +-
+ net/bluetooth/hci_conn.c           |   52 ++++----
+ net/bluetooth/hci_core.c           |  142 +++++++++++-----------
+ net/bluetooth/hci_event.c          |  234 ++++++++++++++++++------------------
+ net/bluetooth/hci_sock.c           |   26 ++--
+ net/bluetooth/hci_sysfs.c          |   12 +-
+ net/bluetooth/hidp/core.c          |   50 ++++----
+ net/bluetooth/hidp/sock.c          |   10 +-
+ net/bluetooth/l2cap_core.c         |  172 +++++++++++++-------------
+ net/bluetooth/l2cap_sock.c         |   40 +++---
+ net/bluetooth/lib.c                |   23 ++++-
+ net/bluetooth/mgmt.c               |   80 ++++++------
+ net/bluetooth/rfcomm/core.c        |  152 ++++++++++++------------
+ net/bluetooth/rfcomm/sock.c        |   56 +++++-----
+ net/bluetooth/rfcomm/tty.c         |  100 ++++++++--------
+ net/bluetooth/sco.c                |   84 +++++++-------
+ net/bluetooth/smp.c                |   30 +++---
+ 44 files changed, 1144 insertions(+), 1122 deletions(-)
+
 -- 
-1.7.4.1
+1.7.6.rc1
 
