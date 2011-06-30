@@ -1,50 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758226Ab1F3Flg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 01:41:36 -0400
-Received: from linux-sh.org ([111.68.239.195]:49018 "EHLO linux-sh.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752630Ab1F3Fl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 01:41:29 -0400
-Date: Thu, 30 Jun 2011 14:38:52 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] arm: platsmp: Allow secondary cpu hotplug with maxcpus=1
-Message-ID: <20110630053851.GC22023@linux-sh.org>
-References: <1309372300-28911-1-git-send-email-sboyd@codeaurora.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309372300-28911-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.4.1i
+	id S1754227Ab1F3FlL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 01:41:11 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:12127 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab1F3FlI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 01:41:08 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6392"; a="101008855"
+From: "Tanya Brokhman" <tlinder@codeaurora.org>
+To: "'Greg KH'" <greg@kroah.com>
+Cc: <balbi@ti.com>, <linux-usb@vger.kernel.org>,
+        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
+        "'open list'" <linux-kernel@vger.kernel.org>
+References: <1309350899-23868-1-git-send-email-tlinder@codeaurora.org> <1309350899-23868-2-git-send-email-tlinder@codeaurora.org> <20110629123826.GQ2760@legolas.emea.dhcp.ti.com> <051801cc365a$73187140$594953c0$@org> <20110629124822.GS2760@legolas.emea.dhcp.ti.com> <055801cc3681$d080ba00$71822e00$@org> <20110629194126.GA6057@legolas.emea.dhcp.ti.com> <05b101cc36e4$9067d8f0$b1378ad0$@org> <20110630052156.GA24087@kroah.com>
+In-Reply-To: <20110630052156.GA24087@kroah.com>
+Subject: RE: [PATCH v2 1/2] usb: gadget: add max_speed to usb_composite_driver
+Date: Thu, 30 Jun 2011 08:41:03 +0300
+Message-ID: <05b801cc36e8$4ec52fc0$ec4f8f40$@org>
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Acw25a8ZE4QSKoWRSjqqXsQExq4+vgAAnT0Q
+Content-Language: he
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 11:31:39AM -0700, Stephen Boyd wrote:
-> If an ARM system has multiple cpus in the same socket and the
-> kernel is booted with maxcpus=1, secondary cpus are possible but
-> not present due to how platform_smp_prepare_cpus() is called.
-> Fix this by always calling platform_smp_prepare_cpus() as long as
-> max_cpus is non-zero (0 means no SMP) to allow platform code to
-> decide if any non-boot cpus are present in the system. Since
-> all current platform code doesn't support physical hotplug we
-> have a situation where possible == present and thus we can
-> simply copy the possible map to the present map.
+> >
+> > Just emailed you the fixing patch.
+> > Just one thing. Greg already merged the patch that caused the
+> compilation
+> > warning into his tree so perhaps you can't merge the fix into the
+> original
+> > patch and need to post the fix as a different patch....
 > 
-> With this patch it's possible to boot an ARM system with
-> maxcpus=1 on the command line and then hotplug in secondary cpus
-> via sysfs. This is more in line with how x86 works with maxcpus=1
-> on the command line.
+> Nope, you can't, I need just a single patch that resolves this.  I'll
+> queue up the patch you just sent, thanks.
 > 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-Acked-by: Paul Mundt <lethal@linux-sh.org>
+One sec! I just found out that I was running checkpatch.pl from a wrong
+location. There is a checkpatch warning. I'll send you the fix in a few
+minutes.
+Sorry.
+
+
+Thanks,
+Tanya Brokhman
+---
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
+
+
+
