@@ -1,103 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587Ab1F3Mgs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:36:48 -0400
-Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:44509 "EHLO
-	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751031Ab1F3Mgl convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:36:41 -0400
+	id S1752210Ab1F3MiN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 08:38:13 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:33422
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751358Ab1F3MiG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 08:38:06 -0400
+Date: Thu, 30 Jun 2011 08:37:59 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Christoph Hellwig <hch@infradead.org>, Curt Wohlgemuth <curtw@google.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
+Subject: Re: [PATCH] writeback: Don't wait for completion in
+ writeback_inodes_sb_nr
+Message-ID: <20110630123759.GA14956@infradead.org>
+References: <1309304616-8657-1-git-send-email-curtw@google.com>
+ <20110629005422.GQ32466@dastard>
+ <BANLkTimKtwVZo3D+w9AB2-C83d08YROcMw@mail.gmail.com>
+ <20110629081155.GA5558@infradead.org>
+ <20110629165714.GF17590@quack.suse.cz>
+ <20110629175534.GA32236@infradead.org>
+ <20110629191518.GA23196@quack.suse.cz>
+ <20110629201234.GA31129@infradead.org>
+ <20110630121558.GF28475@quack.suse.cz>
 MIME-Version: 1.0
-In-Reply-To: <1309248717-14606-1-git-send-email-per.forlin@linaro.org>
-References: <1309248717-14606-1-git-send-email-per.forlin@linaro.org>
-Date: Thu, 30 Jun 2011 18:06:39 +0530
-Message-ID: <BANLkTinSt3D+5r9bOL5rTjw5BiuiSDvGvA@mail.gmail.com>
-Subject: Re: [PATCH v8 00/12] use nonblock mmc requests to minimize latency
-From: "Poddar, Sourav" <sourav.poddar@ti.com>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org,
-        Nickolay Nickolaev <nicknickolaev@gmail.com>,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110630121558.GF28475@quack.suse.cz>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 1:41 PM, Per Forlin <per.forlin@linaro.org> wrote:
-> How significant is the cache maintenance over head?
-> It depends, the eMMC are much faster now
-> compared to a few years ago and cache maintenance cost more due to
-> multiple cache levels and speculative cache pre-fetch. In relation the
-> cost for handling the caches have increased and is now a bottle neck
-> dealing with fast eMMC together with DMA.
->
-> The intention for introducing non-blocking mmc requests is to minimize the
-> time between a mmc request ends and another mmc request starts. In the
-> current implementation the MMC controller is idle when dma_map_sg and
-> dma_unmap_sg is processing. Introducing non-blocking mmc request makes it
-> possible to prepare the caches for next job in parallel to an active
-> mmc request.
->
-> This is done by making the issue_rw_rq() non-blocking.
-> The increase in throughput is proportional to the time it takes to
-> prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
-> a request and how fast the memory is. The faster the MMC/SD is
-> the more significant the prepare request time becomes. Measurements on U5500
-> and Panda on eMMC and SD shows significant performance gain for large
-> reads when running DMA mode. In the PIO case the performance is unchanged.
->
-> There are two optional hooks pre_req() and post_req() that the host driver
-> may implement in order to move work to before and after the actual mmc_request
-> function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
-> the dma descriptor and post_req runs the dma_unmap_sg.
->
-> Details on measurements from IOZone and mmc_test:
-> https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
->
-> Changes since v7:
->  * rebase on mmc-next, on top of Russell's updated error handling.
->  * Clarify description of mmc_start_req()
->  * Resolve compile without CONFIG_DMA_ENIGNE issue for mmci
->  * Add mmc test to measure how performance is affected by sg length
->  * Add missing wait_for_busy in mmc_test non-blocking test. This call got lost
->   in v4 of this patchset when refactoring mmc_start_req.
->  * Add sub-prefix (core block queue) to relevant patches.
->
-> Per Forlin (12):
->  mmc: core: add non-blocking mmc request function
->  omap_hsmmc: add support for pre_req and post_req
->  mmci: implement pre_req() and post_req()
->  mmc: mmc_test: add debugfs file to list all tests
->  mmc: mmc_test: add test for non-blocking transfers
->  mmc: mmc_test: test to measure how sg_len affect performance
->  mmc: block: add member in mmc queue struct to hold request data
->  mmc: block: add a block request prepare function
->  mmc: block: move error code in issue_rw_rq to a separate function.
->  mmc: queue: add a second mmc queue request member
->  mmc: core: add random fault injection
->  mmc: block: add handling for two parallel block requests in
->    issue_rw_rq
->
->  drivers/mmc/card/block.c      |  505 ++++++++++++++++++++++++-----------------
->  drivers/mmc/card/mmc_test.c   |  491 ++++++++++++++++++++++++++++++++++++++--
->  drivers/mmc/card/queue.c      |  184 ++++++++++------
->  drivers/mmc/card/queue.h      |   33 ++-
->  drivers/mmc/core/core.c       |  167 +++++++++++++-
->  drivers/mmc/core/debugfs.c    |    5 +
->  drivers/mmc/host/mmci.c       |  147 +++++++++++-
->  drivers/mmc/host/mmci.h       |    8 +
->  drivers/mmc/host/omap_hsmmc.c |   87 +++++++-
->  include/linux/mmc/core.h      |    6 +-
->  include/linux/mmc/host.h      |   24 ++
->  lib/Kconfig.debug             |   11 +
->  12 files changed, 1345 insertions(+), 323 deletions(-)
+On Thu, Jun 30, 2011 at 02:15:58PM +0200, Jan Kara wrote:
+>   Yes. Actually, specifically for filesystems like XFS which update inode
+> after IO completion we would need more passes to be efficient and correct:
+>   for all inodes
+>     fdatawrite
+>   for all inodes
+>     fdatawait
+>   for all inodes
+>     write_inode
+>   for all inodes
+>     wait for inode IO
+> 
+>   But maybe this could be handled by having new WB_SYNC_ mode indicating
+> that writeback_single_inode() should not bother waiting (thus we'd really
+> end up waiting in sync_inodes_sb()) and then XFS and other filesystems that
+> need it would writeout inodes in their sync_fs() implementation (possibly
+> using a generic helper)?
 
+We do very little in write_inode these days.  Basically just log the
+inode size and timestamp sized into the in-memory log.  The actual
+writeout of the log happens in ->sync_fs already.
 
-
-Boot tested on Omap4430 Blaze board.
-
-Tested-by: Sourav Poddar<sourav.poddar@ti.com>
