@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986Ab1F3Avg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 20:51:36 -0400
+	id S1758069Ab1F3Avo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 20:51:44 -0400
 Received: from mailout4.samsung.com ([203.254.224.34]:17697 "EHLO
 	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704Ab1F3Av2 (ORCPT
+	with ESMTP id S1757135Ab1F3Av3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 20:51:28 -0400
-X-AuditID: cbfee61b-b7bfdae000006d51-3f-4e0bc88ec270
-Date: Thu, 30 Jun 2011 09:51:24 +0900
+	Wed, 29 Jun 2011 20:51:29 -0400
+X-AuditID: cbfee61b-b7bfdae000006d51-44-4e0bc88e087a
+Date: Thu, 30 Jun 2011 09:51:25 +0900
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH 1/2] ARM: EXYNOS4: Add more register addresses of CMU and PMU.
+Subject: [PATCH 2/2] ARM: EXYNOS4: Add more registers to be saved and restored
+ for PM
+In-reply-to: <1309395085-22084-1-git-send-email-myungjoo.ham@samsung.com>
 To: linux-arm-kernel@lists.infradead.org
 Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Kukjin Kim <kgene.kim@samsung.com>,
@@ -19,140 +21,172 @@ Cc: linux-samsung-soc@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jaecheol Lee <jc.lee@samsung.com>,
         Sylwester Nawrocki <s.nawrocki@samsung.com>,
         Greg Kroah-Hartman <gregkh@suse.de>, myungjoo.ham@gmail.com
-Message-id: <1309395085-22084-1-git-send-email-myungjoo.ham@samsung.com>
+Message-id: <1309395085-22084-2-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 30 Jun 2011 00:51:40.0868 (UTC)
- FILETIME=[DFD2A840:01CC36BF]
+References: <1309395085-22084-1-git-send-email-myungjoo.ham@samsung.com>
+X-OriginalArrivalTime: 30 Jun 2011 00:51:40.0883 (UTC)
+ FILETIME=[DFD4F230:01CC36BF]
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We need more registers to be saved and restored for PM of Exynos4210.
+Otherwise, with additional drivers running, suspend-to-RAM fails to wake
+up properly. This patch adds registers omitted in the initial PM
+patches.
+
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- arch/arm/mach-exynos4/include/mach/regs-clock.h |   13 +++++++++++++
- arch/arm/mach-exynos4/include/mach/regs-pmu.h   |   16 ++++++++++++++++
- 2 files changed, 29 insertions(+), 0 deletions(-)
+ arch/arm/mach-exynos4/pm.c |   77 +++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 76 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-exynos4/include/mach/regs-clock.h b/arch/arm/mach-exynos4/include/mach/regs-clock.h
-index 64bdd24..f723e62 100644
---- a/arch/arm/mach-exynos4/include/mach/regs-clock.h
-+++ b/arch/arm/mach-exynos4/include/mach/regs-clock.h
-@@ -17,13 +17,17 @@
+diff --git a/arch/arm/mach-exynos4/pm.c b/arch/arm/mach-exynos4/pm.c
+index a103c13..24c9265 100644
+--- a/arch/arm/mach-exynos4/pm.c
++++ b/arch/arm/mach-exynos4/pm.c
+@@ -27,6 +27,8 @@
+ #include <plat/cpu.h>
+ #include <plat/pm.h>
+ #include <plat/pll.h>
++#include <plat/regs-srom.h>
++#include <plat/regs-timer.h>
  
- #define S5P_CLKREG(x)			(S5P_VA_CMU + (x))
+ #include <mach/regs-irq.h>
+ #include <mach/regs-gpio.h>
+@@ -60,14 +62,20 @@ static struct sleep_save exynos4_vpll_save[] = {
  
-+#define S5P_CLKSRC_LEFTBUS              S5P_CLKREG(0x04200)
- #define S5P_CLKDIV_LEFTBUS		S5P_CLKREG(0x04500)
- #define S5P_CLKDIV_STAT_LEFTBUS		S5P_CLKREG(0x04600)
- #define S5P_CLKGATE_IP_LEFTBUS		S5P_CLKREG(0x04800)
-+#define S5P_CLKOUT_CMU_LEFTBUS		S5P_CLKREG(0x04A00)
- 
-+#define S5P_CLKSRC_RIGHTBUS             S5P_CLKREG(0x08200)
- #define S5P_CLKDIV_RIGHTBUS		S5P_CLKREG(0x08500)
- #define S5P_CLKDIV_STAT_RIGHTBUS	S5P_CLKREG(0x08600)
- #define S5P_CLKGATE_IP_RIGHTBUS		S5P_CLKREG(0x08800)
-+#define S5P_CLKOUT_CMU_RIGHTBUS		S5P_CLKREG(0x08A00)
- 
- #define S5P_EPLL_LOCK			S5P_CLKREG(0x0C010)
- #define S5P_VPLL_LOCK			S5P_CLKREG(0x0C020)
-@@ -36,7 +40,9 @@
- #define S5P_CLKSRC_TOP0			S5P_CLKREG(0x0C210)
- #define S5P_CLKSRC_TOP1			S5P_CLKREG(0x0C214)
- #define S5P_CLKSRC_CAM			S5P_CLKREG(0x0C220)
-+#define S5P_CLKSRC_TV			S5P_CLKREG(0x0C224)
- #define S5P_CLKSRC_MFC			S5P_CLKREG(0x0C228)
-+#define S5P_CLKSRC_G3D			S5P_CLKREG(0x0C22C)
- #define S5P_CLKSRC_IMAGE		S5P_CLKREG(0x0C230)
- #define S5P_CLKSRC_LCD0			S5P_CLKREG(0x0C234)
- #define S5P_CLKSRC_LCD1			S5P_CLKREG(0x0C238)
-@@ -64,6 +70,7 @@
- #define S5P_CLKDIV_PERIL3		S5P_CLKREG(0x0C55C)
- #define S5P_CLKDIV_PERIL4		S5P_CLKREG(0x0C560)
- #define S5P_CLKDIV_PERIL5		S5P_CLKREG(0x0C564)
-+#define S5P_CLKDIV2_RATIO		S5P_CLKREG(0x0C580)
- 
- #define S5P_CLKSRC_MASK_TOP		S5P_CLKREG(0x0C310)
- #define S5P_CLKSRC_MASK_CAM		S5P_CLKREG(0x0C320)
-@@ -91,6 +98,8 @@
- #define S5P_CLKGATE_IP_PERIR		S5P_CLKREG(0x0C960)
- #define S5P_CLKGATE_BLOCK		S5P_CLKREG(0x0C970)
- 
-+#define S5P_CLKOUT_CMU_TOP		S5P_CLKREG(0x0CA00)
+ static struct sleep_save exynos4_core_save[] = {
+ 	/* CMU side */
++	SAVE_ITEM(S5P_CLKSRC_LEFTBUS),
+ 	SAVE_ITEM(S5P_CLKDIV_LEFTBUS),
+ 	SAVE_ITEM(S5P_CLKGATE_IP_LEFTBUS),
++	SAVE_ITEM(S5P_CLKOUT_CMU_LEFTBUS),
++	SAVE_ITEM(S5P_CLKSRC_RIGHTBUS),
+ 	SAVE_ITEM(S5P_CLKDIV_RIGHTBUS),
+ 	SAVE_ITEM(S5P_CLKGATE_IP_RIGHTBUS),
++	SAVE_ITEM(S5P_CLKOUT_CMU_RIGHTBUS),
+ 	SAVE_ITEM(S5P_CLKSRC_TOP0),
+ 	SAVE_ITEM(S5P_CLKSRC_TOP1),
+ 	SAVE_ITEM(S5P_CLKSRC_CAM),
++	SAVE_ITEM(S5P_CLKSRC_TV),
+ 	SAVE_ITEM(S5P_CLKSRC_MFC),
++	SAVE_ITEM(S5P_CLKSRC_G3D),
+ 	SAVE_ITEM(S5P_CLKSRC_IMAGE),
+ 	SAVE_ITEM(S5P_CLKSRC_LCD0),
+ 	SAVE_ITEM(S5P_CLKSRC_LCD1),
+@@ -94,6 +102,7 @@ static struct sleep_save exynos4_core_save[] = {
+ 	SAVE_ITEM(S5P_CLKDIV_PERIL4),
+ 	SAVE_ITEM(S5P_CLKDIV_PERIL5),
+ 	SAVE_ITEM(S5P_CLKDIV_TOP),
++	SAVE_ITEM(S5P_CLKSRC_MASK_TOP),
+ 	SAVE_ITEM(S5P_CLKSRC_MASK_CAM),
+ 	SAVE_ITEM(S5P_CLKSRC_MASK_TV),
+ 	SAVE_ITEM(S5P_CLKSRC_MASK_LCD0),
+@@ -102,6 +111,7 @@ static struct sleep_save exynos4_core_save[] = {
+ 	SAVE_ITEM(S5P_CLKSRC_MASK_FSYS),
+ 	SAVE_ITEM(S5P_CLKSRC_MASK_PERIL0),
+ 	SAVE_ITEM(S5P_CLKSRC_MASK_PERIL1),
++	SAVE_ITEM(S5P_CLKDIV2_RATIO),
+ 	SAVE_ITEM(S5P_CLKGATE_SCLKCAM),
+ 	SAVE_ITEM(S5P_CLKGATE_IP_CAM),
+ 	SAVE_ITEM(S5P_CLKGATE_IP_TV),
+@@ -115,15 +125,59 @@ static struct sleep_save exynos4_core_save[] = {
+ 	SAVE_ITEM(S5P_CLKGATE_IP_PERIL),
+ 	SAVE_ITEM(S5P_CLKGATE_IP_PERIR),
+ 	SAVE_ITEM(S5P_CLKGATE_BLOCK),
++	SAVE_ITEM(S5P_CLKOUT_CMU_TOP),
+ 	SAVE_ITEM(S5P_CLKSRC_MASK_DMC),
+ 	SAVE_ITEM(S5P_CLKSRC_DMC),
+ 	SAVE_ITEM(S5P_CLKDIV_DMC0),
+ 	SAVE_ITEM(S5P_CLKDIV_DMC1),
+ 	SAVE_ITEM(S5P_CLKGATE_IP_DMC),
++	SAVE_ITEM(S5P_CLKOUT_CMU_DMC),
++	SAVE_ITEM(S5P_APLL_LOCK),
++	SAVE_ITEM(S5P_MPLL_LOCK),
++	SAVE_ITEM(S5P_APLL_CON0),
++	SAVE_ITEM(S5P_APLL_CON1),
++	SAVE_ITEM(S5P_MPLL_CON0),
++	SAVE_ITEM(S5P_MPLL_CON1),
+ 	SAVE_ITEM(S5P_CLKSRC_CPU),
+ 	SAVE_ITEM(S5P_CLKDIV_CPU),
++	SAVE_ITEM(S5P_CLKDIV_CPU + 0x4),
+ 	SAVE_ITEM(S5P_CLKGATE_SCLKCPU),
+ 	SAVE_ITEM(S5P_CLKGATE_IP_CPU),
++	SAVE_ITEM(S5P_CLKOUT_CMU_CPU),
 +
- #define S5P_CLKSRC_MASK_DMC		S5P_CLKREG(0x10300)
- #define S5P_CLKSRC_DMC			S5P_CLKREG(0x10200)
- #define S5P_CLKDIV_DMC0			S5P_CLKREG(0x10500)
-@@ -98,6 +107,8 @@
- #define S5P_CLKDIV_STAT_DMC0		S5P_CLKREG(0x10600)
- #define S5P_CLKGATE_IP_DMC		S5P_CLKREG(0x10900)
- 
-+#define S5P_CLKOUT_CMU_DMC		S5P_CLKREG(0x10A00)
++	/* PMU */
++	SAVE_ITEM(S5P_HDMI_PHY_CONTROL),
++	SAVE_ITEM(S5P_USBOTG_PHY_CONTROL),
++	SAVE_ITEM(S5P_USBHOST_PHY_CONTROL),
++	SAVE_ITEM(S5P_DAC_CONTROL),
++	SAVE_ITEM(S5P_MIPI_CONTROL0),
++	SAVE_ITEM(S5P_MIPI_CONTROL1),
++	SAVE_ITEM(S5P_ADC_CONTROL),
++	SAVE_ITEM(S5P_PCIE_CONTROL),
++	SAVE_ITEM(S5P_SATA_CONTROL),
++	SAVE_ITEM(S5P_PMU_DEBUG),
++	SAVE_ITEM(S5P_ARM_CORE0_CONFIGURATION),
++	SAVE_ITEM(S5P_ARM_CORE1_CONFIGURATION),
++	SAVE_ITEM(S5P_ARM_CPU_L2_0_CONFIGURATION),
++	SAVE_ITEM(S5P_ARM_CPU_L2_1_CONFIGURATION),
++	SAVE_ITEM(S5P_XUSBXTI_CONFIGURATION),
++	SAVE_ITEM(S5P_XXTI_CONFIGURATION),
++	SAVE_ITEM(S5P_PMU_CAM_CONF),
++	SAVE_ITEM(S5P_PMU_TV_CONF),
++	SAVE_ITEM(S5P_PMU_MFC_CONF),
++	SAVE_ITEM(S5P_PMU_G3D_CONF),
++	SAVE_ITEM(S5P_PMU_LCD0_CONF),
++	SAVE_ITEM(S5P_PMU_LCD1_CONF),
++	SAVE_ITEM(S5P_MAUDIO_CONFIGURATION),
++	SAVE_ITEM(S5P_PMU_GPS_CONF),
 +
- #define S5P_APLL_LOCK			S5P_CLKREG(0x14000)
- #define S5P_MPLL_LOCK			S5P_CLKREG(0x14004)
- #define S5P_APLL_CON0			S5P_CLKREG(0x14100)
-@@ -116,6 +127,8 @@
- #define S5P_CLKGATE_SCLKCPU		S5P_CLKREG(0x14800)
- #define S5P_CLKGATE_IP_CPU		S5P_CLKREG(0x14900)
- 
-+#define S5P_CLKOUT_CMU_CPU		S5P_CLKREG(0x14A00)
++	/* System Controller side */
++	SAVE_ITEM(S3C_VA_SYS + 0x0210),
++	SAVE_ITEM(S3C_VA_SYS + 0x0214),
++	SAVE_ITEM(S3C_VA_SYS + 0x0218),
++	SAVE_ITEM(S3C_VA_SYS + 0x0220),
++	SAVE_ITEM(S3C_VA_SYS + 0x0230),
 +
- #define S5P_APLL_LOCKTIME		(0x1C20)	/* 300us */
+ 	/* GIC side */
+ 	SAVE_ITEM(S5P_VA_GIC_CPU + 0x000),
+ 	SAVE_ITEM(S5P_VA_GIC_CPU + 0x004),
+@@ -232,11 +286,32 @@ static struct sleep_save exynos4_core_save[] = {
+ 	SAVE_ITEM(S5P_VA_GIC_DIST + 0xC20),
+ 	SAVE_ITEM(S5P_VA_GIC_DIST + 0xC24),
  
- #define S5P_APLLCON0_ENABLE_SHIFT	(31)
-diff --git a/arch/arm/mach-exynos4/include/mach/regs-pmu.h b/arch/arm/mach-exynos4/include/mach/regs-pmu.h
-index a964337..8c4596f 100644
---- a/arch/arm/mach-exynos4/include/mach/regs-pmu.h
-+++ b/arch/arm/mach-exynos4/include/mach/regs-pmu.h
-@@ -33,8 +33,16 @@
- #define S5P_EINT_WAKEUP_MASK			S5P_PMUREG(0x0604)
- #define S5P_WAKEUP_MASK				S5P_PMUREG(0x0608)
- 
-+#define S5P_HDMI_PHY_CONTROL			S5P_PMUREG(0x0700)
-+#define S5P_USBOTG_PHY_CONTROL			S5P_PMUREG(0x0704)
- #define S5P_USBHOST_PHY_CONTROL			S5P_PMUREG(0x0708)
- #define S5P_USBHOST_PHY_ENABLE			(1 << 0)
-+#define S5P_DAC_CONTROL				S5P_PMUREG(0x070C)
-+#define S5P_MIPI_CONTROL0			S5P_PMUREG(0x0710)
-+#define S5P_MIPI_CONTROL1			S5P_PMUREG(0x0714)
-+#define S5P_ADC_CONTROL				S5P_PMUREG(0x0718)
-+#define S5P_PCIE_CONTROL			S5P_PMUREG(0x071C)
-+#define S5P_SATA_CONTROL			S5P_PMUREG(0x0720)
- 
- #define S5P_MIPI_DPHY_CONTROL(n)		S5P_PMUREG(0x0710 + (n) * 4)
- #define S5P_MIPI_DPHY_ENABLE			(1 << 0)
-@@ -51,6 +59,8 @@
- #define S5P_INFORM6				S5P_PMUREG(0x0818)
- #define S5P_INFORM7				S5P_PMUREG(0x081C)
- 
-+#define S5P_PMU_DEBUG				S5P_PMUREG(0x0A00)
+-
+ 	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x000),
+ 	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x010),
+ 	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x020),
+ 	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x030),
++	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x040),
++	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x050),
++	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x060),
++	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x070),
++	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x080),
++	SAVE_ITEM(S5P_VA_COMBINER_BASE + 0x090),
 +
- #define S5P_ARM_CORE0_LOWPWR			S5P_PMUREG(0x1000)
- #define S5P_DIS_IRQ_CORE0			S5P_PMUREG(0x1004)
- #define S5P_DIS_IRQ_CENTRAL0			S5P_PMUREG(0x1008)
-@@ -130,6 +140,8 @@
- #define S5P_ARM_CORE1_OPTION			S5P_PMUREG(0x2088)
- 
- #define S5P_ARM_COMMON_OPTION			S5P_PMUREG(0x2408)
-+#define S5P_ARM_CPU_L2_0_CONFIGURATION		S5P_PMUREG(0x2600)
-+#define S5P_ARM_CPU_L2_1_CONFIGURATION		S5P_PMUREG(0x2620)
- #define S5P_TOP_PWR_OPTION			S5P_PMUREG(0x2C48)
- #define S5P_CAM_OPTION				S5P_PMUREG(0x3C08)
- #define S5P_TV_OPTION				S5P_PMUREG(0x3C28)
-@@ -149,6 +161,10 @@
- #define S5P_PAD_RET_EBIA_OPTION			S5P_PMUREG(0x3188)
- #define S5P_PAD_RET_EBIB_OPTION			S5P_PMUREG(0x31A8)
- 
-+#define S5P_XUSBXTI_CONFIGURATION		S5P_PMUREG(0x3400)
-+#define S5P_XXTI_CONFIGURATION			S5P_PMUREG(0x3420)
-+#define S5P_MAUDIO_CONFIGURATION		S5P_PMUREG(0x3CC0)
++	/* SROM side */
++	SAVE_ITEM(S5P_SROM_BW),
++	SAVE_ITEM(S5P_SROM_BC0),
++	SAVE_ITEM(S5P_SROM_BC1),
++	SAVE_ITEM(S5P_SROM_BC2),
++	SAVE_ITEM(S5P_SROM_BC3),
 +
- #define S5P_PMU_CAM_CONF			S5P_PMUREG(0x3C00)
- #define S5P_PMU_TV_CONF				S5P_PMUREG(0x3C20)
- #define S5P_PMU_MFC_CONF			S5P_PMUREG(0x3C40)
++	/* PWM Register */
++	SAVE_ITEM(S3C2410_TCFG0),
++	SAVE_ITEM(S3C2410_TCFG1),
++	SAVE_ITEM(S3C64XX_TINT_CSTAT),
++	SAVE_ITEM(S3C2410_TCON),
++	SAVE_ITEM(S3C2410_TCNTB(0)),
++	SAVE_ITEM(S3C2410_TCMPB(0)),
++	SAVE_ITEM(S3C2410_TCNTO(0)),
+ };
+ 
+ static struct sleep_save exynos4_l2cc_save[] = {
 -- 
 1.7.4.1
 
