@@ -1,83 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758586Ab1F3Hu4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 03:50:56 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41920 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758528Ab1F3Huu convert rfc822-to-8bit (ORCPT
+	id S1758577Ab1F3HxW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 03:53:22 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:59774 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1F3HxS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 03:50:50 -0400
+	Thu, 30 Jun 2011 03:53:18 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Subject: Re: [PATCH v3] pch_gpio: Support interrupt function
+Date: Thu, 30 Jun 2011 09:53:15 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
+Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
+References: <1308631468-2376-1-git-send-email-tomoya-linux@dsn.okisemi.com> <4E0BDA54.2080007@dsn.okisemi.com>
+In-Reply-To: <4E0BDA54.2080007@dsn.okisemi.com>
 MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <004a01cc3662$65751a90$305f4fb0$%kim@samsung.com>
-References: <20110620101737.GA31864@opensource.wolfsonmicro.com>
-	<1308621527-2457-1-git-send-email-myungjoo.ham@samsung.com>
-	<1308621527-2457-3-git-send-email-myungjoo.ham@samsung.com>
-	<004a01cc3662$65751a90$305f4fb0$%kim@samsung.com>
-Date: Thu, 30 Jun 2011 16:50:48 +0900
-X-Google-Sender-Auth: cjj9-NimcJg3p_CgQmdT8LVWrJg
-Message-ID: <BANLkTik-k+9=8coWpZO_zToYCm8iHfO3CQ@mail.gmail.com>
-Subject: Re: [PATCH v2 2/5] Samsung SoC ADC: Channel selection for S5PV210,
- S5PC110, and Exynos4
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-samsung-soc@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>, Ben Dooks <ben-linux@fluff.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, dg77.kim@samsung.com,
-        =?UTF-8?B?7ZWo66qF7KO8?= <myungjoo.ham@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-2022-jp"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106300953.16654.alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 10:42 PM, Kukjin Kim <kgene.kim@samsung.com> wrote:
-> MyungJoo Ham wrote:
->>
->> In S5PV210/S5PC110/Exynos4, ADCMUX channel selection uses ADCMUX
->> register, not ADCCON register. This patch corrects the behavior of
->> Samsung-ADC for such cpus.
->>
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
->> --
->> v2: No changes from v1. Resubmitted as a series of patches
->> ---
-[]
->>
->>  enum s3c_cpu_type {
->>       TYPE_S3C24XX,
->> -     TYPE_S3C64XX
->> +     TYPE_S3C64XX,
->> +     TYPE_S5P,
->>  };
->
-> How about S5PC100? Following is better for next if we cannot distinguish it
-> by CPU.
->
-> -enum s3c_cpu_type {
-> -       TYPE_S3C24XX,
-> -       TYPE_S3C64XX
-> +enum samsung_adc_type {
-> +       TYPE_ADC24,      /* S3C24XX */
-> +       TYPE_ADC64,      /* S3C64XX, S5P64X0, S5PC100 */
-> +       TYPE_ADCV3      /* S5PV210, EXYNOS4210 */
->  };
-> ...
->
-> TYPE_ADCV1 and V2?...
-> Of course, the name can be changed...
+On Thursday 30 June 2011 04:07:16 Tomoya MORINAGA wrote:
+> Hi Grant,
+> 
+> If you don't have any concern, would you accept this patch ?
+> 
+> Thanks,
+> 
+> (2011/06/21 13:44), Tomoya MORINAGA wrote:
+> > Support interrupt function using irq_chip_generic
+> > 
+> > Signed-off-by: Tomoya MORINAGA<tomoya-linux@dsn.okisemi.com>
+> > ---
+> > @@ -202,8 +345,36 @@ static int __devinit pch_gpio_probe(struct pci_dev
+> > *pdev,
+> > 
+> >   		goto err_gpiochip_add;
+> >   	
+> >   	}
+> > 
+> > +	irq_base = irq_alloc_descs(-1, PCH_IRQ_BASE, GPIO_NUM_PINS,
+> > GFP_KERNEL); +	if (irq_base<  0) {
+> > +		dev_err(&pdev->dev, "PCH gpio: Failed to get IRQ base num\n");
+> > +		goto err_irq_alloc_descs;
+> > +	}
+> > +	chip->irq_base = irq_base;
+> > +
+> > +	ret = request_irq(pdev->irq, pch_gpio_handler,
+> > +			     IRQF_SHARED, KBUILD_MODNAME, chip);
+> > +	if (ret != 0) {
+> > +		dev_err(&pdev->dev,
+> > +			"%s request_irq failed\n", __func__);
+> > +		goto err_request_irq;
+> > +	}
+> > +
+> > +	pch_gpio_alloc_generic_chip(chip, irq_base, GPIO_NUM_PINS);
+> > +
+> > +	/* Initialize interrupt ien register */
+> > +	iowrite32(0,&chip->reg->ien);
+> > +
+> > 
+> >   	return 0;
+> > 
+> > +err_request_irq:
+> > +	irq_free_descs(irq_base, GPIO_NUM_PINS);
+> > +
+> > +err_irq_alloc_descs:
+> > +	ret = gpiochip_remove(&chip->gpio);
+> > +	if (ret)
+> > +		dev_err(&pdev->dev, "%s gpiochip_remove failed\n", __func__);
+> > +
+> > 
+> >   err_gpiochip_add:
+> >   	pci_iounmap(pdev, chip->base);
+> > 
+> > @@ -224,6 +395,8 @@ static void __devexit pch_gpio_remove(struct pci_dev
+> > *pdev)
+> > 
+> >   	int err;
+> >   	struct pch_gpio *chip = pci_get_drvdata(pdev);
+> > 
+> > +	irq_free_descs(chip->irq_base, GPIO_NUM_PINS);
+> > +
 
-I don't mind about these names as they are just internal values of adc.c.
-Anyway, I prefer the last suggestion and I'll use TYPE_ADCV1/V2/V3.
+Is a free_irq missing here?
 
-Thanks.
+> > 
+> >   	err = gpiochip_remove(&chip->gpio);
+> >   	if (err)
+> >   	
+> >   		dev_err(&pdev->dev, "Failed gpiochip_remove\n");
 
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+Regards,
+Alexander
