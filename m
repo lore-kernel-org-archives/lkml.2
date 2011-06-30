@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456Ab1F3NER (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 09:04:17 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:40028 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750720Ab1F3NEL (ORCPT
+	id S1751643Ab1F3NIQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 09:08:16 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54093 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751115Ab1F3NII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 09:04:11 -0400
+	Thu, 30 Jun 2011 09:08:08 -0400
+Date: Thu, 30 Jun 2011 17:08:02 +0400
 From: Vasiliy Kulikov <segoon@openwall.com>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-hardening@lists.openwall.com,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: kernel-hardening@lists.openwall.com, Randy Dunlap <rdunlap@xenotime.net>,
         "Eric W. Biederman" <ebiederm@xmission.com>,
-        David Howells <dhowells@redhat.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>, Helge Deller <deller@gmx.de>,
-        Hugh Dickins <hughd@google.com>
-Subject: [PATCH] ipc: comments for shm_forced_rmid code
-Date: Thu, 30 Jun 2011 17:04:05 +0400
-Message-Id: <1309439045-12445-1-git-send-email-segoon@openwall.com>
-X-Mailer: git-send-email 1.7.0.4
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [RFC] ipc: introduce shm_rmid_forced sysctl
+Message-ID: <20110630130802.GA12620@albatros>
+References: <20110622152514.GA9521@albatros>
+ <20110629151436.9be479fb.akpm@linux-foundation.org>
+ <20110630092103.GA4252@albatros>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110630092103.GA4252@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-shm_may_destroy() and ipc_namespace.shm_forced_rmid lack comments.
+On Thu, Jun 30, 2011 at 13:21 +0400, Vasiliy Kulikov wrote:
+> > Perhaps shm_rmid_forced should have had bool type.
+> 
+> OK.  The sysctl handler should parse it OK if feed it with sizeof(bool).
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
----
- include/linux/ipc_namespace.h |    3 +++
- ipc/shm.c                     |   10 ++++++++++
- 2 files changed, 13 insertions(+), 0 deletions(-)
+I was wrong, maxlen must not be less than sizeof(int), it makes sense
+for arrays only.  So, it is kept being int.
 
-diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
-index bec508f..74173c5 100644
---- a/include/linux/ipc_namespace.h
-+++ b/include/linux/ipc_namespace.h
-@@ -44,6 +44,9 @@ struct ipc_namespace {
- 	size_t		shm_ctlall;
- 	int		shm_ctlmni;
- 	int		shm_tot;
-+
-+	/* Defines whether IPC_RMID is forced for _all_ shm segments
-+	 * regardless of shmctl() */
- 	int		shm_forced_rmid;
- 
- 	struct notifier_block ipcns_nb;
-diff --git a/ipc/shm.c b/ipc/shm.c
-index c55623c..22006f1 100644
---- a/ipc/shm.c
-+++ b/ipc/shm.c
-@@ -187,6 +187,16 @@ static void shm_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp)
- 	ipc_rcu_putref(shp);
- }
- 
-+/*
-+ * shm_may_destroy - identifies whether shm segment should be destroyed now
-+ *
-+ * Returns true if and only if there are no active users of the segment and
-+ * one of the following is true:
-+ *
-+ * 1) shmctl(id, IPC_RMID, NULL) was called for this shp
-+ *
-+ * 2) sysctl kernel.shm_forced_rmid is set to 1.
-+ */
- static bool shm_may_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp)
- {
- 	return (shp->shm_nattch == 0) &&
 -- 
-1.7.0.4
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
