@@ -1,98 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab1F3WJQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 18:09:16 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:33088 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753086Ab1F3WER (ORCPT
+	id S1754425Ab1F3WKa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 18:10:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:48059 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754142Ab1F3WK1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 18:04:17 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "Greg Kroah-Hartman" <greg@kroah.com>
-Cc: Marek Belisko <marek.belisko@gmail.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 06/28] staging: ft1000-pcmcia: remove DRVMSG typedefs
-Date: Fri,  1 Jul 2011 00:03:35 +0200
-Message-Id: <1309471437-12633-7-git-send-email-linux@rainbow-software.org>
-X-Mailer: git-send-email 1.7.2.5
-In-Reply-To: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
-References: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
+	Thu, 30 Jun 2011 18:10:27 -0400
+Subject: Re: [PATCH 2/4] perf, x86: Add Intel SandyBridge uncore pmu
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1309421396-17438-3-git-send-email-ming.m.lin@intel.com>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
+	 <1309421396-17438-3-git-send-email-ming.m.lin@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 01 Jul 2011 00:09:18 +0200
+Message-ID: <1309471758.12449.628.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove DRVMSG typedefs.
+On Thu, 2011-06-30 at 08:09 +0000, Lin Ming wrote:
+> +static struct uncore_config {
+> +       unsigned long config_base;
+> +       unsigned long event_base;
+> +} snb_uncore_configs[SNB_UNCORE_NUM_COUNTERS] = {
+> +       {SNB_MSR_UNC_CBO_0_PERFEVTSEL0, SNB_MSR_UNC_CBO_0_PER_CTR0},
+> +       {SNB_MSR_UNC_CBO_0_PERFEVTSEL1, SNB_MSR_UNC_CBO_0_PER_CTR1},
+> +       {SNB_MSR_UNC_CBO_1_PERFEVTSEL0, SNB_MSR_UNC_CBO_1_PER_CTR0},
+> +       {SNB_MSR_UNC_CBO_1_PERFEVTSEL1, SNB_MSR_UNC_CBO_1_PER_CTR1},
+> +       {SNB_MSR_UNC_CBO_2_PERFEVTSEL0, SNB_MSR_UNC_CBO_2_PER_CTR0},
+> +       {SNB_MSR_UNC_CBO_2_PERFEVTSEL1, SNB_MSR_UNC_CBO_2_PER_CTR1},
+> +       {SNB_MSR_UNC_CBO_3_PERFEVTSEL0, SNB_MSR_UNC_CBO_3_PER_CTR0},
+> +       {SNB_MSR_UNC_CBO_3_PERFEVTSEL1, SNB_MSR_UNC_CBO_3_PER_CTR1},
+> +};
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
----
- drivers/staging/ft1000/ft1000-pcmcia/ft1000.h      |    4 ++--
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |    4 ++--
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |    4 ++--
- 3 files changed, 6 insertions(+), 6 deletions(-)
+> +static int snb_uncore_pmu_hw_config(struct perf_event *event)
+> +{
+> +       struct hw_perf_event *hwc = &event->hw;
+> +       int i = hwc->idx;
+> +
+> +       hwc->config = event->attr.config & SNB_UNCORE_RAW_EVENT_MASK;
+> +       hwc->config_base = snb_uncore_configs[i].config_base;
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-index ca73aa4..472b737 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-@@ -285,12 +285,12 @@ struct pseudo_hdr
- 
- #define MAXIMUM_ASIC_HB_CNT      15
- 
--typedef struct _DRVMSG {
-+struct drv_msg {
- 	struct pseudo_hdr pseudo;
- 	u16 type;
- 	u16 length;
- 	u8  data[0];
--} __attribute__ ((packed)) DRVMSG, *PDRVMSG;
-+} __attribute__ ((packed));
- 
- typedef struct _MEDIAMSG {
- 	struct pseudo_hdr pseudo;
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-index 5633c40..0a905a4 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
-@@ -328,7 +328,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
- 	PDSP_IMAGE_INFO_V6 pDspImageInfoV6 = NULL;
- 	long requested_version;
- 	BOOLEAN bGoodVersion = 0;
--	PDRVMSG pMailBoxData;
-+	struct drv_msg *pMailBoxData;
- 	USHORT *pUsData = NULL;
- 	USHORT *pUsFile = NULL;
- 	UCHAR *pUcFile = NULL;
-@@ -605,7 +605,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
- 						(long)(info->DSPInfoBlklen + 1) / 2;
- 					put_request_value(dev, word_length);
- 					pMailBoxData =
--						(PDRVMSG) & info->DSPInfoBlk[0];
-+						(struct drv_msg *) & info->DSPInfoBlk[0];
- 					pUsData =
- 						(USHORT *) & pMailBoxData->data[0];
- 					// Provide mutual exclusive access while reading ASIC registers.
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-index 5f610e5..77ce8c4 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-@@ -1017,7 +1017,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
- 	u16 tempword;
- 	PMEDIAMSG pmediamsg;
- 	PDSPINITMSG pdspinitmsg;
--	PDRVMSG pdrvmsg;
-+	struct drv_msg *pdrvmsg;
- 	u16 len;
- 	u16 i;
- 	PPROV_RECORD ptr;
-@@ -1038,7 +1038,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
-     if ( ft1000_receive_cmd(dev, &cmdbuffer[0], MAX_CMD_SQSIZE, &tempword) ) {
- 
- 		// Get the message type which is total_len + PSEUDO header + msgtype + message body
--		pdrvmsg = (PDRVMSG) & cmdbuffer[0];
-+		pdrvmsg = (struct drv_msg *) & cmdbuffer[0];
- 		msgtype = ntohs(pdrvmsg->type);
- 		DEBUG(1, "Command message type = 0x%x\n", msgtype);
- 		switch (msgtype) {
--- 
-Ondrej Zary
+	hwc->config_base = SNB_MSR_UNC_CBO_0_PERFEVTSEL0 + 
+		0x10 * (i >> 1) + 0x6 * (i & 1);
+
+Saves a memory lookup, might or might not be worth it.
+
+What the heck did Intel mess those MSRs up for anyway?
+
+> +       hwc->event_base = snb_uncore_configs[i].event_base;
+> +
+> +       return 0;
+> +} 
+
 
