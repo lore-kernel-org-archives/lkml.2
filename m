@@ -1,190 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758888Ab1F3I0O (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 04:26:14 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62588 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757677Ab1F3I0I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 04:26:08 -0400
-Message-ID: <4E0C3391.6050807@cn.fujitsu.com>
-Date: Thu, 30 Jun 2011 16:28:01 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1753967Ab1F3Ibi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:31:38 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:6774 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167Ab1F3Ibg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 04:31:36 -0400
+Message-ID: <4E0C3440.9010802@atmel.com>
+Date: Thu, 30 Jun 2011 10:30:56 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3 19/19] KVM: MMU: trace mmio page fault
-References: <4E0C3178.2080603@cn.fujitsu.com>
-In-Reply-To: <4E0C3178.2080603@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-30 16:25:32,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-30 16:25:34,
-	Serialize complete at 2011-06-30 16:25:34
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, balbi@ti.com
+CC: cjb@laptop.org, linux-mmc@vger.kernel.org,
+        hans-christian.egtvedt@atmel.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@avr32linux.org,
+        =?ISO-8859-2?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 1/2] MMC: PM: add suspend/resume in atmel-mci
+References: <1ef60c032bc39531302c1603bfcb841d2d437ccc.1309366360.git.nicolas.ferre@atmel.com> <20110629160110.GD2760@legolas.emea.dhcp.ti.com> <201106292339.12402.rjw@sisk.pl>
+In-Reply-To: <201106292339.12402.rjw@sisk.pl>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add tracepoints to trace mmio page fault
+Le 29/06/2011 23:39, Rafael J. Wysocki :
+> On Wednesday, June 29, 2011, Felipe Balbi wrote:
+>> Hi,
+>>
+>> On Wed, Jun 29, 2011 at 06:54:19PM +0200, Nicolas Ferre wrote:
+>>> Take care of slots while going to suspend state.
+>>>
+>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>>> ---
+>>>  drivers/mmc/host/atmel-mci.c |   51 ++++++++++++++++++++++++++++++++++++++++++
+>>>  1 files changed, 51 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+>>> index aa8039f..c414ebe 100644
+>>> --- a/drivers/mmc/host/atmel-mci.c
+>>> +++ b/drivers/mmc/host/atmel-mci.c
+>>> @@ -1878,8 +1878,59 @@ static int __exit atmci_remove(struct platform_device *pdev)
+>>>  	return 0;
+>>>  }
+>>>  
+>>> +#ifdef CONFIG_PM
+>>> +static int atmci_suspend(struct platform_device *pdev, pm_message_t mesg)
+>>> +{
+>>> +	struct atmel_mci *host = platform_get_drvdata(pdev);
+>>> +	struct atmel_mci_slot *slot;
+>>> +	int i, ret;
+>>> +
+>>> +	 for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
+>>> +		slot = host->slot[i];
+>>> +		if (!slot)
+>>> +			continue;
+>>> +		ret = mmc_suspend_host(slot->mmc);
+>>> +		if (ret < 0) {
+>>> +			while (--i >= 0) {
+>>> +				slot = host->slot[i];
+>>> +				if (slot)
+>>> +					mmc_resume_host(host->slot[i]->mmc);
+>>> +			}
+>>> +			return ret;
+>>> +		}
+>>> +	}
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +
+>>> +static int atmci_resume(struct platform_device *pdev)
+>>> +{
+>>> +	struct atmel_mci *host = platform_get_drvdata(pdev);
+>>> +	struct atmel_mci_slot *slot;
+>>> +	int i, ret;
+>>> +
+>>> +	for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
+>>> +		slot = host->slot[i];
+>>> +		if (!slot)
+>>> +			continue;
+>>> +		ret = mmc_resume_host(slot->mmc);
+>>> +		if (ret < 0)
+>>> +			return ret;
+>>> +	}
+>>> +
+>>> +	return 0;
+>>> +}
+>>> +#else
+>>> +#define atmci_suspend	NULL
+>>> +#define atmci_resume	NULL
+>>> +#endif
+>>> +
+>>> +
+>>> +
+>>>  static struct platform_driver atmci_driver = {
+>>>  	.remove		= __exit_p(atmci_remove),
+>>> +	.suspend	= atmci_suspend,
+>>> +	.resume		= atmci_resume,
+>>
+>> should this be using dev_pm_ops instead ?
+> 
+> It should.  Also, please remember to initialize the hibernate callback
+> pointers too, e.g. via the SIMPLE_DEV_PM_OPS() macro.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c      |    5 ++++
- arch/x86/kvm/mmutrace.h |   48 +++++++++++++++++++++++++++++++++++++++++++++++
- arch/x86/kvm/trace.h    |   23 ++++++++++++++++++++++
- arch/x86/kvm/x86.c      |    5 +++-
- 4 files changed, 80 insertions(+), 1 deletions(-)
+Felipe, Rafael,
+Thanks for your feedback. I will implement this in a v2 patch.
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a5a69a8..3193fa9 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -211,6 +211,7 @@ static void mark_mmio_spte(u64 *sptep, u64 gfn, unsigned access)
- {
- 	access &= ACC_WRITE_MASK | ACC_USER_MASK;
- 
-+	trace_mark_mmio_spte(sptep, gfn, access);
- 	mmu_spte_set(sptep, shadow_mmio_mask | access | gfn << PAGE_SHIFT);
- }
- 
-@@ -1920,6 +1921,8 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
- 		kvm_mmu_isolate_pages(invalid_list);
- 		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
- 		list_del_init(invalid_list);
-+
-+		trace_kvm_mmu_delay_free_pages(sp);
- 		call_rcu(&sp->rcu, free_pages_rcu);
- 		return;
- 	}
-@@ -2903,6 +2906,8 @@ int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
- 
- 		if (direct)
- 			addr = 0;
-+
-+		trace_handle_mmio_page_fault(addr, gfn, access);
- 		vcpu_cache_mmio_info(vcpu, addr, gfn, access);
- 		return 1;
- 	}
-diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
-index b60b4fd..eed67f3 100644
---- a/arch/x86/kvm/mmutrace.h
-+++ b/arch/x86/kvm/mmutrace.h
-@@ -196,6 +196,54 @@ DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_prepare_zap_page,
- 	TP_ARGS(sp)
- );
- 
-+DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_delay_free_pages,
-+	TP_PROTO(struct kvm_mmu_page *sp),
-+
-+	TP_ARGS(sp)
-+);
-+
-+TRACE_EVENT(
-+	mark_mmio_spte,
-+	TP_PROTO(u64 *sptep, gfn_t gfn, unsigned access),
-+	TP_ARGS(sptep, gfn, access),
-+
-+	TP_STRUCT__entry(
-+		__field(void *, sptep)
-+		__field(gfn_t, gfn)
-+		__field(unsigned, access)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->sptep = sptep;
-+		__entry->gfn = gfn;
-+		__entry->access = access;
-+	),
-+
-+	TP_printk("sptep:%p gfn %llx access %x", __entry->sptep, __entry->gfn,
-+		  __entry->access)
-+);
-+
-+TRACE_EVENT(
-+	handle_mmio_page_fault,
-+	TP_PROTO(u64 addr, gfn_t gfn, unsigned access),
-+	TP_ARGS(addr, gfn, access),
-+
-+	TP_STRUCT__entry(
-+		__field(u64, addr)
-+		__field(gfn_t, gfn)
-+		__field(unsigned, access)
-+	),
-+
-+	TP_fast_assign(
-+		__entry->addr = addr;
-+		__entry->gfn = gfn;
-+		__entry->access = access;
-+	),
-+
-+	TP_printk("addr:%llx gfn %llx access %x", __entry->addr, __entry->gfn,
-+		  __entry->access)
-+);
-+
- TRACE_EVENT(
- 	kvm_mmu_audit,
- 	TP_PROTO(struct kvm_vcpu *vcpu, int audit_point),
-diff --git a/arch/x86/kvm/trace.h b/arch/x86/kvm/trace.h
-index 624f8cb..3ff898c 100644
---- a/arch/x86/kvm/trace.h
-+++ b/arch/x86/kvm/trace.h
-@@ -698,6 +698,29 @@ TRACE_EVENT(kvm_emulate_insn,
- #define trace_kvm_emulate_insn_start(vcpu) trace_kvm_emulate_insn(vcpu, 0)
- #define trace_kvm_emulate_insn_failed(vcpu) trace_kvm_emulate_insn(vcpu, 1)
- 
-+TRACE_EVENT(
-+	vcpu_match_mmio,
-+	TP_PROTO(gva_t gva, gpa_t gpa, bool write, bool gpa_match),
-+	TP_ARGS(gva, gpa, write, gpa_match),
-+
-+	TP_STRUCT__entry(
-+		__field(gva_t, gva)
-+		__field(gpa_t, gpa)
-+		__field(bool, write)
-+		__field(bool, gpa_match)
-+		),
-+
-+	TP_fast_assign(
-+		__entry->gva = gva;
-+		__entry->gpa = gpa;
-+		__entry->write = write;
-+		__entry->gpa_match = gpa_match
-+		),
-+
-+	TP_printk("gva %#lx gpa %#llx %s %s", __entry->gva, __entry->gpa,
-+		  __entry->write ? "Write" : "Read",
-+		  __entry->gpa_match ? "GPA" : "GVA")
-+);
- #endif /* _TRACE_KVM_H */
- 
- #undef TRACE_INCLUDE_PATH
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index ffdbc90..3b78312 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3955,6 +3955,7 @@ static int vcpu_mmio_gva_to_gpa(struct kvm_vcpu *vcpu, unsigned long gva,
- 		  vcpu->arch.access)) {
- 		*gpa = vcpu->arch.mmio_gfn << PAGE_SHIFT |
- 					(gva & (PAGE_SIZE - 1));
-+		trace_vcpu_match_mmio(gva, *gpa, write, false);
- 		return 1;
- 	}
- 
-@@ -3970,8 +3971,10 @@ static int vcpu_mmio_gva_to_gpa(struct kvm_vcpu *vcpu, unsigned long gva,
- 	if ((*gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
- 		return 1;
- 
--	if (vcpu_match_mmio_gpa(vcpu, *gpa))
-+	if (vcpu_match_mmio_gpa(vcpu, *gpa)) {
-+		trace_vcpu_match_mmio(gva, *gpa, write, true);
- 		return 1;
-+	}
- 
- 	return 0;
- }
+BTW, should I use #ifdef CONFIG_PM or #ifdef CONFIG_PM_SLEEP?
+
+Best regards,
 -- 
-1.7.5.4
+Nicolas Ferre
 
