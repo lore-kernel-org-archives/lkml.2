@@ -1,131 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758457Ab1F3Gct (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 02:32:49 -0400
-Received: from eu1sys200aog120.obsmtp.com ([207.126.144.149]:33148 "EHLO
-	eu1sys200aog120.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758433Ab1F3Gcn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 02:32:43 -0400
-From: Linus Walleij <linus.walleij@stericsson.com>
-To: <greg@kroah.com>, <linux-kernel@vger.kernel.org>
-Cc: Axel Lin <axel.lin@gmail.com>, Lee Jones <lee.jones@linaro.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Subject: [PATCH] staging/ste_rmi4: remove cross-dependent platform data
-Date: Thu, 30 Jun 2011 08:31:59 +0200
-Message-ID: <1309415519-27887-1-git-send-email-linus.walleij@stericsson.com>
-X-Mailer: git-send-email 1.7.3.2
+	id S1758430Ab1F3Gcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 02:32:41 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50414 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750970Ab1F3Gcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 02:32:35 -0400
+Date: Thu, 30 Jun 2011 08:32:32 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Ying Han <yinghan@google.com>
+Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
+Message-ID: <20110630063231.GA12342@tiehlicka.suse.cz>
+References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
+ <20110629130043.4dc47249.akpm@linux-foundation.org>
+ <20110630123229.37424449.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110630123229.37424449.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Walleij <linus.walleij@linaro.org>
+On Thu 30-06-11 12:32:29, KAMEZAWA Hiroyuki wrote:
+> On Wed, 29 Jun 2011 13:00:43 -0700
+> Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > On Wed, 29 Jun 2011 19:03:25 +0900
+> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > 
+> > > Each memory cgroup has 'swappiness' value and it can be accessed by
+> > > get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
+> > > and swappiness is passed by argument. It's propagated by scan_control.
+> > > 
+> > > get_swappiness is static function but some planned updates will need to
+> > > get swappiness from files other than memcontrol.c
+> > > This patch exports get_swappiness() as mem_cgroup_swappiness().
+> > > By this, we can remove the argument of swapiness from try_to_free...
+> > > and drop swappiness from scan_control. only memcg uses it.
+> > > 
+> > 
+> > > +extern unsigned int mem_cgroup_swappiness(struct mem_cgroup *mem);
+> > > +unsigned int mem_cgroup_swappiness(struct mem_cgroup *memcg)
+> > > +static int vmscan_swappiness(struct scan_control *sc)
+> > 
+> > The patch seems a bit confused about the signedness of swappiness.
+> > 
+> 
+> ok, v3 here. Now, memcg's one use "int" because vm_swapiness is "int".
+> ==
+> 
+> From af1bae8f2c6a8dbff048222bb45c7162b505f38b Mon Sep 17 00:00:00 2001
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Date: Wed, 29 Jun 2011 18:24:49 +0900
+> Subject: [PATCH] export memory cgroup's swappines by mem_cgroup_swappiness()
+> 
+> Each memory cgroup has 'swappiness' value and it can be accessed by
+> get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
+> and swappiness is passed by argument. It's propagated by scan_control.
+> 
+> get_swappiness is static function but some planned updates will need to
+> get swappiness from files other than memcontrol.c
+> This patch exports get_swappiness() as mem_cgroup_swappiness().
+> By this, we can remove the argument of swapiness from try_to_free...
+> and drop swappiness from scan_control. only memcg uses it.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-The ux500 machine was actually defining platform data for the
-staging driver ste_rmi4, which is not OK. Let us instead define
-some __weak platform data in the machine so that the staging
-driver can override it at compile-time and we can thus have the
-driver self-contained in staging.
+Reviewed-by: Michal Hocko <mhocko@suse.cz>
 
-Reported-by: Axel Lin <axel.lin@gmail.com>
-Signed-off-by: Linus Walleij <linus.walleij@linaro.org>
----
- arch/arm/mach-ux500/board-mop500-u8500uib.c        |   24 +-------------
- drivers/staging/ste_rmi4/Makefile                  |    1 +
- .../staging/ste_rmi4/board-mop500-u8500uib-rmi4.c  |   32 ++++++++++++++++++++
- 3 files changed, 35 insertions(+), 22 deletions(-)
- create mode 100644 drivers/staging/ste_rmi4/board-mop500-u8500uib-rmi4.c
+> 
+> Changelog:
+>   - adjusted signedness to vm_swappiness.
+>   - drop swappiness from scan_control
+> ---
+>  include/linux/swap.h |   10 +++++++---
+>  mm/memcontrol.c      |   15 +++++++--------
+>  mm/vmscan.c          |   23 ++++++++++-------------
+>  3 files changed, 24 insertions(+), 24 deletions(-)
+> 
+[...]
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 3e7d5e6..db70176 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+[...]
+> @@ -4288,7 +4287,7 @@ static u64 mem_cgroup_swappiness_read(struct cgroup *cgrp, struct cftype *cft)
+>  {
+>  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+>  
+> -	return get_swappiness(memcg);
+> +	return mem_cgroup_swappiness(memcg);
+>  }
 
-diff --git a/arch/arm/mach-ux500/board-mop500-u8500uib.c b/arch/arm/mach-ux500/board-mop500-u8500uib.c
-index d8a8734..8ce46c0 100644
---- a/arch/arm/mach-ux500/board-mop500-u8500uib.c
-+++ b/arch/arm/mach-ux500/board-mop500-u8500uib.c
-@@ -12,34 +12,14 @@
- #include <linux/interrupt.h>
- #include <linux/mfd/tc3589x.h>
- #include <linux/input/matrix_keypad.h>
--#include <../drivers/staging/ste_rmi4/synaptics_i2c_rmi4.h>
- 
- #include <mach/gpio.h>
- #include <mach/irqs.h>
- 
- #include "board-mop500.h"
- 
--/*
-- * Synaptics RMI4 touchscreen interface on the U8500 UIB
-- */
--
--/*
-- * Descriptor structure.
-- * Describes the number of i2c devices on the bus that speak RMI.
-- */
--static struct synaptics_rmi4_platform_data rmi4_i2c_dev_platformdata = {
--	.irq_number     = NOMADIK_GPIO_TO_IRQ(84),
--	.irq_type       = (IRQF_TRIGGER_FALLING | IRQF_SHARED),
--	.x_flip		= false,
--	.y_flip		= true,
--	.regulator_en   = false,
--};
--
--static struct i2c_board_info __initdata mop500_i2c3_devices_u8500[] = {
--	{
--		I2C_BOARD_INFO("synaptics_rmi4_i2c", 0x4B),
--		.platform_data = &rmi4_i2c_dev_platformdata,
--	},
-+/* Dummy data that can be overridden by staging driver */
-+struct i2c_board_info __initdata __weak mop500_i2c3_devices_u8500[] = {
- };
- 
- /*
-diff --git a/drivers/staging/ste_rmi4/Makefile b/drivers/staging/ste_rmi4/Makefile
-index 6cce2ed..176f469 100644
---- a/drivers/staging/ste_rmi4/Makefile
-+++ b/drivers/staging/ste_rmi4/Makefile
-@@ -2,3 +2,4 @@
- # Makefile for the RMI4 touchscreen driver.
- #
- obj-$(CONFIG_TOUCHSCREEN_SYNAPTICS_I2C_RMI4) += synaptics_i2c_rmi4.o
-+obj-$(CONFIG_MACH_U8500) += board-mop500-u8500uib-rmi4.o
-diff --git a/drivers/staging/ste_rmi4/board-mop500-u8500uib-rmi4.c b/drivers/staging/ste_rmi4/board-mop500-u8500uib-rmi4.c
-new file mode 100644
-index 0000000..a272e48
---- /dev/null
-+++ b/drivers/staging/ste_rmi4/board-mop500-u8500uib-rmi4.c
-@@ -0,0 +1,32 @@
-+/*
-+ * Some platform data for the RMI4 touchscreen that will override the __weak
-+ * platform data in the Ux500 machine if this driver is activated.
-+ */
-+#include <linux/i2c.h>
-+#include <linux/gpio.h>
-+#include <linux/interrupt.h>
-+#include <mach/gpio.h>
-+#include <mach/irqs.h>
-+#include "synaptics_i2c_rmi4.h"
-+
-+/*
-+ * Synaptics RMI4 touchscreen interface on the U8500 UIB
-+ */
-+
-+/*
-+ * Descriptor structure.
-+ * Describes the number of i2c devices on the bus that speak RMI.
-+ */
-+static struct synaptics_rmi4_platform_data rmi4_i2c_dev_platformdata = {
-+	.irq_number     = NOMADIK_GPIO_TO_IRQ(84),
-+	.irq_type       = (IRQF_TRIGGER_FALLING | IRQF_SHARED),
-+	.x_flip		= false,
-+	.y_flip		= true,
-+};
-+
-+struct i2c_board_info __initdata mop500_i2c3_devices_u8500[] = {
-+	{
-+		I2C_BOARD_INFO("synaptics_rmi4_i2c", 0x4B),
-+		.platform_data = &rmi4_i2c_dev_platformdata,
-+	},
-+};
+If you want to be type clean you should change this one as well. I
+think it is worth it, though. The function is called only to return the
+current value to userspace and mem_cgroup_swappiness_write guaranties
+that it falls down into <0,100> interval. Additionally, cftype doesn't
+have any read specialization for int values so you would need to use a
+generic one. Finally if you changed read part you should change also
+write part and add > 0 check which is a lot of code for not that good
+reason.
 -- 
-1.7.3.2
-
+Michal Hocko
+SUSE Labs
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
