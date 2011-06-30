@@ -1,169 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab1F3XOT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 19:14:19 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:49411 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752365Ab1F3XOQ (ORCPT
+	id S1752650Ab1F3XYO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 19:24:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:52188 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab1F3XYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 19:14:16 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 7/10 v6] PM / Domains: Don't stop wakeup devices during system sleep transitions
-Organization: Texas Instruments, Inc.
-References: <201106112223.04972.rjw@sisk.pl> <201106302137.23801.rjw@sisk.pl>
-	<878vsjdjpx.fsf@ti.com> <201107010055.26952.rjw@sisk.pl>
-Date: Thu, 30 Jun 2011 16:14:11 -0700
-In-Reply-To: <201107010055.26952.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Fri, 1 Jul 2011 00:55:26 +0200")
-Message-ID: <87iprmdi9o.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 30 Jun 2011 19:24:13 -0400
+Message-ID: <4E0D0595.5070205@gmail.com>
+Date: Fri, 01 Jul 2011 09:24:05 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Bill Gatliff <bgat@billgatliff.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Ryan Mallon <ryan@bluewatersys.com>
+Subject: Re: [PATCH 1/3] PWM: add pwm framework support
+References: <1309430517-23821-1-git-send-email-s.hauer@pengutronix.de> <1309430517-23821-2-git-send-email-s.hauer@pengutronix.de> <BANLkTikQGFA7XcuAtEEi7_4m-j6-00sZ6Q@mail.gmail.com> <201106301441.24493.arnd@arndb.de> <BANLkTin_htv2z3D9Bbf6N8Y7UKFRvPtvOg@mail.gmail.com> <20110630170229.GP6069@pengutronix.de>
+In-Reply-To: <20110630170229.GP6069@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
-
-> On Friday, July 01, 2011, Kevin Hilman wrote:
->> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
->> 
->> > On Thursday, June 30, 2011, Kevin Hilman wrote:
->> >> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
->> >> 
->> >> > From: Rafael J. Wysocki <rjw@sisk.pl>
->> >> >
->> >> > Devices that are set up to wake up the system from sleep states
->> >> > should not be stopped and power should not be removed from them
->> >> > when the system goes into a sleep state.  
->> >> 
->> >> I don't think this belongs in the generic layer since the two
->> >> assumptions above are not generally true on embedded systems, and would
->> >> result in rather significant power consumption unnecessarily.
->> >
->> > As to whether or not this belongs to the generic layer, I don't quite agree
->> > (see below), but the changelog seems to be a bit inaccurate.
->> >
->> >> First, whether the device should be stopped on device_may_wakeup():
->> >> b
->> >> Some IP blocks (at least on OMAP) have "asynchronous" wakeups.  Meaning
->> >> that they can generate wakeups even when they're not clocked (a.k.a
->> >> stopped).  So in this case, even after a ->stop_device (which clock
->> >> gates the IP), it can still generate wakeups.
->> >> 
->> >> Second, whether the device should be powered off if device_may_wakeup():
->> >> 
->> >> Embedded SoCs have other ways to wakeup than device-level wakeups.
->> >> 
->> >> For example, on OMAP, every pad on the SoC can be configured as a wakeup
->> >> source So, for example, you could completely power down the UART IP
->> >> blocks (and the enclosing power domain), configure the UART RX pad as a
->> >> wakeup source, and still wakeup the system on UART activity.  The OMAP
->> >> docs call these IO pad wakeups.
->> >> 
->> >> On OMAP in fact, this is the common, default behavior when we enable
->> >> "off-mode" in idle and/or suspend, since most of the IPs are powered off
->> >> but can still wake up the system.
->> >> 
->> >> So in summary, even if device_may_wakeup() is true, many devices (with
->> >> additional SoC magic) can still generate wakeups even when stopped and
->> >> powered off.
->> >
->> > Well, on the other hand, on some SoCs there are devices that can't be
->> > powered off (or "declocked") if they are supposed to generate wakeups.
->> 
->> Correct.
->> 
->> > Also, I'm sure there are cases in which wakeups can be generated for devices
->> > with their clocks off, but only if power is present.  
->> 
->> Yes.
->> 
->> > So there are multiple
->> > cases, but not so many overall.  So, IMO, it makes sense to handle that at
->> > the generic level, although not necessarily in such a simplistic way.
->> >
->> > Now, at this point, I want to do something very simple, which I think is
->> > done by this patch. 
->> >
->> > Is this optimal power comsumption-wise for every potential
->> > user of the framework?  
->> 
->> Well, sub-optimal would be an understatement.  I would consider this a
->> major regression since if we were to use this for OMAP, we would never
->> hit the full-chip low-power states if *any* device had wakeups enabled,
->> whereas today we can.
->> 
->> > No, but certainly for some it's sufficient.  Is it
->> > going to work in general?  I think it is.
->> >
->> > Of course, there's the question how to handle that more accurately and I have
->> > some ideas.  If you have any, please let me know.
->> >
->> > In the meantime, I'm going to modify the changelog so that it's clear that
->> > it's a "first approximation" thing, like in the patch below.
->> >
->> > Thanks,
->> > Rafael
->> >
->> > ---
->> > From: Rafael J. Wysocki <rjw@sisk.pl>
->> > Subject: PM / Domains: Don't stop wakeup devices during system sleep transitions
->> >
->> > There is the problem how to handle devices set up to wake up the
->> > system from sleep states during system-wide power transitions.
->> > In some cases, those devices can be turned off entirely, because the
->> > wakeup signals will be generated on their behalf anyway.  In some
->> > other cases, they will generate wakeup signals if their clocks are
->> > stopped, but only if power is not removed from them.  Finally, in
->> > some cases, they can only generate wakeup signals if power is not
->> > removed from them and their clocks are enabled.
->> 
->> That's a good summary.
->> 
->> > In the future, it will be necessary to take all of the above
->> > situations into account, but for starters it is possible to use
->> > the observation that if all wakeup devices are treated like the
->> > last group (i.e. their clocks are enabled and power in not removed
->> > from them during system suspend transitions), they all will be able
->> > to generate wakeups, although power consumption in the resulting
->> > system sleep state may not be optimal in some cases.
->> 
->> I'm not opposed to this kind of check happening.  I'm only opposed to it
->> happening in this "generic" layer because..., well, it's not generic.
->> 
->> Not only is it not generic, it would be a major regression in power
->> consumption for anyone moving to this layer that has the various
->> different wakeup capabilities already described.
->> 
->> The decision of whether or not to clock gate and/or power gate based on
->> wakeup capabilies has to be made somewhere (and in fact is already made
->> by existing code.)  But IMO, that decision should only be made where
->> wakeup capabilies are known, so that sensible decisions (for power
->> management) can be made.
->> 
->> Until there is a way in the generic code to distinguish between the
->> various ways a device can wakeup, this decision should be left up to the
->> code that knows how.
+On 01/07/11 03:02, Sascha Hauer wrote:
+> Bill,
 >
-> OK, so I suppose your suggestion is to drop the patch and let the
-> .stop_device() and .power_off() PM domain callbacks to hand that, is this
-> correct?
+> On Thu, Jun 30, 2011 at 11:17:54AM -0500, Bill Gatliff wrote:
+>> Guys:
+>>
+>> On Thu, Jun 30, 2011 at 7:41 AM, Arnd Bergmann<arnd@arndb.de>  wrote:
+>>
+>>> A lot of people want to see a framework get merged, and I think it's
+>>> great that Sascha has volunteered to do the work to push that
+>>> through this time, especially since you have not been able to
+>>> finish your work.
+>> Sascha is wasting his time by reinventing the wheel.  He's traveling
+>> over exactly the same path I have already covered.  In fact, some of
+>> his reviewer comments are almost word-for-word the same as those I
+>> have received and addressed in the past.
+>>
+>> My patches were always kept current in this mailing list and others,
+>> and Sascha clearly has the skills necessary to make improvements and
+>> corrections should he have chosen to do so.
+> I think that you made the fundamental mistake to completly ignore the
+> existing pwm API and its users. With a competing api we are basically
+> stuck. We can't convert the existing hardware drivers to the new API
+> because leds-pwm.c, pwm_bl.c and others still depend on the old API and
+> boards using it would break.
 
-Correct.
+I don't think this is really a blocker to Bill's patches. There are 
+three (that I can see) pwm users currently:
+drivers/video/backlight/pwm_bl.c
+drivers/leds/leds-pwm.c
+drivers/input/misc/pwm-beeper.c
 
-Initially I was thinking only about .power_off(), but you'd probably
-want this at .stop_device() too.  In order to do that, probably want
-.stop_device() to be able to return an error code such that an error
-would prevent .power_off().
+All of those drivers are trivial and good easily be updated to work with 
+Bill's patches. Bill already provided a leds-pwm driver.
 
-Kevin
+There is also the interesting case of the Atmel pwm driver, which does 
+not fit the current pwm api and has its own backlight and leds drivers. 
+Bill's patches addressed this, Sasha's patches do not. If we merge 
+Sasha's patches then we are going to be in the same position as Bill's 
+patches at some point in that we need to change the pwm api (and all its 
+users) to meet the needs of the Atmel (and any similar hardware) pwm device.
+
+The ep93xx pwm driver (drivers/misc/ep93xx-pwm.c) also does not fit the 
+current api (though it could), but instead provides a sysfs interface to 
+user-space. Again, this was addressed by Bill's patches.
+
+> We can't convert the function drivers
+> either because again this would break boards for which only an old style
+> pwm driver exists.  So the logical thing to do is to put a step in
+> between: Consolidate the existing drivers and *then* change the API
+> atomically so that nothing breaks. Your patches don't do this, so I
+> don't think at all that what I did is duplication of work.
+
+You have to modify the drivers anyway match the new pwm core. The Atmel 
+and ep93xx drivers are going to be difficult to merge into the new api, 
+and seeing as there are only about seven pwm drivers total in the kernel 
+I think its a significant portion. Any pwm api patchset could easily 
+convert all of the existing pwm drivers without becoming overly massive.
+
+If we merge Sasha's api, then we can move most of the existing drivers 
+and maybe add some new ones, but we will still have the unconsolidated 
+outliers. When (if?) we try to fix those we will probably need to change 
+the pwm api and therefore all of the drivers to. So its basically a case 
+of do the effort now (Bill's patches) or do it later. Doing it later 
+will probably require more effort.
+
+> Given the current rush to move drivers out of arch/ it probably won't
+> take long until all pwm drivers are moved to drivers/pwm/ and converted
+> to use the framework, and then you have a good base to put your work onto.
+> So please don't complain too much: We are currently only doing the work
+> you didn't want to do.
+>
+
+You can move all of the drivers out of arch now if you want. You just 
+need to make sure you are only compiling one of them in. The real job in 
+consolidating means making sure that the api meets the needs of all of 
+the drivers. The in kernel Atmel pwm driver at least is not going to 
+convert easily to this api.
+
+Also, please not my change of email address for future emails.
+
+Thanks,
+~Ryan
 
 
