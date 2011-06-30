@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753325Ab1F3MoT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:44:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63433 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751159Ab1F3MoP (ORCPT
+	id S1753280Ab1F3MrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 08:47:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:36876 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751159Ab1F3MrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:44:15 -0400
-From: Miklos Szeredi <miklos@szeredi.hu>
-To: David Howells <dhowells@redhat.com>
-Cc: Ric Wheeler <ricwheeler@gmail.com>, Michal Suchanek <hramrach@centrum.cz>,
-        Alexander Viro <aviro@redhat.com>, Ian Kent <ikent@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jeff Moyer <jmoyer@redhat.com>, Christoph Hellwig <hch@infradead.org>
-Subject: Re: Union mount and overlayfs bake off?
-References: <4E0AF2BA.2040706@gmail.com>
-	<1302756608.2854.10.camel@perseus.themaw.net>
-	<BANLkTini-g9XVOohKjwpZT-SGozcwx720A@mail.gmail.com>
-	<4DA4B6A8.7030804@gmail.com>
-	<BANLkTimsAE1ZAJhsSjnh3LqwsN9x0cLaXg@mail.gmail.com>
-	<4DA5DCB8.3040101@gmail.com>
-	<BANLkTineg2XYYOZAU9trrw=+-vH8McN_9w@mail.gmail.com>
-	<4DA5F569.9020309@gmail.com>
-	<BANLkTi=Z1CQm=u2Q1VCHfr=53n5qTC=7bA@mail.gmail.com>
-	<24792.1302808448@redhat.com> <2477.1309342656@redhat.com>
-Date: Thu, 30 Jun 2011 14:44:59 +0200
-In-Reply-To: <2477.1309342656@redhat.com> (David Howells's message of "Wed, 29
-	Jun 2011 11:17:36 +0100")
-Message-ID: <87vcvnpjxw.fsf@tucsk.pomaz.szeredi.hu>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 30 Jun 2011 08:47:04 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Thu, 30 Jun 2011 20:47:03 +0800
+Message-ID: <BANLkTikH9cdO+bwNN4kGgisP6RCy2Xo-3g@mail.gmail.com>
+Subject: [RFC] sched: check RT runqueue overloaded in tick timer
+From: Hillf Danton <dhillf@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells <dhowells@redhat.com> writes:
+Hi Steven
 
-> I've been dealing with some of Al's issues with the unionmount
-> patches, but I know he's got more - I just can't remember them all.
+When tick timer runs, runqueue overload is checked. If overloaded and other
+CPUs available at the moment, reschedule is fired to allow push logic to move
+the pushable tasks somewhere else.
 
-A couple of questions I have:
+Thanks
 
-1) What happens to the union in a cloned namespace (CLONE_NEWNS)?
+Hillf
+---
+ kernel/sched_rt.c |   21 +++++++++++++++++++--
+ 1 files changed, 19 insertions(+), 2 deletions(-)
 
-2) What's the overhead for non-unioned filesystems if CONFIG_UNION_MOUNTS
-is enabled?  Does it show up in any microbenchmarks?
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index b03cd89..afd29a3 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -1767,10 +1767,10 @@ static void task_tick_rt(struct rq *rq, struct
+task_struct *p, int queued)
+ 	 * FIFO tasks have no timeslices.
+ 	 */
+ 	if (p->policy != SCHED_RR)
+-		return;
++		goto check_overload;
 
-3) Is there a future strategy for making atomic operations really atomic?
-E.g. what happens if power is lost in the middle of a copy-up?  Or if
-whiteout of source fails after a successful rename()?
+ 	if (--p->rt.time_slice)
+-		return;
++		goto check_overload;
 
-4) Have you looked at overlayfs?  Do you have any thoughts about the
-relative merrits of each solution?
+ 	p->rt.time_slice = DEF_TIMESLICE;
 
-Thanks,
-Miklos
+@@ -1782,6 +1782,23 @@ static void task_tick_rt(struct rq *rq, struct
+task_struct *p, int queued)
+ 		requeue_task_rt(rq, p, 0);
+ 		set_tsk_need_resched(p);
+ 	}
++
++check_overload:
++#ifdef CONFIG_SMP
++	if (!test_tsk_need_resched(p)) {
++		struct task_struct *t = pick_next_pushable_task(rq);
++		/*
++		 * If @rq overloaded and other CPUs available, reschedule
++		 * @p to allow the push logic to move the pushable tasks
++		 * somewhere else.
++		 *
++		 * It is a pseudo schedule, since @p, without accident, will
++		 * be picked again. If not, fine:)
++		 */
++		if (t && cpupri_find(&rq->rd->cpupri, t, NULL))
++			set_tsk_need_resched(p);
++	}
++#endif
+ }
+
+ static void set_curr_task_rt(struct rq *rq)
