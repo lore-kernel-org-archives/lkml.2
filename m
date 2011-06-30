@@ -1,117 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752609Ab1F3QZB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 12:25:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58590 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751294Ab1F3QZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 12:25:00 -0400
-Date: Thu, 30 Jun 2011 18:24:57 +0200
-From: Jan Kara <jack@suse.cz>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/9] writeback: make writeback_control.nr_to_write
- straight
-Message-ID: <20110630162457.GH28475@quack.suse.cz>
-References: <20110629145245.835998321@intel.com>
- <20110629145553.642570515@intel.com>
+	id S1752792Ab1F3Q1r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 12:27:47 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:1262 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752483Ab1F3Q1n (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 12:27:43 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:date:
+	message-id:subject:from:to:cc:content-type:x-system-of-record;
+	b=A4/BMv09UqPRx3dnk25m6zgQr5kt0ZnLWncGpAJWnvUS+ocaf7c9dHTOBQ/sV1x1R
+	5KNeG3ZA36y2UoG04Uktg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110629145553.642570515@intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <CABPqkBRs1nd7KptkVCg5QeG0AJJck=VHAgCpSOJKpOgdDuN-6A@mail.gmail.com>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
+	<CABPqkBRs1nd7KptkVCg5QeG0AJJck=VHAgCpSOJKpOgdDuN-6A@mail.gmail.com>
+Date: Thu, 30 Jun 2011 18:27:40 +0200
+Message-ID: <CABPqkBRZf41wbJKq2PCdMzDhgNMn0VYkVsaZToS34AXpRzTGLw@mail.gmail.com>
+Subject: Re: [PATCH 0/4] perf: Intel uncore pmu counting support
+From: Stephane Eranian <eranian@google.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 29-06-11 22:52:46, Wu Fengguang wrote:
-> Pass struct wb_writeback_work all the way down to writeback_sb_inodes(),
-> and initialize the struct writeback_control there.
-> 
-> struct writeback_control is basically designed to control writeback of a
-> single file, but we keep abuse it for writing multiple files in
-> writeback_sb_inodes() and its callers.
-> 
-> It immediately clean things up, e.g. suddenly wbc.nr_to_write vs
-> work->nr_pages starts to make sense, and instead of saving and restoring
-> pages_skipped in writeback_sb_inodes it can always start with a clean
-> zero value.
-> 
-> It also makes a neat IO pattern change: large dirty files are now
-> written in the full 4MB writeback chunk size, rather than whatever
-> remained quota in wbc->nr_to_write.
-> 
-> Acked-by: Jan Kara <jack@suse.cz>
-> Proposed-by: Christoph Hellwig <hch@infradead.org>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-  Just one minor nit:
+On Thu, Jun 30, 2011 at 2:10 PM, Stephane Eranian <eranian@google.com> wrote:
+> On Thu, Jun 30, 2011 at 10:09 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+>> Hi, all
+>>
+>> I posted uncore patches months ago, but it was pended due to an uncore
+>> interrupt problem.
+>>
+>> This series are cut to support uncore pmu counting only.
+>> So uncore interrupt handling is not needed.
+>>
+> You're making the assumption that when counting, you can never construct
+> a measurement that will cause a counter to overflow the 39 bits. If not, then
+> you need interrupt handling even when counting.
+>
+The actual counter width is 48. But wrmsrl() can only write the bottom 32 bits
+of a register. I think Intel fixed that only with SandyBridge (see Vol3b). Thus,
+the risk of 'silent' wrap around is much higher now as you have only 31 bits
+to play with.
 
-> @@ -570,17 +622,25 @@ static int writeback_sb_inodes(struct su
->  		iput(inode);
->  		cond_resched();
->  		spin_lock(&wb->list_lock);
-> -		if (wbc->nr_to_write <= 0)
-> -			return 1;
-> +		/*
-> +		 * bail out to wb_writeback() often enough to check
-> +		 * background threshold and other termination conditions.
-> +		 */
-> +		if (wrote) {
-> +			if (jiffies - start_time > HZ / 10UL)
-> +				break;
-  I guess this comparison should use time_before() macro - or maybe even
-time_is_before_jiffies().
+But if I read your patch correctly, it seems you are avoiding wrmsrl() on the
+counter. Instead, you are reading it when you start (prev_count) and using
+that value to compute the delta on stop.
 
-> +			if (work->nr_pages <= 0)
-> +				break;
-> +		}
->  	}
-> -	/* b_io is empty */
-> -	return 1;
-> +	return wrote;
->  }
->  
-> -static void __writeback_inodes_wb(struct bdi_writeback *wb,
-> -				  struct writeback_control *wbc)
-> +static long __writeback_inodes_wb(struct bdi_writeback *wb,
-> +				  struct wb_writeback_work *work)
->  {
-> -	int ret = 0;
-> +	unsigned long start_time = jiffies;
-> +	long wrote = 0;
->  
->  	while (!list_empty(&wb->b_io)) {
->  		struct inode *inode = wb_inode(wb->b_io.prev);
-> @@ -590,33 +650,37 @@ static void __writeback_inodes_wb(struct
->  			requeue_io(inode, wb);
->  			continue;
->  		}
-> -		ret = writeback_sb_inodes(sb, wb, wbc, false);
-> +		wrote += writeback_sb_inodes(sb, wb, work);
->  		drop_super(sb);
->  
-> -		if (ret)
-> -			break;
-> +		/* refer to the same tests at the end of writeback_sb_inodes */
-> +		if (wrote) {
-> +			if (jiffies - start_time > HZ / 10UL)
-> +				break;
-  And the same here.
+Am I understanding your workaround correctly?
 
-> +			if (work->nr_pages <= 0)
-> +				break;
-> +		}
->  	}
->  	/* Leave any unwritten inodes on b_io */
-> +	return wrote;
->  }
->  
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+>
+>> The uncore pmu type is allocated dynamically and exported via sysfs.
+>> $ cat /sys/bus/event_source/devices/uncore/type
+>> 6
+>>
+>> You can count uncore raw events as below,
+>> $ perf stat -e uncore:r0101 ls
+>>
+>> It reads uncore pmu type id from sysfs to setup perf_event_attr::type.
+>>
+>> Comments are appreciated.
+>>
+>> Thanks,
+>> Lin Ming
+>>
+>>
+>
