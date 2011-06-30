@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758073Ab1F3CYE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 22:24:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36414 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753730Ab1F3CYB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 22:24:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4E0BDE2B.50006@jp.fujitsu.com>
-Date: Thu, 30 Jun 2011 11:23:39 +0900
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: mgorman@suse.de
-CC: akpm@linux-foundation.org, P@draigBrady.com,
-        James.Bottomley@HansenPartnership.com, colin.king@canonical.com,
-        minchan.kim@gmail.com, luto@mit.edu, riel@redhat.com,
-        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4] mm: vmscan: Correct check for kswapd sleeping in
- sleeping_prematurely
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de> <1308926697-22475-2-git-send-email-mgorman@suse.de>
-In-Reply-To: <1308926697-22475-2-git-send-email-mgorman@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1758129Ab1F3Cdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 22:33:44 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48904 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757529Ab1F3Cdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 22:33:39 -0400
+Date: Thu, 30 Jun 2011 12:33:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vlad Zolotarov <vladz@broadcom.com>,
+        Bhanu Prakash Gollapudi <bprakash@broadcom.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>
+Subject: linux-next: manual merge of the net tree with the scsi tree
+Message-Id: <20110630123325.43268067.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__30_Jun_2011_12_33_25_+1000_ydD8yP/DmDZB5sPm"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/24 23:44), Mel Gorman wrote:
-> During allocator-intensive workloads, kswapd will be woken frequently
-> causing free memory to oscillate between the high and min watermark.
-> This is expected behaviour.
-> 
-> A problem occurs if the highest zone is small.  balance_pgdat()
-> only considers unreclaimable zones when priority is DEF_PRIORITY
-> but sleeping_prematurely considers all zones. It's possible for this
-> sequence to occur
-> 
->   1. kswapd wakes up and enters balance_pgdat()
->   2. At DEF_PRIORITY, marks highest zone unreclaimable
->   3. At DEF_PRIORITY-1, ignores highest zone setting end_zone
->   4. At DEF_PRIORITY-1, calls shrink_slab freeing memory from
->         highest zone, clearing all_unreclaimable. Highest zone
->         is still unbalanced
->   5. kswapd returns and calls sleeping_prematurely
->   6. sleeping_prematurely looks at *all* zones, not just the ones
->      being considered by balance_pgdat. The highest small zone
->      has all_unreclaimable cleared but but the zone is not
->      balanced. all_zones_ok is false so kswapd stays awake
-> 
-> This patch corrects the behaviour of sleeping_prematurely to check
-> the zones balance_pgdat() checked.
-> 
-> Reported-and-tested-by: Pádraig Brady <P@draigBrady.com>
-> Signed-off-by: Mel Gorman <mgorman@suse.de>
-> ---
->  mm/vmscan.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 8ff834e..841e3bf 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2323,7 +2323,7 @@ static bool sleeping_prematurely(pg_data_t *pgdat, int order, long remaining,
->  		return true;
->  
->  	/* Check the watermark levels */
-> -	for (i = 0; i < pgdat->nr_zones; i++) {
-> +	for (i = 0; i <= classzone_idx; i++) {
->  		struct zone *zone = pgdat->node_zones + i;
->  
->  		if (!populated_zone(zone))
+--Signature=_Thu__30_Jun_2011_12_33_25_+1000_ydD8yP/DmDZB5sPm
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-sorry for the delay.
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Hi all,
 
+Today's linux-next merge of the net tree got conflicts in
+drivers/scsi/bnx2fc/bnx2fc.h and drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+between commit 2382d2364a60 ("[SCSI] bnx2fc: Bumped version to 1.0.2")
+from the scsi tree and commit 619c5cb6885b ("New 7.0 FW: bnx2x, cnic,
+bnx2i, bnx2fc") from the net tree.
 
+I used the versions from the net tree as those version numbers were newer.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Thu__30_Jun_2011_12_33_25_+1000_ydD8yP/DmDZB5sPm
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOC+B1AAoJEDMEi1NhKgbs+UkIAInMaFaTppuuyQxsV45MXXnW
+HpuXdIhRH9hv7mcPgY6u+D7JgbU2IrkhV0y/zdkhhnmr9UcBxv0QkdfclX1MxuTB
+0lXdZ7/oLra7AsdpRcuY2Q0QH0zQSPDjqrXH9oOlmj0B+dLX2drg+Y+lk80fLqTT
+0z7aRXiVgWAEGpQ057fOdIdpA7ZbkT0FItRZ6QuhF9xDFfUjm6AGCpJGfHiofWBA
+MJTnlnYmZeORHf09jYFiZtreO8sOG9Cl2ctczDD4OW5YTvOSEkn4H1PvzyLYUyes
+tSIlGU+uX4pMPnpn9RXXWJC4jv0nLf/diufHUR9btueyzPr1V6bbDwMm/wWRZCk=
+=uIDP
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__30_Jun_2011_12_33_25_+1000_ydD8yP/DmDZB5sPm--
