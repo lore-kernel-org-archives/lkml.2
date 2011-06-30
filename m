@@ -1,92 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab1F3Fh1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 01:37:27 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:34684 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752705Ab1F3FhT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 01:37:19 -0400
-Date: Wed, 29 Jun 2011 22:37:12 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: ashishj3 <ashish.jangam@kpitcummins.com>
-Cc: jic23@cam.ac.uk, linux-kernel@vger.kernel.org,
-        Dajun <dajun.chen@diasemi.com>, grant@secretlab.ca
-Subject: Re: [PATCH 02/11] GPIO: DA9052 GPIO module v1
-Message-ID: <20110630053711.GB796@opensource.wolfsonmicro.com>
-References: <1309355591.2344.4.camel@L-0532.kpit.com>
-MIME-Version: 1.0
+	id S1758226Ab1F3Flg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 01:41:36 -0400
+Received: from linux-sh.org ([111.68.239.195]:49018 "EHLO linux-sh.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752630Ab1F3Fl3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 01:41:29 -0400
+Date: Thu, 30 Jun 2011 14:38:52 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: Re: [PATCH] arm: platsmp: Allow secondary cpu hotplug with maxcpus=1
+Message-ID: <20110630053851.GC22023@linux-sh.org>
+References: <1309372300-28911-1-git-send-email-sboyd@codeaurora.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1309355591.2344.4.camel@L-0532.kpit.com>
-X-Cookie: A is for Apple.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1309372300-28911-1-git-send-email-sboyd@codeaurora.org>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 07:23:11PM +0530, ashishj3 wrote:
-
-> DA9052 PMIC has 16 bit GPIO bus for peripheral control.
+On Wed, Jun 29, 2011 at 11:31:39AM -0700, Stephen Boyd wrote:
+> If an ARM system has multiple cpus in the same socket and the
+> kernel is booted with maxcpus=1, secondary cpus are possible but
+> not present due to how platform_smp_prepare_cpus() is called.
+> Fix this by always calling platform_smp_prepare_cpus() as long as
+> max_cpus is non-zero (0 means no SMP) to allow platform code to
+> decide if any non-boot cpus are present in the system. Since
+> all current platform code doesn't support physical hotplug we
+> have a situation where possible == present and thus we can
+> simply copy the possible map to the present map.
 > 
-> This patch add support for the GPIO pins on the DA9052.
+> With this patch it's possible to boot an ARM system with
+> maxcpus=1 on the command line and then hotplug in secondary cpus
+> via sysfs. This is more in line with how x86 works with maxcpus=1
+> on the command line.
+> 
+> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
 
-You need to send this to Grant, the GPIO maintainer.  CCed him.
-
-> +config GPIO_DA9052
-> +	bool "Dialog DA9052 GPIO"
-> +	depends on PMIC_DA9052
-> +	help
-> +	  Say yes here to enable the GPIO driver for the DA9052 chip.
-> +
-
-Why only bool?
-
-> diff --git a/drivers/gpio/da9052-gpio.c b/drivers/gpio/da9052-gpio.c
-> new file mode 100755
-> index 0000000..3e1f854
-
-gpio-da9052.c
-
-> +static int da9052_gpio_get(struct gpio_chip *gc, unsigned offset)
-> +{
-> +	struct da9052_gpio *gpio = to_da9052_gpio(gc);
-> +	int da9052_port_direction = 0;
-> +	int ret;
-> +
-> +	ret = da9052_reg_read(gpio->da9052,
-> +			      DA9052_GPIO_0_1_REG + (offset >> 1));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	if (da9052_gpio_port_odd(offset)) {
-> +		da9052_port_direction = ret & DA9052_GPIO_ODD_PORT_PIN;
-> +		da9052_port_direction >>= 4;
-> +		}
-> +	else
-> +		da9052_port_direction = ret & DA9052_GPIO_EVEN_PORT_PIN;
-
-The indentation here needs to be checked up.
-
-> +static int da9052_gpio_to_irq(struct gpio_chip *gc, u32 offset)
-> +{
-> +	struct da9052_gpio *gpio;
-> +	gpio = to_da9052_gpio(gc);
-> +
-> +	return gpio->gp.base + offset;
-> +}
-
-This looks like it's returning a GPIO number...  If nothing else "base"
-is confusingly named and should be something like irq_base.
-
-> +	gpio->da9052 = dev_get_drvdata(pdev->dev.parent);
-> +	pdata = gpio->da9052->dev->platform_data;
-> +
-> +	if (pdata == NULL) {
-> +		dev_err(&pdev->dev, "Failed no platform data for GPIO\n");
-> +		ret = -ENOMEM;
-> +		goto err_mem;
-> +	}
-
-Why insist on platform data?  gpiolib can dynamically allocate a GPIO
-range to the device.
+Acked-by: Paul Mundt <lethal@linux-sh.org>
