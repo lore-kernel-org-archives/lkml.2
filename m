@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758445Ab1F3Gdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 02:33:40 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:14502 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754229Ab1F3Gdc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 02:33:32 -0400
-X-AuditID: cbfee61a-b7c53ae000002dc1-61-4e0c18baba90
-Date: Thu, 30 Jun 2011 15:33:33 +0900
-From: Jaehoon Chung <jh80.chung@samsung.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Add the function call for board-specific
- initialization.
-In-reply-to: <1309402665-29228-1-git-send-email-tgih.jun@samsung.com>
-To: Seungwon Jeon <tgih.jun@samsung.com>
-Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-kernel@vger.kernel.org
-Message-id: <4E0C18BD.8000608@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-8859-1
-Content-transfer-encoding: 7BIT
-User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
-References: <1309402665-29228-1-git-send-email-tgih.jun@samsung.com>
-X-OriginalArrivalTime: 30 Jun 2011 06:33:45.0501 (UTC)
- FILETIME=[A9751CD0:01CC36EF]
-X-Brightmail-Tracker: AAAAAA==
+	id S1758278Ab1F3GhM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 02:37:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49433 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750928Ab1F3GhK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 02:37:10 -0400
+Date: Thu, 30 Jun 2011 16:36:59 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (powerpc
+ tree related)
+Message-Id: <20110630163659.374db7f9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__30_Jun_2011_16_36_59_+1000_cTItxjKQG0jtDPaA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mr.Jeon
+--Signature=_Thu__30_Jun_2011_16_36_59_+1000_cTItxjKQG0jtDPaA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This patch is the compiler error.
+Hi all,
 
-didn't find host->card_work..
+After merging the final tree, today's linux-next build (powerpc
+allyesconfig) failed like this:
 
-do you want this
-queue_work(dw_mci_card_workqueue, &slot->host->card_work); ?
+drivers/tty/hvc/hvsi.c:701:12: error: conflicting types for 'hvsi_put_chars'
+arch/powerpc/include/asm/hvsi.h:92:12: note: previous declaration of 'hvsi_=
+put_chars' was here
+drivers/tty/hvc/hvsi.c:736:12: error: conflicting types for 'hvsi_open'
+arch/powerpc/include/asm/hvsi.h:86:12: note: previous declaration of 'hvsi_=
+open' was here
+drivers/tty/hvc/hvsi.c:802:13: error: conflicting types for 'hvsi_close'
+arch/powerpc/include/asm/hvsi.h:87:13: note: previous declaration of 'hvsi_=
+close' was here
+drivers/tty/hvc/hvsi.c:1083:19: error: conflicting types for 'hvsi_init'
+arch/powerpc/include/asm/hvsi.h:81:13: note: previous declaration of 'hvsi_=
+init' was here
 
+Caused by commit 17bdc6c0e979 ("powerpc/pseries: Move hvsi support into a
+library").
 
-Regards,
-Jaehoon Chung
+I have reverted that commit for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Thu__30_Jun_2011_16_36_59_+1000_cTItxjKQG0jtDPaA
+Content-Type: application/pgp-signature
 
-Seungwon Jeon wrote:
-> Need to call init() function of dw_mci_board.
-> It seems to be omitted to call this function.
-> 
-> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
-> ---
->  drivers/mmc/host/dw_mmc.c |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-> index a524416..073c420 100644
-> --- a/drivers/mmc/host/dw_mmc.c
-> +++ b/drivers/mmc/host/dw_mmc.c
-> @@ -1585,6 +1585,15 @@ static void dw_mci_work_routine_card(struct work_struct *work)
->  	}
->  }
-> 
-> +static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
-> +{
-> +	struct dw_mci_slot *slot = dev_id;
-> +
-> +	queue_work(dw_mci_card_workqueue, &host->card_work);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
->  static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->  {
->  	struct mmc_host *mmc;
-> @@ -1657,6 +1666,8 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->  	} else
->  		regulator_enable(host->vmmc);
-> 
-> +	host->pdata->init(id, dw_mci_detect_interrupt, host);
-> +
->  	if (dw_mci_get_cd(mmc))
->  		set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
->  	else
-> --
-> 1.7.0.4
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJODBmLAAoJEDMEi1NhKgbsjlYIAIGttKm9UOuT6VyjtGz4hCWR
+DI4glgK+BT7RvNXUt8pOcYNJR7YEaGNdCz9E48JUaWioraSy9vY/KWjhQXteTv3R
+vf5LiyTnpIxdK0l/GR1bzo2V2vhoyM5IFDnoesrkR7VJvrkIV/AWkksVGSq3swnx
+vQTAJ+i9dRpMkN/txtFfKZK/+I+ep8LcGU/OZrcjbH0r7Cab1NiWax5BOWzbZIcT
+hUgSaqnwQp7K9rXqwVVE8zUoNxekUAQKi56xLFcTh+lqroeIkQ6W3veWK1h2okHh
+nChwMFrSOYqCyT/X4X7ZhQQu55GpecO7Udf+rcSHu2f3UbsYLVOOEtLj2/Dkk0A=
+=EX7t
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__30_Jun_2011_16_36_59_+1000_cTItxjKQG0jtDPaA--
