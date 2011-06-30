@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751840Ab1F3NKU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 09:10:20 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:50997 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751211Ab1F3NKQ (ORCPT
+	id S1752259Ab1F3NKd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 09:10:33 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:38454 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751211Ab1F3NK0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 09:10:16 -0400
-Date: Thu, 30 Jun 2011 14:10:12 +0100
-From: Seth Forshee <seth.forshee@canonical.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Anton Salikhmetov <alexo@tuxera.com>, linux-kernel@vger.kernel.org
-Subject: Re: hfsplus mount regression in 2.6.38
-Message-ID: <20110630131012.GA19309@thinkpad-t410>
-Mail-Followup-To: Christoph Hellwig <hch@infradead.org>,
-	Anton Salikhmetov <alexo@tuxera.com>, linux-kernel@vger.kernel.org
-References: <20110525142521.GA32511@thinkpad-t410>
- <20110527092522.GA11600@infradead.org>
- <20110527132356.GA13908@thinkpad-t410>
- <20110527182406.GB13908@thinkpad-t410>
- <20110602215821.GA13099@thinkpad-t410>
- <20110630113520.GA6744@infradead.org>
+	Thu, 30 Jun 2011 09:10:26 -0400
+X-Sasl-enc: qUPNLK3p2n5V3kViiJq/JuDKuL2x+hrLp5JnWI+pC3H1 1309439424
+Message-ID: <4E0C75BD.1050103@ladisch.de>
+Date: Thu, 30 Jun 2011 15:10:21 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Ralf Baechle <ralf@linux-mips.org>
+CC: Takashi Iwai <tiwai@suse.de>, linux-arch@vger.kernel.org,
+        linux-mips@linux-mips.org, alsa-devel@alsa-project.org,
+        florian@linux-mips.org, "David S. Miller" <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>, sparclinux@vger.kernel.org,
+        Paul Mackerras <paulus@samba.org>, Matt Turner <mattst88@gmail.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Richard Henderson <rth@twiddle.net>
+Subject: Re: [alsa-devel] SB16 build error.
+References: <20110630091754.GA12119@linux-mips.org>	<s5h8vsjy68z.wl%tiwai@suse.de> <20110630105254.GA25732@linux-mips.org>
+In-Reply-To: <20110630105254.GA25732@linux-mips.org>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110630113520.GA6744@infradead.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 07:35:20AM -0400, Christoph Hellwig wrote:
-> On Thu, Jun 02, 2011 at 04:58:21PM -0500, Seth Forshee wrote:
-> > I took a crack at converting the users of direct bio to use
-> > bdev_logical_block_size instead of HFSPLUS_SECTOR_SIZE. sb->s_blocksize
-> > doesn't turn out to work because it may change after reading the
-> > volume header. The patch is below; feedback is appreciated.
-> > 
-> > So far I've only done light testing, and no testing with large-sector
-> > devices since I don't have any to test with. I'm still concerned about
-> > duplicating data also in the page cache with this approach. Any thoughts
-> > on whether or not this is something to be worried about?
-> 
-> Did you manage to test it on a large sector device?
+Ralf Baechle wrote:
+> I have no idea how big the soundblaster microcode being loaded actually is,
+> that is if the reduced size of 0x1f00 will be sufficient.
 
-I've gotten some test results back, but the results are mixed. I haven't
-had much time yet to try to find out what's going wrong, but I hope to
-do so soon.
+The biggest file is WFM0001A.CSP with 0x2df0 bytes.
 
-> I'm be rather surprised if we actually need the read modify write
-> cycles.  I've not seen any filesystem that doesn't align it's metadata
-> to the sector size yet.
+> I don't see how the old ioctl can possibly have been
+> used before so there isn't a compatibility problem.
 
-I agree. What I was more concerned about was that if you had e.g. a 2 KB
-sector device, metadata could possibly end up in the filesystem cache
-along with some file data in an adjacent block, and that as a result you
-could overwrite that data structure with stale data.
+The code uses SNDRV_SB_CSP_MAX_MICROCODE_FILE_SIZE but doesn't care what
+the size field of the ioctl code is, so we could use any random value on
+those architectures.
+
+> Or you could entirely sidestep the problem and use request_firmware()
+> but I guess that's more effort than you want to invest.
+
+The driver already implements this for a bunch of predefined CSP code
+blobs.  I'm not sure whether anybody has ever loaded additional .csp
+files.
+
+
+Regards,
+Clemens
