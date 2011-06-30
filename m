@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753878Ab1F3WEY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 18:04:24 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:34232 "EHLO
+	id S1753990Ab1F3WEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 18:04:32 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:45148 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752252Ab1F3WER (ORCPT
+	with ESMTP id S1752705Ab1F3WER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Jun 2011 18:04:17 -0400
 From: Ondrej Zary <linux@rainbow-software.org>
 To: "Greg Kroah-Hartman" <greg@kroah.com>
 Cc: Marek Belisko <marek.belisko@gmail.com>,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 11/28] staging: ft1000-pcmcia: delete unused APP_INFO_BLOCK typedefs
-Date: Fri,  1 Jul 2011 00:03:40 +0200
-Message-Id: <1309471437-12633-12-git-send-email-linux@rainbow-software.org>
+Subject: [PATCH 20/28] staging: ft1000-pcmcia: remove useless debugging from ft1000_cs.c
+Date: Fri,  1 Jul 2011 00:03:49 +0200
+Message-Id: <1309471437-12633-21-git-send-email-linux@rainbow-software.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
 References: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
@@ -21,48 +21,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Delete unused APP_INFO_BLOCK typedefs and associated variables.
+Remove useless debugging from ft1000_cs.c
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
- drivers/staging/ft1000/ft1000-pcmcia/ft1000.h |   10 ----------
- 1 files changed, 0 insertions(+), 10 deletions(-)
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c |   18 ------------------
+ 1 files changed, 0 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-index ecead81..b3aefd8 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-@@ -281,8 +281,6 @@ struct pseudo_hdr
- #define  TRUE                   0x1
- #define  FALSE                  0x0
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
+index a9b0cff..b99f07d 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
+@@ -65,11 +65,6 @@ MODULE_LICENSE("GPL");
+    left out.  If you compile with PCMCIA_DEBUG=0, the debug code will
+    be present but disabled.
+ */
+-#ifdef FT_DEBUG
+-#define DEBUG(n, args...) printk(KERN_DEBUG args)
+-#else
+-#define DEBUG(n, args...)
+-#endif
  
--#define  MAX_NUM_APP            6
+ /*====================================================================*/
+ 
+@@ -103,8 +98,6 @@ static void ft1000_reset(struct pcmcia_device * link)
+ 
+ static int ft1000_attach(struct pcmcia_device *link)
+ {
+-	DEBUG(0, "ft1000_cs: ft1000_attach()\n");
 -
- #define MAXIMUM_ASIC_HB_CNT      15
+ 	link->priv = NULL;
+ 	link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_SET_IO;
  
- struct drv_msg {
-@@ -317,12 +315,6 @@ struct dsp_init_msg {
-     u8 RfCalDate[CALDATESZ];    // Rf Calibration date
- } __attribute__ ((packed));
+@@ -125,13 +118,6 @@ static void ft1000_detach(struct pcmcia_device *link)
+ {
+ 	struct net_device *dev = link->priv;
  
--typedef struct _APP_INFO_BLOCK
--{
--    u32 fileobject;                // Application's file object
--    u16 app_id;                    // Application id
--} APP_INFO_BLOCK, *PAPP_INFO_BLOCK;
+-	DEBUG(0, "ft1000_cs: ft1000_detach(0x%p)\n", link);
 -
- typedef struct _PROV_RECORD {
-     struct list_head list;
-     u8 *pprov_data;
-@@ -365,8 +357,6 @@ typedef struct _FT1000_INFO {
-     u8 RfCalDate[CALDATESZ];
-     u16 DSP_TIME[4];
-     struct list_head prov_list;
--    int appcnt;
--    APP_INFO_BLOCK app_info[MAX_NUM_APP];
-     u16 DSPInfoBlklen;
-     u16 DrvMsgPend;
- 	int (*ft1000_reset)(void *);
+-	if (link == NULL) {
+-		DEBUG(0,"ft1000_cs:ft1000_detach: Got a NULL pointer\n");
+-		return;
+-	}
+-
+ 	if (dev) {
+ 		stop_ft1000_card(dev);
+ 	}
+@@ -207,8 +193,6 @@ failed:
+ static void ft1000_release(struct pcmcia_device * link)
+ {
+ 
+-	DEBUG(0, "ft1000_cs: ft1000_release(0x%p)\n", link);
+-
+ 	/*
+ 	   If the device is currently in use, we won't release until it
+ 	   is actually closed, because until then, we can't be sure that
+@@ -277,13 +261,11 @@ static struct pcmcia_driver ft1000_cs_driver = {
+ 
+ static int __init init_ft1000_cs(void)
+ {
+-	DEBUG(0, "ft1000_cs: loading\n");
+ 	return pcmcia_register_driver(&ft1000_cs_driver);
+ }
+ 
+ static void __exit exit_ft1000_cs(void)
+ {
+-	DEBUG(0, "ft1000_cs: unloading\n");
+ 	pcmcia_unregister_driver(&ft1000_cs_driver);
+ }
+ 
 -- 
 Ondrej Zary
 
