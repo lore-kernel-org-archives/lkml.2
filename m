@@ -1,292 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab1F3Djt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 23:39:49 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39065 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753921Ab1F3Djm (ORCPT
+	id S1758278Ab1F3DdR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 23:33:17 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:40806 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757887Ab1F3DdK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 23:39:42 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 30 Jun 2011 12:32:29 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
-Message-Id: <20110630123229.37424449.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110629130043.4dc47249.akpm@linux-foundation.org>
-References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110629130043.4dc47249.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 29 Jun 2011 23:33:10 -0400
+Message-ID: <4E0BEE6F.3090802@linux.vnet.ibm.com>
+Date: Thu, 30 Jun 2011 11:33:03 +0800
+From: Cheng Xu <chengxu@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Yong Zhang <yong.zhang0@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH V2] sched: skip autogroup when looking for all rt sched
+ groups
+References: <BANLkTikKRnQb_T5x1BA=WopbBA_weLNFoQ@mail.gmail.com> <4E0321AD.2080308@linux.vnet.ibm.com> <BANLkTinacDgzZenwmG4==1gYfEaQg-YQ-g@mail.gmail.com> <BANLkTi=87P3RoTF_UEtamNfc_XGxQXE__Q@mail.gmail.com>
+In-Reply-To: <BANLkTi=87P3RoTF_UEtamNfc_XGxQXE__Q@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011 13:00:43 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Wed, 29 Jun 2011 19:03:25 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On 06/28/2011 10:51 AM, Yong Zhang wrote:
+> From: Yong Zhang <yong.zhang0@gmail.com>
+> Subject: [PATCH V2] sched: skip autogroup when looking for all rt sched groups
 > 
-> > Each memory cgroup has 'swappiness' value and it can be accessed by
-> > get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
-> > and swappiness is passed by argument. It's propagated by scan_control.
-> > 
-> > get_swappiness is static function but some planned updates will need to
-> > get swappiness from files other than memcontrol.c
-> > This patch exports get_swappiness() as mem_cgroup_swappiness().
-> > By this, we can remove the argument of swapiness from try_to_free...
-> > and drop swappiness from scan_control. only memcg uses it.
-> > 
+> Since [commit ec514c48: sched: Fix rt_rq runtime leakage bug],
+> 'cat /proc/sched_debug' will print data of root_task_group.rt_rq
+> multi times, this is due to autogroup has no its own rt group,
+> instead rt group of autogroup is linked to root_task_group.
 > 
-> > +extern unsigned int mem_cgroup_swappiness(struct mem_cgroup *mem);
-> > +unsigned int mem_cgroup_swappiness(struct mem_cgroup *memcg)
-> > +static int vmscan_swappiness(struct scan_control *sc)
+> So skip it when we are looking for all rt sched groups, and it
+> will also save some noop operation against root_task_group when
+> __disable_runtime()/__enable_runtime().
 > 
-> The patch seems a bit confused about the signedness of swappiness.
+> V2: Based on Cheng Xu's idea which uses less code.
 > 
+> Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Cheng Xu <chengxu@linux.vnet.ibm.com>
 
-ok, v3 here. Now, memcg's one use "int" because vm_swapiness is "int".
-==
+The code looks fine, and works for me. 
 
->From af1bae8f2c6a8dbff048222bb45c7162b505f38b Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 29 Jun 2011 18:24:49 +0900
-Subject: [PATCH] export memory cgroup's swappines by mem_cgroup_swappiness()
+Reviewed-by: Cheng Xu <chengxu@linux.vnet.ibm.com>
 
-Each memory cgroup has 'swappiness' value and it can be accessed by
-get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
-and swappiness is passed by argument. It's propagated by scan_control.
-
-get_swappiness is static function but some planned updates will need to
-get swappiness from files other than memcontrol.c
-This patch exports get_swappiness() as mem_cgroup_swappiness().
-By this, we can remove the argument of swapiness from try_to_free...
-and drop swappiness from scan_control. only memcg uses it.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-Changelog:
-  - adjusted signedness to vm_swappiness.
-  - drop swappiness from scan_control
----
- include/linux/swap.h |   10 +++++++---
- mm/memcontrol.c      |   15 +++++++--------
- mm/vmscan.c          |   23 ++++++++++-------------
- 3 files changed, 24 insertions(+), 24 deletions(-)
-
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index a273468..0299832 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -252,11 +252,9 @@ static inline void lru_cache_add_file(struct page *page)
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
- extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
--						  gfp_t gfp_mask, bool noswap,
--						  unsigned int swappiness);
-+						  gfp_t gfp_mask, bool noswap);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
--						unsigned int swappiness,
- 						struct zone *zone,
- 						unsigned long *nr_scanned);
- extern int __isolate_lru_page(struct page *page, int mode, int file);
-@@ -365,11 +363,17 @@ static inline void put_swap_token(struct mm_struct *mm)
- extern void
- mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout);
- extern int mem_cgroup_count_swap_user(swp_entry_t ent, struct page **pagep);
-+extern int mem_cgroup_swappiness(struct mem_cgroup *mem);
- #else
- static inline void
- mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
- {
- }
-+
-+static inline int mem_cgroup_swappiness(struct mem_cgroup *mem)
-+{
-+	return vm_swappiness;
-+}
- #endif
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
- extern void mem_cgroup_uncharge_swap(swp_entry_t ent);
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3e7d5e6..db70176 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -249,7 +249,7 @@ struct mem_cgroup {
- 	atomic_t	oom_lock;
- 	atomic_t	refcnt;
- 
--	unsigned int	swappiness;
-+	int	swappiness;
- 	/* OOM-Killer disable */
- 	int		oom_kill_disable;
- 
-@@ -1330,7 +1330,7 @@ static unsigned long mem_cgroup_margin(struct mem_cgroup *mem)
- 	return margin >> PAGE_SHIFT;
- }
- 
--static unsigned int get_swappiness(struct mem_cgroup *memcg)
-+int mem_cgroup_swappiness(struct mem_cgroup *memcg)
- {
- 	struct cgroup *cgrp = memcg->css.cgroup;
- 
-@@ -1776,12 +1776,11 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
- 		/* we use swappiness of local cgroup */
- 		if (check_soft) {
- 			ret = mem_cgroup_shrink_node_zone(victim, gfp_mask,
--				noswap, get_swappiness(victim), zone,
--				&nr_scanned);
-+				noswap, zone, &nr_scanned);
- 			*total_scanned += nr_scanned;
- 		} else
- 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
--						noswap, get_swappiness(victim));
-+						noswap);
- 		css_put(&victim->css);
- 		/*
- 		 * At shrinking usage, we can't check we should stop here or
-@@ -3826,7 +3825,7 @@ try_to_free:
- 			goto out;
- 		}
- 		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
--						false, get_swappiness(mem));
-+						false);
- 		if (!progress) {
- 			nr_retries--;
- 			/* maybe some writeback is necessary */
-@@ -4288,7 +4287,7 @@ static u64 mem_cgroup_swappiness_read(struct cgroup *cgrp, struct cftype *cft)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 
--	return get_swappiness(memcg);
-+	return mem_cgroup_swappiness(memcg);
- }
- 
- static int mem_cgroup_swappiness_write(struct cgroup *cgrp, struct cftype *cft,
-@@ -4997,7 +4996,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 	INIT_LIST_HEAD(&mem->oom_notify);
- 
- 	if (parent)
--		mem->swappiness = get_swappiness(parent);
-+		mem->swappiness = mem_cgroup_swappiness(parent);
- 	atomic_set(&mem->refcnt, 1);
- 	mem->move_charge_at_immigrate = 0;
- 	mutex_init(&mem->thresholds_lock);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 4f49535..fb37699 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -95,8 +95,6 @@ struct scan_control {
- 	/* Can pages be swapped as part of reclaim? */
- 	int may_swap;
- 
--	int swappiness;
--
- 	int order;
- 
- 	/*
-@@ -1729,6 +1727,13 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
- 	return shrink_inactive_list(nr_to_scan, zone, sc, priority, file);
- }
- 
-+static int vmscan_swappiness(struct scan_control *sc)
-+{
-+	if (scanning_global_lru(sc))
-+		return vm_swappiness;
-+	return mem_cgroup_swappiness(sc->mem_cgroup);
-+}
-+
- /*
-  * Determine how aggressively the anon and file LRU lists should be
-  * scanned.  The relative value of each set of LRU lists is determined
-@@ -1789,8 +1794,8 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 	 * With swappiness at 100, anonymous and file have the same priority.
- 	 * This scanning priority is essentially the inverse of IO cost.
- 	 */
--	anon_prio = sc->swappiness;
--	file_prio = 200 - sc->swappiness;
-+	anon_prio = vmscan_swappiness(sc);
-+	file_prio = 200 - vmscan_swappiness(sc);
- 
- 	/*
- 	 * OK, so we have swap space and a fair amount of page cache
-@@ -2179,7 +2184,6 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
- 		.may_unmap = 1,
- 		.may_swap = 1,
--		.swappiness = vm_swappiness,
- 		.order = order,
- 		.mem_cgroup = NULL,
- 		.nodemask = nodemask,
-@@ -2203,7 +2207,6 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 
- unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
--						unsigned int swappiness,
- 						struct zone *zone,
- 						unsigned long *nr_scanned)
- {
-@@ -2213,7 +2216,6 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
- 		.may_swap = !noswap,
--		.swappiness = swappiness,
- 		.order = 0,
- 		.mem_cgroup = mem,
- 	};
-@@ -2242,8 +2244,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 
- unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 					   gfp_t gfp_mask,
--					   bool noswap,
--					   unsigned int swappiness)
-+					   bool noswap)
- {
- 	struct zonelist *zonelist;
- 	unsigned long nr_reclaimed;
-@@ -2253,7 +2254,6 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 		.may_unmap = 1,
- 		.may_swap = !noswap,
- 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
--		.swappiness = swappiness,
- 		.order = 0,
- 		.mem_cgroup = mem_cont,
- 		.nodemask = NULL, /* we don't care the placement */
-@@ -2403,7 +2403,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 		 * we want to put equal scanning pressure on each zone.
- 		 */
- 		.nr_to_reclaim = ULONG_MAX,
--		.swappiness = vm_swappiness,
- 		.order = order,
- 		.mem_cgroup = NULL,
- 	};
-@@ -2862,7 +2861,6 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 		.may_writepage = 1,
- 		.nr_to_reclaim = nr_to_reclaim,
- 		.hibernation_mode = 1,
--		.swappiness = vm_swappiness,
- 		.order = 0,
- 	};
- 	struct shrink_control shrink = {
-@@ -3049,7 +3047,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		.nr_to_reclaim = max_t(unsigned long, nr_pages,
- 				       SWAP_CLUSTER_MAX),
- 		.gfp_mask = gfp_mask,
--		.swappiness = vm_swappiness,
- 		.order = order,
- 	};
- 	struct shrink_control shrink = {
--- 
-1.7.4.1
-
+> ---
+> 
+> Attach it too in case webmail will mangle the patch.
+> 
+>  kernel/sched_autogroup.h |    1 +
+>  kernel/sched_rt.c        |   22 +++++++++++++++++-----
+>  2 files changed, 18 insertions(+), 5 deletions(-)
+> 
+> diff --git a/kernel/sched_autogroup.h b/kernel/sched_autogroup.h
+> index 0557705..c2f0e72 100644
+> --- a/kernel/sched_autogroup.h
+> +++ b/kernel/sched_autogroup.h
+> @@ -13,6 +13,7 @@ struct autogroup {
+>  	int			nice;
+>  };
+> 
+> +static inline bool task_group_is_autogroup(struct task_group *tg);
+>  static inline struct task_group *
+>  autogroup_task_group(struct task_struct *p, struct task_group *tg);
+> 
+> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+> index 10d0182..8c04cb2 100644
+> --- a/kernel/sched_rt.c
+> +++ b/kernel/sched_rt.c
+> @@ -185,11 +185,23 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
+> 
+>  typedef struct task_group *rt_rq_iter_t;
+> 
+> -#define for_each_rt_rq(rt_rq, iter, rq) \
+> -	for (iter = list_entry_rcu(task_groups.next, typeof(*iter), list); \
+> -	     (&iter->list != &task_groups) && \
+> -	     (rt_rq = iter->rt_rq[cpu_of(rq)]); \
+> -	     iter = list_entry_rcu(iter->list.next, typeof(*iter), list))
+> +static inline struct task_group *next_task_group(struct task_group *tg)
+> +{
+> +	do {
+> +		tg = list_entry_rcu(tg->list.next,
+> +			typeof(struct task_group), list);
+> +	} while (&tg->list != &task_groups && task_group_is_autogroup(tg));
+> +
+> +	if (&tg->list == &task_groups)
+> +		tg = NULL;
+> +
+> +	return tg;
+> +}
+> +
+> +#define for_each_rt_rq(rt_rq, iter, rq)					\
+> +	for (iter = container_of(&task_groups, typeof(*iter), list);	\
+> +		(iter = next_task_group(iter)) &&			\
+> +		(rt_rq = iter->rt_rq[cpu_of(rq)]);)
+> 
+>  static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
+>  {
 
