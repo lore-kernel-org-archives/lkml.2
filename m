@@ -1,33 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754148Ab1F3Tqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 15:46:43 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:54310 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753927Ab1F3Tql convert rfc822-to-8bit (ORCPT
+	id S1754159Ab1F3Tr5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 15:47:57 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:44831
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752926Ab1F3Tr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 15:46:41 -0400
+	Thu, 30 Jun 2011 15:47:56 -0400
+Date: Thu, 30 Jun 2011 15:47:54 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 38/40] Staging: hv: storvsc: Fixup srb_status for INQUIRY
+ and MODE_SENSE
+Message-ID: <20110630194754.GG22707@infradead.org>
+References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
+ <1309358377-8537-1-git-send-email-kys@microsoft.com>
+ <1309358377-8537-38-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <1309461732-2875-2-git-send-email-jonas@southpole.se>
-References: <201106281245.19457.arnd@arndb.de> <1309461732-2875-1-git-send-email-jonas@southpole.se>
- <1309461732-2875-2-git-send-email-jonas@southpole.se>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 30 Jun 2011 15:46:21 -0400
-Message-ID: <BANLkTimAjC6mpFBqYhgjodANOed2mfbzrA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] modules: make arch's use default loader hooks
-To: Jonas Bonn <jonas@southpole.se>
-Cc: rusty@rustcorp.com.au, arnd@ardnb.de, geert@linux-m68k.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        monstr@monstr.eu, cmetcalf@tilera.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309358377-8537-38-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 15:22, Jonas Bonn wrote:
->  arch/blackfin/kernel/module.c   |   21 -------------
+On Wed, Jun 29, 2011 at 07:39:35AM -0700, K. Y. Srinivasan wrote:
+> The current handler on the Windows Host does not correctly handle
+> INQUIRY and MODE_SENSE commands with some options. Fixup srb_status
+> in these cases since the failure is not fatal.
 
-Acked-by: Mike Frysinger <vapier@gentoo.org>
--mike
+> +	/*
+> +	 * The current SCSI handling on the host side does
+> +	 * not correctly handle:
+> +	 * INQUIRY command with page code parameter set to 0x80
+> +	 * MODE_SENSE command with cmd[2] == 0x1c
+> +	 *
+> +	 * Setup srb status so this won't be fatal.
+> +	 */
+> +
+> +	if ((stor_pkt->vm_srb.cdb[0] == INQUIRY) ||
+> +	   (stor_pkt->vm_srb.cdb[0] == MODE_SENSE))
+> +		vstor_packet->vm_srb.srb_status = 0;
+
+Given that the srb_status is only used for debug printks I don't
+quite see the point.  If people explicitly turn on debugging they
+should see that these commands fail, shouldn't they?
+
