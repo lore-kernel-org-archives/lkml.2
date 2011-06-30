@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753174Ab1F3Mzd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:55:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:55131 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750799Ab1F3Mz3 (ORCPT
+	id S1751500Ab1F3M7u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 08:59:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:61433 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750708Ab1F3M7n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:55:29 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=hSGkvnjVqWsA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=7k9qpevRiHmZAb1ouxkA:9 a=92EjhzOJeTSoLCjVR-cA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC] sched: check RT runqueue overloaded in tick timer
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Hillf Danton <dhillf@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <BANLkTikH9cdO+bwNN4kGgisP6RCy2Xo-3g@mail.gmail.com>
-References: <BANLkTikH9cdO+bwNN4kGgisP6RCy2Xo-3g@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 30 Jun 2011 08:55:26 -0400
-Message-ID: <1309438526.26417.65.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Jun 2011 08:59:43 -0400
+Date: Thu, 30 Jun 2011 08:59:38 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: Avi Kivity <avi@redhat.com>
+Cc: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Anthony Liguori <aliguori@us.ibm.com>
+Subject: Re: [PATCH v3 2/9] KVM-HDR Add constant to represent KVM MSRs
+ enabled bit
+Message-ID: <20110630125938.GA4823@mgebm.net>
+References: <1309361388-30163-1-git-send-email-glommer@redhat.com>
+ <1309361388-30163-3-git-send-email-glommer@redhat.com>
+ <20110629215608.GA3557@mgebm.net>
+ <4E0C3458.6090801@redhat.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
+Content-Disposition: inline
+In-Reply-To: <4E0C3458.6090801@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-30 at 20:47 +0800, Hillf Danton wrote:
-> Hi Steven
-> 
-> When tick timer runs, runqueue overload is checked. If overloaded and other
-> CPUs available at the moment, reschedule is fired to allow push logic to move
-> the pushable tasks somewhere else.
 
-Why?
+--h31gzZEtNLTqOjlF
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-This would be a waste of overhead. We check when a task is queued and
-dequeue, and when a cpu lowers its priority (for a pull). There's no
-need to randomly check if we need to push or pull based on timers.
-That's just going to slow things down.
+On Thu, 30 Jun 2011, Avi Kivity wrote:
 
--- Steve
+> On 06/30/2011 12:56 AM, Eric B Munson wrote:
+> >My mail provider seems to have dropped patch 1 of the series so I can't =
+reply
+> >directly to it, please add my Tested-by there as well.
+>=20
+> How did you test it then?
+>=20
 
-> 
-> Thanks
-> 
-> Hillf
-> ---
->  kernel/sched_rt.c |   21 +++++++++++++++++++--
->  1 files changed, 19 insertions(+), 2 deletions(-)
-> 
-> diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-> index b03cd89..afd29a3 100644
-> --- a/kernel/sched_rt.c
-> +++ b/kernel/sched_rt.c
-> @@ -1767,10 +1767,10 @@ static void task_tick_rt(struct rq *rq, struct
-> task_struct *p, int queued)
->  	 * FIFO tasks have no timeslices.
->  	 */
->  	if (p->policy != SCHED_RR)
-> -		return;
-> +		goto check_overload;
-> 
->  	if (--p->rt.time_slice)
-> -		return;
-> +		goto check_overload;
-> 
->  	p->rt.time_slice = DEF_TIMESLICE;
-> 
-> @@ -1782,6 +1782,23 @@ static void task_tick_rt(struct rq *rq, struct
-> task_struct *p, int queued)
->  		requeue_task_rt(rq, p, 0);
->  		set_tsk_need_resched(p);
->  	}
-> +
-> +check_overload:
-> +#ifdef CONFIG_SMP
-> +	if (!test_tsk_need_resched(p)) {
-> +		struct task_struct *t = pick_next_pushable_task(rq);
-> +		/*
-> +		 * If @rq overloaded and other CPUs available, reschedule
-> +		 * @p to allow the push logic to move the pushable tasks
-> +		 * somewhere else.
-> +		 *
-> +		 * It is a pseudo schedule, since @p, without accident, will
-> +		 * be picked again. If not, fine:)
-> +		 */
-> +		if (t && cpupri_find(&rq->rd->cpupri, t, NULL))
-> +			set_tsk_need_resched(p);
-> +	}
-> +#endif
->  }
-> 
->  static void set_curr_task_rt(struct rq *rq)
+I built host and guest kernels with the patches and pinned a while(1) and t=
+he
+CPU thread from qemu to CPU 2 on the host.  I then started the same while(1)
+process in guest and verified that I see ~50% steal time reported.
 
+I then built 2.6.39 (just the code I had present) on the guest and time it
+while it was competing with the while(1) on the host for CPU time.  Next I
+built the guest kernel with STEAL_TIME=3DN and reran the kernel compile to =
+make
+sure that there weren't any huge variations in performace.
 
+Eric
+
+--h31gzZEtNLTqOjlF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJODHM6AAoJEH65iIruGRnNWwUIAIw7yDzzyEPA9nMpWgkFgqDU
+nMpsPjD7hh3/M6Sx589c59WfQYa2G+opksUhwB9chL/PWUA3XRlLG4X/TkfUBnoe
+S5gzZbGxnxdeUTYRVTeDegWaxPtosz2n6bbe1xRWAPvgZJ2/r9mlDYEGmZ/Id2+2
+ymWj2ZdkdaNuQms2n4KfADdvY0vJDrPkwIIgEMTpXaOLEsYFKQdNuUn9e9OnE1qD
+vEGn1dwfg0/qspEnjspqYFjpMEAdkXPfCAYYEFKMpgY72CEScBKdC+EN2pO3X9m5
+qwrCKJEAMBCos1GgL9totC0TH5PhtWorFQsdadkBP+T+LymNIztqoaPIesgY7no=
+=OFsZ
+-----END PGP SIGNATURE-----
+
+--h31gzZEtNLTqOjlF--
