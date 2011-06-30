@@ -1,262 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab1F3PwF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 11:52:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62312 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1F3PwA (ORCPT
+	id S1751170Ab1F3P4G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 11:56:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59317 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750698Ab1F3P4C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 11:52:00 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=084NUYD2L1oA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=joOU5cuHxQLoJ0XiNB8A:9 a=YoGOZpXzs5_oXJ7S5WcA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: [RFC][PATCH] kprobes: Add separate preempt_disabling for kprobes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1309440213.26417.76.camel@gandalf.stny.rr.com>
-References: <1309440213.26417.76.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 30 Jun 2011 11:51:57 -0400
-Message-ID: <1309449117.26417.90.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 30 Jun 2011 11:56:02 -0400
+Date: Thu, 30 Jun 2011 17:55:57 +0200
+From: Tejun Heo <tj@kernel.org>
+To: Hans Rosenfeld <hans.rosenfeld@amd.com>
+Cc: "Seidel, Conny" <Conny.Seidel@amd.com>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: 32bit NUMA and fakeNUMA broken for AMD CPUs
+Message-ID: <20110630155557.GS3386@htj.dyndns.org>
+References: <20110621174131.054f0422.conny.seidel_amd.com@marah.osrc.amd.com>
+ <20110626102235.GC12200@mtj.dyndns.org>
+ <20110626223807.47cef5c6.conny.seidel_amd.com@marah.osrc.amd.com>
+ <20110628174613.GP478@escobedo.osrc.amd.com>
+ <20110629094451.GJ3386@htj.dyndns.org>
+ <20110629123409.GL3386@htj.dyndns.org>
+ <20110629125507.GQ478@escobedo.osrc.amd.com>
+ <20110629130349.GM3386@htj.dyndns.org>
+ <20110629161517.GN3386@htj.dyndns.org>
+ <20110630131337.GT478@escobedo.osrc.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110630131337.GT478@escobedo.osrc.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kprobes requires preemption to be disabled as it single steps the code
-it replaced with a breakpoint. But because the code that is single
-stepped could be reading the preempt count, the kprobe disabling of the
-preempt count can cause the wrong value to end up as a result. Here's an
-example:
+Hello,
 
-If we add a kprobe on a inc_preempt_count() call:
+On Thu, Jun 30, 2011 at 03:13:38PM +0200, Hans Rosenfeld wrote:
+> On Wed, Jun 29, 2011 at 12:15:17PM -0400, Tejun Heo wrote:
+> > Hans, can you please apply the following patch and post the boot log
+> > from both SPARSEMEM and DISCONTIGMEM kernels?  On SPARSEMEM, it should
+> > reject NUMA config and boot w/ flatmem.
+> 
+> Bootlogs are attached. Now DISCONTIGMEM panics.
+...
+> [    0.000000] Linux version 2.6.39-rc5-00181-g2706a0b-dirty (root@worms) (gcc version 4.5.2 (Gentoo 4.5.2 p1.1, pie-0.4.5) ) #26 SMP Thu Jun 30 14:39:05 CEST 2011
 
-	[ preempt_count = 0 ]
+Hmmm... it looks like the kernel is crashing from the other bug in
+this thread.  Can you please apply both patches on top of 3.0-rc5 and
+re-test?
 
-	ld preempt_count, %eax	<<--- trap
+Thank you.
 
-		<trap>
-		preempt_disable();
-		[ preempt_count = 1]
-		setup_singlestep();
-		<trap return>
-
-	[ preempt_count = 1 ]
-
-	ld preempt_count, %eax
-
-	[ %eax = 1 ]
-
-		<trap>
-		post_kprobe_handler()
-			preempt_enable_no_resched();
-			[ preempt_count = 0 ]
-		<trap return>
-
-	[ %eax = 1 ]
-
-	add %eax,1
-
-	[ %eax = 2 ]
-
-	st %eax, preempt_count
-
-	[ preempt_count = 2 ]
-
-
-We just caused preempt count to increment twice when it should have only
-incremented once, and this screws everything else up.
-
-To solve this, I've added a per_cpu variable called
-kprobe_preempt_disabled, that is set by the kprobe code. If it is set,
-the preempt_schedule() will not preempt the code.
-
-I did not update task_struct for a separate variable for kprobes to test
-because it would just bloat that structure with one more test. Adding a
-flag per cpu is much better than adding one per task. The kprobes are
-slow anyway, so causing it to do a little bit more work is not a
-problem.
-
-I tested this code against the probes that caused my previous crashes,
-and it works fine.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index f1a6244..2ed67e6 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -475,7 +475,7 @@ static void __kprobes setup_singlestep(struct kprobe *p, struct pt_regs *regs,
- 		 * stepping.
- 		 */
- 		regs->ip = (unsigned long)p->ainsn.insn;
--		preempt_enable_no_resched();
-+		kprobe_preempt_enable();
- 		return;
- 	}
- #endif
-@@ -547,7 +547,7 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
- 	 * re-enable preemption at the end of this function,
- 	 * and also in reenter_kprobe() and setup_singlestep().
- 	 */
--	preempt_disable();
-+	kprobe_preempt_disable();
- 
- 	kcb = get_kprobe_ctlblk();
- 	p = get_kprobe(addr);
-@@ -583,7 +583,7 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
- 		 * the original instruction.
- 		 */
- 		regs->ip = (unsigned long)addr;
--		preempt_enable_no_resched();
-+		kprobe_preempt_enable();
- 		return 1;
- 	} else if (kprobe_running()) {
- 		p = __this_cpu_read(current_kprobe);
-@@ -593,7 +593,7 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
- 		}
- 	} /* else: not a kprobe fault; let the kernel handle it */
- 
--	preempt_enable_no_resched();
-+	kprobe_preempt_enable();
- 	return 0;
- }
- 
-@@ -917,7 +917,7 @@ static int __kprobes post_kprobe_handler(struct pt_regs *regs)
- 	}
- 	reset_current_kprobe();
- out:
--	preempt_enable_no_resched();
-+	kprobe_preempt_enable();
- 
- 	/*
- 	 * if somebody else is singlestepping across a probe point, flags
-@@ -951,7 +951,7 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 			restore_previous_kprobe(kcb);
- 		else
- 			reset_current_kprobe();
--		preempt_enable_no_resched();
-+		kprobe_preempt_enable();
- 		break;
- 	case KPROBE_HIT_ACTIVE:
- 	case KPROBE_HIT_SSDONE:
-@@ -1098,7 +1098,7 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
- 		       kcb->jprobes_stack,
- 		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
--		preempt_enable_no_resched();
-+		kprobe_preempt_enable();
- 		return 1;
- 	}
- 	return 0;
-@@ -1530,7 +1530,7 @@ static int  __kprobes setup_detour_execution(struct kprobe *p,
- 		regs->ip = (unsigned long)op->optinsn.insn + TMPL_END_IDX;
- 		if (!reenter)
- 			reset_current_kprobe();
--		preempt_enable_no_resched();
-+		kprobe_preempt_enable();
- 		return 1;
- 	}
- 	return 0;
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index a837b20..c7c423e 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -258,6 +258,24 @@ extern spinlock_t mmlist_lock;
- 
- struct task_struct;
- 
-+#ifdef CONFIG_KPROBES
-+DECLARE_PER_CPU(int, kprobe_preempt_disabled);
-+
-+static inline void kprobe_preempt_disable(void)
-+{
-+	preempt_disable();
-+	__get_cpu_var(kprobe_preempt_disabled) = 1;
-+	preempt_enable_no_resched();
-+}
-+
-+static inline void kprobe_preempt_enable(void)
-+{
-+	preempt_disable();
-+	__get_cpu_var(kprobe_preempt_disabled) = 0;
-+	preempt_enable_no_resched();
-+}
-+#endif
-+
- #ifdef CONFIG_PROVE_RCU
- extern int lockdep_tasklist_lock_is_held(void);
- #endif /* #ifdef CONFIG_PROVE_RCU */
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3f2e502..990d53d 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -443,6 +443,30 @@ static struct root_domain def_root_domain;
- 
- #endif /* CONFIG_SMP */
- 
-+#ifdef CONFIG_KPROBES
-+/*
-+ * Kprobes can not disable preempting with the preempt_count.
-+ * If it does, and it single steps kernel code that modifies
-+ * the preempt_count, it will corrupt the result.
-+ *
-+ * Since kprobes is slow anyways, we do not need to bloat the
-+ * task_struct or thread_struct with another variable to test.
-+ * Simply use a per_cpu variable and require the kprobe code
-+ * to disable preemption normally to set it.
-+ */
-+DEFINE_PER_CPU(int, kprobe_preempt_disabled);
-+
-+static inline int preempt_disabled_kprobe(void)
-+{
-+	return __get_cpu_var(kprobe_preempt_disabled);
-+}
-+#else
-+static inline int preempt_disabled_kprobe(void)
-+{
-+	return 0;
-+}
-+#endif
-+
- /*
-  * This is the main, per-CPU runqueue data structure.
-  *
-@@ -4106,7 +4130,7 @@ void __kprobes add_preempt_count(int val)
- 	DEBUG_LOCKS_WARN_ON((preempt_count() & PREEMPT_MASK) >=
- 				PREEMPT_MASK - 10);
- #endif
--	if (preempt_count() == val)
-+	if (preempt_count() == val && !preempt_disabled_kprobe())
- 		trace_preempt_off(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
- }
- EXPORT_SYMBOL(add_preempt_count);
-@@ -4127,7 +4151,7 @@ void __kprobes sub_preempt_count(int val)
- 		return;
- #endif
- 
--	if (preempt_count() == val)
-+	if (preempt_count() == val && !preempt_disabled_kprobe())
- 		trace_preempt_on(CALLER_ADDR0, get_parent_ip(CALLER_ADDR1));
- 	preempt_count() -= val;
- }
-@@ -4373,6 +4397,10 @@ asmlinkage void __sched notrace preempt_schedule(void)
- 
- 	do {
- 		add_preempt_count_notrace(PREEMPT_ACTIVE);
-+		if (unlikely(preempt_disabled_kprobe())) {
-+			sub_preempt_count_notrace(PREEMPT_ACTIVE);
-+			break;
-+		}
- 		schedule();
- 		sub_preempt_count_notrace(PREEMPT_ACTIVE);
- 
-
-
+-- 
+tejun
