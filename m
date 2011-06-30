@@ -1,155 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab1F3JlG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 05:41:06 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52899 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753316Ab1F3Jk5 (ORCPT
+	id S1755178Ab1F3Jlb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 05:41:31 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:57342 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752310Ab1F3JlZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 05:40:57 -0400
-Date: Thu, 30 Jun 2011 02:40:23 -0700 (PDT)
-Message-Id: <20110630.024023.1470581259069660124.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 30 Jun 2011 02:40:24 -0700 (PDT)
+	Thu, 30 Jun 2011 05:41:25 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Girdwood, Liam" <lrg@ti.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: Re: Re: [alsa-devel] [PATCH v6 00/18] MFD/ASoC/Input: TWL4030/TWL60X0 changes
+Date: Thu, 30 Jun 2011 12:41:14 +0300
+Message-ID: <1716345.TLaZkrJrpR@barack>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
+In-Reply-To: <20110630080443.GD12106@sortiz-mobl>
+References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com> <1764311.fyKV9VEiMM@barack> <20110630080443.GD12106@sortiz-mobl>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Samuel,
 
-1) Bridge flooding fix from Herbert Xu.
+On Thursday 30 June 2011 10:04:43 Samuel Ortiz wrote:
+> I will do that very soon, no worries.
 
-2) ip_rt_bug can trigger in certain TPROXY situations, fix
-   from Julian Anastasov.
+Thank you very much, I'm going to have another series on top of this one 
+coming, and want to make sure that I'm in the right track.
 
-3) Fix bluetooth L2CAP security check, from Luiz Augusto von Dentz.
-
-4) zlib inflate buffer alloc can result in order-4 allocation, use
-   vmalloc instead.
-
-5) ipv6 UDP checks wrong variable for non-blocking condition, fix
-   from Xufeng Zhang.
-
-6) If UDP recvmsg ends up retrying, we need to clear the MSG_TRUNC
-   flag as the next packet we're going to try might fit.  Fix
-   from Xufeng Zhang.
-
-7) Fix OOPS in rionet_remove, from Yinglin Luan.
-
-8) Packet length calculation fixes in the ipv4 output path from
-   Steffen Klassert.
-
-9) Fix Kconfig deps for netconsole, from Randy Dunlap.
-
-10) CAN Kconfig files were using "default Y" instead of "default y",
-    fix from marc Kleine-Budde.
-
-Please pull, thanks a lot!
-
-The following changes since commit ca56a95eedcc95f8fea7b49c87565cd961d74fe2:
-
-  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-06-29 18:18:48 -0700)
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Dan Carpenter (1):
-      net/usb/kalmia: signedness bug in kalmia_bind()
-
-Dave Jones (1):
-      usbnet: Remove over-broad module alias from zaurus.
-
-David S. Miller (2):
-      Merge branch 'davem.r8169' of git://git.kernel.org/.../romieu/netdev-2.6
-      net+crypto: Use vmalloc for zlib inflate buffers.
-
-Francois Romieu (1):
-      r8169: fix wrong register use.
-
-Herbert Xu (1):
-      bridge: Only flood unregistered groups to routers
-
-Ilia Kolomisnky (1):
-      Bluetooth: Fix L2CAP connection establishment
-
-Johan Hedberg (1):
-      Bluetooth: Fix accepting connect requests for defer_setup
-
-John (Jay) Hernandez (1):
-      cxgb3: skb_record_rx_queue now records the queue index relative to the net_device.
-
-John W. Linville (2):
-      Merge branch 'master' of master.kernel.org:/.../padovan/bluetooth-2.6
-      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6 into for-davem
-
-Julian Anastasov (1):
-      netfilter: Fix ip_route_me_harder triggering ip_rt_bug
-
-Larry Finger (2):
-      rtlwifi: rtl8192se: Handle duplicate PCI ID 0x10ec:0x8192 conflict with r8192e_pci
-      rtl8192cu: Fix missing firmware load
-
-Luiz Augusto von Dentz (1):
-      Bluetooth: Fix L2CAP security check
-
-Marc Kleine-Budde (1):
-      net/can: activate bit-timing calculation and netlink based drivers by default
-
-Marius B. Kotsbak (1):
-      net/usb: kalmia: Various fixes for better support of non-x86 architectures.
-
-Mike Frysinger (2):
-      MAINTAINERS: mark socketcan-core lists as subscribers-only
-      MAINTAINERS: drop Michael from bfin_mac driver
-
-Randy Dunlap (1):
-      netconsole: fix build when CONFIG_NETCONSOLE_DYNAMIC is turned on
-
-Ron Mercer (1):
-      qlge: Add maintainer.
-
-Steffen Klassert (2):
-      ipv4: Fix packet size calculation in __ip_append_data
-      ipv4: Fix IPsec slowpath fragmentation problem
-
-Sven Eckelmann (1):
-      MAINTAINERS: Remove Sven Eckelmann from BATMAN ADVANCED
-
-Xufeng Zhang (2):
-      ipv6/udp: Use the correct variable to determine non-blocking condition
-      udp/recvmsg: Clear MSG_TRUNC flag when starting over for a new packet
-
-Yinglin Luan (1):
-      rionet: fix NULL pointer dereference in rionet_remove
-
- MAINTAINERS                                 |    7 +--
- crypto/deflate.c                            |    7 +--
- crypto/zlib.c                               |    7 +--
- drivers/net/Kconfig                         |    3 +-
- drivers/net/bnx2x/bnx2x_main.c              |    6 +-
- drivers/net/can/Kconfig                     |    4 +-
- drivers/net/cxgb3/sge.c                     |    4 +-
- drivers/net/ppp_deflate.c                   |    5 +-
- drivers/net/r8169.c                         |    2 +-
- drivers/net/rionet.c                        |   28 +++++++------
- drivers/net/usb/kalmia.c                    |   42 +++++++++++--------
- drivers/net/usb/zaurus.c                    |   10 ----
- drivers/net/wireless/rtlwifi/pci.c          |   13 +++++-
- drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |   20 +++++++++
- net/bluetooth/hci_conn.c                    |    6 +-
- net/bluetooth/l2cap_core.c                  |   21 +++++++---
- net/bridge/br_multicast.c                   |    5 ++-
- net/ipv4/ip_output.c                        |   17 +++----
- net/ipv4/netfilter.c                        |   60 ++++++++++-----------------
- net/ipv4/netfilter/ipt_REJECT.c             |   14 ++----
- net/ipv4/udp.c                              |    3 +
- net/ipv6/udp.c                              |    5 ++-
- 22 files changed, 155 insertions(+), 134 deletions(-)
+Thanks,
+Péter
