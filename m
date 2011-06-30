@@ -1,105 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab1F3Jjm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 05:39:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59491 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752943Ab1F3Jji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 05:39:38 -0400
-Date: Thu, 30 Jun 2011 10:39:33 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: P?draig Brady <P@draigBrady.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Colin King <colin.king@canonical.com>,
-        Minchan Kim <minchan.kim@gmail.com>, Andrew Lutomirski <luto@mit.edu>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] mm: vmscan: Correct check for kswapd sleeping in
- sleeping_prematurely
-Message-ID: <20110630093933.GY9396@suse.de>
-References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
- <1308926697-22475-2-git-send-email-mgorman@suse.de>
- <20110628144900.b33412c6.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110628144900.b33412c6.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755134Ab1F3JlG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 05:41:06 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:52899 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753316Ab1F3Jk5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 05:40:57 -0400
+Date: Thu, 30 Jun 2011 02:40:23 -0700 (PDT)
+Message-Id: <20110630.024023.1470581259069660124.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 30 Jun 2011 02:40:24 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 28, 2011 at 02:49:00PM -0700, Andrew Morton wrote:
-> On Fri, 24 Jun 2011 15:44:54 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
-> 
-> > During allocator-intensive workloads, kswapd will be woken frequently
-> > causing free memory to oscillate between the high and min watermark.
-> > This is expected behaviour.
-> > 
-> > A problem occurs if the highest zone is small.  balance_pgdat()
-> > only considers unreclaimable zones when priority is DEF_PRIORITY
-> > but sleeping_prematurely considers all zones. It's possible for this
-> > sequence to occur
-> > 
-> >   1. kswapd wakes up and enters balance_pgdat()
-> >   2. At DEF_PRIORITY, marks highest zone unreclaimable
-> >   3. At DEF_PRIORITY-1, ignores highest zone setting end_zone
-> >   4. At DEF_PRIORITY-1, calls shrink_slab freeing memory from
-> >         highest zone, clearing all_unreclaimable. Highest zone
-> >         is still unbalanced
-> >   5. kswapd returns and calls sleeping_prematurely
-> >   6. sleeping_prematurely looks at *all* zones, not just the ones
-> >      being considered by balance_pgdat. The highest small zone
-> >      has all_unreclaimable cleared but but the zone is not
-> >      balanced. all_zones_ok is false so kswapd stays awake
-> > 
-> > This patch corrects the behaviour of sleeping_prematurely to check
-> > the zones balance_pgdat() checked.
-> 
-> But kswapd is making progress: it's reclaiming slab.  Eventually that
-> won't work any more and all_unreclaimable will not be cleared and the
-> condition will fix itself up?
-> 
 
-It might, but at that point we've dumped as much slab as we can which
-is very aggressive and there is no guarantee the condition is fixed
-up. For example, if fork is happening often enough due to terminal
-usage for example, it may be just enough allocation requests satisified
-from the highest zone to clear all_unreclaimable during exit.
+1) Bridge flooding fix from Herbert Xu.
 
-> btw,
-> 
-> 	if (!sleeping_prematurely(...))
-> 		sleep();
-> 
-> hurts my brain.  My brain would prefer
-> 
-> 	if (kswapd_should_sleep(...))
-> 		sleep();
-> 
-> no?
-> 
+2) ip_rt_bug can trigger in certain TPROXY situations, fix
+   from Julian Anastasov.
 
-kswapd_try_to_sleep -> should_sleep feel like it would hurt too. I
-prefer the sleeping_prematurely name because it indicates what
-condition we are checking but I'm biased and generally suck at naming.
+3) Fix bluetooth L2CAP security check, from Luiz Augusto von Dentz.
 
-> > Reported-and-tested-by: Pádraig Brady <P@draigBrady.com>
-> 
-> But what were the before-and-after observations?  I don't understand
-> how this can cause a permanent cpuchew by kswapd.
-> 
+4) zlib inflate buffer alloc can result in order-4 allocation, use
+   vmalloc instead.
 
-Pádraig has reported on his before-and-after observations.
+5) ipv6 UDP checks wrong variable for non-blocking condition, fix
+   from Xufeng Zhang.
 
-On its own, this patch doesn't entirely fix his problem because all
-the patches are required but I felt that a rolled-up patch would be
-too hard to review.
+6) If UDP recvmsg ends up retrying, we need to clear the MSG_TRUNC
+   flag as the next packet we're going to try might fit.  Fix
+   from Xufeng Zhang.
 
--- 
-Mel Gorman
-SUSE Labs
+7) Fix OOPS in rionet_remove, from Yinglin Luan.
+
+8) Packet length calculation fixes in the ipv4 output path from
+   Steffen Klassert.
+
+9) Fix Kconfig deps for netconsole, from Randy Dunlap.
+
+10) CAN Kconfig files were using "default Y" instead of "default y",
+    fix from marc Kleine-Budde.
+
+Please pull, thanks a lot!
+
+The following changes since commit ca56a95eedcc95f8fea7b49c87565cd961d74fe2:
+
+  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-06-29 18:18:48 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Dan Carpenter (1):
+      net/usb/kalmia: signedness bug in kalmia_bind()
+
+Dave Jones (1):
+      usbnet: Remove over-broad module alias from zaurus.
+
+David S. Miller (2):
+      Merge branch 'davem.r8169' of git://git.kernel.org/.../romieu/netdev-2.6
+      net+crypto: Use vmalloc for zlib inflate buffers.
+
+Francois Romieu (1):
+      r8169: fix wrong register use.
+
+Herbert Xu (1):
+      bridge: Only flood unregistered groups to routers
+
+Ilia Kolomisnky (1):
+      Bluetooth: Fix L2CAP connection establishment
+
+Johan Hedberg (1):
+      Bluetooth: Fix accepting connect requests for defer_setup
+
+John (Jay) Hernandez (1):
+      cxgb3: skb_record_rx_queue now records the queue index relative to the net_device.
+
+John W. Linville (2):
+      Merge branch 'master' of master.kernel.org:/.../padovan/bluetooth-2.6
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6 into for-davem
+
+Julian Anastasov (1):
+      netfilter: Fix ip_route_me_harder triggering ip_rt_bug
+
+Larry Finger (2):
+      rtlwifi: rtl8192se: Handle duplicate PCI ID 0x10ec:0x8192 conflict with r8192e_pci
+      rtl8192cu: Fix missing firmware load
+
+Luiz Augusto von Dentz (1):
+      Bluetooth: Fix L2CAP security check
+
+Marc Kleine-Budde (1):
+      net/can: activate bit-timing calculation and netlink based drivers by default
+
+Marius B. Kotsbak (1):
+      net/usb: kalmia: Various fixes for better support of non-x86 architectures.
+
+Mike Frysinger (2):
+      MAINTAINERS: mark socketcan-core lists as subscribers-only
+      MAINTAINERS: drop Michael from bfin_mac driver
+
+Randy Dunlap (1):
+      netconsole: fix build when CONFIG_NETCONSOLE_DYNAMIC is turned on
+
+Ron Mercer (1):
+      qlge: Add maintainer.
+
+Steffen Klassert (2):
+      ipv4: Fix packet size calculation in __ip_append_data
+      ipv4: Fix IPsec slowpath fragmentation problem
+
+Sven Eckelmann (1):
+      MAINTAINERS: Remove Sven Eckelmann from BATMAN ADVANCED
+
+Xufeng Zhang (2):
+      ipv6/udp: Use the correct variable to determine non-blocking condition
+      udp/recvmsg: Clear MSG_TRUNC flag when starting over for a new packet
+
+Yinglin Luan (1):
+      rionet: fix NULL pointer dereference in rionet_remove
+
+ MAINTAINERS                                 |    7 +--
+ crypto/deflate.c                            |    7 +--
+ crypto/zlib.c                               |    7 +--
+ drivers/net/Kconfig                         |    3 +-
+ drivers/net/bnx2x/bnx2x_main.c              |    6 +-
+ drivers/net/can/Kconfig                     |    4 +-
+ drivers/net/cxgb3/sge.c                     |    4 +-
+ drivers/net/ppp_deflate.c                   |    5 +-
+ drivers/net/r8169.c                         |    2 +-
+ drivers/net/rionet.c                        |   28 +++++++------
+ drivers/net/usb/kalmia.c                    |   42 +++++++++++--------
+ drivers/net/usb/zaurus.c                    |   10 ----
+ drivers/net/wireless/rtlwifi/pci.c          |   13 +++++-
+ drivers/net/wireless/rtlwifi/rtl8192cu/sw.c |   20 +++++++++
+ net/bluetooth/hci_conn.c                    |    6 +-
+ net/bluetooth/l2cap_core.c                  |   21 +++++++---
+ net/bridge/br_multicast.c                   |    5 ++-
+ net/ipv4/ip_output.c                        |   17 +++----
+ net/ipv4/netfilter.c                        |   60 ++++++++++-----------------
+ net/ipv4/netfilter/ipt_REJECT.c             |   14 ++----
+ net/ipv4/udp.c                              |    3 +
+ net/ipv6/udp.c                              |    5 ++-
+ 22 files changed, 155 insertions(+), 134 deletions(-)
