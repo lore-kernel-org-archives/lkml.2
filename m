@@ -1,68 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753189Ab1F3Xci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 19:32:38 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:23264 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751258Ab1F3Xcg convert rfc822-to-8bit (ORCPT
+	id S1753302Ab1F3XoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 19:44:07 -0400
+Received: from mta21.charter.net ([216.33.127.81]:44390 "EHLO
+	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752417Ab1F3XoD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 19:32:36 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 00/40] Staging: hv: Driver cleanup
-Thread-Topic: [PATCH 00/40] Staging: hv: Driver cleanup
-Thread-Index: AQHMNmfj17zjqSVuBEq2aM1XFV3FGpTWwcoA///MScA=
-Date: Thu, 30 Jun 2011 23:32:34 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0480816C384@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
- <20110630193346.GA22707@infradead.org>
-In-Reply-To: <20110630193346.GA22707@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Thu, 30 Jun 2011 19:44:03 -0400
+X-Authority-Analysis: v=1.1 cv=G6Q69DB3AUoJKS2BpLRaz8MQ2NORN7h5HRzrJMPOhRw=
+ c=1 sm=1 a=kge-9xan5_IA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
+ a=pyR_tkqvhZ_ySJ0FD5EA:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
+From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+To: mmarek@suse.cz
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Dietsche <Gregory.Dietsche@cuw.edu>
+Subject: [PATCH] gitignore: ignore debian build directory
+Date: Thu, 30 Jun 2011 18:42:50 -0500
+Message-Id: <1309477370-5866-1-git-send-email-Gregory.Dietsche@cuw.edu>
+X-Mailer: git-send-email 1.7.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Have git ignore the Debian directory created when running:
+	make deb-pkg
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Thursday, June 30, 2011 3:34 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
-> 
-> On Wed, Jun 29, 2011 at 07:38:21AM -0700, K. Y. Srinivasan wrote:
-> > Further cleanup of the hv drivers:
-> >
-> > 	1) Cleanup the reference counting mess for both stor and net devices.
-> 
-> I really don't understand the need for reference counting on the storage
-> side, especially now that you only have a SCSI driver.  The SCSI
-> midlayer does proper counting on it's objects (Scsi_Host, scsi_device,
-> scsi_cmnd), so you'll get that for free given that SCSI drivers just
-> piggyback on the midlayer lifetime rules.
-> 
-> For now your patches should probably go in as-is, but mid-term you
-> should be able to completely remove that code on the storage side.
-> 
+Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
+---
+ .gitignore |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Greg,
+diff --git a/.gitignore b/.gitignore
+index 9dacde0..dc243a6 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -46,6 +46,11 @@ modules.builtin
+ /Module.symvers
+ 
+ #
++#Debian directory (make deb-pkg)
++#
++/debian/
++
++#
+ # git files that we don't want to ignore even it they are dot-files
+ #
+ !.gitignore
+-- 
+1.7.2.5
 
-I am thinking of  going back to my original implementation where I had one scsi host
-per IDE device. This will certainly simply the code. Let me know what you think. If you
-agree with this approach, please drop this patch-set, I will send you a new set of patches.
-
-Regards,
-
-K. Y
