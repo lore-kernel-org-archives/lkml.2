@@ -1,38 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1F3Ibr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 04:31:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41819 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751432Ab1F3Ibg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 04:31:36 -0400
-Message-ID: <4E0C3458.6090801@redhat.com>
-Date: Thu, 30 Jun 2011 11:31:20 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754188Ab1F3Id2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:33:28 -0400
+Received: from webbox687.server-home.net ([195.149.74.151]:41606 "EHLO
+	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751432Ab1F3IdZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 04:33:25 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Stephen Hemminger <shemminger@linux-foundation.org>
+Subject: possible bridge regression in "bridge: implement [add/del]_slave ops"?
+Date: Thu, 30 Jun 2011 10:33:23 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
+Cc: "David S. Miller" <davem@davemloft.net>, bridge@lists.linux-foundation.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Eric B Munson <emunson@mgebm.net>
-CC: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Anthony Liguori <aliguori@us.ibm.com>
-Subject: Re: [PATCH v3 2/9] KVM-HDR Add constant to represent KVM MSRs enabled
- bit
-References: <1309361388-30163-1-git-send-email-glommer@redhat.com> <1309361388-30163-3-git-send-email-glommer@redhat.com> <20110629215608.GA3557@mgebm.net>
-In-Reply-To: <20110629215608.GA3557@mgebm.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+X-Length: 3303
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201106301033.23997.alexander.stein@systec-electronic.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2011 12:56 AM, Eric B Munson wrote:
-> My mail provider seems to have dropped patch 1 of the series so I can't reply
-> directly to it, please add my Tested-by there as well.
+Hello,
 
-How did you test it then?
+I tried using the rstpd daemon from 
+http://git.kernel.org/?p=linux/kernel/git/shemminger/rstp.git;a=summary which 
+worked fine on my desktop.
+I then tried doing the same on my embedded atom baord and failed.
+It turned out the used kernel 2.6.38-gentoo-r6 had not the problem the kernel 
+v2.6.39 used on atomboard had. After trying a 2.6.39 based kernel on my 
+desktop the same problem occured.
+After bisecting I ended up at commit 
+afc6151a78a43bdca5f64a8bd3e3c13837580c54
+"bridge: implement [add/del]_slave ops"
 
--- 
-error compiling committee.c: too many arguments to function
+My /sbin/bridge-stp is the one from commit 
+b27ab0efa4ecf7a839f750ec1e9b9092c577ebbb in the rstpd repository.
 
+My steps to reproduce:
+* start rstpd (I used rstpd -d -v2 from a different terminal to see the error 
+messages)
+* echo $(pgrep rstpd) > /var/run/rstpd.pid
+* brctl addbr br1
+* echo 1 > /sys/class/net/br1/bridge/stp_state
+* brctl addif br1 eth1
+* brctl addif br1 eth2
+* ifconfig br1 up 192.168.0.20
+* ifconfig eth1 up
+* ifconfig eth2 up
+
+Then I get the following output from rstpd:
+7: br1 
+2011-06-30 09:08:01 create_if: Add bridge br1
+2011-06-30 09:08:01 CTL_enable_bridge_rstp: bridge 7, enable 1
+3: eth1 master br1 
+2011-06-30 09:08:01 stp_enabled: STP on br1 state 2
+2011-06-30 09:08:01 set_br_up: br1 was up stp was down
+2011-06-30 09:08:01 set_br_up: Set bridge br1 up stp up
+2011-06-30 09:08:01 create_if: Add iface eth1 to bridge br1
+2: eth2 master br1 
+2011-06-30 09:08:01 create_if: Add iface eth2 to bridge br1
+7: br1 
+2011-06-30 09:08:01 Error in bridge_bpdu_rcv at bridge_track.c:585 verifying 
+ifc->up. 
+2: eth2 master br1 
+2011-06-30 09:08:03 Error in bridge_bpdu_rcv at bridge_track.c:585 verifying 
+ifc->up. 
+2011-06-30 09:08:03 Error in bridge_bpdu_rcv at bridge_track.c:585 verifying 
+ifc->up. 
+2011-06-30 09:08:05 Error in bridge_bpdu_rcv at bridge_track.c:585 verifying 
+ifc->up. 
+2011-06-30 09:08:05 Error in bridge_bpdu_rcv at bridge_track.c:585 verifying 
+ifc->up.
+
+The last error messages are printed for each BPDU received at the bridge.
+
+Reverting the named commit on v2.6.39.2 restores the old behavior and I get a 
+working RSTP again.
+
+BTW: I noticed that in 2.6.39.2 independently from this patch revert this 
+bridge didn't show up RUNNING ifconfg. Is this intended? Another bridge I 
+have, which doesn't use (R)STP, is shown as RUNNING like before.
+
+Regards,
+Alexander
