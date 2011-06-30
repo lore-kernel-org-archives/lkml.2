@@ -1,76 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab1F3Uuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 16:50:44 -0400
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:38559
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751144Ab1F3Uul (ORCPT
+	id S1752070Ab1F3U52 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 16:57:28 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64201 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751291Ab1F3U5Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 16:50:41 -0400
-Message-ID: <4E0CE189.1020000@compulab.co.il>
-Date: Thu, 30 Jun 2011 23:50:17 +0300
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.13) Gecko/20101211 Lightning/1.0b2 Thunderbird/3.1.7
+	Thu, 30 Jun 2011 16:57:25 -0400
+Message-ID: <4E0CE332.4040102@gmail.com>
+Date: Thu, 30 Jun 2011 15:57:22 -0500
+From: Rob Herring <robherring2@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Stanislav Brabec <utx@penguin.cz>, Marek Vasut <marek.vasut@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, zaurus-devel@www.linuxtogo.org,
-        spi-devel-general@lists.sourceforge.net, vapier@gentoo.org,
-        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org, pavel@ucw.cz,
-        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: kernel panic in spi_complete() on spitz (PXA270)
-References: <1308845380.4533.54.camel@oct.suse.cz> <201106301352.21684.marek.vasut@gmail.com> <1309445118.4406.47.camel@oct.suse.cz> <4E0C957F.8080807@compulab.co.il> <1309450406.4406.59.camel@oct.suse.cz> <4E0CB518.2080703@compulab.co.il> <20110630180105.GA5064@opensource.wolfsonmicro.com>
-In-Reply-To: <20110630180105.GA5064@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: devicetree-discuss@lists.ozlabs.org, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-serial@vger.kernel.org,
+        Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH] tty/serial: change of_serial to use new of_property_read_u32()
+ api
+References: <20110630185921.13784.3823.stgit@ponder>
+In-Reply-To: <20110630185921.13784.3823.stgit@ponder>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Grant,
 
+On 06/30/2011 02:00 PM, Grant Likely wrote:
+> Simplifies the code a bit and drops a few lines.
+> 
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+> 
+> I've only actually build tested this, but this shows some of the cleanup
+> achieved using the of_property_read_u32() API.  If this gets merged in the
+> v3.1 merge window then it will need to go via the devicetree/next branch.
+> 
+> g.
 
-On 06/30/11 21:01, Mark Brown wrote:
-> On Thu, Jun 30, 2011 at 08:40:40PM +0300, Igor Grinberg wrote:
->> On 06/30/11 19:13, Stanislav Brabec wrote:
->
->>>  I seen two
->>> proposals:
->>> - As ADS7846 hardware does not require dedicated regulator, don't
->>>   require it in driver and fail only on platforms that have a dedicated
->>>   regulator.
->> The thing is that ads7846 chip itself just requires power supply
-> Right, and the regulator API hides the non-switchability of the supply
-> from the driver so there's no need for the driver to worry about how the
-> supplies are wired up.  It just turns the regulator on when it needs it
-> and turns it off when it doesn't.
->
->>>> 1) add regulator definition for ads7846 into the board file
->>> There is no dedicated regulator on spitz, ADS7846 uses common always-on
->>> power supply.
->> Is there a kind of regulator for this case (except dummy)?
->> Some kind of fixed regulator which is not binded to any supply?
-> This is just a fixed voltage regulator, support for that has been in the
-> kernel since the regulator API was merged.  This is the best solution,
-> it ensures that you don't mistakenly activate dummy reglators for
-> supplies that really need software control.
+You can't give yourself bonus points. ;)
 
-Right, just as I thought (I still haven't made myself familiar with all the
-regulator API aspects).
+> 
+>  drivers/tty/serial/of_serial.c |   37 +++++++++++++++----------------------
+>  1 files changed, 15 insertions(+), 22 deletions(-)
+> 
+> diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
+> index 36038ed..dbfbfda 100644
+> --- a/drivers/tty/serial/of_serial.c
+> +++ b/drivers/tty/serial/of_serial.c
+> @@ -32,17 +32,17 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>  {
+>  	struct resource resource;
+>  	struct device_node *np = ofdev->dev.of_node;
+> -	const __be32 *clk, *spd;
+> -	const __be32 *prop;
+> -	int ret, prop_size;
+> +	u32 clk, spd, prop;
+> +	int ret;
+>  
+>  	memset(port, 0, sizeof *port);
+> -	spd = of_get_property(np, "current-speed", NULL);
+> -	clk = of_get_property(np, "clock-frequency", NULL);
+> -	if (!clk) {
+> +	if (of_property_read_u32(np, "clock-frequency", &clk)) {
 
-Stanislav,
-Can't you define a fixed voltage regulator for the ads7846 in spitz board file?
-This shouldn't be a hard task and is the right solution from the regulator API POV.
+s/clk/port->uartclk/
 
+And below, then remove clk.
 
--- 
-Regards,
-Igor.
+>  		dev_warn(&ofdev->dev, "no clock-frequency property set\n");
+>  		return -ENODEV;
+>  	}
+> +	/* If current-speed was set, then try not to change it. */
+> +	if (of_property_read_u32(np, "current-speed", &spd) == 0)
+> +		port->custom_divisor = clk / (16 * spd);
+>  
+>  	ret = of_address_to_resource(np, 0, &resource);
+>  	if (ret) {
+> @@ -54,20 +54,17 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>  	port->mapbase = resource.start;
+>  
+>  	/* Check for shifted address mapping */
+> -	prop = of_get_property(np, "reg-offset", &prop_size);
+> -	if (prop && (prop_size == sizeof(u32)))
+> -		port->mapbase += be32_to_cpup(prop);
+> +	if (of_property_read_u32(np, "reg-offset", &prop) == 0)
+> +		port->mapbase += prop;
+>  
+>  	/* Check for registers offset within the devices address range */
+> -	prop = of_get_property(np, "reg-shift", &prop_size);
+> -	if (prop && (prop_size == sizeof(u32)))
+> -		port->regshift = be32_to_cpup(prop);
+> +	if (of_property_read_u32(np, "reg-shift", &prop) == 0)
+> +		port->regshift = prop;
+
+Can be further simplified:
+
+of_property_read_u32(np, "reg-shift", &port->regshift);
+
+Rob
+
+>  
+>  	port->irq = irq_of_parse_and_map(np, 0);
+>  	port->iotype = UPIO_MEM;
+> -	prop = of_get_property(np, "reg-io-width", &prop_size);
+> -	if (prop && (prop_size == sizeof(u32))) {
+> -		switch (be32_to_cpup(prop)) {
+> +	if (of_property_read_u32(np, "reg-io-width", &prop) == 0) {
+> +		switch (prop) {
+>  		case 1:
+>  			port->iotype = UPIO_MEM;
+>  			break;
+> @@ -75,21 +72,17 @@ static int __devinit of_platform_serial_setup(struct platform_device *ofdev,
+>  			port->iotype = UPIO_MEM32;
+>  			break;
+>  		default:
+> -			dev_warn(&ofdev->dev,
+> -				 "unsupported io width (%d bytes)\n",
+> -				 be32_to_cpup(prop));
+> +			dev_warn(&ofdev->dev, "unsupported reg-io-width (%d)\n",
+> +				 prop);
+>  			return -EINVAL;
+>  		}
+>  	}
+>  
+>  	port->type = type;
+> -	port->uartclk = be32_to_cpup(clk);
+> +	port->uartclk = clk;
+>  	port->flags = UPF_SHARE_IRQ | UPF_BOOT_AUTOCONF | UPF_IOREMAP
+>  		| UPF_FIXED_PORT | UPF_FIXED_TYPE;
+>  	port->dev = &ofdev->dev;
+> -	/* If current-speed was set, then try not to change it. */
+> -	if (spd)
+> -		port->custom_divisor = be32_to_cpup(clk) / (16 * (be32_to_cpup(spd)));
+>  
+>  	return 0;
+>  }
+> 
+> _______________________________________________
+> devicetree-discuss mailing list
+> devicetree-discuss@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/devicetree-discuss
 
