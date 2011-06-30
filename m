@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753367Ab1F3Mte (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:49:34 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56196 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750991Ab1F3Mt3 convert rfc822-to-8bit (ORCPT
+	id S1752468Ab1F3Mym (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 08:54:42 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:52346 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750799Ab1F3Myf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:49:29 -0400
+	Thu, 30 Jun 2011 08:54:35 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: SB16 build error.
+Date: Thu, 30 Jun 2011 14:54:16 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Takashi Iwai <tiwai@suse.de>, Jaroslav Kysela <perex@perex.cz>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org,
+        linux-mips@linux-mips.org, florian@linux-mips.org,
+        Florian Fainelli <florian@openwrt.org>, linux-arch@vger.kernel.org,
+        Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
+References: <20110630091754.GA12119@linux-mips.org> <s5hy60jwocc.wl%tiwai@suse.de> <20110630123212.GA6690@linux-mips.org>
+In-Reply-To: <20110630123212.GA6690@linux-mips.org>
 MIME-Version: 1.0
-In-Reply-To: <20110630103432.GV21898@n2100.arm.linux.org.uk>
-References: <1308940724-2099-1-git-send-email-vincent.guittot@linaro.org>
-	<20110630103432.GV21898@n2100.arm.linux.org.uk>
-Date: Thu, 30 Jun 2011 14:49:29 +0200
-Message-ID: <BANLkTi=XA4Ny0x1U-wYu5DH4FuyY05g3Aw@mail.gmail.com>
-Subject: Re: [PATCH v3] Add ARM cpu topology definition
-From: Vincent Guittot <vincent.guittot@linaro.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, patches@linaro.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106301454.16530.arnd@arndb.de>
+X-Provags-ID: V02:K0:ipnQQbgI2nL1V72pn4sQ2+HB7Yl3zcv6bH8CXOn4aGZ
+ ekvvO+TYBqFFhvMrCtVjXqvASmubmcmkPj05J7stHqQU7rBE97
+ 0a5u24Q633WwhfwVwDTVDV8DdZN3KzlmJkS8iVFrqtbmK5O0WC
+ hL8wo/vxCEZeOPPoHuVPEySUoPJDZ3LxCuxeN34f3EKn307feq
+ 28orNv/BxY2SxeXpAyMYw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 30 June 2011 12:34, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> On Fri, Jun 24, 2011 at 08:38:44PM +0200, Vincent Guittot wrote:
->> +     printk(KERN_INFO "cpu %u : thread %d cpu %d, socket %d, mpidr %x\n",
->> +             cpuid, cpu_topology[cpuid].thread_id,
->> +             cpu_topology[cpuid].core_id,
->> +             cpu_topology[cpuid].socket_id, mpidr);
->> +
->> +}
->
-> Please remove that empty blank line before the closing brace.
->
+On Thursday 30 June 2011, Ralf Baechle wrote:
+> #define SNDRV_SB_CSP_IOCTL_LOAD_CODE                            \
+>         _IOC(_IOC_WRITE,'H', 0x11, sizeof(struct snd_sb_csp_microcode))
+> 
+> error checking can be bypassed and all will be fine as long as the
+> resulting value doesn't result in in a a duplicate case value - which it
+> doesn't, at least not in my testing.
+> 
+> Should work but isn't nice.
 
-ok
+Right. It's probably the best we can do. I think we added a few similar
+definitions when we originally introduce _IOC_TYPECHECK. The idea was
+never to break existing code, but rather to avoid merging new drivers that
+use inconsistent ioctl command numbers.
 
-> Also...
->
-> cpu 0 : thread -1 cpu 0, socket 0, mpidr 80000000
-> Calibrating local timer... 199.99MHz.
-> hw perfevents: enabled with ARMv7 Cortex-A9 PMU driver, 7 counters available
-> CPU1: Booted secondary processor
-> cpu 1 : thread -1 cpu 1, socket 0, mpidr 80000001
-> CPU2: Booted secondary processor
-> cpu 2 : thread -1 cpu 2, socket 0, mpidr 80000002
-> CPU3: Booted secondary processor
-> cpu 3 : thread -1 cpu 3, socket 0, mpidr 80000003
-> Brought up 4 CPUs
->
-> It'd be better to have some consistency there - please change from
-> "cpu %u :" to "CPU%u:".
->
-
-ok
+	Arnd
