@@ -1,111 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab1F3JVS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 05:21:18 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:63933 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab1F3JVK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 05:21:10 -0400
-Date: Thu, 30 Jun 2011 13:21:03 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: kernel-hardening@lists.openwall.com, Randy Dunlap <rdunlap@xenotime.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [RFC] ipc: introduce shm_rmid_forced sysctl
-Message-ID: <20110630092103.GA4252@albatros>
-References: <20110622152514.GA9521@albatros>
- <20110629151436.9be479fb.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110629151436.9be479fb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755069Ab1F3Jam (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 05:30:42 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46207 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753322Ab1F3Jaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 05:30:35 -0400
+Date: Thu, 30 Jun 2011 19:30:23 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, git@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the security-testing tree with the
+ tree
+Message-Id: <20110630193023.6056d48e.sfr@canb.auug.org.au>
+In-Reply-To: <20110630072559.GA4048@pengutronix.de>
+References: <20110630142910.2fea4257.sfr@canb.auug.org.au>
+	<20110630072559.GA4048@pengutronix.de>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__30_Jun_2011_19_30_23_+1000_FPHb.q8Ju=toAu/n"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 15:14 -0700, Andrew Morton wrote:
-> What a horrid patch.  But given the POSIX (mis?)feature I don't see a
-> better way, and the feature seems desirable.  Sigh.
-> 
-> What sort of users would want to turn this on, and why?
+--Signature=_Thu__30_Jun_2011_19_30_23_+1000_FPHb.q8Ju=toAu/n
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-A shared environment, e.g. a shared web hosting.  With multiple ipc
-namespaces (on a VPS) each namespace can steal a few megabytes of memory
-without any per user accounting.  Even if all user's processes are
-killed, the orphaned shm is still kept in RAM.  It doesn't lead to OOM,
-but it prevents from creating new segments and just annoys.
+Hi Uwe,
 
+On Thu, 30 Jun 2011 09:25:59 +0200 Uwe Kleine-K=C3=B6nig <u.kleine-koenig@p=
+engutronix.de> wrote:
+>
+> Long history short: James probably used -s ours or similar and it's fine
+> not to merge that commit into next :-)
 
-> > --- a/include/linux/ipc_namespace.h
-> > +++ b/include/linux/ipc_namespace.h
-> > @@ -44,6 +44,7 @@ struct ipc_namespace {
-> >  	size_t		shm_ctlall;
-> >  	int		shm_ctlmni;
-> >  	int		shm_tot;
-> > +	int		shm_rmid_forced;
-> >  
-> >  	struct notifier_block ipcns_nb;
-> 
-> Please send a patch which adds a nice comment to this field.
+Ah ha!  Thanks for the explanation.  My mind was clearly not up to it
+today. :-)
 
-OK.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> Perhaps shm_rmid_forced should have had bool type.
+--Signature=_Thu__30_Jun_2011_19_30_23_+1000_FPHb.q8Ju=toAu/n
+Content-Type: application/pgp-signature
 
-OK.  The sysctl handler should parse it OK if feed it with sizeof(bool).
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-> > --- a/ipc/shm.c
-> > +++ b/ipc/shm.c
-> > @@ -74,6 +74,7 @@ void shm_init_ns(struct ipc_namespace *ns)
-> >  	ns->shm_ctlmax = SHMMAX;
-> >  	ns->shm_ctlall = SHMALL;
-> >  	ns->shm_ctlmni = SHMMNI;
-> > +	ns->shm_rmid_forced = 0;
-> >  	ns->shm_tot = 0;
-> >  	ipc_init_ids(&shm_ids(ns));
-> >  }
-> 
-> The problem is that nobody will test your feature.  So for testing
-> purposes, let's enable the feature by default.  I assume this:
-> 
-> --- a/ipc/shm.c~ipc-introduce-shm_rmid_forced-sysctl-ipc-introduce-shm_rmid_forced-sysctl-testing
-> +++ a/ipc/shm.c
-> @@ -74,7 +74,7 @@ void shm_init_ns(struct ipc_namespace *n
->  	ns->shm_ctlmax = SHMMAX;
->  	ns->shm_ctlall = SHMALL;
->  	ns->shm_ctlmni = SHMMNI;
-> -	ns->shm_rmid_forced = 0;
-> +	ns->shm_rmid_forced = 1;
->  	ns->shm_tot = 0;
->  	ipc_init_ids(&shm_ids(ns));
->  }
-> 
-> will do that?
+iQEcBAEBAgAGBQJODEIvAAoJEDMEi1NhKgbsaZUH/i64CxxpGaK5mgQXAs0w+dy3
+zg+QMPOvWlztgiJxPSAHTghGcr1sZaeSUZA1qyWGjrt+FQ4mnAjX1UH7JYXTonav
+BaQyXJuVyNQ5Y/EXpIgkRapttS0ExRwBrxPyxC32WCFAD1yqYOlgA15L8yC5RzdY
+zIWBnRaF7pfPMQKHE+bSAf7YZTtL5FDTOhnhi5uYP85tPQJo8KTmiic7gAhrBDAC
+PLf4ZQbtzXtOmSgpz0CwPWNqG16GBJUYLfwmBCQ8m6gdHIjR1IX+5pXrnWQtyWEy
+6qu9mvW6N23QfeDLaafbjNR1gyQsm3WeyXPrKiiMNEyhOsaldkxWQMf7/rbuMJE=
+=jEb5
+-----END PGP SIGNATURE-----
 
-Sure if it helps testing :)
-
-> > +static bool shm_may_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp)
-> > +{
-> > +	return (shp->shm_nattch == 0) &&
-> > +	       (ns->shm_rmid_forced ||
-> > +		(shp->shm_perm.mode & SHM_DEST));
-> > +}
-> 
-> Just because the existing code is crappily documented doesn't mean that
-> we have to copy that ;)
-
-OK ;)
-
-
-Thank you!
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+--Signature=_Thu__30_Jun_2011_19_30_23_+1000_FPHb.q8Ju=toAu/n--
