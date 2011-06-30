@@ -1,68 +1,384 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758338Ab1F3GhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 02:37:22 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:37399 "HELO
-	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758296Ab1F3GhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 02:37:13 -0400
-X-Authenticated: #12510340
-X-Provags-ID: V01U2FsdGVkX18YF9dLoiMYt8c9BhEv5HKl1gwVDNlsMnrS0ya/De
-	UYAb0zn9/E3ZhB
-Message-ID: <4E0C1995.20009@gmx.net>
-Date: Thu, 30 Jun 2011 08:37:09 +0200
-From: Olaf Freyer <aaron667@gmx.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110623 Lightning/1.0b3pre Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: Florian Mickler <florian@mickler.org>, linux-kernel@vger.kernel.org,
-        Chris Wilson <chris@chris-wilson.co.uk>,
-        Keith Packard <keithp@keithp.com>, dri-devel@lists.freedesktop.org
-Subject: Re: Erroneous package power limit notification since kernel 2.6.39
-References: <4DD9092A.4080507@gmx.net>	<loom.20110525T172412-101@post.gmane.org>	<20110626182725.3f2eac8d@schatten.dmk.lab>	<4E0A3DB1.8000202@gmx.net>	<20110628135936.297293b4@jbarnes-desktop>	<4E0A4319.6040309@gmx.net>	<20110628141831.55502d76@jbarnes-desktop>	<4E0A4F56.90806@gmx.net> <20110628150644.14805e83@jbarnes-desktop>
-In-Reply-To: <20110628150644.14805e83@jbarnes-desktop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1758365Ab1F3GxR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 02:53:17 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42364 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752512Ab1F3GxL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 02:53:11 -0400
+Date: Thu, 30 Jun 2011 16:53:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 30
+Message-Id: <20110630165302.12ee1bd0.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__30_Jun_2011_16_53_02_+1000_GxcdRh6nIsmNp_1g"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 29.06.2011 00:06, schrieb Jesse Barnes:
-> On Wed, 29 Jun 2011 00:01:58 +0200
-> Olaf Freyer <aaron667@gmx.net> wrote:
->
->> Am 28.06.2011 23:18, schrieb Jesse Barnes:
->>> Ok interesting, didn't realize X startup was so GPU intensive. :)
->>>
->>> The patch you reverted will definitely cause the GPU to ramp up its
->>> frequency much faster than before, but it sounds like on your system
->>> you might also see it with the revert if you run something GPU
->>> intensive like nexuiz.
->>>
->>> The CPU (and by extension the GPU) will take care of itself though; if
->>> things get too hot or over power, it will clock throttle to keep itself
->>> in a safe range.
->> I also see the message alot during my daily average usage of my computer
->> (just using Firefox, Thunderbird and IntelliJ) - seeing things like
->> CPU3: Package power limit notification (total events = 90809)
->> after a normal day in the office became normal since 2.6.39.
->>
->> I just gave nexuiz a try for about 30 minutes with the reversal patch
->> applied -
->> and not a single message appeared in my logs.
-> Sounds like with the patch reverted we can't drive your GPU and CPU
-> hard enough to generate the messages.  Not sure if that's a good thing
-> or a bad thing though...
->
-I'm not sure either. I saw a single notification event yesterday while
-in office -
-previously I would have recieved 70000-90000 during that timeframe.
-I consider the pure amount of notifications unsettling - and in case of
-some
-"real" issue it might even get lost inbetween those notifications.
+--Signature=_Thu__30_Jun_2011_16_53_02_+1000_GxcdRh6nIsmNp_1g
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Maybe there is a possible compromise between the situation before and
-after the patch? I'm willing to lose a few percent of GPU performance just
-for the sake of getting lost of those notification events...
+Hi all,
+
+Changes since 20110629:
+
+The powerpc tree gained a build failure for which I reverted a commit.
+
+The libata tree gained a conflict against Linus' tree.
+
+The net tree lost its 2 build failures but gained conflicts agains the
+scsi tree.
+
+The wireless tree lost its build failure.
+
+The security-testing tree lost its build failure, but produced a very
+conflicted merge result so I used the version from next-20110628.
+
+The kvm tree gained a conflict agains Linus' tree.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 194 trees (counting Linus' and 28 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Randy Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging kbuild-current/rc-fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging 52xx-and-virtex-current/powerpc/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging driver-core.current/driver-core-linus
+Merging tty.current/tty-linus
+Merging usb.current/usb-linus
+Merging staging.current/staging-linus
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging sh-current/sh-fixes-for-linus
+Merging rmobile-current/rmobile-fixes-for-linus
+Merging fbdev-current/fbdev-fixes-for-linus
+Merging devicetree-current/devicetree/merge
+Merging spi-current/spi/merge
+Merging arm/for-next
+Merging arm-lpae/for-next
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgalloc.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/pgtable.h
+CONFLICT (content): Merge conflict in arch/arm/include/asm/tlb.h
+CONFLICT (content): Merge conflict in arch/arm/mm/context.c
+CONFLICT (content): Merge conflict in arch/arm/mm/dma-mapping.c
+CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
+Merging at91/at91-next
+Merging davinci/davinci-next
+Merging i.MX/for-next
+CONFLICT (content): Merge conflict in arch/arm/plat-mxc/devices/platform-im=
+x-dma.c
+Merging linux-spec/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+Merging tegra/for-next
+Merging ux500-core/ux500-core
+Merging xilinx/arm-next
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/for-next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/powerpc/next
+Merging galak/next
+Merging s390/features
+Merging sh/sh-latest
+Merging rmobile/rmobile-latest
+Merging sparc/master
+Merging tile/master
+Merging unicore32/unicore32
+Merging xtensa/master
+CONFLICT (content): Merge conflict in arch/xtensa/configs/iss_defconfig
+Merging ceph/for-next
+CONFLICT (content): Merge conflict in fs/ceph/export.c
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/dev
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging hfsplus/for-next
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging vfs-scale/vfs-scale-working
+Merging pci/linux-next
+Merging of-pci/of-pci
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+Merging quilt/jdelvare-hwmon
+Merging hwmon-staging/hwmon-next
+Merging quilt/kernel-doc
+Merging docs/docs-move
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+CONFLICT (content): Merge conflict in drivers/ata/libahci.c
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+CONFLICT (content): Merge conflict in arch/x86/kernel/process.c
+Merging powertools/tools-test
+Merging cpupowerutils/master
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging dlm/next
+Merging swiotlb/master
+Merging ibft/master
+Merging scsi/master
+Merging slave-dma/next
+Merging async_tx/next
+Merging net/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-tx.c
+CONFLICT (content): Merge conflict in drivers/scsi/bnx2fc/bnx2fc.h
+CONFLICT (content): Merge conflict in drivers/scsi/bnx2fc/bnx2fc_fcoe.c
+Merging wireless/master
+Merging bluetooth/master
+Merging mtd/master
+Merging l2-mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging sound-asoc/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging input/next
+Merging input-mt/next
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in block/blk-throttle.c
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+CONFLICT (content): Merge conflict in drivers/leds/Kconfig
+Merging backlight/for-mm
+Merging mmc/mmc-next
+CONFLICT (delete/modify): drivers/mmc/host/sdhci-of-core.c deleted in mmc/m=
+mc-next and modified in HEAD. Version HEAD of drivers/mmc/host/sdhci-of-cor=
+e.c left in tree.
+$ git rm -f drivers/mmc/host/sdhci-of-core.c
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging fbdev/master
+Merging viafb/viafb-next
+Merging omap_dss2/for-next
+Merging voltage/for-next
+Merging security-testing/next
+CONFLICT (content): Merge conflict in arch/arm/mach-shmobile/board-ag5evm.c
+CONFLICT (content): Merge conflict in arch/arm/mm/context.c
+CONFLICT (content): Merge conflict in arch/arm/mm/proc-v7.S
+CONFLICT (content): Merge conflict in arch/arm/plat-mxc/devices/platform-im=
+x-dma.c
+CONFLICT (content): Merge conflict in arch/arm/plat-s5p/include/plat/map-s5=
+p.h
+CONFLICT (content): Merge conflict in arch/m68k/Kconfig.nommu
+CONFLICT (content): Merge conflict in block/blk-throttle.c
+CONFLICT (content): Merge conflict in drivers/gpu/drm/nouveau/nouveau_fence=
+.c
+CONFLICT (delete/modify): drivers/net/usb/kalmia.c deleted in security-test=
+ing/next and modified in HEAD. Version HEAD of drivers/net/usb/kalmia.c lef=
+t in tree.
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlegacy/iwl-dev=
+.h
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlegacy/iwl4965=
+-base.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn-=
+rxon.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-agn.c
+CONFLICT (content): Merge conflict in drivers/net/wireless/rtlwifi/pci.c
+CONFLICT (delete/modify): drivers/video/backlight/adp8870_bl.c deleted in s=
+ecurity-testing/next and modified in HEAD. Version HEAD of drivers/video/ba=
+cklight/adp8870_bl.c left in tree.
+CONFLICT (content): Merge conflict in fs/namei.c
+CONFLICT (content): Merge conflict in fs/nfs/nfs4proc.c
+CONFLICT (content): Merge conflict in fs/nfs/pnfs.c
+CONFLICT (content): Merge conflict in fs/proc/base.c
+CONFLICT (content): Merge conflict in net/bluetooth/rfcomm/sock.c
+CONFLICT (content): Merge conflict in net/ipv4/ip_output.c
+CONFLICT (content): Merge conflict in net/netfilter/ipvs/ip_vs_core.c
+CONFLICT (content): Merge conflict in sound/pci/hda/patch_via.c
+CONFLICT (content): Merge conflict in sound/soc/codecs/ad1836.h
+CONFLICT (content): Merge conflict in sound/soc/soc-cache.c
+$ git reset --hard
+Merging refs/next/20110628/security-testing
+Merging selinux/master
+Merging lblnet/master
+Merging agp/agp-next
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+CONFLICT (delete/modify): arch/arm/mach-ep93xx/dma-m2p.c deleted in HEAD an=
+d modified in trivial/for-next. Version trivial/for-next of arch/arm/mach-e=
+p93xx/dma-m2p.c left in tree.
+CONFLICT (content): Merge conflict in drivers/mtd/maps/pxa2xx-flash.c
+$ git rm -f arch/arm/mach-ep93xx/dma-m2p.c
+Merging audit/for-next
+Merging suspend/linux-next
+Merging apm/for-next
+Merging fsnotify/for-next
+Merging irda/for-next
+Merging i7core_edac/linux_next
+Merging i7300_edac/linux_next
+Merging devicetree/devicetree/next
+Merging spi/spi/next
+Merging gpio/gpio/next
+CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/Makefile
+CONFLICT (content): Merge conflict in drivers/gpio/Makefile
+CONFLICT (content): Merge conflict in drivers/gpio/gpio-ep93xx.c
+Merging tip/auto-latest
+Merging rcu/rcu/next
+Merging kvm/linux-next
+CONFLICT (content): Merge conflict in arch/x86/kvm/emulate.c
+Merging oprofile/for-next
+Merging ptrace/ptrace
+Merging xen/upstream/xen
+Merging xen-two/linux-next
+Merging xen-pvhvm/linux-next
+Merging edac-amd/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging namespace/master
+Merging driver-core/driver-core-next
+Merging tty/tty-next
+Merging usb/usb-next
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging staging/staging-next
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/Kconfig
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
+d_linux.c
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/dh=
+d_sdio.c
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_cfg80211.h
+CONFLICT (content): Merge conflict in drivers/staging/brcm80211/brcmfmac/wl=
+_iw.c
+CONFLICT (content): Merge conflict in drivers/staging/usbip/userspace/src/u=
+tils.h
+Merging bkl-config/config
+Merging tmem/linux-next
+Merging writeback/next
+Merging arm-dt/devicetree/arm-next
+Merging scsi-post-merge/merge-base:master
+[master f724ed5] Revert "powerpc/pseries: Move hvsi support into a library"
+
+--Signature=_Thu__30_Jun_2011_16_53_02_+1000_GxcdRh6nIsmNp_1g
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJODB1OAAoJEDMEi1NhKgbsPn4H/RKus8MebfNkC1p/w/EGRKb6
+3Iz/Y/f2EXfCF3V3OmhftjRG1ixSaDh2oS1+Id2dS7BOuvbMo7s6GA9XxXPwEGj6
+zbeXOH+i7a50oMDOt3bSqcz8lyNGI7JRgOvTSuopIRfX/pRRhXjsQM2JL6gaZIy2
+PH3AzETVq9bVfkesGn4Tvkhpb2zQXPsXWV1vF3Rl2I1C1bvQoU7wfa4AMTGRaDq3
+gW6VN/a1okqL3WGAWaV08/o6kMPH18flCxv4rme/S7NAvcOHu5gB05igHaBNp64B
+RviJibNHZlg7bULHc7wJZZlLKbrOYiUKDAc+QhS1XDQbXmu21qh1LUTMSjZ8B1I=
+=+sbc
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__30_Jun_2011_16_53_02_+1000_GxcdRh6nIsmNp_1g--
