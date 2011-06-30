@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758612Ab1F3IAS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 04:00:18 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33745 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab1F3IAO (ORCPT
+	id S1758623Ab1F3IB2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:01:28 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:56337
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751499Ab1F3IBX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 04:00:14 -0400
+	Thu, 30 Jun 2011 04:01:23 -0400
+Date: Thu, 30 Jun 2011 04:01:19 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: Re: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
+Message-ID: <20110630080119.GA20802@infradead.org>
+References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
+ <20110629140630.5aefdda8.rdunlap@xenotime.net>
+ <BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20110630055719.GA930@opensource.wolfsonmicro.com>
-References: <1309397507-24959-1-git-send-email-myungjoo.ham@samsung.com>
-	<1309397507-24959-3-git-send-email-myungjoo.ham@samsung.com>
-	<20110630052808.GA796@opensource.wolfsonmicro.com>
-	<BANLkTikGR-HdVZ-5h3kW64wiFduuuiU6Vw@mail.gmail.com>
-	<20110630055719.GA930@opensource.wolfsonmicro.com>
-Date: Thu, 30 Jun 2011 17:00:13 +0900
-Message-ID: <BANLkTin4sCfX1Ahb_Td6VWH28s7SukYN-g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] MFD: MAX8997: IRQ definition moved to public header.
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Donggeun Kim <dg77.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 2:57 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Thu, Jun 30, 2011 at 02:56:27PM +0900, MyungJoo Ham wrote:
->
->> In order to request MAX8997's IRQs, these IRQ enums are required by
->> board files (such as /arch/arm/mach-exynos4/mach-*.c). So, these IRQ
->> enums are no more "private" to max8997 device drivers. Without this
->> patch, board files need to include max8997-private.h.
->
-> Why does the board file need to request these IRQs?
->
+On Thu, Jun 30, 2011 at 08:59:28AM +0200, Geert Uytterhoeven wrote:
+> Nope. Also only happens on cris, which has in
+> arch/cris/include/asm/posix_types.h:
+> 
+> typedef long            __kernel_ssize_t;
+> 
+> The "long" should be "int".
+> But probably it should just include <asm-generic/posix_types.h> instead.
 
+Changing a user visible type won't be very nice for those using it in
+C++ code.
 
-It specifies which interrupts of MAX8997 are used.
+Better fix the code to use the proper %zd specifier for printing ssize_t
+variables.  
 
-In our code:
-http://git.infradead.org/users/kmpark/linux-2.6-samsung/blob/eba500212699c0ad8d6bde0dc01c3ec7101f8154:/arch/arm/mach-exynos4/setup-charger.c
-around line 85, it specifies which interrupt is going to be a
-wakeup-source ("true"), how the power-managing S/W should interpret
-them.
-
-The interrupts not listed in the array are not used as a wakeup-source.
-
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
