@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754255Ab1F3WJS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 18:09:18 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:59884 "EHLO
+	id S1754076Ab1F3WJQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 18:09:16 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:33088 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752990Ab1F3WER (ORCPT
+	with ESMTP id S1753086Ab1F3WER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Jun 2011 18:04:17 -0400
 From: Ondrej Zary <linux@rainbow-software.org>
 To: "Greg Kroah-Hartman" <greg@kroah.com>
 Cc: Marek Belisko <marek.belisko@gmail.com>,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 23/28] staging: ft1000-pcmcia: coding style fixes in ft1000_cs.c
-Date: Fri,  1 Jul 2011 00:03:52 +0200
-Message-Id: <1309471437-12633-24-git-send-email-linux@rainbow-software.org>
+Subject: [PATCH 06/28] staging: ft1000-pcmcia: remove DRVMSG typedefs
+Date: Fri,  1 Jul 2011 00:03:35 +0200
+Message-Id: <1309471437-12633-7-git-send-email-linux@rainbow-software.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
 References: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
@@ -21,109 +21,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Minor coding style fixes in ft1000_cs.c
+Remove DRVMSG typedefs.
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c |   29 +++++++++-------------
- 1 files changed, 12 insertions(+), 17 deletions(-)
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000.h      |    4 ++--
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |    4 ++--
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c   |    4 ++--
+ 3 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-index 34fc21f..9a54c84 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
-@@ -63,11 +63,11 @@ void stop_ft1000_card(struct net_device *);
- static int ft1000_config(struct pcmcia_device *link);
- static void ft1000_release(struct pcmcia_device *link);
- static void ft1000_detach(struct pcmcia_device *link);
--static int  ft1000_attach(struct pcmcia_device *link);
-+static int ft1000_attach(struct pcmcia_device *link);
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+index ca73aa4..472b737 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
+@@ -285,12 +285,12 @@ struct pseudo_hdr
  
- /*====================================================================*/
+ #define MAXIMUM_ASIC_HB_CNT      15
  
--static void ft1000_reset(struct pcmcia_device * link)
-+static void ft1000_reset(struct pcmcia_device *link)
- {
- 	pcmcia_reset_card(link->socket);
- }
-@@ -78,21 +78,17 @@ static int ft1000_attach(struct pcmcia_device *link)
- 	link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_SET_IO;
+-typedef struct _DRVMSG {
++struct drv_msg {
+ 	struct pseudo_hdr pseudo;
+ 	u16 type;
+ 	u16 length;
+ 	u8  data[0];
+-} __attribute__ ((packed)) DRVMSG, *PDRVMSG;
++} __attribute__ ((packed));
  
- 	return ft1000_config(link);
--
- }
+ typedef struct _MEDIAMSG {
+ 	struct pseudo_hdr pseudo;
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
+index 5633c40..0a905a4 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
+@@ -328,7 +328,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 	PDSP_IMAGE_INFO_V6 pDspImageInfoV6 = NULL;
+ 	long requested_version;
+ 	BOOLEAN bGoodVersion = 0;
+-	PDRVMSG pMailBoxData;
++	struct drv_msg *pMailBoxData;
+ 	USHORT *pUsData = NULL;
+ 	USHORT *pUsFile = NULL;
+ 	UCHAR *pUcFile = NULL;
+@@ -605,7 +605,7 @@ int card_download(struct net_device *dev, const u8 *pFileStart, UINT FileLength)
+ 						(long)(info->DSPInfoBlklen + 1) / 2;
+ 					put_request_value(dev, word_length);
+ 					pMailBoxData =
+-						(PDRVMSG) & info->DSPInfoBlk[0];
++						(struct drv_msg *) & info->DSPInfoBlk[0];
+ 					pUsData =
+ 						(USHORT *) & pMailBoxData->data[0];
+ 					// Provide mutual exclusive access while reading ASIC registers.
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+index 5f610e5..77ce8c4 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
+@@ -1017,7 +1017,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+ 	u16 tempword;
+ 	PMEDIAMSG pmediamsg;
+ 	PDSPINITMSG pdspinitmsg;
+-	PDRVMSG pdrvmsg;
++	struct drv_msg *pdrvmsg;
+ 	u16 len;
+ 	u16 i;
+ 	PPROV_RECORD ptr;
+@@ -1038,7 +1038,7 @@ void ft1000_proc_drvmsg(struct net_device *dev)
+     if ( ft1000_receive_cmd(dev, &cmdbuffer[0], MAX_CMD_SQSIZE, &tempword) ) {
  
- static void ft1000_detach(struct pcmcia_device *link)
- {
- 	struct net_device *dev = link->priv;
- 
--	if (dev) {
-+	if (dev)
- 		stop_ft1000_card(dev);
--	}
- 
- 	pcmcia_disable_device(link);
--
- 	free_netdev(dev);
--
- }
- 
- int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
-@@ -110,7 +106,7 @@ int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
- 
- static int ft1000_config(struct pcmcia_device *link)
- {
--	int  ret;
-+	int ret;
- 
- 	dev_dbg(&link->dev, "ft1000_cs: ft1000_config(0x%p)\n", link);
- 
-@@ -129,7 +125,7 @@ static int ft1000_config(struct pcmcia_device *link)
- 	}
- 
- 	link->priv = init_ft1000_card(link, &ft1000_reset);
--	if (link->priv == NULL) {
-+	if (!link->priv) {
- 		printk(KERN_INFO "ft1000: Could not register as network device\n");
- 		goto failed;
- 	}
-@@ -140,7 +136,6 @@ static int ft1000_config(struct pcmcia_device *link)
- failed:
- 	ft1000_release(link);
- 	return -ENODEV;
--
- }
- 
- /*======================================================================
-@@ -151,7 +146,7 @@ failed:
- 
- ======================================================================*/
- 
--static void ft1000_release(struct pcmcia_device * link)
-+static void ft1000_release(struct pcmcia_device *link)
- {
- 	 pcmcia_disable_device(link);
- }
-@@ -182,13 +177,13 @@ static const struct pcmcia_device_id ft1000_ids[] = {
- MODULE_DEVICE_TABLE(pcmcia, ft1000_ids);
- 
- static struct pcmcia_driver ft1000_cs_driver = {
--	.owner = THIS_MODULE,
--	.name = "ft1000_cs",
--	.probe      = ft1000_attach,
--	.remove     = ft1000_detach,
-+	.owner		= THIS_MODULE,
-+	.name		= "ft1000_cs",
-+	.probe		= ft1000_attach,
-+	.remove		= ft1000_detach,
- 	.id_table	= ft1000_ids,
--	.suspend    = ft1000_suspend,
--	.resume     = ft1000_resume,
-+	.suspend	= ft1000_suspend,
-+	.resume		= ft1000_resume,
- };
- 
- static int __init init_ft1000_cs(void)
+ 		// Get the message type which is total_len + PSEUDO header + msgtype + message body
+-		pdrvmsg = (PDRVMSG) & cmdbuffer[0];
++		pdrvmsg = (struct drv_msg *) & cmdbuffer[0];
+ 		msgtype = ntohs(pdrvmsg->type);
+ 		DEBUG(1, "Command message type = 0x%x\n", msgtype);
+ 		switch (msgtype) {
 -- 
 Ondrej Zary
 
