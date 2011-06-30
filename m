@@ -1,83 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753895Ab1F3T7c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 15:59:32 -0400
-Received: from mail2.microsoft.com ([131.107.115.215]:55343 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab1F3T73 convert rfc822-to-8bit (ORCPT
+	id S1754030Ab1F3UBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 16:01:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42940 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751193Ab1F3UBs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 15:59:29 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
+	Thu, 30 Jun 2011 16:01:48 -0400
+Date: Thu, 30 Jun 2011 13:01:34 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 38/40] Staging: hv: storvsc: Fixup srb_status for
- INQUIRY and MODE_SENSE
-Thread-Topic: [PATCH 38/40] Staging: hv: storvsc: Fixup srb_status for
- INQUIRY and MODE_SENSE
-Thread-Index: AQHMNmgKIdhbK1f7mUWDaxtsqb4cCZTWxb0A//+NPVA=
-Date: Thu, 30 Jun 2011 19:59:28 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0480816C27C@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
- <1309358377-8537-1-git-send-email-kys@microsoft.com>
- <1309358377-8537-38-git-send-email-kys@microsoft.com>
- <20110630194754.GG22707@infradead.org>
-In-Reply-To: <20110630194754.GG22707@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
+Message-Id: <20110630130134.63a1dd37.akpm@linux-foundation.org>
+In-Reply-To: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 29 Jun 2011 19:03:25 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> Each memory cgroup has 'swappiness' value and it can be accessed by
+> get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
+> and swappiness is passed by argument. It's propagated by scan_control.
+> 
+> get_swappiness is static function but some planned updates will need to
+> get swappiness from files other than memcontrol.c
+> This patch exports get_swappiness() as mem_cgroup_swappiness().
+> By this, we can remove the argument of swapiness from try_to_free...
+> and drop swappiness from scan_control. only memcg uses it.
+
+x86_64 allnoconfig (aka Documentation/SubmitChecklist, section 2b):
+
+mm/vmscan.c: In function 'vmscan_swappiness':
+mm/vmscan.c:1734: error: implicit declaration of function 'mem_cgroup_swappiness'
+
+This is pretty broken.  I think we do want to implement this for
+CONFIG_CGROUP_MEM_RES_CTLR=y, CONFIG_SWAP=n:
+
+--- a/include/linux/swap.h~memcg-export-memory-cgroups-swappiness-fix
++++ a/include/linux/swap.h
+@@ -365,17 +365,12 @@ static inline void put_swap_token(struct
+ extern void
+ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout);
+ extern int mem_cgroup_count_swap_user(swp_entry_t ent, struct page **pagep);
+-extern unsigned int mem_cgroup_swappiness(struct mem_cgroup *mem);
+ #else
+ static inline void
+ mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
+ {
+ }
+ 
+-static inline unsigned int mem_cgroup_swappiness(struct mem_cgroup *mem)
+-{
+-	return vm_swappiness;
+-}
+ #endif
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
+ extern void mem_cgroup_uncharge_swap(swp_entry_t ent);
+@@ -510,5 +505,15 @@ mem_cgroup_count_swap_user(swp_entry_t e
+ #endif
+ 
+ #endif /* CONFIG_SWAP */
++
++#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++extern unsigned int mem_cgroup_swappiness(struct mem_cgroup *mem);
++#else
++static inline unsigned int mem_cgroup_swappiness(struct mem_cgroup *mem)
++{
++	return vm_swappiness;
++}
++#endif
++
+ #endif /* __KERNEL__*/
+ #endif /* _LINUX_SWAP_H */
+
+But what is the role of CONFIG_CGROUP_MEM_RES_CTLR_SWAP?
+
+And in the above circumstances, vmscan_swappiness() devolves into
+
+static int vmscan_swappiness(struct scan_control *sc)
+{
+       if (scanning_global_lru(sc))
+               return vm_swappiness;
+       return vm_swappiness;
+}
+
+which I guess makes sense but seems a bit odd.
+
+Anyway, my confidence level is low so I think I'll drop this patch. 
+Please have a think about the interplay between
+CONFIG_CGROUP_MEM_RES_CTLR, CONFIG_CGROUP_MEM_RES_CTLR_SWAP and
+CONFIG_SWAP.
 
 
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Thursday, June 30, 2011 3:48 PM
-> To: KY Srinivasan
-> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
-> Abhishek Kane (Mindtree Consulting PVT LTD); Hank Janssen
-> Subject: Re: [PATCH 38/40] Staging: hv: storvsc: Fixup srb_status for INQUIRY and
-> MODE_SENSE
-> 
-> On Wed, Jun 29, 2011 at 07:39:35AM -0700, K. Y. Srinivasan wrote:
-> > The current handler on the Windows Host does not correctly handle
-> > INQUIRY and MODE_SENSE commands with some options. Fixup srb_status
-> > in these cases since the failure is not fatal.
-> 
-> > +	/*
-> > +	 * The current SCSI handling on the host side does
-> > +	 * not correctly handle:
-> > +	 * INQUIRY command with page code parameter set to 0x80
-> > +	 * MODE_SENSE command with cmd[2] == 0x1c
-> > +	 *
-> > +	 * Setup srb status so this won't be fatal.
-> > +	 */
-> > +
-> > +	if ((stor_pkt->vm_srb.cdb[0] == INQUIRY) ||
-> > +	   (stor_pkt->vm_srb.cdb[0] == MODE_SENSE))
-> > +		vstor_packet->vm_srb.srb_status = 0;
-> 
-> Given that the srb_status is only used for debug printks I don't
-> quite see the point.  If people explicitly turn on debugging they
-> should see that these commands fail, shouldn't they?
-> 
-The reason I did this was so that  I could key off  on real failures indicated by
-srb_status == 0x4 to off-line the device.
-
-Regards,
-
-K. Y
