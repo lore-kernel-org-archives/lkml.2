@@ -1,46 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757990Ab1F3Bbi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 21:31:38 -0400
-Received: from tundra.namei.org ([65.99.196.166]:57993 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753661Ab1F3Bbc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 21:31:32 -0400
-Date: Thu, 30 Jun 2011 11:30:42 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Will Drewry <wad@chromium.org>
-cc: Chris Evans <scarybeasts@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, djm@mindrot.org,
-        segoon@openwall.com, kees.cook@canonical.com,
-        Ingo Molnar <mingo@elte.hu>, rostedt@goodmis.org, fweisbec@gmail.com,
-        tglx@linutronix.de, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH v9 05/13] seccomp_filter: Document what seccomp_filter
- is and how it works.
-In-Reply-To: <BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1106301128590.13496@tundra.namei.org>
-References: <1308875813-20122-1-git-send-email-wad@chromium.org> <1308875813-20122-5-git-send-email-wad@chromium.org> <BANLkTimtYUyXbZjWhjK61B_1WBXE4MoAeA@mail.gmail.com> <alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>
- <BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758156Ab1F3Bb4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 21:31:56 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:40845 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754733Ab1F3Bbt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 21:31:49 -0400
+X-AuditID: cbfee61a-b7c53ae000002dc1-bc-4e0bd20302c3
+Date: Thu, 30 Jun 2011 10:31:45 +0900
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+Subject: [PATCH 1/3] MFD: MAX8997: IRQ Handling Bugfix
+To: linux-kernel@vger.kernel.org
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Donggeun Kim <dg77.kim@samsung.com>, myungjoo.ham@gmail.com
+Message-id: <1309397507-24959-1-git-send-email-myungjoo.ham@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 30 Jun 2011 01:32:02.0176 (UTC)
+ FILETIME=[8308F000:01CC36C5]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011, Will Drewry wrote:
+Required platform information is not handed to max8997-irq.c properly.
+This patch enables to hand over such information to max8997-irq.c so
+that max8997-irq functions properly.
 
-> Since it seems that there'll be consumers (openssh, vsftpd, kvm/qemu,
-> chromium, chromium os) and feedback quieted down, what are the next
-> steps to get this to a pull/no-pull decision points (or at least some
-> Ack's or Nack's)?  I know this patch series crosses a number of
-> maintainers, and I never know exactly what's next when the feedback
-> slows down.
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/mfd/max8997.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Are there any outstanding objections to this approach?  How do the tracing 
-folk feel about it?
-
+diff --git a/drivers/mfd/max8997.c b/drivers/mfd/max8997.c
+index 5d1fca0..f83103b 100644
+--- a/drivers/mfd/max8997.c
++++ b/drivers/mfd/max8997.c
+@@ -135,10 +135,13 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 	max8997->dev = &i2c->dev;
+ 	max8997->i2c = i2c;
+ 	max8997->type = id->driver_data;
++	max8997->irq = i2c->irq;
+ 
+ 	if (!pdata)
+ 		goto err;
+ 
++	max8997->irq_base = pdata->irq_base;
++	max8997->ono = pdata->ono;
+ 	max8997->wakeup = pdata->wakeup;
+ 
+ 	mutex_init(&max8997->iolock);
+@@ -152,6 +155,8 @@ static int max8997_i2c_probe(struct i2c_client *i2c,
+ 
+ 	pm_runtime_set_active(max8997->dev);
+ 
++	max8997_irq_init(max8997);
++
+ 	mfd_add_devices(max8997->dev, -1, max8997_devs,
+ 			ARRAY_SIZE(max8997_devs),
+ 			NULL, 0);
 -- 
-James Morris
-<jmorris@namei.org>
+1.7.4.1
+
