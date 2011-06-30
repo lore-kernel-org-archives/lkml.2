@@ -1,69 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab1F3Elc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 00:41:32 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59744 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750725Ab1F3El0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 00:41:26 -0400
-Date: Thu, 30 Jun 2011 14:41:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "Bhanu Prakash Gollapudi" <bprakash@broadcom.com>
-Cc: "David Miller" <davem@davemloft.net>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Vladislav Zolotarov" <vladz@broadcom.com>,
-        "James Bottomley" <James.Bottomley@HansenPartnership.com>,
-        mchan@broadcom.com
-Subject: Re: linux-next: manual merge of the net tree with the scsi tree
-Message-Id: <20110630144119.1bff2ccb.sfr@canb.auug.org.au>
-In-Reply-To: <4E0BF998.7030800@broadcom.com>
-References: <20110630123325.43268067.sfr@canb.auug.org.au>
-	<4E0BF998.7030800@broadcom.com>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__30_Jun_2011_14_41_19_+1000_spVF7eu+vTdA9kMf"
+	id S1751985Ab1F3Eoq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 00:44:46 -0400
+Received: from mail9.hitachi.co.jp ([133.145.228.44]:43866 "EHLO
+	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750749Ab1F3Eoj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 00:44:39 -0400
+X-AuditID: b753bd60-a327cba0000050a4-ef-4e0bff331509
+X-AuditID: b753bd60-a327cba0000050a4-ef-4e0bff331509
+Message-ID: <4E0BFF2D.6040108@hitachi.com>
+Date: Thu, 30 Jun 2011 13:44:29 +0900
+From: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -tip 3/4] perf script: add the option to show the offset
+ of symbols
+References: <20110628074019.4269.32109.stgit@linux3> <20110628074044.4269.40422.stgit@linux3> <4E09EA90.8040801@gmail.com> <4E09EB66.6050406@gmail.com>
+In-Reply-To: <4E09EB66.6050406@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__30_Jun_2011_14_41_19_+1000_spVF7eu+vTdA9kMf
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Bhanu,
-
-On Wed, 29 Jun 2011 21:20:40 -0700 "Bhanu Prakash Gollapudi" <bprakash@broa=
-dcom.com> wrote:
+(2011/06/28 23:55), David Ahern wrote:
+> On 06/28/2011 08:52 AM, David Ahern wrote:
+>> On 06/28/2011 01:40 AM, Akihiro Nagai wrote:
+>>> Add the option '--show-symbol-offset' to show the offset from
+>>> the symbols in the output of perf-script. We can get the more
+>>> detailed address information.
+>>
+>> I like the offset option; added that locally last week as well. more below.
 >
-> Stephen, can you please send the conflicts? Most probably you should=20
-> have seen the conflicts w.r.t version number in bnx2fc.h and date in=20
-> bnx2fc_fcoe.c.  If that is the case, the versions from net tree are good.
+> one more comment: move the --show-symbol-offset option to a field
+> parameter - like ip, addr, dso and sym. For parameter checking make it
+> depend on the sym field.
+>
+> Update the Documentation file as well.
+OK, I'm going to add 'offs' field specifier instead of
+the option '--show-symbol-offset', and update documents.
 
-Yes, they were exactly the only conflicts I got.
+>
+> David
+>
+>>
+>>>
+>>> Output sample:
+>>> # perf script -f ip,addr,sym --show-symbol-offset
+>>> 301ec016b0 ffffffff81467612 irq_return+0x0
+>>> 301ec016b0            _start+0x0 ffffffff81467612 irq_return+0x0
+>>> 301ec04b70         _dl_start+0x0       301ec016b3 _start+0x3
+>>> 301ec04b70         _dl_start+0x0 ffffffff81467612 irq_return+0x0
+>>> 301ec04b96        _dl_start+0x26 ffffffff81467612 irq_return+0x0
+>>> 301ec04b9d        _dl_start+0x2d ffffffff81467612 irq_return+0x0
+>>> 301ec04c0d        _dl_start+0x9d       301ec04beb _dl_start+0x7b
+>>> 301ec04bf0        _dl_start+0x80       301ec04c11 _dl_start+0xa1
+>>> [snip]
+>>>
+>>> Signed-off-by: Akihiro Nagai<akihiro.nagai.hw@hitachi.com>
+>>> Cc: Peter Zijlstra<peterz@infradead.org>
+>>> Cc: Frederic Weisbecker<fweisbec@gmail.com>
+>>> Cc: Paul Mackerras<paulus@samba.org>
+>>> Cc: Ingo Molnar<mingo@elte.hu>
+>>> Cc: Arnaldo Carvalho de Melo<acme@infradead.org>
+>>> Cc: David Ahern<dsahern@gmail.com>
+>>> Cc: Masami Hiramatsu<masami.hiramatsu.pt@hitachi.com>
+>>> ---
+>>>
+>>>   tools/perf/Documentation/perf-script.txt |    3 +++
+>>>   tools/perf/builtin-script.c              |   20 ++++++++++++++------
+>>>   tools/perf/util/session.c                |   16 ++++++++++------
+>>>   tools/perf/util/session.h                |    3 ++-
+>>>   4 files changed, 29 insertions(+), 13 deletions(-)
+>>>
+>>> diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+>>> index c6068cb..39c4721 100644
+>>> --- a/tools/perf/Documentation/perf-script.txt
+>>> +++ b/tools/perf/Documentation/perf-script.txt
+>>> @@ -182,6 +182,9 @@ OPTIONS
+>>>   --hide-call-graph::
+>>>           When printing symbols do not display call chain.
+>>>
+>>> +--show-symbol-offset::
+>>> +	Show the offset of the symbols.
+>>> +
+>>>   SEE ALSO
+>>>   --------
+>>>   linkperf:perf-record[1], linkperf:perf-script-perl[1],
+>>> diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+>>> index 2d68086..f9b7047 100644
+>>> --- a/tools/perf/builtin-script.c
+>>> +++ b/tools/perf/builtin-script.c
+>>> @@ -21,6 +21,7 @@ static u64			last_timestamp;
+>>>   static u64			nr_unordered;
+>>>   extern const struct option	record_options[];
+>>>   static bool			no_callchain;
+>>> +static bool			show_symbol_offset;
+>>>
+>>>   enum perf_output_field {
+>>>   	PERF_OUTPUT_COMM            = 1U<<  0,
+>>> @@ -324,6 +325,7 @@ static void print_sample_addr(union perf_event *event,
+>>>   	struct addr_location al;
+>>>   	u8 cpumode = event->header.misc&  PERF_RECORD_MISC_CPUMODE_MASK;
+>>>   	const char *symname, *dsoname;
+>>> +	unsigned long offset;
+>>>
+>>>   	printf("%16" PRIx64, sample->addr);
+>>>
+>>> @@ -346,12 +348,15 @@ static void print_sample_addr(union perf_event *event,
+>>>   		al.sym = map__find_symbol(al.map, al.addr, NULL);
+>>>
+>>>   	if (PRINT_FIELD(SYM)) {
+>>> -		if (al.sym&&  al.sym->name)
+>>> +		printf(" ");
+>>> +		if (al.sym&&  al.sym->name) {
+>>>   			symname = al.sym->name;
+>>> -		else
+>>> -			symname = "";
+>>
+>> dropping the else path will cause columns to misalign when ip's do not
+>> resolve.
+I see.
+I'd like to add a magic word that indicates perf-script failed to resolve the symbol.
+For example, '[unknown]'.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+>>
+>>> -
+>>> -		printf(" %16s", symname);
+>>> +			offset = al.addr - al.sym->start;
+>>
+>> move the offset calculation under the if (show_symbol_offset)
+OK.
 
---Signature=_Thu__30_Jun_2011_14_41_19_+1000_spVF7eu+vTdA9kMf
-Content-Type: application/pgp-signature
+>>
+>>> +			if (show_symbol_offset)
+>>> +				printf("%16s+0x%lx", symname, offset);
+>>> +			else
+>>> +				printf("%16s", symname);
+>>> +		}
+>>>   	}
+>>>
+>>>   	if (PRINT_FIELD(DSO)) {
+>>> @@ -390,7 +395,8 @@ static void process_event(union perf_event *event __unused,
+>>>   		else
+>>>   			printf("\n");
+>>>   		perf_session__print_ip(event, sample, session,
+>>> -					      PRINT_FIELD(SYM), PRINT_FIELD(DSO));
+>>> +				       PRINT_FIELD(SYM), PRINT_FIELD(DSO),
+>>> +				       show_symbol_offset);
+>>>   	}
+>>>
+>>>   	printf("\n");
+>>> @@ -1084,6 +1090,8 @@ static const struct option options[] = {
+>>>   	OPT_CALLBACK('f', "fields", NULL, "str",
+>>>   		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
+>>>   		     parse_output_fields),
+>>> +	OPT_BOOLEAN('\0', "show-symbol-offset",&show_symbol_offset,
+>>> +		    "Show the offset of the symbol."),
+>>>
+>>>   	OPT_END()
+>>>   };
+>>> diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+>>> index 632266f..bb522ed 100644
+>>> --- a/tools/perf/util/session.c
+>>> +++ b/tools/perf/util/session.c
+>>> @@ -1205,10 +1205,11 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+>>>   void perf_session__print_ip(union perf_event *event,
+>>>   			    struct perf_sample *sample,
+>>>   			    struct perf_session *session,
+>>> -			    int print_sym, int print_dso)
+>>> +			    int print_sym, int print_dso, int print_offset)
+>>>   {
+>>>   	struct addr_location al;
+>>>   	const char *symname, *dsoname;
+>>> +	unsigned long offset;
+>>>   	struct callchain_cursor *cursor =&session->callchain_cursor;
+>>>   	struct callchain_cursor_node *node;
+>>>
+>>> @@ -1259,12 +1260,15 @@ void perf_session__print_ip(union perf_event *event,
+>>>   	} else {
+>>>   		printf("%16" PRIx64, sample->ip);
+>>>   		if (print_sym) {
+>>> -			if (al.sym&&  al.sym->name)
+>>> +			printf(" ");
+>>> +			if (al.sym&&  al.sym->name) {
+>>>   				symname = al.sym->name;
+>>> -			else
+>>> -				symname = "";
+>>> -
+>>> -			printf(" %s", symname);
+>>> +				offset = al.addr - al.sym->start;
+>>> +				if (print_offset)
+>>> +					printf("%s+0x%lx", symname, offset);
+>>
+>> same comments for this code path.
+OK. I'm going to move the code.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOC/5vAAoJEDMEi1NhKgbsb5gH/1qiNAZ348iQ0iqH2UXTnfkv
-0XhQZAnyFzMpoJHLQjELJLRTCOp6XeRxJtAKbRFhdrgYM/fmTLtzC2VQ/AnvnUja
-yN501XW23ndQOhNYRoUMQMehNFeNnr7XkKzUlKGjuydQFtGaYB1GN4QAjW64XZhX
-ob9QrkjUP1UcAY4HLqCEs0EsyX0e2XuqT8Q5NHS8sZPxatJ8i1UytzYRRWgXVPxb
-em476hKBs5w0/yQXkPjizrI8gEKaqd+AeZd8dDTC4+//8hm363AQ4WHJNJ/2l7u7
-2JCdgPY+xaOy5DHru8HjFajfNY5wNagutC6phe9c+sn84fYB4AEJwyO3083WLvE=
-=ynvR
------END PGP SIGNATURE-----
+Thank you.
 
---Signature=_Thu__30_Jun_2011_14_41_19_+1000_spVF7eu+vTdA9kMf--
+>>
+>> David
+>>
+>>
+>>> +				else
+>>> +					printf("%s", symname);
+>>> +			}
+>>>   		}
+>>>
+>>>   		if (print_dso) {
+>>> diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+>>> index de4178d..8187e68 100644
+>>> --- a/tools/perf/util/session.h
+>>> +++ b/tools/perf/util/session.h
+>>> @@ -170,6 +170,7 @@ struct perf_evsel *perf_session__find_first_evtype(struct perf_session *session,
+>>>   void perf_session__print_ip(union perf_event *event,
+>>>   				 struct perf_sample *sample,
+>>>   				 struct perf_session *session,
+>>> -				 int print_sym, int print_dso);
+>>> +				 int print_sym, int print_dso,
+>>> +				 int print_offset);
+>>>
+>>>   #endif /* __PERF_SESSION_H */
+>>>
