@@ -1,16 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758616Ab1F3HuE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 03:50:04 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:46463 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752887Ab1F3Hti (ORCPT
+	id S1758578Ab1F3Ht4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 03:49:56 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:40951 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab1F3Hth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 03:49:38 -0400
-X-AuditID: cbfee61b-b7bfdae000006d51-36-4e0c2a8fe4da
-Date: Thu, 30 Jun 2011 16:49:30 +0900
+	Thu, 30 Jun 2011 03:49:37 -0400
+X-AuditID: cbfee61b-b7bfdae000006d51-3a-4e0c2a8fa3d0
+Date: Thu, 30 Jun 2011 16:49:31 +0900
 From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH v3 1/6] Samsung SoC ADC: use regulator (VDD for ADC).
+Subject: [PATCH v3 2/6] Samsung SoC ADC: Channel selection for S5PV210,
+ S5PC110, and Exynos4
 In-reply-to: <1309420175-10301-1-git-send-email-myungjoo.ham@samsung.com>
 To: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org
 Cc: Kukjin Kim <kgene.kim@samsung.com>, Russell King <linux@arm.linux.org.uk>,
@@ -23,156 +24,127 @@ Cc: Kukjin Kim <kgene.kim@samsung.com>, Russell King <linux@arm.linux.org.uk>,
         Jassi Brar <jassi.brar@samsung.com>,
         Seungwhan Youn <sw.youn@samsung.com>, linux-kernel@vger.kernel.org,
         myungjoo.ham@gmail.com
-Message-id: <1309420175-10301-2-git-send-email-myungjoo.ham@samsung.com>
+Message-id: <1309420175-10301-3-git-send-email-myungjoo.ham@samsung.com>
 X-Mailer: git-send-email 1.7.4.1
 Content-transfer-encoding: 7BIT
 References: <1309420175-10301-1-git-send-email-myungjoo.ham@samsung.com>
-X-OriginalArrivalTime: 30 Jun 2011 07:49:50.0141 (UTC)
- FILETIME=[4A31E6D0:01CC36FA]
+X-OriginalArrivalTime: 30 Jun 2011 07:49:50.0157 (UTC)
+ FILETIME=[4A3457D0:01CC36FA]
 X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch allows the Samsung ADC driver to enable VDD regulator at
-probe and resume and to disable at exit and suspend.
-In a platform where ADC's VDD regulator is not "always-on", this control
-is required although this patch does not provide fine-grained power
-control (turning on the regulator only when being accessed).
-
-However, if VDD regulator ("vdd" for the adc device) is not provided,
-the regulator control will not be activated because there are platforms
-that do not provide regulator for ADC device.
-
-arch_initcall has been modified to module_init in order to allow
-regulators to be available at probe.
+In S5PV210/S5PC110/Exynos4, ADCMUX channel selection uses ADCMUX
+register, not ADCCON register. This patch corrects the behavior of
+Samsung-ADC for such cpus.
 
 Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-
 --
-changed from v2 with valuable comments from Mark Brown.
-- Bugfix on error handling
-- Faster escape when error at resume function
-changes from v1
-- Removed macro defining the name of regulator.
-- Handle error from regulator_enable.
-- Do not allow not to have the regulator if CONFIG_REGULATOR.
-- Seperate a patch dealing with "arch_initcall->module_init"
+updates from v2
+- Renamed internal device names.
 ---
- arch/arm/plat-samsung/adc.c |   31 +++++++++++++++++++++++++++----
- 1 files changed, 27 insertions(+), 4 deletions(-)
+ arch/arm/plat-samsung/adc.c                   |   29 ++++++++++++++++--------
+ arch/arm/plat-samsung/include/plat/regs-adc.h |    1 +
+ 2 files changed, 20 insertions(+), 10 deletions(-)
 
 diff --git a/arch/arm/plat-samsung/adc.c b/arch/arm/plat-samsung/adc.c
-index e8f2be2..2224128 100644
+index 2224128..45cc7e6 100644
 --- a/arch/arm/plat-samsung/adc.c
 +++ b/arch/arm/plat-samsung/adc.c
-@@ -21,6 +21,7 @@
- #include <linux/clk.h>
- #include <linux/interrupt.h>
- #include <linux/io.h>
-+#include <linux/regulator/consumer.h>
+@@ -40,8 +40,9 @@
+  */
  
- #include <plat/regs-adc.h>
- #include <plat/adc.h>
-@@ -71,6 +72,7 @@ struct adc_device {
- 	unsigned int		 prescale;
- 
- 	int			 irq;
-+	struct regulator	*vdd;
+ enum s3c_cpu_type {
+-	TYPE_S3C24XX,
+-	TYPE_S3C64XX
++	TYPE_ADCV1, /* S3C24XX */
++	TYPE_ADCV2, /* S3C64XX, S5P64X0, S5PC100 */
++	TYPE_ADCV3, /* S5PV210, S5PC110, EXYNOS4210 */
  };
  
- static struct adc_device *adc_dev;
-@@ -338,17 +340,24 @@ static int s3c_adc_probe(struct platform_device *pdev)
- 	adc->pdev = pdev;
- 	adc->prescale = S3C2410_ADCCON_PRSCVL(49);
+ struct s3c_adc_client {
+@@ -93,6 +94,7 @@ static inline void s3c_adc_select(struct adc_device *adc,
+ 				  struct s3c_adc_client *client)
+ {
+ 	unsigned con = readl(adc->regs + S3C2410_ADCCON);
++	enum s3c_cpu_type cpu = platform_get_device_id(adc->pdev)->driver_data;
  
-+	adc->vdd = regulator_get(dev, "vdd");
-+	if (IS_ERR(adc->vdd)) {
-+		dev_err(dev, "operating without regulator \"vdd\" .\n");
-+		ret = PTR_ERR(adc->vdd);
-+		goto err_alloc;
+ 	client->select_cb(client, 1);
+ 
+@@ -100,8 +102,12 @@ static inline void s3c_adc_select(struct adc_device *adc,
+ 	con &= ~S3C2410_ADCCON_STDBM;
+ 	con &= ~S3C2410_ADCCON_STARTMASK;
+ 
+-	if (!client->is_ts)
+-		con |= S3C2410_ADCCON_SELMUX(client->channel);
++	if (!client->is_ts) {
++		if (cpu == TYPE_ADCV3)
++			writel(client->channel & 0xf, adc->regs + S5P_ADCMUX);
++		else
++			con |= S3C2410_ADCCON_SELMUX(client->channel);
 +	}
-+
- 	adc->irq = platform_get_irq(pdev, 1);
- 	if (adc->irq <= 0) {
- 		dev_err(dev, "failed to get adc irq\n");
- 		ret = -ENOENT;
--		goto err_alloc;
-+		goto err_reg;
+ 
+ 	writel(con, adc->regs + S3C2410_ADCCON);
+ }
+@@ -287,8 +293,8 @@ static irqreturn_t s3c_adc_irq(int irq, void *pw)
+ 
+ 	client->nr_samples--;
+ 
+-	if (cpu == TYPE_S3C64XX) {
+-		/* S3C64XX ADC resolution is 12-bit */
++	if (cpu != TYPE_ADCV1) {
++		/* S3C64XX/S5P ADC resolution is 12-bit */
+ 		data0 &= 0xfff;
+ 		data1 &= 0xfff;
+ 	} else {
+@@ -314,7 +320,7 @@ static irqreturn_t s3c_adc_irq(int irq, void *pw)
  	}
  
- 	ret = request_irq(adc->irq, s3c_adc_irq, 0, dev_name(dev), adc);
- 	if (ret < 0) {
- 		dev_err(dev, "failed to attach adc irq\n");
--		goto err_alloc;
-+		goto err_reg;
+ exit:
+-	if (cpu == TYPE_S3C64XX) {
++	if (cpu != TYPE_ADCV1) {
+ 		/* Clear ADC interrupt */
+ 		writel(0, adc->regs + S3C64XX_ADCCLRINT);
  	}
- 
- 	adc->clk = clk_get(dev, "adc");
-@@ -372,6 +381,10 @@ static int s3c_adc_probe(struct platform_device *pdev)
- 		goto err_clk;
- 	}
- 
-+	ret = regulator_enable(adc->vdd);
-+	if (ret)
-+		goto err_ioremap;
-+
+@@ -388,7 +394,7 @@ static int s3c_adc_probe(struct platform_device *pdev)
  	clk_enable(adc->clk);
  
  	tmp = adc->prescale | S3C2410_ADCCON_PRSCEN;
-@@ -388,12 +401,15 @@ static int s3c_adc_probe(struct platform_device *pdev)
+-	if (platform_get_device_id(pdev)->driver_data == TYPE_S3C64XX) {
++	if (platform_get_device_id(pdev)->driver_data != TYPE_ADCV1) {
+ 		/* Enable 12-bit ADC resolution */
+ 		tmp |= S3C64XX_ADCCON_RESSEL;
+ 	}
+@@ -476,10 +482,13 @@ static int s3c_adc_resume(struct platform_device *pdev)
+ static struct platform_device_id s3c_adc_driver_ids[] = {
+ 	{
+ 		.name           = "s3c24xx-adc",
+-		.driver_data    = TYPE_S3C24XX,
++		.driver_data    = TYPE_ADCV1,
+ 	}, {
+ 		.name           = "s3c64xx-adc",
+-		.driver_data    = TYPE_S3C64XX,
++		.driver_data    = TYPE_ADCV2,
++	}, {
++		.name		= "samsung-adc-v3",
++		.driver_data	= TYPE_ADCV3,
+ 	},
+ 	{ }
+ };
+diff --git a/arch/arm/plat-samsung/include/plat/regs-adc.h b/arch/arm/plat-samsung/include/plat/regs-adc.h
+index 7554c4f..035e8c3 100644
+--- a/arch/arm/plat-samsung/include/plat/regs-adc.h
++++ b/arch/arm/plat-samsung/include/plat/regs-adc.h
+@@ -21,6 +21,7 @@
+ #define S3C2410_ADCDAT1	   S3C2410_ADCREG(0x10)
+ #define S3C64XX_ADCUPDN		S3C2410_ADCREG(0x14)
+ #define S3C64XX_ADCCLRINT	S3C2410_ADCREG(0x18)
++#define S5P_ADCMUX		S3C2410_ADCREG(0x1C)
+ #define S3C64XX_ADCCLRINTPNDNUP	S3C2410_ADCREG(0x20)
  
- 	return 0;
  
-+ err_ioremap:
-+	iounmap(adc->regs);
-  err_clk:
- 	clk_put(adc->clk);
- 
-  err_irq:
- 	free_irq(adc->irq, adc);
--
-+ err_reg:
-+	regulator_put(adc->vdd);
-  err_alloc:
- 	kfree(adc);
- 	return ret;
-@@ -406,6 +422,8 @@ static int __devexit s3c_adc_remove(struct platform_device *pdev)
- 	iounmap(adc->regs);
- 	free_irq(adc->irq, adc);
- 	clk_disable(adc->clk);
-+	regulator_disable(adc->vdd);
-+	regulator_put(adc->vdd);
- 	clk_put(adc->clk);
- 	kfree(adc);
- 
-@@ -428,6 +446,7 @@ static int s3c_adc_suspend(struct platform_device *pdev, pm_message_t state)
- 	disable_irq(adc->irq);
- 	spin_unlock_irqrestore(&adc->lock, flags);
- 	clk_disable(adc->clk);
-+	regulator_disable(adc->vdd);
- 
- 	return 0;
- }
-@@ -435,7 +454,11 @@ static int s3c_adc_suspend(struct platform_device *pdev, pm_message_t state)
- static int s3c_adc_resume(struct platform_device *pdev)
- {
- 	struct adc_device *adc = platform_get_drvdata(pdev);
-+	int ret;
- 
-+	ret = regulator_enable(adc->vdd);
-+	if (ret)
-+		return ret;
- 	clk_enable(adc->clk);
- 	enable_irq(adc->irq);
- 
-@@ -485,4 +508,4 @@ static int __init adc_init(void)
- 	return ret;
- }
- 
--arch_initcall(adc_init);
-+module_init(adc_init);
 -- 
 1.7.4.1
 
