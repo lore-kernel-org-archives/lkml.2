@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754980Ab1F3Jvq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 05:51:46 -0400
-Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:46672 "EHLO
-	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754780Ab1F3JvY (ORCPT
+	id S1755093Ab1F3JwH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 05:52:07 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:48675 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752043Ab1F3Jv0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 05:51:24 -0400
+	Thu, 30 Jun 2011 05:51:26 -0400
 From: Felipe Balbi <balbi@ti.com>
 To: Linux OMAP Mailing List <linux-omap@vger.kernel.org>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
         Thomas Gleixner <tglx@linutronix.de>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 2/7] mfd: twl4030-irq: implement bus_lock/bus_sync_unlock methods
-Date: Thu, 30 Jun 2011 12:51:05 +0300
-Message-Id: <1309427470-605-3-git-send-email-balbi@ti.com>
+Subject: [PATCH 3/7] mfd: twl4030-irq: drop the kthread
+Date: Thu, 30 Jun 2011 12:51:06 +0300
+Message-Id: <1309427470-605-4-git-send-email-balbi@ti.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1309427470-605-1-git-send-email-balbi@ti.com>
 References: <1309427470-605-1-git-send-email-balbi@ti.com>
@@ -23,149 +23,154 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for doing that, drop the locking and change that
-to a mutex.
+... and use threaded IRQ infrastructure. Later
+patches will come dropping both workqueues and
+setting the nested thread flag.
 
 Signed-off-by: Felipe Balbi <balbi@ti.com>
 ---
- drivers/mfd/twl4030-irq.c |   37 +++++++++++++++++++++----------------
- 1 files changed, 21 insertions(+), 16 deletions(-)
+ drivers/mfd/twl4030-irq.c |   94 ++++++++++-----------------------------------
+ 1 files changed, 21 insertions(+), 73 deletions(-)
 
 diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
-index 7be97cb..291364c 100644
+index 291364c..e1e0944 100644
 --- a/drivers/mfd/twl4030-irq.c
 +++ b/drivers/mfd/twl4030-irq.c
-@@ -460,8 +460,6 @@ static inline void activate_irq(int irq)
+@@ -30,7 +30,6 @@
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+ #include <linux/irq.h>
+-#include <linux/kthread.h>
+ #include <linux/slab.h>
  
- /*----------------------------------------------------------------------*/
+ #include <linux/i2c/twl.h>
+@@ -278,59 +277,6 @@ static const struct sih sih_modules_twl5031[8] = {
  
--static DEFINE_SPINLOCK(sih_agent_lock);
+ static unsigned twl4030_irq_base;
+ 
+-static struct completion irq_event;
 -
- static struct workqueue_struct *wq;
- 
- struct sih_agent {
-@@ -474,6 +472,8 @@ struct sih_agent {
- 
- 	u32			edge_change;
- 	struct work_struct	edge_work;
-+
-+	struct mutex		irq_lock;
- };
- 
- static void twl4030_sih_do_mask(struct work_struct *work)
-@@ -489,7 +489,6 @@ static void twl4030_sih_do_mask(struct work_struct *work)
- 	agent = container_of(work, struct sih_agent, mask_work);
- 
- 	/* see what work we have */
--	spin_lock_irq(&sih_agent_lock);
- 	if (agent->imr_change_pending) {
- 		sih = agent->sih;
- 		/* byte[0] gets overwritten as we write ... */
-@@ -497,7 +496,6 @@ static void twl4030_sih_do_mask(struct work_struct *work)
- 		agent->imr_change_pending = false;
- 	} else
- 		sih = NULL;
--	spin_unlock_irq(&sih_agent_lock);
- 	if (!sih)
- 		return;
- 
-@@ -520,11 +518,9 @@ static void twl4030_sih_do_edge(struct work_struct *work)
- 	agent = container_of(work, struct sih_agent, edge_work);
- 
- 	/* see what work we have */
--	spin_lock_irq(&sih_agent_lock);
- 	edge_change = agent->edge_change;
- 	agent->edge_change = 0;
- 	sih = edge_change ? agent->sih : NULL;
--	spin_unlock_irq(&sih_agent_lock);
- 	if (!sih)
- 		return;
- 
-@@ -580,49 +576,57 @@ static void twl4030_sih_do_edge(struct work_struct *work)
- static void twl4030_sih_mask(struct irq_data *data)
+-/*
+- * This thread processes interrupts reported by the Primary Interrupt Handler.
+- */
+-static int twl4030_irq_thread(void *data)
+-{
+-	long irq = (long)data;
+-	static unsigned i2c_errors;
+-	static const unsigned max_i2c_errors = 100;
+-
+-
+-	current->flags |= PF_NOFREEZE;
+-
+-	while (!kthread_should_stop()) {
+-		int ret;
+-		int module_irq;
+-		u8 pih_isr;
+-
+-		/* Wait for IRQ, then read PIH irq status (also blocking) */
+-		wait_for_completion_interruptible(&irq_event);
+-
+-		ret = twl_i2c_read_u8(TWL4030_MODULE_PIH, &pih_isr,
+-					  REG_PIH_ISR_P1);
+-		if (ret) {
+-			pr_warning("twl4030: I2C error %d reading PIH ISR\n",
+-					ret);
+-			if (++i2c_errors >= max_i2c_errors) {
+-				printk(KERN_ERR "Maximum I2C error count"
+-						" exceeded.  Terminating %s.\n",
+-						__func__);
+-				break;
+-			}
+-			complete(&irq_event);
+-			continue;
+-		}
+-
+-		/* these handlers deal with the relevant SIH irq status */
+-		local_irq_disable();
+-		for (module_irq = twl4030_irq_base;
+-				pih_isr;
+-				pih_isr >>= 1, module_irq++) {
+-			if (pih_isr & 0x1)
+-				generic_handle_irq(module_irq);
+-		}
+-		local_irq_enable();
+-
+-		enable_irq(irq);
+-	}
+-
+-	return 0;
+-}
+-
+ /*
+  * handle_twl4030_pih() is the desc->handle method for the twl4030 interrupt.
+  * This is a chained interrupt, so there is no desc->action method for it.
+@@ -342,9 +288,25 @@ static int twl4030_irq_thread(void *data)
+  */
+ static irqreturn_t handle_twl4030_pih(int irq, void *devid)
  {
- 	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&sih_agent_lock, flags);
- 	sih->imr |= BIT(data->irq - sih->irq_base);
- 	sih->imr_change_pending = true;
- 	queue_work(wq, &sih->mask_work);
--	spin_unlock_irqrestore(&sih_agent_lock, flags);
+-	/* Acknowledge, clear *AND* mask the interrupt... */
+-	disable_irq_nosync(irq);
+-	complete(devid);
++	int		module_irq;
++	irqreturn_t	ret;
++	u8		pih_isr;
++
++	ret = twl_i2c_read_u8(TWL4030_MODULE_PIH, &pih_isr,
++			REG_PIH_ISR_P1);
++	if (ret) {
++		pr_warning("twl4030: I2C error %d reading PIH ISR\n", ret);
++		return IRQ_NONE;
++	}
++
++	/* these handlers deal with the relevant SIH irq status */
++	for (module_irq = twl4030_irq_base;
++			pih_isr;
++			pih_isr >>= 1, module_irq++) {
++		if (pih_isr & 0x1)
++			generic_handle_irq(module_irq);
++	}
++
+ 	return IRQ_HANDLED;
  }
- 
- static void twl4030_sih_unmask(struct irq_data *data)
- {
- 	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
--	unsigned long flags;
- 
--	spin_lock_irqsave(&sih_agent_lock, flags);
- 	sih->imr &= ~BIT(data->irq - sih->irq_base);
- 	sih->imr_change_pending = true;
- 	queue_work(wq, &sih->mask_work);
--	spin_unlock_irqrestore(&sih_agent_lock, flags);
- }
- 
- static int twl4030_sih_set_type(struct irq_data *data, unsigned trigger)
- {
- 	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
--	unsigned long flags;
- 
- 	if (trigger & ~(IRQ_TYPE_EDGE_FALLING | IRQ_TYPE_EDGE_RISING))
- 		return -EINVAL;
- 
--	spin_lock_irqsave(&sih_agent_lock, flags);
- 	if (irqd_get_trigger_type(data) != trigger) {
- 		sih->edge_change |= BIT(data->irq - sih->irq_base);
- 		queue_work(wq, &sih->edge_work);
- 	}
--	spin_unlock_irqrestore(&sih_agent_lock, flags);
-+
- 	return 0;
- }
- 
-+static void twl4030_sih_bus_lock(struct irq_data *data)
-+{
-+	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
-+
-+	mutex_lock(&sih->irq_lock);
-+}
-+
-+static void twl4030_sih_bus_sync_unlock(struct irq_data *data)
-+{
-+	struct sih_agent *sih = irq_data_get_irq_chip_data(data);
-+
-+	mutex_unlock(&sih->irq_lock);
-+}
-+
- static struct irq_chip twl4030_sih_irq_chip = {
- 	.name		= "twl4030",
- 	.irq_mask	= twl4030_sih_mask,
- 	.irq_unmask	= twl4030_sih_unmask,
- 	.irq_set_type	= twl4030_sih_set_type,
-+	.irq_bus_lock	= twl4030_sih_bus_lock,
-+	.irq_bus_sync_unlock = twl4030_sih_bus_sync_unlock,
- };
- 
  /*----------------------------------------------------------------------*/
-@@ -718,15 +722,16 @@ int twl4030_sih_setup(int module)
- 	agent->irq_base = irq_base;
- 	agent->sih = sih;
- 	agent->imr = ~0;
-+	mutex_init(&agent->irq_lock);
- 	INIT_WORK(&agent->mask_work, twl4030_sih_do_mask);
- 	INIT_WORK(&agent->edge_work, twl4030_sih_do_edge);
+@@ -763,7 +725,6 @@ int twl4030_init_irq(int irq_num, unsigned irq_base, unsigned irq_end)
  
- 	for (i = 0; i < sih->bits; i++) {
- 		irq = irq_base + i;
+ 	int			status;
+ 	int			i;
+-	struct task_struct	*task;
  
-+		irq_set_chip_data(irq, agent);
- 		irq_set_chip_and_handler(irq, &twl4030_sih_irq_chip,
- 					 handle_edge_irq);
--		irq_set_chip_data(irq, agent);
- 		activate_irq(irq);
+ 	/*
+ 	 * Mask and clear all TWL4030 interrupts since initially we do
+@@ -806,27 +767,14 @@ int twl4030_init_irq(int irq_num, unsigned irq_base, unsigned irq_end)
  	}
  
+ 	/* install an irq handler to demultiplex the TWL4030 interrupt */
+-
+-
+-	init_completion(&irq_event);
+-
+-	status = request_irq(irq_num, handle_twl4030_pih, IRQF_DISABLED,
+-				"TWL4030-PIH", &irq_event);
++	status = request_threaded_irq(irq_num, NULL, handle_twl4030_pih,
++			IRQF_DISABLED, "TWL4030-PIH", NULL);
+ 	if (status < 0) {
+ 		pr_err("twl4030: could not claim irq%d: %d\n", irq_num, status);
+ 		goto fail_rqirq;
+ 	}
+ 
+-	task = kthread_run(twl4030_irq_thread, (void *)(long)irq_num,
+-								"twl4030-irq");
+-	if (IS_ERR(task)) {
+-		pr_err("twl4030: could not create irq %d thread!\n", irq_num);
+-		status = PTR_ERR(task);
+-		goto fail_kthread;
+-	}
+ 	return status;
+-fail_kthread:
+-	free_irq(irq_num, &irq_event);
+ fail_rqirq:
+ 	/* clean up twl4030_sih_setup */
+ fail:
 -- 
 1.7.6
 
