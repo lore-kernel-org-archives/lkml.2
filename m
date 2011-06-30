@@ -1,52 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758198Ab1F3FrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 01:47:00 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:23940 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750825Ab1F3Fqy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 01:46:54 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6392"; a="100799418"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Greg KH'" <greg@kroah.com>
-Cc: <balbi@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <ablay@codeaurora.org>,
-        "'open list'" <linux-kernel@vger.kernel.org>
-References: <1309350899-23868-1-git-send-email-tlinder@codeaurora.org> <1309350899-23868-2-git-send-email-tlinder@codeaurora.org> <20110629123826.GQ2760@legolas.emea.dhcp.ti.com> <051801cc365a$73187140$594953c0$@org> <20110629124822.GS2760@legolas.emea.dhcp.ti.com> <055801cc3681$d080ba00$71822e00$@org> <20110629194126.GA6057@legolas.emea.dhcp.ti.com> <05b101cc36e4$9067d8f0$b1378ad0$@org> <20110630052156.GA24087@kroah.com> <05b801cc36e8$4ec52fc0$ec4f8f40$@org>
-In-Reply-To: <05b801cc36e8$4ec52fc0$ec4f8f40$@org>
-Subject: RE: [PATCH v2 1/2] usb: gadget: add max_speed to usb_composite_driver
-Date: Thu, 30 Jun 2011 08:46:50 +0300
-Message-ID: <05b901cc36e9$1db40a40$591c1ec0$@org>
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acw25a8ZE4QSKoWRSjqqXsQExq4+vgAAnT0QAAA19EA=
-Content-Language: he
+	id S1758034Ab1F3FyJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 01:54:09 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36622 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752568Ab1F3FyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 01:54:04 -0400
+Date: Thu, 30 Jun 2011 15:53:54 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: James Morris <jmorris@namei.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        git@vger.kernel.org, Linus <torvalds@linux-foundation.org>,
+        John Johansen <john.johansen@canonical.com>
+Subject: Re: linux-next: manual merge of the security-testing tree with the
+ tree
+Message-Id: <20110630155354.bdd620b5.sfr@canb.auug.org.au>
+In-Reply-To: <alpine.LRH.2.00.1106301518430.13767@tundra.namei.org>
+References: <20110630142910.2fea4257.sfr@canb.auug.org.au>
+	<alpine.LRH.2.00.1106301518430.13767@tundra.namei.org>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__30_Jun_2011_15_53_54_+1000_.BesutqQ6X+nDHuk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> One sec! I just found out that I was running checkpatch.pl from a wrong
-> location. There is a checkpatch warning. I'll send you the fix in a few
-> minutes.
-> Sorry.
-> 
+--Signature=_Thu__30_Jun_2011_15_53_54_+1000_.BesutqQ6X+nDHuk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi James,
 
-Done! Please pick up "[PATCH v2] usb: gadget: Compilation warning fix".
-Sorry for the trouble...
+On Thu, 30 Jun 2011 15:22:33 +1000 (EST) James Morris <jmorris@namei.org> w=
+rote:
+>
+> On Thu, 30 Jun 2011, Stephen Rothwell wrote:
+>=20
+> > I cannot merge commit bcd05ca10420 ("Merge branch 'for-security' of
+> > git://git.kernel.org/pub/scm/linux/kernel/git/jj/apparmor-dev into next=
+")
+> > which is the child of the above two commits.
+>=20
+> Actually, I may have accidentally pulled upstream commits in via the=20
+> above.  I'll rebase my tree to the TOMOYO merge.
 
+It does pull in v3.0-rc5, but that is already in my tree today, so I
+still don't understand why the merge I did gets so messaed up.
 
-Thanks,
-Tanya Brokhman
----
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Thu__30_Jun_2011_15_53_54_+1000_.BesutqQ6X+nDHuk
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJODA9yAAoJEDMEi1NhKgbsdp8IAIFdTkAXEHjo9c3i3IliO2YW
+/gxOik1oUqgIV0osNeMLz9Sx5bDQyoxjiKwHMpZL2kStlcbaW/vwLVQwwNadel1f
+IwQM4KdZ+qm2aKQNgTA0txsLzh9AUwyIRUadhT1vXlQ5PvfsC8FEffEssbfjPYwT
+IuNKwHspVf9bWsvnJiDRxMBGOuO326dkQA20MPyVi3Cnxcep2S5eyI9wVGoGjg35
+qs+oP6VJNGCwxQhJJSyucMOGN71R/nOVbTVvHBG+0PdUXU4phjoo0V7wDXWeZgya
+s2fRfL9sQwVPo4AThw4Aje4aw7F5sCeyAsqr96ab+joh/zTQoIdvsvHccENf1fk=
+=APNQ
+-----END PGP SIGNATURE-----
 
+--Signature=_Thu__30_Jun_2011_15_53_54_+1000_.BesutqQ6X+nDHuk--
