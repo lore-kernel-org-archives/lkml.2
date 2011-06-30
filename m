@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab1F3RHU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 13:07:20 -0400
-Received: from mail-out.m-online.net ([212.18.0.10]:50487 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752010Ab1F3RHP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 13:07:15 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Christoph Hellwig <hch@infradead.org>, Randy Dunlap <rdunlap@xenotime.net>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
-Subject: Re: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
-References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
-	<20110629140630.5aefdda8.rdunlap@xenotime.net>
-	<BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
-	<20110630080119.GA20802@infradead.org>
-	<BANLkTik81kgf=g+QngnaB7gNUF+xCQdSvw@mail.gmail.com>
-X-Yow: Boy, am I glad it's only 1971...
-Date: Thu, 30 Jun 2011 19:07:08 +0200
-In-Reply-To: <BANLkTik81kgf=g+QngnaB7gNUF+xCQdSvw@mail.gmail.com> (Geert
-	Uytterhoeven's message of "Thu, 30 Jun 2011 10:43:47 +0200")
-Message-ID: <m2y60jmeo3.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
+	id S1753206Ab1F3RHr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 13:07:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55440 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752031Ab1F3RHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 13:07:30 -0400
+Message-ID: <4E0CAD47.9020709@ti.com>
+Date: Thu, 30 Jun 2011 18:07:19 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
+        Samuel Oritz <sameo@linux.intel.com>,
+        Lars-Peter Clausen <lars@metafoo.de>,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH 0/8] regmap: Generic I2C and SPI register map library
+References: <20110630055844.GC796@opensource.wolfsonmicro.com>
+In-Reply-To: <20110630055844.GC796@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven <geert@linux-m68k.org> writes:
+On 30/06/11 06:58, Mark Brown wrote:
+> [This revision of the series has some minor updates to the SPI code.]
+> 
+> Many I2C and SPI based devices implement register maps on top of the raw
+> wire interface.  This is generally done in a very standard fashion by
+> devices, resulting in a lot of very similar code in drivers.  For some
+> time now ASoC has factored this code out into the subsystem but that's
+> only useful for audio devices.  The intention with this series is to
+> generalise the concept so that it can be used throughout the kernel.
+> 
+> It's not intended that this be suitable for all devices - some devices
+> have things that are hard to generalise like registers with variable
+> size and paging which are hard to support genericly.  At the minute the
+> code is focused on the common cases.  It is likely that the same code
+> could be used with other buses with similar properties to I2C and SPI.
+> 
+> Currently only physical I/O is handled, the intention is that once this
+> support has been reviewed and merged the generic register cache code
+> that ASoC includes will also be factored out too.  For devices with read
+> heavy workloads (especially those that need a lot of read/modify/write
+> cycles) or which don't support read at all this can provide a useful
+> performance improvement and for sparse register maps there's a lot of
+> benefit in relatively complex cache code.
+> 
+> I'm not entirely happy with the implementation currently but am fairly
+> happy with the external interfaces.
+> 
 
-> On Thu, Jun 30, 2011 at 10:01, Christoph Hellwig <hch@infradead.org> wrote:
->> On Thu, Jun 30, 2011 at 08:59:28AM +0200, Geert Uytterhoeven wrote:
->>> Nope. Also only happens on cris, which has in
->>> arch/cris/include/asm/posix_types.h:
->>>
->>> typedef long            __kernel_ssize_t;
->>>
->>> The "long" should be "int".
->>> But probably it should just include <asm-generic/posix_types.h> instead.
->>
->> Changing a user visible type won't be very nice for those using it in
->> C++ code.
->
-> Are __kernel_* types exported to C++ userspace?
+I'm also happy with the interface and imho the code looks fine for initial integration.  
 
-Currently, no exported kernel header is using __kernel_ssize_t, so it
-may not be too late to change cris.
+Regards
 
-Andreas.
-
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+Liam
