@@ -1,306 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753486Ab1F3XAL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 19:00:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:41090 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751514Ab1F3XAH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 19:00:07 -0400
-Message-Id: <201106302259.p5UMxh5i019162@imap1.linux-foundation.org>
-Subject: mmotm 2011-06-30-15-59 uploaded
-To: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-From: akpm@linux-foundation.org
-Date: Thu, 30 Jun 2011 15:59:43 -0700
+	id S1753872Ab1F3XDz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 19:03:55 -0400
+Received: from lucidpixels.com ([72.73.18.11]:58645 "EHLO lucidpixels.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752755Ab1F3XDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 19:03:53 -0400
+Date: Thu, 30 Jun 2011 19:03:52 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: "Ronciak, John" <john.ronciak@intel.com>
+cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>
+Subject: RE: [E1000-devel] 2.6.39.2: skb_over_panic: kernel BUG at
+ net/core/skbuff.c:127!
+In-Reply-To: <alpine.DEB.2.02.1106272006310.6864@p34.internal.lan>
+Message-ID: <alpine.DEB.2.02.1106301900500.16354@p34.internal.lan>
+References: <alpine.DEB.2.02.1106271742310.6721@p34.internal.lan> <D38E8E86660E514AB505863C19C9287C03A525@ORSMSX101.amr.corp.intel.com> <alpine.DEB.2.02.1106271814200.6721@p34.internal.lan> <D38E8E86660E514AB505863C19C9287C03A585@ORSMSX101.amr.corp.intel.com>
+ <alpine.DEB.2.02.1106271831060.6721@p34.internal.lan> <alpine.DEB.2.02.1106272006310.6864@p34.internal.lan>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The mm-of-the-moment snapshot 2011-06-30-15-59 has been uploaded to
 
-   http://userweb.kernel.org/~akpm/mmotm/
 
-and will soon be available at
-   git://zen-kernel.org/kernel/mmotm.git
-or
-   git://git.cmpxchg.org/linux-mmotm.git
+On Mon, 27 Jun 2011, Justin Piszcz wrote:
 
-It contains the following patches against 3.0-rc5:
+>
+> On Mon, 27 Jun 2011, Justin Piszcz wrote:
+>
+>> 
+>> 
+>> On Mon, 27 Jun 2011, Ronciak, John wrote:
+>> 
+>
+> Hi,
+>
+> Here's another crash: (see the dmesg, its right when powering the disks up)
+> http://home.comcast.net/~jpiszcz/20110627/IMG_2704.JPG
+>
+> In this case, I was mkfs.xfs -f (some disks attached to a sata dock) over
+> an Sil 3132 card, I disconnected the card and re-ran it w/ the on-board
+> SATA controller and the problem no longer occurred (crashed repeatedly
+> everytime with the NIC error), strange.
+>
+> In any case, will let you know if there are any further crashes after
+> removing that PCI-e card.
+>
+> Justin.
+>
+>
 
-origin.patch
-mm-vmscan-correct-check-for-kswapd-sleeping-in-sleeping_prematurely.patch
-mm-vmscan-do-not-apply-pressure-to-slab-if-we-are-not-applying-pressure-to-zone.patch
-mm-vmscan-evaluate-the-watermarks-against-the-correct-classzone.patch
-mm-vmscan-only-read-new_classzone_idx-from-pgdat-when-reclaiming-successfully.patch
-mm-__tlb_remove_page-checks-correct-batch.patch
-memcg-fix-reclaimable-lru-check-in-memcg.patch
-memcg-fix-reclaimable-lru-check-in-memcg-checkpatch-fixes.patch
-memcg-fix-reclaimable-lru-check-in-memcg-fix.patch
-memcg-fix-numa-scan-information-update-to-be-triggered-by-memory-event.patch
-memcg-fix-numa-scan-information-update-to-be-triggered-by-memory-event-fix.patch
-mm-preallocate-page-before-lock_page-at-filemap-cow.patch
-mm-preallocate-page-before-lock_page-at-filemap-cow-fix.patch
-mm-cleanup-descriptions-of-filler-arg.patch
-mm-truncate-functions-are-in-truncatec.patch
-mm-tidy-vmtruncate_range-and-related-functions.patch
-mm-consistent-truncate-and-invalidate-loops.patch
-mm-pincer-in-truncate_inode_pages_range.patch
-tmpfs-no-need-to-use-i_lock.patch
-mm-nommuc-fix-remap_pfn_range.patch
-mm-nommuc-fix-remap_pfn_range-update.patch
-linux-next.patch
-documentation-docbook-media-makefile-unbork.patch
-drivers-staging-makefile-cs5535_gpio-went-away.patch
-i-need-old-gcc.patch
-arch-alpha-kernel-systblss-remove-debug-check.patch
-drivers-misc-pch_phubc-dont-oops-if-dmi_get_system_info-returns-null.patch
-bdi_min_ratio-never-shrinks-ultimately-preventing-valid-setting-of-min_ratio.patch
-cris-fix-a-build-error-in-kernel-forkc.patch
-cris-fix-a-build-error-in-kernel-forkc-checkpatch-fixes.patch
-cris-fix-a-build-error-in-sync_serial_open.patch
-cris-fix-the-prototype-of-sync_serial_ioctl.patch
-cris-add-missing-declaration-of-kgdb_init-and-breakpoint.patch
-hfsplus-add-missing-call-to-bio_put.patch
-drivers-scsi-pmcraid-reject-negative-request-size.patch
-drivers-scsi-iprc-reorder-error-handling-code-to-include-iounmap.patch
-drivers-net-wireless-rtlwifi-rtl8192de-phyc-fix-udelay-usage.patch
-thermal-hide-config_thermal_hwmon.patch
-thermal-split-hwmon-lookup-to-a-separate-function.patch
-thermal-make-thermal_hwmon-implementation-fully-internal.patch
-acpi-remove-nid_inval.patch
-acerhdf-add-support-for-aspire-1410-bios-v13314.patch
-arch-x86-include-asm-delayh-fix-udelay-and-ndelay-for-8-bit-args.patch
-x86-fix-mmap-random-address-range.patch
-leds-new-pcengines-alix-system-driver-enables-leds-via-gpio-interface.patch
-arch-x86-kernel-e820c-eliminate-bubble-sort-from-sanitize_e820_map.patch
-x86-olpc-add-missing-elements-to-device-tree.patch
-x86-olpc-move-cs5536-related-constants-to-cs5535h.patch
-x86-olpc-rename-olpc-xo1-to-olpc-xo1-pm.patch
-x86-olpc-add-xo-1-suspend-resume-support.patch
-x86-olpc-add-xo-1-sci-driver-and-power-button-control.patch
-x86-olpc-ec-sci-wakeup-mask-functionality.patch
-x86-olpc-xo1-sci-add-gpe-handler-and-ebook-switch-functionality.patch
-x86-olpc-xo1-sci-add-lid-switch-functionality.patch
-x86-olpc-xo1-sci-propagate-power-supply-battery-events.patch
-x86-olpc-add-xo-1-rtc-driver.patch
-x86-olpc-add-xo-15-sci-driver.patch
-x86-mtrr-lock-stop-machine-during-mtrr-rendezvous-sequence.patch
-stop_machine-reorganize-stop_cpus-implementation.patch
-stop_machine-implement-stop_machine_from_inactive_cpu.patch
-x86-mtrr-use-stop_machine-apis-for-doing-mtrr-rendezvous.patch
-arch-arm-mach-ux500-mbox-db5500c-world-writable-sysfs-fifo-file.patch
-arm-exec-remove-redundant-set_fsuser_ds.patch
-audit-always-follow-va_copy-with-va_end.patch
-btrfs-dont-dereference-extent_mapping-if-null.patch
-drivers-block-drbd-drbd_nlc-use-bitmap_parse-instead-of-__bitmap_parse.patch
-ppc-exec-remove-redundant-set_fsuser_ds.patch
-fb-fix-potential-deadlock-between-lock_fb_info-and-console_lock.patch
-cyber2000fb-avoid-palette-corruption-at-higher-clocks.patch
-genirq-fix-missing-parenthesises-in-generic-chip.patch
-ia64-exec-remove-redundant-set_fsuser_ds.patch
-microblaze-exec-remove-redundant-set_fsuser_ds.patch
-mips-exec-remove-redundant-addr_limit-assignment.patch
-unicore32-exec-remove-redundant-set_fsuser_ds.patch
-drivers-video-backlight-ld9040c-small-fixes.patch
-backlight-add-ams369fg06-amoled-driver.patch
-i915-add-native-backlight-control.patch
-btusb-patch-add_apple_macbookpro62.patch
-ext4-use-proper-little-endian-bitops.patch
-ocfs2-avoid-unaligned-access-to-dqc_bitmap.patch
-parisc-exec-remove-redundant-set_fsuser_ds.patch
-pci-dmar-update-dmar-units-devices-list-during-hotplug.patch
-drivers-firmware-dmi_scanc-make-dmi_name_in_vendors-more-focused.patch
-pci-enumerate-the-pci-device-only-removed-out-pci-hierarchy-of-os-when-re-scanning-pci.patch
-pci-enumerate-the-pci-device-only-removed-out-pci-hierarchy-of-os-when-re-scanning-pci-fix.patch
-pci-make-the-struct-pci_dev-argument-of-pci_fixup_irqs-const.patch
-s390-exec-remove-redundant-set_fsuser_ds.patch
-scsi-fix-a-header-to-include-linux-typesh.patch
-drivers-scsi-megaraidc-fix-sparse-warnings.patch
-drivers-block-brdc-make-brd_make_request-return-error-code.patch
-block-genhdc-remove-useless-cast-in-diskstats_show.patch
-sparc-exec-remove-redundant-addr_limit-assignment.patch
-drivers-staging-speakup-devsynthc-fix-buffer-size-is-not-provably-correct-error.patch
-drivers-staging-gma500-psb_intel_displayc-fix-build.patch
-drivers-staging-dt3155v4l-dt3155v4lc-needs-slabh.patch
-drivers-staging-solo6x10-corec-needs-slabh.patch
-drivers-staging-solo6x10-p2mc-needs-slabh.patch
-staging-more-missing-slabh-inclusions.patch
-slab-use-numa_no_node.patch
-mm.patch
-mm-extend-memory-hotplug-api-to-allow-memory-hotplug-in-virtual-machines.patch
-mm-extend-memory-hotplug-api-to-allow-memory-hotplug-in-virtual-machines-fix.patch
-xen-balloon-memory-hotplug-support-for-xen-balloon-driver.patch
-mm-swap-token-fix-dead-link.patch
-mm-swap-token-makes-global-variables-to-function-local.patch
-mm-swap-token-add-a-comment-for-priority-aging.patch
-pagewalk-fix-walk_page_range-dont-check-find_vma-result-properly.patch
-pagewalk-dont-look-up-vma-if-walk-hugetlb_entry-is-unused.patch
-pagewalk-add-locking-rule-comments.patch
-pagewalk-add-locking-rule-comments-fix.patch
-pagewalk-fix-code-comment-for-thp.patch
-mm-remove-the-leftovers-of-noswapaccount.patch
-mm-page_cgroupc-simplify-code-by-using-section_align_up-and-section_align_down-macros.patch
-mm-thp-minor-lock-simplification-in-__khugepaged_exit.patch
-mm-hugetlb-fix-coding-style-issues.patch
-mm-memoryc-remove-zap_block_size.patch
-oom-remove-references-to-old-badness-function.patch
-tmpfs-clone-shmem_file_splice_read.patch
-tmpfs-refine-shmem_file_splice_read.patch
-tmpfs-pass-gfp-to-shmem_getpage_gfp.patch
-tmpfs-remove_shmem_readpage.patch
-tmpfs-simplify-prealloc_page.patch
-tmpfs-simplify-filepage-swappage.patch
-tmpfs-simplify-unuse-and-writepage.patch
-radix_tree-exceptional-entries-and-indices.patch
-mm-let-swap-use-exceptional-entries.patch
-tmpfs-demolish-old-swap-vector-support.patch
-tmpfs-miscellaneous-trivial-cleanups.patch
-tmpfs-copy-truncate_inode_pages_range.patch
-tmpfs-convert-shmem_truncate_range-to-radix-swap.patch
-tmpfs-convert-shmem_unuse_inode-to-radix-swap.patch
-tmpfs-convert-shmem_getpage_gfp-to-radix-swap.patch
-tmpfs-convert-mem_cgroup-shmem-to-radix-swap.patch
-tmpfs-convert-shmem_writepage-and-enable-swap.patch
-tmpfs-use-kmemdup-for-short-symlinks.patch
-mm-a-few-small-updates-for-radix-swap.patch
-mm-a-few-small-updates-for-radix-swap-fix.patch
-tmpfs-expand-help-to-explain-value-of-tmpfs_posix_acl.patch
-tmpfs-expand-help-to-explain-value-of-tmpfs_posix_acl-v3.patch
-frv-hook-up-gpiolib-support.patch
-frv-exec-remove-redundant-set_fsuser_ds.patch
-frv-duplicate-output_buffer-of-e03.patch
-frv-duplicate-output_buffer-of-e03-checkpatch-fixes.patch
-h8300-exec-remove-redundant-set_fsuser_ds.patch
-hpet-factor-timer-allocate-from-open.patch
-alpha-exec-remove-redundant-set_fsuser_ds.patch
-m32r-exec-remove-redundant-set_fsuser_ds.patch
-m68k-exec-remove-redundant-set_fsuser_ds.patch
-mn10300-exec-remove-redundant-set_fsuser_ds.patch
-intel_idle-fix-api-misuse.patch
-intel_idle-disable-auto_demotion-for-hotplugged-cpus.patch
-cris-fix-some-build-warnings-in-pinmuxc.patch
-cris-exec-remove-redundant-set_fsuser_ds.patch
-um-clean-up-vm-flagsh.patch
-um-exec-remove-redundant-set_fsuser_ds.patch
-um-clean-up-delay-functions-v2.patch
-um-fix-_fortify_source=2-support-for-kernel-modules.patch
-um-add-netpoll-support.patch
-um-reinstate-kernel-version-in-generated-config.patch
-drivers-use-kzalloc-kcalloc-instead-of-kmallocmemset-where-possible.patch
-asm-generic-systemh-drop-useless-__kernel__.patch
-kprobes-silence-debug_strict_user_copy_checks=y-warning.patch
-x86-implement-strict-user-copy-checks-for-x86_64.patch
-consolidate-config_debug_strict_user_copy_checks.patch
-devres-fix-possible-use-after-free.patch
-drivers-misc-pch_phubc-fix-register-miss-setting-issue.patch
-geode-reflect-mfgpt-dependency-on-mfd.patch
-drivers-misc-add-support-the-fsa9480-usb-switch.patch
-drivers-misc-add-support-the-fsa9480-usb-switch-fix.patch
-notifiers-cpu-move-cpu-notifiers-into-cpuh.patch
-notifiers-net-move-netdevice-notifiers-into-netdeviceh.patch
-notifiers-sys-move-reboot-notifiers-into-rebooth.patch
-notifiers-pm-move-pm-notifiers-into-suspendh.patch
-notifiers-pm-move-pm-notifiers-into-suspendh-update.patch
-notifiers-vt-move-vt-notifiers-into-vth.patch
-kernel-configsc-include-module_-when-config_ikconfig_proc=n.patch
-fcntlf_setfl-allow-setting-of-o_sync.patch
-get_maintainerspl-improve-mailmap-parsing.patch
-maintainers-update-high-resolution-timers-patterns.patch
-maintainers-remove-section-usb-se401-driver.patch
-leds-lp5521-provide-section-tagging.patch
-drivers-leds-leds-sunfirec-fix-sunfire_led_generic_probe-error-handling.patch
-leds-lm3530-calibrate-als-input-voltage.patch
-mach-ux500-add-lm3530-als-platform-data-for-u5500.patch
-leds-route-kbd-leds-through-the-generic-leds-layer.patch
-lib-lcmc-quiet-sparse-noise.patch
-checkpatch-suggest-using-min_t-or-max_t-v2.patch
-checkpatch-add-__rcu-as-a-sparse-modifier.patch
-checkpatch-validate-signature-styles-and-to-and-cc-lines.patch
-checkpatch-add-a-prefer-__aligned-check.patch
-checkpatchpl-add-ability-to-ignore-various-messages.patch
-misc-eeprom-add-driver-for-microwire-93xx46-eeproms.patch
-misc-eeprom-add-eeprom-access-driver-for-digsy_mtc-board.patch
-lib-hexdumpc-make-hex2bin-return-the-updated-src-address.patch
-fs-binfmt_miscc-use-kernels-hex_to_bin-method.patch
-fs-binfmt_miscc-use-kernels-hex_to_bin-method-fix.patch
-fs-binfmt_miscc-use-kernels-hex_to_bin-method-fix-fix.patch
-init-skip-calibration-delay-if-previously-done.patch
-init-skip-calibration-delay-if-previously-done-fix.patch
-init-skip-calibration-delay-if-previously-done-fix-fix.patch
-init-skip-calibration-delay-if-previously-done-fix-fix-fix.patch
-init-skip-calibration-delay-if-previously-done-4.patch
-drivers-rtc-rtc-mpc5121c-add-support-for-rtc-on-mpc5200.patch
-drivers-rtc-rtc-s3cc-support-clock-gating.patch
-drivers-rtc-add-support-for-qualcomm-pmic8xxx-rtc.patch
-drivers-rtc-add-support-for-qualcomm-pmic8xxx-rtc-fix.patch
-drivers-rtc-add-support-for-qualcomm-pmic8xxx-rtc-do-not-use-mfd_get_data.patch
-reiserfs-use-proper-little-endian-bitops.patch
-reiserfs-use-hweight_long.patch
-memcg-do-not-expose-uninitialized-mem_cgroup_per_node-to-world.patch
-cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node.patch
-cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-fix-2.patch
-cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-cpusets-initialize-spread-rotor-lazily.patch
-cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node-cpusets-initialize-spread-rotor-lazily-fix.patch
-ptrace-unify-show_regs-prototype.patch
-ptrace-unify-show_regs-prototype-fix.patch
-coredump-use-task-comm-instead-of-unknown.patch
-coredump-escape-in-hostname-and-comm.patch
-do_coredump-fix-the-ispipe-error-check.patch
-h8300-m68k-xtensa-__fd_isset-should-return-0-1.patch
-proc-pid-fdinfo-add-cloexec-information.patch
-proc-pid-fdinfo-add-cloexec-information-fix.patch
-kernel-forkc-fix-a-few-coding-style-issues.patch
-fs-execc-use-build_bug_on-for-vm_stack_flags-vm_stack_incomplete_setup.patch
-cpumask-convert-for_each_cpumask-with-for_each_cpu.patch
-cpumask-alloc_cpumask_var-use-numa_no_node.patch
-cpumask-add-cpumask_var_t-documentation.patch
-ipc-mqueue-refactor-failure-handling.patch
-ipc-mqueue-fix-mq_open-return-value.patch
-ipc-introduce-shm_rmid_forced-sysctl.patch
-ipc-introduce-shm_rmid_forced-sysctl-fix.patch
-ipc-introduce-shm_rmid_forced-sysctl-fix-2.patch
-ipc-introduce-shm_rmid_forced-sysctl-cleanup.patch
-ipc-introduce-shm_rmid_forced-sysctl-comments.patch
-ipc-introduce-shm_rmid_forced-sysctl-comments-fix.patch
-ipc-introduce-shm_rmid_forced-sysctl-testing.patch
-sysctl-add-proc_dointvec_bool-handler.patch
-sysctl-use-proc_dointvec_bool-where-appropriate.patch
-sysctl-add-proc_dointvec_unsigned-handler.patch
-sysctl-add-proc_dointvec_unsigned-handler-update.patch
-sysctl-use-proc_dointvec_unsigned-where-appropriate.patch
-gcov-disable-constructors-for-uml.patch
-include-linux-dma-mappingh-remove-dma_xxbit_mask-macros.patch
-scatterlist-new-helper-functions.patch
-scatterlist-new-helper-functions-update.patch
-scatterlist-new-helper-functions-update-fix.patch
-memstick-add-support-for-legacy-memorysticks.patch
-memstick-add-support-for-legacy-memorysticks-update-2.patch
-kexec-remove-kmsg_dump_kexec.patch
-ramoops-use-module-parameters-instead-of-platform-data-if-not-available.patch
-ramoops-use-module-parameters-instead-of-platform-data-if-not-available-checkpatch-fixes.patch
-ramoops-add-new-line-to-each-print.patch
-asm-generic-add-another-generic-ext2-atomic-bitops.patch
-atomic-use-linux-atomich.patch
-atomic-move-atomic_add_unless-to-generic-code.patch
-atomic-cleanup-asm-generic-atomich-inclusion.patch
-atomic-update-comments-in-atomich.patch
-asm-generic-atomich-simplify-inc-dec-test-helpers.patch
-asm-generic-atomich-fix-type-used-in-atomic_clear_mask.patch
-asm-generic-atomich-add-atomic_set_mask-helper.patch
-asm-generic-atomich-allow-smp-peeps-to-leverage-this.patch
-make-sure-nobodys-leaking-resources.patch
-journal_add_journal_head-debug.patch
-releasing-resources-with-children.patch
-make-frame_pointer-default=y.patch
-mutex-subsystem-synchro-test-module.patch
-mutex-subsystem-synchro-test-module-fix.patch
-slab-leaks3-default-y.patch
-put_bh-debug.patch
-add-debugging-aid-for-memory-initialisation-problems.patch
-workaround-for-a-pci-restoring-bug.patch
-prio_tree-debugging-patch.patch
-single_open-seq_release-leak-diagnostics.patch
-add-a-refcount-check-in-dput.patch
-memblock-add-input-size-checking-to-memblock_find_region.patch
-memblock-add-input-size-checking-to-memblock_find_region-fix.patch
+Hi,
+
+Per:
+http://www.mail-archive.com/e1000-devel@lists.sourceforge.net/msg04232.html
+
+I am using the drivers on e1000.sf.net for:
+e1000e
+igb
+igbe
+
+version:        1.3.17-NAPI
+srcversion:     BA556C5C800B0D67E5F8B84
+version:        3.0.22
+srcversion:     45B8078075068728A5A5573
+version:        3.3.9-NAPI
+srcversion:     0734B0E06E21B50A92ADDFF
+
+No crashes when I run mkfs.xfs (w/the eSATA card back in).
+
+Will monitor throughout to see if it recurs.
+When will the current -stable versions go into mainline?
+
+Also, is there a kernel option to 'pause' or take a screenshot of a kernel 
+console crash/dump/stack trace (besides kdump) and not reboot the machine 
+when it crashes?
+
+I do not have any option to reboot on panic, but sometimes it still does 
+that.
+
+Thanks!
+
+Justin.
