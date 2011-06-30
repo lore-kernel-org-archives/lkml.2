@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753962Ab1F3WFS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 18:05:18 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:54133 "EHLO
+	id S1754057Ab1F3WFZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 18:05:25 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:58397 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753470Ab1F3WET (ORCPT
+	with ESMTP id S1753491Ab1F3WET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Jun 2011 18:04:19 -0400
 From: Ondrej Zary <linux@rainbow-software.org>
 To: "Greg Kroah-Hartman" <greg@kroah.com>
 Cc: Marek Belisko <marek.belisko@gmail.com>,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 26/28] staging: ft1000-pcmcia: CodingStyle fixes in ft1000.h
-Date: Fri,  1 Jul 2011 00:03:55 +0200
-Message-Id: <1309471437-12633-27-git-send-email-linux@rainbow-software.org>
+Subject: [PATCH 28/28] staging: ft1000-pcmcia: remove support for v5 firmware
+Date: Fri,  1 Jul 2011 00:03:57 +0200
+Message-Id: <1309471437-12633-29-git-send-email-linux@rainbow-software.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
 References: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
@@ -21,678 +21,520 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Major CodingStyle fixes in ft1000.h
+Remove support for v5 firmware images as all known firmware images are v6.
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
- drivers/staging/ft1000/ft1000-pcmcia/ft1000.h |  621 ++++++++++++-------------
- 1 files changed, 297 insertions(+), 324 deletions(-)
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c |  422 ++++++--------------
+ 1 files changed, 129 insertions(+), 293 deletions(-)
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-index f4c8735..e1aa528 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000.h
-@@ -1,281 +1,252 @@
--//---------------------------------------------------------------------------
--// FT1000 driver for Flarion Flash OFDM NIC Device
--//
--// Copyright (C) 2002 Flarion Technologies, All rights reserved.
--//
--// This program is free software; you can redistribute it and/or modify it
--// under the terms of the GNU General Public License as published by the Free
--// Software Foundation; either version 2 of the License, or (at your option) any
--// later version. This program is distributed in the hope that it will be useful,
--// but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
--// or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
--// more details. You should have received a copy of the GNU General Public
--// License along with this program; if not, write to the
--// Free Software Foundation, Inc., 59 Temple Place -
--// Suite 330, Boston, MA 02111-1307, USA.
--//---------------------------------------------------------------------------
--//
--// File:         ft1000.h
--//
--// Description:    Common structures and defines
--//
--// History:
--// 8/29/02    Whc                Ported to Linux.
--// 7/19/04    Whc                Drop packet and cmd msg with pseudo header
--//                               checksum
--// 10/27/04   Whc                Added dynamic downloading of test image.
--// 01/11/04   Whc                Added support for Magnemite ASIC
--//
--//---------------------------------------------------------------------------
-+/*---------------------------------------------------------------------------
-+   FT1000 driver for Flarion Flash OFDM NIC Device
-+
-+   Copyright (C) 2002 Flarion Technologies, All rights reserved.
-+
-+   This program is free software; you can redistribute it and/or modify it
-+   under the terms of the GNU General Public License as published by the Free
-+   Software Foundation; either version 2 of the License, or (at your option) any
-+   later version. This program is distributed in the hope that it will be useful,
-+   but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-+   or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+   more details. You should have received a copy of the GNU General Public
-+   License along with this program; if not, write to the
-+   Free Software Foundation, Inc., 59 Temple Place -
-+   Suite 330, Boston, MA 02111-1307, USA.
-+---------------------------------------------------------------------------
-+   Description:    Common structures and defines
-+---------------------------------------------------------------------------*/
- #ifndef _FT1000H_
- #define _FT1000H_
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
+index c8b73c6..c956857 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c
+@@ -94,18 +94,6 @@ void put_request_value(struct net_device *dev, long lvalue);
+ u16 hdr_checksum(struct pseudo_hdr *pHdr);
  
--
--#define FT1000_DRV_VER       0x01010300
--
--#define DSPVERSZ                4
--#define HWSERNUMSZ              16
--#define SKUSZ                   20
--#define EUISZ                   8
--#define MODESZ                  2
--#define CALVERSZ                2
--#define CALDATESZ               6
--
--// Pseudo Header structure
--struct pseudo_hdr
--{
--   unsigned short    length;        // length of msg body
--   unsigned char     source;        // hardware source id
--                                    //     Host = 0x10
--                                    //     Dsp  = 0x20
--   unsigned char     destination;   // hardware destination id (refer to source)
--   unsigned char     portdest;      // software destination port id
--                                    //    Host = 0x00
--                                    //    Applicaton Broadcast = 0x10
--                                    //    Network Stack = 0x20
--                                    //    Dsp OAM = 0x80
--                                    //    Dsp Airlink = 0x90
--                                    //    Dsp Loader = 0xa0
--                                    //    Dsp MIP = 0xb0
--   unsigned char     portsrc;       // software source port id (refer to portdest)
--   unsigned short    sh_str_id;     // not used
--   unsigned char     control;       // not used
--   unsigned char     rsvd1;
--   unsigned char     seq_num;       // message sequence number
--   unsigned char     rsvd2;
--   unsigned short    qos_class;     // not used
--   unsigned short    checksum;      // pseudo header checksum
+ struct dsp_file_hdr {
+-	u32  build_date;
+-	u32  dsp_coff_date;
+-	u32  loader_code_address;
+-	u32  loader_code_size;
+-	u32  loader_code_end;
+-	u32  dsp_code_address;
+-	u32  dsp_code_size;
+-	u32  dsp_code_end;
+-	u32  reserved[8];
 -} __attribute__ ((packed));
 -
--#define ELECTRABUZZ_ID       0          // ASIC ID for Electrabuzz
--#define MAGNEMITE_ID         0x1a01     // ASIC ID for Magnemite
--
--// MEMORY MAP common to both ELECTRABUZZ and MAGNEMITE
--#define	FT1000_REG_DPRAM_ADDR	0x000E	// DPADR - Dual Port Ram Indirect Address Register
--#define	FT1000_REG_SUP_CTRL		0x0020	// HCTR - Host Control Register
--#define	FT1000_REG_SUP_STAT		0x0022	// HSTAT - Host Status Register
--#define	FT1000_REG_RESET		0x0024	// HCTR - Host Control Register
--#define	FT1000_REG_SUP_ISR		0x0026	// HISR - Host Interrupt Status Register
--#define	FT1000_REG_SUP_IMASK	0x0028	// HIMASK - Host Interrupt Mask
--#define	FT1000_REG_DOORBELL		0x002a	// DBELL - Door Bell Register
--#define FT1000_REG_ASIC_ID      0x002e  // ASICID - ASIC Identification Number
--                                        // (Electrabuzz=0 Magnemite=0x1A01)
--
--// MEMORY MAP FOR ELECTRABUZZ ASIC
--
--#define FT1000_REG_UFIFO_STAT	0x0000	// UFSR - Uplink FIFO status register
--#define FT1000_REG_UFIFO_BEG	0x0002	// UFBR	- Uplink FIFO beginning register
--#define	FT1000_REG_UFIFO_MID	0x0004	// UFMR	- Uplink FIFO middle register
--#define	FT1000_REG_UFIFO_END	0x0006	// UFER	- Uplink FIFO end register
--#define	FT1000_REG_DFIFO_STAT	0x0008	// DFSR - Downlink FIFO status register
--#define	FT1000_REG_DFIFO		0x000A	// DFR - Downlink FIFO Register
--#define	FT1000_REG_DPRAM_DATA	0x000C	// DPRAM - Dual Port Indirect Data Register
--#define	FT1000_REG_WATERMARK	0x0010	// WMARK - Watermark Register
--
--// MEMORY MAP FOR MAGNEMITE
--#define FT1000_REG_MAG_UFDR     0x0000  // UFDR - Uplink FIFO Data Register (32-bits)
--#define FT1000_REG_MAG_UFDRL    0x0000  // UFDRL - Uplink FIFO Data Register low-word (16-bits)
--#define FT1000_REG_MAG_UFDRH    0x0002  // UFDRH - Uplink FIFO Data Register high-word (16-bits)
--#define FT1000_REG_MAG_UFER     0x0004  // UFER - Uplink FIFO End Register
--#define FT1000_REG_MAG_UFSR     0x0006  // UFSR - Uplink FIFO Status Register
--#define FT1000_REG_MAG_DFR      0x0008  // DFR - Downlink FIFO Register (32-bits)
--#define FT1000_REG_MAG_DFRL     0x0008  // DFRL - Downlink FIFO Register low-word (16-bits)
--#define FT1000_REG_MAG_DFRH     0x000a  // DFRH - Downlink FIFO Register high-word (16-bits)
--#define FT1000_REG_MAG_DFSR     0x000c  // DFSR - Downlink FIFO Status Register
--#define FT1000_REG_MAG_DPDATA   0x0010  // DPDATA - Dual Port RAM Indirect Data Register (32-bits)
--#define FT1000_REG_MAG_DPDATAL  0x0010  // DPDATAL - Dual Port RAM Indirect Data Register low-word (16-bits)
--#define FT1000_REG_MAG_DPDATAH  0x0012  // DPDATAH - Dual Port RAM Indirect Data Register high-word (16-bits)
--#define	FT1000_REG_MAG_WATERMARK 0x002c	// WMARK - Watermark Register
--
--// Reserved Dual Port RAM offsets for Electrabuzz
--#define FT1000_DPRAM_TX_BASE	0x0002	// Host to PC Card Messaging Area
--#define FT1000_DPRAM_RX_BASE	0x0800	// PC Card to Host Messaging Area
--#define FT1000_FIFO_LEN         0x7FC   // total length for DSP FIFO tracking
--#define FT1000_HI_HO            0x7FE   // heartbeat with HI/HO
--#define FT1000_DSP_STATUS       0xFFE   // dsp status - non-zero is a request to reset dsp
--#define FT1000_DSP_LED          0xFFA   // dsp led status for PAD device
--#define FT1000_DSP_CON_STATE    0xFF8   // DSP Connection Status Info
--#define FT1000_DPRAM_FEFE       0x002   // location for dsp ready indicator
--#define FT1000_DSP_TIMER0       0x1FF0  // Timer Field from Basestation
--#define FT1000_DSP_TIMER1       0x1FF2  // Timer Field from Basestation
--#define FT1000_DSP_TIMER2       0x1FF4  // Timer Field from Basestation
--#define FT1000_DSP_TIMER3       0x1FF6  // Timer Field from Basestation
--
--// Reserved Dual Port RAM offsets for Magnemite
--#define FT1000_DPRAM_MAG_TX_BASE		 0x0000	 //  Host to PC Card Messaging Area
--#define FT1000_DPRAM_MAG_RX_BASE		 0x0200	 //  PC Card to Host Messaging Area
--#define FT1000_MAG_FIFO_LEN              0x1FF   // total length for DSP FIFO tracking
--#define FT1000_MAG_FIFO_LEN_INDX         0x1     // low-word index
--#define FT1000_MAG_HI_HO                 0x1FF   // heartbeat with HI/HO
--#define FT1000_MAG_HI_HO_INDX            0x0     // high-word index
--#define FT1000_MAG_DSP_LED               0x3FE   // dsp led status for PAD device
--#define FT1000_MAG_DSP_LED_INDX          0x0     // dsp led status for PAD device
--
--#define FT1000_MAG_DSP_CON_STATE         0x3FE   // DSP Connection Status Info
--#define FT1000_MAG_DSP_CON_STATE_INDX    0x1     // DSP Connection Status Info
--
--#define FT1000_MAG_DPRAM_FEFE            0x000   // location for dsp ready indicator
--#define FT1000_MAG_DPRAM_FEFE_INDX       0x0     // location for dsp ready indicator
--
--#define FT1000_MAG_DSP_TIMER0            0x3FC   // Timer Field from Basestation
--#define FT1000_MAG_DSP_TIMER0_INDX       0x1
--
--#define FT1000_MAG_DSP_TIMER1            0x3FC   // Timer Field from Basestation
--#define FT1000_MAG_DSP_TIMER1_INDX       0x0
--
--#define FT1000_MAG_DSP_TIMER2            0x3FD   // Timer Field from Basestation
--#define FT1000_MAG_DSP_TIMER2_INDX       0x1
--
--#define FT1000_MAG_DSP_TIMER3            0x3FD   // Timer Field from Basestation
--#define FT1000_MAG_DSP_TIMER3_INDX       0x0
--
--#define FT1000_MAG_TOTAL_LEN             0x200
--#define FT1000_MAG_TOTAL_LEN_INDX        0x1
--
--#define FT1000_MAG_PH_LEN                0x200
--#define FT1000_MAG_PH_LEN_INDX           0x0
--
--#define FT1000_MAG_PORT_ID               0x201
--#define FT1000_MAG_PORT_ID_INDX          0x0
--
--#define HOST_INTF_LE                     0x0     // Host interface little endian mode
--#define HOST_INTF_BE                     0x1     // Host interface big endian mode
--
--// PC Card to Host Doorbell assignments
--#define FT1000_DB_DPRAM_RX		0x0001	// this value indicates that DSP has
--                                        //      data for host in DPRAM
--#define FT1000_ASIC_RESET_REQ   0x0004  // DSP requesting host to reset the ASIC
--#define FT1000_DSP_ASIC_RESET   0x0008  // DSP indicating host that it will reset the ASIC
--#define FT1000_DB_COND_RESET    0x0010  // DSP request for a card reset.
--
--// Host to PC Card Doorbell assignments
--#define FT1000_DB_DPRAM_TX		0x0100	// this value indicates that host has
--                                        //      data for DSP in DPRAM.
--#define FT1000_ASIC_RESET_DSP   0x0400  // Responds to FT1000_ASIC_RESET_REQ
--#define FT1000_DB_HB            0x1000  // Indicates that supervisor
--                                        //      has a heartbeat message for DSP.
--
--#define FT1000_DPRAM_BASE		0x0000	// Dual Port RAM starting offset
--
--#define hi                      0x6869  // PC Card heartbeat values
--#define ho                      0x686f  // PC Card heartbeat values
--
--// Magnemite specific defines
--#define hi_mag                  0x6968  // Byte swap hi to avoid additional system call
--#define ho_mag                  0x6f68  // Byte swap ho to avoid additional system call
--
--//
--// Bit field definitions for Host Interrupt Status Register
--//
--// Indicate the cause of an interrupt.
--//
--#define ISR_EMPTY				0x00	  // no bits set
--#define ISR_DOORBELL_ACK		0x01	  // Doorbell acknowledge from DSP
--#define ISR_DOORBELL_PEND		0x02	  // Doorbell pending from DSP
--#define ISR_RCV					0x04	  // Packet available in Downlink FIFO
--#define ISR_WATERMARK			0x08	  // Watermark requirements satisfied
--
--// Bit field definition for Host Interrupt Mask
--#define ISR_MASK_NONE			0x0000	  // no bits set
--#define ISR_MASK_DOORBELL_ACK	0x0001	  // Doorbell acknowledge mask
--#define ISR_MASK_DOORBELL_PEND	0x0002	  // Doorbell pending mask
--#define ISR_MASK_RCV			0x0004	  // Downlink Packet available mask
--#define ISR_MASK_WATERMARK		0x0008	  // Watermark interrupt mask
--#define ISR_MASK_ALL			0xffff    // Mask all interrupts
--
--// Bit field definition for Host Control Register
--#define DSP_RESET_BIT           0x0001    // Bit field to control dsp reset state
--                                          // (0 = out of reset 1 = reset)
--#define ASIC_RESET_BIT          0x0002    // Bit field to control ASIC reset state
--                                          // (0 = out of reset 1 = reset)
--
--// Default interrupt mask (Enable Doorbell pending and Packet available interrupts)
--#define ISR_DEFAULT_MASK		0x7ff9
--
--// Application specific IDs
--#define DSPID                   0x20
--#define HOSTID                  0x10
--#define DSPAIRID                0x90
--#define DRIVERID                0x00
--#define NETWORKID               0x20
--
--// Size of DPRAM Message
--#define MAX_CMD_SQSIZE          1780
--
--#define ENET_MAX_SIZE           1514
--#define ENET_HEADER_SIZE        14
--
--#define SLOWQ_TYPE              0
--#define FASTQ_TYPE              1
--
--#define MAX_DSP_SESS_REC        1024
--
--#define DSP_QID_OFFSET          4
--#define PSEUDOSZ                16
--#define PSEUDOSZWRD             8
--
--// Maximum number of occurrence of pseudo header errors before resetting PC Card.
--#define MAX_PH_ERR              300
--
--// Driver message types
--#define MEDIA_STATE             0x0010
--#define TIME_UPDATE             0x0020
--#define DSP_PROVISION           0x0030
--#define DSP_INIT_MSG            0x0050
--#define DSP_HIBERNATE           0x0060
--
--#define DSP_STORE_INFO          0x0070
--#define DSP_GET_INFO            0x0071
--#define GET_DRV_ERR_RPT_MSG     0x0073
--#define RSP_DRV_ERR_RPT_MSG     0x0074
--
--// Driver Error Messages for DSP
--#define DSP_HB_INFO             0x7ef0
--#define DSP_FIFO_INFO           0x7ef1
--#define DSP_CONDRESET_INFO      0x7ef2
--#define DSP_CMDLEN_INFO         0x7ef3
--#define DSP_CMDPHCKSUM_INFO     0x7ef4
--#define DSP_PKTPHCKSUM_INFO     0x7ef5
--#define DSP_PKTLEN_INFO         0x7ef6
--#define DSP_USER_RESET          0x7ef7
--#define FIFO_FLUSH_MAXLIMIT     0x7ef8
--#define FIFO_FLUSH_BADCNT       0x7ef9
--#define FIFO_ZERO_LEN           0x7efa
--
--#define HOST_QID_OFFSET         5
--#define QTYPE_OFFSET            13
--
--#define  SUCCESS                0x00
--#define  FAILURE                0x01
--
--#define MAXIMUM_ASIC_HB_CNT      15
-+#define FT1000_DRV_VER 0x01010300
-+
-+#define DSPVERSZ	4
-+#define HWSERNUMSZ	16
-+#define SKUSZ		20
-+#define EUISZ		8
-+#define MODESZ		2
-+#define CALVERSZ	2
-+#define CALDATESZ	6
-+
-+/* Pseudo Header structure */
-+struct pseudo_hdr {
-+	unsigned short	length;		/* length of msg body */
-+	unsigned char	source;		/* hardware source id */
-+					/*    Host = 0x10 */
-+					/*    Dsp  = 0x20 */
-+	unsigned char	destination;	/* hardware destination id (refer to source) */
-+	unsigned char	portdest;	/* software destination port id */
-+					/*    Host = 0x00 */
-+					/*    Applicaton Broadcast = 0x10 */
-+					/*    Network Stack = 0x20 */
-+					/*    Dsp OAM = 0x80 */
-+					/*    Dsp Airlink = 0x90 */
-+					/*    Dsp Loader = 0xa0 */
-+					/*    Dsp MIP = 0xb0 */
-+	unsigned char	portsrc;	/* software source port id (refer to portdest) */
-+	unsigned short	sh_str_id;	/* not used */
-+	unsigned char	control;	/* not used */
-+	unsigned char	rsvd1;
-+	unsigned char	seq_num;	/* message sequence number */
-+	unsigned char	rsvd2;
-+	unsigned short	qos_class;	/* not used */
-+	unsigned short	checksum;	/* pseudo header checksum */
-+} __packed;
-+
-+#define ELECTRABUZZ_ID	0	/* ASIC ID for Electrabuzz */
-+#define MAGNEMITE_ID	0x1a01	/* ASIC ID for Magnemite */
-+
-+/* MEMORY MAP common to both ELECTRABUZZ and MAGNEMITE */
-+#define	FT1000_REG_DPRAM_ADDR	0x000E	/* DPADR - Dual Port Ram Indirect Address Register */
-+#define	FT1000_REG_SUP_CTRL	0x0020	/* HCTR - Host Control Register */
-+#define	FT1000_REG_SUP_STAT	0x0022	/* HSTAT - Host Status Register */
-+#define	FT1000_REG_RESET	0x0024	/* HCTR - Host Control Register */
-+#define	FT1000_REG_SUP_ISR	0x0026	/* HISR - Host Interrupt Status Register */
-+#define	FT1000_REG_SUP_IMASK	0x0028	/* HIMASK - Host Interrupt Mask */
-+#define	FT1000_REG_DOORBELL	0x002a	/* DBELL - Door Bell Register */
-+#define FT1000_REG_ASIC_ID	0x002e	/* ASICID - ASIC Identification Number */
-+
-+/* MEMORY MAP FOR ELECTRABUZZ ASIC */
-+#define FT1000_REG_UFIFO_STAT	0x0000	/* UFSR - Uplink FIFO status register */
-+#define FT1000_REG_UFIFO_BEG	0x0002	/* UFBR	- Uplink FIFO beginning register */
-+#define	FT1000_REG_UFIFO_MID	0x0004	/* UFMR	- Uplink FIFO middle register */
-+#define	FT1000_REG_UFIFO_END	0x0006	/* UFER	- Uplink FIFO end register */
-+#define	FT1000_REG_DFIFO_STAT	0x0008	/* DFSR - Downlink FIFO status register */
-+#define	FT1000_REG_DFIFO	0x000A	/* DFR - Downlink FIFO Register */
-+#define	FT1000_REG_DPRAM_DATA	0x000C	/* DPRAM - Dual Port Indirect Data Register */
-+#define	FT1000_REG_WATERMARK	0x0010	/* WMARK - Watermark Register */
-+
-+/* MEMORY MAP FOR MAGNEMITE */
-+#define FT1000_REG_MAG_UFDR	0x0000	/* UFDR - Uplink FIFO Data Register (32-bits) */
-+#define FT1000_REG_MAG_UFDRL	0x0000	/* UFDRL - Uplink FIFO Data Register low-word (16-bits) */
-+#define FT1000_REG_MAG_UFDRH	0x0002	/* UFDRH - Uplink FIFO Data Register high-word (16-bits) */
-+#define FT1000_REG_MAG_UFER	0x0004	/* UFER - Uplink FIFO End Register */
-+#define FT1000_REG_MAG_UFSR	0x0006	/* UFSR - Uplink FIFO Status Register */
-+#define FT1000_REG_MAG_DFR	0x0008	/* DFR - Downlink FIFO Register (32-bits) */
-+#define FT1000_REG_MAG_DFRL	0x0008	/* DFRL - Downlink FIFO Register low-word (16-bits) */
-+#define FT1000_REG_MAG_DFRH	0x000a	/* DFRH - Downlink FIFO Register high-word (16-bits) */
-+#define FT1000_REG_MAG_DFSR	0x000c	/* DFSR - Downlink FIFO Status Register */
-+#define FT1000_REG_MAG_DPDATA	0x0010	/* DPDATA - Dual Port RAM Indirect Data Register (32-bits) */
-+#define FT1000_REG_MAG_DPDATAL	0x0010	/* DPDATAL - Dual Port RAM Indirect Data Register low-word (16-bits) */
-+#define FT1000_REG_MAG_DPDATAH	0x0012	/* DPDATAH - Dual Port RAM Indirect Data Register high-word (16-bits) */
-+#define	FT1000_REG_MAG_WATERMARK 0x002c	/* WMARK - Watermark Register */
-+
-+/* Reserved Dual Port RAM offsets for Electrabuzz */
-+#define FT1000_DPRAM_TX_BASE	0x0002	/* Host to PC Card Messaging Area */
-+#define FT1000_DPRAM_RX_BASE	0x0800	/* PC Card to Host Messaging Area */
-+#define FT1000_FIFO_LEN		0x07FC	/* total length for DSP FIFO tracking */
-+#define FT1000_HI_HO		0x07FE	/* heartbeat with HI/HO */
-+#define FT1000_DSP_STATUS	0x0FFE	/* dsp status - non-zero is a request to reset dsp */
-+#define FT1000_DSP_LED		0x0FFA	/* dsp led status for PAD device */
-+#define FT1000_DSP_CON_STATE	0x0FF8	/* DSP Connection Status Info */
-+#define FT1000_DPRAM_FEFE	0x0002	/* location for dsp ready indicator */
-+#define FT1000_DSP_TIMER0	0x1FF0	/* Timer Field from Basestation */
-+#define FT1000_DSP_TIMER1	0x1FF2	/* Timer Field from Basestation */
-+#define FT1000_DSP_TIMER2	0x1FF4	/* Timer Field from Basestation */
-+#define FT1000_DSP_TIMER3	0x1FF6	/* Timer Field from Basestation */
-+
-+/* Reserved Dual Port RAM offsets for Magnemite */
-+#define FT1000_DPRAM_MAG_TX_BASE	0x0000	/* Host to PC Card Messaging Area */
-+#define FT1000_DPRAM_MAG_RX_BASE	0x0200	/* PC Card to Host Messaging Area */
-+
-+#define FT1000_MAG_FIFO_LEN		0x1FF	/* total length for DSP FIFO tracking */
-+#define FT1000_MAG_FIFO_LEN_INDX	0x1	/* low-word index */
-+#define FT1000_MAG_HI_HO		0x1FF	/* heartbeat with HI/HO */
-+#define FT1000_MAG_HI_HO_INDX		0x0	/* high-word index */
-+#define FT1000_MAG_DSP_LED		0x3FE	/* dsp led status for PAD device */
-+#define FT1000_MAG_DSP_LED_INDX		0x0	/* dsp led status for PAD device */
-+#define FT1000_MAG_DSP_CON_STATE	0x3FE	/* DSP Connection Status Info */
-+#define FT1000_MAG_DSP_CON_STATE_INDX	0x1	/* DSP Connection Status Info */
-+#define FT1000_MAG_DPRAM_FEFE		0x000	/* location for dsp ready indicator */
-+#define FT1000_MAG_DPRAM_FEFE_INDX	0x0	/* location for dsp ready indicator */
-+#define FT1000_MAG_DSP_TIMER0		0x3FC	/* Timer Field from Basestation */
-+#define FT1000_MAG_DSP_TIMER0_INDX	0x1
-+#define FT1000_MAG_DSP_TIMER1		0x3FC	/* Timer Field from Basestation */
-+#define FT1000_MAG_DSP_TIMER1_INDX	0x0
-+#define FT1000_MAG_DSP_TIMER2		0x3FD	/* Timer Field from Basestation */
-+#define FT1000_MAG_DSP_TIMER2_INDX	0x1
-+#define FT1000_MAG_DSP_TIMER3		0x3FD	/* Timer Field from Basestation */
-+#define FT1000_MAG_DSP_TIMER3_INDX	0x0
-+#define FT1000_MAG_TOTAL_LEN		0x200
-+#define FT1000_MAG_TOTAL_LEN_INDX	0x1
-+#define FT1000_MAG_PH_LEN		0x200
-+#define FT1000_MAG_PH_LEN_INDX		0x0
-+#define FT1000_MAG_PORT_ID		0x201
-+#define FT1000_MAG_PORT_ID_INDX		0x0
-+
-+#define HOST_INTF_LE			0x0	/* Host interface little endian mode */
-+#define HOST_INTF_BE			0x1	/* Host interface big endian mode */
-+
-+/* PC Card to Host Doorbell assignments */
-+#define FT1000_DB_DPRAM_RX	0x0001	/* this value indicates that DSP has data for host in DPRAM */
-+#define FT1000_ASIC_RESET_REQ	0x0004	/* DSP requesting host to reset the ASIC */
-+#define FT1000_DSP_ASIC_RESET	0x0008	/* DSP indicating host that it will reset the ASIC */
-+#define FT1000_DB_COND_RESET	0x0010	/* DSP request for a card reset. */
-+
-+/* Host to PC Card Doorbell assignments */
-+#define FT1000_DB_DPRAM_TX	0x0100	/* this value indicates that host has data for DSP in DPRAM. */
-+#define FT1000_ASIC_RESET_DSP	0x0400	/* Responds to FT1000_ASIC_RESET_REQ */
-+#define FT1000_DB_HB		0x1000	/* Indicates that supervisor has a heartbeat message for DSP. */
-+
-+#define FT1000_DPRAM_BASE	0x0000	/* Dual Port RAM starting offset */
-+
-+#define hi			0x6869	/* PC Card heartbeat values */
-+#define ho			0x686f	/* PC Card heartbeat values */
-+
-+/* Magnemite specific defines */
-+#define hi_mag			0x6968	/* Byte swap hi to avoid additional system call */
-+#define ho_mag			0x6f68	/* Byte swap ho to avoid additional system call */
-+
-+/* Bit field definitions for Host Interrupt Status Register */
-+/* Indicate the cause of an interrupt. */
-+#define ISR_EMPTY		0x00	/* no bits set */
-+#define ISR_DOORBELL_ACK	0x01	/* Doorbell acknowledge from DSP */
-+#define ISR_DOORBELL_PEND	0x02	/* Doorbell pending from DSP */
-+#define ISR_RCV			0x04	/* Packet available in Downlink FIFO */
-+#define ISR_WATERMARK		0x08	/* Watermark requirements satisfied */
-+
-+/* Bit field definition for Host Interrupt Mask */
-+#define ISR_MASK_NONE		0x0000	/* no bits set */
-+#define ISR_MASK_DOORBELL_ACK	0x0001	/* Doorbell acknowledge mask */
-+#define ISR_MASK_DOORBELL_PEND	0x0002	/* Doorbell pending mask */
-+#define ISR_MASK_RCV		0x0004	/* Downlink Packet available mask */
-+#define ISR_MASK_WATERMARK	0x0008	/* Watermark interrupt mask */
-+#define ISR_MASK_ALL		0xffff	/* Mask all interrupts */
-+
-+/* Bit field definition for Host Control Register */
-+#define DSP_RESET_BIT		0x0001	/* Bit field to control dsp reset state */
-+					/* (0 = out of reset 1 = reset) */
-+#define ASIC_RESET_BIT		0x0002	/* Bit field to control ASIC reset state */
-+					/* (0 = out of reset 1 = reset) */
-+
-+/* Default interrupt mask (Enable Doorbell pending and Packet available interrupts) */
-+#define ISR_DEFAULT_MASK	0x7ff9
-+
-+/* Application specific IDs */
-+#define DSPID		0x20
-+#define HOSTID		0x10
-+#define DSPAIRID	0x90
-+#define DRIVERID	0x00
-+#define NETWORKID	0x20
-+
-+/* Size of DPRAM Message */
-+#define MAX_CMD_SQSIZE	1780
-+
-+#define ENET_MAX_SIZE		1514
-+#define ENET_HEADER_SIZE	14
-+
-+#define SLOWQ_TYPE	0
-+#define FASTQ_TYPE	1
-+
-+#define MAX_DSP_SESS_REC	1024
-+
-+#define DSP_QID_OFFSET	4
-+#define PSEUDOSZ	16
-+#define PSEUDOSZWRD	8
-+
-+/* Maximum number of occurrence of pseudo header errors before resetting PC Card. */
-+#define MAX_PH_ERR	300
-+
-+/* Driver message types */
-+#define MEDIA_STATE	0x0010
-+#define TIME_UPDATE	0x0020
-+#define DSP_PROVISION	0x0030
-+#define DSP_INIT_MSG	0x0050
-+#define DSP_HIBERNATE	0x0060
-+
-+#define DSP_STORE_INFO		0x0070
-+#define DSP_GET_INFO		0x0071
-+#define GET_DRV_ERR_RPT_MSG	0x0073
-+#define RSP_DRV_ERR_RPT_MSG	0x0074
-+
-+/* Driver Error Messages for DSP */
-+#define DSP_HB_INFO		0x7ef0
-+#define DSP_FIFO_INFO		0x7ef1
-+#define DSP_CONDRESET_INFO	0x7ef2
-+#define DSP_CMDLEN_INFO		0x7ef3
-+#define DSP_CMDPHCKSUM_INFO	0x7ef4
-+#define DSP_PKTPHCKSUM_INFO	0x7ef5
-+#define DSP_PKTLEN_INFO		0x7ef6
-+#define DSP_USER_RESET		0x7ef7
-+#define FIFO_FLUSH_MAXLIMIT	0x7ef8
-+#define FIFO_FLUSH_BADCNT	0x7ef9
-+#define FIFO_ZERO_LEN		0x7efa
-+
-+#define HOST_QID_OFFSET		5
-+#define QTYPE_OFFSET		13
-+
-+#define SUCCESS	0x00
-+#define FAILURE	0x01
-+
-+#define MAXIMUM_ASIC_HB_CNT	15
- 
- struct drv_msg {
- 	struct pseudo_hdr pseudo;
- 	u16 type;
- 	u16 length;
- 	u8  data[0];
+-struct dsp_file_hdr_5 {
+ 	u32  version_id;	// Version ID of this image format.
+ 	u32  package_id;	// Package ID of code release.
+ 	u32  build_date;	// Date/time stamp when file was built.
+@@ -126,15 +114,6 @@ struct dsp_image_info {
+ 	u32  run_address;	// On chip Start address of DSP code.
+ 	u32  image_size;	// Size of image.
+ 	u32  version;		// Embedded version # of DSP code.
 -} __attribute__ ((packed));
-+} __packed;
+-
+-struct dsp_image_info_v6 {
+-	u32  coff_date;		// Date/time when DSP Coff image was built.
+-	u32  begin_offset;	// Offset in file where image begins.
+-	u32  end_offset;	// Offset in file where image begins.
+-	u32  run_address;	// On chip Start address of DSP code.
+-	u32  image_size;	// Size of image.
+-	u32  version;		// Embedded version # of DSP code.
+ 	unsigned short checksum;	// Dsp File checksum
+ 	unsigned short pad1;
+ } __attribute__ ((packed));
+@@ -312,20 +291,17 @@ int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
+ {
+ 	struct ft1000_info *info = (struct ft1000_info *) netdev_priv(dev);
+ 	int Status = SUCCESS;
+-	u16 DspWordCnt = 0;
+ 	u32 uiState;
+ 	u16 handshake;
+ 	struct pseudo_hdr *pHdr;
+ 	u16 usHdrLength;
+-	struct dsp_file_hdr *pFileHdr;
+ 	long word_length;
+ 	u16 request;
+ 	u16 temp;
+ 	struct prov_record *pprov_record;
+ 	u8 *pbuffer;
+-	struct dsp_file_hdr_5 *pFileHdr5;
+-	struct dsp_image_info *pDspImageInfo = NULL;
+-	struct dsp_image_info_v6 *pDspImageInfoV6 = NULL;
++	struct dsp_file_hdr *pFileHdr5;
++	struct dsp_image_info *pDspImageInfoV6 = NULL;
+ 	long requested_version;
+ 	bool bGoodVersion = 0;
+ 	struct drv_msg *pMailBoxData;
+@@ -344,36 +320,22 @@ int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
+ 	unsigned long templong;
+ 	unsigned long image_chksum = 0;
  
- struct media_msg {
- 	struct pseudo_hdr pseudo;
-@@ -283,81 +254,83 @@ struct media_msg {
- 	u16 length;
- 	u16 state;
- 	u32 ip_addr;
--    u32 net_mask;
-+	u32 net_mask;
- 	u32 gateway;
- 	u32 dns_1;
- 	u32 dns_2;
--} __attribute__ ((packed));
-+} __packed;
+-	//
+-	// Get version id of file, at first 4 bytes of file, for newer files.
+-	//
+ 	file_version = *(long *)pFileStart;
++	if (file_version != 6) {
++		printk(KERN_ERR "ft1000: unsupported firmware version %ld\n", file_version);
++		Status = FAILURE;
++	}
  
- struct dsp_init_msg {
--    struct pseudo_hdr pseudo;
--    u16 type;
--    u16 length;
--    u8 DspVer[DSPVERSZ];        // DSP version number
--    u8 HwSerNum[HWSERNUMSZ];    // Hardware Serial Number
--    u8 Sku[SKUSZ];              // SKU
--    u8 eui64[EUISZ];            // EUI64
--    u8 ProductMode[MODESZ];     // Product Mode (Market/Production)
--    u8 RfCalVer[CALVERSZ];      // Rf Calibration version
--    u8 RfCalDate[CALDATESZ];    // Rf Calibration date
--} __attribute__ ((packed));
-+	struct pseudo_hdr pseudo;
-+	u16 type;
-+	u16 length;
-+	u8 DspVer[DSPVERSZ];		/* DSP version number */
-+	u8 HwSerNum[HWSERNUMSZ];	/* Hardware Serial Number */
-+	u8 Sku[SKUSZ];			/* SKU */
-+	u8 eui64[EUISZ];		/* EUI64 */
-+	u8 ProductMode[MODESZ];		/* Product Mode (Market/Production) */
-+	u8 RfCalVer[CALVERSZ];		/* Rf Calibration version */
-+	u8 RfCalDate[CALDATESZ];	/* Rf Calibration date */
-+} __packed;
+ 	uiState = STATE_START_DWNLD;
  
- struct prov_record {
--    struct list_head list;
--    u8 *pprov_data;
-+	struct list_head list;
-+	u8 *pprov_data;
- };
+-	pFileHdr = (struct dsp_file_hdr *) pFileStart;
+-	pFileHdr5 = (struct dsp_file_hdr_5 *) pFileStart;
+-
+-	switch (file_version) {
+-	case 5:
+-	case 6:
+-		pUsFile =
+-			(u16 *) ((long)pFileStart + pFileHdr5->loader_offset);
+-		pUcFile =
+-			(u8 *) ((long)pFileStart + pFileHdr5->loader_offset);
+-
+-		pBootEnd =
+-			(u8 *) ((long)pFileStart + pFileHdr5->loader_code_end);
++	pFileHdr5 = (struct dsp_file_hdr *) pFileStart;
  
- struct ft1000_info {
--    struct net_device_stats stats;
--    u16 DrvErrNum;
--    u16 AsicID;
--    int PktIntfErr;
--    int CardReady;
--    int registered;
--    int mediastate;
--    u16 packetseqnum;
--    u8 squeseqnum;                 // sequence number on slow queue
--    spinlock_t dpram_lock;
--    u16 fifo_cnt;
--    u8 DspVer[DSPVERSZ];        // DSP version number
--    u8 HwSerNum[HWSERNUMSZ];    // Hardware Serial Number
--    u8 Sku[SKUSZ];              // SKU
--    u8 eui64[EUISZ];            // EUI64
--	time_t ConTm;               // Connection Time
--    u16 LedStat;
--    u16 ConStat;
--    u16 ProgConStat;
--    u8 ProductMode[MODESZ];
--    u8 RfCalVer[CALVERSZ];
--    u8 RfCalDate[CALDATESZ];
--    u16 DSP_TIME[4];
--    struct list_head prov_list;
--    u16 DSPInfoBlklen;
-+	struct net_device_stats stats;
-+	u16 DrvErrNum;
-+	u16 AsicID;
-+	int PktIntfErr;
-+	int CardReady;
-+	int registered;
-+	int mediastate;
-+	u16 packetseqnum;
-+	u8 squeseqnum;			/* sequence number on slow queue */
-+	spinlock_t dpram_lock;
-+	u16 fifo_cnt;
-+	u8 DspVer[DSPVERSZ];		/* DSP version number */
-+	u8 HwSerNum[HWSERNUMSZ];	/* Hardware Serial Number */
-+	u8 Sku[SKUSZ];			/* SKU */
-+	u8 eui64[EUISZ];		/* EUI64 */
-+	time_t ConTm;			/* Connection Time */
-+	u16 LedStat;
-+	u16 ConStat;
-+	u16 ProgConStat;
-+	u8 ProductMode[MODESZ];
-+	u8 RfCalVer[CALVERSZ];
-+	u8 RfCalDate[CALDATESZ];
-+	u16 DSP_TIME[4];
-+	struct list_head prov_list;
-+	u16 DSPInfoBlklen;
- 	int (*ft1000_reset)(void *);
--    void *link;
--    u16 DSPInfoBlk[MAX_DSP_SESS_REC];
--    union {
--        u16 Rec[MAX_DSP_SESS_REC];
--        u32 MagRec[MAX_DSP_SESS_REC/2];
--    } DSPSess;
-+	void *link;
-+	u16 DSPInfoBlk[MAX_DSP_SESS_REC];
-+	union {
-+		u16 Rec[MAX_DSP_SESS_REC];
-+		u32 MagRec[MAX_DSP_SESS_REC/2];
-+	} DSPSess;
- 	struct proc_dir_entry *proc_ft1000;
- 	char netdevname[IFNAMSIZ];
- };
+-		loader_code_address = pFileHdr5->loader_code_address;
+-		loader_code_size = pFileHdr5->loader_code_size;
+-		bGoodVersion = false;
+-		break;
+-
+-	default:
+-		Status = FAILURE;
+-		break;
+-	}
++	pUsFile = (u16 *) ((long)pFileStart + pFileHdr5->loader_offset);
++	pUcFile = (u8 *) ((long)pFileStart + pFileHdr5->loader_offset);
++	pBootEnd = (u8 *) ((long)pFileStart + pFileHdr5->loader_code_end);
++	loader_code_address = pFileHdr5->loader_code_address;
++	loader_code_size = pFileHdr5->loader_code_size;
++	bGoodVersion = false;
  
--extern u16 ft1000_read_dpram (struct net_device *dev, int offset);
-+extern u16 ft1000_read_dpram(struct net_device *dev, int offset);
- extern void card_bootload(struct net_device *dev);
--extern u16 ft1000_read_dpram_mag_16 (struct net_device *dev, int offset, int Index);
--extern u32 ft1000_read_dpram_mag_32 (struct net_device *dev, int offset);
--void ft1000_write_dpram_mag_32 (struct net_device *dev, int offset, u32 value);
-+extern u16 ft1000_read_dpram_mag_16(struct net_device *dev, int offset, int Index);
-+extern u32 ft1000_read_dpram_mag_32(struct net_device *dev, int offset);
-+void ft1000_write_dpram_mag_32(struct net_device *dev, int offset, u32 value);
+ 	while ((Status == SUCCESS) && (uiState != STATE_DONE_FILE)) {
  
- /* Read the value of a given ASIC register. */
--static inline u16 ft1000_read_reg (struct net_device *dev, u16 offset) {
--    return inw(dev->base_addr + offset);
-+static inline u16 ft1000_read_reg(struct net_device *dev, u16 offset)
-+{
-+	return inw(dev->base_addr + offset);
- }
+@@ -431,45 +393,24 @@ int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
+ 					// Provide mutual exclusive access while reading ASIC registers.
+ 					spin_lock_irqsave(&info->dpram_lock,
+ 							  flags);
+-					if (file_version == 5) {
+-						/*
+-						 * Position ASIC DPRAM auto-increment pointer.
+-						 */
+-						ft1000_write_reg(dev,
+-								 FT1000_REG_DPRAM_ADDR,
+-								 DWNLD_PS_HDR_LOC);
+-
+-						for (; word_length > 0; word_length--) {	/* In words */
+-							//temp = *pUsFile;
+-							//temp = RtlUshortByteSwap(temp);
+-							ft1000_write_reg(dev,
+-									 FT1000_REG_DPRAM_DATA,
+-									 *pUsFile);
+-							pUsFile++;
+-							pUcFile += 2;
+-							DspWordCnt++;
+-						}
+-					} else {
+-						/*
+-						 * Position ASIC DPRAM auto-increment pointer.
+-						 */
+-						outw(DWNLD_MAG_PS_HDR_LOC,
++					/*
++					 * Position ASIC DPRAM auto-increment pointer.
++					 */
++					outw(DWNLD_MAG_PS_HDR_LOC,
++						 dev->base_addr +
++						 FT1000_REG_DPRAM_ADDR);
++					if (word_length & 0x01)
++						word_length++;
++					word_length = word_length / 2;
++
++					for (; word_length > 0; word_length--) {	/* In words */
++						templong = *pUsFile++;
++						templong |=
++							(*pUsFile++ << 16);
++						pUcFile += 4;
++						outl(templong,
+ 							 dev->base_addr +
+-							 FT1000_REG_DPRAM_ADDR);
+-						if (word_length & 0x01) {
+-							word_length++;
+-						}
+-						word_length = word_length / 2;
+-
+-						for (; word_length > 0; word_length--) {	/* In words */
+-							templong = *pUsFile++;
+-							templong |=
+-								(*pUsFile++ << 16);
+-							pUcFile += 4;
+-							outl(templong,
+-								 dev->base_addr +
+-								 FT1000_REG_MAG_DPDATAL);
+-						}
++							 FT1000_REG_MAG_DPDATAL);
+ 					}
+ 					spin_unlock_irqrestore(&info->
+ 								   dpram_lock,
+@@ -519,24 +460,8 @@ int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
+ 					break;
+ 				case REQUEST_DONE_CL:
+ 					/* Reposition ptrs to beginning of provisioning section */
+-					switch (file_version) {
+-					case 5:
+-					case 6:
+-						pUsFile =
+-							(u16 *) ((long)pFileStart
+-								+
+-								pFileHdr5->
+-								commands_offset);
+-						pUcFile =
+-							(u8 *) ((long)pFileStart
+-								   +
+-								   pFileHdr5->
+-								   commands_offset);
+-						break;
+-					default:
+-						Status = FAILURE;
+-						break;
+-					}
++					pUsFile = (u16 *) ((long)pFileStart + pFileHdr5->commands_offset);
++					pUcFile = (u8 *) ((long)pFileStart + pFileHdr5->commands_offset);
+ 					uiState = STATE_DONE_DWNLD;
+ 					break;
+ 				case REQUEST_CODE_SEGMENT:
+@@ -557,45 +482,24 @@ int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
+ 						Status = FAILURE;
+ 						break;
+ 					}
+-					if (file_version == 5) {
+-						/*
+-						 * Position ASIC DPRAM auto-increment pointer.
+-						 */
+-						ft1000_write_reg(dev,
+-								 FT1000_REG_DPRAM_ADDR,
+-								 DWNLD_PS_HDR_LOC);
+-
+-						for (; word_length > 0; word_length--) {	/* In words */
+-							//temp = *pUsFile;
+-							//temp = RtlUshortByteSwap(temp);
+-							ft1000_write_reg(dev,
+-									 FT1000_REG_DPRAM_DATA,
+-									 *pUsFile);
+-							pUsFile++;
+-							pUcFile += 2;
+-							DspWordCnt++;
+-						}
+-					} else {
+-						/*
+-						 * Position ASIC DPRAM auto-increment pointer.
+-						 */
+-						outw(DWNLD_MAG_PS_HDR_LOC,
++					/*
++					 * Position ASIC DPRAM auto-increment pointer.
++					 */
++					outw(DWNLD_MAG_PS_HDR_LOC,
++						 dev->base_addr +
++						 FT1000_REG_DPRAM_ADDR);
++					if (word_length & 0x01)
++						word_length++;
++					word_length = word_length / 2;
++
++					for (; word_length > 0; word_length--) {	/* In words */
++						templong = *pUsFile++;
++						templong |=
++							(*pUsFile++ << 16);
++						pUcFile += 4;
++						outl(templong,
+ 							 dev->base_addr +
+-							 FT1000_REG_DPRAM_ADDR);
+-						if (word_length & 0x01) {
+-							word_length++;
+-						}
+-						word_length = word_length / 2;
+-
+-						for (; word_length > 0; word_length--) {	/* In words */
+-							templong = *pUsFile++;
+-							templong |=
+-								(*pUsFile++ << 16);
+-							pUcFile += 4;
+-							outl(templong,
+-								 dev->base_addr +
+-								 FT1000_REG_MAG_DPDATAL);
+-						}
++							 FT1000_REG_MAG_DPDATAL);
+ 					}
+ 					break;
  
- /* Set the value of a given ASIC register. */
--static inline void ft1000_write_reg (struct net_device *dev, u16 offset, u16 value) {
--    outw(value, dev->base_addr + offset);
-+static inline void ft1000_write_reg(struct net_device *dev, u16 offset, u16 value)
-+{
-+	outw(value, dev->base_addr + offset);
- }
- 
--#endif // _FT1000H_
-+#endif
+@@ -663,45 +567,26 @@ int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
+ 					// Provide mutual exclusive access while reading ASIC registers.
+ 					spin_lock_irqsave(&info->dpram_lock,
+ 							  flags);
+-					if (file_version == 5) {
+-						/*
+-						 * Position ASIC DPRAM auto-increment pointer.
+-						 */
+-						ft1000_write_reg(dev,
+-								 FT1000_REG_DPRAM_ADDR,
+-								 DWNLD_PS_HDR_LOC);
+-
+-						for (; word_length > 0; word_length--) {	/* In words */
+-							ft1000_write_reg(dev,
+-									 FT1000_REG_DPRAM_DATA,
+-									 *pUsFile
+-									 /*temp */
+-								);
+-							pUsFile++;
+-						}
+-					} else {
+-						/*
+-						 * Position ASIC DPRAM auto-increment pointer.
+-						 */
+-						outw(DWNLD_MAG_PS_HDR_LOC,
++					/*
++					 * Position ASIC DPRAM auto-increment pointer.
++					 */
++					outw(DWNLD_MAG_PS_HDR_LOC,
++						 dev->base_addr +
++						 FT1000_REG_DPRAM_ADDR);
++					if (word_length & 0x01)
++						word_length++;
++					word_length = word_length / 2;
++
++					for (; word_length > 0; word_length--) {	/* In words */
++						templong =
++							ntohs(*pUsFile++);
++						temp =
++							ntohs(*pUsFile++);
++						templong |=
++							(temp << 16);
++						outl(templong,
+ 							 dev->base_addr +
+-							 FT1000_REG_DPRAM_ADDR);
+-						if (word_length & 0x01) {
+-							word_length++;
+-						}
+-						word_length = word_length / 2;
+-
+-						for (; word_length > 0; word_length--) {	/* In words */
+-							templong =
+-								ntohs(*pUsFile++);
+-							temp =
+-								ntohs(*pUsFile++);
+-							templong |=
+-								(temp << 16);
+-							outl(templong,
+-								 dev->base_addr +
+-								 FT1000_REG_MAG_DPDATAL);
+-						}
++							 FT1000_REG_MAG_DPDATAL);
+ 					}
+ 					spin_unlock_irqrestore(&info->
+ 								   dpram_lock,
+@@ -712,117 +597,68 @@ int card_download(struct net_device *dev, const u8 *pFileStart, u32 FileLength)
+ 					bGoodVersion = false;
+ 					requested_version =
+ 						get_request_value(dev);
+-					if (file_version == 5) {
+-						pDspImageInfo =
+-							(struct dsp_image_info *) ((long)
+-									   pFileStart
+-									   +
+-									   sizeof
+-									   (struct dsp_file_hdr_5));
+-						for (imageN = 0;
+-							 imageN <
+-							 pFileHdr5->nDspImages;
+-							 imageN++) {
+-							if (pDspImageInfo->
+-								version ==
+-								requested_version) {
+-								bGoodVersion =
+-									true;
+-								pUsFile =
+-									(u16
+-									 *) ((long)
+-									 pFileStart
+-									 +
+-									 pDspImageInfo->
+-									 begin_offset);
+-								pUcFile =
+-									(u8
+-									 *) ((long)
+-									 pFileStart
+-									 +
+-									 pDspImageInfo->
+-									 begin_offset);
+-								pCodeEnd =
+-									(u8
+-									 *) ((long)
+-									 pFileStart
+-									 +
+-									 pDspImageInfo->
+-									 end_offset);
+-								run_address =
+-									pDspImageInfo->
+-									run_address;
+-								run_size =
+-									pDspImageInfo->
+-									image_size;
+-								break;
+-							}
+-							pDspImageInfo++;
+-						}
+-					} else {
+-						pDspImageInfoV6 =
+-							(struct dsp_image_info_v6 *) ((long)
+-									  pFileStart
+-									  +
+-									  sizeof
+-									  (struct dsp_file_hdr_5));
+-						for (imageN = 0;
+-							 imageN <
+-							 pFileHdr5->nDspImages;
+-							 imageN++) {
+-							temp = (u16)
+-								(pDspImageInfoV6->
+-								 version);
+-							templong = temp;
+-							temp = (u16)
+-								(pDspImageInfoV6->
+-								 version >> 16);
+-							templong |=
+-								(temp << 16);
+-							if (templong ==
+-								requested_version) {
+-								bGoodVersion =
+-									true;
+-								pUsFile =
+-									(u16
+-									 *) ((long)
+-									 pFileStart
+-									 +
+-									 pDspImageInfoV6->
+-									 begin_offset);
+-								pUcFile =
+-									(u8
+-									 *) ((long)
+-									 pFileStart
+-									 +
+-									 pDspImageInfoV6->
+-									 begin_offset);
+-								pCodeEnd =
+-									(u8
+-									 *) ((long)
+-									 pFileStart
+-									 +
+-									 pDspImageInfoV6->
+-									 end_offset);
+-								run_address =
+-									pDspImageInfoV6->
+-									run_address;
+-								run_size =
+-									pDspImageInfoV6->
+-									image_size;
+-								image_chksum =
+-									(u32)
+-									pDspImageInfoV6->
+-									checksum;
+-								DEBUG(0,
+-									  "ft1000_dnld: image_chksum = 0x%8x\n",
+-									  (unsigned
+-									   int)
+-									  image_chksum);
+-								break;
+-							}
+-							pDspImageInfoV6++;
++					pDspImageInfoV6 =
++						(struct dsp_image_info *) ((long)
++								  pFileStart
++								  +
++								  sizeof
++								  (struct dsp_file_hdr));
++					for (imageN = 0;
++						 imageN <
++						 pFileHdr5->nDspImages;
++						 imageN++) {
++						temp = (u16)
++							(pDspImageInfoV6->
++							 version);
++						templong = temp;
++						temp = (u16)
++							(pDspImageInfoV6->
++							 version >> 16);
++						templong |=
++							(temp << 16);
++						if (templong ==
++							requested_version) {
++							bGoodVersion =
++								true;
++							pUsFile =
++								(u16
++								 *) ((long)
++								 pFileStart
++								 +
++								 pDspImageInfoV6->
++								 begin_offset);
++							pUcFile =
++								(u8
++								 *) ((long)
++								 pFileStart
++								 +
++								 pDspImageInfoV6->
++								 begin_offset);
++							pCodeEnd =
++								(u8
++								 *) ((long)
++								 pFileStart
++								 +
++								 pDspImageInfoV6->
++								 end_offset);
++							run_address =
++								pDspImageInfoV6->
++								run_address;
++							run_size =
++								pDspImageInfoV6->
++								image_size;
++							image_chksum =
++								(u32)
++								pDspImageInfoV6->
++								checksum;
++							DEBUG(0,
++								  "ft1000_dnld: image_chksum = 0x%8x\n",
++								  (unsigned
++								   int)
++								  image_chksum);
++							break;
+ 						}
++						pDspImageInfoV6++;
+ 					}
+ 					if (!bGoodVersion) {
+ 						/*
 -- 
 Ondrej Zary
 
