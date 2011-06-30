@@ -1,65 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752478Ab1F3PJ6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 11:09:58 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:33162 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab1F3PJy (ORCPT
+	id S1752734Ab1F3PLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 11:11:47 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:51434 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751609Ab1F3PLo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 11:09:54 -0400
-From: Marek Vasut <marek.vasut@gmail.com>
-To: Stanislav Brabec <utx@penguin.cz>
-Subject: Re: kernel panic in spi_complete() on spitz (PXA270)
-Date: Thu, 30 Jun 2011 17:09:48 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39-1-amd64; KDE/4.6.3; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, zaurus-devel@www.linuxtogo.org,
-        spi-devel-general@lists.sourceforge.net,
-        Igor Grinberg <grinberg@compulab.co.il>, vapier@gentoo.org,
-        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org, pavel@ucw.cz,
-        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
-        akpm@linux-foundation.org, broonie@opensource.wolfsonmicro.com,
-        Pavel Herrmann <morpheus.ibis@gmail.com>
-References: <1308845380.4533.54.camel@oct.suse.cz> <201106301352.21684.marek.vasut@gmail.com> <1309445118.4406.47.camel@oct.suse.cz>
-In-Reply-To: <1309445118.4406.47.camel@oct.suse.cz>
+	Thu, 30 Jun 2011 11:11:44 -0400
+Date: Thu, 30 Jun 2011 17:11:38 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Shawn Guo <shawn.guo@linaro.org>, Ryan Mallon <ryan@bluewatersys.com>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 3/3] pwm: Add a i.MX23/28 pwm driver
+Message-ID: <20110630151138.GB9349@pengutronix.de>
+References: <1309430517-23821-1-git-send-email-s.hauer@pengutronix.de>
+ <1309430517-23821-4-git-send-email-s.hauer@pengutronix.de>
+ <201106301342.36088.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106301709.48818.marek.vasut@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106301342.36088.arnd@arndb.de>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 17:10:47 up 8 days, 20:58, 30 users,  load average: 0.06, 0.29, 0.75
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 30, 2011 04:45:18 PM Stanislav Brabec wrote:
-> Marek Vasut wrote:
-> > On Thursday, June 23, 2011 06:09:40 PM Stanislav Brabec wrote:
-> > > Hallo.
-> > > 
-> > > These Oops and kernel panic were observed on a Zaurus (spitz) machine
-> > > (ARMv5, PXA270).
-> > 
-> > Looks similar to "Re: [PATCH v2] Input: Make ADS7846 independent on
-> > regulator"
+On Thu, Jun 30, 2011 at 01:42:35PM +0200, Arnd Bergmann wrote:
+> On Thursday 30 June 2011, Sascha Hauer wrote:
+> > Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 > 
-> I don't see any trace in that thread. But yes, I was testing your patch
-> from this thread. Without it, ADS7846 does not work on spitz (ADS7846
-> does not have any dedicated regulator there). I want to
-> add .needs_regulator bool to ads7846.c and send the patch again to the
-> list.
+> Hi Sascha,
 > 
-> After sending the trace I was able to reproduced it several times by
-> attaching of external charger.
+> The probing looks good to me now. I would have added extra code to avoid
+> ioremapping the same page multiple times, but I see this as a matter of
+> different preferences, so I'm fine with that.
 > 
-> Then I tried to apply "[PATCH] MAX1111: Fix race condition causing NULL
-> pointer exception", connected charger that periodically disconnects and
-> not seen the crash again. No OOPS was seen after ~100 reconnects.
-> 
-> So I guess that MAX1111 AC voltage reading (via SPI) was involved in an
-> incorrect moment and race happened there and your MAX1111 race condition
-> fix fixes it.
+> You are still missing a description of the driver, both in the changelog
+> above and in the Kconfig patch. A small sentence to spell out PWM
+> in the changelog and to list the devices that will use this driver
+> would be helpful to the causal reader.
 
-It's not mine, it's from Pavel Herrmann actually ;-)
+Ok, will add.
 
-But yes, it's likely either this or the regulator stuff again (which I believed 
-was fixed).
+> 
+> Provided that you add that:
+> 
+> Reviewed-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> > diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
+> > index 93c1052..5694574 100644
+> > --- a/drivers/pwm/Kconfig
+> > +++ b/drivers/pwm/Kconfig
+> > @@ -2,11 +2,15 @@ menuconfig PWM
+> >  	bool "PWM Support"
+> >  	help
+> >  	  This enables PWM support through the generic PWM framework.
+> > -	  You only need to enable this, if you also want to enable
+> > +	  You only need to enable this if you also want to enable
+> >  	  one or more of the PWM drivers below.
+> >  
+> >  	  If unsure, say N.
+> >  
+> 
+> I think this hunk should have been in the other first patch.
+
+Indeed, will fix.
+
+Sascha
+
+
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
