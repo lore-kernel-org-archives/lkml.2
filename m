@@ -1,88 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab1F3Qqb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 12:46:31 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:42685 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751261Ab1F3Qqa (ORCPT
+	id S1751302Ab1F3Q6z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 12:58:55 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:52741 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1F3Q6x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 12:46:30 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=EAdfuy46jrwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=wOPrychqn_hb7_mOn8AA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH] kprobes: Add separate preempt_disabling for
- kprobes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20110630161439.GA8508@somewhere>
-References: <1309440213.26417.76.camel@gandalf.stny.rr.com>
-	 <1309449117.26417.90.camel@gandalf.stny.rr.com>
-	 <20110630161439.GA8508@somewhere>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 30 Jun 2011 12:46:27 -0400
-Message-ID: <1309452387.26417.111.camel@gandalf.stny.rr.com>
+	Thu, 30 Jun 2011 12:58:53 -0400
+Date: Thu, 30 Jun 2011 18:58:49 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] perf, x86: Add Intel Nehalem/Westmere uncore pmu
+Message-ID: <20110630165849.GE23059@one.firstfloor.org>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com> <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-30 at 18:14 +0200, Frederic Weisbecker wrote:
+On Thu, Jun 30, 2011 at 08:09:53AM +0000, Lin Ming wrote:
+> +static u64 uncore_perf_event_update(struct perf_event *event)
+> +{
+> +	struct hw_perf_event *hwc = &event->hw;
+> +	int shift = 64 - intel_uncore_pmu.cntval_bits;
+> +	u64 prev_raw_count, new_raw_count;
+> +	s64 delta;
+> +
+> +	/*
+> +	 * Careful: an NMI might modify the previous event value.
+
+There are no NMIs without sampling, so at least the comment seems bogus.
+Perhaps the code could be a bit simplified now without atomics.
+
+> +static int uncore_pmu_event_init(struct perf_event *event)
+> +{
+> +	struct hw_perf_event *hwc = &event->hw;
+> +
+> +	if (!uncore_pmu_initialized)
+> +		return -ENOENT;
+> +
+> +	if (event->attr.type != uncore_pmu.type)
+> +		return -ENOENT;
+> +
+> +	/*
+> +	 * Uncore PMU does measure at all privilege level all the time.
+> +	 * So it doesn't make sense to specify any exclude bits.
+> +	 */
+> +	if (event->attr.exclude_user || event->attr.exclude_kernel
+> +	    || event->attr.exclude_hv || event->attr.exclude_idle)
+> +		return -ENOENT;
+> +
+> +	/* Sampling not supported yet */
+> +	if (hwc->sample_period)
+> +		return -EINVAL;
+
+Don't we need a "is root" check here? uncore counts everything, so
+it cannot be limited to a single process.
+
+> +static void uncore_pmu_cpu_starting(int cpu)
+> +{
+> +	struct cpu_uncore_events *cpuc = &per_cpu(cpu_uncore_events, cpu);
+> +	struct intel_uncore *uncore;
+> +	int i, uncore_id;
+> +
+> +	if (boot_cpu_data.x86_max_cores < 2)
+> +		return;
+
+Why that check? uncore counting should work on a single core system too.
+
+I think you should remove all of those.
+
+> +
+> +	uncore_id = topology_physical_package_id(cpu);
+> +	WARN_ON_ONCE(uncore_id == BAD_APICID);
+> +
+> +	raw_spin_lock(&intel_uncore_lock);
+
+Does this really need to be a raw spinlock? 
+
+> +#define NHM_MSR_UNCORE_PERF_GLOBAL_CTRL    	0x391
+> +#define NHM_MSR_UNCORE_PMC0			0x3b0
+> +#define NHM_MSR_UNCORE_PERFEVTSEL0		0x3c0
+
+These should be in msr-index.h
 
 
-> That's a bit sad we need to bloat preempt_schedule() with a new test, especially
-> as kprobes should not add overhead in the off case and then I guess many distros
-> enable kprobes by default, so it's probably not just enabled on some debug kernel.
-
-A simple per_cpu var test is not that bad, and that's also why I put it
-where I did. It only gets checked after all the other locations fail. I
-doubt this really adds any measurable overhead. Note, most distro's
-don't even enable CONFIG_PREEMPT so this isn't even touched by them.
-
-> 
-> Another idea could be to turn current_thread_info()->preempt_count into a local_t
-> var which ensures a single incrementation is performed in a single instruction.
-
-Not all archs support such a thing.
-
-> 
-> Well, in the hope that every arch can do something like:
-> 
-> inc (mem_addr)
-> 
-> IIRC, I believe arm can't... And the default local_inc is probably not helpful
-> in our case...
-
-Some archs (I believe) perform local_inc() slower than i++. In which
-case, this solution will more likely slow things down even more than
-what I proposed. As the impact will be on every preempt_disable and
-enable.
-
-And this would not even help for the place that I actually hit the crash
-on. Which was in the scheduler. It wasn't the addition of the
-preempt_count that caused my crash, it was just reading it.
-
-	if (unlikely(in_atomic_preempt_off() && !prev->exit_state))
-		__schedule_bug(prev);
-
-The in_atomic_preempt_off() is what blew up on me.
-
-#define in_atomic_preempt_off() \
-		((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_CHECK_OFFSET)
-
-What happened was that the reading of preempt_count was single stepped.
-And that had preempt_count set to one more due to the preempt_disable()
-in kprobes. Even if preempt_count was a local_t, this bug would have
-still triggered, and my system would have crashed anyway. (every
-schedule caused a printk to happen).
-
-
--- Steve
-
-
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
