@@ -1,67 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753735Ab1F3XsQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 19:48:16 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:49432 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753456Ab1F3XsN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 19:48:13 -0400
-Date: Thu, 30 Jun 2011 16:48:08 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
-Message-ID: <20110630164808.17c506a4@nehalam.ftrdhcpuser.net>
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0480816C384@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
-	<20110630193346.GA22707@infradead.org>
-	<6E21E5352C11B742B20C142EB499E0480816C384@TK5EX14MBXC126.redmond.corp.microsoft.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754167Ab1F3Xsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 19:48:36 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46514 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753688Ab1F3Xsc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 19:48:32 -0400
+From: Ram Pai <linuxram@us.ibm.com>
+To: jbarnes@virtuousgeek.org, torvalds@linux-foundation.org
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, bhutchings@solarflare.com, socketcan@hartkopp.net,
+        bhelgaas@google.com, linux@dominikbrodowski.net,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: [PATCH 4/5 v2] PCI: make cardbus-bridge resources optional
+Date: Thu, 30 Jun 2011 16:47:41 -0700
+Message-Id: <1309477662-18680-5-git-send-email-linuxram@us.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1309477662-18680-1-git-send-email-linuxram@us.ibm.com>
+References: <1309477662-18680-1-git-send-email-linuxram@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 30 Jun 2011 23:32:34 +0000
-KY Srinivasan <kys@microsoft.com> wrote:
+Allocate resources to cardbus bridge only after all other genuine
+resources requests are satisfied. Dont retry if resource allocation
+for cardbus-bridges fail.
 
-> 
-> > -----Original Message-----
-> > From: Christoph Hellwig [mailto:hch@infradead.org]
-> > Sent: Thursday, June 30, 2011 3:34 PM
-> > To: KY Srinivasan
-> > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> > Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
-> > 
-> > On Wed, Jun 29, 2011 at 07:38:21AM -0700, K. Y. Srinivasan wrote:
-> > > Further cleanup of the hv drivers:
-> > >
-> > > 	1) Cleanup the reference counting mess for both stor and net devices.
-> > 
-> > I really don't understand the need for reference counting on the storage
-> > side, especially now that you only have a SCSI driver.  The SCSI
-> > midlayer does proper counting on it's objects (Scsi_Host, scsi_device,
-> > scsi_cmnd), so you'll get that for free given that SCSI drivers just
-> > piggyback on the midlayer lifetime rules.
-> > 
-> > For now your patches should probably go in as-is, but mid-term you
-> > should be able to completely remove that code on the storage side.
-> > 
-> 
-> Greg,
-> 
-> I am thinking of  going back to my original implementation where I had one scsi host
-> per IDE device. This will certainly simply the code. Let me know what you think. If you
-> agree with this approach, please drop this patch-set, I will send you a new set of patches.
+   Changelog: Fixed a alignment problem noticed on Oliver's setup.
 
-I think there ref counting on network devices is also unneeded
-as long as the unregister logic handles RCU correctly. The network layer
-calls the driver unregister routine after all packets are gone.
+Tested-by: Oliver Hartkopp <socketcan@hartkopp.net>
+Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+---
+ drivers/pci/pci.h       |    4 ++++
+ drivers/pci/setup-bus.c |   41 ++++++++++++++++++++++++++++++++---------
+ 2 files changed, 36 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/pci/pci.h b/drivers/pci/pci.h
+index 731e202..ebaf0ed 100644
+--- a/drivers/pci/pci.h
++++ b/drivers/pci/pci.h
+@@ -283,6 +283,8 @@ static inline int pci_iov_bus_range(struct pci_bus *bus)
+ 
+ #endif /* CONFIG_PCI_IOV */
+ 
++extern unsigned long pci_cardbus_resource_alignment(struct resource *);
++
+ static inline resource_size_t pci_resource_alignment(struct pci_dev *dev,
+ 					 struct resource *res)
+ {
+@@ -292,6 +294,8 @@ static inline resource_size_t pci_resource_alignment(struct pci_dev *dev,
+ 	if (resno >= PCI_IOV_RESOURCES && resno <= PCI_IOV_RESOURCE_END)
+ 		return pci_sriov_resource_alignment(dev, resno);
+ #endif
++	if (dev->class >> 8  == PCI_CLASS_BRIDGE_CARDBUS)
++		return pci_cardbus_resource_alignment(res);
+ 	return resource_alignment(res);
+ }
+ 
+diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+index a0555cb..b40df97 100644
+--- a/drivers/pci/setup-bus.c
++++ b/drivers/pci/setup-bus.c
+@@ -157,6 +157,7 @@ static void adjust_resources_sorted(struct resource_list_x *add_head,
+ 		idx = res - &list->dev->resource[0];
+ 		add_size=list->add_size;
+ 		if (!resource_size(res)) {
++			res->start = list->start;
+ 			res->end = res->start + add_size - 1;
+ 			if(pci_assign_resource(list->dev, idx))
+ 				reset_resource(res);
+@@ -216,7 +217,7 @@ static void __assign_resources_sorted(struct resource_list *head,
+ 	/* Satisfy the must-have resource requests */
+ 	assign_requested_resources_sorted(head, fail_head);
+ 
+-	/* Try to satisfy any additional nice-to-have resource
++	/* Try to satisfy any additional optional resource
+ 		requests */
+ 	if (add_head)
+ 		adjust_resources_sorted(add_head, head);
+@@ -674,7 +675,7 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 			if (add_head && i >= PCI_IOV_RESOURCES &&
+ 					i <= PCI_IOV_RESOURCE_END) {
+ 				r->end = r->start - 1;
+-				add_to_list(add_head, dev, r, r_size, 1);
++				add_to_list(add_head, dev, r, r_size, 0/* dont' care */);
+ 				children_add_size += r_size;
+ 				continue;
+ 			}
+@@ -739,7 +740,17 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+ 	return 1;
+ }
+ 
+-static void pci_bus_size_cardbus(struct pci_bus *bus)
++unsigned long pci_cardbus_resource_alignment(struct resource *res)
++{
++	if (res->flags & IORESOURCE_IO)
++		return pci_cardbus_io_size;
++	if (res->flags & IORESOURCE_MEM)
++		return pci_cardbus_mem_size;
++	return 0;
++}
++
++static void pci_bus_size_cardbus(struct pci_bus *bus,
++			struct resource_list_x *add_head)
+ {
+ 	struct pci_dev *bridge = bus->self;
+ 	struct resource *b_res = &bridge->resource[PCI_BRIDGE_RESOURCES];
+@@ -750,12 +761,14 @@ static void pci_bus_size_cardbus(struct pci_bus *bus)
+ 	 * a fixed amount of bus space for CardBus bridges.
+ 	 */
+ 	b_res[0].start = 0;
+-	b_res[0].end = pci_cardbus_io_size - 1;
+ 	b_res[0].flags |= IORESOURCE_IO | IORESOURCE_SIZEALIGN;
++	if (add_head)
++		add_to_list(add_head, bridge, b_res, pci_cardbus_io_size, 0 /* dont care */);
+ 
+ 	b_res[1].start = 0;
+-	b_res[1].end = pci_cardbus_io_size - 1;
+ 	b_res[1].flags |= IORESOURCE_IO | IORESOURCE_SIZEALIGN;
++	if (add_head)
++		add_to_list(add_head, bridge, b_res+1, pci_cardbus_io_size, 0 /* dont care */);
+ 
+ 	/*
+ 	 * Check whether prefetchable memory is supported
+@@ -775,17 +788,27 @@ static void pci_bus_size_cardbus(struct pci_bus *bus)
+ 	 */
+ 	if (ctrl & PCI_CB_BRIDGE_CTL_PREFETCH_MEM0) {
+ 		b_res[2].start = 0;
+-		b_res[2].end = pci_cardbus_mem_size - 1;
+ 		b_res[2].flags |= IORESOURCE_MEM | IORESOURCE_PREFETCH | IORESOURCE_SIZEALIGN;
++		if (add_head)
++			add_to_list(add_head, bridge, b_res+2, pci_cardbus_mem_size, 0 /* dont care */);
+ 
+ 		b_res[3].start = 0;
+-		b_res[3].end = pci_cardbus_mem_size - 1;
+ 		b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
++		if (add_head)
++			add_to_list(add_head, bridge, b_res+3, pci_cardbus_mem_size, 0 /* dont care */);
+ 	} else {
+ 		b_res[3].start = 0;
+-		b_res[3].end = pci_cardbus_mem_size * 2 - 1;
+ 		b_res[3].flags |= IORESOURCE_MEM | IORESOURCE_SIZEALIGN;
++		if (add_head)
++			add_to_list(add_head, bridge, b_res+3, pci_cardbus_mem_size * 2, 0 /* dont care */);
+ 	}
++
++	/* set the size of the resource to zero, so that the resource does not
++	 * get assigned during required-resource allocation cycle but gets assigned
++	 * during the optional-resource allocation cycle.
++ 	 */
++	b_res[0].start = b_res[1].start = b_res[2].start = b_res[3].start = 1;
++	b_res[0].end = b_res[1].end = b_res[2].end = b_res[3].end = 0;
+ }
+ 
+ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+@@ -802,7 +825,7 @@ void __ref __pci_bus_size_bridges(struct pci_bus *bus,
+ 
+ 		switch (dev->class >> 8) {
+ 		case PCI_CLASS_BRIDGE_CARDBUS:
+-			pci_bus_size_cardbus(b);
++			pci_bus_size_cardbus(b, add_head);
+ 			break;
+ 
+ 		case PCI_CLASS_BRIDGE_PCI:
+-- 
+1.7.0.4
+
