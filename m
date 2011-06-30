@@ -1,71 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751544Ab1F3Kxr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 06:53:47 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:52075 "EHLO linux-mips.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750991Ab1F3Kxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 06:53:42 -0400
-Date: Thu, 30 Jun 2011 11:52:54 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        florian@linux-mips.org, Florian Fainelli <florian@openwrt.org>,
-        linux-arch@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: SB16 build error.
-Message-ID: <20110630105254.GA25732@linux-mips.org>
-References: <20110630091754.GA12119@linux-mips.org>
- <s5h8vsjy68z.wl%tiwai@suse.de>
+	id S1751946Ab1F3K7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 06:59:49 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:64856 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab1F3K7m convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 06:59:42 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <s5h8vsjy68z.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110630075716.GB3377@albatros>
+References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
+	<BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
+	<20110630075716.GB3377@albatros>
+Date: Thu, 30 Jun 2011 16:29:41 +0530
+Message-ID: <BANLkTik0DF5jUhOsP=Pnm+vMbHzEx+3L-Q@mail.gmail.com>
+Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
+From: Balbir Singh <bsingharora@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Shailabh Nagar <nagar@us.ibm.com>, linux-kernel@vger.kernel.org,
+        security@kernel.org, Eric Paris <eparis@redhat.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        kernel-hardening@lists.openwall.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 12:15:56PM +0200, Takashi Iwai wrote:
+On Thu, Jun 30, 2011 at 1:27 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> On Wed, Jun 29, 2011 at 13:09 -0700, Linus Torvalds wrote:
+>> Ok, having looked at this some more, I'm quite ready to just mark the
+>> whole TASKSTATS config option as BROKEN. It does seem to be a horrible
+>> security hazard, and very little seems to use it.
+>>
 
-> At Thu, 30 Jun 2011 10:17:54 +0100,
-> Ralf Baechle wrote:
-> > 
-> > Found on a MIPS build but certain other architectures will have the same
-> > issue:
-> > 
-> >   CC      sound/isa/sb/sb16_csp.o
-> > sound/isa/sb/sb16_csp.c: In function â€˜snd_sb_csp_ioctlâ€™:
-> > sound/isa/sb/sb16_csp.c:228: error: case label does not reduce to an integer constant
-> > make[1]: *** [sound/isa/sb/sb16_csp.o] Error 1
-> > make: *** [sound/isa/sb/sb16_csp.o] Error 2
-> > 
-> > This error message is caused by the _IOC_TYPECHECK() error check triggering
-> > due to excessive ioctl size on Alpha, PowerPC, MIPS and SPARC which define
-> > _IOC_SIZEBITS as 13.  On all other architectures define it as 14 so struct
-> > snd_sb_csp_microcode with it's little over 12kB will just about fit into
-> > the 16kB limit.
-> 
-> What about the patch below?
+I am not sure how you define BROKEN, BROKEN as per security rules?
+/proc/$pid/xxx also expose similar information.
 
-I have no idea how big the soundblaster microcode being loaded actually is,
-that is if the reduced size of 0x1f00 will be sufficient.  Aside of that I
-don't see a problem - I don't see how the old ioctl can possibly have been
-used before so there isn't a compatibility problem.
+>> It also seems to be really fundamentally broken. Afaik, there's no way
+>> to filter taskstats not only by security issues (Vasiliy's patch
+>> really is very ugly), but it seems to be some global cross-namespace
+>> thing too, so it exposes taskstats across pid namespaces afaik.
+>
+> The problem here is that it keeps a pid in a global list.  This list is
+> then browsed by all namespaces.  Looking into the code, I see 2 real
+> problems (didn't check, though):
+>
+> 1) If there are 2+ pid namespaces, one listener in pid_ns #1 and some
+> process dies in pid_ns #2, then the dying task wouldn't find the
+> listener via find_task_by_vpid() and would just delete the listener from
+> listeners list.  Looks like this problem was created by optimization
+> patch f9fd8914c1acca0.
 
-Or you could entirely sidestep the problem and use request_firmware() but
-I guess that's more effort than you want to invest.
+I must admit, I did not pay much attention to pid namespace changes as
+they were being made to taskstats. I'll look at the code later this
+week.
 
-> This is an old ISA driver, so the impact must be very low.
+>
+> 2) Netlink sockets are per net namespace, but this accounting thing is per
+> pid namespace.  So, if the dying task and the listener are in a single
+> pid namespace, but in different net namespaces, the message will not be
+> sent via genlmsg_unicast().  I suspect it is a problem of all non-net
+> netlink sockets.
+>
 
-True.  I notice that sort of stuff in automated mass builds - not
-necessarily the sort of kernels one would actually use.  Still build errors
-are annoying :)
+Good catch, under what circumstances would tasks have the same pid
+namespace, but different net namespaces?
 
-  Ralf
+>
+>> It
+>> does that even with Vasiliy's patch, afaik, although then I think you
+>> need to have collissions in the namespaces if I read the code
+>> correctly.
+>>
+>> I suspect that could be fixed by adding a pid namespace to the
+>> 'listener' structure. Also adding a 'cred' pointer (or the actual
+>> listener thread pointer) to it would make Vasiliy's patch more
+>> palatable, since then you wouldn't need to look up the credentials at
+>> send_cpu_listeners() time.
+>>
+
+A simple work around could be to disable taskstats under network
+namespace or even the current behaviour should just warn the user that
+the network namespace of the listener is distinct and disallow the
+listener
+
+>> Maybe I have mis-read the code. But it does all make me shudder. There
+>> doesn't even seem to be all that many _users_ of the thing, so the
+>> problems it has really makes me go "is that code worth it"? We
+>> probably should never have merged it in the first place.
+
+iotop(), getdelays (in kernel) with many developers using it and many
+more. The interface has been published for a while now
+
+Thanks for the review,
+Balbir Singh
