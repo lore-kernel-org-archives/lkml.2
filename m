@@ -1,47 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab1F3MHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:07:43 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:59125 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab1F3MHh (ORCPT
+	id S1753030Ab1F3MIm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 08:08:42 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38836 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752565Ab1F3MIh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:07:37 -0400
-Subject: Re: [PATCH] mtd: tmio_nand: fix build error
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-Cc: Axel Lin <axel.lin@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org
-Date: Thu, 30 Jun 2011 15:08:29 +0300
-In-Reply-To: <BANLkTikonD2fcbkBU2ESYm_XncBXNZc_hw@mail.gmail.com>
-References: <1309408494.10500.1.camel@phoenix>
-	 <BANLkTikonD2fcbkBU2ESYm_XncBXNZc_hw@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 (3.0.2-2.fc15) 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1309435714.23597.181.camel@sauron>
-Mime-Version: 1.0
+	Thu, 30 Jun 2011 08:08:37 -0400
+Date: Thu, 30 Jun 2011 16:08:31 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Shailabh Nagar <nagar@us.ibm.com>, linux-kernel@vger.kernel.org,
+        security@kernel.org, Eric Paris <eparis@redhat.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
+Message-ID: <20110630120831.GB7707@albatros>
+References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
+ <BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
+ <20110630075716.GB3377@albatros>
+ <BANLkTik0DF5jUhOsP=Pnm+vMbHzEx+3L-Q@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTik0DF5jUhOsP=Pnm+vMbHzEx+3L-Q@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-30 at 12:23 +0400, Dmitry Eremin-Solenikov wrote:
-> On 6/30/11, Axel Lin <axel.lin@gmail.com> wrote:
-> > Fix a mistake introduced by commit 33f4a3b
-> > "mtd: tmio_nand.c: use mtd_device_parse_register"
+On Thu, Jun 30, 2011 at 16:29 +0530, Balbir Singh wrote:
+> On Thu, Jun 30, 2011 at 1:27 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> > On Wed, Jun 29, 2011 at 13:09 -0700, Linus Torvalds wrote:
+> >> Ok, having looked at this some more, I'm quite ready to just mark the
+> >> whole TASKSTATS config option as BROKEN. It does seem to be a horrible
+> >> security hazard, and very little seems to use it.
+> >>
 > 
-> Already sumbited 27 June 2011. Strangely Artem remains silent.
+> I am not sure how you define BROKEN, BROKEN as per security rules?
+> /proc/$pid/xxx also expose similar information.
 
-I handle my mailbox in FIFO order (with exceptions) so I have not
-reached your patch yet. Now I've merged it with one of your previous
-patches to keep the kernel bisectable.
+I'm sure this information is also dangerous.
 
-Thanks!
+
+> >> It also seems to be really fundamentally broken. Afaik, there's no way
+> >> to filter taskstats not only by security issues (Vasiliy's patch
+> >> really is very ugly), but it seems to be some global cross-namespace
+> >> thing too, so it exposes taskstats across pid namespaces afaik.
+> >
+> > The problem here is that it keeps a pid in a global list.  This list is
+> > then browsed by all namespaces.  Looking into the code, I see 2 real
+> > problems (didn't check, though):
+> >
+> > 1) If there are 2+ pid namespaces, one listener in pid_ns #1 and some
+> > process dies in pid_ns #2, then the dying task wouldn't find the
+> > listener via find_task_by_vpid() and would just delete the listener from
+> > listeners list.  Looks like this problem was created by optimization
+> > patch f9fd8914c1acca0.
+> 
+> I must admit, I did not pay much attention to pid namespace changes as
+> they were being made to taskstats. I'll look at the code later this
+> week.
+> 
+> >
+> > 2) Netlink sockets are per net namespace, but this accounting thing is per
+> > pid namespace.  So, if the dying task and the listener are in a single
+> > pid namespace, but in different net namespaces, the message will not be
+> > sent via genlmsg_unicast().  I suspect it is a problem of all non-net
+> > netlink sockets.
+
+This is not a problem of all non-net netlink sockets, but only of those
+who finds a task by the pid.  AFAIU, the normal netlink policy is using
+broadcast packets.
+
+
+3) A process cannot own 2 taskstats sockets because the information
+stored in listeners array doesn't make difference between different
+sockets of the same task.  Both searches would stop on the first socket,
+the first socket would receive 2 messages while the second would be
+silent.  It was introduced by f9fd8914c1acca0.
+
+
+> Good catch, under what circumstances would tasks have the same pid
+> namespace, but different net namespaces?
+
+Umm, if one did unshare() or clone() to unshare only net namespace?
+
+
+> >> It
+> >> does that even with Vasiliy's patch, afaik, although then I think you
+> >> need to have collissions in the namespaces if I read the code
+> >> correctly.
+> >>
+> >> I suspect that could be fixed by adding a pid namespace to the
+> >> 'listener' structure. Also adding a 'cred' pointer (or the actual
+> >> listener thread pointer) to it would make Vasiliy's patch more
+> >> palatable, since then you wouldn't need to look up the credentials at
+> >> send_cpu_listeners() time.
+> >>
+> 
+> A simple work around could be to disable taskstats under network
+> namespace or even the current behaviour should just warn the user that
+> the network namespace of the listener is distinct and disallow the
+> listener
+> 
+> >> Maybe I have mis-read the code. But it does all make me shudder. There
+> >> doesn't even seem to be all that many _users_ of the thing, so the
+> >> problems it has really makes me go "is that code worth it"? We
+> >> probably should never have merged it in the first place.
+> 
+> iotop(), getdelays (in kernel) with many developers using it and many
+> more. The interface has been published for a while now
+> 
+> Thanks for the review,
+> Balbir Singh
+
+
+Thanks,
 
 -- 
-Best Regards,
-Artem Bityutskiy
-
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
