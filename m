@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751312Ab1F3QAH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 12:00:07 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:54791 "EHLO
+	id S1751445Ab1F3QFJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 12:05:09 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57587 "EHLO
 	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750999Ab1F3QAE (ORCPT
+	by vger.kernel.org with ESMTP id S1751252Ab1F3QFF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 12:00:04 -0400
-Date: Thu, 30 Jun 2011 08:59:58 -0700
+	Thu, 30 Jun 2011 12:05:05 -0400
+Date: Thu, 30 Jun 2011 09:05:02 -0700
 From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Igor Grinberg <grinberg@compulab.co.il>
-Cc: Stanislav Brabec <utx@penguin.cz>, Marek Vasut <marek.vasut@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, zaurus-devel@www.linuxtogo.org,
-        spi-devel-general@lists.sourceforge.net, vapier@gentoo.org,
-        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org, pavel@ucw.cz,
-        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
-        akpm@linux-foundation.org
-Subject: Re: kernel panic in spi_complete() on spitz (PXA270)
-Message-ID: <20110630155957.GF3249@opensource.wolfsonmicro.com>
-References: <1308845380.4533.54.camel@oct.suse.cz>
- <201106301352.21684.marek.vasut@gmail.com>
- <1309445118.4406.47.camel@oct.suse.cz>
- <4E0C957F.8080807@compulab.co.il>
+To: Vasily Khoruzhick <anarsoul@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        linux-samsung-soc@vger.kernel.org, Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassi.brar@samsung.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, myungjoo.ham@gmail.com,
+        Ben Dooks <ben-linux@fluff.org>, Seungwhan Youn <sw.youn@samsung.com>,
+        Changhwan Youn <chaos.youn@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH v3 1/6] Samsung SoC ADC: use regulator (VDD for ADC).
+Message-ID: <20110630160501.GG3249@opensource.wolfsonmicro.com>
+References: <1309420175-10301-1-git-send-email-myungjoo.ham@samsung.com>
+ <1309420175-10301-2-git-send-email-myungjoo.ham@samsung.com>
+ <201106301122.50800.anarsoul@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E0C957F.8080807@compulab.co.il>
+In-Reply-To: <201106301122.50800.anarsoul@gmail.com>
 X-Cookie: You are always busy.
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 06:25:51PM +0300, Igor Grinberg wrote:
-> On 06/30/11 17:45, Stanislav Brabec wrote:
+On Thu, Jun 30, 2011 at 11:22:50AM +0300, Vasily Khoruzhick wrote:
+> On Thursday 30 June 2011 10:49:30 MyungJoo Ham wrote:
 
-> > from this thread. Without it, ADS7846 does not work on spitz (ADS7846
-> > does not have any dedicated regulator there). I want to
-> > add .needs_regulator bool to ads7846.c and send the patch again to the
-> > list.
+> > +	adc->vdd = regulator_get(dev, "vdd");
+> > +	if (IS_ERR(adc->vdd)) {
+> > +		dev_err(dev, "operating without regulator \"vdd\" .\n");
+> > +		ret = PTR_ERR(adc->vdd);
+> > +		goto err_alloc;
+> > +	}
+> > +
 
-> Please, don't...
-> I thought we've finished discussing the regulator issue...
+> NACK. Make it optional, otherwise it breaks s3c24xx.
 
-> Instead of patching the driver and the platform data and the board file,
-> you should do _either_ of the following:
-> 1) add regulator definition for ads7846 into the board file
-> 2) enable the CONFIG_REGULATOR_DUMMY in your kernel configuration
-> 3) use regulator_use_dummy_regulator() call in the board file.
+No, the above code is how the regulator API should be used.  The API
+will stub itself out if not in use so unless the s3c24xx platforms are
+using regulators and there's a couple of options in the regulator API
+for handling partially defined hookups of regulators on the board.
 
-> Using either of the above, you will not need the patch for ads7846, only for the board file.
-
-Yes, we've been through this repeatedly.  None of these options take any
-appreciable time to implement, it'd be much more productive to just do
-so.
+If there isn't a separate supply for the regulators on S3C24xx devices
+then I guess the best option is to provide that supply as a dummy
+regulator in the s3c24xx core code.
