@@ -1,42 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755178Ab1F3Jlb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 05:41:31 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:57342 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752310Ab1F3JlZ convert rfc822-to-8bit (ORCPT
+	id S1755169Ab1F3JoH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 05:44:07 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:52430
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754680Ab1F3JoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 05:41:25 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Girdwood, Liam" <lrg@ti.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: Re: Re: [alsa-devel] [PATCH v6 00/18] MFD/ASoC/Input: TWL4030/TWL60X0 changes
-Date: Thu, 30 Jun 2011 12:41:14 +0300
-Message-ID: <1716345.TLaZkrJrpR@barack>
-User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
-In-Reply-To: <20110630080443.GD12106@sortiz-mobl>
-References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com> <1764311.fyKV9VEiMM@barack> <20110630080443.GD12106@sortiz-mobl>
+	Thu, 30 Jun 2011 05:44:04 -0400
+Date: Thu, 30 Jun 2011 05:44:01 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: Re: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
+Message-ID: <20110630094401.GA31095@infradead.org>
+References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
+ <20110629140630.5aefdda8.rdunlap@xenotime.net>
+ <BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
+ <20110630080119.GA20802@infradead.org>
+ <BANLkTik81kgf=g+QngnaB7gNUF+xCQdSvw@mail.gmail.com>
+ <20110630085633.GA31414@infradead.org>
+ <BANLkTim4SHUXQn4D9Lup4mc0i2D8D0dCUg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTim4SHUXQn4D9Lup4mc0i2D8D0dCUg@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Thu, Jun 30, 2011 at 11:32:14AM +0200, Geert Uytterhoeven wrote:
+> > %zd is specified as the correct format for ssize_t.
+> 
+> And the code is already using that!
+> But cris overrides ssize_t to a different type than expected by the compiler.
 
-On Thursday 30 June 2011 10:04:43 Samuel Ortiz wrote:
-> I will do that very soon, no worries.
+Yikes, ok.  That's a pretty stupid thing to do.  I guess cris has
+mismatching kernel and userspace defintions for it?
 
-Thank you very much, I'm going to have another series on top of this one 
-coming, and want to make sure that I'm in the right track.
-
-Thanks,
-Péter
