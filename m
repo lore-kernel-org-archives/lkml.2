@@ -1,88 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab1F3T3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 15:29:52 -0400
-Received: from smtp.net4visions.de ([85.214.69.78]:41281 "EHLO
-	smtp.net4visions.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752754Ab1F3T3u (ORCPT
+	id S1753905Ab1F3TWU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 15:22:20 -0400
+Received: from mail.southpole.se ([193.12.106.18]:37702 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753451Ab1F3TWS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 15:29:50 -0400
-X-Greylist: delayed 530 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Jun 2011 15:29:49 EDT
-X-Spam-Flag: NO
-X-Spam-Score: 0.602
-Message-ID: <4E0CCC80.4070701@tower-net.de>
-Date: Thu, 30 Jun 2011 21:20:32 +0200
-From: Markus Kolb <linux-201011@tower-net.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: dbrownell@users.sourceforge.net
-Subject: [PATCH] cdc_ether fix to support Samsung Galaxy S with Android 2.3.4
- again
-Content-Type: multipart/mixed;
- boundary="------------090402070908000508040002"
+	Thu, 30 Jun 2011 15:22:18 -0400
+From: Jonas Bonn <jonas@southpole.se>
+To: rusty@rustcorp.com.au
+Cc: arnd@ardnb.de, geert@linux-m68k.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        monstr@monstr.eu, cmetcalf@tilera.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, Jonas Bonn <jonas@southpole.se>
+Subject: [PATCH 1/2] modules: add default loader hook implementations
+Date: Thu, 30 Jun 2011 21:22:11 +0200
+Message-Id: <1309461732-2875-1-git-send-email-jonas@southpole.se>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <201106281245.19457.arnd@arndb.de>
+References: <201106281245.19457.arnd@arndb.de>
+X-Assp-Client-SSL: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090402070908000508040002
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
 
-cdc_ether uses currently the wrong bInterfaceNumber(s).
-It uses CDC Union information for bMasterInterface and bSlaveInterface 
-which seems to be wrong. At least there isn't any relation.
-I don't know what would be the correct way but with my patch the driver 
-supports the mobile phone again and there should be no malfunction with 
-already supported hardware.
-For a bug report see
-https://bugs.launchpad.net/ubuntu/+source/linux/+bug/796006
+The module loader code allows architectures to hook into the code by
+providing a small number of entry points that each arch must implement.
+This patch provides __weakly linked generic implementations of these
+entry points for architectures that don't need to do anything special.
 
+Signed-off-by: Jonas Bonn <jonas@southpole.se>
+---
+ include/linux/moduleloader.h |    7 +++++-
+ kernel/module.c              |   49 ++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 55 insertions(+), 1 deletions(-)
 
---------------090402070908000508040002
-Content-Type: text/x-patch;
- name="Ubuntu_bug_796006.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="Ubuntu_bug_796006.patch"
-
-diff -ru linux-2.6.38/drivers/net/usb/cdc_ether.c linux-2.6.38.patched/drivers/net/usb/cdc_ether.c
---- linux-2.6.38/drivers/net/usb/cdc_ether.c	2011-03-15 02:20:32.000000000 +0100
-+++ linux-2.6.38.patched/drivers/net/usb/cdc_ether.c	2011-06-30 18:48:29.749287600 +0200
-@@ -86,6 +86,8 @@
- 	struct usb_driver		*driver = driver_of(intf);
- 	struct usb_cdc_mdlm_desc	*desc = NULL;
- 	struct usb_cdc_mdlm_detail_desc *detail = NULL;
-+	int				mapped_master;
-+	int				mapped_slave;
+diff --git a/include/linux/moduleloader.h b/include/linux/moduleloader.h
+index c1f40c2..b2be02e 100644
+--- a/include/linux/moduleloader.h
++++ b/include/linux/moduleloader.h
+@@ -5,7 +5,12 @@
+ #include <linux/module.h>
+ #include <linux/elf.h>
  
- 	if (sizeof dev->data < sizeof *info)
- 		return -EDOM;
-@@ -188,6 +190,24 @@
- 						info->u->bMasterInterface0);
- 			info->data = usb_ifnum_to_if(dev->udev,
- 						info->u->bSlaveInterface0);
-+			if ((!info->control || !info->data) 
-+					&& (info->u->bMasterInterface0 > 0)) {
-+				// try with mapping to start with 0
-+				mapped_master = (info->u->bMasterInterface0 
-+						- ((info->u->bSlaveInterface0 >
-+						info->u->bMasterInterface0) ? 
-+						info->u->bMasterInterface0 : 
-+						info->u->bSlaveInterface0));
-+				mapped_slave = (info->u->bSlaveInterface0 
-+						- ((info->u->bSlaveInterface0 >
-+						info->u->bMasterInterface0) ? 
-+						info->u->bMasterInterface0 : 
-+						info->u->bSlaveInterface0));
-+				info->control = usb_ifnum_to_if(dev->udev,
-+						mapped_master);
-+				info->data = usb_ifnum_to_if(dev->udev,
-+						mapped_slave);
-+			}
- 			if (!info->control || !info->data) {
- 				dev_dbg(&intf->dev,
- 					"master #%u/%p slave #%u/%p\n",
+-/* These must be implemented by the specific architecture */
++/* These may be implemented by architectures that need to hook into the
++ * module loader code.  Architectures that don't need to do anything special
++ * can just rely on the 'weak' default hooks defined in kernel/module.c.
++ * Note, however, that at least one of apply_relocate or apply_relocate_add
++ * must be implemented by each architecture.
++ */
+ 
+ /* Adjust arch-specific sections.  Return 0 on success.  */
+ int module_frob_arch_sections(Elf_Ehdr *hdr,
+diff --git a/kernel/module.c b/kernel/module.c
+index 795bdc7..6301d6e 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -1697,6 +1697,15 @@ static void unset_module_core_ro_nx(struct module *mod) { }
+ static void unset_module_init_ro_nx(struct module *mod) { }
+ #endif
+ 
++void __weak module_free(struct module *mod, void *module_region)
++{
++	vfree(module_region);
++}
++
++void __weak module_arch_cleanup(struct module *mod)
++{
++}
++
+ /* Free a module, remove from lists, etc. */
+ static void free_module(struct module *mod)
+ {
+@@ -1851,6 +1860,26 @@ static int simplify_symbols(struct module *mod, const struct load_info *info)
+ 	return ret;
+ }
+ 
++int __weak apply_relocate(Elf_Shdr *sechdrs,
++			  const char *strtab,
++			  unsigned int symindex,
++			  unsigned int relsec,
++			  struct module *me)
++{
++	pr_err("module %s: REL relocation unsupported\n", me->name);
++	return -ENOEXEC;
++}
++
++int __weak apply_relocate_add(Elf_Shdr *sechdrs,
++			      const char *strtab,
++			      unsigned int symindex,
++			      unsigned int relsec,
++			      struct module *me)
++{
++	pr_err("module %s: RELA relocation unsupported\n", me->name);
++	return -ENOEXEC;
++}
++
+ static int apply_relocations(struct module *mod, const struct load_info *info)
+ {
+ 	unsigned int i;
+@@ -2235,6 +2264,11 @@ static void dynamic_debug_remove(struct _ddebug *debug)
+ 		ddebug_remove_module(debug->modname);
+ }
+ 
++void * __weak module_alloc(unsigned long size)
++{
++	return size == 0 ? NULL : vmalloc_exec(size);
++}
++
+ static void *module_alloc_update_bounds(unsigned long size)
+ {
+ 	void *ret = module_alloc(size);
+@@ -2645,6 +2679,14 @@ static void flush_module_icache(const struct module *mod)
+ 	set_fs(old_fs);
+ }
+ 
++int __weak module_frob_arch_sections(Elf_Ehdr *hdr,
++				     Elf_Shdr *sechdrs,
++				     char *secstrings,
++				     struct module *mod)
++{
++	return 0;
++}
++
+ static struct module *layout_and_allocate(struct load_info *info)
+ {
+ 	/* Module within temporary copy. */
+@@ -2716,6 +2758,13 @@ static void module_deallocate(struct module *mod, struct load_info *info)
+ 	module_free(mod, mod->module_core);
+ }
+ 
++int __weak module_finalize(const Elf_Ehdr *hdr,
++			   const Elf_Shdr *sechdrs,
++			   struct module *me)
++{
++	return 0;
++}
++
+ static int post_relocation(struct module *mod, const struct load_info *info)
+ {
+ 	/* Sort exception table now relocations are done. */
+-- 
+1.7.4.1
 
---------------090402070908000508040002--
