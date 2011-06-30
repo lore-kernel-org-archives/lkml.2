@@ -1,76 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab1F3Q1r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 12:27:47 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:1262 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752483Ab1F3Q1n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 12:27:43 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:date:
-	message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=A4/BMv09UqPRx3dnk25m6zgQr5kt0ZnLWncGpAJWnvUS+ocaf7c9dHTOBQ/sV1x1R
-	5KNeG3ZA36y2UoG04Uktg==
+	id S1752770Ab1F3QcY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 12:32:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:61044 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751378Ab1F3QcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 12:32:22 -0400
+Date: Thu, 30 Jun 2011 12:32:18 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Aloisio Almeida <aloisio.almeida@openbossa.org>
+Subject: Re: RFC: Add __dynamic_dev_dbg
+Message-ID: <20110630163218.GA2457@redhat.com>
+References: <1309285246-8495-1-git-send-email-aloisio.almeida@openbossa.org>
+ <1309285246-8495-2-git-send-email-aloisio.almeida@openbossa.org>
+ <1309292325.29598.9.camel@Joe-Laptop>
+ <1309311096.2208.33.camel@aeonflux>
+ <1309312164.29598.53.camel@Joe-Laptop>
+ <1309370457.2208.48.camel@aeonflux>
+ <BANLkTinospg_dhTC8Tcok3kqk9gOryG6eA@mail.gmail.com>
+ <1309391163.29598.92.camel@Joe-Laptop>
+ <CAEsZsEgfKPtsXKGiAV3QuH=YESyS+GHnsNjauVZV==AN94fxug@mail.gmail.com>
+ <1309409341.1726.14.camel@Joe-Laptop>
 MIME-Version: 1.0
-In-Reply-To: <CABPqkBRs1nd7KptkVCg5QeG0AJJck=VHAgCpSOJKpOgdDuN-6A@mail.gmail.com>
-References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
-	<CABPqkBRs1nd7KptkVCg5QeG0AJJck=VHAgCpSOJKpOgdDuN-6A@mail.gmail.com>
-Date: Thu, 30 Jun 2011 18:27:40 +0200
-Message-ID: <CABPqkBRZf41wbJKq2PCdMzDhgNMn0VYkVsaZToS34AXpRzTGLw@mail.gmail.com>
-Subject: Re: [PATCH 0/4] perf: Intel uncore pmu counting support
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309409341.1726.14.camel@Joe-Laptop>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 2:10 PM, Stephane Eranian <eranian@google.com> wrote:
-> On Thu, Jun 30, 2011 at 10:09 AM, Lin Ming <ming.m.lin@intel.com> wrote:
->> Hi, all
->>
->> I posted uncore patches months ago, but it was pended due to an uncore
->> interrupt problem.
->>
->> This series are cut to support uncore pmu counting only.
->> So uncore interrupt handling is not needed.
->>
-> You're making the assumption that when counting, you can never construct
-> a measurement that will cause a counter to overflow the 39 bits. If not, then
-> you need interrupt handling even when counting.
->
-The actual counter width is 48. But wrmsrl() can only write the bottom 32 bits
-of a register. I think Intel fixed that only with SandyBridge (see Vol3b). Thus,
-the risk of 'silent' wrap around is much higher now as you have only 31 bits
-to play with.
+On Wed, Jun 29, 2011 at 09:49:01PM -0700, Joe Perches wrote:
+> (resending to LKML)
+> 
+> That seems enough easy to fix.
+> 
+> Jason?  How does this look?
+> 
 
-But if I read your patch correctly, it seems you are avoiding wrmsrl() on the
-counter. Instead, you are reading it when you start (prev_count) and using
-that value to compute the delta on stop.
+Thanks for noticing the inconsistency. Patch makes sense to me.
 
-Am I understanding your workaround correctly?
+There seem to be a number of pending dynamic debug patches. So if you want to
+send me this patch with a changelog and sob line, I can queue up with the rest.
 
+thanks,
 
->
->> The uncore pmu type is allocated dynamically and exported via sysfs.
->> $ cat /sys/bus/event_source/devices/uncore/type
->> 6
->>
->> You can count uncore raw events as below,
->> $ perf stat -e uncore:r0101 ls
->>
->> It reads uncore pmu type id from sysfs to setup perf_event_attr::type.
->>
->> Comments are appreciated.
->>
->> Thanks,
->> Lin Ming
->>
->>
->
+-Jason
+
+> ---
+> 
+>  drivers/base/core.c           |    5 +++--
+>  include/linux/device.h        |    5 +++++
+>  include/linux/dynamic_debug.h |   10 ++++++++--
+>  lib/dynamic_debug.c           |   38 ++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 54 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/base/core.c b/drivers/base/core.c
+> index bc8729d..82c8654 100644
+> --- a/drivers/base/core.c
+> +++ b/drivers/base/core.c
+> @@ -1764,8 +1764,8 @@ void device_shutdown(void)
+>  
+>  #ifdef CONFIG_PRINTK
+>  
+> -static int __dev_printk(const char *level, const struct device *dev,
+> -			struct va_format *vaf)
+> +int __dev_printk(const char *level, const struct device *dev,
+> +		 struct va_format *vaf)
+>  {
+>  	if (!dev)
+>  		return printk("%s(NULL device *): %pV", level, vaf);
+> @@ -1773,6 +1773,7 @@ static int __dev_printk(const char *level, const struct device *dev,
+>  	return printk("%s%s %s: %pV",
+>  		      level, dev_driver_string(dev), dev_name(dev), vaf);
+>  }
+> +EXPORT_SYMBOL(__dev_printk);
+>  
+>  int dev_printk(const char *level, const struct device *dev,
+>  	       const char *fmt, ...)
+> diff --git a/include/linux/device.h b/include/linux/device.h
+> index e4f62d8..53711f2 100644
+> --- a/include/linux/device.h
+> +++ b/include/linux/device.h
+> @@ -785,6 +785,8 @@ extern const char *dev_driver_string(const struct device *dev);
+>  
+>  #ifdef CONFIG_PRINTK
+>  
+> +extern int __dev_printk(const char *level, const struct device *dev,
+> +			struct va_format *vaf);
+>  extern int dev_printk(const char *level, const struct device *dev,
+>  		      const char *fmt, ...)
+>  	__attribute__ ((format (printf, 3, 4)));
+> @@ -805,6 +807,9 @@ extern int _dev_info(const struct device *dev, const char *fmt, ...)
+>  
+>  #else
+>  
+> +static inline int __dev_printk(const char *level, const struct device *dev,
+> +			       struct va_format *vaf)
+> +	 { return 0; }
+>  static inline int dev_printk(const char *level, const struct device *dev,
+>  		      const char *fmt, ...)
+>  	__attribute__ ((format (printf, 3, 4)));
+> diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+> index e747ecd..bdf1531 100644
+> --- a/include/linux/dynamic_debug.h
+> +++ b/include/linux/dynamic_debug.h
+> @@ -47,6 +47,13 @@ extern int ddebug_remove_module(const char *mod_name);
+>  extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+>  	__attribute__ ((format (printf, 2, 3)));
+>  
+> +struct device;
+> +
+> +extern int __dynamic_dev_dbg(struct _ddebug *descriptor,
+> +			     const struct device *dev,
+> +			     const char *fmt, ...)
+> +	__attribute__ ((format (printf, 3, 4)));
+> +
+>  #define dynamic_pr_debug(fmt, ...) do {					\
+>  	static struct _ddebug descriptor				\
+>  	__used								\
+> @@ -57,7 +64,6 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+>  		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__); \
+>  	} while (0)
+>  
+> -
+>  #define dynamic_dev_dbg(dev, fmt, ...) do {				\
+>  	static struct _ddebug descriptor				\
+>  	__used								\
+> @@ -65,7 +71,7 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+>  	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
+>  		_DPRINTK_FLAGS_DEFAULT };				\
+>  	if (unlikely(descriptor.enabled))				\
+> -		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
+> +		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);	\
+>  	} while (0)
+>  
+>  #else
+> diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+> index 75ca78f..5c5f8f9 100644
+> --- a/lib/dynamic_debug.c
+> +++ b/lib/dynamic_debug.c
+> @@ -30,6 +30,7 @@
+>  #include <linux/jump_label.h>
+>  #include <linux/hardirq.h>
+>  #include <linux/sched.h>
+> +#include <linux/device.h>
+>  
+>  extern struct _ddebug __start___verbose[];
+>  extern struct _ddebug __stop___verbose[];
+> @@ -456,6 +457,43 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+>  }
+>  EXPORT_SYMBOL(__dynamic_pr_debug);
+>  
+> +int __dynamic_dev_dbg(struct _ddebug *descriptor,
+> +		      const struct device *dev, const char *fmt, ...)
+> +{
+> +	struct va_format vaf;
+> +	va_list args;
+> +	int res;
+> +
+> +	BUG_ON(!descriptor);
+> +	BUG_ON(!fmt);
+> +
+> +	va_start(args, fmt);
+> +
+> +	vaf.fmt = fmt;
+> +	vaf.va = &args;
+> +
+> +	res = printk(KERN_DEBUG);
+> +	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
+> +		if (in_interrupt())
+> +			res += printk(KERN_CONT "<intr> ");
+> +		else
+> +			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
+> +	}
+> +	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
+> +		res += printk(KERN_CONT "%s:", descriptor->modname);
+> +	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
+> +		res += printk(KERN_CONT "%s:", descriptor->function);
+> +	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
+> +		res += printk(KERN_CONT "%d ", descriptor->lineno);
+> +
+> +	res += __dev_printk("", dev, &vaf);
+> +
+> +	va_end(args);
+> +
+> +	return res;
+> +}
+> +EXPORT_SYMBOL(__dynamic_dev_dbg);
+> +
+>  static __initdata char ddebug_setup_string[1024];
+>  static __init int ddebug_setup_query(char *str)
+>  {
+> 
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
