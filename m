@@ -1,48 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752047Ab1F3U65 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 16:58:57 -0400
-Received: from acheron.ifi.lmu.de ([129.187.214.135]:51577 "EHLO
-	acheron.ifi.lmu.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751291Ab1F3U6z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 16:58:55 -0400
-X-Greylist: delayed 1708 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Jun 2011 16:58:55 EDT
-From: Michael Brade <brade@informatik.uni-muenchen.de>
-Organization: =?iso-8859-1?q?Ludwig-Maximilians-Universit=E4t?= 
- =?iso-8859-1?q?_M=FCnchen?=
-To: linux-kernel@vger.kernel.org
-Subject: found the reason for: utsrelease.h contains "CHK include/generated/utsrelease"
-Date: Thu, 30 Jun 2011 22:30:25 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.39.2-grsec+; KDE/4.6.4; x86_64; ; )
+	id S1751933Ab1F3Uol (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 16:44:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62096 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751115Ab1F3Uog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 16:44:36 -0400
+Date: Thu, 30 Jun 2011 16:44:32 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
+        linux-fsdevel@vger.kernel.org, andrea@betterlinux.com,
+        linux-ext4@vger.kernel.org
+Subject: Re: fsync serialization on ext4 with blkio throttling (Was: Re:
+ [PATCH 0/8][V2] blk-throttle: Throttle buffered WRITEs in
+ balance_dirty_pages())
+Message-ID: <20110630204432.GL27889@redhat.com>
+References: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
+ <20110629004219.GP32466@dastard>
+ <20110629015336.GA19082@redhat.com>
+ <20110630200459.GI27889@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106302230.25239.brade@informatik.uni-muenchen.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110630200459.GI27889@redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jun 30, 2011 at 04:04:59PM -0400, Vivek Goyal wrote:
 
-> I repeatedly get garbled output in utsrelease.h when compiling my own
-> kernel. 
-> To reproduce:
->
-> make mrproper
-> make allnoconfig
-> make prepare
->
-> Output of "cat include/generated/utsrelease.h":
->  CHK     include/generated/utsrelease
+[..]
+> Dave,
+> 
+> Just another example where serialization is taking place with ext4.
+> 
+> I created a group with 1MB/s write limit and ran tedso's fsync tester
+> program with little modification. I used write() system call instead
+> of pwrite() so that file size grows. This program basically writes
+> 1MB of data and then fsync's it and then measures the fsync time.
+> 
+> I ran two instances of prgram in two groups on two separate files. One
+> instances is throttled to 1MB/s and other is in root group unthrottled.
+> 
+> Unthrottled program gets serialized behind throttled one. Following
+> are fsync times.
+> 
+> Throttled instance	Unthrottled Instance
+> ------------------ 	--------------------
+> fsync time: 1.0051	fsync time: 1.0067
+> fsync time: 1.0049	fsync time: 1.0075
+> fsync time: 1.0048	fsync time: 1.0063
+> fsync time: 1.0073	fsync time: 1.0062
+> fsync time: 1.0070	fsync time: 1.0078
+> fsync time: 1.0032	fsync time: 1.0049
+> fsync time: 0.0154	fsync time: 1.0068
+> fsync time: 0.0137	fsync time: 1.0048
+> 
+> Without any throttling both the instances do fine
+> -------------------------------------------------
+> Throttled instance	Unthrottled Instance
+> ------------------ 	--------------------
+> fsync time: 0.0139	fsync time: 0.0162
+> fsync time: 0.0132	fsync time: 0.0156
+> fsync time: 0.0149	fsync time: 0.0169
+> fsync time: 0.0165	fsync time: 0.0152
+> fsync time: 0.0188	fsync time: 0.0135
+> fsync time: 0.0137	fsync time: 0.0142
+> fsync time: 0.0148	fsync time: 0.0149
+> fsync time: 0.0168	fsync time: 0.0163
+> fsync time: 0.0153	fsync time: 0.0143
+> 
+> So when we are inreasing the size of file and fsyncing it, other
+> unthrottled instances of similar activities will get throttled
+> behind it.
+> 
+> IMHO, this is a problem and should be fixed. If filesystem can fix it great.
+> But if not, then we should consider the option of throttling buffered writes 
+> in balance_dirty_pages().
 
-I have spent many more hours analyzing this and finally found exactly what 
-causes this problem: doing "make prepare" under a running kernel with the 
-grsecurity/PAX option CONFIG_PAX_MEMORY_UDEREF set to Yes. I will post this in 
-the grsecurity forums as well, it seems to be their bug after all.
+XFS seems to be doing well for this particular test. Unthrottled
+fsyncer does not get serialized behind throttled one.
 
-cheers,
-  Michael 
+Throttled instance	Unthrottled Instance
+------------------ 	--------------------
+fsync time: 1.0511	fsync time: 0.0204
+fsync time: 1.0486	fsync time: 0.0260
+fsync time: 1.0445	fsync time: 0.0260
+fsync time: 1.0485	fsync time: 0.0260
+fsync time: 1.0446	fsync time: 0.0260
+fsync time: 1.2157	fsync time: 0.0260
+fsync time: 1.0446	fsync time: 0.0300
+fsync time: 1.0484	fsync time: 0.0340
+fsync time: 1.0446	fsync time: 0.0221
+fsync time: 1.0486	fsync time: 0.0340
+fsync time: 1.0406	fsync time: 0.0340
 
-
+Thanks
+Vivek
