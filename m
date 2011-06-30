@@ -1,104 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752994Ab1F3MnJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:43:09 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:10412 "EHLO
+	id S1751677Ab1F3N6S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 09:58:18 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:21050 "EHLO
 	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752551Ab1F3MnE (ORCPT
+	with ESMTP id S1751097Ab1F3N6N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:43:04 -0400
+	Thu, 30 Jun 2011 09:58:13 -0400
+Message-ID: <4E0C80B8.7030006@atmel.com>
+Date: Thu, 30 Jun 2011 15:57:12 +0200
 From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org,
-        hans-christian.egtvedt@atmel.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@avr32linux.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: [PATCH V2] MMC: PM: add suspend/resume in atmel-mci
-Date: Thu, 30 Jun 2011 15:49:41 +0200
-Message-Id: <1309441781-11012-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <201106292339.12402.rjw@sisk.pl>
-References: <201106292339.12402.rjw@sisk.pl>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+CC: lrg@ti.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: [PATCH 1/5] ASoC: wm8731: rework power management
+References: <1309370419-22810-1-git-send-email-nicolas.ferre@atmel.com> <ccd4b125244271af7978948689cf1dcef37bc06b.1309368631.git.nicolas.ferre@atmel.com> <20110629171148.GB10798@opensource.wolfsonmicro.com>
+In-Reply-To: <20110629171148.GB10798@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Take care of slots while going to suspend state.
+Le 29/06/2011 19:11, Mark Brown :
+> On Wed, Jun 29, 2011 at 08:00:15PM +0200, Nicolas Ferre wrote:
+> 
+> Don't mix multiple changes into a single patch!  There's no perceptible
+> code overlap between these so I don't understand why you've merged them,
+> it just makes review harder and the changelog less descriptive.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
-V2: move to pm_ops
+Ok.
 
- drivers/mmc/host/atmel-mci.c |   47 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 47 insertions(+), 0 deletions(-)
+>> - preserve crystal oscillator across suspend/resume sequence:
+>>   enabled by default, it should be kept enabled on resume.
+> 
+> This isn't what your code does...
+> 
+>>  		snd_soc_write(codec, WM8731_ACTIVE, 0x0);
+>> -		snd_soc_write(codec, WM8731_PWR, 0xffff);
+>> +		/* standby: keep crystal oscillator enabled */
+>> +		snd_soc_write(codec, WM8731_PWR, 0x00df);
+> 
+> This doesn't keep the crystal oscillator enabled, this forces it on in
+> suspend (and without looking at the datasheet it also changes way more
+> than the one register bit I'd expect to be changed).  If the system
+> isn't using the oscillator then that's not good.
+> 
+> I'd expect to see a change to using snd_soc_update_bits() based on your
+> description, or more likely something more involved.
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index aa8039f..058f1842 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -1878,10 +1878,57 @@ static int __exit atmci_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
-+static int atmci_suspend(struct device *dev)
-+{
-+	struct atmel_mci *host = dev_get_drvdata(dev);
-+	struct atmel_mci_slot *slot;
-+	int i, ret;
-+
-+	 for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-+		slot = host->slot[i];
-+		if (!slot)
-+			continue;
-+		ret = mmc_suspend_host(slot->mmc);
-+		if (ret < 0) {
-+			while (--i >= 0) {
-+				slot = host->slot[i];
-+				if (slot)
-+					mmc_resume_host(host->slot[i]->mmc);
-+			}
-+			return ret;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int atmci_resume(struct device *dev)
-+{
-+	struct atmel_mci *host = dev_get_drvdata(dev);
-+	struct atmel_mci_slot *slot;
-+	int i, ret;
-+
-+	for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-+		slot = host->slot[i];
-+		if (!slot)
-+			continue;
-+		ret = mmc_resume_host(slot->mmc);
-+		if (ret < 0)
-+			return ret;
-+	}
-+
-+	return 0;
-+}
-+#endif
-+static SIMPLE_DEV_PM_OPS(atmci_pm, atmci_suspend, atmci_resume);
-+
-+
- static struct platform_driver atmci_driver = {
- 	.remove		= __exit_p(atmci_remove),
- 	.driver		= {
- 		.name		= "atmel_mci",
-+		.pm		= &atmci_pm,
- 	},
- };
- 
+First of all, I experienced issues while not having OSC enabled during suspend/resume cycle. Am I right supposing that, if using oscillator to clock the codec, I have to keep it running during a suspend/resume cycle?
+
+Is something like this sounds like an acceptable option or we need something more sophisticated?
+
+@@ -481,7 +481,10 @@ static int wm8731_set_bias_level(struct snd_soc_codec *codec,
+                break;
+        case SND_SOC_BIAS_OFF:
+                snd_soc_write(codec, WM8731_ACTIVE, 0x0);
+-               snd_soc_write(codec, WM8731_PWR, 0xffff);
++               reg = 0xdf;
++               if (wm8731->sysclk_type == WM8731_SYSCLK_XTAL)
++                               reg |= 1 << 0x5;
++               snd_soc_update_bits(codec, WM8731_PWR, 0x00ff, reg);
+                regulator_bulk_disable(ARRAY_SIZE(wm8731->supplies),
+                                       wm8731->supplies);
+                break;
+
+And, yes, there is only 8 bits dedicated to power down control in this register.
+
+Best regards,
 -- 
-1.7.3
+Nicolas Ferre
 
