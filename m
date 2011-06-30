@@ -1,58 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753435Ab1F3Slt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 14:41:49 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:25761 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab1F3Slr (ORCPT
+	id S1753493Ab1F3SrN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 14:47:13 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:44456 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752188Ab1F3SrK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 14:41:47 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6393"; a="100953515"
-From: "Tanya Brokhman" <tlinder@codeaurora.org>
-To: "'Sarah Sharp'" <sarah.a.sharp@linux.intel.com>
-Cc: <greg@kroah.com>, <linux-usb@vger.kernel.org>,
-        <linux-arm-msm@vger.kernel.org>, <balbi@ti.com>,
-        <ablay@codeaurora.org>, "'open list'" <linux-kernel@vger.kernel.org>
-References: <1308231068-24038-2-git-send-email-tlinder@codeaurora.org> <1308231068-24038-6-git-send-email-tlinder@codeaurora.org> <20110630174538.GA7979@xanatos>
-In-Reply-To: <20110630174538.GA7979@xanatos>
-Subject: RE: [PATCH/RFC 5/5] usb: Add support for streams alloc/dealloc to devio.c
-Date: Thu, 30 Jun 2011 21:41:40 +0300
-Message-ID: <063601cc3755$5cfe0180$16fa0480$@org>
+	Thu, 30 Jun 2011 14:47:10 -0400
+Message-ID: <4E0CC4AC.9020400@candelatech.com>
+Date: Thu, 30 Jun 2011 11:47:08 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII"
+To: "J. Bruce Fields" <bfields@fieldses.org>
+CC: linux-nfs@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: NFS crash in un-modified 3.0.0-rc3+, list corruption.
+References: <4DFFCCDC.2070106@candelatech.com> <4DFFD738.2080608@candelatech.com> <20110630182513.GC18713@fieldses.org>
+In-Reply-To: <20110630182513.GC18713@fieldses.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acw3TYf2B2HIOGmITsq5hOgD8hpD/QABxAww
-Content-Language: he
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Sarah,
+On 06/30/2011 11:25 AM, J. Bruce Fields wrote:
+> On Mon, Jun 20, 2011 at 04:26:48PM -0700, Ben Greear wrote:
+>> On 06/20/2011 03:42 PM, Ben Greear wrote:
+>>> This machine is acting as a server.  It is from linux-2.6, pulled
+>>> today:
+>>>
+>>> commit de505e709ffb09a7382ca8e0d8c7dbb171ba5830
+>>>
+>>> We are hitting it with 200 clients reading and writing, mounting and
+>>> un-mounting.
+>>> This bug is fairly reproducible (twice today).
+>>>
+>>> Large amounts of debugging options are enabled.
+>>
+>> We were also starting/stopping NFS on the server machine.
+>> It appears that this crash happens during the
+>> /etc/init.d/nfs stop
+>> command.
+>
+> I'll be submitting the below.
+>
+> The bug's been there for a really long time and we're getting late into
+> the release cycle so I'll probably just save it for 3.1 (but it'll go to
+> stable as well then).
 
-> Will this patch be used to create a userspace UAS driver, or are you
-> envisioning other ways userspace might use streams?  I ask because I
-> can't think of another usage of streams in currently available devices.
-> 
-
-No, this patch isn't used for UAS driver. It's used by us only for several
-tests that we implemented in the user space unittests framework we released
-with this patch. We used this FW to test our superspeed support
-implementation and the UAS gadget driver. It's a userspace application that
-uses Google test and libusb.
-That's the only reason we need this patch at the moment.
-But in any case, due to the comments we got on it from Greg/Alan/Felipe this
-patch is rewritten at the moment by its original author Amit Blay
-(ablay@codeaurora.org). He'll post a new version of it once he's done.
-
+Looks good to me!
 
 Thanks,
-Tanya Brokhman
----
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Ben
+
+>
+> --b.
+>
+> commit 0f4bb2521a0e300443e9d80b10778f5a93cc0dbc
+> Author: J. Bruce Fields<bfields@redhat.com>
+> Date:   Wed Jun 29 16:49:04 2011 -0400
+>
+>      svcrpc: fix list-corrupting race on nfsd shutdown
+>
+>      After commit 3262c816a3d7fb1eaabce633caa317887ed549ae "[PATCH] knfsd:
+>      split svc_serv into pools", svc_delete_xprt (then svc_delete_socket) no
+>      longer removed its xpt_ready (then sk_ready) field from whatever list it
+>      was on, noting that there was no point since the whole list was about to
+>      be destroyed anyway.
+>
+>      That was mostly true, but forgot that a few svc_xprt_enqueue()'s might
+>      still be hanging around playing with the about-to-be-destroyed list, and
+>      could get themselves into trouble writing to freed memory if we left
+>      this xprt on the list after freeing it.
+>
+>      (This is actually functionally identical to a patch made first by Ben
+>      Greear, but with more comments.)
+>
+>      Cc: stable@kernel.org
+>      Cc: gnb@fmeh.org
+>      Reported-by: Ben Greear<greearb@candelatech.com>
+>      Tested-by: Ben Greear<greearb@candelatech.com>
+>      Signed-off-by: J. Bruce Fields<bfields@redhat.com>
+>
+> diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
+> index ab86b79..bd31208 100644
+> --- a/net/sunrpc/svc_xprt.c
+> +++ b/net/sunrpc/svc_xprt.c
+> @@ -902,12 +902,13 @@ void svc_delete_xprt(struct svc_xprt *xprt)
+>   	if (!test_and_set_bit(XPT_DETACHED,&xprt->xpt_flags))
+>   		list_del_init(&xprt->xpt_list);
+>   	/*
+> -	 * We used to delete the transport from whichever list
+> -	 * it's sk_xprt.xpt_ready node was on, but we don't actually
+> -	 * need to.  This is because the only time we're called
+> -	 * while still attached to a queue, the queue itself
+> -	 * is about to be destroyed (in svc_destroy).
+> +	 * The only time we're called while xpt_ready is still on a list
+> +	 * is while the list itself is about to be destroyed (in
+> +	 * svc_destroy).  BUT svc_xprt_enqueue could still be attempting
+> +	 * to add new entries to the sp_sockets list, so we can't leave
+> +	 * a freed xprt on it.
+>   	 */
+> +	list_del_init(&xprt->xpt_ready);
+>   	if (test_bit(XPT_TEMP,&xprt->xpt_flags))
+>   		serv->sv_tmpcnt--;
+>   	spin_unlock_bh(&serv->sv_lock);
 
 
-
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
 
