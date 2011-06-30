@@ -1,35 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab1F3N13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 09:27:29 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:46827 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab1F3N1W (ORCPT
+	id S1751523Ab1F3Nah (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 09:30:37 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43334 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab1F3Nab (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 09:27:22 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Stephen Hemminger <shemminger@linux-foundation.org>
-Subject: Re: possible bridge regression in "bridge: implement [add/del]_slave ops"?
-Date: Thu, 30 Jun 2011 15:27:19 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
-Cc: "David S. Miller" <davem@davemloft.net>, bridge@lists.linux-foundation.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <201106301033.23997.alexander.stein@systec-electronic.com>
-In-Reply-To: <201106301033.23997.alexander.stein@systec-electronic.com>
+	Thu, 30 Jun 2011 09:30:31 -0400
+Date: Thu, 30 Jun 2011 14:30:03 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Per Forlin <per.forlin@linaro.org>,
+        Nickolay Nickolaev <nicknickolaev@gmail.com>
+Subject: Re: [PATCH v8 00/12] use nonblock mmc requests to minimize latency
+Message-ID: <20110630133003.GZ21898@n2100.arm.linux.org.uk>
+References: <1309248717-14606-1-git-send-email-per.forlin@linaro.org> <201106301512.46788.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106301527.19539.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106301512.46788.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 June 2011 10:33:23 Alexander Stein wrote:
-> BTW: I noticed that in 2.6.39.2 independently from this patch revert this
-> bridge didn't show up RUNNING ifconfg. Is this intended? Another bridge I
-> have, which doesn't use (R)STP, is shown as RUNNING like before.
+On Thu, Jun 30, 2011 at 03:12:46PM +0200, Arnd Bergmann wrote:
+> I think this looks good enough to merge into the linux-mmc tree, the code is
+> clean and the benefits are clear.
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> One logical follow-up as both a cleanup and performance optimization would be
+> to get rid of the mmc_queue_thread completely. When mmc_blk_issue_rq() is
+> non-blocking always, you can call it directly from the mmc_request()
+> function, instead of waking up another thread to do it for you.
 
-This change was caused by commit 1faa4356a3bd89ea11fb92752d897cff3a20ec0e 
-"bridge: control carrier based on ports online". It prevents the bridge from 
-actually receiving/sending packets. Reverting restores the old behavior.
+It isn't anywhere near that - because you need to wait for the
+request to complete, then analyze the results and if there has been
+an error, send more commands and wait for their response.
+
+To do all that in an asynchronous fashion will just create a mess of
+small little functions with hard to understand code.  It's far better
+to do all that in a clear procedural way in a thread.
+
+We've been here before - with PCMCIA's card insertion code, where you
+have to go through a sequence of events (insert, power up, reset, etc).
+The PCMCIA code used to have a collection of small functions to do
+each step, one chained after the other in a state machine fashion.
+The result was horrid.  That's exactly what you'll end up with here.
+
+Threads have their place, and this is one of them.
