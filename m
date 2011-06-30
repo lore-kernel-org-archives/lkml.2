@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751500Ab1F3M7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:59:50 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61433 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab1F3M7n (ORCPT
+	id S1751456Ab1F3NER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 09:04:17 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:40028 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750720Ab1F3NEL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:59:43 -0400
-Date: Thu, 30 Jun 2011 08:59:38 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: Avi Kivity <avi@redhat.com>
-Cc: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Anthony Liguori <aliguori@us.ibm.com>
-Subject: Re: [PATCH v3 2/9] KVM-HDR Add constant to represent KVM MSRs
- enabled bit
-Message-ID: <20110630125938.GA4823@mgebm.net>
-References: <1309361388-30163-1-git-send-email-glommer@redhat.com>
- <1309361388-30163-3-git-send-email-glommer@redhat.com>
- <20110629215608.GA3557@mgebm.net>
- <4E0C3458.6090801@redhat.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="h31gzZEtNLTqOjlF"
-Content-Disposition: inline
-In-Reply-To: <4E0C3458.6090801@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 30 Jun 2011 09:04:11 -0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org
+Cc: kernel-hardening@lists.openwall.com,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        David Howells <dhowells@redhat.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>, Helge Deller <deller@gmx.de>,
+        Hugh Dickins <hughd@google.com>
+Subject: [PATCH] ipc: comments for shm_forced_rmid code
+Date: Thu, 30 Jun 2011 17:04:05 +0400
+Message-Id: <1309439045-12445-1-git-send-email-segoon@openwall.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+shm_may_destroy() and ipc_namespace.shm_forced_rmid lack comments.
 
---h31gzZEtNLTqOjlF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+---
+ include/linux/ipc_namespace.h |    3 +++
+ ipc/shm.c                     |   10 ++++++++++
+ 2 files changed, 13 insertions(+), 0 deletions(-)
 
-On Thu, 30 Jun 2011, Avi Kivity wrote:
+diff --git a/include/linux/ipc_namespace.h b/include/linux/ipc_namespace.h
+index bec508f..74173c5 100644
+--- a/include/linux/ipc_namespace.h
++++ b/include/linux/ipc_namespace.h
+@@ -44,6 +44,9 @@ struct ipc_namespace {
+ 	size_t		shm_ctlall;
+ 	int		shm_ctlmni;
+ 	int		shm_tot;
++
++	/* Defines whether IPC_RMID is forced for _all_ shm segments
++	 * regardless of shmctl() */
+ 	int		shm_forced_rmid;
+ 
+ 	struct notifier_block ipcns_nb;
+diff --git a/ipc/shm.c b/ipc/shm.c
+index c55623c..22006f1 100644
+--- a/ipc/shm.c
++++ b/ipc/shm.c
+@@ -187,6 +187,16 @@ static void shm_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp)
+ 	ipc_rcu_putref(shp);
+ }
+ 
++/*
++ * shm_may_destroy - identifies whether shm segment should be destroyed now
++ *
++ * Returns true if and only if there are no active users of the segment and
++ * one of the following is true:
++ *
++ * 1) shmctl(id, IPC_RMID, NULL) was called for this shp
++ *
++ * 2) sysctl kernel.shm_forced_rmid is set to 1.
++ */
+ static bool shm_may_destroy(struct ipc_namespace *ns, struct shmid_kernel *shp)
+ {
+ 	return (shp->shm_nattch == 0) &&
+-- 
+1.7.0.4
 
-> On 06/30/2011 12:56 AM, Eric B Munson wrote:
-> >My mail provider seems to have dropped patch 1 of the series so I can't =
-reply
-> >directly to it, please add my Tested-by there as well.
->=20
-> How did you test it then?
->=20
-
-I built host and guest kernels with the patches and pinned a while(1) and t=
-he
-CPU thread from qemu to CPU 2 on the host.  I then started the same while(1)
-process in guest and verified that I see ~50% steal time reported.
-
-I then built 2.6.39 (just the code I had present) on the guest and time it
-while it was competing with the while(1) on the host for CPU time.  Next I
-built the guest kernel with STEAL_TIME=3DN and reran the kernel compile to =
-make
-sure that there weren't any huge variations in performace.
-
-Eric
-
---h31gzZEtNLTqOjlF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJODHM6AAoJEH65iIruGRnNWwUIAIw7yDzzyEPA9nMpWgkFgqDU
-nMpsPjD7hh3/M6Sx589c59WfQYa2G+opksUhwB9chL/PWUA3XRlLG4X/TkfUBnoe
-S5gzZbGxnxdeUTYRVTeDegWaxPtosz2n6bbe1xRWAPvgZJ2/r9mlDYEGmZ/Id2+2
-ymWj2ZdkdaNuQms2n4KfADdvY0vJDrPkwIIgEMTpXaOLEsYFKQdNuUn9e9OnE1qD
-vEGn1dwfg0/qspEnjspqYFjpMEAdkXPfCAYYEFKMpgY72CEScBKdC+EN2pO3X9m5
-qwrCKJEAMBCos1GgL9totC0TH5PhtWorFQsdadkBP+T+LymNIztqoaPIesgY7no=
-=OFsZ
------END PGP SIGNATURE-----
-
---h31gzZEtNLTqOjlF--
