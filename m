@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab1F3Uol (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 16:44:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62096 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751115Ab1F3Uog (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 16:44:36 -0400
-Date: Thu, 30 Jun 2011 16:44:32 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org, andrea@betterlinux.com,
-        linux-ext4@vger.kernel.org
-Subject: Re: fsync serialization on ext4 with blkio throttling (Was: Re:
- [PATCH 0/8][V2] blk-throttle: Throttle buffered WRITEs in
- balance_dirty_pages())
-Message-ID: <20110630204432.GL27889@redhat.com>
-References: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
- <20110629004219.GP32466@dastard>
- <20110629015336.GA19082@redhat.com>
- <20110630200459.GI27889@redhat.com>
+	id S1751897Ab1F3Uuo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 16:50:44 -0400
+Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:38559
+	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751144Ab1F3Uul (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 16:50:41 -0400
+Message-ID: <4E0CE189.1020000@compulab.co.il>
+Date: Thu, 30 Jun 2011 23:50:17 +0300
+From: Igor Grinberg <grinberg@compulab.co.il>
+Organization: CompuLab Ltd.
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.13) Gecko/20101211 Lightning/1.0b2 Thunderbird/3.1.7
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110630200459.GI27889@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Stanislav Brabec <utx@penguin.cz>, Marek Vasut <marek.vasut@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, zaurus-devel@www.linuxtogo.org,
+        spi-devel-general@lists.sourceforge.net, vapier@gentoo.org,
+        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
+        linux-kernel@vger.kernel.org, pavel@ucw.cz,
+        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
+        akpm@linux-foundation.org
+Subject: Re: kernel panic in spi_complete() on spitz (PXA270)
+References: <1308845380.4533.54.camel@oct.suse.cz> <201106301352.21684.marek.vasut@gmail.com> <1309445118.4406.47.camel@oct.suse.cz> <4E0C957F.8080807@compulab.co.il> <1309450406.4406.59.camel@oct.suse.cz> <4E0CB518.2080703@compulab.co.il> <20110630180105.GA5064@opensource.wolfsonmicro.com>
+In-Reply-To: <20110630180105.GA5064@opensource.wolfsonmicro.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 04:04:59PM -0400, Vivek Goyal wrote:
 
-[..]
-> Dave,
-> 
-> Just another example where serialization is taking place with ext4.
-> 
-> I created a group with 1MB/s write limit and ran tedso's fsync tester
-> program with little modification. I used write() system call instead
-> of pwrite() so that file size grows. This program basically writes
-> 1MB of data and then fsync's it and then measures the fsync time.
-> 
-> I ran two instances of prgram in two groups on two separate files. One
-> instances is throttled to 1MB/s and other is in root group unthrottled.
-> 
-> Unthrottled program gets serialized behind throttled one. Following
-> are fsync times.
-> 
-> Throttled instance	Unthrottled Instance
-> ------------------ 	--------------------
-> fsync time: 1.0051	fsync time: 1.0067
-> fsync time: 1.0049	fsync time: 1.0075
-> fsync time: 1.0048	fsync time: 1.0063
-> fsync time: 1.0073	fsync time: 1.0062
-> fsync time: 1.0070	fsync time: 1.0078
-> fsync time: 1.0032	fsync time: 1.0049
-> fsync time: 0.0154	fsync time: 1.0068
-> fsync time: 0.0137	fsync time: 1.0048
-> 
-> Without any throttling both the instances do fine
-> -------------------------------------------------
-> Throttled instance	Unthrottled Instance
-> ------------------ 	--------------------
-> fsync time: 0.0139	fsync time: 0.0162
-> fsync time: 0.0132	fsync time: 0.0156
-> fsync time: 0.0149	fsync time: 0.0169
-> fsync time: 0.0165	fsync time: 0.0152
-> fsync time: 0.0188	fsync time: 0.0135
-> fsync time: 0.0137	fsync time: 0.0142
-> fsync time: 0.0148	fsync time: 0.0149
-> fsync time: 0.0168	fsync time: 0.0163
-> fsync time: 0.0153	fsync time: 0.0143
-> 
-> So when we are inreasing the size of file and fsyncing it, other
-> unthrottled instances of similar activities will get throttled
-> behind it.
-> 
-> IMHO, this is a problem and should be fixed. If filesystem can fix it great.
-> But if not, then we should consider the option of throttling buffered writes 
-> in balance_dirty_pages().
 
-XFS seems to be doing well for this particular test. Unthrottled
-fsyncer does not get serialized behind throttled one.
+On 06/30/11 21:01, Mark Brown wrote:
+> On Thu, Jun 30, 2011 at 08:40:40PM +0300, Igor Grinberg wrote:
+>> On 06/30/11 19:13, Stanislav Brabec wrote:
+>
+>>>  I seen two
+>>> proposals:
+>>> - As ADS7846 hardware does not require dedicated regulator, don't
+>>>   require it in driver and fail only on platforms that have a dedicated
+>>>   regulator.
+>> The thing is that ads7846 chip itself just requires power supply
+> Right, and the regulator API hides the non-switchability of the supply
+> from the driver so there's no need for the driver to worry about how the
+> supplies are wired up.  It just turns the regulator on when it needs it
+> and turns it off when it doesn't.
+>
+>>>> 1) add regulator definition for ads7846 into the board file
+>>> There is no dedicated regulator on spitz, ADS7846 uses common always-on
+>>> power supply.
+>> Is there a kind of regulator for this case (except dummy)?
+>> Some kind of fixed regulator which is not binded to any supply?
+> This is just a fixed voltage regulator, support for that has been in the
+> kernel since the regulator API was merged.  This is the best solution,
+> it ensures that you don't mistakenly activate dummy reglators for
+> supplies that really need software control.
 
-Throttled instance	Unthrottled Instance
------------------- 	--------------------
-fsync time: 1.0511	fsync time: 0.0204
-fsync time: 1.0486	fsync time: 0.0260
-fsync time: 1.0445	fsync time: 0.0260
-fsync time: 1.0485	fsync time: 0.0260
-fsync time: 1.0446	fsync time: 0.0260
-fsync time: 1.2157	fsync time: 0.0260
-fsync time: 1.0446	fsync time: 0.0300
-fsync time: 1.0484	fsync time: 0.0340
-fsync time: 1.0446	fsync time: 0.0221
-fsync time: 1.0486	fsync time: 0.0340
-fsync time: 1.0406	fsync time: 0.0340
+Right, just as I thought (I still haven't made myself familiar with all the
+regulator API aspects).
 
-Thanks
-Vivek
+Stanislav,
+Can't you define a fixed voltage regulator for the ads7846 in spitz board file?
+This shouldn't be a hard task and is the right solution from the regulator API POV.
+
+
+-- 
+Regards,
+Igor.
+
