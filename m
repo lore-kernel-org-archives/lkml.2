@@ -1,124 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932116Ab1F3ISq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 04:18:46 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52001 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757677Ab1F3ISi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 04:18:38 -0400
-Message-ID: <4E0C31D1.8000904@cn.fujitsu.com>
-Date: Thu, 30 Jun 2011 16:20:33 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3 03/19] KVM: x86: introduce vcpu_mmio_gva_to_gpa to cleanup
- the code
-References: <4E0C3178.2080603@cn.fujitsu.com>
-In-Reply-To: <4E0C3178.2080603@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-30 16:18:04,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-30 16:18:04,
-	Serialize complete at 2011-06-30 16:18:04
-Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+	id S1758767Ab1F3IUw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:20:52 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:14598 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752682Ab1F3IUq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 04:20:46 -0400
+X-AuditID: cbfee61b-b7bfdae000006d51-5d-4e0c31dcb9db
+Date: Thu, 30 Jun 2011 17:20:47 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Add the function call for board-specific
+ initialization.
+In-reply-to: <BANLkTikhwh5M1XB9zRiLzMd7dL18kA_o0g@mail.gmail.com>
+To: James Hogan <james@albanarts.com>
+Cc: Jaehoon Chung <jh80.chung@samsung.com>,
+        Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
+        cjb@laptop.org, linux-kernel@vger.kernel.org
+Message-id: <4E0C31DF.5090200@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
+References: <1309402665-29228-1-git-send-email-tgih.jun@samsung.com>
+ <4E0C18BD.8000608@samsung.com>
+ <BANLkTikhwh5M1XB9zRiLzMd7dL18kA_o0g@mail.gmail.com>
+X-OriginalArrivalTime: 30 Jun 2011 08:20:59.0305 (UTC)
+ FILETIME=[A44DB190:01CC36FE]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce vcpu_mmio_gva_to_gpa to translate the gva to gpa, we can use it
-to cleanup the code between read emulation and write emulation
+Hi James
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/x86.c |   42 +++++++++++++++++++++++++++++++-----------
- 1 files changed, 31 insertions(+), 11 deletions(-)
+James Hogan wrote:
+> On 30 June 2011 07:33, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>> Hi Mr.Jeon
+>>
+>> This patch is the compiler error.
+>>
+>> didn't find host->card_work..
+>>
+>> do you want this
+>> queue_work(dw_mci_card_workqueue, &slot->host->card_work); ?
+> 
+> I think the patch is based on mmc-next, which has the following commit:
+> 35ba9d8 mmc: dw_mmc: convert card tasklet to workqueue
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 0b803f0..d77ac44 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3944,6 +3944,27 @@ out:
- }
- EXPORT_SYMBOL_GPL(kvm_write_guest_virt_system);
- 
-+static int vcpu_mmio_gva_to_gpa(struct kvm_vcpu *vcpu, unsigned long gva,
-+				gpa_t *gpa, struct x86_exception *exception,
-+				bool write)
-+{
-+	u32 access = (kvm_x86_ops->get_cpl(vcpu) == 3) ? PFERR_USER_MASK : 0;
-+
-+	if (write)
-+		access |= PFERR_WRITE_MASK;
-+
-+	*gpa = vcpu->arch.walk_mmu->gva_to_gpa(vcpu, gva, access, exception);
-+
-+	if (*gpa == UNMAPPED_GVA)
-+		return -1;
-+
-+	/* For APIC access vmexit */
-+	if ((*gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
-+		return 1;
-+
-+	return 0;
-+}
-+
- static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
- 				  unsigned long addr,
- 				  void *val,
-@@ -3951,8 +3972,8 @@ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
- 				  struct x86_exception *exception)
- {
- 	struct kvm_vcpu *vcpu = emul_to_vcpu(ctxt);
--	gpa_t                 gpa;
--	int handled;
-+	gpa_t gpa;
-+	int handled, ret;
- 
- 	if (vcpu->mmio_read_completed) {
- 		memcpy(val, vcpu->mmio_data, bytes);
-@@ -3962,13 +3983,12 @@ static int emulator_read_emulated(struct x86_emulate_ctxt *ctxt,
- 		return X86EMUL_CONTINUE;
- 	}
- 
--	gpa = kvm_mmu_gva_to_gpa_read(vcpu, addr, exception);
-+	ret = vcpu_mmio_gva_to_gpa(vcpu, addr, &gpa, exception, false);
- 
--	if (gpa == UNMAPPED_GVA)
-+	if (ret < 0)
- 		return X86EMUL_PROPAGATE_FAULT;
- 
--	/* For APIC access vmexit */
--	if ((gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
-+	if (ret)
- 		goto mmio;
- 
- 	if (kvm_read_guest_virt(ctxt, addr, val, bytes, exception)
-@@ -4019,16 +4039,16 @@ static int emulator_write_emulated_onepage(unsigned long addr,
- 					   struct x86_exception *exception,
- 					   struct kvm_vcpu *vcpu)
- {
--	gpa_t                 gpa;
--	int handled;
-+	gpa_t gpa;
-+	int handled, ret;
- 
--	gpa = kvm_mmu_gva_to_gpa_write(vcpu, addr, exception);
-+	ret = vcpu_mmio_gva_to_gpa(vcpu, addr, &gpa, exception, true);
- 
--	if (gpa == UNMAPPED_GVA)
-+	if (ret < 0)
- 		return X86EMUL_PROPAGATE_FAULT;
- 
- 	/* For APIC access vmexit */
--	if ((gpa & PAGE_MASK) == APIC_DEFAULT_PHYS_BASE)
-+	if (ret)
- 		goto mmio;
- 
- 	if (emulator_write_phys(vcpu, gpa, val, bytes))
--- 
-1.7.5.4
+I also tested this patch based on mmc-next.
+But my mean is that there is not host structure in dw_mci_detect_interrupt().
+
+drivers/mmc/host/dw_mmc.c: In function 'dw_mci_detect_interrupt':
+drivers/mmc/host/dw_mmc.c:1592: error: 'host' undeclared (first use in this function)
+drivers/mmc/host/dw_mmc.c:1592: error: (Each undeclared identifier is reported only once
+drivers/mmc/host/dw_mmc.c:1592: error: for each function it appears in.)
+drivers/mmc/host/dw_mmc.c:1590: warning: unused variable 'slot'
+make[3]: *** [drivers/mmc/host/dw_mmc.o] Error 1
+make[2]: *** [drivers/mmc/host] Error 2
+
+Did you really compile fine?
+
+Regards,
+Jaehoon Chung
+
+> 
+> Cheers
+> James
+> 
+>>
+>> Regards,
+>> Jaehoon Chung
+>>
+>>
+>> Seungwon Jeon wrote:
+>>> Need to call init() function of dw_mci_board.
+>>> It seems to be omitted to call this function.
+>>>
+>>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+>>> ---
+>>>  drivers/mmc/host/dw_mmc.c |   11 +++++++++++
+>>>  1 files changed, 11 insertions(+), 0 deletions(-)
+>>>
+>>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+>>> index a524416..073c420 100644
+>>> --- a/drivers/mmc/host/dw_mmc.c
+>>> +++ b/drivers/mmc/host/dw_mmc.c
+>>> @@ -1585,6 +1585,15 @@ static void dw_mci_work_routine_card(struct work_struct *work)
+>>>       }
+>>>  }
+>>>
+>>> +static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
+>>> +{
+>>> +     struct dw_mci_slot *slot = dev_id;
+>>> +
+>>> +     queue_work(dw_mci_card_workqueue, &host->card_work);
+>>> +
+>>> +     return IRQ_HANDLED;
+>>> +}
+>>> +
+>>>  static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>>>  {
+>>>       struct mmc_host *mmc;
+>>> @@ -1657,6 +1666,8 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>>>       } else
+>>>               regulator_enable(host->vmmc);
+>>>
+>>> +     host->pdata->init(id, dw_mci_detect_interrupt, host);
+>>> +
+>>>       if (dw_mci_get_cd(mmc))
+>>>               set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+>>>       else
+>>> --
+>>> 1.7.0.4
+>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+> 
+> 
+> 
 
