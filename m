@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753122Ab1F3PPt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 11:15:49 -0400
-Received: from ns.penguin.cz ([84.21.108.25]:38042 "EHLO ns.penguin.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752572Ab1F3PPq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 11:15:46 -0400
-X-Greylist: delayed 1822 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Jun 2011 11:15:46 EDT
-Subject: Re: kernel panic in spi_complete() on spitz (PXA270)
-From: Stanislav Brabec <utx@penguin.cz>
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, zaurus-devel@www.linuxtogo.org,
-        spi-devel-general@lists.sourceforge.net,
-        Igor Grinberg <grinberg@compulab.co.il>, vapier@gentoo.org,
-        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org, pavel@ucw.cz,
-        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
-        akpm@linux-foundation.org, broonie@opensource.wolfsonmicro.com
-In-Reply-To: <201106301352.21684.marek.vasut@gmail.com>
-References: <1308845380.4533.54.camel@oct.suse.cz>
-	 <201106301352.21684.marek.vasut@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Jun 2011 16:45:18 +0200
-Message-ID: <1309445118.4406.47.camel@oct.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.1 
-Content-Transfer-Encoding: 7bit
+	id S1751844Ab1F3OsV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 10:48:21 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:50095 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751017Ab1F3OsQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 10:48:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110630141823.GF1997@pengutronix.de>
+References: <1309440959-18692-1-git-send-email-w.sang@pengutronix.de>
+ <20110630161101.4bee9b19@endymion.delvare> <20110630141823.GF1997@pengutronix.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 30 Jun 2011 08:47:55 -0600
+X-Google-Sender-Auth: gN2IyFPsfLRFnpC_3Z2HiW_RVdA
+Message-ID: <BANLkTimNPnjsW1ny0AvsFuw7_bSmnF0Ejw@mail.gmail.com>
+Subject: Re: [PATCH] gpio: pca953x: change driver name to be unique
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        linux-i2c@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Marek Vasut wrote:
-> On Thursday, June 23, 2011 06:09:40 PM Stanislav Brabec wrote:
-> > Hallo.
-> > 
-> > These Oops and kernel panic were observed on a Zaurus (spitz) machine
-> > (ARMv5, PXA270).
-> 
-> Looks similar to "Re: [PATCH v2] Input: Make ADS7846 independent on regulator"
+On Thu, Jun 30, 2011 at 8:18 AM, Wolfram Sang <w.sang@pengutronix.de> wrote:
+> On Thu, Jun 30, 2011 at 04:11:01PM +0200, Jean Delvare wrote:
+>> On Thu, 30 Jun 2011 15:35:59 +0200, Wolfram Sang wrote:
+>> > This driver handles the variants pca9534-pca9539, so it chose the name
+>> > "pca953x". However, there is a led driver which decided on the same
+>> > name. As a result, those two can't be loaded at the same time. Add a
+>> > subsystem prefix to make the driver name unique. Device matching will
+>> > not suffer, because both are I2C drivers which match using a
+>> > i2c_device_id-table which is not altered.
+>> >
+>> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+>> > ---
+>> >  drivers/gpio/pca953x.c |    2 +-
+>> >  1 files changed, 1 insertions(+), 1 deletions(-)
+>> >
+>> > diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
+>> > index 0451d7a..b30dd0b 100644
+>> > --- a/drivers/gpio/pca953x.c
+>> > +++ b/drivers/gpio/pca953x.c
+>> > @@ -742,7 +742,7 @@ static int pca953x_remove(struct i2c_client *client)
+>> >
+>> >  static struct i2c_driver pca953x_driver = {
+>> >     .driver = {
+>> > -           .name   = "pca953x",
+>> > +           .name   = "gpio-pca953x",
+>> >     },
+>> >     .probe          = pca953x_probe,
+>> >     .remove         = pca953x_remove,
+>>
+>> With the proposed change to the leds-pca9532 driver, you could leave
+>> this one alone, for the sake of simplicity and consistency with the
+>> pca953x, pcf857x and max732x gpio drivers.
+>>
+>> But I am not objecting to this change, if you like it.
+>
+> I am fine with your suggestion.
 
-I don't see any trace in that thread. But yes, I was testing your patch
-from this thread. Without it, ADS7846 does not work on spitz (ADS7846
-does not have any dedicated regulator there). I want to
-add .needs_regulator bool to ads7846.c and send the patch again to the
-list.
+All right, I'll ignore this patch then.
 
-After sending the trace I was able to reproduced it several times by
-attaching of external charger.
-
-Then I tried to apply "[PATCH] MAX1111: Fix race condition causing NULL
-pointer exception", connected charger that periodically disconnects and
-not seen the crash again. No OOPS was seen after ~100 reconnects.
-
-So I guess that MAX1111 AC voltage reading (via SPI) was involved in an
-incorrect moment and race happened there and your MAX1111 race condition
-fix fixes it.
-
--- 
-Stanislav Brabec
-http://www.penguin.cz/~utx
-
+g.
