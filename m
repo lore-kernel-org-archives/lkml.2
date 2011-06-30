@@ -1,99 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755698Ab1F3IkV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 04:40:21 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:54350 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753863Ab1F3IkR (ORCPT
+	id S1756432Ab1F3InK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:43:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43802 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754539Ab1F3InF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 04:40:17 -0400
-X-AuditID: b753bd60-a467eba0000050a4-5b-4e0c366ec3d7
-X-AuditID: b753bd60-a467eba0000050a4-5b-4e0c366ec3d7
-Message-ID: <4E0C366C.8040408@hitachi.com>
-Date: Thu, 30 Jun 2011 17:40:12 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+	Thu, 30 Jun 2011 04:43:05 -0400
 MIME-Version: 1.0
-To: Stijn Devriendt <highguy@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>, Russell King <linux@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        John Stultz <john.stultz@linaro.org>, yrl.pp-manager.tt@hitachi.com
-Subject: Re: [patch 1/5] i8253: Create common clockevent implementation
-References: <20110609130509.346588418@linutronix.de>	<20110609130621.921710458@linutronix.de> <BANLkTinwpK=TFFexbeBeqXz-s=ouBK9gEg@mail.gmail.com>
-In-Reply-To: <BANLkTinwpK=TFFexbeBeqXz-s=ouBK9gEg@mail.gmail.com>
+X-Originating-IP: [87.194.181.195]
+In-Reply-To: <4E0C31DF.5090200@samsung.com>
+References: <1309402665-29228-1-git-send-email-tgih.jun@samsung.com>
+	<4E0C18BD.8000608@samsung.com>
+	<BANLkTikhwh5M1XB9zRiLzMd7dL18kA_o0g@mail.gmail.com>
+	<4E0C31DF.5090200@samsung.com>
+Date: Thu, 30 Jun 2011 09:43:04 +0100
+Message-ID: <BANLkTi=r3x81sPVLG9yRAG9hHnjQuqTHCg@mail.gmail.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Add the function call for board-specific initialization.
+From: James Hogan <james@albanarts.com>
+To: Jaehoon Chung <jh80.chung@samsung.com>
+Cc: Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
+        cjb@laptop.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/26 5:03), Stijn Devriendt wrote:
->> +/*
->> + * Initialize the conversion factor and the min/max deltas of the clock event
->> + * structure and register the clock event source with the framework.
->> + */
->> +void __init clockevent_i8253_init(bool oneshot)
->> +{
->> +       if (oneshot)
->> +               i8253_clockevent.features |= CLOCK_EVT_FEAT_ONESHOT;
->> +       /*
->> +        * Start pit with the boot cpu mask. x86 might make it global
->> +        * when it is used as broadcast device later.
->> +        */
->> +       i8253_clockevent.cpumask = cpumask_of(smp_processor_id());
->> +
->> +       clockevents_config_and_register(&i8253_clockevent, PIT_TICK_RATE,
->> +                                       0xF, 0x7FFF);
->> +}
->> +#endif
+Hi,
+
+On 30 June 2011 09:20, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> Hi James
+>
+> James Hogan wrote:
+>> On 30 June 2011 07:33, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+>>> Hi Mr.Jeon
+>>>
+>>> This patch is the compiler error.
+>>>
+>>> didn't find host->card_work..
+>>>
+>>> do you want this
+>>> queue_work(dw_mci_card_workqueue, &slot->host->card_work); ?
 >>
-> Both this function and the i8253_clockevent declaration seem to be missing
-> from include/linux/i8253.h causing compile failures for at least x86.
-> 
-> I was just trying to compile tip of
-> git://git.kernel.org/pub/scm/linux/kernel/git/mingo/linux-2.6-sched-devel.git
+>> I think the patch is based on mmc-next, which has the following commit:
+>> 35ba9d8 mmc: dw_mmc: convert card tasklet to workqueue
+>
+> I also tested this patch based on mmc-next.
+> But my mean is that there is not host structure in dw_mci_detect_interrupt().
+>
+> drivers/mmc/host/dw_mmc.c: In function 'dw_mci_detect_interrupt':
+> drivers/mmc/host/dw_mmc.c:1592: error: 'host' undeclared (first use in this function)
+> drivers/mmc/host/dw_mmc.c:1592: error: (Each undeclared identifier is reported only once
+> drivers/mmc/host/dw_mmc.c:1592: error: for each function it appears in.)
+> drivers/mmc/host/dw_mmc.c:1590: warning: unused variable 'slot'
+> make[3]: *** [drivers/mmc/host/dw_mmc.o] Error 1
+> make[2]: *** [drivers/mmc/host] Error 2
 
-I've met same problem on latest tip tree.
+Sorry, I misunderstood. You are correct.
 
-> Should be fixed by applying the following patch.
+Cheers
+James
 
-We still need to expose clocksource_i8253_init() too
-for CONFIG_X86_64=n.
-So, could you update your patch (and send it as a patch mail)?
+>
+> Did you really compile fine?
+>
+> Regards,
+> Jaehoon Chung
+>
+>>
+>> Cheers
+>> James
+>>
+>>>
+>>> Regards,
+>>> Jaehoon Chung
+>>>
+>>>
+>>> Seungwon Jeon wrote:
+>>>> Need to call init() function of dw_mci_board.
+>>>> It seems to be omitted to call this function.
+>>>>
+>>>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+>>>> ---
+>>>>  drivers/mmc/host/dw_mmc.c |   11 +++++++++++
+>>>>  1 files changed, 11 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+>>>> index a524416..073c420 100644
+>>>> --- a/drivers/mmc/host/dw_mmc.c
+>>>> +++ b/drivers/mmc/host/dw_mmc.c
+>>>> @@ -1585,6 +1585,15 @@ static void dw_mci_work_routine_card(struct work_struct *work)
+>>>>       }
+>>>>  }
+>>>>
+>>>> +static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
+>>>> +{
+>>>> +     struct dw_mci_slot *slot = dev_id;
+>>>> +
+>>>> +     queue_work(dw_mci_card_workqueue, &host->card_work);
+>>>> +
+>>>> +     return IRQ_HANDLED;
+>>>> +}
+>>>> +
+>>>>  static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>>>>  {
+>>>>       struct mmc_host *mmc;
+>>>> @@ -1657,6 +1666,8 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>>>>       } else
+>>>>               regulator_enable(host->vmmc);
+>>>>
+>>>> +     host->pdata->init(id, dw_mci_detect_interrupt, host);
+>>>> +
+>>>>       if (dw_mci_get_cd(mmc))
+>>>>               set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+>>>>       else
+>>>> --
+>>>> 1.7.0.4
+>>>>
+>>>> --
+>>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>>>> the body of a message to majordomo@vger.kernel.org
+>>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>>
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>>
+>>
+>
+>
 
-Thank you,
-
-> 
-> commit 0c24072a8d580acd5b4fc57009b72b217c0f23d9
-> Author: Stijn Devriendt <HIGHGuY@gmail.com>
-> Date:   Sat Jun 25 22:04:53 2011 +0200
-> 
->     Fix missing declarations of i8253.
-> 
->     Signed-off-by: Stijn Devriendt <HIGHGuY@gmail.com>
-> 
-> diff --git a/include/linux/i8253.h b/include/linux/i8253.h
-> index 0770fc5..e6c032f 100644
-> --- a/include/linux/i8253.h
-> +++ b/include/linux/i8253.h
-> @@ -22,6 +22,10 @@
-> 
->  extern raw_spinlock_t i8253_lock;
-> 
-> +extern struct clock_event_device i8253_clockevent;
-> +
->  extern void setup_pit_timer(void);
-> 
-> +extern void clockevent_i8253_init(bool oneshot);
-> +
->  #endif /* __LINUX_I8253_H */
 
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+James Hogan
