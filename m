@@ -1,56 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755167Ab1F3JcW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 05:32:22 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:58108 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750892Ab1F3JcP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 05:32:15 -0400
+	id S1754710Ab1F3Jjm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 05:39:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59491 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752943Ab1F3Jji (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 05:39:38 -0400
+Date: Thu, 30 Jun 2011 10:39:33 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: P?draig Brady <P@draigBrady.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Colin King <colin.king@canonical.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Andrew Lutomirski <luto@mit.edu>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] mm: vmscan: Correct check for kswapd sleeping in
+ sleeping_prematurely
+Message-ID: <20110630093933.GY9396@suse.de>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+ <1308926697-22475-2-git-send-email-mgorman@suse.de>
+ <20110628144900.b33412c6.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20110630085633.GA31414@infradead.org>
-References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
-	<20110629140630.5aefdda8.rdunlap@xenotime.net>
-	<BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
-	<20110630080119.GA20802@infradead.org>
-	<BANLkTik81kgf=g+QngnaB7gNUF+xCQdSvw@mail.gmail.com>
-	<20110630085633.GA31414@infradead.org>
-Date: Thu, 30 Jun 2011 11:32:14 +0200
-X-Google-Sender-Auth: TqDPDVw1_SNQFaA7R4L28M0MuK4
-Message-ID: <BANLkTim4SHUXQn4D9Lup4mc0i2D8D0dCUg@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Mikael Starvik <starvik@axis.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110628144900.b33412c6.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 10:56, Christoph Hellwig <hch@infradead.org> wrote:
-> On Thu, Jun 30, 2011 at 10:43:47AM +0200, Geert Uytterhoeven wrote:
->> > Better fix the code to use the proper %zd specifier for printing ssize_t
->> > variables.
->>
->> We cannot, as that would break on all other platforms that use the
->> correct ssize_t.
->
-> %zd is specified as the correct format for ssize_t.
+On Tue, Jun 28, 2011 at 02:49:00PM -0700, Andrew Morton wrote:
+> On Fri, 24 Jun 2011 15:44:54 +0100
+> Mel Gorman <mgorman@suse.de> wrote:
+> 
+> > During allocator-intensive workloads, kswapd will be woken frequently
+> > causing free memory to oscillate between the high and min watermark.
+> > This is expected behaviour.
+> > 
+> > A problem occurs if the highest zone is small.  balance_pgdat()
+> > only considers unreclaimable zones when priority is DEF_PRIORITY
+> > but sleeping_prematurely considers all zones. It's possible for this
+> > sequence to occur
+> > 
+> >   1. kswapd wakes up and enters balance_pgdat()
+> >   2. At DEF_PRIORITY, marks highest zone unreclaimable
+> >   3. At DEF_PRIORITY-1, ignores highest zone setting end_zone
+> >   4. At DEF_PRIORITY-1, calls shrink_slab freeing memory from
+> >         highest zone, clearing all_unreclaimable. Highest zone
+> >         is still unbalanced
+> >   5. kswapd returns and calls sleeping_prematurely
+> >   6. sleeping_prematurely looks at *all* zones, not just the ones
+> >      being considered by balance_pgdat. The highest small zone
+> >      has all_unreclaimable cleared but but the zone is not
+> >      balanced. all_zones_ok is false so kswapd stays awake
+> > 
+> > This patch corrects the behaviour of sleeping_prematurely to check
+> > the zones balance_pgdat() checked.
+> 
+> But kswapd is making progress: it's reclaiming slab.  Eventually that
+> won't work any more and all_unreclaimable will not be cleared and the
+> condition will fix itself up?
+> 
 
-And the code is already using that!
-But cris overrides ssize_t to a different type than expected by the compiler.
+It might, but at that point we've dumped as much slab as we can which
+is very aggressive and there is no guarantee the condition is fixed
+up. For example, if fork is happening often enough due to terminal
+usage for example, it may be just enough allocation requests satisified
+from the highest zone to clear all_unreclaimable during exit.
 
-Gr{oetje,eeting}s,
+> btw,
+> 
+> 	if (!sleeping_prematurely(...))
+> 		sleep();
+> 
+> hurts my brain.  My brain would prefer
+> 
+> 	if (kswapd_should_sleep(...))
+> 		sleep();
+> 
+> no?
+> 
 
-                        Geert
+kswapd_try_to_sleep -> should_sleep feel like it would hurt too. I
+prefer the sleeping_prematurely name because it indicates what
+condition we are checking but I'm biased and generally suck at naming.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+> > Reported-and-tested-by: P�draig Brady <P@draigBrady.com>
+> 
+> But what were the before-and-after observations?  I don't understand
+> how this can cause a permanent cpuchew by kswapd.
+> 
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-                                -- Linus Torvalds
+P�draig has reported on his before-and-after observations.
+
+On its own, this patch doesn't entirely fix his problem because all
+the patches are required but I felt that a rolled-up patch would be
+too hard to review.
+
+-- 
+Mel Gorman
+SUSE Labs
