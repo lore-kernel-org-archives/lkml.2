@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab1F3RlU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 13:41:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61687 "EHLO mx1.redhat.com"
+	id S1752956Ab1F3Rnw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 13:43:52 -0400
+Received: from imr4.ericy.com ([198.24.6.8]:50130 "EHLO imr4.ericy.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751977Ab1F3RlR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 13:41:17 -0400
-Date: Thu, 30 Jun 2011 13:41:15 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Andrea Righi <andrea@betterlinux.com>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Jens Axboe <jaxboe@fusionio.com>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] blk-cgroup: fix file names in documentation
-Message-ID: <20110630174115.GH27889@redhat.com>
-References: <1309447324-3824-1-git-send-email-andrea@betterlinux.com>
+	id S1751104Ab1F3Rnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 13:43:50 -0400
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Evgeniy Dushistov <dushistov@mail.ru>
+CC: <linux-fsdevel@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Guenter Roeck <guenter.roeck@ericsson.com>
+Subject: [PATCH resend] ufs: Fix backtrace seen when mounting a bad ufs file system
+Date: Thu, 30 Jun 2011 10:43:36 -0700
+Message-ID: <1309455816-8945-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: git-send-email 1.7.3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309447324-3824-1-git-send-email-andrea@betterlinux.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 05:22:04PM +0200, Andrea Righi wrote:
-> All the blkio.throttle.* file names are incorrectly reported without
-> ".throttle" in the documentation. Fix it.
-> 
-> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+If an attempt is made to mount a bad ufs file system, the following backtrace
+may be seen.
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
+Call Trace:
+[<ffffffff81443d50>] mutex_lock+0x18/0x70
+[<ffffffff8127d6cc>] ufs_sync_fs+0x2c/0x278
+[<ffffffff8120d814>] __sync_filesystem+0x74/0xb8
+[<ffffffff8120d934>] sync_filesystem+0x4c/0x80
+[<ffffffff811e23dc>] generic_shutdown_super+0x34/0x110
+[<ffffffff811e24dc>] kill_block_super+0x24/0x80
+[<ffffffff811e2644>] deactivate_locked_super+0x6c/0x98
+[<ffffffff811e32e0>] mount_bdev+0x218/0x220
+[<ffffffff811e295c>] mount_fs+0xe4/0x220
+[<ffffffff81201064>] vfs_kern_mount+0x64/0x110
+[<ffffffff812014fc>] do_kern_mount+0x4c/0x138
+[<ffffffff81202d58>] do_mount+0x440/0x898
+[<ffffffff8122c870>] compat_sys_mount+0xd8/0x248
 
-Good catch. I never noticed that "throttle" is missing in file names :-)
+The backtrace occurs if ufs_read_cylinder_structures() reports an error.
+The calling function ufs_fill_super() tries to clean up, but does not return
+the error to the calling code. This ultimately causes the backtrace.
 
-Thanks
-Vivek
+Fix problem by returning an error from ufs_fill_super() if
+ufs_read_cylinder_structures() fails.
 
-> ---
->  Documentation/cgroups/blkio-controller.txt |   12 ++++++------
->  1 files changed, 6 insertions(+), 6 deletions(-)
-> 
-> diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
-> index cd45c8e..84f0a15 100644
-> --- a/Documentation/cgroups/blkio-controller.txt
-> +++ b/Documentation/cgroups/blkio-controller.txt
-> @@ -77,7 +77,7 @@ Throttling/Upper Limit policy
->  - Specify a bandwidth rate on particular device for root group. The format
->    for policy is "<major>:<minor>  <byes_per_second>".
->  
-> -        echo "8:16  1048576" > /sys/fs/cgroup/blkio/blkio.read_bps_device
-> +        echo "8:16  1048576" > /sys/fs/cgroup/blkio/blkio.throttle.read_bps_device
->  
->    Above will put a limit of 1MB/second on reads happening for root group
->    on device having major/minor number 8:16.
-> @@ -90,7 +90,7 @@ Throttling/Upper Limit policy
->          1024+0 records out
->          4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
->  
-> - Limits for writes can be put using blkio.write_bps_device file.
-> + Limits for writes can be put using blkio.throttle.write_bps_device file.
->  
->  Hierarchical Cgroups
->  ====================
-> @@ -286,28 +286,28 @@ Throttling/Upper limit policy files
->  	  specified in bytes per second. Rules are per deivce. Following is
->  	  the format.
->  
-> -  echo "<major>:<minor>  <rate_bytes_per_second>" > /cgrp/blkio.read_bps_device
-> +  echo "<major>:<minor>  <rate_bytes_per_second>" > /cgrp/blkio.throttle.read_bps_device
->  
->  - blkio.throttle.write_bps_device
->  	- Specifies upper limit on WRITE rate to the device. IO rate is
->  	  specified in bytes per second. Rules are per deivce. Following is
->  	  the format.
->  
-> -  echo "<major>:<minor>  <rate_bytes_per_second>" > /cgrp/blkio.write_bps_device
-> +  echo "<major>:<minor>  <rate_bytes_per_second>" > /cgrp/blkio.throttle.write_bps_device
->  
->  - blkio.throttle.read_iops_device
->  	- Specifies upper limit on READ rate from the device. IO rate is
->  	  specified in IO per second. Rules are per deivce. Following is
->  	  the format.
->  
-> -  echo "<major>:<minor>  <rate_io_per_second>" > /cgrp/blkio.read_iops_device
-> +  echo "<major>:<minor>  <rate_io_per_second>" > /cgrp/blkio.throttle.read_iops_device
->  
->  - blkio.throttle.write_iops_device
->  	- Specifies upper limit on WRITE rate to the device. IO rate is
->  	  specified in io per second. Rules are per deivce. Following is
->  	  the format.
->  
-> -  echo "<major>:<minor>  <rate_io_per_second>" > /cgrp/blkio.write_iops_device
-> +  echo "<major>:<minor>  <rate_io_per_second>" > /cgrp/blkio.throttle.write_iops_device
->  
->  Note: If both BW and IOPS rules are specified for a device, then IO is
->        subjectd to both the constraints.
-> -- 
-> 1.7.4.1
+Signed-off-by: Guenter Roeck <guenter.roeck@ericsson.com>
+---
+Resend, this time copying the linux-fsdevel list.
+If I should send it to some other list, please let me know.
+
+ fs/ufs/super.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/fs/ufs/super.c b/fs/ufs/super.c
+index 3915ade..c398221 100644
+--- a/fs/ufs/super.c
++++ b/fs/ufs/super.c
+@@ -1174,8 +1174,12 @@ magic_found:
+ 	 * Read cylinder group structures
+ 	 */
+ 	if (!(sb->s_flags & MS_RDONLY))
+-		if (!ufs_read_cylinder_structures(sb))
++		if (!ufs_read_cylinder_structures(sb)) {
++			dput(sb->s_root);
++			sb->s_root = NULL;
++			ret = -ENODEV;
+ 			goto failed;
++		}
+ 
+ 	UFSD("EXIT\n");
+ 	return 0;
+-- 
+1.7.3.1
+
