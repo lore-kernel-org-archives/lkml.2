@@ -1,85 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752218Ab1F3Mcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:32:46 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:53821 "EHLO linux-mips.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751730Ab1F3Mcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:32:42 -0400
-Date: Thu, 30 Jun 2011 13:32:12 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-        florian@linux-mips.org, Florian Fainelli <florian@openwrt.org>,
-        linux-arch@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>, sparclinux@vger.kernel.org
-Subject: Re: SB16 build error.
-Message-ID: <20110630123212.GA6690@linux-mips.org>
-References: <20110630091754.GA12119@linux-mips.org>
- <s5h8vsjy68z.wl%tiwai@suse.de>
- <20110630105254.GA25732@linux-mips.org>
- <s5h39iry3xp.wl%tiwai@suse.de>
- <s5hy60jwocc.wl%tiwai@suse.de>
+	id S1751587Ab1F3Mgs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 08:36:48 -0400
+Received: from na3sys009aog109.obsmtp.com ([74.125.149.201]:44509 "EHLO
+	na3sys009aog109.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751031Ab1F3Mgl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 08:36:41 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <s5hy60jwocc.wl%tiwai@suse.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1309248717-14606-1-git-send-email-per.forlin@linaro.org>
+References: <1309248717-14606-1-git-send-email-per.forlin@linaro.org>
+Date: Thu, 30 Jun 2011 18:06:39 +0530
+Message-ID: <BANLkTinSt3D+5r9bOL5rTjw5BiuiSDvGvA@mail.gmail.com>
+Subject: Re: [PATCH v8 00/12] use nonblock mmc requests to minimize latency
+From: "Poddar, Sourav" <sourav.poddar@ti.com>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org,
+        Nickolay Nickolaev <nicknickolaev@gmail.com>,
+        Venkatraman S <svenkatr@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 01:28:03PM +0200, Takashi Iwai wrote:
+On Tue, Jun 28, 2011 at 1:41 PM, Per Forlin <per.forlin@linaro.org> wrote:
+> How significant is the cache maintenance over head?
+> It depends, the eMMC are much faster now
+> compared to a few years ago and cache maintenance cost more due to
+> multiple cache levels and speculative cache pre-fetch. In relation the
+> cost for handling the caches have increased and is now a bottle neck
+> dealing with fast eMMC together with DMA.
+>
+> The intention for introducing non-blocking mmc requests is to minimize the
+> time between a mmc request ends and another mmc request starts. In the
+> current implementation the MMC controller is idle when dma_map_sg and
+> dma_unmap_sg is processing. Introducing non-blocking mmc request makes it
+> possible to prepare the caches for next job in parallel to an active
+> mmc request.
+>
+> This is done by making the issue_rw_rq() non-blocking.
+> The increase in throughput is proportional to the time it takes to
+> prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
+> a request and how fast the memory is. The faster the MMC/SD is
+> the more significant the prepare request time becomes. Measurements on U5500
+> and Panda on eMMC and SD shows significant performance gain for large
+> reads when running DMA mode. In the PIO case the performance is unchanged.
+>
+> There are two optional hooks pre_req() and post_req() that the host driver
+> may implement in order to move work to before and after the actual mmc_request
+> function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
+> the dma descriptor and post_req runs the dma_unmap_sg.
+>
+> Details on measurements from IOZone and mmc_test:
+> https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
+>
+> Changes since v7:
+>  * rebase on mmc-next, on top of Russell's updated error handling.
+>  * Clarify description of mmc_start_req()
+>  * Resolve compile without CONFIG_DMA_ENIGNE issue for mmci
+>  * Add mmc test to measure how performance is affected by sg length
+>  * Add missing wait_for_busy in mmc_test non-blocking test. This call got lost
+>   in v4 of this patchset when refactoring mmc_start_req.
+>  * Add sub-prefix (core block queue) to relevant patches.
+>
+> Per Forlin (12):
+>  mmc: core: add non-blocking mmc request function
+>  omap_hsmmc: add support for pre_req and post_req
+>  mmci: implement pre_req() and post_req()
+>  mmc: mmc_test: add debugfs file to list all tests
+>  mmc: mmc_test: add test for non-blocking transfers
+>  mmc: mmc_test: test to measure how sg_len affect performance
+>  mmc: block: add member in mmc queue struct to hold request data
+>  mmc: block: add a block request prepare function
+>  mmc: block: move error code in issue_rw_rq to a separate function.
+>  mmc: queue: add a second mmc queue request member
+>  mmc: core: add random fault injection
+>  mmc: block: add handling for two parallel block requests in
+>    issue_rw_rq
+>
+>  drivers/mmc/card/block.c      |  505 ++++++++++++++++++++++++-----------------
+>  drivers/mmc/card/mmc_test.c   |  491 ++++++++++++++++++++++++++++++++++++++--
+>  drivers/mmc/card/queue.c      |  184 ++++++++++------
+>  drivers/mmc/card/queue.h      |   33 ++-
+>  drivers/mmc/core/core.c       |  167 +++++++++++++-
+>  drivers/mmc/core/debugfs.c    |    5 +
+>  drivers/mmc/host/mmci.c       |  147 +++++++++++-
+>  drivers/mmc/host/mmci.h       |    8 +
+>  drivers/mmc/host/omap_hsmmc.c |   87 +++++++-
+>  include/linux/mmc/core.h      |    6 +-
+>  include/linux/mmc/host.h      |   24 ++
+>  lib/Kconfig.debug             |   11 +
+>  12 files changed, 1345 insertions(+), 323 deletions(-)
 
-> > > I have no idea how big the soundblaster microcode being loaded actually is,
-> > > that is if the reduced size of 0x1f00 will be sufficient.
-> > 
-> > The files found in /lib/firmware/sb16 are all under 2kB, thus likely
-> > sufficient.
-> 
-> Too shortly answered.  It turned out that some CSP codes (like Qsound)
-> can be above that size, it's almost 12kB.  So the size in the original
-> code is really the necessary requirement, and the patch breaks for
-> such a case.
-> 
-> An ugly workaround would be to fake the ioctl size.  But this is
-> certainly to be avoided, since it has been broken on the specific
-> platforms for ages, thus breaking for them would be mostly harmless,
-> too.
-> 
-> > > Aside of that I
-> > > don't see a problem - I don't see how the old ioctl can possibly have been
-> > > used before so there isn't a compatibility problem.
-> > > 
-> > > Or you could entirely sidestep the problem and use request_firmware() but
-> > > I guess that's more effort than you want to invest.
-> > 
-> > Yeah, that's another option I thought of.  But it's too intrusive for
-> > 3.0-rc6, so I'd like waive it for 3.1.
-> 
-> Actually the request_firmware() was implemented for some auto-loadable
-> CSP codes.  Others need the manual loading, so it is via ioctl.  It
-> can be converted, but I don't think it makes sense for such old
-> stuff.  After all, it still works with x86-ISA as is.
 
-In userland an empty definition will be used for _IOC_TYPECHECK so there
-won't be an error.  So userland already is already using the existing
-value for SNDRV_SB_CSP_IOCTL_LOAD_CODE ...
 
-With a crude hack like
+Boot tested on Omap4430 Blaze board.
 
-#define SNDRV_SB_CSP_IOCTL_LOAD_CODE				\
-	_IOC(_IOC_WRITE,'H', 0x11, sizeof(struct snd_sb_csp_microcode))
-
-error checking can be bypassed and all will be fine as long as the
-resulting value doesn't result in in a a duplicate case value - which it
-doesn't, at least not in my testing.
-
-Should work but isn't nice.
-
-  Ralf
+Tested-by: Sourav Poddar<sourav.poddar@ti.com>
