@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab1F3AnA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 20:43:00 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21710 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754704Ab1F3Am4 convert rfc822-to-8bit (ORCPT
+	id S1757990Ab1F3Amq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 20:42:46 -0400
+Received: from mailc.microsoft.com ([131.107.115.214]:45449 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754704Ab1F3Aml convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 20:42:56 -0400
-References: <4E0BA7FE.9050607@hp.com>
-In-Reply-To: <4E0BA7FE.9050607@hp.com>
-Mime-Version: 1.0 (iPhone Mail 8C148)
+	Wed, 29 Jun 2011 20:42:41 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <gregkh@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        "Haiyang Zhang" <haiyangz@microsoft.com>
+Subject: RE: [PATCH 1/1] Staging: hv: Integrate the time source driver with
+ Hyper-V detection code
+Thread-Topic: [PATCH 1/1] Staging: hv: Integrate the time source driver with
+ Hyper-V detection code
+Thread-Index: AQHMNo1D9gB2gma+3UOFIc6h3vcrBZTVJ5oA///oTNA=
+Date: Thu, 30 Jun 2011 00:42:40 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480816BF39@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1309374364-23528-1-git-send-email-kys@microsoft.com>
+ <20110629190642.GA19698@suse.de>
+In-Reply-To: <20110629190642.GA19698@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <C8998C1F-0C0B-4B82-841A-16FD6829A90C@kernel.org>
-Cc: "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-        "x86@kernel.org" <x86@kernel.org>,
-        Feng Tang <feng.tang@linux.intel.com>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-X-Mailer: iPhone Mail (8C148)
-From: Yinghai <yinghai@kernel.org>
-Subject: Re: MPS table vs ACPI
-Date: Wed, 29 Jun 2011 17:40:37 -0700
-To: sreenivasa reddy berahalli <sreenivasa-reddy-berahalli@hp.com>
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E0BC61A.010D,ss=1,re=0.000,fgs=0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On Jun 29, 2011, at 3:32 PM, sreenivasa reddy berahalli <sreenivasa-reddy-berahalli@hp.com> wrote:
-
-> Hello All,
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Wednesday, June 29, 2011 3:07 PM
+> To: KY Srinivasan
+> Cc: linux-kernel@vger.kernel.org; devel@linuxdriverproject.org;
+> virtualization@lists.osdl.org; Haiyang Zhang
+> Subject: Re: [PATCH 1/1] Staging: hv: Integrate the time source driver with Hyper-
+> V detection code
 > 
-> Recent interaction with BIOS teams within in my Organization left me
-> wondering if MP table spec from Intel is no more a mandatory one
-> http://www.intel.com/design/pentium/datashts/24201606.pdf
+> On Wed, Jun 29, 2011 at 12:06:04PM -0700, K. Y. Srinivasan wrote:
+> > The Hyper-V timesource driver is best integrated with Hyper-V detection code
+> > since: (a) Linux guests running on Hyper-V need this timesource and (b)
+> > by integrating with Hyper-V detection, we could minimize the code in the
+> > timesource driver. Greg, you had  helped me initially in getting the Hyper-V
+> > detection code into the kernel (mshyperv.c). I am hoping you can take
+> > this patch.
 > 
-> Section #8.4.5 http://www.intel.com/Assets/PDF/manual/253668.pdf
-> Talks as ACPI or MPS table.
-> That means BIOS can report through ACPI tables only.
-> 
-> I looked through x86 boot sequence and notice Linux scanning for MPS
-> table in below locations and Linux doesn't seem to go further without
-> MPS table or doesn't know how to live with ACPI only.
-> 1) Scan the bottom 1K for a signature
-> 2) Scan the top 1K of base RAM
-> 3) Scan the 64K of bios
+> Nope, it needs to go through the x86 maintainers, please resend it to
+> them.  The scripts/get_maintainer.pl file should have told you this,
+> right?
 
-Have one system with x2apic pre-enabled in bios, and it does not have mps table from bios. At least 2.6.32 based distribution kernel works well.
-Current kernel works well too if you have acpi enabled in kernel.
+Thanks Greg. I have done what you have recommended.
 
-Mptable assume apicid is 8 bits
+Regards,
 
-Thanks
+K. Y
 
-Yinghai
