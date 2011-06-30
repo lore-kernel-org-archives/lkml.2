@@ -1,191 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967Ab1F3EtJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 00:49:09 -0400
-Received: from mail.perches.com ([173.55.12.10]:3361 "EHLO mail.perches.com"
+	id S1752463Ab1F3E4c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 00:56:32 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48801 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750889Ab1F3EtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 00:49:03 -0400
-Subject: RFC: Add __dynamic_dev_dbg
-From: Joe Perches <joe@perches.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Jason Baron <jbaron@redhat.com>,
-        Aloisio Almeida <aloisio.almeida@openbossa.org>
-In-Reply-To: <CAEsZsEgfKPtsXKGiAV3QuH=YESyS+GHnsNjauVZV==AN94fxug@mail.gmail.com>
-References: <1309285246-8495-1-git-send-email-aloisio.almeida@openbossa.org>
-	 <1309285246-8495-2-git-send-email-aloisio.almeida@openbossa.org>
-	 <1309292325.29598.9.camel@Joe-Laptop> <1309311096.2208.33.camel@aeonflux>
-	 <1309312164.29598.53.camel@Joe-Laptop> <1309370457.2208.48.camel@aeonflux>
-	 <BANLkTinospg_dhTC8Tcok3kqk9gOryG6eA@mail.gmail.com>
-	 <1309391163.29598.92.camel@Joe-Laptop>
-	 <CAEsZsEgfKPtsXKGiAV3QuH=YESyS+GHnsNjauVZV==AN94fxug@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 29 Jun 2011 21:49:01 -0700
-Message-ID: <1309409341.1726.14.camel@Joe-Laptop>
+	id S1750888Ab1F3E40 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 00:56:26 -0400
+Date: Thu, 30 Jun 2011 14:56:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: strange commits in drivers-x86 tree
+Message-Id: <20110630145617.c25910a9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__30_Jun_2011_14_56_17_+1000_vySsr+Mt.yA64w+K"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-30 at 00:26 -0300, Aloisio Almeida wrote:
-> It's stored but not retrieved. If you check lib/dynamic_debug.c you
-> see that only __dynamic_pr_debug() (called by dynamic_pr_debug() )
-> adds such information on prints. The dev_printk() does not check
-> _DPRINTK_FLAGS_INCL_* flags.
+--Signature=_Thu__30_Jun_2011_14_56_17_+1000_vySsr+Mt.yA64w+K
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-(resending to LKML)
+Hi Matt,
 
-That seems enough easy to fix.
+Commits dda10fb10f45 ("x86: cpu-hotplug: Prevent softirq wakeup on wrong
+CPU") to c1ad45c0be10 ("Linux 3.0-rc3") in the drivers-x86 tree look to
+be a cherry-pick of commits 842c895d140a ("Merge branches
+'x86-urgent-for-linus' and 'irq-urgent-for-linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip") to
+2c53b436a308 ("Linux 3.0-rc3") from Linus' tree.
 
-Jason?  How does this look?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
----
+--Signature=_Thu__30_Jun_2011_14_56_17_+1000_vySsr+Mt.yA64w+K
+Content-Type: application/pgp-signature
 
- drivers/base/core.c           |    5 +++--
- include/linux/device.h        |    5 +++++
- include/linux/dynamic_debug.h |   10 ++++++++--
- lib/dynamic_debug.c           |   38 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 54 insertions(+), 4 deletions(-)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index bc8729d..82c8654 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -1764,8 +1764,8 @@ void device_shutdown(void)
- 
- #ifdef CONFIG_PRINTK
- 
--static int __dev_printk(const char *level, const struct device *dev,
--			struct va_format *vaf)
-+int __dev_printk(const char *level, const struct device *dev,
-+		 struct va_format *vaf)
- {
- 	if (!dev)
- 		return printk("%s(NULL device *): %pV", level, vaf);
-@@ -1773,6 +1773,7 @@ static int __dev_printk(const char *level, const struct device *dev,
- 	return printk("%s%s %s: %pV",
- 		      level, dev_driver_string(dev), dev_name(dev), vaf);
- }
-+EXPORT_SYMBOL(__dev_printk);
- 
- int dev_printk(const char *level, const struct device *dev,
- 	       const char *fmt, ...)
-diff --git a/include/linux/device.h b/include/linux/device.h
-index e4f62d8..53711f2 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -785,6 +785,8 @@ extern const char *dev_driver_string(const struct device *dev);
- 
- #ifdef CONFIG_PRINTK
- 
-+extern int __dev_printk(const char *level, const struct device *dev,
-+			struct va_format *vaf);
- extern int dev_printk(const char *level, const struct device *dev,
- 		      const char *fmt, ...)
- 	__attribute__ ((format (printf, 3, 4)));
-@@ -805,6 +807,9 @@ extern int _dev_info(const struct device *dev, const char *fmt, ...)
- 
- #else
- 
-+static inline int __dev_printk(const char *level, const struct device *dev,
-+			       struct va_format *vaf)
-+	 { return 0; }
- static inline int dev_printk(const char *level, const struct device *dev,
- 		      const char *fmt, ...)
- 	__attribute__ ((format (printf, 3, 4)));
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index e747ecd..bdf1531 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -47,6 +47,13 @@ extern int ddebug_remove_module(const char *mod_name);
- extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 	__attribute__ ((format (printf, 2, 3)));
- 
-+struct device;
-+
-+extern int __dynamic_dev_dbg(struct _ddebug *descriptor,
-+			     const struct device *dev,
-+			     const char *fmt, ...)
-+	__attribute__ ((format (printf, 3, 4)));
-+
- #define dynamic_pr_debug(fmt, ...) do {					\
- 	static struct _ddebug descriptor				\
- 	__used								\
-@@ -57,7 +64,6 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 		__dynamic_pr_debug(&descriptor, pr_fmt(fmt), ##__VA_ARGS__); \
- 	} while (0)
- 
--
- #define dynamic_dev_dbg(dev, fmt, ...) do {				\
- 	static struct _ddebug descriptor				\
- 	__used								\
-@@ -65,7 +71,7 @@ extern int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- 	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
- 		_DPRINTK_FLAGS_DEFAULT };				\
- 	if (unlikely(descriptor.enabled))				\
--		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
-+		__dynamic_dev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);	\
- 	} while (0)
- 
- #else
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 75ca78f..5c5f8f9 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -30,6 +30,7 @@
- #include <linux/jump_label.h>
- #include <linux/hardirq.h>
- #include <linux/sched.h>
-+#include <linux/device.h>
- 
- extern struct _ddebug __start___verbose[];
- extern struct _ddebug __stop___verbose[];
-@@ -456,6 +457,43 @@ int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
- }
- EXPORT_SYMBOL(__dynamic_pr_debug);
- 
-+int __dynamic_dev_dbg(struct _ddebug *descriptor,
-+		      const struct device *dev, const char *fmt, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int res;
-+
-+	BUG_ON(!descriptor);
-+	BUG_ON(!fmt);
-+
-+	va_start(args, fmt);
-+
-+	vaf.fmt = fmt;
-+	vaf.va = &args;
-+
-+	res = printk(KERN_DEBUG);
-+	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
-+		if (in_interrupt())
-+			res += printk(KERN_CONT "<intr> ");
-+		else
-+			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
-+	}
-+	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
-+		res += printk(KERN_CONT "%s:", descriptor->modname);
-+	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
-+		res += printk(KERN_CONT "%s:", descriptor->function);
-+	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
-+		res += printk(KERN_CONT "%d ", descriptor->lineno);
-+
-+	res += __dev_printk("", dev, &vaf);
-+
-+	va_end(args);
-+
-+	return res;
-+}
-+EXPORT_SYMBOL(__dynamic_dev_dbg);
-+
- static __initdata char ddebug_setup_string[1024];
- static __init int ddebug_setup_query(char *str)
- {
+iQEcBAEBAgAGBQJODAHxAAoJEDMEi1NhKgbsiDUH/1hwAS6O5jlmEax19K2PwlXJ
+osqvCbHpxSK8Jx851/5qAfYZLG02Tu8nMJWXU7MA9FZsPCtSY8K69rKSVv5oonHU
+Dcf4bAz4Cinj5dGdM0FZA6zjcXHW0p4+mcZeZ5KitodebjI1iS4iAlriBPxh0ceN
+mGTt8/ULiYHwg3AYT4f+xBsLWSKvAvW2tMXYxQDjy1YOapX9VuYbOy9aQWWLyprK
+xmHN/AN4sufnme9W6dC2XgBysKgQHZQE2JN/14GcRUncXREAYYMdl0CdVBbb1BGf
+UB0/OhKIRBjnUSjV/nj2sNAJpe3UiYEtkbzfaht1/Cf9hEK+nO4v0qJFyii06Wc=
+=1qps
+-----END PGP SIGNATURE-----
 
-
-
+--Signature=_Thu__30_Jun_2011_14_56_17_+1000_vySsr+Mt.yA64w+K--
