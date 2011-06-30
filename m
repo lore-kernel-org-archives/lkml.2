@@ -1,49 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753007Ab1F3NMT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 09:12:19 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39482 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751382Ab1F3NMN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 09:12:13 -0400
-Date: Thu, 30 Jun 2011 14:11:54 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-sh@vger.kernel.org, linux-tegra@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
-        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>
-Subject: Re: [PATCH] arm: platsmp: Allow secondary cpu hotplug with
-	maxcpus=1
-Message-ID: <20110630131154.GJ23312@n2100.arm.linux.org.uk>
-References: <1309372300-28911-1-git-send-email-sboyd@codeaurora.org>
+	id S1752486Ab1F3NMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 09:12:10 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:40944 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751382Ab1F3NMA convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 09:12:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309372300-28911-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <BANLkTinSt3D+5r9bOL5rTjw5BiuiSDvGvA@mail.gmail.com>
+References: <1309248717-14606-1-git-send-email-per.forlin@linaro.org>
+	<BANLkTinSt3D+5r9bOL5rTjw5BiuiSDvGvA@mail.gmail.com>
+Date: Thu, 30 Jun 2011 18:41:57 +0530
+Message-ID: <BANLkTimMEfo3LpDRK1mP2qVPm=Dn2B7Bpw@mail.gmail.com>
+Subject: Re: [PATCH v8 00/12] use nonblock mmc requests to minimize latency
+From: "S, Venkatraman" <svenkatr@ti.com>
+To: "Poddar, Sourav" <sourav.poddar@ti.com>
+Cc: Per Forlin <per.forlin@linaro.org>,
+        linaro-dev <linaro-dev@lists.linaro.org>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        Nickolay Nickolaev <nicknickolaev@gmail.com>,
+        Linus Walleij <linus.walleij@linaro.org>, Chris Ball <cjb@laptop.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 11:31:39AM -0700, Stephen Boyd wrote:
->  void __init platform_smp_prepare_cpus(unsigned int max_cpus)
->  {
-> -	int i;
-> -
->  	/*
->  	 * Initialise the present map, which describes the set of CPUs
->  	 * actually populated at the present time.
->  	 */
-> -	for (i = 0; i < max_cpus; i++)
-> -		set_cpu_present(i, true);
-> +	init_cpu_present(&cpu_possible_map);
-
-Ok, if we're now doing this in every platform, it might as well go into
-arch/arm/kernel/smp.c - platforms can re-initialize the present map
-in this callback if they need to do something different.
+On Thu, Jun 30, 2011 at 6:06 PM, Poddar, Sourav <sourav.poddar@ti.com> wrote:
+> On Tue, Jun 28, 2011 at 1:41 PM, Per Forlin <per.forlin@linaro.org> wrote:
+>> How significant is the cache maintenance over head?
+>> It depends, the eMMC are much faster now
+>> compared to a few years ago and cache maintenance cost more due to
+>> multiple cache levels and speculative cache pre-fetch. In relation the
+>> cost for handling the caches have increased and is now a bottle neck
+>> dealing with fast eMMC together with DMA.
+>>
+>> The intention for introducing non-blocking mmc requests is to minimize the
+>> time between a mmc request ends and another mmc request starts. In the
+>> current implementation the MMC controller is idle when dma_map_sg and
+>> dma_unmap_sg is processing. Introducing non-blocking mmc request makes it
+>> possible to prepare the caches for next job in parallel to an active
+>> mmc request.
+>>
+>> This is done by making the issue_rw_rq() non-blocking.
+>> The increase in throughput is proportional to the time it takes to
+>> prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
+>> a request and how fast the memory is. The faster the MMC/SD is
+>> the more significant the prepare request time becomes. Measurements on U5500
+>> and Panda on eMMC and SD shows significant performance gain for large
+>> reads when running DMA mode. In the PIO case the performance is unchanged.
+>>
+>> There are two optional hooks pre_req() and post_req() that the host driver
+>> may implement in order to move work to before and after the actual mmc_request
+>> function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
+>> the dma descriptor and post_req runs the dma_unmap_sg.
+>>
+>> Details on measurements from IOZone and mmc_test:
+>> https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
+>>
+>> Changes since v7:
+>>  * rebase on mmc-next, on top of Russell's updated error handling.
+>>  * Clarify description of mmc_start_req()
+>>  * Resolve compile without CONFIG_DMA_ENIGNE issue for mmci
+>>  * Add mmc test to measure how performance is affected by sg length
+>>  * Add missing wait_for_busy in mmc_test non-blocking test. This call got lost
+>>   in v4 of this patchset when refactoring mmc_start_req.
+>>  * Add sub-prefix (core block queue) to relevant patches.
+>>
+>> Per Forlin (12):
+>>  mmc: core: add non-blocking mmc request function
+>>  omap_hsmmc: add support for pre_req and post_req
+>>  mmci: implement pre_req() and post_req()
+>>  mmc: mmc_test: add debugfs file to list all tests
+>>  mmc: mmc_test: add test for non-blocking transfers
+>>  mmc: mmc_test: test to measure how sg_len affect performance
+>>  mmc: block: add member in mmc queue struct to hold request data
+>>  mmc: block: add a block request prepare function
+>>  mmc: block: move error code in issue_rw_rq to a separate function.
+>>  mmc: queue: add a second mmc queue request member
+>>  mmc: core: add random fault injection
+>>  mmc: block: add handling for two parallel block requests in
+>>    issue_rw_rq
+>>
+>>  drivers/mmc/card/block.c      |  505 ++++++++++++++++++++++++-----------------
+>>  drivers/mmc/card/mmc_test.c   |  491 ++++++++++++++++++++++++++++++++++++++--
+>>  drivers/mmc/card/queue.c      |  184 ++++++++++------
+>>  drivers/mmc/card/queue.h      |   33 ++-
+>>  drivers/mmc/core/core.c       |  167 +++++++++++++-
+>>  drivers/mmc/core/debugfs.c    |    5 +
+>>  drivers/mmc/host/mmci.c       |  147 +++++++++++-
+>>  drivers/mmc/host/mmci.h       |    8 +
+>>  drivers/mmc/host/omap_hsmmc.c |   87 +++++++-
+>>  include/linux/mmc/core.h      |    6 +-
+>>  include/linux/mmc/host.h      |   24 ++
+>>  lib/Kconfig.debug             |   11 +
+>>  12 files changed, 1345 insertions(+), 323 deletions(-)
+>
+>
+>
+> Boot tested on Omap4430 Blaze board.
+>
+> Tested-by: Sourav Poddar<sourav.poddar@ti.com>
+>
+Reviewed for OMAP along with Sourav's tests..
+Reviewed-by: Venkatraman S <svenkatr@ti.com>
