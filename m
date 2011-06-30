@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab1F3MQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:16:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41577 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750874Ab1F3MQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:16:00 -0400
-Date: Thu, 30 Jun 2011 14:15:58 +0200
-From: Jan Kara <jack@suse.cz>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jan Kara <jack@suse.cz>, Curt Wohlgemuth <curtw@google.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, fengguang.wu@intel.com
-Subject: Re: [PATCH] writeback: Don't wait for completion in
- writeback_inodes_sb_nr
-Message-ID: <20110630121558.GF28475@quack.suse.cz>
-References: <1309304616-8657-1-git-send-email-curtw@google.com>
- <20110629005422.GQ32466@dastard>
- <BANLkTimKtwVZo3D+w9AB2-C83d08YROcMw@mail.gmail.com>
- <20110629081155.GA5558@infradead.org>
- <20110629165714.GF17590@quack.suse.cz>
- <20110629175534.GA32236@infradead.org>
- <20110629191518.GA23196@quack.suse.cz>
- <20110629201234.GA31129@infradead.org>
+	id S1752802Ab1F3MRU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 08:17:20 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41702 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750952Ab1F3MRP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 08:17:15 -0400
+Date: Thu, 30 Jun 2011 14:17:10 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, git@vger.kernel.org,
+        Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: manual merge of the security-testing tree with the
+ tree
+Message-ID: <20110630121710.GJ11559@pengutronix.de>
+References: <20110630142910.2fea4257.sfr@canb.auug.org.au>
+ <20110630072559.GA4048@pengutronix.de>
+ <20110630193023.6056d48e.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20110629201234.GA31129@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110630193023.6056d48e.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed 29-06-11 16:12:34, Christoph Hellwig wrote:
-> On Wed, Jun 29, 2011 at 09:15:18PM +0200, Jan Kara wrote:
-> >   True but writeback_single_inode() has in it:
-> >         if (wbc->sync_mode == WB_SYNC_ALL) {
-> >                 int err = filemap_fdatawait(mapping);
-> >                 if (ret == 0)
-> >                         ret = err;
-> >         }
-> >   So we end up waiting much earlier. Probably we should remove this wait
-> > but that will need some audit I guess.
+On Thu, Jun 30, 2011 at 07:30:23PM +1000, Stephen Rothwell wrote:
+> Hi Uwe,
 > 
-> Uhh, indeed.  We'll need this wait for things like sync_inode, though.
-  Yes. Actually, specifically for filesystems like XFS which update inode
-after IO completion we would need more passes to be efficient and correct:
-  for all inodes
-    fdatawrite
-  for all inodes
-    fdatawait
-  for all inodes
-    write_inode
-  for all inodes
-    wait for inode IO
+> On Thu, 30 Jun 2011 09:25:59 +0200 Uwe Kleine-König <u.kleine-koenig@pengutronix.de> wrote:
+> >
+> > Long history short: James probably used -s ours or similar and it's fine
+> > not to merge that commit into next :-)
+> 
+> Ah ha!  Thanks for the explanation.  My mind was clearly not up to it
+> today. :-)
+The uncomfortable issue here is that 
 
-  But maybe this could be handled by having new WB_SYNC_ mode indicating
-that writeback_single_inode() should not bother waiting (thus we'd really
-end up waiting in sync_inodes_sb()) and then XFS and other filesystems that
-need it would writeout inodes in their sync_fs() implementation (possibly
-using a generic helper)?
-								Honza
+	git show bcd05ca10420
+
+(or gitk or gitweb or <enteryourfavoritetoolhere>) doesn't indicate that
+it's "strange". The patch shown is simply empty, as it would be if the
+tree matched the other parent or if it were a clean merge.
+
+A flag would be nice that does what I did: redo the merge and compare
+bcd05ca10420^{tree} with the result?
+
+Best regards
+Uwe
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
