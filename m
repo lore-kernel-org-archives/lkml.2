@@ -1,76 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755029Ab1F3KSk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 06:18:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:48280 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752118Ab1F3KSe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 06:18:34 -0400
+	id S1755073Ab1F3KTo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 06:19:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33155 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752360Ab1F3KTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 06:19:39 -0400
+Date: Thu, 30 Jun 2011 11:19:31 +0100
+From: Mel Gorman <mgorman@suse.de>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: akpm@linux-foundation.org, P@draigBrady.com,
+        James.Bottomley@HansenPartnership.com, colin.king@canonical.com,
+        minchan.kim@gmail.com, luto@mit.edu, riel@redhat.com,
+        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm: vmscan: Only read new_classzone_idx from pgdat
+ when reclaiming successfully
+Message-ID: <20110630101931.GZ9396@suse.de>
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de>
+ <1308926697-22475-5-git-send-email-mgorman@suse.de>
+ <4E0C3C77.8010608@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <4E0B360B.5050600@canonical.com>
-References: <1309268154-6872-1-git-send-email-kengyu@canonical.com> <4E0B360B.5050600@canonical.com>
-From: =?UTF-8?B?S2VuZy1Zw7wgTGlu?= <kengyu@canonical.com>
-Date: Thu, 30 Jun 2011 11:17:52 +0100
-X-Google-Sender-Auth: q3OHPII-10rO4BV6VuhV67WCruw
-Message-ID: <BANLkTinwSHoV+BBG_jvLdg3c4o_uODNJvQ@mail.gmail.com>
-Subject: Re: [PATCH 1/2] ideapad-laptop: Ignore an unused VPC notification
-To: Ike Panhc <ike.pan@canonical.com>
-Cc: Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vanhoof@canonical.com,
-        kent.lin@canonical.com, sylee@canonical.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E0C3C77.8010608@jp.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 3:26 PM, Ike Panhc <ike.pan@canonical.com> wrote:
-> On 06/28/2011 09:35 PM, Keng-Yu Lin wrote:
->> BIOS fires notifications in a constant period with VPC bit 1 set when the
->> power cord is unplugged.
->>
->> This event is not known yet to have any effect, but it makes the
->> call to sparse_keymap_report_event() and generates many KEY_UNKNOWNs.
->>
->> This causes the userspace (Gnome Power Manager in my case) unable
->> to enter the idle mode. As the result there is no screensaver showing up,
->> no dim backlight, etc.
->>
->> Signed-off-by: Keng-Yu Lin <kengyu@canonical.com>
->> ---
->>  drivers/platform/x86/ideapad-laptop.c |    3 ++-
->>  1 files changed, 2 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/platform/x86/ideapad-laptop.c b/drivers/platform/x86/ideapad-laptop.c
->> index bfdda33..820f013 100644
->> --- a/drivers/platform/x86/ideapad-laptop.c
->> +++ b/drivers/platform/x86/ideapad-laptop.c
->> @@ -463,7 +463,8 @@ static void ideapad_acpi_notify(struct acpi_device *adevice, u32 event)
->>                               ideapad_sync_rfk_state(adevice);
->>                       else if (vpc_bit == 4)
->>                               read_ec_data(handle, 0x12, &vpc2);
->> -                     else
->> +                     else if (vpc_bit == 1) {
->> +                     } else
->>                               ideapad_input_report(priv, vpc_bit);
->>               }
->>       }
->
-> So far I know this event (coming with vpc_bit=1) is for Lenovo PM utility
-> on Windows. For most of the machine this event is not implemented in BIOS.
->
-> Its ok that we just ignore the event.
->
-> I think it will be better if we can let sparse-keymap or any upper level
-> application to ignore all unknown scancode or KEY_UNKNOWN but so far I do
-> not know a better way then this patch.
+On Thu, Jun 30, 2011 at 06:05:59PM +0900, KOSAKI Motohiro wrote:
+> (2011/06/24 23:44), Mel Gorman wrote:
+> > During allocator-intensive workloads, kswapd will be woken frequently
+> > causing free memory to oscillate between the high and min watermark.
+> > This is expected behaviour.  Unfortunately, if the highest zone is
+> > small, a problem occurs.
+> > 
+> > When balance_pgdat() returns, it may be at a lower classzone_idx than
+> > it started because the highest zone was unreclaimable. Before checking
+> > if it should go to sleep though, it checks pgdat->classzone_idx which
+> > when there is no other activity will be MAX_NR_ZONES-1. It interprets
+> > this as it has been woken up while reclaiming, skips scheduling and
+> > reclaims again. As there is no useful reclaim work to do, it enters
+> > into a loop of shrinking slab consuming loads of CPU until the highest
+> > zone becomes reclaimable for a long period of time.
+> > 
+> > There are two problems here. 1) If the returned classzone or order is
+> > lower, it'll continue reclaiming without scheduling. 2) if the highest
+> > zone was marked unreclaimable but balance_pgdat() returns immediately
+> > at DEF_PRIORITY, the new lower classzone is not communicated back to
+> > kswapd() for sleeping.
+> > 
+> > This patch does two things that are related. If the end_zone is
+> > unreclaimable, this information is communicated back. Second, if
+> > the classzone or order was reduced due to failing to reclaim, new
+> > information is not read from pgdat and instead an attempt is made to go
+> > to sleep. Due to this, it is also necessary that pgdat->classzone_idx
+> > be initialised each time to pgdat->nr_zones - 1 to avoid re-reads
+> > being interpreted as wakeups.
+> > 
+> > Reported-and-tested-by: P�draig Brady <P@draigBrady.com>
+> > Signed-off-by: Mel Gorman <mgorman@suse.de>
+> > ---
+> >  mm/vmscan.c |   34 +++++++++++++++++++++-------------
+> >  1 files changed, 21 insertions(+), 13 deletions(-)
+> > 
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index a76b6cc2..fe854d7 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -2448,7 +2448,6 @@ loop_again:
+> >  			if (!zone_watermark_ok_safe(zone, order,
+> >  					high_wmark_pages(zone), 0, 0)) {
+> >  				end_zone = i;
+> > -				*classzone_idx = i;
+> >  				break;
+> >  			}
+> >  		}
+> > @@ -2528,8 +2527,11 @@ loop_again:
+> >  			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
+> >  				sc.may_writepage = 1;
+> >  
+> > -			if (zone->all_unreclaimable)
+> > +			if (zone->all_unreclaimable) {
+> > +				if (end_zone && end_zone == i)
+> > +					end_zone--;
+> >  				continue;
+> > +			}
+> >  
+> >  			if (!zone_watermark_ok_safe(zone, order,
+> >  					high_wmark_pages(zone), end_zone, 0)) {
+> > @@ -2709,8 +2711,8 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
+> >   */
+> >  static int kswapd(void *p)
+> >  {
+> > -	unsigned long order;
+> > -	int classzone_idx;
+> > +	unsigned long order, new_order;
+> > +	int classzone_idx, new_classzone_idx;
+> >  	pg_data_t *pgdat = (pg_data_t*)p;
+> >  	struct task_struct *tsk = current;
+> >  
+> > @@ -2740,17 +2742,23 @@ static int kswapd(void *p)
+> >  	tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
+> >  	set_freezable();
+> >  
+> > -	order = 0;
+> > -	classzone_idx = MAX_NR_ZONES - 1;
+> > +	order = new_order = 0;
+> > +	classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
+> >  	for ( ; ; ) {
+> > -		unsigned long new_order;
+> > -		int new_classzone_idx;
+> >  		int ret;
+> >  
+> > -		new_order = pgdat->kswapd_max_order;
+> > -		new_classzone_idx = pgdat->classzone_idx;
+> > -		pgdat->kswapd_max_order = 0;
+> > -		pgdat->classzone_idx = MAX_NR_ZONES - 1;
+> > +		/*
+> > +		 * If the last balance_pgdat was unsuccessful it's unlikely a
+> > +		 * new request of a similar or harder type will succeed soon
+> > +		 * so consider going to sleep on the basis we reclaimed at
+> > +		 */
+> > +		if (classzone_idx >= new_classzone_idx && order == new_order) {
+> 
+> I'm confusing this. If we take a following scenario, new_classzone_idx may be garbage.
+> 
+> 1. new_classzone_idx = pgdat->classzone_idx
+> 2. kswapd_try_to_sleep()
+> 3. classzone_idx = pgdat->classzone_idx
+> 4. balance_pgdat()
+> 
+> Wouldn't we need to reinitialize new_classzone_idx nad new_order at kswapd_try_to_sleep()
+> path too?
+> 
 
-I think sparse_keymap_report_event() sends the KEY_UNKNOWN on purpose
-as a debugging aid.
+I don't understand your question. new_classzone_idx is initialised
+before the kswapd main loop and after this patch is only updated
+only when balance_pgdat() successfully balanced but the following
+situation can arise
 
-We should prevent the call to it in ideapad-laptop. I think the patch
-is probably the simplest way.
+1. Read for balance-request-A (order, classzone) pair
+2. Fail balance_pgdat
+3. Sleep based on (order, classzone) pair
+4. Wake for balance-request-B (order, classzone) pair where
+   balance-request-B != balance-request-A
+5. Succeed balance_pgdat
+6. Compare order,classzone with balance-request-A which will treat
+   balance_pgdat() as fail and try go to sleep
 
-  Thanks,
--kengyu
+This is not the same as new_classzone_idx being "garbage" but is it
+what you mean? If so, is this your proposed fix?
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index fe854d7..1a518e6 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2770,6 +2770,8 @@ static int kswapd(void *p)
+ 			kswapd_try_to_sleep(pgdat, order, classzone_idx);
+ 			order = pgdat->kswapd_max_order;
+ 			classzone_idx = pgdat->classzone_idx;
++			new_order = order;
++			new_classzone_idx = classzone_idx;
+ 			pgdat->kswapd_max_order = 0;
+ 			pgdat->classzone_idx = pgdat->nr_zones - 1;
+ 		}
