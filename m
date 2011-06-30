@@ -1,56 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751718Ab1F3NfQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 09:35:16 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49908 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751057Ab1F3NfL (ORCPT
+	id S1751963Ab1F3NgT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 09:36:19 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34343 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab1F3NgM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 09:35:11 -0400
-Subject: [PATCH] ARM i.MX23/28: platform-mxsfb: Add missing include of
- linux/dma-mapping.h
-From: Axel Lin <axel.lin@gmail.com>
+	Thu, 30 Jun 2011 09:36:12 -0400
+From: Wolfram Sang <w.sang@pengutronix.de>
 To: linux-kernel@vger.kernel.org
-Cc: Sascha Hauer <kernel@pengutronix.de>,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Jun 2011 21:35:03 +0800
-Message-ID: <1309440903.22791.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+Cc: linux-i2c@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
+        Grant Likely <grant.likely@secretlab.ca>
+Subject: [PATCH] gpio: pca953x: change driver name to be unique
+Date: Thu, 30 Jun 2011 15:35:59 +0200
+Message-Id: <1309440959-18692-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: git-send-email 1.7.5.4
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix below build error:
-  CC      arch/arm/mach-mxs/devices/platform-mxsfb.o
-arch/arm/mach-mxs/devices/platform-mxsfb.c: In function 'mx23_add_mxsfb':
-arch/arm/mach-mxs/devices/platform-mxsfb.c:27: error: implicit declaration of function 'DMA_BIT_MASK'
-make[2]: *** [arch/arm/mach-mxs/devices/platform-mxsfb.o] Error 1
-make[1]: *** [arch/arm/mach-mxs/devices] Error 2
-make: *** [arch/arm/mach-mxs] Error 2
+This driver handles the variants pca9534-pca9539, so it chose the name
+"pca953x". However, there is a led driver which decided on the same
+name. As a result, those two can't be loaded at the same time. Add a
+subsystem prefix to make the driver name unique. Device matching will
+not suffer, because both are I2C drivers which match using a
+i2c_device_id-table which is not altered.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 ---
- arch/arm/mach-mxs/devices/platform-mxsfb.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/gpio/pca953x.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-mxs/devices/platform-mxsfb.c b/arch/arm/mach-mxs/devices/platform-mxsfb.c
-index bf72c9b..5a75b71 100644
---- a/arch/arm/mach-mxs/devices/platform-mxsfb.c
-+++ b/arch/arm/mach-mxs/devices/platform-mxsfb.c
-@@ -5,6 +5,7 @@
-  * the terms of the GNU General Public License version 2 as published by the
-  * Free Software Foundation.
-  */
-+#include <linux/dma-mapping.h>
- #include <asm/sizes.h>
- #include <mach/mx23.h>
- #include <mach/mx28.h>
+diff --git a/drivers/gpio/pca953x.c b/drivers/gpio/pca953x.c
+index 0451d7a..b30dd0b 100644
+--- a/drivers/gpio/pca953x.c
++++ b/drivers/gpio/pca953x.c
+@@ -742,7 +742,7 @@ static int pca953x_remove(struct i2c_client *client)
+ 
+ static struct i2c_driver pca953x_driver = {
+ 	.driver = {
+-		.name	= "pca953x",
++		.name	= "gpio-pca953x",
+ 	},
+ 	.probe		= pca953x_probe,
+ 	.remove		= pca953x_remove,
 -- 
-1.7.4.1
-
-
+1.7.5.4
 
