@@ -1,101 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758577Ab1F3HxW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 03:53:22 -0400
-Received: from webbox687.server-home.net ([195.149.74.151]:59774 "EHLO
-	webbox687.server-home.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab1F3HxS (ORCPT
+	id S1758598Ab1F3H50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 03:57:26 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41335 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab1F3H5W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 03:53:18 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: Re: [PATCH v3] pch_gpio: Support interrupt function
-Date: Thu, 30 Jun 2011 09:53:15 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.38-gentoo-r6; KDE/4.6.3; x86_64; ; )
-Cc: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com
-References: <1308631468-2376-1-git-send-email-tomoya-linux@dsn.okisemi.com> <4E0BDA54.2080007@dsn.okisemi.com>
-In-Reply-To: <4E0BDA54.2080007@dsn.okisemi.com>
+	Thu, 30 Jun 2011 03:57:22 -0400
+Date: Thu, 30 Jun 2011 11:57:16 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Shailabh Nagar <nagar@us.ibm.com>, Balbir Singh <bsingharora@gmail.com>,
+        linux-kernel@vger.kernel.org, security@kernel.org,
+        Eric Paris <eparis@redhat.com>, Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
+Message-ID: <20110630075716.GB3377@albatros>
+References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
+ <BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-2022-jp"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106300953.16654.alexander.stein@systec-electronic.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 June 2011 04:07:16 Tomoya MORINAGA wrote:
-> Hi Grant,
+On Wed, Jun 29, 2011 at 13:09 -0700, Linus Torvalds wrote:
+> Ok, having looked at this some more, I'm quite ready to just mark the
+> whole TASKSTATS config option as BROKEN. It does seem to be a horrible
+> security hazard, and very little seems to use it.
 > 
-> If you don't have any concern, would you accept this patch ?
+> It also seems to be really fundamentally broken. Afaik, there's no way
+> to filter taskstats not only by security issues (Vasiliy's patch
+> really is very ugly), but it seems to be some global cross-namespace
+> thing too, so it exposes taskstats across pid namespaces afaik.
+
+The problem here is that it keeps a pid in a global list.  This list is
+then browsed by all namespaces.  Looking into the code, I see 2 real
+problems (didn't check, though):
+
+1) If there are 2+ pid namespaces, one listener in pid_ns #1 and some
+process dies in pid_ns #2, then the dying task wouldn't find the
+listener via find_task_by_vpid() and would just delete the listener from
+listeners list.  Looks like this problem was created by optimization
+patch f9fd8914c1acca0.
+
+2) Netlink sockets are per net namespace, but this accounting thing is per
+pid namespace.  So, if the dying task and the listener are in a single
+pid namespace, but in different net namespaces, the message will not be
+sent via genlmsg_unicast().  I suspect it is a problem of all non-net
+netlink sockets.
+
+
+> It
+> does that even with Vasiliy's patch, afaik, although then I think you
+> need to have collissions in the namespaces if I read the code
+> correctly.
 > 
-> Thanks,
+> I suspect that could be fixed by adding a pid namespace to the
+> 'listener' structure. Also adding a 'cred' pointer (or the actual
+> listener thread pointer) to it would make Vasiliy's patch more
+> palatable, since then you wouldn't need to look up the credentials at
+> send_cpu_listeners() time.
 > 
-> (2011/06/21 13:44), Tomoya MORINAGA wrote:
-> > Support interrupt function using irq_chip_generic
-> > 
-> > Signed-off-by: Tomoya MORINAGA<tomoya-linux@dsn.okisemi.com>
-> > ---
-> > @@ -202,8 +345,36 @@ static int __devinit pch_gpio_probe(struct pci_dev
-> > *pdev,
-> > 
-> >   		goto err_gpiochip_add;
-> >   	
-> >   	}
-> > 
-> > +	irq_base = irq_alloc_descs(-1, PCH_IRQ_BASE, GPIO_NUM_PINS,
-> > GFP_KERNEL); +	if (irq_base<  0) {
-> > +		dev_err(&pdev->dev, "PCH gpio: Failed to get IRQ base num\n");
-> > +		goto err_irq_alloc_descs;
-> > +	}
-> > +	chip->irq_base = irq_base;
-> > +
-> > +	ret = request_irq(pdev->irq, pch_gpio_handler,
-> > +			     IRQF_SHARED, KBUILD_MODNAME, chip);
-> > +	if (ret != 0) {
-> > +		dev_err(&pdev->dev,
-> > +			"%s request_irq failed\n", __func__);
-> > +		goto err_request_irq;
-> > +	}
-> > +
-> > +	pch_gpio_alloc_generic_chip(chip, irq_base, GPIO_NUM_PINS);
-> > +
-> > +	/* Initialize interrupt ien register */
-> > +	iowrite32(0,&chip->reg->ien);
-> > +
-> > 
-> >   	return 0;
-> > 
-> > +err_request_irq:
-> > +	irq_free_descs(irq_base, GPIO_NUM_PINS);
-> > +
-> > +err_irq_alloc_descs:
-> > +	ret = gpiochip_remove(&chip->gpio);
-> > +	if (ret)
-> > +		dev_err(&pdev->dev, "%s gpiochip_remove failed\n", __func__);
-> > +
-> > 
-> >   err_gpiochip_add:
-> >   	pci_iounmap(pdev, chip->base);
-> > 
-> > @@ -224,6 +395,8 @@ static void __devexit pch_gpio_remove(struct pci_dev
-> > *pdev)
-> > 
-> >   	int err;
-> >   	struct pch_gpio *chip = pci_get_drvdata(pdev);
-> > 
-> > +	irq_free_descs(chip->irq_base, GPIO_NUM_PINS);
-> > +
+> Maybe I have mis-read the code. But it does all make me shudder. There
+> doesn't even seem to be all that many _users_ of the thing, so the
+> problems it has really makes me go "is that code worth it"? We
+> probably should never have merged it in the first place.
 
-Is a free_irq missing here?
+> but it seems to be some global cross-namespace
+> thing too, so it exposes taskstats across pid namespaces afaik.
 
-> > 
-> >   	err = gpiochip_remove(&chip->gpio);
-> >   	if (err)
-> >   	
-> >   		dev_err(&pdev->dev, "Failed gpiochip_remove\n");
 
-Regards,
-Alexander
+Thanks,
+
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
