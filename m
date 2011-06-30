@@ -1,140 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756432Ab1F3InK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 04:43:10 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43802 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754539Ab1F3InF convert rfc822-to-8bit (ORCPT
+	id S1757662Ab1F3In5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:43:57 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:50578 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755864Ab1F3Ins convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 04:43:05 -0400
+	Thu, 30 Jun 2011 04:43:48 -0400
 MIME-Version: 1.0
-X-Originating-IP: [87.194.181.195]
-In-Reply-To: <4E0C31DF.5090200@samsung.com>
-References: <1309402665-29228-1-git-send-email-tgih.jun@samsung.com>
-	<4E0C18BD.8000608@samsung.com>
-	<BANLkTikhwh5M1XB9zRiLzMd7dL18kA_o0g@mail.gmail.com>
-	<4E0C31DF.5090200@samsung.com>
-Date: Thu, 30 Jun 2011 09:43:04 +0100
-Message-ID: <BANLkTi=r3x81sPVLG9yRAG9hHnjQuqTHCg@mail.gmail.com>
-Subject: Re: [PATCH] mmc: dw_mmc: Add the function call for board-specific initialization.
-From: James Hogan <james@albanarts.com>
-To: Jaehoon Chung <jh80.chung@samsung.com>
-Cc: Seungwon Jeon <tgih.jun@samsung.com>, linux-mmc@vger.kernel.org,
-        cjb@laptop.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110630080119.GA20802@infradead.org>
+References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
+	<20110629140630.5aefdda8.rdunlap@xenotime.net>
+	<BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
+	<20110630080119.GA20802@infradead.org>
+Date: Thu, 30 Jun 2011 10:43:47 +0200
+X-Google-Sender-Auth: oiZrexSdhxHzv_hoGDzmuWv5W2I
+Message-ID: <BANLkTik81kgf=g+QngnaB7gNUF+xCQdSvw@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On 30 June 2011 09:20, Jaehoon Chung <jh80.chung@samsung.com> wrote:
-> Hi James
->
-> James Hogan wrote:
->> On 30 June 2011 07:33, Jaehoon Chung <jh80.chung@samsung.com> wrote:
->>> Hi Mr.Jeon
->>>
->>> This patch is the compiler error.
->>>
->>> didn't find host->card_work..
->>>
->>> do you want this
->>> queue_work(dw_mci_card_workqueue, &slot->host->card_work); ?
+On Thu, Jun 30, 2011 at 10:01, Christoph Hellwig <hch@infradead.org> wrote:
+> On Thu, Jun 30, 2011 at 08:59:28AM +0200, Geert Uytterhoeven wrote:
+>> Nope. Also only happens on cris, which has in
+>> arch/cris/include/asm/posix_types.h:
 >>
->> I think the patch is based on mmc-next, which has the following commit:
->> 35ba9d8 mmc: dw_mmc: convert card tasklet to workqueue
->
-> I also tested this patch based on mmc-next.
-> But my mean is that there is not host structure in dw_mci_detect_interrupt().
->
-> drivers/mmc/host/dw_mmc.c: In function 'dw_mci_detect_interrupt':
-> drivers/mmc/host/dw_mmc.c:1592: error: 'host' undeclared (first use in this function)
-> drivers/mmc/host/dw_mmc.c:1592: error: (Each undeclared identifier is reported only once
-> drivers/mmc/host/dw_mmc.c:1592: error: for each function it appears in.)
-> drivers/mmc/host/dw_mmc.c:1590: warning: unused variable 'slot'
-> make[3]: *** [drivers/mmc/host/dw_mmc.o] Error 1
-> make[2]: *** [drivers/mmc/host] Error 2
-
-Sorry, I misunderstood. You are correct.
-
-Cheers
-James
-
->
-> Did you really compile fine?
->
-> Regards,
-> Jaehoon Chung
->
+>> typedef long Â  Â  Â  Â  Â  Â __kernel_ssize_t;
 >>
->> Cheers
->> James
->>
->>>
->>> Regards,
->>> Jaehoon Chung
->>>
->>>
->>> Seungwon Jeon wrote:
->>>> Need to call init() function of dw_mci_board.
->>>> It seems to be omitted to call this function.
->>>>
->>>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
->>>> ---
->>>>  drivers/mmc/host/dw_mmc.c |   11 +++++++++++
->>>>  1 files changed, 11 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
->>>> index a524416..073c420 100644
->>>> --- a/drivers/mmc/host/dw_mmc.c
->>>> +++ b/drivers/mmc/host/dw_mmc.c
->>>> @@ -1585,6 +1585,15 @@ static void dw_mci_work_routine_card(struct work_struct *work)
->>>>       }
->>>>  }
->>>>
->>>> +static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
->>>> +{
->>>> +     struct dw_mci_slot *slot = dev_id;
->>>> +
->>>> +     queue_work(dw_mci_card_workqueue, &host->card_work);
->>>> +
->>>> +     return IRQ_HANDLED;
->>>> +}
->>>> +
->>>>  static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->>>>  {
->>>>       struct mmc_host *mmc;
->>>> @@ -1657,6 +1666,8 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
->>>>       } else
->>>>               regulator_enable(host->vmmc);
->>>>
->>>> +     host->pdata->init(id, dw_mci_detect_interrupt, host);
->>>> +
->>>>       if (dw_mci_get_cd(mmc))
->>>>               set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
->>>>       else
->>>> --
->>>> 1.7.0.4
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>
->>> --
->>> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
->>> the body of a message to majordomo@vger.kernel.org
->>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>
->>
->>
->>
+>> The "long" should be "int".
+>> But probably it should just include <asm-generic/posix_types.h> instead.
 >
->
+> Changing a user visible type won't be very nice for those using it in
+> C++ code.
 
+Are __kernel_* types exported to C++ userspace?
 
+> Better fix the code to use the proper %zd specifier for printing ssize_t
+> variables.
 
--- 
-James Hogan
+We cannot, as that would break on all other platforms that use the
+correct ssize_t.
+
+The problem is the incorrect typedef in the cris headers.
+
+Gr{oetje,eeting}s,
+
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
