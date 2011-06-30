@@ -1,115 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753493Ab1F3SrN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 14:47:13 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:44456 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752188Ab1F3SrK (ORCPT
+	id S1753521Ab1F3Ssc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 14:48:32 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55321 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab1F3Ssb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 14:47:10 -0400
-Message-ID: <4E0CC4AC.9020400@candelatech.com>
-Date: Thu, 30 Jun 2011 11:47:08 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Thu, 30 Jun 2011 14:48:31 -0400
 MIME-Version: 1.0
-To: "J. Bruce Fields" <bfields@fieldses.org>
-CC: linux-nfs@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: NFS crash in un-modified 3.0.0-rc3+, list corruption.
-References: <4DFFCCDC.2070106@candelatech.com> <4DFFD738.2080608@candelatech.com> <20110630182513.GC18713@fieldses.org>
-In-Reply-To: <20110630182513.GC18713@fieldses.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4E0CBFF0.2040205@zytor.com>
+References: <20110622063441.GA1740@x4.trippels.de> <4E048C0D.7020403@suse.cz>
+ <20110624135100.GB1708@x4.trippels.de> <201106241833.15424.arnd@arndb.de>
+ <BANLkTi=9e-it8nd2s-vcbEfc1h8tnSmj8A@mail.gmail.com> <4E0CBFF0.2040205@zytor.com>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Thu, 30 Jun 2011 14:48:11 -0400
+X-Google-Sender-Auth: Xm0CAECu2Xi7q1hB-ZG1OvBcSoA
+Message-ID: <BANLkTikKq64RPyT3CS8U+zdc2HmqHYZt4Q@mail.gmail.com>
+Subject: Re: {PATCH] fix __packed in exported kernel headers
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Arnd Bergmann <arnd@arndb.de>,
+        Markus Trippelsdorf <markus@trippelsdorf.de>,
+        Michal Marek <mmarek@suse.cz>, Joe Perches <joe@perches.com>,
+        Nick Bowler <nbowler@elliptictech.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Sam Ravnborg <sam@ravnborg.org>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2011 11:25 AM, J. Bruce Fields wrote:
-> On Mon, Jun 20, 2011 at 04:26:48PM -0700, Ben Greear wrote:
->> On 06/20/2011 03:42 PM, Ben Greear wrote:
->>> This machine is acting as a server.  It is from linux-2.6, pulled
->>> today:
->>>
->>> commit de505e709ffb09a7382ca8e0d8c7dbb171ba5830
->>>
->>> We are hitting it with 200 clients reading and writing, mounting and
->>> un-mounting.
->>> This bug is fairly reproducible (twice today).
->>>
->>> Large amounts of debugging options are enabled.
+On Thu, Jun 30, 2011 at 14:26, H. Peter Anvin wrote:
+> On 06/24/2011 10:00 AM, Mike Frysinger wrote:
+>>> We generally try to add no such requirements on user applications.
 >>
->> We were also starting/stopping NFS on the server machine.
->> It appears that this crash happens during the
->> /etc/init.d/nfs stop
->> command.
+>> the only real solution there is to export the compiler.h headers too
+>>
+>> plus, many compilers nowadays (like icc/llvm) tend to include support
+>> for common gcc attributes ...
 >
-> I'll be submitting the below.
->
-> The bug's been there for a really long time and we're getting late into
-> the release cycle so I'll probably just save it for 3.1 (but it'll go to
-> stable as well then).
+> Either that OR define a set of macros as being expected by the
+> environment of the kernel ABI headers (to be provided by the library.)
 
-Looks good to me!
-
-Thanks,
-Ben
-
->
-> --b.
->
-> commit 0f4bb2521a0e300443e9d80b10778f5a93cc0dbc
-> Author: J. Bruce Fields<bfields@redhat.com>
-> Date:   Wed Jun 29 16:49:04 2011 -0400
->
->      svcrpc: fix list-corrupting race on nfsd shutdown
->
->      After commit 3262c816a3d7fb1eaabce633caa317887ed549ae "[PATCH] knfsd:
->      split svc_serv into pools", svc_delete_xprt (then svc_delete_socket) no
->      longer removed its xpt_ready (then sk_ready) field from whatever list it
->      was on, noting that there was no point since the whole list was about to
->      be destroyed anyway.
->
->      That was mostly true, but forgot that a few svc_xprt_enqueue()'s might
->      still be hanging around playing with the about-to-be-destroyed list, and
->      could get themselves into trouble writing to freed memory if we left
->      this xprt on the list after freeing it.
->
->      (This is actually functionally identical to a patch made first by Ben
->      Greear, but with more comments.)
->
->      Cc: stable@kernel.org
->      Cc: gnb@fmeh.org
->      Reported-by: Ben Greear<greearb@candelatech.com>
->      Tested-by: Ben Greear<greearb@candelatech.com>
->      Signed-off-by: J. Bruce Fields<bfields@redhat.com>
->
-> diff --git a/net/sunrpc/svc_xprt.c b/net/sunrpc/svc_xprt.c
-> index ab86b79..bd31208 100644
-> --- a/net/sunrpc/svc_xprt.c
-> +++ b/net/sunrpc/svc_xprt.c
-> @@ -902,12 +902,13 @@ void svc_delete_xprt(struct svc_xprt *xprt)
->   	if (!test_and_set_bit(XPT_DETACHED,&xprt->xpt_flags))
->   		list_del_init(&xprt->xpt_list);
->   	/*
-> -	 * We used to delete the transport from whichever list
-> -	 * it's sk_xprt.xpt_ready node was on, but we don't actually
-> -	 * need to.  This is because the only time we're called
-> -	 * while still attached to a queue, the queue itself
-> -	 * is about to be destroyed (in svc_destroy).
-> +	 * The only time we're called while xpt_ready is still on a list
-> +	 * is while the list itself is about to be destroyed (in
-> +	 * svc_destroy).  BUT svc_xprt_enqueue could still be attempting
-> +	 * to add new entries to the sp_sockets list, so we can't leave
-> +	 * a freed xprt on it.
->   	 */
-> +	list_del_init(&xprt->xpt_ready);
->   	if (test_bit(XPT_TEMP,&xprt->xpt_flags))
->   		serv->sv_tmpcnt--;
->   	spin_unlock_bh(&serv->sv_lock);
-
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+without fallback logic (#ifndef xxx...#define xxx...#endif), i think
+that's throwing an unreasonable amount of requirements onto userspace
+consumers
+-mike
