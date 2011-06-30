@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab1F3JZg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 05:25:36 -0400
-Received: from server109-228-6-236.live-servers.net ([109.228.6.236]:63278
-	"EHLO fireflyinternet.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750988Ab1F3JZ3 (ORCPT
+	id S1758840Ab1F3I4o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:56:44 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:49873
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751897Ab1F3I4j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 05:25:29 -0400
-X-Greylist: delayed 1762 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Jun 2011 05:25:29 EDT
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=78.156.66.37;
-Date: Thu, 30 Jun 2011 09:55:55 +0100
-To: Keith Packard <keithp@keithp.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] i915: slab shrinker have to return -1 if it cant shrink any objects
-Cc: kosaki.motohiro@jp.fujitsu.com
-References: <4E0444CA.3080407@jp.fujitsu.com> <yuny60kt1nx.fsf@aiko.keithp.com>
-From: Chris Wilson <chris@chris-wilson.co.uk>
-In-Reply-To: <yuny60kt1nx.fsf@aiko.keithp.com>
-X-Originating-IP: 78.156.66.37
-Message-ID: <1309424153_44559@CP5-2952>
+	Thu, 30 Jun 2011 04:56:39 -0400
+Date: Thu, 30 Jun 2011 04:56:33 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Christoph Hellwig <hch@infradead.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Mikael Starvik <starvik@axis.com>,
+        Jesper Nilsson <jesper.nilsson@axis.com>, linux-cris-kernel@axis.com
+Subject: Re: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
+Message-ID: <20110630085633.GA31414@infradead.org>
+References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
+ <20110629140630.5aefdda8.rdunlap@xenotime.net>
+ <BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
+ <20110630080119.GA20802@infradead.org>
+ <BANLkTik81kgf=g+QngnaB7gNUF+xCQdSvw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <BANLkTik81kgf=g+QngnaB7gNUF+xCQdSvw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011 20:53:54 -0700, Keith Packard <keithp@keithp.com> wrote:
-> On Fri, 24 Jun 2011 17:03:22 +0900, KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On Thu, Jun 30, 2011 at 10:43:47AM +0200, Geert Uytterhoeven wrote:
+> > Better fix the code to use the proper %zd specifier for printing ssize_t
+> > variables.
 > 
-> > Now, i915_gem_inactive_shrink() should return -1 instead of 0 if it
-> > can't take a lock. Otherwise, vmscan is getting a lot of confusing
-> > because vmscan can't distinguish "can't take a lock temporary" and
-> > "we've shrank all of i915 objects".
-> 
-> This doesn't look like the cleanest change possible. I think it would be
-> better if the shrink function could uniformly return an error
-> indication so that we wouldn't need the weird looking conditional return.
+> We cannot, as that would break on all other platforms that use the
+> correct ssize_t.
 
-Unless I am mistaken, and there are more patches in flight, the return
-code from i915_gem_inactive_shrink() is promoted to unsigned long and then
-used in the calculation of how may objects to evict...
--Chris
+%zd is specified as the correct format for ssize_t.
 
--- 
-Chris Wilson, Intel Open Source Technology Centre
