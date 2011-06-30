@@ -1,105 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752597Ab1F3VNX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 17:13:23 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34873 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab1F3VNN (ORCPT
+	id S1752181Ab1F3VQE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 17:16:04 -0400
+Received: from mail3.microsoft.com ([131.107.115.214]:35943 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab1F3VQB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 17:13:13 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: kay.sievers@vrfy.org, akpm@linux-foundation.org,
-        Will Drewry <wad@chromium.org>, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org
-Subject: [PATCH v3 2/2] Documentation: add pointer to name_to_dev_t for root= values
-Date: Thu, 30 Jun 2011 16:10:07 -0500
-Message-Id: <1309468207-24199-2-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1309468207-24199-1-git-send-email-wad@chromium.org>
-References: <1309468207-24199-1-git-send-email-wad@chromium.org>
+	Thu, 30 Jun 2011 17:16:01 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
+	<v-abkane@microsoft.com>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH 24/40] Staging: hv: storvsc: On I/O get the correct IDE
+ device
+Thread-Topic: [PATCH 24/40] Staging: hv: storvsc: On I/O get the correct IDE
+ device
+Thread-Index: AQHMNmgWbGY5kOd/Uk6J+qlCI81qb5TWw8mA//+jQpA=
+Date: Thu, 30 Jun 2011 21:15:54 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480816C2CF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
+ <1309358377-8537-1-git-send-email-kys@microsoft.com>
+ <1309358377-8537-24-git-send-email-kys@microsoft.com>
+ <20110630194055.GC22707@infradead.org>
+In-Reply-To: <20110630194055.GC22707@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updates kernel-parameters.txt to point users to the authoritative
-comment for name_to_dev_t.  In addition, updates other places where some
-name_to_dev_t behavior was discussed.  All other references to root=
-appear to be for explicit sample usage or just side comments when
-discussing other kernel parameters.
 
-Signed-off-by: Will Drewry <wad@chromium.org>
----
- Documentation/frv/booting.txt         |   13 ++++++++++---
- Documentation/kernel-parameters.txt   |    1 +
- Documentation/m68k/kernel-options.txt |   14 ++++++++++++++
- 3 files changed, 25 insertions(+), 3 deletions(-)
 
-diff --git a/Documentation/frv/booting.txt b/Documentation/frv/booting.txt
-index ace200b..37c4d84 100644
---- a/Documentation/frv/booting.txt
-+++ b/Documentation/frv/booting.txt
-@@ -106,13 +106,20 @@ separated by spaces:
-       To use the first on-chip serial port at baud rate 115200, no parity, 8
-       bits, and no flow control.
- 
--  (*) root=/dev/<xxxx>
-+  (*) root=<xxxx>
- 
--      This specifies the device upon which the root filesystem resides. For
--      example:
-+      This specifies the device upon which the root filesystem resides. It
-+      may be specified by major and minor number, device path, or even
-+      partition uuid, if supported.  For example:
- 
- 	/dev/nfs	NFS root filesystem
- 	/dev/mtdblock3	Fourth RedBoot partition on the System Flash
-+	PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF/PARTNROFF=1
-+		first partition after the partition with the given UUID
-+	253:0		Device with major 253 and minor 0
-+
-+      Authoritative information can be found in
-+      "Documentation/kernel-parameters.txt".
- 
-   (*) rw
- 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index fd248a3..c8e1737 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -2234,6 +2234,7 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
- 	ro		[KNL] Mount root device read-only on boot
- 
- 	root=		[KNL] Root filesystem
-+			See name_to_dev_t comment in init/do_mounts.c.
- 
- 	rootdelay=	[KNL] Delay (in seconds) to pause before attempting to
- 			mount the root filesystem
-diff --git a/Documentation/m68k/kernel-options.txt b/Documentation/m68k/kernel-options.txt
-index c93bed6..97d45f2 100644
---- a/Documentation/m68k/kernel-options.txt
-+++ b/Documentation/m68k/kernel-options.txt
-@@ -129,6 +129,20 @@ decimal 11 is the major of SCSI CD-ROMs, and the minor 0 stands for
- the first of these. You can find out all valid major numbers by
- looking into include/linux/major.h.
- 
-+In addition to major and minor numbers, if the device containing your
-+root partition uses a partition table format with unique partition
-+identifiers, then you may use them.  For instance,
-+"root=PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF".  It is also
-+possible to reference another partition on the same device using a
-+known partition UUID as the starting point.  For example,
-+if partition 5 of the device has the UUID of
-+00112233-4455-6677-8899-AABBCCDDEEFF then partition 3 may be found as
-+follows:
-+  PARTUUID=00112233-4455-6677-8899-AABBCCDDEEFF/PARTNROFF=-2
-+
-+Authoritative information can be found in
-+"Documentation/kernel-parameters.txt".
-+
- 
- 2.2) ro, rw
- -----------
--- 
-1.7.0.4
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Thursday, June 30, 2011 3:41 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
+> Abhishek Kane (Mindtree Consulting PVT LTD); Hank Janssen
+> Subject: Re: [PATCH 24/40] Staging: hv: storvsc: On I/O get the correct IDE device
+> 
+> On Wed, Jun 29, 2011 at 07:39:21AM -0700, K. Y. Srinivasan wrote:
+> > We use the channel number to distinguish an IDE device managed by the
+> > storvsc driver from scsi devices. Add code to get the correct
+> > device pointer based on the channel number.
+> >
+> > Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
+> > Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+> > Signed-off-by: Abhishek Kane <v-abkane@microsoft.com>
+> > Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+> > ---
+> >  drivers/staging/hv/storvsc_drv.c |   10 ++++++++++
+> >  1 files changed, 10 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/drivers/staging/hv/storvsc_drv.c b/drivers/staging/hv/storvsc_drv.c
+> > index cf659d7..fcc3f5d 100644
+> > --- a/drivers/staging/hv/storvsc_drv.c
+> > +++ b/drivers/staging/hv/storvsc_drv.c
+> > @@ -517,6 +517,16 @@ static int storvsc_queuecommand_lck(struct scsi_cmnd
+> *scmnd,
+> >  	unsigned int sg_count = 0;
+> >  	struct vmscsi_request *vm_srb;
+> >
+> > +	if (scmnd->device->channel >= HV_IDE_BASE_CHANNEL) {
+> > +		int channel = scmnd->device->channel;
+> > +
+> > +		/*
+> > +		 * This is an IDE device; get the right dev.
+> > +		 */
+> > +
+> > +		dev = ide_devices[channel - HV_IDE_BASE_CHANNEL];
+> > +	}
+> 
+> So instead of playing games about getting the right hv_device here,
+> why don't you register one scsi host for each IDE device? libata
+> does the same for real ATA devices.
+> 
+That is what I did initially. Then looking at the way we  were handling scsi devices
+where each scsi controller configured for the guest results in an emulated HBA
+(scsi host) in the guest and all the block devices under a given controller are
+handled through this one host, I decided to mimic a similar structure  - one
+scsi host for all the block devices configured as an IDE device.
 
+I can go back to my earlier implementation with one host per disk.
+
+Regards,
+
+K. Y 
