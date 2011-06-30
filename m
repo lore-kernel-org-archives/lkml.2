@@ -1,147 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab1F3PlM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 11:41:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11476 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751146Ab1F3PlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 11:41:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,450,1304319600"; 
-   d="scan'208";a="20168266"
-Message-ID: <4E0C9911.7030907@linux.intel.com>
-Date: Thu, 30 Jun 2011 08:41:05 -0700
-From: Darren Hart <dvhart@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+	id S1752944Ab1F3Pmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 11:42:49 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45821 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab1F3Pmr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 11:42:47 -0400
+Message-ID: <4E0C9971.5040605@gmail.com>
+Date: Thu, 30 Jun 2011 09:42:41 -0600
+From: David Ahern <dsahern@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: "David C. Oliver" <david@rgmadvisors.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Shawn Bohrer <sbohrer@rgmadvisors.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
-        eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
-        zvonler@rgmadvisors.com, hughd@google.com, mingo@elte.hu
-Subject: Re: [PATCH v4] futex: Fix regression with read only mappings
-References: <4E0A6A0F.9020004@linux.intel.com> <1309360644-24079-1-git-send-email-sbohrer@rgmadvisors.com> <alpine.LFD.2.02.1106300129130.2917@ionos> <4E0BF945.4080102@linux.intel.com> <70B461D3-FBA0-4055-AD84-D6F06E0D7BD6@rgmadvisors.com>
-In-Reply-To: <70B461D3-FBA0-4055-AD84-D6F06E0D7BD6@rgmadvisors.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Akihiro Nagai <akihiro.nagai.hw@hitachi.com>
+CC: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        yrl.pp-manager.tt@hitachi.com, Paul Mackerras <paulus@samba.org>
+Subject: Re: [PATCH -tip 3/4] perf script: add the option to show the offset
+ of symbols
+References: <20110628074019.4269.32109.stgit@linux3> <20110628074044.4269.40422.stgit@linux3> <4E09EA90.8040801@gmail.com> <4E09EB66.6050406@gmail.com> <4E0BFF2D.6040108@hitachi.com>
+In-Reply-To: <4E0BFF2D.6040108@hitachi.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/29/2011 10:44 PM, Akihiro Nagai wrote:
+>>>> @@ -346,12 +348,15 @@ static void print_sample_addr(union perf_event
+>>>> *event,
+>>>>           al.sym = map__find_symbol(al.map, al.addr, NULL);
+>>>>
+>>>>       if (PRINT_FIELD(SYM)) {
+>>>> -        if (al.sym&&  al.sym->name)
+>>>> +        printf(" ");
+>>>> +        if (al.sym&&  al.sym->name) {
+>>>>               symname = al.sym->name;
+>>>> -        else
+>>>> -            symname = "";
+>>>
+>>> dropping the else path will cause columns to misalign when ip's do not
+>>> resolve.
+> I see.
+> I'd like to add a magic word that indicates perf-script failed to
+> resolve the symbol.
+> For example, '[unknown]'.
 
+ok. constant number of fields would make secondary analysis tools easier.
 
-On 06/30/2011 07:02 AM, David C. Oliver wrote:
-> 
-> On Jun 29, 2011, at 11:19 PM, Darren Hart wrote:
-> 
->> 
->> 
->> On 06/29/2011 04:38 PM, Thomas Gleixner wrote:
->>> On Wed, 29 Jun 2011, Shawn Bohrer wrote:
->>>> 
->>>> While fixing the regression this patch opens up a possible bad 
->>>> scenarios as identified by KOSAKI Motohiro:
->>>> 
->>>> This patch also allows FUTEX_WAIT on RO private mappings which
->>>> have the following corner case.
->>> 
->>> These two sentences make no sense at all. We really need a very 
->>> accurate description of this change. That code is subtle and we
->>> really want to have a very clear and understandable changelog.
->>> 
->>> Your changelog fails the basic test by mentioning "corner case"
->>> simply because the whole futex code consists only of corner
->>> cases.
->>> 
->>> Thanks,
->>> 
->>> tglx
->> 
->> Yeah, those messages are quotes from Kosaki, but that isn't
->> apparent without having all the context. They are confusing. The
->> language needs to be cleaned up a bit as well.
->> 
->> Shawn, I apologize for this as it was my idea to begin with, but
->> after rereading all of the previous patches from Kosaki, I realized
->> that the rw parameter was part of the original design (and not
->> newly introduced by your patch) and that cramming the FLAGS_RO flag
->> into the flags variables muddies the meaning of flags. flags is
->> meant to modify a particular futex call and ensure that call is 
->> correctly restarted after a signal. The RO/RW bit pertains to the
->> calling function and does not vary from call to call. We should
->> revert back to the rw parameter using VERIFY_READ and
->> VERIFY_WRITE.
->> 
->> How about this for a header (I'll leave it to Shawn to incorporate,
->> adjust, and resend):
->> 
->> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
->> parameter from get_futex_key()) in 2.6.33 introduced a user-mode
->> regression in that it broke futex operations on read-only memory
->> maps in addition to preventing a loop when encountering a
->> ZERO_PAGE.  For example, this breaks workloads that have one or
->> more reader processes doing a FUTEX_WAIT on a futex within a read
->> only shared file mapping, and a writer processes that has a
->> writable mapping issuing the FUTEX_WAKE.
->> 
->> This fixes the regression for valid futex operations on RO mappings
->> by trying a RO get_user_pages_fast() when the RW
->> get_user_pages_fast() fails. This change makes it necessary to also
->> check for invalid use cases, such as anonymous RO mappings (which
->> can never change) and the ZERO_PAGE which the commit referenced 
->> above was written to address.
->> 
->> This patch does restore the original behavior with RO private
->> mappings which suffer from the following corner case.
->> 
->> Thread-A: call futex(FUTEX_WAIT, memory-region-A). get_futex_key()
->> returns an inode based key. sleep on the key Thread-B: call
->> mprotect(PROT_READ|PROT_WRITE, memory-region-A) Thread-B: write
->> memory-region-A. This process's memory-region-A gets remapped to a 
->> COWed PageAnon=1 page. Thread-B: call futex(FUETX_WAKE,
->> memory-region-A).
-> s/FUETEX_WAKE/FUTEX_WAIT/
->> get_futex_key() returns an mm based key. Thread-A is never woken as
->> it is waiting on a different key.
-> 
-> If I follow this correctly, it implies that a FUTEX_WAIT on an RO
-> private mapped futex will never return normally, as changing the
-> futex's value will cause the COW behavior (leaving the value
-> unchanged before doing the FUTEX_WAIT will not wake the waiter).
-
-
-That is correct. Hopefully that isn't just implied. ;-) However, because
-it is private, before the futex value can change, you also have to
-change the RW policy. This "use case" makes no sense, and it was
-determined that processes doing this deserve what they get.
-
---
-Darren
-
->> Checking for a private mapping requires walking the vmas and was
->> deemed too costly to avoid a userspace hang in a nonsensical use
->> case.
->> 
->> This Patch is based on Peter Zijlstra's initial patch with
->> modifications to only allow RO mappings for futex operations that
->> need VERIFY_READ access.
->> 
->> 
->> -- Darren Hart Intel Open Source Technology Center Yocto Project -
->> Linux Kernel
-> 
-> Cheers!
-> 
-> David.
-> 
-> --------------------------------------------------------------- This
-> email, along with any attachments, is confidential. If you believe
-> you received this message in error, please contact the sender
-> immediately and delete all copies of the message. Thank you.
-> 
-
--- 
-Darren Hart
-Intel Open Source Technology Center
-Yocto Project - Linux Kernel
+David
