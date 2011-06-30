@@ -1,85 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758598Ab1F3H50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 03:57:26 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41335 "EHLO
+	id S1758612Ab1F3IAS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:00:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33745 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab1F3H5W (ORCPT
+	with ESMTP id S1751499Ab1F3IAO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 03:57:22 -0400
-Date: Thu, 30 Jun 2011 11:57:16 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Shailabh Nagar <nagar@us.ibm.com>, Balbir Singh <bsingharora@gmail.com>,
-        linux-kernel@vger.kernel.org, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        kernel-hardening@lists.openwall.com
-Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
-Message-ID: <20110630075716.GB3377@albatros>
-References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
- <BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
+	Thu, 30 Jun 2011 04:00:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110630055719.GA930@opensource.wolfsonmicro.com>
+References: <1309397507-24959-1-git-send-email-myungjoo.ham@samsung.com>
+	<1309397507-24959-3-git-send-email-myungjoo.ham@samsung.com>
+	<20110630052808.GA796@opensource.wolfsonmicro.com>
+	<BANLkTikGR-HdVZ-5h3kW64wiFduuuiU6Vw@mail.gmail.com>
+	<20110630055719.GA930@opensource.wolfsonmicro.com>
+Date: Thu, 30 Jun 2011 17:00:13 +0900
+Message-ID: <BANLkTin4sCfX1Ahb_Td6VWH28s7SukYN-g@mail.gmail.com>
+Subject: Re: [PATCH 3/3] MFD: MAX8997: IRQ definition moved to public header.
+From: MyungJoo Ham <myungjoo.ham@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Donggeun Kim <dg77.kim@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 13:09 -0700, Linus Torvalds wrote:
-> Ok, having looked at this some more, I'm quite ready to just mark the
-> whole TASKSTATS config option as BROKEN. It does seem to be a horrible
-> security hazard, and very little seems to use it.
-> 
-> It also seems to be really fundamentally broken. Afaik, there's no way
-> to filter taskstats not only by security issues (Vasiliy's patch
-> really is very ugly), but it seems to be some global cross-namespace
-> thing too, so it exposes taskstats across pid namespaces afaik.
-
-The problem here is that it keeps a pid in a global list.  This list is
-then browsed by all namespaces.  Looking into the code, I see 2 real
-problems (didn't check, though):
-
-1) If there are 2+ pid namespaces, one listener in pid_ns #1 and some
-process dies in pid_ns #2, then the dying task wouldn't find the
-listener via find_task_by_vpid() and would just delete the listener from
-listeners list.  Looks like this problem was created by optimization
-patch f9fd8914c1acca0.
-
-2) Netlink sockets are per net namespace, but this accounting thing is per
-pid namespace.  So, if the dying task and the listener are in a single
-pid namespace, but in different net namespaces, the message will not be
-sent via genlmsg_unicast().  I suspect it is a problem of all non-net
-netlink sockets.
+On Thu, Jun 30, 2011 at 2:57 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Thu, Jun 30, 2011 at 02:56:27PM +0900, MyungJoo Ham wrote:
+>
+>> In order to request MAX8997's IRQs, these IRQ enums are required by
+>> board files (such as /arch/arm/mach-exynos4/mach-*.c). So, these IRQ
+>> enums are no more "private" to max8997 device drivers. Without this
+>> patch, board files need to include max8997-private.h.
+>
+> Why does the board file need to request these IRQs?
+>
 
 
-> It
-> does that even with Vasiliy's patch, afaik, although then I think you
-> need to have collissions in the namespaces if I read the code
-> correctly.
-> 
-> I suspect that could be fixed by adding a pid namespace to the
-> 'listener' structure. Also adding a 'cred' pointer (or the actual
-> listener thread pointer) to it would make Vasiliy's patch more
-> palatable, since then you wouldn't need to look up the credentials at
-> send_cpu_listeners() time.
-> 
-> Maybe I have mis-read the code. But it does all make me shudder. There
-> doesn't even seem to be all that many _users_ of the thing, so the
-> problems it has really makes me go "is that code worth it"? We
-> probably should never have merged it in the first place.
+It specifies which interrupts of MAX8997 are used.
 
-> but it seems to be some global cross-namespace
-> thing too, so it exposes taskstats across pid namespaces afaik.
+In our code:
+http://git.infradead.org/users/kmpark/linux-2.6-samsung/blob/eba500212699c0ad8d6bde0dc01c3ec7101f8154:/arch/arm/mach-exynos4/setup-charger.c
+around line 85, it specifies which interrupt is going to be a
+wakeup-source ("true"), how the power-managing S/W should interpret
+them.
 
-
-Thanks,
+The interrupts not listed in the array are not used as a wakeup-source.
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+MyungJoo Ham, Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
