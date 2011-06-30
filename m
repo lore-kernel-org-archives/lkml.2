@@ -1,101 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758784Ab1F3IU7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 04:20:59 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55887 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1758764Ab1F3IUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 04:20:52 -0400
-Message-ID: <4E0C3256.6070505@cn.fujitsu.com>
-Date: Thu, 30 Jun 2011 16:22:46 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1758865Ab1F3IYK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:24:10 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41779 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758790Ab1F3IX6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 04:23:58 -0400
+From: Vasily Khoruzhick <anarsoul@gmail.com>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH v3 1/6] Samsung SoC ADC: use regulator (VDD for ADC).
+Date: Thu, 30 Jun 2011 11:22:50 +0300
+User-Agent: KMail/1.13.7 (Linux/2.6.39-gentoo-anarsoul; KDE/4.6.3; i686; ; )
+Cc: MyungJoo Ham <myungjoo.ham@samsung.com>, linux-samsung-soc@vger.kernel.org,
+        Kukjin Kim <kgene.kim@samsung.com>,
+        Russell King <linux@arm.linux.org.uk>,
+        Jassi Brar <jassi.brar@samsung.com>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>, myungjoo.ham@gmail.com,
+        Ben Dooks <ben-linux@fluff.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Seungwhan Youn <sw.youn@samsung.com>,
+        Changhwan Youn <chaos.youn@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+References: <1309420175-10301-1-git-send-email-myungjoo.ham@samsung.com> <1309420175-10301-2-git-send-email-myungjoo.ham@samsung.com>
+In-Reply-To: <1309420175-10301-2-git-send-email-myungjoo.ham@samsung.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: [PATCH v3 08/19] KVM: MMU: count used shadow pages on prepareing
- path
-References: <4E0C3178.2080603@cn.fujitsu.com>
-In-Reply-To: <4E0C3178.2080603@cn.fujitsu.com>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-30 16:20:17,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-06-30 16:20:18,
-	Serialize complete at 2011-06-30 16:20:18
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
+Message-Id: <201106301122.50800.anarsoul@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Move counting used shadow pages from commiting path to preparing path to
-reduce tlb flush on some paths
+On Thursday 30 June 2011 10:49:30 MyungJoo Ham wrote:
+> This patch allows the Samsung ADC driver to enable VDD regulator at
+> probe and resume and to disable at exit and suspend.
+> In a platform where ADC's VDD regulator is not "always-on", this control
+> is required although this patch does not provide fine-grained power
+> control (turning on the regulator only when being accessed).
+> 
+> However, if VDD regulator ("vdd" for the adc device) is not provided,
+> the regulator control will not be activated because there are platforms
+> that do not provide regulator for ADC device.
+> 
+> arch_initcall has been modified to module_init in order to allow
+> regulators to be available at probe.
+> 
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index a62ba46..91d3069 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -1039,7 +1039,7 @@ static inline void kvm_mod_used_mmu_pages(struct kvm *kvm, int nr)
- 	percpu_counter_add(&kvm_total_used_mmu_pages, nr);
- }
- 
--static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
-+static void kvm_mmu_free_page(struct kvm_mmu_page *sp)
- {
- 	ASSERT(is_empty_shadow_page(sp->spt));
- 	hlist_del(&sp->hash_link);
-@@ -1048,7 +1048,6 @@ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
- 	if (!sp->role.direct)
- 		free_page((unsigned long)sp->gfns);
- 	kmem_cache_free(mmu_page_header_cache, sp);
--	kvm_mod_used_mmu_pages(kvm, -1);
- }
- 
- static unsigned kvm_page_table_hashfn(gfn_t gfn)
-@@ -1655,6 +1654,7 @@ static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
- 		/* Count self */
- 		ret++;
- 		list_move(&sp->link, invalid_list);
-+		kvm_mod_used_mmu_pages(kvm, -1);
- 	} else {
- 		list_move(&sp->link, &kvm->arch.active_mmu_pages);
- 		kvm_reload_remote_mmus(kvm);
-@@ -1678,7 +1678,7 @@ static void kvm_mmu_commit_zap_page(struct kvm *kvm,
- 	do {
- 		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
- 		WARN_ON(!sp->role.invalid || sp->root_count);
--		kvm_mmu_free_page(kvm, sp);
-+		kvm_mmu_free_page(sp);
- 	} while (!list_empty(invalid_list));
- 
- }
-@@ -1704,8 +1704,8 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int goal_nr_mmu_pages)
- 			page = container_of(kvm->arch.active_mmu_pages.prev,
- 					    struct kvm_mmu_page, link);
- 			kvm_mmu_prepare_zap_page(kvm, page, &invalid_list);
--			kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 		}
-+		kvm_mmu_commit_zap_page(kvm, &invalid_list);
- 		goal_nr_mmu_pages = kvm->arch.n_used_mmu_pages;
- 	}
- 
-@@ -3302,9 +3302,9 @@ void __kvm_mmu_free_some_pages(struct kvm_vcpu *vcpu)
- 		sp = container_of(vcpu->kvm->arch.active_mmu_pages.prev,
- 				  struct kvm_mmu_page, link);
- 		kvm_mmu_prepare_zap_page(vcpu->kvm, sp, &invalid_list);
--		kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
- 		++vcpu->kvm->stat.mmu_recycled;
- 	}
-+	kvm_mmu_commit_zap_page(vcpu->kvm, &invalid_list);
- }
- 
- int kvm_mmu_page_fault(struct kvm_vcpu *vcpu, gva_t cr2, u32 error_code,
--- 
-1.7.5.4
+> --
+> changed from v2 with valuable comments from Mark Brown.
+> - Bugfix on error handling
+> - Faster escape when error at resume function
+> changes from v1
+> - Removed macro defining the name of regulator.
+> - Handle error from regulator_enable.
+> - Do not allow not to have the regulator if CONFIG_REGULATOR.
+> - Seperate a patch dealing with "arch_initcall->module_init"
+> ---
+>  arch/arm/plat-samsung/adc.c |   31 +++++++++++++++++++++++++++----
+>  1 files changed, 27 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/arm/plat-samsung/adc.c b/arch/arm/plat-samsung/adc.c
+> index e8f2be2..2224128 100644
+> --- a/arch/arm/plat-samsung/adc.c
+> +++ b/arch/arm/plat-samsung/adc.c
+> @@ -21,6 +21,7 @@
+>  #include <linux/clk.h>
+>  #include <linux/interrupt.h>
+>  #include <linux/io.h>
+> +#include <linux/regulator/consumer.h>
+> 
+>  #include <plat/regs-adc.h>
+>  #include <plat/adc.h>
+> @@ -71,6 +72,7 @@ struct adc_device {
+>  	unsigned int		 prescale;
+> 
+>  	int			 irq;
+> +	struct regulator	*vdd;
+>  };
+> 
+>  static struct adc_device *adc_dev;
+> @@ -338,17 +340,24 @@ static int s3c_adc_probe(struct platform_device
+> *pdev) adc->pdev = pdev;
+>  	adc->prescale = S3C2410_ADCCON_PRSCVL(49);
+> 
+> +	adc->vdd = regulator_get(dev, "vdd");
+> +	if (IS_ERR(adc->vdd)) {
+> +		dev_err(dev, "operating without regulator \"vdd\" .\n");
+> +		ret = PTR_ERR(adc->vdd);
+> +		goto err_alloc;
+> +	}
+> +
 
+NACK. Make it optional, otherwise it breaks s3c24xx.
+
+>  	adc->irq = platform_get_irq(pdev, 1);
+>  	if (adc->irq <= 0) {
+>  		dev_err(dev, "failed to get adc irq\n");
+>  		ret = -ENOENT;
+> -		goto err_alloc;
+> +		goto err_reg;
+>  	}
+> 
+>  	ret = request_irq(adc->irq, s3c_adc_irq, 0, dev_name(dev), adc);
+>  	if (ret < 0) {
+>  		dev_err(dev, "failed to attach adc irq\n");
+> -		goto err_alloc;
+> +		goto err_reg;
+>  	}
+> 
+>  	adc->clk = clk_get(dev, "adc");
+> @@ -372,6 +381,10 @@ static int s3c_adc_probe(struct platform_device *pdev)
+>  		goto err_clk;
+>  	}
+> 
+> +	ret = regulator_enable(adc->vdd);
+> +	if (ret)
+> +		goto err_ioremap;
+> +
+>  	clk_enable(adc->clk);
+> 
+>  	tmp = adc->prescale | S3C2410_ADCCON_PRSCEN;
+> @@ -388,12 +401,15 @@ static int s3c_adc_probe(struct platform_device
+> *pdev)
+> 
+>  	return 0;
+> 
+> + err_ioremap:
+> +	iounmap(adc->regs);
+>   err_clk:
+>  	clk_put(adc->clk);
+> 
+>   err_irq:
+>  	free_irq(adc->irq, adc);
+> -
+> + err_reg:
+> +	regulator_put(adc->vdd);
+>   err_alloc:
+>  	kfree(adc);
+>  	return ret;
+> @@ -406,6 +422,8 @@ static int __devexit s3c_adc_remove(struct
+> platform_device *pdev) iounmap(adc->regs);
+>  	free_irq(adc->irq, adc);
+>  	clk_disable(adc->clk);
+> +	regulator_disable(adc->vdd);
+> +	regulator_put(adc->vdd);
+>  	clk_put(adc->clk);
+>  	kfree(adc);
+> 
+> @@ -428,6 +446,7 @@ static int s3c_adc_suspend(struct platform_device
+> *pdev, pm_message_t state) disable_irq(adc->irq);
+>  	spin_unlock_irqrestore(&adc->lock, flags);
+>  	clk_disable(adc->clk);
+> +	regulator_disable(adc->vdd);
+> 
+>  	return 0;
+>  }
+> @@ -435,7 +454,11 @@ static int s3c_adc_suspend(struct platform_device
+> *pdev, pm_message_t state) static int s3c_adc_resume(struct
+> platform_device *pdev)
+>  {
+>  	struct adc_device *adc = platform_get_drvdata(pdev);
+> +	int ret;
+> 
+> +	ret = regulator_enable(adc->vdd);
+> +	if (ret)
+> +		return ret;
+>  	clk_enable(adc->clk);
+>  	enable_irq(adc->irq);
+> 
+> @@ -485,4 +508,4 @@ static int __init adc_init(void)
+>  	return ret;
+>  }
+> 
+> -arch_initcall(adc_init);
+> +module_init(adc_init);
