@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab1F3WJV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 18:09:21 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:35713 "EHLO
+	id S1754255Ab1F3WJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 18:09:18 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:59884 "EHLO
 	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752926Ab1F3WER (ORCPT
+	with ESMTP id S1752990Ab1F3WER (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 30 Jun 2011 18:04:17 -0400
 From: Ondrej Zary <linux@rainbow-software.org>
 To: "Greg Kroah-Hartman" <greg@kroah.com>
 Cc: Marek Belisko <marek.belisko@gmail.com>,
         Kernel development list <linux-kernel@vger.kernel.org>
-Subject: [PATCH 22/28] staging: ft1000-pcmcia: remove unused ft1000_asic_read and ft1000_asic_write functions
-Date: Fri,  1 Jul 2011 00:03:51 +0200
-Message-Id: <1309471437-12633-23-git-send-email-linux@rainbow-software.org>
+Subject: [PATCH 23/28] staging: ft1000-pcmcia: coding style fixes in ft1000_cs.c
+Date: Fri,  1 Jul 2011 00:03:52 +0200
+Message-Id: <1309471437-12633-24-git-send-email-linux@rainbow-software.org>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
 References: <1309471437-12633-1-git-send-email-linux@rainbow-software.org>
@@ -21,58 +21,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Functions ft1000_asic_read() and ft1000_asic_write() are unused. Remove them.
+Minor coding style fixes in ft1000_cs.c
 
 Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
 ---
- drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c |   34 ----------------------
- 1 files changed, 0 insertions(+), 34 deletions(-)
+ drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c |   29 +++++++++-------------
+ 1 files changed, 12 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-index b3739b9..23854e0 100644
---- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-+++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c
-@@ -88,40 +88,6 @@ MODULE_SUPPORTED_DEVICE("FT1000");
+diff --git a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
+index 34fc21f..9a54c84 100644
+--- a/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
++++ b/drivers/staging/ft1000/ft1000-pcmcia/ft1000_cs.c
+@@ -63,11 +63,11 @@ void stop_ft1000_card(struct net_device *);
+ static int ft1000_config(struct pcmcia_device *link);
+ static void ft1000_release(struct pcmcia_device *link);
+ static void ft1000_detach(struct pcmcia_device *link);
+-static int  ft1000_attach(struct pcmcia_device *link);
++static int ft1000_attach(struct pcmcia_device *link);
  
- //---------------------------------------------------------------------------
- //
--// Function:   ft1000_asic_read
--// Description: This function will retrieve the value of a specific ASIC
--//             register.
--// Input:
--//    dev - network device structure
--//    offset - ASIC register to read
--// Output:
--//    value - value of ASIC register
--//
--//---------------------------------------------------------------------------
--inline u16 ft1000_asic_read(struct net_device *dev, u16 offset)
--{
--	return (ft1000_read_reg(dev, offset));
--}
+ /*====================================================================*/
+ 
+-static void ft1000_reset(struct pcmcia_device * link)
++static void ft1000_reset(struct pcmcia_device *link)
+ {
+ 	pcmcia_reset_card(link->socket);
+ }
+@@ -78,21 +78,17 @@ static int ft1000_attach(struct pcmcia_device *link)
+ 	link->config_flags |= CONF_ENABLE_IRQ | CONF_AUTO_SET_IO;
+ 
+ 	return ft1000_config(link);
 -
--//---------------------------------------------------------------------------
--//
--// Function:   ft1000_asic_write
--// Description: This function will set the value of a specific ASIC
--//             register.
--// Input:
--//    dev - network device structure
--//    value - value to set ASIC register
--// Output:
--//    none
--//
--//---------------------------------------------------------------------------
--inline void ft1000_asic_write(struct net_device *dev, u16 offset, u16 value)
--{
--	ft1000_write_reg(dev, offset, value);
--}
+ }
+ 
+ static void ft1000_detach(struct pcmcia_device *link)
+ {
+ 	struct net_device *dev = link->priv;
+ 
+-	if (dev) {
++	if (dev)
+ 		stop_ft1000_card(dev);
+-	}
+ 
+ 	pcmcia_disable_device(link);
 -
--//---------------------------------------------------------------------------
--//
- // Function:   ft1000_read_fifo_len
- // Description: This function will read the ASIC Uplink FIFO status register
- //             which will return the number of bytes remaining in the Uplink FIFO.
+ 	free_netdev(dev);
+-
+ }
+ 
+ int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
+@@ -110,7 +106,7 @@ int ft1000_confcheck(struct pcmcia_device *link, void *priv_data)
+ 
+ static int ft1000_config(struct pcmcia_device *link)
+ {
+-	int  ret;
++	int ret;
+ 
+ 	dev_dbg(&link->dev, "ft1000_cs: ft1000_config(0x%p)\n", link);
+ 
+@@ -129,7 +125,7 @@ static int ft1000_config(struct pcmcia_device *link)
+ 	}
+ 
+ 	link->priv = init_ft1000_card(link, &ft1000_reset);
+-	if (link->priv == NULL) {
++	if (!link->priv) {
+ 		printk(KERN_INFO "ft1000: Could not register as network device\n");
+ 		goto failed;
+ 	}
+@@ -140,7 +136,6 @@ static int ft1000_config(struct pcmcia_device *link)
+ failed:
+ 	ft1000_release(link);
+ 	return -ENODEV;
+-
+ }
+ 
+ /*======================================================================
+@@ -151,7 +146,7 @@ failed:
+ 
+ ======================================================================*/
+ 
+-static void ft1000_release(struct pcmcia_device * link)
++static void ft1000_release(struct pcmcia_device *link)
+ {
+ 	 pcmcia_disable_device(link);
+ }
+@@ -182,13 +177,13 @@ static const struct pcmcia_device_id ft1000_ids[] = {
+ MODULE_DEVICE_TABLE(pcmcia, ft1000_ids);
+ 
+ static struct pcmcia_driver ft1000_cs_driver = {
+-	.owner = THIS_MODULE,
+-	.name = "ft1000_cs",
+-	.probe      = ft1000_attach,
+-	.remove     = ft1000_detach,
++	.owner		= THIS_MODULE,
++	.name		= "ft1000_cs",
++	.probe		= ft1000_attach,
++	.remove		= ft1000_detach,
+ 	.id_table	= ft1000_ids,
+-	.suspend    = ft1000_suspend,
+-	.resume     = ft1000_resume,
++	.suspend	= ft1000_suspend,
++	.resume		= ft1000_resume,
+ };
+ 
+ static int __init init_ft1000_cs(void)
 -- 
 Ondrej Zary
 
