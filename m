@@ -1,227 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753885Ab1F3TVH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 15:21:07 -0400
-Received: from 99-108-226-0.lightspeed.iplsin.sbcglobal.net ([99.108.226.0]:40562
-	"EHLO peff.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753451Ab1F3TVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 15:21:04 -0400
-Date: Thu, 30 Jun 2011 15:13:39 -0400
-From: Jeff King <peff@peff.net>
-To: Junio C Hamano <gitster@pobox.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Uwe =?utf-8?Q?Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        James Morris <jmorris@namei.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, git@vger.kernel.org
-Subject: Re: linux-next: manual merge of the security-testing tree with the
- tree
-Message-ID: <20110630191339.GA9176@sigill.intra.peff.net>
-References: <20110630142910.2fea4257.sfr@canb.auug.org.au>
- <20110630072559.GA4048@pengutronix.de>
- <20110630193023.6056d48e.sfr@canb.auug.org.au>
- <20110630121710.GJ11559@pengutronix.de>
- <BANLkTi=usrsF60Popfu55v3_dXe7Yo0GrA@mail.gmail.com>
- <7v4o37qhi6.fsf@alter.siamese.dyndns.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <7v4o37qhi6.fsf@alter.siamese.dyndns.org>
+	id S1753868Ab1F3TTP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 15:19:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55009 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753724Ab1F3TTM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 15:19:12 -0400
+Date: Thu, 30 Jun 2011 12:19:09 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/4] x86: Implement strict user copy checks for x86_64
+Message-Id: <20110630121909.d4ac1bfc.akpm@linux-foundation.org>
+In-Reply-To: <1306865673-20560-4-git-send-email-sboyd@codeaurora.org>
+References: <1306865673-20560-1-git-send-email-sboyd@codeaurora.org>
+	<1306865673-20560-4-git-send-email-sboyd@codeaurora.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 11:52:17AM -0700, Junio C Hamano wrote:
+On Tue, 31 May 2011 11:14:32 -0700
+Stephen Boyd <sboyd@codeaurora.org> wrote:
 
-> I would have to say that it would boil down to "re-do the merge" whichever
-> way we implement it, and it is not necessarily a bad thing.  
-> 
-> There are ideas to implement a mode of "git merge" that works entirely
-> in-core without touching the working tree (it may have to write temporary
-> blobs and possibly trees to the object store, though). It would let sites
-> like github to let its users accept a trivial pull request that can merge
-> cleanly on site in the browser without necessarily having to have a local
-> checkout used for conflict resolution.
-> 
-> If such an "in-core merge" feature is implemented cleanly in a reusable
-> way, it would be just the matter of comparing the output from it with the
-> actual committed result.
+> Strict user copy checks are only really supported on x86_32 even
+> though the config option is selectable on x86_64. Add the
+> necessary support to the 64 bit code to trigger copy_from_user()
+> warnings at compile time.
 
-Below is my unpolished, probably-buggy-as-hell patch to do the in-core
-content merge.  But there are still two sticking points:
+So I'm getting 20-30 warnings from an x86_64 allmodconfig build.
 
-  1. This is a dirt-simple 3-way content merge. The actual merge would
-     likely have used some more complex strategy. So you're going to see
-     discrepancies between a real merge, even a correct one, and what
-     this produces (e.g., in the face of renames detected by
-     merge-recursive).
-
-  2. This just makes read-tree do the content merge where it doesn't
-     conflict, and leaves the conflicted cases unmerged in the index.
-     Which is of course the only sane thing to put in the index.
-
-     But what do you want to do about comparing entries with conflicts,
-     which are the really interesting bits?  Compare the result to the
-     version of the file with conflict markers? If so, where do you want
-     to store the file with conflict markers?  I guess we could generate
-     an in-core index with the conflict markers that we are just going
-     to throw away. That seems pretty hack-ish.
-
--Peff
-
--- >8 --
-Subject: [PATCH] teach read-tree to do content-level merges
-
-Read-tree will resolve simple 3-way merges, such as a path
-touched on one branch but not on the other. With
---aggressive, it will also do some more complex merges, like
-both sides adding the same content. But it always stops
-short of actually merging content, leaving the unmerged
-paths in the index.
-
-One can always use "git merge-index git-merge-one-file -a"
-to do a content-level merge of these paths. However, that
-has two disadvantages:
-
-  1. It's slower, as we actually invoke merge-one-file for
-     each unmerged path, which in turns writes temporary
-     files to the filesystem.
-
-  2. It requires a working directory to store the merged
-     result. When working in a bare repository, this can be
-     inconvenient.
-
-Instead, let's have read-tree perform the content-level
-merge in core. If it results in conflicts, read-tree can
-simply punt and leave the unmerged entries in the index.
-
-Signed-off-by: Jeff King <peff@peff.net>
----
- builtin/read-tree.c |    2 +
- unpack-trees.c      |   69 +++++++++++++++++++++++++++++++++++++++++++++++++++
- unpack-trees.h      |    1 +
- 3 files changed, 72 insertions(+), 0 deletions(-)
-
-diff --git a/builtin/read-tree.c b/builtin/read-tree.c
-index df6c4c8..392c378 100644
---- a/builtin/read-tree.c
-+++ b/builtin/read-tree.c
-@@ -117,6 +117,8 @@ int cmd_read_tree(int argc, const char **argv, const char *unused_prefix)
- 			    "3-way merge if no file level merging required", 1),
- 		OPT_SET_INT(0, "aggressive", &opts.aggressive,
- 			    "3-way merge in presence of adds and removes", 1),
-+		OPT_SET_INT(0, "merge-content", &opts.file_level_merge,
-+			    "3-way merge of non-conflicting file content", 1),
- 		OPT_SET_INT(0, "reset", &opts.reset,
- 			    "same as -m, but discard unmerged entries", 1),
- 		{ OPTION_STRING, 0, "prefix", &opts.prefix, "<subdirectory>/",
-diff --git a/unpack-trees.c b/unpack-trees.c
-index 3a61d82..0443fcf 100644
---- a/unpack-trees.c
-+++ b/unpack-trees.c
-@@ -8,6 +8,8 @@
- #include "progress.h"
- #include "refs.h"
- #include "attr.h"
-+#include "xdiff-interface.h"
-+#include "blob.h"
- 
- /*
-  * Error messages expected by scripts out of plumbing commands such as
-@@ -1515,6 +1517,45 @@ static void show_stage_entry(FILE *o,
- }
- #endif
- 
-+static int file_level_merge(unsigned char sha1[20],
-+			    struct cache_entry *old,
-+			    struct cache_entry *head,
-+			    struct cache_entry *remote)
-+{
-+	mmfile_t old_data = {0}, head_data = {0}, remote_data = {0};
-+	mmbuffer_t resolved = {0};
-+	xmparam_t xmp = {{0}};
-+	int ret = -1;
-+
-+	if (remote->ce_mode != head->ce_mode &&
-+	    remote->ce_mode != old->ce_mode)
-+		goto out;
-+
-+	read_mmblob(&old_data, old->sha1);
-+	if (buffer_is_binary(old_data.ptr, old_data.size))
-+		goto out;
-+	read_mmblob(&head_data, head->sha1);
-+	if (buffer_is_binary(head_data.ptr, head_data.size))
-+		goto out;
-+	read_mmblob(&remote_data, remote->sha1);
-+	if (buffer_is_binary(remote_data.ptr, remote_data.size))
-+		goto out;
-+
-+	xmp.level = XDL_MERGE_ZEALOUS_ALNUM;
-+	if (xdl_merge(&old_data, &head_data, &remote_data, &xmp, &resolved))
-+		goto out;
-+	if (write_sha1_file(resolved.ptr, resolved.size, blob_type, sha1) < 0)
-+		die("unable to write resolved blob object");
-+	ret = 0;
-+
-+out:
-+	free(old_data.ptr);
-+	free(head_data.ptr);
-+	free(remote_data.ptr);
-+	free(resolved.ptr);
-+	return ret;
-+}
-+
- int threeway_merge(struct cache_entry **stages, struct unpack_trees_options *o)
- {
- 	struct cache_entry *index;
-@@ -1653,6 +1694,34 @@ int threeway_merge(struct cache_entry **stages, struct unpack_trees_options *o)
- 			return -1;
- 	}
- 
-+	if (o->file_level_merge &&
-+	    !no_anc_exists && head && remote && !head_match && !remote_match) {
-+		int i;
-+		struct cache_entry *old = NULL;
-+		unsigned char sha1[20];
-+
-+		for (i = 1; i < o->head_idx; i++) {
-+			if (stages[i] && stages[i] != o->df_conflict_entry) {
-+				old = stages[i];
-+				break;
-+			}
-+		}
-+		if (!old)
-+			die("BUG: file-level merge couldn't find ancestor");
-+
-+		if (file_level_merge(sha1, old, head, remote) == 0) {
-+			/* ugh */
-+			unsigned char tmp[20];
-+			int r;
-+
-+			hashcpy(tmp, head->sha1);
-+			hashcpy(head->sha1, sha1);
-+			r = merged_entry(head, index, o);
-+			hashcpy(head->sha1, tmp);
-+			return r;
-+		}
-+	}
-+
- 	o->nontrivial_merge = 1;
- 
- 	/* #2, #3, #4, #6, #7, #9, #10, #11. */
-diff --git a/unpack-trees.h b/unpack-trees.h
-index 7998948..516c2f1 100644
---- a/unpack-trees.h
-+++ b/unpack-trees.h
-@@ -40,6 +40,7 @@ struct unpack_trees_options {
- 		     trivial_merges_only,
- 		     verbose_update,
- 		     aggressive,
-+		     file_level_merge,
- 		     skip_unmerged,
- 		     initial_checkout,
- 		     diff_index_cached,
--- 
-1.7.6.15.ga6419
+I don't think we want a million other people to have to put up with
+those warnings too.  Can you please take a look at fixing these up?
 
