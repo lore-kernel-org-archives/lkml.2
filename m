@@ -1,48 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758847Ab1F3IXt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 04:23:49 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57867 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab1F3IXq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 04:23:46 -0400
+	id S1758810Ab1F3IW2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 04:22:28 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64385 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758530Ab1F3IWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 04:22:19 -0400
+Message-ID: <4E0C32A6.6080607@cn.fujitsu.com>
+Date: Thu, 30 Jun 2011 16:24:06 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1309408494.10500.1.camel@phoenix>
-References: <1309408494.10500.1.camel@phoenix>
-Date: Thu, 30 Jun 2011 12:23:45 +0400
-Message-ID: <BANLkTikonD2fcbkBU2ESYm_XncBXNZc_hw@mail.gmail.com>
-Subject: Re: [PATCH] mtd: tmio_nand: fix build error
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: [PATCH v3 11/19] KVM: MMU: filter out the mmio pfn from the fault
+ pfn
+References: <4E0C3178.2080603@cn.fujitsu.com>
+In-Reply-To: <4E0C3178.2080603@cn.fujitsu.com>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-30 16:21:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-06-30 16:21:40,
+	Serialize complete at 2011-06-30 16:21:40
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/30/11, Axel Lin <axel.lin@gmail.com> wrote:
-> Fix a mistake introduced by commit 33f4a3b
-> "mtd: tmio_nand.c: use mtd_device_parse_register"
+If the page fault is caused by mmio, the gfn can not be found in memslots, and
+'bad_pfn' is returned on gfn_to_hva path, so we can use 'bad_pfn' to identify
+the mmio page fault.
+And, to clarify the meaning of mmio pfn, we return fault page instead of bad
+page when the gfn is not allowd to prefetch
 
-Already sumbited 27 June 2011. Strangely Artem remains silent.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c       |    4 ++--
+ include/linux/kvm_host.h |    5 +++++
+ virt/kvm/kvm_main.c      |   16 ++++++++++++++--
+ 3 files changed, 21 insertions(+), 4 deletions(-)
 
->   CC [M]  drivers/mtd/nand/tmio_nand.o
-> drivers/mtd/nand/tmio_nand.c:461:35: error: macro "mtd_device_register"
-> passed 5 arguments, but takes just 3
-> drivers/mtd/nand/tmio_nand.c: In function 'tmio_probe':
-> drivers/mtd/nand/tmio_nand.c:459: error: 'mtd_device_register' undeclared
-> (first use in this function)
-> drivers/mtd/nand/tmio_nand.c:459: error: (Each undeclared identifier is
-> reported only once
-> drivers/mtd/nand/tmio_nand.c:459: error: for each function it appears in.)
-> make[3]: *** [drivers/mtd/nand/tmio_nand.o] Error 1
-> make[2]: *** [drivers/mtd/nand] Error 2
-> make[1]: *** [drivers/mtd] Error 2
-> make: *** [drivers] Error 2
-
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 5334b4e..96a7ed4 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2085,8 +2085,8 @@ static pfn_t pte_prefetch_gfn_to_pfn(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 
+ 	slot = gfn_to_memslot_dirty_bitmap(vcpu, gfn, no_dirty_log);
+ 	if (!slot) {
+-		get_page(bad_page);
+-		return page_to_pfn(bad_page);
++		get_page(fault_page);
++		return page_to_pfn(fault_page);
+ 	}
+ 
+ 	hva = gfn_to_hva_memslot(slot, gfn);
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 31ebb59..3e548e8 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -326,12 +326,17 @@ static inline struct kvm_memslots *kvm_memslots(struct kvm *kvm)
+ static inline int is_error_hpa(hpa_t hpa) { return hpa >> HPA_MSB; }
+ 
+ extern struct page *bad_page;
++extern struct page *fault_page;
++
+ extern pfn_t bad_pfn;
++extern pfn_t fault_pfn;
+ 
+ int is_error_page(struct page *page);
+ int is_error_pfn(pfn_t pfn);
+ int is_hwpoison_pfn(pfn_t pfn);
+ int is_fault_pfn(pfn_t pfn);
++int is_mmio_pfn(pfn_t pfn);
++int is_invalid_pfn(pfn_t pfn);
+ int kvm_is_error_hva(unsigned long addr);
+ int kvm_set_memory_region(struct kvm *kvm,
+ 			  struct kvm_userspace_memory_region *mem,
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index 11d2783..c7d41d4 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -101,8 +101,8 @@ static bool largepages_enabled = true;
+ static struct page *hwpoison_page;
+ static pfn_t hwpoison_pfn;
+ 
+-static struct page *fault_page;
+-static pfn_t fault_pfn;
++struct page *fault_page;
++pfn_t fault_pfn;
+ 
+ inline int kvm_is_mmio_pfn(pfn_t pfn)
+ {
+@@ -931,6 +931,18 @@ int is_fault_pfn(pfn_t pfn)
+ }
+ EXPORT_SYMBOL_GPL(is_fault_pfn);
+ 
++int is_mmio_pfn(pfn_t pfn)
++{
++	return pfn == bad_pfn;
++}
++EXPORT_SYMBOL_GPL(is_mmio_pfn);
++
++int is_invalid_pfn(pfn_t pfn)
++{
++	return pfn == hwpoison_pfn || pfn == fault_pfn;
++}
++EXPORT_SYMBOL_GPL(is_invalid_pfn);
++
+ static inline unsigned long bad_hva(void)
+ {
+ 	return PAGE_OFFSET;
 -- 
-With best wishes
-Dmitry
+1.7.5.4
+
