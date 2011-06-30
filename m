@@ -1,38 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab1F3ToI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 15:44:08 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:48714 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752076Ab1F3ToE convert rfc822-to-8bit (ORCPT
+	id S1754091Ab1F3ToZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 15:44:25 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:39668
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753895Ab1F3ToX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 15:44:04 -0400
+	Thu, 30 Jun 2011 15:44:23 -0400
+Date: Thu, 30 Jun 2011 15:44:21 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: "K. Y. Srinivasan" <kys@microsoft.com>
+Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
+        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
+        Abhishek Kane <v-abkane@microsoft.com>,
+        Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 25/40] Staging: hv: storvsc: Add state to manage the
+ lifecycle of emulated HBA
+Message-ID: <20110630194421.GD22707@infradead.org>
+References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
+ <1309358377-8537-1-git-send-email-kys@microsoft.com>
+ <1309358377-8537-25-git-send-email-kys@microsoft.com>
 MIME-Version: 1.0
-In-Reply-To: <1309461732-2875-1-git-send-email-jonas@southpole.se>
-References: <201106281245.19457.arnd@arndb.de> <1309461732-2875-1-git-send-email-jonas@southpole.se>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 30 Jun 2011 15:43:43 -0400
-Message-ID: <BANLkTi=6RkrRHeNtDhpebKx7cNXNKvbxtw@mail.gmail.com>
-Subject: Re: [PATCH 1/2] modules: add default loader hook implementations
-To: Jonas Bonn <jonas@southpole.se>
-Cc: rusty@rustcorp.com.au, arnd@ardnb.de, geert@linux-m68k.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        monstr@monstr.eu, cmetcalf@tilera.com, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309358377-8537-25-git-send-email-kys@microsoft.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 15:22, Jonas Bonn wrote:
-> -/* These must be implemented by the specific architecture */
-> +/* These may be implemented by architectures that need to hook into the
-> + * module loader code.  Architectures that don't need to do anything special
-> + * can just rely on the 'weak' default hooks defined in kernel/module.c.
-> + * Note, however, that at least one of apply_relocate or apply_relocate_add
-> + * must be implemented by each architecture.
-> + */
+I think all this would be a lot simpler if you simply used one scsi
+host per ide device as mentioned before.
 
-still need to update this multi-line comment ;)
--mike
+Also it would be nice if you could sent patches 23 to 28 as one patch
+in the next round, as that allows reviewing the whole IDE related code
+in one go, which is useful given that it's all interwinded.
+
