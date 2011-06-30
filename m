@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751913Ab1F3PTL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 11:19:11 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:38756 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1750881Ab1F3PTK (ORCPT
+	id S1752486Ab1F3PWg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 11:22:36 -0400
+Received: from mail.betterlinux.com ([199.58.199.50]:35756 "EHLO
+	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab1F3PWf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 11:19:10 -0400
-Date: Thu, 30 Jun 2011 11:19:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>
-Subject: Re: 3.0rc3-rc5: usb stops working after resume from suspend to ram
-In-Reply-To: <Pine.LNX.4.44L0.1106291720330.2064-100000@iolanthe.rowland.org>
-Message-ID: <Pine.LNX.4.44L0.1106301110330.1957-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 30 Jun 2011 11:22:35 -0400
+From: Andrea Righi <andrea@betterlinux.com>
+To: Randy Dunlap <rdunlap@xenotime.net>, Vivek Goyal <vgoyal@redhat.com>
+Cc: Jens Axboe <jaxboe@fusionio.com>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] blk-cgroup: fix file names in documentation
+Date: Thu, 30 Jun 2011 17:22:04 +0200
+Message-Id: <1309447324-3824-1-git-send-email-andrea@betterlinux.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011, Alan Stern wrote:
+All the blkio.throttle.* file names are incorrectly reported without
+".throttle" in the documentation. Fix it.
 
-> On Wed, 29 Jun 2011, Arkadiusz Miskiewicz wrote:
-> 
-> > On Wednesday 29 of June 2011, Alan Stern wrote:
-> > > On Wed, 29 Jun 2011, Arkadiusz Miskiewicz wrote:
-> > > > Hi,
-> > > > 
-> > > > Something broke between rc3 and rc5. Thinkpad t400, logitech usb mouse.
-> > > > After resume from ram usb device no longer works. Somewhere around rc3 it
-> > > > was working fine.
-> > > 
-> > > Obviously you can try bisection to find the problem.  But if you don't
-> > > want to go through that, you could post the dmesg from a kernel that
-> > > has CONFIG_USB_DEBUG enabled.
-> > 
-> > CONFIG_USB_DEBUG will be faster but I'll bisect if no one figures out what's 
-> > wrong.
-> 
-> Actually bisection might end up being quicker.  This looks like a
-> pretty tricky problem.  Maybe you should start a bisection while I look 
-> at this stuff; you'll probably reach an answer before I do!
-> 
-> > Note that I tried to unplug & plugin usb mouse after all this dmesg but 
-> > nothing new appeared in dmesg - kernel didn't notice that I did that.
+Signed-off-by: Andrea Righi <andrea@betterlinux.com>
+---
+ Documentation/cgroups/blkio-controller.txt |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-The log suggests that something went wrong somewhere around here:
-
-[   73.811538] usb 2-4: unregistering interface 2-4:1.7
-[   73.811594] cdc_ether 2-4:1.7: wwan0: unregister 'cdc_ether' usb-0000:00:1d.7-4, Mobile Broadband Network Device
-[   73.823457] done.
-[   73.823470] video LNXVIDEO:00: Restoring backlight state
-[   74.056070] usb usb3: suspend_rh (auto-stop)
-
-(I don't have any idea what that "done" refers to.)  There should have
-been additional messages about unregistering interfaces 2-4:1.8,
-2-4:1.9, and 2-4:1.10.  So perhaps the cdc_ether unregistration got
-hung up.  Can you get a stack trace for the khubd thread at this point?
-
-Also, you can try unloading cdc-ether before starting the suspend to
-see if that makes any difference.
-
-Alan Stern
+diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
+index cd45c8e..84f0a15 100644
+--- a/Documentation/cgroups/blkio-controller.txt
++++ b/Documentation/cgroups/blkio-controller.txt
+@@ -77,7 +77,7 @@ Throttling/Upper Limit policy
+ - Specify a bandwidth rate on particular device for root group. The format
+   for policy is "<major>:<minor>  <byes_per_second>".
+ 
+-        echo "8:16  1048576" > /sys/fs/cgroup/blkio/blkio.read_bps_device
++        echo "8:16  1048576" > /sys/fs/cgroup/blkio/blkio.throttle.read_bps_device
+ 
+   Above will put a limit of 1MB/second on reads happening for root group
+   on device having major/minor number 8:16.
+@@ -90,7 +90,7 @@ Throttling/Upper Limit policy
+         1024+0 records out
+         4194304 bytes (4.2 MB) copied, 4.0001 s, 1.0 MB/s
+ 
+- Limits for writes can be put using blkio.write_bps_device file.
++ Limits for writes can be put using blkio.throttle.write_bps_device file.
+ 
+ Hierarchical Cgroups
+ ====================
+@@ -286,28 +286,28 @@ Throttling/Upper limit policy files
+ 	  specified in bytes per second. Rules are per deivce. Following is
+ 	  the format.
+ 
+-  echo "<major>:<minor>  <rate_bytes_per_second>" > /cgrp/blkio.read_bps_device
++  echo "<major>:<minor>  <rate_bytes_per_second>" > /cgrp/blkio.throttle.read_bps_device
+ 
+ - blkio.throttle.write_bps_device
+ 	- Specifies upper limit on WRITE rate to the device. IO rate is
+ 	  specified in bytes per second. Rules are per deivce. Following is
+ 	  the format.
+ 
+-  echo "<major>:<minor>  <rate_bytes_per_second>" > /cgrp/blkio.write_bps_device
++  echo "<major>:<minor>  <rate_bytes_per_second>" > /cgrp/blkio.throttle.write_bps_device
+ 
+ - blkio.throttle.read_iops_device
+ 	- Specifies upper limit on READ rate from the device. IO rate is
+ 	  specified in IO per second. Rules are per deivce. Following is
+ 	  the format.
+ 
+-  echo "<major>:<minor>  <rate_io_per_second>" > /cgrp/blkio.read_iops_device
++  echo "<major>:<minor>  <rate_io_per_second>" > /cgrp/blkio.throttle.read_iops_device
+ 
+ - blkio.throttle.write_iops_device
+ 	- Specifies upper limit on WRITE rate to the device. IO rate is
+ 	  specified in io per second. Rules are per deivce. Following is
+ 	  the format.
+ 
+-  echo "<major>:<minor>  <rate_io_per_second>" > /cgrp/blkio.write_iops_device
++  echo "<major>:<minor>  <rate_io_per_second>" > /cgrp/blkio.throttle.write_iops_device
+ 
+ Note: If both BW and IOPS rules are specified for a device, then IO is
+       subjectd to both the constraints.
+-- 
+1.7.4.1
 
