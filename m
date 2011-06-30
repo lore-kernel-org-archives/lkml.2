@@ -1,36 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751967Ab1F3PC4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 11:02:56 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57844 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751193Ab1F3PCy (ORCPT
+	id S1752523Ab1F3PEc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 11:04:32 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:18135 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab1F3PEb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 11:02:54 -0400
-Date: Fri, 1 Jul 2011 00:02:43 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Mel Gorman <mgorman@suse.de>, Rik van Riel <riel@redhat.com>,
-        Michal Hocko <mhocko@suse.cz>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH v4 00/10] Prevent LRU churning
-Message-ID: <20110630150243.GA2707@barrios-desktop>
-References: <cover.1309444657.git.minchan.kim@gmail.com>
+	Thu, 30 Jun 2011 11:04:31 -0400
+Message-ID: <4E0C9062.4010901@atmel.com>
+Date: Thu, 30 Jun 2011 17:04:02 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1309444657.git.minchan.kim@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        alsa-devel@alsa-project.org
+CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        lrg@ti.com, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] [PATCH 1/5] ASoC: wm8731: rework power management
+References: <1309370419-22810-1-git-send-email-nicolas.ferre@atmel.com>	<ccd4b125244271af7978948689cf1dcef37bc06b.1309368631.git.nicolas.ferre@atmel.com>	<20110629171148.GB10798@opensource.wolfsonmicro.com> <4E0C80B8.7030006@atmel.com>
+In-Reply-To: <4E0C80B8.7030006@atmel.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I resend by missing Cc.
-Sorry for the noise.
+Le 30/06/2011 15:57, Nicolas Ferre :
+> Le 29/06/2011 19:11, Mark Brown :
+>> On Wed, Jun 29, 2011 at 08:00:15PM +0200, Nicolas Ferre wrote:
+>>
+>> Don't mix multiple changes into a single patch!  There's no perceptible
+>> code overlap between these so I don't understand why you've merged them,
+>> it just makes review harder and the changelog less descriptive.
+> 
+> Ok.
+> 
+>>> - preserve crystal oscillator across suspend/resume sequence:
+>>>   enabled by default, it should be kept enabled on resume.
+>>
+>> This isn't what your code does...
+>>
+>>>  		snd_soc_write(codec, WM8731_ACTIVE, 0x0);
+>>> -		snd_soc_write(codec, WM8731_PWR, 0xffff);
+>>> +		/* standby: keep crystal oscillator enabled */
+>>> +		snd_soc_write(codec, WM8731_PWR, 0x00df);
+>>
+>> This doesn't keep the crystal oscillator enabled, this forces it on in
+>> suspend (and without looking at the datasheet it also changes way more
+>> than the one register bit I'd expect to be changed).  If the system
+>> isn't using the oscillator then that's not good.
+>>
+>> I'd expect to see a change to using snd_soc_update_bits() based on your
+>> description, or more likely something more involved.
+> 
+> First of all, I experienced issues while not having OSC enabled during suspend/resume cycle. Am I right supposing that, if using oscillator to clock the codec, I have to keep it running during a suspend/resume cycle?
+> 
+> Is something like this sounds like an acceptable option or we need something more sophisticated?
+> 
+> @@ -481,7 +481,10 @@ static int wm8731_set_bias_level(struct snd_soc_codec *codec,
+>                 break;
+>         case SND_SOC_BIAS_OFF:
+>                 snd_soc_write(codec, WM8731_ACTIVE, 0x0);
+> -               snd_soc_write(codec, WM8731_PWR, 0xffff);
+> +               reg = 0xdf;
+> +               if (wm8731->sysclk_type == WM8731_SYSCLK_XTAL)
+
+Actually it is: if... != WM8731_SYSCLK_XTAL
+
+> +                               reg |= 1 << 0x5;
+> +               snd_soc_update_bits(codec, WM8731_PWR, 0x00ff, reg);
+
+And maybe here a simple snd_soc_write() is sufficient...
+
+>                 regulator_bulk_disable(ARRAY_SIZE(wm8731->supplies),
+>                                        wm8731->supplies);
+>                 break;
+> 
+> And, yes, there is only 8 bits dedicated to power down control in this register.
+> 
+> Best regards,
 
 -- 
-Kind regards,
-Minchan Kim
+Nicolas Ferre
+
