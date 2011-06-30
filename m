@@ -1,46 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab1F3MlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 08:41:09 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40871 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063Ab1F3MlD (ORCPT
+	id S1753053Ab1F3Mlr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 08:41:47 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:51665 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751031Ab1F3Mlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 08:41:03 -0400
+	Thu, 30 Jun 2011 08:41:42 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bill Gatliff <bgat@billgatliff.com>
+Subject: Re: [PATCH 1/3] PWM: add pwm framework support
+Date: Thu, 30 Jun 2011 14:41:24 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Ryan Mallon <ryan@bluewatersys.com>
+References: <1309430517-23821-1-git-send-email-s.hauer@pengutronix.de> <1309430517-23821-2-git-send-email-s.hauer@pengutronix.de> <BANLkTikQGFA7XcuAtEEi7_4m-j6-00sZ6Q@mail.gmail.com>
+In-Reply-To: <BANLkTikQGFA7XcuAtEEi7_4m-j6-00sZ6Q@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1309435714.23597.181.camel@sauron>
-References: <1309408494.10500.1.camel@phoenix>
-	<BANLkTikonD2fcbkBU2ESYm_XncBXNZc_hw@mail.gmail.com>
-	<1309435714.23597.181.camel@sauron>
-Date: Thu, 30 Jun 2011 16:41:02 +0400
-Message-ID: <BANLkTik-pWfbC3J9LkB-jL9H8cnoLR=R-Q@mail.gmail.com>
-Subject: Re: [PATCH] mtd: tmio_nand: fix build error
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: dedekind1@gmail.com
-Cc: Axel Lin <axel.lin@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106301441.24493.arnd@arndb.de>
+X-Provags-ID: V02:K0:LwZVuh4hKKML7oItW28dGvpq9GQZ8lr8PaJSMJ3m9fD
+ cYQWhHVR0NaIpZsuqxt84Znip2BkDPanvhXFjnUdgZDLAYZp8y
+ NfYXwAK74sVTDTR1O3E6PphG8S+BfDpdewfFBPDCN4D22ZcqOX
+ vfXJz2vXjEoo5UC+EaMzhJVdi5b8CW433qzBzhPlmLry0aAt3c
+ J+FXTIhF5Ediwef0/6HhQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/30/11, Artem Bityutskiy <dedekind1@gmail.com> wrote:
-> On Thu, 2011-06-30 at 12:23 +0400, Dmitry Eremin-Solenikov wrote:
->> On 6/30/11, Axel Lin <axel.lin@gmail.com> wrote:
->> > Fix a mistake introduced by commit 33f4a3b
->> > "mtd: tmio_nand.c: use mtd_device_parse_register"
->>
->> Already sumbited 27 June 2011. Strangely Artem remains silent.
->
-> I handle my mailbox in FIFO order (with exceptions) so I have not
-> reached your patch yet. Now I've merged it with one of your previous
-> patches to keep the kernel bisectable.
+On Thursday 30 June 2011, Bill Gatliff wrote:
+> I'm completely against this effort.
+> 
+> The objections to my submission weren't ever because I was changing
+> the user-visible API, so I don't think you can claim any advantage to
+> mine in that regard.
+> 
+> I will take some blame for not getting my API finished, but I have
+> been fighting some serious non-work issues that have consumed nearly
+> all of my available time--- including the professional time I would
+> otherwise have to invest in getting my code finished.
+> 
+> Is there the possibility that we could cooperate to get my patches
+> finished, rather than discarding and reinventing them completely?
 
-Thanks and sorry if my comment offended you! It's just I see most of
-MLs/patches in threads, so I was a bit puzzled.
+I've looked at your patches again, and it seems that you are doing
+two distinct changes, both good:
 
--- 
-With best wishes
-Dmitry
+1. You provide a generic framework for pwm drivers that makes it
+possible for multiple drivers to coexist and simplifies the way
+that these drivers interact with the core OS.
+
+2. You extend and fix a number of aspects in the global PWM API.
+
+Sascha's patch does only part 1, not part 2, but I don't think that
+makes his patches any worse. The introduction of the framework
+now is very similar to what you had suggested, and you should
+probably be mentioned in the changelog, even though the two
+implementations were done independently.
+
+A lot of people want to see a framework get merged, and I think it's
+great that Sascha has volunteered to do the work to push that
+through this time, especially since you have not been able to
+finish your work.
+
+What I think would be the best plan forward is to merge Sascha's
+patches as soon as we can, then get all currently existing pwm
+drivers converted to that and moved to drivers/pwm, and finally
+do the interface changes that you have proposed earlier.
+
+I would also hope that you can give constructive feedback to
+the submission and point out potential problems that you see
+where the code should be changed now in order to make your
+interface changes more easy later.
+
+I realize that it's annoying to spend a lot of time on a specific
+implementation and then see competing code get merged. Unfortunately,
+this happens all the time, and the code we merge is often not
+the one that has had the most effort spent on it, but the one that
+looks most promising at the time when it gets merged.
+
+	Arnd
