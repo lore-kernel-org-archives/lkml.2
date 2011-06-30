@@ -1,96 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab1F3JDQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 05:03:16 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47720 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754648Ab1F3JDI convert rfc822-to-8bit (ORCPT
+	id S1758888Ab1F3JGZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 05:06:25 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51361 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751431Ab1F3JGU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 05:03:08 -0400
+	Thu, 30 Jun 2011 05:06:20 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4E0C3C77.8010608@jp.fujitsu.com>
+Date: Thu, 30 Jun 2011 18:05:59 +0900
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-In-Reply-To: <201106301122.50800.anarsoul@gmail.com>
-References: <1309420175-10301-1-git-send-email-myungjoo.ham@samsung.com>
-	<1309420175-10301-2-git-send-email-myungjoo.ham@samsung.com>
-	<201106301122.50800.anarsoul@gmail.com>
-Date: Thu, 30 Jun 2011 18:03:06 +0900
-Message-ID: <BANLkTimwqF3APEbJnTGcO5mh+AnS=N787g@mail.gmail.com>
-Subject: Re: [PATCH v3 1/6] Samsung SoC ADC: use regulator (VDD for ADC).
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: Vasily Khoruzhick <anarsoul@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Jassi Brar <jassi.brar@samsung.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ben Dooks <ben-linux@fluff.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Seungwhan Youn <sw.youn@samsung.com>,
-        Changhwan Youn <chaos.youn@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: mgorman@suse.de
+CC: akpm@linux-foundation.org, P@draigBrady.com,
+        James.Bottomley@HansenPartnership.com, colin.king@canonical.com,
+        minchan.kim@gmail.com, luto@mit.edu, riel@redhat.com,
+        hannes@cmpxchg.org, linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] mm: vmscan: Only read new_classzone_idx from pgdat
+ when reclaiming successfully
+References: <1308926697-22475-1-git-send-email-mgorman@suse.de> <1308926697-22475-5-git-send-email-mgorman@suse.de>
+In-Reply-To: <1308926697-22475-5-git-send-email-mgorman@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 5:22 PM, Vasily Khoruzhick <anarsoul@gmail.com> wrote:
-> On Thursday 30 June 2011 10:49:30 MyungJoo Ham wrote:
->> This patch allows the Samsung ADC driver to enable VDD regulator at
->> probe and resume and to disable at exit and suspend.
->> In a platform where ADC's VDD regulator is not "always-on", this control
->> is required although this patch does not provide fine-grained power
->> control (turning on the regulator only when being accessed).
->>
->> However, if VDD regulator ("vdd" for the adc device) is not provided,
->> the regulator control will not be activated because there are platforms
->> that do not provide regulator for ADC device.
->>
->> arch_initcall has been modified to module_init in order to allow
->> regulators to be available at probe.
->>
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-[]
->> +     adc->vdd = regulator_get(dev, "vdd");
->> +     if (IS_ERR(adc->vdd)) {
->> +             dev_err(dev, "operating without regulator \"vdd\" .\n");
->> +             ret = PTR_ERR(adc->vdd);
->> +             goto err_alloc;
->> +     }
->> +
->
-> NACK. Make it optional, otherwise it breaks s3c24xx.
->
+(2011/06/24 23:44), Mel Gorman wrote:
+> During allocator-intensive workloads, kswapd will be woken frequently
+> causing free memory to oscillate between the high and min watermark.
+> This is expected behaviour.  Unfortunately, if the highest zone is
+> small, a problem occurs.
+> 
+> When balance_pgdat() returns, it may be at a lower classzone_idx than
+> it started because the highest zone was unreclaimable. Before checking
+> if it should go to sleep though, it checks pgdat->classzone_idx which
+> when there is no other activity will be MAX_NR_ZONES-1. It interprets
+> this as it has been woken up while reclaiming, skips scheduling and
+> reclaims again. As there is no useful reclaim work to do, it enters
+> into a loop of shrinking slab consuming loads of CPU until the highest
+> zone becomes reclaimable for a long period of time.
+> 
+> There are two problems here. 1) If the returned classzone or order is
+> lower, it'll continue reclaiming without scheduling. 2) if the highest
+> zone was marked unreclaimable but balance_pgdat() returns immediately
+> at DEF_PRIORITY, the new lower classzone is not communicated back to
+> kswapd() for sleeping.
+> 
+> This patch does two things that are related. If the end_zone is
+> unreclaimable, this information is communicated back. Second, if
+> the classzone or order was reduced due to failing to reclaim, new
+> information is not read from pgdat and instead an attempt is made to go
+> to sleep. Due to this, it is also necessary that pgdat->classzone_idx
+> be initialised each time to pgdat->nr_zones - 1 to avoid re-reads
+> being interpreted as wakeups.
+> 
+> Reported-and-tested-by: PÃ¡draig Brady <P@draigBrady.com>
+> Signed-off-by: Mel Gorman <mgorman@suse.de>
+> ---
+>  mm/vmscan.c |   34 +++++++++++++++++++++-------------
+>  1 files changed, 21 insertions(+), 13 deletions(-)
+> 
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index a76b6cc2..fe854d7 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2448,7 +2448,6 @@ loop_again:
+>  			if (!zone_watermark_ok_safe(zone, order,
+>  					high_wmark_pages(zone), 0, 0)) {
+>  				end_zone = i;
+> -				*classzone_idx = i;
+>  				break;
+>  			}
+>  		}
+> @@ -2528,8 +2527,11 @@ loop_again:
+>  			    total_scanned > sc.nr_reclaimed + sc.nr_reclaimed / 2)
+>  				sc.may_writepage = 1;
+>  
+> -			if (zone->all_unreclaimable)
+> +			if (zone->all_unreclaimable) {
+> +				if (end_zone && end_zone == i)
+> +					end_zone--;
+>  				continue;
+> +			}
+>  
+>  			if (!zone_watermark_ok_safe(zone, order,
+>  					high_wmark_pages(zone), end_zone, 0)) {
+> @@ -2709,8 +2711,8 @@ static void kswapd_try_to_sleep(pg_data_t *pgdat, int order, int classzone_idx)
+>   */
+>  static int kswapd(void *p)
+>  {
+> -	unsigned long order;
+> -	int classzone_idx;
+> +	unsigned long order, new_order;
+> +	int classzone_idx, new_classzone_idx;
+>  	pg_data_t *pgdat = (pg_data_t*)p;
+>  	struct task_struct *tsk = current;
+>  
+> @@ -2740,17 +2742,23 @@ static int kswapd(void *p)
+>  	tsk->flags |= PF_MEMALLOC | PF_SWAPWRITE | PF_KSWAPD;
+>  	set_freezable();
+>  
+> -	order = 0;
+> -	classzone_idx = MAX_NR_ZONES - 1;
+> +	order = new_order = 0;
+> +	classzone_idx = new_classzone_idx = pgdat->nr_zones - 1;
+>  	for ( ; ; ) {
+> -		unsigned long new_order;
+> -		int new_classzone_idx;
+>  		int ret;
+>  
+> -		new_order = pgdat->kswapd_max_order;
+> -		new_classzone_idx = pgdat->classzone_idx;
+> -		pgdat->kswapd_max_order = 0;
+> -		pgdat->classzone_idx = MAX_NR_ZONES - 1;
+> +		/*
+> +		 * If the last balance_pgdat was unsuccessful it's unlikely a
+> +		 * new request of a similar or harder type will succeed soon
+> +		 * so consider going to sleep on the basis we reclaimed at
+> +		 */
+> +		if (classzone_idx >= new_classzone_idx && order == new_order) {
 
-Ok. Now, I've got the issue I've worried in the previous patch revision.
+I'm confusing this. If we take a following scenario, new_classzone_idx may be garbage.
 
-Anyway, Mark once stated:
---- quote starts ---
-On Sun, Jun 19, 2011 at 12:06 AM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
->> +     if (IS_ERR_OR_NULL(adc->vdd)) {
->> +             dev_dbg(dev, "operating without regulator %s.\n", S3C_ADC_REGULATOR_NAME);
->> +             adc->vdd = NULL; /* Do not control regulator */
->> +     }
->> +
->
-> No, don't do this.  Just unconditionally assume the regulator is present
-> if power is essential for use of the device.  The regulator API will
-> stub out correctly if it's not in use to allow things to proceed and if
-> vdd is genuinely not hooked up then the driver can't function.
---- quote ends ---
+1. new_classzone_idx = pgdat->classzone_idx
+2. kswapd_try_to_sleep()
+3. classzone_idx = pgdat->classzone_idx
+4. balance_pgdat()
 
-Then, how about unconditionally using ADC VDD for TYPE_ADCV3
-(S5PC110/S5PV210/Exynos4210) and forget VDD for older ADC types?
+Wouldn't we need to reinitialize new_classzone_idx nad new_order at kswapd_try_to_sleep()
+path too?
 
 
-Thanks.
 
-- MyungJoo
--- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+> +			new_order = pgdat->kswapd_max_order;
+> +			new_classzone_idx = pgdat->classzone_idx;
+> +			pgdat->kswapd_max_order =  0;
+> +			pgdat->classzone_idx = pgdat->nr_zones - 1;
+> +		}
+> +
+>  		if (order < new_order || classzone_idx > new_classzone_idx) {
+>  			/*
+>  			 * Don't sleep if someone wants a larger 'order'
+
