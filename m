@@ -1,112 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519Ab1F3HUC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 03:20:02 -0400
-Received: from mail.perches.com ([173.55.12.10]:3366 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750988Ab1F3HTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 03:19:53 -0400
-From: Joe Perches <joe@perches.com>
-To: Marcel Holtmann <marcel@holtmann.org>,
-        "Gustavo F. Padovan" <padovan@profusion.mobi>
-Cc: "David S. Miller" <davem@davemloft.net>, linux-bluetooth@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] bluetooth: Add bt_printk
-Date: Thu, 30 Jun 2011 00:19:51 -0700
-Message-Id: <f06f1d8f4185db431a038c328c42caf4fe270dd0.1309418368.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.rc1
-In-Reply-To: <20110630033119.GA3438@joana>
-References: <20110630033119.GA3438@joana>
+	id S1758525Ab1F3HXV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 03:23:21 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:64503 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751320Ab1F3HXN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 03:23:13 -0400
+Date: Thu, 30 Jun 2011 09:23:10 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+X-X-Sender: lyakh@axis700.grange
+To: Axel Lin <axel.lin@gmail.com>
+cc: linux-kernel@vger.kernel.org, Ian Molton <spyro@f2s.com>,
+        Chris Ball <cjb@laptop.org>, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] mmc: tmio: fix build error if CONFIG_MMC_SDHI is not
+ configured
+In-Reply-To: <1309409956.10500.3.camel@phoenix>
+Message-ID: <Pine.LNX.4.64.1106300922110.1965@axis700.grange>
+References: <1309409956.10500.3.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Provags-ID: V02:K0:grb1TcgAM4mWrb/1cjLEXnKQeYCCUmQ64XSXJdMhfvL
+ njR4mWTq4zN3j2Y3SMAR+tpzwCY/70IE8u8j2CjcyevGIqKcGL
+ sdVHquPkbwALFDqZOTt47MNO6gXLaFq1kBle+ev2tkzpNbr8km
+ /lJlwOV9jJIXL4iK00PL94g5oBLQ/UuRP0opR43FgYdvVUcIML
+ S2M4Pwri1XQGmzsP5ulKlXGnVi4UOvGvCbVKhgVB7A=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a local logging function to emit bluetooth specific
-messages.  Using vsprintf extension %pV saves code/text
-space.
+Hi Axel
 
-Convert the current BT_INFO and BT_ERR macros to use bt_printk.
-Remove __func__ from BT_ERR macro (and the uses).
-Prefix "Bluetooth: " to BT_ERR
-Remove __func__ from BT_DBG as function can be prefixed when
-using dynamic_debug.
+On Thu, 30 Jun 2011, Axel Lin wrote:
 
-With allyesconfig:
+> Fix below build error:
+> 
+>   CC      drivers/mmc/host/tmio_mmc_dma.o
+> drivers/mmc/host/tmio_mmc_dma.c:192: error: redefinition of 'tmio_mmc_start_dma'
+> drivers/mmc/host/tmio_mmc.h:111: error: previous definition of 'tmio_mmc_start_dma' was here
+> drivers/mmc/host/tmio_mmc_dma.c:257: error: redefinition of 'tmio_mmc_request_dma'
+> drivers/mmc/host/tmio_mmc.h:116: error: previous definition of 'tmio_mmc_request_dma' was here
+> drivers/mmc/host/tmio_mmc_dma.c:305: error: redefinition of 'tmio_mmc_release_dma'
+> drivers/mmc/host/tmio_mmc.h:122: error: previous definition of 'tmio_mmc_release_dma' was here
+> make[3]: *** [drivers/mmc/host/tmio_mmc_dma.o] Error 1
+> make[2]: *** [drivers/mmc/host] Error 2
+> make[1]: *** [drivers/mmc] Error 2
+> make: *** [drivers] Error 2
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-   text	   data	    bss	    dec	    hex	filename
- 129956	   8632	  36096	 174684	  2aa5c	drivers/bluetooth/built-in.o.new2
- 134402	   8632	  36064	 179098	  2bb9a	drivers/bluetooth/built-in.o.old
-  14778	   1012	   3408	  19198	   4afe	net/bluetooth/bnep/built-in.o.new2
-  15067	   1012	   3408	  19487	   4c1f	net/bluetooth/bnep/built-in.o.old
- 346595	  19163	  86080	 451838	  6e4fe	net/bluetooth/built-in.o.new2
- 353751	  19163	  86064	 458978	  700e2	net/bluetooth/built-in.o.old
-  18483	   1172	   4264	  23919	   5d6f	net/bluetooth/cmtp/built-in.o.new2
-  18927	   1172	   4264	  24363	   5f2b	net/bluetooth/cmtp/built-in.o.old
-  19237	   1172	   5152	  25561	   63d9	net/bluetooth/hidp/built-in.o.new2
-  19581	   1172	   5152	  25905	   6531	net/bluetooth/hidp/built-in.o.old
-  59461	   3884	  14464	  77809	  12ff1	net/bluetooth/rfcomm/built-in.o.new2
-  61206	   3884	  14464	  79554	  136c2	net/bluetooth/rfcomm/built-in.o.old
+This is a known bug and a correct fix for it is this:
 
-with x86 defconfig (and just bluetooth):
+http://www.mail-archive.com/linux-mmc@vger.kernel.org/msg07999.html
 
-$ size net/bluetooth/built-in.o.defconfig.*
-   text	   data	    bss	    dec	    hex	filename
-  66358	    933	    100	  67391	  1073f	net/bluetooth/built-in.o.defconfig.new
-  66643	    933	    100	  67676	  1085c	net/bluetooth/built-in.o.defconfig.old
+No idea, why it still hasn't been applied, Chris?
 
-Signed-off-by: Joe Perches <joe@perches.com>
+Thanks
+Guennadi
+
+> ---
+>  drivers/mmc/host/tmio_mmc_dma.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/mmc/host/tmio_mmc_dma.c b/drivers/mmc/host/tmio_mmc_dma.c
+> index a40fdba..4dc563a 100644
+> --- a/drivers/mmc/host/tmio_mmc_dma.c
+> +++ b/drivers/mmc/host/tmio_mmc_dma.c
+> @@ -189,6 +189,7 @@ pio:
+>  		desc, cookie);
+>  }
+>  
+> +#if defined(CONFIG_MMC_SDHI) || defined(CONFIG_MMC_SDHI_MODULE)
+>  void tmio_mmc_start_dma(struct tmio_mmc_host *host,
+>  			       struct mmc_data *data)
+>  {
+> @@ -200,6 +201,7 @@ void tmio_mmc_start_dma(struct tmio_mmc_host *host,
+>  			tmio_mmc_start_dma_tx(host);
+>  	}
+>  }
+> +#endif
+>  
+>  static void tmio_mmc_issue_tasklet_fn(unsigned long priv)
+>  {
+> @@ -254,6 +256,7 @@ static bool tmio_mmc_filter(struct dma_chan *chan, void *arg)
+>  	return true;
+>  }
+>  
+> +#if defined(CONFIG_MMC_SDHI) || defined(CONFIG_MMC_SDHI_MODULE)
+>  void tmio_mmc_request_dma(struct tmio_mmc_host *host, struct tmio_mmc_data *pdata)
+>  {
+>  	/* We can only either use DMA for both Tx and Rx or not use it at all */
+> @@ -319,3 +322,4 @@ void tmio_mmc_release_dma(struct tmio_mmc_host *host)
+>  		host->bounce_buf = NULL;
+>  	}
+>  }
+> +#endif
+> -- 
+> 1.7.4.1
+> 
+> 
+> 
+
 ---
- include/net/bluetooth/bluetooth.h |    9 ++++++---
- net/bluetooth/lib.c               |   19 +++++++++++++++++++
- 2 files changed, 25 insertions(+), 3 deletions(-)
-
-diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
-index 7bccaf9..042591c 100644
---- a/include/net/bluetooth/bluetooth.h
-+++ b/include/net/bluetooth/bluetooth.h
-@@ -76,9 +76,12 @@ struct bt_power {
- #define BT_POWER_FORCE_ACTIVE_OFF 0
- #define BT_POWER_FORCE_ACTIVE_ON  1
- 
--#define BT_INFO(fmt, arg...) printk(KERN_INFO "Bluetooth: " fmt "\n" , ## arg)
--#define BT_ERR(fmt, arg...)  printk(KERN_ERR "%s: " fmt "\n" , __func__ , ## arg)
--#define BT_DBG(fmt, arg...)  pr_debug("%s: " fmt "\n" , __func__ , ## arg)
-+__attribute__((format (printf, 2, 3)))
-+int bt_printk(const char *level, const char *fmt, ...);
-+
-+#define BT_INFO(fmt, arg...)	bt_printk(KERN_INFO, pr_fmt(fmt), ##arg)
-+#define BT_ERR(fmt, arg...)	bt_printk(KERN_ERR, pr_fmt(fmt), ##arg)
-+#define BT_DBG(fmt, arg...)	pr_debug(fmt "\n", ##arg)
- 
- /* Connection and socket states */
- enum {
-diff --git a/net/bluetooth/lib.c b/net/bluetooth/lib.c
-index b826d1b..fdb3ec3 100644
---- a/net/bluetooth/lib.c
-+++ b/net/bluetooth/lib.c
-@@ -150,3 +150,22 @@ int bt_err(__u16 code)
- 	}
- }
- EXPORT_SYMBOL(bt_err);
-+
-+int bt_printk(const char *level, const char *format, ...)
-+{
-+	struct va_format vaf;
-+	va_list args;
-+	int r;
-+
-+	va_start(args, format);
-+
-+	vaf.fmt = format;
-+	vaf.va = &args;
-+
-+	r = printk("%sbluetooth: %pV\n", level, &vaf);
-+
-+	va_end(args);
-+
-+	return r;
-+}
-+EXPORT_SYMBOL(bt_printk);
--- 
-1.7.6.rc1
-
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
