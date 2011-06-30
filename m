@@ -1,185 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752668Ab1F3PGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 11:06:18 -0400
-Received: from mail.betterlinux.com ([199.58.199.50]:59830 "EHLO
-	mail.betterlinux.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751781Ab1F3PGP (ORCPT
+	id S1752478Ab1F3PJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 11:09:58 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:33162 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750714Ab1F3PJy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 11:06:15 -0400
-Date: Thu, 30 Jun 2011 17:06:08 +0200
-From: Andrea Righi <andrea@betterlinux.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 8/8] blk-throttle: enable throttling of task while
- dirtying pages
-Message-ID: <20110630150608.GA2068@thinkpad>
-References: <1309275309-12889-1-git-send-email-vgoyal@redhat.com>
- <1309275309-12889-9-git-send-email-vgoyal@redhat.com>
- <20110630145229.GA1655@thinkpad>
+	Thu, 30 Jun 2011 11:09:54 -0400
+From: Marek Vasut <marek.vasut@gmail.com>
+To: Stanislav Brabec <utx@penguin.cz>
+Subject: Re: kernel panic in spi_complete() on spitz (PXA270)
+Date: Thu, 30 Jun 2011 17:09:48 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.39-1-amd64; KDE/4.6.3; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, zaurus-devel@www.linuxtogo.org,
+        spi-devel-general@lists.sourceforge.net,
+        Igor Grinberg <grinberg@compulab.co.il>, vapier@gentoo.org,
+        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
+        linux-kernel@vger.kernel.org, pavel@ucw.cz,
+        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
+        akpm@linux-foundation.org, broonie@opensource.wolfsonmicro.com,
+        Pavel Herrmann <morpheus.ibis@gmail.com>
+References: <1308845380.4533.54.camel@oct.suse.cz> <201106301352.21684.marek.vasut@gmail.com> <1309445118.4406.47.camel@oct.suse.cz>
+In-Reply-To: <1309445118.4406.47.camel@oct.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110630145229.GA1655@thinkpad>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201106301709.48818.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 04:52:29PM +0200, Andrea Righi wrote:
-> On Tue, Jun 28, 2011 at 11:35:09AM -0400, Vivek Goyal wrote:
-> > Put the blk_throtl_dirty_pages() hook in
-> > balance_dirty_pages_ratelimited_nr() to enable task throttling.
+On Thursday, June 30, 2011 04:45:18 PM Stanislav Brabec wrote:
+> Marek Vasut wrote:
+> > On Thursday, June 23, 2011 06:09:40 PM Stanislav Brabec wrote:
+> > > Hallo.
+> > > 
+> > > These Oops and kernel panic were observed on a Zaurus (spitz) machine
+> > > (ARMv5, PXA270).
 > > 
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > ---
-> >  include/linux/blkdev.h |    5 +++++
-> >  mm/page-writeback.c    |    3 +++
-> >  2 files changed, 8 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-> > index 4ce6e68..5d4a57e 100644
-> > --- a/include/linux/blkdev.h
-> > +++ b/include/linux/blkdev.h
-> > @@ -1180,12 +1180,17 @@ static inline uint64_t rq_io_start_time_ns(struct request *req)
-> >  extern int blk_throtl_init(struct request_queue *q);
-> >  extern void blk_throtl_exit(struct request_queue *q);
-> >  extern int blk_throtl_bio(struct request_queue *q, struct bio **bio);
-> > +extern void blk_throtl_dirty_pages(struct address_space *mapping,
-> > +				unsigned long nr_dirty);
-> >  #else /* CONFIG_BLK_DEV_THROTTLING */
-> >  static inline int blk_throtl_bio(struct request_queue *q, struct bio **bio)
-> >  {
-> >  	return 0;
-> >  }
-> >  
-> > +static inline void blk_throtl_dirty_pages(struct address_space *mapping,
-> > +				unsigned long nr_dirty) {}
-> > +
-> >  static inline int blk_throtl_init(struct request_queue *q) { return 0; }
-> >  static inline int blk_throtl_exit(struct request_queue *q) { return 0; }
-> >  #endif /* CONFIG_BLK_DEV_THROTTLING */
-> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> > index 31f6988..943e551 100644
-> > --- a/mm/page-writeback.c
-> > +++ b/mm/page-writeback.c
-> > @@ -629,6 +629,9 @@ void balance_dirty_pages_ratelimited_nr(struct address_space *mapping,
-> >  	unsigned long ratelimit;
-> >  	unsigned long *p;
-> >  
-> > +	/* Subject writes to IO controller throttling */
-> > +	blk_throtl_dirty_pages(mapping, nr_pages_dirtied);
-> > +
+> > Looks similar to "Re: [PATCH v2] Input: Make ADS7846 independent on
+> > regulator"
 > 
-> mmmh.. in this way we throttle also tasks that are re-writing dirty pages
-> multiple times.
+> I don't see any trace in that thread. But yes, I was testing your patch
+> from this thread. Without it, ADS7846 does not work on spitz (ADS7846
+> does not have any dedicated regulator there). I want to
+> add .needs_regulator bool to ads7846.c and send the patch again to the
+> list.
 > 
-> From the controller perspective what is actually generating I/O on block
-> devices is the generation of _new_ dirty pages. Multiple re-writes in page
-> cache should never be throttled IMHO.
+> After sending the trace I was able to reproduced it several times by
+> attaching of external charger.
 > 
-> I would re-write this patch in the following way. What do you think?
+> Then I tried to apply "[PATCH] MAX1111: Fix race condition causing NULL
+> pointer exception", connected charger that periodically disconnects and
+> not seen the crash again. No OOPS was seen after ~100 reconnects.
 > 
-> Thanks,
-> -Andrea
-> 
-> ---
-> Subject: [PATCH 8/8] blk-throttle: enable throttling of task while dirtying pages
-> 
-> From: Andrea Righi <andrea@betterlinux.com>
-> 
-> Put the blk_throtl_dirty_pages() hook in balance_dirty_pages_ratelimited_nr()
-> to enable task throttling.
-> 
-> Moreover, modify balance_dirty_pages_ratelimited_nr() to accept the additional
-> parameter "redirty". This parameter can be used to notify if the pages have
-> been dirtied for the first time or re-dirtied.
-> 
-> This information can be used by the blkio.throttle controller to distinguish
-> between a WRITE in the page cache, that will eventually generates I/O activity
-> on block device by the writeback code, and a re-WRITE operation that most of
-> the time will not generate additional I/O activity.
-> 
-> This means that a task that re-writes multiple times the same blocks of a file
-> is affected by the blkio limitations only for the actual I/O that will be
-> performed to the underlying block devices during the writeback process.
-> 
-> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> So I guess that MAX1111 AC voltage reading (via SPI) was involved in an
+> incorrect moment and race happened there and your MAX1111 race condition
+> fix fixes it.
 
-A simple test (see rewrite.c below):
+It's not mine, it's from Pavel Herrmann actually ;-)
 
- # echo 8:0 1000000 > /sys/fs/cgroup/blkio/foo/blkio.throttle.write_bps_device
-
-- before:
-
- $ ./rewrite 
- 0: 4s <-- first write
- 1: 4s \
- 2: 4s |
- 3: 5s |
- 4: 4s |
- 5: 4s | <-- re-writes (not generating additional I/O)
- 6: 4s |
- 7: 4s |
- 8: 5s |
- 9: 4s /
-
-- after:
-
- $ ./rewrite 
- 0: 4s <-- first write
- 1: 0s \
- 2: 0s |
- 3: 0s |
- 4: 0s |
- 5: 0s | <-- re-writes (not generating additional I/O)
- 6: 0s |
- 7: 0s |
- 8: 0s |
- 9: 0s /
-
--Andrea
-
----
-/*
- * rewrite.c
- */
-
-#include <errno.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <time.h>
-#include <fcntl.h>
-#include <sys/types.h>
-
-static char buf[4 * 1024 * 1024];
-
-int main(int argc, char **argv)
-{
-	int fd, i;
-
-	fd = open("junk", O_WRONLY | O_CREAT, 0600);
-	if (fd < 0) {
-		perror("open");
-		exit(1);
-	}
-	for (i = 0; i < 10; i++) {
-		time_t start, end;
-
-		lseek(fd, 0, SEEK_SET);
-		start = time(NULL);
-		if (write(fd, buf, sizeof(buf)) < 0) {
-			perror("write");
-			exit(1);
-		}
-		end = time(NULL);
-
-		printf("%d: %zus\n", i, end - start);
-		fflush(stdout);
-	}
-	unlink("junk");
-	return 0;
-}
+But yes, it's likely either this or the regulator stuff again (which I believed 
+was fixed).
