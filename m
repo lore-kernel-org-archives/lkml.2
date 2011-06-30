@@ -1,54 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab1F3PhV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 11:37:21 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:38070 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab1F3PhT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 11:37:19 -0400
-From: Pavel Herrmann <morpheus.ibis@gmail.com>
-To: Stanislav Brabec <utx@penguin.cz>
-Cc: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
-        zaurus-devel@www.linuxtogo.org,
-        spi-devel-general@lists.sourceforge.net,
-        Igor Grinberg <grinberg@compulab.co.il>, vapier@gentoo.org,
-        khilman@deeprootsystems.com, dmitry.torokhov@gmail.com,
-        linux-kernel@vger.kernel.org, pavel@ucw.cz,
-        linux-input@vger.kernel.org, eric.y.miao@gmail.com,
-        akpm@linux-foundation.org, broonie@opensource.wolfsonmicro.com
-Subject: Re: kernel panic in spi_complete() on spitz (PXA270)
-Date: Thu, 30 Jun 2011 17:36:57 +0200
-Message-ID: <22208110.jIqhYvKY9h@bloomfield>
-User-Agent: KMail/4.6.0 (Linux/2.6.33-gentoo-r1; KDE/4.6.4; x86_64; ; )
-In-Reply-To: <201106301709.48818.marek.vasut@gmail.com>
-References: <1308845380.4533.54.camel@oct.suse.cz> <1309445118.4406.47.camel@oct.suse.cz> <201106301709.48818.marek.vasut@gmail.com>
+	id S1752842Ab1F3PlM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 11:41:12 -0400
+Received: from mga02.intel.com ([134.134.136.20]:11476 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751146Ab1F3PlI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 11:41:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,450,1304319600"; 
+   d="scan'208";a="20168266"
+Message-ID: <4E0C9911.7030907@linux.intel.com>
+Date: Thu, 30 Jun 2011 08:41:05 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7Bit
-Content-Type: text/plain; charset="us-ascii"
+To: "David C. Oliver" <david@rgmadvisors.com>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Shawn Bohrer <sbohrer@rgmadvisors.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, peterz@infradead.org,
+        eric.dumazet@gmail.com, linux-kernel@vger.kernel.org,
+        zvonler@rgmadvisors.com, hughd@google.com, mingo@elte.hu
+Subject: Re: [PATCH v4] futex: Fix regression with read only mappings
+References: <4E0A6A0F.9020004@linux.intel.com> <1309360644-24079-1-git-send-email-sbohrer@rgmadvisors.com> <alpine.LFD.2.02.1106300129130.2917@ionos> <4E0BF945.4080102@linux.intel.com> <70B461D3-FBA0-4055-AD84-D6F06E0D7BD6@rgmadvisors.com>
+In-Reply-To: <70B461D3-FBA0-4055-AD84-D6F06E0D7BD6@rgmadvisors.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, June 30, 2011 04:45:18 PM Stanislav Brabec wrote:
-> Then I tried to apply "[PATCH] MAX1111: Fix race condition causing NULL
-> pointer exception", connected charger that periodically disconnects and
-> not seen the crash again. No OOPS was seen after ~100 reconnects.
+
+
+On 06/30/2011 07:02 AM, David C. Oliver wrote:
 > 
-> So I guess that MAX1111 AC voltage reading (via SPI) was involved in an
-> incorrect moment and race happened there and your MAX1111 race condition
-> fix fixes it.
+> On Jun 29, 2011, at 11:19 PM, Darren Hart wrote:
+> 
+>> 
+>> 
+>> On 06/29/2011 04:38 PM, Thomas Gleixner wrote:
+>>> On Wed, 29 Jun 2011, Shawn Bohrer wrote:
+>>>> 
+>>>> While fixing the regression this patch opens up a possible bad 
+>>>> scenarios as identified by KOSAKI Motohiro:
+>>>> 
+>>>> This patch also allows FUTEX_WAIT on RO private mappings which
+>>>> have the following corner case.
+>>> 
+>>> These two sentences make no sense at all. We really need a very 
+>>> accurate description of this change. That code is subtle and we
+>>> really want to have a very clear and understandable changelog.
+>>> 
+>>> Your changelog fails the basic test by mentioning "corner case"
+>>> simply because the whole futex code consists only of corner
+>>> cases.
+>>> 
+>>> Thanks,
+>>> 
+>>> tglx
+>> 
+>> Yeah, those messages are quotes from Kosaki, but that isn't
+>> apparent without having all the context. They are confusing. The
+>> language needs to be cleaned up a bit as well.
+>> 
+>> Shawn, I apologize for this as it was my idea to begin with, but
+>> after rereading all of the previous patches from Kosaki, I realized
+>> that the rw parameter was part of the original design (and not
+>> newly introduced by your patch) and that cramming the FLAGS_RO flag
+>> into the flags variables muddies the meaning of flags. flags is
+>> meant to modify a particular futex call and ensure that call is 
+>> correctly restarted after a signal. The RO/RW bit pertains to the
+>> calling function and does not vary from call to call. We should
+>> revert back to the rw parameter using VERIFY_READ and
+>> VERIFY_WRITE.
+>> 
+>> How about this for a header (I'll leave it to Shawn to incorporate,
+>> adjust, and resend):
+>> 
+>> commit 7485d0d3758e8e6491a5c9468114e74dc050785d (futexes: Remove rw
+>> parameter from get_futex_key()) in 2.6.33 introduced a user-mode
+>> regression in that it broke futex operations on read-only memory
+>> maps in addition to preventing a loop when encountering a
+>> ZERO_PAGE.  For example, this breaks workloads that have one or
+>> more reader processes doing a FUTEX_WAIT on a futex within a read
+>> only shared file mapping, and a writer processes that has a
+>> writable mapping issuing the FUTEX_WAKE.
+>> 
+>> This fixes the regression for valid futex operations on RO mappings
+>> by trying a RO get_user_pages_fast() when the RW
+>> get_user_pages_fast() fails. This change makes it necessary to also
+>> check for invalid use cases, such as anonymous RO mappings (which
+>> can never change) and the ZERO_PAGE which the commit referenced 
+>> above was written to address.
+>> 
+>> This patch does restore the original behavior with RO private
+>> mappings which suffer from the following corner case.
+>> 
+>> Thread-A: call futex(FUTEX_WAIT, memory-region-A). get_futex_key()
+>> returns an inode based key. sleep on the key Thread-B: call
+>> mprotect(PROT_READ|PROT_WRITE, memory-region-A) Thread-B: write
+>> memory-region-A. This process's memory-region-A gets remapped to a 
+>> COWed PageAnon=1 page. Thread-B: call futex(FUETX_WAKE,
+>> memory-region-A).
+> s/FUETEX_WAKE/FUTEX_WAIT/
+>> get_futex_key() returns an mm based key. Thread-A is never woken as
+>> it is waiting on a different key.
+> 
+> If I follow this correctly, it implies that a FUTEX_WAIT on an RO
+> private mapped futex will never return normally, as changing the
+> futex's value will cause the COW behavior (leaving the value
+> unchanged before doing the FUTEX_WAIT will not wake the waiter).
 
-Hi,
 
-Are you using the first or second version of the patch? if the former, please 
-use v2 (sent a few days later), which has solved the same problem by using a 
-mutex instead of allocating message data on stack (which is not good for DMA)
+That is correct. Hopefully that isn't just implied. ;-) However, because
+it is private, before the futex value can change, you also have to
+change the RW policy. This "use case" makes no sense, and it was
+determined that processes doing this deserve what they get.
 
-as for the backstory, this crash ocurrs when a short (measured in time spent) 
-message was enqueued after a long message, so that the short one finished first 
-(the actual bug was present even if the long one finished first, but in that 
-case there was double complete() on the one completion instead of a NULL 
-dereference)
+--
+Darren
 
-Pavel
+>> Checking for a private mapping requires walking the vmas and was
+>> deemed too costly to avoid a userspace hang in a nonsensical use
+>> case.
+>> 
+>> This Patch is based on Peter Zijlstra's initial patch with
+>> modifications to only allow RO mappings for futex operations that
+>> need VERIFY_READ access.
+>> 
+>> 
+>> -- Darren Hart Intel Open Source Technology Center Yocto Project -
+>> Linux Kernel
+> 
+> Cheers!
+> 
+> David.
+> 
+> --------------------------------------------------------------- This
+> email, along with any attachments, is confidential. If you believe
+> you received this message in error, please contact the sender
+> immediately and delete all copies of the message. Thank you.
+> 
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
