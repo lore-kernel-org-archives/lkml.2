@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751884Ab1F3Lms (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 07:42:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55954 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751361Ab1F3Lmn (ORCPT
+	id S1752309Ab1F3Lm4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 07:42:56 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:50500
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751361Ab1F3Lmu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 07:42:43 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH 3/3] pwm: Add a i.MX23/28 pwm driver
-Date: Thu, 30 Jun 2011 13:42:35 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Ryan Mallon <ryan@bluewatersys.com>
-References: <1309430517-23821-1-git-send-email-s.hauer@pengutronix.de> <1309430517-23821-4-git-send-email-s.hauer@pengutronix.de>
-In-Reply-To: <1309430517-23821-4-git-send-email-s.hauer@pengutronix.de>
+	Thu, 30 Jun 2011 07:42:50 -0400
+Date: Thu, 30 Jun 2011 07:42:42 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Alexey Khoroshilov <khoroshilov@ispras.ru>
+Cc: Christoph Hellwig <hch@tuxera.com>, Anton Salikhmetov <alexo@tuxera.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, roman@ardistech.com,
+        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
+Subject: Re: [PATCH 1/2] hfsplus: add error checking for hfs_find_init()
+Message-ID: <20110630114242.GA9597@infradead.org>
+References: <1308863702-30859-1-git-send-email-khoroshilov@ispras.ru>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201106301342.36088.arnd@arndb.de>
-X-Provags-ID: V02:K0:lt0SwOsmY4qIHYAM96sADkOFVxTBqZt71DSvBNJqCJR
- Rn/cNZP/4//fFjUW05zn6hc0aPICO8LA8sLx04j1mawWpirQ0m
- TIPbLEvpiFtw7mCo3VErs2Bf/pXDfrSDJ4wAlGIsptY0gyE006
- v1Pnn0nCfTeIziub44QK4jv6LkuY9W2Z0SP1THxrCPnLCd5Ze1
- adYZbHiTwm9dZN2gfbgoQ==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308863702-30859-1-git-send-email-khoroshilov@ispras.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 June 2011, Sascha Hauer wrote:
-> Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+On Fri, Jun 24, 2011 at 01:15:01AM +0400, Alexey Khoroshilov wrote:
+> hfs_find_init() may fail with ENOMEM, but there are places, where
+> the returned value is not checked. The consequences can be very
+> unpleasant, e.g. kfree uninitialized pointer and
+> inappropriate mutex unlocking.
+> 
+> The patch adds checks for errors in hfs_find_init().
+> 
+> Found by Linux Driver Verification project (linuxtesting.org).
 
-Hi Sascha,
+What kind of testing did you do in detail?
 
-The probing looks good to me now. I would have added extra code to avoid
-ioremapping the same page multiple times, but I see this as a matter of
-different preferences, so I'm fine with that.
-
-You are still missing a description of the driver, both in the changelog
-above and in the Kconfig patch. A small sentence to spell out PWM
-in the changelog and to list the devices that will use this driver
-would be helpful to the causal reader.
-
-Provided that you add that:
-
-Reviewed-by: Arnd Bergmann <arnd@arndb.de>
-
-> diff --git a/drivers/pwm/Kconfig b/drivers/pwm/Kconfig
-> index 93c1052..5694574 100644
-> --- a/drivers/pwm/Kconfig
-> +++ b/drivers/pwm/Kconfig
-> @@ -2,11 +2,15 @@ menuconfig PWM
->  	bool "PWM Support"
->  	help
->  	  This enables PWM support through the generic PWM framework.
-> -	  You only need to enable this, if you also want to enable
-> +	  You only need to enable this if you also want to enable
->  	  one or more of the PWM drivers below.
+> -	hfs_find_init(HFSPLUS_SB(sb)->cat_tree, &fd);
+> +	err = hfs_find_init(HFSPLUS_SB(sb)->cat_tree, &fd);
+> +	if (err)
+> +		goto err_init;
 >  
->  	  If unsure, say N.
+>  	hfsplus_cat_build_key(sb, fd.search_key, cnid, NULL);
+>  	entry_size = hfsplus_fill_cat_thread(sb, &entry,
+> @@ -255,6 +257,7 @@ err1:
+>  		hfs_brec_remove(&fd);
+>  err2:
+>  	hfs_find_exit(&fd);
+> +err_init:
+
+Please just return the error directly unless there's something to
+unwind, both here and in other places.
+
+> @@ -124,9 +124,10 @@ static void hfsplus_ext_write_extent_locked(struct inode *inode)
+>  	if (HFSPLUS_I(inode)->extent_state & HFSPLUS_EXT_DIRTY) {
+>  		struct hfs_find_data fd;
 >  
+> -		hfs_find_init(HFSPLUS_SB(inode->i_sb)->ext_tree, &fd);
+> -		__hfsplus_ext_write_extent(inode, &fd);
+> -		hfs_find_exit(&fd);
+> +		if (!hfs_find_init(HFSPLUS_SB(inode->i_sb)->ext_tree, &fd)) {
+> +			__hfsplus_ext_write_extent(inode, &fd);
+> +			hfs_find_exit(&fd);
+> +		}
+>  	}
+>  }
 
-I think this hunk should have been in the other first patch.
+This one need to be propagated back through the callers.
 
-	Arnd
+> @@ -523,7 +528,11 @@ void hfsplus_file_truncate(struct inode *inode)
+>  		goto out;
+>  
+>  	mutex_lock(&hip->extents_lock);
+> -	hfs_find_init(HFSPLUS_SB(sb)->ext_tree, &fd);
+> +	res = hfs_find_init(HFSPLUS_SB(sb)->ext_tree, &fd);
+> +	if (res) {
+> +		mutex_unlock(&hip->extents_lock);
+> +		return;
+> +	}
+
+At least add an XXX comment about the lack of error handling here.
+Once hfsplus gets converted to the new truncate sequence we'll be
+able to handle to return it.
+
