@@ -1,94 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758381Ab1F3HXu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 03:23:50 -0400
-Received: from anubis.se.axis.com ([195.60.68.12]:51135 "EHLO
-	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753826Ab1F3HXo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 03:23:44 -0400
-X-Greylist: delayed 459 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Jun 2011 03:23:44 EDT
-From: Mikael Starvik <mikael.starvik@axis.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Randy Dunlap <rdunlap@xenotime.net>
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        Jesper Nilsson <jespern@axis.com>,
-        linux-cris-kernel <linux-cris-kernel@axis.com>
-Date: Thu, 30 Jun 2011 09:16:00 +0200
-Subject: RE: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
-Thread-Topic: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
-Thread-Index: Acw29C8hgNnhPh6GRcqoIumElpXdogAATLig
-Message-ID: <4BEA3FF3CAA35E408EA55C7BE2E61D055C63F4D597@xmail3.se.axis.com>
-References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
-	<20110629140630.5aefdda8.rdunlap@xenotime.net>
- <BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
-In-Reply-To: <BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
-Accept-Language: sv-SE
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: sv-SE
-Content-Type: text/plain; charset="utf-8"
-MIME-Version: 1.0
+	id S1758519Ab1F3HUC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 03:20:02 -0400
+Received: from mail.perches.com ([173.55.12.10]:3366 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750988Ab1F3HTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 03:19:53 -0400
+From: Joe Perches <joe@perches.com>
+To: Marcel Holtmann <marcel@holtmann.org>,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-bluetooth@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] bluetooth: Add bt_printk
+Date: Thu, 30 Jun 2011 00:19:51 -0700
+Message-Id: <f06f1d8f4185db431a038c328c42caf4fe270dd0.1309418368.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.rc1
+In-Reply-To: <20110630033119.GA3438@joana>
+References: <20110630033119.GA3438@joana>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p5U7NuBs027258
 
->The "long" should be "int".
->But probably it should just include <asm-generic/posix_types.h> instead.
+Add a local logging function to emit bluetooth specific
+messages.  Using vsprintf extension %pV saves code/text
+space.
 
-Agreed. We wonÂ´t be able to test and push something like that before vacation but feel free to test
-that change and commit it if it works. Otherwise we'll fix it after vacations.
+Convert the current BT_INFO and BT_ERR macros to use bt_printk.
+Remove __func__ from BT_ERR macro (and the uses).
+Prefix "Bluetooth: " to BT_ERR
+Remove __func__ from BT_DBG as function can be prefixed when
+using dynamic_debug.
 
-/Mikael
+With allyesconfig:
 
------Original Message-----
-From: geert.uytterhoeven@gmail.com [mailto:geert.uytterhoeven@gmail.com] On Behalf Of Geert Uytterhoeven
-Sent: den 30 juni 2011 08:59
-To: Randy Dunlap
-Cc: Linux Kernel Development; Mikael Starvik; Jesper Nilsson; linux-cris-kernel
-Subject: Re: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
+   text	   data	    bss	    dec	    hex	filename
+ 129956	   8632	  36096	 174684	  2aa5c	drivers/bluetooth/built-in.o.new2
+ 134402	   8632	  36064	 179098	  2bb9a	drivers/bluetooth/built-in.o.old
+  14778	   1012	   3408	  19198	   4afe	net/bluetooth/bnep/built-in.o.new2
+  15067	   1012	   3408	  19487	   4c1f	net/bluetooth/bnep/built-in.o.old
+ 346595	  19163	  86080	 451838	  6e4fe	net/bluetooth/built-in.o.new2
+ 353751	  19163	  86064	 458978	  700e2	net/bluetooth/built-in.o.old
+  18483	   1172	   4264	  23919	   5d6f	net/bluetooth/cmtp/built-in.o.new2
+  18927	   1172	   4264	  24363	   5f2b	net/bluetooth/cmtp/built-in.o.old
+  19237	   1172	   5152	  25561	   63d9	net/bluetooth/hidp/built-in.o.new2
+  19581	   1172	   5152	  25905	   6531	net/bluetooth/hidp/built-in.o.old
+  59461	   3884	  14464	  77809	  12ff1	net/bluetooth/rfcomm/built-in.o.new2
+  61206	   3884	  14464	  79554	  136c2	net/bluetooth/rfcomm/built-in.o.old
 
-On Wed, Jun 29, 2011 at 23:06, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Wed, 29 Jun 2011 10:13:17 +0200 (CEST) Geert Uytterhoeven wrote:
->
->> *** WARNINGS ***
->>
->> 358 regressions:
->
->> Â  + drivers/net/wimax/i2400m/usb-fw.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t': Â => 210
->> Â  + drivers/net/wimax/i2400m/usb-fw.c: warning: format '%zd' expects type 'signed size_t', but argument 8 has type 'ssize_t': Â => 222
->
->> Â  + drivers/staging/bcm/Bcmchar.c: warning: format '%zd' expects type 'signed size_t', but argument 2 has type 'ssize_t': Â => 146
->> Â  + drivers/staging/bcm/Bcmchar.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t': Â => 146
->
->> Â  + net/sunrpc/auth_gss/auth_gss.c: warning: format '%Zd' expects type 'signed size_t', but argument 2 has type 'ssize_t': Â => 708
->> Â  + net/sunrpc/auth_gss/auth_gss.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t': Â => 690
->
->
-> Can someone explain these warnings, please? Â (signed size_t vs. ssize_t)
->
-> Is gcc confused?
-> Looks like a compiler issue to me.
+with x86 defconfig (and just bluetooth):
 
-Nope. Also only happens on cris, which has in
-arch/cris/include/asm/posix_types.h:
+$ size net/bluetooth/built-in.o.defconfig.*
+   text	   data	    bss	    dec	    hex	filename
+  66358	    933	    100	  67391	  1073f	net/bluetooth/built-in.o.defconfig.new
+  66643	    933	    100	  67676	  1085c	net/bluetooth/built-in.o.defconfig.old
 
-typedef long            __kernel_ssize_t;
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ include/net/bluetooth/bluetooth.h |    9 ++++++---
+ net/bluetooth/lib.c               |   19 +++++++++++++++++++
+ 2 files changed, 25 insertions(+), 3 deletions(-)
 
-The "long" should be "int".
-But probably it should just include <asm-generic/posix_types.h> instead.
+diff --git a/include/net/bluetooth/bluetooth.h b/include/net/bluetooth/bluetooth.h
+index 7bccaf9..042591c 100644
+--- a/include/net/bluetooth/bluetooth.h
++++ b/include/net/bluetooth/bluetooth.h
+@@ -76,9 +76,12 @@ struct bt_power {
+ #define BT_POWER_FORCE_ACTIVE_OFF 0
+ #define BT_POWER_FORCE_ACTIVE_ON  1
+ 
+-#define BT_INFO(fmt, arg...) printk(KERN_INFO "Bluetooth: " fmt "\n" , ## arg)
+-#define BT_ERR(fmt, arg...)  printk(KERN_ERR "%s: " fmt "\n" , __func__ , ## arg)
+-#define BT_DBG(fmt, arg...)  pr_debug("%s: " fmt "\n" , __func__ , ## arg)
++__attribute__((format (printf, 2, 3)))
++int bt_printk(const char *level, const char *fmt, ...);
++
++#define BT_INFO(fmt, arg...)	bt_printk(KERN_INFO, pr_fmt(fmt), ##arg)
++#define BT_ERR(fmt, arg...)	bt_printk(KERN_ERR, pr_fmt(fmt), ##arg)
++#define BT_DBG(fmt, arg...)	pr_debug(fmt "\n", ##arg)
+ 
+ /* Connection and socket states */
+ enum {
+diff --git a/net/bluetooth/lib.c b/net/bluetooth/lib.c
+index b826d1b..fdb3ec3 100644
+--- a/net/bluetooth/lib.c
++++ b/net/bluetooth/lib.c
+@@ -150,3 +150,22 @@ int bt_err(__u16 code)
+ 	}
+ }
+ EXPORT_SYMBOL(bt_err);
++
++int bt_printk(const char *level, const char *format, ...)
++{
++	struct va_format vaf;
++	va_list args;
++	int r;
++
++	va_start(args, format);
++
++	vaf.fmt = format;
++	vaf.va = &args;
++
++	r = printk("%sbluetooth: %pV\n", level, &vaf);
++
++	va_end(args);
++
++	return r;
++}
++EXPORT_SYMBOL(bt_printk);
+-- 
+1.7.6.rc1
 
-Gr{oetje,eeting}s,
-
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â Â  Â Â  -- Linus Torvalds
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
