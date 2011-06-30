@@ -1,56 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753439Ab1F3HJq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 03:09:46 -0400
-Received: from gate.crashing.org ([63.228.1.57]:47520 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750888Ab1F3HJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 03:09:38 -0400
-Subject: Re: linux-next: build failure after merge of the final tree
- (powerpc tree related)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110630163659.374db7f9.sfr@canb.auug.org.au>
-References: <20110630163659.374db7f9.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Jun 2011 17:09:21 +1000
-Message-ID: <1309417761.14501.206.camel@pasglop>
+	id S1758321Ab1F3HSK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 03:18:10 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:58375 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750988Ab1F3HSC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 03:18:02 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 30 Jun 2011 16:10:39 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Michal Hocko <mhocko@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Ying Han <yinghan@google.com>
+Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
+Message-Id: <20110630161039.604f91b9.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110630063231.GA12342@tiehlicka.suse.cz>
+References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110629130043.4dc47249.akpm@linux-foundation.org>
+	<20110630123229.37424449.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110630063231.GA12342@tiehlicka.suse.cz>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-30 at 16:36 +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the final tree, today's linux-next build (powerpc
-> allyesconfig) failed like this:
-> 
-> drivers/tty/hvc/hvsi.c:701:12: error: conflicting types for 'hvsi_put_chars'
-> arch/powerpc/include/asm/hvsi.h:92:12: note: previous declaration of 'hvsi_put_chars' was here
-> drivers/tty/hvc/hvsi.c:736:12: error: conflicting types for 'hvsi_open'
-> arch/powerpc/include/asm/hvsi.h:86:12: note: previous declaration of 'hvsi_open' was here
-> drivers/tty/hvc/hvsi.c:802:13: error: conflicting types for 'hvsi_close'
-> arch/powerpc/include/asm/hvsi.h:87:13: note: previous declaration of 'hvsi_close' was here
-> drivers/tty/hvc/hvsi.c:1083:19: error: conflicting types for 'hvsi_init'
-> arch/powerpc/include/asm/hvsi.h:81:13: note: previous declaration of 'hvsi_init' was here
-> 
-> Caused by commit 17bdc6c0e979 ("powerpc/pseries: Move hvsi support into a
-> library").
-> 
-> I have reverted that commit for today.
+On Thu, 30 Jun 2011 08:32:32 +0200
+Michal Hocko <mhocko@suse.cz> wrote:
 
-Ooops, that seems to be entirely my fault, not sure what happened, I
-might have merged the wrong patch version (I had some problem locally
-with screwing up the git repo where those patches were originally).
+> On Thu 30-06-11 12:32:29, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 29 Jun 2011 13:00:43 -0700
+> > Andrew Morton <akpm@linux-foundation.org> wrote:
+> > 
+> > > On Wed, 29 Jun 2011 19:03:25 +0900
+> > > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > > 
+> > > > Each memory cgroup has 'swappiness' value and it can be accessed by
+> > > > get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
+> > > > and swappiness is passed by argument. It's propagated by scan_control.
+> > > > 
+> > > > get_swappiness is static function but some planned updates will need to
+> > > > get swappiness from files other than memcontrol.c
+> > > > This patch exports get_swappiness() as mem_cgroup_swappiness().
+> > > > By this, we can remove the argument of swapiness from try_to_free...
+> > > > and drop swappiness from scan_control. only memcg uses it.
+> > > > 
+> > > 
+> > > > +extern unsigned int mem_cgroup_swappiness(struct mem_cgroup *mem);
+> > > > +unsigned int mem_cgroup_swappiness(struct mem_cgroup *memcg)
+> > > > +static int vmscan_swappiness(struct scan_control *sc)
+> > > 
+> > > The patch seems a bit confused about the signedness of swappiness.
+> > > 
+> > 
+> > ok, v3 here. Now, memcg's one use "int" because vm_swapiness is "int".
+> > ==
+> > 
+> > From af1bae8f2c6a8dbff048222bb45c7162b505f38b Mon Sep 17 00:00:00 2001
+> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> > Date: Wed, 29 Jun 2011 18:24:49 +0900
+> > Subject: [PATCH] export memory cgroup's swappines by mem_cgroup_swappiness()
+> > 
+> > Each memory cgroup has 'swappiness' value and it can be accessed by
+> > get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
+> > and swappiness is passed by argument. It's propagated by scan_control.
+> > 
+> > get_swappiness is static function but some planned updates will need to
+> > get swappiness from files other than memcontrol.c
+> > This patch exports get_swappiness() as mem_cgroup_swappiness().
+> > By this, we can remove the argument of swapiness from try_to_free...
+> > and drop swappiness from scan_control. only memcg uses it.
+> > 
+> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Reviewed-by: Michal Hocko <mhocko@suse.cz>
+> 
+> > 
+> > Changelog:
+> >   - adjusted signedness to vm_swappiness.
+> >   - drop swappiness from scan_control
+> > ---
+> >  include/linux/swap.h |   10 +++++++---
+> >  mm/memcontrol.c      |   15 +++++++--------
+> >  mm/vmscan.c          |   23 ++++++++++-------------
+> >  3 files changed, 24 insertions(+), 24 deletions(-)
+> > 
+> [...]
+> > diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> > index 3e7d5e6..db70176 100644
+> > --- a/mm/memcontrol.c
+> > +++ b/mm/memcontrol.c
+> [...]
+> > @@ -4288,7 +4287,7 @@ static u64 mem_cgroup_swappiness_read(struct cgroup *cgrp, struct cftype *cft)
+> >  {
+> >  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
+> >  
+> > -	return get_swappiness(memcg);
+> > +	return mem_cgroup_swappiness(memcg);
+> >  }
+> 
+> If you want to be type clean you should change this one as well. I
+> think it is worth it, though. The function is called only to return the
+> current value to userspace and mem_cgroup_swappiness_write guaranties
+> that it falls down into <0,100> interval. Additionally, cftype doesn't
+> have any read specialization for int values so you would need to use a
+> generic one. Finally if you changed read part you should change also
+> write part and add > 0 check which is a lot of code for not that good
+> reason.
 
-I'll push a fix tomorrow.
+I don't want to make this type-clean. Should I add type casting as
+==
+ return (u64) mem_cgroup_swappiness(memcg);
+==
+?
 
-Cheers,
-Ben.
+Thanks,
+-Kame
 
 
