@@ -1,117 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758430Ab1F3Gcl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 02:32:41 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50414 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750970Ab1F3Gcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 02:32:35 -0400
-Date: Thu, 30 Jun 2011 08:32:32 +0200
-From: Michal Hocko <mhocko@suse.cz>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Ying Han <yinghan@google.com>
-Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
-Message-ID: <20110630063231.GA12342@tiehlicka.suse.cz>
-References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
- <20110629130043.4dc47249.akpm@linux-foundation.org>
- <20110630123229.37424449.kamezawa.hiroyu@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110630123229.37424449.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758445Ab1F3Gdk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 02:33:40 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:14502 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754229Ab1F3Gdc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 02:33:32 -0400
+X-AuditID: cbfee61a-b7c53ae000002dc1-61-4e0c18baba90
+Date: Thu, 30 Jun 2011 15:33:33 +0900
+From: Jaehoon Chung <jh80.chung@samsung.com>
+Subject: Re: [PATCH] mmc: dw_mmc: Add the function call for board-specific
+ initialization.
+In-reply-to: <1309402665-29228-1-git-send-email-tgih.jun@samsung.com>
+To: Seungwon Jeon <tgih.jun@samsung.com>
+Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-kernel@vger.kernel.org
+Message-id: <4E0C18BD.8000608@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=ISO-8859-1
+Content-transfer-encoding: 7BIT
+User-Agent: Thunderbird 2.0.0.24 (X11/20100623)
+References: <1309402665-29228-1-git-send-email-tgih.jun@samsung.com>
+X-OriginalArrivalTime: 30 Jun 2011 06:33:45.0501 (UTC)
+ FILETIME=[A9751CD0:01CC36EF]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 30-06-11 12:32:29, KAMEZAWA Hiroyuki wrote:
-> On Wed, 29 Jun 2011 13:00:43 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > On Wed, 29 Jun 2011 19:03:25 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > 
-> > > Each memory cgroup has 'swappiness' value and it can be accessed by
-> > > get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
-> > > and swappiness is passed by argument. It's propagated by scan_control.
-> > > 
-> > > get_swappiness is static function but some planned updates will need to
-> > > get swappiness from files other than memcontrol.c
-> > > This patch exports get_swappiness() as mem_cgroup_swappiness().
-> > > By this, we can remove the argument of swapiness from try_to_free...
-> > > and drop swappiness from scan_control. only memcg uses it.
-> > > 
-> > 
-> > > +extern unsigned int mem_cgroup_swappiness(struct mem_cgroup *mem);
-> > > +unsigned int mem_cgroup_swappiness(struct mem_cgroup *memcg)
-> > > +static int vmscan_swappiness(struct scan_control *sc)
-> > 
-> > The patch seems a bit confused about the signedness of swappiness.
-> > 
-> 
-> ok, v3 here. Now, memcg's one use "int" because vm_swapiness is "int".
-> ==
-> 
-> From af1bae8f2c6a8dbff048222bb45c7162b505f38b Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Wed, 29 Jun 2011 18:24:49 +0900
-> Subject: [PATCH] export memory cgroup's swappines by mem_cgroup_swappiness()
-> 
-> Each memory cgroup has 'swappiness' value and it can be accessed by
-> get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
-> and swappiness is passed by argument. It's propagated by scan_control.
-> 
-> get_swappiness is static function but some planned updates will need to
-> get swappiness from files other than memcontrol.c
-> This patch exports get_swappiness() as mem_cgroup_swappiness().
-> By this, we can remove the argument of swapiness from try_to_free...
-> and drop swappiness from scan_control. only memcg uses it.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Hi Mr.Jeon
 
-Reviewed-by: Michal Hocko <mhocko@suse.cz>
+This patch is the compiler error.
 
+didn't find host->card_work..
+
+do you want this
+queue_work(dw_mci_card_workqueue, &slot->host->card_work); ?
+
+
+Regards,
+Jaehoon Chung
+
+
+Seungwon Jeon wrote:
+> Need to call init() function of dw_mci_board.
+> It seems to be omitted to call this function.
 > 
-> Changelog:
->   - adjusted signedness to vm_swappiness.
->   - drop swappiness from scan_control
+> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
 > ---
->  include/linux/swap.h |   10 +++++++---
->  mm/memcontrol.c      |   15 +++++++--------
->  mm/vmscan.c          |   23 ++++++++++-------------
->  3 files changed, 24 insertions(+), 24 deletions(-)
+>  drivers/mmc/host/dw_mmc.c |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
 > 
-[...]
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 3e7d5e6..db70176 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-[...]
-> @@ -4288,7 +4287,7 @@ static u64 mem_cgroup_swappiness_read(struct cgroup *cgrp, struct cftype *cft)
->  {
->  	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
->  
-> -	return get_swappiness(memcg);
-> +	return mem_cgroup_swappiness(memcg);
+> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> index a524416..073c420 100644
+> --- a/drivers/mmc/host/dw_mmc.c
+> +++ b/drivers/mmc/host/dw_mmc.c
+> @@ -1585,6 +1585,15 @@ static void dw_mci_work_routine_card(struct work_struct *work)
+>  	}
 >  }
+> 
+> +static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
+> +{
+> +	struct dw_mci_slot *slot = dev_id;
+> +
+> +	queue_work(dw_mci_card_workqueue, &host->card_work);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+>  static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  {
+>  	struct mmc_host *mmc;
+> @@ -1657,6 +1666,8 @@ static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int id)
+>  	} else
+>  		regulator_enable(host->vmmc);
+> 
+> +	host->pdata->init(id, dw_mci_detect_interrupt, host);
+> +
+>  	if (dw_mci_get_cd(mmc))
+>  		set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+>  	else
+> --
+> 1.7.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-If you want to be type clean you should change this one as well. I
-think it is worth it, though. The function is called only to return the
-current value to userspace and mem_cgroup_swappiness_write guaranties
-that it falls down into <0,100> interval. Additionally, cftype doesn't
-have any read specialization for int values so you would need to use a
-generic one. Finally if you changed read part you should change also
-write part and add > 0 check which is a lot of code for not that good
-reason.
--- 
-Michal Hocko
-SUSE Labs
-SUSE LINUX s.r.o.
-Lihovarska 1060/12
-190 00 Praha 9    
-Czech Republic
