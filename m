@@ -1,63 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751457Ab1F3Nkc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 09:40:32 -0400
-Received: from 207-126-122-235.ip.openhosting.com ([207.126.122.235]:36936
-	"EHLO drepperk.user.openhosting.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750974Ab1F3Nk0 (ORCPT
+	id S1752994Ab1F3MnJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 08:43:09 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:10412 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752551Ab1F3MnE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 09:40:26 -0400
-Message-ID: <4E0C7C95.4070803@akkadia.org>
-Date: Thu, 30 Jun 2011 09:39:33 -0400
-From: Ulrich Drepper <drepper@akkadia.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Lightning/1.0b3pre Thunderbird/3.1.10
+	Thu, 30 Jun 2011 08:43:04 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: cjb@laptop.org, linux-mmc@vger.kernel.org,
+        hans-christian.egtvedt@atmel.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@avr32linux.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH V2] MMC: PM: add suspend/resume in atmel-mci
+Date: Thu, 30 Jun 2011 15:49:41 +0200
+Message-Id: <1309441781-11012-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <201106292339.12402.rjw@sisk.pl>
+References: <201106292339.12402.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-        linux-kernel@vger.kernel.org, rientjes@google.com,
-        viro@zeniv.linux.org.uk, wilsons@start.ca
-Subject: Re: [PATCH] Add cloexec information to fdinfo
-References: <201106100355.p5A3t8Aa024924@drepperk.user.openhosting.com> <BANLkTin7wm6m5bN4CfQzhJZuhy3bUrS80A@mail.gmail.com> <4E0ADF27.5070805@akkadia.org> <BANLkTi=dQRi82gkDwtR3Kh2R7f0uGu7HpQ@mail.gmail.com> <BANLkTi=pUZnhBa9W0eobQ_RWQGtMZ3u6Eg@mail.gmail.com> <4E0BE6A9.3040708@akkadia.org>
-In-Reply-To: <4E0BE6A9.3040708@akkadia.org>
-X-Enigmail-Version: 1.1.2
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enig2FC9E39817A14CB54FBA2EEC"
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig2FC9E39817A14CB54FBA2EEC
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Take care of slots while going to suspend state.
 
-On 06/29/2011 10:59 PM, Ulrich Drepper wrote:
-> It provides the information, yes, but it also hides some information.
-> If you do it this way we cannot distinguish code which uses O_CLOEXEC a=
-t
-> open-time from uses of fcntl(FD_CLOEXEC).
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+---
+V2: move to pm_ops
 
-One more reason to at least not use the patch as you have it right now.
- If a file descriptor was opened with O_CLOEXEC but subsequently the bit
-has been reset using fcntl() the f_flags value would still have the
-O_CLOEXEC bit set.
+ drivers/mmc/host/atmel-mci.c |   47 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 47 insertions(+), 0 deletions(-)
 
-If you don't like the separate cloexec line, at least reset the
-O_CLOEXEC bit in the f_flags output if the FD_ISSET() test returns zero.
+diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+index aa8039f..058f1842 100644
+--- a/drivers/mmc/host/atmel-mci.c
++++ b/drivers/mmc/host/atmel-mci.c
+@@ -1878,10 +1878,57 @@ static int __exit atmci_remove(struct platform_device *pdev)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++static int atmci_suspend(struct device *dev)
++{
++	struct atmel_mci *host = dev_get_drvdata(dev);
++	struct atmel_mci_slot *slot;
++	int i, ret;
++
++	 for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
++		slot = host->slot[i];
++		if (!slot)
++			continue;
++		ret = mmc_suspend_host(slot->mmc);
++		if (ret < 0) {
++			while (--i >= 0) {
++				slot = host->slot[i];
++				if (slot)
++					mmc_resume_host(host->slot[i]->mmc);
++			}
++			return ret;
++		}
++	}
++
++	return 0;
++}
++
++static int atmci_resume(struct device *dev)
++{
++	struct atmel_mci *host = dev_get_drvdata(dev);
++	struct atmel_mci_slot *slot;
++	int i, ret;
++
++	for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
++		slot = host->slot[i];
++		if (!slot)
++			continue;
++		ret = mmc_resume_host(slot->mmc);
++		if (ret < 0)
++			return ret;
++	}
++
++	return 0;
++}
++#endif
++static SIMPLE_DEV_PM_OPS(atmci_pm, atmci_suspend, atmci_resume);
++
++
+ static struct platform_driver atmci_driver = {
+ 	.remove		= __exit_p(atmci_remove),
+ 	.driver		= {
+ 		.name		= "atmel_mci",
++		.pm		= &atmci_pm,
+ 	},
+ };
+ 
+-- 
+1.7.3
 
-
---------------enig2FC9E39817A14CB54FBA2EEC
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.16 (GNU/Linux)
-
-iEYEARECAAYFAk4MfJUACgkQ2ijCOnn/RHQ6+wCeIbTGJMsCdZMmgoTcoA4zJ7OV
-jO8AnjCG10sjrlVGSnXNO4qeCdDf23B9
-=cwn2
------END PGP SIGNATURE-----
-
---------------enig2FC9E39817A14CB54FBA2EEC--
