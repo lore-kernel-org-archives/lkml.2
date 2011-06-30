@@ -1,55 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758052Ab1F3CKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 29 Jun 2011 22:10:24 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:55165 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757887Ab1F3CKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 29 Jun 2011 22:10:16 -0400
-Date: Thu, 30 Jun 2011 12:10:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Joe Perches <joe@perches.com>
-Subject: linux-next: manual merge of the libata tree with the Linus' tree
-Message-Id: <20110630121006.0c447f1a.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757902Ab1F3CS5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 29 Jun 2011 22:18:57 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:41097 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753655Ab1F3CSu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 29 Jun 2011 22:18:50 -0400
+Date: Wed, 29 Jun 2011 22:18:47 -0400
+Message-Id: <E1Qc6q7-0002hy-3s@tytso-glaptop>
+To: linux-kernel@vger.kernel.org,
+        ksummit-2011-discuss@lists.linux-foundation.org
+Subject: Reminder for Kernel Summit 2011 nomination deadline
+From: "Theodore Ts'o" <tytso@mit.edu>
+Phone: (781) 391-3464
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jeff,
+Hi,
 
-Today's linux-next merge of the libata tree got a conflict in
-drivers/ata/libahci.c between commit 49743170556e ("ahci: change 'masking
-port_map' printk to KERN_WARNING level") from the Linus' tree and commit
-c4d21d680e91 ("ata: Convert dev_printk(KERN_<LEVEL> to dev_<level>(")
-from the libata tree.
+	This is the last message that I will be sending to the LKML.
+Future messages relating to the 2011 Kernel Summit organization will be
+sent to the ksummit-2011-discuss mailing list.   If you are interested
+in those messages, please subscribe[1].
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+[1] https://lists.linux-foundation.org/mailman/listinfo/ksummit-2011-discuss
 
-diff --cc drivers/ata/libahci.c
-index 41223c7,d8ff9c4..0000000
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@@ -452,9 -455,9 +455,9 @@@ void ahci_save_initial_config(struct de
-  	}
-  
-  	if (mask_port_map) {
-- 		dev_printk(KERN_WARNING, dev, "masking port_map 0x%x -> 0x%x\n",
-- 			   port_map,
-- 			   port_map & mask_port_map);
- -		dev_err(dev, "masking port_map 0x%x -> 0x%x\n",
-++		dev_warn(dev, "masking port_map 0x%x -> 0x%x\n",
-+ 			port_map,
-+ 			port_map & mask_port_map);
-  		port_map &= mask_port_map;
-  	}
-  
+	As a reminder, the deadline for nominating (or self-nominating)
+kernel developers that should be considered by the program committee for
+the receiving invites to the kernel summit is tomorrow, Friday, June
+30th.  Please check out the list of people who are already on the list
+for consideration here[2].  A form to add someone whom you think is not
+on the list but should be can also be found at [2].
+
+[2] https://sites.google.com/site/kernelsummit2011/nominated-list
+
+	Also, if you have some new and unique ideas for topics that
+should be discussed at the kernel summit, please note them here[3].  The
+people who submit the best ideas will get an invite to the kernel
+summit!   Also, please use [3] if you have some presentation that you
+think would be worthwhile to present at the kernel summit.   (Yet
+another way you can wangle an invite to the kernel summit!)   Proposals
+are due by July 22, 2011.
+
+[3]  https://sites.google.com/site/kernelsummit2011/proposals
+
+							- Ted
