@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753302Ab1F3XoH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 19:44:07 -0400
-Received: from mta21.charter.net ([216.33.127.81]:44390 "EHLO
-	mta21.charter.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752417Ab1F3XoD (ORCPT
+	id S1753286Ab1F3XsF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 19:48:05 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:33188 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752346Ab1F3XsC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 19:44:03 -0400
-X-Authority-Analysis: v=1.1 cv=G6Q69DB3AUoJKS2BpLRaz8MQ2NORN7h5HRzrJMPOhRw=
- c=1 sm=1 a=kge-9xan5_IA:10 a=lDGNyK2vIvEA:10 a=xzrYXqw+0zwiO4gHSXHcAg==:17
- a=pyR_tkqvhZ_ySJ0FD5EA:9 a=xzrYXqw+0zwiO4gHSXHcAg==:117
-From: Greg Dietsche <Gregory.Dietsche@cuw.edu>
-To: mmarek@suse.cz
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Greg Dietsche <Gregory.Dietsche@cuw.edu>
-Subject: [PATCH] gitignore: ignore debian build directory
-Date: Thu, 30 Jun 2011 18:42:50 -0500
-Message-Id: <1309477370-5866-1-git-send-email-Gregory.Dietsche@cuw.edu>
-X-Mailer: git-send-email 1.7.2.5
+	Thu, 30 Jun 2011 19:48:02 -0400
+From: Ram Pai <linuxram@us.ibm.com>
+To: jbarnes@virtuousgeek.org, torvalds@linux-foundation.org
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, bhutchings@solarflare.com, socketcan@hartkopp.net,
+        bhelgaas@google.com, linux@dominikbrodowski.net,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: [PATCH 0/5 v2] PCI: fix cardbus and sriov regressions
+Date: Thu, 30 Jun 2011 16:47:37 -0700
+Message-Id: <1309477662-18680-1-git-send-email-linuxram@us.ibm.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Have git ignore the Debian directory created when running:
-	make deb-pkg
+The following patch-set fixes regressions caused by:
 
-Signed-off-by: Greg Dietsche <Gregory.Dietsche@cuw.edu>
----
- .gitignore |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+the commit "PCI: update bridge resources to get more big ranges when allocating space (again)"
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=da7822e5ad71ec9b745b412639f1e5e0ba795a20
 
-diff --git a/.gitignore b/.gitignore
-index 9dacde0..dc243a6 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -46,6 +46,11 @@ modules.builtin
- /Module.symvers
- 
- #
-+#Debian directory (make deb-pkg)
-+#
-+/debian/
-+
-+#
- # git files that we don't want to ignore even it they are dot-files
- #
- !.gitignore
--- 
-1.7.2.5
+patch 1/5: fix calculation of additional resource size for hotplug bridges
+patch 2/5: ability to resize assigned pci-resource
+patch 3/5: make SRIOV BARs resources optional
+patch 4/5: make cardbus bridge resources optional
+patch 5/5: code and terminology cleanup
 
+The regression was caused on some platforms with limited i/o and memory
+resources, the optional resources were allocated ahead of required resources,
+thus starving the latter. The patchset ensures that all the required resources
+are satisfied before any optional resources are satisfied.
