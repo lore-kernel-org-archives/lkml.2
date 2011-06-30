@@ -1,420 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758125Ab1F3GOs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 02:14:48 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:60462 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750714Ab1F3GOm convert rfc822-to-8bit (ORCPT
+	id S1758323Ab1F3GPW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 02:15:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54692 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750855Ab1F3GPQ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 02:14:42 -0400
+	Thu, 30 Jun 2011 02:15:16 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: <alsa-devel@alsa-project.org>
+CC: "Girdwood, Liam" <lrg@ti.com>, Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: Re: [alsa-devel] [PATCH v6 00/18] MFD/ASoC/Input: TWL4030/TWL60X0 changes
+Date: Thu, 30 Jun 2011 09:15:08 +0300
+Message-ID: <1764311.fyKV9VEiMM@barack>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
+In-Reply-To: <1770658.gTOGV79JgY@barack>
+References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com> <1770658.gTOGV79JgY@barack>
 MIME-Version: 1.0
-In-Reply-To: <201106252326.23837.rjw@sisk.pl>
-References: <201106112223.04972.rjw@sisk.pl>
-	<201106252324.13454.rjw@sisk.pl>
-	<201106252326.23837.rjw@sisk.pl>
-Date: Thu, 30 Jun 2011 14:14:40 +0800
-Message-ID: <BANLkTi=tipUrzeKJeQirrNWyE0KMS1+DYw@mail.gmail.com>
-Subject: Re: [PATCH 3/10 v6] PM / Domains: Support for generic I/O PM domains (v7)
-From: Ming Lei <tom.leiming@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="iso-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Samuel,
 
-On Sun, Jun 26, 2011 at 5:26 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+Would you be able to take a look at this series?
+I already have the rebased version on top of linux-omap/devel-cleanup branch 
+as Tony requested, and I'm now waiting for your comments.
 
-> +static void genpd_power_off_work_fn(struct work_struct *work)
-> +{
-> +       struct generic_pm_domain *genpd;
-> +
-> +       genpd = container_of(work, struct generic_pm_domain, power_off_work);
-> +
-> +       if (genpd->parent)
-> +               mutex_lock(&genpd->parent->lock);
-> +       mutex_lock(&genpd->lock);
+Thank you,
+Péter
 
-lockdep warning may be triggered if LOCKDEP is enabled, so the
-mutex_lock for subdomain should be replaced as mutex_lock_nest.
+On Monday 27 June 2011 11:43:57 Ujfalusi, Peter wrote:
+> Hi Tony, Samuel,
+> 
+> Would you have time to take a look at this series?
+> 
+> Thanks,
+> Péter
+> 
+> On Tuesday 21 June 2011 15:38:58 Ujfalusi, Peter wrote:
+> > Hello,
+> > 
+> > Changes since v5:
+> > - Use alloc_workqueue in the twl6040-vibra driver (comment from Tejun
+> > Heo) - Allow user to change the headset power mode, but if the change
+> > is not allowed by the use case the change is not written to the HW
+> > (comment from Mark Brown)
+> > 
+> > Mark: I have added your acks for the patches, except for patch 15, where
+> > you requested a change.
+> > 
+> > Intro message from the v5 series:
+> > The series will do five major things, and they are in one series,
+> > because
+> > they pretty much depending on each other, so it is easier to handle them
+> > together.
+> > 
+> > 1. Move the common pmic related configurations out from the board files.
+> > New twl-common.c/h file has been created for this purpose.
+> > OMAP3 board files received two patches (pdata, and regualtor changes),
+> > OMAP4 board files has been changed with one patch.
+> > 
+> > 2. Rename the twl4030-codec MFD driver to twl4030-audio
+> > Since the ASoC multicomponent introduction (2.6.37) the twl4030-codec
+> > MFD
+> > dirver had been using twl4030-audio to register (twl4030-codec is the
+> > ASoC codec driver). The documentation refers to this part of twl as
+> > audio block, so it is better to rename the driver as well to avoid
+> > confusion.
+> > 
+> > 3. Introduction of MFD driver for twl6040.
+> > The TWL6040 audio IC has codec and vibra functionality.
+> > Convert the existing ASoC codec driver to use the new MFD driver's
+> > interface.
+> > 
+> > 4. Vibrator driver for TWL6040 (Input/ForceFeedback driver)
+> > The driver itself, and support for the vibrators in SDP4430 board.
+> > 
+> > 5. Updates for twl6040 ASoC codec driver
+> > HS ramp configuration, new ABE dais, updated sample rate constraints,
+> > SDP4430 configuration.
+> > 
+> > Regards,
+> > Peter
+> > 
+> > ---
+> > 
+> > Axel Castaneda Gonzalez (1):
+> >   ASoC: twl6040: Configure ramp step based on platform
+> > 
+> > Liam Girdwood (3):
+> >   ASoC: twl6040: add all ABE DAIs
+> >   ASoC: twl6040: Support other sample rates in constraints.
+> >   ASoC: twl6040: set default constraints.
+> > 
+> > Misael Lopez Cruz (5):
+> >   mfd: twl6040: Add initial support
+> >   ASoC: twl6040: Convert into TWL6040 MFD child
+> >   input: Add initial support for TWL6040 vibrator
+> >   ASoC: twl6040: Remove pll and headset mode dependency
+> >   OMAP4: SDP4430: Add twl6040 codec platform support
+> > 
+> > Peter Ujfalusi (9):
+> >   OMAP: New twl-common for common TWL configuration
+> >   OMAP4: Move common twl6030 configuration to twl-common
+> >   OMAP3: Move common twl configuration to twl-common
+> >   OMAP3: Move common regulator configuration to twl-common
+> >   MFD: twl4030-codec: Rename internals from codec to audio
+> >   MFD: twl4030-codec -> twl4030-audio: Rename the driver
+> >   MFD: twl4030-audio: Rename platform data
+> >   MFD: twl6040: Change platform data for soc codec driver
+> >   OMAP4: SDP4430: Add twl6040 vibrator platform support
+> >  
+> >  arch/arm/mach-omap2/Makefile                       |    2 +-
+> >  arch/arm/mach-omap2/board-3430sdp.c                |   89 +---
+> >  arch/arm/mach-omap2/board-4430sdp.c                |  187 ++----
+> >  arch/arm/mach-omap2/board-cm-t35.c                 |   48 +--
+> >  arch/arm/mach-omap2/board-devkit8000.c             |   37 +--
+> >  arch/arm/mach-omap2/board-igep0020.c               |   44 +--
+> >  arch/arm/mach-omap2/board-ldp.c                    |   15 +-
+> >  arch/arm/mach-omap2/board-omap3beagle.c            |   60 +--
+> >  arch/arm/mach-omap2/board-omap3evm.c               |   67 +--
+> >  arch/arm/mach-omap2/board-omap3pandora.c           |   59 +--
+> >  arch/arm/mach-omap2/board-omap3stalker.c           |   70 +--
+> >  arch/arm/mach-omap2/board-omap3touchbook.c         |   57 +--
+> >  arch/arm/mach-omap2/board-omap4panda.c             |  149 +-----
+> >  arch/arm/mach-omap2/board-overo.c                  |   59 +--
+> >  arch/arm/mach-omap2/board-rm680.c                  |    8 +-
+> >  arch/arm/mach-omap2/board-rx51-peripherals.c       |   44 +--
+> >  arch/arm/mach-omap2/board-zoom-peripherals.c       |   88 +---
+> >  arch/arm/mach-omap2/common-board-devices.c         |   21 -
+> >  arch/arm/mach-omap2/common-board-devices.h         |   26 +-
+> >  arch/arm/mach-omap2/twl-common.c                   |  304 ++++++++++
+> >  arch/arm/mach-omap2/twl-common.h                   |   59 ++
+> >  arch/arm/plat-omap/include/plat/irqs.h             |   12 +-
+> >  drivers/input/misc/Kconfig                         |   13 +-
+> >  drivers/input/misc/Makefile                        |    1 +
+> >  drivers/input/misc/twl4030-vibra.c                 |   12 +-
+> >  drivers/input/misc/twl6040-vibra.c                 |  416
+> >  +++++++++++++
+> >  drivers/mfd/Kconfig                                |    8 +-
+> >  drivers/mfd/Makefile                               |    3 +-
+> >  drivers/mfd/twl-core.c                             |   13 +-
+> >  drivers/mfd/twl4030-audio.c                        |  277 +++++++++
+> >  drivers/mfd/twl4030-codec.c                        |  277 ---------
+> >  drivers/mfd/twl6040-core.c                         |  601
+> > 
+> > +++++++++++++++++++ drivers/mfd/twl6040-irq.c                          |
+> > 205 +++++++ include/linux/i2c/twl.h                            |   25 +-
+> > 
+> >  .../linux/mfd/{twl4030-codec.h => twl4030-audio.h} |   16 +-
+> >  include/linux/mfd/twl6040.h                        |  261 ++++++++
+> >  sound/soc/codecs/Kconfig                           |    3 +-
+> >  sound/soc/codecs/twl4030.c                         |   22 +-
+> >  sound/soc/codecs/twl6040.c                         |  628
+> > 
+> > ++++++++------------ sound/soc/codecs/twl6040.h                        
+> > |
+> > 118 ----
+> > 
+> >  sound/soc/omap/sdp3430.c                           |    2 +-
+> >  sound/soc/omap/sdp4430.c                           |    2 +
+> >  sound/soc/omap/zoom2.c                             |    2 +-
+> >  43 files changed, 2635 insertions(+), 1775 deletions(-)
+> >  create mode 100644 arch/arm/mach-omap2/twl-common.c
+> >  create mode 100644 arch/arm/mach-omap2/twl-common.h
+> >  create mode 100644 drivers/input/misc/twl6040-vibra.c
+> >  create mode 100644 drivers/mfd/twl4030-audio.c
+> >  delete mode 100644 drivers/mfd/twl4030-codec.c
+> >  create mode 100644 drivers/mfd/twl6040-core.c
+> >  create mode 100644 drivers/mfd/twl6040-irq.c
+> >  rename include/linux/mfd/{twl4030-codec.h => twl4030-audio.h} (96%)
+> >  create mode 100644 include/linux/mfd/twl6040.h
+> 
+> _______________________________________________
+> Alsa-devel mailing list
+> Alsa-devel@alsa-project.org
+> http://mailman.alsa-project.org/mailman/listinfo/alsa-devel
 
-> +       pm_genpd_poweroff(genpd);
-> +       mutex_unlock(&genpd->lock);
-> +       if (genpd->parent)
-> +               mutex_unlock(&genpd->parent->lock);
-> +}
-> +
-> +/**
-> + * pm_genpd_runtime_suspend - Suspend a device belonging to I/O PM domain.
-> + * @dev: Device to suspend.
-> + *
-> + * Carry out a runtime suspend of a device under the assumption that its
-> + * pm_domain field points to the domain member of an object of type
-> + * struct generic_pm_domain representing a PM domain consisting of I/O devices.
-> + */
-> +static int pm_genpd_runtime_suspend(struct device *dev)
-> +{
-> +       struct generic_pm_domain *genpd;
-> +
-> +       dev_dbg(dev, "%s()\n", __func__);
-> +
-> +       if (IS_ERR_OR_NULL(dev->pm_domain))
-> +               return -EINVAL;
-> +
-> +       genpd = container_of(dev->pm_domain, struct generic_pm_domain, domain);
-> +
-> +       if (genpd->parent)
-> +               mutex_lock(&genpd->parent->lock);
-> +       mutex_lock(&genpd->lock);
-
-same with above.
-
-> +       if (genpd->stop_device) {
-> +               int ret = genpd->stop_device(dev);
-> +               if (ret)
-> +                       goto out;
-> +       }
-> +       genpd->in_progress++;
-> +       pm_genpd_poweroff(genpd);
-> +       genpd->in_progress--;
-> +
-> + out:
-> +       mutex_unlock(&genpd->lock);
-> +       if (genpd->parent)
-> +               mutex_unlock(&genpd->parent->lock);
-> +
-> +       return 0;
-> +}
-> +
-> +/**
-> + * pm_genpd_poweron - Restore power to a given PM domain and its parents.
-> + * @genpd: PM domain to power up.
-> + *
-> + * Restore power to @genpd and all of its parents so that it is possible to
-> + * resume a device belonging to it.
-> + */
-> +static int pm_genpd_poweron(struct generic_pm_domain *genpd)
-> +{
-> +       int ret = 0;
-> +
-> + start:
-> +       if (genpd->parent)
-> +               mutex_lock(&genpd->parent->lock);
-> +       mutex_lock(&genpd->lock);
-
-same with above
-
-> +       if (!genpd->power_is_off)
-> +               goto out;
-> +
-> +       if (genpd->parent && genpd->parent->power_is_off) {
-> +               mutex_unlock(&genpd->lock);
-> +               mutex_unlock(&genpd->parent->lock);
-> +
-> +               ret = pm_genpd_poweron(genpd->parent);
-> +               if (ret)
-> +                       return ret;
-> +
-> +               goto start;
-> +       }
-> +
-> +       if (genpd->power_on) {
-> +               int ret = genpd->power_on(genpd);
-> +               if (ret)
-> +                       goto out;
-> +       }
-> +
-> +       genpd->power_is_off = false;
-> +       if (genpd->parent)
-> +               genpd->parent->sd_count++;
-> +
-> + out:
-> +       mutex_unlock(&genpd->lock);
-> +       if (genpd->parent)
-> +               mutex_unlock(&genpd->parent->lock);
-> +
-> +       return ret;
-> +}
-> +
-> +/**
-> + * pm_genpd_runtime_resume - Resume a device belonging to I/O PM domain.
-> + * @dev: Device to resume.
-> + *
-> + * Carry out a runtime resume of a device under the assumption that its
-> + * pm_domain field points to the domain member of an object of type
-> + * struct generic_pm_domain representing a PM domain consisting of I/O devices.
-> + */
-> +static int pm_genpd_runtime_resume(struct device *dev)
-> +{
-> +       struct generic_pm_domain *genpd;
-> +       struct dev_list_entry *dle;
-> +       int ret;
-> +
-> +       dev_dbg(dev, "%s()\n", __func__);
-> +
-> +       if (IS_ERR_OR_NULL(dev->pm_domain))
-> +               return -EINVAL;
-> +
-> +       genpd = container_of(dev->pm_domain, struct generic_pm_domain, domain);
-> +
-> +       ret = pm_genpd_poweron(genpd);
-> +       if (ret)
-> +               return ret;
-> +
-> +       mutex_lock(&genpd->lock);
-> +
-> +       list_for_each_entry(dle, &genpd->dev_list, node) {
-> +               if (dle->dev == dev) {
-> +                       __pm_genpd_restore_device(dle, genpd);
-> +                       break;
-> +               }
-> +       }
-> +
-> +       if (genpd->start_device)
-> +               genpd->start_device(dev);
-> +
-> +       mutex_unlock(&genpd->lock);
-> +
-> +       return 0;
-> +}
-> +
-> +#else
-> +
-> +static inline void genpd_power_off_work_fn(struct work_struct *work) {}
-> +
-> +#define pm_genpd_runtime_suspend       NULL
-> +#define pm_genpd_runtime_resume                NULL
-> +
-> +#endif /* CONFIG_PM_RUNTIME */
-> +
-> +/**
-> + * pm_genpd_add_device - Add a device to an I/O PM domain.
-> + * @genpd: PM domain to add the device to.
-> + * @dev: Device to be added.
-> + */
-> +int pm_genpd_add_device(struct generic_pm_domain *genpd, struct device *dev)
-> +{
-> +       struct dev_list_entry *dle;
-> +       int ret = 0;
-> +
-> +       dev_dbg(dev, "%s()\n", __func__);
-> +
-> +       if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(dev))
-> +               return -EINVAL;
-> +
-> +       mutex_lock(&genpd->lock);
-> +
-> +       if (genpd->power_is_off) {
-> +               ret = -EINVAL;
-> +               goto out;
-> +       }
-> +
-> +       list_for_each_entry(dle, &genpd->dev_list, node)
-> +               if (dle->dev == dev) {
-> +                       ret = -EINVAL;
-> +                       goto out;
-> +               }
-> +
-> +       dle = kzalloc(sizeof(*dle), GFP_KERNEL);
-> +       if (!dle) {
-> +               ret = -ENOMEM;
-> +               goto out;
-> +       }
-> +
-> +       dle->dev = dev;
-> +       dle->need_restore = false;
-> +       list_add_tail(&dle->node, &genpd->dev_list);
-> +
-> +       spin_lock_irq(&dev->power.lock);
-> +       dev->pm_domain = &genpd->domain;
-> +       spin_unlock_irq(&dev->power.lock);
-> +
-> + out:
-> +       mutex_unlock(&genpd->lock);
-> +
-> +       return ret;
-> +}
-> +
-> +/**
-> + * pm_genpd_remove_device - Remove a device from an I/O PM domain.
-> + * @genpd: PM domain to remove the device from.
-> + * @dev: Device to be removed.
-> + */
-> +int pm_genpd_remove_device(struct generic_pm_domain *genpd,
-> +                          struct device *dev)
-> +{
-> +       struct dev_list_entry *dle;
-> +       int ret = -EINVAL;
-> +
-> +       dev_dbg(dev, "%s()\n", __func__);
-> +
-> +       if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(dev))
-> +               return -EINVAL;
-> +
-> +       mutex_lock(&genpd->lock);
-> +
-> +       list_for_each_entry(dle, &genpd->dev_list, node) {
-> +               if (dle->dev != dev)
-> +                       continue;
-> +
-> +               spin_lock_irq(&dev->power.lock);
-> +               dev->pm_domain = NULL;
-> +               spin_unlock_irq(&dev->power.lock);
-> +
-> +               list_del(&dle->node);
-> +               kfree(dle);
-> +
-> +               ret = 0;
-> +               break;
-> +       }
-> +
-> +       mutex_unlock(&genpd->lock);
-> +
-> +       return ret;
-> +}
-> +
-> +/**
-> + * pm_genpd_add_subdomain - Add a subdomain to an I/O PM domain.
-> + * @genpd: Master PM domain to add the subdomain to.
-> + * @new_subdomain: Subdomain to be added.
-> + */
-> +int pm_genpd_add_subdomain(struct generic_pm_domain *genpd,
-> +                          struct generic_pm_domain *new_subdomain)
-> +{
-> +       struct generic_pm_domain *subdomain;
-> +       int ret = 0;
-> +
-> +       if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(new_subdomain))
-> +               return -EINVAL;
-> +
-> +       mutex_lock(&genpd->lock);
-> +
-> +       if (genpd->power_is_off && !new_subdomain->power_is_off) {
-> +               ret = -EINVAL;
-> +               goto out;
-> +       }
-> +
-> +       list_for_each_entry(subdomain, &genpd->sd_list, sd_node) {
-> +               if (subdomain == new_subdomain) {
-> +                       ret = -EINVAL;
-> +                       goto out;
-> +               }
-> +       }
-> +
-> +       mutex_lock(&new_subdomain->lock);
-
-same with above
-
-> +
-> +       list_add_tail(&new_subdomain->sd_node, &genpd->sd_list);
-> +       new_subdomain->parent = genpd;
-> +       if (!subdomain->power_is_off)
-> +               genpd->sd_count++;
-> +
-> +       mutex_unlock(&new_subdomain->lock);
-> +
-> + out:
-> +       mutex_unlock(&genpd->lock);
-> +
-> +       return ret;
-> +}
-> +
-> +/**
-> + * pm_genpd_remove_subdomain - Remove a subdomain from an I/O PM domain.
-> + * @genpd: Master PM domain to remove the subdomain from.
-> + * @target: Subdomain to be removed.
-> + */
-> +int pm_genpd_remove_subdomain(struct generic_pm_domain *genpd,
-> +                             struct generic_pm_domain *target)
-> +{
-> +       struct generic_pm_domain *subdomain;
-> +       int ret = -EINVAL;
-> +
-> +       if (IS_ERR_OR_NULL(genpd) || IS_ERR_OR_NULL(target))
-> +               return -EINVAL;
-> +
-> +       mutex_lock(&genpd->lock);
-> +
-> +       list_for_each_entry(subdomain, &genpd->sd_list, sd_node) {
-> +               if (subdomain != target)
-> +                       continue;
-> +
-> +               mutex_lock(&subdomain->lock);
-
-same with above
-
-> +               list_del(&subdomain->sd_node);
-> +               subdomain->parent = NULL;
-> +               if (!subdomain->power_is_off)
-> +                       genpd_sd_counter_dec(genpd);
-> +
-> +               mutex_unlock(&subdomain->lock);
-> +
-> +               ret = 0;
-> +               break;
-> +       }
-> +
-> +       mutex_unlock(&genpd->lock);
-> +
-> +       return ret;
-> +}
-> +
-> +/**
-> + * pm_genpd_init - Initialize a generic I/O PM domain object.
-> + * @genpd: PM domain object to initialize.
-> + * @gov: PM domain governor to associate with the domain (may be NULL).
-> + * @is_off: Initial value of the domain's power_is_off field.
-> + */
-> +void pm_genpd_init(struct generic_pm_domain *genpd,
-> +                  struct dev_power_governor *gov, bool is_off)
-> +{
-> +       if (IS_ERR_OR_NULL(genpd))
-> +               return;
-> +
-> +       INIT_LIST_HEAD(&genpd->sd_node);
-> +       genpd->parent = NULL;
-> +       INIT_LIST_HEAD(&genpd->dev_list);
-> +       INIT_LIST_HEAD(&genpd->sd_list);
-> +       mutex_init(&genpd->lock);
-> +       genpd->gov = gov;
-> +       INIT_WORK(&genpd->power_off_work, genpd_power_off_work_fn);
-> +       genpd->in_progress = 0;
-> +       genpd->sd_count = 0;
-> +       genpd->power_is_off = is_off;
-> +       genpd->domain.ops.runtime_suspend = pm_genpd_runtime_suspend;
-> +       genpd->domain.ops.runtime_resume = pm_genpd_runtime_resume;
-> +       genpd->domain.ops.runtime_idle = pm_generic_runtime_idle;
-> +}
-> Index: linux-2.6/kernel/power/Kconfig
-> ===================================================================
-> --- linux-2.6.orig/kernel/power/Kconfig
-> +++ linux-2.6/kernel/power/Kconfig
-> @@ -227,3 +227,7 @@ config PM_OPP
->  config PM_RUNTIME_CLK
->        def_bool y
->        depends on PM_RUNTIME && HAVE_CLK
-> +
-> +config PM_GENERIC_DOMAINS
-> +       bool
-> +       depends on PM
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
-
-
-thanks,
--- 
-Ming Lei
