@@ -1,103 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab1GAOU1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:20:27 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:53424 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756689Ab1GAOUY (ORCPT
+	id S1756769Ab1GAOWt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:22:49 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:37940 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756670Ab1GAOWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:20:24 -0400
-Message-ID: <4E0DD7A5.7020106@candelatech.com>
-Date: Fri, 01 Jul 2011 07:20:21 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.15) Gecko/20110307 Fedora/3.1.9-0.38.b3pre.fc13 Thunderbird/3.1.9
+	Fri, 1 Jul 2011 10:22:48 -0400
+Message-ID: <4E0DD816.7070104@atmel.com>
+Date: Fri, 01 Jul 2011 16:22:14 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Christoph Lameter <cl@linux.com>
-CC: penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] slub: Enable backtrace for create/delete points.
-References: <1309308462-20124-1-git-send-email-greearb@candelatech.com> <1309308462-20124-2-git-send-email-greearb@candelatech.com> <alpine.DEB.2.00.1107010905350.2458@router.home>
-In-Reply-To: <alpine.DEB.2.00.1107010905350.2458@router.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+CC: cjb@laptop.org, linux-mmc@vger.kernel.org,
+        hans-christian.egtvedt@atmel.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@avr32linux.org
+Subject: Re: [PATCH V2] MMC: PM: add suspend/resume in atmel-mci
+References: <201106292339.12402.rjw@sisk.pl> <1309441781-11012-1-git-send-email-nicolas.ferre@atmel.com> <20110630131342.GK11559@pengutronix.de>
+In-Reply-To: <20110630131342.GK11559@pengutronix.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2011 07:08 AM, Christoph Lameter wrote:
-> On Tue, 28 Jun 2011, greearb@candelatech.com wrote:
->
->> diff --git a/mm/slub.c b/mm/slub.c
->> index 35f351f..3477ce5 100644
->> --- a/mm/slub.c
->> +++ b/mm/slub.c
->> @@ -191,8 +191,12 @@ static LIST_HEAD(slab_caches);
->>   /*
->>    * Tracking user of a slab.
->>    */
->> +#define TRACK_ADDRS_COUNT 16
->>   struct track {
->> -	unsigned long addr;	/* Called from address */
->> +	unsigned long caddr;
->
-> Keep the name the same since its role does not change. That makes the
-> patch touch less code.
->
->> +#ifdef CONFIG_STACKTRACE
->> +	unsigned long addrs[TRACK_ADDRS_COUNT];	/* Called from address */
->> +#endif
->>   	int cpu;		/* Was running on cpu */
->>   	int pid;		/* Pid context */
->>   	unsigned long when;	/* When did the operation occur */
->> @@ -420,7 +424,25 @@ static void set_track(struct kmem_cache *s, void *object,
->>   	struct track *p = get_track(s, object, alloc);
+Le 30/06/2011 15:13, Uwe Kleine-König :
+> Hello Nicolas,
+> 
+> On Thu, Jun 30, 2011 at 03:49:41PM +0200, Nicolas Ferre wrote:
+>> Take care of slots while going to suspend state.
 >>
->>   	if (addr) {
->> -		p->addr = addr;
->> +#ifdef CONFIG_STACKTRACE
->> +		struct stack_trace trace;
->> +		int i;
+>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+>> ---
+>> V2: move to pm_ops
+>>
+>>  drivers/mmc/host/atmel-mci.c |   47 ++++++++++++++++++++++++++++++++++++++++++
+>>  1 files changed, 47 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
+>> index aa8039f..058f1842 100644
+>> --- a/drivers/mmc/host/atmel-mci.c
+>> +++ b/drivers/mmc/host/atmel-mci.c
+>> @@ -1878,10 +1878,57 @@ static int __exit atmci_remove(struct platform_device *pdev)
+>>  	return 0;
+>>  }
+>>  
+>> +#ifdef CONFIG_PM
+>> +static int atmci_suspend(struct device *dev)
+>> +{
+>> +	struct atmel_mci *host = dev_get_drvdata(dev);
+>> +	struct atmel_mci_slot *slot;
+>> +	int i, ret;
+> slot and ret can have a more local scope.
+
+ok.
+
 >> +
->> +		trace.nr_entries = 0;
->> +		trace.max_entries = TRACK_ADDRS_COUNT;
->> +		trace.entries = p->addrs;
->> +		trace.skip = 3;
->> +		save_stack_trace(&trace);
+>> +	 for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
+>> +		slot = host->slot[i];
+>> +		if (!slot)
+>> +			continue;
+>> +		ret = mmc_suspend_host(slot->mmc);
+>> +		if (ret < 0) {
+>> +			while (--i >= 0) {
+>> +				slot = host->slot[i];
+>> +				if (slot)
+>> +					mmc_resume_host(host->slot[i]->mmc);
+> hmm, mmc_resume_host could fail. But probably you cannot handle that in
+> a sane way, do you?
+
+Well, actually for the current implementation the only return code is... 0.
+And here I try to have a king of best effort approach ;-)
+
+>> +			}
+>> +			return ret;
+>> +		}
+>> +	}
 >> +
->> +		/* See rant in lockdep.c */
->> +		if (trace.nr_entries != 0&&
->> +		    trace.entries[trace.nr_entries - 1] == ULONG_MAX)
->> +			trace.nr_entries--;
+>> +	return 0;
+>> +}
 >> +
->> +		for (i = trace.nr_entries; i<  TRACK_ADDRS_COUNT; i++)
->> +			p->addrs[i] = 0;
+>> +static int atmci_resume(struct device *dev)
+>> +{
+>> +	struct atmel_mci *host = dev_get_drvdata(dev);
+>> +	struct atmel_mci_slot *slot;
+>> +	int i, ret;
+>> +
+>> +	for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
+>> +		slot = host->slot[i];
+>> +		if (!slot)
+>> +			continue;
+>> +		ret = mmc_resume_host(slot->mmc);
+>> +		if (ret < 0)
+>> +			return ret;
+> Maybe you should try to resume host 5 even if resuming host 4 failed?
+
+In fact all other drivers that are dealing with multiple slots are doing
+the same... So I have difficulties to know the truth.
+The question is: is it better to return an error to the "resume"
+function so that we are called later again or do we have to do our best
+to thaw everything out?
+
+>> +	}
+>> +
+>> +	return 0;
+>> +}
 >> +#endif
->
-> Hmmm... Is this really working on all architectures? I remember from years
-> past that we had issues with adding the same functionality to slab.
+>> +static SIMPLE_DEV_PM_OPS(atmci_pm, atmci_suspend, atmci_resume);
+>> +
+>> +
+> For my taste a single empty line is enough.
 
-The lockdep code seems to use the same basic logic, and I didn't notice
-any arch checks in it.  I think recently someone must have fixed the backtrace
-logic to be more easily used...this API didn't exist a few kernels
-ago.
+Ok.
 
->
-> Otherwise the patch is quite straightforward (and it will be much cleaner
-> if you do not change the name of "addr").
+>>  static struct platform_driver atmci_driver = {
+>>  	.remove		= __exit_p(atmci_remove),
+>>  	.driver		= {
+>>  		.name		= "atmel_mci",
+>> +		.pm		= &atmci_pm,
+>>  	},
+>>  };
+> 
 
-Ok, will change that.
-
-Thanks,
-Ben
-
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Thanks, best regards,
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+Nicolas Ferre
+
