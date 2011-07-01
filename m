@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756626Ab1GANsV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:48:21 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38138
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756463Ab1GANsT (ORCPT
+	id S1756644Ab1GANxg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:53:36 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38965 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756475Ab1GANxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:48:19 -0400
-Date: Fri, 1 Jul 2011 09:47:05 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Petr Tesarik <ptesarik@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
-Message-ID: <20110701134705.GA6175@infradead.org>
-References: <201106171038.25988.ptesarik@suse.cz>
- <20110617093032.GA19235@elte.hu>
- <201106291106.00070.ptesarik@suse.cz>
- <20110701125802.GE12605@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110701125802.GE12605@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 1 Jul 2011 09:53:33 -0400
+X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=J5aFgaVnb1wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=T5ghlZuFmIMCY4AcciAA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [RFC PATCH -tip ] [BUGFIX] x86: Remove preempt disabling from
+ kprobes
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        yrl.pp-manager.tt@hitachi.com
+In-Reply-To: <1309527824.26417.149.camel@gandalf.stny.rr.com>
+References: <4E0DC859.6050405@hitachi.com>
+	 <20110701131408.30886.45766.stgit@localhost.localdomain>
+	 <1309527824.26417.149.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 01 Jul 2011 09:53:31 -0400
+Message-ID: <1309528411.26417.153.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 02:58:02PM +0200, Ingo Molnar wrote:
-> So what was not mentioned in your series, what is *your* motivation 
-> and your usecase? Enabling closed-source userspace drivers? Enabling 
-> the crash utility?
+On Fri, 2011-07-01 at 09:43 -0400, Steven Rostedt wrote:
 
-He stated it pretty clearly in the thread, it's the crash utility.
+> I applied it to v3.0-rc5. And not surprisingly it works. But the
+> question I have is, when we return from the trap, and NEED_RECHED is
+> set, will it schedule? My test placed the probe within the scheduler
+> where preemption is already disabled. Let me do this in places that has
+> preemption and interrupts enabled.
+> 
+> I'll also try a kernel mod that adds a probe handler that does a
+> udelay() loop, forcing the timer interrupt to be set on return of the
+> trap, and see what happens there.
 
-> 
-> If the former then shame on you, if the latter then how do you 
-> explain that distros appear to disable the RAM aspect of /dev/mem:
-> 
->  $ grep DEVMEM $(rpm -ql kernel-2.6.38-0.rc7.git2.3.fc16.x86_64 | grep config-2.6 )
->  CONFIG_STRICT_DEVMEM=y
-> 
-> So the crash utility use-case does not work on unpatched, default 
-> kernels, right?
+I didn't need to do the above. Just adding a probe at the beginning of
+schedule() should do the trick. As I see from the latency-format option
+set, that NEED_RESCHED is enabled when we enter the path. If interrupts
+are enabled on single step, I would think that the code would go into an
+infinite loop if it had issues there.
 
-Not if you have highmem.  That's why Redhat or Fedora to quote your
-example patch in the /dev/crash driver, which totally defeats the
-CONFIG_STRICT_DEVMEM setting.  But apparently it's good enough that no
-one either noticed or at least doesn't care.
+Thus I think we can say that removing preempt_disable() from kprobes in
+x86_64 (and probably 32) is safe. I'll go and test this on my PPC64 and
+mips (if I can get that compiled).
+
+-- Steve
+
 
