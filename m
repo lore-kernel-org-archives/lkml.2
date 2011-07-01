@@ -1,74 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757531Ab1GASLU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 14:11:20 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:51261 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751992Ab1GASLS (ORCPT
+	id S1757255Ab1GASOI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 14:14:08 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:64928 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab1GASOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 14:11:18 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 3/10 v6] PM / Domains: Support for generic I/O PM domains (v7)
-Organization: Texas Instruments, Inc.
-References: <201106112223.04972.rjw@sisk.pl> <201106252324.13454.rjw@sisk.pl>
-	<201106252326.23837.rjw@sisk.pl>
-Date: Fri, 01 Jul 2011 11:11:13 -0700
-In-Reply-To: <201106252326.23837.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Sat, 25 Jun 2011 23:26:23 +0200")
-Message-ID: <87tyb5yipq.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Fri, 1 Jul 2011 14:14:05 -0400
+Message-ID: <4E0E0D03.2080203@gmail.com>
+Date: Fri, 01 Jul 2011 20:08:03 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Sergiu Iordache <sergiu@chromium.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 3/3] char drivers: ramoops debugfs entry
+References: <1309483720-1407-1-git-send-email-sergiu@chromium.org> <1309483720-1407-4-git-send-email-sergiu@chromium.org>
+In-Reply-To: <1309483720-1407-4-git-send-email-sergiu@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
-
-> From: Rafael J. Wysocki <rjw@sisk.pl>
+Il 01/07/2011 03:28, Sergiu Iordache ha scritto:
+> While ramoops writes to ram, accessing the dump requires using /dev/mem
+> and knowing the memory location (or a similar solution). This patch
+> provides a debugfs interface through which the respective memory
+> area can be easily accessed. It also adds an entry to expose the record
+> size which must be used to divide the memory area into individual dumps
+> and a dump count entry.
 >
-> Introduce common headers, helper functions and callbacks allowing
-> platforms to use simple generic power domains for runtime power
-> management.
->
-> Introduce struct generic_pm_domain to be used for representing
-> power domains that each contain a number of devices and may be
-> parent domains or subdomains with respect to other power domains.
-> Among other things, this structure includes callbacks to be
-> provided by platforms for performing specific tasks related to
-> power management (i.e. ->stop_device() may disable a device's
-> clocks, while ->start_device() may enable them, ->power_off() is
-> supposed to remove power from the entire power domain
-> and ->power_on() is supposed to restore it).
->
-> Introduce functions that can be used as power domain runtime PM
-> callbacks, pm_genpd_runtime_suspend() and pm_genpd_runtime_resume(),
-> as well as helper functions for the initialization of a power
-> domain represented by a struct generic_power_domain object,
-> adding a device to or removing a device from it and adding or
-> removing subdomains.
->
-> Introduce configuration option CONFIG_PM_GENERIC_DOMAINS to be
-> selected by the platforms that want to use the new code.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-Reviewed-by: Kevin Hilman <khilman@ti.com>
+Good.
 
-While I still don't think this is generic enough for some more
-complicated SoCs, it most certainly a huge step in the right direction,
-and I think we can address the other complexities with additional
-patches as needed.
+> The entries added are:
+> /sys/kernel/debug/ramoops/full - memory dump of the whole reserved area.
+> /sys/kernel/debug/ramoops/count - number of dumps currently present
+> (will be 0 after a restart).
 
-Thanks Rafael for all your hard work on this and putting up with my
-nagging. ;)
+Is this count really needed?
 
-Kevin
+>
+> Change-Id: Ifbab9af833be9ee0bc1c33bc9871f2fc0eb9d228
+> Signed-off-by: Sergiu Iordache<sergiu@chromium.org>
+> ---
+> The patch was built on the 2.6.38 kernel and is based on the following
+> patches which were applied from the mmotm tree:
+> ramoops-add-new-line-to-each-print
+> ramoops-use-module-parameters-instead-of-platform-data-if-not-available
+> ramoops-use-module-parameters-instead-of-platform-data-if-not-available-checkpatch-fixes
+>
+>   drivers/char/ramoops.c |  101 ++++++++++++++++++++++++++++++++++++++++++++++++
+>   1 files changed, 101 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+> index f34077e..9c0e30e 100644
+> --- a/drivers/char/ramoops.c
+> +++ b/drivers/char/ramoops.c
+> @@ -30,9 +30,15 @@
+>   #include<linux/platform_device.h>
+>   #include<linux/slab.h>
+>   #include<linux/ramoops.h>
+> +#include<linux/uaccess.h>
+> +#include<linux/debugfs.h>
+>
+>   #define RAMOOPS_KERNMSG_HDR "===="
+>   #define MIN_MEM_SIZE 4096UL
+> +#define RAMOOPS_DIR "ramoops"
+> +#define RAMOOPS_FULL "full"
+> +#define RAMOOPS_RS "record_size"
+> +#define RAMOOPS_COUNT "count"
+>
+>   static ulong record_size = 4096UL;
+>   module_param(record_size, ulong, 0400);
+> @@ -67,6 +73,39 @@ static struct ramoops_context {
+>
+>   static struct platform_device *dummy;
+>   static struct ramoops_platform_data *dummy_data;
+> +static DEFINE_MUTEX(ramoops_mutex);
+> +
+> +/* Debugfs entries for ramoops */
+> +static struct dentry *ramoops_dir, *ramoops_full_entry, *ramoops_rs_entry,
+> +				*ramoops_count_entry;
+> +
+> +/* Entry to have access to the whole memory area */
+> +static ssize_t ramoops_read_full(struct file *file, char __user *buf,
+> +					size_t count, loff_t *ppos)
+> +{
+> +	struct ramoops_context *cxt =&oops_cxt;
+> +
+> +	mutex_lock(&ramoops_mutex);
+> +	if (*ppos + count>  cxt->size)
+> +		count = cxt->size - *ppos;
+> +	if (*ppos>  cxt->size) {
+> +		count = 0;
+> +		goto out;
+> +	}
+> +	if (copy_to_user(buf, cxt->virt_addr + *ppos, count)) {
+> +		count = -EFAULT;
+> +		goto out;
+> +	}
+> +	*ppos += count;
+> +
+> +out:
+> +	mutex_unlock(&ramoops_mutex);
+> +	return count;
+> +}
+> +
+> +static const struct file_operations ramoops_full_fops = {
+> +	.read = ramoops_read_full,
+> +};
+>
+>   static void ramoops_do_dump(struct kmsg_dumper *dumper,
+>   		enum kmsg_dump_reason reason, const char *s1, unsigned long l1,
+> @@ -89,6 +128,7 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+>   	if (reason == KMSG_DUMP_OOPS&&  !cxt->dump_oops)
+>   		return;
+>
+> +	mutex_lock(&ramoops_mutex);
+>   	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
+>   	buf_orig = buf;
+>
+> @@ -110,6 +150,7 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+>   	memcpy(buf + l1_cpy, s2 + s2_start, l2_cpy);
+>
+>   	cxt->count = (cxt->count + 1) % cxt->max_count;
+> +	mutex_unlock(&ramoops_mutex);
+>   }
+>
+>   static int __init ramoops_probe(struct platform_device *pdev)
+> @@ -168,6 +209,51 @@ static int __init ramoops_probe(struct platform_device *pdev)
+>   		goto fail1;
+>   	}
+>
+> +	/* Initialize debugfs entry so the memory can be easily accessed */
+> +	ramoops_dir = debugfs_create_dir(RAMOOPS_DIR, NULL);
+> +	if (ramoops_dir == NULL) {
+> +		err = -ENOMEM;
+> +		pr_err("debugfs directory entry creation failed\n");
+> +		goto out;
+> +	}
+> +
+> +	ramoops_full_entry = debugfs_create_file(RAMOOPS_FULL, 0444,
+> +					ramoops_dir, NULL,&ramoops_full_fops);
+> +
+> +	if (ramoops_full_entry == NULL) {
+> +		err = -ENOMEM;
+> +		pr_err("debugfs full entry creation failed\n");
+> +		goto no_ramoops_full;
+> +	}
+> +
+> +	/*
+> +	 * Since ramoops returns records of record_size it is useful to
+> +	 * know the record size from userspace so we can parse the result
+> +	 * Since the record size is usually small we don't mind converting
+> +	 * it to a u32 from ulong.
+> +	 */
+> +	ramoops_rs_entry = debugfs_create_u32(RAMOOPS_RS, 0444,
+> +					ramoops_dir, (u32 *)&cxt->record_size);
+> +
+
+Like above. The result can be parsed in an easy way due to 
+RAMOOPS_KERNMSG_HDR.
+
+Marco
