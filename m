@@ -1,60 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756644Ab1GANxg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:53:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:38965 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756475Ab1GANxd (ORCPT
+	id S1756658Ab1GAN5u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:57:50 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:24790
+	"EHLO CH1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756475Ab1GAN5s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:53:33 -0400
-X-Authority-Analysis: v=1.1 cv=yMxAJ7W7nAoPh8ZdbvCArpG6pAdHwgpzIvOq8QbMesM= c=1 sm=0 a=J5aFgaVnb1wA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=T5ghlZuFmIMCY4AcciAA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC PATCH -tip ] [BUGFIX] x86: Remove preempt disabling from
- kprobes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        yrl.pp-manager.tt@hitachi.com
-In-Reply-To: <1309527824.26417.149.camel@gandalf.stny.rr.com>
-References: <4E0DC859.6050405@hitachi.com>
-	 <20110701131408.30886.45766.stgit@localhost.localdomain>
-	 <1309527824.26417.149.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 01 Jul 2011 09:53:31 -0400
-Message-ID: <1309528411.26417.153.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Jul 2011 09:57:48 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h)
+X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LNNQS4-01-9U6-02
+X-M-MSG: 
+Date: Fri, 1 Jul 2011 15:57:38 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Francis Moreau <francis.moro@gmail.com>,
+        "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
+        "tglx@linutronix.de" <tglx@linutronix.de>,
+        "mingo@elte.hu" <mingo@elte.hu>
+Subject: Re: [tip:perf/core] perf: Ignore non-sampling overflows
+Message-ID: <20110701135738.GU4590@erda.amd.com>
+References: <tip-963988262c3c8f4234f64a0dde59446a295e07bb@git.kernel.org>
+ <20110628105335.GA17199@erda.amd.com>
+ <1309259105.6701.210.camel@twins>
+ <BANLkTimcxGWasWqgem=5EYDKGAM+dq26xQ@mail.gmail.com>
+ <20110629103714.GM4590@erda.amd.com>
+ <1309344655.6701.1054.camel@twins>
+ <20110629141056.GN4590@erda.amd.com>
+ <1309358386.6701.1307.camel@twins>
+ <20110630124752.GS4590@erda.amd.com>
+ <1309527416.12449.729.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1309527416.12449.729.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 09:43 -0400, Steven Rostedt wrote:
-
-> I applied it to v3.0-rc5. And not surprisingly it works. But the
-> question I have is, when we return from the trap, and NEED_RECHED is
-> set, will it schedule? My test placed the probe within the scheduler
-> where preemption is already disabled. Let me do this in places that has
-> preemption and interrupts enabled.
+On 01.07.11 09:36:56, Peter Zijlstra wrote:
+> On Thu, 2011-06-30 at 14:47 +0200, Robert Richter wrote:
+> > 
+> > It covers the case there the sampling period may be specified in the
+> > raw config register (line 286). I know, this is not the preferred way,
+> > but this way you can directly set the config value in perf without
+> > bypassing some bits through event->attr. As IBS events are sampling
+> > events I will change the code so that it writes back the specified
+> > period to event->attr.sample_period/event->hw.sample_period. Something
+> > like:
+> > 
+> >         if (event->hw.sample_period) {
+> >                 ...
+> >         } else {
+> >                 max_cnt = event->attr.config & map->cnt_mask;
+> >                 event->attr.sample_period = max_cnt << 4;
+> >                 event->hw.sample_period = event->attr.sample_period;
+> >         }
+> > 
+> > This will then proper identify IBS samples as samling event.
 > 
-> I'll also try a kernel mod that adds a probe handler that does a
-> udelay() loop, forcing the timer interrupt to be set on return of the
-> trap, and see what happens there.
+> Ah, being a naught boy then ;-), yeah passing stuff through like that
+> will confuse bits and the fixup you propose will indeed work around
+> that.
+> 
+> But why complicate things like this? You just add extra code to the init
+> path since you need to support attr.sample_period input as well.
 
-I didn't need to do the above. Just adding a probe at the beginning of
-schedule() should do the trick. As I see from the latency-format option
-set, that NEED_RESCHED is enabled when we enter the path. If interrupts
-are enabled on single step, I would think that the code would go into an
-infinite loop if it had issues there.
+For people who only want to set the raw register value as in the spec
+it is much easier, they don't need to know perf internals. 3 lines of
+code for this are okay.
 
-Thus I think we can say that removing preempt_disable() from kprobes in
-x86_64 (and probably 32) is safe. I'll go and test this on my PPC64 and
-mips (if I can get that compiled).
+-Robert
 
--- Steve
-
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
