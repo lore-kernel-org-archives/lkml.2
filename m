@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752005Ab1GAPJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 11:09:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55883 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751584Ab1GAPJr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 11:09:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: AT91: Fix pull requset
-Date: Fri, 1 Jul 2011 17:09:40 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>, linux-kernel@vger.kernel.org
-References: <20110701065411.GD14408@game.jcrosoft.org>
-In-Reply-To: <20110701065411.GD14408@game.jcrosoft.org>
+	id S1752099Ab1GAPMp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 11:12:45 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57819 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750788Ab1GAPMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 11:12:42 -0400
+Date: Fri, 1 Jul 2011 15:12:21 GMT
+From: tip-bot for Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Message-ID: <tip-140fe3b1ab9c082182ef13359fab4ddba95c24c3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        xiaoguangrong@cn.fujitsu.com, rostedt@goodmis.org,
+        johannes@sipsolutions.net, tglx@linutronix.de, jbaron@redhat.com,
+        mingo@elte.hu, avi@redhat.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        xiaoguangrong@cn.fujitsu.com, rostedt@goodmis.org,
+        johannes@sipsolutions.net, tglx@linutronix.de, jbaron@redhat.com,
+        avi@redhat.com, mingo@elte.hu
+In-Reply-To: <4E00038B.2060404@cn.fujitsu.com>
+References: <4E00038B.2060404@cn.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] jump_label: Fix jump_label update for modules
+Git-Commit-ID: 140fe3b1ab9c082182ef13359fab4ddba95c24c3
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107011709.40359.arnd@arndb.de>
-X-Provags-ID: V02:K0:YEE4MsR1wh5dAeuUoc4P4m8Dpjvr1LwsOPRDIVVqLmE
- mVOt/5bZ5BgdFVqVcTxpzXbRzEQTHRXsWG7jgmKYiUg0PHR9JX
- ILhwG99Qh345UK06LpwLy/qT6dQcbHFppmpOKV2FmbyNKAkw80
- Ho4ebYb5cDilUbtaL8CiigHJ14/HI131WyyRhmqeP7XNCnUXUC
- uI9Ya2XzfdZkWo9dbtPzw==
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:12:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 July 2011, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> HI Linus, Russell, Arnd
-> 
-> 	I do not known who can take this pull request
-> 
-> 	But this is some fix for at91 for the 3.0
+Commit-ID:  140fe3b1ab9c082182ef13359fab4ddba95c24c3
+Gitweb:     http://git.kernel.org/tip/140fe3b1ab9c082182ef13359fab4ddba95c24c3
+Author:     Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+AuthorDate: Tue, 21 Jun 2011 10:35:55 +0800
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Wed, 29 Jun 2011 09:59:17 -0400
 
-I can take and forward these next week, possibly together with other bug
-fixes that come in for soc trees.
+jump_label: Fix jump_label update for modules
 
-One comment though:
+The jump labels entries for modules do not stop at __stop__jump_table,
+but after mod->jump_entries + mod_num_jump_entries.
 
-> Jean-Christophe PLAGNIOL-VILLARD (3):
->       at91: fix at91_set_serial_console: use platform device id
->       atmel_serial: fix internal port num
+By checking the wrong end point, module trace events never get enabled.
 
-These two patches look like they should apply to older kernels as well:
-The code you change has been in the kernel since 2006.
+Cc: Ingo Molnar <mingo@elte.hu>
+Acked-by: Jason Baron <jbaron@redhat.com>
+Tested-by: Avi Kivity <avi@redhat.com>
+Tested-by: Johannes Berg <johannes@sipsolutions.net>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Link: http://lkml.kernel.org/r/4E00038B.2060404@cn.fujitsu.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/jump_label.c |   14 +++++++++-----
+ 1 files changed, 9 insertions(+), 5 deletions(-)
 
-For every bug fix you commit, please check if it applies to older
-kernels as well, and mark with 'Cc: stable@kernel.org' if so. Do you
-want to update the changelog and send another pull request?
-
-	Arnd
+diff --git a/kernel/jump_label.c b/kernel/jump_label.c
+index fa27e75..a8ce450 100644
+--- a/kernel/jump_label.c
++++ b/kernel/jump_label.c
+@@ -375,15 +375,19 @@ int jump_label_text_reserved(void *start, void *end)
+ 
+ static void jump_label_update(struct jump_label_key *key, int enable)
+ {
+-	struct jump_entry *entry = key->entries;
+-
+-	/* if there are no users, entry can be NULL */
+-	if (entry)
+-		__jump_label_update(key, entry, __stop___jump_table, enable);
++	struct jump_entry *entry = key->entries, *stop = __stop___jump_table;
+ 
+ #ifdef CONFIG_MODULES
++	struct module *mod = __module_address((jump_label_t)key);
++
+ 	__jump_label_mod_update(key, enable);
++
++	if (mod)
++		stop = mod->jump_entries + mod->num_jump_entries;
+ #endif
++	/* if there are no users, entry can be NULL */
++	if (entry)
++		__jump_label_update(key, entry, stop, enable);
+ }
+ 
+ #endif
