@@ -1,67 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757524Ab1GASEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 14:04:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55310 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486Ab1GASEN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 14:04:13 -0400
-X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=BMon_h8pASkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=_Ubq8_g_6hdqfwj8LL0A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH v9 05/13] seccomp_filter: Document what seccomp_filter
- is and how it works.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Will Drewry <wad@chromium.org>
-Cc: Ingo Molnar <mingo@elte.hu>, James Morris <jmorris@namei.org>,
-        Chris Evans <scarybeasts@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, djm@mindrot.org,
-        segoon@openwall.com, kees.cook@canonical.com, fweisbec@gmail.com,
-        tglx@linutronix.de, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        linux-security-module@vger.kernel.org,
-        ksummit-2011-discuss@lists.linux-foundation.org
-In-Reply-To: <BANLkTikCaACO8o9HkAnkuaTuoKqqQWQrtw@mail.gmail.com>
-References: <1308875813-20122-1-git-send-email-wad@chromium.org>
-	 <1308875813-20122-5-git-send-email-wad@chromium.org>
-	 <BANLkTimtYUyXbZjWhjK61B_1WBXE4MoAeA@mail.gmail.com>
-	 <alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>
-	 <BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
-	 <alpine.LRH.2.00.1106301128590.13496@tundra.namei.org>
-	 <20110701115600.GK20990@elte.hu>
-	 <BANLkTim8CGx89nOg0HX=S1=arunBU3sEGQ@mail.gmail.com>
-	 <20110701130705.GG12605@elte.hu>
-	 <BANLkTimN0nEa2Bog2-vzCv=1XOG5OsJjLA@mail.gmail.com>
-	 <20110701161027.GA29035@elte.hu>
-	 <BANLkTikCaACO8o9HkAnkuaTuoKqqQWQrtw@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 01 Jul 2011 14:04:08 -0400
-Message-ID: <1309543448.26417.156.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1753050Ab1GASGq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 14:06:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751394Ab1GASGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 14:06:42 -0400
+Date: Fri, 1 Jul 2011 19:05:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv4] ptrace: make former thread ID available via
+	PTRACE_GETEVENTMSG after PTRACE_EVENT_EXEC stop
+Message-ID: <20110701170559.GA12402@redhat.com>
+References: <201106290413.39429.vda.linux@googlemail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106290413.39429.vda.linux@googlemail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 11:43 -0500, Will Drewry wrote:
-> On Fri, Jul 1, 2011 at 11:10 AM, Ingo Molnar <mingo@elte.hu> wrote:
+On 06/29, Denys Vlasenko wrote:
+>
+> When multithreaded program execs under ptrace,
+> all traced threads report WIFEXITED status, except for
+> thread group leader and the thread which execs.
+>
+> Unless tracer tracks thread group relationship between tracees,
+> which is a nontrivial task, it will not detect that
+> execed thread no longer exists.
+>
+> This patch allows tracer to figure out which thread
+> performed this exec, by requesting PTRACE_GETEVENTMSG
+> in PTRACE_EVENT_EXEC stop.
+>
+> Another, samller problem which is solved by this patch
+> is that tracer now can figure out which of the several
+> concurrent execs in multithreaded program succeeded.
+>
+> Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
 
-> I'd like to be able to move along security for the platform today and
-> not in two years, but if my only chance of any form of this being
-> ACK'd is to write it such that it shares code with perf and has a
-> shiny new ABI, then I'll queue up the work for when I can start trying
-> to tackle it.
+Thanks, applied.
 
-As this seems to be dragging on, and does not look to be solved by
-October, I would like to propose this topic for the Kernel Summit in
-Prague. I believe all parties involved may be there, and if not, I will
-push hard to get them there.
+> @@ -1370,6 +1371,11 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+>  	if (retval)
+>  		return retval;
+>
+> +	/* Need to fetch pid before load_binary changes it */
+> +	rcu_read_lock();
+> +	old_pid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
+> +	rcu_read_unlock();
+> +
+>  	retval = -ENOENT;
+>  	for (try=0; try<2; try++) {
+>  		read_lock(&binfmt_lock);
+> @@ -1389,7 +1395,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+>  			bprm->recursion_depth = depth;
+>  			if (retval >= 0) {
+>  				if (depth == 0)
+> -					ptrace_event(PTRACE_EVENT_EXEC, 0);
+> +					ptrace_event(PTRACE_EVENT_EXEC,
+> +							old_pid);
 
-Email is not always the best median for discussions. Face to face can
-usually solve things much quicker.
+Just for record. ->parent can be changed after we call task_pid_nr_ns(),
+and the new parent (tracer) can have another namespace, in this case
+we report the wrong pid. This is possible even now, without
+"PT_SEIZED implies PTRACE_EVENT_EXEC" we are going to add, although
+this is very unlikely and in this case PTRACE_EVENT_EXEC is spurious
+anyway. But when we change the behaviour of PT_SEIZED, this race
+becomes not that exotic, although very unlikely anyway.
 
--- Steve
+I do not think we should try to fix this, it is not trivial and
+doesn't worth the trouble.
 
+Oleg.
 
