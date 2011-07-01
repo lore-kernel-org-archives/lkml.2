@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757410Ab1GASJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 14:09:59 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:48175 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751557Ab1GASJ5 (ORCPT
+	id S1757531Ab1GASLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 14:11:20 -0400
+Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:51261 "EHLO
+	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751992Ab1GASLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 14:09:57 -0400
+	Fri, 1 Jul 2011 14:11:18 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 3/10 v6] PM / Domains: Support for generic I/O PM domains (v7)
+Organization: Texas Instruments, Inc.
+References: <201106112223.04972.rjw@sisk.pl> <201106252324.13454.rjw@sisk.pl>
+	<201106252326.23837.rjw@sisk.pl>
+Date: Fri, 01 Jul 2011 11:11:13 -0700
+In-Reply-To: <201106252326.23837.rjw@sisk.pl> (Rafael J. Wysocki's message of
+	"Sat, 25 Jun 2011 23:26:23 +0200")
+Message-ID: <87tyb5yipq.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <1309543448.26417.156.camel@gandalf.stny.rr.com>
-References: <1308875813-20122-1-git-send-email-wad@chromium.org>
-	<1308875813-20122-5-git-send-email-wad@chromium.org>
-	<BANLkTimtYUyXbZjWhjK61B_1WBXE4MoAeA@mail.gmail.com>
-	<alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>
-	<BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
-	<alpine.LRH.2.00.1106301128590.13496@tundra.namei.org>
-	<20110701115600.GK20990@elte.hu>
-	<BANLkTim8CGx89nOg0HX=S1=arunBU3sEGQ@mail.gmail.com>
-	<20110701130705.GG12605@elte.hu>
-	<BANLkTimN0nEa2Bog2-vzCv=1XOG5OsJjLA@mail.gmail.com>
-	<20110701161027.GA29035@elte.hu>
-	<BANLkTikCaACO8o9HkAnkuaTuoKqqQWQrtw@mail.gmail.com>
-	<1309543448.26417.156.camel@gandalf.stny.rr.com>
-Date: Fri, 1 Jul 2011 13:09:56 -0500
-Message-ID: <BANLkTin6rpBvbA1OuVHWy9ViZ-WPnwuXNw@mail.gmail.com>
-Subject: Re: [PATCH v9 05/13] seccomp_filter: Document what seccomp_filter is
- and how it works.
-From: Will Drewry <wad@chromium.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Ingo Molnar <mingo@elte.hu>, James Morris <jmorris@namei.org>,
-        Chris Evans <scarybeasts@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, djm@mindrot.org,
-        segoon@openwall.com, kees.cook@canonical.com, fweisbec@gmail.com,
-        tglx@linutronix.de, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        linux-security-module@vger.kernel.org,
-        ksummit-2011-discuss@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 1, 2011 at 1:04 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> On Fri, 2011-07-01 at 11:43 -0500, Will Drewry wrote:
->> On Fri, Jul 1, 2011 at 11:10 AM, Ingo Molnar <mingo@elte.hu> wrote:
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+
+> From: Rafael J. Wysocki <rjw@sisk.pl>
 >
->> I'd like to be able to move along security for the platform today and
->> not in two years, but if my only chance of any form of this being
->> ACK'd is to write it such that it shares code with perf and has a
->> shiny new ABI, then I'll queue up the work for when I can start trying
->> to tackle it.
+> Introduce common headers, helper functions and callbacks allowing
+> platforms to use simple generic power domains for runtime power
+> management.
 >
-> As this seems to be dragging on, and does not look to be solved by
-> October, I would like to propose this topic for the Kernel Summit in
-> Prague. I believe all parties involved may be there, and if not, I will
-> push hard to get them there.
+> Introduce struct generic_pm_domain to be used for representing
+> power domains that each contain a number of devices and may be
+> parent domains or subdomains with respect to other power domains.
+> Among other things, this structure includes callbacks to be
+> provided by platforms for performing specific tasks related to
+> power management (i.e. ->stop_device() may disable a device's
+> clocks, while ->start_device() may enable them, ->power_off() is
+> supposed to remove power from the entire power domain
+> and ->power_on() is supposed to restore it).
 >
-> Email is not always the best median for discussions. Face to face can
-> usually solve things much quicker.
+> Introduce functions that can be used as power domain runtime PM
+> callbacks, pm_genpd_runtime_suspend() and pm_genpd_runtime_resume(),
+> as well as helper functions for the initialization of a power
+> domain represented by a struct generic_power_domain object,
+> adding a device to or removing a device from it and adding or
+> removing subdomains.
+>
+> Introduce configuration option CONFIG_PM_GENERIC_DOMAINS to be
+> selected by the platforms that want to use the new code.
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-I have a panel reserved on system/kernel hardening with Kees at the
-Linux Security Summit as part of the LPC (thanks to the LSS
-committee).  Will the relevant people be able to attend that in
-September?
+Reviewed-by: Kevin Hilman <khilman@ti.com>
 
-(Since the KS is invite-only, I'm obviously not on the list for it,
-but I realize I'm just a bit player in this. Maybe some direction can
-be resolved I can play catch up with.)
+While I still don't think this is generic enough for some more
+complicated SoCs, it most certainly a huge step in the right direction,
+and I think we can address the other complexities with additional
+patches as needed.
 
-What's another couple months? :)
+Thanks Rafael for all your hard work on this and putting up with my
+nagging. ;)
 
-Thanks!
-will
+Kevin
