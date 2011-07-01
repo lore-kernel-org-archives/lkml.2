@@ -1,37 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab1GAM2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 08:28:51 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42906 "EHLO mx2.mail.elte.hu"
+	id S1756316Ab1GAMgs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 08:36:48 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55937 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755482Ab1GAM2u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 08:28:50 -0400
-Date: Fri, 1 Jul 2011 14:28:24 +0200
+	id S1756047Ab1GAMgr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 08:36:47 -0400
+Date: Fri, 1 Jul 2011 14:36:29 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Hu Tao <hutao@cn.fujitsu.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
-        linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [patch 00/16] CFS Bandwidth Control v7
-Message-ID: <20110701122824.GE28008@elte.hu>
-References: <20110621071649.862846205@google.com>
- <4E01BE6B.2090701@jp.fujitsu.com>
- <1308830816.1022.112.camel@twins>
- <20110623124310.GA15430@elte.hu>
- <4E041C6A.4000701@jp.fujitsu.com>
- <20110626103526.GA11093@elte.hu>
- <20110629040521.GG4186@localhost.localdomain>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL v2] sched: Make sleep inside atomic detection work on
+ !PREEMPT
+Message-ID: <20110701123629.GA12605@elte.hu>
+References: <1307712622-11104-1-git-send-email-fweisbec@gmail.com>
+ <20110622224844.GA3290@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110629040521.GG4186@localhost.localdomain>
+In-Reply-To: <20110622224844.GA3290@somewhere>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -45,70 +36,60 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Hu Tao <hutao@cn.fujitsu.com> wrote:
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> > Yeah, these numbers look pretty good. Note that the percentages 
-> > in the third column (the amount of time that particular event was 
-> > measured) is pretty low, and it would be nice to eliminate it: 
-> > i.e. now that we know the ballpark figures do very precise 
-> > measurements that do not over-commit the PMU.
+> On Fri, Jun 10, 2011 at 03:30:18PM +0200, Frederic Weisbecker wrote:
+> > Ingo,
 > > 
-> > One such measurement would be:
+> > Please pull the sched/core branch that can be found at:
 > > 
-> > 	-e cycles -e instructions -e branches
-> > 
-> > This should also bring the stddev percentages down i think, to 
-> > below 0.1%.
-> > 
-> > Another measurement would be to test not just the feature-enabled 
-> > but also the feature-disabled cost - so that we document the 
-> > rough overhead that users of this new scheduler feature should 
-> > expect.
-> > 
-> > Organizing it into neat before/after numbers and percentages, 
-> > comparing it with noise (stddev) [i.e. determining that the 
-> > effect we measure is above noise] and putting it all into the 
-> > changelog would be the other goal of these measurements.
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > 	sched/core
 > 
 > Hi Ingo,
 > 
-> I've tested pipe-test-100k in the following cases: base(no patch), 
-> with patch but feature-disabled, with patch and several 
-> periods(quota set to be a large value to avoid processes 
-> throttled), the result is:
+> I have added Randy's ack on the last patch. To get it, please pull the v2 in
+> the following branch:
 > 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+>        sched/core-v2
 > 
->                                             cycles                   instructions            branches
-> -------------------------------------------------------------------------------------------------------------------
-> base                                        7,526,317,497           8,666,579,347            1,771,078,445
-> +patch, cgroup not enabled                  7,610,354,447 (1.12%)   8,569,448,982 (-1.12%)   1,751,675,193 (-0.11%)
-> +patch, 10000000000/1000(quota/period)      7,856,873,327 (4.39%)   8,822,227,540 (1.80%)    1,801,766,182 (1.73%)
-> +patch, 10000000000/10000(quota/period)     7,797,711,600 (3.61%)   8,754,747,746 (1.02%)    1,788,316,969 (0.97%)
-> +patch, 10000000000/100000(quota/period)    7,777,784,384 (3.34%)   8,744,979,688 (0.90%)    1,786,319,566 (0.86%)
-> +patch, 10000000000/1000000(quota/period)   7,802,382,802 (3.67%)   8,755,638,235 (1.03%)    1,788,601,070 (0.99%)
-> -------------------------------------------------------------------------------------------------------------------
+> There are no other changes.
 
-ok, i had a quick look at the stddev numbers as well and most seem 
-below the 0.1 range, well below the effects you managed to measure. 
-So i think this table is pretty accurate and we can rely on it for 
-analysis.
+Hm, this triggers such warnings now:
 
-So we've got a +1.1% incrase in overhead with cgroups disabled, while 
-the instruction count went down by 1.1%. Is this expected? If you 
-profile stalled cycles and use perf diff between base and patched 
-kernels, does it show you some new hotspot that causes the overhead?
+Detected 2010.217 MHz processor.
+Marking TSC unstable due to TSCs unsynchronized
+Calibrating delay loop (skipped), value calculated using timer frequency.. 4022.95 BogoMIPS (lpj=6700723)
+pid_max: default: 4096 minimum: 301
+BUG: scheduling while atomic: swapper/0/0x10000002
+no locks held by swapper/0.
+Pid: 0, comm: swapper Not tainted 3.0.0-rc5-tip-01401-ga7adf5f-dirty #141020
+Call Trace:
+ [<ffffffff81ddb3b0>] __schedule_bug+0x60/0x65
+ [<ffffffff81dee803>] schedule+0x953/0x980
+ [<ffffffff81571e30>] ? serial8250_console_putchar+0x30/0x40
+ [<ffffffff81df177b>] ? _raw_spin_unlock+0x2b/0x50
+ [<ffffffff8107882a>] __cond_resched+0x2a/0x40
+ [<ffffffff81dee8e2>] _cond_resched+0x32/0x40
+ [<ffffffff81110ba8>] __alloc_pages_nodemask+0x1b8/0x880
+ [<ffffffff81df23ce>] ? common_interrupt+0xe/0x13
+ [<ffffffff81080649>] ? vprintk+0x359/0x530
+ [<ffffffff8113b4e7>] slob_new_pages+0x17/0x80
+ [<ffffffff8113bd13>] __kmalloc_node+0xa3/0x270
+ [<ffffffff81ddb6d5>] ? printk+0x41/0x43
+ [<ffffffff82738420>] pidmap_init+0x80/0xbf
+ [<ffffffff8272aa54>] start_kernel+0x28b/0x300
+ [<ffffffff8272a2ee>] x86_64_start_reservations+0xfe/0x102
+ [<ffffffff8272a3e2>] x86_64_start_kernel+0xf0/0xf7
+Security Framework initialized
+AppArmor: AppArmor initialized
+Mount-cache hash table entries: 256
+Initializing cgroup subsys cpuacct
 
-To better understand the reasons behind that result, could you try to 
-see whether the cycles count is stable across reboots as well, or 
-does it vary beyond the ~1% value that you measure?
-
-One thing that can help validating the measurements is to do:
-
-  echo 1 > /proc/sys/vm/drop_caches
-
-Before testing. This helps re-establish the whole pagecache layout 
-(which gives a lot of the across-boot variability of such 
-measurements).
+Not sure we want to warn about schedule during early init, or can it 
+cause problems and should thus be fixed? I bet there's more such 
+instances.
 
 Thanks,
 
