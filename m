@@ -1,109 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753990Ab1GACix (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 22:38:53 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:45727 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752373Ab1GACiw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 22:38:52 -0400
-Date: Thu, 30 Jun 2011 19:38:49 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-Subject: Re: [PATCH 1/8] regmap: Add generic non-memory mapped register
- access API
-Message-ID: <20110701023848.GA7540@opensource.wolfsonmicro.com>
-References: <20110622184407.GC13847@sirena.org.uk>
- <1308768353-19372-1-git-send-email-broonie@opensource.wolfsonmicro.com>
- <1309479761.3093.1659.camel@localhost>
+	id S1754423Ab1GACur (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 22:50:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32830 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752518Ab1GACup (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 22:50:45 -0400
+Message-ID: <4E0D35E5.9080506@redhat.com>
+Date: Thu, 30 Jun 2011 23:50:13 -0300
+From: Glauber Costa <glommer@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309479761.3093.1659.camel@localhost>
-X-Cookie: There is a fly on your nose.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Avi Kivity <avi@redhat.com>, Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: Re: [PATCH v3 7/9] KVM-GST: KVM Steal time accounting
+References: <1309361388-30163-1-git-send-email-glommer@redhat.com>	 <1309361388-30163-8-git-send-email-glommer@redhat.com> <1309470872.12449.609.camel@twins>
+In-Reply-To: <1309470872.12449.609.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 01:22:41AM +0100, Ben Hutchings wrote:
-> On Wed, 2011-06-22 at 19:45 +0100, Mark Brown wrote:
+On 06/30/2011 06:54 PM, Peter Zijlstra wrote:
+> On Wed, 2011-06-29 at 11:29 -0400, Glauber Costa wrote:
+>> +static noinline bool touch_steal_time(int is_idle)
+>
+> That noinline is very unlucky there,
+>
+>> +{
+>> +       u64 steal, st = 0;
+>> +
+>> +       if (static_branch(&paravirt_steal_enabled)) {
+>> +
+>> +               steal = paravirt_steal_clock(smp_processor_id());
+>> +
+>> +               steal -= this_rq()->prev_steal_time;
+>> +
+>> +               st = steal_ticks(steal);
+>> +               this_rq()->prev_steal_time += st * TICK_NSEC;
+>> +
+>> +               if (is_idle || st == 0)
+>> +                       return false;
+>> +
+>> +               account_steal_time(st);
+>> +               return true;
+>> +       }
+>> +       return false;
+>> +}
+>> +
+>>   static void update_rq_clock_task(struct rq *rq, s64 delta)
+>>   {
+>>          s64 irq_delta;
+>> @@ -3716,6 +3760,9 @@ void account_user_time(struct task_struct *p,
+>> cputime_t cputime,
+>>          struct cpu_usage_stat *cpustat =&kstat_this_cpu.cpustat;
+>>          cputime64_t tmp;
+>>
+>> +       if (touch_steal_time(0))
+>> +               return;
+>
+> Means we have an unconditional call here, even if the static_branch() is
+> patched out.
+Ok.
 
-> > +	b[0] = be16_to_cpu(b[0]);
-> > +
-> > +	return b[0];
-
-> The assignment doesn't seem to be necessary and will irritate sparse,
-> so:
-
-> 	return be16_to_cpu(b[0]);
-
-sparse is silent on whatever the issue is here and the assignment is
-used (we both modify the buffer in place and return the result of the
-conversion to make life more convenient for users).  Which isn't
-urgently tasteful but felt less tasteless than anything else I thought
-of.  Data manging doesn't lend itself to elegance.
-
-> > + * dev: Device that will be interacted with
-> > + * config: Configuration for register map
-
-> Missing '@' before the parameter names.
-
-You're looking at an old version of the code.
-
-> > +	/* Otherwise fall back on linearising by hand. */
-> > +	if (ret == -ENOTSUPP) {
-> > +		len = map->format.reg_bytes + val_len;
-> > +		buf = kmalloc(len, GFP_KERNEL);
-> > +		if (!buf)
-> > +			return -ENOMEM;
-> > +		memcpy(buf, map->work_buf, map->format.reg_bytes);
-> > +		memcpy(buf + map->format.reg_bytes, val, val_len);
-
-> If I understand correctly, this is usually called by _regmap_write() and
-> val is already at the appropriate offset in work_buf.  Is it not worth
-> avoiding the allocation in that case?
-
-It's marginal, and given that it's vanishingly rare to hit this case
-(essentially all the interesting controllers for this API can do the
-gather write) I didn't feel it was worth it for a first pass.  We can
-always do the optimization later if someone finds it important.  I
-suspect any controller that hits the issue is going to be slow enough to
-dwarf the cost of the allocation with the I/O cost.
-
-> General comments:
-
-> - All the functions must be called in process context, but this isn't
-> documented.
-
-This should be obvious, none of the relevant buses can be interacted
-with in anything other than process context anyway as they need to
-sleep.
-
-> - I think this could go in lib or drivers/base rather than in a new
-> directory.  The specific support for I2C and SPI would go in their
-> existing directories.
-
-lib feels wrong, it's going to be peering into the drivers directory too
-much.
-
-drivers/base is a good point, but then the code will grow quite a bit
-once we start layering cache support on top of it and until the code
-settles down I don't really want to have to deal with cross tree issues
-if we decide we need to update the interface to the bus code, that's
-definitely a first pass thing right now.  The latter is the main thing
-that made me do things this way rather than pushing things into the
-buses, it's definitely not the finished product right now internally -
-the client API should be reasonably stable so not have these issues.
-
-My inclination is to start off isolating the code until we've reached
-the point where things are more static.  I suppose we could put it in a
-subdirectory of drivers/base in the meantime, though.  Will have a think
-for the next repost.
-
-Fixed everything else, thanks.
+I was under the impression that the proper use of jump labels required 
+each label to be tied to a single location. If we make it inline, the 
+same key would point to multiple locations, and we would have trouble
+altering all of the locations. I might be wrong, of course. Isn't it the 
+case?
