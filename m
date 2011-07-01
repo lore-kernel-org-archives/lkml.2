@@ -1,91 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab1GAOcV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:32:21 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31623 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756598Ab1GAOcU convert rfc822-to-8bit (ORCPT
+	id S1756824Ab1GAOc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:32:56 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:20009 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756679Ab1GAOcx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:32:20 -0400
-MIME-Version: 1.0
-Message-ID: <871d7dbc-041f-411f-b91a-cbc5aeb9db98@default>
-Date: Fri, 1 Jul 2011 07:31:54 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Marcus Klemm <marcus.klemm@googlemail.com>, kvm@vger.kernel.org,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-kernel@vger.kernel.org,
-        linux-mm <linux-mm@kvack.org>,
-        Seth Jennings <sjenning@linux.vnet.ibm.com>,
-        devel@linuxdriverproject.org
-Subject: RE: [PATCH v2] staging: zcache: support multiple clients, prep for
- KVM and RAMster
-References: <1d15f28a-56df-4cf4-9dd9-1032f211c0d0@default20110630224019.GC2544@shale.localdomain>
- <3b67511f-bad9-4c41-915b-1f6e196f4d43@default
- 20110701083850.GE2544@shale.localdomain>
-In-Reply-To: <20110701083850.GE2544@shale.localdomain>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.4.1.0  (410211) [OL
- 12.0.6557.5001]
-Content-Type: text/plain; charset=us-ascii
+	Fri, 1 Jul 2011 10:32:53 -0400
+Subject: Re: [PATCH V2] MMC: PM: add suspend/resume in atmel-mci
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        cjb@laptop.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        kernel@avr32linux.org
+In-Reply-To: <4E0DD816.7070104@atmel.com>
+References: <201106292339.12402.rjw@sisk.pl>
+	 <1309441781-11012-1-git-send-email-nicolas.ferre@atmel.com>
+	 <20110630131342.GK11559@pengutronix.de>  <4E0DD816.7070104@atmel.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Fri, 01 Jul 2011 16:32:34 +0200
+Message-ID: <1309530754.4373.3.camel@hcegtvedt.norway.atmel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4E0DDA6F.002C:SCFMA922111,ss=1,re=-4.000,fgs=0
+X-OriginalArrivalTime: 01 Jul 2011 14:32:36.0283 (UTC) FILETIME=[B8C048B0:01CC37FB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Dan Carpenter [mailto:error27@gmail.com]
-> 
-> On Thu, Jun 30, 2011 at 04:28:14PM -0700, Dan Magenheimer wrote:
-> > Hi Dan --
-> >
-> > Thanks for the careful review.  You're right... some
-> > of this was leftover from debugging an off-by-one error,
-> > though the code as is still works.
-> >
-> > OTOH, there's a good chance that much of this sysfs
-> > code will disappear before zcache would get promoted
-> > out of staging, since it is to help those experimenting
-> > with zcache to get more insight into what the underlying
-> > compression/accept-reject algorithms are doing.
-> >
-> > So I hope you (and GregKH) are OK that another version is
-> > not necessary at this time to fix these.
-> 
-> Off by one errors are kind of insidious.  People cut and paste them
-> and they spread.  If someone adds a new list of chunks then there
-> are now two examples that are correct and two which have an extra
-> element, so it's 50/50 that he'll copy the right one.
+On Fri, 2011-07-01 at 16:22 +0200, Nicolas Ferre wrote:
+> Le 30/06/2011 15:13, Uwe Kleine-König :
 
-True, but these are NOT off-by-one errors... they are
-correct-but-slightly-ugly code snippets.  (To clarify, I said
-the *ugliness* arose when debugging an off-by-one error.)
+<snipp>
 
-Patches always welcome, and I agree that these should be
-fixed eventually, assuming the code doesn't go away completely
-first.. I'm simply stating the position
-that going through another test/submit cycling to fix
-correct-but-slightly-ugly code which is present only to
-surface information for experiments is not high on my priority
-list right now... unless GregKH says he won't accept the patch.
- 
-> Btw, looking at it again, this seems like maybe a similar issue in
-> zbud_evict_zbpg():
+> Well, actually for the current implementation the only return code is... 0.
+> And here I try to have a king of best effort approach ;-)
 > 
->    516          for (i = 0; i < MAX_CHUNK; i++) {
->    517  retry_unbud_list_i:
+> >> +			}
+> >> +			return ret;
+> >> +		}
+> >> +	}
+> >> +
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +static int atmci_resume(struct device *dev)
+> >> +{
+> >> +	struct atmel_mci *host = dev_get_drvdata(dev);
+> >> +	struct atmel_mci_slot *slot;
+> >> +	int i, ret;
+> >> +
+> >> +	for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
+> >> +		slot = host->slot[i];
+> >> +		if (!slot)
+> >> +			continue;
+> >> +		ret = mmc_resume_host(slot->mmc);
+> >> +		if (ret < 0)
+> >> +			return ret;
+> > Maybe you should try to resume host 5 even if resuming host 4 failed?
 > 
-> 
-> MAX_CHUNKS is NCHUNKS - 1.  Shouldn't that be i < NCHUNKS so that we
-> reach the last element in the list?
+> In fact all other drivers that are dealing with multiple slots are doing
+> the same... So I have difficulties to know the truth.
+> The question is: is it better to return an error to the "resume"
+> function so that we are called later again or do we have to do our best
+> to thaw everything out?
 
-No, the last element in that list is unused.  There is a comment
-to that effect someplace in the code.  (These lists are keeping
-track of pages with "chunks" of available space and the last
-entry would have no available space so is always empty.)
+Detect failures and return the error value, but also try to resume the
+other slots.
 
-Thanks again for your interest... are you using zcache?
+You must however then keep track of which are restored for later calls
+to resume AFAICT.
 
-Dan
+<snipp>
+
+-- 
+Hans-Christian Egtvedt
+
