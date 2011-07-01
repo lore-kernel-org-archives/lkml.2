@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758048Ab1GAXOW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 19:14:22 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:39332 "EHLO mail.zytor.com"
+	id S1758064Ab1GAXPf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 19:15:35 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60909 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756745Ab1GAXOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 19:14:21 -0400
-Message-ID: <4E0E532C.2060807@zytor.com>
-Date: Fri, 01 Jul 2011 16:07:24 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Kees Cook <kees.cook@canonical.com>
-CC: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Brian Gerst <brgerst@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] x86: add missing verify_cpu to 32bit wakeup
-References: <20110701211943.GA7042@outflux.net> <4E0E3B83.3000403@zytor.com> <20110701223623.GV32221@outflux.net>
-In-Reply-To: <20110701223623.GV32221@outflux.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756745Ab1GAXPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 19:15:34 -0400
+Subject: Re: [PATCH 2/2] powerpc/mm: Fix memory_block_size_bytes() for
+ non-pseries
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
+In-Reply-To: <20110701121516.GD28008@elte.hu>
+References: <1308013071.2874.785.camel@pasglop>
+	 <20110701121516.GD28008@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 02 Jul 2011 09:15:12 +1000
+Message-ID: <1309562112.14501.257.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/01/2011 03:36 PM, Kees Cook wrote:
->>
->> For S3, we should save/restore MISC_ENABLE instead... in fact, we
->> already save it, we just restore it too late.
-> 
-> Given that MISC_ENABLE may not be available for a given CPU, it seems that
-> it's basically the same detection code as in verify_cpu() already. Since
-> this bit is the only part that is needed that early, I think the patch is
-> good the way it is (especially since it balances the 64bit path which
-> already calls this logic). I don't think doing the full early MISC_ENABLE
-> save/restore this early is worth it. Thoughts?
-> 
+On Fri, 2011-07-01 at 14:15 +0200, Ingo Molnar wrote:
 
-We already save it, including if it exists, so we should just restore it
-early, and then we don't have to do it again.
+> > +/* WARNING: This is going to override the generic definition whenever
+> > + * pseries is built-in regardless of what platform is active at boot
+> > + * time. This is fine for now as this is the only "option" and it
+> > + * should work everywhere. If not, we'll have to turn this into a
+> > + * ppc_md. callback
+> > + */
+> 
+> Just a small nit, please use the customary (multi-line) comment 
+> style:
+> 
+>   /*
+>    * Comment .....
+>    * ...... goes here.
+>    */
+> 
+> specified in Documentation/CodingStyle.
 
-	-hpa
+Ah ! Here goes my sneak attempts at violating coding style while nobody
+notices :-)
+
+No seriously, that sort of stuff shouldn't be such a hard rule... In
+some cases the "official" way looks nicer, on some cases it's just a
+waste of space, and I've grown to prefer my slightly more compact form,
+at least depending on how the surrounding code looks like.
+
+Since that's all powerpc arch code, I believe I'm entitled to that
+little bit of flexibility in how the code looks like :-) It's not
+like I'm GoingToPlayWithCaps() or switching to 3-char tabs :-)
+
+Cheers,
+Ben.
+
 
