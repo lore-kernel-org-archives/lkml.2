@@ -1,44 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757909Ab1GAVbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:31:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63899 "EHLO mx1.redhat.com"
+	id S1758025Ab1GAVcB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 17:32:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6780 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757837Ab1GAVbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:31:03 -0400
+	id S1757919Ab1GAVbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 17:31:09 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+Cc: linux-kernel@vger.kernel.org, Isaku Yamahata <yamahata@valinux.co.jp>,
+        Eddie Dong <eddie.dong@intel.com>, Rik van Riel <riel@redhat.com>,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
         Anthony Liguori <aliguori@us.ibm.com>,
         Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH v4 4/9] KVM-HV: KVM Steal time implementation
-Date: Fri,  1 Jul 2011 17:22:44 -0400
-Message-Id: <1309555369-16867-5-git-send-email-glommer@redhat.com>
+Subject: [PATCH v4 6/9] add jump labels for ia64 paravirt
+Date: Fri,  1 Jul 2011 17:22:46 -0400
+Message-Id: <1309555369-16867-7-git-send-email-glommer@redhat.com>
 In-Reply-To: <1309555369-16867-1-git-send-email-glommer@redhat.com>
 References: <1309555369-16867-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To implement steal time, we need the hypervisor to pass the guest
-information about how much time was spent running other processes
-outside the VM, while the vcpu had meaningful work to do - halt
-time does not count.
-
-This information is acquired through the run_delay field of
-delayacct/schedstats infrastructure, that counts time spent in a
-runqueue but not running.
-
-Steal time is a per-cpu information, so the traditional MSR-based
-infrastructure is used. A new msr, KVM_MSR_STEAL_TIME, holds the
-memory area address containing information about steal time
-
-This patch contains the hypervisor part of the steal time infrasructure,
-and can be backported independently of the guest portion.
+Since in a later patch I intend to call jump labels inside
+CONFIG_PARAVIRT, IA64 would fail to compile if they are not
+provided. This patch provides those jump labels for the IA64
+architecture.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
+CC: Isaku Yamahata <yamahata@valinux.co.jp>
+CC: Eddie Dong <eddie.dong@intel.com>
 CC: Rik van Riel <riel@redhat.com>
 CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 CC: Peter Zijlstra <peterz@infradead.org>
@@ -46,171 +38,38 @@ CC: Avi Kivity <avi@redhat.com>
 CC: Anthony Liguori <aliguori@us.ibm.com>
 CC: Eric B Munson <emunson@mgebm.net>
 ---
- arch/x86/include/asm/kvm_host.h |    8 +++++
- arch/x86/include/asm/kvm_para.h |    4 +++
- arch/x86/kvm/Kconfig            |    1 +
- arch/x86/kvm/x86.c              |   56 ++++++++++++++++++++++++++++++++++++--
- 4 files changed, 66 insertions(+), 3 deletions(-)
+ arch/ia64/include/asm/paravirt.h |    4 ++++
+ arch/ia64/kernel/paravirt.c      |    2 ++
+ 2 files changed, 6 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index da6bbee..9ba354d 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -389,6 +389,14 @@ struct kvm_vcpu_arch {
- 	unsigned int hw_tsc_khz;
- 	unsigned int time_offset;
- 	struct page *time_page;
-+
-+	struct {
-+		u64 msr_val;
-+		u64 last_steal;
-+		struct gfn_to_hva_cache stime;
-+		struct kvm_steal_time steal;
-+	} st;
-+
- 	u64 last_guest_tsc;
- 	u64 last_kernel_ns;
- 	u64 last_tsc_nsec;
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 65f8bb9..c484ba8 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -45,6 +45,10 @@ struct kvm_steal_time {
- 	__u32 pad[12];
- };
- 
-+#define KVM_STEAL_ALIGNMENT_BITS 5
-+#define KVM_STEAL_VALID_BITS ((-1ULL << (KVM_STEAL_ALIGNMENT_BITS + 1)))
-+#define KVM_STEAL_RESERVED_MASK (((1 << KVM_STEAL_ALIGNMENT_BITS) - 1 ) << 1)
-+
- #define KVM_MAX_MMU_OP_BATCH           32
- 
- #define KVM_ASYNC_PF_ENABLED			(1 << 0)
-diff --git a/arch/x86/kvm/Kconfig b/arch/x86/kvm/Kconfig
-index 50f6364..99c3f05 100644
---- a/arch/x86/kvm/Kconfig
-+++ b/arch/x86/kvm/Kconfig
-@@ -31,6 +31,7 @@ config KVM
- 	select KVM_ASYNC_PF
- 	select USER_RETURN_NOTIFIER
- 	select KVM_MMIO
-+	select TASK_DELAY_ACCT
- 	---help---
- 	  Support hosting fully virtualized guest machines using hardware
- 	  virtualization extensions.  You will need a fairly recent
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 7167717..237bcdc 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -808,12 +808,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
-  * kvm-specific. Those are put in the beginning of the list.
-  */
- 
--#define KVM_SAVE_MSRS_BEGIN	8
-+#define KVM_SAVE_MSRS_BEGIN	9
- static u32 msrs_to_save[] = {
- 	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
- 	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
- 	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
--	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
-+	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN, MSR_KVM_STEAL_TIME,
- 	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
- 	MSR_STAR,
- #ifdef CONFIG_X86_64
-@@ -1491,6 +1491,27 @@ static void kvmclock_reset(struct kvm_vcpu *vcpu)
- 	}
+diff --git a/arch/ia64/include/asm/paravirt.h b/arch/ia64/include/asm/paravirt.h
+index 2eb0a98..32551d3 100644
+--- a/arch/ia64/include/asm/paravirt.h
++++ b/arch/ia64/include/asm/paravirt.h
+@@ -281,6 +281,10 @@ paravirt_init_missing_ticks_accounting(int cpu)
+ 		pv_time_ops.init_missing_ticks_accounting(cpu);
  }
  
-+static void record_steal_time(struct kvm_vcpu *vcpu)
-+{
-+	u64 delta;
++struct jump_label_key;
++extern struct jump_label_key paravirt_steal_enabled;
++extern struct jump_label_key paravirt_steal_rq_enabled;
 +
-+	if (!(vcpu->arch.st.msr_val & KVM_MSR_ENABLED))
-+		return;
-+
-+	if (unlikely(kvm_read_guest_cached(vcpu->kvm, &vcpu->arch.st.stime,
-+		&vcpu->arch.st.steal, sizeof(struct kvm_steal_time))))
-+		return;
-+
-+	delta = current->sched_info.run_delay - vcpu->arch.st.last_steal;
-+	vcpu->arch.st.last_steal = current->sched_info.run_delay;
-+
-+	vcpu->arch.st.steal.steal += delta;
-+	vcpu->arch.st.steal.version += 2;
-+
-+	kvm_write_guest_cached(vcpu->kvm, &vcpu->arch.st.stime,
-+		&vcpu->arch.st.steal, sizeof(struct kvm_steal_time));
-+}
-+
- int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ static inline int
+ paravirt_do_steal_accounting(unsigned long *new_itm)
  {
- 	switch (msr) {
-@@ -1573,6 +1594,28 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
- 		if (kvm_pv_enable_async_pf(vcpu, data))
- 			return 1;
- 		break;
-+	case MSR_KVM_STEAL_TIME:
-+		vcpu->arch.st.msr_val = data;
-+
-+		if (!(data & KVM_MSR_ENABLED)) {
-+			break;
-+		}
-+
-+		if (unlikely(!sched_info_on()))
-+			break;
-+
-+		if (data & KVM_STEAL_RESERVED_MASK)
-+			return 1;
-+
-+		if (kvm_gfn_to_hva_cache_init(vcpu->kvm, &vcpu->arch.st.stime,
-+							data & KVM_STEAL_VALID_BITS))
-+			return 1;
-+
-+		vcpu->arch.st.last_steal = current->sched_info.run_delay;
-+
-+		record_steal_time(vcpu);
-+		break;
-+
- 	case MSR_IA32_MCG_CTL:
- 	case MSR_IA32_MCG_STATUS:
- 	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
-@@ -1858,6 +1901,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
- 	case MSR_KVM_ASYNC_PF_EN:
- 		data = vcpu->arch.apf.msr_val;
- 		break;
-+	case MSR_KVM_STEAL_TIME:
-+		data = vcpu->arch.st.msr_val;
-+		break;
- 	case MSR_IA32_P5_MC_ADDR:
- 	case MSR_IA32_P5_MC_TYPE:
- 	case MSR_IA32_MCG_CAP:
-@@ -2169,6 +2215,8 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 			kvm_migrate_timers(vcpu);
- 		vcpu->cpu = cpu;
- 	}
-+
-+	record_steal_time(vcpu);
- }
+diff --git a/arch/ia64/kernel/paravirt.c b/arch/ia64/kernel/paravirt.c
+index a21d7bb..1008682 100644
+--- a/arch/ia64/kernel/paravirt.c
++++ b/arch/ia64/kernel/paravirt.c
+@@ -634,6 +634,8 @@ struct pv_irq_ops pv_irq_ops = {
+  * pv_time_ops
+  * time operations
+  */
++struct jump_label_key paravirt_steal_enabled;
++struct jump_label_key paravirt_steal_rq_enabled;
  
- void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
-@@ -2489,7 +2537,8 @@ static void do_cpuid_ent(struct kvm_cpuid_entry2 *entry, u32 function,
- 			     (1 << KVM_FEATURE_NOP_IO_DELAY) |
- 			     (1 << KVM_FEATURE_CLOCKSOURCE2) |
- 			     (1 << KVM_FEATURE_ASYNC_PF) |
--			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT);
-+			     (1 << KVM_FEATURE_CLOCKSOURCE_STABLE_BIT) |
-+			     (1 << KVM_FEATURE_STEAL_TIME);
- 		entry->ebx = 0;
- 		entry->ecx = 0;
- 		entry->edx = 0;
-@@ -6209,6 +6258,7 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
- 
- 	kvm_make_request(KVM_REQ_EVENT, vcpu);
- 	vcpu->arch.apf.msr_val = 0;
-+	vcpu->arch.st.msr_val = 0;
- 
- 	kvmclock_reset(vcpu);
- 
+ static int
+ ia64_native_do_steal_accounting(unsigned long *new_itm)
 -- 
 1.7.3.4
 
