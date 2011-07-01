@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab1GANrj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:47:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60032 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756479Ab1GANrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:47:35 -0400
-Date: Fri, 1 Jul 2011 15:47:34 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Peter Foley <pefoley2@verizon.net>
-Cc: Arnaud Lacombe <lacombar@gmail.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>
-Subject: Re: [PATCH V2] kbuild: silence generated makefile message
-Message-ID: <20110701134733.GB25895@sepie.suse.cz>
-References: <alpine.LNX.2.00.1106271619350.24034@linux>
- <BANLkTimrUYk-8GSsf35mUmLVBAaO84R6dA@mail.gmail.com>
- <alpine.LNX.2.00.1106271915160.38876@linux>
- <alpine.LNX.2.00.1106271932480.13060@linux>
+	id S1756626Ab1GANsV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:48:21 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38138
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756463Ab1GANsT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 09:48:19 -0400
+Date: Fri, 1 Jul 2011 09:47:05 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Petr Tesarik <ptesarik@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+Message-ID: <20110701134705.GA6175@infradead.org>
+References: <201106171038.25988.ptesarik@suse.cz>
+ <20110617093032.GA19235@elte.hu>
+ <201106291106.00070.ptesarik@suse.cz>
+ <20110701125802.GE12605@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1106271932480.13060@linux>
+In-Reply-To: <20110701125802.GE12605@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 07:33:54PM -0400, Peter Foley wrote:
-> 
-> This patch silences the "make -C /usr/src/git O=/usr/src/git/build/." 
-> message shown when using the generated makefile in KBUILD_OUTDIR.
-> 
-> 
-> Signed-off-by: Peter Foley <pefoley2@verizon.net>
-> ---
-> 
-> V2: Show message when V=1
-> 
->  scripts/mkmakefile |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/scripts/mkmakefile b/scripts/mkmakefile
-> index 5325423..ea26f37 100644
-> --- a/scripts/mkmakefile
-> +++ b/scripts/mkmakefile
-> @@ -30,6 +30,10 @@ PATCHLEVEL = $4
->  lastword = \$(word \$(words \$(1)),\$(1))
->  makedir := \$(dir \$(call lastword,\$(MAKEFILE_LIST)))
->  
-> +ifneq (\$(V),1)
-> +Q := @
-> +endif
+On Fri, Jul 01, 2011 at 02:58:02PM +0200, Ingo Molnar wrote:
+> So what was not mentioned in your series, what is *your* motivation 
+> and your usecase? Enabling closed-source userspace drivers? Enabling 
+> the crash utility?
 
-Please check if V=1 is passed on the commandline and not set in the
-environmnent, like the toplevel Makefile does:
+He stated it pretty clearly in the thread, it's the crash utility.
 
-ifeq ("$(origin V)", "command line")
-...
+> 
+> If the former then shame on you, if the latter then how do you 
+> explain that distros appear to disable the RAM aspect of /dev/mem:
+> 
+>  $ grep DEVMEM $(rpm -ql kernel-2.6.38-0.rc7.git2.3.fc16.x86_64 | grep config-2.6 )
+>  CONFIG_STRICT_DEVMEM=y
+> 
+> So the crash utility use-case does not work on unpatched, default 
+> kernels, right?
 
-Michal
+Not if you have highmem.  That's why Redhat or Fedora to quote your
+example patch in the /dev/crash driver, which totally defeats the
+CONFIG_STRICT_DEVMEM setting.  But apparently it's good enough that no
+one either noticed or at least doesn't care.
+
