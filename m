@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab1GADAc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 23:00:32 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54219 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752518Ab1GADAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 23:00:30 -0400
-Subject: Re: linux-next: build failure after merge of the powerpc tree
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20110701113942.5cfed9a3.sfr@canb.auug.org.au>
-References: <20110701113942.5cfed9a3.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 13:00:12 +1000
-Message-ID: <1309489212.14501.237.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754539Ab1GADCJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 23:02:09 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:44190 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687Ab1GADCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 23:02:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <BANLkTi=DiVRV9dkTtYgq+CY-kxVs5ecoWw@mail.gmail.com>
+References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
+	<BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
+	<20110630075716.GB3377@albatros>
+	<BANLkTik0DF5jUhOsP=Pnm+vMbHzEx+3L-Q@mail.gmail.com>
+	<BANLkTi=DiVRV9dkTtYgq+CY-kxVs5ecoWw@mail.gmail.com>
+Date: Fri, 1 Jul 2011 08:32:07 +0530
+Message-ID: <BANLkTimnP8L3kSoafdTtUhr9CXx9-WDVLQ@mail.gmail.com>
+Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
+From: Balbir Singh <bsingharora@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, Shailabh Nagar <nagar@us.ibm.com>,
+        linux-kernel@vger.kernel.org, security@kernel.org,
+        Eric Paris <eparis@redhat.com>, Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        David Rientjes <rientjes@google.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        kernel-hardening@lists.openwall.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 11:39 +1000, Stephen Rothwell wrote:
-> Hi all,
-> 
-> After merging the powerpc tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> arch/powerpc/include/asm/setup.h: Assembler messages:
-> arch/powerpc/include/asm/setup.h:6: Error: Unrecognized opcode: `extern'
-> make[2]: *** [arch/powerpc/kernel/head_64.o] Error 1
-> 
-> Caused by commit a9c0f41b3a64 ("powerpc: Add printk companion for
-> ppc_md.progress").  Clearly not build tested for 64 but powerpc :-(
-> 
-> I have used the version of the powerpc tree from next-20110630 for today.
+On Thu, Jun 30, 2011 at 10:10 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, Jun 30, 2011 at 3:59 AM, Balbir Singh <bsingharora@gmail.com> wrote:
+>> On Thu, Jun 30, 2011 at 1:27 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+>>> On Wed, Jun 29, 2011 at 13:09 -0700, Linus Torvalds wrote:
+>>>> Ok, having looked at this some more, I'm quite ready to just mark the
+>>>> whole TASKSTATS config option as BROKEN. It does seem to be a horrible
+>>>> security hazard, and very little seems to use it.
+>>>>
+>>
+>> I am not sure how you define BROKEN, BROKEN as per security rules?
+>> /proc/$pid/xxx also expose similar information.
+>
+> No it doesn't.
+>
+> /proc/$pid/xyz has always had proper security checks. Now, sometimes
+> they've been a bit too lax (iow, we've had cases where we just allowed
+> things we shouldn't - like this "io" file), but /proc/pid/ at least
+> *conceptually* has always had the "do I have permission to read this
+> or not". Do a "cat /proc/*/* > /dev/null" and you'll be getting a lot
+> of "permission denied" etc.
+>
 
-Crap !
+I've tried that, but fundamentally the statistics we export in
+taskstats is what a utility like top would need. Compare them against
+cat /proc/$pid/sched and /proc/$pid/status
 
-I had fixed that locally, and ... forgot to commit --amend before
-pushing it.
+> TASKSTATS? Nothing. Nada. Completely open.
+>
+> That's just broken.
+>
 
-I'll stick a fixup patch right next to it.
+Except for the I/O part, which turned about to be a cause of concern,
+look at struct taskstats and please see the comment above. We have
+some additional delay statistics, but I don't see them as a core
+broken issue
 
-Cheers,
-Ben.
+> TASKSTATS also isn't apparently used by any normal program, and so
+> never got updated to namespaces. Again, /proc/xyz/ at least *tries*:
+> I'm not guaranteeing that it doesn't have some gaping holes, but I can
+> at least find the logic that saves and uses namespace information.
+>
 
+Or namespaces are not being used as much, I know a lot of users use
+iotop(), I've frequently gotten and handled requests to enable the
+feature across distros
 
+> Again, TASKSTATS? Not so much.
+>
+>> I must admit, I did not pay much attention to pid namespace changes as
+>> they were being made to taskstats. I'll look at the code later this
+>> week.
+>
+> Some of the pid namespace issues could be fixed with the attached kind
+> of starting point.
+>
+> But it's broken. See the comment I added. Why is it broken? Again -
+> taskstats is fundamentally broken, and doesn't seem to actually clean
+> up after itself. The "cleanup" depends on noticing at run-time that
+> some pid is stale and no longer listening. Again, that's just
+> fundamental brokenness in taskstats.
+>
 
+That is lazy cleanup to avoid trapping exit events of listeners and
+then having to check against the list. But if the cleanup needs to be
+more active, it should be easy to fix. What I am saying is that it is
+not as BROKEN as you make it sound. The attached patch is definitely a
+step in the right direction and should be applied.
+
+> And it also only look sat pid namespaces. The network namespace issue
+> is separate.
+>
+> So that's why I think it should be marked BROKEN. What applications
+> actually depend on this? iotop and what else? Because if it's just
+> iotop, I do suspect we might be better off telling people "ok,
+> disabling this will break iotop, but quite frankly, you're better off
+> without it".
+
+I beg to differ, due to the reasons above. I'd rather find time and
+fix the pending issues (network namespace), you've fixed the pid
+namespace issue. I'd also look for exiting listeners
+
+Balbir Singh
