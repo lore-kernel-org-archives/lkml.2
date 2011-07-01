@@ -1,38 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189Ab1GATj1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 15:39:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48559 "EHLO ogre.sisk.pl"
+	id S1756427Ab1GATnf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 15:43:35 -0400
+Received: from mail.perches.com ([173.55.12.10]:3427 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755051Ab1GATj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 15:39:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Marc Koschewski <marc@osknowledge.org>
-Subject: Re: [REGRESSION] suspend/resume broken on T510
-Date: Fri, 1 Jul 2011 21:40:03 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org,
-        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-References: <20110630220050.GB30291@marc.osknowledge.org> <201107010007.27588.rjw@sisk.pl> <20110630223401.GA17292@marc.osknowledge.org>
-In-Reply-To: <20110630223401.GA17292@marc.osknowledge.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107012140.03596.rjw@sisk.pl>
+	id S1751711Ab1GATnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 15:43:32 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-decnet-user@lists.sourceforge.net, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-x25@vger.kernel.org,
+        linux-hams@vger.kernel.org, linux-sctp@vger.kernel.org,
+        linux-nfs@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 00/12] net switch/case reformatting
+Date: Fri,  1 Jul 2011 12:43:01 -0700
+Message-Id: <cover.1309549243.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 01, 2011, Marc Koschewski wrote:
-> * Rafael J. Wysocki <rjw@sisk.pl> [2011-07-01 00:07:27 +0200]:
-> 
-> Hi Rafael,
-> 
-> I have attached some files here to let you know what machine won't resume.
+Just whitespace cleanups with a couple trivial corrections
 
-I saw them, thanks.
+Joe Perches (12):
+  appletalk: Reduce switch/case indent
+  decnet: Reduce switch/case indent
+  econet: Reduce switch/case indent
+  ipconfig: Reduce switch/case indent
+  netfilter: Reduce switch/case indent
+  ipv4: Reduce switch/case indent
+  ipv6: Reduce switch/case indent
+  lapb: Reduce switch/case indent
+  netrom:  Reduce switch/case indent
+  sctp: Reduce switch/case indent
+  sunrpc: Reduce switch/case indent
+  x25: Reduce switch/case indent
 
-Still, it's a bit difficult to figure out what's wrong.
+ net/appletalk/aarp.c                   |  138 +++---
+ net/appletalk/ddp.c                    |  398 +++++++-------
+ net/decnet/af_decnet.c                 |  697 +++++++++++++-------------
+ net/decnet/dn_dev.c                    |   70 ++--
+ net/decnet/dn_fib.c                    |   77 ++--
+ net/decnet/dn_neigh.c                  |   14 +-
+ net/decnet/dn_nsp_in.c                 |  182 ++++----
+ net/decnet/dn_route.c                  |  102 ++--
+ net/decnet/dn_table.c                  |   23 +-
+ net/decnet/netfilter/dn_rtmsg.c        |   18 +-
+ net/decnet/sysctl_net_decnet.c         |   17 +-
+ net/econet/af_econet.c                 |   23 +-
+ net/ipv4/ipconfig.c                    |   73 ++--
+ net/ipv4/netfilter/ipt_CLUSTERIP.c     |   26 +-
+ net/ipv4/netfilter/nf_nat_snmp_basic.c |  210 ++++----
+ net/ipv4/raw.c                         |   36 +-
+ net/ipv4/route.c                       |   28 +-
+ net/ipv6/raw.c                         |  145 +++---
+ net/lapb/lapb_iface.c                  |   30 +-
+ net/lapb/lapb_in.c                     |  881 ++++++++++++++++----------------
+ net/netfilter/xt_HL.c                  |   64 ++--
+ net/netfilter/xt_hl.c                  |   32 +-
+ net/netrom/nr_route.c                  |   22 +-
+ net/sctp/sm_statefuns.c                |   51 +-
+ net/sctp/socket.c                      |   10 +-
+ net/sunrpc/auth_gss/auth_gss.c         |   46 +-
+ net/sunrpc/clnt.c                      |   25 +-
+ net/sunrpc/rpc_pipe.c                  |   14 +-
+ net/x25/af_x25.c                       |  473 +++++++++---------
+ net/x25/x25_dev.c                      |   44 +-
+ net/x25/x25_in.c                       |  118 +++---
+ net/x25/x25_link.c                     |   87 ++--
+ net/x25/x25_subr.c                     |   78 ++--
+ 33 files changed, 2111 insertions(+), 2141 deletions(-)
 
-Rafael
+-- 
+1.7.6.rc1
+
