@@ -1,121 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757873Ab1GAVbG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:31:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54574 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757827Ab1GAVbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:31:03 -0400
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH v4 3/9] KVM-HDR: KVM Steal time implementation
-Date: Fri,  1 Jul 2011 17:22:43 -0400
-Message-Id: <1309555369-16867-4-git-send-email-glommer@redhat.com>
-In-Reply-To: <1309555369-16867-1-git-send-email-glommer@redhat.com>
-References: <1309555369-16867-1-git-send-email-glommer@redhat.com>
+	id S1758084Ab1GAVd0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 17:33:26 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:37293 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757817Ab1GAVdW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 17:33:22 -0400
+X-Sasl-enc: zHE2QvKUeNACuhQHXAy0V15NJc/RIwCZuQUMvM4AFW1/ 1309556001
+Date: Fri, 1 Jul 2011 14:24:27 -0700
+From: Greg KH <greg@kroah.com>
+To: Kirill Smelkov <kirr@mns.spb.ru>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-uvc-devel@lists.berlios.de,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] USB: EHCI: Allow users to override 80% max
+ periodic bandwidth
+Message-ID: <20110701212427.GA11831@kroah.com>
+References: <cover.1309520144.git.kirr@mns.spb.ru>
+ <69ea2dd940481508f190419c53c780b626460b22.1309520144.git.kirr@mns.spb.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <69ea2dd940481508f190419c53c780b626460b22.1309520144.git.kirr@mns.spb.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To implement steal time, we need the hypervisor to pass the guest information
-about how much time was spent running other processes outside the VM.
-This is per-vcpu, and using the kvmclock structure for that is an abuse
-we decided not to make.
+On Fri, Jul 01, 2011 at 03:47:11PM +0400, Kirill Smelkov wrote:
+>  drivers/usb/host/ehci-sysfs.c |  104 +++++++++++++++++++++++++++++++++++++++--
 
-In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
-holds the memory area address containing information about steal time
+As you are adding new sysfs files, it is required that you also add new
+entries in the Documentation/ABI/ directory.
 
-This patch contains the headers for it. I am keeping it separate to facilitate
-backports to people who wants to backport the kernel part but not the
-hypervisor, or the other way around.
+Please do that for these files so that people have an idea of what they
+are, and how to use them.
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Avi Kivity <avi@redhat.com>
-CC: Anthony Liguori <aliguori@us.ibm.com>
-CC: Eric B Munson <emunson@mgebm.net>
----
- Documentation/virtual/kvm/msr.txt |   35 +++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/kvm_para.h   |    9 +++++++++
- 2 files changed, 44 insertions(+), 0 deletions(-)
+Care to redo this series with that change?
 
-diff --git a/Documentation/virtual/kvm/msr.txt b/Documentation/virtual/kvm/msr.txt
-index d079aed..38db3f8 100644
---- a/Documentation/virtual/kvm/msr.txt
-+++ b/Documentation/virtual/kvm/msr.txt
-@@ -185,3 +185,38 @@ MSR_KVM_ASYNC_PF_EN: 0x4b564d02
- 
- 	Currently type 2 APF will be always delivered on the same vcpu as
- 	type 1 was, but guest should not rely on that.
-+
-+MSR_KVM_STEAL_TIME: 0x4b564d03
-+
-+	data: 64-byte alignment physical address of a memory area which must be
-+	in guest RAM, plus an enable bit in bit 0. This memory is expected to
-+	hold a copy of the following structure:
-+
-+	struct kvm_steal_time {
-+	  	__u64 steal;
-+ 		__u32 version;
-+ 		__u32 flags;
-+	 	__u32 pad[12];
-+	}
-+
-+	whose data will be filled in by the hypervisor periodically. Only one
-+	write, or registration, is needed for each VCPU. The interval between
-+	updates of this structure is arbitrary and implementation-dependent.
-+	The hypervisor may update this structure at any time it sees fit until
-+	anything with bit0 == 0 is written to it. Guest is required to make sure
-+	this structure is initialized to zero.
-+
-+	Fields have the following meanings:
-+
-+		version: a sequence counter. In other words, guest has to check
-+		this field before and after grabbing time information and make 
-+		sure they are both equal and even. An odd version indicates an
-+		in-progress update.
-+
-+		flags: At this point, always zero. May be used to indicate
-+		changes in this structure in the future.
-+
-+		steal: the amount of time in which this vCPU did not run, in
-+		nanoseconds. Time during which the vcpu is idle, will not be
-+		reported as steal time.
-+
-diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index d6cd79b..65f8bb9 100644
---- a/arch/x86/include/asm/kvm_para.h
-+++ b/arch/x86/include/asm/kvm_para.h
-@@ -21,6 +21,7 @@
-  */
- #define KVM_FEATURE_CLOCKSOURCE2        3
- #define KVM_FEATURE_ASYNC_PF		4
-+#define KVM_FEATURE_STEAL_TIME		5
- 
- /* The last 8 bits are used to indicate how to interpret the flags field
-  * in pvclock structure. If no bits are set, all flags are ignored.
-@@ -35,6 +36,14 @@
- #define MSR_KVM_WALL_CLOCK_NEW  0x4b564d00
- #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
- #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
-+#define MSR_KVM_STEAL_TIME  0x4b564d03
-+
-+struct kvm_steal_time {
-+	__u64 steal;
-+	__u32 version;
-+	__u32 flags;
-+	__u32 pad[12];
-+};
- 
- #define KVM_MAX_MMU_OP_BATCH           32
- 
--- 
-1.7.3.4
+thanks,
 
+greg k-h
