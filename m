@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756946Ab1GAQFh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:05:37 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:62935 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab1GAQFf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:05:35 -0400
+	id S1757063Ab1GAQFu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:05:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58969 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756979Ab1GAQFr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 12:05:47 -0400
+Message-ID: <4E0DEF2C.3040504@zytor.com>
+Date: Fri, 01 Jul 2011 09:00:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinnEPKC+Nb7zK_PswU+M=sNPxWCig@mail.gmail.com>
-References: <1305248699-2347-1-git-send-email-daniel.blueman@gmail.com>
-	<69e8f8a9-4e8b-4c02-b566-304ff837d166@email.android.com>
-	<BANLkTi=h5f6o3iVK24sQ20xYYQAMbLavMg@mail.gmail.com>
-	<BANLkTik9BtnXxsOGKuhmoUFsKPbhBwXr3A@mail.gmail.com>
-	<4DE3C652.5090309@zytor.com>
-	<BANLkTinnEPKC+Nb7zK_PswU+M=sNPxWCig@mail.gmail.com>
-Date: Sat, 2 Jul 2011 00:05:33 +0800
-Message-ID: <BANLkTiktLdMiSa7bOCkrRxmngx-=CONSew@mail.gmail.com>
-Subject: Re: [PATCH] x86: Add Dell E5420 reboot quirk
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Ingo Molnar <mingo@elte.hu>
+CC: Petr Tesarik <ptesarik@suse.cz>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+References: <201106171038.25988.ptesarik@suse.cz> <20110701144129.GA10052@infradead.org> <20110701144641.GA23272@elte.hu> <201107011654.06651.ptesarik@suse.cz> <20110701153634.GA27407@elte.hu>
+In-Reply-To: <20110701153634.GA27407@elte.hu>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 May 2011 00:52, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
-> On 31 May 2011 00:31, H. Peter Anvin <hpa@zytor.com> wrote:
->> On 05/30/2011 07:43 AM, Daniel J Blueman wrote:
->>>
->>> Without this patch, rebooting is like Russian roulette; with quite a
->>> few of these laptops in the field, perhaps it is better to enable the
->>> quirk unless you think there may be an issue in the kernel preventing
->>> correct behaviour that I could debug?
->>>
->>> On the other hand, Dell may later fix the BIOS AML (seen with the
->>> excellent fwts) just as the cure for cancer is found. If they do, I'll
->>> buy whiskey too.
->
->> Enabling the quirk is the right thing; however, if ACPI worked I'd have
->> preferred it since we just switched to ACPI as the default.
->
-> Indeed - the new and default ACPI reboot method works perfectly in
-> 3.0-rc1, whereas with 2.6.39, it didn't, so no further need for this
-> patch then.
+On 07/01/2011 08:36 AM, Ingo Molnar wrote:
+> 
+> So we could kill multiple birds with the same stone here:
+> 
+>  - remove various ugly uses of /dev/mem (including the rootkit usage),
+>    with or without strict-devmem
+> 
+>  - extending it to above-4G for inspection purposes
+> 
+>  - allowing to kill /dev/mem access runtime similar to the 
+>    disable_modules lock-down killswitch, for the so inclined.
+> 
+> Would you be interested in modifying your patch-set in such a 
+> fashion?
+> 
 
-I slipped up, since after finally now moving on from 2.6.39, I removed
-the 'reboot=p' boot parameter; it turns out that 3.0-rc1 through -rc5
-do need this workaround; and the BIOS isn't changed. Honest. So, I
-didn't double-check that I had booted without it.
+There is another use that I have looked at, as well: for testing
+purposes, it would be extremely good to be able to dirty and/or flush an
+arbitrary physical cache line for testing purposes.
 
-Can you queue up the patch please (earlier in the thread)? Probably we
-should consider it for stable too, due to the hassle it brings. Let me
-know if we should debug would be useful for this problem.
+This is very very similar to /dev/mem usage -- access to an arbitrary
+chunk of memory -- and a fully enabled /dev/mem can of course support
+this use (just mmap the page with the relevant cache line).  However, it
+could also be a separate device which could have looser permissions than
+/dev/mem; or a set of ioctls on /dev/mem with a separate kill switch,
+because no data would ever be have modified or returned to user space.
 
-Thanks,
-  Daniel
+Either way, though, we found that it would share a lot of code with the
+/dev/mem implementation, and as such fixing up the underlying machinery
+is the sanest way to upstream this.
+
+	-hpa
+
 -- 
-Daniel J Blueman
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
