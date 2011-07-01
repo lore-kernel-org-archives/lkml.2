@@ -1,43 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab1GAASM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 20:18:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50523 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab1GAASL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 20:18:11 -0400
-Message-ID: <4E0D1239.70205@zytor.com>
-Date: Thu, 30 Jun 2011 17:18:01 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754088Ab1GAATl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 20:19:41 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:46431 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286Ab1GAATj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 20:19:39 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 00/40] Staging: hv: Driver cleanup
+Thread-Topic: [PATCH 00/40] Staging: hv: Driver cleanup
+Thread-Index: AQHMNmfj17zjqSVuBEq2aM1XFV3FGpTWwcoA///MScCAAHrJAP//kvcw
+Date: Fri, 1 Jul 2011 00:19:38 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480816C3AF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
+	<20110630193346.GA22707@infradead.org>
+	<6E21E5352C11B742B20C142EB499E0480816C384@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110630164808.17c506a4@nehalam.ftrdhcpuser.net>
+In-Reply-To: <20110630164808.17c506a4@nehalam.ftrdhcpuser.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: Peter Chubb <peter.chubb@nicta.com.au>, linux-kernel@vger.kernel.org
-Subject: Re: Acer Aspire One now hangs on reboot/shutdown
-References: <w4oc1qp2wf.wl%peter@chubb.wattle.id.au> <20110622194324.GD8861@srcf.ucam.org> <w4sjr1v323.wl%peter@chubb.wattle.id.au> <4E0CC06E.7040204@zytor.com> <w4d3huc3va.wl%peter@chubb.wattle.id.au> <20110630235802.GA18584@srcf.ucam.org>
-In-Reply-To: <20110630235802.GA18584@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/2011 04:58 PM, Matthew Garrett wrote:
-> On Fri, Jul 01, 2011 at 09:10:33AM +1000, Peter Chubb wrote:
+
+
+> -----Original Message-----
+> From: Stephen Hemminger [mailto:shemminger@vyatta.com]
+> Sent: Thursday, June 30, 2011 7:48 PM
+> To: KY Srinivasan
+> Cc: Christoph Hellwig; devel@linuxdriverproject.org; gregkh@suse.de; linux-
+> kernel@vger.kernel.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
 > 
->> t, p and a all result in a machine hang with the power light on, the
->> backlight off, and no apparent activity anywhere.
+> On Thu, 30 Jun 2011 23:32:34 +0000
+> KY Srinivasan <kys@microsoft.com> wrote:
 > 
-> Having PCI reboot be broken does make me wonder whether there's 
-> something about the hardware state that confuses it.
+> >
+> > > -----Original Message-----
+> > > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > > Sent: Thursday, June 30, 2011 3:34 PM
+> > > To: KY Srinivasan
+> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > > Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
+> > >
+> > > On Wed, Jun 29, 2011 at 07:38:21AM -0700, K. Y. Srinivasan wrote:
+> > > > Further cleanup of the hv drivers:
+> > > >
+> > > > 	1) Cleanup the reference counting mess for both stor and net devices.
+> > >
+> > > I really don't understand the need for reference counting on the storage
+> > > side, especially now that you only have a SCSI driver.  The SCSI
+> > > midlayer does proper counting on it's objects (Scsi_Host, scsi_device,
+> > > scsi_cmnd), so you'll get that for free given that SCSI drivers just
+> > > piggyback on the midlayer lifetime rules.
+> > >
+> > > For now your patches should probably go in as-is, but mid-term you
+> > > should be able to completely remove that code on the storage side.
+> > >
+> >
+> > Greg,
+> >
+> > I am thinking of  going back to my original implementation where I had one scsi
+> host
+> > per IDE device. This will certainly simply the code. Let me know what you think.
+> If you
+> > agree with this approach, please drop this patch-set, I will send you a new set
+> of patches.
 > 
+> I think there ref counting on network devices is also unneeded
+> as long as the unregister logic handles RCU correctly. The network layer
+> calls the driver unregister routine after all packets are gone.
+On the networking side, what about incoming packets that may be racing
+with the device destruction. The current ref counting scheme deals with
+that case.
 
-It might be a RESET versus INIT difference... if the "PCI reboot" (which
-is what "ACPI reboot") points to, it might end up pulling INIT, whereas
-the keyboard controller pulls RESET.
+Regards,
 
-RESET would forcibly initialize the hardware state of the machine,
-obviously...
-
-	-hpa
-
+K. Y
