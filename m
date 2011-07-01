@@ -1,73 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755323Ab1GAL16 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 07:27:58 -0400
-Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:53670
-	"EHLO CH1EHSOBE016.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755199Ab1GAL15 (ORCPT
+	id S1755281Ab1GALdl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 07:33:41 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:60742 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755026Ab1GALdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 07:27:57 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz9371M4015L542M1432N98dKzz1202hzz8275bh8275dhz32i2a8h668h839h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
-From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-CC: "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
-        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
-        "dchen@diasemi.com" <dchen@diasemi.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Date: Fri, 1 Jul 2011 16:57:55 +0530
-Subject: RE: [PATCH 6/11] HWMON: DA9052 hwmon driver v2
-Thread-Topic: [PATCH 6/11] HWMON: DA9052 hwmon driver v2
-Thread-Index: Acw3MSlS2BYM5MldSLir4rJ4RzCx7wAsLGlg
-Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D152F0185F5@KCINPUNHJCMS01.kpit.com>
-References: <1309439728.4656.0.camel@L-0532.kpit.com>
- <20110630142219.GA13161@ericsson.com>
-In-Reply-To: <20110630142219.GA13161@ericsson.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 1 Jul 2011 07:33:38 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: kpitcummins.com
+From: Christian Gmeiner <christian.gmeiner@gmail.com>
+Date: Fri, 1 Jul 2011 13:33:18 +0200
+Message-ID: <BANLkTimSkDEzPvRMmX1O0YjjpoPzQt6_+w@mail.gmail.com>
+Subject: pca953x: support working w/o platform data
+To: linux-kernel@vger.kernel.org
+Cc: grant.likely@secretlab.ca
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p61BS86S001129
 
+Provide defaults for pca953x, so the driver can be used w/o
+providing platform data.
 
-> -----Original Message-----
-> From: Guenter Roeck [mailto:guenter.roeck@ericsson.com]
-> Sent: Thursday, June 30, 2011 7:52 PM
-> To: Ashish Jangam
-> Cc: randy.dunlap@oracle.com; linaro-dev@lists.linaro.org; dchen@diasemi.com;
-> linux-kernel@vger.kernel.org; lm-sensors@lm-sensors.org
-> Subject: Re: [PATCH 6/11] HWMON: DA9052 hwmon driver v2
-> 
-> On Thu, Jun 30, 2011 at 09:15:27AM -0400, ashishj3 wrote:
-> > The DA9052 PMIC provides an Analogue to Digital Converter with 10 bits
-> > resolution and 10 channels.
-> >
-> > This patch montiors the DA9052 PMIC's ADC channels mostly for battery
-> parameters
-> > like battery temperature, junction temperature, battery current etc.
-> >
-> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> 
-> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
-> 
-> I assume this patch will be handled as part of a patchset, correct ?
-Correct.
-> 
-> Thanks,
-> Guenter
+Signed-off-by: Christian Gmeiner <christian.gmeiner@gmail.com>
+---
+ pca953x.c |   21 +++++++++++----------
+ 1 file changed, 11 insertions(+), 10 deletions(-)
+diff -Nur linux-3.0-rc5/drivers/gpio//pca953x.c
+linux-3.0-rc5__patched/drivers/gpio//pca953x.c
+--- linux-3.0-rc5/drivers/gpio//pca953x.c	2011-06-28 04:12:22.000000000 +0200
++++ linux-3.0-rc5__patched/drivers/gpio//pca953x.c	2011-07-01
+13:19:08.369130336 +0200
+@@ -452,7 +452,7 @@
+ 	struct pca953x_platform_data *pdata = client->dev.platform_data;
+ 	int ret, offset = 0;
 
+-	if (pdata->irq_base != -1
++	if (pdata && pdata->irq_base != -1
+ 			&& (id->driver_data & PCA_INT)) {
+ 		int lvl;
 
+@@ -524,7 +524,7 @@
+ 	struct i2c_client *client = chip->client;
+ 	struct pca953x_platform_data *pdata = client->dev.platform_data;
 
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+-	if (pdata->irq_base != -1 && (id->driver_data & PCA_INT))
++	if (pdata && pdata->irq_base != -1 && (id->driver_data & PCA_INT))
+ 		dev_warn(&client->dev, "interrupt support not compiled in\n");
+
+ 	return 0;
+@@ -643,6 +643,7 @@
+ 	struct pca953x_platform_data *pdata;
+ 	struct pca953x_chip *chip;
+ 	int ret = 0;
++	int invert = 0;
+
+ 	chip = kzalloc(sizeof(struct pca953x_chip), GFP_KERNEL);
+ 	if (chip == NULL)
+@@ -660,15 +661,13 @@
+
+ 	if (pdata == NULL) {
+ 		dev_dbg(&client->dev, "no platform data\n");
+-		ret = -EINVAL;
+-		goto out_failed;
+ 	}
+
+ 	chip->client = client;
+
+-	chip->gpio_start = pdata->gpio_base;
++	chip->gpio_start = pdata ? pdata->gpio_base : -1;
+
+-	chip->names = pdata->names;
++	chip->names = pdata ? pdata->names : NULL;
+ 	chip->chip_type = id->driver_data & (PCA953X_TYPE | PCA957X_TYPE);
+
+ 	mutex_init(&chip->i2c_lock);
+@@ -678,10 +677,12 @@
+ 	 */
+ 	pca953x_setup_gpio(chip, id->driver_data & PCA_GPIO_MASK);
+
++	invert = pdata ? pdata->invert : 0;
++
+ 	if (chip->chip_type == PCA953X_TYPE)
+-		device_pca953x_init(chip, pdata->invert);
++		device_pca953x_init(chip, invert);
+ 	else if (chip->chip_type == PCA957X_TYPE)
+-		device_pca957x_init(chip, pdata->invert);
++		device_pca957x_init(chip, invert);
+ 	else
+ 		goto out_failed;
+
+@@ -693,7 +694,7 @@
+ 	if (ret)
+ 		goto out_failed_irq;
+
+-	if (pdata->setup) {
++	if (pdata && pdata->setup) {
+ 		ret = pdata->setup(client, chip->gpio_chip.base,
+ 				chip->gpio_chip.ngpio, pdata->context);
+ 		if (ret < 0)
+@@ -717,7 +718,7 @@
+ 	struct pca953x_chip *chip = i2c_get_clientdata(client);
+ 	int ret = 0;
+
+-	if (pdata->teardown) {
++	if (pdata && pdata->teardown) {
+ 		ret = pdata->teardown(client, chip->gpio_chip.base,
+ 				chip->gpio_chip.ngpio, pdata->context);
+ 		if (ret < 0) {
+---
