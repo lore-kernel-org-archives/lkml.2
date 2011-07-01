@@ -1,123 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab1GAJTE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:19:04 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:33163 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756089Ab1GAJSZ (ORCPT
+	id S1756008Ab1GAJSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 05:18:09 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:34716 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755954Ab1GAJSH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 05:18:25 -0400
-From: Stefan Bader <stefan.bader@canonical.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Seth Forshee <seth.forshee@canonical.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 07/10] drm/i915/evict: Ensure we completely cleanup on failure" has been added to staging queue
-Date: Fri,  1 Jul 2011 10:18:22 +0100
-Message-Id: <1309511902-3080-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
+	Fri, 1 Jul 2011 05:18:07 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: linux-arm-kernel@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, patrice.vilchez@atmel.com,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH for 3.0] AT91: Change nand buswidth logic to match hardware default configuration
+Date: Fri,  1 Jul 2011 12:25:24 +0200
+Message-Id: <1309515924-22531-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+The recently modified nand buswitth configuration is not aligned with
+board reality: the double footprint on boards is always populated with 8bits
+buswidth nand flashes.
+So we have to consider that without particular configuration the 8bits
+buswidth is selected by default.
+Moreover, the previous logic was always using !board_have_nand_8bit(), we
+change it to a simpler: board_have_nand_16bit().
 
-    Subject: [PATCH 07/10] drm/i915/evict: Ensure we completely cleanup on failure
-
-to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
-
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
-
-If you, or anyone else, feels it should not be added to the drm33-longterm tree,
-please reply to this email not later than 8 days after this email was sent.
-
-Thanks.
--Stefan
-
-------
-
->From 2f4f8bc3da84232a25e0ced165d4bb5643d3aaad Mon Sep 17 00:00:00 2001
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Date: Fri, 17 Jun 2011 10:04:22 -0500
-Subject: [PATCH 07/10] drm/i915/evict: Ensure we completely cleanup on failure
-
-BugLink: http://bugs.launchpad.net/bugs/599017
-
-... and not leave the objects in a inconsistent state.
-
-[seth.forshee@canonical.com: Also backported similar cleanups in success
- path from commit e39a01501b228e1be2037d5bddccae2a820af902]
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: stable@kernel.org
-(backported from commit 092de6f225638ec300936bfcbdc67805733cc78c upstream)
-
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
 ---
- drivers/gpu/drm/i915/i915_gem_evict.c |   32 ++++++++++++++++++++------------
- 1 files changed, 20 insertions(+), 12 deletions(-)
+ arch/arm/mach-at91/board-cap9adk.c           |    2 +-
+ arch/arm/mach-at91/board-sam9260ek.c         |    2 +-
+ arch/arm/mach-at91/board-sam9261ek.c         |    2 +-
+ arch/arm/mach-at91/board-sam9263ek.c         |    2 +-
+ arch/arm/mach-at91/board-sam9g20ek.c         |    2 +-
+ arch/arm/mach-at91/board-sam9m10g45ek.c      |    2 +-
+ arch/arm/mach-at91/include/mach/system_rev.h |   10 +++++-----
+ 7 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem_evict.c b/drivers/gpu/drm/i915/i915_gem_evict.c
-index 84ed1a7..9c1ec78 100644
---- a/drivers/gpu/drm/i915/i915_gem_evict.c
-+++ b/drivers/gpu/drm/i915/i915_gem_evict.c
-@@ -134,9 +134,15 @@ i915_gem_evict_something(struct drm_device *dev, int min_size, unsigned alignmen
- 	}
-
- 	/* Nothing found, clean up and bail out! */
--	list_for_each_entry(obj_priv, &unwind_list, evict_list) {
-+	while (!list_empty(&unwind_list)) {
-+		obj_priv = list_first_entry(&unwind_list,
-+					    struct drm_i915_gem_object,
-+					    evict_list);
-+
- 		ret = drm_mm_scan_remove_block(obj_priv->gtt_space);
- 		BUG_ON(ret);
-+
-+		list_del_init(&obj_priv->evict_list);
- 	}
-
- 	/* We expect the caller to unpin, evict all and try again, or give up.
-@@ -145,26 +151,28 @@ i915_gem_evict_something(struct drm_device *dev, int min_size, unsigned alignmen
- 	return -ENOSPC;
-
- found:
-+	/* drm_mm doesn't allow any other other operations while
-+	 * scanning, therefore store to be evicted objects on a
-+	 * temporary list. */
- 	INIT_LIST_HEAD(&eviction_list);
- 	list_for_each_entry_safe(obj_priv, tmp_obj_priv,
- 				 &unwind_list, evict_list) {
- 		if (drm_mm_scan_remove_block(obj_priv->gtt_space)) {
--			/* drm_mm doesn't allow any other other operations while
--			 * scanning, therefore store to be evicted objects on a
--			 * temporary list. */
- 			list_move(&obj_priv->evict_list, &eviction_list);
-+			continue;
- 		}
-+		list_del_init(&obj_priv->evict_list);
- 	}
-
- 	/* Unbinding will emit any required flushes */
--	list_for_each_entry_safe(obj_priv, tmp_obj_priv,
--				 &eviction_list, evict_list) {
--#if WATCH_LRU
--		DRM_INFO("%s: evicting %p\n", __func__, obj);
--#endif
--		ret = i915_gem_object_unbind(obj_priv->obj);
--		if (ret)
--			return ret;
-+	while (!list_empty(&eviction_list)) {
-+		obj_priv = list_first_entry(&eviction_list,
-+					    struct drm_i915_gem_object,
-+					    evict_list);
-+		if (ret == 0)
-+			ret = i915_gem_object_unbind(obj_priv->obj);
-+
-+		list_del_init(&obj_priv->evict_list);
- 	}
-
- 	/* The just created free hole should be on the top of the free stack
---
-1.7.4.1
+diff --git a/arch/arm/mach-at91/board-cap9adk.c b/arch/arm/mach-at91/board-cap9adk.c
+index 1904fdf..cdb65d4 100644
+--- a/arch/arm/mach-at91/board-cap9adk.c
++++ b/arch/arm/mach-at91/board-cap9adk.c
+@@ -215,7 +215,7 @@ static void __init cap9adk_add_device_nand(void)
+ 	csa = at91_sys_read(AT91_MATRIX_EBICSA);
+ 	at91_sys_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_EBI_VDDIOMSEL_3_3V);
+ 
+-	cap9adk_nand_data.bus_width_16 = !board_have_nand_8bit();
++	cap9adk_nand_data.bus_width_16 = board_have_nand_16bit();
+ 	/* setup bus-width (8 or 16) */
+ 	if (cap9adk_nand_data.bus_width_16)
+ 		cap9adk_nand_smc_config.mode |= AT91_SMC_DBW_16;
+diff --git a/arch/arm/mach-at91/board-sam9260ek.c b/arch/arm/mach-at91/board-sam9260ek.c
+index d600dc1..5c24074 100644
+--- a/arch/arm/mach-at91/board-sam9260ek.c
++++ b/arch/arm/mach-at91/board-sam9260ek.c
+@@ -214,7 +214,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+ 
+ static void __init ek_add_device_nand(void)
+ {
+-	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
++	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+ 	/* setup bus-width (8 or 16) */
+ 	if (ek_nand_data.bus_width_16)
+ 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
+index f897f84..b60c22b 100644
+--- a/arch/arm/mach-at91/board-sam9261ek.c
++++ b/arch/arm/mach-at91/board-sam9261ek.c
+@@ -220,7 +220,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+ 
+ static void __init ek_add_device_nand(void)
+ {
+-	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
++	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+ 	/* setup bus-width (8 or 16) */
+ 	if (ek_nand_data.bus_width_16)
+ 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+diff --git a/arch/arm/mach-at91/board-sam9263ek.c b/arch/arm/mach-at91/board-sam9263ek.c
+index 605b26f..9bbdc92 100644
+--- a/arch/arm/mach-at91/board-sam9263ek.c
++++ b/arch/arm/mach-at91/board-sam9263ek.c
+@@ -221,7 +221,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+ 
+ static void __init ek_add_device_nand(void)
+ {
+-	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
++	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+ 	/* setup bus-width (8 or 16) */
+ 	if (ek_nand_data.bus_width_16)
+ 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+index 7624cf0..1325a50 100644
+--- a/arch/arm/mach-at91/board-sam9g20ek.c
++++ b/arch/arm/mach-at91/board-sam9g20ek.c
+@@ -198,7 +198,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+ 
+ static void __init ek_add_device_nand(void)
+ {
+-	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
++	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+ 	/* setup bus-width (8 or 16) */
+ 	if (ek_nand_data.bus_width_16)
+ 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
+index 063c95d..33eaa13 100644
+--- a/arch/arm/mach-at91/board-sam9m10g45ek.c
++++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
+@@ -178,7 +178,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+ 
+ static void __init ek_add_device_nand(void)
+ {
+-	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
++	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+ 	/* setup bus-width (8 or 16) */
+ 	if (ek_nand_data.bus_width_16)
+ 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+diff --git a/arch/arm/mach-at91/include/mach/system_rev.h b/arch/arm/mach-at91/include/mach/system_rev.h
+index b855ee7..8f48660 100644
+--- a/arch/arm/mach-at91/include/mach/system_rev.h
++++ b/arch/arm/mach-at91/include/mach/system_rev.h
+@@ -13,13 +13,13 @@
+  * the 16-31 bit are reserved for at91 generic information
+  *
+  * bit 31:
+- *	0 => nand 16 bit
+- *	1 => nand 8 bit
++ *	0 => nand 8 bit
++ *	1 => nand 16 bit
+  */
+-#define BOARD_HAVE_NAND_8BIT	(1 << 31)
+-static int inline board_have_nand_8bit(void)
++#define BOARD_HAVE_NAND_16BIT	(1 << 31)
++static inline int board_have_nand_16bit(void)
+ {
+-	return system_rev & BOARD_HAVE_NAND_8BIT;
++	return system_rev & BOARD_HAVE_NAND_16BIT;
+ }
+ 
+ #endif /* __ARCH_SYSTEM_REV_H__ */
+-- 
+1.7.3
 
