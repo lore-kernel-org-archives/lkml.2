@@ -1,218 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756794Ab1GAPWw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 11:22:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57576 "EHLO hera.kernel.org"
+	id S1756643Ab1GAPXT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 11:23:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57605 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753090Ab1GAPWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 11:22:49 -0400
-Date: Fri, 1 Jul 2011 15:22:37 GMT
+	id S1752456Ab1GAPXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 11:23:13 -0400
+Date: Fri, 1 Jul 2011 15:23:01 GMT
 From: tip-bot for Stephane Eranian <eranian@google.com>
-Message-ID: <tip-cd8a38d33e2528998998bae70a45ad27e442f114@git.kernel.org>
+Message-ID: <tip-ee89cbc2d48150c7c0e9f2aaac00afde99af098c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, eranian@google.com, hpa@zytor.com,
         mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, eranian@google.com,
         linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
         tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20110606145708.GA7279@quad>
-References: <20110606145708.GA7279@quad>
+In-Reply-To: <20110606145712.GA7304@quad>
+References: <20110606145712.GA7304@quad>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf_events: Fix validation of events using an extra reg
-Git-Commit-ID: cd8a38d33e2528998998bae70a45ad27e442f114
+Subject: [tip:perf/core] perf_events: Add Intel Sandy Bridge offcore_response low-level support
+Git-Commit-ID: ee89cbc2d48150c7c0e9f2aaac00afde99af098c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:22:38 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:23:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  cd8a38d33e2528998998bae70a45ad27e442f114
-Gitweb:     http://git.kernel.org/tip/cd8a38d33e2528998998bae70a45ad27e442f114
+Commit-ID:  ee89cbc2d48150c7c0e9f2aaac00afde99af098c
+Gitweb:     http://git.kernel.org/tip/ee89cbc2d48150c7c0e9f2aaac00afde99af098c
 Author:     Stephane Eranian <eranian@google.com>
-AuthorDate: Mon, 6 Jun 2011 16:57:08 +0200
+AuthorDate: Mon, 6 Jun 2011 16:57:12 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 1 Jul 2011 11:06:36 +0200
+CommitDate: Fri, 1 Jul 2011 11:06:37 +0200
 
-perf_events: Fix validation of events using an extra reg
+perf_events: Add Intel Sandy Bridge offcore_response low-level support
 
-The validate_group() function needs to validate events with
-extra shared regs. Within an event group, only events with
-the same value for the extra reg can co-exist. This was not
-checked by validate_group() because it was missing the
-shared_regs logic.
+This patch adds Intel Sandy Bridge offcore_response support by
+providing the low-level constraint table for those events.
 
-This patch changes the allocation of the fake cpuc used for
-validation to also point to a fake shared_regs structure such
-that group events be properly testing.
+On Sandy Bridge, there are two offcore_response events. Each uses
+its own dedictated extra register. But those registers are NOT shared
+between sibling CPUs when HT is on unlike Nehalem/Westmere. They are
+always private to each CPU. But they still need to be controlled within
+an event group. All events within an event group must use the same
+value for the extra MSR. That's not controlled by the second patch in
+this series.
 
-It modifies __intel_shared_reg_get_constraints() to use
-spin_lock_irqsave() to avoid lockdep issues.
+Furthermore on Sandy Bridge, the offcore_response events have NO
+counter constraints contrary to what the official documentation
+indicates, so drop the events from the contraint table.
 
 Signed-off-by: Stephane Eranian <eranian@google.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110606145708.GA7279@quad
+Link: http://lkml.kernel.org/r/20110606145712.GA7304@quad
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/kernel/cpu/perf_event.c       |   59 ++++++++++++++++++++++++-------
- arch/x86/kernel/cpu/perf_event_intel.c |   16 ++++++--
- 2 files changed, 57 insertions(+), 18 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c       |    1 +
+ arch/x86/kernel/cpu/perf_event_intel.c |   13 ++++++++++---
+ 2 files changed, 11 insertions(+), 3 deletions(-)
 
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 019fda7..9a0f55c 100644
+index 9a0f55c..583f311 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1689,6 +1689,40 @@ static int x86_pmu_commit_txn(struct pmu *pmu)
- 	perf_pmu_enable(pmu);
- 	return 0;
- }
-+/*
-+ * a fake_cpuc is used to validate event groups. Due to
-+ * the extra reg logic, we need to also allocate a fake
-+ * per_core and per_cpu structure. Otherwise, group events
-+ * using extra reg may conflict without the kernel being
-+ * able to catch this when the last event gets added to
-+ * the group.
-+ */
-+static void free_fake_cpuc(struct cpu_hw_events *cpuc)
-+{
-+	kfree(cpuc->shared_regs);
-+	kfree(cpuc);
-+}
-+
-+static struct cpu_hw_events *allocate_fake_cpuc(void)
-+{
-+	struct cpu_hw_events *cpuc;
-+	int cpu = raw_smp_processor_id();
-+
-+	cpuc = kzalloc(sizeof(*cpuc), GFP_KERNEL);
-+	if (!cpuc)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* only needed, if we have extra_regs */
-+	if (x86_pmu.extra_regs) {
-+		cpuc->shared_regs = allocate_shared_regs(cpu);
-+		if (!cpuc->shared_regs)
-+			goto error;
-+	}
-+	return cpuc;
-+error:
-+	free_fake_cpuc(cpuc);
-+	return ERR_PTR(-ENOMEM);
-+}
- 
- /*
-  * validate that we can schedule this event
-@@ -1699,9 +1733,9 @@ static int validate_event(struct perf_event *event)
- 	struct event_constraint *c;
- 	int ret = 0;
- 
--	fake_cpuc = kmalloc(sizeof(*fake_cpuc), GFP_KERNEL | __GFP_ZERO);
--	if (!fake_cpuc)
--		return -ENOMEM;
-+	fake_cpuc = allocate_fake_cpuc();
-+	if (IS_ERR(fake_cpuc))
-+		return PTR_ERR(fake_cpuc);
- 
- 	c = x86_pmu.get_event_constraints(fake_cpuc, event);
- 
-@@ -1711,7 +1745,7 @@ static int validate_event(struct perf_event *event)
- 	if (x86_pmu.put_event_constraints)
- 		x86_pmu.put_event_constraints(fake_cpuc, event);
- 
--	kfree(fake_cpuc);
-+	free_fake_cpuc(fake_cpuc);
- 
- 	return ret;
- }
-@@ -1731,35 +1765,32 @@ static int validate_group(struct perf_event *event)
- {
- 	struct perf_event *leader = event->group_leader;
- 	struct cpu_hw_events *fake_cpuc;
--	int ret, n;
-+	int ret = -ENOSPC, n;
- 
--	ret = -ENOMEM;
--	fake_cpuc = kmalloc(sizeof(*fake_cpuc), GFP_KERNEL | __GFP_ZERO);
--	if (!fake_cpuc)
--		goto out;
-+	fake_cpuc = allocate_fake_cpuc();
-+	if (IS_ERR(fake_cpuc))
-+		return PTR_ERR(fake_cpuc);
- 	/*
- 	 * the event is not yet connected with its
- 	 * siblings therefore we must first collect
- 	 * existing siblings, then add the new event
- 	 * before we can simulate the scheduling
+@@ -327,6 +327,7 @@ struct x86_pmu {
+ 	 * Extra registers for events
  	 */
--	ret = -ENOSPC;
- 	n = collect_events(fake_cpuc, leader, true);
- 	if (n < 0)
--		goto out_free;
-+		goto out;
+ 	struct extra_reg *extra_regs;
++	bool regs_no_ht_sharing;
+ };
  
- 	fake_cpuc->n_events = n;
- 	n = collect_events(fake_cpuc, event, false);
- 	if (n < 0)
--		goto out_free;
-+		goto out;
- 
- 	fake_cpuc->n_events = n;
- 
- 	ret = x86_pmu.schedule_events(fake_cpuc, n, NULL);
- 
--out_free:
--	kfree(fake_cpuc);
- out:
-+	free_fake_cpuc(fake_cpuc);
- 	return ret;
- }
- 
+ static struct x86_pmu x86_pmu __read_mostly;
 diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index 6ad95ba..ac02b83 100644
+index ac02b83..a674ae4 100644
 --- a/arch/x86/kernel/cpu/perf_event_intel.c
 +++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1027,14 +1027,18 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
+@@ -100,8 +100,6 @@ static struct event_constraint intel_snb_event_constraints[] __read_mostly =
+ 	FIXED_EVENT_CONSTRAINT(0x003c, 1), /* CPU_CLK_UNHALTED.CORE */
+ 	/* FIXED_EVENT_CONSTRAINT(0x013c, 2), CPU_CLK_UNHALTED.REF */
+ 	INTEL_EVENT_CONSTRAINT(0x48, 0x4), /* L1D_PEND_MISS.PENDING */
+-	INTEL_EVENT_CONSTRAINT(0xb7, 0x1), /* OFF_CORE_RESPONSE_0 */
+-	INTEL_EVENT_CONSTRAINT(0xbb, 0x8), /* OFF_CORE_RESPONSE_1 */
+ 	INTEL_UEVENT_CONSTRAINT(0x01c0, 0x2), /* INST_RETIRED.PREC_DIST */
+ 	INTEL_EVENT_CONSTRAINT(0xcd, 0x8), /* MEM_TRANS_RETIRED.LOAD_LATENCY */
+ 	EVENT_CONSTRAINT_END
+@@ -122,6 +120,12 @@ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
+ 	EVENT_CONSTRAINT_END
+ };
+ 
++static struct extra_reg intel_snb_extra_regs[] __read_mostly = {
++	INTEL_EVENT_EXTRA_REG(0xb7, MSR_OFFCORE_RSP_0, 0x3fffffffffull, RSP_0),
++	INTEL_EVENT_EXTRA_REG(0xbb, MSR_OFFCORE_RSP_1, 0x3fffffffffull, RSP_1),
++	EVENT_EXTRA_END
++};
++
+ static u64 intel_pmu_event_map(int hw_event)
  {
- 	struct event_constraint *c = &emptyconstraint;
- 	struct er_account *era;
-+	unsigned long flags;
+ 	return intel_perfmon_event_map[hw_event];
+@@ -1260,7 +1264,7 @@ static void intel_pmu_cpu_starting(int cpu)
+ 	 */
+ 	intel_pmu_lbr_reset();
  
- 	/* already allocated shared msr */
--	if (reg->alloc || !cpuc->shared_regs)
-+	if (reg->alloc)
- 		return &unconstrained;
+-	if (!cpuc->shared_regs)
++	if (!cpuc->shared_regs || x86_pmu.regs_no_ht_sharing)
+ 		return;
  
- 	era = &cpuc->shared_regs->regs[reg->idx];
--
--	raw_spin_lock(&era->lock);
-+	/*
-+	 * we use spin_lock_irqsave() to avoid lockdep issues when
-+	 * passing a fake cpuc
-+	 */
-+	raw_spin_lock_irqsave(&era->lock, flags);
+ 	for_each_cpu(i, topology_thread_cpumask(cpu)) {
+@@ -1502,6 +1506,9 @@ static __init int intel_pmu_init(void)
  
- 	if (!atomic_read(&era->ref) || era->config == reg->config) {
+ 		x86_pmu.event_constraints = intel_snb_event_constraints;
+ 		x86_pmu.pebs_constraints = intel_snb_pebs_events;
++		x86_pmu.extra_regs = intel_snb_extra_regs;
++		/* all extra regs are per-cpu when HT is on */
++		x86_pmu.regs_no_ht_sharing = true;
  
-@@ -1058,7 +1062,7 @@ __intel_shared_reg_get_constraints(struct cpu_hw_events *cpuc,
- 		 */
- 		c = &unconstrained;
- 	}
--	raw_spin_unlock(&era->lock);
-+	raw_spin_unlock_irqrestore(&era->lock, flags);
- 
- 	return c;
- }
-@@ -1524,4 +1528,8 @@ static int intel_pmu_init(void)
- 	return 0;
- }
- 
-+static struct intel_shared_regs *allocate_shared_regs(int cpu)
-+{
-+	return NULL;
-+}
- #endif /* CONFIG_CPU_SUP_INTEL */
+ 		/* UOPS_ISSUED.ANY,c=1,i=1 to count stall cycles */
+ 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_FRONTEND] = 0x180010e;
