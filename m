@@ -1,54 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757572Ab1GASlE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 14:41:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54003 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426Ab1GASlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 14:41:02 -0400
-Date: Fri, 1 Jul 2011 14:40:46 -0400
-From: Dave Jones <davej@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, axboe@kernel.dk,
-        rjw@sisk.pl
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-Message-ID: <20110701184046.GA2118@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Andi Kleen <andi@firstfloor.org>, linux-scsi@vger.kernel.org,
-	linux-kernel@vger.kernel.org, axboe@kernel.dk, rjw@sisk.pl
-References: <20110701170531.GA3693@tassilo.jf.intel.com>
- <20110701181406.GA1614@redhat.com>
- <20110701183227.GF23059@one.firstfloor.org>
+	id S1757604Ab1GASll (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 14:41:41 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45058 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754528Ab1GASlk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 14:41:40 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=VV6DqiCZ3Lux2bWj7tgtGHOgFXB6PCxQ7VyLIgQKypDz2I28pNNl9rrIYEicCi/xe
+	XHdp803nRFYrkl6OO9gcw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110701183227.GF23059@one.firstfloor.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <4E0E0A76.4080204@gmail.com>
+References: <1309483720-1407-1-git-send-email-sergiu@chromium.org>
+ <1309483720-1407-3-git-send-email-sergiu@chromium.org> <4E0E0A76.4080204@gmail.com>
+From: Sergiu Iordache <sergiu@google.com>
+Date: Fri, 1 Jul 2011 11:41:11 -0700
+Message-ID: <BANLkTi=HqKggFkcLgN22qgTr5drz3_5vO+Q9bM+NqsOYVK5uag@mail.gmail.com>
+Subject: Re: [PATCH v2 2/3] char drivers: ramoops record_size module parameter
+To: Marco Stornelli <marco.stornelli@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 08:32:27PM +0200, Andi Kleen wrote:
- > On Fri, Jul 01, 2011 at 02:14:06PM -0400, Dave Jones wrote:
- > > On Fri, Jul 01, 2011 at 10:05:31AM -0700, Andi Kleen wrote:
- > > 
- > >  > I found I can reliably crash a 3.0 system by pulling the
- > >  > USB cable of a mounted USB cdrom (or rather a USB device which
- > >  > has a builtin fake CD-ROM) 
- > >  > 
- > >  > I suspect it's a regression too.
- > > 
- > > We've been seeing a lot of similar bugs in Fedora since we pushed
- > > a 2.6.38.8 update.  Some of the traces are different, but some
- > 
- > I've also seen one with an earlier kernel where the NULL 
- > reference was in elv_.* something.  Don't have a written down backtrace
- > for this, but perhaps you have.
+On Fri, Jul 1, 2011 at 10:57 AM, Marco Stornelli
+<marco.stornelli@gmail.com> wrote:
+> Hi,
+>
+> Il 01/07/2011 03:28, Sergiu Iordache ha scritto:
+>>
+>> The size of the dump is currently set using the RECORD_SIZE macro which
+>> is set to a page size. This patch makes the record size a module
+>> parameter and allows it to be set through platform data as well to allow
+>> larger dumps if needed.
+>>
+>> Signed-off-by: Sergiu Iordache<sergiu@chromium.org>
+>> Change-Id: Ie5a53acb50d5881d51354f5d9d13e3d6bedf6a2e
+>> ---
+>> The patch was built on the 2.6.38 kernel and is based on the following
+>> patches which were applied from the mmotm tree:
+>> ramoops-add-new-line-to-each-print
+>> ramoops-use-module-parameters-instead-of-platform-data-if-not-available
+>>
+>> ramoops-use-module-parameters-instead-of-platform-data-if-not-available-checkpatch-fixes
+>>
+>>  drivers/char/ramoops.c  |   33 ++++++++++++++++++++++++++-------
+>>  include/linux/ramoops.h |    1 +
+>>  2 files changed, 27 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+>> index 5349d94..f34077e 100644
+>> --- a/drivers/char/ramoops.c
+>> +++ b/drivers/char/ramoops.c
+>> @@ -32,8 +32,12 @@
+>>  #include<linux/ramoops.h>
+>>
+>>  #define RAMOOPS_KERNMSG_HDR "===="
+>> +#define MIN_MEM_SIZE 4096UL
+>>
+>> -#define RECORD_SIZE 4096UL
+>> +static ulong record_size = 4096UL;
+>> +module_param(record_size, ulong, 0400);
+>> +MODULE_PARM_DESC(record_size,
+>> +               "size of each dump done on oops/panic");
+>>
+>>  static ulong mem_address;
+>>  module_param(mem_address, ulong, 0400);
+>> @@ -55,6 +59,7 @@ static struct ramoops_context {
+>>        void *virt_addr;
+>>        phys_addr_t phys_addr;
+>>        unsigned long size;
+>> +       unsigned long record_size;
+>>        int dump_oops;
+>>        int count;
+>>        int max_count;
+>> @@ -84,10 +89,10 @@ static void ramoops_do_dump(struct kmsg_dumper
+>> *dumper,
+>>        if (reason == KMSG_DUMP_OOPS&&  !cxt->dump_oops)
+>>                return;
+>>
+>> -       buf = cxt->virt_addr + (cxt->count * RECORD_SIZE);
+>> +       buf = cxt->virt_addr + (cxt->count * cxt->record_size);
+>>        buf_orig = buf;
+>>
+>> -       memset(buf, '\0', RECORD_SIZE);
+>> +       memset(buf, '\0', cxt->record_size);
+>>        res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
+>>        buf += res;
+>>        do_gettimeofday(&timestamp);
+>> @@ -95,8 +100,8 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+>>        buf += res;
+>>
+>>        hdr_size = buf - buf_orig;
+>> -       l2_cpy = min(l2, RECORD_SIZE - hdr_size);
+>> -       l1_cpy = min(l1, RECORD_SIZE - hdr_size - l2_cpy);
+>> +       l2_cpy = min(l2, cxt->record_size - hdr_size);
+>> +       l1_cpy = min(l1, cxt->record_size - hdr_size - l2_cpy);
+>>
+>>        s2_start = l2 - l2_cpy;
+>>        s1_start = l1 - l1_cpy;
+>> @@ -119,16 +124,29 @@ static int __init ramoops_probe(struct
+>> platform_device *pdev)
+>>        }
+>>
+>>        rounddown_pow_of_two(pdata->mem_size);
+>> +       rounddown_pow_of_two(pdata->record_size);
+>>
+>> -       if (pdata->mem_size<  RECORD_SIZE) {
+>> +       /* Check for the minimum memory size */
+>> +       if (pdata->mem_size<  MIN_MEM_SIZE) {
+>> +               pr_err("memory size too small, min %lu\n", MIN_MEM_SIZE);
+>> +               goto fail3;
+>> +       }
+>> +
+>> +       if (pdata->mem_size<  pdata->record_size) {
+>>                pr_err("size too small\n");
+>>                goto fail3;
+>>        }
+>>
+>> -       cxt->max_count = pdata->mem_size / RECORD_SIZE;
+>> +       if (pdata->record_size<= 0) {
+>> +               pr_err("record size too small\n");
+>> +               goto fail3;
+>> +       }
+>
+> There is something wrong here. First of all if record_size is unsigned it
+> can't negative. In addition, if we are here, we know that:
+>
+> record_size >= mem_size >= MIN_MEM_SIZE
+>
+> So this check have no sense.
 
-We had a bazillion reports of elv_may_queue oopses that looked like
-https://bugzilla.redhat.com/show_bug.cgi?id=elv_may_queue
+The pdata->record size <= 0 check is indeed redundant and should be removed.
 
-That should be fixed in .39 and newer.
+I didn't completely understand the second comment, the module errors
+if mem_size < MIN_MEM_SIZE or mem_size < record_size, which means that
+mem_size should be larger than MIN_MEM_SIZE and record_size (which
+leads to record_size being between 0 and mem_size). Am I missing
+something?
 
-	Dave
+(Resent after not reply-ing to all by mistake)
 
+Sergiu
