@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab1GAVd0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:33:26 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:37293 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757817Ab1GAVdW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:33:22 -0400
-X-Sasl-enc: zHE2QvKUeNACuhQHXAy0V15NJc/RIwCZuQUMvM4AFW1/ 1309556001
-Date: Fri, 1 Jul 2011 14:24:27 -0700
-From: Greg KH <greg@kroah.com>
-To: Kirill Smelkov <kirr@mns.spb.ru>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-uvc-devel@lists.berlios.de,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] USB: EHCI: Allow users to override 80% max
- periodic bandwidth
-Message-ID: <20110701212427.GA11831@kroah.com>
-References: <cover.1309520144.git.kirr@mns.spb.ru>
- <69ea2dd940481508f190419c53c780b626460b22.1309520144.git.kirr@mns.spb.ru>
+	id S1758104Ab1GAVdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 17:33:43 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33499 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757806Ab1GAVdl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 17:33:41 -0400
+Message-ID: <4E0E3B83.3000403@zytor.com>
+Date: Fri, 01 Jul 2011 14:26:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <69ea2dd940481508f190419c53c780b626460b22.1309520144.git.kirr@mns.spb.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Kees Cook <kees.cook@canonical.com>
+CC: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Brian Gerst <brgerst@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] x86: add missing verify_cpu to 32bit wakeup
+References: <20110701211943.GA7042@outflux.net>
+In-Reply-To: <20110701211943.GA7042@outflux.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 03:47:11PM +0400, Kirill Smelkov wrote:
->  drivers/usb/host/ehci-sysfs.c |  104 +++++++++++++++++++++++++++++++++++++++--
+On 07/01/2011 02:19 PM, Kees Cook wrote:
+> Some BIOSes will reset the Intel XD_DISABLE MSR bit when resuming from S3,
+> which can interact poorly with ebba638ae723d8a8fc2f7abce5ec18b688b791d7.
+> In 32bit PAE mode, this can lead to a fault when EFER is restored by
+> the kernel wakeup routines, due to it setting the NX bit for a CPU
+> that (thanks to the BIOS reset) now incorrectly thinks it lacks the NX
+> feature. 64bit wakeup already handled this through its common call path
+> that would hit verify_cpu(). 32bit has a separate path for restoring
+> CPU state on S3 wakeup, and needed to call verify_cpu() to handle this
+> situation.
 
-As you are adding new sysfs files, it is required that you also add new
-entries in the Documentation/ABI/ directory.
+For S3, we should save/restore MISC_ENABLE instead... in fact, we
+already save it, we just restore it too late.
 
-Please do that for these files so that people have an idea of what they
-are, and how to use them.
-
-Care to redo this series with that change?
-
-thanks,
-
-greg k-h
+	-hpa
