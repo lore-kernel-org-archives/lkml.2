@@ -1,42 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751446Ab1GAEFv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 00:05:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63656 "EHLO mx1.redhat.com"
+	id S1751188Ab1GAEg2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 00:36:28 -0400
+Received: from mga09.intel.com ([134.134.136.24]:38616 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab1GAEFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 00:05:50 -0400
-Message-ID: <4E0D4799.3030508@redhat.com>
-Date: Fri, 01 Jul 2011 12:05:45 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1750835Ab1GAEg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 00:36:27 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,456,1304319600"; 
+   d="scan'208";a="22221742"
+From: Darren Hart <dvhart@linux.intel.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: Darren Hart <dvhart@linux.intel.com>, Eric Anholt <eric@anholt.net>
+Subject: [PATCH] i915: silence gcc warnings with CONFIG_BUG disabled
+Date: Thu, 30 Jun 2011 21:36:14 -0700
+Message-Id: <1356458e54b6de3c2ae4bea7744f3ddd85bce0cc.1309494974.git.dvhart@linux.intel.com>
+X-Mailer: git-send-email 1.7.1
 MIME-Version: 1.0
-To: Joe Perches <joe@perches.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 0/2] netpoll: Trivial updates
-References: <cover.1309482314.git.joe@perches.com>	 <4E0D3E80.5080209@redhat.com> <1309491349.7277.22.camel@Joe-Laptop>	 <4E0D43C3.5090502@redhat.com> <1309492522.7277.25.camel@Joe-Laptop>	 <4E0D4651.7000005@redhat.com> <1309493039.7277.26.camel@Joe-Laptop>
-In-Reply-To: <1309493039.7277.26.camel@Joe-Laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年07月01日 12:03, Joe Perches 写道:
-> On Fri, 2011-07-01 at 12:00 +0800, Cong Wang wrote:
->> 于 2011年07月01日 11:55, Joe Perches 写道:
->>> On Fri, 2011-07-01 at 11:49 +0800, Cong Wang wrote:
->>>> 于 2011年07月01日 11:35, Joe Perches 写道:
->>>>>> BTW, you can kill the export of netpoll_send_skb_on_dev() too.
->>>>> Not too sure about that.
->>>>> It's used in netpoll.h by netpoll_send_skb.
->>>>> It could be called from anywhere.
->>>>> It's currently called/used by bonding.h.
->>> Read what I wrote.
->>> Look up one level at where it's used by netpoll.h.
->> Then move netpoll_send_skb(), export it instead of netpoll_send_skb_on_dev()...
->
-> Submit that if you choose.
+With CONFIG_BUG disabled, gcc issues the following warnings:
 
-Well, you are on it, I am fine to leave as it is, as you agree these
-changes are all trivial. :)
+drivers/gpu/drm/i915/intel_display.c:773: warning: ‘state_string’ defined but not used
+drivers/gpu/drm/i915/intel_display.c: In function ‘intel_pin_and_fence_fb_obj’:
+drivers/gpu/drm/i915/intel_display.c:1790: warning: ‘alignment’ may be used uninitialized in this function
+
+Fix the "state_string()" error with a __maybe_unused tag.
+
+Fix the "alignment" error by assigning it to 0 in the default case,
+this avoids an unecessary initialization in the common case.
+
+Signed-off-by: Darren Hart <dvhart@linux.intel.com>
+CC: Eric Anholt <eric@anholt.net>
+---
+ drivers/gpu/drm/i915/intel_display.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
+index 21b6f93..adf483e 100644
+--- a/drivers/gpu/drm/i915/intel_display.c
++++ b/drivers/gpu/drm/i915/intel_display.c
+@@ -770,7 +770,7 @@ void intel_wait_for_pipe_off(struct drm_device *dev, int pipe)
+ 	}
+ }
+ 
+-static const char *state_string(bool enabled)
++static __maybe_unused const char *state_string(bool enabled)
+ {
+ 	return enabled ? "on" : "off";
+ }
+@@ -1808,6 +1808,8 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
+ 		DRM_ERROR("Y tiled not allowed for scan out buffers\n");
+ 		return -EINVAL;
+ 	default:
++		/* silence gcc uninitialized warnings with CONFIG_BUG not set */
++		alignment = 0;
+ 		BUG();
+ 	}
+ 
+-- 
+1.7.1
+
