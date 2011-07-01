@@ -1,64 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758064Ab1GAXPf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 19:15:35 -0400
-Received: from gate.crashing.org ([63.228.1.57]:60909 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756745Ab1GAXPe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 19:15:34 -0400
-Subject: Re: [PATCH 2/2] powerpc/mm: Fix memory_block_size_bytes() for
- non-pseries
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-In-Reply-To: <20110701121516.GD28008@elte.hu>
-References: <1308013071.2874.785.camel@pasglop>
-	 <20110701121516.GD28008@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 02 Jul 2011 09:15:12 +1000
-Message-ID: <1309562112.14501.257.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1758120Ab1GAXPk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 19:15:40 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:55845 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758072Ab1GAXPh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 19:15:37 -0400
+MIME-Version: 1.0
+In-Reply-To: <201107020005.02075.arnd@arndb.de>
+References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg> <201107020005.02075.arnd@arndb.de>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 1 Jul 2011 19:15:16 -0400
+Message-ID: <CAMjpGUcrZpqDwi8r+BmyDV29-FcU9miJLv-dHGjUYY_GLYLU8A@mail.gmail.com>
+Subject: Re: Build regressions/improvements in v3.0-rc5
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 14:15 +0200, Ingo Molnar wrote:
+On Fri, Jul 1, 2011 at 18:05, Arnd Bergmann wrote:
+> --- a/kernel/resource.c
+> +++ b/kernel/resource.c
+> @@ -21,7 +21,7 @@
+>  #include <linux/pfn.h>
+>  #include <asm/io.h>
+>
+> -
+> +#ifdef IO_SPACE_LIMIT
+>  struct resource ioport_resource = {
+>        .name   = "PCI IO",
+>        .start  = 0,
+> @@ -29,6 +29,7 @@ struct resource ioport_resource = {
+>        .flags  = IORESOURCE_IO,
+>  };
+>  EXPORT_SYMBOL(ioport_resource);
+> +#endif
 
-> > +/* WARNING: This is going to override the generic definition whenever
-> > + * pseries is built-in regardless of what platform is active at boot
-> > + * time. This is fine for now as this is the only "option" and it
-> > + * should work everywhere. If not, we'll have to turn this into a
-> > + * ppc_md. callback
-> > + */
-> 
-> Just a small nit, please use the customary (multi-line) comment 
-> style:
-> 
->   /*
->    * Comment .....
->    * ...... goes here.
->    */
-> 
-> specified in Documentation/CodingStyle.
-
-Ah ! Here goes my sneak attempts at violating coding style while nobody
-notices :-)
-
-No seriously, that sort of stuff shouldn't be such a hard rule... In
-some cases the "official" way looks nicer, on some cases it's just a
-waste of space, and I've grown to prefer my slightly more compact form,
-at least depending on how the surrounding code looks like.
-
-Since that's all powerpc arch code, I believe I'm entitled to that
-little bit of flexibility in how the code looks like :-) It's not
-like I'm GoingToPlayWithCaps() or switching to 3-char tabs :-)
-
-Cheers,
-Ben.
-
-
+hmm, asm-generic/io.h unconditionally sets this to 0xffff.  should
+that depend on CONFIG_HAS_IOPORT ?
+-mike
