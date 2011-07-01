@@ -1,91 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755548Ab1GAIkw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 04:40:52 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59794 "EHLO hera.kernel.org"
+	id S1755578Ab1GAIlR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 04:41:17 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59823 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754881Ab1GAIku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 04:40:50 -0400
-Date: Fri, 1 Jul 2011 08:40:29 GMT
+	id S1755437Ab1GAIlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 04:41:15 -0400
+Date: Fri, 1 Jul 2011 08:40:56 GMT
 From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-0a779c571314b7951ff12edac80aa0cbe7c12b6e@git.kernel.org>
+Message-ID: <tip-2d02612f61cc15b2025c90e32ed4a43eaa6753cd@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, john.stultz@linaro.org, hpa@zytor.com,
         mingo@redhat.com, ralf@linux-mips.org, linux@arm.linux.org.uk,
         tglx@linutronix.de
 Reply-To: mingo@redhat.com, hpa@zytor.com, john.stultz@linaro.org,
         linux-kernel@vger.kernel.org, linux@arm.linux.org.uk,
         ralf@linux-mips.org, tglx@linutronix.de
-In-Reply-To: <20110609130622.026152527@linutronix.de>
-References: <20110609130622.026152527@linutronix.de>
+In-Reply-To: <20110609130622.133068765@linutronix.de>
+References: <20110609130622.133068765@linutronix.de>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:timers/cleanup] x86: Use common i8253 clockevent
-Git-Commit-ID: 0a779c571314b7951ff12edac80aa0cbe7c12b6e
+Subject: [tip:timers/cleanup] mips: Use common i8253 clockevent
+Git-Commit-ID: 2d02612f61cc15b2025c90e32ed4a43eaa6753cd
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 08:40:29 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 08:40:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0a779c571314b7951ff12edac80aa0cbe7c12b6e
-Gitweb:     http://git.kernel.org/tip/0a779c571314b7951ff12edac80aa0cbe7c12b6e
+Commit-ID:  2d02612f61cc15b2025c90e32ed4a43eaa6753cd
+Gitweb:     http://git.kernel.org/tip/2d02612f61cc15b2025c90e32ed4a43eaa6753cd
 Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Thu, 9 Jun 2011 13:08:26 +0000
+AuthorDate: Thu, 9 Jun 2011 13:08:27 +0000
 Committer:  Thomas Gleixner <tglx@linutronix.de>
 CommitDate: Fri, 1 Jul 2011 10:37:14 +0200
 
-x86: Use common i8253 clockevent
+mips: Use common i8253 clockevent
 
 Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Cc: Russell King <linux@arm.linux.org.uk>
 Cc: Ralf Baechle <ralf@linux-mips.org>
 Cc: John Stultz <john.stultz@linaro.org>
-Link: http://lkml.kernel.org/r/20110609130622.026152527@linutronix.de
+Link: http://lkml.kernel.org/r/20110609130622.133068765@linutronix.de
 ---
- arch/x86/Kconfig        |    2 +-
- arch/x86/kernel/i8253.c |   93 ++---------------------------------------------
- 2 files changed, 4 insertions(+), 91 deletions(-)
+ arch/mips/Kconfig        |    1 +
+ arch/mips/kernel/i8253.c |   97 +---------------------------------------------
+ 2 files changed, 3 insertions(+), 95 deletions(-)
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 2dd95b5..26a14b4 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -71,7 +71,7 @@ config X86
- 	select IRQ_FORCED_THREADING
- 	select USE_GENERIC_SMP_HELPERS if SMP
- 	select HAVE_BPF_JIT if (X86_64 && NET)
--	select I8253_LOCK
+diff --git a/arch/mips/Kconfig b/arch/mips/Kconfig
+index 45f7aac..6cb60ad 100644
+--- a/arch/mips/Kconfig
++++ b/arch/mips/Kconfig
+@@ -2391,6 +2391,7 @@ config MMU
+ config I8253
+ 	bool
+ 	select CLKSRC_I8253
 +	select CLKEVT_I8253
+ 	select MIPS_EXTERNAL_TIMER
  
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-diff --git a/arch/x86/kernel/i8253.c b/arch/x86/kernel/i8253.c
-index 5783e6d..f2b96de 100644
---- a/arch/x86/kernel/i8253.c
-+++ b/arch/x86/kernel/i8253.c
-@@ -3,15 +3,9 @@
-  *
+ config ZONE_DMA32
+diff --git a/arch/mips/kernel/i8253.c b/arch/mips/kernel/i8253.c
+index 3d2ff57..8d95fe4f 100644
+--- a/arch/mips/kernel/i8253.c
++++ b/arch/mips/kernel/i8253.c
+@@ -4,92 +4,15 @@
   */
  #include <linux/clockchips.h>
--#include <linux/interrupt.h>
--#include <linux/spinlock.h>
--#include <linux/jiffies.h>
- #include <linux/module.h>
- #include <linux/timex.h>
--#include <linux/delay.h>
  #include <linux/i8253.h>
 -#include <linux/init.h>
--#include <linux/io.h>
+-#include <linux/interrupt.h>
+-#include <linux/jiffies.h>
+ #include <linux/module.h>
+ #include <linux/smp.h>
+-#include <linux/spinlock.h>
+ #include <linux/irq.h>
  
- #include <asm/hpet.h>
+-#include <asm/delay.h>
+-#include <asm/io.h>
  #include <asm/time.h>
-@@ -23,91 +17,10 @@
-  */
- struct clock_event_device *global_clock_event;
  
 -/*
 - * Initialize the PIT timer.
@@ -97,27 +92,27 @@ index 5783e6d..f2b96de 100644
 -{
 -	raw_spin_lock(&i8253_lock);
 -
--	switch (mode) {
+-	switch(mode) {
 -	case CLOCK_EVT_MODE_PERIODIC:
 -		/* binary, mode 2, LSB/MSB, ch 0 */
--		outb_pit(0x34, PIT_MODE);
--		outb_pit(LATCH & 0xff , PIT_CH0);	/* LSB */
--		outb_pit(LATCH >> 8 , PIT_CH0);		/* MSB */
+-		outb_p(0x34, PIT_MODE);
+-		outb_p(LATCH & 0xff , PIT_CH0);	/* LSB */
+-		outb(LATCH >> 8 , PIT_CH0);	/* MSB */
 -		break;
 -
 -	case CLOCK_EVT_MODE_SHUTDOWN:
 -	case CLOCK_EVT_MODE_UNUSED:
 -		if (evt->mode == CLOCK_EVT_MODE_PERIODIC ||
 -		    evt->mode == CLOCK_EVT_MODE_ONESHOT) {
--			outb_pit(0x30, PIT_MODE);
--			outb_pit(0, PIT_CH0);
--			outb_pit(0, PIT_CH0);
+-			outb_p(0x30, PIT_MODE);
+-			outb_p(0, PIT_CH0);
+-			outb_p(0, PIT_CH0);
 -		}
 -		break;
 -
 -	case CLOCK_EVT_MODE_ONESHOT:
 -		/* One shot setup */
--		outb_pit(0x38, PIT_MODE);
+-		outb_p(0x38, PIT_MODE);
 -		break;
 -
 -	case CLOCK_EVT_MODE_RESUME:
@@ -135,8 +130,8 @@ index 5783e6d..f2b96de 100644
 -static int pit_next_event(unsigned long delta, struct clock_event_device *evt)
 -{
 -	raw_spin_lock(&i8253_lock);
--	outb_pit(delta & 0xff , PIT_CH0);	/* LSB */
--	outb_pit(delta >> 8 , PIT_CH0);		/* MSB */
+-	outb_p(delta & 0xff , PIT_CH0);	/* LSB */
+-	outb(delta >> 8 , PIT_CH0);	/* MSB */
 -	raw_spin_unlock(&i8253_lock);
 -
 -	return 0;
@@ -146,11 +141,11 @@ index 5783e6d..f2b96de 100644
 - * On UP the PIT can serve all of the possible timer functions. On SMP systems
 - * it can be solely used for the global tick.
 - *
-- * The profiling and update capabilities are switched off once the local apic is
+- * The profiling and update capabilites are switched off once the local apic is
 - * registered. This mechanism replaces the previous #ifdef LOCAL_APIC -
 - * !using_apic_timer decisions in do_timer_interrupt_hook()
 - */
--static struct clock_event_device pit_ce = {
+-static struct clock_event_device pit_clockevent = {
 -	.name		= "pit",
 -	.features	= CLOCK_EVT_FEAT_PERIODIC | CLOCK_EVT_FEAT_ONESHOT,
 -	.set_mode	= init_pit_timer,
@@ -158,31 +153,37 @@ index 5783e6d..f2b96de 100644
 -	.irq		= 0,
 -};
 -
+ static irqreturn_t timer_interrupt(int irq, void *dev_id)
+ {
+-	pit_clockevent.event_handler(&pit_clockevent);
++	i8253_clockevent.event_handler(&pit_clockevent);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -100,25 +23,9 @@ static struct irqaction irq0  = {
+ 	.name = "timer"
+ };
+ 
 -/*
 - * Initialize the conversion factor and the min/max deltas of the clock event
 - * structure and register the clock event source with the framework.
 - */
  void __init setup_pit_timer(void)
  {
+-	struct clock_event_device *cd = &pit_clockevent;
+-	unsigned int cpu = smp_processor_id();
+-
 -	/*
 -	 * Start pit with the boot cpu mask and make it global after the
 -	 * IO_APIC has been initialized.
 -	 */
--	pit_ce.cpumask = cpumask_of(smp_processor_id());
+-	cd->cpumask = cpumask_of(cpu);
+-	clockevent_set_clock(cd, CLOCK_TICK_RATE);
+-	cd->max_delta_ns = clockevent_delta2ns(0x7FFF, cd);
+-	cd->min_delta_ns = clockevent_delta2ns(0xF, cd);
+-	clockevents_register_device(cd);
 -
--	clockevents_config_and_register(&pit_ce, CLOCK_TICK_RATE, 0xF, 0x7FFF);
--	global_clock_event = &pit_ce;
 +	clockevent_i8253_init(true);
-+	global_clock_event = &i8253_clockevent;
+ 	setup_irq(0, &irq0);
  }
  
- #ifndef CONFIG_X86_64
-@@ -121,7 +34,7 @@ static int __init init_pit_clocksource(void)
- 	  * - when local APIC timer is active (PIT is switched off)
- 	  */
- 	if (num_possible_cpus() > 1 || is_hpet_enabled() ||
--	    pit_ce.mode != CLOCK_EVT_MODE_PERIODIC)
-+	    i8253_clockevent.mode != CLOCK_EVT_MODE_PERIODIC)
- 		return 0;
- 
- 	return clocksource_i8253_init();
