@@ -1,66 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755337Ab1GAUkG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 16:40:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39694 "HELO
+	id S1756829Ab1GAUnG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 16:43:06 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:39701 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752160Ab1GAUkF (ORCPT
+	with SMTP id S1755828Ab1GAUnD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 16:40:05 -0400
-Date: Fri, 1 Jul 2011 16:40:04 -0400 (EDT)
+	Fri, 1 Jul 2011 16:43:03 -0400
+Date: Fri, 1 Jul 2011 16:43:02 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-cc: =?iso-8859-1?Q?=C9ric?= Piel <e.a.b.piel@tudelft.nl>,
-        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Regression 3.0-rc5+ : khubd blocked
-In-Reply-To: <20110701200800.GB17865@xanatos>
-Message-ID: <Pine.LNX.4.44L0.1107011637091.1624-100000@iolanthe.rowland.org>
+To: Greg KH <greg@kroah.com>
+cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: [PATCH] USB: fix regression occurring during device removal
+In-Reply-To: <1309552148.2722.46.camel@mulgrave>
+Message-ID: <Pine.LNX.4.44L0.1107011640300.1624-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jul 2011, Sarah Sharp wrote:
+This patch (as1476) fixes a regression introduced by
+fccf4e86200b8f5edd9a65da26f150e32ba79808 (USB: Free bandwidth when
+usb_disable_device is called).  usb_disconnect() grabs the
+bandwidth_mutex before calling usb_disable_device(), which calls down
+indirectly to usb_set_interface(), which tries to acquire the
+bandwidth_mutex.
 
-> On Fri, Jul 01, 2011 at 01:19:23PM -0400, Alan Stern wrote:
-> > On Fri, 1 Jul 2011, [ISO-8859-1] ?ric Piel wrote:
+The fix causes usb_set_interface() to return early when it is called
+for an interface that has already been unregistered, which is what
+happens in usb_disable_device().
+
+Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+CC: <stable@kernel.org>
+
+---
+
+On Fri, 1 Jul 2011, James Bottomley wrote:
+
+> On Fri, 2011-07-01 at 14:14 -0400, Dave Jones wrote:
+> > On Fri, Jul 01, 2011 at 10:05:31AM -0700, Andi Kleen wrote:
 > > 
-> > > Sorry, but from a quick look, it seems to not fix the bug.
-> > > 
-> > > I'll try further on Monday.
+> >  > I found I can reliably crash a 3.0 system by pulling the
+> >  > USB cable of a mounted USB cdrom (or rather a USB device which
+> >  > has a builtin fake CD-ROM) 
+> >  > 
+> >  > I suspect it's a regression too.
 > > 
-> > Do you get a similar message from the task watchdog?  The patch should 
-> > have caused usb_set_interface() to return early, without trying to 
-> > acquire the mutex that caused the problem before.
+> > We've been seeing a lot of similar bugs in Fedora since we pushed
+> > a 2.6.38.8 update.  Some of the traces are different, but some
+> > look to be the same as yours. (here's one for eg: https://bugzilla.redhat.com/show_bug.cgi?id=712830)
+> > 
+> > The common cause seems to be 'device went away'. So USB CD drives,
+> > USB memory sticks, and for some reason virtualbox shutdown.
 > 
-> I've been able to reproduce this bug with linus/master.  When I apply
-> your patch (or at least change the code to match your patch, since I
-> don't have those top-level directories),
-
-What top-level directories?  You're not referring to the dummy 
-"usb-3.0.orig" and "usb-3.0" path components in the patch?  They don't 
-matter if you use "patch -p1".
-
->  I can successfully unplug and
-> replug in a hub with a keyboard and mouse attached to it, with no hangs.
-> So I'm not sure why it isn't working for Éric.
+> I think it's something specific in the USB path.  I can't reproduce on
+> 3.0-rc5 with a SATA DVD hot unplug.  USB cc's added.
 > 
-> One further complication of the original patch is that when the xHCI
-> driver is unloaded, usb_disable_device is called for devices under the
-> USB 2.0 split rootub after the USB 3.0 roothub has been unregistered and
-> the xHCI host is halted.  The configure endpoint code doesn't actually
-> check if the hardware is running before submitting commands, so it takes
-> about 30 seconds for the command for each device to timeout.  So that
-> needs to be fixed as well.
-> 
-> Do you mind if I just take your patch and make a proper fix out of it?
+> James
 
-Don't bother; I'll send it in to Greg momentarily (along with your 
-Tested-by if you don't mind).
+This should fix the problem.  Or at least, it does fix a very similar 
+problem.
 
 Alan Stern
+
+
+
+ drivers/usb/core/message.c |    2 ++
+ 1 file changed, 2 insertions(+)
+
+Index: usb-3.0/drivers/usb/core/message.c
+===================================================================
+--- usb-3.0.orig/drivers/usb/core/message.c
++++ usb-3.0/drivers/usb/core/message.c
+@@ -1286,6 +1286,8 @@ int usb_set_interface(struct usb_device 
+ 			interface);
+ 		return -EINVAL;
+ 	}
++	if (iface->unregistering)
++		return -ENODEV;
+ 
+ 	alt = usb_altnum_to_altsetting(iface, alternate);
+ 	if (!alt) {
 
