@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120Ab1GAXPk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 19:15:40 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:55845 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758072Ab1GAXPh convert rfc822-to-8bit (ORCPT
+	id S932098Ab1GAXRG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 19:17:06 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:52759 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757689Ab1GAXRD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 19:15:37 -0400
-MIME-Version: 1.0
-In-Reply-To: <201107020005.02075.arnd@arndb.de>
-References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg> <201107020005.02075.arnd@arndb.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 1 Jul 2011 19:15:16 -0400
-Message-ID: <CAMjpGUcrZpqDwi8r+BmyDV29-FcU9miJLv-dHGjUYY_GLYLU8A@mail.gmail.com>
-Subject: Re: Build regressions/improvements in v3.0-rc5
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-        Linux Kernel Development <linux-kernel@vger.kernel.org>,
-        linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Jul 2011 19:17:03 -0400
+Date: Fri, 01 Jul 2011 16:15:50 -0700 (PDT)
+Message-Id: <20110701.161550.1316844563798183164.davem@davemloft.net>
+To: joe@perches.com
+Cc: linux-decnet-user@lists.sourceforge.net, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, linux-x25@vger.kernel.org,
+        linux-hams@vger.kernel.org, linux-sctp@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/12] net switch/case reformatting
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <cover.1309549243.git.joe@perches.com>
+References: <cover.1309549243.git.joe@perches.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 01 Jul 2011 16:15:52 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 1, 2011 at 18:05, Arnd Bergmann wrote:
-> --- a/kernel/resource.c
-> +++ b/kernel/resource.c
-> @@ -21,7 +21,7 @@
->  #include <linux/pfn.h>
->  #include <asm/io.h>
->
-> -
-> +#ifdef IO_SPACE_LIMIT
->  struct resource ioport_resource = {
->        .name   = "PCI IO",
->        .start  = 0,
-> @@ -29,6 +29,7 @@ struct resource ioport_resource = {
->        .flags  = IORESOURCE_IO,
->  };
->  EXPORT_SYMBOL(ioport_resource);
-> +#endif
+From: Joe Perches <joe@perches.com>
+Date: Fri,  1 Jul 2011 12:43:01 -0700
 
-hmm, asm-generic/io.h unconditionally sets this to 0xffff.  should
-that depend on CONFIG_HAS_IOPORT ?
--mike
+> Just whitespace cleanups with a couple trivial corrections
+
+All applied, thanks Joe.
