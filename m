@@ -1,80 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753050Ab1GASGq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 14:06:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35907 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751394Ab1GASGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 14:06:42 -0400
-Date: Fri, 1 Jul 2011 19:05:59 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Denys Vlasenko <vda.linux@googlemail.com>
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv4] ptrace: make former thread ID available via
-	PTRACE_GETEVENTMSG after PTRACE_EVENT_EXEC stop
-Message-ID: <20110701170559.GA12402@redhat.com>
-References: <201106290413.39429.vda.linux@googlemail.com>
+	id S1757410Ab1GASJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 14:09:59 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48175 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751557Ab1GASJ5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 14:09:57 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106290413.39429.vda.linux@googlemail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1309543448.26417.156.camel@gandalf.stny.rr.com>
+References: <1308875813-20122-1-git-send-email-wad@chromium.org>
+	<1308875813-20122-5-git-send-email-wad@chromium.org>
+	<BANLkTimtYUyXbZjWhjK61B_1WBXE4MoAeA@mail.gmail.com>
+	<alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>
+	<BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
+	<alpine.LRH.2.00.1106301128590.13496@tundra.namei.org>
+	<20110701115600.GK20990@elte.hu>
+	<BANLkTim8CGx89nOg0HX=S1=arunBU3sEGQ@mail.gmail.com>
+	<20110701130705.GG12605@elte.hu>
+	<BANLkTimN0nEa2Bog2-vzCv=1XOG5OsJjLA@mail.gmail.com>
+	<20110701161027.GA29035@elte.hu>
+	<BANLkTikCaACO8o9HkAnkuaTuoKqqQWQrtw@mail.gmail.com>
+	<1309543448.26417.156.camel@gandalf.stny.rr.com>
+Date: Fri, 1 Jul 2011 13:09:56 -0500
+Message-ID: <BANLkTin6rpBvbA1OuVHWy9ViZ-WPnwuXNw@mail.gmail.com>
+Subject: Re: [PATCH v9 05/13] seccomp_filter: Document what seccomp_filter is
+ and how it works.
+From: Will Drewry <wad@chromium.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, James Morris <jmorris@namei.org>,
+        Chris Evans <scarybeasts@gmail.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, djm@mindrot.org,
+        segoon@openwall.com, kees.cook@canonical.com, fweisbec@gmail.com,
+        tglx@linutronix.de, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        linux-security-module@vger.kernel.org,
+        ksummit-2011-discuss@lists.linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29, Denys Vlasenko wrote:
+On Fri, Jul 1, 2011 at 1:04 PM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> On Fri, 2011-07-01 at 11:43 -0500, Will Drewry wrote:
+>> On Fri, Jul 1, 2011 at 11:10 AM, Ingo Molnar <mingo@elte.hu> wrote:
 >
-> When multithreaded program execs under ptrace,
-> all traced threads report WIFEXITED status, except for
-> thread group leader and the thread which execs.
+>> I'd like to be able to move along security for the platform today and
+>> not in two years, but if my only chance of any form of this being
+>> ACK'd is to write it such that it shares code with perf and has a
+>> shiny new ABI, then I'll queue up the work for when I can start trying
+>> to tackle it.
 >
-> Unless tracer tracks thread group relationship between tracees,
-> which is a nontrivial task, it will not detect that
-> execed thread no longer exists.
+> As this seems to be dragging on, and does not look to be solved by
+> October, I would like to propose this topic for the Kernel Summit in
+> Prague. I believe all parties involved may be there, and if not, I will
+> push hard to get them there.
 >
-> This patch allows tracer to figure out which thread
-> performed this exec, by requesting PTRACE_GETEVENTMSG
-> in PTRACE_EVENT_EXEC stop.
->
-> Another, samller problem which is solved by this patch
-> is that tracer now can figure out which of the several
-> concurrent execs in multithreaded program succeeded.
->
-> Signed-off-by: Denys Vlasenko <vda.linux@googlemail.com>
+> Email is not always the best median for discussions. Face to face can
+> usually solve things much quicker.
 
-Thanks, applied.
+I have a panel reserved on system/kernel hardening with Kees at the
+Linux Security Summit as part of the LPC (thanks to the LSS
+committee).  Will the relevant people be able to attend that in
+September?
 
-> @@ -1370,6 +1371,11 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
->  	if (retval)
->  		return retval;
->
-> +	/* Need to fetch pid before load_binary changes it */
-> +	rcu_read_lock();
-> +	old_pid = task_pid_nr_ns(current, task_active_pid_ns(current->parent));
-> +	rcu_read_unlock();
-> +
->  	retval = -ENOENT;
->  	for (try=0; try<2; try++) {
->  		read_lock(&binfmt_lock);
-> @@ -1389,7 +1395,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
->  			bprm->recursion_depth = depth;
->  			if (retval >= 0) {
->  				if (depth == 0)
-> -					ptrace_event(PTRACE_EVENT_EXEC, 0);
-> +					ptrace_event(PTRACE_EVENT_EXEC,
-> +							old_pid);
+(Since the KS is invite-only, I'm obviously not on the list for it,
+but I realize I'm just a bit player in this. Maybe some direction can
+be resolved I can play catch up with.)
 
-Just for record. ->parent can be changed after we call task_pid_nr_ns(),
-and the new parent (tracer) can have another namespace, in this case
-we report the wrong pid. This is possible even now, without
-"PT_SEIZED implies PTRACE_EVENT_EXEC" we are going to add, although
-this is very unlikely and in this case PTRACE_EVENT_EXEC is spurious
-anyway. But when we change the behaviour of PT_SEIZED, this race
-becomes not that exotic, although very unlikely anyway.
+What's another couple months? :)
 
-I do not think we should try to fix this, it is not trivial and
-doesn't worth the trouble.
-
-Oleg.
-
+Thanks!
+will
