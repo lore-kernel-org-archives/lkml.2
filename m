@@ -1,114 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab1GAQCU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:02:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:59056 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab1GAQCP (ORCPT
+	id S1756946Ab1GAQFh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:05:37 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:62935 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab1GAQFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:02:15 -0400
-Date: Fri, 1 Jul 2011 18:02:10 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL v2] sched: Make sleep inside atomic detection work on
- !PREEMPT
-Message-ID: <20110701160207.GF8508@somewhere>
-References: <1307712622-11104-1-git-send-email-fweisbec@gmail.com>
- <20110622224844.GA3290@somewhere>
- <20110701123629.GA12605@elte.hu>
- <20110701125644.GD8508@somewhere>
- <20110701125926.GF12605@elte.hu>
+	Fri, 1 Jul 2011 12:05:35 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110701125926.GF12605@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <BANLkTinnEPKC+Nb7zK_PswU+M=sNPxWCig@mail.gmail.com>
+References: <1305248699-2347-1-git-send-email-daniel.blueman@gmail.com>
+	<69e8f8a9-4e8b-4c02-b566-304ff837d166@email.android.com>
+	<BANLkTi=h5f6o3iVK24sQ20xYYQAMbLavMg@mail.gmail.com>
+	<BANLkTik9BtnXxsOGKuhmoUFsKPbhBwXr3A@mail.gmail.com>
+	<4DE3C652.5090309@zytor.com>
+	<BANLkTinnEPKC+Nb7zK_PswU+M=sNPxWCig@mail.gmail.com>
+Date: Sat, 2 Jul 2011 00:05:33 +0800
+Message-ID: <BANLkTiktLdMiSa7bOCkrRxmngx-=CONSew@mail.gmail.com>
+Subject: Re: [PATCH] x86: Add Dell E5420 reboot quirk
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 02:59:26PM +0200, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Fri, Jul 01, 2011 at 02:36:29PM +0200, Ingo Molnar wrote:
-> > > 
-> > > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > > 
-> > > > On Fri, Jun 10, 2011 at 03:30:18PM +0200, Frederic Weisbecker wrote:
-> > > > > Ingo,
-> > > > > 
-> > > > > Please pull the sched/core branch that can be found at:
-> > > > > 
-> > > > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> > > > > 	sched/core
-> > > > 
-> > > > Hi Ingo,
-> > > > 
-> > > > I have added Randy's ack on the last patch. To get it, please pull the v2 in
-> > > > the following branch:
-> > > > 
-> > > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> > > >        sched/core-v2
-> > > > 
-> > > > There are no other changes.
-> > > 
-> > > Hm, this triggers such warnings now:
-> > > 
-> > > Detected 2010.217 MHz processor.
-> > > Marking TSC unstable due to TSCs unsynchronized
-> > > Calibrating delay loop (skipped), value calculated using timer frequency.. 4022.95 BogoMIPS (lpj=6700723)
-> > > pid_max: default: 4096 minimum: 301
-> > > BUG: scheduling while atomic: swapper/0/0x10000002
-> > > no locks held by swapper/0.
-> > > Pid: 0, comm: swapper Not tainted 3.0.0-rc5-tip-01401-ga7adf5f-dirty #141020
-> > > Call Trace:
-> > >  [<ffffffff81ddb3b0>] __schedule_bug+0x60/0x65
-> > >  [<ffffffff81dee803>] schedule+0x953/0x980
-> > >  [<ffffffff81571e30>] ? serial8250_console_putchar+0x30/0x40
-> > >  [<ffffffff81df177b>] ? _raw_spin_unlock+0x2b/0x50
-> > >  [<ffffffff8107882a>] __cond_resched+0x2a/0x40
-> > >  [<ffffffff81dee8e2>] _cond_resched+0x32/0x40
-> > >  [<ffffffff81110ba8>] __alloc_pages_nodemask+0x1b8/0x880
-> > >  [<ffffffff81df23ce>] ? common_interrupt+0xe/0x13
-> > >  [<ffffffff81080649>] ? vprintk+0x359/0x530
-> > >  [<ffffffff8113b4e7>] slob_new_pages+0x17/0x80
-> > >  [<ffffffff8113bd13>] __kmalloc_node+0xa3/0x270
-> > >  [<ffffffff81ddb6d5>] ? printk+0x41/0x43
-> > >  [<ffffffff82738420>] pidmap_init+0x80/0xbf
-> > >  [<ffffffff8272aa54>] start_kernel+0x28b/0x300
-> > >  [<ffffffff8272a2ee>] x86_64_start_reservations+0xfe/0x102
-> > >  [<ffffffff8272a3e2>] x86_64_start_kernel+0xf0/0xf7
-> > > Security Framework initialized
-> > > AppArmor: AppArmor initialized
-> > > Mount-cache hash table entries: 256
-> > > Initializing cgroup subsys cpuacct
-> > > 
-> > > Not sure we want to warn about schedule during early init, or can 
-> > > it cause problems and should thus be fixed? I bet there's more 
-> > > such instances.
-> > 
-> > I believe this is harmless because no other other tasks than init 
-> > are queued at that time. But I don't know, may be calling 
-> > schedule() involves some things that are not ready yet at that 
-> > time.
-> 
-> So why does it have need_resched set then? (which i presume must be a 
-> condition for cond_resched() to call into schedule())
+On 31 May 2011 00:52, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+> On 31 May 2011 00:31, H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 05/30/2011 07:43 AM, Daniel J Blueman wrote:
+>>>
+>>> Without this patch, rebooting is like Russian roulette; with quite a
+>>> few of these laptops in the field, perhaps it is better to enable the
+>>> quirk unless you think there may be an issue in the kernel preventing
+>>> correct behaviour that I could debug?
+>>>
+>>> On the other hand, Dell may later fix the BIOS AML (seen with the
+>>> excellent fwts) just as the cure for cancer is found. If they do, I'll
+>>> buy whiskey too.
+>
+>> Enabling the quirk is the right thing; however, if ACPI worked I'd have
+>> preferred it since we just switched to ACPI as the default.
+>
+> Indeed - the new and default ACPI reboot method works perfectly in
+> 3.0-rc1, whereas with 2.6.39, it didn't, so no further need for this
+> patch then.
 
-Good point, I'm looking at this.
- 
-> > Either we add a system_state check in schedule_debug() or we fix 
-> > the callers to not call schedule when system_state shows we are 
-> > booting..
-> 
-> Hm, such attempts were rather fragile in the past.
-> 
-> Thanks,
-> 
-> 	Ingo
+I slipped up, since after finally now moving on from 2.6.39, I removed
+the 'reboot=p' boot parameter; it turns out that 3.0-rc1 through -rc5
+do need this workaround; and the BIOS isn't changed. Honest. So, I
+didn't double-check that I had booted without it.
+
+Can you queue up the patch please (earlier in the thread)? Probably we
+should consider it for stable too, due to the hassle it brings. Let me
+know if we should debug would be useful for this problem.
+
+Thanks,
+  Daniel
+-- 
+Daniel J Blueman
