@@ -1,99 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754548Ab1GABG4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 21:06:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59948 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754133Ab1GABGz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 21:06:55 -0400
-Date: Thu, 30 Jun 2011 18:06:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
-Message-Id: <20110630180653.1df10f38.akpm@linux-foundation.org>
-In-Reply-To: <20110701092059.be4400f7.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110630130134.63a1dd37.akpm@linux-foundation.org>
-	<20110701085013.4e8cbb02.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110701092059.be4400f7.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754645Ab1GABJG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 21:09:06 -0400
+Received: from mail.perches.com ([173.55.12.10]:3387 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754615Ab1GABJE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 21:09:04 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: WANG Cong <amwang@redhat.com>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org
+Subject: [PATCH 2/2] netpoll: Remove wrapper function netpoll_poll
+Date: Thu, 30 Jun 2011 18:08:58 -0700
+Message-Id: <6d0de0ce0430d29d1808ecba1ce306ccca52247e.1309482314.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.rc1
+In-Reply-To: <cover.1309482314.git.joe@perches.com>
+References: <cover.1309482314.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jul 2011 09:20:59 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Too trivial to live.
 
-> On Fri, 1 Jul 2011 08:50:13 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > On Thu, 30 Jun 2011 13:01:34 -0700
-> > Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > Ok, I'll check it. Maybe I miss !CONFIG_SWAP...
-> > 
-> 
-> v4 here. Thank you for pointing out. I could think of several ways but
-> maybe this one is good because using vm_swappines with !CONFIG_SWAP seems
-> to be a bug.
+cc: WANG Cong <amwang@redhat.com>
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ net/core/netpoll.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
 
-No, it isn't a bug - swappiness also controls the kernel's eagerness to
-unmap and reclaim mmapped pagecache.
-
-> tested with allyesconfig/allnoconfig.
-
-Did it break the above?
-
-> +#ifdef CONFIG_SWAP
-> +static int vmscan_swappiness(struct scan_control *sc)
-> +{
-> +	if (scanning_global_lru(sc))
-> +		return vm_swappiness;
-
-Well that's a bit ugly - it assumes that all callers set
-scan_control.swappiness to vm_swappiness then never change it.  That
-may be true in the current code.
-
-Ho hum, I guess that's a simplification we can make.
-
-> +	return mem_cgroup_swappiness(sc->mem_cgroup);
-> +}
-> +#else
-> +static int vmscan_swappiness(struct scan_control *sc)
-> +{
-> +	/* Now, this function is never called with !CONFIG_SWAP */
-> +	BUG();
-> +	return 0;
-> +}
-> +#endif
->
-> ...
->
-> @@ -1789,8 +1804,8 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
->  	 * With swappiness at 100, anonymous and file have the same priority.
->  	 * This scanning priority is essentially the inverse of IO cost.
->  	 */
-> -	anon_prio = sc->swappiness;
-> -	file_prio = 200 - sc->swappiness;
-> +	anon_prio = vmscan_swappiness(sc);
-> +	file_prio = 200 - vmscan_swappiness(sc);
-
-hah, this should go BUG if CONFIG_SWAP=n.  But it won't, because we
-broke get_scan_count().  It fails to apply vm_swappiness to file-backed
-pages if there's no available swap, which is daft.
-
-I think this happened in 76a33fc380c9a ("vmscan: prevent
-get_scan_ratio() rounding errors") which claims "this patch doesn't
-really change logics, but just increase precision".
-
+diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+index 4ce595e..adf84dd 100644
+--- a/net/core/netpoll.c
++++ b/net/core/netpoll.c
+@@ -209,11 +209,6 @@ static void netpoll_poll_dev(struct net_device *dev)
+ 	zap_completion_queue();
+ }
+ 
+-static void netpoll_poll(struct netpoll *np)
+-{
+-	netpoll_poll_dev(np->dev);
+-}
+-
+ static void refill_skbs(void)
+ {
+ 	struct sk_buff *skb;
+@@ -273,7 +268,7 @@ repeat:
+ 
+ 	if (!skb) {
+ 		if (++count < 10) {
+-			netpoll_poll(np);
++			netpoll_poll_dev(np->dev);
+ 			goto repeat;
+ 		}
+ 		return NULL;
+@@ -334,7 +329,7 @@ void netpoll_send_skb_on_dev(struct netpoll *np, struct sk_buff *skb,
+ 			}
+ 
+ 			/* tickle device maybe there is some cleanup */
+-			netpoll_poll(np);
++			netpoll_poll_dev(np->dev);
+ 
+ 			udelay(USEC_PER_POLL);
+ 		}
+-- 
+1.7.6.rc1
 
