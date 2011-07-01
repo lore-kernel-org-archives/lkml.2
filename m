@@ -1,144 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab1GAUpJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 16:45:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46658 "EHLO mx2.suse.de"
+	id S1756912Ab1GAUxu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 16:53:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:39837 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755146Ab1GAUpG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 16:45:06 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary physical addresses
-Date: Fri, 1 Jul 2011 22:44:57 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.5-default; KDE/4.6.0; i686; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <201106171038.25988.ptesarik@suse.cz> <201107012134.45881.ptesarik@suse.cz> <20110701195629.GA19057@elte.hu>
-In-Reply-To: <20110701195629.GA19057@elte.hu>
+	id S1756130Ab1GAUxt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 16:53:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,460,1304319600"; 
+   d="scan'208";a="22499410"
+Date: Fri, 1 Jul 2011 13:53:44 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: =?iso-8859-1?Q?=C9ric?= Piel <e.a.b.piel@tudelft.nl>,
+        Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Regression 3.0-rc5+ : khubd blocked
+Message-ID: <20110701205344.GA18229@xanatos>
+References: <20110701200800.GB17865@xanatos>
+ <Pine.LNX.4.44L0.1107011637091.1624-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107012244.57593.ptesarik@suse.cz>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1107011637091.1624-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne Pá 1. července 2011 21:56:29 Ingo Molnar napsal(a):
-> * Petr Tesarik <ptesarik@suse.cz> wrote:
-> > Dne Pá 1. července 2011 18:13:45 Ingo Molnar napsal(a):
-> > > * H. Peter Anvin <hpa@zytor.com> wrote:
-> > > > On 07/01/2011 08:36 AM, Ingo Molnar wrote:
-> > > > > So we could kill multiple birds with the same stone here:
-> > > > >  - remove various ugly uses of /dev/mem (including the rootkit
-> > > > >  usage),
-> > > > >  
-> > > > >    with or without strict-devmem
-> > > > >  
-> > > > >  - extending it to above-4G for inspection purposes
-> > > > >  
-> > > > >  - allowing to kill /dev/mem access runtime similar to the
-> > > > >  
-> > > > >    disable_modules lock-down killswitch, for the so inclined.
-> > > > > 
-> > > > > Would you be interested in modifying your patch-set in such a
-> > > > > fashion?
-> > 
-> > Yes, this works for me. How persistent should the kill-switch be? I
-> > assume it doesn't make much sense to make a sysfs toggle, because
-> > then it would still be open to abuse. I'd rather see it specified
-> > on boot and never changed. Agreed?
-> > 
-> > Something like "enable_dev_mem" on the kenrel command line (default
-> > is disabled).
-> > 
-> > On a similar note, I should probably rip off write_mem() completely
-> > and disallow PROT_WRITE mmapping of the device. Right?
+On Fri, Jul 01, 2011 at 04:40:04PM -0400, Alan Stern wrote:
+> On Fri, 1 Jul 2011, Sarah Sharp wrote:
+> > Do you mind if I just take your patch and make a proper fix out of it?
 > 
-> Yeah - there's two things here: one is the boot option to turn it on,
-> the other is the kill-switch that is runtime and kills this method of
-> access permanently (until next reboot that is).
-> 
-> the kill-switch works like modules_disabled: once you echo 1 into it
-> you cannot move it back to 0 anymore.
+> Don't bother; I'll send it in to Greg momentarily (along with your 
+> Tested-by if you don't mind).
 
-Got it.
+Sure, that works.
 
-> The boot option would be a standard boot option - devmem=1 would be
-> the canonical naming? (but no strong feelings about the naming)
-
-I don't have any strong feelings either. "devmem=<int>" might be better, 
-because it could be used to control whether the device is read-only. That is, 
-if we want allow writing to /dev/mem under any circumstances. I'm fine with 
-removing the write part completely.
-
-> Do you expect distros to enable this boot option by default? I.e.
-> would SuSE be willing to ship with a restrictive /dev/mem by default?
-> That's really the wider goal we want to work towards.
-
-I'm not really the decision-maker on this, but even though I don't need it for 
-crash, there are several other users which would have to be fixed:
-
-1. hwinfo (EFI, MPTABLE and ACPI table parsing, analyzing video BIOS)
-2. dmidecode (SMBIOS, DMI)
-3. possibly others
-
-IMO there should be standard interfaces for all of these. SUSE will probably 
-continue to ship devmem-enabled kernels until we have a complete replacement 
-(esp. hwinfo seems to be important, because it is run as part of the 
-supportconfig script, which is run on customer machines and gathers all kind 
-of info that is useful to support teams). Note that these tools are mostly 
-content with access to the lowest megabyte, so they can also be used with 
-CONFIG_STRICT_DEVMEM.
-
-However, somebody must do the first step, and since we are the ones who 
-dislike the current state of affairs, it's probably our turn. Once /dev/mem is 
-disabled, authors of diagnostic tools will probably complain loudly here. We 
-(as in "kernel hackers") should provide proper interfaces for the low-level 
-info, and they'll adjust user-space. At this point I would expect distros to 
-disable /dev/mem by default.
-
-> > > > There is another use that I have looked at, as well: for
-> > > > testing purposes, it would be extremely good to be able to
-> > > > dirty and/or flush an arbitrary physical cache line for testing
-> > > > purposes.
-> > > > 
-> > > > This is very very similar to /dev/mem usage -- access to an
-> > > > arbitrary chunk of memory -- and a fully enabled /dev/mem can
-> > > > of course support this use (just mmap the page with the
-> > > > relevant cache line).  However, it could also be a separate
-> > > > device which could have looser permissions than /dev/mem; or a
-> > > > set of ioctls on /dev/mem with a separate kill switch, because
-> > > > no data would ever be have modified or returned to user space.
-> > > > 
-> > > > Either way, though, we found that it would share a lot of code
-> > > > with the /dev/mem implementation, and as such fixing up the
-> > > > underlying machinery is the sanest way to upstream this.
-> > > 
-> > > To me that cache flush thing sounds obscure (but still useful)
-> > > enough to justify a new ioctl over /dev/mem.
-> > > 
-> > > Not sure it even needs a killswitch, unless there's some real
-> > > security problem related to it.
-> > 
-> > It can be used for DoS, but if you have permission for the ioctl(),
-> > then you probably also have easier ways to kill the system.
-> 
-> Hm, why would the ability "dirty and/or flush an arbitrary physical
-> cache line for testing purposes" be a DoS?
-
-Effectively switching off CPU caches can slow things down quite a bit... 
-especially on a large SMP system. ;)
-
-Petr Tesarik
+Sarah Sharp
