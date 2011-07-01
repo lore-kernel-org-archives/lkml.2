@@ -1,168 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932130Ab1GAPVS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 11:21:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57472 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753311Ab1GAPVP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 11:21:15 -0400
-Date: Fri, 1 Jul 2011 15:20:53 GMT
-From: tip-bot for Cyrill Gorcunov <gorcunov@gmail.com>
-Message-ID: <tip-1880c4ae182afb5650c5678949ecfe7ff66a724e@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, eranian@google.com, acme@redhat.com,
-        hpa@zytor.com, mingo@redhat.com, gorcunov@openvz.org,
-        a.p.zijlstra@chello.nl, gorcunov@gmail.com, fweisbec@gmail.com,
-        ming.m.lin@intel.com, tglx@linutronix.de, mingo@elte.hu,
-        dzickus@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, eranian@google.com,
-        linux-kernel@vger.kernel.org, gorcunov@openvz.org,
-        a.p.zijlstra@chello.nl, gorcunov@gmail.com, fweisbec@gmail.com,
-        ming.m.lin@intel.com, tglx@linutronix.de, dzickus@redhat.com,
-        mingo@elte.hu
-In-Reply-To: <20110623124918.GC13050@sun>
-References: <20110623124918.GC13050@sun>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, x86: Add hw_watchdog_set_attr() in a sake of nmi-watchdog on P4
-Git-Commit-ID: 1880c4ae182afb5650c5678949ecfe7ff66a724e
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1755620Ab1GAPVx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 11:21:53 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:54660 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752456Ab1GAPVv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 11:21:51 -0400
+Date: Fri, 1 Jul 2011 11:21:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: =?UTF-8?B?w4lyaWMgUGllbA==?= <E.A.B.Piel@tudelft.nl>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+cc: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Regression 3.0-rc5+ : khubd blocked
+In-Reply-To: <4E0DC172.9010504@tudelft.nl>
+Message-ID: <Pine.LNX.4.44L0.1107011106380.1988-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:20:55 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1880c4ae182afb5650c5678949ecfe7ff66a724e
-Gitweb:     http://git.kernel.org/tip/1880c4ae182afb5650c5678949ecfe7ff66a724e
-Author:     Cyrill Gorcunov <gorcunov@gmail.com>
-AuthorDate: Thu, 23 Jun 2011 16:49:18 +0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 1 Jul 2011 11:06:34 +0200
+On Fri, 1 Jul 2011, Éric Piel wrote:
 
-perf, x86: Add hw_watchdog_set_attr() in a sake of nmi-watchdog on P4
+> Hello,
+> I've come across to what looks like a regression in the kernel a
+> few commits after 3.0-rc5.
+> 
+> When I turn off a usb hub, to which my mouse and keyboard are connected,
+> and then turn it on again, they are not detected again. After unplugging
+> it and waiting a few minutes I get a "task khubd:621 blocked for more
+> than 120 seconds."
+> 
+> I haven't investigated much. It seems reproducible here on my x86_64
+> laptop. It doesn't seem to happen on a 3.0-rc4. Maybe important, my
+> kernel already has commit 2e34b429a404675dc4fc4ad2ee339eea028da3ca
+> "Merge branch 'usb-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6"
+> 
+> Let me know if you need me to investigate more, or maybe there is
+> already a fix for that bug?
+> 
+> Below is the whole message of the hung. 
+> 
+> Cheers,
+> Éric
+> 
+> 
+> Jul  1 14:08:16 dutifh kernel: INFO: task khubd:621 blocked for more than 120 seconds.
+> Jul  1 14:08:16 dutifh kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+> Jul  1 14:08:16 dutifh kernel: khubd           D ffff88013a30dfd8     0   621      2 0x00000000
+> Jul  1 14:08:16 dutifh kernel: ffff88013a30db00 0000000000000046 ffff88013a30da10 ffffffffa00dd852
+> Jul  1 14:08:16 dutifh kernel: ffff88013b954320 ffff88013a30dfd8 ffff88013a30dfd8 ffff88013a30dfd8
+> Jul  1 14:08:16 dutifh kernel: ffff88013b891660 ffff88013b954320 ffff8800bb0084c0 dead000000100100
+> Jul  1 14:08:16 dutifh kernel: Call Trace:
+> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00dd852>] ? usb_hcd_giveback_urb+0x72/0xe0 [usbcore]
+> Jul  1 14:08:16 dutifh kernel: [<ffffffff8109e24f>] ? __rcu_read_unlock+0x2f/0x200
+> Jul  1 14:08:16 dutifh kernel: [<ffffffff81388634>] __mutex_lock_slowpath+0xf4/0x190
+> Jul  1 14:08:16 dutifh kernel: [<ffffffff8138806d>] mutex_lock+0x1d/0x40
+> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00e1e22>] usb_set_interface+0x62/0x250 [usbcore]
+> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00e3b9f>] usb_unbind_interface+0x10f/0x180 [usbcore]
+> Jul  1 14:08:16 dutifh kernel: [<ffffffff81269217>] __device_release_driver+0x77/0xd0
+> Jul  1 14:08:16 dutifh kernel: [<ffffffff81269297>] device_release_driver+0x27/0x40
+> Jul  1 14:08:16 dutifh kernel: [<ffffffff81268d83>] bus_remove_device+0x73/0xb0
+> Jul  1 14:08:16 dutifh kernel: [<ffffffff81266845>] device_del+0x125/0x1a0
+> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00e192c>] usb_disable_device+0x7c/0x1a0 [usbcore]
+> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00d9f80>] usb_disconnect+0xa0/0x140 [usbcore]
 
-Due to restriction and specifics of Netburst PMU we need a separated
-event for NMI watchdog. In particular every Netburst event
-consumes not just a counter and a config register, but also an
-additional ESCR register.
+It appears that this was caused by Sarah's commit 
+fccf4e86200b8f5edd9a65da26f150e32ba79808 (USB: Free bandwidth when 
+usb_disable_device is called).  usb_disconnect() grabs the 
+bandwidth_mutex before calling usb_disable_device(), which calls down 
+indirectly to usb_set_interface(), which tries to acquire the 
+bandwidth_mutex.
 
-Since ESCR registers are grouped upon counters (i.e. if ESCR is occupied
-for some event there is no room for another event to enter until its
-released) we need to pick up the "least" used ESCR (or the most available
-one) for nmi-watchdog purposes -- so MSR_P4_CRU_ESCR2/3 was chosen.
+This patch should fix the problem.  Still, this whole area cries out 
+for some serious rewriting.
 
-With this patch nmi-watchdog and perf top should be able to run simultaneously.
+Alan Stern
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Lin Ming <ming.m.lin@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-Tested-and-reviewed-by: Don Zickus <dzickus@redhat.com>
-Tested-and-reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/20110623124918.GC13050@sun
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/perf_event.c    |    7 +++++++
- arch/x86/kernel/cpu/perf_event_p4.c |   26 ++++++++++++++++++++++++++
- kernel/watchdog.c                   |    6 +++++-
- 3 files changed, 38 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 3a0338b..8a57f9a 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -233,6 +233,7 @@ struct x86_pmu {
- 	void		(*enable_all)(int added);
- 	void		(*enable)(struct perf_event *);
- 	void		(*disable)(struct perf_event *);
-+	void		(*hw_watchdog_set_attr)(struct perf_event_attr *attr);
- 	int		(*hw_config)(struct perf_event *event);
- 	int		(*schedule_events)(struct cpu_hw_events *cpuc, int n, int *assign);
- 	unsigned	eventsel;
-@@ -315,6 +316,12 @@ static u64 __read_mostly hw_cache_extra_regs
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
- 				[PERF_COUNT_HW_CACHE_RESULT_MAX];
+
+Index: usb-3.0/drivers/usb/core/message.c
+===================================================================
+--- usb-3.0.orig/drivers/usb/core/message.c
++++ usb-3.0/drivers/usb/core/message.c
+@@ -1273,6 +1273,8 @@ int usb_set_interface(struct usb_device 
+ 			interface);
+ 		return -EINVAL;
+ 	}
++	if (iface->unregistering)
++		return -ENODEV;
  
-+void hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr)
-+{
-+	if (x86_pmu.hw_watchdog_set_attr)
-+		x86_pmu.hw_watchdog_set_attr(wd_attr);
-+}
-+
- /*
-  * Propagate event elapsed time into the generic event.
-  * Can only be executed on the CPU where the event is active.
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index ead584f..f76fddf 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -705,6 +705,31 @@ static int p4_validate_raw_event(struct perf_event *event)
- 	return 0;
- }
- 
-+static void p4_hw_watchdog_set_attr(struct perf_event_attr *wd_attr)
-+{
-+	/*
-+	 * Watchdog ticks are special on Netburst, we use
-+	 * that named "non-sleeping" ticks as recommended
-+	 * by Intel SDM Vol3b.
-+	 */
-+	WARN_ON_ONCE(wd_attr->type	!= PERF_TYPE_HARDWARE ||
-+		     wd_attr->config	!= PERF_COUNT_HW_CPU_CYCLES);
-+
-+	wd_attr->type	= PERF_TYPE_RAW;
-+	wd_attr->config	=
-+		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS2)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS3)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS0)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS1)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS2)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS3))		|
-+		p4_config_pack_cccr(P4_CCCR_THRESHOLD(15) | P4_CCCR_COMPLEMENT		|
-+			P4_CCCR_COMPARE);
-+}
-+
- static int p4_hw_config(struct perf_event *event)
- {
- 	int cpu = get_cpu();
-@@ -1179,6 +1204,7 @@ static __initconst const struct x86_pmu p4_pmu = {
- 	.cntval_bits		= ARCH_P4_CNTRVAL_BITS,
- 	.cntval_mask		= ARCH_P4_CNTRVAL_MASK,
- 	.max_period		= (1ULL << (ARCH_P4_CNTRVAL_BITS - 1)) - 1,
-+	.hw_watchdog_set_attr	= p4_hw_watchdog_set_attr,
- 	.hw_config		= p4_hw_config,
- 	.schedule_events	= p4_pmu_schedule_events,
- 	/*
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 3d0c56a..752b75b 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -200,6 +200,8 @@ static int is_softlockup(unsigned long touch_ts)
- }
- 
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
-+void __weak hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr) { }
-+
- static struct perf_event_attr wd_hw_attr = {
- 	.type		= PERF_TYPE_HARDWARE,
- 	.config		= PERF_COUNT_HW_CPU_CYCLES,
-@@ -368,9 +370,11 @@ static int watchdog_nmi_enable(int cpu)
- 	if (event != NULL)
- 		goto out_enable;
- 
--	/* Try to register using hardware perf events */
- 	wd_attr = &wd_hw_attr;
- 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
-+	hw_nmi_watchdog_set_attr(wd_attr);
-+
-+	/* Try to register using hardware perf events */
- 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
- 	if (!IS_ERR(event)) {
- 		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
+ 	alt = usb_altnum_to_altsetting(iface, alternate);
+ 	if (!alt) {
+
