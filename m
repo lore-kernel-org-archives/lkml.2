@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757464Ab1GAQ4y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:56:54 -0400
+	id S1757438Ab1GAQ4w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:56:52 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:62813 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757391Ab1GAQ4u (ORCPT
+	with ESMTP id S1757366Ab1GAQ4p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:56:50 -0400
+	Fri, 1 Jul 2011 12:56:45 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
         Chris Ball <cjb@laptop.org>
 Cc: Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v9 10/12] mmc: queue: add a second mmc queue request member
-Date: Fri,  1 Jul 2011 18:55:31 +0200
-Message-Id: <1309539333-2606-11-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v9 08/12] mmc: block: add a block request prepare function
+Date: Fri,  1 Jul 2011 18:55:29 +0200
+Message-Id: <1309539333-2606-9-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
 References: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
@@ -26,9 +26,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an additional mmc queue request instance to make way for
-two active block requests. One request may be active while the
-other request is being prepared.
+Break out code from mmc_blk_issue_rw_rq to create a
+block request prepare function. This doesn't change
+any functionallity. This helps when handling more
+than one active block request.
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
@@ -37,143 +38,260 @@ Reviewed-by: Venkatraman S <svenkatr@ti.com>
 Tested-by: Sourav Poddar<sourav.poddar@ti.com>
 Tested-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mmc/card/queue.c |   44 ++++++++++++++++++++++++++++++++++++++++++--
- drivers/mmc/card/queue.h |    3 ++-
- 2 files changed, 44 insertions(+), 3 deletions(-)
+ drivers/mmc/card/block.c |  218 ++++++++++++++++++++++++----------------------
+ 1 files changed, 114 insertions(+), 104 deletions(-)
 
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index 4222e1a..d69d954 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -132,6 +132,7 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 	u64 limit = BLK_BOUNCE_HIGH;
- 	int ret;
- 	struct mmc_queue_req *mqrq_cur = &mq->mqrq[0];
-+	struct mmc_queue_req *mqrq_prev = &mq->mqrq[1];
+diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
+index 88bcc4e..a0a76f4 100644
+--- a/drivers/mmc/card/block.c
++++ b/drivers/mmc/card/block.c
+@@ -812,12 +812,15 @@ static inline void mmc_apply_rel_rw(struct mmc_blk_request *brq,
+ 	 R1_CC_ERROR |		/* Card controller error */		\
+ 	 R1_ERROR)		/* General/unknown error */
  
- 	if (mmc_dev(host)->dma_mask && *mmc_dev(host)->dma_mask)
- 		limit = *mmc_dev(host)->dma_mask;
-@@ -142,7 +143,9 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 		return -ENOMEM;
+-static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
++static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
++			       struct mmc_card *card,
++			       int disable_multi,
++			       struct mmc_queue *mq)
+ {
++	u32 readcmd, writecmd;
++	struct mmc_blk_request *brq = &mqrq->brq;
++	struct request *req = mqrq->req;
+ 	struct mmc_blk_data *md = mq->data;
+-	struct mmc_card *card = md->queue.card;
+-	struct mmc_blk_request *brq = &mq->mqrq_cur->brq;
+-	int ret = 1, disable_multi = 0, retry = 0;
  
- 	memset(&mq->mqrq_cur, 0, sizeof(mq->mqrq_cur));
-+	memset(&mq->mqrq_prev, 0, sizeof(mq->mqrq_prev));
- 	mq->mqrq_cur = mqrq_cur;
-+	mq->mqrq_prev = mqrq_prev;
- 	mq->queue->queuedata = mq;
+ 	/*
+ 	 * Reliable writes are used to implement Forced Unit Access and
+@@ -828,119 +831,126 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
+ 		(rq_data_dir(req) == WRITE) &&
+ 		(md->flags & MMC_BLK_REL_WR);
  
- 	blk_queue_prep_rq(mq->queue, mmc_prep_request);
-@@ -178,9 +181,17 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 					"allocate bounce cur buffer\n",
- 					mmc_card_name(card));
+-	do {
+-		u32 readcmd, writecmd;
+-
+-		memset(brq, 0, sizeof(struct mmc_blk_request));
+-		brq->mrq.cmd = &brq->cmd;
+-		brq->mrq.data = &brq->data;
+-
+-		brq->cmd.arg = blk_rq_pos(req);
+-		if (!mmc_card_blockaddr(card))
+-			brq->cmd.arg <<= 9;
+-		brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
+-		brq->data.blksz = 512;
+-		brq->stop.opcode = MMC_STOP_TRANSMISSION;
+-		brq->stop.arg = 0;
+-		brq->stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
+-		brq->data.blocks = blk_rq_sectors(req);
+-
+-		/*
+-		 * The block layer doesn't support all sector count
+-		 * restrictions, so we need to be prepared for too big
+-		 * requests.
+-		 */
+-		if (brq->data.blocks > card->host->max_blk_count)
+-			brq->data.blocks = card->host->max_blk_count;
++	memset(brq, 0, sizeof(struct mmc_blk_request));
++	brq->mrq.cmd = &brq->cmd;
++	brq->mrq.data = &brq->data;
+ 
+-		/*
+-		 * After a read error, we redo the request one sector at a time
+-		 * in order to accurately determine which sectors can be read
+-		 * successfully.
+-		 */
+-		if (disable_multi && brq->data.blocks > 1)
+-			brq->data.blocks = 1;
++	brq->cmd.arg = blk_rq_pos(req);
++	if (!mmc_card_blockaddr(card))
++		brq->cmd.arg <<= 9;
++	brq->cmd.flags = MMC_RSP_SPI_R1 | MMC_RSP_R1 | MMC_CMD_ADTC;
++	brq->data.blksz = 512;
++	brq->stop.opcode = MMC_STOP_TRANSMISSION;
++	brq->stop.arg = 0;
++	brq->stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
++	brq->data.blocks = blk_rq_sectors(req);
+ 
+-		if (brq->data.blocks > 1 || do_rel_wr) {
+-			/* SPI multiblock writes terminate using a special
+-			 * token, not a STOP_TRANSMISSION request.
+-			 */
+-			if (!mmc_host_is_spi(card->host) ||
+-			    rq_data_dir(req) == READ)
+-				brq->mrq.stop = &brq->stop;
+-			readcmd = MMC_READ_MULTIPLE_BLOCK;
+-			writecmd = MMC_WRITE_MULTIPLE_BLOCK;
+-		} else {
+-			brq->mrq.stop = NULL;
+-			readcmd = MMC_READ_SINGLE_BLOCK;
+-			writecmd = MMC_WRITE_BLOCK;
+-		}
+-		if (rq_data_dir(req) == READ) {
+-			brq->cmd.opcode = readcmd;
+-			brq->data.flags |= MMC_DATA_READ;
+-		} else {
+-			brq->cmd.opcode = writecmd;
+-			brq->data.flags |= MMC_DATA_WRITE;
+-		}
++	/*
++	 * The block layer doesn't support all sector count
++	 * restrictions, so we need to be prepared for too big
++	 * requests.
++	 */
++	if (brq->data.blocks > card->host->max_blk_count)
++		brq->data.blocks = card->host->max_blk_count;
+ 
+-		if (do_rel_wr)
+-			mmc_apply_rel_rw(brq, card, req);
++	/*
++	 * After a read error, we redo the request one sector at a time
++	 * in order to accurately determine which sectors can be read
++	 * successfully.
++	 */
++	if (disable_multi && brq->data.blocks > 1)
++		brq->data.blocks = 1;
+ 
+-		/*
+-		 * Pre-defined multi-block transfers are preferable to
+-		 * open ended-ones (and necessary for reliable writes).
+-		 * However, it is not sufficient to just send CMD23,
+-		 * and avoid the final CMD12, as on an error condition
+-		 * CMD12 (stop) needs to be sent anyway. This, coupled
+-		 * with Auto-CMD23 enhancements provided by some
+-		 * hosts, means that the complexity of dealing
+-		 * with this is best left to the host. If CMD23 is
+-		 * supported by card and host, we'll fill sbc in and let
+-		 * the host deal with handling it correctly. This means
+-		 * that for hosts that don't expose MMC_CAP_CMD23, no
+-		 * change of behavior will be observed.
+-		 *
+-		 * N.B: Some MMC cards experience perf degradation.
+-		 * We'll avoid using CMD23-bounded multiblock writes for
+-		 * these, while retaining features like reliable writes.
++	if (brq->data.blocks > 1 || do_rel_wr) {
++		/* SPI multiblock writes terminate using a special
++		 * token, not a STOP_TRANSMISSION request.
+ 		 */
++		if (!mmc_host_is_spi(card->host) ||
++		    rq_data_dir(req) == READ)
++			brq->mrq.stop = &brq->stop;
++		readcmd = MMC_READ_MULTIPLE_BLOCK;
++		writecmd = MMC_WRITE_MULTIPLE_BLOCK;
++	} else {
++		brq->mrq.stop = NULL;
++		readcmd = MMC_READ_SINGLE_BLOCK;
++		writecmd = MMC_WRITE_BLOCK;
++	}
++	if (rq_data_dir(req) == READ) {
++		brq->cmd.opcode = readcmd;
++		brq->data.flags |= MMC_DATA_READ;
++	} else {
++		brq->cmd.opcode = writecmd;
++		brq->data.flags |= MMC_DATA_WRITE;
++	}
+ 
+-		if ((md->flags & MMC_BLK_CMD23) &&
+-		    mmc_op_multi(brq->cmd.opcode) &&
+-		    (do_rel_wr || !(card->quirks & MMC_QUIRK_BLK_NO_CMD23))) {
+-			brq->sbc.opcode = MMC_SET_BLOCK_COUNT;
+-			brq->sbc.arg = brq->data.blocks |
+-				(do_rel_wr ? (1 << 31) : 0);
+-			brq->sbc.flags = MMC_RSP_R1 | MMC_CMD_AC;
+-			brq->mrq.sbc = &brq->sbc;
+-		}
++	if (do_rel_wr)
++		mmc_apply_rel_rw(brq, card, req);
+ 
+-		mmc_set_data_timeout(&brq->data, card);
++	/*
++	 * Pre-defined multi-block transfers are preferable to
++	 * open ended-ones (and necessary for reliable writes).
++	 * However, it is not sufficient to just send CMD23,
++	 * and avoid the final CMD12, as on an error condition
++	 * CMD12 (stop) needs to be sent anyway. This, coupled
++	 * with Auto-CMD23 enhancements provided by some
++	 * hosts, means that the complexity of dealing
++	 * with this is best left to the host. If CMD23 is
++	 * supported by card and host, we'll fill sbc in and let
++	 * the host deal with handling it correctly. This means
++	 * that for hosts that don't expose MMC_CAP_CMD23, no
++	 * change of behavior will be observed.
++	 *
++	 * N.B: Some MMC cards experience perf degradation.
++	 * We'll avoid using CMD23-bounded multiblock writes for
++	 * these, while retaining features like reliable writes.
++	 */
+ 
+-		brq->data.sg = mq->mqrq_cur->sg;
+-		brq->data.sg_len = mmc_queue_map_sg(mq, mq->mqrq_cur);
++	if ((md->flags & MMC_BLK_CMD23) &&
++	    mmc_op_multi(brq->cmd.opcode) &&
++	    (do_rel_wr || !(card->quirks & MMC_QUIRK_BLK_NO_CMD23))) {
++		brq->sbc.opcode = MMC_SET_BLOCK_COUNT;
++		brq->sbc.arg = brq->data.blocks |
++			(do_rel_wr ? (1 << 31) : 0);
++		brq->sbc.flags = MMC_RSP_R1 | MMC_CMD_AC;
++		brq->mrq.sbc = &brq->sbc;
++	}
+ 
+-		/*
+-		 * Adjust the sg list so it is the same size as the
+-		 * request.
+-		 */
+-		if (brq->data.blocks != blk_rq_sectors(req)) {
+-			int i, data_size = brq->data.blocks << 9;
+-			struct scatterlist *sg;
+-
+-			for_each_sg(brq->data.sg, sg, brq->data.sg_len, i) {
+-				data_size -= sg->length;
+-				if (data_size <= 0) {
+-					sg->length += data_size;
+-					i++;
+-					break;
+-				}
++	mmc_set_data_timeout(&brq->data, card);
++
++	brq->data.sg = mqrq->sg;
++	brq->data.sg_len = mmc_queue_map_sg(mq, mqrq);
++
++	/*
++	 * Adjust the sg list so it is the same size as the
++	 * request.
++	 */
++	if (brq->data.blocks != blk_rq_sectors(req)) {
++		int i, data_size = brq->data.blocks << 9;
++		struct scatterlist *sg;
++
++		for_each_sg(brq->data.sg, sg, brq->data.sg_len, i) {
++			data_size -= sg->length;
++			if (data_size <= 0) {
++				sg->length += data_size;
++				i++;
++				break;
  			}
-+			mqrq_prev->bounce_buf = kmalloc(bouncesz, GFP_KERNEL);
-+			if (!mqrq_prev->bounce_buf) {
-+				printk(KERN_WARNING "%s: unable to "
-+					"allocate bounce prev buffer\n",
-+					mmc_card_name(card));
-+				kfree(mqrq_cur->bounce_buf);
-+				mqrq_cur->bounce_buf = NULL;
-+			}
+-			brq->data.sg_len = i;
  		}
++		brq->data.sg_len = i;
++	}
  
--		if (mqrq_cur->bounce_buf) {
-+		if (mqrq_cur->bounce_buf && mqrq_prev->bounce_buf) {
- 			blk_queue_bounce_limit(mq->queue, BLK_BOUNCE_ANY);
- 			blk_queue_max_hw_sectors(mq->queue, bouncesz / 512);
- 			blk_queue_max_segments(mq->queue, bouncesz / 512);
-@@ -195,11 +206,19 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 			if (ret)
- 				goto cleanup_queue;
+-		mmc_queue_bounce_pre(mq->mqrq_cur);
++	mmc_queue_bounce_pre(mqrq);
++}
  
-+			mqrq_prev->sg = mmc_alloc_sg(1, &ret);
-+			if (ret)
-+				goto cleanup_queue;
++static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
++{
++	struct mmc_blk_data *md = mq->data;
++	struct mmc_card *card = md->queue.card;
++	struct mmc_blk_request *brq = &mq->mqrq_cur->brq;
++	int ret = 1, disable_multi = 0, retry = 0;
 +
-+			mqrq_prev->bounce_sg =
-+				mmc_alloc_sg(bouncesz / 512, &ret);
-+			if (ret)
-+				goto cleanup_queue;
- 		}
- 	}
- #endif
++	do {
++		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, disable_multi, mq);
+ 		mmc_wait_for_req(card->host, &brq->mrq);
  
--	if (!mqrq_cur->bounce_buf) {
-+	if (!mqrq_cur->bounce_buf && !mqrq_prev->bounce_buf) {
- 		blk_queue_bounce_limit(mq->queue, limit);
- 		blk_queue_max_hw_sectors(mq->queue,
- 			min(host->max_blk_count, host->max_req_size / 512));
-@@ -210,6 +229,10 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 		if (ret)
- 			goto cleanup_queue;
- 
-+
-+		mqrq_prev->sg = mmc_alloc_sg(host->max_segs, &ret);
-+		if (ret)
-+			goto cleanup_queue;
- 	}
- 
- 	sema_init(&mq->thread_sem, 1);
-@@ -226,6 +249,8 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
-  free_bounce_sg:
- 	kfree(mqrq_cur->bounce_sg);
- 	mqrq_cur->bounce_sg = NULL;
-+	kfree(mqrq_prev->bounce_sg);
-+	mqrq_prev->bounce_sg = NULL;
- 
-  cleanup_queue:
- 	kfree(mqrq_cur->sg);
-@@ -233,6 +258,11 @@ int mmc_init_queue(struct mmc_queue *mq, struct mmc_card *card,
- 	kfree(mqrq_cur->bounce_buf);
- 	mqrq_cur->bounce_buf = NULL;
- 
-+	kfree(mqrq_prev->sg);
-+	mqrq_prev->sg = NULL;
-+	kfree(mqrq_prev->bounce_buf);
-+	mqrq_prev->bounce_buf = NULL;
-+
- 	blk_cleanup_queue(mq->queue);
- 	return ret;
- }
-@@ -242,6 +272,7 @@ void mmc_cleanup_queue(struct mmc_queue *mq)
- 	struct request_queue *q = mq->queue;
- 	unsigned long flags;
- 	struct mmc_queue_req *mqrq_cur = mq->mqrq_cur;
-+	struct mmc_queue_req *mqrq_prev = mq->mqrq_prev;
- 
- 	/* Make sure the queue isn't suspended, as that will deadlock */
- 	mmc_queue_resume(mq);
-@@ -264,6 +295,15 @@ void mmc_cleanup_queue(struct mmc_queue *mq)
- 	kfree(mqrq_cur->bounce_buf);
- 	mqrq_cur->bounce_buf = NULL;
- 
-+	kfree(mqrq_prev->bounce_sg);
-+	mqrq_prev->bounce_sg = NULL;
-+
-+	kfree(mqrq_prev->sg);
-+	mqrq_prev->sg = NULL;
-+
-+	kfree(mqrq_prev->bounce_buf);
-+	mqrq_prev->bounce_buf = NULL;
-+
- 	mq->card = NULL;
- }
- EXPORT_SYMBOL(mmc_cleanup_queue);
-diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
-index c1a69ac..1a637d2 100644
---- a/drivers/mmc/card/queue.h
-+++ b/drivers/mmc/card/queue.h
-@@ -29,8 +29,9 @@ struct mmc_queue {
- 	int			(*issue_fn)(struct mmc_queue *, struct request *);
- 	void			*data;
- 	struct request_queue	*queue;
--	struct mmc_queue_req	mqrq[1];
-+	struct mmc_queue_req	mqrq[2];
- 	struct mmc_queue_req	*mqrq_cur;
-+	struct mmc_queue_req	*mqrq_prev;
- };
- 
- extern int mmc_init_queue(struct mmc_queue *, struct mmc_card *, spinlock_t *,
+ 		mmc_queue_bounce_post(mq->mqrq_cur);
 -- 
 1.7.4.1
 
