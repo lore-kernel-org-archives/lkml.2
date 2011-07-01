@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757485Ab1GAQ5E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:57:04 -0400
+	id S1757368Ab1GAQ4g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:56:36 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:62813 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757384Ab1GAQ46 (ORCPT
+	with ESMTP id S1757354Ab1GAQ4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:56:58 -0400
+	Fri, 1 Jul 2011 12:56:33 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
         Chris Ball <cjb@laptop.org>
 Cc: Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v9 11/12] mmc: core: add random fault injection
-Date: Fri,  1 Jul 2011 18:55:32 +0200
-Message-Id: <1309539333-2606-12-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v9 05/12] mmc: mmc_test: add test for non-blocking transfers
+Date: Fri,  1 Jul 2011 18:55:26 +0200
+Message-Id: <1309539333-2606-6-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
 References: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
@@ -26,10 +26,15 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This simple fault injection proved to be very useful to
-test the error handling in the block.c rw_rq(). It may
-still be useful to test if the host driver handle
-pre_req() and post_req() correctly in case of errors.
+Add four tests for read and write performance per
+different transfer size, 4k to 4M.
+ * Read using blocking mmc request
+ * Read using non-blocking mmc request
+ * Write using blocking mmc request
+ * Write using non-blocking mmc request
+
+The host dirver must support pre_req() and post_req()
+in order to run the non-blocking test cases.
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
@@ -38,143 +43,402 @@ Reviewed-by: Venkatraman S <svenkatr@ti.com>
 Tested-by: Sourav Poddar<sourav.poddar@ti.com>
 Tested-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mmc/core/core.c    |   54 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/mmc/core/debugfs.c |    5 ++++
- include/linux/mmc/host.h   |    3 ++
- lib/Kconfig.debug          |   11 +++++++++
- 4 files changed, 73 insertions(+), 0 deletions(-)
+ drivers/mmc/card/mmc_test.c |  318 +++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 310 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
-index d2d7239..62a8cc7 100644
---- a/drivers/mmc/core/core.c
-+++ b/drivers/mmc/core/core.c
-@@ -23,6 +23,8 @@
- #include <linux/log2.h>
- #include <linux/regulator/consumer.h>
- #include <linux/pm_runtime.h>
-+#include <linux/fault-inject.h>
-+#include <linux/random.h>
- 
- #include <linux/mmc/card.h>
- #include <linux/mmc/host.h>
-@@ -82,6 +84,56 @@ static void mmc_flush_scheduled_work(void)
- 	flush_workqueue(workqueue);
- }
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+
-+static DECLARE_FAULT_ATTR(fail_mmc_request);
-+
-+static int __init setup_fail_mmc_request(char *str)
-+{
-+	return setup_fault_attr(&fail_mmc_request, str);
-+}
-+__setup("fail_mmc_request=", setup_fail_mmc_request);
-+
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
-+{
-+	struct mmc_command *cmd = mrq->cmd;
-+	struct mmc_data *data = mrq->data;
-+	static const int data_errors[] = {
-+		-ETIMEDOUT,
-+		-EILSEQ,
-+		-EIO,
-+	};
-+
-+	if (!data)
-+		return;
-+
-+	if (cmd->error || data->error || !host->make_it_fail ||
-+	    !should_fail(&fail_mmc_request, data->blksz * data->blocks))
-+		return;
-+
-+	data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
-+	data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
-+}
-+
-+static int __init fail_mmc_request_debugfs(void)
-+{
-+	return init_fault_attr_dentries(&fail_mmc_request,
-+					"fail_mmc_request");
-+}
-+
-+late_initcall(fail_mmc_request_debugfs);
-+
-+#else /* CONFIG_FAIL_MMC_REQUEST */
-+
-+static void mmc_should_fail_request(struct mmc_host *host,
-+				    struct mmc_request *mrq)
-+{
-+}
-+
-+#endif /* CONFIG_FAIL_MMC_REQUEST */
-+
-+
- /**
-  *	mmc_request_done - finish processing an MMC request
-  *	@host: MMC host which completed request
-@@ -108,6 +160,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
- 		cmd->error = 0;
- 		host->ops->request(host, mrq);
- 	} else {
-+		mmc_should_fail_request(host, mrq);
-+
- 		led_trigger_event(host->led, LED_OFF);
- 
- 		pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
-diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
-index 998797e..588e76f 100644
---- a/drivers/mmc/core/debugfs.c
-+++ b/drivers/mmc/core/debugfs.c
-@@ -188,6 +188,11 @@ void mmc_add_host_debugfs(struct mmc_host *host)
- 				root, &host->clk_delay))
- 		goto err_node;
- #endif
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	if (!debugfs_create_u8("make-it-fail", S_IRUSR | S_IWUSR,
-+			       root, &host->make_it_fail))
-+		goto err_node;
-+#endif
- 	return;
- 
- err_node:
-diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
-index 59db6f2..0d0a48f 100644
---- a/include/linux/mmc/host.h
-+++ b/include/linux/mmc/host.h
-@@ -301,6 +301,9 @@ struct mmc_host {
- 
- 	struct mmc_async_req	*areq;		/* active async req */
- 
-+#ifdef CONFIG_FAIL_MMC_REQUEST
-+	u8			make_it_fail;
-+#endif
- 	unsigned long		private[0] ____cacheline_aligned;
+diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
+index e8508e9..51031a5 100644
+--- a/drivers/mmc/card/mmc_test.c
++++ b/drivers/mmc/card/mmc_test.c
+@@ -148,6 +148,26 @@ struct mmc_test_card {
+ 	struct mmc_test_general_result	*gr;
  };
  
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index c768bcd..330fc70 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -1057,6 +1057,17 @@ config FAIL_IO_TIMEOUT
- 	  Only works with drivers that use the generic timeout handling,
- 	  for others it wont do anything.
- 
-+config FAIL_MMC_REQUEST
-+	bool "Fault-injection capability for MMC IO"
-+	select DEBUG_FS
-+	depends on FAULT_INJECTION
-+	help
-+	  Provide fault-injection capability for MMC IO.
-+	  This will make the mmc core return data errors. This is
-+	  useful for testing the error handling in the mmc block device
-+	  and how the mmc host driver handle retries from
-+	  the block device.
++enum mmc_test_prep_media {
++	MMC_TEST_PREP_NONE = 0,
++	MMC_TEST_PREP_WRITE_FULL = 1 << 0,
++	MMC_TEST_PREP_ERASE = 1 << 1,
++};
 +
- config FAULT_INJECTION_DEBUG_FS
- 	bool "Debugfs entries for fault-injection capabilities"
- 	depends on FAULT_INJECTION && SYSFS && DEBUG_FS
++struct mmc_test_multiple_rw {
++	unsigned int *bs;
++	unsigned int len;
++	unsigned int size;
++	bool do_write;
++	bool do_nonblock_req;
++	enum mmc_test_prep_media prepare;
++};
++
++struct mmc_test_async_req {
++	struct mmc_async_req areq;
++	struct mmc_test_card *test;
++};
++
+ /*******************************************************************/
+ /*  General helper functions                                       */
+ /*******************************************************************/
+@@ -661,7 +681,7 @@ static void mmc_test_prepare_broken_mrq(struct mmc_test_card *test,
+  * Checks that a normal transfer didn't have any errors
+  */
+ static int mmc_test_check_result(struct mmc_test_card *test,
+-	struct mmc_request *mrq)
++				 struct mmc_request *mrq)
+ {
+ 	int ret;
+ 
+@@ -685,6 +705,17 @@ static int mmc_test_check_result(struct mmc_test_card *test,
+ 	return ret;
+ }
+ 
++static int mmc_test_check_result_async(struct mmc_card *card,
++				       struct mmc_async_req *areq)
++{
++	struct mmc_test_async_req *test_async =
++		container_of(areq, struct mmc_test_async_req, areq);
++
++	mmc_test_wait_busy(test_async->test);
++
++	return mmc_test_check_result(test_async->test, areq->mrq);
++}
++
+ /*
+  * Checks that a "short transfer" behaved as expected
+  */
+@@ -720,6 +751,85 @@ static int mmc_test_check_broken_result(struct mmc_test_card *test,
+ }
+ 
+ /*
++ * Tests nonblock transfer with certain parameters
++ */
++static void mmc_test_nonblock_reset(struct mmc_request *mrq,
++				    struct mmc_command *cmd,
++				    struct mmc_command *stop,
++				    struct mmc_data *data)
++{
++	memset(mrq, 0, sizeof(struct mmc_request));
++	memset(cmd, 0, sizeof(struct mmc_command));
++	memset(data, 0, sizeof(struct mmc_data));
++	memset(stop, 0, sizeof(struct mmc_command));
++
++	mrq->cmd = cmd;
++	mrq->data = data;
++	mrq->stop = stop;
++}
++static int mmc_test_nonblock_transfer(struct mmc_test_card *test,
++				      struct scatterlist *sg, unsigned sg_len,
++				      unsigned dev_addr, unsigned blocks,
++				      unsigned blksz, int write, int count)
++{
++	struct mmc_request mrq1;
++	struct mmc_command cmd1;
++	struct mmc_command stop1;
++	struct mmc_data data1;
++
++	struct mmc_request mrq2;
++	struct mmc_command cmd2;
++	struct mmc_command stop2;
++	struct mmc_data data2;
++
++	struct mmc_test_async_req test_areq[2];
++	struct mmc_async_req *done_areq;
++	struct mmc_async_req *cur_areq = &test_areq[0].areq;
++	struct mmc_async_req *other_areq = &test_areq[1].areq;
++	int i;
++	int ret;
++
++	test_areq[0].test = test;
++	test_areq[1].test = test;
++
++	mmc_test_nonblock_reset(&mrq1, &cmd1, &stop1, &data1);
++	mmc_test_nonblock_reset(&mrq2, &cmd2, &stop2, &data2);
++
++	cur_areq->mrq = &mrq1;
++	cur_areq->err_check = mmc_test_check_result_async;
++	other_areq->mrq = &mrq2;
++	other_areq->err_check = mmc_test_check_result_async;
++
++	for (i = 0; i < count; i++) {
++		mmc_test_prepare_mrq(test, cur_areq->mrq, sg, sg_len, dev_addr,
++				     blocks, blksz, write);
++		done_areq = mmc_start_req(test->card->host, cur_areq, &ret);
++
++		if (ret || (!done_areq && i > 0))
++			goto err;
++
++		if (done_areq) {
++			if (done_areq->mrq == &mrq2)
++				mmc_test_nonblock_reset(&mrq2, &cmd2,
++							&stop2, &data2);
++			else
++				mmc_test_nonblock_reset(&mrq1, &cmd1,
++							&stop1, &data1);
++		}
++		done_areq = cur_areq;
++		cur_areq = other_areq;
++		other_areq = done_areq;
++		dev_addr += blocks;
++	}
++
++	done_areq = mmc_start_req(test->card->host, NULL, &ret);
++
++	return ret;
++err:
++	return ret;
++}
++
++/*
+  * Tests a basic transfer with certain parameters
+  */
+ static int mmc_test_simple_transfer(struct mmc_test_card *test,
+@@ -1336,14 +1446,17 @@ static int mmc_test_area_transfer(struct mmc_test_card *test,
+ }
+ 
+ /*
+- * Map and transfer bytes.
++ * Map and transfer bytes for multiple transfers.
+  */
+-static int mmc_test_area_io(struct mmc_test_card *test, unsigned long sz,
+-			    unsigned int dev_addr, int write, int max_scatter,
+-			    int timed)
++static int mmc_test_area_io_seq(struct mmc_test_card *test, unsigned long sz,
++				unsigned int dev_addr, int write,
++				int max_scatter, int timed, int count,
++				bool nonblock)
+ {
+ 	struct timespec ts1, ts2;
+-	int ret;
++	int ret = 0;
++	int i;
++	struct mmc_test_area *t = &test->area;
+ 
+ 	/*
+ 	 * In the case of a maximally scattered transfer, the maximum transfer
+@@ -1367,8 +1480,15 @@ static int mmc_test_area_io(struct mmc_test_card *test, unsigned long sz,
+ 
+ 	if (timed)
+ 		getnstimeofday(&ts1);
++	if (nonblock)
++		ret = mmc_test_nonblock_transfer(test, t->sg, t->sg_len,
++				 dev_addr, t->blocks, 512, write, count);
++	else
++		for (i = 0; i < count && ret == 0; i++) {
++			ret = mmc_test_area_transfer(test, dev_addr, write);
++			dev_addr += sz >> 9;
++		}
+ 
+-	ret = mmc_test_area_transfer(test, dev_addr, write);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1376,11 +1496,19 @@ static int mmc_test_area_io(struct mmc_test_card *test, unsigned long sz,
+ 		getnstimeofday(&ts2);
+ 
+ 	if (timed)
+-		mmc_test_print_rate(test, sz, &ts1, &ts2);
++		mmc_test_print_avg_rate(test, sz, count, &ts1, &ts2);
+ 
+ 	return 0;
+ }
+ 
++static int mmc_test_area_io(struct mmc_test_card *test, unsigned long sz,
++			    unsigned int dev_addr, int write, int max_scatter,
++			    int timed)
++{
++	return mmc_test_area_io_seq(test, sz, dev_addr, write, max_scatter,
++				    timed, 1, false);
++}
++
+ /*
+  * Write the test area entirely.
+  */
+@@ -1954,6 +2082,153 @@ static int mmc_test_large_seq_write_perf(struct mmc_test_card *test)
+ 	return mmc_test_large_seq_perf(test, 1);
+ }
+ 
++static int mmc_test_rw_multiple(struct mmc_test_card *test,
++				struct mmc_test_multiple_rw *tdata,
++				unsigned int reqsize, unsigned int size)
++{
++	unsigned int dev_addr;
++	struct mmc_test_area *t = &test->area;
++	int ret = 0;
++
++	/* Set up test area */
++	if (size > mmc_test_capacity(test->card) / 2 * 512)
++		size = mmc_test_capacity(test->card) / 2 * 512;
++	if (reqsize > t->max_tfr)
++		reqsize = t->max_tfr;
++	dev_addr = mmc_test_capacity(test->card) / 4;
++	if ((dev_addr & 0xffff0000))
++		dev_addr &= 0xffff0000; /* Round to 64MiB boundary */
++	else
++		dev_addr &= 0xfffff800; /* Round to 1MiB boundary */
++	if (!dev_addr)
++		goto err;
++
++	if (reqsize > size)
++		return 0;
++
++	/* prepare test area */
++	if (mmc_can_erase(test->card) &&
++	    tdata->prepare & MMC_TEST_PREP_ERASE) {
++		ret = mmc_erase(test->card, dev_addr,
++				size / 512, MMC_SECURE_ERASE_ARG);
++		if (ret)
++			ret = mmc_erase(test->card, dev_addr,
++					size / 512, MMC_ERASE_ARG);
++		if (ret)
++			goto err;
++	}
++
++	/* Run test */
++	ret = mmc_test_area_io_seq(test, reqsize, dev_addr,
++				   tdata->do_write, 0, 1, size / reqsize,
++				   tdata->do_nonblock_req);
++	if (ret)
++		goto err;
++
++	return ret;
++ err:
++	printk(KERN_INFO "[%s] error\n", __func__);
++	return ret;
++}
++
++static int mmc_test_rw_multiple_size(struct mmc_test_card *test,
++				     struct mmc_test_multiple_rw *rw)
++{
++	int ret = 0;
++	int i;
++	void *pre_req = test->card->host->ops->pre_req;
++	void *post_req = test->card->host->ops->post_req;
++
++	if (rw->do_nonblock_req &&
++	    ((!pre_req && post_req) || (pre_req && !post_req))) {
++		printk(KERN_INFO "error: only one of pre/post is defined\n");
++		return -EINVAL;
++	}
++
++	for (i = 0 ; i < rw->len && ret == 0; i++) {
++		ret = mmc_test_rw_multiple(test, rw, rw->bs[i], rw->size);
++		if (ret)
++			break;
++	}
++	return ret;
++}
++
++/*
++ * Multiple blocking write 4k to 4 MB chunks
++ */
++static int mmc_test_profile_mult_write_blocking_perf(struct mmc_test_card *test)
++{
++	unsigned int bs[] = {1 << 12, 1 << 13, 1 << 14, 1 << 15, 1 << 16,
++			     1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 22};
++	struct mmc_test_multiple_rw test_data = {
++		.bs = bs,
++		.size = TEST_AREA_MAX_SIZE,
++		.len = ARRAY_SIZE(bs),
++		.do_write = true,
++		.do_nonblock_req = false,
++		.prepare = MMC_TEST_PREP_ERASE,
++	};
++
++	return mmc_test_rw_multiple_size(test, &test_data);
++};
++
++/*
++ * Multiple non-blocking write 4k to 4 MB chunks
++ */
++static int mmc_test_profile_mult_write_nonblock_perf(struct mmc_test_card *test)
++{
++	unsigned int bs[] = {1 << 12, 1 << 13, 1 << 14, 1 << 15, 1 << 16,
++			     1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 22};
++	struct mmc_test_multiple_rw test_data = {
++		.bs = bs,
++		.size = TEST_AREA_MAX_SIZE,
++		.len = ARRAY_SIZE(bs),
++		.do_write = true,
++		.do_nonblock_req = true,
++		.prepare = MMC_TEST_PREP_ERASE,
++	};
++
++	return mmc_test_rw_multiple_size(test, &test_data);
++}
++
++/*
++ * Multiple blocking read 4k to 4 MB chunks
++ */
++static int mmc_test_profile_mult_read_blocking_perf(struct mmc_test_card *test)
++{
++	unsigned int bs[] = {1 << 12, 1 << 13, 1 << 14, 1 << 15, 1 << 16,
++			     1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 22};
++	struct mmc_test_multiple_rw test_data = {
++		.bs = bs,
++		.size = TEST_AREA_MAX_SIZE,
++		.len = ARRAY_SIZE(bs),
++		.do_write = false,
++		.do_nonblock_req = false,
++		.prepare = MMC_TEST_PREP_NONE,
++	};
++
++	return mmc_test_rw_multiple_size(test, &test_data);
++}
++
++/*
++ * Multiple non-blocking read 4k to 4 MB chunks
++ */
++static int mmc_test_profile_mult_read_nonblock_perf(struct mmc_test_card *test)
++{
++	unsigned int bs[] = {1 << 12, 1 << 13, 1 << 14, 1 << 15, 1 << 16,
++			     1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 22};
++	struct mmc_test_multiple_rw test_data = {
++		.bs = bs,
++		.size = TEST_AREA_MAX_SIZE,
++		.len = ARRAY_SIZE(bs),
++		.do_write = false,
++		.do_nonblock_req = true,
++		.prepare = MMC_TEST_PREP_NONE,
++	};
++
++	return mmc_test_rw_multiple_size(test, &test_data);
++}
++
+ static const struct mmc_test_case mmc_test_cases[] = {
+ 	{
+ 		.name = "Basic write (no data verification)",
+@@ -2221,6 +2496,33 @@ static const struct mmc_test_case mmc_test_cases[] = {
+ 		.cleanup = mmc_test_area_cleanup,
+ 	},
+ 
++	{
++		.name = "Write performance with blocking req 4k to 4MB",
++		.prepare = mmc_test_area_prepare,
++		.run = mmc_test_profile_mult_write_blocking_perf,
++		.cleanup = mmc_test_area_cleanup,
++	},
++
++	{
++		.name = "Write performance with non-blocking req 4k to 4MB",
++		.prepare = mmc_test_area_prepare,
++		.run = mmc_test_profile_mult_write_nonblock_perf,
++		.cleanup = mmc_test_area_cleanup,
++	},
++
++	{
++		.name = "Read performance with blocking req 4k to 4MB",
++		.prepare = mmc_test_area_prepare,
++		.run = mmc_test_profile_mult_read_blocking_perf,
++		.cleanup = mmc_test_area_cleanup,
++	},
++
++	{
++		.name = "Read performance with non-blocking req 4k to 4MB",
++		.prepare = mmc_test_area_prepare,
++		.run = mmc_test_profile_mult_read_nonblock_perf,
++		.cleanup = mmc_test_area_cleanup,
++	},
+ };
+ 
+ static DEFINE_MUTEX(mmc_test_lock);
 -- 
 1.7.4.1
 
