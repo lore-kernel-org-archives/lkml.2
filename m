@@ -1,52 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab1GAN3o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:29:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59435 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755554Ab1GAN3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:29:42 -0400
-Date: Fri, 1 Jul 2011 06:29:19 -0700
-From: Greg KH <gregkh@suse.de>
-To: =?iso-8859-1?Q?=C9ric?= Piel <E.A.B.Piel@tudelft.nl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Regression 3.0-rc5+ : khubd blocked
-Message-ID: <20110701132919.GB8902@suse.de>
-References: <4E0DC172.9010504@tudelft.nl>
+	id S1756556Ab1GANbb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:31:31 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:25163 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755554Ab1GANba convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 09:31:30 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Christoph Hellwig <hch@infradead.org>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 00/40] Staging: hv: Driver cleanup
+Thread-Topic: [PATCH 00/40] Staging: hv: Driver cleanup
+Thread-Index: AQHMNmfj17zjqSVuBEq2aM1XFV3FGpTWwcoA///LLvCAAQtaAP//38qQ
+Date: Fri, 1 Jul 2011 13:31:30 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480816C4BF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
+ <20110630193346.GA22707@infradead.org>
+ <6E21E5352C11B742B20C142EB499E0480816C36D@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110701082136.GE28322@infradead.org>
+In-Reply-To: <20110701082136.GE28322@infradead.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4E0DC172.9010504@tudelft.nl>
-User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 02:45:38PM +0200, Éric Piel wrote:
-> Hello,
-> I've come across to what looks like a regression in the kernel a
-> few commits after 3.0-rc5.
-> 
-> When I turn off a usb hub, to which my mouse and keyboard are connected,
-> and then turn it on again, they are not detected again. After unplugging
-> it and waiting a few minutes I get a "task khubd:621 blocked for more
-> than 120 seconds."
-> 
-> I haven't investigated much. It seems reproducible here on my x86_64
-> laptop. It doesn't seem to happen on a 3.0-rc4. Maybe important, my
-> kernel already has commit 2e34b429a404675dc4fc4ad2ee339eea028da3ca
-> "Merge branch 'usb-linus' of
-> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6"
-> 
-> Let me know if you need me to investigate more, or maybe there is
-> already a fix for that bug?
 
-Can you run 'git bisect' to track it down to the exact patch that causes
-the problem?
 
-thanks,
+> -----Original Message-----
+> From: Christoph Hellwig [mailto:hch@infradead.org]
+> Sent: Friday, July 01, 2011 4:22 AM
+> To: KY Srinivasan
+> Cc: Christoph Hellwig; gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
+> 
+> On Thu, Jun 30, 2011 at 11:28:27PM +0000, KY Srinivasan wrote:
+> > > On Wed, Jun 29, 2011 at 07:38:21AM -0700, K. Y. Srinivasan wrote:
+> > > > Further cleanup of the hv drivers:
+> > > >
+> > > > 	1) Cleanup the reference counting mess for both stor and net devices.
+> > >
+> > > I really don't understand the need for reference counting on the storage
+> > > side, especially now that you only have a SCSI driver.  The SCSI
+> > > midlayer does proper counting on it's objects (Scsi_Host, scsi_device,
+> > > scsi_cmnd), so you'll get that for free given that SCSI drivers just
+> > > piggyback on the midlayer lifetime rules.
+> >
+> > The reference counting allows us to properly deal with messages coming back
+> from the host
+> > to the guest with a racing remove of the device. I am told these messages could
+> potentially be
+> > not a response to a message sent from the guest.
+> 
+> To deal with that the scsi subsystem has a two stage teardown for the
+> SCSI host.  First you call scsi_remove_host, at which point no new I/O
+> to it can be started.  After that you can wait for all outstanding
+> messages, and finally you do a scsi_host_put to drop the long-term
+> reference to it, and eventually free it.
 
-greg k-h
+That is what I have currently implemented both on the stor as well
+as the net side with regards to the device specific objects hanging off of
+struct hv_device (the ext field). If it is ok with you, I want to do what you
+had suggested earlier. Keep the patches as they are with regards to 
+reference counting for now. We can always simplify the code later.
+
+Regards,
+
+K. Y
