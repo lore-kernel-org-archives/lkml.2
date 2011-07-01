@@ -1,70 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754660Ab1GABSZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 21:18:25 -0400
-Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:19538
-	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753670Ab1GABSX convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 21:18:23 -0400
-X-SpamScore: -4
-X-BigFish: VS-4(zz9371M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h1a1r61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
-From: Tabi Timur-B04825 <B04825@freescale.com>
-To: Arnd Bergmann <arnd@arndb.de>
-CC: "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>,
-        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
-        Gala Kumar-B11780 <B11780@freescale.com>,
-        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
-        "greg@kroah.com" <greg@kroah.com>, "akpm@kernel.org" <akpm@kernel.org>,
-        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
-        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "dsaxena@linaro.org" <dsaxena@linaro.org>,
-        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-console@vger.kernel.org" <linux-console@vger.kernel.org>
-Subject: Re: [PATCH 7/7] [v6] drivers/virt: introduce Freescale hypervisor
- management driver
-Thread-Topic: [PATCH 7/7] [v6] drivers/virt: introduce Freescale hypervisor
- management driver
-Thread-Index: AQHMN4zAQUHEITu9+kSoiB4MK937mw==
-Date: Fri, 1 Jul 2011 01:18:15 +0000
-Message-ID: <BANLkTi=3r=UQYJVqRLRe-eu7rdkXQS-ESQ@mail.gmail.com>
-References: <1307652726-4356-1-git-send-email-timur@freescale.com>
-	<201106092304.55479.arnd@arndb.de>
-In-Reply-To: <201106092304.55479.arnd@arndb.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [174.129.36.64]
-Content-Type: text/plain; charset=US-ASCII
-Content-ID: <4EA51EC6BB80F340A5CB3FBBFBD06B1C@freescale.net>
-Content-Transfer-Encoding: 7BIT
+	id S1754680Ab1GABU3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 21:20:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:41089 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753670Ab1GABU2 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 21:20:28 -0400
 MIME-Version: 1.0
-X-OriginatorOrg: freescale.com
+In-Reply-To: <4E0D191C.5090208@linux.intel.com>
+References: <1309473108-5337-1-git-send-email-Gregory.Dietsche@cuw.edu>
+	<tip-a5fd117a8fda8621e1ae1bb3b8d55e4c0ebabd94@git.kernel.org>
+	<4E0D1400.7020107@zytor.com>
+	<20110701004121.GA18671@farmergreg.com>
+	<4E0D191C.5090208@linux.intel.com>
+Date: Thu, 30 Jun 2011 21:20:26 -0400
+Message-ID: <BANLkTimO30XXhzQt15tDK1-+ch8GcH4bjw@mail.gmail.com>
+Subject: Re: [tip:x86/cleanups] x86, smpboot: Mark names[] array as const
+From: Brian Gerst <brgerst@gmail.com>
+To: "H. Peter Anvin" <hpa@linux.intel.com>
+Cc: Greg Dietsche <greg@farmergreg.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        mingo@redhat.com, linux-kernel@vger.kernel.org,
+        Gregory.Dietsche@cuw.edu, tglx@linutronix.de,
+        linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 9, 2011 at 4:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Thursday 09 June 2011 22:52:06 Timur Tabi wrote:
->> Add the drivers/virt directory, which houses drivers that support
->> virtualization environments, and add the Freescale hypervisor management
->> driver.
-....
+On Thu, Jun 30, 2011 at 8:47 PM, H. Peter Anvin <hpa@linux.intel.com> wrote:
+> On 06/30/2011 05:41 PM, Greg Dietsche wrote:
+>> On Thu, Jun 30, 2011 at 05:25:36PM -0700, H. Peter Anvin wrote:
+>>> On 06/30/2011 05:21 PM, tip-bot for Greg Dietsche wrote:
+>>>> +   const char const *names[] = { "ID", "VERSION", "SPIV" };
+>>>         ^^^^^^^^^^^^^^^^
+>>>
+>>> Doesn't make sense, patch removed...
+>>>
+>> could you explain a little more? I don't see my mistake.
+>> it compiles and is running on my box currently.
 >>
->> Signed-off-by: Timur Tabi <timur@freescale.com>
->
-> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-So I've made the changes that people have asked for, and Arnd has
-acked this driver.  Who's going to pick it up?  Who will be the
-maintainer for drivers/virt?  I'd really like to see this driver in
-3.1, and there's not much time left.
+One const is for the strings, the other is for the array of pointers.
 
--- 
-Timur Tabi
-Linux kernel developer at Freescale
+--
+Brian Gerst
