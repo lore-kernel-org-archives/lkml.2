@@ -1,230 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab1GAJTx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:19:53 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:32911 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755959Ab1GAJR7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 05:17:59 -0400
-From: Stefan Bader <stefan.bader@canonical.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Stefan Bader <stefan.bader@canonical.com>,
-        linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 03/10] drm/i915: prepare for fair lru eviction" has been added to staging queue
-Date: Fri,  1 Jul 2011 10:17:54 +0100
-Message-Id: <1309511874-2940-1-git-send-email-stefan.bader@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1755028Ab1GAJ2I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 05:28:08 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:39335 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754832Ab1GAJ2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 05:28:06 -0400
+Date: Fri, 1 Jul 2011 13:27:03 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, matt mooney <mfm@muteddisk.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-uvc-devel@lists.berlios.de, linux-media@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 0/2] USB: EHCI: Allow users to override 80% max
+	periodic bandwidth
+Message-ID: <20110701092703.GA17010@tugrik.mns.mnsspb.ru>
+References: <cover.1308933456.git.kirr@mns.spb.ru> <20110630180101.GB7979@xanatos>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110630180101.GB7979@xanatos>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a note to let you know that I have just added a patch titled
+On Thu, Jun 30, 2011 at 11:01:01AM -0700, Sarah Sharp wrote:
+> On Fri, Jun 24, 2011 at 08:48:06PM +0400, Kirill Smelkov wrote:
+> > 
+> > Changes since v1:
+> > 
+> > 
+> >  - dropped RFC status as "this seems like the sort of feature somebody might
+> >    reasonably want to use -- if they know exactly what they're doing";
+> > 
+> >  - new preparatory patch (1/2) which moves already-in-there sysfs code into
+> >    ehci-sysfs.c;
+> > 
+> >  - moved uframe_periodic_max parameter from module option to sysfs attribute,
+> >    so that it can be set per controller and at runtime, added validity checks;
+> > 
+> >  - clarified a bit bandwith analysis for 96% max periodic setup as noticed by
+> >    Alan Stern;
+> > 
+> >  - clarified patch description saying that set in stone 80% max periodic is
+> >    specified by USB 2.0;
+> 
+> Have you tested this patch by maxing out this bandwidth on various
+> types of host controllers?  It's entirely possible that you'll run into
+> vendor-specific bugs if you try to pack the schedule with isochronous
+> transfers.  I don't think any hardware designer would seriously test or
+> validate their hardware with a schedule that is basically a violation of
+> the USB bus spec (more than 80% for periodic transfers).
 
-    Subject: [PATCH 03/10] drm/i915: prepare for fair lru eviction
+I've only tested it to work on my HP Mini 5103 with N10 chipset:
 
-to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
+    kirr@mini:~$ lspci 
+    00:00.0 Host bridge: Intel Corporation N10 Family DMI Bridge
+    00:02.0 VGA compatible controller: Intel Corporation N10 Family Integrated Graphics Controller
+    00:02.1 Display controller: Intel Corporation N10 Family Integrated Graphics Controller
+    00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio Controller (rev 02)
+    00:1c.0 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 1 (rev 02)
+    00:1c.3 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 4 (rev 02)
+    00:1d.0 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #1 (rev 02)
+    00:1d.1 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #2 (rev 02)
+    00:1d.2 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #3 (rev 02)
+    00:1d.3 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #4 (rev 02)
+    00:1d.7 USB Controller: Intel Corporation N10/ICH 7 Family USB2 EHCI Controller (rev 02)
+    00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev e2)
+    00:1f.0 ISA bridge: Intel Corporation NM10 Family LPC Controller (rev 02)
+    00:1f.2 SATA controller: Intel Corporation N10/ICH7 Family SATA AHCI Controller (rev 02)
+    01:00.0 Network controller: Broadcom Corporation BCM4313 802.11b/g/n Wireless LAN Controller (rev 01)
+    02:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8059 PCI-E Gigabit Ethernet Controller (rev 11)
 
-  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
+The system works stable with 110us/uframe (~88%) isoc bandwith allocated for
+integrated UVC webcam and external EM28XX based capture board.
 
-If you, or anyone else, feels it should not be added to the drm33-longterm tree,
-please reply to this email not later than 8 days after this email was sent.
 
-Thanks.
--Stefan
+> But if Alan is fine with giving users a way to shoot themselves in the
+> foot, and it's disabled by default, then I don't particularly mind this
+> patch.
 
-------
+Yes, it is disabled by default, I mean max periodic bandwidth is set to
+100us/uframe by default exactly as it was before the patch. So only
+those of us who need the extreme settings are taking the risk - normal
+users who do not alter uframe_periodic_max attribute should not see any
+change at all.
 
->From f07147fcefea6d203882c570d61bdf73dd25ae66 Mon Sep 17 00:00:00 2001
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date: Fri, 17 Jun 2011 10:04:20 -0500
-Subject: [PATCH 03/10] drm/i915: prepare for fair lru eviction
 
-BugLink: http://bugs.launchpad.net/bugs/599017
+Thanks for commenting. I'll extend my testing information and notes on
+do-not-do-harm bahaviour in updated patch.
 
-This does two little changes:
 
-- Add an alignment parameter for evict_something. It's not really great to
-  whack a carefully sized hole into the gtt with the wrong alignment.
-  Especially since the fallback path is a full evict.
-
-- With the inactive scan stuff we need to evict more that one object, so
-  move the unbind call into the helper function that scans for the object
-  to be evicted, too.  And adjust its name.
-
-No functional changes in this patch, just preparation.
-
-Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Eric Anholt <eric@anholt.net>
-(backported from commit 0108a3edd5c2e3b150a550d565b6aa1a67c0edbe upstream)
-
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
-Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
----
- drivers/gpu/drm/i915/i915_gem.c |   67 ++++++++++++++++++++++++---------------
- 1 files changed, 41 insertions(+), 26 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index a34fd44..e0afa05 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -36,6 +36,7 @@
-
- #define I915_GEM_GPU_DOMAINS	(~(I915_GEM_DOMAIN_CPU | I915_GEM_DOMAIN_GTT))
-
-+static uint32_t i915_gem_get_gtt_alignment(struct drm_gem_object *obj);
- static void i915_gem_object_flush_gpu_write_domain(struct drm_gem_object *obj);
- static void i915_gem_object_flush_gtt_write_domain(struct drm_gem_object *obj);
- static void i915_gem_object_flush_cpu_write_domain(struct drm_gem_object *obj);
-@@ -49,7 +50,8 @@ static int i915_gem_object_wait_rendering(struct drm_gem_object *obj);
- static int i915_gem_object_bind_to_gtt(struct drm_gem_object *obj,
- 					   unsigned alignment);
- static void i915_gem_clear_fence_reg(struct drm_gem_object *obj);
--static int i915_gem_evict_something(struct drm_device *dev, int min_size);
-+static int i915_gem_evict_something(struct drm_device *dev, int min_size,
-+				    unsigned alignment);
- static int i915_gem_evict_from_inactive_list(struct drm_device *dev);
- static int i915_gem_phys_pwrite(struct drm_device *dev, struct drm_gem_object *obj,
- 				struct drm_i915_gem_pwrite *args,
-@@ -334,7 +336,8 @@ i915_gem_object_get_pages_or_evict(struct drm_gem_object *obj)
- 	if (ret == -ENOMEM) {
- 		struct drm_device *dev = obj->dev;
-
--		ret = i915_gem_evict_something(dev, obj->size);
-+		ret = i915_gem_evict_something(dev, obj->size,
-+					       i915_gem_get_gtt_alignment(obj));
- 		if (ret)
- 			return ret;
-
-@@ -2102,10 +2105,12 @@ i915_gem_object_unbind(struct drm_gem_object *obj)
- 	return 0;
- }
-
--static struct drm_gem_object *
--i915_gem_find_inactive_object(struct drm_device *dev, int min_size)
-+static int
-+i915_gem_scan_inactive_list_and_evict(struct drm_device *dev, int min_size,
-+				      unsigned alignment, int *found)
- {
- 	drm_i915_private_t *dev_priv = dev->dev_private;
-+	struct drm_gem_object *obj;
- 	struct drm_i915_gem_object *obj_priv;
- 	struct drm_gem_object *best = NULL;
- 	struct drm_gem_object *first = NULL;
-@@ -2119,14 +2124,31 @@ i915_gem_find_inactive_object(struct drm_device *dev, int min_size)
- 			    (!best || obj->size < best->size)) {
- 				best = obj;
- 				if (best->size == min_size)
--					return best;
-+					break;
- 			}
- 			if (!first)
- 			    first = obj;
- 		}
- 	}
-
--	return best ? best : first;
-+	obj = best ? best : first;
-+
-+	if (!obj) {
-+		*found = 0;
-+		return 0;
-+	}
-+
-+	*found = 1;
-+
-+#if WATCH_LRU
-+	DRM_INFO("%s: evicting %p\n", __func__, obj);
-+#endif
-+	obj_priv = obj->driver_private;
-+	BUG_ON(obj_priv->pin_count != 0);
-+	BUG_ON(obj_priv->active);
-+
-+	/* Wait on the rendering and unbind the buffer. */
-+	return i915_gem_object_unbind(obj);
- }
-
- static int
-@@ -2173,11 +2195,11 @@ i915_gem_evict_everything(struct drm_device *dev)
- }
-
- static int
--i915_gem_evict_something(struct drm_device *dev, int min_size)
-+i915_gem_evict_something(struct drm_device *dev,
-+			 int min_size, unsigned alignment)
- {
- 	drm_i915_private_t *dev_priv = dev->dev_private;
--	struct drm_gem_object *obj;
--	int ret;
-+	int ret, found;
-
- 	for (;;) {
- 		i915_gem_retire_requests(dev);
-@@ -2185,20 +2207,11 @@ i915_gem_evict_something(struct drm_device *dev, int min_size)
- 		/* If there's an inactive buffer available now, grab it
- 		 * and be done.
- 		 */
--		obj = i915_gem_find_inactive_object(dev, min_size);
--		if (obj) {
--			struct drm_i915_gem_object *obj_priv;
--
--#if WATCH_LRU
--			DRM_INFO("%s: evicting %p\n", __func__, obj);
--#endif
--			obj_priv = obj->driver_private;
--			BUG_ON(obj_priv->pin_count != 0);
--			BUG_ON(obj_priv->active);
--
--			/* Wait on the rendering and unbind the buffer. */
--			return i915_gem_object_unbind(obj);
--		}
-+		ret = i915_gem_scan_inactive_list_and_evict(dev, min_size,
-+							    alignment,
-+							    &found);
-+		if (found)
-+			return ret;
-
- 		/* If we didn't get anything, but the ring is still processing
- 		 * things, wait for the next to finish and hopefully leave us
-@@ -2224,6 +2237,7 @@ i915_gem_evict_something(struct drm_device *dev, int min_size)
- 		 * will get moved to inactive.
- 		 */
- 		if (!list_empty(&dev_priv->mm.flushing_list)) {
-+			struct drm_gem_object *obj = NULL;
- 			struct drm_i915_gem_object *obj_priv;
-
- 			/* Find an object that we can immediately reuse */
-@@ -2672,7 +2686,7 @@ i915_gem_object_bind_to_gtt(struct drm_gem_object *obj, unsigned alignment)
- #if WATCH_LRU
- 		DRM_INFO("%s: GTT full, evicting something\n", __func__);
- #endif
--		ret = i915_gem_evict_something(dev, obj->size);
-+		ret = i915_gem_evict_something(dev, obj->size, alignment);
- 		if (ret)
- 			return ret;
-
-@@ -2690,7 +2704,8 @@ i915_gem_object_bind_to_gtt(struct drm_gem_object *obj, unsigned alignment)
-
- 		if (ret == -ENOMEM) {
- 			/* first try to clear up some space from the GTT */
--			ret = i915_gem_evict_something(dev, obj->size);
-+			ret = i915_gem_evict_something(dev, obj->size,
-+						       alignment);
- 			if (ret) {
- 				/* now try to shrink everyone else */
- 				if (gfpmask) {
-@@ -2720,7 +2735,7 @@ i915_gem_object_bind_to_gtt(struct drm_gem_object *obj, unsigned alignment)
- 		drm_mm_put_block(obj_priv->gtt_space);
- 		obj_priv->gtt_space = NULL;
-
--		ret = i915_gem_evict_something(dev, obj->size);
-+		ret = i915_gem_evict_something(dev, obj->size, alignment);
- 		if (ret)
- 			return ret;
-
---
-1.7.4.1
-
+Kirill
