@@ -1,123 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab1GAT5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 15:57:09 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:34131 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441Ab1GAT5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 15:57:07 -0400
-Date: Fri, 1 Jul 2011 21:56:29 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
-Message-ID: <20110701195629.GA19057@elte.hu>
-References: <201106171038.25988.ptesarik@suse.cz>
- <4E0DEF2C.3040504@zytor.com>
- <20110701161345.GA29775@elte.hu>
- <201107012134.45881.ptesarik@suse.cz>
+	id S1752312Ab1GAUAY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 16:00:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:49014 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab1GAUAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 16:00:23 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201107012134.45881.ptesarik@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+From: =?UTF-8?B?5L+e6aKQ6LaF?= <yyc1992@gmail.com>
+Date: Fri, 1 Jul 2011 16:00:02 -0400
+Message-ID: <BANLkTin4P7X0gbbShNTQNpV0khq3Bb9PhQ@mail.gmail.com>
+Subject: mistake about the cpufreq?
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The following is what I get when I run the command in
+/sys/devices/system/cpu/cpu0/cpufreq
 
-* Petr Tesarik <ptesarik@suse.cz> wrote:
+$ sudo grep "" *
+affected_cpus:0
+bios_limit:800000
+cpuinfo_cur_freq:2800000
+cpuinfo_max_freq:2801000
+cpuinfo_min_freq:800000
+cpuinfo_transition_latency:10000
+related_cpus:0 1
+scaling_available_frequencies:2801000 2800000 2133000 1600000 800000
+scaling_available_governors:conservative ondemand userspace powersave
+performance
+scaling_cur_freq:800000
+scaling_driver:acpi-cpufreq
+scaling_governor:performance
+scaling_max_freq:800000
+scaling_min_freq:800000
+scaling_setspeed:<unsupported>
 
-> Dne Pá 1. července 2011 18:13:45 Ingo Molnar napsal(a):
-> > * H. Peter Anvin <hpa@zytor.com> wrote:
-> > > On 07/01/2011 08:36 AM, Ingo Molnar wrote:
-> > > > So we could kill multiple birds with the same stone here:
-> > > >  - remove various ugly uses of /dev/mem (including the rootkit usage),
-> > > >  
-> > > >    with or without strict-devmem
-> > > >  
-> > > >  - extending it to above-4G for inspection purposes
-> > > >  
-> > > >  - allowing to kill /dev/mem access runtime similar to the
-> > > >  
-> > > >    disable_modules lock-down killswitch, for the so inclined.
-> > > > 
-> > > > Would you be interested in modifying your patch-set in such a
-> > > > fashion?
-> 
-> Yes, this works for me. How persistent should the kill-switch be? I 
-> assume it doesn't make much sense to make a sysfs toggle, because 
-> then it would still be open to abuse. I'd rather see it specified 
-> on boot and never changed. Agreed?
-> 
-> Something like "enable_dev_mem" on the kenrel command line (default 
-> is disabled).
-> 
-> On a similar note, I should probably rip off write_mem() completely 
-> and disallow PROT_WRITE mmapping of the device. Right?
+The problem is basically the scalings is different from cpuinfos. It
+appears when I unplug the power and still there when I have repluged
+the power.
+Does any know what probably the problem is and where can I look for
+more detail information.
 
-Yeah - there's two things here: one is the boot option to turn it on, 
-the other is the kill-switch that is runtime and kills this method of 
-access permanently (until next reboot that is).
+some basic info about my computer
 
-the kill-switch works like modules_disabled: once you echo 1 into it 
-you cannot move it back to 0 anymore.
+$ uname -a
+Linux yuyichao-PC 2.6.39-ARCH #1 SMP PREEMPT Mon Jun 27 21:26:22 CEST
+2011 x86_64 Intel(R) Core(TM)2 Duo CPU T9600 @ 2.80GHz GenuineIntel
+GNU/Linux
+(The kernel version should be 2.6.39.2)
 
-The boot option would be a standard boot option - devmem=1 would be 
-the canonical naming? (but no strong feelings about the naming)
 
-Do you expect distros to enable this boot option by default? I.e. 
-would SuSE be willing to ship with a restrictive /dev/mem by default? 
-That's really the wider goal we want to work towards.
+Thanks.
 
-> > > There is another use that I have looked at, as well: for 
-> > > testing purposes, it would be extremely good to be able to 
-> > > dirty and/or flush an arbitrary physical cache line for testing 
-> > > purposes.
-> > > 
-> > > This is very very similar to /dev/mem usage -- access to an 
-> > > arbitrary chunk of memory -- and a fully enabled /dev/mem can 
-> > > of course support this use (just mmap the page with the 
-> > > relevant cache line).  However, it could also be a separate 
-> > > device which could have looser permissions than /dev/mem; or a 
-> > > set of ioctls on /dev/mem with a separate kill switch, because 
-> > > no data would ever be have modified or returned to user space.
-> > > 
-> > > Either way, though, we found that it would share a lot of code 
-> > > with the /dev/mem implementation, and as such fixing up the 
-> > > underlying machinery is the sanest way to upstream this.
-> > 
-> > To me that cache flush thing sounds obscure (but still useful) 
-> > enough to justify a new ioctl over /dev/mem.
-> > 
-> > Not sure it even needs a killswitch, unless there's some real 
-> > security problem related to it.
-> 
-> It can be used for DoS, but if you have permission for the ioctl(), 
-> then you probably also have easier ways to kill the system.
-
-Hm, why would the ability "dirty and/or flush an arbitrary physical 
-cache line for testing purposes" be a DoS?
-
-Thanks,
-
-	Ingo
+Yichao
