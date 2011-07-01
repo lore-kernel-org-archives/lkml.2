@@ -1,174 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756490Ab1GANTM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:19:12 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:57414 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756462Ab1GANTJ (ORCPT
+	id S932086Ab1GANUB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:20:01 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:43535 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756460Ab1GANT6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:19:09 -0400
-X-AuditID: b753bd60-a50caba000003bac-bc-4e0dc94a415e
-X-AuditID: b753bd60-a50caba000003bac-bc-4e0dc94a415e
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: [RFC PATCH -tip ] [BUGFIX] x86: Remove preempt disabling from kprobes
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	Fri, 1 Jul 2011 09:19:58 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=ws2KCyzbm0YA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=qPJ1fmbzUYmyS83jizoA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [BUG] kprobes crashing because of preempt count
+From: Steven Rostedt <rostedt@goodmis.org>
+To: ananth@in.ibm.com
+Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Date: Fri, 01 Jul 2011 22:14:08 +0900
-Message-ID: <20110701131408.30886.45766.stgit@localhost.localdomain>
-In-Reply-To: <4E0DC859.6050405@hitachi.com>
-References: <4E0DC859.6050405@hitachi.com>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+        yrl.pp-manager.tt@hitachi.com
+In-Reply-To: <20110701130313.GA10935@in.ibm.com>
+References: <1309440213.26417.76.camel@gandalf.stny.rr.com>
+	 <4E0D1EE3.6080607@hitachi.com> <20110701113626.GB23752@in.ibm.com>
+	 <4E0DB6FC.20904@hitachi.com>  <20110701130313.GA10935@in.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 01 Jul 2011 09:19:55 -0400
+Message-ID: <1309526395.26417.146.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt reported that putting kprobe on the instruction which
-loads preempt_count causes the wrong result, as below.
+On Fri, 2011-07-01 at 18:33 +0530, Ananth N Mavinakayanahalli wrote:
+> On Fri, Jul 01, 2011 at 09:01:00PM +0900, Masami Hiramatsu wrote:
+> > 
+> > Yeah, it seems that same thing is done on arm too. And I'm sure that
+> > However, I'm still not sure that entire int3 exec path can run without
+> > calling inc_preempt_count.
+> > It seems that the function is very primitive, and I doubt we can
+> > allow to put kprobes on that...
+> 
+> Right. I think all preempt manipulation routines need to be __kprobes.
+> 
 
-Kprobes requires preemption to be disabled as it single steps the code
-it replaced with a breakpoint. But because the code that is single
-stepped could be reading the preempt count, the kprobe disabling of the
-preempt count can cause the wrong value to end up as a result. Here's an
-example:
+As I stated earlier, it can be triggered on just a read of preempt
+count. I would also hate to force preempt_count() reads and updates to
+be function calls (that's the only way to make it __kprobes). The
+inc/dec preempt count routines are only function calls if debug preempt
+or preempt tracing is enabled, which is not the case on most distros.
 
-If we add a kprobe on a inc_preempt_count() call:
+Not to mention, I think reading the value of preempt count by kprobes is
+a legit use case.
 
-	[ preempt_count = 0 ]
+> Also, Steve is testing the -rt tree where artefacts related to
+> locking/preemption are possibly quite different from the mainline that
+> may also be at play here.
 
-	ld preempt_count, %eax	<<--- trap
+Yes, I noticed this first on an -rt variant. But I'm actually testing
+patches to move from -rt to mainline. This happens to be more a mainline
+issue. Once I noticed this bug, all my tests afterward was based on
+v3.0-rc5.
 
-		<trap>
-		preempt_disable();
-		[ preempt_count = 1]
-		setup_singlestep();
-		<trap return>
+-- Steve
 
-	[ preempt_count = 1 ]
-
-	ld preempt_count, %eax
-
-	[ %eax = 1 ]
-
-		<trap>
-		post_kprobe_handler()
-			preempt_enable_no_resched();
-			[ preempt_count = 0 ]
-		<trap return>
-
-	[ %eax = 1 ]
-
-	add %eax,1
-
-	[ %eax = 2 ]
-
-	st %eax, preempt_count
-
-	[ preempt_count = 2 ]
-
-
-We just caused preempt count to increment twice when it should have only
-incremented once, and this screws everything else up.
-
-To solve this, I've removed preempt disabling code from kprobes,
-since the breakpoint exception and kprobes single step routine
-disables interrupts, it doesn't need to disable preemption while
-single-stepping anymore.
-
-This patch is for -tip tree, and it can be applied to linus tree too.
-
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Reported-by: Steven Rostedt <rostedt@goodmis.org>
----
-
- arch/x86/kernel/kprobes.c |   18 ++++++------------
- 1 files changed, 6 insertions(+), 12 deletions(-)
-
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index f1a6244..5de9cfb 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -475,7 +475,6 @@ static void __kprobes setup_singlestep(struct kprobe *p, struct pt_regs *regs,
- 		 * stepping.
- 		 */
- 		regs->ip = (unsigned long)p->ainsn.insn;
--		preempt_enable_no_resched();
- 		return;
- 	}
- #endif
-@@ -542,12 +541,13 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
- 
- 	addr = (kprobe_opcode_t *)(regs->ip - sizeof(kprobe_opcode_t));
- 	/*
--	 * We don't want to be preempted for the entire
--	 * duration of kprobe processing. We conditionally
--	 * re-enable preemption at the end of this function,
--	 * and also in reenter_kprobe() and setup_singlestep().
-+	 * We don't want to be preempted for the entire duration of kprobe
-+	 * processing. This should be done by disabling interrupts instead
-+	 * of incrementing preempt_count, because if the probed instruction
-+	 * reads the count, it will get a wrong value.
-+	 * Disabling irq is done by breakpoint exception.
- 	 */
--	preempt_disable();
-+	BUG_ON(!irqs_disabled());
- 
- 	kcb = get_kprobe_ctlblk();
- 	p = get_kprobe(addr);
-@@ -583,7 +583,6 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
- 		 * the original instruction.
- 		 */
- 		regs->ip = (unsigned long)addr;
--		preempt_enable_no_resched();
- 		return 1;
- 	} else if (kprobe_running()) {
- 		p = __this_cpu_read(current_kprobe);
-@@ -593,7 +592,6 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
- 		}
- 	} /* else: not a kprobe fault; let the kernel handle it */
- 
--	preempt_enable_no_resched();
- 	return 0;
- }
- 
-@@ -917,7 +915,6 @@ static int __kprobes post_kprobe_handler(struct pt_regs *regs)
- 	}
- 	reset_current_kprobe();
- out:
--	preempt_enable_no_resched();
- 
- 	/*
- 	 * if somebody else is singlestepping across a probe point, flags
-@@ -951,7 +948,6 @@ int __kprobes kprobe_fault_handler(struct pt_regs *regs, int trapnr)
- 			restore_previous_kprobe(kcb);
- 		else
- 			reset_current_kprobe();
--		preempt_enable_no_resched();
- 		break;
- 	case KPROBE_HIT_ACTIVE:
- 	case KPROBE_HIT_SSDONE:
-@@ -1098,7 +1094,6 @@ int __kprobes longjmp_break_handler(struct kprobe *p, struct pt_regs *regs)
- 		memcpy((kprobe_opcode_t *)(kcb->jprobe_saved_sp),
- 		       kcb->jprobes_stack,
- 		       MIN_STACK_SIZE(kcb->jprobe_saved_sp));
--		preempt_enable_no_resched();
- 		return 1;
- 	}
- 	return 0;
-@@ -1530,7 +1525,6 @@ static int  __kprobes setup_detour_execution(struct kprobe *p,
- 		regs->ip = (unsigned long)op->optinsn.insn + TMPL_END_IDX;
- 		if (!reenter)
- 			reset_current_kprobe();
--		preempt_enable_no_resched();
- 		return 1;
- 	}
- 	return 0;
 
