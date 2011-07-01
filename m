@@ -1,61 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754811Ab1GAF7h (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 01:59:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10857 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752655Ab1GAF7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 01:59:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,456,1304319600"; 
-   d="scan'208";a="22238827"
-Subject: Re: [PATCH 1/4] perf, x86: Add Intel Nehalem/Westmere uncore pmu
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1309442903.12449.55.camel@twins>
-References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
-	 <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
-	 <1309442903.12449.55.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 14:05:01 +0800
-Message-ID: <1309500301.24590.116.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754835Ab1GAGBp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 02:01:45 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.160]:25357 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753718Ab1GAGBn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 02:01:43 -0400
+X-RZG-AUTH: :P2MHfkW8eP4Mre39l357AZT/I7AY/7nT2yrT1q0ngWNsKR9Dbc7nsXB+5kzHuK6Qd0Q=
+X-RZG-CLASS-ID: mo00
+Message-ID: <4E0D62BD.5070405@hartkopp.net>
+Date: Fri, 01 Jul 2011 08:01:33 +0200
+From: Oliver Hartkopp <socketcan@hartkopp.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110606 Icedove/3.1.10
+MIME-Version: 1.0
+To: Ram Pai <linuxram@us.ibm.com>
+CC: jbarnes@virtuousgeek.org, torvalds@linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, bhutchings@solarflare.com, bhelgaas@google.com,
+        linux@dominikbrodowski.net
+Subject: Re: [PATCH 3/5 v2] PCI: make SRIOV resources optional
+References: <1309477662-18680-1-git-send-email-linuxram@us.ibm.com> <1309477662-18680-4-git-send-email-linuxram@us.ibm.com>
+In-Reply-To: <1309477662-18680-4-git-send-email-linuxram@us.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-30 at 22:08 +0800, Peter Zijlstra wrote:
-> On Thu, 2011-06-30 at 08:09 +0000, Lin Ming wrote:
-> > +static struct pmu uncore_pmu = {
+On 01.07.2011 01:47, Ram Pai wrote:
+> From: Yinghai Lu <yinghai@kernel.org>
 > 
-> 	.task_ctx_nr = perf_invalid_context,
-
-OK.
-
-usage: perf stat [<options>] [<command>]
-
-Currently, "perf stat" always need a <command> to do counting.
-Need to change it to be optional.
-
-So I may add a "P" option to specify which physical processor to count.
-
-perf stat -P 3 -e uncore:rXXXX
-
+> From: Yinghai Lu <yinghai@kernel.org>
 > 
-> > +       .event_init     = uncore_pmu_event_init,
-> > +       .add            = uncore_pmu_add,
-> > +       .del            = uncore_pmu_del,
-> > +       .start          = uncore_pmu_start,
-> > +       .stop           = uncore_pmu_stop,
-> > +       .read           = uncore_pmu_read,
-> > +}; 
+> Allocate resources to SRIOV BARs only after all other required
+> resource-requests are satisfied. Dont retry if resource allocation for SRIOV
+> BARs fail.
 > 
-> 
+> Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
+Tested-by: Oliver Hartkopp <socketcan@hartkopp.net>
+
+I applied the whole patchset and it looks very similar to the dmsg output
+before the problematic commit that caused the regression.
+
+Tnx!
+
+Oliver
+
+
+> ---
+>  drivers/pci/setup-bus.c |   10 ++++++++++
+>  1 files changed, 10 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/pci/setup-bus.c b/drivers/pci/setup-bus.c
+> index 9f2f15f..a0555cb 100644
+> --- a/drivers/pci/setup-bus.c
+> +++ b/drivers/pci/setup-bus.c
+> @@ -669,6 +669,16 @@ static int pbus_size_mem(struct pci_bus *bus, unsigned long mask,
+>  			if (r->parent || (r->flags & mask) != type)
+>  				continue;
+>  			r_size = resource_size(r);
+> +#ifdef CONFIG_PCI_IOV
+> +			/* put SRIOV requested res to the optional list */
+> +			if (add_head && i >= PCI_IOV_RESOURCES &&
+> +					i <= PCI_IOV_RESOURCE_END) {
+> +				r->end = r->start - 1;
+> +				add_to_list(add_head, dev, r, r_size, 1);
+> +				children_add_size += r_size;
+> +				continue;
+> +			}
+> +#endif
+>  			/* For bridges size != alignment */
+>  			align = pci_resource_alignment(dev, r);
+>  			order = __ffs(align) - 20;
 
