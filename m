@@ -1,62 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757367Ab1GAVEg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:04:36 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:36781 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757277Ab1GAVEe (ORCPT
+	id S1757408Ab1GAVFj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 17:05:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:63341 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751929Ab1GAVFi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:04:34 -0400
-Date: Fri, 1 Jul 2011 17:04:34 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        <axboe@kernel.dk>, <rjw@sisk.pl>, <linux-usb@vger.kernel.org>
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-In-Reply-To: <1309552148.2722.46.camel@mulgrave>
-Message-ID: <Pine.LNX.4.44L0.1107011656450.1624-100000@iolanthe.rowland.org>
+	Fri, 1 Jul 2011 17:05:38 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Nathan Royer <nroyer@invensense.com>
+Subject: Re: [PATCH 01/11] misc: inv_mpu primary header file and README file.
+Date: Fri, 1 Jul 2011 23:04:18 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
+        Alan Cox <alan@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+References: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
+In-Reply-To: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107012304.19073.arnd@arndb.de>
+X-Provags-ID: V02:K0:hn2jVqv5OzIyBbsLKuI1/iBT2zRzh7s25zTpdg73PDi
+ fM8WR6wpV2UkuATjsbTWKK4UYQgLzBtVWLWghMt811wPb9boxh
+ 5VXs8ZkmZnCAMmib1VBKlWqAJ82oFuAp7qKjyHxwmXr9X9ratY
+ 9v4Kf8agzYBpw9In59fhx43h2ZJLQKeC2S93SHCVEK4cc4zMIn
+ aGMY4w7Di1B/BYMHwOV5Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jul 2011, James Bottomley wrote:
+On Friday 01 July 2011 04:18:17 Nathan Royer wrote:
+> +/* Structure for the following IOCTS's
+> + * MPU_CONFIG_GYRO
+> + * MPU_CONFIG_ACCEL
+> + * MPU_CONFIG_COMPASS
+> + * MPU_CONFIG_PRESSURE
+> + * MPU_GET_CONFIG_GYRO
+> + * MPU_GET_CONFIG_ACCEL
+> + * MPU_GET_CONFIG_COMPASS
+> + * MPU_GET_CONFIG_PRESSURE
+> + *
+> + * @key one of enum ext_slave_config_key
+> + * @len length of data pointed to by data
+> + * @apply zero if communication with the chip is not necessary, false otherwise
+> + *        This flag can be used to select cached data or to refresh cashed data
+> + *        cache data to be pushed later or push immediately.  If true and the
+> + *        slave is on the secondary bus the MPU will first enger bypass mode
+> + *        before calling the slaves .config or .get_config funcion
+> + * @data pointer to the data to confgure or get
+> + */
+> +struct ext_slave_config {
+> +       __u8 key;
+> +       __u16 len;
+> +       __u8 apply;
+> +       void *data;
+> +};
 
-> On Fri, 2011-07-01 at 14:14 -0400, Dave Jones wrote:
-> > On Fri, Jul 01, 2011 at 10:05:31AM -0700, Andi Kleen wrote:
-> > 
-> >  > I found I can reliably crash a 3.0 system by pulling the
-> >  > USB cable of a mounted USB cdrom (or rather a USB device which
-> >  > has a builtin fake CD-ROM) 
-> >  > 
-> >  > I suspect it's a regression too.
-> > 
-> > We've been seeing a lot of similar bugs in Fedora since we pushed
-> > a 2.6.38.8 update.  Some of the traces are different, but some
-> > look to be the same as yours. (here's one for eg: https://bugzilla.redhat.com/show_bug.cgi?id=712830)
-> > 
-> > The common cause seems to be 'device went away'. So USB CD drives,
-> > USB memory sticks, and for some reason virtualbox shutdown.
-> 
-> I think it's something specific in the USB path.  I can't reproduce on
-> 3.0-rc5 with a SATA DVD hot unplug.  USB cc's added.
+I'm a bit worried about the ioctl interface, it seems overloaded and has
+problems with 32/64 bit compatibility. In general, having void pointers
+in an structure that is used as an ioctl argument is a sign that the
+interface is too complex. In fact, there are a number of reasons why you
+should try to avoid pointers in there completely.
 
-I just took a look at the Red Hat bugzilla entry mentioned above.  It 
-seems to be quite different from the issue addressed by the patch I 
-just posted -- a crash with invalid memory access rather than a lockdep 
-violation and hang of the khubd thread.
+You should also try to avoid padding in structures. The definition you
+have could be any of 64/96/128 bytes long depending on the architecture,
+and leak kernel stack data.
 
-It's also notable that the stack dump in the bugzilla report doesn't 
-contain any functions in the USB subsystem.  Of course this doesn't 
-prove anything, but it is suggestive.
+Having separate commands on a single device file in order to do the
+same operation on distinct pieces of hardware sounds like a wrong
+abstraction of your devices. Instead, it would seem more appropriate
+to represent each hardware endpoint (gyro/accel/compass/...) as one
+character device, and let each of them export the same minimum set of
+commands. However, the suggestion to use an existing subsystem (iio,
+input, hwmon, ...) for each of the endpoints as appropriate would fit
+better into the existing use cases.
 
-Evidently the sdev argument to scsi_prep_state_check() was NULL.  This
-looks like the problem that cropped up before, where q->queuedata was
-getting set to NULL while the queue was still in use.  I can't imagine
-how anything in usb-storage could have caused that.
+I haven't been able to figure out if all those endpoints are just
+I2C devices and could be handled by i2c drivers for those subsystems,
+or if you have another hardware interface that groups of them. In the
+latter case, would an MFD driver work for this? The idea of that is
+essentially to prove a new bus_type without having to do all the
+abstraction work when you already know all the devices behind it.
 
-Alan Stern
 
+	Arnd
