@@ -1,238 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756793Ab1GATuO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 15:50:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48599 "EHLO ogre.sisk.pl"
+	id S1755407Ab1GAT5J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 15:57:09 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:34131 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756134Ab1GATuM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 15:50:12 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [PATCH 3/3] PM: Limit race conditions between runtime PM and system sleep
-Date: Fri, 1 Jul 2011 21:50:56 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        Tejun Heo <tj@kernel.org>, Alan Stern <stern@rowland.harvard.edu>,
-        Greg KH <greg@kroah.com>, LKML <linux-kernel@vger.kernel.org>,
-        Magnus Damm <magnus.damm@gmail.com>, linux-scsi@vger.kernel.org
-References: <201106260054.20578.rjw@sisk.pl> <201106260056.32221.rjw@sisk.pl> <87sjqq2coj.fsf@ti.com>
-In-Reply-To: <87sjqq2coj.fsf@ti.com>
+	id S1751441Ab1GAT5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 15:57:07 -0400
+Date: Fri, 1 Jul 2011 21:56:29 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+Message-ID: <20110701195629.GA19057@elte.hu>
+References: <201106171038.25988.ptesarik@suse.cz>
+ <4E0DEF2C.3040504@zytor.com>
+ <20110701161345.GA29775@elte.hu>
+ <201107012134.45881.ptesarik@suse.cz>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107012150.56341.rjw@sisk.pl>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201107012134.45881.ptesarik@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Friday, July 01, 2011, Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > One of the roles of the PM core is to prevent different PM callbacks
-> > executed for the same device object from racing with each other.
-> > Unfortunately, after commit e8665002477f0278f84f898145b1f141ba26ee26
-> > (PM: Allow pm_runtime_suspend() to succeed during system suspend)
-> > runtime PM callbacks may be executed concurrently with system
-> > suspend/resume callbacks for the same device.
-> >
-> > The main reason for commit e8665002477f0278f84f898145b1f141ba26ee26
-> > was that some subsystems and device drivers wanted to use runtime PM
-> > helpers, pm_runtime_suspend() and pm_runtime_put_sync() in
-> > particular, for carrying out the suspend of devices in their
-> > .suspend() callbacks.  However, as it's been determined recently,
-> > there are multiple reasons not to do so, inlcuding:
-> >
-> >  * The caller really doesn't control the runtime PM usage counters,
-> >    because user space can access them through sysfs and effectively
-> >    block runtime PM.  That means using pm_runtime_suspend() or
-> >    pm_runtime_get_sync() to suspend devices during system suspend
-> >    may or may not work.
-> >
-> >  * If a driver calls pm_runtime_suspend() from its .suspend()
-> >    callback, it causes the subsystem's .runtime_suspend() callback to
-> >    be executed, which leads to the call sequence:
-> >
-> >    subsys->suspend(dev)
-> >       driver->suspend(dev)
-> >          pm_runtime_suspend(dev)
-> >             subsys->runtime_suspend(dev)
-> >
-> >    recursive from the subsystem's point of view.  For some subsystems
-> >    that may actually work (e.g. the platform bus type), but for some
-> >    it will fail in a rather spectacular fashion (e.g. PCI).  In each
-> >    case it means a layering violation.
-> >
-> >  * Both the subsystem and the driver can provide .suspend_noirq()
-> >    callbacks for system suspend that can do whatever the
-> >    .runtime_suspend() callbacks do just fine, so it really isn't
-> >    necessary to call pm_runtime_suspend() during system suspend.
-> >
-> >  * The runtime PM's handling of wakeup devices is usually different
-> >    from the system suspend's one, so .runtime_suspend() may simply be
-> >    inappropriate for system suspend.
-> >
-> >  * System suspend is supposed to work even if CONFIG_PM_RUNTIME is
-> >    unset.
-> >
-> >  * The runtime PM workqueue is frozen before system suspend, so if
-> >    whatever the driver is going to do during system suspend depends
-> >    on it, that simply won't work.
-> 
-> Thanks for the thorough description of all these reasons.
+* Petr Tesarik <ptesarik@suse.cz> wrote:
 
-Well, I thought I had to document them before I would forget again.
-
-> > Still, there is a good reason to allow pm_runtime_resume() to
-> > succeed during system suspend and resume (for instance, some
-> > subsystems and device drivers may legitimately use it to ensure that
-> > their devices are in full-power states before suspending them).
-> > Moreover, there is no reason to prevent runtime PM callbacks from
-> > being executed in parallel with the system suspend/resume .prepare()
-> > and .complete() callbacks and the code removed by commit
-> > e8665002477f0278f84f898145b1f141ba26ee26 went too far in this
-> > respect.  On the other hand, runtime PM callbacks, including
-> > .runtime_resume(), must not be executed during system suspend's
-> > "late" stage of suspending devices and during system resume's "early"
-> > device resume stage.
-> >
-> > Taking all of the above into consideration, make the PM core
-> > acquire a runtime PM reference to every device and resume it if
-> > there's a runtime PM resume request pending right before executing
-> > the subsystem-level .suspend() callback for it.  Make the PM core
-> > drop references to all devices right after executing the
-> > subsystem-level .resume() callbacks for them.  Additionally,
-> > make the PM core disable the runtime PM framework for all devices
-> > during system suspend, after executing the subsystem-level .suspend()
-> > callbacks for them, and enable the runtime PM framework for all
-> > devices during system resume, right before executing the
-> > subsystem-level .resume() callbacks for them.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Dne Pá 1. července 2011 18:13:45 Ingo Molnar napsal(a):
+> > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > > On 07/01/2011 08:36 AM, Ingo Molnar wrote:
+> > > > So we could kill multiple birds with the same stone here:
+> > > >  - remove various ugly uses of /dev/mem (including the rootkit usage),
+> > > >  
+> > > >    with or without strict-devmem
+> > > >  
+> > > >  - extending it to above-4G for inspection purposes
+> > > >  
+> > > >  - allowing to kill /dev/mem access runtime similar to the
+> > > >  
+> > > >    disable_modules lock-down killswitch, for the so inclined.
+> > > > 
+> > > > Would you be interested in modifying your patch-set in such a
+> > > > fashion?
 > 
-> OK, I'm convinced.  :)
+> Yes, this works for me. How persistent should the kill-switch be? I 
+> assume it doesn't make much sense to make a sysfs toggle, because 
+> then it would still be open to abuse. I'd rather see it specified 
+> on boot and never changed. Agreed?
 > 
-> Acked-by: Kevin Hilman <khilman@ti.com>
-
-Cool, thanks. :-)
-
-> Minor documentation comment below...
+> Something like "enable_dev_mem" on the kenrel command line (default 
+> is disabled).
 > 
-> >  Documentation/power/runtime_pm.txt |   20 ++++++++++++++++++++
-> >  drivers/base/power/main.c          |   27 ++++++++++++++++++++++-----
-> >  2 files changed, 42 insertions(+), 5 deletions(-)
-> >
-> > Index: linux-2.6/drivers/base/power/main.c
-> > ===================================================================
-> > --- linux-2.6.orig/drivers/base/power/main.c
-> > +++ linux-2.6/drivers/base/power/main.c
-> > @@ -505,6 +505,7 @@ static int legacy_resume(struct device *
-> >  static int device_resume(struct device *dev, pm_message_t state, bool async)
-> >  {
-> >  	int error = 0;
-> > +	bool put = false;
-> >  
-> >  	TRACE_DEVICE(dev);
-> >  	TRACE_RESUME(0);
-> > @@ -521,6 +522,9 @@ static int device_resume(struct device *
-> >  	if (!dev->power.is_suspended)
-> >  		goto Unlock;
-> >  
-> > +	pm_runtime_enable(dev);
-> > +	put = true;
-> > +
-> >  	if (dev->pm_domain) {
-> >  		pm_dev_dbg(dev, state, "power domain ");
-> >  		error = pm_op(dev, &dev->pm_domain->ops, state);
-> > @@ -563,6 +567,10 @@ static int device_resume(struct device *
-> >  	complete_all(&dev->power.completion);
-> >  
-> >  	TRACE_RESUME(error);
-> > +
-> > +	if (put)
-> > +		pm_runtime_put_sync(dev);
-> > +
-> >  	return error;
-> >  }
-> >  
-> > @@ -843,16 +851,22 @@ static int __device_suspend(struct devic
-> >  	int error = 0;
-> >  
-> >  	dpm_wait_for_children(dev, async);
-> > -	device_lock(dev);
-> >  
-> >  	if (async_error)
-> > -		goto Unlock;
-> > +		return 0;
-> > +
-> > +	pm_runtime_get_noresume(dev);
-> > +	if (pm_runtime_barrier(dev) && device_may_wakeup(dev))
-> > +		pm_wakeup_event(dev, 0);
-> >  	if (pm_wakeup_pending()) {
-> > +		pm_runtime_put_sync(dev);
-> >  		async_error = -EBUSY;
-> > -		goto Unlock;
-> > +		return 0;
-> >  	}
-> >  
-> > +	device_lock(dev);
-> > +
-> >  	if (dev->pm_domain) {
-> >  		pm_dev_dbg(dev, state, "power domain ");
-> >  		error = pm_op(dev, &dev->pm_domain->ops, state);
-> > @@ -890,12 +904,15 @@ static int __device_suspend(struct devic
-> >   End:
-> >  	dev->power.is_suspended = !error;
-> >  
-> > - Unlock:
-> >  	device_unlock(dev);
-> >  	complete_all(&dev->power.completion);
-> >  
-> > -	if (error)
-> > +	if (error) {
-> > +		pm_runtime_put_sync(dev);
-> >  		async_error = error;
-> > +	} else if (dev->power.is_suspended) {
-> > +		__pm_runtime_disable(dev, false);
-> > +	}
-> >  
-> >  	return error;
-> >  }
-> > Index: linux-2.6/Documentation/power/runtime_pm.txt
-> > ===================================================================
-> > --- linux-2.6.orig/Documentation/power/runtime_pm.txt
-> > +++ linux-2.6/Documentation/power/runtime_pm.txt
-> > @@ -567,6 +567,11 @@ this is:
-> >  	pm_runtime_set_active(dev);
-> >  	pm_runtime_enable(dev);
-> >  
-> > +The PM core always increments the run-time usage counter before calling the
-> > +->suspend() callback and decrements it after calling the ->resume() callback.
-> > +Hence disabling run-time PM temporarily like this will not cause any run-time
-> > +suspend callbacks to be lost.
-> > +
-> >  On some systems, however, system sleep is not entered through a global firmware
-> >  or hardware operation.  Instead, all hardware components are put into low-power
-> >  states directly by the kernel in a coordinated way.  Then, the system sleep
-> > @@ -579,6 +584,21 @@ place (in particular, if the system is n
-> >  be more efficient to leave the devices that had been suspended before the system
-> >  suspend began in the suspended state.
-> >  
-> > +The PM core does its best to reduce the probability of race conditions between
-> > +the runtime PM and system suspend/resume (and hibernation) callbacks by carrying
-> > +out the following operations:
-> > +
-> > +  * During system suspend it acquires a runtime PM reference to every device
-> > +    and resume it if there's a runtime PM resume request pending right before
-> 
-> minor: s/resume/resumes/
+> On a similar note, I should probably rip off write_mem() completely 
+> and disallow PROT_WRITE mmapping of the device. Right?
 
-That has been changed in the latest version:
-https://patchwork.kernel.org/patch/919622/
+Yeah - there's two things here: one is the boot option to turn it on, 
+the other is the kill-switch that is runtime and kills this method of 
+access permanently (until next reboot that is).
+
+the kill-switch works like modules_disabled: once you echo 1 into it 
+you cannot move it back to 0 anymore.
+
+The boot option would be a standard boot option - devmem=1 would be 
+the canonical naming? (but no strong feelings about the naming)
+
+Do you expect distros to enable this boot option by default? I.e. 
+would SuSE be willing to ship with a restrictive /dev/mem by default? 
+That's really the wider goal we want to work towards.
+
+> > > There is another use that I have looked at, as well: for 
+> > > testing purposes, it would be extremely good to be able to 
+> > > dirty and/or flush an arbitrary physical cache line for testing 
+> > > purposes.
+> > > 
+> > > This is very very similar to /dev/mem usage -- access to an 
+> > > arbitrary chunk of memory -- and a fully enabled /dev/mem can 
+> > > of course support this use (just mmap the page with the 
+> > > relevant cache line).  However, it could also be a separate 
+> > > device which could have looser permissions than /dev/mem; or a 
+> > > set of ioctls on /dev/mem with a separate kill switch, because 
+> > > no data would ever be have modified or returned to user space.
+> > > 
+> > > Either way, though, we found that it would share a lot of code 
+> > > with the /dev/mem implementation, and as such fixing up the 
+> > > underlying machinery is the sanest way to upstream this.
+> > 
+> > To me that cache flush thing sounds obscure (but still useful) 
+> > enough to justify a new ioctl over /dev/mem.
+> > 
+> > Not sure it even needs a killswitch, unless there's some real 
+> > security problem related to it.
+> 
+> It can be used for DoS, but if you have permission for the ioctl(), 
+> then you probably also have easier ways to kill the system.
+
+Hm, why would the ability "dirty and/or flush an arbitrary physical 
+cache line for testing purposes" be a DoS?
 
 Thanks,
-Rafael
+
+	Ingo
