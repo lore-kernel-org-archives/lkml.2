@@ -1,440 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab1GATny (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 15:43:54 -0400
-Received: from mail.perches.com ([173.55.12.10]:3450 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755560Ab1GATno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 15:43:44 -0400
-From: Joe Perches <joe@perches.com>
-To: Patrick McHardy <kaber@trash.net>
-Cc: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 05/12] netfilter: Reduce switch/case indent
-Date: Fri,  1 Jul 2011 12:43:06 -0700
-Message-Id: <2066c42e04b33d3a2870c1d3e93f974d9085887c.1309549244.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.rc1
-In-Reply-To: <cover.1309549243.git.joe@perches.com>
-References: <cover.1309549243.git.joe@perches.com>
+	id S932278Ab1GATpU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 15:45:20 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58548 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932127Ab1GATpO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 15:45:14 -0400
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, axboe@kernel.dk,
+        rjw@sisk.pl
+In-Reply-To: <1309548797.2722.37.camel@mulgrave>
+References: <20110701170531.GA3693@tassilo.jf.intel.com>
+	 <1309548044.2722.35.camel@mulgrave>  <1309548797.2722.37.camel@mulgrave>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jul 2011 14:45:12 -0500
+Message-ID: <1309549512.2722.41.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make the case labels the same indent as the switch.
+On Fri, 2011-07-01 at 14:33 -0500, James Bottomley wrote:
+> On Fri, 2011-07-01 at 14:20 -0500, James Bottomley wrote:
+> > I'll see if I can find the refcounting problem.
+> > 
+> > Likely it's a longstanding bug which we didn't actually notice until
+> > now.
+> 
+> OK, so it looks like we have correct refcounting on the sr_block ops,
+> but not on the actual cdrom ops, so the device is already gone by the
+> time the cdrom release function gets called.
+> 
+> This is my best guess at the fix (just add a get into the cdrom ops),
+> does it work?
 
-git diff -w shows miscellaneous 80 column wrapping,
-comment reflowing and a comment for a useless gcc
-warning for an otherwise unused default: case.
+Actually, forget that.  The cdrom ops open/release is entirely
+subordinate to the block one.
 
-Signed-off-by: Joe Perches <joe@perches.com>
+unless we have some type of double put, the sdev should be held by
+refcount right up until the cdrom code calls cdo->release().  However,
+there is one ioctl operation after that, but it's tray_move() not
+lock_door().  This should be the fix for that, but if we're oopsing in
+lock_door(), it's almost certain we've run into some refcounting
+imbalance.
+
+James
+
 ---
- net/ipv4/netfilter/ipt_CLUSTERIP.c     |   26 ++--
- net/ipv4/netfilter/nf_nat_snmp_basic.c |  210 ++++++++++++++++----------------
- net/netfilter/xt_HL.c                  |   64 +++++-----
- net/netfilter/xt_hl.c                  |   32 +++---
- 4 files changed, 165 insertions(+), 167 deletions(-)
 
-diff --git a/net/ipv4/netfilter/ipt_CLUSTERIP.c b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-index 5c9e97c..db8d22d 100644
---- a/net/ipv4/netfilter/ipt_CLUSTERIP.c
-+++ b/net/ipv4/netfilter/ipt_CLUSTERIP.c
-@@ -317,19 +317,19 @@ clusterip_tg(struct sk_buff *skb, const struct xt_action_param *par)
- 	hash = clusterip_hashfn(skb, cipinfo->config);
+diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
+index 75fb965..512bd31 100644
+--- a/drivers/cdrom/cdrom.c
++++ b/drivers/cdrom/cdrom.c
+@@ -1220,12 +1220,12 @@ void cdrom_release(struct cdrom_device_info *cdi, fmode_t mode)
+ 	if (CDROM_CAN(CDC_RAM) && !cdi->use_count && cdi->for_data)
+ 		cdrom_close_write(cdi);
  
- 	switch (ctinfo) {
--		case IP_CT_NEW:
--			ct->mark = hash;
--			break;
--		case IP_CT_RELATED:
--		case IP_CT_RELATED_REPLY:
--			/* FIXME: we don't handle expectations at the
--			 * moment.  they can arrive on a different node than
--			 * the master connection (e.g. FTP passive mode) */
--		case IP_CT_ESTABLISHED:
--		case IP_CT_ESTABLISHED_REPLY:
--			break;
--		default:
--			break;
-+	case IP_CT_NEW:
-+		ct->mark = hash;
-+		break;
-+	case IP_CT_RELATED:
-+	case IP_CT_RELATED_REPLY:
-+		/* FIXME: we don't handle expectations at the moment.
-+		 * They can arrive on a different node than
-+		 * the master connection (e.g. FTP passive mode) */
-+	case IP_CT_ESTABLISHED:
-+	case IP_CT_ESTABLISHED_REPLY:
-+		break;
-+	default:			/* Prevent gcc warnings */
-+		break;
+-	cdo->release(cdi);
+ 	if (cdi->use_count == 0) {      /* last process that closes dev*/
+ 		if (opened_for_data &&
+ 		    cdi->options & CDO_AUTO_EJECT && CDROM_CAN(CDC_OPEN_TRAY))
+ 			cdo->tray_move(cdi, 1);
  	}
++	cdo->release(cdi);
+ }
  
- #ifdef DEBUG
-diff --git a/net/ipv4/netfilter/nf_nat_snmp_basic.c b/net/ipv4/netfilter/nf_nat_snmp_basic.c
-index 8812a02..076b7c8 100644
---- a/net/ipv4/netfilter/nf_nat_snmp_basic.c
-+++ b/net/ipv4/netfilter/nf_nat_snmp_basic.c
-@@ -719,117 +719,115 @@ static unsigned char snmp_object_decode(struct asn1_ctx *ctx,
- 
- 	l = 0;
- 	switch (type) {
--		case SNMP_INTEGER:
--			len = sizeof(long);
--			if (!asn1_long_decode(ctx, end, &l)) {
--				kfree(id);
--				return 0;
--			}
--			*obj = kmalloc(sizeof(struct snmp_object) + len,
--				       GFP_ATOMIC);
--			if (*obj == NULL) {
--				kfree(id);
--				if (net_ratelimit())
--					pr_notice("OOM in bsalg (%d)\n", __LINE__);
--				return 0;
--			}
--			(*obj)->syntax.l[0] = l;
--			break;
--		case SNMP_OCTETSTR:
--		case SNMP_OPAQUE:
--			if (!asn1_octets_decode(ctx, end, &p, &len)) {
--				kfree(id);
--				return 0;
--			}
--			*obj = kmalloc(sizeof(struct snmp_object) + len,
--				       GFP_ATOMIC);
--			if (*obj == NULL) {
--				kfree(p);
--				kfree(id);
--				if (net_ratelimit())
--					pr_notice("OOM in bsalg (%d)\n", __LINE__);
--				return 0;
--			}
--			memcpy((*obj)->syntax.c, p, len);
-+	case SNMP_INTEGER:
-+		len = sizeof(long);
-+		if (!asn1_long_decode(ctx, end, &l)) {
-+			kfree(id);
-+			return 0;
-+		}
-+		*obj = kmalloc(sizeof(struct snmp_object) + len, GFP_ATOMIC);
-+		if (*obj == NULL) {
-+			kfree(id);
-+			if (net_ratelimit())
-+				pr_notice("OOM in bsalg (%d)\n", __LINE__);
-+			return 0;
-+		}
-+		(*obj)->syntax.l[0] = l;
-+		break;
-+	case SNMP_OCTETSTR:
-+	case SNMP_OPAQUE:
-+		if (!asn1_octets_decode(ctx, end, &p, &len)) {
-+			kfree(id);
-+			return 0;
-+		}
-+		*obj = kmalloc(sizeof(struct snmp_object) + len, GFP_ATOMIC);
-+		if (*obj == NULL) {
- 			kfree(p);
--			break;
--		case SNMP_NULL:
--		case SNMP_NOSUCHOBJECT:
--		case SNMP_NOSUCHINSTANCE:
--		case SNMP_ENDOFMIBVIEW:
--			len = 0;
--			*obj = kmalloc(sizeof(struct snmp_object), GFP_ATOMIC);
--			if (*obj == NULL) {
--				kfree(id);
--				if (net_ratelimit())
--					pr_notice("OOM in bsalg (%d)\n", __LINE__);
--				return 0;
--			}
--			if (!asn1_null_decode(ctx, end)) {
--				kfree(id);
--				kfree(*obj);
--				*obj = NULL;
--				return 0;
--			}
--			break;
--		case SNMP_OBJECTID:
--			if (!asn1_oid_decode(ctx, end, (unsigned long **)&lp, &len)) {
--				kfree(id);
--				return 0;
--			}
--			len *= sizeof(unsigned long);
--			*obj = kmalloc(sizeof(struct snmp_object) + len, GFP_ATOMIC);
--			if (*obj == NULL) {
--				kfree(lp);
--				kfree(id);
--				if (net_ratelimit())
--					pr_notice("OOM in bsalg (%d)\n", __LINE__);
--				return 0;
--			}
--			memcpy((*obj)->syntax.ul, lp, len);
-+			kfree(id);
-+			if (net_ratelimit())
-+				pr_notice("OOM in bsalg (%d)\n", __LINE__);
-+			return 0;
-+		}
-+		memcpy((*obj)->syntax.c, p, len);
-+		kfree(p);
-+		break;
-+	case SNMP_NULL:
-+	case SNMP_NOSUCHOBJECT:
-+	case SNMP_NOSUCHINSTANCE:
-+	case SNMP_ENDOFMIBVIEW:
-+		len = 0;
-+		*obj = kmalloc(sizeof(struct snmp_object), GFP_ATOMIC);
-+		if (*obj == NULL) {
-+			kfree(id);
-+			if (net_ratelimit())
-+				pr_notice("OOM in bsalg (%d)\n", __LINE__);
-+			return 0;
-+		}
-+		if (!asn1_null_decode(ctx, end)) {
-+			kfree(id);
-+			kfree(*obj);
-+			*obj = NULL;
-+			return 0;
-+		}
-+		break;
-+	case SNMP_OBJECTID:
-+		if (!asn1_oid_decode(ctx, end, (unsigned long **)&lp, &len)) {
-+			kfree(id);
-+			return 0;
-+		}
-+		len *= sizeof(unsigned long);
-+		*obj = kmalloc(sizeof(struct snmp_object) + len, GFP_ATOMIC);
-+		if (*obj == NULL) {
- 			kfree(lp);
--			break;
--		case SNMP_IPADDR:
--			if (!asn1_octets_decode(ctx, end, &p, &len)) {
--				kfree(id);
--				return 0;
--			}
--			if (len != 4) {
--				kfree(p);
--				kfree(id);
--				return 0;
--			}
--			*obj = kmalloc(sizeof(struct snmp_object) + len, GFP_ATOMIC);
--			if (*obj == NULL) {
--				kfree(p);
--				kfree(id);
--				if (net_ratelimit())
--					pr_notice("OOM in bsalg (%d)\n", __LINE__);
--				return 0;
--			}
--			memcpy((*obj)->syntax.uc, p, len);
-+			kfree(id);
-+			if (net_ratelimit())
-+				pr_notice("OOM in bsalg (%d)\n", __LINE__);
-+			return 0;
-+		}
-+		memcpy((*obj)->syntax.ul, lp, len);
-+		kfree(lp);
-+		break;
-+	case SNMP_IPADDR:
-+		if (!asn1_octets_decode(ctx, end, &p, &len)) {
-+			kfree(id);
-+			return 0;
-+		}
-+		if (len != 4) {
- 			kfree(p);
--			break;
--		case SNMP_COUNTER:
--		case SNMP_GAUGE:
--		case SNMP_TIMETICKS:
--			len = sizeof(unsigned long);
--			if (!asn1_ulong_decode(ctx, end, &ul)) {
--				kfree(id);
--				return 0;
--			}
--			*obj = kmalloc(sizeof(struct snmp_object) + len, GFP_ATOMIC);
--			if (*obj == NULL) {
--				kfree(id);
--				if (net_ratelimit())
--					pr_notice("OOM in bsalg (%d)\n", __LINE__);
--				return 0;
--			}
--			(*obj)->syntax.ul[0] = ul;
--			break;
--		default:
- 			kfree(id);
- 			return 0;
-+		}
-+		*obj = kmalloc(sizeof(struct snmp_object) + len, GFP_ATOMIC);
-+		if (*obj == NULL) {
-+			kfree(p);
-+			kfree(id);
-+			if (net_ratelimit())
-+				pr_notice("OOM in bsalg (%d)\n", __LINE__);
-+			return 0;
-+		}
-+		memcpy((*obj)->syntax.uc, p, len);
-+		kfree(p);
-+		break;
-+	case SNMP_COUNTER:
-+	case SNMP_GAUGE:
-+	case SNMP_TIMETICKS:
-+		len = sizeof(unsigned long);
-+		if (!asn1_ulong_decode(ctx, end, &ul)) {
-+			kfree(id);
-+			return 0;
-+		}
-+		*obj = kmalloc(sizeof(struct snmp_object) + len, GFP_ATOMIC);
-+		if (*obj == NULL) {
-+			kfree(id);
-+			if (net_ratelimit())
-+				pr_notice("OOM in bsalg (%d)\n", __LINE__);
-+			return 0;
-+		}
-+		(*obj)->syntax.ul[0] = ul;
-+		break;
-+	default:
-+		kfree(id);
-+		return 0;
- 	}
- 
- 	(*obj)->syntax_len = len;
-diff --git a/net/netfilter/xt_HL.c b/net/netfilter/xt_HL.c
-index 95b08480..1535e87 100644
---- a/net/netfilter/xt_HL.c
-+++ b/net/netfilter/xt_HL.c
-@@ -38,22 +38,22 @@ ttl_tg(struct sk_buff *skb, const struct xt_action_param *par)
- 	iph = ip_hdr(skb);
- 
- 	switch (info->mode) {
--		case IPT_TTL_SET:
--			new_ttl = info->ttl;
--			break;
--		case IPT_TTL_INC:
--			new_ttl = iph->ttl + info->ttl;
--			if (new_ttl > 255)
--				new_ttl = 255;
--			break;
--		case IPT_TTL_DEC:
--			new_ttl = iph->ttl - info->ttl;
--			if (new_ttl < 0)
--				new_ttl = 0;
--			break;
--		default:
--			new_ttl = iph->ttl;
--			break;
-+	case IPT_TTL_SET:
-+		new_ttl = info->ttl;
-+		break;
-+	case IPT_TTL_INC:
-+		new_ttl = iph->ttl + info->ttl;
-+		if (new_ttl > 255)
-+			new_ttl = 255;
-+		break;
-+	case IPT_TTL_DEC:
-+		new_ttl = iph->ttl - info->ttl;
-+		if (new_ttl < 0)
-+			new_ttl = 0;
-+		break;
-+	default:
-+		new_ttl = iph->ttl;
-+		break;
- 	}
- 
- 	if (new_ttl != iph->ttl) {
-@@ -78,22 +78,22 @@ hl_tg6(struct sk_buff *skb, const struct xt_action_param *par)
- 	ip6h = ipv6_hdr(skb);
- 
- 	switch (info->mode) {
--		case IP6T_HL_SET:
--			new_hl = info->hop_limit;
--			break;
--		case IP6T_HL_INC:
--			new_hl = ip6h->hop_limit + info->hop_limit;
--			if (new_hl > 255)
--				new_hl = 255;
--			break;
--		case IP6T_HL_DEC:
--			new_hl = ip6h->hop_limit - info->hop_limit;
--			if (new_hl < 0)
--				new_hl = 0;
--			break;
--		default:
--			new_hl = ip6h->hop_limit;
--			break;
-+	case IP6T_HL_SET:
-+		new_hl = info->hop_limit;
-+		break;
-+	case IP6T_HL_INC:
-+		new_hl = ip6h->hop_limit + info->hop_limit;
-+		if (new_hl > 255)
-+			new_hl = 255;
-+		break;
-+	case IP6T_HL_DEC:
-+		new_hl = ip6h->hop_limit - info->hop_limit;
-+		if (new_hl < 0)
-+			new_hl = 0;
-+		break;
-+	default:
-+		new_hl = ip6h->hop_limit;
-+		break;
- 	}
- 
- 	ip6h->hop_limit = new_hl;
-diff --git a/net/netfilter/xt_hl.c b/net/netfilter/xt_hl.c
-index 7d12221..0039511 100644
---- a/net/netfilter/xt_hl.c
-+++ b/net/netfilter/xt_hl.c
-@@ -31,14 +31,14 @@ static bool ttl_mt(const struct sk_buff *skb, struct xt_action_param *par)
- 	const u8 ttl = ip_hdr(skb)->ttl;
- 
- 	switch (info->mode) {
--		case IPT_TTL_EQ:
--			return ttl == info->ttl;
--		case IPT_TTL_NE:
--			return ttl != info->ttl;
--		case IPT_TTL_LT:
--			return ttl < info->ttl;
--		case IPT_TTL_GT:
--			return ttl > info->ttl;
-+	case IPT_TTL_EQ:
-+		return ttl == info->ttl;
-+	case IPT_TTL_NE:
-+		return ttl != info->ttl;
-+	case IPT_TTL_LT:
-+		return ttl < info->ttl;
-+	case IPT_TTL_GT:
-+		return ttl > info->ttl;
- 	}
- 
- 	return false;
-@@ -50,14 +50,14 @@ static bool hl_mt6(const struct sk_buff *skb, struct xt_action_param *par)
- 	const struct ipv6hdr *ip6h = ipv6_hdr(skb);
- 
- 	switch (info->mode) {
--		case IP6T_HL_EQ:
--			return ip6h->hop_limit == info->hop_limit;
--		case IP6T_HL_NE:
--			return ip6h->hop_limit != info->hop_limit;
--		case IP6T_HL_LT:
--			return ip6h->hop_limit < info->hop_limit;
--		case IP6T_HL_GT:
--			return ip6h->hop_limit > info->hop_limit;
-+	case IP6T_HL_EQ:
-+		return ip6h->hop_limit == info->hop_limit;
-+	case IP6T_HL_NE:
-+		return ip6h->hop_limit != info->hop_limit;
-+	case IP6T_HL_LT:
-+		return ip6h->hop_limit < info->hop_limit;
-+	case IP6T_HL_GT:
-+		return ip6h->hop_limit > info->hop_limit;
- 	}
- 
- 	return false;
--- 
-1.7.6.rc1
+ static int cdrom_read_mech_status(struct cdrom_device_info *cdi, 
+
 
