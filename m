@@ -1,95 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756356Ab1GAM4x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 08:56:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58072 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541Ab1GAM4u (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 08:56:50 -0400
-Date: Fri, 1 Jul 2011 14:56:46 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL v2] sched: Make sleep inside atomic detection work on
- !PREEMPT
-Message-ID: <20110701125644.GD8508@somewhere>
-References: <1307712622-11104-1-git-send-email-fweisbec@gmail.com>
- <20110622224844.GA3290@somewhere>
- <20110701123629.GA12605@elte.hu>
+	id S1756343Ab1GAM6i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 08:58:38 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55167 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755541Ab1GAM6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 08:58:35 -0400
+Date: Fri, 1 Jul 2011 14:58:02 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Petr Tesarik <ptesarik@suse.cz>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+Message-ID: <20110701125802.GE12605@elte.hu>
+References: <201106171038.25988.ptesarik@suse.cz>
+ <20110617093032.GA19235@elte.hu>
+ <201106291106.00070.ptesarik@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20110701123629.GA12605@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201106291106.00070.ptesarik@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 02:36:29PM +0200, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Fri, Jun 10, 2011 at 03:30:18PM +0200, Frederic Weisbecker wrote:
-> > > Ingo,
-> > > 
-> > > Please pull the sched/core branch that can be found at:
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> > > 	sched/core
-> > 
-> > Hi Ingo,
-> > 
-> > I have added Randy's ack on the last patch. To get it, please pull the v2 in
-> > the following branch:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> >        sched/core-v2
-> > 
-> > There are no other changes.
-> 
-> Hm, this triggers such warnings now:
-> 
-> Detected 2010.217 MHz processor.
-> Marking TSC unstable due to TSCs unsynchronized
-> Calibrating delay loop (skipped), value calculated using timer frequency.. 4022.95 BogoMIPS (lpj=6700723)
-> pid_max: default: 4096 minimum: 301
-> BUG: scheduling while atomic: swapper/0/0x10000002
-> no locks held by swapper/0.
-> Pid: 0, comm: swapper Not tainted 3.0.0-rc5-tip-01401-ga7adf5f-dirty #141020
-> Call Trace:
->  [<ffffffff81ddb3b0>] __schedule_bug+0x60/0x65
->  [<ffffffff81dee803>] schedule+0x953/0x980
->  [<ffffffff81571e30>] ? serial8250_console_putchar+0x30/0x40
->  [<ffffffff81df177b>] ? _raw_spin_unlock+0x2b/0x50
->  [<ffffffff8107882a>] __cond_resched+0x2a/0x40
->  [<ffffffff81dee8e2>] _cond_resched+0x32/0x40
->  [<ffffffff81110ba8>] __alloc_pages_nodemask+0x1b8/0x880
->  [<ffffffff81df23ce>] ? common_interrupt+0xe/0x13
->  [<ffffffff81080649>] ? vprintk+0x359/0x530
->  [<ffffffff8113b4e7>] slob_new_pages+0x17/0x80
->  [<ffffffff8113bd13>] __kmalloc_node+0xa3/0x270
->  [<ffffffff81ddb6d5>] ? printk+0x41/0x43
->  [<ffffffff82738420>] pidmap_init+0x80/0xbf
->  [<ffffffff8272aa54>] start_kernel+0x28b/0x300
->  [<ffffffff8272a2ee>] x86_64_start_reservations+0xfe/0x102
->  [<ffffffff8272a3e2>] x86_64_start_kernel+0xf0/0xf7
-> Security Framework initialized
-> AppArmor: AppArmor initialized
-> Mount-cache hash table entries: 256
-> Initializing cgroup subsys cpuacct
-> 
-> Not sure we want to warn about schedule during early init, or can it 
-> cause problems and should thus be fixed? I bet there's more such 
-> instances.
 
-I believe this is harmless because no other other tasks than init are queued at that
-time. But I don't know, may be calling schedule() involves some things that
-are not ready yet at that time.
+* Petr Tesarik <ptesarik@suse.cz> wrote:
 
-Either we add a system_state check in schedule_debug() or we fix the callers
-to not call schedule when system_state shows we are booting..
+> Dne Pá 17. června 2011 11:30:32 Ingo Molnar napsal(a):
+> > * Petr Tesarik <ptesarik@suse.cz> wrote:
+> > > This patch series enhances /dev/mem, so that read and write is
+> > > possible at any address. The patchset includes actual
+> > > implementation for x86.
+> > 
+> > This series lacks a description of why this is desired.
+> >[...]
+> > 
+> > Are you aware of any legitimate usecases?
+> 
+> Looking back at the mail tread, I'd say there are people who have 
+> legitimate usecases. However, this may not be the most important 
+> question. At the moment, the /dev/mem interface is broken (it 
+> doesn't implement the specification correctly), and my patchset 
+> fixes it.
+> 
+> If there are no technical objections, [...]
+
+Well, my objections were entirely technical:
+
+ - the device never implemented above-4G support upstream
+
+ - there's colorful variants of abuse (drivers with binary-only
+   userspace) even if we ignore the obvious fact that the
+   main use of /dev/mem today is /dev/rootkit ...
+
+Now my objections might be outweighed by the advantages of improving 
+this driver, but you misrepresenting my position really does not help 
+that process.
+
+So what was not mentioned in your series, what is *your* motivation 
+and your usecase? Enabling closed-source userspace drivers? Enabling 
+the crash utility?
+
+If the former then shame on you, if the latter then how do you 
+explain that distros appear to disable the RAM aspect of /dev/mem:
+
+ $ grep DEVMEM $(rpm -ql kernel-2.6.38-0.rc7.git2.3.fc16.x86_64 | grep config-2.6 )
+ CONFIG_STRICT_DEVMEM=y
+
+So the crash utility use-case does not work on unpatched, default 
+kernels, right?
+
+As i said i have no problem with extending this, as long as it 
+couples to a non-default flag (for example !STRICT_DEVMEM or a boot 
+flag) and thus does not extend by default and does not extend the 
+abuse.
+
+> @Ingo: you can also send a patchset that rips off the /dev/mem 
+> driver completely if you believe that would get through. [...]
+
+Why would we want to do that? Existing users can become more and more 
+obsolete just fine.
+
+What i'm asking for is to not enable new abuse by default ...
+
+Thanks,
+
+	Ingo
