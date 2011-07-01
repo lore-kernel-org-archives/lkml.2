@@ -1,151 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab1GAC0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 22:26:48 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:46543 "HELO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754479Ab1GAC0r (ORCPT
+	id S1754741Ab1GAC2I (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 22:28:08 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:24037 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754523Ab1GAC2G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 22:26:47 -0400
-X-Greylist: delayed 438 seconds by postgrey-1.27 at vger.kernel.org; Thu, 30 Jun 2011 22:26:46 EDT
-From: Nathan Royer <nroyer@invensense.com>
-To: Nathan Royer <nroyer@invensense.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
-        Alan Cox <alan@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 08/11] misc: Kconfig and Makefile changes for inv_mpu driver
-Date: Thu, 30 Jun 2011 19:18:24 -0700
-Message-Id: <1309486707-1658-8-git-send-email-nroyer@invensense.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
-References: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
+	Thu, 30 Jun 2011 22:28:06 -0400
+X-AuditID: cbfee61b-b7bfdae000006d51-15-4e0d30afcbec
+Date: Fri, 01 Jul 2011 11:27:59 +0900
+From: =?utf-8?B?7KCE7Iq57JuQ?= <tgih.jun@samsung.com>
+Subject: RE: [PATCH] mmc: dw_mmc: Add the function call for board-specific
+ initialization.
+In-reply-to: <BANLkTi=r3x81sPVLG9yRAG9hHnjQuqTHCg@mail.gmail.com>
+To: "'James Hogan'" <james@albanarts.com>,
+        "'Jaehoon Chung'" <jh80.chung@samsung.com>
+Cc: linux-mmc@vger.kernel.org, cjb@laptop.org, linux-kernel@vger.kernel.org
+Message-id: <008801cc3796$7eb6c0f0$7c2442d0$%jun@samsung.com>
+MIME-version: 1.0
+X-Mailer: Microsoft Office Outlook 12.0
+Content-type: text/plain; charset=utf-8
+Content-language: ko
+Content-transfer-encoding: 7BIT
+Thread-index: Acw3AcI64PFRlfokS8W+J2Q1XNFM9wAlBmsg
+References: <1309402665-29228-1-git-send-email-tgih.jun@samsung.com>
+ <4E0C18BD.8000608@samsung.com>
+ <BANLkTikhwh5M1XB9zRiLzMd7dL18kA_o0g@mail.gmail.com>
+ <4E0C31DF.5090200@samsung.com>
+ <BANLkTi=r3x81sPVLG9yRAG9hHnjQuqTHCg@mail.gmail.com>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Nathan Royer <nroyer@invensense.com>
----
- drivers/misc/Kconfig          |    1 +
- drivers/misc/Makefile         |    1 +
- drivers/misc/inv_mpu/Kconfig  |   58 +++++++++++++++++++++++++++++++++++++++++
- drivers/misc/inv_mpu/Makefile |   17 ++++++++++++
- 4 files changed, 77 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/inv_mpu/Kconfig
- create mode 100644 drivers/misc/inv_mpu/Makefile
+Hi,
+Thank you for comment.
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 4e349cd..2dc231d 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -493,6 +493,7 @@ config PCH_PHUB
- source "drivers/misc/c2port/Kconfig"
- source "drivers/misc/eeprom/Kconfig"
- source "drivers/misc/cb710/Kconfig"
-+source "drivers/misc/inv_mpu/Kconfig"
- source "drivers/misc/iwmc3200top/Kconfig"
- source "drivers/misc/ti-st/Kconfig"
- source "drivers/misc/lis3lv02d/Kconfig"
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 5f03172..3b371cf 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -35,6 +35,7 @@ obj-$(CONFIG_DS1682)		+= ds1682.o
- obj-$(CONFIG_TI_DAC7512)	+= ti_dac7512.o
- obj-$(CONFIG_C2PORT)		+= c2port/
- obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
-+obj-y				+= inv_mpu/
- obj-$(CONFIG_HMC6352)		+= hmc6352.o
- obj-y				+= eeprom/
- obj-y				+= cb710/
-diff --git a/drivers/misc/inv_mpu/Kconfig b/drivers/misc/inv_mpu/Kconfig
-new file mode 100644
-index 0000000..fdfa7a6
---- /dev/null
-+++ b/drivers/misc/inv_mpu/Kconfig
-@@ -0,0 +1,58 @@
-+
-+menuconfig: INV_SENSORS
-+	tristate "Motion Processing Unit"
-+	depends on I2C
-+	default y
-+
-+if INV_SENSORS
-+
-+choice
-+	prompt "MPU Master"
-+	depends on I2C && INV_SENSORS
-+	default MPU_SENSORS_MPU3050
-+
-+config MPU_SENSORS_MPU3050
-+	bool "MPU3050"
-+	depends on I2C
-+	select MPU_SENSORS_MPU3050_GYRO
-+	help
-+	  If you say yes here you get support for the MPU3050 Gyroscope driver
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called mpu3050.
-+
-+config MPU_SENSORS_MPU6050A2
-+	bool "MPU6050A2"
-+	depends on I2C
-+	select MPU_SENSORS_MPU6050_GYRO
-+	help
-+	  If you say yes here you get support for the MPU6050A2 Gyroscope driver
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called mpu6050a2.
-+
-+config MPU_SENSORS_MPU6050B1
-+	bool "MPU6050B1"
-+	select MPU_SENSORS_MPU6050_GYRO
-+	depends on I2C
-+	help
-+	  If you say yes here you get support for the MPU6050 Gyroscope driver
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called mpu6050b1.
-+
-+endchoice
-+
-+choice
-+	prompt "Gyroscope Type"
-+	depends on I2C && INV_SENSORS
-+	default MPU_SENSORS_MPU3050_GYRO
-+
-+config MPU_SENSORS_MPU3050_GYRO
-+	bool "MPU3050 built in gyroscope"
-+	depends on MPU_SENSORS_MPU3050
-+
-+config MPU_SENSORS_MPU6050_GYRO
-+	bool "MPU6050 built in gyroscope"
-+	depends on MPU_SENSORS_MPU6050B1 || MPU_SENSORS_MPU6050A2
-+
-+endchoice
-+
-+endif #INV_SENSORS
-diff --git a/drivers/misc/inv_mpu/Makefile b/drivers/misc/inv_mpu/Makefile
-new file mode 100644
-index 0000000..48fc55a
---- /dev/null
-+++ b/drivers/misc/inv_mpu/Makefile
-@@ -0,0 +1,17 @@
-+
-+# Kernel makefile for motions sensors
-+#
-+#
-+
-+# MPU
-+
-+obj-$(CONFIG_INV_SENSORS)	+= mpu3050.o
-+
-+mpu3050-objs += mpuirq.o
-+mpu3050-objs += slaveirq.o
-+mpu3050-objs += mpu-dev.o
-+mpu3050-objs += mlsl.o
-+mpu3050-objs += mldl_cfg.o
-+mpu3050-objs += mldl_print_cfg.o
-+
-+EXTRA_CFLAGS += -Idrivers/misc/inv_mpu
--- 
-1.7.4.1
+> -----Original Message-----
+> From: linux-mmc-owner@vger.kernel.org [mailto:linux-mmc-
+> owner@vger.kernel.org] On Behalf Of James Hogan
+> Sent: Thursday, June 30, 2011 5:43 PM
+> To: Jaehoon Chung
+> Cc: Seungwon Jeon; linux-mmc@vger.kernel.org; cjb@laptop.org; linux-
+> kernel@vger.kernel.org
+> Subject: Re: [PATCH] mmc: dw_mmc: Add the function call for board-specific
+> initialization.
+> 
+> Hi,
+> 
+> On 30 June 2011 09:20, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> > Hi James
+> >
+> > James Hogan wrote:
+> >> On 30 June 2011 07:33, Jaehoon Chung <jh80.chung@samsung.com> wrote:
+> >>> Hi Mr.Jeon
+> >>>
+> >>> This patch is the compiler error.
+> >>>
+> >>> didn't find host->card_work..
+> >>>
+> >>> do you want this
+> >>> queue_work(dw_mci_card_workqueue, &slot->host->card_work); ?
+> >>
+> >> I think the patch is based on mmc-next, which has the following commit:
+> >> 35ba9d8 mmc: dw_mmc: convert card tasklet to workqueue
+> >
+> > I also tested this patch based on mmc-next.
+> > But my mean is that there is not host structure in
+> dw_mci_detect_interrupt().
+> >
+> > drivers/mmc/host/dw_mmc.c: In function 'dw_mci_detect_interrupt':
+> > drivers/mmc/host/dw_mmc.c:1592: error: 'host' undeclared (first use in
+> this function)
+> > drivers/mmc/host/dw_mmc.c:1592: error: (Each undeclared identifier is
+> reported only once
+> > drivers/mmc/host/dw_mmc.c:1592: error: for each function it appears in.)
+> > drivers/mmc/host/dw_mmc.c:1590: warning: unused variable 'slot'
+> > make[3]: *** [drivers/mmc/host/dw_mmc.o] Error 1
+> > make[2]: *** [drivers/mmc/host] Error 2
+> 
+> Sorry, I misunderstood. You are correct.
+
+
+queue_work(dw_mci_card_workqueue, &host->card_work);
+'slot' is omitted. (&slot->host->card_work)
+
+Sorry for my mistake.
+I'll fix it.
+
+Best regards,
+Seungwon.
+
+
+> Cheers
+> James
+> 
+> >
+> > Did you really compile fine?
+> >
+> > Regards,
+> > Jaehoon Chung
+> >
+> >>
+> >> Cheers
+> >> James
+> >>
+> >>>
+> >>> Regards,
+> >>> Jaehoon Chung
+> >>>
+> >>>
+> >>> Seungwon Jeon wrote:
+> >>>> Need to call init() function of dw_mci_board.
+> >>>> It seems to be omitted to call this function.
+> >>>>
+> >>>> Signed-off-by: Seungwon Jeon <tgih.jun@samsung.com>
+> >>>> ---
+> >>>>  drivers/mmc/host/dw_mmc.c |   11 +++++++++++
+> >>>>  1 files changed, 11 insertions(+), 0 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+> >>>> index a524416..073c420 100644
+> >>>> --- a/drivers/mmc/host/dw_mmc.c
+> >>>> +++ b/drivers/mmc/host/dw_mmc.c
+> >>>> @@ -1585,6 +1585,15 @@ static void dw_mci_work_routine_card(struct
+> work_struct *work)
+> >>>>       }
+> >>>>  }
+> >>>>
+> >>>> +static irqreturn_t dw_mci_detect_interrupt(int irq, void *dev_id)
+> >>>> +{
+> >>>> +     struct dw_mci_slot *slot = dev_id;
+> >>>> +
+> >>>> +     queue_work(dw_mci_card_workqueue, &host->card_work);
+> >>>> +
+> >>>> +     return IRQ_HANDLED;
+> >>>> +}
+> >>>> +
+> >>>>  static int __init dw_mci_init_slot(struct dw_mci *host, unsigned int
+> id)
+> >>>>  {
+> >>>>       struct mmc_host *mmc;
+> >>>> @@ -1657,6 +1666,8 @@ static int __init dw_mci_init_slot(struct
+> dw_mci *host, unsigned int id)
+> >>>>       } else
+> >>>>               regulator_enable(host->vmmc);
+> >>>>
+> >>>> +     host->pdata->init(id, dw_mci_detect_interrupt, host);
+> >>>> +
+> >>>>       if (dw_mci_get_cd(mmc))
+> >>>>               set_bit(DW_MMC_CARD_PRESENT, &slot->flags);
+> >>>>       else
+> >>>> --
+> >>>> 1.7.0.4
+> >>>>
+> >>>> --
+> >>>> To unsubscribe from this list: send the line "unsubscribe linux-mmc"
+> in
+> >>>> the body of a message to majordomo@vger.kernel.org
+> >>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>>
+> >>> --
+> >>> To unsubscribe from this list: send the line "unsubscribe linux-mmc"
+> in
+> >>> the body of a message to majordomo@vger.kernel.org
+> >>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>>
+> >>
+> >>
+> >>
+> >
+> >
+> 
+> 
+> 
+> --
+> James Hogan
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
