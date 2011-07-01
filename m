@@ -1,36 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932098Ab1GAXRG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 19:17:06 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:52759 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757689Ab1GAXRD (ORCPT
+	id S1758100Ab1GAXbc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 19:31:32 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50397 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757689Ab1GAXbb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 19:17:03 -0400
-Date: Fri, 01 Jul 2011 16:15:50 -0700 (PDT)
-Message-Id: <20110701.161550.1316844563798183164.davem@davemloft.net>
-To: joe@perches.com
-Cc: linux-decnet-user@lists.sourceforge.net, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, linux-x25@vger.kernel.org,
-        linux-hams@vger.kernel.org, linux-sctp@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/12] net switch/case reformatting
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <cover.1309549243.git.joe@perches.com>
-References: <cover.1309549243.git.joe@perches.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 01 Jul 2011 16:15:52 -0700 (PDT)
+	Fri, 1 Jul 2011 19:31:31 -0400
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Michal Marek <mmarek@suse.cz>, Arnaud Lacombe <lacombar@gmail.com>,
+        Steven Rostedt <srostedt@redhat.com>
+Subject: [RFC 0/4] streamline_config clean-ups
+Date: Fri,  1 Jul 2011 19:31:12 -0400
+Message-Id: <1309563076-5050-1-git-send-email-lacombar@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.574.g608b.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Fri,  1 Jul 2011 12:43:01 -0700
+Hi,
 
-> Just whitespace cleanups with a couple trivial corrections
+The following series attempts to merge some redundants stuff in the kconfig
+Makefile, namely how streamline_config learns about its environment, avoids
+multi-line shell command in kconfig's Makefile. Seconds commit also removes the
+non-portable usage of sed(1) as -i is not POSIX compliant.
 
-All applied, thanks Joe.
+Comments appreciated!
+
+ - Arnaud
+
+ps: I'm not really a huge fan of the direct export of MAKECMDGOALS, maybe should
+it be KBUILD_MAKECMDGOALS.
+
+Arnaud Lacombe (4):
+  kbuild: export MAKECMDGOALS
+  kconfig/streamline_config.pl: directly access LSMOD
+  kconfig/streamline_config.pl: merge local{mod,yes}config
+  kconfig/streamline_config.pl: move config generation to script
+
+ Makefile                             |    3 ++
+ scripts/kconfig/Makefile             |   40 +--------------------------------
+ scripts/kconfig/localconfig.sh       |   20 +++++++++++++++++
+ scripts/kconfig/streamline_config.pl |   19 +++++++++++++--
+ 4 files changed, 41 insertions(+), 41 deletions(-)
+ create mode 100755 scripts/kconfig/localconfig.sh
+
+-- 
+1.7.3.4.574.g608b.dirty
+
