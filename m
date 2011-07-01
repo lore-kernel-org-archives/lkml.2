@@ -1,45 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab1GAT3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 15:29:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14969 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750974Ab1GAT3d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 15:29:33 -0400
-Date: Fri, 1 Jul 2011 15:29:15 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
-        Dave Chinner <david@fromorbit.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Li Shaohua <shaohua.li@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/9] writeback: bdi write bandwidth estimation
-Message-ID: <20110701192915.GE28563@redhat.com>
-References: <20110629145245.835998321@intel.com>
- <20110629145553.906668553@intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110629145553.906668553@intel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755199Ab1GATdU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 15:33:20 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:49087 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750874Ab1GATdT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 15:33:19 -0400
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, axboe@kernel.dk,
+        rjw@sisk.pl
+In-Reply-To: <1309548044.2722.35.camel@mulgrave>
+References: <20110701170531.GA3693@tassilo.jf.intel.com>
+	 <1309548044.2722.35.camel@mulgrave>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jul 2011 14:33:17 -0500
+Message-ID: <1309548797.2722.37.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 10:52:48PM +0800, Wu Fengguang wrote:
-> The estimation value will start from 100MB/s and adapt to the real
-> bandwidth in seconds.
+On Fri, 2011-07-01 at 14:20 -0500, James Bottomley wrote:
+> I'll see if I can find the refcounting problem.
 > 
-> It tries to update the bandwidth only when disk is fully utilized.
-> Any inactive period of more than one second will be skipped.
+> Likely it's a longstanding bug which we didn't actually notice until
+> now.
 
-Is this piece of code being tested in your graphs? Are there any
-inactive periods which get filtered out in your workload? I am 
-assuming in a continuous dd, we will not have periods of inactivity
-1 second long.
+OK, so it looks like we have correct refcounting on the sr_block ops,
+but not on the actual cdrom ops, so the device is already gone by the
+time the cdrom release function gets called.
 
-Thanks
-Vivek
+This is my best guess at the fix (just add a get into the cdrom ops),
+does it work?
+
+James
+
+---
+
+diff --git a/drivers/scsi/sr.c b/drivers/scsi/sr.c
+index 4778e27..ee75983 100644
+--- a/drivers/scsi/sr.c
++++ b/drivers/scsi/sr.c
+@@ -575,7 +575,10 @@ static int sr_open(struct cdrom_device_info *cdi, int purpose)
+ {
+ 	struct scsi_cd *cd = cdi->handle;
+ 	struct scsi_device *sdev = cd->device;
+-	int retval;
++	int retval = scsi_device_get(sdev);
++
++	if (!retval)
++		return retval;
+ 
+ 	/*
+ 	 * If the device is in error recovery, wait until it is done.
+@@ -588,6 +591,7 @@ static int sr_open(struct cdrom_device_info *cdi, int purpose)
+ 	return 0;
+ 
+ error_out:
++	scsi_device_put(sdev);
+ 	return retval;	
+ }
+ 
+@@ -598,6 +602,7 @@ static void sr_release(struct cdrom_device_info *cdi)
+ 	if (cd->device->sector_size > 2048)
+ 		sr_set_blocklength(cd, 2048);
+ 
++	scsi_device_put(cd->device);
+ }
+ 
+ static int sr_probe(struct device *dev)
+
+
