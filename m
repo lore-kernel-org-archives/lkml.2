@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756119Ab1GAJSb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:18:31 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:33190 "EHLO
+	id S932102Ab1GAJSl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 05:18:41 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:34966 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010Ab1GAJS1 (ORCPT
+	with ESMTP id S932082Ab1GAJSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 05:18:27 -0400
+	Fri, 1 Jul 2011 05:18:39 -0400
 From: Stefan Bader <stefan.bader@canonical.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Seth Forshee <seth.forshee@canonical.com>,
+To: Daniel Haid <d.haid@gogi.tv>
+Cc: Dave Airlie <airlied@redhat.com>,
         Stefan Bader <stefan.bader@canonical.com>,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 08/10] drm/i915: Periodically flush the active lists and requests" has been added to staging queue
-Date: Fri,  1 Jul 2011 10:18:25 +0100
-Message-Id: <1309511905-3115-1-git-send-email-stefan.bader@canonical.com>
+Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 10/10] drm/radeon/kms: fix for radeon on systems >4GB without hardware iommu" has been added to staging queue
+Date: Fri,  1 Jul 2011 10:18:32 +0100
+Message-Id: <1309511912-3185-1-git-send-email-stefan.bader@canonical.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,7 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    Subject: [PATCH 08/10] drm/i915: Periodically flush the active lists and requests
+    Subject: [PATCH 10/10] drm/radeon/kms: fix for radeon on systems >4GB without hardware iommu
 
 to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
 
@@ -36,49 +36,47 @@ Thanks.
 
 ------
 
->From 41516474bc14ea128b05bf65c9cbdb04739582ac Mon Sep 17 00:00:00 2001
-From: Chris Wilson <chris@chris-wilson.co.uk>
-Date: Fri, 17 Jun 2011 10:04:22 -0500
-Subject: [PATCH 08/10] drm/i915: Periodically flush the active lists and requests
+>From 2e49607f2fdfe966ea6caae27c1e7547b917ccb7 Mon Sep 17 00:00:00 2001
+From: Daniel Haid <d.haid@gogi.tv>
+Date: Wed, 8 Jun 2011 20:04:45 +1000
+Subject: [PATCH 10/10] drm/radeon/kms: fix for radeon on systems >4GB without hardware iommu
 
-BugLink: http://bugs.launchpad.net/bugs/599017
+commit 62fff811d73095bd95579d72f558f03c78f7914a upstream.
 
-In order to retire active buffers whilst no client is active, we need to
-insert our own flush requests onto the ring.
+On my x86_64 system with >4GB of ram and swiotlb instead of
+a hardware iommu (because I have a VIA chipset), the call
+to pci_set_dma_mask (see below) with 40bits returns an error.
 
-This is useful for servers that queue up some rendering and then go to
-sleep as it allows us to the complete processing of those requests,
-potentially making that memory available again much earlier.
+But it seems that the radeon driver is designed to have
+need_dma32 = true exactly if pci_set_dma_mask is called
+with 32 bits and false if it is called with 40 bits.
 
-Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-(backported from commit 0a58705b2fc3fa29525cf2fdae3d4276a5771280 upstream)
+I have read somewhere that the default are 32 bits. So if the
+call fails I suppose that need_dma32 should be set to true.
 
-Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+And indeed the patch fixes the problem I have had before
+and which I had described here:
+http://choon.net/forum/read.php?21,106131,115940
+
+Acked-by: Alex Deucher <alexdeucher@gmail.com>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_gem.c |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/radeon/radeon_device.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index b3c7bd1..0314f7f 100644
---- a/drivers/gpu/drm/i915/i915_gem.c
-+++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -1862,9 +1862,16 @@ i915_gem_retire_work_handler(struct work_struct *work)
-
- 	mutex_lock(&dev->struct_mutex);
- 	i915_gem_retire_requests(dev);
-+
-+	if (!list_empty(&dev_priv->mm.gpu_write_list)) {
-+		i915_gem_flush(dev, 0, I915_GEM_GPU_DOMAINS);
-+		i915_add_request(dev, NULL, I915_GEM_GPU_DOMAINS);
-+	}
-+
- 	if (!dev_priv->mm.suspended &&
- 	    !list_empty(&dev_priv->mm.request_list))
- 		queue_delayed_work(dev_priv->wq, &dev_priv->mm.retire_work, HZ);
-+
- 	mutex_unlock(&dev->struct_mutex);
- }
+diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeon/radeon_device.c
+index ac47fd0..6a78b34 100644
+--- a/drivers/gpu/drm/radeon/radeon_device.c
++++ b/drivers/gpu/drm/radeon/radeon_device.c
+@@ -682,6 +682,7 @@ int radeon_device_init(struct radeon_device *rdev,
+ 	dma_bits = rdev->need_dma32 ? 32 : 40;
+ 	r = pci_set_dma_mask(rdev->pdev, DMA_BIT_MASK(dma_bits));
+ 	if (r) {
++		rdev->need_dma32 = true;
+ 		printk(KERN_WARNING "radeon: No suitable DMA available.\n");
+ 	}
 
 --
 1.7.4.1
