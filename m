@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab1GACCd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 22:02:33 -0400
-Received: from mga09.intel.com ([134.134.136.24]:13159 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752373Ab1GACCc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 22:02:32 -0400
-MIME-Version: 1.0
-In-Reply-To: <1309473473.2857.5.camel@localhost.localdomain>
-References: <CA323325.7D40%ryan.r.ware@intel.com>
-	<1309473473.2857.5.camel@localhost.localdomain>
-Date: Thu, 30 Jun 2011 19:02:28 -0700
-Message-ID: <BANLkTinSwVnZ=Yg2HTVSqDN2Qx9rOLJsqw@mail.gmail.com>
-Subject: Re: [PATCH v7 00/16] EVM
-From: "Ware, Ryan R" <ryan.r.ware@intel.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dmitry Kasatkin <dmitry.s.kasatkin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753990Ab1GACDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 22:03:42 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:49258 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752511Ab1GACDl convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 22:03:41 -0400
+From: Xiangliang Yu <yuxiangl@marvell.com>
+To: Dan Williams <dan.j.williams@intel.com>,
+        "yxlraid@gmail.com" <yxlraid@gmail.com>
+CC: "JBottomley@parallels.com" <JBottomley@parallels.com>,
+        "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+        "jack_wang@usish.com" <jack_wang@usish.com>,
+        "lucas.demarchi@profusion.mobi" <lucas.demarchi@profusion.mobi>,
+        "maciej.trela@intel.com" <maciej.trela@intel.com>,
+        "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jacky Feng <jfeng@marvell.com>
+Date: Thu, 30 Jun 2011 19:03:27 -0700
+Subject: RE: [PATCH 9/9] [SCSI] mvsas: Add support for interrupt tasklet
+Thread-Topic: [PATCH 9/9] [SCSI] mvsas: Add support for interrupt tasklet
+Thread-Index: Acw3TanwceDS/4dlTKOvJaKpKOcw3QAQle2w
+Message-ID: <F766E4F80769BD478052FB6533FA745D19FAF50016@SC-VEXCH4.marvell.com>
+References: <1309444056-29277-1-git-send-email-yxlraid@gmail.com>
+ <BANLkTinDLpb=mQpBEF3JnaA4eXrZC14aYA@mail.gmail.com>
+In-Reply-To: <BANLkTinDLpb=mQpBEF3JnaA4eXrZC14aYA@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="iso-8859-1"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 3:37 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
->
-> On Thu, 2011-06-30 at 14:06 -0700, Ryan Ware wrote:
-> > Glad to see this going in Mimi!  Looking forward to enabling this in our
-> > MeeGo kernels.
-> >
-> > Ryan
->
-> I wish.  As far as I'm aware, EVM hasn't been upstreamed.  The good news
-> is that the ecryptfs encrypted-key patches are now in the
-> security-testing tree.
 
-True.  My wording should have been clearer.  It's definitely good to
-have the ecryptfs patches in.
+>Subject: Re: [PATCH 9/9] [SCSI] mvsas: Add support for interrupt tasklet
 
->
-> > On 6/29/11 12:50 PM, "Mimi Zohar" <zohar@linux.vnet.ibm.com> wrote:
-> >
-> > >Discretionary Access Control(DAC) and Mandatory Access Control(MAC) can
-> > >protect the integrity of a running system from unauthorized changes. When
-> > >these protections are not running, such as when booting a malicious OS,
-> > >mounting the disk under a different operating system, or physically moving
-> > >the disk to another system, an "offline" attack is free to read and write
-> > >file data/metadata.
-> > >
-> > >...snip...
-> >
-> >
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>On Thu, Jun 30, 2011 at 7:27 AM,  <yxlraid@gmail.com> wrote:
+>> From: Xiangliang Yu <yuxiangl@marvell.com>
+>>
+>> -- Add support for interrupt tasklet, which will improve performance.
+
+>Interesting, do you happen to have comparative performance numbers?
+According to internal test, the increase of tasklet performance is about
+1.5MB. This is first step, I will continue to enhance the performance.
+
+>>
+>>  ccflags-$(CONFIG_SCSI_MVSAS_DEBUG) := -DMV_DEBUG
+>> +ccflags-$(CONFIG_SCSI_MVSAS_TASKLET) := -DMVS_USE_TASKLET
+
+>Question, why not just use "#ifdef CONFIG_SCSI_MVSAS_TASKLET" and drop
+>these redefinitions?
+I think the Tasklet is a experimental feature, if any problem, the user
+Can close the feature. 
+
+Thanks!
+
