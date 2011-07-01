@@ -1,45 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab1GAIxj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 04:53:39 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:48104 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755694Ab1GAIxh (ORCPT
+	id S1755822Ab1GAIyS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 04:54:18 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:40257 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755630Ab1GAIyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 04:53:37 -0400
-Date: Fri, 01 Jul 2011 01:52:27 -0700 (PDT)
-Message-Id: <20110701.015227.1310214485297198560.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2011-06-30
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110630173223.GA12963@tuxdriver.com>
-References: <20110630173223.GA12963@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 01 Jul 2011 01:52:33 -0700 (PDT)
+	Fri, 1 Jul 2011 04:54:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <1309508518-23586-1-git-send-email-chrisf@ijw.co.nz>
+References: <1309508518-23586-1-git-send-email-chrisf@ijw.co.nz>
+Date: Fri, 1 Jul 2011 16:53:49 +0800
+Message-ID: <BANLkTi=ykdWdW_S0H4b7VZ2ODUJATfCpPg@mail.gmail.com>
+Subject: Re: [PATCH] kernel: auditfilter: replace kmalloc+memset with kzalloc
+From: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>
+To: Chris Forbes <chrisf@ijw.co.nz>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Thu, 30 Jun 2011 13:32:25 -0400
+On Fri, Jul 1, 2011 at 4:21 PM, Chris Forbes <chrisf@ijw.co.nz> wrote:
+> Replaced a kmalloc+memset pair with a single call to kzalloc.
+>
+> Signed-off-by: Chris Forbes <chrisf@ijw.co.nz>
 
-> Here is a batch of fixes intended for 3.0.  Arik gives us a fix for a
-> potential NULL dereference in mac80211.  Emmanuel gives us a fix for a
-> regression introduced by "iwlagn: support multiple TBs per command" that
-> can corrupt memory.  Eugene (and Bob) gives a memory leak fix for ath5k.
-> Evgeni gives us a preprocessor-related fix that makes modinfo output
-> make more sense for iwlagn.  Johannes gives us a trio of fixes, all
-> isolated to the bowels of iwlagn.  I overlayed a fixup on top of one of
-> Johannes's patches, since there was some confusion between DMA and PCI
-> API usage.  Finally, Rajkumar gives us an ath9k fix to ensure the chip
-> is properly awakened even if there is no active interface when the
-> resume occurs.
-> 
-> Please let me know if there are problems!
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
 
-Pulled, thanks John.
+Thanks.
