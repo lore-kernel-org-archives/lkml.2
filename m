@@ -1,109 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754627Ab1GABMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 21:12:09 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:45704 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab1GABMH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 21:12:07 -0400
-X-AuditID: b753bd60-a50b1ba0000019f4-d9-4e0d1ee439c9
-X-AuditID: b753bd60-a50b1ba0000019f4-d9-4e0d1ee439c9
-Message-ID: <4E0D1EE3.6080607@hitachi.com>
-Date: Fri, 01 Jul 2011 10:12:03 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+	id S1754660Ab1GABSZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 21:18:25 -0400
+Received: from am1ehsobe001.messaging.microsoft.com ([213.199.154.204]:19538
+	"EHLO AM1EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753670Ab1GABSX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 21:18:23 -0400
+X-SpamScore: -4
+X-BigFish: VS-4(zz9371M1432N98dKzz1202hzz8275bhz2dh2a8h668h839h8e2h8e3h1a1r61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:70.37.183.190;KIP:(null);UIP:(null);IPVD:NLI;H:mail.freescale.net;RD:none;EFVD:NLI
+From: Tabi Timur-B04825 <B04825@freescale.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>,
+        "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+        Gala Kumar-B11780 <B11780@freescale.com>,
+        "benh@kernel.crashing.org" <benh@kernel.crashing.org>,
+        "greg@kroah.com" <greg@kroah.com>, "akpm@kernel.org" <akpm@kernel.org>,
+        "cmetcalf@tilera.com" <cmetcalf@tilera.com>,
+        "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "dsaxena@linaro.org" <dsaxena@linaro.org>,
+        "linuxppc-dev@lists.ozlabs.org" <linuxppc-dev@lists.ozlabs.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-console@vger.kernel.org" <linux-console@vger.kernel.org>
+Subject: Re: [PATCH 7/7] [v6] drivers/virt: introduce Freescale hypervisor
+ management driver
+Thread-Topic: [PATCH 7/7] [v6] drivers/virt: introduce Freescale hypervisor
+ management driver
+Thread-Index: AQHMN4zAQUHEITu9+kSoiB4MK937mw==
+Date: Fri, 1 Jul 2011 01:18:15 +0000
+Message-ID: <BANLkTi=3r=UQYJVqRLRe-eu7rdkXQS-ESQ@mail.gmail.com>
+References: <1307652726-4356-1-git-send-email-timur@freescale.com>
+	<201106092304.55479.arnd@arndb.de>
+In-Reply-To: <201106092304.55479.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [174.129.36.64]
+Content-Type: text/plain; charset=US-ASCII
+Content-ID: <4EA51EC6BB80F340A5CB3FBBFBD06B1C@freescale.net>
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [BUG] kprobes crashing because of preempt count
-References: <1309440213.26417.76.camel@gandalf.stny.rr.com>
-In-Reply-To: <1309440213.26417.76.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
+X-OriginatorOrg: freescale.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2011/06/30 22:23), Steven Rostedt wrote:
-> Hi Masami,
-> 
-> While testing some changes in -rt against kprobes, I hit a crash that
-> exists in mainline. If we stick a probe in a location that reads
-> preempt_count, we corrupt the kernel itself.
-> 
-> Reason is that the kprobe single step handler disables preemption, sets
-> up the single step, returns to the code to execute that single step,
-> takes the trap, enables preemption, and continues.
-> 
-> The issue, is because we disabled preemption in the trap, returned, then
-> enabled it again in another trap, we just changed what the code sees
-> that does that single step.
-> 
-> If we add a kprobe on a inc_preempt_count() call:
-> 
-> 	[ preempt_count = 0 ]
-> 
-> 	ld preempt_count, %eax	<<--- trap
-> 
-> 		<trap>
-> 		preempt_disable();
-> 		[ preempt_count = 1]
-> 		setup_singlestep();
-> 		<trap return>
-> 
-> 	[ preempt_count = 1 ]
-> 
-> 	ld preempt_count, %eax
-> 
-> 	[ %eax = 1 ]
-> 
-> 		<trap>
-> 		post_kprobe_handler()
-> 			preempt_enable_no_resched();
-> 			[ preempt_count = 0 ]
-> 		<trap return>
-> 
-> 	[ %eax = 1 ]
-> 
-> 	add %eax,1
-> 
-> 	[ %eax = 2 ]
-> 
-> 	st %eax, preempt_count
-> 
-> 	[ preempt_count = 2 ]
-> 
-> 
-> We just caused preempt count to increment twice when it should have only
-> incremented once, and this screws everything else up.
+On Thu, Jun 9, 2011 at 4:04 PM, Arnd Bergmann <arnd@arndb.de> wrote:
+> On Thursday 09 June 2011 22:52:06 Timur Tabi wrote:
+>> Add the drivers/virt directory, which houses drivers that support
+>> virtualization environments, and add the Freescale hypervisor management
+>> driver.
+....
+>>
+>> Signed-off-by: Timur Tabi <timur@freescale.com>
+>
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-Ah! right!
-
-> Do we really need to have preemption disabled throughout this? Is it
-> because we don't want to migrate or call schedule? Not sure what the
-> best way to fix this is. Perhaps we add a kprobe_preempt_disable() that
-> is checked as well?
-
-I think the best way to do that is just removing preemption disabling
-code, because
-- breakpoint exception itself disables interrupt (at least on x86)
-- While single stepping, interrupts also be disabled.
-(BTW, theoretically, boosted and optimized kprobes shouldn't have
-this problem, because those doesn't execute single-stepping)
-
-So, I think there is no reason of disabling preemption.
-
-Thank you,
+So I've made the changes that people have asked for, and Arnd has
+acked this driver.  Who's going to pick it up?  Who will be the
+maintainer for drivers/virt?  I'd really like to see this driver in
+3.1, and there's not much time left.
 
 -- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+Timur Tabi
+Linux kernel developer at Freescale
