@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755338Ab1GALfq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 07:35:46 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44448 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755026Ab1GALfo (ORCPT
+	id S1755398Ab1GALgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 07:36:38 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:50917 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755026Ab1GALgi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 07:35:44 -0400
-Date: Fri, 1 Jul 2011 15:35:33 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Ingo Molnar <mingo@elte.hu>, solar@openwall.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        kernel-hardening@lists.openwall.com,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC] ipc: introduce shm_rmid_forced sysctl
-Message-ID: <20110701113533.GA19945@albatros>
-References: <20110622152514.GA9521@albatros>
- <20110629151436.9be479fb.akpm@linux-foundation.org>
- <20110701112534.GG20990@elte.hu>
+	Fri, 1 Jul 2011 07:36:38 -0400
+Date: Fri, 1 Jul 2011 17:06:26 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [BUG] kprobes crashing because of preempt count
+Message-ID: <20110701113626.GB23752@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <1309440213.26417.76.camel@gandalf.stny.rr.com> <4E0D1EE3.6080607@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110701112534.GG20990@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4E0D1EE3.6080607@hitachi.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 13:25 +0200, Ingo Molnar wrote:
-> Furthermore, if testing shows that this is not actually breaking 
-> anything in a serious way we could also in theory simplify the patch 
-> and just make this the default behavior with no runtime ability to 
-> switch it off.
+On Fri, Jul 01, 2011 at 10:12:03AM +0900, Masami Hiramatsu wrote:
+> (2011/06/30 22:23), Steven Rostedt wrote:
 
-I'm afraid it's impossible.  From -ow readme:
+...
 
-"Of course, this breaks the way things are defined, so some applications
-might stop working. In particular, expect most commercial databases to
-break. Apache and PostgreSQL are known to work, though. :-)"
+> > Do we really need to have preemption disabled throughout this? Is it
+> > because we don't want to migrate or call schedule? Not sure what the
+> > best way to fix this is. Perhaps we add a kprobe_preempt_disable() that
+> > is checked as well?
+> 
+> I think the best way to do that is just removing preemption disabling
+> code, because
+> - breakpoint exception itself disables interrupt (at least on x86)
+> - While single stepping, interrupts also be disabled.
 
-http://www.openwall.com/linux/README.shtml
+On 64-bit powerpc, kprobe handlers are run with interrupts enabled
+(MSR_EE = 1), but most instructions (including loads/stores) are
+emulated, so for the most part, we don't take the sstep exception.
 
-But as it was written in days of Linux 2.4.x, the situation could have
-changed.  A desktop system seems to work.
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Ananth
