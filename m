@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756589Ab1GANre (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:47:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56937 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756477Ab1GANrd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:47:33 -0400
-From: =?UTF-8?q?M=C3=A5rten=20Kongstad?= <marten.kongstad@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        =?UTF-8?q?M=C3=A5rten=20Kongstad?= <marten.kongstad@gmail.com>
-Subject: [PATCH] Staging: echo: fix checkpatch errors and warnings
-Date: Fri,  1 Jul 2011 15:46:49 +0200
-Message-Id: <1309528009-1943-1-git-send-email-marten.kongstad@gmail.com>
-X-Mailer: git-send-email 1.7.4.1
+	id S1756630Ab1GANrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:47:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60032 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756479Ab1GANrf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 09:47:35 -0400
+Date: Fri, 1 Jul 2011 15:47:34 +0200
+From: Michal Marek <mmarek@suse.cz>
+To: Peter Foley <pefoley2@verizon.net>
+Cc: Arnaud Lacombe <lacombar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH V2] kbuild: silence generated makefile message
+Message-ID: <20110701134733.GB25895@sepie.suse.cz>
+References: <alpine.LNX.2.00.1106271619350.24034@linux>
+ <BANLkTimrUYk-8GSsf35mUmLVBAaO84R6dA@mail.gmail.com>
+ <alpine.LNX.2.00.1106271915160.38876@linux>
+ <alpine.LNX.2.00.1106271932480.13060@linux>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1106271932480.13060@linux>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes 2 errors, 7 warnings as reported by checkpatch.
+On Mon, Jun 27, 2011 at 07:33:54PM -0400, Peter Foley wrote:
+> 
+> This patch silences the "make -C /usr/src/git O=/usr/src/git/build/." 
+> message shown when using the generated makefile in KBUILD_OUTDIR.
+> 
+> 
+> Signed-off-by: Peter Foley <pefoley2@verizon.net>
+> ---
+> 
+> V2: Show message when V=1
+> 
+>  scripts/mkmakefile |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/mkmakefile b/scripts/mkmakefile
+> index 5325423..ea26f37 100644
+> --- a/scripts/mkmakefile
+> +++ b/scripts/mkmakefile
+> @@ -30,6 +30,10 @@ PATCHLEVEL = $4
+>  lastword = \$(word \$(words \$(1)),\$(1))
+>  makedir := \$(dir \$(call lastword,\$(MAKEFILE_LIST)))
+>  
+> +ifneq (\$(V),1)
+> +Q := @
+> +endif
 
-Signed-off-by: Mårten Kongstad <marten.kongstad@gmail.com>
----
- drivers/staging/echo/echo.c |   11 ++---------
- 1 files changed, 2 insertions(+), 9 deletions(-)
+Please check if V=1 is passed on the commandline and not set in the
+environmnent, like the toplevel Makefile does:
 
-diff --git a/drivers/staging/echo/echo.c b/drivers/staging/echo/echo.c
-index c0adae1..afbf544 100644
---- a/drivers/staging/echo/echo.c
-+++ b/drivers/staging/echo/echo.c
-@@ -276,7 +276,6 @@ error_oom:
- 	kfree(ec);
- 	return NULL;
- }
--
- EXPORT_SYMBOL_GPL(oslec_create);
- 
- void oslec_free(struct oslec_state *ec)
-@@ -290,14 +289,12 @@ void oslec_free(struct oslec_state *ec)
- 	kfree(ec->snapshot);
- 	kfree(ec);
- }
--
- EXPORT_SYMBOL_GPL(oslec_free);
- 
- void oslec_adaption_mode(struct oslec_state *ec, int adaption_mode)
- {
- 	ec->adaption_mode = adaption_mode;
- }
--
- EXPORT_SYMBOL_GPL(oslec_adaption_mode);
- 
- void oslec_flush(struct oslec_state *ec)
-@@ -324,14 +321,12 @@ void oslec_flush(struct oslec_state *ec)
- 	ec->curr_pos = ec->taps - 1;
- 	ec->Pstates = 0;
- }
--
- EXPORT_SYMBOL_GPL(oslec_flush);
- 
- void oslec_snapshot(struct oslec_state *ec)
- {
- 	memcpy(ec->snapshot, ec->fir_taps16[0], ec->taps * sizeof(int16_t));
- }
--
- EXPORT_SYMBOL_GPL(oslec_snapshot);
- 
- /* Dual Path Echo Canceller */
-@@ -406,7 +401,7 @@ int16_t oslec_update(struct oslec_state *ec, int16_t tx, int16_t rx)
- 		/* efficient "out with the old and in with the new" algorithm so
- 		   we don't have to recalculate over the whole block of
- 		   samples. */
--		new = (int)tx *(int)tx;
-+		new = (int)tx * (int)tx;
- 		old = (int)ec->fir_state.history[ec->fir_state.curr_pos] *
- 		    (int)ec->fir_state.history[ec->fir_state.curr_pos];
- 		ec->Pstates +=
-@@ -603,7 +598,6 @@ int16_t oslec_update(struct oslec_state *ec, int16_t tx, int16_t rx)
- 
- 	return (int16_t) ec->clean_nlp << 1;
- }
--
- EXPORT_SYMBOL_GPL(oslec_update);
- 
- /* This function is separated from the echo canceller is it is usually called
-@@ -628,7 +622,7 @@ EXPORT_SYMBOL_GPL(oslec_update);
-    giving very clean DC removal.
- */
- 
--int16_t oslec_hpf_tx(struct oslec_state * ec, int16_t tx)
-+int16_t oslec_hpf_tx(struct oslec_state *ec, int16_t tx)
- {
- 	int tmp, tmp1;
- 
-@@ -657,7 +651,6 @@ int16_t oslec_hpf_tx(struct oslec_state * ec, int16_t tx)
- 
- 	return tx;
- }
--
- EXPORT_SYMBOL_GPL(oslec_hpf_tx);
- 
- MODULE_LICENSE("GPL");
--- 
-1.7.4.1
+ifeq ("$(origin V)", "command line")
+...
 
+Michal
