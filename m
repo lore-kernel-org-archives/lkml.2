@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab1GAVNn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:13:43 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:36560 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756069Ab1GAVNl (ORCPT
+	id S1757640Ab1GAVQg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 17:16:36 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:51725 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757597Ab1GAVQe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:13:41 -0400
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk, rjw@sisk.pl, linux-usb@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.44L0.1107011656450.1624-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1107011656450.1624-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 16:13:38 -0500
-Message-ID: <1309554818.2722.48.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Jul 2011 17:16:34 -0400
+X-Sasl-enc: dytt+PsXn4PNSh/+6qhm4rvdTjCy0pUcfCLraL4EXqQs 1309554993
+Date: Fri, 1 Jul 2011 14:14:49 -0700
+From: Greg KH <greg@kroah.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
+Message-ID: <20110701211449.GB19805@kroah.com>
+References: <1308434431.1050.5.camel@mop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308434431.1050.5.camel@mop>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 17:04 -0400, Alan Stern wrote:
-> On Fri, 1 Jul 2011, James Bottomley wrote:
+On Sun, Jun 19, 2011 at 12:00:29AM +0200, Kay Sievers wrote:
+> From: Kay Sievers <kay.sievers@vrfy.org>
+> Subject: module: sysfs - add 'uevent' file to allow built-in coldplug
 > 
-> > On Fri, 2011-07-01 at 14:14 -0400, Dave Jones wrote:
-> > > On Fri, Jul 01, 2011 at 10:05:31AM -0700, Andi Kleen wrote:
-> > > 
-> > >  > I found I can reliably crash a 3.0 system by pulling the
-> > >  > USB cable of a mounted USB cdrom (or rather a USB device which
-> > >  > has a builtin fake CD-ROM) 
-> > >  > 
-> > >  > I suspect it's a regression too.
-> > > 
-> > > We've been seeing a lot of similar bugs in Fedora since we pushed
-> > > a 2.6.38.8 update.  Some of the traces are different, but some
-> > > look to be the same as yours. (here's one for eg: https://bugzilla.redhat.com/show_bug.cgi?id=712830)
-> > > 
-> > > The common cause seems to be 'device went away'. So USB CD drives,
-> > > USB memory sticks, and for some reason virtualbox shutdown.
-> > 
-> > I think it's something specific in the USB path.  I can't reproduce on
-> > 3.0-rc5 with a SATA DVD hot unplug.  USB cc's added.
+> Userspace wants to manage module parameters with udev rules.
+> This currently only works for loaded modules, but not for
+> built-in ones.
 > 
-> I just took a look at the Red Hat bugzilla entry mentioned above.  It 
-> seems to be quite different from the issue addressed by the patch I 
-> just posted -- a crash with invalid memory access rather than a lockdep 
-> violation and hang of the khubd thread.
+> To allow access to the built-in modules we need to
+> re-trigger all module load events that happened before any
+> userspace was running. We already do the same thing for all
+> devices, subsystems(buses) and drivers.
 > 
-> It's also notable that the stack dump in the bugzilla report doesn't 
-> contain any functions in the USB subsystem.  Of course this doesn't 
-> prove anything, but it is suggestive.
+> This adds the currently missing /sys/module/<name>/uevent files
+> to all module entries.
 > 
-> Evidently the sdev argument to scsi_prep_state_check() was NULL.  This
-> looks like the problem that cropped up before, where q->queuedata was
-> getting set to NULL while the queue was still in use.  I can't imagine
-> how anything in usb-storage could have caused that.
+> Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
 
-Right ... the device release function has already been called, so it's
-some type of refcounting cockup.  The fact that I can't reproduce with a
-SATA unplug is what makes me think it might be USB specific ... of
-course, that's not definitive.
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-James
-
+Rusty, are you going to take this in your tree?
 
