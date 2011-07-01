@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757165Ab1GAVEF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:04:05 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:47936 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751870Ab1GAVED (ORCPT
+	id S1757367Ab1GAVEg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 17:04:36 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:36781 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757277Ab1GAVEe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:04:03 -0400
-Date: Fri, 1 Jul 2011 23:04:02 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        axboe@kernel.dk, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: [PATCH] USB: fix regression occurring during device removal
-Message-ID: <20110701210402.GG23059@one.firstfloor.org>
-References: <1309552148.2722.46.camel@mulgrave> <Pine.LNX.4.44L0.1107011640300.1624-100000@iolanthe.rowland.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1107011640300.1624-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 1 Jul 2011 17:04:34 -0400
+Date: Fri, 1 Jul 2011 17:04:34 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <axboe@kernel.dk>, <rjw@sisk.pl>, <linux-usb@vger.kernel.org>
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+In-Reply-To: <1309552148.2722.46.camel@mulgrave>
+Message-ID: <Pine.LNX.4.44L0.1107011656450.1624-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This should fix the problem.  Or at least, it does fix a very similar 
-> problem.
+On Fri, 1 Jul 2011, James Bottomley wrote:
 
-Thanks. I tried it and it doesn't fix the problem unfortunately.
+> On Fri, 2011-07-01 at 14:14 -0400, Dave Jones wrote:
+> > On Fri, Jul 01, 2011 at 10:05:31AM -0700, Andi Kleen wrote:
+> > 
+> >  > I found I can reliably crash a 3.0 system by pulling the
+> >  > USB cable of a mounted USB cdrom (or rather a USB device which
+> >  > has a builtin fake CD-ROM) 
+> >  > 
+> >  > I suspect it's a regression too.
+> > 
+> > We've been seeing a lot of similar bugs in Fedora since we pushed
+> > a 2.6.38.8 update.  Some of the traces are different, but some
+> > look to be the same as yours. (here's one for eg: https://bugzilla.redhat.com/show_bug.cgi?id=712830)
+> > 
+> > The common cause seems to be 'device went away'. So USB CD drives,
+> > USB memory sticks, and for some reason virtualbox shutdown.
+> 
+> I think it's something specific in the USB path.  I can't reproduce on
+> 3.0-rc5 with a SATA DVD hot unplug.  USB cc's added.
 
--Andi
+I just took a look at the Red Hat bugzilla entry mentioned above.  It 
+seems to be quite different from the issue addressed by the patch I 
+just posted -- a crash with invalid memory access rather than a lockdep 
+violation and hang of the khubd thread.
+
+It's also notable that the stack dump in the bugzilla report doesn't 
+contain any functions in the USB subsystem.  Of course this doesn't 
+prove anything, but it is suggestive.
+
+Evidently the sdev argument to scsi_prep_state_check() was NULL.  This
+looks like the problem that cropped up before, where q->queuedata was
+getting set to NULL while the queue was still in use.  I can't imagine
+how anything in usb-storage could have caused that.
+
+Alan Stern
+
