@@ -1,67 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755311Ab1GALZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 07:25:52 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:41839 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755139Ab1GALZu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 07:25:50 -0400
-Date: Fri, 1 Jul 2011 13:25:34 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, kernel-hardening@lists.openwall.com,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-security-module@vger.kernel.org
-Subject: Re: [RFC] ipc: introduce shm_rmid_forced sysctl
-Message-ID: <20110701112534.GG20990@elte.hu>
-References: <20110622152514.GA9521@albatros>
- <20110629151436.9be479fb.akpm@linux-foundation.org>
+	id S1755323Ab1GAL16 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 07:27:58 -0400
+Received: from ch1ehsobe001.messaging.microsoft.com ([216.32.181.181]:53670
+	"EHLO CH1EHSOBE016.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755199Ab1GAL15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 07:27:57 -0400
+X-SpamScore: -22
+X-BigFish: VPS-22(zz9371M4015L542M1432N98dKzz1202hzz8275bh8275dhz32i2a8h668h839h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+CC: "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>,
+        "dchen@diasemi.com" <dchen@diasemi.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Date: Fri, 1 Jul 2011 16:57:55 +0530
+Subject: RE: [PATCH 6/11] HWMON: DA9052 hwmon driver v2
+Thread-Topic: [PATCH 6/11] HWMON: DA9052 hwmon driver v2
+Thread-Index: Acw3MSlS2BYM5MldSLir4rJ4RzCx7wAsLGlg
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D152F0185F5@KCINPUNHJCMS01.kpit.com>
+References: <1309439728.4656.0.camel@L-0532.kpit.com>
+ <20110630142219.GA13161@ericsson.com>
+In-Reply-To: <20110630142219.GA13161@ericsson.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110629151436.9be479fb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p61BS86S001129
 
 
-* Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> > --- a/ipc/shm.c
-> > +++ b/ipc/shm.c
-> > @@ -74,6 +74,7 @@ void shm_init_ns(struct ipc_namespace *ns)
-> >  	ns->shm_ctlmax = SHMMAX;
-> >  	ns->shm_ctlall = SHMALL;
-> >  	ns->shm_ctlmni = SHMMNI;
-> > +	ns->shm_rmid_forced = 0;
-> >  	ns->shm_tot = 0;
-> >  	ipc_init_ids(&shm_ids(ns));
-> >  }
+> -----Original Message-----
+> From: Guenter Roeck [mailto:guenter.roeck@ericsson.com]
+> Sent: Thursday, June 30, 2011 7:52 PM
+> To: Ashish Jangam
+> Cc: randy.dunlap@oracle.com; linaro-dev@lists.linaro.org; dchen@diasemi.com;
+> linux-kernel@vger.kernel.org; lm-sensors@lm-sensors.org
+> Subject: Re: [PATCH 6/11] HWMON: DA9052 hwmon driver v2
 > 
-> The problem is that nobody will test your feature.  So for testing
-> purposes, let's enable the feature by default.  I assume this:
+> On Thu, Jun 30, 2011 at 09:15:27AM -0400, ashishj3 wrote:
+> > The DA9052 PMIC provides an Analogue to Digital Converter with 10 bits
+> > resolution and 10 channels.
+> >
+> > This patch montiors the DA9052 PMIC's ADC channels mostly for battery
+> parameters
+> > like battery temperature, junction temperature, battery current etc.
+> >
+> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
+> 
+> Acked-by: Guenter Roeck <guenter.roeck@ericsson.com>
+> 
+> I assume this patch will be handled as part of a patchset, correct ?
+Correct.
+> 
+> Thanks,
+> Guenter
 
-I'd also strongly argue to keep this as a default. OOM-kills are not 
-part of POSIX and violate POSIX in a number of ways already.
 
-Furthermore, if testing shows that this is not actually breaking 
-anything in a serious way we could also in theory simplify the patch 
-and just make this the default behavior with no runtime ability to 
-switch it off.
 
-Thanks,
-
-	Ingo
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
