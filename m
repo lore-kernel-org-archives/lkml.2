@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756202Ab1GATEL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 15:04:11 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:57805 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754866Ab1GATEJ (ORCPT
+	id S1755911Ab1GATGx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 15:06:53 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48578 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751141Ab1GATGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 15:04:09 -0400
-Date: Fri, 1 Jul 2011 16:04:04 -0300
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-To: Joe Perches <joe@perches.com>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] bluetooth: Rename function bt_err to bt_to_errno
-Message-ID: <20110701190404.GE23683@joana>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	Marcel Holtmann <marcel@holtmann.org>,
-	"David S. Miller" <davem@davemloft.net>,
-	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1309370457.2208.48.camel@aeonflux>
- <cover.1309396408.git.joe@perches.com>
- <895bc01e49b93b9498ca05cfa1bd9cf58cf30df8.1309396408.git.joe@perches.com>
+	Fri, 1 Jul 2011 15:06:50 -0400
+Date: Fri, 1 Jul 2011 15:06:49 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Keshava Munegowda <keshava_mgowda@ti.com>
+cc: linux-usb@vger.kernel.org, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <balbi@ti.com>, <gadiyar@ti.com>,
+        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
+        <khilman@ti.com>, <b-cousson@ti.com>, <paul@pwsan.com>,
+        <johnstul@us.ibm.com>, <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
+ of ehci and ohci
+In-Reply-To: <1309546474-15363-7-git-send-email-keshava_mgowda@ti.com>
+Message-ID: <Pine.LNX.4.44L0.1107011504530.1624-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <895bc01e49b93b9498ca05cfa1bd9cf58cf30df8.1309396408.git.joe@perches.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Joe Perches <joe@perches.com> [2011-06-29 18:18:29 -0700]:
+On Sat, 2 Jul 2011, Keshava Munegowda wrote:
 
-> Make it easier to use more normal logging styles later.
+> From: Keshava Munegowda <Keshava_mgowda@ti.com>
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+> The global suspend and resume functions for ehci and ohci
+> drivers are implemented; these functions does the
+> pm_runtime_get_sync and pm_runtime_put_sync of the
+> parent device usbhs core driver respectively.
+> 
+> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
 > ---
->  include/net/bluetooth/bluetooth.h |    2 +-
->  net/bluetooth/hci_core.c          |    2 +-
->  net/bluetooth/l2cap_core.c        |    4 ++--
->  net/bluetooth/lib.c               |    4 ++--
->  net/bluetooth/sco.c               |    4 ++--
->  5 files changed, 8 insertions(+), 8 deletions(-)
+>  drivers/usb/host/ehci-omap.c  |   22 ++++++++++++++++++++--
+>  drivers/usb/host/ohci-omap3.c |   21 +++++++++++++++++++++
+>  2 files changed, 41 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-omap.c
+> index 178f63e..a02a684 100644
+> --- a/drivers/usb/host/ehci-omap.c
+> +++ b/drivers/usb/host/ehci-omap.c
+> @@ -259,14 +259,32 @@ static void ehci_hcd_omap_shutdown(struct platform_device *pdev)
+>  		hcd->driver->shutdown(hcd);
+>  }
+>  
+> +static int omap_ehci_resume(struct device *dev)
+> +{
+> +	if (dev->parent)
+> +		pm_runtime_get_sync(dev->parent);
+> +	return 0;
+> +}
+> +
+> +static int omap_ehci_suspend(struct device *dev)
+> +{
+> +	if (dev->parent)
+> +		pm_runtime_put_sync(dev->parent);
+> +	return 0;
+> +}
 
-I applied this one as well. Thanks.
+I don't see any point in these routines (and likewise for
+omap_ohci_suspend/resume).  When the whole system is going to sleep
+anyway, what reason is there for enabling runtime PM on the parent
+device?
 
-	Gustavo
+Alan Stern
+
