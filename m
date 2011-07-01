@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758010Ab1GAVbY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:31:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47171 "EHLO mx1.redhat.com"
+	id S1757934Ab1GAVbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 17:31:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60820 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757981Ab1GAVbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:31:21 -0400
+	id S1757841Ab1GAVbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 17:31:04 -0400
 From: Glauber Costa <glommer@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
@@ -13,20 +13,18 @@ Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
         Anthony Liguori <aliguori@us.ibm.com>,
         Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH v4 5/9] KVM-GST: Add a pv_ops stub for steal time
-Date: Fri,  1 Jul 2011 17:22:45 -0400
-Message-Id: <1309555369-16867-6-git-send-email-glommer@redhat.com>
+Subject: [PATCH v4 2/9] KVM-HDR Add constant to represent KVM MSRs enabled bit
+Date: Fri,  1 Jul 2011 17:22:42 -0400
+Message-Id: <1309555369-16867-3-git-send-email-glommer@redhat.com>
 In-Reply-To: <1309555369-16867-1-git-send-email-glommer@redhat.com>
 References: <1309555369-16867-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a function pointer in one of the many paravirt_ops
-structs, to allow guests to register a steal time function. Besides
-a steal time function, we also declare two jump_labels. They will be
-used to allow the steal time code to be easily bypassed when not
-in use.
+This patch is simple, put in a different commit so it can be more easily
+shared between guest and hypervisor. It just defines a named constant
+to indicate the enable bit for KVM-specific MSRs.
 
 Signed-off-by: Glauber Costa <glommer@redhat.com>
 CC: Rik van Riel <riel@redhat.com>
@@ -36,70 +34,21 @@ CC: Avi Kivity <avi@redhat.com>
 CC: Anthony Liguori <aliguori@us.ibm.com>
 CC: Eric B Munson <emunson@mgebm.net>
 ---
- arch/x86/include/asm/paravirt.h       |    9 +++++++++
- arch/x86/include/asm/paravirt_types.h |    1 +
- arch/x86/kernel/paravirt.c            |    9 +++++++++
- 3 files changed, 19 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/kvm_para.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
-index ebbc4d8..a7d2db9 100644
---- a/arch/x86/include/asm/paravirt.h
-+++ b/arch/x86/include/asm/paravirt.h
-@@ -230,6 +230,15 @@ static inline unsigned long long paravirt_sched_clock(void)
- 	return PVOP_CALL0(unsigned long long, pv_time_ops.sched_clock);
- }
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index a427bf7..d6cd79b 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -30,6 +30,7 @@
+ #define MSR_KVM_WALL_CLOCK  0x11
+ #define MSR_KVM_SYSTEM_TIME 0x12
  
-+struct jump_label_key;
-+extern struct jump_label_key paravirt_steal_enabled;
-+extern struct jump_label_key paravirt_steal_rq_enabled;
-+
-+static inline u64 paravirt_steal_clock(int cpu)
-+{
-+	return PVOP_CALL1(u64, pv_time_ops.steal_clock, cpu);
-+}
-+
- static inline unsigned long long paravirt_read_pmc(int counter)
- {
- 	return PVOP_CALL1(u64, pv_cpu_ops.read_pmc, counter);
-diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
-index 8288509..2c76521 100644
---- a/arch/x86/include/asm/paravirt_types.h
-+++ b/arch/x86/include/asm/paravirt_types.h
-@@ -89,6 +89,7 @@ struct pv_lazy_ops {
- 
- struct pv_time_ops {
- 	unsigned long long (*sched_clock)(void);
-+	unsigned long long (*steal_clock)(int cpu);
- 	unsigned long (*get_tsc_khz)(void);
- };
- 
-diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
-index 869e1ae..613a793 100644
---- a/arch/x86/kernel/paravirt.c
-+++ b/arch/x86/kernel/paravirt.c
-@@ -202,6 +202,14 @@ static void native_flush_tlb_single(unsigned long addr)
- 	__native_flush_tlb_single(addr);
- }
- 
-+struct jump_label_key paravirt_steal_enabled;
-+struct jump_label_key paravirt_steal_rq_enabled;
-+
-+static u64 native_steal_clock(int cpu)
-+{
-+	return 0;
-+}
-+
- /* These are in entry.S */
- extern void native_iret(void);
- extern void native_irq_enable_sysexit(void);
-@@ -307,6 +315,7 @@ struct pv_init_ops pv_init_ops = {
- 
- struct pv_time_ops pv_time_ops = {
- 	.sched_clock = native_sched_clock,
-+	.steal_clock = native_steal_clock,
- };
- 
- struct pv_irq_ops pv_irq_ops = {
++#define KVM_MSR_ENABLED 1
+ /* Custom MSRs falls in the range 0x4b564d00-0x4b564dff */
+ #define MSR_KVM_WALL_CLOCK_NEW  0x4b564d00
+ #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
 -- 
 1.7.3.4
 
