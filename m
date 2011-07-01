@@ -1,84 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932120Ab1GAOeY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:34:24 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:51411 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756694Ab1GAOeV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:34:21 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 7/10 v6] PM / Domains: Don't stop wakeup devices during system sleep transitions
-Organization: Texas Instruments, Inc.
-References: <201106112223.04972.rjw@sisk.pl> <201107010128.03732.rjw@sisk.pl>
-	<8762nmc1hs.fsf@ti.com> <201107010224.37609.rjw@sisk.pl>
-Date: Fri, 01 Jul 2011 07:34:16 -0700
-In-Reply-To: <201107010224.37609.rjw@sisk.pl> (Rafael J. Wysocki's message of
-	"Fri, 1 Jul 2011 02:24:37 +0200")
-Message-ID: <87tyb66pef.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1756842Ab1GAOex (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:34:53 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:55685 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756694Ab1GAOew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 10:34:52 -0400
+Subject: Re: [PATCH v7 00/16] EVM
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Kyle Moffett <kyle@moffetthome.net>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
+        David Safford <safford@watson.ibm.com>
+In-Reply-To: <BANLkTin-x1kkXiowUYjBS_tr4iwDrzNQkA@mail.gmail.com>
+References: <1309377038-4550-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <BANLkTinSsqBqX7=jzwbw_=RfXeQz29h_+A@mail.gmail.com>
+	 <1309390941.3205.22.camel@localhost.localdomain>
+	 <BANLkTineYVKw9MMQUqRGJ6Q_yEfgmsgJxg@mail.gmail.com>
+	 <1309405895.3205.57.camel@localhost.localdomain>
+	 <BANLkTin-x1kkXiowUYjBS_tr4iwDrzNQkA@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jul 2011 10:34:33 -0400
+Message-ID: <1309530873.3245.23.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Thu, 2011-06-30 at 18:31 -0400, Kyle Moffett wrote:
 
-> On Friday, July 01, 2011, Kevin Hilman wrote:
->> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> ...
->> > So the only way forward I can see is to add a special PM domain callback,
->> > say .active_wakeup(), that will return "true" if the device is to be left
->> > active when wakeup-enabled.  So the check you don't like will become
->> > something like:
->> >
->> > if (device_may_wakeup(dev) && genpd->active_wakeup
->> >     && genpd->active_wakeup(dev))
->> >         return 0;
->> >
->> > Would that be better?
->> 
->> Yes, much better.  And I like the default behavior if no hooks are provided.
->
-> So, what about the appended patch instead of the $subject one?
->
-> Rafael
->
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM / Domains: Wakeup devices support for system sleep transitions
->
-> There is the problem how to handle devices set up to wake up the
-> system from sleep states during system-wide power transitions.
-> In some cases, those devices can be turned off entirely, because the
-> wakeup signals will be generated on their behalf anyway.  In some
-> other cases, they will generate wakeup signals if their clocks are
-> stopped, but only if power is not removed from them.  Finally, in
-> some cases, they can only generate wakeup signals if power is not
-> removed from them and their clocks are enabled.
->
-> To allow platform-specific code to decide whether or not to put
-> wakeup devices (and their PM domains) into low-power state during
-> system-wide transitions, such as system suspend, introduce a new
-> generic PM domain callback, .active_wakeup(), that will be used
-> during the "noirq" phase of system suspend and hibernation (after
-> image creation) to decide what to do with wakeup devices.
-> Specifically, if this callback is present and returns "true", the
-> generic PM domain code will not execute .stop_device() for the
-> given wakeup device and its PM domain won't be powered off.
->
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> The problem is that you are assuming that a large chunk of filesystem
+> code is capable of properly and securely handling untrusted and
+> malicious
+> content.  Historically filesystem drivers are NOT capable of handling
+> such things, as evidenced by the large number of bugs that tools such
+> as
+> fsfuzzer tend to trigger.  If you want to use IMA as-designed then you
+> need to perform a relatively extensive audit of filesystem and fsck
+> code.
+> 
+> Furthermore, even when the filesystem does not have any security
+> issues
+> itself, you are assuming that intentionally malicious data-aliasing
+> between "trusted" and "untrusted" files can have no potential security
+> implications.  You should look at the prevalence of simple stupid
+> "/tmp"
+> symlink attacks for more counter-examples there.
+> 
+> In addition, IMA relies on the underlying attribute and data caching
+> properties of the VFS, which won't hold true for intentionally
+> malicious
+> corrupted filesystems.  It effectively assumes that writing data or
+> metadata for one file will not invalidate the cached data or metadata
+> for
+> another which is blatantly false when filesystem extents overlap each
+> other.
+> 
+> Overall, the IMA architecture assumes that if it loads and validates
+> the
+> file data or metadata that it cannot be changed except through a
+> kernel
+> access to that particular inode.  For a corrupted filesystem that is
+> absolutely untrue.
+> 
+> Cheers,
+> Kyle Moffett
 
-Acked-by: Kevin Hilman <khilman@ti.com>
+You've brought up a number of interesting scenarios, which I appreciate.
+I will definitely take a closer look at fsfuzzer. It might be a good
+starting point for an EVM/IMA-appraisal LTP testsuite. The bottom line,
+as I said previously, is that EVM/IMA-appraisal doesn't need to prevent
+these things from occurring.  It just needs to be able to detect them.
+Caching the integrity verification results is a performance issue, be it
+an important one.
 
-Thanks,
+Currently the integrity verification results are reset when the file
+data or metadata changes and removed on __fput().  Based on your
+scenarios, I am looking to see if there might be additional situations
+where the verification results need to be reset.
 
-Kevin
+thanks,
+
+Mimi
+
