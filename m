@@ -1,107 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab1GAM6i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 08:58:38 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55167 "EHLO mx3.mail.elte.hu"
+	id S1756398Ab1GAM7T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 08:59:19 -0400
+Received: from smtp5-g21.free.fr ([212.27.42.5]:41912 "EHLO smtp5-g21.free.fr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755541Ab1GAM6f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 08:58:35 -0400
-Date: Fri, 1 Jul 2011 14:58:02 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
-Message-ID: <20110701125802.GE12605@elte.hu>
-References: <201106171038.25988.ptesarik@suse.cz>
- <20110617093032.GA19235@elte.hu>
- <201106291106.00070.ptesarik@suse.cz>
+	id S1756344Ab1GAM7S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 08:59:18 -0400
+Message-ID: <4E0DC4F3.6010203@free.fr>
+Date: Fri, 01 Jul 2011 15:00:35 +0200
+From: Bernard F6BVP <f6bvp@free.fr>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110621 Mandriva/3.1.11-0.1mdv2010.2 (2010.2) Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+To: Ralf Baechle DL5RB <ralf@linux-mips.org>
+CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        Linux Netdev List <netdev@vger.kernel.org>, linux-hams@vger.kernel.org
+Subject: Re: [AX25] inconsistent lock state
+References: <4B2CD772.1030106@upmc.fr> <201106171536.15660.arnd@arndb.de> <20110617135147.GA3470@linux-mips.org> <201106171611.10655.arnd@arndb.de> <4E06040B.7040309@free.fr> <20110625163942.GB20976@linux-mips.org>
+In-Reply-To: <20110625163942.GB20976@linux-mips.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <201106291106.00070.ptesarik@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi all,
 
-* Petr Tesarik <ptesarik@suse.cz> wrote:
+Now, who is going to commit this mkiss patch and the equivalent one for 
+sixpack.c ?
 
-> Dne Pá 17. června 2011 11:30:32 Ingo Molnar napsal(a):
-> > * Petr Tesarik <ptesarik@suse.cz> wrote:
-> > > This patch series enhances /dev/mem, so that read and write is
-> > > possible at any address. The patchset includes actual
-> > > implementation for x86.
-> > 
-> > This series lacks a description of why this is desired.
-> >[...]
-> > 
-> > Are you aware of any legitimate usecases?
-> 
-> Looking back at the mail tread, I'd say there are people who have 
-> legitimate usecases. However, this may not be the most important 
-> question. At the moment, the /dev/mem interface is broken (it 
-> doesn't implement the specification correctly), and my patchset 
-> fixes it.
-> 
-> If there are no technical objections, [...]
+Bernard, f6bvp
 
-Well, my objections were entirely technical:
 
- - the device never implemented above-4G support upstream
-
- - there's colorful variants of abuse (drivers with binary-only
-   userspace) even if we ignore the obvious fact that the
-   main use of /dev/mem today is /dev/rootkit ...
-
-Now my objections might be outweighed by the advantages of improving 
-this driver, but you misrepresenting my position really does not help 
-that process.
-
-So what was not mentioned in your series, what is *your* motivation 
-and your usecase? Enabling closed-source userspace drivers? Enabling 
-the crash utility?
-
-If the former then shame on you, if the latter then how do you 
-explain that distros appear to disable the RAM aspect of /dev/mem:
-
- $ grep DEVMEM $(rpm -ql kernel-2.6.38-0.rc7.git2.3.fc16.x86_64 | grep config-2.6 )
- CONFIG_STRICT_DEVMEM=y
-
-So the crash utility use-case does not work on unpatched, default 
-kernels, right?
-
-As i said i have no problem with extending this, as long as it 
-couples to a non-default flag (for example !STRICT_DEVMEM or a boot 
-flag) and thus does not extend by default and does not extend the 
-abuse.
-
-> @Ingo: you can also send a patchset that rips off the /dev/mem 
-> driver completely if you believe that would get through. [...]
-
-Why would we want to do that? Existing users can become more and more 
-obsolete just fine.
-
-What i'm asking for is to not enable new abuse by default ...
-
-Thanks,
-
-	Ingo
+Le 25/06/2011 18:39, Ralf Baechle DL5RB a �crit :
+> On Sat, Jun 25, 2011 at 05:51:39PM +0200, f6bvp wrote:
+>
+>> I applied the patch and since then I could not reproduce the
+>> inconsistent lock state.
+>> Thus mkiss patch fixed it.
+>
+> I also think the patch is the right thing, so
+>
+> Acked-by: Ralf Baechle<ralf@linux-mips.org>
+>
+>    Ralf
