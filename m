@@ -1,289 +1,951 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab1GACTF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 22:19:05 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:6294 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753161Ab1GACTE (ORCPT
+	id S1754626Ab1GACTe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 22:19:34 -0400
+Received: from na3sys009aog104.obsmtp.com ([74.125.149.73]:40497 "HELO
+	na3sys009aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754727Ab1GACTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 22:19:04 -0400
-From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-To: Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        alexander.stein@systec-electronic.com
-Cc: qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Subject: [PATCH v4] pch_gpio: Support interrupt function
-Date: Fri,  1 Jul 2011 11:16:12 +0900
-Message-Id: <1309486572-2789-1-git-send-email-tomoya-linux@dsn.okisemi.com>
-X-Mailer: git-send-email 1.7.4.4
+	Thu, 30 Jun 2011 22:19:31 -0400
+From: Nathan Royer <nroyer@invensense.com>
+To: Nathan Royer <nroyer@invensense.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
+        Alan Cox <alan@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: [PATCH 09/11] misc: Add slave driver for kxtf9 accelerometer
+Date: Thu, 30 Jun 2011 19:18:25 -0700
+Message-Id: <1309486707-1658-9-git-send-email-nroyer@invensense.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
+References: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Support interrupt function using irq_chip_generic
-
-Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Signed-off-by: Nathan Royer <nroyer@invensense.com>
 ---
-v4: add free_irq in remove()
----
- drivers/gpio/Kconfig    |    1 +
- drivers/gpio/pch_gpio.c |  175 +++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 176 insertions(+), 0 deletions(-)
+ drivers/misc/inv_mpu/Kconfig        |    2 +
+ drivers/misc/inv_mpu/Makefile       |    2 +
+ drivers/misc/inv_mpu/accel/Kconfig  |   23 +
+ drivers/misc/inv_mpu/accel/Makefile |    7 +
+ drivers/misc/inv_mpu/accel/kxtf9.c  |  841 +++++++++++++++++++++++++++++++++++
+ 5 files changed, 875 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/inv_mpu/accel/Kconfig
+ create mode 100644 drivers/misc/inv_mpu/accel/Makefile
+ create mode 100644 drivers/misc/inv_mpu/accel/kxtf9.c
 
-diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-index 2967002..bd64a55 100644
---- a/drivers/gpio/Kconfig
-+++ b/drivers/gpio/Kconfig
-@@ -352,6 +352,7 @@ config GPIO_LANGWELL
- config GPIO_PCH
- 	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GPIO"
- 	depends on PCI && X86
-+	select GENERIC_IRQ_CHIP
- 	help
- 	  This driver is for PCH(Platform controller Hub) GPIO of Intel Topcliff
- 	  which is an IOH(Input/Output Hub) for x86 embedded processor.
-diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
-index 36919e7..46e0576 100644
---- a/drivers/gpio/pch_gpio.c
-+++ b/drivers/gpio/pch_gpio.c
-@@ -17,10 +17,21 @@
- #include <linux/kernel.h>
- #include <linux/pci.h>
- #include <linux/gpio.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
+diff --git a/drivers/misc/inv_mpu/Kconfig b/drivers/misc/inv_mpu/Kconfig
+index fdfa7a6..6116010 100644
+--- a/drivers/misc/inv_mpu/Kconfig
++++ b/drivers/misc/inv_mpu/Kconfig
+@@ -55,4 +55,6 @@ config MPU_SENSORS_MPU6050_GYRO
  
- #define PCH_GPIO_ALL_PINS	0xfff /* Mask for GPIO pins 0 to 11 */
- #define GPIO_NUM_PINS	12	/* Specifies number of GPIO PINS GPIO0-GPIO11 */
+ endchoice
  
-+#define PCH_EDGE_FALLING	0
-+#define PCH_EDGE_RISING		BIT(0)
-+#define PCH_LEVEL_L		BIT(1)
-+#define PCH_LEVEL_H		(BIT(0) | BIT(1))
-+#define PCH_EDGE_BOTH		BIT(2)
-+#define PCH_IM_MASK		(BIT(0) | BIT(1) | BIT(2))
++source "drivers/misc/inv_mpu/accel/Kconfig"
 +
-+#define PCH_IRQ_BASE		23
+ endif #INV_SENSORS
+diff --git a/drivers/misc/inv_mpu/Makefile b/drivers/misc/inv_mpu/Makefile
+index 48fc55a..d2c2c9a 100644
+--- a/drivers/misc/inv_mpu/Makefile
++++ b/drivers/misc/inv_mpu/Makefile
+@@ -15,3 +15,5 @@ mpu3050-objs += mldl_cfg.o
+ mpu3050-objs += mldl_print_cfg.o
+ 
+ EXTRA_CFLAGS += -Idrivers/misc/inv_mpu
 +
- struct pch_regs {
- 	u32	ien;
- 	u32	istatus;
-@@ -55,6 +66,10 @@ struct pch_gpio_reg_data {
-  * @gpio:			Data for GPIO infrastructure.
-  * @pch_gpio_reg:		Memory mapped Register data is saved here
-  *				when suspend.
-+ * @lock:			mutex_lock variable
-+ * @irq_base:		Save base of IRQ number for interrupt
-+ * @spinlock:		spin_lock variable
-+ * @irq_mask:		IRQ mask variable
-  */
- struct pch_gpio {
- 	void __iomem *base;
-@@ -63,6 +78,9 @@ struct pch_gpio {
- 	struct gpio_chip gpio;
- 	struct pch_gpio_reg_data pch_gpio_reg;
- 	struct mutex lock;
-+	int irq_base;
-+	spinlock_t spinlock;
-+	unsigned int irq_mask;
- };
- 
- static void pch_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
-@@ -146,6 +164,12 @@ static void pch_gpio_restore_reg_conf(struct pch_gpio *chip)
- 	iowrite32(chip->pch_gpio_reg.pm_reg, &chip->reg->pm);
- }
- 
-+static int pch_gpio_to_irq(struct gpio_chip *gpio, unsigned offset)
++obj-y			+= accel/
+diff --git a/drivers/misc/inv_mpu/accel/Kconfig b/drivers/misc/inv_mpu/accel/Kconfig
+new file mode 100644
+index 0000000..5e7aeaf
+--- /dev/null
++++ b/drivers/misc/inv_mpu/accel/Kconfig
+@@ -0,0 +1,23 @@
++menuconfig INV_SENSORS_ACCELEROMETERS
++	bool "Accelerometer Slave Sensors"
++	default y
++	---help---
++	  Say Y here to get to see options for device drivers for various
++	  accelerometrs for integration with the MPU3050 or MPU6050 driver.
++	  This option alone does not add any kernel code.
++
++	  If you say N, all options in this submenu will be skipped and disabled.
++
++if INV_SENSORS_ACCELEROMETERS
++
++config MPU_SENSORS_KXTF9
++	tristate "Kionix KXTF9"
++	depends on MPU_SENSORS_MPU3050 || MPU_SENSORS_MPU6050B1 || MPU_SENSORS_MPU6050A2
++	help
++	  This enables support for the Kionix KXFT9 accelerometer
++	  This support is for integration with the MPU3050 gyroscope device
++	  driver.  Only one accelerometer can be registered at a time.
++	  Specifying more that one accelerometer in the board file will result
++	  in runtime errors.
++
++endif
+diff --git a/drivers/misc/inv_mpu/accel/Makefile b/drivers/misc/inv_mpu/accel/Makefile
+new file mode 100644
+index 0000000..9592973
+--- /dev/null
++++ b/drivers/misc/inv_mpu/accel/Makefile
+@@ -0,0 +1,7 @@
++#
++# Accel Slaves to MPUxxxx
++#
++obj-$(CONFIG_MPU_SENSORS_KXTF9) += inv_mpu_kxtf9.o
++inv_mpu_kxtf9-objs += kxtf9.o
++
++EXTRA_CFLAGS += -Idrivers/misc/inv_mpu
+diff --git a/drivers/misc/inv_mpu/accel/kxtf9.c b/drivers/misc/inv_mpu/accel/kxtf9.c
+new file mode 100644
+index 0000000..33fafc8
+--- /dev/null
++++ b/drivers/misc/inv_mpu/accel/kxtf9.c
+@@ -0,0 +1,841 @@
++/*
++	$License:
++	Copyright (C) 2011 InvenSense Corporation, All Rights Reserved.
++
++	This program is free software; you can redistribute it and/or modify
++	it under the terms of the GNU General Public License as published by
++	the Free Software Foundation; either version 2 of the License, or
++	(at your option) any later version.
++
++	This program is distributed in the hope that it will be useful,
++	but WITHOUT ANY WARRANTY; without even the implied warranty of
++	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++	GNU General Public License for more details.
++
++	You should have received a copy of the GNU General Public License
++	along with this program.  If not, see <http://www.gnu.org/licenses/>.
++	$
++ */
++
++/**
++ *  @addtogroup ACCELDL
++ *  @brief      Accelerometer setup and handling methods for Kionix KXTF9.
++ *
++ *  @{
++ *      @file   kxtf9.c
++ *      @brief  Accelerometer setup and handling methods for Kionix KXTF9.
++*/
++
++/* -------------------------------------------------------------------------- */
++
++#undef MPL_LOG_NDEBUG
++#define MPL_LOG_NDEBUG 1
++
++#include <linux/i2c.h>
++#include <linux/module.h>
++#include <linux/moduleparam.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include "mpu-dev.h"
++
++#include <log.h>
++#include <linux/mpu.h>
++#include "mlsl.h"
++#include "mldl_cfg.h"
++#undef MPL_LOG_TAG
++#define MPL_LOG_TAG "MPL-acc"
++
++#define KXTF9_XOUT_HPF_L                (0x00)	/* 0000 0000 */
++#define KXTF9_XOUT_HPF_H                (0x01)	/* 0000 0001 */
++#define KXTF9_YOUT_HPF_L                (0x02)	/* 0000 0010 */
++#define KXTF9_YOUT_HPF_H                (0x03)	/* 0000 0011 */
++#define KXTF9_ZOUT_HPF_L                (0x04)	/* 0001 0100 */
++#define KXTF9_ZOUT_HPF_H                (0x05)	/* 0001 0101 */
++#define KXTF9_XOUT_L                    (0x06)	/* 0000 0110 */
++#define KXTF9_XOUT_H                    (0x07)	/* 0000 0111 */
++#define KXTF9_YOUT_L                    (0x08)	/* 0000 1000 */
++#define KXTF9_YOUT_H                    (0x09)	/* 0000 1001 */
++#define KXTF9_ZOUT_L                    (0x0A)	/* 0001 1010 */
++#define KXTF9_ZOUT_H                    (0x0B)	/* 0001 1011 */
++#define KXTF9_ST_RESP                   (0x0C)	/* 0000 1100 */
++#define KXTF9_WHO_AM_I                  (0x0F)	/* 0000 1111 */
++#define KXTF9_TILT_POS_CUR              (0x10)	/* 0001 0000 */
++#define KXTF9_TILT_POS_PRE              (0x11)	/* 0001 0001 */
++#define KXTF9_INT_SRC_REG1              (0x15)	/* 0001 0101 */
++#define KXTF9_INT_SRC_REG2              (0x16)	/* 0001 0110 */
++#define KXTF9_STATUS_REG                (0x18)	/* 0001 1000 */
++#define KXTF9_INT_REL                   (0x1A)	/* 0001 1010 */
++#define KXTF9_CTRL_REG1                 (0x1B)	/* 0001 1011 */
++#define KXTF9_CTRL_REG2                 (0x1C)	/* 0001 1100 */
++#define KXTF9_CTRL_REG3                 (0x1D)	/* 0001 1101 */
++#define KXTF9_INT_CTRL_REG1             (0x1E)	/* 0001 1110 */
++#define KXTF9_INT_CTRL_REG2             (0x1F)	/* 0001 1111 */
++#define KXTF9_INT_CTRL_REG3             (0x20)	/* 0010 0000 */
++#define KXTF9_DATA_CTRL_REG             (0x21)	/* 0010 0001 */
++#define KXTF9_TILT_TIMER                (0x28)	/* 0010 1000 */
++#define KXTF9_WUF_TIMER                 (0x29)	/* 0010 1001 */
++#define KXTF9_TDT_TIMER                 (0x2B)	/* 0010 1011 */
++#define KXTF9_TDT_H_THRESH              (0x2C)	/* 0010 1100 */
++#define KXTF9_TDT_L_THRESH              (0x2D)	/* 0010 1101 */
++#define KXTF9_TDT_TAP_TIMER             (0x2E)	/* 0010 1110 */
++#define KXTF9_TDT_TOTAL_TIMER           (0x2F)	/* 0010 1111 */
++#define KXTF9_TDT_LATENCY_TIMER         (0x30)	/* 0011 0000 */
++#define KXTF9_TDT_WINDOW_TIMER          (0x31)	/* 0011 0001 */
++#define KXTF9_WUF_THRESH                (0x5A)	/* 0101 1010 */
++#define KXTF9_TILT_ANGLE                (0x5C)	/* 0101 1100 */
++#define KXTF9_HYST_SET                  (0x5F)	/* 0101 1111 */
++
++#define KXTF9_MAX_DUR (0xFF)
++#define KXTF9_MAX_THS (0xFF)
++#define KXTF9_THS_COUNTS_P_G (32)
++
++/* -------------------------------------------------------------------------- */
++
++struct kxtf9_config {
++	unsigned int odr;	/* Output data rate mHz */
++	unsigned int fsr;	/* full scale range mg */
++	unsigned int ths;	/* Motion no-motion thseshold mg */
++	unsigned int dur;	/* Motion no-motion duration ms */
++	unsigned int irq_type;
++	unsigned char reg_ths;
++	unsigned char reg_dur;
++	unsigned char reg_odr;
++	unsigned char reg_int_cfg1;
++	unsigned char reg_int_cfg2;
++	unsigned char ctrl_reg1;
++};
++
++struct kxtf9_private_data {
++	struct kxtf9_config suspend;
++	struct kxtf9_config resume;
++};
++
++static int kxtf9_set_ths(void *mlsl_handle,
++			 struct ext_slave_platform_data *pdata,
++			 struct kxtf9_config *config, int apply, long ths)
 +{
-+	struct pch_gpio *chip =	container_of(gpio, struct pch_gpio, gpio);
-+	return chip->irq_base + offset;
++	int result = INV_SUCCESS;
++	if ((ths * KXTF9_THS_COUNTS_P_G / 1000) > KXTF9_MAX_THS)
++		ths = (KXTF9_MAX_THS * 1000) / KXTF9_THS_COUNTS_P_G;
++
++	if (ths < 0)
++		ths = 0;
++
++	config->ths = ths;
++	config->reg_ths = (unsigned char)
++	    ((long)(ths * KXTF9_THS_COUNTS_P_G) / 1000);
++	MPL_LOGV("THS: %d, 0x%02x\n", config->ths, (int)config->reg_ths);
++	if (apply)
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_WUF_THRESH,
++						 config->reg_ths);
++	return result;
 +}
 +
- static void pch_gpio_setup(struct pch_gpio *chip)
- {
- 	struct gpio_chip *gpio = &chip->gpio;
-@@ -160,6 +184,124 @@ static void pch_gpio_setup(struct pch_gpio *chip)
- 	gpio->base = -1;
- 	gpio->ngpio = GPIO_NUM_PINS;
- 	gpio->can_sleep = 0;
-+	gpio->to_irq = pch_gpio_to_irq;
++static int kxtf9_set_dur(void *mlsl_handle,
++			 struct ext_slave_platform_data *pdata,
++			 struct kxtf9_config *config, int apply, long dur)
++{
++	int result = INV_SUCCESS;
++	long reg_dur = (dur * config->odr) / 1000000;
++	config->dur = dur;
++
++	if (reg_dur > KXTF9_MAX_DUR)
++		reg_dur = KXTF9_MAX_DUR;
++
++	config->reg_dur = (unsigned char)reg_dur;
++	MPL_LOGV("DUR: %d, 0x%02x\n", config->dur, (int)config->reg_dur);
++	if (apply)
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_WUF_TIMER,
++						 (unsigned char)reg_dur);
++	return result;
 +}
 +
-+static int pch_irq_type(struct irq_data *d, unsigned int type)
++/**
++ * Sets the IRQ to fire when one of the IRQ events occur.  Threshold and
++ * duration will not be used uless the type is MOT or NMOT.
++ *
++ * @param config configuration to apply to, suspend or resume
++ * @param irq_type The type of IRQ.  Valid values are
++ * - MPU_SLAVE_IRQ_TYPE_NONE
++ * - MPU_SLAVE_IRQ_TYPE_MOTION
++ * - MPU_SLAVE_IRQ_TYPE_DATA_READY
++ */
++static int kxtf9_set_irq(void *mlsl_handle,
++			 struct ext_slave_platform_data *pdata,
++			 struct kxtf9_config *config, int apply, long irq_type)
 +{
-+	u32 im;
-+	u32 *im_reg;
-+	u32 ien;
-+	u32 im_pos;
-+	int ch;
-+	unsigned long flags;
-+	u32 val;
-+	int irq = d->irq;
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct pch_gpio *chip = gc->private;
++	int result = INV_SUCCESS;
++	struct kxtf9_private_data *private_data = pdata->private_data;
 +
-+	ch = irq - chip->irq_base;
-+	if (irq <= chip->irq_base + 7) {
-+		im_reg = &chip->reg->im0;
-+		im_pos = ch;
++	config->irq_type = (unsigned char)irq_type;
++	config->ctrl_reg1 &= ~0x22;
++	if (irq_type == MPU_SLAVE_IRQ_TYPE_DATA_READY) {
++		config->ctrl_reg1 |= 0x20;
++		config->reg_int_cfg1 = 0x38;
++		config->reg_int_cfg2 = 0x00;
++	} else if (irq_type == MPU_SLAVE_IRQ_TYPE_MOTION) {
++		config->ctrl_reg1 |= 0x02;
++		if ((unsigned long)config ==
++		    (unsigned long)&private_data->suspend)
++			config->reg_int_cfg1 = 0x34;
++		else
++			config->reg_int_cfg1 = 0x24;
++		config->reg_int_cfg2 = 0xE0;
 +	} else {
-+		im_reg = &chip->reg->im1;
-+		im_pos = ch - 8;
-+	}
-+	dev_dbg(chip->dev, "%s:irq=%d type=%d ch=%d pos=%d\n",
-+		__func__, irq, type, ch, im_pos);
-+
-+	spin_lock_irqsave(&chip->spinlock, flags);
-+
-+	if (type == IRQ_TYPE_EDGE_RISING)
-+		val = PCH_EDGE_RISING;
-+	else if (type == IRQ_TYPE_EDGE_FALLING)
-+		val = PCH_EDGE_FALLING;
-+	else if (type == IRQ_TYPE_EDGE_BOTH)
-+		val = PCH_EDGE_BOTH;
-+	else if (type == IRQ_TYPE_LEVEL_HIGH)
-+		val = PCH_LEVEL_L;
-+	else if (type == IRQ_TYPE_LEVEL_LOW)
-+		val = PCH_LEVEL_H;
-+	else if (type == IRQ_TYPE_PROBE)
-+		goto end;
-+	else {
-+		dev_warn(chip->dev, "%s: unknown type(%dd)", __func__, type);
-+		goto end;
++		config->reg_int_cfg1 = 0x00;
++		config->reg_int_cfg2 = 0x00;
 +	}
 +
-+	/* Set interrupt mode */
-+	im = ioread32(im_reg) & ~(PCH_IM_MASK << (im_pos * 4));
-+	iowrite32(im | (val << (im_pos * 4)), im_reg);
++	if (apply) {
++		/* Must clear bit 7 before writing new configuration */
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_CTRL_REG1, 0x40);
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_INT_CTRL_REG1,
++						 config->reg_int_cfg1);
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_INT_CTRL_REG2,
++						 config->reg_int_cfg2);
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_CTRL_REG1,
++						 config->ctrl_reg1);
++	}
++	MPL_LOGV("CTRL_REG1: %lx, INT_CFG1: %lx, INT_CFG2: %lx\n",
++		 (unsigned long)config->ctrl_reg1,
++		 (unsigned long)config->reg_int_cfg1,
++		 (unsigned long)config->reg_int_cfg2);
 +
-+	/* iclr */
-+	iowrite32(BIT(ch), &chip->reg->iclr);
++	return result;
++}
 +
-+	/* IMASKCLR */
-+	iowrite32(BIT(ch), &chip->reg->imaskclr);
++/**
++ * Set the Output data rate for the particular configuration
++ *
++ * @param config Config to modify with new ODR
++ * @param odr Output data rate in units of 1/1000Hz
++ */
++static int kxtf9_set_odr(void *mlsl_handle,
++			 struct ext_slave_platform_data *pdata,
++			 struct kxtf9_config *config, int apply, long odr)
++{
++	unsigned char bits;
++	int result = INV_SUCCESS;
 +
-+	/* Enable interrupt */
-+	ien = ioread32(&chip->reg->ien);
-+	iowrite32(ien | BIT(ch), &chip->reg->ien);
-+end:
-+	spin_unlock_irqrestore(&chip->spinlock, flags);
++	/* Data sheet says there is 12.5 hz, but that seems to produce a single
++	 * correct data value, thus we remove it from the table */
++	if (odr > 400000) {
++		config->odr = 800000;
++		bits = 0x06;
++	} else if (odr > 200000) {
++		config->odr = 400000;
++		bits = 0x05;
++	} else if (odr > 100000) {
++		config->odr = 200000;
++		bits = 0x04;
++	} else if (odr > 50000) {
++		config->odr = 100000;
++		bits = 0x03;
++	} else if (odr > 25000) {
++		config->odr = 50000;
++		bits = 0x02;
++	} else if (odr != 0) {
++		config->odr = 25000;
++		bits = 0x01;
++	} else {
++		config->odr = 0;
++		bits = 0;
++	}
 +
++	if (odr != 0)
++		config->ctrl_reg1 |= 0x80;
++	else
++		config->ctrl_reg1 &= ~0x80;
++
++	config->reg_odr = bits;
++	kxtf9_set_dur(mlsl_handle, pdata, config, apply, config->dur);
++	MPL_LOGV("ODR: %d, 0x%02x\n", config->odr, (int)config->ctrl_reg1);
++	if (apply) {
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_DATA_CTRL_REG,
++						 config->reg_odr);
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_CTRL_REG1, 0x40);
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_CTRL_REG1,
++						 config->ctrl_reg1);
++	}
++	return result;
++}
++
++/**
++ * Set the full scale range of the accels
++ *
++ * @param config pointer to configuration
++ * @param fsr requested full scale range
++ */
++static int kxtf9_set_fsr(void *mlsl_handle,
++			 struct ext_slave_platform_data *pdata,
++			 struct kxtf9_config *config, int apply, long fsr)
++{
++	int result = INV_SUCCESS;
++
++	config->ctrl_reg1 = (config->ctrl_reg1 & 0xE7);
++	if (fsr <= 2000) {
++		config->fsr = 2000;
++		config->ctrl_reg1 |= 0x00;
++	} else if (fsr <= 4000) {
++		config->fsr = 4000;
++		config->ctrl_reg1 |= 0x08;
++	} else {
++		config->fsr = 8000;
++		config->ctrl_reg1 |= 0x10;
++	}
++
++	MPL_LOGV("FSR: %d\n", config->fsr);
++	if (apply) {
++		/* Must clear bit 7 before writing new configuration */
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_CTRL_REG1, 0x40);
++		result = inv_serial_single_write(mlsl_handle, pdata->address,
++						 KXTF9_CTRL_REG1,
++						 config->ctrl_reg1);
++	}
++	return result;
++}
++
++static int kxtf9_suspend(void *mlsl_handle,
++			 struct ext_slave_descr *slave,
++			 struct ext_slave_platform_data *pdata)
++{
++	int result;
++	unsigned char data;
++	struct kxtf9_private_data *private_data = pdata->private_data;
++
++	/* Wake up */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_CTRL_REG1, 0x40);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* INT_CTRL_REG1: */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_INT_CTRL_REG1,
++					 private_data->suspend.reg_int_cfg1);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* WUF_THRESH: */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_WUF_THRESH,
++					 private_data->suspend.reg_ths);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* DATA_CTRL_REG */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_DATA_CTRL_REG,
++					 private_data->suspend.reg_odr);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* WUF_TIMER */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_WUF_TIMER,
++					 private_data->suspend.reg_dur);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++
++	/* Normal operation  */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_CTRL_REG1,
++					 private_data->suspend.ctrl_reg1);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	result = inv_serial_read(mlsl_handle, pdata->address,
++				 KXTF9_INT_REL, 1, &data);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++
++	return result;
++}
++
++/* full scale setting - register and mask */
++#define ACCEL_KIONIX_CTRL_REG      (0x1b)
++#define ACCEL_KIONIX_CTRL_MASK     (0x18)
++
++static int kxtf9_resume(void *mlsl_handle,
++			struct ext_slave_descr *slave,
++			struct ext_slave_platform_data *pdata)
++{
++	int result = INV_SUCCESS;
++	unsigned char data;
++	struct kxtf9_private_data *private_data = pdata->private_data;
++
++	/* Wake up */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_CTRL_REG1, 0x40);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* INT_CTRL_REG1: */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_INT_CTRL_REG1,
++					 private_data->resume.reg_int_cfg1);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* WUF_THRESH: */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_WUF_THRESH,
++					 private_data->resume.reg_ths);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* DATA_CTRL_REG */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_DATA_CTRL_REG,
++					 private_data->resume.reg_odr);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* WUF_TIMER */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_WUF_TIMER,
++					 private_data->resume.reg_dur);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++
++	/* Normal operation  */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_CTRL_REG1,
++					 private_data->resume.ctrl_reg1);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	result = inv_serial_read(mlsl_handle, pdata->address,
++				 KXTF9_INT_REL, 1, &data);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++
++	return INV_SUCCESS;
++}
++
++static int kxtf9_init(void *mlsl_handle,
++		      struct ext_slave_descr *slave,
++		      struct ext_slave_platform_data *pdata)
++{
++
++	struct kxtf9_private_data *private_data;
++	int result = INV_SUCCESS;
++
++	private_data = (struct kxtf9_private_data *)
++	    kzalloc(sizeof(struct kxtf9_private_data), GFP_KERNEL);
++
++	if (!private_data)
++		return INV_ERROR_MEMORY_EXAUSTED;
++
++	/* RAM reset */
++	/* Fastest Reset */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_CTRL_REG1, 0x40);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* Fastest Reset */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_DATA_CTRL_REG, 0x36);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	/* Reset */
++	result = inv_serial_single_write(mlsl_handle, pdata->address,
++					 KXTF9_CTRL_REG3, 0xcd);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	msleep(2);
++
++	pdata->private_data = private_data;
++
++	private_data->resume.ctrl_reg1 = 0xC0;
++	private_data->suspend.ctrl_reg1 = 0x40;
++
++	result = kxtf9_set_dur(mlsl_handle, pdata, &private_data->suspend,
++			       false, 1000);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	result = kxtf9_set_dur(mlsl_handle, pdata, &private_data->resume,
++			       false, 2540);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++
++	result = kxtf9_set_odr(mlsl_handle, pdata, &private_data->suspend,
++			       false, 50000);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	result = kxtf9_set_odr(mlsl_handle, pdata, &private_data->resume,
++			       false, 200000);
++
++	result = kxtf9_set_fsr(mlsl_handle, pdata, &private_data->suspend,
++			       false, 2000);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	result = kxtf9_set_fsr(mlsl_handle, pdata, &private_data->resume,
++			       false, 2000);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++
++	result = kxtf9_set_ths(mlsl_handle, pdata, &private_data->suspend,
++			       false, 80);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	result = kxtf9_set_ths(mlsl_handle, pdata, &private_data->resume,
++			       false, 40);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++
++	result = kxtf9_set_irq(mlsl_handle, pdata, &private_data->suspend,
++			       false, MPU_SLAVE_IRQ_TYPE_NONE);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	result = kxtf9_set_irq(mlsl_handle, pdata, &private_data->resume,
++			       false, MPU_SLAVE_IRQ_TYPE_NONE);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	return result;
++}
++
++static int kxtf9_exit(void *mlsl_handle,
++		      struct ext_slave_descr *slave,
++		      struct ext_slave_platform_data *pdata)
++{
++	kfree(pdata->private_data);
++	return INV_SUCCESS;
++}
++
++static int kxtf9_config(void *mlsl_handle,
++			struct ext_slave_descr *slave,
++			struct ext_slave_platform_data *pdata,
++			struct ext_slave_config *data)
++{
++	struct kxtf9_private_data *private_data = pdata->private_data;
++	if (!data->data)
++		return INV_ERROR_INVALID_PARAMETER;
++
++	switch (data->key) {
++	case MPU_SLAVE_CONFIG_ODR_SUSPEND:
++		return kxtf9_set_odr(mlsl_handle, pdata,
++				     &private_data->suspend,
++				     data->apply, *((long *)data->data));
++	case MPU_SLAVE_CONFIG_ODR_RESUME:
++		return kxtf9_set_odr(mlsl_handle, pdata,
++				     &private_data->resume,
++				     data->apply, *((long *)data->data));
++	case MPU_SLAVE_CONFIG_FSR_SUSPEND:
++		return kxtf9_set_fsr(mlsl_handle, pdata,
++				     &private_data->suspend,
++				     data->apply, *((long *)data->data));
++	case MPU_SLAVE_CONFIG_FSR_RESUME:
++		return kxtf9_set_fsr(mlsl_handle, pdata,
++				     &private_data->resume,
++				     data->apply, *((long *)data->data));
++	case MPU_SLAVE_CONFIG_MOT_THS:
++		return kxtf9_set_ths(mlsl_handle, pdata,
++				     &private_data->suspend,
++				     data->apply, *((long *)data->data));
++	case MPU_SLAVE_CONFIG_NMOT_THS:
++		return kxtf9_set_ths(mlsl_handle, pdata,
++				     &private_data->resume,
++				     data->apply, *((long *)data->data));
++	case MPU_SLAVE_CONFIG_MOT_DUR:
++		return kxtf9_set_dur(mlsl_handle, pdata,
++				     &private_data->suspend,
++				     data->apply, *((long *)data->data));
++	case MPU_SLAVE_CONFIG_NMOT_DUR:
++		return kxtf9_set_dur(mlsl_handle, pdata,
++				     &private_data->resume,
++				     data->apply, *((long *)data->data));
++	case MPU_SLAVE_CONFIG_IRQ_SUSPEND:
++		return kxtf9_set_irq(mlsl_handle, pdata,
++				     &private_data->suspend,
++				     data->apply, *((long *)data->data));
++	case MPU_SLAVE_CONFIG_IRQ_RESUME:
++		return kxtf9_set_irq(mlsl_handle, pdata,
++				     &private_data->resume,
++				     data->apply, *((long *)data->data));
++	default:
++		return INV_ERROR_FEATURE_NOT_IMPLEMENTED;
++	};
++
++	return INV_SUCCESS;
++}
++
++static int kxtf9_get_config(void *mlsl_handle,
++			    struct ext_slave_descr *slave,
++			    struct ext_slave_platform_data *pdata,
++			    struct ext_slave_config *data)
++{
++	struct kxtf9_private_data *private_data = pdata->private_data;
++	if (!data->data)
++		return INV_ERROR_INVALID_PARAMETER;
++
++	switch (data->key) {
++	case MPU_SLAVE_CONFIG_ODR_SUSPEND:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->suspend.odr;
++		break;
++	case MPU_SLAVE_CONFIG_ODR_RESUME:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->resume.odr;
++		break;
++	case MPU_SLAVE_CONFIG_FSR_SUSPEND:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->suspend.fsr;
++		break;
++	case MPU_SLAVE_CONFIG_FSR_RESUME:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->resume.fsr;
++		break;
++	case MPU_SLAVE_CONFIG_MOT_THS:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->suspend.ths;
++		break;
++	case MPU_SLAVE_CONFIG_NMOT_THS:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->resume.ths;
++		break;
++	case MPU_SLAVE_CONFIG_MOT_DUR:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->suspend.dur;
++		break;
++	case MPU_SLAVE_CONFIG_NMOT_DUR:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->resume.dur;
++		break;
++	case MPU_SLAVE_CONFIG_IRQ_SUSPEND:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->suspend.irq_type;
++		break;
++	case MPU_SLAVE_CONFIG_IRQ_RESUME:
++		(*(unsigned long *)data->data) =
++		    (unsigned long)private_data->resume.irq_type;
++		break;
++	default:
++		return INV_ERROR_FEATURE_NOT_IMPLEMENTED;
++	};
++
++	return INV_SUCCESS;
++}
++
++static int kxtf9_read(void *mlsl_handle,
++		      struct ext_slave_descr *slave,
++		      struct ext_slave_platform_data *pdata,
++		      unsigned char *data)
++{
++	int result;
++	unsigned char reg;
++	result = inv_serial_read(mlsl_handle, pdata->address,
++				 KXTF9_INT_SRC_REG2, 1, &reg);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++
++	if (!(reg & 0x10))
++		return INV_ERROR_ACCEL_DATA_NOT_READY;
++
++	result = inv_serial_read(mlsl_handle, pdata->address,
++				 slave->read_reg, slave->read_len, data);
++	if (result) {
++		LOG_RESULT_LOCATION(result);
++		return result;
++	}
++	return result;
++}
++
++static struct ext_slave_descr kxtf9_descr = {
++	.init             = kxtf9_init,
++	.exit             = kxtf9_exit,
++	.suspend          = kxtf9_suspend,
++	.resume           = kxtf9_resume,
++	.read             = kxtf9_read,
++	.config           = kxtf9_config,
++	.get_config       = kxtf9_get_config,
++	.name             = "kxtf9",
++	.type             = EXT_SLAVE_TYPE_ACCEL,
++	.id               = ACCEL_ID_KXTF9,
++	.read_reg         = 0x06,
++	.read_len         = 6,
++	.endian           = EXT_SLAVE_LITTLE_ENDIAN,
++	.range            = {2, 0},
++	.trigger          = NULL,
++};
++
++static
++struct ext_slave_descr *kxtf9_get_slave_descr(void)
++{
++	return &kxtf9_descr;
++}
++
++/* -------------------------------------------------------------------------- */
++struct kxtf9_mod_private_data {
++	struct i2c_client *client;
++	struct ext_slave_platform_data *pdata;
++};
++
++static unsigned short normal_i2c[] = { I2C_CLIENT_END };
++
++static int kxtf9_mod_probe(struct i2c_client *client,
++			   const struct i2c_device_id *devid)
++{
++	struct ext_slave_platform_data *pdata;
++	struct kxtf9_mod_private_data *private_data;
++	int result = 0;
++
++	dev_info(&client->adapter->dev, "%s: %s\n", __func__, devid->name);
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++		result = -ENODEV;
++		goto out_no_free;
++	}
++
++	pdata = client->dev.platform_data;
++	if (!pdata) {
++		dev_err(&client->adapter->dev,
++			"Missing platform data for slave %s\n", devid->name);
++		result = -EFAULT;
++		goto out_no_free;
++	}
++
++	private_data = kzalloc(sizeof(*private_data), GFP_KERNEL);
++	if (!private_data) {
++		result = -ENOMEM;
++		goto out_no_free;
++	}
++
++	i2c_set_clientdata(client, private_data);
++	private_data->client = client;
++	private_data->pdata = pdata;
++
++	result = inv_mpu_register_slave(THIS_MODULE, client, pdata,
++					kxtf9_get_slave_descr);
++	if (result) {
++		dev_err(&client->adapter->dev,
++			"Slave registration failed: %s, %d\n",
++			devid->name, result);
++		goto out_free_memory;
++	}
++
++	return result;
++
++out_free_memory:
++	kfree(private_data);
++out_no_free:
++	dev_err(&client->adapter->dev, "%s failed %d\n", __func__, result);
++	return result;
++
++}
++
++static int kxtf9_mod_remove(struct i2c_client *client)
++{
++	struct kxtf9_mod_private_data *private_data =
++		i2c_get_clientdata(client);
++
++	dev_dbg(&client->adapter->dev, "%s\n", __func__);
++
++	inv_mpu_unregister_slave(client, private_data->pdata,
++				kxtf9_get_slave_descr);
++
++	kfree(private_data);
 +	return 0;
 +}
 +
-+static void pch_irq_unmask(struct irq_data *d)
-+{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct pch_gpio *chip = gc->private;
++static const struct i2c_device_id kxtf9_mod_id[] = {
++	{ "kxtf9", ACCEL_ID_KXTF9 },
++	{}
++};
 +
-+	chip->irq_mask |= 1 << (d->irq - chip->irq_base);
++MODULE_DEVICE_TABLE(i2c, kxtf9_mod_id);
++
++static struct i2c_driver kxtf9_mod_driver = {
++	.class = I2C_CLASS_HWMON,
++	.probe = kxtf9_mod_probe,
++	.remove = kxtf9_mod_remove,
++	.id_table = kxtf9_mod_id,
++	.driver = {
++		   .owner = THIS_MODULE,
++		   .name = "kxtf9_mod",
++		   },
++	.address_list = normal_i2c,
++};
++
++static int __init kxtf9_mod_init(void)
++{
++	int res = i2c_add_driver(&kxtf9_mod_driver);
++	pr_info("%s: Probe name %s\n", __func__, "kxtf9_mod");
++	if (res)
++		pr_err("%s failed\n", __func__);
++	return res;
 +}
 +
-+static void pch_irq_mask(struct irq_data *d)
++static void __exit kxtf9_mod_exit(void)
 +{
-+	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-+	struct pch_gpio *chip = gc->private;
-+
-+	chip->irq_mask &= ~(1 << (d->irq - chip->irq_base));
++	pr_info("%s\n", __func__);
++	i2c_del_driver(&kxtf9_mod_driver);
 +}
 +
-+static irqreturn_t pch_gpio_handler(int irq, void *dev_id)
-+{
-+	struct pch_gpio *chip = dev_id;
-+	u32 reg_val = ioread32(&chip->reg->istatus);
-+	int i;
-+	int ret = IRQ_NONE;
++module_init(kxtf9_mod_init);
++module_exit(kxtf9_mod_exit);
 +
-+	for (i = 0; i < GPIO_NUM_PINS; i++) {
-+		if (reg_val & BIT(i) & chip->irq_mask) {
-+			dev_dbg(chip->dev, "%s:[%d]:irq=%d  status=0x%x\n",
-+				__func__, i, irq, reg_val);
-+			iowrite32(BIT(i), &chip->reg->iclr);
-+			generic_handle_irq(chip->irq_base + i);
-+			ret = IRQ_HANDLED;
-+		}
-+	}
-+	return ret;
-+}
++MODULE_AUTHOR("Invensense Corporation");
++MODULE_DESCRIPTION("Driver to integrate KXTF9 sensor with the MPU");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("kxtf9_mod");
 +
-+static __devinit void
-+pch_gpio_alloc_generic_chip(struct pch_gpio *chip, unsigned int irq_start,
-+			    unsigned int num)
-+{
-+	struct irq_chip_generic *gc;
-+	struct irq_chip_type *ct;
-+
-+	gc = irq_alloc_generic_chip("pch_gpio", 1, irq_start, chip->base,
-+				    handle_simple_irq);
-+	gc->private = chip;
-+	ct = gc->chip_types;
-+
-+	ct->chip.irq_mask = pch_irq_mask;
-+	ct->chip.irq_unmask = pch_irq_unmask;
-+	ct->chip.irq_set_type = pch_irq_type;
-+
-+	irq_setup_generic_chip(gc, IRQ_MSK(num), IRQ_GC_INIT_MASK_CACHE,
-+			       IRQ_NOREQUEST | IRQ_NOPROBE, 0);
- }
- 
- static int __devinit pch_gpio_probe(struct pci_dev *pdev,
-@@ -167,6 +309,7 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
- {
- 	s32 ret;
- 	struct pch_gpio *chip;
-+	int irq_base;
- 
- 	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
- 	if (chip == NULL)
-@@ -202,8 +345,36 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
- 		goto err_gpiochip_add;
- 	}
- 
-+	irq_base = irq_alloc_descs(-1, PCH_IRQ_BASE, GPIO_NUM_PINS, GFP_KERNEL);
-+	if (irq_base < 0) {
-+		dev_err(&pdev->dev, "PCH gpio: Failed to get IRQ base num\n");
-+		goto err_irq_alloc_descs;
-+	}
-+	chip->irq_base = irq_base;
-+
-+	ret = request_irq(pdev->irq, pch_gpio_handler,
-+			     IRQF_SHARED, KBUILD_MODNAME, chip);
-+	if (ret != 0) {
-+		dev_err(&pdev->dev,
-+			"%s request_irq failed\n", __func__);
-+		goto err_request_irq;
-+	}
-+
-+	pch_gpio_alloc_generic_chip(chip, irq_base, GPIO_NUM_PINS);
-+
-+	/* Initialize interrupt ien register */
-+	iowrite32(0, &chip->reg->ien);
-+
- 	return 0;
- 
-+err_request_irq:
-+	irq_free_descs(irq_base, GPIO_NUM_PINS);
-+
-+err_irq_alloc_descs:
-+	ret = gpiochip_remove(&chip->gpio);
-+	if (ret)
-+		dev_err(&pdev->dev, "%s gpiochip_remove failed\n", __func__);
-+
- err_gpiochip_add:
- 	pci_iounmap(pdev, chip->base);
- 
-@@ -224,6 +395,10 @@ static void __devexit pch_gpio_remove(struct pci_dev *pdev)
- 	int err;
- 	struct pch_gpio *chip = pci_get_drvdata(pdev);
- 
-+	free_irq(pdev->irq, chip);
-+
-+	irq_free_descs(chip->irq_base, GPIO_NUM_PINS);
-+
- 	err = gpiochip_remove(&chip->gpio);
- 	if (err)
- 		dev_err(&pdev->dev, "Failed gpiochip_remove\n");
++/**
++ *  @}
++ */
 -- 
-1.7.4.4
+1.7.4.1
 
