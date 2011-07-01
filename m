@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab1GAXLe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 19:11:34 -0400
-Received: from gate.crashing.org ([63.228.1.57]:39031 "EHLO gate.crashing.org"
+	id S1758048Ab1GAXOW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 19:14:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39332 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757801Ab1GAXLd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 19:11:33 -0400
-Subject: Re: [PATCH 1/2] mm: Move definition of MIN_MEMORY_BLOCK_SIZE to a
- header
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>
-In-Reply-To: <20110701121408.GC28008@elte.hu>
-References: <1308013070.2874.784.camel@pasglop>
-	 <20110701121408.GC28008@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 02 Jul 2011 09:11:06 +1000
-Message-ID: <1309561866.14501.254.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756745Ab1GAXOV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 19:14:21 -0400
+Message-ID: <4E0E532C.2060807@zytor.com>
+Date: Fri, 01 Jul 2011 16:07:24 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Kees Cook <kees.cook@canonical.com>
+CC: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        Brian Gerst <brgerst@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] x86: add missing verify_cpu to 32bit wakeup
+References: <20110701211943.GA7042@outflux.net> <4E0E3B83.3000403@zytor.com> <20110701223623.GV32221@outflux.net>
+In-Reply-To: <20110701223623.GV32221@outflux.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 14:14 +0200, Ingo Molnar wrote:
-> * Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+On 07/01/2011 03:36 PM, Kees Cook wrote:
+>>
+>> For S3, we should save/restore MISC_ENABLE instead... in fact, we
+>> already save it, we just restore it too late.
 > 
-> > The macro MIN_MEMORY_BLOCK_SIZE is currently defined twice in two .c
-> > files, and I need it in a third one to fix a powerpc bug, so let's
-> > first move it into a header
-> > 
-> > Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > ---
-> > 
-> > Ingo, Thomas: Who needs to ack the x86 bit ? I'd like to send that
-> > to Linus asap with the powerpc fix.
+> Given that MISC_ENABLE may not be available for a given CPU, it seems that
+> it's basically the same detection code as in verify_cpu() already. Since
+> this bit is the only part that is needed that early, I think the patch is
+> good the way it is (especially since it balances the 64bit path which
+> already calls this logic). I don't think doing the full early MISC_ENABLE
+> save/restore this early is worth it. Thoughts?
 > 
-> Acked-by: Ingo Molnar <mingo@elte.hu>
-> 
-> (btw., you can consider obvious cleanups as being implicitly acked by 
-> me and don't need to block fixes on me.)
 
-Ok thanks !
+We already save it, including if it exists, so we should just restore it
+early, and then we don't have to do it again.
 
-Cheers,
-Ben.
-
+	-hpa
 
