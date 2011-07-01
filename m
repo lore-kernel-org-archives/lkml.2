@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756111Ab1GAKKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 06:10:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34969 "EHLO mx1.redhat.com"
+	id S1756153Ab1GAKOe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 06:14:34 -0400
+Received: from mail.perches.com ([173.55.12.10]:3415 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755731Ab1GAKKl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 06:10:41 -0400
-Message-ID: <4E0D9D16.7020508@redhat.com>
-Date: Fri, 01 Jul 2011 18:10:30 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the akpm tree
-References: <20110701151931.4c2d78b5.sfr@canb.auug.org.au>	<4E0D5BD4.6080403@redhat.com> <20110701170843.bd60e326.sfr@canb.auug.org.au>
-In-Reply-To: <20110701170843.bd60e326.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+	id S1755731Ab1GAKOc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 06:14:32 -0400
+Subject: [PATCH] checkpatch: Make utf-8 test --strict
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+        Andy Whitcroft <apw@shadowen.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110630225925.278e2471.akpm@linux-foundation.org>
+References: <20110628145623.65567b78.akpm@linux-foundation.org>
+	 <1309410138.1726.21.camel@Joe-Laptop>
+	 <20110629231056.1b5d20a9.akpm@linux-foundation.org>
+	 <1309491411.7277.23.camel@Joe-Laptop>
+	 <20110630225925.278e2471.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jul 2011 03:14:30 -0700
+Message-ID: <1309515270.7277.36.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年07月01日 15:08, Stephen Rothwell 写道:
-> Hi,
->
-> On Fri, 01 Jul 2011 13:32:04 +0800 Cong Wang<amwang@redhat.com>  wrote:
->>
->> 于 2011年07月01日 13:19, Stephen Rothwell 写道:
->>>
->>> After merging the akpm tree, today's linux-next build (powerpc
->>> ppc64_defconfig) failed like this:
->>>
->>> arch/powerpc/kernel/rtas.c: In function 'rtas_restart':
->>> arch/powerpc/kernel/rtas.c:655:24: error: 'SYS_RESTART' undeclared (first use in this function)
->>> arch/powerpc/kernel/rtas.c: In function 'rtas_power_off':
->>> arch/powerpc/kernel/rtas.c:664:24: error: 'SYS_POWER_OFF' undeclared (first use in this function)
->>> arch/powerpc/kernel/rtas.c: In function 'rtas_halt':
->>> arch/powerpc/kernel/rtas.c:674:24: error: 'SYS_HALT' undeclared (first use in this function)
->>>
->>> Caused by commit ac050ff2a176 ("It is not necessary to share the same
->>> notifier.h").
->>
->> I think the following patch will fix this.
->
-> Please find all the other files that need that include as well (there is
-> at least one more).
->
+Some patches are sent in using ISO-8859 or even Windows codepage 1252.
 
-Ok, I will do a cross-compilation.
+Make checkpatch accept these by default and only emit the "Invalid UTF-8"
+message when using --strict.
 
-Thanks.
+Signed-off-by: Joe Perches <joe@perches.com>
+
+---
+
+ scripts/checkpatch.pl |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index b0aa2c6..313ee88 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1408,7 +1408,7 @@ sub process {
+ 			my $ptr = substr($blank, 0, length($utf8_prefix)) . "^";
+ 			my $hereptr = "$hereline$ptr\n";
+ 
+-			ERROR("Invalid UTF-8, patch and commit message should be encoded in UTF-8\n" . $hereptr);
++			CHK("Invalid UTF-8, patch and commit message should be encoded in UTF-8\n" . $hereptr);
+ 		}
+ 
+ # ignore non-hunk lines and lines being removed
+
+
