@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab1GAGvb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 02:51:31 -0400
-Received: from mail.kapulan.hu ([213.16.89.155]:46614 "EHLO kapulan.hu"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754890Ab1GAGva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 02:51:30 -0400
-X-Greylist: delayed 1345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jul 2011 02:51:30 EDT
-To: undisclosed-recipients:;
-Subject: Nachricht
+	id S1755111Ab1GAHAQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 03:00:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39276 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755080Ab1GAHAO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 03:00:14 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8;
- format=flowed
-Content-Transfer-Encoding: 8bit
-Date: Fri, 01 Jul 2011 06:28:59 +0000
-From: "Mr. Mervyn King" <directaccess@msnzone.cn>
-Reply-To: <directacess-mervynking@hotmail.co.uk>
-Mail-Reply-To: <directacess-mervynking@hotmail.co.uk>
-Message-ID: <9ccfcb3522bed4e6b6ddb12b08dc0c75@kapulan.hu>
-User-Agent: Roundcube Webmail/0.5.1
+In-Reply-To: <1309461732-2875-2-git-send-email-jonas@southpole.se>
+References: <201106281245.19457.arnd@arndb.de>
+	<1309461732-2875-1-git-send-email-jonas@southpole.se>
+	<1309461732-2875-2-git-send-email-jonas@southpole.se>
+Date: Fri, 1 Jul 2011 09:00:13 +0200
+X-Google-Sender-Auth: XeTWzvLx21Igt7Ii8J50oI3xFeE
+Message-ID: <BANLkTi=j+3eovYhcjoniFrCL_vAC0BQCdw@mail.gmail.com>
+Subject: Re: [PATCH 2/2] modules: make arch's use default loader hooks
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: rusty@rustcorp.com.au, arnd@ardnb.de, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        monstr@monstr.eu, cmetcalf@tilera.com, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Guten Tag
+On Thu, Jun 30, 2011 at 21:22, Jonas Bonn <jonas@southpole.se> wrote:
+> This patch removes all the module loader hook implementations in the
+> architecture specific code where the functionality is the same as that
+> now provided by the recently added default hooks.
+>
+> Signed-off-by: Jonas Bonn <jonas@southpole.se>
 
+>  arch/m68k/kernel/module_mm.c    |   27 -----------------
+>  arch/m68k/kernel/module_no.c    |   34 ---------------------
 
- Ich möchte Sie intime mit der bitte, die immensen Vorteil für uns beide 
- wären, obwohl Sie möglicherweise besorgt über meine e-Mail, wie wir vor 
- nicht erfüllt haben. Mein Name ist Mervyn King, ich arbeite mit Bank Of 
- England. Es ist die Summe von €20,600,000.00 Euro in meiner Bank, und es 
- gibt keine Begünstigten sagte über diese Mittel, was bedeutet, dass 
- niemand jemals vorwärts kommen würde es verlangen.
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
+Gr{oetje,eeting}s,
 
- Ich bitte, dass wir zusammenarbeiten zu übertragen die Mittel von 
- meiner Bank in Ihr Bankkonto oder jedem anderen Account Ihrer Wahl, die 
- ich Ihnen gerne sehen, wenn Sie mir helfen und auch ein guter und 
- vertrauenswürdigen Partner werden können. Sobald die Mittel zu Ihrer 
- nominiert Bankkonto übertragen werden, so teilen wir dann im Verhältnis 
- von 60 % für mich und 40 % für Sie. Senden Sie mich e-Mail so schnell 
- wie möglich für weitere Details. Hier ist meine e-Mail-Adresse: 
- (directaccess-mervynking@hotmail.co.uk).
+                        Geert
 
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
- Herzliche Grüße,
-
-
- Herr Mervyn King
- Bank von England
-
-
- Bitte senden Sie Ihre E-mails an 
- (directaccess-mervynking@hotmail.co.uk)
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
