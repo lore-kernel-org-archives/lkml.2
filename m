@@ -1,93 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756829Ab1GAUnG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 16:43:06 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:39701 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755828Ab1GAUnD (ORCPT
+	id S1756882Ab1GAUpJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 16:45:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46658 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755146Ab1GAUpG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 16:43:03 -0400
-Date: Fri, 1 Jul 2011 16:43:02 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <greg@kroah.com>
-cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        <axboe@kernel.dk>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: [PATCH] USB: fix regression occurring during device removal
-In-Reply-To: <1309552148.2722.46.camel@mulgrave>
-Message-ID: <Pine.LNX.4.44L0.1107011640300.1624-100000@iolanthe.rowland.org>
+	Fri, 1 Jul 2011 16:45:06 -0400
+From: Petr Tesarik <ptesarik@suse.cz>
+Organization: SUSE LINUX, s.r.o.
+To: Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary physical addresses
+Date: Fri, 1 Jul 2011 22:44:57 +0200
+User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.5-default; KDE/4.6.0; i686; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+References: <201106171038.25988.ptesarik@suse.cz> <201107012134.45881.ptesarik@suse.cz> <20110701195629.GA19057@elte.hu>
+In-Reply-To: <20110701195629.GA19057@elte.hu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201107012244.57593.ptesarik@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch (as1476) fixes a regression introduced by
-fccf4e86200b8f5edd9a65da26f150e32ba79808 (USB: Free bandwidth when
-usb_disable_device is called).  usb_disconnect() grabs the
-bandwidth_mutex before calling usb_disable_device(), which calls down
-indirectly to usb_set_interface(), which tries to acquire the
-bandwidth_mutex.
-
-The fix causes usb_set_interface() to return early when it is called
-for an interface that has already been unregistered, which is what
-happens in usb_disable_device().
-
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
-Tested-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-CC: <stable@kernel.org>
-
----
-
-On Fri, 1 Jul 2011, James Bottomley wrote:
-
-> On Fri, 2011-07-01 at 14:14 -0400, Dave Jones wrote:
-> > On Fri, Jul 01, 2011 at 10:05:31AM -0700, Andi Kleen wrote:
+Dne Pá 1. července 2011 21:56:29 Ingo Molnar napsal(a):
+> * Petr Tesarik <ptesarik@suse.cz> wrote:
+> > Dne Pá 1. července 2011 18:13:45 Ingo Molnar napsal(a):
+> > > * H. Peter Anvin <hpa@zytor.com> wrote:
+> > > > On 07/01/2011 08:36 AM, Ingo Molnar wrote:
+> > > > > So we could kill multiple birds with the same stone here:
+> > > > >  - remove various ugly uses of /dev/mem (including the rootkit
+> > > > >  usage),
+> > > > >  
+> > > > >    with or without strict-devmem
+> > > > >  
+> > > > >  - extending it to above-4G for inspection purposes
+> > > > >  
+> > > > >  - allowing to kill /dev/mem access runtime similar to the
+> > > > >  
+> > > > >    disable_modules lock-down killswitch, for the so inclined.
+> > > > > 
+> > > > > Would you be interested in modifying your patch-set in such a
+> > > > > fashion?
 > > 
-> >  > I found I can reliably crash a 3.0 system by pulling the
-> >  > USB cable of a mounted USB cdrom (or rather a USB device which
-> >  > has a builtin fake CD-ROM) 
-> >  > 
-> >  > I suspect it's a regression too.
+> > Yes, this works for me. How persistent should the kill-switch be? I
+> > assume it doesn't make much sense to make a sysfs toggle, because
+> > then it would still be open to abuse. I'd rather see it specified
+> > on boot and never changed. Agreed?
 > > 
-> > We've been seeing a lot of similar bugs in Fedora since we pushed
-> > a 2.6.38.8 update.  Some of the traces are different, but some
-> > look to be the same as yours. (here's one for eg: https://bugzilla.redhat.com/show_bug.cgi?id=712830)
+> > Something like "enable_dev_mem" on the kenrel command line (default
+> > is disabled).
 > > 
-> > The common cause seems to be 'device went away'. So USB CD drives,
-> > USB memory sticks, and for some reason virtualbox shutdown.
+> > On a similar note, I should probably rip off write_mem() completely
+> > and disallow PROT_WRITE mmapping of the device. Right?
 > 
-> I think it's something specific in the USB path.  I can't reproduce on
-> 3.0-rc5 with a SATA DVD hot unplug.  USB cc's added.
+> Yeah - there's two things here: one is the boot option to turn it on,
+> the other is the kill-switch that is runtime and kills this method of
+> access permanently (until next reboot that is).
 > 
-> James
+> the kill-switch works like modules_disabled: once you echo 1 into it
+> you cannot move it back to 0 anymore.
 
-This should fix the problem.  Or at least, it does fix a very similar 
-problem.
+Got it.
 
-Alan Stern
+> The boot option would be a standard boot option - devmem=1 would be
+> the canonical naming? (but no strong feelings about the naming)
 
+I don't have any strong feelings either. "devmem=<int>" might be better, 
+because it could be used to control whether the device is read-only. That is, 
+if we want allow writing to /dev/mem under any circumstances. I'm fine with 
+removing the write part completely.
 
+> Do you expect distros to enable this boot option by default? I.e.
+> would SuSE be willing to ship with a restrictive /dev/mem by default?
+> That's really the wider goal we want to work towards.
 
- drivers/usb/core/message.c |    2 ++
- 1 file changed, 2 insertions(+)
+I'm not really the decision-maker on this, but even though I don't need it for 
+crash, there are several other users which would have to be fixed:
 
-Index: usb-3.0/drivers/usb/core/message.c
-===================================================================
---- usb-3.0.orig/drivers/usb/core/message.c
-+++ usb-3.0/drivers/usb/core/message.c
-@@ -1286,6 +1286,8 @@ int usb_set_interface(struct usb_device 
- 			interface);
- 		return -EINVAL;
- 	}
-+	if (iface->unregistering)
-+		return -ENODEV;
- 
- 	alt = usb_altnum_to_altsetting(iface, alternate);
- 	if (!alt) {
+1. hwinfo (EFI, MPTABLE and ACPI table parsing, analyzing video BIOS)
+2. dmidecode (SMBIOS, DMI)
+3. possibly others
 
+IMO there should be standard interfaces for all of these. SUSE will probably 
+continue to ship devmem-enabled kernels until we have a complete replacement 
+(esp. hwinfo seems to be important, because it is run as part of the 
+supportconfig script, which is run on customer machines and gathers all kind 
+of info that is useful to support teams). Note that these tools are mostly 
+content with access to the lowest megabyte, so they can also be used with 
+CONFIG_STRICT_DEVMEM.
+
+However, somebody must do the first step, and since we are the ones who 
+dislike the current state of affairs, it's probably our turn. Once /dev/mem is 
+disabled, authors of diagnostic tools will probably complain loudly here. We 
+(as in "kernel hackers") should provide proper interfaces for the low-level 
+info, and they'll adjust user-space. At this point I would expect distros to 
+disable /dev/mem by default.
+
+> > > > There is another use that I have looked at, as well: for
+> > > > testing purposes, it would be extremely good to be able to
+> > > > dirty and/or flush an arbitrary physical cache line for testing
+> > > > purposes.
+> > > > 
+> > > > This is very very similar to /dev/mem usage -- access to an
+> > > > arbitrary chunk of memory -- and a fully enabled /dev/mem can
+> > > > of course support this use (just mmap the page with the
+> > > > relevant cache line).  However, it could also be a separate
+> > > > device which could have looser permissions than /dev/mem; or a
+> > > > set of ioctls on /dev/mem with a separate kill switch, because
+> > > > no data would ever be have modified or returned to user space.
+> > > > 
+> > > > Either way, though, we found that it would share a lot of code
+> > > > with the /dev/mem implementation, and as such fixing up the
+> > > > underlying machinery is the sanest way to upstream this.
+> > > 
+> > > To me that cache flush thing sounds obscure (but still useful)
+> > > enough to justify a new ioctl over /dev/mem.
+> > > 
+> > > Not sure it even needs a killswitch, unless there's some real
+> > > security problem related to it.
+> > 
+> > It can be used for DoS, but if you have permission for the ioctl(),
+> > then you probably also have easier ways to kill the system.
+> 
+> Hm, why would the ability "dirty and/or flush an arbitrary physical
+> cache line for testing purposes" be a DoS?
+
+Effectively switching off CPU caches can slow things down quite a bit... 
+especially on a large SMP system. ;)
+
+Petr Tesarik
