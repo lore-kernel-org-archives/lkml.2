@@ -1,145 +1,347 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab1GAJSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:18:09 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:34716 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab1GAJSH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1755981Ab1GAJSH (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Jul 2011 05:18:07 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: linux-arm-kernel@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, patrice.vilchez@atmel.com,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH for 3.0] AT91: Change nand buswidth logic to match hardware default configuration
-Date: Fri,  1 Jul 2011 12:25:24 +0200
-Message-Id: <1309515924-22531-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
+Received: from adelie.canonical.com ([91.189.90.139]:32859 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755954Ab1GAJRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 05:17:55 -0400
+From: Stefan Bader <stefan.bader@canonical.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 02/10] drm: implement helper functions for scanning lru list" has been added to staging queue
+Date: Fri,  1 Jul 2011 10:17:48 +0100
+Message-Id: <1309511868-2905-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The recently modified nand buswitth configuration is not aligned with
-board reality: the double footprint on boards is always populated with 8bits
-buswidth nand flashes.
-So we have to consider that without particular configuration the 8bits
-buswidth is selected by default.
-Moreover, the previous logic was always using !board_have_nand_8bit(), we
-change it to a simpler: board_have_nand_16bit().
+This is a note to let you know that I have just added a patch titled
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+    Subject: [PATCH 02/10] drm: implement helper functions for scanning lru list
+
+to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
+
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
+
+If you, or anyone else, feels it should not be added to the drm33-longterm tree,
+please reply to this email not later than 8 days after this email was sent.
+
+Thanks.
+-Stefan
+
+------
+
+>From be54bbcaee8559cc412b5e4abc8eb33388b083e0 Mon Sep 17 00:00:00 2001
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date: Fri, 17 Jun 2011 10:04:20 -0500
+Subject: [PATCH 02/10] drm: implement helper functions for scanning lru list
+
+BugLink: http://bugs.launchpad.net/bugs/599017
+
+These helper functions can be used to efficiently scan lru list
+for eviction. Eviction becomes a three stage process:
+1. Scanning through the lru list until a suitable hole has been found.
+2. Scan backwards to restore drm_mm consistency and find out which
+   objects fall into the hole.
+3. Evict the objects that fall into the hole.
+
+These helper functions don't allocate any memory (at the price of
+not allowing any other concurrent operations). Hence this can also be
+used for ttm (which does lru scanning under a spinlock).
+
+Evicting objects in this fashion should be more fair than the current
+approach by i915 (scan the lru for a object large enough to contain
+the new object). It's also more efficient than the current approach used
+by ttm (uncoditionally evict objects from the lru until there's enough
+free space).
+
+Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Acked-by: Thomas Hellstrom <thellstrom@vmwgfx.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+(backported from commit 709ea97145c125b3811ff70429e90ebdb0e832e5 upstream)
+
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 ---
- arch/arm/mach-at91/board-cap9adk.c           |    2 +-
- arch/arm/mach-at91/board-sam9260ek.c         |    2 +-
- arch/arm/mach-at91/board-sam9261ek.c         |    2 +-
- arch/arm/mach-at91/board-sam9263ek.c         |    2 +-
- arch/arm/mach-at91/board-sam9g20ek.c         |    2 +-
- arch/arm/mach-at91/board-sam9m10g45ek.c      |    2 +-
- arch/arm/mach-at91/include/mach/system_rev.h |   10 +++++-----
- 7 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/gpu/drm/drm_mm.c |  167 ++++++++++++++++++++++++++++++++++++++++++++-
+ include/drm/drm_mm.h     |   15 ++++-
+ 2 files changed, 177 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/mach-at91/board-cap9adk.c b/arch/arm/mach-at91/board-cap9adk.c
-index 1904fdf..cdb65d4 100644
---- a/arch/arm/mach-at91/board-cap9adk.c
-+++ b/arch/arm/mach-at91/board-cap9adk.c
-@@ -215,7 +215,7 @@ static void __init cap9adk_add_device_nand(void)
- 	csa = at91_sys_read(AT91_MATRIX_EBICSA);
- 	at91_sys_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_EBI_VDDIOMSEL_3_3V);
- 
--	cap9adk_nand_data.bus_width_16 = !board_have_nand_8bit();
-+	cap9adk_nand_data.bus_width_16 = board_have_nand_16bit();
- 	/* setup bus-width (8 or 16) */
- 	if (cap9adk_nand_data.bus_width_16)
- 		cap9adk_nand_smc_config.mode |= AT91_SMC_DBW_16;
-diff --git a/arch/arm/mach-at91/board-sam9260ek.c b/arch/arm/mach-at91/board-sam9260ek.c
-index d600dc1..5c24074 100644
---- a/arch/arm/mach-at91/board-sam9260ek.c
-+++ b/arch/arm/mach-at91/board-sam9260ek.c
-@@ -214,7 +214,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
- 
- static void __init ek_add_device_nand(void)
- {
--	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
-+	ek_nand_data.bus_width_16 = board_have_nand_16bit();
- 	/* setup bus-width (8 or 16) */
- 	if (ek_nand_data.bus_width_16)
- 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
-diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
-index f897f84..b60c22b 100644
---- a/arch/arm/mach-at91/board-sam9261ek.c
-+++ b/arch/arm/mach-at91/board-sam9261ek.c
-@@ -220,7 +220,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
- 
- static void __init ek_add_device_nand(void)
- {
--	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
-+	ek_nand_data.bus_width_16 = board_have_nand_16bit();
- 	/* setup bus-width (8 or 16) */
- 	if (ek_nand_data.bus_width_16)
- 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
-diff --git a/arch/arm/mach-at91/board-sam9263ek.c b/arch/arm/mach-at91/board-sam9263ek.c
-index 605b26f..9bbdc92 100644
---- a/arch/arm/mach-at91/board-sam9263ek.c
-+++ b/arch/arm/mach-at91/board-sam9263ek.c
-@@ -221,7 +221,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
- 
- static void __init ek_add_device_nand(void)
- {
--	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
-+	ek_nand_data.bus_width_16 = board_have_nand_16bit();
- 	/* setup bus-width (8 or 16) */
- 	if (ek_nand_data.bus_width_16)
- 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
-diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
-index 7624cf0..1325a50 100644
---- a/arch/arm/mach-at91/board-sam9g20ek.c
-+++ b/arch/arm/mach-at91/board-sam9g20ek.c
-@@ -198,7 +198,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
- 
- static void __init ek_add_device_nand(void)
- {
--	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
-+	ek_nand_data.bus_width_16 = board_have_nand_16bit();
- 	/* setup bus-width (8 or 16) */
- 	if (ek_nand_data.bus_width_16)
- 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
-diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
-index 063c95d..33eaa13 100644
---- a/arch/arm/mach-at91/board-sam9m10g45ek.c
-+++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
-@@ -178,7 +178,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
- 
- static void __init ek_add_device_nand(void)
- {
--	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
-+	ek_nand_data.bus_width_16 = board_have_nand_16bit();
- 	/* setup bus-width (8 or 16) */
- 	if (ek_nand_data.bus_width_16)
- 		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
-diff --git a/arch/arm/mach-at91/include/mach/system_rev.h b/arch/arm/mach-at91/include/mach/system_rev.h
-index b855ee7..8f48660 100644
---- a/arch/arm/mach-at91/include/mach/system_rev.h
-+++ b/arch/arm/mach-at91/include/mach/system_rev.h
-@@ -13,13 +13,13 @@
-  * the 16-31 bit are reserved for at91 generic information
-  *
-  * bit 31:
-- *	0 => nand 16 bit
-- *	1 => nand 8 bit
-+ *	0 => nand 8 bit
-+ *	1 => nand 16 bit
-  */
--#define BOARD_HAVE_NAND_8BIT	(1 << 31)
--static int inline board_have_nand_8bit(void)
-+#define BOARD_HAVE_NAND_16BIT	(1 << 31)
-+static inline int board_have_nand_16bit(void)
- {
--	return system_rev & BOARD_HAVE_NAND_8BIT;
-+	return system_rev & BOARD_HAVE_NAND_16BIT;
+diff --git a/drivers/gpu/drm/drm_mm.c b/drivers/gpu/drm/drm_mm.c
+index 4935e91..f1d3314 100644
+--- a/drivers/gpu/drm/drm_mm.c
++++ b/drivers/gpu/drm/drm_mm.c
+@@ -83,9 +83,9 @@ static struct drm_mm_node *drm_mm_kmalloc(struct drm_mm *mm, int atomic)
+ 	struct drm_mm_node *child;
+
+ 	if (atomic)
+-		child = kmalloc(sizeof(*child), GFP_ATOMIC);
++		child = kzalloc(sizeof(*child), GFP_ATOMIC);
+ 	else
+-		child = kmalloc(sizeof(*child), GFP_KERNEL);
++		child = kzalloc(sizeof(*child), GFP_KERNEL);
+
+ 	if (unlikely(child == NULL)) {
+ 		spin_lock(&mm->unused_lock);
+@@ -115,7 +115,7 @@ int drm_mm_pre_get(struct drm_mm *mm)
+ 	spin_lock(&mm->unused_lock);
+ 	while (mm->num_unused < MM_UNUSED_TARGET) {
+ 		spin_unlock(&mm->unused_lock);
+-		node = kmalloc(sizeof(*node), GFP_KERNEL);
++		node = kzalloc(sizeof(*node), GFP_KERNEL);
+ 		spin_lock(&mm->unused_lock);
+
+ 		if (unlikely(node == NULL)) {
+@@ -179,7 +179,6 @@ static struct drm_mm_node *drm_mm_split_at_start(struct drm_mm_node *parent,
+
+ 	INIT_LIST_HEAD(&child->fl_entry);
+
+-	child->free = 0;
+ 	child->size = size;
+ 	child->start = parent->start;
+ 	child->mm = parent->mm;
+@@ -280,6 +279,9 @@ void drm_mm_put_block(struct drm_mm_node *cur)
+
+ 	int merged = 0;
+
++	BUG_ON(cur->scanned_block || cur->scanned_prev_free
++				  || cur->scanned_next_free);
++
+ 	if (cur_head->prev != root_head) {
+ 		prev_node =
+ 		    list_entry(cur_head->prev, struct drm_mm_node, ml_entry);
+@@ -359,6 +361,8 @@ struct drm_mm_node *drm_mm_search_free(const struct drm_mm *mm,
+ 	struct drm_mm_node *best;
+ 	unsigned long best_size;
+
++	BUG_ON(mm->scanned_blocks);
++
+ 	best = NULL;
+ 	best_size = ~0UL;
+
+@@ -394,6 +398,8 @@ struct drm_mm_node *drm_mm_search_free_in_range(const struct drm_mm *mm,
+ 	struct drm_mm_node *best;
+ 	unsigned long best_size;
+
++	BUG_ON(mm->scanned_blocks);
++
+ 	best = NULL;
+ 	best_size = ~0UL;
+
+@@ -419,6 +425,158 @@ struct drm_mm_node *drm_mm_search_free_in_range(const struct drm_mm *mm,
  }
- 
- #endif /* __ARCH_SYSTEM_REV_H__ */
--- 
-1.7.3
+ EXPORT_SYMBOL(drm_mm_search_free_in_range);
+
++/**
++ * Initializa lru scanning.
++ *
++ * This simply sets up the scanning routines with the parameters for the desired
++ * hole.
++ *
++ * Warning: As long as the scan list is non-empty, no other operations than
++ * adding/removing nodes to/from the scan list are allowed.
++ */
++void drm_mm_init_scan(struct drm_mm *mm, unsigned long size,
++		      unsigned alignment)
++{
++	mm->scan_alignment = alignment;
++	mm->scan_size = size;
++	mm->scanned_blocks = 0;
++	mm->scan_hit_start = 0;
++	mm->scan_hit_size = 0;
++}
++EXPORT_SYMBOL(drm_mm_init_scan);
++
++/**
++ * Add a node to the scan list that might be freed to make space for the desired
++ * hole.
++ *
++ * Returns non-zero, if a hole has been found, zero otherwise.
++ */
++int drm_mm_scan_add_block(struct drm_mm_node *node)
++{
++	struct drm_mm *mm = node->mm;
++	struct list_head *prev_free, *next_free;
++	struct drm_mm_node *prev_node, *next_node;
++
++	mm->scanned_blocks++;
++
++	prev_free = next_free = NULL;
++
++	BUG_ON(node->free);
++	node->scanned_block = 1;
++	node->free = 1;
++
++	if (node->ml_entry.prev != &mm->ml_entry) {
++		prev_node = list_entry(node->ml_entry.prev, struct drm_mm_node,
++				       ml_entry);
++
++		if (prev_node->free) {
++			list_del(&prev_node->ml_entry);
++
++			node->start = prev_node->start;
++			node->size += prev_node->size;
++
++			prev_node->scanned_prev_free = 1;
++
++			prev_free = &prev_node->fl_entry;
++		}
++	}
++
++	if (node->ml_entry.next != &mm->ml_entry) {
++		next_node = list_entry(node->ml_entry.next, struct drm_mm_node,
++				       ml_entry);
++
++		if (next_node->free) {
++			list_del(&next_node->ml_entry);
++
++			node->size += next_node->size;
++
++			next_node->scanned_next_free = 1;
++
++			next_free = &next_node->fl_entry;
++		}
++	}
++
++	/* The fl_entry list is not used for allocated objects, so these two
++	 * pointers can be abused (as long as no allocations in this memory
++	 * manager happens). */
++	node->fl_entry.prev = prev_free;
++	node->fl_entry.next = next_free;
++
++	if (check_free_mm_node(node, mm->scan_size, mm->scan_alignment)) {
++		mm->scan_hit_start = node->start;
++		mm->scan_hit_size = node->size;
++
++		return 1;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(drm_mm_scan_add_block);
++
++/**
++ * Remove a node from the scan list.
++ *
++ * Nodes _must_ be removed in the exact same order from the scan list as they
++ * have been added, otherwise the internal state of the memory manager will be
++ * corrupted.
++ *
++ * When the scan list is empty, the selected memory nodes can be freed. An
++ * immediatly following drm_mm_search_free with best_match = 0 will then return
++ * the just freed block (because its at the top of the fl_entry list).
++ *
++ * Returns one if this block should be evicted, zero otherwise. Will always
++ * return zero when no hole has been found.
++ */
++int drm_mm_scan_remove_block(struct drm_mm_node *node)
++{
++	struct drm_mm *mm = node->mm;
++	struct drm_mm_node *prev_node, *next_node;
++
++	mm->scanned_blocks--;
++
++	BUG_ON(!node->scanned_block);
++	node->scanned_block = 0;
++	node->free = 0;
++
++	prev_node = list_entry(node->fl_entry.prev, struct drm_mm_node,
++			       fl_entry);
++	next_node = list_entry(node->fl_entry.next, struct drm_mm_node,
++			       fl_entry);
++
++	if (prev_node) {
++		BUG_ON(!prev_node->scanned_prev_free);
++		prev_node->scanned_prev_free = 0;
++
++		list_add_tail(&prev_node->ml_entry, &node->ml_entry);
++
++		node->start = prev_node->start + prev_node->size;
++		node->size -= prev_node->size;
++	}
++
++	if (next_node) {
++		BUG_ON(!next_node->scanned_next_free);
++		next_node->scanned_next_free = 0;
++
++		list_add(&next_node->ml_entry, &node->ml_entry);
++
++		node->size -= next_node->size;
++	}
++
++	INIT_LIST_HEAD(&node->fl_entry);
++
++	/* Only need to check for containement because start&size for the
++	 * complete resulting free block (not just the desired part) is
++	 * stored. */
++	if (node->start >= mm->scan_hit_start &&
++	    node->start + node->size
++	    		<= mm->scan_hit_start + mm->scan_hit_size) {
++		return 1;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(drm_mm_scan_remove_block);
++
+ int drm_mm_clean(struct drm_mm * mm)
+ {
+ 	struct list_head *head = &mm->ml_entry;
+@@ -433,6 +591,7 @@ int drm_mm_init(struct drm_mm * mm, unsigned long start, unsigned long size)
+ 	INIT_LIST_HEAD(&mm->fl_entry);
+ 	INIT_LIST_HEAD(&mm->unused_nodes);
+ 	mm->num_unused = 0;
++	mm->scanned_blocks = 0;
+ 	spin_lock_init(&mm->unused_lock);
+
+ 	return drm_mm_create_tail_node(mm, start, size, 0);
+diff --git a/include/drm/drm_mm.h b/include/drm/drm_mm.h
+index 4c10be3..83a7495 100644
+--- a/include/drm/drm_mm.h
++++ b/include/drm/drm_mm.h
+@@ -44,7 +44,10 @@
+ struct drm_mm_node {
+ 	struct list_head fl_entry;
+ 	struct list_head ml_entry;
+-	int free;
++	unsigned free : 1;
++	unsigned scanned_block : 1;
++	unsigned scanned_prev_free : 1;
++	unsigned scanned_next_free : 1;
+ 	unsigned long start;
+ 	unsigned long size;
+ 	struct drm_mm *mm;
+@@ -57,6 +60,11 @@ struct drm_mm {
+ 	struct list_head unused_nodes;
+ 	int num_unused;
+ 	spinlock_t unused_lock;
++	unsigned scan_alignment;
++	unsigned long scan_size;
++	unsigned long scan_hit_start;
++	unsigned scan_hit_size;
++	unsigned scanned_blocks;
+ };
+
+ /*
+@@ -133,6 +141,11 @@ static inline struct drm_mm *drm_get_mm(struct drm_mm_node *block)
+ 	return block->mm;
+ }
+
++void drm_mm_init_scan(struct drm_mm *mm, unsigned long size,
++		      unsigned alignment);
++int drm_mm_scan_add_block(struct drm_mm_node *node);
++int drm_mm_scan_remove_block(struct drm_mm_node *node);
++
+ extern void drm_mm_debug_table(struct drm_mm *mm, const char *prefix);
+ #ifdef CONFIG_DEBUG_FS
+ int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm);
+--
+1.7.4.1
 
