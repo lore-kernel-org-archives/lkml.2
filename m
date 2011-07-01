@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab1GAAfZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 20:35:25 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:56131 "EHLO
+	id S1754133Ab1GAAis (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 20:38:48 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:56159 "EHLO
 	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752775Ab1GAAfY (ORCPT
+	with ESMTP id S1753470Ab1GAAir (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 20:35:24 -0400
-Date: Fri, 1 Jul 2011 01:35:09 +0100
+	Thu, 30 Jun 2011 20:38:47 -0400
+Date: Fri, 1 Jul 2011 01:38:39 +0100
 From: Matthew Garrett <mjg59@srcf.ucam.org>
 To: Peter Chubb <peter.chubb@nicta.com.au>
 Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org
 Subject: Re: Acer Aspire One now hangs on reboot/shutdown
-Message-ID: <20110701003509.GA19738@srcf.ucam.org>
+Message-ID: <20110701003838.GB19738@srcf.ucam.org>
 References: <w4oc1qp2wf.wl%peter@chubb.wattle.id.au>
  <20110622194324.GD8861@srcf.ucam.org>
  <w4sjr1v323.wl%peter@chubb.wattle.id.au>
@@ -35,13 +35,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Jul 01, 2011 at 10:31:53AM +1000, Peter Chubb wrote:
->  Matthew> I guess I'm going to have to go back and retest the XP
->  Matthew> behaviour. I'd expect this machine to be using the ACPI
->  Matthew> vector there too.
-> 
+
 > This machine was only ever shipped with Linux (Linpus) on it, AFAIK.
 
-Ha! Ok, let me look into this some more.
+Bother. Your ACPI tables still make an _OSI query for Windows, even if 
+it only ever booted Linux - but only if there's no _OSI Linux. So we 
+could theoretically quirk it based on an OSI call for Linux followed by 
+one for Windows (rather than the other way around), but I suspect that 
+this is a specific enough case that a static quirk may be the easiest 
+thing to do here.
 
 -- 
 Matthew Garrett | mjg59@srcf.ucam.org
