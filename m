@@ -1,90 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755804Ab1GATew (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 15:34:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44720 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753780Ab1GATet convert rfc822-to-8bit (ORCPT
+	id S1756344Ab1GATg3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 15:36:29 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:41354 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755377Ab1GATgZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 15:34:49 -0400
-From: Petr Tesarik <ptesarik@suse.cz>
-Organization: SUSE LINUX, s.r.o.
-To: Ingo Molnar <mingo@elte.hu>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary physical addresses
-Date: Fri, 1 Jul 2011 21:34:45 +0200
-User-Agent: KMail/1.13.6 (Linux/2.6.37.6-0.5-default; KDE/4.6.0; i686; ; )
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <201106171038.25988.ptesarik@suse.cz> <4E0DEF2C.3040504@zytor.com> <20110701161345.GA29775@elte.hu>
-In-Reply-To: <20110701161345.GA29775@elte.hu>
+	Fri, 1 Jul 2011 15:36:25 -0400
+Date: Fri, 1 Jul 2011 16:36:20 -0300
+From: "Gustavo F. Padovan" <padovan@profusion.mobi>
+To: Joe Perches <joe@perches.com>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] bluetooth: Add bt_printk
+Message-ID: <20110701193620.GI23683@joana>
+Mail-Followup-To: Joe Perches <joe@perches.com>,
+	Marcel Holtmann <marcel@holtmann.org>,
+	"David S. Miller" <davem@davemloft.net>,
+	linux-bluetooth@vger.kernel.org, netdev@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <20110630033119.GA3438@joana>
+ <f06f1d8f4185db431a038c328c42caf4fe270dd0.1309418368.git.joe@perches.com>
+ <20110701190327.GD23683@joana>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107012134.45881.ptesarik@suse.cz>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110701190327.GD23683@joana>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne Pá 1. července 2011 18:13:45 Ingo Molnar napsal(a):
-> * H. Peter Anvin <hpa@zytor.com> wrote:
-> > On 07/01/2011 08:36 AM, Ingo Molnar wrote:
-> > > So we could kill multiple birds with the same stone here:
-> > >  - remove various ugly uses of /dev/mem (including the rootkit usage),
-> > >  
-> > >    with or without strict-devmem
-> > >  
-> > >  - extending it to above-4G for inspection purposes
-> > >  
-> > >  - allowing to kill /dev/mem access runtime similar to the
-> > >  
-> > >    disable_modules lock-down killswitch, for the so inclined.
-> > > 
-> > > Would you be interested in modifying your patch-set in such a
-> > > fashion?
+* Gustavo F. Padovan <padovan@profusion.mobi> [2011-07-01 16:03:27 -0300]:
 
-Yes, this works for me. How persistent should the kill-switch be? I assume it 
-doesn't make much sense to make a sysfs toggle, because then it would still be 
-open to abuse. I'd rather see it specified on boot and never changed. Agreed?
-
-Something like "enable_dev_mem" on the kenrel command line (default is 
-disabled).
-
-On a similar note, I should probably rip off write_mem() completely and 
-disallow PROT_WRITE mmapping of the device. Right?
-
-> > There is another use that I have looked at, as well: for testing
-> > purposes, it would be extremely good to be able to dirty and/or
-> > flush an arbitrary physical cache line for testing purposes.
-> > 
-> > This is very very similar to /dev/mem usage -- access to an
-> > arbitrary chunk of memory -- and a fully enabled /dev/mem can of
-> > course support this use (just mmap the page with the relevant cache
-> > line).  However, it could also be a separate device which could
-> > have looser permissions than /dev/mem; or a set of ioctls on
-> > /dev/mem with a separate kill switch, because no data would ever be
-> > have modified or returned to user space.
-> > 
-> > Either way, though, we found that it would share a lot of code with
-> > the /dev/mem implementation, and as such fixing up the underlying
-> > machinery is the sanest way to upstream this.
+> Hi Joe,
 > 
-> To me that cache flush thing sounds obscure (but still useful) enough
-> to justify a new ioctl over /dev/mem.
+> * Joe Perches <joe@perches.com> [2011-06-30 00:19:51 -0700]:
 > 
-> Not sure it even needs a killswitch, unless there's some real
-> security problem related to it.
+> > Add a local logging function to emit bluetooth specific
+> > messages.  Using vsprintf extension %pV saves code/text
+> > space.
+> > 
+> > Convert the current BT_INFO and BT_ERR macros to use bt_printk.
+> > Remove __func__ from BT_ERR macro (and the uses).
+> > Prefix "Bluetooth: " to BT_ERR
+> > Remove __func__ from BT_DBG as function can be prefixed when
+> > using dynamic_debug.
+> > 
+> > With allyesconfig:
+> > 
+> >    text	   data	    bss	    dec	    hex	filename
+> >  129956	   8632	  36096	 174684	  2aa5c	drivers/bluetooth/built-in.o.new2
+> >  134402	   8632	  36064	 179098	  2bb9a	drivers/bluetooth/built-in.o.old
+> >   14778	   1012	   3408	  19198	   4afe	net/bluetooth/bnep/built-in.o.new2
+> >   15067	   1012	   3408	  19487	   4c1f	net/bluetooth/bnep/built-in.o.old
+> >  346595	  19163	  86080	 451838	  6e4fe	net/bluetooth/built-in.o.new2
+> >  353751	  19163	  86064	 458978	  700e2	net/bluetooth/built-in.o.old
+> >   18483	   1172	   4264	  23919	   5d6f	net/bluetooth/cmtp/built-in.o.new2
+> >   18927	   1172	   4264	  24363	   5f2b	net/bluetooth/cmtp/built-in.o.old
+> >   19237	   1172	   5152	  25561	   63d9	net/bluetooth/hidp/built-in.o.new2
+> >   19581	   1172	   5152	  25905	   6531	net/bluetooth/hidp/built-in.o.old
+> >   59461	   3884	  14464	  77809	  12ff1	net/bluetooth/rfcomm/built-in.o.new2
+> >   61206	   3884	  14464	  79554	  136c2	net/bluetooth/rfcomm/built-in.o.old
+> > 
+> > with x86 defconfig (and just bluetooth):
+> > 
+> > $ size net/bluetooth/built-in.o.defconfig.*
+> >    text	   data	    bss	    dec	    hex	filename
+> >   66358	    933	    100	  67391	  1073f	net/bluetooth/built-in.o.defconfig.new
+> >   66643	    933	    100	  67676	  1085c	net/bluetooth/built-in.o.defconfig.old
+> > 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> 
+> I applied this patch with a minimal change in the print format. I changed
+> 'bluetooth' to 'Bluetooth'. Thanks a lot for the patch. ;)
 
-It can be used for DoS, but if you have permission for the ioctl(), then you 
-probably also have easier ways to kill the system.
+Ah, and in the case someone want to add the function name to debug messages
+after this patch. It is easy. Just run
 
-Petr
+echo -n "module bluetooth +pf" > /sys/kernel/debug/dynamic_debug/control
+
+And debug with funcion names will be enabled. ;)
+
+	Gustavo
