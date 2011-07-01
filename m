@@ -1,115 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755091Ab1GALNY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 07:13:24 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:51196 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753132Ab1GALNV (ORCPT
+	id S1755221Ab1GALN3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 07:13:29 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:58708 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755101Ab1GALNY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 07:13:21 -0400
-X-AuditID: b753bd60-a32aeba0000019f4-66-4e0dabcd8e6c
-X-AuditID: b753bd60-a32aeba0000019f4-66-4e0dabcd8e6c
-Message-ID: <4E0DABCC.1090303@hitachi.com>
-Date: Fri, 01 Jul 2011 20:13:16 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+	Fri, 1 Jul 2011 07:13:24 -0400
+Message-ID: <4E0DAB90.9080708@mvista.com>
+Date: Fri, 01 Jul 2011 15:12:16 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-GB; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC][PATCH] kprobes: Add separate preempt_disabling for kprobes
-References: <1309440213.26417.76.camel@gandalf.stny.rr.com> <1309449117.26417.90.camel@gandalf.stny.rr.com> <4E0D5682.3050806@hitachi.com>
-In-Reply-To: <4E0D5682.3050806@hitachi.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Axel Lin <axel.lin@gmail.com>
+CC: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM: DMA: Add missing semicolon for the define of dma_alloc_area
+References: <1309509472.30642.1.camel@phoenix>
+In-Reply-To: <1309509472.30642.1.camel@phoenix>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Steve,
+Hello.
 
-(2011/07/01 14:09), Masami Hiramatsu wrote:
-> (2011/07/01 0:51), Steven Rostedt wrote:
->> Kprobes requires preemption to be disabled as it single steps the code
->> it replaced with a breakpoint. But because the code that is single
->> stepped could be reading the preempt count, the kprobe disabling of the
->> preempt count can cause the wrong value to end up as a result. Here's an
->> example:
->>
->> If we add a kprobe on a inc_preempt_count() call:
-> 
-> BTW, on my tip tree, add_preempt_count (a.k.a. inc_preempt_count())
-> is marked as __kprobes, so it can not be probed. Is there any change?
+On 01-07-2011 12:37, Axel Lin wrote:
 
-Finally, I've stacked on this point. It seems that
-the add_preempt_count() (or inc_preempt_count) is called somewhere
-inside the do_int3 and it causes double fault and reboot.
+> I got below build error by: make at91x40_defconfig;make
+> Fix it by adding a missing semicolon for the define of dma_alloc_area.
 
-I guess following loop could be happen,
-inc_preempt_count->int3->do_int3->preempt_conditional_sti->inc_preempt_count..
+>    CC      arch/arm/mm/dma-mapping.o
+> arch/arm/mm/dma-mapping.c:309: warning: 'struct dma_coherent_area' declared inside parameter list
+> arch/arm/mm/dma-mapping.c:309: warning: its scope is only this definition or declaration, which is probably not what you want
+> arch/arm/mm/dma-mapping.c: In function '__dma_alloc':
+> arch/arm/mm/dma-mapping.c:324: error: expected ';' before '}' token
+> arch/arm/mm/dma-mapping.c: At top level:
+> arch/arm/mm/dma-mapping.c:334: warning: 'struct dma_coherent_area' declared inside parameter list
+> arch/arm/mm/dma-mapping.c:374: warning: 'struct dma_coherent_area' declared inside parameter list
+> make[1]: *** [arch/arm/mm/dma-mapping.o] Error 1
+> make: *** [arch/arm/mm] Error 2
 
-I'm still investigating that. Could you tell me what the basic tree
-you are working on? I'm using the latest -tip tree.
+    You didn't fix the warning though, so not clear why you cited them....
 
-Thank you,
+> Signed-off-by: Axel Lin<axel.lin@gmail.com>
 
-> 
-> Anyway, I'll send the removing preempt_disable from kprobe patch.
-> 
-> Thank you,
-> 
->>
->> 	[ preempt_count = 0 ]
->>
->> 	ld preempt_count, %eax	<<--- trap
->>
->> 		<trap>
->> 		preempt_disable();
->> 		[ preempt_count = 1]
->> 		setup_singlestep();
->> 		<trap return>
->>
->> 	[ preempt_count = 1 ]
->>
->> 	ld preempt_count, %eax
->>
->> 	[ %eax = 1 ]
->>
->> 		<trap>
->> 		post_kprobe_handler()
->> 			preempt_enable_no_resched();
->> 			[ preempt_count = 0 ]
->> 		<trap return>
->>
->> 	[ %eax = 1 ]
->>
->> 	add %eax,1
->>
->> 	[ %eax = 2 ]
->>
->> 	st %eax, preempt_count
->>
->> 	[ preempt_count = 2 ]
->>
->>
->> We just caused preempt count to increment twice when it should have only
->> incremented once, and this screws everything else up.
->>
->> To solve this, I've added a per_cpu variable called
->> kprobe_preempt_disabled, that is set by the kprobe code. If it is set,
->> the preempt_schedule() will not preempt the code.
->>
-> 
-
-
--- 
-Masami HIRAMATSU
-Software Platform Research Dept. Linux Technology Center
-Hitachi, Ltd., Yokohama Research Laboratory
-E-mail: masami.hiramatsu.pt@hitachi.com
+WBR, Sergei
