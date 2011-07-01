@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab1GAQ4b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:56:31 -0400
+	id S1757397Ab1GAQ4m (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:56:42 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:62813 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757304Ab1GAQ42 (ORCPT
+	with ESMTP id S1757366Ab1GAQ4h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:56:28 -0400
+	Fri, 1 Jul 2011 12:56:37 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
         Chris Ball <cjb@laptop.org>
 Cc: Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v9 04/12] mmc: mmc_test: add debugfs file to list all tests
-Date: Fri,  1 Jul 2011 18:55:25 +0200
-Message-Id: <1309539333-2606-5-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v9 06/12] mmc: mmc_test: test to measure how sg_len affect performance
+Date: Fri,  1 Jul 2011 18:55:27 +0200
+Message-Id: <1309539333-2606-7-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
 References: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
@@ -26,7 +26,9 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a debugfs file "testlist" to print all available tests
+test that measures how the mmc bandwidth depends on the numbers of sg elements
+in the sg list. The transfer size if fixed and sg length goes from a few up
+to 512. The purpose is to measure overhead caused by multiple sg elements.
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
@@ -35,66 +37,271 @@ Reviewed-by: Venkatraman S <svenkatr@ti.com>
 Tested-by: Sourav Poddar<sourav.poddar@ti.com>
 Tested-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mmc/card/mmc_test.c |   39 ++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 38 insertions(+), 1 deletions(-)
+ drivers/mmc/card/mmc_test.c |  151 +++++++++++++++++++++++++++++++++++++++----
+ 1 files changed, 139 insertions(+), 12 deletions(-)
 
 diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
-index 233cdfa..e8508e9 100644
+index 51031a5..006a5e9 100644
 --- a/drivers/mmc/card/mmc_test.c
 +++ b/drivers/mmc/card/mmc_test.c
-@@ -2445,6 +2445,32 @@ static const struct file_operations mmc_test_fops_test = {
- 	.release	= single_release,
+@@ -155,6 +155,7 @@ enum mmc_test_prep_media {
  };
  
-+static int mtf_testlist_show(struct seq_file *sf, void *data)
+ struct mmc_test_multiple_rw {
++	unsigned int *sg_len;
+ 	unsigned int *bs;
+ 	unsigned int len;
+ 	unsigned int size;
+@@ -387,21 +388,26 @@ out_free:
+  * Map memory into a scatterlist.  Optionally allow the same memory to be
+  * mapped more than once.
+  */
+-static int mmc_test_map_sg(struct mmc_test_mem *mem, unsigned long sz,
++static int mmc_test_map_sg(struct mmc_test_mem *mem, unsigned long size,
+ 			   struct scatterlist *sglist, int repeat,
+ 			   unsigned int max_segs, unsigned int max_seg_sz,
+-			   unsigned int *sg_len)
++			   unsigned int *sg_len, int min_sg_len)
+ {
+ 	struct scatterlist *sg = NULL;
+ 	unsigned int i;
++	unsigned long sz = size;
+ 
+ 	sg_init_table(sglist, max_segs);
++	if (min_sg_len > max_segs)
++		min_sg_len = max_segs;
+ 
+ 	*sg_len = 0;
+ 	do {
+ 		for (i = 0; i < mem->cnt; i++) {
+ 			unsigned long len = PAGE_SIZE << mem->arr[i].order;
+ 
++			if (min_sg_len && (size / min_sg_len < len))
++				len = ALIGN(size / min_sg_len, 512);
+ 			if (len > sz)
+ 				len = sz;
+ 			if (len > max_seg_sz)
+@@ -574,11 +580,12 @@ static void mmc_test_print_avg_rate(struct mmc_test_card *test, uint64_t bytes,
+ 
+ 	printk(KERN_INFO "%s: Transfer of %u x %u sectors (%u x %u%s KiB) took "
+ 			 "%lu.%09lu seconds (%u kB/s, %u KiB/s, "
+-			 "%u.%02u IOPS)\n",
++			 "%u.%02u IOPS, sg_len %d)\n",
+ 			 mmc_hostname(test->card->host), count, sectors, count,
+ 			 sectors >> 1, (sectors & 1 ? ".5" : ""),
+ 			 (unsigned long)ts.tv_sec, (unsigned long)ts.tv_nsec,
+-			 rate / 1000, rate / 1024, iops / 100, iops % 100);
++			 rate / 1000, rate / 1024, iops / 100, iops % 100,
++			 test->area.sg_len);
+ 
+ 	mmc_test_save_transfer_result(test, count, sectors, ts, rate, iops);
+ }
+@@ -1412,7 +1419,7 @@ static int mmc_test_no_highmem(struct mmc_test_card *test)
+  * Map sz bytes so that it can be transferred.
+  */
+ static int mmc_test_area_map(struct mmc_test_card *test, unsigned long sz,
+-			     int max_scatter)
++			     int max_scatter, int min_sg_len)
+ {
+ 	struct mmc_test_area *t = &test->area;
+ 	int err;
+@@ -1425,7 +1432,7 @@ static int mmc_test_area_map(struct mmc_test_card *test, unsigned long sz,
+ 				       &t->sg_len);
+ 	} else {
+ 		err = mmc_test_map_sg(t->mem, sz, t->sg, 1, t->max_segs,
+-				      t->max_seg_sz, &t->sg_len);
++				      t->max_seg_sz, &t->sg_len, min_sg_len);
+ 	}
+ 	if (err)
+ 		printk(KERN_INFO "%s: Failed to map sg list\n",
+@@ -1451,7 +1458,7 @@ static int mmc_test_area_transfer(struct mmc_test_card *test,
+ static int mmc_test_area_io_seq(struct mmc_test_card *test, unsigned long sz,
+ 				unsigned int dev_addr, int write,
+ 				int max_scatter, int timed, int count,
+-				bool nonblock)
++				bool nonblock, int min_sg_len)
+ {
+ 	struct timespec ts1, ts2;
+ 	int ret = 0;
+@@ -1474,7 +1481,7 @@ static int mmc_test_area_io_seq(struct mmc_test_card *test, unsigned long sz,
+ 			sz = max_tfr;
+ 	}
+ 
+-	ret = mmc_test_area_map(test, sz, max_scatter);
++	ret = mmc_test_area_map(test, sz, max_scatter, min_sg_len);
+ 	if (ret)
+ 		return ret;
+ 
+@@ -1506,7 +1513,7 @@ static int mmc_test_area_io(struct mmc_test_card *test, unsigned long sz,
+ 			    int timed)
+ {
+ 	return mmc_test_area_io_seq(test, sz, dev_addr, write, max_scatter,
+-				    timed, 1, false);
++				    timed, 1, false, 0);
+ }
+ 
+ /*
+@@ -2084,7 +2091,8 @@ static int mmc_test_large_seq_write_perf(struct mmc_test_card *test)
+ 
+ static int mmc_test_rw_multiple(struct mmc_test_card *test,
+ 				struct mmc_test_multiple_rw *tdata,
+-				unsigned int reqsize, unsigned int size)
++				unsigned int reqsize, unsigned int size,
++				int min_sg_len)
+ {
+ 	unsigned int dev_addr;
+ 	struct mmc_test_area *t = &test->area;
+@@ -2121,7 +2129,7 @@ static int mmc_test_rw_multiple(struct mmc_test_card *test,
+ 	/* Run test */
+ 	ret = mmc_test_area_io_seq(test, reqsize, dev_addr,
+ 				   tdata->do_write, 0, 1, size / reqsize,
+-				   tdata->do_nonblock_req);
++				   tdata->do_nonblock_req, min_sg_len);
+ 	if (ret)
+ 		goto err;
+ 
+@@ -2146,7 +2154,22 @@ static int mmc_test_rw_multiple_size(struct mmc_test_card *test,
+ 	}
+ 
+ 	for (i = 0 ; i < rw->len && ret == 0; i++) {
+-		ret = mmc_test_rw_multiple(test, rw, rw->bs[i], rw->size);
++		ret = mmc_test_rw_multiple(test, rw, rw->bs[i], rw->size, 0);
++		if (ret)
++			break;
++	}
++	return ret;
++}
++
++static int mmc_test_rw_multiple_sg_len(struct mmc_test_card *test,
++				       struct mmc_test_multiple_rw *rw)
 +{
++	int ret = 0;
 +	int i;
 +
-+	mutex_lock(&mmc_test_lock);
-+
-+	for (i = 0; i < ARRAY_SIZE(mmc_test_cases); i++)
-+		seq_printf(sf, "%d:\t%s\n", i+1, mmc_test_cases[i].name);
-+
-+	mutex_unlock(&mmc_test_lock);
-+
-+	return 0;
-+}
-+
-+static int mtf_testlist_open(struct inode *inode, struct file *file)
++	for (i = 0 ; i < rw->len && ret == 0; i++) {
++		ret = mmc_test_rw_multiple(test, rw, 512*1024, rw->size,
++					   rw->sg_len[i]);
+ 		if (ret)
+ 			break;
+ 	}
+@@ -2229,6 +2252,82 @@ static int mmc_test_profile_mult_read_nonblock_perf(struct mmc_test_card *test)
+ 	return mmc_test_rw_multiple_size(test, &test_data);
+ }
+ 
++/*
++ * Multiple blocking write 1 to 512 sg elements
++ */
++static int mmc_test_profile_sglen_wr_blocking_perf(struct mmc_test_card *test)
 +{
-+	return single_open(file, mtf_testlist_show, inode->i_private);
-+}
++	unsigned int sg_len[] = {1, 1 << 3, 1 << 4, 1 << 5, 1 << 6,
++				 1 << 7, 1 << 8, 1 << 9};
++	struct mmc_test_multiple_rw test_data = {
++		.sg_len = sg_len,
++		.size = TEST_AREA_MAX_SIZE,
++		.len = ARRAY_SIZE(sg_len),
++		.do_write = true,
++		.do_nonblock_req = false,
++		.prepare = MMC_TEST_PREP_ERASE,
++	};
 +
-+static const struct file_operations mmc_test_fops_testlist = {
-+	.open		= mtf_testlist_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
++	return mmc_test_rw_multiple_sg_len(test, &test_data);
 +};
 +
- static void mmc_test_free_file_test(struct mmc_card *card)
- {
- 	struct mmc_test_dbgfs_file *df, *dfs;
-@@ -2476,7 +2502,18 @@ static int mmc_test_register_file_test(struct mmc_card *card)
++/*
++ * Multiple non-blocking write 1 to 512 sg elements
++ */
++static int mmc_test_profile_sglen_wr_nonblock_perf(struct mmc_test_card *test)
++{
++	unsigned int sg_len[] = {1, 1 << 3, 1 << 4, 1 << 5, 1 << 6,
++				 1 << 7, 1 << 8, 1 << 9};
++	struct mmc_test_multiple_rw test_data = {
++		.sg_len = sg_len,
++		.size = TEST_AREA_MAX_SIZE,
++		.len = ARRAY_SIZE(sg_len),
++		.do_write = true,
++		.do_nonblock_req = true,
++		.prepare = MMC_TEST_PREP_ERASE,
++	};
++
++	return mmc_test_rw_multiple_sg_len(test, &test_data);
++}
++
++/*
++ * Multiple blocking read 1 to 512 sg elements
++ */
++static int mmc_test_profile_sglen_r_blocking_perf(struct mmc_test_card *test)
++{
++	unsigned int sg_len[] = {1, 1 << 3, 1 << 4, 1 << 5, 1 << 6,
++				 1 << 7, 1 << 8, 1 << 9};
++	struct mmc_test_multiple_rw test_data = {
++		.sg_len = sg_len,
++		.size = TEST_AREA_MAX_SIZE,
++		.len = ARRAY_SIZE(sg_len),
++		.do_write = false,
++		.do_nonblock_req = false,
++		.prepare = MMC_TEST_PREP_NONE,
++	};
++
++	return mmc_test_rw_multiple_sg_len(test, &test_data);
++}
++
++/*
++ * Multiple non-blocking read 1 to 512 sg elements
++ */
++static int mmc_test_profile_sglen_r_nonblock_perf(struct mmc_test_card *test)
++{
++	unsigned int sg_len[] = {1, 1 << 3, 1 << 4, 1 << 5, 1 << 6,
++				 1 << 7, 1 << 8, 1 << 9};
++	struct mmc_test_multiple_rw test_data = {
++		.sg_len = sg_len,
++		.size = TEST_AREA_MAX_SIZE,
++		.len = ARRAY_SIZE(sg_len),
++		.do_write = false,
++		.do_nonblock_req = true,
++		.prepare = MMC_TEST_PREP_NONE,
++	};
++
++	return mmc_test_rw_multiple_sg_len(test, &test_data);
++}
++
+ static const struct mmc_test_case mmc_test_cases[] = {
+ 	{
+ 		.name = "Basic write (no data verification)",
+@@ -2523,6 +2622,34 @@ static const struct mmc_test_case mmc_test_cases[] = {
+ 		.run = mmc_test_profile_mult_read_nonblock_perf,
+ 		.cleanup = mmc_test_area_cleanup,
+ 	},
++
++	{
++		.name = "Write performance blocking req 1 to 512 sg elems",
++		.prepare = mmc_test_area_prepare,
++		.run = mmc_test_profile_sglen_wr_blocking_perf,
++		.cleanup = mmc_test_area_cleanup,
++	},
++
++	{
++		.name = "Write performance non-blocking req 1 to 512 sg elems",
++		.prepare = mmc_test_area_prepare,
++		.run = mmc_test_profile_sglen_wr_nonblock_perf,
++		.cleanup = mmc_test_area_cleanup,
++	},
++
++	{
++		.name = "Read performance blocking req 1 to 512 sg elems",
++		.prepare = mmc_test_area_prepare,
++		.run = mmc_test_profile_sglen_r_blocking_perf,
++		.cleanup = mmc_test_area_cleanup,
++	},
++
++	{
++		.name = "Read performance non-blocking req 1 to 512 sg elems",
++		.prepare = mmc_test_area_prepare,
++		.run = mmc_test_profile_sglen_r_nonblock_perf,
++		.cleanup = mmc_test_area_cleanup,
++	},
+ };
  
- 	if (IS_ERR_OR_NULL(file)) {
- 		dev_err(&card->dev,
--			"Can't create file. Perhaps debugfs is disabled.\n");
-+			"Can't create test. Perhaps debugfs is disabled.\n");
-+		ret = -ENODEV;
-+		goto err;
-+	}
-+
-+	if (card->debugfs_root)
-+		file = debugfs_create_file("testlist", S_IRUGO,
-+			card->debugfs_root, card, &mmc_test_fops_testlist);
-+
-+	if (IS_ERR_OR_NULL(file)) {
-+		dev_err(&card->dev,
-+			"Can't create testlist. Perhaps debugfs is disabled.\n");
- 		ret = -ENODEV;
- 		goto err;
- 	}
+ static DEFINE_MUTEX(mmc_test_lock);
 -- 
 1.7.4.1
 
