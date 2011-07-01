@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751188Ab1GAEg2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 00:36:28 -0400
-Received: from mga09.intel.com ([134.134.136.24]:38616 "EHLO mga09.intel.com"
+	id S1751148Ab1GAEpT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 00:45:19 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:57255 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab1GAEg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 00:36:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,456,1304319600"; 
-   d="scan'208";a="22221742"
-From: Darren Hart <dvhart@linux.intel.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Darren Hart <dvhart@linux.intel.com>, Eric Anholt <eric@anholt.net>
-Subject: [PATCH] i915: silence gcc warnings with CONFIG_BUG disabled
-Date: Thu, 30 Jun 2011 21:36:14 -0700
-Message-Id: <1356458e54b6de3c2ae4bea7744f3ddd85bce0cc.1309494974.git.dvhart@linux.intel.com>
-X-Mailer: git-send-email 1.7.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1750795Ab1GAEpS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 00:45:18 -0400
+Date: Thu, 30 Jun 2011 21:45:12 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: KY Srinivasan <kys@microsoft.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
+Message-ID: <20110630214512.1b9125b7@nehalam.ftrdhcpuser.net>
+In-Reply-To: <6E21E5352C11B742B20C142EB499E0480816C3AF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
+	<20110630193346.GA22707@infradead.org>
+	<6E21E5352C11B742B20C142EB499E0480816C384@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	<20110630164808.17c506a4@nehalam.ftrdhcpuser.net>
+	<6E21E5352C11B742B20C142EB499E0480816C3AF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With CONFIG_BUG disabled, gcc issues the following warnings:
+On Fri, 1 Jul 2011 00:19:38 +0000
+KY Srinivasan <kys@microsoft.com> wrote:
 
-drivers/gpu/drm/i915/intel_display.c:773: warning: ‘state_string’ defined but not used
-drivers/gpu/drm/i915/intel_display.c: In function ‘intel_pin_and_fence_fb_obj’:
-drivers/gpu/drm/i915/intel_display.c:1790: warning: ‘alignment’ may be used uninitialized in this function
+> 
+> 
+> > -----Original Message-----
+> > From: Stephen Hemminger [mailto:shemminger@vyatta.com]
+> > Sent: Thursday, June 30, 2011 7:48 PM
+> > To: KY Srinivasan
+> > Cc: Christoph Hellwig; devel@linuxdriverproject.org; gregkh@suse.de; linux-
+> > kernel@vger.kernel.org; virtualization@lists.osdl.org
+> > Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
+> > 
+> > On Thu, 30 Jun 2011 23:32:34 +0000
+> > KY Srinivasan <kys@microsoft.com> wrote:
+> > 
+> > >
+> > > > -----Original Message-----
+> > > > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > > > Sent: Thursday, June 30, 2011 3:34 PM
+> > > > To: KY Srinivasan
+> > > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > > > Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
+> > > >
+> > > > On Wed, Jun 29, 2011 at 07:38:21AM -0700, K. Y. Srinivasan wrote:
+> > > > > Further cleanup of the hv drivers:
+> > > > >
+> > > > > 	1) Cleanup the reference counting mess for both stor and net devices.
+> > > >
+> > > > I really don't understand the need for reference counting on the storage
+> > > > side, especially now that you only have a SCSI driver.  The SCSI
+> > > > midlayer does proper counting on it's objects (Scsi_Host, scsi_device,
+> > > > scsi_cmnd), so you'll get that for free given that SCSI drivers just
+> > > > piggyback on the midlayer lifetime rules.
+> > > >
+> > > > For now your patches should probably go in as-is, but mid-term you
+> > > > should be able to completely remove that code on the storage side.
+> > > >
+> > >
+> > > Greg,
+> > >
+> > > I am thinking of  going back to my original implementation where I had one scsi
+> > host
+> > > per IDE device. This will certainly simply the code. Let me know what you think.
+> > If you
+> > > agree with this approach, please drop this patch-set, I will send you a new set
+> > of patches.
+> > 
+> > I think there ref counting on network devices is also unneeded
+> > as long as the unregister logic handles RCU correctly. The network layer
+> > calls the driver unregister routine after all packets are gone.
+> On the networking side, what about incoming packets that may be racing
+> with the device destruction. The current ref counting scheme deals with
+> that case.
 
-Fix the "state_string()" error with a __maybe_unused tag.
-
-Fix the "alignment" error by assigning it to 0 in the default case,
-this avoids an unecessary initialization in the common case.
-
-Signed-off-by: Darren Hart <dvhart@linux.intel.com>
-CC: Eric Anholt <eric@anholt.net>
----
- drivers/gpu/drm/i915/intel_display.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/gpu/drm/i915/intel_display.c b/drivers/gpu/drm/i915/intel_display.c
-index 21b6f93..adf483e 100644
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -770,7 +770,7 @@ void intel_wait_for_pipe_off(struct drm_device *dev, int pipe)
- 	}
- }
- 
--static const char *state_string(bool enabled)
-+static __maybe_unused const char *state_string(bool enabled)
- {
- 	return enabled ? "on" : "off";
- }
-@@ -1808,6 +1808,8 @@ intel_pin_and_fence_fb_obj(struct drm_device *dev,
- 		DRM_ERROR("Y tiled not allowed for scan out buffers\n");
- 		return -EINVAL;
- 	default:
-+		/* silence gcc uninitialized warnings with CONFIG_BUG not set */
-+		alignment = 0;
- 		BUG();
- 	}
- 
--- 
-1.7.1
-
+Not sure how HV driver tells hypervisor to stop sending packets. But the
+destructor is not called until after all other CPU's are done processing
+packets from that device.
