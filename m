@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758037Ab1GAXFF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 19:05:05 -0400
-Received: from home.keithp.com ([63.227.221.253]:39573 "EHLO keithp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757914Ab1GAXFD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 19:05:03 -0400
-From: "Keith Packard" <keithp@keithp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-        intel-gfx@lists.freedesktop.org
-Subject: [PULL] drm-intel-fixes (drm/i915 driver)
-User-Agent: Notmuch/0.5-202-g6ae4e7d (http://notmuchmail.org) Emacs/23.3.1 (i486-pc-linux-gnu)
-Date: Fri, 01 Jul 2011 16:04:59 -0700
-Message-ID: <yuny60ha9gk.fsf@aiko.keithp.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1758034Ab1GAXH5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 19:07:57 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:41553 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757657Ab1GAXH4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 19:07:56 -0400
+Subject: Re: [PATCH 0/5 v2] PCI: fix cardbus and sriov regressions
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Ram Pai <linuxram@us.ibm.com>
+Cc: jbarnes@virtuousgeek.org, torvalds@linux-foundation.org,
+        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org, socketcan@hartkopp.net, bhelgaas@google.com,
+        linux@dominikbrodowski.net
+In-Reply-To: <1309477662-18680-1-git-send-email-linuxram@us.ibm.com>
+References: <1309477662-18680-1-git-send-email-linuxram@us.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Solarflare Communications
+Date: Sat, 02 Jul 2011 00:07:48 +0100
+Message-ID: <1309561669.2693.20.camel@bwh-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 01 Jul 2011 23:07:55.0155 (UTC) FILETIME=[B5D5BE30:01CC3843]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.500.1024-18232.005
+X-TM-AS-Result: No--3.084600-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+On Thu, 2011-06-30 at 16:47 -0700, Ram Pai wrote:
+> The following patch-set fixes regressions caused by:
+> 
+> the commit "PCI: update bridge resources to get more big ranges when allocating space (again)"
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=da7822e5ad71ec9b745b412639f1e5e0ba795a20
+> 
+> patch 1/5: fix calculation of additional resource size for hotplug bridges
+> patch 2/5: ability to resize assigned pci-resource
+> patch 3/5: make SRIOV BARs resources optional
+> patch 4/5: make cardbus bridge resources optional
+> patch 5/5: code and terminology cleanup
+> 
+> The regression was caused on some platforms with limited i/o and memory
+> resources, the optional resources were allocated ahead of required resources,
+> thus starving the latter. The patchset ensures that all the required resources
+> are satisfied before any optional resources are satisfied.
 
+This certainly fixes the problem I originally reported: all the basic
+BARs for devices with SR-IOV enabled are mapped.
 
-Another forcewake fix, a NULL pointer oops, some error-path cleanups, a
-UMS for IRL fix and another IVB fix. The UMS for IRL fix (from Jesse)
-contains a bunch of code motion, hence the fairly large
-diffstat. Otherwise, these are all tiny fixes.
+When testing this, I noticed that a BAR which we fail to allocate space
+for may be left configured with an address range that overlaps that of
+other BARs.  However, that does not appear to be a regression.
 
-The following changes since commit 0d72c6fcb5cd215eeab824fac216ea42c5b574aa:
+Ben.
 
-  Merge branch 'drm-intel-fixes' of git://git.kernel.org/pub/scm/linux/kern=
-el/git/keithp/linux-2.6 (2011-06-28 11:15:57 -0700)
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/keithp/linux-2.6.git drm=
--intel-fixes
-
-Ben Widawsky (1):
-      drm/i915: Don't call describe_obj on NULL pointers
-
-Chris Wilson (1):
-      drm/i915/overlay: Fix unpinning along init error paths
-
-Jesse Barnes (2):
-      drm/i915: move IRQ function table init to i915_irq.c
-      drm/i915: apply HWSTAM writes to Ivy Bridge as well
-
-Keith Packard (1):
-      drm/i915: Hold struct_mutex during i915_save_state/i915_restore_state
-
- drivers/gpu/drm/i915/i915_debugfs.c  |   16 ++++---
- drivers/gpu/drm/i915/i915_dma.c      |   31 +-------------
- drivers/gpu/drm/i915/i915_drv.c      |    8 ---
- drivers/gpu/drm/i915/i915_drv.h      |   32 +-------------
- drivers/gpu/drm/i915/i915_irq.c      |   80 +++++++++++++++++++++++++-----=
-----
- drivers/gpu/drm/i915/i915_suspend.c  |   19 ++++++---
- drivers/gpu/drm/i915/intel_overlay.c |   17 ++++---
- 7 files changed, 94 insertions(+), 109 deletions(-)
-
-=2D-=20
-keith.packard@intel.com
-
---=-=-=
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iD8DBQFODlKbQp8BWwlsTdMRAp9tAJ9wjYbfX2fQa0fZFgN8r9wB7GIeJwCgzzfV
-s5pfrFO0tdawc9C2y1CpftU=
-=H2RJ
------END PGP SIGNATURE-----
---=-=-=--
