@@ -1,292 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754356Ab1GAA2G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 20:28:06 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38882 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753670Ab1GAA2E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 20:28:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 1 Jul 2011 09:20:59 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
-Message-Id: <20110701092059.be4400f7.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110701085013.4e8cbb02.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110630130134.63a1dd37.akpm@linux-foundation.org>
-	<20110701085013.4e8cbb02.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754388Ab1GAAa7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 20:30:59 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45164 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753905Ab1GAAa6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 20:30:58 -0400
+Date: Fri, 1 Jul 2011 00:30:51 GMT
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Message-ID: <tip-3e7cf5b00dd5b577b4ee9b2a66e40fb670ef210b@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <1309479572.2665.1372.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <1309479572.2665.1372.camel@sbsiddha-MOBL3.sc.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/fpu] x86-32, fpu: Fix DNA exception during check_fpu()
+Git-Commit-ID: 3e7cf5b00dd5b577b4ee9b2a66e40fb670ef210b
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 00:30:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jul 2011 08:50:13 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+Commit-ID:  3e7cf5b00dd5b577b4ee9b2a66e40fb670ef210b
+Gitweb:     http://git.kernel.org/tip/3e7cf5b00dd5b577b4ee9b2a66e40fb670ef210b
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Thu, 30 Jun 2011 17:19:32 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 30 Jun 2011 17:29:47 -0700
 
-> On Thu, 30 Jun 2011 13:01:34 -0700
-> Andrew Morton <akpm@linux-foundation.org> wrote:
+x86-32, fpu: Fix DNA exception during check_fpu()
 
-> Ok, I'll check it. Maybe I miss !CONFIG_SWAP...
-> 
+Before check_fpu() is called, we have cr0.TS bit set and hence the floating
+point code to check the FDIV bug was generating a DNA exception.
 
-v4 here. Thank you for pointing out. I could think of several ways but
-maybe this one is good because using vm_swappines with !CONFIG_SWAP seems
-to be a bug.
-tested with allyesconfig/allnoconfig.
-==
->From 0fb6905c288a16e99ee739f65cb486451e840637 Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Wed, 29 Jun 2011 18:24:49 +0900
-Subject: [PATCH] export memory cgroup's swappines by mem_cgroup_swappiness()
+Use kernel_fpu_begin()/kernel_fpu_end() around the floating point
+code to avoid this unnecessary device not available exception during
+boot.
 
-Each memory cgroup has 'swappiness' value and it can be accessed by
-get_swappiness(memcg). The major user is try_to_free_mem_cgroup_pages()
-and swappiness is passed by argument. It's propagated by scan_control.
-
-get_swappiness is static function but some planned updates will need to
-get swappiness from files other than memcontrol.c
-This patch exports get_swappiness() as mem_cgroup_swappiness().
-By this, we can remove the argument of swapiness from try_to_free...
-and drop swappiness from scan_control. only memcg uses it.
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-
-Changelog:
-  - fixed/tested allyesconfig/allnoconfig compile failure.
-  - adjusted signedness to vm_swappiness.
-  - drop swappiness from scan_control
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Link: http://lkml.kernel.org/r/1309479572.2665.1372.camel@sbsiddha-MOBL3.sc.intel.com
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- include/linux/swap.h |   10 +++++++---
- mm/memcontrol.c      |   15 +++++++--------
- mm/vmscan.c          |   33 ++++++++++++++++++++-------------
- 3 files changed, 34 insertions(+), 24 deletions(-)
+ arch/x86/kernel/cpu/bugs.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/swap.h b/include/linux/swap.h
-index a273468..0299832 100644
---- a/include/linux/swap.h
-+++ b/include/linux/swap.h
-@@ -252,11 +252,9 @@ static inline void lru_cache_add_file(struct page *page)
- extern unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 					gfp_t gfp_mask, nodemask_t *mask);
- extern unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem,
--						  gfp_t gfp_mask, bool noswap,
--						  unsigned int swappiness);
-+						  gfp_t gfp_mask, bool noswap);
- extern unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
--						unsigned int swappiness,
- 						struct zone *zone,
- 						unsigned long *nr_scanned);
- extern int __isolate_lru_page(struct page *page, int mode, int file);
-@@ -365,11 +363,17 @@ static inline void put_swap_token(struct mm_struct *mm)
- extern void
- mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout);
- extern int mem_cgroup_count_swap_user(swp_entry_t ent, struct page **pagep);
-+extern int mem_cgroup_swappiness(struct mem_cgroup *mem);
- #else
- static inline void
- mem_cgroup_uncharge_swapcache(struct page *page, swp_entry_t ent, bool swapout)
- {
- }
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index 525514c..46674fb 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -62,6 +62,8 @@ static void __init check_fpu(void)
+ 		return;
+ 	}
+ 
++	kernel_fpu_begin();
 +
-+static inline int mem_cgroup_swappiness(struct mem_cgroup *mem)
-+{
-+	return vm_swappiness;
-+}
- #endif
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR_SWAP
- extern void mem_cgroup_uncharge_swap(swp_entry_t ent);
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 3e7d5e6..db70176 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -249,7 +249,7 @@ struct mem_cgroup {
- 	atomic_t	oom_lock;
- 	atomic_t	refcnt;
- 
--	unsigned int	swappiness;
-+	int	swappiness;
- 	/* OOM-Killer disable */
- 	int		oom_kill_disable;
- 
-@@ -1330,7 +1330,7 @@ static unsigned long mem_cgroup_margin(struct mem_cgroup *mem)
- 	return margin >> PAGE_SHIFT;
- }
- 
--static unsigned int get_swappiness(struct mem_cgroup *memcg)
-+int mem_cgroup_swappiness(struct mem_cgroup *memcg)
- {
- 	struct cgroup *cgrp = memcg->css.cgroup;
- 
-@@ -1776,12 +1776,11 @@ static int mem_cgroup_hierarchical_reclaim(struct mem_cgroup *root_mem,
- 		/* we use swappiness of local cgroup */
- 		if (check_soft) {
- 			ret = mem_cgroup_shrink_node_zone(victim, gfp_mask,
--				noswap, get_swappiness(victim), zone,
--				&nr_scanned);
-+				noswap, zone, &nr_scanned);
- 			*total_scanned += nr_scanned;
- 		} else
- 			ret = try_to_free_mem_cgroup_pages(victim, gfp_mask,
--						noswap, get_swappiness(victim));
-+						noswap);
- 		css_put(&victim->css);
- 		/*
- 		 * At shrinking usage, we can't check we should stop here or
-@@ -3826,7 +3825,7 @@ try_to_free:
- 			goto out;
- 		}
- 		progress = try_to_free_mem_cgroup_pages(mem, GFP_KERNEL,
--						false, get_swappiness(mem));
-+						false);
- 		if (!progress) {
- 			nr_retries--;
- 			/* maybe some writeback is necessary */
-@@ -4288,7 +4287,7 @@ static u64 mem_cgroup_swappiness_read(struct cgroup *cgrp, struct cftype *cft)
- {
- 	struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);
- 
--	return get_swappiness(memcg);
-+	return mem_cgroup_swappiness(memcg);
- }
- 
- static int mem_cgroup_swappiness_write(struct cgroup *cgrp, struct cftype *cft,
-@@ -4997,7 +4996,7 @@ mem_cgroup_create(struct cgroup_subsys *ss, struct cgroup *cont)
- 	INIT_LIST_HEAD(&mem->oom_notify);
- 
- 	if (parent)
--		mem->swappiness = get_swappiness(parent);
-+		mem->swappiness = mem_cgroup_swappiness(parent);
- 	atomic_set(&mem->refcnt, 1);
- 	mem->move_charge_at_immigrate = 0;
- 	mutex_init(&mem->thresholds_lock);
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 4f49535..3d1d733 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -95,8 +95,6 @@ struct scan_control {
- 	/* Can pages be swapped as part of reclaim? */
- 	int may_swap;
- 
--	int swappiness;
--
- 	int order;
- 
  	/*
-@@ -1729,6 +1727,23 @@ static unsigned long shrink_list(enum lru_list lru, unsigned long nr_to_scan,
- 	return shrink_inactive_list(nr_to_scan, zone, sc, priority, file);
- }
+ 	 * trap_init() enabled FXSR and company _before_ testing for FP
+ 	 * problems here.
+@@ -80,6 +82,8 @@ static void __init check_fpu(void)
+ 		: "=m" (*&fdiv_bug)
+ 		: "m" (*&x), "m" (*&y));
  
-+#ifdef CONFIG_SWAP
-+static int vmscan_swappiness(struct scan_control *sc)
-+{
-+	if (scanning_global_lru(sc))
-+		return vm_swappiness;
-+	return mem_cgroup_swappiness(sc->mem_cgroup);
-+}
-+#else
-+static int vmscan_swappiness(struct scan_control *sc)
-+{
-+	/* Now, this function is never called with !CONFIG_SWAP */
-+	BUG();
-+	return 0;
-+}
-+#endif
++	kernel_fpu_end();
 +
-+
- /*
-  * Determine how aggressively the anon and file LRU lists should be
-  * scanned.  The relative value of each set of LRU lists is determined
-@@ -1789,8 +1804,8 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
- 	 * With swappiness at 100, anonymous and file have the same priority.
- 	 * This scanning priority is essentially the inverse of IO cost.
- 	 */
--	anon_prio = sc->swappiness;
--	file_prio = 200 - sc->swappiness;
-+	anon_prio = vmscan_swappiness(sc);
-+	file_prio = 200 - vmscan_swappiness(sc);
- 
- 	/*
- 	 * OK, so we have swap space and a fair amount of page cache
-@@ -2179,7 +2194,6 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
- 		.may_unmap = 1,
- 		.may_swap = 1,
--		.swappiness = vm_swappiness,
- 		.order = order,
- 		.mem_cgroup = NULL,
- 		.nodemask = nodemask,
-@@ -2203,7 +2217,6 @@ unsigned long try_to_free_pages(struct zonelist *zonelist, int order,
- 
- unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 						gfp_t gfp_mask, bool noswap,
--						unsigned int swappiness,
- 						struct zone *zone,
- 						unsigned long *nr_scanned)
- {
-@@ -2213,7 +2226,6 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 		.may_writepage = !laptop_mode,
- 		.may_unmap = 1,
- 		.may_swap = !noswap,
--		.swappiness = swappiness,
- 		.order = 0,
- 		.mem_cgroup = mem,
- 	};
-@@ -2242,8 +2254,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
- 
- unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 					   gfp_t gfp_mask,
--					   bool noswap,
--					   unsigned int swappiness)
-+					   bool noswap)
- {
- 	struct zonelist *zonelist;
- 	unsigned long nr_reclaimed;
-@@ -2253,7 +2264,6 @@ unsigned long try_to_free_mem_cgroup_pages(struct mem_cgroup *mem_cont,
- 		.may_unmap = 1,
- 		.may_swap = !noswap,
- 		.nr_to_reclaim = SWAP_CLUSTER_MAX,
--		.swappiness = swappiness,
- 		.order = 0,
- 		.mem_cgroup = mem_cont,
- 		.nodemask = NULL, /* we don't care the placement */
-@@ -2403,7 +2413,6 @@ static unsigned long balance_pgdat(pg_data_t *pgdat, int order,
- 		 * we want to put equal scanning pressure on each zone.
- 		 */
- 		.nr_to_reclaim = ULONG_MAX,
--		.swappiness = vm_swappiness,
- 		.order = order,
- 		.mem_cgroup = NULL,
- 	};
-@@ -2862,7 +2871,6 @@ unsigned long shrink_all_memory(unsigned long nr_to_reclaim)
- 		.may_writepage = 1,
- 		.nr_to_reclaim = nr_to_reclaim,
- 		.hibernation_mode = 1,
--		.swappiness = vm_swappiness,
- 		.order = 0,
- 	};
- 	struct shrink_control shrink = {
-@@ -3049,7 +3057,6 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		.nr_to_reclaim = max_t(unsigned long, nr_pages,
- 				       SWAP_CLUSTER_MAX),
- 		.gfp_mask = gfp_mask,
--		.swappiness = vm_swappiness,
- 		.order = order,
- 	};
- 	struct shrink_control shrink = {
--- 
-1.7.4.1
-
-
+ 	boot_cpu_data.fdiv_bug = fdiv_bug;
+ 	if (boot_cpu_data.fdiv_bug)
+ 		printk(KERN_WARNING "Hmm, FPU with FDIV bug.\n");
