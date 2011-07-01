@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab1GABBk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 21:01:40 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:32784 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab1GABBj (ORCPT
+	id S1754548Ab1GABG4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 21:06:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59948 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754133Ab1GABGz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 21:01:39 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 1 Jul 2011 09:54:33 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+	Thu, 30 Jun 2011 21:06:55 -0400
+Date: Thu, 30 Jun 2011 18:06:53 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
 To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
-        akpm@linux-foundation.org, linux-mm@kvack.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2011-06-30-15-59 uploaded (mm/memcontrol.c)
-Message-Id: <20110701095433.71c2aa18.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110701091525.bd8095f1.kamezawa.hiroyu@jp.fujitsu.com>
-References: <201106302259.p5UMxh5i019162@imap1.linux-foundation.org>
-	<20110630172054.49287627.randy.dunlap@oracle.com>
-	<20110701091525.bd8095f1.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "bsingharora@gmail.com" <bsingharora@gmail.com>,
+        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [PATCH] [Cleanup] memcg: export memory cgroup's swappiness v2
+Message-Id: <20110630180653.1df10f38.akpm@linux-foundation.org>
+In-Reply-To: <20110701092059.be4400f7.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20110629190325.28aa2dc6.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110630130134.63a1dd37.akpm@linux-foundation.org>
+	<20110701085013.4e8cbb02.kamezawa.hiroyu@jp.fujitsu.com>
+	<20110701092059.be4400f7.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -29,110 +32,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jul 2011 09:15:25 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Fri, 1 Jul 2011 09:20:59 +0900 KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-> On Thu, 30 Jun 2011 17:20:54 -0700
-> Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> On Fri, 1 Jul 2011 08:50:13 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 > 
-> > On Thu, 30 Jun 2011 15:59:43 -0700 akpm@linux-foundation.org wrote:
-> > 
-> > > The mm-of-the-moment snapshot 2011-06-30-15-59 has been uploaded to
-> > > 
-> > >    http://userweb.kernel.org/~akpm/mmotm/
-> > > 
-> > > and will soon be available at
-> > >    git://zen-kernel.org/kernel/mmotm.git
-> > > or
-> > >    git://git.cmpxchg.org/linux-mmotm.git
-> > > 
-> > > It contains the following patches against 3.0-rc5:
-> > 
-> > I see several of these build errors:
-> > 
-> > mmotm-2011-0630-1559/mm/memcontrol.c:1579: error: implicit declaration of function 'mem_cgroup_node_nr_file_lru_pages'
-> > mmotm-2011-0630-1559/mm/memcontrol.c:1583: error: implicit declaration of function 'mem_cgroup_node_nr_anon_lru_pages'
+> > On Thu, 30 Jun 2011 13:01:34 -0700
+> > Andrew Morton <akpm@linux-foundation.org> wrote:
+> 
+> > Ok, I'll check it. Maybe I miss !CONFIG_SWAP...
 > > 
 > 
-> Thanks...maybe !CONFIG_NUMA again. will post a fix soon.
-> 
+> v4 here. Thank you for pointing out. I could think of several ways but
+> maybe this one is good because using vm_swappines with !CONFIG_SWAP seems
+> to be a bug.
 
-fix here. compiled and booted on !CONFIG_NUMA on my host.
-I think I should do total cleanup of functions in mm/memcontrol.c 
-in the next week..several functions implements similar logics....
-==
->From 8773fc8b596dc56adf52fd0780c1b034291185ee Mon Sep 17 00:00:00 2001
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Date: Fri, 1 Jul 2011 09:49:54 +0900
-Subject: [PATCH]memcg-fix-reclaimable-lru-check-in-memcg-fix2.patch
+No, it isn't a bug - swappiness also controls the kernel's eagerness to
+unmap and reclaim mmapped pagecache.
 
+> tested with allyesconfig/allnoconfig.
 
- memcg-fix-reclaimable-lru-check-in-memcg.patch
- causes following error with !CONFIG_NUMA.
+Did it break the above?
 
-> mmotm-2011-0630-1559/mm/memcontrol.c:1579: error: implicit declaration of function 'mem_cgroup_node_nr_file_lru_pages'
-> mmotm-2011-0630-1559/mm/memcontrol.c:1583: error: implicit declaration of function 'mem_cgroup_node_nr_anon_lru_pages'
+> +#ifdef CONFIG_SWAP
+> +static int vmscan_swappiness(struct scan_control *sc)
+> +{
+> +	if (scanning_global_lru(sc))
+> +		return vm_swappiness;
+
+Well that's a bit ugly - it assumes that all callers set
+scan_control.swappiness to vm_swappiness then never change it.  That
+may be true in the current code.
+
+Ho hum, I guess that's a simplification we can make.
+
+> +	return mem_cgroup_swappiness(sc->mem_cgroup);
+> +}
+> +#else
+> +static int vmscan_swappiness(struct scan_control *sc)
+> +{
+> +	/* Now, this function is never called with !CONFIG_SWAP */
+> +	BUG();
+> +	return 0;
+> +}
+> +#endif
 >
+> ...
+>
+> @@ -1789,8 +1804,8 @@ static void get_scan_count(struct zone *zone, struct scan_control *sc,
+>  	 * With swappiness at 100, anonymous and file have the same priority.
+>  	 * This scanning priority is essentially the inverse of IO cost.
+>  	 */
+> -	anon_prio = sc->swappiness;
+> -	file_prio = 200 - sc->swappiness;
+> +	anon_prio = vmscan_swappiness(sc);
+> +	file_prio = 200 - vmscan_swappiness(sc);
 
-This patch fixes it by moving functions out of #ifdef.
+hah, this should go BUG if CONFIG_SWAP=n.  But it won't, because we
+broke get_scan_count().  It fails to apply vm_swappiness to file-backed
+pages if there's no available swap, which is daft.
 
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   23 +++++++++++------------
- 1 files changed, 11 insertions(+), 12 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index db70176..fb7338f 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1134,7 +1134,6 @@ unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
- 	return MEM_CGROUP_ZSTAT(mz, lru);
- }
- 
--#ifdef CONFIG_NUMA
- static unsigned long mem_cgroup_node_nr_file_lru_pages(struct mem_cgroup *memcg,
- 							int nid)
- {
-@@ -1146,6 +1145,17 @@ static unsigned long mem_cgroup_node_nr_file_lru_pages(struct mem_cgroup *memcg,
- 	return ret;
- }
- 
-+static unsigned long mem_cgroup_node_nr_anon_lru_pages(struct mem_cgroup *memcg,
-+							int nid)
-+{
-+	unsigned long ret;
-+
-+	ret = mem_cgroup_get_zonestat_node(memcg, nid, LRU_INACTIVE_ANON) +
-+		mem_cgroup_get_zonestat_node(memcg, nid, LRU_ACTIVE_ANON);
-+	return ret;
-+}
-+
-+#if MAX_NUMNODES > 1
- static unsigned long mem_cgroup_nr_file_lru_pages(struct mem_cgroup *memcg)
- {
- 	u64 total = 0;
-@@ -1157,17 +1167,6 @@ static unsigned long mem_cgroup_nr_file_lru_pages(struct mem_cgroup *memcg)
- 	return total;
- }
- 
--static unsigned long mem_cgroup_node_nr_anon_lru_pages(struct mem_cgroup *memcg,
--							int nid)
--{
--	unsigned long ret;
--
--	ret = mem_cgroup_get_zonestat_node(memcg, nid, LRU_INACTIVE_ANON) +
--		mem_cgroup_get_zonestat_node(memcg, nid, LRU_ACTIVE_ANON);
--
--	return ret;
--}
--
- static unsigned long mem_cgroup_nr_anon_lru_pages(struct mem_cgroup *memcg)
- {
- 	u64 total = 0;
--- 
-1.7.4.1
-
-
+I think this happened in 76a33fc380c9a ("vmscan: prevent
+get_scan_ratio() rounding errors") which claims "this patch doesn't
+really change logics, but just increase precision".
 
 
