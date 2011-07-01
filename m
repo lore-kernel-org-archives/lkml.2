@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756925Ab1GAOqh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:46:37 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51059 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756621Ab1GAOqg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:46:36 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Johannes Stezenbach <js@sig21.net>
-Subject: Re: [PATCH resend] compat_ioctl: fix warning caused by qemu
-Date: Fri, 1 Jul 2011 16:46:28 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-22-generic; KDE/4.3.2; x86_64; ; )
-Cc: Kevin Wolf <kwolf@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>
-References: <20110701093336.GA9582@sig21.net>
-In-Reply-To: <20110701093336.GA9582@sig21.net>
+	id S1756953Ab1GAOrQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:47:16 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36956 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756900Ab1GAOrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 10:47:14 -0400
+Date: Fri, 1 Jul 2011 16:46:41 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Petr Tesarik <ptesarik@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+Message-ID: <20110701144641.GA23272@elte.hu>
+References: <201106171038.25988.ptesarik@suse.cz>
+ <20110617093032.GA19235@elte.hu>
+ <201106291106.00070.ptesarik@suse.cz>
+ <20110701125802.GE12605@elte.hu>
+ <20110701134705.GA6175@infradead.org>
+ <20110701143735.GA21367@elte.hu>
+ <20110701144129.GA10052@infradead.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107011646.28918.arnd@arndb.de>
-X-Provags-ID: V02:K0:HuohgkClsj4p/Ys0QmMPu9AbNMCw8sou1bTqEIenO96
- g7EzDaFS1kEaggrhXHtOFGhkGa1KjrdF2TQF+zdQv0ifr0mTKO
- 2KRZWI2MtgyBWJO7qLckycne0qSSjwSXYeoyO6VeWAVJEpz+mN
- Ul1RMfvmCR6d63Smhv/u1wS5GlJlrEGs5+OKeM5ink+Jp/5ye6
- H7FKuo3F3d7JEvD5Fyvmg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110701144129.GA10052@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 01 July 2011, Johannes Stezenbach wrote:
-> 
-> On Linux x86_64 host with 32bit userspace, running
-> qemu or even just "qemu-img create -f qcow2 some.img 1G"
-> causes a kernel warning:
-> 
-> ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(00005326){t:'S';sz:0} arg(7fffffff) on some.img
-> ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(801c0204){t:02;sz:28} arg(fff77350) on some.img
-> 
-> ioctl 00005326 is CDROM_DRIVE_STATUS,
-> ioctl 801c0204 is FDGETPRM.
-> 
-> The warning appears because the Linux compat-ioctl handler for these
-> ioctls only applies to block devices, while qemu also uses the ioctls on
-> plain files.
-> 
-> Signed-off-by: Johannes Stezenbach <js@sig21.net>
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+* Christoph Hellwig <hch@infradead.org> wrote:
 
-> ---
-> (resend with Cc: suggested by get_maintainer.pl)
+> On Fri, Jul 01, 2011 at 04:37:35PM +0200, Ingo Molnar wrote:
+>
+> > After initial modules have loaded i essentially disable crash.ko 
+> > via /proc/sys/kernel/modules_disabled so rootkits have to work a 
+> > bit harder than that.
 > 
-> discussed in http://lkml.kernel.org/r/20110617090424.GA19345@sig21.net
-> 
-> Arnd, is this what you had in mind, or did you mean to move
-> all floppy compat definitions?  I decided to go with the
-> minimal change.  Tested on both 2.6.39.2 and 3.0-rc5-63-g0d72c6f.
+> Not sure for fedora as I don'[t have a kernel tree at hand right 
+> now, but for x86 systems at least RHEL6 has the module built in. 
+> [...]
 
-Yes, that should be fine, unless Jens would like to see a different
-solution for the struct definitions, e.g. moving all of the floppy
-compat ioctl numbers to fd.h. I'm fine with it either way.
+Fedora Rawhide has it modular:
 
-	Arnd
+ # grep CRASH /boot/config-2.6.38-0.rc7.git2.3.fc16.x86_64
+ CONFIG_CRASH=m
+
+ # rpm -ql kernel-2.6.38-0.rc7.git2.3.fc16.x86_64 | grep crash
+ /lib/modules/2.6.38-0.rc7.git2.3.fc16.x86_64/kernel/drivers/char/crash.ko
+
+> [...]  Either way we'll need some way to support crash properly in 
+> mainline, preferably in a boot-time opt-in way. [...]
+
+Yes, boot-time opt-in was what i suggested.
+
+> [...] I'd tend slightly toward optionally enabling /dev/mem for it 
+> instead of a separate driver, but if people prefer a different 
+> route I'm fine, too.
+
+No, sharing the driver is perfectly fine and sane as long as this 
+weird usage is not enabled widely.
+
+> Note that for normal crash usage read only access is just fine.
+
+That's true as well. Petr?
+
+Thanks,
+
+	Ingo
