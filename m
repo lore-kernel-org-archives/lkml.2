@@ -1,90 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756702Ab1GAOLg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:11:36 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:45670 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756481Ab1GAOLe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:11:34 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: uhkmUqIVM1mVN7MwQ4mQ67KQDZ3TOe2sbdRPKa2j3TYiU_S
- LbwuE7O8rOHDY3F2lXoXG9Rdnsjhxcsd3YN1aaCKucucQyLEcXdU4a17GCZT
- XtDYP2Q9O.9lWdCJv0vXLNLaY96Vbvs.vF2qiZtVHgakGFrW7YvKwTBFVQPX
- EwMPnmgeX2gX..XBoT4mHZ1aQ.jETAOiFpfLbP38_g9o95A6bT5Mn9ryEkq5
- BjP.NzXK8kQSqPPbbofhFfQqjWSAyy1iD7C1w34_zqDGSQytQ9sxprna7eH_
- Ql1ilQEUlwUs290LJ6GJjJPYTPzEx5T6keYPEZoGPRXsqacOj
-X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 1 Jul 2011 09:11:31 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Ben Greear <greearb@candelatech.com>
-cc: penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/2] slub:  Add method to verify memory is not
- freed.
-In-Reply-To: <1309308462-20124-3-git-send-email-greearb@candelatech.com>
-Message-ID: <alpine.DEB.2.00.1107010909060.2458@router.home>
-References: <1309308462-20124-1-git-send-email-greearb@candelatech.com> <1309308462-20124-3-git-send-email-greearb@candelatech.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1756714Ab1GAOMF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:12:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:32865 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756481Ab1GAOMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 10:12:01 -0400
+Message-ID: <4E0DD5AF.5040604@suse.cz>
+Date: Fri, 01 Jul 2011 16:11:59 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [RFC] Kconfig library check merge
+References: <1307387767-9237-1-git-send-email-lacombar@gmail.com>
+In-Reply-To: <1307387767-9237-1-git-send-email-lacombar@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 28 Jun 2011, greearb@candelatech.com wrote:
-
-> diff --git a/include/linux/slab.h b/include/linux/slab.h
-> index ad4dd1c..916ce0f 100644
-> --- a/include/linux/slab.h
-> +++ b/include/linux/slab.h
-> @@ -302,6 +302,19 @@ extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
+On 6.6.2011 21:16, Arnaud Lacombe wrote:
+> Hi Michal, Sam,
 >
->  #endif /* CONFIG_NUMA */
+> This is a bit a more deep patch. I was fed up of seeing the various library
+> check done for kconfig in at least 3 places in the scripts/kconfig/ tree. In
+> particular, the QT and GTK checks are far too messy to be in a Makefile, while
+> the gettext is pretty trivial and has its own shell script... Moreover, `nconf'
+> is missing explicit check for ncurses.
 >
-> +/**
-> + * Calling this on allocated memory will check that the memory
-> + * is expected to be in use, and print warnings if not.
-> + */
-> +#if defined(CONFIG_SLUB) && defined(CONFIG_SLUB_DEBUG)
-> +extern bool verify_mem_not_deleted(const void *x);
-> +#else
-> +static inline bool verify_mem_not_deleted(const void *x)
-> +{
-> +	return true;
-> +}
-> +#endif
-> +
-
-Why is this in slab.h and not slub_def.h?
-
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 3477ce5..f64caca 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -2958,6 +2958,42 @@ size_t ksize(const void *object)
->  }
->  EXPORT_SYMBOL(ksize);
+> Anyway, here it is. It is a single huge patch _on_purpose_, merely meant to be a
+> proof of concept. It is based on the previous serie of trivial fixes.
 >
-> +#ifdef CONFIG_SLUB_DEBUG
-> +bool verify_mem_not_deleted(const void *x)
-> +{
-> +	struct page *page;
-> +	void *object = (void *)x;
-> +	unsigned long flags;
-> +	bool rv;
-> +
-> +	if (unlikely(ZERO_OR_NULL_PTR(x)))
-> +		return false;
-> +
-> +	local_irq_save(flags);
-> +
-> +	page = virt_to_head_page(x);
-> +	if (unlikely(!PageSlab(page))) {
-> +		/* maybe it was from stack? */
-> +		rv = true;
-> +		goto out_unlock;
-> +	}
+> Most of the changes are made to rationalize the architecture. I thought in the
+> beginning of using autoconf/automake, but that'd be overkill. A single shell
+> script is far enough to do the job. All the checks only do a bunch of
+> verification, and export CFLAGS/LDFLAGS for building the frontend. The script
+> itself output a Makefile ready to be included for the top-level Makefile, with
+> the necessary check to trigger a re-check if the requested front-end is changed.
+>
+> Comments welcome!
+>
+> Regards,
+>   - Arnaud
+>
+> Cc: Sam Ravnborg<sam@ravnborg.org>
+>
+> ---
+>   scripts/kconfig/Makefile                   |  160 +++++++------------------
+>   scripts/kconfig/check.sh                   |  184 ++++++++++++++++++++++++++--
+>   scripts/kconfig/lxdialog/check-lxdialog.sh |   84 -------------
+>   3 files changed, 216 insertions(+), 212 deletions(-)
+>
+> diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+> index 84abb2f..f8f853d 100644
+> --- a/scripts/kconfig/Makefile
+> +++ b/scripts/kconfig/Makefile
+> @@ -141,14 +141,6 @@ help:
+>   	@echo  '  listnewconfig   - List new options'
+>   	@echo  '  oldnoconfig     - Same as silentoldconfig but set new symbols to n (unset)'
+>
+> -# lxdialog stuff
+> -check-lxdialog  := $(srctree)/$(src)/lxdialog/check-lxdialog.sh
+> -
+> -# Use recursively expanded variables so we do not call gcc unless
+> -# we really need to do so. (Do not call gcc as part of make mrproper)
+> -HOST_EXTRACFLAGS += $(shell $(CONFIG_SHELL) $(check-lxdialog) -ccflags) \
+> -                    -DLOCALE
+> -
+>   # ===========================================================================
+>   # Shared Makefile for the various kconfig executables:
+>   # conf:	  Used for defconfig, oldconfig and related targets
+> @@ -173,14 +165,19 @@ qconf-cxxobjs	:= qconf.o
+>   qconf-objs	:= zconf.tab.o
+>   gconf-objs	:= gconf.o zconf.tab.o
+>
+> -hostprogs-y := conf
+> +frontends-objs := $(conf-objs) $(mconf-objs) $(nconf-objs)
+> +frontends-objs := $(qconf-cxxobjs) $(gconf-objs)
+                   ^^
+Should be +=.
 
-The above check is problematic for slabs that have SLAB_DESTROY_BY_RCU
-set. PageSlab(page) may be true to the next rcu interval.
+> +
+> +hostprogs-y :=
+>
+>   ifeq ($(MAKECMDGOALS),nconfig)
+>   	hostprogs-y += nconf
+> +	ncurses-check := 1
+>   endif
+>
+>   ifeq ($(MAKECMDGOALS),menuconfig)
+>   	hostprogs-y += mconf
+> +	ncurses-check := 1
+>   endif
+>
+>   ifeq ($(MAKECMDGOALS),update-po-config)
+> @@ -188,140 +185,67 @@ ifeq ($(MAKECMDGOALS),update-po-config)
+>   endif
+>
+>   ifeq ($(MAKECMDGOALS),xconfig)
+> -	qconf-target := 1
+> -endif
+> -ifeq ($(MAKECMDGOALS),gconfig)
+> -	gconf-target := 1
+> -endif
+> -
+> -
+> -ifeq ($(qconf-target),1)
+>   	hostprogs-y += qconf
+> +	qt-check := 1
+>   endif
+> -
+> -ifeq ($(gconf-target),1)
+> +ifeq ($(MAKECMDGOALS),gconfig)
+>   	hostprogs-y += gconf
+> +	gtk-check := 1
+>   endif
+...
+> +KC_CHECK	:= gettext
+> +
+> +ifeq ($(ncurses-check),1)
+> +KC_CHECK	+= ncurses
+>   endif
+
+You could also build the KC_CHECK right when doing the $(MAKECMDGOALS) 
+tests and drop the *-check variables. Otherwise it is a very nice 
+cleanup, thanks a lot!
+
+Michal
