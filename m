@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756865Ab1GAQB0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:01:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49722 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab1GAQBW (ORCPT
+	id S1756876Ab1GAQCU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:02:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:59056 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751788Ab1GAQCP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:01:22 -0400
-Date: Fri, 1 Jul 2011 18:01:18 +0200
+	Fri, 1 Jul 2011 12:02:15 -0400
+Date: Fri, 1 Jul 2011 18:02:10 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -17,41 +17,97 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Thomas Gleixner <tglx@linutronix.de>
 Subject: Re: [GIT PULL v2] sched: Make sleep inside atomic detection work on
  !PREEMPT
-Message-ID: <20110701160115.GE8508@somewhere>
+Message-ID: <20110701160207.GF8508@somewhere>
 References: <1307712622-11104-1-git-send-email-fweisbec@gmail.com>
  <20110622224844.GA3290@somewhere>
  <20110701123629.GA12605@elte.hu>
  <20110701125644.GD8508@somewhere>
  <20110701125926.GF12605@elte.hu>
- <20110701150517.GA24707@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110701150517.GA24707@elte.hu>
+In-Reply-To: <20110701125926.GF12605@elte.hu>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 05:05:17PM +0200, Ingo Molnar wrote:
+On Fri, Jul 01, 2011 at 02:59:26PM +0200, Ingo Molnar wrote:
 > 
-> -tip testing also found that m32r fails to build:
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
 > 
-> /home/mingo/tip/kernel/sched.c: In function 'preempt_schedule':
-> /home/mingo/tip/kernel/sched.c:4364: error: implicit declaration of function 'add_preempt_count_notrace'
-> /home/mingo/tip/kernel/sched.c:4366: error: implicit declaration of function 'sub_preempt_count_notrace'
+> > On Fri, Jul 01, 2011 at 02:36:29PM +0200, Ingo Molnar wrote:
+> > > 
+> > > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > > 
+> > > > On Fri, Jun 10, 2011 at 03:30:18PM +0200, Frederic Weisbecker wrote:
+> > > > > Ingo,
+> > > > > 
+> > > > > Please pull the sched/core branch that can be found at:
+> > > > > 
+> > > > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > > > > 	sched/core
+> > > > 
+> > > > Hi Ingo,
+> > > > 
+> > > > I have added Randy's ack on the last patch. To get it, please pull the v2 in
+> > > > the following branch:
+> > > > 
+> > > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > > >        sched/core-v2
+> > > > 
+> > > > There are no other changes.
+> > > 
+> > > Hm, this triggers such warnings now:
+> > > 
+> > > Detected 2010.217 MHz processor.
+> > > Marking TSC unstable due to TSCs unsynchronized
+> > > Calibrating delay loop (skipped), value calculated using timer frequency.. 4022.95 BogoMIPS (lpj=6700723)
+> > > pid_max: default: 4096 minimum: 301
+> > > BUG: scheduling while atomic: swapper/0/0x10000002
+> > > no locks held by swapper/0.
+> > > Pid: 0, comm: swapper Not tainted 3.0.0-rc5-tip-01401-ga7adf5f-dirty #141020
+> > > Call Trace:
+> > >  [<ffffffff81ddb3b0>] __schedule_bug+0x60/0x65
+> > >  [<ffffffff81dee803>] schedule+0x953/0x980
+> > >  [<ffffffff81571e30>] ? serial8250_console_putchar+0x30/0x40
+> > >  [<ffffffff81df177b>] ? _raw_spin_unlock+0x2b/0x50
+> > >  [<ffffffff8107882a>] __cond_resched+0x2a/0x40
+> > >  [<ffffffff81dee8e2>] _cond_resched+0x32/0x40
+> > >  [<ffffffff81110ba8>] __alloc_pages_nodemask+0x1b8/0x880
+> > >  [<ffffffff81df23ce>] ? common_interrupt+0xe/0x13
+> > >  [<ffffffff81080649>] ? vprintk+0x359/0x530
+> > >  [<ffffffff8113b4e7>] slob_new_pages+0x17/0x80
+> > >  [<ffffffff8113bd13>] __kmalloc_node+0xa3/0x270
+> > >  [<ffffffff81ddb6d5>] ? printk+0x41/0x43
+> > >  [<ffffffff82738420>] pidmap_init+0x80/0xbf
+> > >  [<ffffffff8272aa54>] start_kernel+0x28b/0x300
+> > >  [<ffffffff8272a2ee>] x86_64_start_reservations+0xfe/0x102
+> > >  [<ffffffff8272a3e2>] x86_64_start_kernel+0xf0/0xf7
+> > > Security Framework initialized
+> > > AppArmor: AppArmor initialized
+> > > Mount-cache hash table entries: 256
+> > > Initializing cgroup subsys cpuacct
+> > > 
+> > > Not sure we want to warn about schedule during early init, or can 
+> > > it cause problems and should thus be fixed? I bet there's more 
+> > > such instances.
+> > 
+> > I believe this is harmless because no other other tasks than init 
+> > are queued at that time. But I don't know, may be calling 
+> > schedule() involves some things that are not ready yet at that 
+> > time.
 > 
-> due to:
+> So why does it have need_resched set then? (which i presume must be a 
+> condition for cond_resched() to call into schedule())
 
-Ok, will fix soon. Thanks!
-
+Good point, I'm looking at this.
+ 
+> > Either we add a system_state check in schedule_debug() or we fix 
+> > the callers to not call schedule when system_state shows we are 
+> > booting..
 > 
-> bdd4e85dc36cdbcfc1608a5b2a17c80a9db8986a is the first bad commit
-> commit bdd4e85dc36cdbcfc1608a5b2a17c80a9db8986a
-> Author: Frederic Weisbecker <fweisbec@gmail.com>
-> Date:   Wed Jun 8 01:13:27 2011 +0200
-> 
->     sched: Isolate preempt counting in its own config option
+> Hm, such attempts were rather fragile in the past.
 > 
 > Thanks,
 > 
