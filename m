@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755458Ab1GAI2C (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 04:28:02 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38023 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755367Ab1GAI17 convert rfc822-to-8bit (ORCPT
+	id S1755451Ab1GAIb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 04:31:26 -0400
+Received: from mailrelay009.isp.belgacom.be ([195.238.6.176]:32528 "EHLO
+	mailrelay009.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755399Ab1GAIbY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 04:27:59 -0400
-Subject: Re: [PATCH v3 7/9] KVM-GST: KVM Steal time accounting
-From: Peter Zijlstra <peterz@infradead.org>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Avi Kivity <avi@redhat.com>, Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-In-Reply-To: <4E0D369C.4090403@redhat.com>
-References: <1309361388-30163-1-git-send-email-glommer@redhat.com>
-	 <1309361388-30163-8-git-send-email-glommer@redhat.com>
-	 <1309470869.12449.607.camel@twins>  <4E0D369C.4090403@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 01 Jul 2011 10:26:31 +0200
-Message-ID: <1309508791.12449.631.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 1 Jul 2011 04:31:24 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: Av0EABCEDU5tg1zt/2dsb2JhbABSp154iHkCwQMOhiQEomU
+Date: Fri, 1 Jul 2011 10:31:22 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: linux-watchdog@vger.kernel.org, Grant Likely <grant.likely@secretlab.ca>,
+        Jamie Iles <jamie@jamieiles.com>,
+        Walter Goossens <waltergoossens@home.nl>,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        nios2-dev@sopc.et.ntust.edu.tw
+Subject: Re: [PATCH v3 RESEND] watchdog: Add driver for Altera Watchdog
+	Timer
+Message-ID: <20110701083122.GA8678@infomag.iguana.be>
+References: <1300461573-12268-1-git-send-email-tklauser@distanz.ch> <20110527082309.GB16394@infomag.iguana.be> <20110614134859.GP20966@distanz.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110614134859.GP20966@distanz.ch>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-30 at 23:53 -0300, Glauber Costa wrote:
-> On 06/30/2011 06:54 PM, Peter Zijlstra wrote:
-> > On Wed, 2011-06-29 at 11:29 -0400, Glauber Costa wrote:
-> >> +       if (static_branch(&paravirt_steal_enabled)) {
-> >
-> > How is that going to compile on !CONFIG_PARAVIRT or !x86 in general?
-> > Only x86-PARAVIRT will provide that variable.
-> >
-> >
-> 
-> Good point. I'd wrap it into CONFIG_PARAVIRT.
-> To be clear, the reason I did not put it inside 
-> CONFIG_PARAVIRT_TIME_ACCOUNTING, is because I wanted to have the mere 
-> display of steal time separated from the rest - unless, of course, you 
-> object this idea.
-> 
-> Using CONFIG_PARAVIRT achieves this goal well.
+Hi Tobias,
 
-ia64 seems to also have CONFIG_PARAVIRT
+> > I presume this will go in together with the other nios2 architecture patches?
+> 
+> It will probably take some time until we get to the point where we're
+> ready to submit nios2 arch patches. We started out with individual
+> drivers to get used to the submission and review process. Most of them
+> got taken by the respective subsystem maintainers.
+> 
+> So if you want to take the driver through your tree, please go ahead.
+> Otherwise I will resubmit it once we're ready to submit the nios2 arch.
+
+Just let me know when you are ready to submit the nios2 arch and then I will do
+the necessary on my side. In the mean time I will add your driver to the
+linux-2.6-watchdog-next tree in some form, but I might convert the driver first
+to the generic watchdog framework.
+
+Kind regards,
+Wim.
+
