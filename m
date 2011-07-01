@@ -1,87 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953Ab1GAOrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:47:16 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:36956 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756900Ab1GAOrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:47:14 -0400
-Date: Fri, 1 Jul 2011 16:46:41 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Petr Tesarik <ptesarik@suse.cz>, Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
-Message-ID: <20110701144641.GA23272@elte.hu>
-References: <201106171038.25988.ptesarik@suse.cz>
- <20110617093032.GA19235@elte.hu>
- <201106291106.00070.ptesarik@suse.cz>
- <20110701125802.GE12605@elte.hu>
- <20110701134705.GA6175@infradead.org>
- <20110701143735.GA21367@elte.hu>
- <20110701144129.GA10052@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110701144129.GA10052@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1756982Ab1GAOrj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:47:39 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56509 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756921Ab1GAOrg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 10:47:36 -0400
+Date: Fri, 1 Jul 2011 15:49:47 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
+ printk()
+Message-ID: <20110701154947.133c30f5@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110701143757.GA22567@albatros>
+References: <20110626165409.GA2584@albatros>
+	<20110626182628.GA20158@elte.hu>
+	<20110626190622.GB4217@albatros>
+	<20110626194618.GA21740@elte.hu>
+	<20110626202518.GA4915@albatros>
+	<20110626220126.GA24004@elte.hu>
+	<20110627083633.GA5846@albatros>
+	<20110627104058.45e93c41@pyx>
+	<20110627183829.GA16033@albatros>
+	<BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com>
+	<20110701143757.GA22567@albatros>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+>  of the multiline feature.  Intoducing new "%S" format for single lines
+>  makes little sense as there are tons of printk() calls that should be
+>  already restricted to one line.
 
-* Christoph Hellwig <hch@infradead.org> wrote:
+You don't need a new format string surely. Your expectation for printk is 
 
-> On Fri, Jul 01, 2011 at 04:37:35PM +0200, Ingo Molnar wrote:
->
-> > After initial modules have loaded i essentially disable crash.ko 
-> > via /proc/sys/kernel/modules_disabled so rootkits have to work a 
-> > bit harder than that.
-> 
-> Not sure for fedora as I don'[t have a kernel tree at hand right 
-> now, but for x86 systems at least RHEL6 has the module built in. 
-> [...]
+"multiple new lines are cool providing they are in the format string"
 
-Fedora Rawhide has it modular:
+So that bit isn't hard to deal with, 
 
- # grep CRASH /boot/config-2.6.38-0.rc7.git2.3.fc16.x86_64
- CONFIG_CRASH=m
+You make vprintk take an extra arg (trusted/untrusted args)
+You make printk pass 'untrusted'
+You make %s quote the arguments for control codes if untrusted is set but
+you don't mangle format string controls.
 
- # rpm -ql kernel-2.6.38-0.rc7.git2.3.fc16.x86_64 | grep crash
- /lib/modules/2.6.38-0.rc7.git2.3.fc16.x86_64/kernel/drivers/char/crash.ko
+End of problem ?
 
-> [...]  Either way we'll need some way to support crash properly in 
-> mainline, preferably in a boot-time opt-in way. [...]
+At which point your attacker has more work to do but given a long string
+yawns and stars using the right number of spaces for the likely 80 col
+screen :)
 
-Yes, boot-time opt-in was what i suggested.
 
-> [...] I'd tend slightly toward optionally enabling /dev/mem for it 
-> instead of a separate driver, but if people prefer a different 
-> route I'm fine, too.
 
-No, sharing the driver is perfectly fine and sane as long as this 
-weird usage is not enabled widely.
-
-> Note that for normal crash usage read only access is just fine.
-
-That's true as well. Petr?
-
-Thanks,
-
-	Ingo
