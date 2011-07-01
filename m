@@ -1,64 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab1GAGln (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 02:41:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57773 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754840Ab1GAGll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 02:41:41 -0400
-Message-ID: <4E0D6C08.1040201@redhat.com>
-Date: Fri, 01 Jul 2011 08:41:12 +0200
-From: Paolo Bonzini <pbonzini@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Mnenhy/0.8.3 Thunderbird/3.1.10
+	id S1754927Ab1GAGvb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 02:51:31 -0400
+Received: from mail.kapulan.hu ([213.16.89.155]:46614 "EHLO kapulan.hu"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754890Ab1GAGva (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 02:51:30 -0400
+X-Greylist: delayed 1345 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jul 2011 02:51:30 EDT
+To: undisclosed-recipients:;
+Subject: Nachricht
 MIME-Version: 1.0
-To: Stefan Hajnoczi <stefanha@gmail.com>
-CC: Hannes Reinecke <hare@suse.de>, Christoph Hellwig <chellwig@redhat.com>,
-        Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        qemu-devel <qemu-devel@nongnu.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Virtualization <virtualization@lists.linux-foundation.org>,
-        "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Subject: Re: virtio scsi host draft specification, v3
-References: <1504884387.187692.1307716550265.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>	<4DF71E28.6070009@suse.de>	<4E0AE36B.9010500@redhat.com> <BANLkTik2AXXkWvV23OP1eDdLirP2N0PC3A@mail.gmail.com>
-In-Reply-To: <BANLkTik2AXXkWvV23OP1eDdLirP2N0PC3A@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8;
+ format=flowed
+Content-Transfer-Encoding: 8bit
+Date: Fri, 01 Jul 2011 06:28:59 +0000
+From: "Mr. Mervyn King" <directaccess@msnzone.cn>
+Reply-To: <directacess-mervynking@hotmail.co.uk>
+Mail-Reply-To: <directacess-mervynking@hotmail.co.uk>
+Message-ID: <9ccfcb3522bed4e6b6ddb12b08dc0c75@kapulan.hu>
+User-Agent: Roundcube Webmail/0.5.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/29/2011 11:39 AM, Stefan Hajnoczi wrote:
-> > >  Of course, when doing so we would be lose the ability to freely remap
-> > >  LUNs. But then remapping LUNs doesn't gain you much imho.
-> > >  Plus you could always use qemu block backend here if you want
-> > >  to hide the details.
-> >
-> >  And you could always use the QEMU block backend with scsi-generic if you
-> >  want to remap LUNs, instead of true passthrough via the kernel target.
->
-> IIUC the in-kernel target always does remapping.  It passes through
-> individual LUNs rather than entire targets and you pick LU Numbers to
-> map to the backing storage (which may or may not be a SCSI
-> pass-through device).  Nicholas Bellinger can confirm whether this is
-> correct.
+ Guten Tag
 
-But then I don't understand.  If you pick LU numbers both with the 
-in-kernel target and with QEMU, you do not need to use e.g. WWPNs with 
-fiber channel, because we are not passing through the details of the 
-transport protocol (one day we might have virtio-fc, but more likely 
-not).  So the LUNs you use might as well be represented by hierarchical 
-LUNs.
 
-Using NPIV with KVM would be done by mapping the same virtual N_Port ID 
-in the host(s) to the same LU number in the guest.  You might already do 
-this now with virtio-blk, in fact.
+ Ich möchte Sie intime mit der bitte, die immensen Vorteil für uns beide 
+ wären, obwohl Sie möglicherweise besorgt über meine e-Mail, wie wir vor 
+ nicht erfüllt haben. Mein Name ist Mervyn King, ich arbeite mit Bank Of 
+ England. Es ist die Summe von €20,600,000.00 Euro in meiner Bank, und es 
+ gibt keine Begünstigten sagte über diese Mittel, was bedeutet, dass 
+ niemand jemals vorwärts kommen würde es verlangen.
 
-Put in another way: the virtio-scsi device is itself a SCSI target, so 
-yes, there is a single target port identifier in virtio-scsi.  But this 
-SCSI target just passes requests down to multiple real targets, and so 
-will let you do ALUA and all that.
 
-Of course if I am dead wrong please correct me.
+ Ich bitte, dass wir zusammenarbeiten zu übertragen die Mittel von 
+ meiner Bank in Ihr Bankkonto oder jedem anderen Account Ihrer Wahl, die 
+ ich Ihnen gerne sehen, wenn Sie mir helfen und auch ein guter und 
+ vertrauenswürdigen Partner werden können. Sobald die Mittel zu Ihrer 
+ nominiert Bankkonto übertragen werden, so teilen wir dann im Verhältnis 
+ von 60 % für mich und 40 % für Sie. Senden Sie mich e-Mail so schnell 
+ wie möglich für weitere Details. Hier ist meine e-Mail-Adresse: 
+ (directaccess-mervynking@hotmail.co.uk).
 
-Paolo
+
+ Herzliche Grüße,
+
+
+ Herr Mervyn King
+ Bank von England
+
+
+ Bitte senden Sie Ihre E-mails an 
+ (directaccess-mervynking@hotmail.co.uk)
