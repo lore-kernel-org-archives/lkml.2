@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756383Ab1GANBq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:01:46 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:25043 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755541Ab1GANBp convert rfc822-to-8bit (ORCPT
+	id S1756326Ab1GANDY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:03:24 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:45923 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751381Ab1GANDT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:01:45 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Christoph Hellwig <hch@infradead.org>
-CC: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 24/40] Staging: hv: storvsc: On I/O get the correct IDE
- device
-Thread-Topic: [PATCH 24/40] Staging: hv: storvsc: On I/O get the correct IDE
- device
-Thread-Index: AQHMNmgWbGY5kOd/Uk6J+qlCI81qb5TWw8mA//+jQpCAATAbgP//2PQA
-Date: Fri, 1 Jul 2011 13:01:43 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0480816C460@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
- <1309358377-8537-1-git-send-email-kys@microsoft.com>
- <1309358377-8537-24-git-send-email-kys@microsoft.com>
- <20110630194055.GC22707@infradead.org>
- <6E21E5352C11B742B20C142EB499E0480816C2CF@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20110701081725.GC28322@infradead.org>
-In-Reply-To: <20110701081725.GC28322@infradead.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Jul 2011 09:03:19 -0400
+Date: Fri, 1 Jul 2011 18:33:13 +0530
+From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        yrl.pp-manager.tt@hitachi.com
+Subject: Re: [BUG] kprobes crashing because of preempt count
+Message-ID: <20110701130313.GA10935@in.ibm.com>
+Reply-To: ananth@in.ibm.com
+References: <1309440213.26417.76.camel@gandalf.stny.rr.com> <4E0D1EE3.6080607@hitachi.com> <20110701113626.GB23752@in.ibm.com> <4E0DB6FC.20904@hitachi.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E0DB6FC.20904@hitachi.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-> -----Original Message-----
-> From: Christoph Hellwig [mailto:hch@infradead.org]
-> Sent: Friday, July 01, 2011 4:17 AM
-> To: KY Srinivasan
-> Cc: Christoph Hellwig; gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang;
-> Abhishek Kane (Mindtree Consulting PVT LTD); Hank Janssen
-> Subject: Re: [PATCH 24/40] Staging: hv: storvsc: On I/O get the correct IDE device
+On Fri, Jul 01, 2011 at 09:01:00PM +0900, Masami Hiramatsu wrote:
+> (2011/07/01 20:36), Ananth N Mavinakayanahalli wrote:
+> > On Fri, Jul 01, 2011 at 10:12:03AM +0900, Masami Hiramatsu wrote:
+> >> (2011/06/30 22:23), Steven Rostedt wrote:
+> > 
+> > ...
+> > 
+> >>> Do we really need to have preemption disabled throughout this? Is it
+> >>> because we don't want to migrate or call schedule? Not sure what the
+> >>> best way to fix this is. Perhaps we add a kprobe_preempt_disable() that
+> >>> is checked as well?
+> >>
+> >> I think the best way to do that is just removing preemption disabling
+> >> code, because
+> >> - breakpoint exception itself disables interrupt (at least on x86)
+> >> - While single stepping, interrupts also be disabled.
+> > 
+> > On 64-bit powerpc, kprobe handlers are run with interrupts enabled
+> > (MSR_EE = 1), but most instructions (including loads/stores) are
+> > emulated, so for the most part, we don't take the sstep exception.
 > 
-> On Thu, Jun 30, 2011 at 09:15:54PM +0000, KY Srinivasan wrote:
-> > That is what I did initially. Then looking at the way we  were handling scsi
-> devices
-> > where each scsi controller configured for the guest results in an emulated HBA
-> > (scsi host) in the guest and all the block devices under a given controller are
-> > handled through this one host, I decided to mimic a similar structure  - one
-> > scsi host for all the block devices configured as an IDE device.
-> >
-> > I can go back to my earlier implementation with one host per disk.
-> 
-> Was there any downside you noticed from using one host per emulated
-> disk?
-Nothing I could see from whatever testing I did. However, the guest will have
-Scsi hosts that the user did not configure. This is certainly the case in both 
-approaches - just the numbers are different!
+> Yeah, it seems that same thing is done on arm too. And I'm sure that
+> However, I'm still not sure that entire int3 exec path can run without
+> calling inc_preempt_count.
+> It seems that the function is very primitive, and I doubt we can
+> allow to put kprobes on that...
 
-K. Y 
+Right. I think all preempt manipulation routines need to be __kprobes.
+
+Also, Steve is testing the -rt tree where artefacts related to
+locking/preemption are possibly quite different from the mainline that
+may also be at play here.
+
+Ananth
