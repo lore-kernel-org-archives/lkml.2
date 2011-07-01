@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab1GAQ4K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:56:10 -0400
+	id S1757303Ab1GAQ41 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:56:27 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:62813 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab1GAQ4I (ORCPT
+	with ESMTP id S1755954Ab1GAQ4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:56:08 -0400
+	Fri, 1 Jul 2011 12:56:21 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -16,89 +16,177 @@ To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
         Chris Ball <cjb@laptop.org>
 Cc: Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v9 00/12] use nonblock mmc requests to minimize latency
-Date: Fri,  1 Jul 2011 18:55:21 +0200
-Message-Id: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v9 02/12] omap_hsmmc: add support for pre_req and post_req
+Date: Fri,  1 Jul 2011 18:55:23 +0200
+Message-Id: <1309539333-2606-3-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
+References: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-How significant is the cache maintenance over head?
-It depends, the eMMC are much faster now
-compared to a few years ago and cache maintenance cost more due to
-multiple cache levels and speculative cache pre-fetch. In relation the
-cost for handling the caches have increased and is now a bottle neck
-dealing with fast eMMC together with DMA.
+pre_req() runs dma_map_sg(), post_req() runs dma_unmap_sg.
+If not calling pre_req() before omap_hsmmc_request()
+dma_map_sg will be issued before starting the transfer.
+It is optional to use pre_req(). If issuing pre_req()
+post_req() must be to be called as well.
 
-The intention for introducing non-blocking mmc requests is to minimize the
-time between a mmc request ends and another mmc request starts. In the
-current implementation the MMC controller is idle when dma_map_sg and
-dma_unmap_sg is processing. Introducing non-blocking mmc request makes it
-possible to prepare the caches for next job in parallel to an active
-mmc request.
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+Reviewed-by: Venkatraman S <svenkatr@ti.com>
+Tested-by: Sourav Poddar<sourav.poddar@ti.com>
+---
+ drivers/mmc/host/omap_hsmmc.c |   87 +++++++++++++++++++++++++++++++++++++++--
+ 1 files changed, 83 insertions(+), 4 deletions(-)
 
-This is done by making the issue_rw_rq() non-blocking.
-The increase in throughput is proportional to the time it takes to
-prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
-a request and how fast the memory is. The faster the MMC/SD is
-the more significant the prepare request time becomes. Measurements on U5500
-and Panda on eMMC and SD shows significant performance gain for large
-reads when running DMA mode. In the PIO case the performance is unchanged.
-
-There are two optional hooks pre_req() and post_req() that the host driver
-may implement in order to move work to before and after the actual mmc_request
-function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
-the dma descriptor and post_req runs the dma_unmap_sg.
-
-Details on measurements from IOZone and mmc_test:
-https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
-
-Tested on platforms
- * Development and extensive testing is done on ux500 and Pandaboard
- * Additional testing is done on
-  * Patches are tested on samsung exynos4 platform
-  * Boot tested on Omap4430 Blaze board
-  * U300 MMC/PL180 mmc_test and ad hoc FS test
-  * ARM realview mmc_test and ad hoc FS test
-
-Changes since v8:
- * add comment to clarify bug print in issue_rw_rq.
- * mmc_test:
-   * align size for sg_len test cases,
-   * use MAX_SIZE define for test size for all non-blocking,
-   * allow non-blocking test even if pre/post is not implemented,
-   * return error if only one of pre or post is implemented.
-
-Per Forlin (12):
-  mmc: core: add non-blocking mmc request function
-  omap_hsmmc: add support for pre_req and post_req
-  mmci: implement pre_req() and post_req()
-  mmc: mmc_test: add debugfs file to list all tests
-  mmc: mmc_test: add test for non-blocking transfers
-  mmc: mmc_test: test to measure how sg_len affect performance
-  mmc: block: add member in mmc queue struct to hold request data
-  mmc: block: add a block request prepare function
-  mmc: block: move error code in issue_rw_rq to a separate function.
-  mmc: queue: add a second mmc queue request member
-  mmc: core: add random fault injection
-  mmc: block: add handling for two parallel block requests in
-    issue_rw_rq
-
- drivers/mmc/card/block.c      |  507 ++++++++++++++++++++++++----------------
- drivers/mmc/card/mmc_test.c   |  498 +++++++++++++++++++++++++++++++++++++++--
- drivers/mmc/card/queue.c      |  184 ++++++++++------
- drivers/mmc/card/queue.h      |   33 ++-
- drivers/mmc/core/core.c       |  167 +++++++++++++-
- drivers/mmc/core/debugfs.c    |    5 +
- drivers/mmc/host/mmci.c       |  147 +++++++++++-
- drivers/mmc/host/mmci.h       |    8 +
- drivers/mmc/host/omap_hsmmc.c |   87 +++++++-
- include/linux/mmc/core.h      |    6 +-
- include/linux/mmc/host.h      |   24 ++
- lib/Kconfig.debug             |   11 +
- 12 files changed, 1356 insertions(+), 321 deletions(-)
-
+diff --git a/drivers/mmc/host/omap_hsmmc.c b/drivers/mmc/host/omap_hsmmc.c
+index cd317af..b29ca90 100644
+--- a/drivers/mmc/host/omap_hsmmc.c
++++ b/drivers/mmc/host/omap_hsmmc.c
+@@ -141,6 +141,11 @@
+ #define OMAP_HSMMC_WRITE(base, reg, val) \
+ 	__raw_writel((val), (base) + OMAP_HSMMC_##reg)
+ 
++struct omap_hsmmc_next {
++	unsigned int	dma_len;
++	s32		cookie;
++};
++
+ struct omap_hsmmc_host {
+ 	struct	device		*dev;
+ 	struct	mmc_host	*mmc;
+@@ -184,6 +189,7 @@ struct omap_hsmmc_host {
+ 	int			reqs_blocked;
+ 	int			use_reg;
+ 	int			req_in_progress;
++	struct omap_hsmmc_next	next_data;
+ 
+ 	struct	omap_mmc_platform_data	*pdata;
+ };
+@@ -1343,8 +1349,9 @@ static void omap_hsmmc_dma_cb(int lch, u16 ch_status, void *cb_data)
+ 		return;
+ 	}
+ 
+-	dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
+-		omap_hsmmc_get_dma_dir(host, data));
++	if (!data->host_cookie)
++		dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
++			     omap_hsmmc_get_dma_dir(host, data));
+ 
+ 	req_in_progress = host->req_in_progress;
+ 	dma_ch = host->dma_ch;
+@@ -1362,6 +1369,45 @@ static void omap_hsmmc_dma_cb(int lch, u16 ch_status, void *cb_data)
+ 	}
+ }
+ 
++static int omap_hsmmc_pre_dma_transfer(struct omap_hsmmc_host *host,
++				       struct mmc_data *data,
++				       struct omap_hsmmc_next *next)
++{
++	int dma_len;
++
++	if (!next && data->host_cookie &&
++	    data->host_cookie != host->next_data.cookie) {
++		printk(KERN_WARNING "[%s] invalid cookie: data->host_cookie %d"
++		       " host->next_data.cookie %d\n",
++		       __func__, data->host_cookie, host->next_data.cookie);
++		data->host_cookie = 0;
++	}
++
++	/* Check if next job is already prepared */
++	if (next ||
++	    (!next && data->host_cookie != host->next_data.cookie)) {
++		dma_len = dma_map_sg(mmc_dev(host->mmc), data->sg,
++				     data->sg_len,
++				     omap_hsmmc_get_dma_dir(host, data));
++
++	} else {
++		dma_len = host->next_data.dma_len;
++		host->next_data.dma_len = 0;
++	}
++
++
++	if (dma_len == 0)
++		return -EINVAL;
++
++	if (next) {
++		next->dma_len = dma_len;
++		data->host_cookie = ++next->cookie < 0 ? 1 : next->cookie;
++	} else
++		host->dma_len = dma_len;
++
++	return 0;
++}
++
+ /*
+  * Routine to configure and start DMA for the MMC card
+  */
+@@ -1395,9 +1441,10 @@ static int omap_hsmmc_start_dma_transfer(struct omap_hsmmc_host *host,
+ 			mmc_hostname(host->mmc), ret);
+ 		return ret;
+ 	}
++	ret = omap_hsmmc_pre_dma_transfer(host, data, NULL);
++	if (ret)
++		return ret;
+ 
+-	host->dma_len = dma_map_sg(mmc_dev(host->mmc), data->sg,
+-			data->sg_len, omap_hsmmc_get_dma_dir(host, data));
+ 	host->dma_ch = dma_ch;
+ 	host->dma_sg_idx = 0;
+ 
+@@ -1477,6 +1524,35 @@ omap_hsmmc_prepare_data(struct omap_hsmmc_host *host, struct mmc_request *req)
+ 	return 0;
+ }
+ 
++static void omap_hsmmc_post_req(struct mmc_host *mmc, struct mmc_request *mrq,
++				int err)
++{
++	struct omap_hsmmc_host *host = mmc_priv(mmc);
++	struct mmc_data *data = mrq->data;
++
++	if (host->use_dma) {
++		dma_unmap_sg(mmc_dev(host->mmc), data->sg, data->sg_len,
++			     omap_hsmmc_get_dma_dir(host, data));
++		data->host_cookie = 0;
++	}
++}
++
++static void omap_hsmmc_pre_req(struct mmc_host *mmc, struct mmc_request *mrq,
++			       bool is_first_req)
++{
++	struct omap_hsmmc_host *host = mmc_priv(mmc);
++
++	if (mrq->data->host_cookie) {
++		mrq->data->host_cookie = 0;
++		return ;
++	}
++
++	if (host->use_dma)
++		if (omap_hsmmc_pre_dma_transfer(host, mrq->data,
++						&host->next_data))
++			mrq->data->host_cookie = 0;
++}
++
+ /*
+  * Request function. for read/write operation
+  */
+@@ -1925,6 +2001,8 @@ static int omap_hsmmc_disable_fclk(struct mmc_host *mmc, int lazy)
+ static const struct mmc_host_ops omap_hsmmc_ops = {
+ 	.enable = omap_hsmmc_enable_fclk,
+ 	.disable = omap_hsmmc_disable_fclk,
++	.post_req = omap_hsmmc_post_req,
++	.pre_req = omap_hsmmc_pre_req,
+ 	.request = omap_hsmmc_request,
+ 	.set_ios = omap_hsmmc_set_ios,
+ 	.get_cd = omap_hsmmc_get_cd,
+@@ -2074,6 +2152,7 @@ static int __init omap_hsmmc_probe(struct platform_device *pdev)
+ 	host->mapbase	= res->start;
+ 	host->base	= ioremap(host->mapbase, SZ_4K);
+ 	host->power_mode = MMC_POWER_OFF;
++	host->next_data.cookie = 1;
+ 
+ 	platform_set_drvdata(pdev, host);
+ 	INIT_WORK(&host->mmc_carddetect_work, omap_hsmmc_detect);
 -- 
 1.7.4.1
 
