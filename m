@@ -1,81 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab1GATUt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 15:20:49 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:48580 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755428Ab1GATUq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 15:20:46 -0400
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, axboe@kernel.dk,
-        rjw@sisk.pl
-In-Reply-To: <20110701170531.GA3693@tassilo.jf.intel.com>
-References: <20110701170531.GA3693@tassilo.jf.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 14:20:44 -0500
-Message-ID: <1309548044.2722.35.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S1756043Ab1GATWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 15:22:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:24763 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754961Ab1GATWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 15:22:49 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,460,1304319600"; 
+   d="scan'208";a="20665769"
+From: Andi Kleen <andi@firstfloor.org>
+To: x86@kernel.org
+Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH 2/3] x86, intel: Use cpu_update for Atom errata check
+Date: Fri,  1 Jul 2011 12:21:25 -0700
+Message-Id: <1309548086-28215-2-git-send-email-andi@firstfloor.org>
+X-Mailer: git-send-email 1.7.4.4
+In-Reply-To: <1309548086-28215-1-git-send-email-andi@firstfloor.org>
+References: <1309548086-28215-1-git-send-email-andi@firstfloor.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 10:05 -0700, Andi Kleen wrote:
-> Hi,
-> 
-> I found I can reliably crash a 3.0 system by pulling the
-> USB cable of a mounted USB cdrom (or rather a USB device which
-> has a builtin fake CD-ROM) 
-> 
-> I suspect it's a regression too.
-> 
-> It ends with a NULL pointer reference on a NULL sdev in 
-> scsi_prep_state_check. 
-> 
-> Here's a somewhat incomplete backtrace (written down by hand)
-> 
-> scsi_prep_state_check
-> scsi_setup_blk_pc_cmnd
-> blk_peek_request
-> ...
-> scsi_request_fn
-> ...
-> ioctl_internal_command
-> ...
-> scsi_set_medium_removal
-> sr_lock_door
-> cdrom_release
-> ...
-> umount
-> 
-> I tried adding a 
-> 
-> 	if (!sdev) 
-> 		return BLKPREP_KILL;
-> 
-> to scsi_prep_state_check, but that caused a RCU CPU stall 
-> and a generally unhappy system instead.
+From: Andi Kleen <ak@linux.intel.com>
 
-Right, that wouldn't work.  The sdev in question comes from
-request_queue->queuedata.  That only goes to null when the last
-reference to the sdev has been released.  So the root cause is something
-in sd holding a reference to sdev without actually getting an additional
-refcount.
+Now that the cpu update level is available the Atom PSE errata
+check can use it directly without reading the MSR again.
 
-> The sdev must be still there in scsi_set_medium_removal because it's 
-> referenced, so it must get lost somewhere in SCSI or in the block layer.
-> 
-> Any ideas how to fix this?
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+---
+ arch/x86/kernel/cpu/intel.c |   15 ++++-----------
+ 1 files changed, 4 insertions(+), 11 deletions(-)
 
-I'll see if I can find the refcounting problem.
-
-Likely it's a longstanding bug which we didn't actually notice until
-now.
-
-James
-
+diff --git a/arch/x86/kernel/cpu/intel.c b/arch/x86/kernel/cpu/intel.c
+index ebedd27..6f75c45 100644
+--- a/arch/x86/kernel/cpu/intel.c
++++ b/arch/x86/kernel/cpu/intel.c
+@@ -55,17 +55,10 @@ static void __cpuinit early_init_intel(struct cpuinfo_x86 *c)
+ 	 * need the microcode to have already been loaded... so if it is
+ 	 * not, recommend a BIOS update and disable large pages.
+ 	 */
+-	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2) {
+-		u32 ucode, junk;
+-
+-		wrmsr(MSR_IA32_UCODE_REV, 0, 0);
+-		sync_core();
+-		rdmsr(MSR_IA32_UCODE_REV, junk, ucode);
+-
+-		if (ucode < 0x20e) {
+-			printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
+-			clear_cpu_cap(c, X86_FEATURE_PSE);
+-		}
++	if (c->x86 == 6 && c->x86_model == 0x1c && c->x86_mask <= 2 &&
++	    c->microcode < 0x20e) {
++		printk(KERN_WARNING "Atom PSE erratum detected, BIOS microcode update recommended\n");
++		clear_cpu_cap(c, X86_FEATURE_PSE);
+ 	}
+ 
+ #ifdef CONFIG_X86_64
+-- 
+1.7.4.4
 
