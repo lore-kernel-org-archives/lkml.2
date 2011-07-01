@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab1GAJSH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:18:07 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:32859 "EHLO
+	id S1756042Ab1GAJTx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 05:19:53 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:32911 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755954Ab1GAJRz (ORCPT
+	with ESMTP id S1755959Ab1GAJR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 05:17:55 -0400
+	Fri, 1 Jul 2011 05:17:59 -0400
 From: Stefan Bader <stefan.bader@canonical.com>
 To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
         Seth Forshee <seth.forshee@canonical.com>,
         Stefan Bader <stefan.bader@canonical.com>,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 02/10] drm: implement helper functions for scanning lru list" has been added to staging queue
-Date: Fri,  1 Jul 2011 10:17:48 +0100
-Message-Id: <1309511868-2905-1-git-send-email-stefan.bader@canonical.com>
+Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 03/10] drm/i915: prepare for fair lru eviction" has been added to staging queue
+Date: Fri,  1 Jul 2011 10:17:54 +0100
+Message-Id: <1309511874-2940-1-git-send-email-stefan.bader@canonical.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,7 +23,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    Subject: [PATCH 02/10] drm: implement helper functions for scanning lru list
+    Subject: [PATCH 03/10] drm/i915: prepare for fair lru eviction
 
 to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
 
@@ -37,311 +37,194 @@ Thanks.
 
 ------
 
->From be54bbcaee8559cc412b5e4abc8eb33388b083e0 Mon Sep 17 00:00:00 2001
+>From f07147fcefea6d203882c570d61bdf73dd25ae66 Mon Sep 17 00:00:00 2001
 From: Daniel Vetter <daniel.vetter@ffwll.ch>
 Date: Fri, 17 Jun 2011 10:04:20 -0500
-Subject: [PATCH 02/10] drm: implement helper functions for scanning lru list
+Subject: [PATCH 03/10] drm/i915: prepare for fair lru eviction
 
 BugLink: http://bugs.launchpad.net/bugs/599017
 
-These helper functions can be used to efficiently scan lru list
-for eviction. Eviction becomes a three stage process:
-1. Scanning through the lru list until a suitable hole has been found.
-2. Scan backwards to restore drm_mm consistency and find out which
-   objects fall into the hole.
-3. Evict the objects that fall into the hole.
+This does two little changes:
 
-These helper functions don't allocate any memory (at the price of
-not allowing any other concurrent operations). Hence this can also be
-used for ttm (which does lru scanning under a spinlock).
+- Add an alignment parameter for evict_something. It's not really great to
+  whack a carefully sized hole into the gtt with the wrong alignment.
+  Especially since the fallback path is a full evict.
 
-Evicting objects in this fashion should be more fair than the current
-approach by i915 (scan the lru for a object large enough to contain
-the new object). It's also more efficient than the current approach used
-by ttm (uncoditionally evict objects from the lru until there's enough
-free space).
+- With the inactive scan stuff we need to evict more that one object, so
+  move the unbind call into the helper function that scans for the object
+  to be evicted, too.  And adjust its name.
+
+No functional changes in this patch, just preparation.
 
 Signed-Off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Acked-by: Thomas Hellstrom <thellstrom@vmwgfx.com>
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-(backported from commit 709ea97145c125b3811ff70429e90ebdb0e832e5 upstream)
+Signed-off-by: Eric Anholt <eric@anholt.net>
+(backported from commit 0108a3edd5c2e3b150a550d565b6aa1a67c0edbe upstream)
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 ---
- drivers/gpu/drm/drm_mm.c |  167 ++++++++++++++++++++++++++++++++++++++++++++-
- include/drm/drm_mm.h     |   15 ++++-
- 2 files changed, 177 insertions(+), 5 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |   67 ++++++++++++++++++++++++---------------
+ 1 files changed, 41 insertions(+), 26 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_mm.c b/drivers/gpu/drm/drm_mm.c
-index 4935e91..f1d3314 100644
---- a/drivers/gpu/drm/drm_mm.c
-+++ b/drivers/gpu/drm/drm_mm.c
-@@ -83,9 +83,9 @@ static struct drm_mm_node *drm_mm_kmalloc(struct drm_mm *mm, int atomic)
- 	struct drm_mm_node *child;
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index a34fd44..e0afa05 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -36,6 +36,7 @@
 
- 	if (atomic)
--		child = kmalloc(sizeof(*child), GFP_ATOMIC);
-+		child = kzalloc(sizeof(*child), GFP_ATOMIC);
- 	else
--		child = kmalloc(sizeof(*child), GFP_KERNEL);
-+		child = kzalloc(sizeof(*child), GFP_KERNEL);
+ #define I915_GEM_GPU_DOMAINS	(~(I915_GEM_DOMAIN_CPU | I915_GEM_DOMAIN_GTT))
 
- 	if (unlikely(child == NULL)) {
- 		spin_lock(&mm->unused_lock);
-@@ -115,7 +115,7 @@ int drm_mm_pre_get(struct drm_mm *mm)
- 	spin_lock(&mm->unused_lock);
- 	while (mm->num_unused < MM_UNUSED_TARGET) {
- 		spin_unlock(&mm->unused_lock);
--		node = kmalloc(sizeof(*node), GFP_KERNEL);
-+		node = kzalloc(sizeof(*node), GFP_KERNEL);
- 		spin_lock(&mm->unused_lock);
++static uint32_t i915_gem_get_gtt_alignment(struct drm_gem_object *obj);
+ static void i915_gem_object_flush_gpu_write_domain(struct drm_gem_object *obj);
+ static void i915_gem_object_flush_gtt_write_domain(struct drm_gem_object *obj);
+ static void i915_gem_object_flush_cpu_write_domain(struct drm_gem_object *obj);
+@@ -49,7 +50,8 @@ static int i915_gem_object_wait_rendering(struct drm_gem_object *obj);
+ static int i915_gem_object_bind_to_gtt(struct drm_gem_object *obj,
+ 					   unsigned alignment);
+ static void i915_gem_clear_fence_reg(struct drm_gem_object *obj);
+-static int i915_gem_evict_something(struct drm_device *dev, int min_size);
++static int i915_gem_evict_something(struct drm_device *dev, int min_size,
++				    unsigned alignment);
+ static int i915_gem_evict_from_inactive_list(struct drm_device *dev);
+ static int i915_gem_phys_pwrite(struct drm_device *dev, struct drm_gem_object *obj,
+ 				struct drm_i915_gem_pwrite *args,
+@@ -334,7 +336,8 @@ i915_gem_object_get_pages_or_evict(struct drm_gem_object *obj)
+ 	if (ret == -ENOMEM) {
+ 		struct drm_device *dev = obj->dev;
 
- 		if (unlikely(node == NULL)) {
-@@ -179,7 +179,6 @@ static struct drm_mm_node *drm_mm_split_at_start(struct drm_mm_node *parent,
+-		ret = i915_gem_evict_something(dev, obj->size);
++		ret = i915_gem_evict_something(dev, obj->size,
++					       i915_gem_get_gtt_alignment(obj));
+ 		if (ret)
+ 			return ret;
 
- 	INIT_LIST_HEAD(&child->fl_entry);
-
--	child->free = 0;
- 	child->size = size;
- 	child->start = parent->start;
- 	child->mm = parent->mm;
-@@ -280,6 +279,9 @@ void drm_mm_put_block(struct drm_mm_node *cur)
-
- 	int merged = 0;
-
-+	BUG_ON(cur->scanned_block || cur->scanned_prev_free
-+				  || cur->scanned_next_free);
-+
- 	if (cur_head->prev != root_head) {
- 		prev_node =
- 		    list_entry(cur_head->prev, struct drm_mm_node, ml_entry);
-@@ -359,6 +361,8 @@ struct drm_mm_node *drm_mm_search_free(const struct drm_mm *mm,
- 	struct drm_mm_node *best;
- 	unsigned long best_size;
-
-+	BUG_ON(mm->scanned_blocks);
-+
- 	best = NULL;
- 	best_size = ~0UL;
-
-@@ -394,6 +398,8 @@ struct drm_mm_node *drm_mm_search_free_in_range(const struct drm_mm *mm,
- 	struct drm_mm_node *best;
- 	unsigned long best_size;
-
-+	BUG_ON(mm->scanned_blocks);
-+
- 	best = NULL;
- 	best_size = ~0UL;
-
-@@ -419,6 +425,158 @@ struct drm_mm_node *drm_mm_search_free_in_range(const struct drm_mm *mm,
+@@ -2102,10 +2105,12 @@ i915_gem_object_unbind(struct drm_gem_object *obj)
+ 	return 0;
  }
- EXPORT_SYMBOL(drm_mm_search_free_in_range);
 
-+/**
-+ * Initializa lru scanning.
-+ *
-+ * This simply sets up the scanning routines with the parameters for the desired
-+ * hole.
-+ *
-+ * Warning: As long as the scan list is non-empty, no other operations than
-+ * adding/removing nodes to/from the scan list are allowed.
-+ */
-+void drm_mm_init_scan(struct drm_mm *mm, unsigned long size,
-+		      unsigned alignment)
-+{
-+	mm->scan_alignment = alignment;
-+	mm->scan_size = size;
-+	mm->scanned_blocks = 0;
-+	mm->scan_hit_start = 0;
-+	mm->scan_hit_size = 0;
-+}
-+EXPORT_SYMBOL(drm_mm_init_scan);
-+
-+/**
-+ * Add a node to the scan list that might be freed to make space for the desired
-+ * hole.
-+ *
-+ * Returns non-zero, if a hole has been found, zero otherwise.
-+ */
-+int drm_mm_scan_add_block(struct drm_mm_node *node)
-+{
-+	struct drm_mm *mm = node->mm;
-+	struct list_head *prev_free, *next_free;
-+	struct drm_mm_node *prev_node, *next_node;
-+
-+	mm->scanned_blocks++;
-+
-+	prev_free = next_free = NULL;
-+
-+	BUG_ON(node->free);
-+	node->scanned_block = 1;
-+	node->free = 1;
-+
-+	if (node->ml_entry.prev != &mm->ml_entry) {
-+		prev_node = list_entry(node->ml_entry.prev, struct drm_mm_node,
-+				       ml_entry);
-+
-+		if (prev_node->free) {
-+			list_del(&prev_node->ml_entry);
-+
-+			node->start = prev_node->start;
-+			node->size += prev_node->size;
-+
-+			prev_node->scanned_prev_free = 1;
-+
-+			prev_free = &prev_node->fl_entry;
-+		}
-+	}
-+
-+	if (node->ml_entry.next != &mm->ml_entry) {
-+		next_node = list_entry(node->ml_entry.next, struct drm_mm_node,
-+				       ml_entry);
-+
-+		if (next_node->free) {
-+			list_del(&next_node->ml_entry);
-+
-+			node->size += next_node->size;
-+
-+			next_node->scanned_next_free = 1;
-+
-+			next_free = &next_node->fl_entry;
-+		}
-+	}
-+
-+	/* The fl_entry list is not used for allocated objects, so these two
-+	 * pointers can be abused (as long as no allocations in this memory
-+	 * manager happens). */
-+	node->fl_entry.prev = prev_free;
-+	node->fl_entry.next = next_free;
-+
-+	if (check_free_mm_node(node, mm->scan_size, mm->scan_alignment)) {
-+		mm->scan_hit_start = node->start;
-+		mm->scan_hit_size = node->size;
-+
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(drm_mm_scan_add_block);
-+
-+/**
-+ * Remove a node from the scan list.
-+ *
-+ * Nodes _must_ be removed in the exact same order from the scan list as they
-+ * have been added, otherwise the internal state of the memory manager will be
-+ * corrupted.
-+ *
-+ * When the scan list is empty, the selected memory nodes can be freed. An
-+ * immediatly following drm_mm_search_free with best_match = 0 will then return
-+ * the just freed block (because its at the top of the fl_entry list).
-+ *
-+ * Returns one if this block should be evicted, zero otherwise. Will always
-+ * return zero when no hole has been found.
-+ */
-+int drm_mm_scan_remove_block(struct drm_mm_node *node)
-+{
-+	struct drm_mm *mm = node->mm;
-+	struct drm_mm_node *prev_node, *next_node;
-+
-+	mm->scanned_blocks--;
-+
-+	BUG_ON(!node->scanned_block);
-+	node->scanned_block = 0;
-+	node->free = 0;
-+
-+	prev_node = list_entry(node->fl_entry.prev, struct drm_mm_node,
-+			       fl_entry);
-+	next_node = list_entry(node->fl_entry.next, struct drm_mm_node,
-+			       fl_entry);
-+
-+	if (prev_node) {
-+		BUG_ON(!prev_node->scanned_prev_free);
-+		prev_node->scanned_prev_free = 0;
-+
-+		list_add_tail(&prev_node->ml_entry, &node->ml_entry);
-+
-+		node->start = prev_node->start + prev_node->size;
-+		node->size -= prev_node->size;
-+	}
-+
-+	if (next_node) {
-+		BUG_ON(!next_node->scanned_next_free);
-+		next_node->scanned_next_free = 0;
-+
-+		list_add(&next_node->ml_entry, &node->ml_entry);
-+
-+		node->size -= next_node->size;
-+	}
-+
-+	INIT_LIST_HEAD(&node->fl_entry);
-+
-+	/* Only need to check for containement because start&size for the
-+	 * complete resulting free block (not just the desired part) is
-+	 * stored. */
-+	if (node->start >= mm->scan_hit_start &&
-+	    node->start + node->size
-+	    		<= mm->scan_hit_start + mm->scan_hit_size) {
-+		return 1;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL(drm_mm_scan_remove_block);
-+
- int drm_mm_clean(struct drm_mm * mm)
+-static struct drm_gem_object *
+-i915_gem_find_inactive_object(struct drm_device *dev, int min_size)
++static int
++i915_gem_scan_inactive_list_and_evict(struct drm_device *dev, int min_size,
++				      unsigned alignment, int *found)
  {
- 	struct list_head *head = &mm->ml_entry;
-@@ -433,6 +591,7 @@ int drm_mm_init(struct drm_mm * mm, unsigned long start, unsigned long size)
- 	INIT_LIST_HEAD(&mm->fl_entry);
- 	INIT_LIST_HEAD(&mm->unused_nodes);
- 	mm->num_unused = 0;
-+	mm->scanned_blocks = 0;
- 	spin_lock_init(&mm->unused_lock);
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
++	struct drm_gem_object *obj;
+ 	struct drm_i915_gem_object *obj_priv;
+ 	struct drm_gem_object *best = NULL;
+ 	struct drm_gem_object *first = NULL;
+@@ -2119,14 +2124,31 @@ i915_gem_find_inactive_object(struct drm_device *dev, int min_size)
+ 			    (!best || obj->size < best->size)) {
+ 				best = obj;
+ 				if (best->size == min_size)
+-					return best;
++					break;
+ 			}
+ 			if (!first)
+ 			    first = obj;
+ 		}
+ 	}
 
- 	return drm_mm_create_tail_node(mm, start, size, 0);
-diff --git a/include/drm/drm_mm.h b/include/drm/drm_mm.h
-index 4c10be3..83a7495 100644
---- a/include/drm/drm_mm.h
-+++ b/include/drm/drm_mm.h
-@@ -44,7 +44,10 @@
- struct drm_mm_node {
- 	struct list_head fl_entry;
- 	struct list_head ml_entry;
--	int free;
-+	unsigned free : 1;
-+	unsigned scanned_block : 1;
-+	unsigned scanned_prev_free : 1;
-+	unsigned scanned_next_free : 1;
- 	unsigned long start;
- 	unsigned long size;
- 	struct drm_mm *mm;
-@@ -57,6 +60,11 @@ struct drm_mm {
- 	struct list_head unused_nodes;
- 	int num_unused;
- 	spinlock_t unused_lock;
-+	unsigned scan_alignment;
-+	unsigned long scan_size;
-+	unsigned long scan_hit_start;
-+	unsigned scan_hit_size;
-+	unsigned scanned_blocks;
- };
-
- /*
-@@ -133,6 +141,11 @@ static inline struct drm_mm *drm_get_mm(struct drm_mm_node *block)
- 	return block->mm;
+-	return best ? best : first;
++	obj = best ? best : first;
++
++	if (!obj) {
++		*found = 0;
++		return 0;
++	}
++
++	*found = 1;
++
++#if WATCH_LRU
++	DRM_INFO("%s: evicting %p\n", __func__, obj);
++#endif
++	obj_priv = obj->driver_private;
++	BUG_ON(obj_priv->pin_count != 0);
++	BUG_ON(obj_priv->active);
++
++	/* Wait on the rendering and unbind the buffer. */
++	return i915_gem_object_unbind(obj);
  }
 
-+void drm_mm_init_scan(struct drm_mm *mm, unsigned long size,
-+		      unsigned alignment);
-+int drm_mm_scan_add_block(struct drm_mm_node *node);
-+int drm_mm_scan_remove_block(struct drm_mm_node *node);
-+
- extern void drm_mm_debug_table(struct drm_mm *mm, const char *prefix);
- #ifdef CONFIG_DEBUG_FS
- int drm_mm_dump_table(struct seq_file *m, struct drm_mm *mm);
+ static int
+@@ -2173,11 +2195,11 @@ i915_gem_evict_everything(struct drm_device *dev)
+ }
+
+ static int
+-i915_gem_evict_something(struct drm_device *dev, int min_size)
++i915_gem_evict_something(struct drm_device *dev,
++			 int min_size, unsigned alignment)
+ {
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	struct drm_gem_object *obj;
+-	int ret;
++	int ret, found;
+
+ 	for (;;) {
+ 		i915_gem_retire_requests(dev);
+@@ -2185,20 +2207,11 @@ i915_gem_evict_something(struct drm_device *dev, int min_size)
+ 		/* If there's an inactive buffer available now, grab it
+ 		 * and be done.
+ 		 */
+-		obj = i915_gem_find_inactive_object(dev, min_size);
+-		if (obj) {
+-			struct drm_i915_gem_object *obj_priv;
+-
+-#if WATCH_LRU
+-			DRM_INFO("%s: evicting %p\n", __func__, obj);
+-#endif
+-			obj_priv = obj->driver_private;
+-			BUG_ON(obj_priv->pin_count != 0);
+-			BUG_ON(obj_priv->active);
+-
+-			/* Wait on the rendering and unbind the buffer. */
+-			return i915_gem_object_unbind(obj);
+-		}
++		ret = i915_gem_scan_inactive_list_and_evict(dev, min_size,
++							    alignment,
++							    &found);
++		if (found)
++			return ret;
+
+ 		/* If we didn't get anything, but the ring is still processing
+ 		 * things, wait for the next to finish and hopefully leave us
+@@ -2224,6 +2237,7 @@ i915_gem_evict_something(struct drm_device *dev, int min_size)
+ 		 * will get moved to inactive.
+ 		 */
+ 		if (!list_empty(&dev_priv->mm.flushing_list)) {
++			struct drm_gem_object *obj = NULL;
+ 			struct drm_i915_gem_object *obj_priv;
+
+ 			/* Find an object that we can immediately reuse */
+@@ -2672,7 +2686,7 @@ i915_gem_object_bind_to_gtt(struct drm_gem_object *obj, unsigned alignment)
+ #if WATCH_LRU
+ 		DRM_INFO("%s: GTT full, evicting something\n", __func__);
+ #endif
+-		ret = i915_gem_evict_something(dev, obj->size);
++		ret = i915_gem_evict_something(dev, obj->size, alignment);
+ 		if (ret)
+ 			return ret;
+
+@@ -2690,7 +2704,8 @@ i915_gem_object_bind_to_gtt(struct drm_gem_object *obj, unsigned alignment)
+
+ 		if (ret == -ENOMEM) {
+ 			/* first try to clear up some space from the GTT */
+-			ret = i915_gem_evict_something(dev, obj->size);
++			ret = i915_gem_evict_something(dev, obj->size,
++						       alignment);
+ 			if (ret) {
+ 				/* now try to shrink everyone else */
+ 				if (gfpmask) {
+@@ -2720,7 +2735,7 @@ i915_gem_object_bind_to_gtt(struct drm_gem_object *obj, unsigned alignment)
+ 		drm_mm_put_block(obj_priv->gtt_space);
+ 		obj_priv->gtt_space = NULL;
+
+-		ret = i915_gem_evict_something(dev, obj->size);
++		ret = i915_gem_evict_something(dev, obj->size, alignment);
+ 		if (ret)
+ 			return ret;
+
 --
 1.7.4.1
 
