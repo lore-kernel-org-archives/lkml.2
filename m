@@ -1,78 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757234Ab1GAQhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:37:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49268 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757139Ab1GAQhh (ORCPT
+	id S1757243Ab1GAQje (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:39:34 -0400
+Received: from na3sys009aog116.obsmtp.com ([74.125.149.240]:57446 "HELO
+	na3sys009aog116.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757139Ab1GAQjc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:37:37 -0400
-Date: Fri, 1 Jul 2011 18:37:33 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Ben Greear <greearb@candelatech.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: workqueue question.
-Message-ID: <20110701163733.GZ3386@htj.dyndns.org>
-References: <4E0A23E7.1000606@candelatech.com>
- <20110629084329.GI3386@htj.dyndns.org>
- <4E0B4C95.6080409@candelatech.com>
- <20110630100031.GP3386@htj.dyndns.org>
- <4E0CAFFC.4000902@candelatech.com>
+	Fri, 1 Jul 2011 12:39:32 -0400
+From: Nathan Royer <nroyer@invensense.com>
+References: <1309486707-1658-1-git-send-email-nroyer@invensense.com> <4E0D8E94.5030604@cam.ac.uk>
+In-Reply-To: <4E0D8E94.5030604@cam.ac.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E0CAFFC.4000902@candelatech.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Mailer: Microsoft Office Outlook 12.0
+thread-index: Acw3zVTzKEfyNEHnTlyTQ9Df/ml3tgAPviPg
+Date: Fri, 1 Jul 2011 09:39:30 -0700
+Message-ID: <4d61a92a11e5d83a1cb0094441ae5f5e@mail.gmail.com>
+Subject: RE: [PATCH 01/11] misc: inv_mpu primary header file and README file.
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <jkosina@suse.cz>,
+        Alan Cox <alan@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
+        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> Just out of interest, can you give details of what other patches are to
+> come?
+> I'm guessing more sensor drivers and I hate discovering I'm
+> implementing drivers
+> for devices that someone already has working code for!
 
-On Thu, Jun 30, 2011 at 10:18:52AM -0700, Ben Greear wrote:
-> >>Is there a method that can be called from a workqueue callback
-> >>to verify that the item has not been re-added to the work-queue?
-> >
-> >Can you be a bit more specific?  Are you saying that queue_work() and
-> >INIT_WORK() may race?
-> 
-> No, I don't think that is racing.  Basically, when I'm about
-> to logically free (put back into mempool) the task struct, I
-> would like to add a sanity check to make sure it's not currently
-> scheduled on a work queue.  If it were, that would explain the
-> backtraces I was seeing from slub memory debugging logic and
-> I'd be closer to understanding the problem.
+I wanted to start off with only 1 driver for each type of slave and with
+only the MPU3050 and exclude the MPU6050 until we figure out exactly the
+best way to fit this into the kernel.
 
-Ah, okay.  When a work is in pending state, work_pending() is always
-true; however, whether a work item is currently being executed is a
-bit more complicated.  You'll need to implement a function which looks
-similar to the following.
-
- bool is_work_executing(work)
- {
-	for_each_gcwq_cpu(cpu) {
-		gcwq = get_gcwq(cpu);
-		lock gcwq;
-		if (find_worker_executing_work(gcwq, work)) {
-			unlock gcwq;
-			return true;
-		}
-		unlock gcwq;
-	}
-	return false;
- }
-
-But I would recommend watching workqueue tracing points first.
-
- $ grep workqueue /sys/kernel/debug/tracing/available_events
- workqueue:workqueue_queue_work
- workqueue:workqueue_activate_work
- workqueue:workqueue_execute_start
- workqueue:workqueue_execute_end
-
-You should be able to tell which work is doing what on which CPU.
-
-Thanks.
-
--- 
-tejun
+The current full list of drivers we have developed in this architecture
+are as follows:
+MPU3050 and MPU6050 support in mldl_cfg.c
+# sesnors - accel
+accel/mpu6050.c
+accel/kxsd9.c
+accel/kxtf9.c
+accel/bma150.c
+accel/bma222.c
+accel/bma250.c
+accel/mma8450.c
+accel/mma845x.c
+accel/lis331.c
+accel/lsm303a.c
+accel/adxl34x.c
+accel/lis3dh.c
+# sensors - compass
+compass/ak8975.c
+compass/ak8972.c
+compass/ami30x.c
+compass/ami306.c
+compass/hmc5883.c
+compass/lsm303m.c
+compass/yas529.c
+compass/yas530.c
+compass/mmc314x.c
+compass/hscdtd002b.c
+compass/hscdtd004a.c
+# sensors - pressure
+pressure/bma085.c
