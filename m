@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757501Ab1GAQ5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:57:19 -0400
+	id S1757485Ab1GAQ5E (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:57:04 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:62813 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755276Ab1GAQ5A (ORCPT
+	with ESMTP id S1757384Ab1GAQ46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:57:00 -0400
+	Fri, 1 Jul 2011 12:56:58 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
         Chris Ball <cjb@laptop.org>
 Cc: Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v9 12/12] mmc: block: add handling for two parallel block requests in issue_rw_rq
-Date: Fri,  1 Jul 2011 18:55:33 +0200
-Message-Id: <1309539333-2606-13-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v9 11/12] mmc: core: add random fault injection
+Date: Fri,  1 Jul 2011 18:55:32 +0200
+Message-Id: <1309539333-2606-12-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
 References: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
@@ -26,15 +26,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change mmc_blk_issue_rw_rq() to become asynchronous.
-The execution flow looks like this:
-The mmc-queue calls issue_rw_rq(), which sends the request
-to the host and returns back to the mmc-queue. The mmc-queue calls
-issue_rw_rq() again with a new request. This new request is prepared,
-in isuue_rw_rq(), then it waits for the active request to complete before
-pushing it to the host. When to mmc-queue is empty it will call
-isuue_rw_rq() with req=NULL to finish off the active request
-without starting a new request.
+This simple fault injection proved to be very useful to
+test the error handling in the block.c rw_rq(). It may
+still be useful to test if the host driver handle
+pre_req() and post_req() correctly in case of errors.
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
 Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
@@ -43,238 +38,143 @@ Reviewed-by: Venkatraman S <svenkatr@ti.com>
 Tested-by: Sourav Poddar<sourav.poddar@ti.com>
 Tested-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mmc/card/block.c |   86 ++++++++++++++++++++++++++++++++++++++--------
- drivers/mmc/card/queue.c |   17 ++++++---
- drivers/mmc/card/queue.h |    1 +
- 3 files changed, 84 insertions(+), 20 deletions(-)
+ drivers/mmc/core/core.c    |   54 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/mmc/core/debugfs.c |    5 ++++
+ include/linux/mmc/host.h   |    3 ++
+ lib/Kconfig.debug          |   11 +++++++++
+ 4 files changed, 73 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index 7ed2c68..38d0149 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -822,12 +822,14 @@ static inline void mmc_apply_rel_rw(struct mmc_blk_request *brq,
- 	 R1_CC_ERROR |		/* Card controller error */		\
- 	 R1_ERROR)		/* General/unknown error */
+diff --git a/drivers/mmc/core/core.c b/drivers/mmc/core/core.c
+index d2d7239..62a8cc7 100644
+--- a/drivers/mmc/core/core.c
++++ b/drivers/mmc/core/core.c
+@@ -23,6 +23,8 @@
+ #include <linux/log2.h>
+ #include <linux/regulator/consumer.h>
+ #include <linux/pm_runtime.h>
++#include <linux/fault-inject.h>
++#include <linux/random.h>
  
--int mmc_blk_err_check(struct mmc_blk_request *brq,
--		      struct request *req,
--		      struct mmc_card *card,
--		      struct mmc_blk_data *md)
-+static int mmc_blk_err_check(struct mmc_card *card,
-+			     struct mmc_async_req *areq)
- {
--	int ret = MMC_BLK_SUCCESS;
-+	enum mmc_blk_status ret = MMC_BLK_SUCCESS;
-+	struct mmc_queue_req *mq_mrq = container_of(areq, struct mmc_queue_req,
-+						    mmc_active);
-+	struct mmc_blk_request *brq = &mq_mrq->brq;
-+	struct request *req = mq_mrq->req;
- 
- 	/*
- 	 * sbc.error indicates a problem with the set block count
-@@ -1038,24 +1040,41 @@ static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
- 		brq->data.sg_len = i;
- 	}
- 
-+	mqrq->mmc_active.mrq = &brq->mrq;
-+	mqrq->mmc_active.err_check = mmc_blk_err_check;
-+
- 	mmc_queue_bounce_pre(mqrq);
+ #include <linux/mmc/card.h>
+ #include <linux/mmc/host.h>
+@@ -82,6 +84,56 @@ static void mmc_flush_scheduled_work(void)
+ 	flush_workqueue(workqueue);
  }
  
--static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
-+static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *rqc)
- {
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
- 	struct mmc_blk_request *brq = &mq->mqrq_cur->brq;
- 	int ret = 1, disable_multi = 0, retry = 0;
- 	enum mmc_blk_status status;
-+	struct mmc_queue_req *mq_rq;
-+	struct request *req;
-+	struct mmc_async_req *areq;
- 
--	do {
--		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, disable_multi, mq);
--		mmc_wait_for_req(card->host, &brq->mrq);
-+	if (!rqc && !mq->mqrq_prev->req)
-+		return 0;
- 
--		mmc_queue_bounce_post(mq->mqrq_cur);
-+	do {
-+		if (rqc) {
-+			mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
-+			areq = &mq->mqrq_cur->mmc_active;
-+		} else
-+			areq = NULL;
-+		areq = mmc_start_req(card->host, areq, (int *) &status);
-+		if (!areq)
-+			return 0;
++#ifdef CONFIG_FAIL_MMC_REQUEST
 +
-+		mq_rq = container_of(areq, struct mmc_queue_req, mmc_active);
-+		brq = &mq_rq->brq;
-+		req = mq_rq->req;
-+		mmc_queue_bounce_post(mq_rq);
- 
--		status = mmc_blk_err_check(brq, req, card, md);
- 		switch (status) {
- 		case MMC_BLK_SUCCESS:
- 		case MMC_BLK_PARTIAL:
-@@ -1066,6 +1085,19 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
- 			ret = __blk_end_request(req, 0,
- 						brq->data.bytes_xfered);
- 			spin_unlock_irq(&md->lock);
-+			if (status == MMC_BLK_SUCCESS && ret) {
-+				/*
-+				 * The blk_end_request has returned non zero
-+				 * even though all data is transfered and no
-+				 * erros returned by host.
-+				 * If this happen it's a bug.
-+				 */
-+				printk(KERN_ERR "%s BUG rq_tot %d d_xfer %d\n",
-+				       __func__, blk_rq_bytes(req),
-+				       brq->data.bytes_xfered);
-+				rqc = NULL;
-+				goto cmd_abort;
-+			}
- 			break;
- 		case MMC_BLK_CMD_ERR:
- 			goto cmd_err;
-@@ -1087,9 +1119,19 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
- 			ret = __blk_end_request(req, -EIO,
- 						brq->data.blksz);
- 			spin_unlock_irq(&md->lock);
-+			if (!ret)
-+				goto start_new_req;
- 			break;
- 		}
- 
-+		if (ret) {
-+			/*
-+			 * In case of a none complete request
-+			 * prepare it again and resend.
-+			 */
-+			mmc_blk_rw_rq_prep(mq_rq, card, disable_multi, mq);
-+			mmc_start_req(card->host, &mq_rq->mmc_active, NULL);
-+		}
- 	} while (ret);
- 
- 	return 1;
-@@ -1124,6 +1166,12 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
- 		ret = __blk_end_request(req, -EIO, blk_rq_cur_bytes(req));
- 	spin_unlock_irq(&md->lock);
- 
-+ start_new_req:
-+	if (rqc) {
-+		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, 0, mq);
-+		mmc_start_req(card->host, &mq->mqrq_cur->mmc_active, NULL);
-+	}
++static DECLARE_FAULT_ATTR(fail_mmc_request);
 +
- 	return 0;
- }
- 
-@@ -1133,26 +1181,34 @@ static int mmc_blk_issue_rq(struct mmc_queue *mq, struct request *req)
- 	struct mmc_blk_data *md = mq->data;
- 	struct mmc_card *card = md->queue.card;
- 
--	mmc_claim_host(card->host);
-+	if (req && !mq->mqrq_prev->req)
-+		/* claim host only for the first request */
-+		mmc_claim_host(card->host);
++static int __init setup_fail_mmc_request(char *str)
++{
++	return setup_fault_attr(&fail_mmc_request, str);
++}
++__setup("fail_mmc_request=", setup_fail_mmc_request);
 +
- 	ret = mmc_blk_part_switch(card, md);
- 	if (ret) {
- 		ret = 0;
- 		goto out;
- 	}
- 
--	if (req->cmd_flags & REQ_DISCARD) {
-+	if (req && req->cmd_flags & REQ_DISCARD) {
-+		/* complete ongoing async transfer before issuing discard */
-+		if (card->host->areq)
-+			mmc_blk_issue_rw_rq(mq, NULL);
- 		if (req->cmd_flags & REQ_SECURE)
- 			ret = mmc_blk_issue_secdiscard_rq(mq, req);
- 		else
- 			ret = mmc_blk_issue_discard_rq(mq, req);
--	} else if (req->cmd_flags & REQ_FLUSH) {
-+	} else if (req && req->cmd_flags & REQ_FLUSH) {
- 		ret = mmc_blk_issue_flush(mq, req);
++static void mmc_should_fail_request(struct mmc_host *host,
++				    struct mmc_request *mrq)
++{
++	struct mmc_command *cmd = mrq->cmd;
++	struct mmc_data *data = mrq->data;
++	static const int data_errors[] = {
++		-ETIMEDOUT,
++		-EILSEQ,
++		-EIO,
++	};
++
++	if (!data)
++		return;
++
++	if (cmd->error || data->error || !host->make_it_fail ||
++	    !should_fail(&fail_mmc_request, data->blksz * data->blocks))
++		return;
++
++	data->error = data_errors[random32() % ARRAY_SIZE(data_errors)];
++	data->bytes_xfered = (random32() % (data->bytes_xfered >> 9)) << 9;
++}
++
++static int __init fail_mmc_request_debugfs(void)
++{
++	return init_fault_attr_dentries(&fail_mmc_request,
++					"fail_mmc_request");
++}
++
++late_initcall(fail_mmc_request_debugfs);
++
++#else /* CONFIG_FAIL_MMC_REQUEST */
++
++static void mmc_should_fail_request(struct mmc_host *host,
++				    struct mmc_request *mrq)
++{
++}
++
++#endif /* CONFIG_FAIL_MMC_REQUEST */
++
++
+ /**
+  *	mmc_request_done - finish processing an MMC request
+  *	@host: MMC host which completed request
+@@ -108,6 +160,8 @@ void mmc_request_done(struct mmc_host *host, struct mmc_request *mrq)
+ 		cmd->error = 0;
+ 		host->ops->request(host, mrq);
  	} else {
- 		ret = mmc_blk_issue_rw_rq(mq, req);
- 	}
++		mmc_should_fail_request(host, mrq);
++
+ 		led_trigger_event(host->led, LED_OFF);
  
- out:
--	mmc_release_host(card->host);
-+	if (!req)
-+		/* release host only when there are no more requests */
-+		mmc_release_host(card->host);
- 	return ret;
- }
+ 		pr_debug("%s: req done (CMD%u): %d: %08x %08x %08x %08x\n",
+diff --git a/drivers/mmc/core/debugfs.c b/drivers/mmc/core/debugfs.c
+index 998797e..588e76f 100644
+--- a/drivers/mmc/core/debugfs.c
++++ b/drivers/mmc/core/debugfs.c
+@@ -188,6 +188,11 @@ void mmc_add_host_debugfs(struct mmc_host *host)
+ 				root, &host->clk_delay))
+ 		goto err_node;
+ #endif
++#ifdef CONFIG_FAIL_MMC_REQUEST
++	if (!debugfs_create_u8("make-it-fail", S_IRUSR | S_IWUSR,
++			       root, &host->make_it_fail))
++		goto err_node;
++#endif
+ 	return;
  
-diff --git a/drivers/mmc/card/queue.c b/drivers/mmc/card/queue.c
-index d69d954..8c51a54 100644
---- a/drivers/mmc/card/queue.c
-+++ b/drivers/mmc/card/queue.c
-@@ -52,6 +52,7 @@ static int mmc_queue_thread(void *d)
- 	down(&mq->thread_sem);
- 	do {
- 		struct request *req = NULL;
-+		struct mmc_queue_req *tmp;
+ err_node:
+diff --git a/include/linux/mmc/host.h b/include/linux/mmc/host.h
+index 59db6f2..0d0a48f 100644
+--- a/include/linux/mmc/host.h
++++ b/include/linux/mmc/host.h
+@@ -301,6 +301,9 @@ struct mmc_host {
  
- 		spin_lock_irq(q->queue_lock);
- 		set_current_state(TASK_INTERRUPTIBLE);
-@@ -59,7 +60,10 @@ static int mmc_queue_thread(void *d)
- 		mq->mqrq_cur->req = req;
- 		spin_unlock_irq(q->queue_lock);
+ 	struct mmc_async_req	*areq;		/* active async req */
  
--		if (!req) {
-+		if (req || mq->mqrq_prev->req) {
-+			set_current_state(TASK_RUNNING);
-+			mq->issue_fn(mq, req);
-+		} else {
- 			if (kthread_should_stop()) {
- 				set_current_state(TASK_RUNNING);
- 				break;
-@@ -67,11 +71,14 @@ static int mmc_queue_thread(void *d)
- 			up(&mq->thread_sem);
- 			schedule();
- 			down(&mq->thread_sem);
--			continue;
- 		}
--		set_current_state(TASK_RUNNING);
- 
--		mq->issue_fn(mq, req);
-+		/* Current request becomes previous request and vice versa. */
-+		mq->mqrq_prev->brq.mrq.data = NULL;
-+		mq->mqrq_prev->req = NULL;
-+		tmp = mq->mqrq_prev;
-+		mq->mqrq_prev = mq->mqrq_cur;
-+		mq->mqrq_cur = tmp;
- 	} while (1);
- 	up(&mq->thread_sem);
- 
-@@ -97,7 +104,7 @@ static void mmc_request(struct request_queue *q)
- 		return;
- 	}
- 
--	if (!mq->mqrq_cur->req)
-+	if (!mq->mqrq_cur->req && !mq->mqrq_prev->req)
- 		wake_up_process(mq->thread);
- }
- 
-diff --git a/drivers/mmc/card/queue.h b/drivers/mmc/card/queue.h
-index 1a637d2..d2a1eb4 100644
---- a/drivers/mmc/card/queue.h
-+++ b/drivers/mmc/card/queue.h
-@@ -19,6 +19,7 @@ struct mmc_queue_req {
- 	char			*bounce_buf;
- 	struct scatterlist	*bounce_sg;
- 	unsigned int		bounce_sg_len;
-+	struct mmc_async_req	mmc_active;
++#ifdef CONFIG_FAIL_MMC_REQUEST
++	u8			make_it_fail;
++#endif
+ 	unsigned long		private[0] ____cacheline_aligned;
  };
  
- struct mmc_queue {
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index c768bcd..330fc70 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -1057,6 +1057,17 @@ config FAIL_IO_TIMEOUT
+ 	  Only works with drivers that use the generic timeout handling,
+ 	  for others it wont do anything.
+ 
++config FAIL_MMC_REQUEST
++	bool "Fault-injection capability for MMC IO"
++	select DEBUG_FS
++	depends on FAULT_INJECTION
++	help
++	  Provide fault-injection capability for MMC IO.
++	  This will make the mmc core return data errors. This is
++	  useful for testing the error handling in the mmc block device
++	  and how the mmc host driver handle retries from
++	  the block device.
++
+ config FAULT_INJECTION_DEBUG_FS
+ 	bool "Debugfs entries for fault-injection capabilities"
+ 	depends on FAULT_INJECTION && SYSFS && DEBUG_FS
 -- 
 1.7.4.1
 
