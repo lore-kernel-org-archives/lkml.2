@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757460Ab1GAQ5r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:57:47 -0400
+	id S1757430Ab1GAQ6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:58:33 -0400
 Received: from mail-bw0-f46.google.com ([209.85.214.46]:62813 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757409Ab1GAQ4r (ORCPT
+	with ESMTP id S1756059Ab1GAQ4Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:56:47 -0400
+	Fri, 1 Jul 2011 12:56:24 -0400
 From: Per Forlin <per.forlin@linaro.org>
 To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
@@ -16,9 +16,9 @@ To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
         Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
         Chris Ball <cjb@laptop.org>
 Cc: Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v9 09/12] mmc: block: move error code in issue_rw_rq to a separate function.
-Date: Fri,  1 Jul 2011 18:55:30 +0200
-Message-Id: <1309539333-2606-10-git-send-email-per.forlin@linaro.org>
+Subject: [PATCH v9 03/12] mmci: implement pre_req() and post_req()
+Date: Fri,  1 Jul 2011 18:55:24 +0200
+Message-Id: <1309539333-2606-4-git-send-email-per.forlin@linaro.org>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
 References: <1309539333-2606-1-git-send-email-per.forlin@linaro.org>
@@ -26,275 +26,279 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Break out code without functional changes. This simplifies the code and
-makes way for handle two parallel request.
+pre_req() runs dma_map_sg() and prepares the dma descriptor
+for the next mmc data transfer. post_req() runs dma_unmap_sg.
+If not calling pre_req() before mmci_request(), mmci_request()
+will prepare the cache and dma just like it did it before.
+It is optional to use pre_req() and post_req() for mmci.
 
 Signed-off-by: Per Forlin <per.forlin@linaro.org>
-Acked-by: Kyungmin Park <kyungmin.park@samsung.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-Reviewed-by: Venkatraman S <svenkatr@ti.com>
-Tested-by: Sourav Poddar<sourav.poddar@ti.com>
 Tested-by: Linus Walleij <linus.walleij@linaro.org>
 ---
- drivers/mmc/card/block.c |  220 +++++++++++++++++++++++++++-------------------
- 1 files changed, 131 insertions(+), 89 deletions(-)
+ drivers/mmc/host/mmci.c |  147 ++++++++++++++++++++++++++++++++++++++++++----
+ drivers/mmc/host/mmci.h |    8 +++
+ 2 files changed, 142 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/mmc/card/block.c b/drivers/mmc/card/block.c
-index a0a76f4..7ed2c68 100644
---- a/drivers/mmc/card/block.c
-+++ b/drivers/mmc/card/block.c
-@@ -106,6 +106,16 @@ struct mmc_blk_data {
+diff --git a/drivers/mmc/host/mmci.c b/drivers/mmc/host/mmci.c
+index b4a7e4f..6ed6770 100644
+--- a/drivers/mmc/host/mmci.c
++++ b/drivers/mmc/host/mmci.c
+@@ -211,6 +211,9 @@ static void __devinit mmci_dma_setup(struct mmci_host *host)
+ 		return;
+ 	}
  
- static DEFINE_MUTEX(open_lock);
- 
-+enum mmc_blk_status {
-+	MMC_BLK_SUCCESS = 0,
-+	MMC_BLK_PARTIAL,
-+	MMC_BLK_RETRY,
-+	MMC_BLK_RETRY_SINGLE,
-+	MMC_BLK_DATA_ERR,
-+	MMC_BLK_CMD_ERR,
-+	MMC_BLK_ABORT,
-+};
++	/* initialize pre request cookie */
++	host->next_data.cookie = 1;
 +
- module_param(perdev_minors, int, 0444);
- MODULE_PARM_DESC(perdev_minors, "Minors numbers to allocate per device");
+ 	/* Try to acquire a generic DMA engine slave channel */
+ 	dma_cap_zero(mask);
+ 	dma_cap_set(DMA_SLAVE, mask);
+@@ -320,7 +323,8 @@ static void mmci_dma_unmap(struct mmci_host *host, struct mmc_data *data)
+ 		dir = DMA_FROM_DEVICE;
+ 	}
  
-@@ -812,6 +822,95 @@ static inline void mmc_apply_rel_rw(struct mmc_blk_request *brq,
- 	 R1_CC_ERROR |		/* Card controller error */		\
- 	 R1_ERROR)		/* General/unknown error */
+-	dma_unmap_sg(chan->device->dev, data->sg, data->sg_len, dir);
++	if (!data->host_cookie)
++		dma_unmap_sg(chan->device->dev, data->sg, data->sg_len, dir);
  
-+int mmc_blk_err_check(struct mmc_blk_request *brq,
-+		      struct request *req,
-+		      struct mmc_card *card,
-+		      struct mmc_blk_data *md)
-+{
-+	int ret = MMC_BLK_SUCCESS;
+ 	/*
+ 	 * Use of DMA with scatter-gather is impossible.
+@@ -338,7 +342,8 @@ static void mmci_dma_data_error(struct mmci_host *host)
+ 	dmaengine_terminate_all(host->dma_current);
+ }
+ 
+-static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
++static int mmci_dma_prep_data(struct mmci_host *host, struct mmc_data *data,
++			      struct mmci_host_next *next)
+ {
+ 	struct variant_data *variant = host->variant;
+ 	struct dma_slave_config conf = {
+@@ -349,13 +354,20 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
+ 		.src_maxburst = variant->fifohalfsize >> 2, /* # of words */
+ 		.dst_maxburst = variant->fifohalfsize >> 2, /* # of words */
+ 	};
+-	struct mmc_data *data = host->data;
+ 	struct dma_chan *chan;
+ 	struct dma_device *device;
+ 	struct dma_async_tx_descriptor *desc;
+ 	int nr_sg;
+ 
+-	host->dma_current = NULL;
++	/* Check if next job is already prepared */
++	if (data->host_cookie && !next &&
++	    host->dma_current && host->dma_desc_current)
++		return 0;
 +
-+	/*
-+	 * sbc.error indicates a problem with the set block count
-+	 * command.  No data will have been transferred.
-+	 *
-+	 * cmd.error indicates a problem with the r/w command.  No
-+	 * data will have been transferred.
-+	 *
-+	 * stop.error indicates a problem with the stop command.  Data
-+	 * may have been transferred, or may still be transferring.
-+	 */
-+	if (brq->sbc.error || brq->cmd.error || brq->stop.error) {
-+		switch (mmc_blk_cmd_recovery(card, req, brq)) {
-+		case ERR_RETRY:
-+			return MMC_BLK_RETRY;
-+		case ERR_ABORT:
-+			return MMC_BLK_ABORT;
-+		case ERR_CONTINUE:
-+			break;
-+		}
++	if (!next) {
++		host->dma_current = NULL;
++		host->dma_desc_current = NULL;
++	}
+ 
+ 	if (data->flags & MMC_DATA_READ) {
+ 		conf.direction = DMA_FROM_DEVICE;
+@@ -370,7 +382,7 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
+ 		return -EINVAL;
+ 
+ 	/* If less than or equal to the fifo size, don't bother with DMA */
+-	if (host->size <= variant->fifosize)
++	if (data->blksz * data->blocks <= variant->fifosize)
+ 		return -EINVAL;
+ 
+ 	device = chan->device;
+@@ -384,14 +396,38 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
+ 	if (!desc)
+ 		goto unmap_exit;
+ 
+-	/* Okay, go for it. */
+-	host->dma_current = chan;
++	if (next) {
++		next->dma_chan = chan;
++		next->dma_desc = desc;
++	} else {
++		host->dma_current = chan;
++		host->dma_desc_current = desc;
 +	}
 +
-+	/*
-+	 * Check for errors relating to the execution of the
-+	 * initial command - such as address errors.  No data
-+	 * has been transferred.
-+	 */
-+	if (brq->cmd.resp[0] & CMD_ERRORS) {
-+		pr_err("%s: r/w command failed, status = %#x\n",
-+		       req->rq_disk->disk_name, brq->cmd.resp[0]);
-+		return MMC_BLK_ABORT;
-+	}
-+
-+	/*
-+	 * Everything else is either success, or a data error of some
-+	 * kind.  If it was a write, we may have transitioned to
-+	 * program mode, which we have to wait for it to complete.
-+	 */
-+	if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
-+		u32 status;
-+		do {
-+			int err = get_card_status(card, &status, 5);
-+			if (err) {
-+				printk(KERN_ERR "%s: error %d requesting status\n",
-+				       req->rq_disk->disk_name, err);
-+				return MMC_BLK_CMD_ERR;
-+			}
-+			/*
-+			 * Some cards mishandle the status bits,
-+			 * so make sure to check both the busy
-+			 * indication and the card state.
-+			 */
-+		} while (!(status & R1_READY_FOR_DATA) ||
-+			 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
-+	}
-+
-+	if (brq->data.error) {
-+		pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response %#x, card status %#x\n",
-+		       req->rq_disk->disk_name, brq->data.error,
-+		       (unsigned)blk_rq_pos(req),
-+		       (unsigned)blk_rq_sectors(req),
-+		       brq->cmd.resp[0], brq->stop.resp[0]);
-+
-+		if (rq_data_dir(req) == READ) {
-+			if (brq->data.blocks > 1) {
-+				/* Redo read one sector at a time */
-+				pr_warning("%s: retrying using single block read\n",
-+					   req->rq_disk->disk_name);
-+				return MMC_BLK_RETRY_SINGLE;
-+			}
-+			return MMC_BLK_DATA_ERR;
-+		} else {
-+			return MMC_BLK_CMD_ERR;
-+		}
-+	}
-+
-+	if (ret == MMC_BLK_SUCCESS &&
-+	    blk_rq_bytes(req) != brq->data.bytes_xfered)
-+		ret = MMC_BLK_PARTIAL;
-+
-+	return ret;
++	return 0;
+ 
++ unmap_exit:
++	if (!next)
++		dmaengine_terminate_all(chan);
++	dma_unmap_sg(device->dev, data->sg, data->sg_len, conf.direction);
++	return -ENOMEM;
 +}
 +
- static void mmc_blk_rw_rq_prep(struct mmc_queue_req *mqrq,
- 			       struct mmc_card *card,
- 			       int disable_multi,
-@@ -948,6 +1047,7 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
- 	struct mmc_card *card = md->queue.card;
- 	struct mmc_blk_request *brq = &mq->mqrq_cur->brq;
- 	int ret = 1, disable_multi = 0, retry = 0;
-+	enum mmc_blk_status status;
++static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
++{
++	int ret;
++	struct mmc_data *data = host->data;
++
++	ret = mmci_dma_prep_data(host, host->data, NULL);
++	if (ret)
++		return ret;
++
++	/* Okay, go for it. */
+ 	dev_vdbg(mmc_dev(host->mmc),
+ 		 "Submit MMCI DMA job, sglen %d blksz %04x blks %04x flags %08x\n",
+ 		 data->sg_len, data->blksz, data->blocks, data->flags);
+-	dmaengine_submit(desc);
+-	dma_async_issue_pending(chan);
++	dmaengine_submit(host->dma_desc_current);
++	dma_async_issue_pending(host->dma_current);
  
- 	do {
- 		mmc_blk_rw_rq_prep(mq->mqrq_cur, card, disable_multi, mq);
-@@ -955,99 +1055,41 @@ static int mmc_blk_issue_rw_rq(struct mmc_queue *mq, struct request *req)
+ 	datactrl |= MCI_DPSM_DMAENABLE;
  
- 		mmc_queue_bounce_post(mq->mqrq_cur);
+@@ -406,14 +442,90 @@ static int mmci_dma_start_data(struct mmci_host *host, unsigned int datactrl)
+ 	writel(readl(host->base + MMCIMASK0) | MCI_DATAENDMASK,
+ 	       host->base + MMCIMASK0);
+ 	return 0;
++}
  
--		/*
--		 * sbc.error indicates a problem with the set block count
--		 * command.  No data will have been transferred.
--		 *
--		 * cmd.error indicates a problem with the r/w command.  No
--		 * data will have been transferred.
--		 *
--		 * stop.error indicates a problem with the stop command.  Data
--		 * may have been transferred, or may still be transferring.
--		 */
--		if (brq->sbc.error || brq->cmd.error || brq->stop.error) {
--			switch (mmc_blk_cmd_recovery(card, req, brq)) {
--			case ERR_RETRY:
--				if (retry++ < 5)
--					continue;
--			case ERR_ABORT:
--				goto cmd_abort;
--			case ERR_CONTINUE:
-+		status = mmc_blk_err_check(brq, req, card, md);
-+		switch (status) {
-+		case MMC_BLK_SUCCESS:
-+		case MMC_BLK_PARTIAL:
-+			/*
-+			 * A block was successfully transferred.
-+			 */
-+			spin_lock_irq(&md->lock);
-+			ret = __blk_end_request(req, 0,
-+						brq->data.bytes_xfered);
-+			spin_unlock_irq(&md->lock);
-+			break;
-+		case MMC_BLK_CMD_ERR:
-+			goto cmd_err;
-+		case MMC_BLK_RETRY_SINGLE:
-+			disable_multi = 1;
-+			break;
-+		case MMC_BLK_RETRY:
-+			if (retry++ < 5)
- 				break;
--			}
--		}
--
--		/*
--		 * Check for errors relating to the execution of the
--		 * initial command - such as address errors.  No data
--		 * has been transferred.
--		 */
--		if (brq->cmd.resp[0] & CMD_ERRORS) {
--			pr_err("%s: r/w command failed, status = %#x\n",
--				req->rq_disk->disk_name, brq->cmd.resp[0]);
-+		case MMC_BLK_ABORT:
- 			goto cmd_abort;
-+		case MMC_BLK_DATA_ERR:
-+			/*
-+			 * After an error, we redo I/O one sector at a
-+			 * time, so we only reach here after trying to
-+			 * read a single sector.
-+			 */
-+			spin_lock_irq(&md->lock);
-+			ret = __blk_end_request(req, -EIO,
-+						brq->data.blksz);
-+			spin_unlock_irq(&md->lock);
-+			break;
- 		}
+-unmap_exit:
+-	dmaengine_terminate_all(chan);
+-	dma_unmap_sg(device->dev, data->sg, data->sg_len, conf.direction);
+-	return -ENOMEM;
++static void mmci_get_next_data(struct mmci_host *host, struct mmc_data *data)
++{
++	struct mmci_host_next *next = &host->next_data;
++
++	if (data->host_cookie && data->host_cookie != next->cookie) {
++		printk(KERN_WARNING "[%s] invalid cookie: data->host_cookie %d"
++		       " host->next_data.cookie %d\n",
++		       __func__, data->host_cookie, host->next_data.cookie);
++		data->host_cookie = 0;
++	}
++
++	if (!data->host_cookie)
++		return;
++
++	host->dma_desc_current = next->dma_desc;
++	host->dma_current = next->dma_chan;
++
++	next->dma_desc = NULL;
++	next->dma_chan = NULL;
+ }
++
++static void mmci_pre_request(struct mmc_host *mmc, struct mmc_request *mrq,
++			     bool is_first_req)
++{
++	struct mmci_host *host = mmc_priv(mmc);
++	struct mmc_data *data = mrq->data;
++	struct mmci_host_next *nd = &host->next_data;
++
++	if (!data)
++		return;
++
++	if (data->host_cookie) {
++		data->host_cookie = 0;
++		return;
++	}
++
++	/* if config for dma */
++	if (((data->flags & MMC_DATA_WRITE) && host->dma_tx_channel) ||
++	    ((data->flags & MMC_DATA_READ) && host->dma_rx_channel)) {
++		if (mmci_dma_prep_data(host, data, nd))
++			data->host_cookie = 0;
++		else
++			data->host_cookie = ++nd->cookie < 0 ? 1 : nd->cookie;
++	}
++}
++
++static void mmci_post_request(struct mmc_host *mmc, struct mmc_request *mrq,
++			      int err)
++{
++	struct mmci_host *host = mmc_priv(mmc);
++	struct mmc_data *data = mrq->data;
++	struct dma_chan *chan;
++	enum dma_data_direction dir;
++
++	if (!data)
++		return;
++
++	if (data->flags & MMC_DATA_READ) {
++		dir = DMA_FROM_DEVICE;
++		chan = host->dma_rx_channel;
++	} else {
++		dir = DMA_TO_DEVICE;
++		chan = host->dma_tx_channel;
++	}
++
++
++	/* if config for dma */
++	if (chan) {
++		if (err)
++			dmaengine_terminate_all(chan);
++		if (err || data->host_cookie)
++			dma_unmap_sg(mmc_dev(host->mmc), data->sg,
++				     data->sg_len, dir);
++		mrq->data->host_cookie = 0;
++	}
++}
++
+ #else
+ /* Blank functions if the DMA engine is not available */
++static void mmci_get_next_data(struct mmci_host *host, struct mmc_data *data)
++{
++}
+ static inline void mmci_dma_setup(struct mmci_host *host)
+ {
+ }
+@@ -434,6 +546,10 @@ static inline int mmci_dma_start_data(struct mmci_host *host, unsigned int datac
+ {
+ 	return -ENOSYS;
+ }
++
++#define mmci_pre_request NULL
++#define mmci_post_request NULL
++
+ #endif
  
--		/*
--		 * Everything else is either success, or a data error of some
--		 * kind.  If it was a write, we may have transitioned to
--		 * program mode, which we have to wait for it to complete.
--		 */
--		if (!mmc_host_is_spi(card->host) && rq_data_dir(req) != READ) {
--			u32 status;
--			do {
--				int err = get_card_status(card, &status, 5);
--				if (err) {
--					printk(KERN_ERR "%s: error %d requesting status\n",
--					       req->rq_disk->disk_name, err);
--					goto cmd_err;
--				}
--				/*
--				 * Some cards mishandle the status bits,
--				 * so make sure to check both the busy
--				 * indication and the card state.
--				 */
--			} while (!(status & R1_READY_FOR_DATA) ||
--				 (R1_CURRENT_STATE(status) == R1_STATE_PRG));
--		}
--
--		if (brq->data.error) {
--			pr_err("%s: error %d transferring data, sector %u, nr %u, cmd response %#x, card status %#x\n",
--				req->rq_disk->disk_name, brq->data.error,
--				(unsigned)blk_rq_pos(req),
--				(unsigned)blk_rq_sectors(req),
--				brq->cmd.resp[0], brq->stop.resp[0]);
--
--			if (rq_data_dir(req) == READ) {
--				if (brq->data.blocks > 1) {
--					/* Redo read one sector at a time */
--					pr_warning("%s: retrying using single block read\n",
--						req->rq_disk->disk_name);
--					disable_multi = 1;
--					continue;
--				}
--
--				/*
--				 * After an error, we redo I/O one sector at a
--				 * time, so we only reach here after trying to
--				 * read a single sector.
--				 */
--				spin_lock_irq(&md->lock);
--				ret = __blk_end_request(req, -EIO,
--							brq->data.blksz);
--				spin_unlock_irq(&md->lock);
--				continue;
--			} else {
--				goto cmd_err;
--			}
--		}
--
--		/*
--		 * A block was successfully transferred.
--		 */
--		spin_lock_irq(&md->lock);
--		ret = __blk_end_request(req, 0, brq->data.bytes_xfered);
--		spin_unlock_irq(&md->lock);
- 	} while (ret);
+ static void mmci_start_data(struct mmci_host *host, struct mmc_data *data)
+@@ -852,6 +968,9 @@ static void mmci_request(struct mmc_host *mmc, struct mmc_request *mrq)
  
- 	return 1;
+ 	host->mrq = mrq;
+ 
++	if (mrq->data)
++		mmci_get_next_data(host, mrq->data);
++
+ 	if (mrq->data && mrq->data->flags & MMC_DATA_READ)
+ 		mmci_start_data(host, mrq->data);
+ 
+@@ -966,6 +1085,8 @@ static irqreturn_t mmci_cd_irq(int irq, void *dev_id)
+ 
+ static const struct mmc_host_ops mmci_ops = {
+ 	.request	= mmci_request,
++	.pre_req	= mmci_pre_request,
++	.post_req	= mmci_post_request,
+ 	.set_ios	= mmci_set_ios,
+ 	.get_ro		= mmci_get_ro,
+ 	.get_cd		= mmci_get_cd,
+diff --git a/drivers/mmc/host/mmci.h b/drivers/mmc/host/mmci.h
+index ec9a7bc6..e21d850 100644
+--- a/drivers/mmc/host/mmci.h
++++ b/drivers/mmc/host/mmci.h
+@@ -150,6 +150,12 @@ struct clk;
+ struct variant_data;
+ struct dma_chan;
+ 
++struct mmci_host_next {
++	struct dma_async_tx_descriptor	*dma_desc;
++	struct dma_chan			*dma_chan;
++	s32				cookie;
++};
++
+ struct mmci_host {
+ 	phys_addr_t		phybase;
+ 	void __iomem		*base;
+@@ -187,6 +193,8 @@ struct mmci_host {
+ 	struct dma_chan		*dma_current;
+ 	struct dma_chan		*dma_rx_channel;
+ 	struct dma_chan		*dma_tx_channel;
++	struct dma_async_tx_descriptor	*dma_desc_current;
++	struct mmci_host_next	next_data;
+ 
+ #define dma_inprogress(host)	((host)->dma_current)
+ #else
 -- 
 1.7.4.1
 
