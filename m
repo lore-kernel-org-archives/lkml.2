@@ -1,69 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751797Ab1GAFTl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 01:19:41 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51095 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750835Ab1GAFTk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 01:19:40 -0400
-Date: Fri, 1 Jul 2011 15:19:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amerigo Wang <amwang@redhat.com>
-Subject: linux-next: build failure after merge of the akpm tree
-Message-Id: <20110701151931.4c2d78b5.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__1_Jul_2011_15_19_31_+1000_PMJHlWtwDVwqi_rX"
+	id S1752020Ab1GAFZc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 01:25:32 -0400
+Received: from anubis.se.axis.com ([195.60.68.12]:56056 "EHLO
+	anubis.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751092Ab1GAFZb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 01:25:31 -0400
+From: Mikael Starvik <mikael.starvik@axis.com>
+To: Andreas Schwab <schwab@linux-m68k.org>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Christoph Hellwig <hch@infradead.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        Linux Kernel Development <linux-kernel@vger.kernel.org>,
+        Jesper Nilsson <jespern@axis.com>,
+        linux-cris-kernel <linux-cris-kernel@axis.com>
+Date: Fri, 1 Jul 2011 07:25:27 +0200
+Subject: RE: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
+Thread-Topic: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
+Thread-Index: Acw3SQpExRV5nVo/REWwVyCfm5mfSAAZjMjg
+Message-ID: <4BEA3FF3CAA35E408EA55C7BE2E61D055C63F4D814@xmail3.se.axis.com>
+References: <alpine.DEB.2.00.1106291011400.10665@ayla.of.borg>
+	<20110629140630.5aefdda8.rdunlap@xenotime.net>
+	<BANLkTin80p6gh0+Kga_92=wNEoAr9gFR2Q@mail.gmail.com>
+	<20110630080119.GA20802@infradead.org>
+	<BANLkTik81kgf=g+QngnaB7gNUF+xCQdSvw@mail.gmail.com>
+ <m2y60jmeo3.fsf@igel.home>
+In-Reply-To: <m2y60jmeo3.fsf@igel.home>
+Accept-Language: sv-SE
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: sv-SE
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p615PrX3032097
 
---Signature=_Fri__1_Jul_2011_15_19_31_+1000_PMJHlWtwDVwqi_rX
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Also note that sizeof(long) == sizeof(int) for cris.
 
-Hi Andrew,
+-----Original Message-----
+From: Andreas Schwab [mailto:schwab@linux-m68k.org] 
+Sent: den 30 juni 2011 19:07
+To: Geert Uytterhoeven
+Cc: Christoph Hellwig; Randy Dunlap; Linux Kernel Development; Mikael Starvik; Jesper Nilsson; linux-cris-kernel
+Subject: Re: Build regressions/improvements in v3.0-rc5 (ssize_t ???)
 
-After merging the akpm tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+Geert Uytterhoeven <geert@linux-m68k.org> writes:
 
-arch/powerpc/kernel/rtas.c: In function 'rtas_restart':
-arch/powerpc/kernel/rtas.c:655:24: error: 'SYS_RESTART' undeclared (first u=
-se in this function)
-arch/powerpc/kernel/rtas.c: In function 'rtas_power_off':
-arch/powerpc/kernel/rtas.c:664:24: error: 'SYS_POWER_OFF' undeclared (first=
- use in this function)
-arch/powerpc/kernel/rtas.c: In function 'rtas_halt':
-arch/powerpc/kernel/rtas.c:674:24: error: 'SYS_HALT' undeclared (first use =
-in this function)
+> On Thu, Jun 30, 2011 at 10:01, Christoph Hellwig <hch@infradead.org> wrote:
+>> On Thu, Jun 30, 2011 at 08:59:28AM +0200, Geert Uytterhoeven wrote:
+>>> Nope. Also only happens on cris, which has in
+>>> arch/cris/include/asm/posix_types.h:
+>>>
+>>> typedef long ¬† ¬† ¬† ¬† ¬† ¬†__kernel_ssize_t;
+>>>
+>>> The "long" should be "int".
+>>> But probably it should just include <asm-generic/posix_types.h> instead.
+>>
+>> Changing a user visible type won't be very nice for those using it in
+>> C++ code.
+>
+> Are __kernel_* types exported to C++ userspace?
 
-Caused by commit ac050ff2a176 ("It is not necessary to share the same
-notifier.h").
+Currently, no exported kernel header is using __kernel_ssize_t, so it
+may not be too late to change cris.
 
-I have reverted that commit for today.
+Andreas.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Fri__1_Jul_2011_15_19_31_+1000_PMJHlWtwDVwqi_rX
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJODVjjAAoJEDMEi1NhKgbsnHIIAJqhmjcnBt1b4xKb0mYM8765
-dfMCx5grrG8c0xI7O06nRkwhq0Zc5ZMFoqfh9AJ7GMaFfXLHQTBASJA5Hfl94nRb
-EXUh999E+W7vOL5+2wvHhirY4n4cpfYYv9LNCYd3KvuKPqH5g03Ml0w4GsJlAtej
-tdLrfTHhW+NI2TP2I1KdAlZ8vbXtD7wOmWaLIDDcLPdYlrK1WGWufTFRhlr+YKYw
-EKDhIfppLoIq33/GXYFcsrVLL9969XPTe0qCJJldbIPk0/lvrJstMyL79gBiud3l
-El/rPd8Id9v0sofvWPRWUMQbrBITX8xxpaL2Xs5GOGbQ0ewYRahzoPcnXhaBz2U=
-=DOQj
------END PGP SIGNATURE-----
-
---Signature=_Fri__1_Jul_2011_15_19_31_+1000_PMJHlWtwDVwqi_rX--
+-- 
+Andreas Schwab, schwab@linux-m68k.org
+GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
+"And now for something completely different."
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
