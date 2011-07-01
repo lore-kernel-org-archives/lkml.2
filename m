@@ -1,87 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756842Ab1GAOex (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:34:53 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:55685 "EHLO e6.ny.us.ibm.com"
+	id S1756832Ab1GAOhX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:37:23 -0400
+Received: from mail.bbaw.de ([194.95.188.6]:58079 "EHLO mail.bbaw.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756694Ab1GAOew (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:34:52 -0400
-Subject: Re: [PATCH v7 00/16] EVM
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>
-In-Reply-To: <BANLkTin-x1kkXiowUYjBS_tr4iwDrzNQkA@mail.gmail.com>
-References: <1309377038-4550-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <BANLkTinSsqBqX7=jzwbw_=RfXeQz29h_+A@mail.gmail.com>
-	 <1309390941.3205.22.camel@localhost.localdomain>
-	 <BANLkTineYVKw9MMQUqRGJ6Q_yEfgmsgJxg@mail.gmail.com>
-	 <1309405895.3205.57.camel@localhost.localdomain>
-	 <BANLkTin-x1kkXiowUYjBS_tr4iwDrzNQkA@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 10:34:33 -0400
-Message-ID: <1309530873.3245.23.camel@localhost.localdomain>
+	id S1756679Ab1GAOhV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 10:37:21 -0400
+Date: Fri, 1 Jul 2011 16:37:19 +0200
+From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
+Message-Id: <20110701163719.27afc580.taeuber@bbaw.de>
+In-Reply-To: <20110701151313.2afd48e0.taeuber@bbaw.de>
+References: <20110606095127.21d23a70.taeuber@bbaw.de>
+	<201106060559.03131.gene.heskett@gmail.com>
+	<20110606130628.e86f0c67.taeuber@bbaw.de>
+	<201106060920.32257.gene.heskett@gmail.com>
+	<20110606155610.69a0d17a.taeuber@bbaw.de>
+	<20110607124354.06ed074e.taeuber@bbaw.de>
+	<20110701102323.3db579ad.taeuber@bbaw.de>
+	<20110701151313.2afd48e0.taeuber@bbaw.de>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.5.34; VDF: 7.11.10.186; host: mailhub); id=8579-Lxrmyn
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-30 at 18:31 -0400, Kyle Moffett wrote:
+Same with new 2TB Seagate Constellation ES ST2000NM0011 connected to the
+areca ARC1300 (mvsas).
+It only takes a simple »dd if=/dev/zero of=/dev/sd_« to provoke the problem.
 
-> The problem is that you are assuming that a large chunk of filesystem
-> code is capable of properly and securely handling untrusted and
-> malicious
-> content.  Historically filesystem drivers are NOT capable of handling
-> such things, as evidenced by the large number of bugs that tools such
-> as
-> fsfuzzer tend to trigger.  If you want to use IMA as-designed then you
-> need to perform a relatively extensive audit of filesystem and fsck
-> code.
-> 
-> Furthermore, even when the filesystem does not have any security
-> issues
-> itself, you are assuming that intentionally malicious data-aliasing
-> between "trusted" and "untrusted" files can have no potential security
-> implications.  You should look at the prevalence of simple stupid
-> "/tmp"
-> symlink attacks for more counter-examples there.
-> 
-> In addition, IMA relies on the underlying attribute and data caching
-> properties of the VFS, which won't hold true for intentionally
-> malicious
-> corrupted filesystems.  It effectively assumes that writing data or
-> metadata for one file will not invalidate the cached data or metadata
-> for
-> another which is blatantly false when filesystem extents overlap each
-> other.
-> 
-> Overall, the IMA architecture assumes that if it loads and validates
-> the
-> file data or metadata that it cannot be changed except through a
-> kernel
-> access to that particular inode.  For a corrupted filesystem that is
-> absolutely untrue.
-> 
-> Cheers,
-> Kyle Moffett
+Connected to the onboard AMD_AHCI controller (3.0 Gbps) both disks can be
+formatted. Also the dd command line doesn't harm anything.
 
-You've brought up a number of interesting scenarios, which I appreciate.
-I will definitely take a closer look at fsfuzzer. It might be a good
-starting point for an EVM/IMA-appraisal LTP testsuite. The bottom line,
-as I said previously, is that EVM/IMA-appraisal doesn't need to prevent
-these things from occurring.  It just needs to be able to detect them.
-Caching the integrity verification results is a performance issue, be it
-an important one.
+But there are some messages in dmesg if I do this with the disks still connected to the AHCI:
 
-Currently the integrity verification results are reset when the file
-data or metadata changes and removed on __fput().  Based on your
-scenarios, I am looking to see if there might be additional situations
-where the verification results need to be reset.
+# mdadm -C /dev/md3 -l5 -n3 /dev/sd[cd] missing
+# mke2fs -Fj /dev/md3
 
-thanks,
+in dmesg:
 
-Mimi
+[ 1515.340662] md: bind<sdc>
+[ 1515.378861] md: bind<sdd>
+[ 1515.470912] md/raid:md3: device sdd operational as raid disk 1
+[ 1515.470919] md/raid:md3: device sdc operational as raid disk 0
+[ 1515.471728] md/raid:md3: allocated 3230kB
+[ 1515.471798] md/raid:md3: raid level 5 active with 2 out of 3 devices,
+algorit hm 2
+[ 1515.471933] RAID conf printout:
+[ 1515.471938]  --- level:5 rd:3 wd:2
+[ 1515.471944]  disk 0, o:1, dev:sdc
+[ 1515.471949]  disk 1, o:1, dev:sdd
+[ 1515.472008] md3: detected capacity change from 0 to 4000797687808
+[ 1515.472765]  md3: unknown partition table
+[ 1918.040121] ata6.00: exception Emask 0x0 SAct 0x3 SErr 0x0 action 0x6 frozen [ 1918.040259] ata6.00: failed command: WRITE FPDMA QUEUED
+[ 1918.040367] ata6.00: cmd 61/00:00:00:00:b4/04:00:cc:00:00/40 tag 0 ncq 524288 out [ 1918.040371]          res 40/00:01:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout) [ 1918.040625] ata6.00: status: { DRDY }
+[ 1918.040718] ata6.00: failed command: WRITE FPDMA QUEUED
+[ 1918.040822] ata6.00: cmd 61/00:08:00:04:b4/04:00:cc:00:00/40 tag 1 ncq 524288 out [ 1918.040825]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout) [ 1918.041078] ata6.00: status: { DRDY }
+[ 1918.041173] ata6: hard resetting link
+[ 1918.041202] ata5.00: exception Emask 0x0 SAct 0x3 SErr 0x0 action 0x6 frozen [ 1918.041315] ata5.00: failed command: WRITE FPDMA QUEUED
+[ 1918.041422] ata5.00: cmd 61/00:00:00:00:b4/04:00:cc:00:00/40 tag 0 ncq 524288 out [ 1918.041426]          res 40/00:01:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout) [ 1918.041681] ata5.00: status: { DRDY }
+[ 1918.041772] ata5.00: failed command: WRITE FPDMA QUEUED
+[ 1918.041877] ata5.00: cmd 61/00:08:00:04:b4/04:00:cc:00:00/40 tag 1 ncq 524288 out [ 1918.041880]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout) [ 1918.042133] ata5.00: status: { DRDY }
+[ 1918.042227] ata5: hard resetting link
+[ 1918.590112] ata5: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[ 1918.590155] ata6: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+[ 1918.592281] ata5.00: configured for UDMA/133
+[ 1918.592297] ata5.00: device reported invalid CHS sector 0
+[ 1918.592307] ata5.00: device reported invalid CHS sector 0
+[ 1918.592322] ata5: EH complete
+[ 1918.592804] ata6.00: configured for UDMA/133
+[ 1918.592818] ata6.00: device reported invalid CHS sector 0
+[ 1918.592827] ata6.00: device reported invalid CHS sector 0
+[ 1918.592841] ata6: EH complete
 
+But the format successfully completes.
+
+Is there an important difference if the controller are onboard or connected via PCIe slot?
+
+I'll try some more SATA controllers on monday.
+In the meanwhile I'll check the ram with memtest86+ as suggested from Lee Mathers.
+
+Have a nice weekend.
+Lars
