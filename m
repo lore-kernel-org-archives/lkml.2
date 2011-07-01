@@ -1,141 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755129Ab1GAHCy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 03:02:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40922 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755083Ab1GAHCw (ORCPT
+	id S1755149Ab1GAHGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 03:06:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33910 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752604Ab1GAHGW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 03:02:52 -0400
-Message-ID: <4E0D7108.5070802@oracle.com>
-Date: Fri, 01 Jul 2011 00:02:32 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Fri, 1 Jul 2011 03:06:22 -0400
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        linux-mm@kvack.org, linux-fsdevel@vger.kernel.org
-Subject: Re: mmotm 2011-06-30-15-59 uploaded (mm/memcontrol.c)
-References: <201106302259.p5UMxh5i019162@imap1.linux-foundation.org>	<20110630172054.49287627.randy.dunlap@oracle.com>	<20110701091525.bd8095f1.kamezawa.hiroyu@jp.fujitsu.com> <20110701095433.71c2aa18.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110701095433.71c2aa18.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4E0D6B8D.6000601@gmail.com>
+References: <4E0D5E42.20702@gmail.com>
+	<BANLkTinBJBnZbHPpdmnYX3EV0SYFd-pRDA@mail.gmail.com>
+	<4E0D6B8D.6000601@gmail.com>
+Date: Fri, 1 Jul 2011 12:36:20 +0530
+Message-ID: <BANLkTimX4=Szn_JT49SLw4BvGxg3Qe0rYw@mail.gmail.com>
+Subject: Re: WARNING: at kernel/timer.c:1011 del_timer_sync+0xa9/0xc4()
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090203.4E0D7116.0072:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/30/11 17:54, KAMEZAWA Hiroyuki wrote:
-> On Fri, 1 Jul 2011 09:15:25 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
->> On Thu, 30 Jun 2011 17:20:54 -0700
->> Randy Dunlap <randy.dunlap@oracle.com> wrote:
+On Fri, Jul 1, 2011 at 12:09 PM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> On 06/30/2011 11:27 PM, Mohammed Shafi wrote:
 >>
->>> On Thu, 30 Jun 2011 15:59:43 -0700 akpm@linux-foundation.org wrote:
+>> On Fri, Jul 1, 2011 at 11:12 AM, Justin P. Mattock
+>> <justinmattock@gmail.com>  wrote:
 >>>
->>>> The mm-of-the-moment snapshot 2011-06-30-15-59 has been uploaded to
->>>>
->>>>    http://userweb.kernel.org/~akpm/mmotm/
->>>>
->>>> and will soon be available at
->>>>    git://zen-kernel.org/kernel/mmotm.git
->>>> or
->>>>    git://git.cmpxchg.org/linux-mmotm.git
->>>>
->>>> It contains the following patches against 3.0-rc5:
+>>> not sure if somebody has posted this or not(did post last week, but no
+>>> replies on this) I would bisect, but have no time(maybe in the future).
 >>>
->>> I see several of these build errors:
+>>> anyways let me know if you need more info.
+>>> dmesg here:
+>>> http://fpaste.org/wLxM/
 >>>
->>> mmotm-2011-0630-1559/mm/memcontrol.c:1579: error: implicit declaration of function 'mem_cgroup_node_nr_file_lru_pages'
->>> mmotm-2011-0630-1559/mm/memcontrol.c:1583: error: implicit declaration of function 'mem_cgroup_node_nr_anon_lru_pages'
 >>>
+>>> [ 43.108967] SELinux: initialized (dev fusectl, type fusectl), uses
+>>> genfs_contexts
+>>> [ 561.844541] ath: Failed to stop TX DMA!
+>>> [ 1514.074565] ------------[ cut here ]------------
+>>> [ 1514.074584] WARNING: at kernel/timer.c:1011 del_timer_sync+0xa9/0xc4()
+>>> [ 1514.074590] Hardware name: MacBookPro2,2
+>>> [ 1514.074595] Modules linked in: fuse 8021q cpufreq_ondemand garp stp
+>>> acpi_cpufreq llc freq_table mperf ipt_REJECT nf_conntrack_ipv4
+>>> nf_defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables arc4 radeon
+>>> ath9k mac80211 ttm ath9k_common drm_kms_helper ath9k_hw drm ath cfg80211
+>>> uvcvideo videodev btusb bluetooth sky2 v4l2_compat_ioctl32 appletouch
+>>> iTCO_wdt i2c_i801 joydev i2c_algo_bit iTCO_vendor_support applesmc rfkill
+>>> i2c_core input_polldev apple_bl video microcode [last unloaded:
+>>> scsi_wait_scan]
+>>> [ 1514.074730] Pid: 1550, comm: threaded-ml Not tainted
+>>> 3.0.0-rc5-00080-gca56a95 #6
+>>> [ 1514.074735] Call Trace:
+>>> [ 1514.074739]<IRQ>  [<ffffffff8104c560>] warn_slowpath_common+0x83/0x9b
+>>> [ 1514.074758] [<ffffffff8104c592>] warn_slowpath_null+0x1a/0x1c
+>>> [ 1514.074767] [<ffffffff81059409>] del_timer_sync+0xa9/0xc4
+>>> [ 1514.074775] [<ffffffff81059360>] ? process_timeout+0x10/0x10
+>>> [ 1514.074794] [<ffffffffa003c971>] ath_reset+0x43/0x1d0 [ath9k]
+>>> [ 1514.074804] [<ffffffff810524b6>] ? _local_bh_enable_ip+0xca/0xce
+>>> [ 1514.074821] [<ffffffffa0040e71>] ath_tx_complete_aggr+0x7c3/0x7dd
+>>> [ath9k]
+>>> [ 1514.074837] [<ffffffffa00406ae>] ? ath_tx_flush_tid+0xe0/0xe0 [ath9k]
+>>> [ 1514.074855] [<ffffffffa0042396>] ath_tx_tasklet+0x235/0x2cb [ath9k]
+>>> [ 1514.074871] [<ffffffffa003cd23>] ath9k_tasklet+0xf4/0x135 [ath9k]
+>>> [ 1514.074880] [<ffffffff81052112>] tasklet_action+0x8d/0xed
+>>> [ 1514.074889] [<ffffffff810526d4>] __do_softirq+0xdb/0x1ec
+>>> [ 1514.074899] [<ffffffff8107c0c9>] ? lock_release+0x165/0x18e
+>>> [ 1514.074910] [<ffffffff814a921c>] call_softirq+0x1c/0x30
+>>> [ 1514.074919] [<ffffffff8100ab5a>] do_softirq+0x4b/0xa1
+>>> [ 1514.074927] [<ffffffff810529f5>] irq_exit+0x5d/0xa8
+>>> [ 1514.074935] [<ffffffff814a9abe>] do_IRQ+0x8e/0xa5
+>>> [ 1514.074945] [<ffffffff814a1793>] common_interrupt+0x13/0x13
+>>> [ 1514.074950]<EOI>  [<ffffffff81071178>] ? current_kernel_time+0x13/0x34
+>>> [ 1514.074968] [<ffffffff814a7fba>] ? sysret_check+0x2e/0x69
+>>> [ 1514.074977] [<ffffffff8107c5b4>] ?
+>>> trace_hardirqs_on_caller+0x10b/0x12f
+>>> [ 1514.074988] [<ffffffff8109e501>] audit_syscall_entry+0x11c/0x148
+>>> [ 1514.074998] [<ffffffff8122ef3e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>>> [ 1514.075076] [<ffffffff814a8089>] auditsys+0x19/0x4a
+>>> [ 1514.075084] ---[ end trace 834e058f0ef2c378 ]---
+>>> [ 1514.075092] ------------[ cut here ]------------
+>>> [ 1514.075101] WARNING: at kernel/softirq.c:98
+>>> __local_bh_disable+0x45/0xb1()
+>>> [ 1514.075108] Hardware name: MacBookPro2,2
+>>> [ 1514.075113] Modules linked in: fuse 8021q cpufreq_ondemand garp stp
+>>> acpi_cpufreq llc freq_table mperf ipt_REJECT nf_conntrack_ipv4
+>>> nf_defrag_ipv4 xt_state nf_conntrack iptable_filter ip_tables arc4 radeon
+>>> ath9k mac80211 ttm ath9k_common drm_kms_helper ath9k_hw drm ath cfg80211
+>>> uvcvideo videodev btusb bluetooth sky2 v4l2_compat_ioctl32 appletouch
+>>> iTCO_wdt i2c_i801 joydev i2c_algo_bit iTCO_vendor_support applesmc rfkill
+>>> i2c_core input_polldev apple_bl video microcode [last unloaded:
+>>> scsi_wait_scan]
+>>> [ 1514.075271] Pid: 1550, comm: threaded-ml Tainted: G W
+>>> 3.0.0-rc5-00080-gca56a95 #6
+>>> [ 1514.075278] Call Trace:
+>>> [ 1514.075283]<IRQ>  [<ffffffff8104c560>] warn_slowpath_common+0x83/0x9b
+>>> [ 1514.075303] [<ffffffff814a1061>] ? _raw_spin_lock_bh+0x16/0x45
+>>> [ 1514.075313] [<ffffffff8104c592>] warn_slowpath_null+0x1a/0x1c
+>>> [ 1514.075324] [<ffffffff810522aa>] __local_bh_disable+0x45/0xb1
+>>> [ 1514.075333] [<ffffffff8105232d>] local_bh_disable+0x17/0x19
+>>> [ 1514.075344] [<ffffffff814a1061>] _raw_spin_lock_bh+0x16/0x45
+>>> [ 1514.075362] [<ffffffffa003c98c>] ath_reset+0x5e/0x1d0 [ath9k]
+>>> [ 1514.075372] [<ffffffff810524b6>] ? _local_bh_enable_ip+0xca/0xce
+>>> [ 1514.075391] [<ffffffffa0040e71>] ath_tx_complete_aggr+0x7c3/0x7dd
+>>> [ath9k]
+>>> [ 1514.075409] [<ffffffffa00406ae>] ? ath_tx_flush_tid+0xe0/0xe0 [ath9k]
+>>> [ 1514.075428] [<ffffffffa0042396>] ath_tx_tasklet+0x235/0x2cb [ath9k]
+>>> [ 1514.075445] [<ffffffffa003cd23>] ath9k_tasklet+0xf4/0x135 [ath9k]
+>>> [ 1514.075456] [<ffffffff81052112>] tasklet_action+0x8d/0xed
+>>> [ 1514.075465] [<ffffffff810526d4>] __do_softirq+0xdb/0x1ec
+>>> [ 1514.075476] [<ffffffff8107c0c9>] ? lock_release+0x165/0x18e
+>>> [ 1514.075487] [<ffffffff814a921c>] call_softirq+0x1c/0x30
+>>> [ 1514.075496] [<ffffffff8100ab5a>] do_softirq+0x4b/0xa1
+>>> [ 1514.075505] [<ffffffff810529f5>] irq_exit+0x5d/0xa8
+>>> [ 1514.075514] [<ffffffff814a9abe>] do_IRQ+0x8e/0xa5
+>>> [ 1514.075524] [<ffffffff814a1793>] common_interrupt+0x13/0x13
+>>> [ 1514.075529]<EOI>  [<ffffffff81071178>] ? current_kernel_time+0x13/0x34
+>>> [ 1514.075548] [<ffffffff814a7fba>] ? sysret_check+0x2e/0x69
+>>> [ 1514.075559] [<ffffffff8107c5b4>] ?
+>>> trace_hardirqs_on_caller+0x10b/0x12f
+>>> [ 1514.075570] [<ffffffff8109e501>] audit_syscall_entry+0x11c/0x148
+>>> [ 1514.075580] [<ffffffff8122ef3e>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+>>> [ 1514.075590] [<ffffffff814a8089>] auditsys+0x19/0x4a
+>>> [ 1514.075596] ---[ end trace 834e058f0ef2c379 ]---
 >>
->> Thanks...maybe !CONFIG_NUMA again. will post a fix soon.
+>> this commit seems to fix it, what did you do to get this warning?
 >>
-> 
-> fix here. compiled and booted on !CONFIG_NUMA on my host.
-> I think I should do total cleanup of functions in mm/memcontrol.c 
-> in the next week..several functions implements similar logics....
-> ==
-> From 8773fc8b596dc56adf52fd0780c1b034291185ee Mon Sep 17 00:00:00 2001
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> Date: Fri, 1 Jul 2011 09:49:54 +0900
-> Subject: [PATCH]memcg-fix-reclaimable-lru-check-in-memcg-fix2.patch
-> 
-> 
->  memcg-fix-reclaimable-lru-check-in-memcg.patch
->  causes following error with !CONFIG_NUMA.
-> 
->> mmotm-2011-0630-1559/mm/memcontrol.c:1579: error: implicit declaration of function 'mem_cgroup_node_nr_file_lru_pages'
->> mmotm-2011-0630-1559/mm/memcontrol.c:1583: error: implicit declaration of function 'mem_cgroup_node_nr_anon_lru_pages'
->>
-> 
-> This patch fixes it by moving functions out of #ifdef.
-> 
-> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>
+> thanks! will revert this and see if it fixes this.
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+:) no, I meant the commit should have fixed your issue. i could not
+understand, this commit should have been there before rc5 came.
+also please post your lspci. thanks.
 
-Thanks.
+>
+> as for what I was doing, nothing just streaming radio, and cunducting
+> regular business, emails, twizzles, etc..
 
-> ---
->  mm/memcontrol.c |   23 +++++++++++------------
->  1 files changed, 11 insertions(+), 12 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index db70176..fb7338f 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -1134,7 +1134,6 @@ unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
->  	return MEM_CGROUP_ZSTAT(mz, lru);
->  }
->  
-> -#ifdef CONFIG_NUMA
->  static unsigned long mem_cgroup_node_nr_file_lru_pages(struct mem_cgroup *memcg,
->  							int nid)
->  {
-> @@ -1146,6 +1145,17 @@ static unsigned long mem_cgroup_node_nr_file_lru_pages(struct mem_cgroup *memcg,
->  	return ret;
->  }
->  
-> +static unsigned long mem_cgroup_node_nr_anon_lru_pages(struct mem_cgroup *memcg,
-> +							int nid)
-> +{
-> +	unsigned long ret;
-> +
-> +	ret = mem_cgroup_get_zonestat_node(memcg, nid, LRU_INACTIVE_ANON) +
-> +		mem_cgroup_get_zonestat_node(memcg, nid, LRU_ACTIVE_ANON);
-> +	return ret;
-> +}
-> +
-> +#if MAX_NUMNODES > 1
->  static unsigned long mem_cgroup_nr_file_lru_pages(struct mem_cgroup *memcg)
->  {
->  	u64 total = 0;
-> @@ -1157,17 +1167,6 @@ static unsigned long mem_cgroup_nr_file_lru_pages(struct mem_cgroup *memcg)
->  	return total;
->  }
->  
-> -static unsigned long mem_cgroup_node_nr_anon_lru_pages(struct mem_cgroup *memcg,
-> -							int nid)
-> -{
-> -	unsigned long ret;
-> -
-> -	ret = mem_cgroup_get_zonestat_node(memcg, nid, LRU_INACTIVE_ANON) +
-> -		mem_cgroup_get_zonestat_node(memcg, nid, LRU_ACTIVE_ANON);
-> -
-> -	return ret;
-> -}
-> -
->  static unsigned long mem_cgroup_nr_anon_lru_pages(struct mem_cgroup *memcg)
->  {
->  	u64 total = 0;
+ok, thanks.
+
+>
+>> commit f6b4e4d476b890e1ddebbed8ec4924f9c2750a31
+>> Author: Rajkumar Manoharan<rmanohar@qca.qualcomm.com>
+>> Date:   Fri Jun 24 17:38:13 2011 +0530
+>>
+>>     ath9k: Fix locking issue during tx completion
+>>
+>>     The received tx status of aggregated frame without BlockAck may
+>>     cause deaf state in AR5416 cards. So the driver does a reset to
+>>     recover. When this happens, we release the pcu_lock before doing
+>>     a reset as ath_rest acquires pcu_lock. This is ugly and also not
+>>     atomic. Fixing this addresses the TX DMA failure also.
+>>
+>>     ath_tx_complete_aggr can be called from different paths which
+>>     takes different variants of spin_lock. This patch also addresses
+>>     the following warning.
+>>
+>>     WARNING: at kernel/timer.c:1011 del_timer_sync+0x4e/0x50()
+>>     Call Trace:
+>>      <IRQ>   [<ffffffff8104be3a>] warn_slowpath_common+0x7a/0xb0
+>>      [<ffffffff8104be85>] warn_slowpath_null+0x15/0x20
+>>      [<ffffffff8105915e>] del_timer_sync+0x4e/0x50
+>>      [<ffffffffa03726be>] ath_reset+0x3e/0x210 [ath9k]
+>>      [<ffffffff8135cdaf>] ? _raw_spin_unlock_bh+0x1f/0x30
+>>      [<ffffffffa037760a>] ath_tx_complete_aggr.isra.26+0x54a/0xa40 [ath9k]
+>>
+>>     Signed-off-by: Rajkumar Manoharan<rmanohar@qca.qualcomm.com>
+>>     Signed-off-by: John W. Linville<linville@tuxdriver.com>
+>>
+>>
+>>
+>>>
+>>> Justin P. Mattock
+>>> --
+>>> To unsubscribe from this list: send the line "unsubscribe linux-wireless"
+>>> in
+>>> the body of a message to majordomo@vger.kernel.org
+>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>>
+>>
+>>
+>>
+>
+>
+
 
 
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+shafi
