@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753Ab1GALs3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 07:48:29 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:33646 "EHLO mail.mnsspb.ru"
+	id S1755927Ab1GALsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 07:48:38 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:33649 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755630Ab1GALsY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 07:48:24 -0400
+	id S1755775Ab1GALse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 07:48:34 -0400
 From: Kirill Smelkov <kirr@mns.spb.ru>
 To: Alan Stern <stern@rowland.harvard.edu>
 Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
@@ -13,9 +13,9 @@ Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
         linux-usb@vger.kernel.org, linux-uvc-devel@lists.berlios.de,
         linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
         Kirill Smelkov <kirr@mns.spb.ru>
-Subject: [PATCH v3 2/2] USB: EHCI: Allow users to override 80% max periodic bandwidth
-Date: Fri,  1 Jul 2011 15:47:11 +0400
-Message-Id: <69ea2dd940481508f190419c53c780b626460b22.1309520144.git.kirr@mns.spb.ru>
+Subject: [PATCH v3 1/2] USB: EHCI: Move sysfs related bits into ehci-sysfs.c
+Date: Fri,  1 Jul 2011 15:47:10 +0400
+Message-Id: <a8236643abf74ea7fbf5fdada29f03d2aad61969.1309520144.git.kirr@mns.spb.ru>
 X-Mailer: git-send-email 1.7.6.rc3
 In-Reply-To: <cover.1309520144.git.kirr@mns.spb.ru>
 References: <cover.1309520144.git.kirr@mns.spb.ru>
@@ -25,314 +25,251 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are cases, when 80% max isochronous bandwidth is too limiting.
+The only sysfs attr implemented so far is "companion" from ehci-hub.c,
+but in the next patch we are going to add another sysfs file, so prior
+to that let's structure things and move already-in-there sysfs code to
+separate file.
 
-For example I have two USB video capture cards which stream uncompressed
-video, and to stream full NTSC + PAL videos we'd need
+NOTE: All the code I'm moving into this new file was written by Alan
+Stern (in 57e06c11 "EHCI: force high-speed devices to run at full
+speed"; Jan 16 2007), that's why I'm putting
 
-    NTSC 640x480 YUV422 @30fps      ~17.6 MB/s
-    PAL  720x576 YUV422 @25fps      ~19.7 MB/s
+    Copyright (C) 2007 by Alan Stern
 
-isoc bandwidth.
+there after explicit request from the author.
 
-Now, due to limited alt settings in capture devices NTSC one ends up
-streaming with max_pkt_size=2688  and  PAL with max_pkt_size=2892, both
-with interval=1. In terms of microframe time allocation this gives
-
-    NTSC    ~53us
-    PAL     ~57us
-
-and together
-
-    ~110us  >  100us == 80% of 125us uframe time.
-
-So those two devices can't work together simultaneously because the'd
-over allocate isochronous bandwidth.
-
-80% seemed a bit arbitrary to me, and I've tried to raise it to 90% and
-both devices started to work together, so I though sometimes it would be
-a good idea for users to override hardcoded default of max 80% isoc
-bandwidth.
-
-After all, isn't it a user who should decide how to load the bus? If I
-can live with 10% or even 5% bulk bandwidth that should be ok. I'm a USB
-newcomer, but that 80% set in stone by USB 2.0 specification seems to be
-chosen pretty arbitrary to me, just to serve as a reasonable default.
-
-NOTE 1
-~~~~~~
-
-for two streams with max_pkt_size=3072 (worst case) both time
-allocation would be 60us+60us=120us which is 96% periodic bandwidth
-leaving 4% for bulk and control.  Alan Stern suggested that bulk then
-would be problematic (less than 300*8 bittimes left per microframe), but
-I think that is still enough for control traffic.
-
-NOTE 2
-~~~~~~
-
-Sarah Sharp expressed concern that maxing out periodic bandwidth
-could lead to vendor-specific hardware bugs on host controllers, because
-
-> It's entirely possible that you'll run into
-> vendor-specific bugs if you try to pack the schedule with isochronous
-> transfers.  I don't think any hardware designer would seriously test or
-> validate their hardware with a schedule that is basically a violation of
-> the USB bus spec (more than 80% for periodic transfers).
-
-So far I've only tested this patch on my HP Mini 5103 with N10 chipeset
-
-    kirr@mini:~$ lspci
-    00:00.0 Host bridge: Intel Corporation N10 Family DMI Bridge
-    00:02.0 VGA compatible controller: Intel Corporation N10 Family Integrated Graphics Controller
-    00:02.1 Display controller: Intel Corporation N10 Family Integrated Graphics Controller
-    00:1b.0 Audio device: Intel Corporation N10/ICH 7 Family High Definition Audio Controller (rev 02)
-    00:1c.0 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 1 (rev 02)
-    00:1c.3 PCI bridge: Intel Corporation N10/ICH 7 Family PCI Express Port 4 (rev 02)
-    00:1d.0 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #1 (rev 02)
-    00:1d.1 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #2 (rev 02)
-    00:1d.2 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #3 (rev 02)
-    00:1d.3 USB Controller: Intel Corporation N10/ICH 7 Family USB UHCI Controller #4 (rev 02)
-    00:1d.7 USB Controller: Intel Corporation N10/ICH 7 Family USB2 EHCI Controller (rev 02)
-    00:1e.0 PCI bridge: Intel Corporation 82801 Mobile PCI Bridge (rev e2)
-    00:1f.0 ISA bridge: Intel Corporation NM10 Family LPC Controller (rev 02)
-    00:1f.2 SATA controller: Intel Corporation N10/ICH7 Family SATA AHCI Controller (rev 02)
-    01:00.0 Network controller: Broadcom Corporation BCM4313 802.11b/g/n Wireless LAN Controller (rev 01)
-    02:00.0 Ethernet controller: Marvell Technology Group Ltd. 88E8059 PCI-E Gigabit Ethernet Controller (rev 11)
-
-and the system works stable with 110us/uframe (~88%) isoc bandwith allocated for
-above-mentioned isochronous transfers.
-
-NOTE 3
-~~~~~~
-
-This feature is off by default. I mean max periodic bandwidth is set to
-100us/uframe by default exactly as it was before the patch. So only those of us
-who need the extreme settings are taking the risk - normal users who do not
-alter uframe_periodic_max sysfs attribute should not see any change at all.
-
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>
 Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+Acked-off-by: Alan Stern <stern@rowland.harvard.edu>
 ---
- drivers/usb/host/ehci-hcd.c   |    6 ++
- drivers/usb/host/ehci-sched.c |   17 +++----
- drivers/usb/host/ehci-sysfs.c |  104 +++++++++++++++++++++++++++++++++++++++--
- drivers/usb/host/ehci.h       |    2 +
- 4 files changed, 115 insertions(+), 14 deletions(-)
+ drivers/usb/host/ehci-hcd.c   |    5 +-
+ drivers/usb/host/ehci-hub.c   |   75 --------------------------------
+ drivers/usb/host/ehci-sysfs.c |   94 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 97 insertions(+), 77 deletions(-)
+ create mode 100644 drivers/usb/host/ehci-sysfs.c
 
 diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
-index 8306155..4ee62be 100644
+index e18862c..8306155 100644
 --- a/drivers/usb/host/ehci-hcd.c
 +++ b/drivers/usb/host/ehci-hcd.c
-@@ -572,6 +572,12 @@ static int ehci_init(struct usb_hcd *hcd)
- 	hcc_params = ehci_readl(ehci, &ehci->caps->hcc_params);
+@@ -336,6 +336,7 @@ static void ehci_work(struct ehci_hcd *ehci);
+ #include "ehci-mem.c"
+ #include "ehci-q.c"
+ #include "ehci-sched.c"
++#include "ehci-sysfs.c"
  
- 	/*
-+	 * by default set standard 80% (== 100 usec/uframe) max periodic
-+	 * bandwidth as required by USB 2.0
-+	 */
-+	ehci->uframe_periodic_max = 100;
-+
-+	/*
- 	 * hw default: 1K periodic list heads, one per frame.
- 	 * periodic_size can shrink by USBCMD update if hcc_params allows.
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -520,7 +521,7 @@ static void ehci_stop (struct usb_hcd *hcd)
+ 	ehci_reset (ehci);
+ 	spin_unlock_irq(&ehci->lock);
+ 
+-	remove_companion_file(ehci);
++	remove_sysfs_files(ehci);
+ 	remove_debug_files (ehci);
+ 
+ 	/* root hub is shut down separately (first, when possible) */
+@@ -754,7 +755,7 @@ static int ehci_run (struct usb_hcd *hcd)
+ 	 * since the class device isn't created that early.
  	 */
-diff --git a/drivers/usb/host/ehci-sched.c b/drivers/usb/host/ehci-sched.c
-index 6c9fbe3..2abf854 100644
---- a/drivers/usb/host/ehci-sched.c
-+++ b/drivers/usb/host/ehci-sched.c
-@@ -172,7 +172,7 @@ periodic_usecs (struct ehci_hcd *ehci, unsigned frame, unsigned uframe)
- 		}
- 	}
- #ifdef	DEBUG
--	if (usecs > 100)
-+	if (usecs > ehci->uframe_periodic_max)
- 		ehci_err (ehci, "uframe %d sched overrun: %d usecs\n",
- 			frame * 8 + uframe, usecs);
- #endif
-@@ -709,11 +709,8 @@ static int check_period (
- 	if (uframe >= 8)
- 		return 0;
+ 	create_debug_files(ehci);
+-	create_companion_file(ehci);
++	create_sysfs_files(ehci);
  
--	/*
--	 * 80% periodic == 100 usec/uframe available
--	 * convert "usecs we need" to "max already claimed"
--	 */
--	usecs = 100 - usecs;
-+	/* convert "usecs we need" to "max already claimed" */
-+	usecs = ehci->uframe_periodic_max - usecs;
- 
- 	/* we "know" 2 and 4 uframe intervals were rejected; so
- 	 * for period 0, check _every_ microframe in the schedule.
-@@ -1286,9 +1283,9 @@ itd_slot_ok (
- {
- 	uframe %= period;
- 	do {
--		/* can't commit more than 80% periodic == 100 usec */
-+		/* can't commit more than uframe_periodic_max usec */
- 		if (periodic_usecs (ehci, uframe >> 3, uframe & 0x7)
--				> (100 - usecs))
-+				> (ehci->uframe_periodic_max - usecs))
- 			return 0;
- 
- 		/* we know urb->interval is 2^N uframes */
-@@ -1345,7 +1342,7 @@ sitd_slot_ok (
- #endif
- 
- 		/* check starts (OUT uses more than one) */
--		max_used = 100 - stream->usecs;
-+		max_used = ehci->uframe_periodic_max - stream->usecs;
- 		for (tmp = stream->raw_mask & 0xff; tmp; tmp >>= 1, uf++) {
- 			if (periodic_usecs (ehci, frame, uf) > max_used)
- 				return 0;
-@@ -1354,7 +1351,7 @@ sitd_slot_ok (
- 		/* for IN, check CSPLIT */
- 		if (stream->c_usecs) {
- 			uf = uframe & 7;
--			max_used = 100 - stream->c_usecs;
-+			max_used = ehci->uframe_periodic_max - stream->c_usecs;
- 			do {
- 				tmp = 1 << uf;
- 				tmp <<= 8;
-diff --git a/drivers/usb/host/ehci-sysfs.c b/drivers/usb/host/ehci-sysfs.c
-index 29824a9..14ced00 100644
---- a/drivers/usb/host/ehci-sysfs.c
-+++ b/drivers/usb/host/ehci-sysfs.c
-@@ -74,21 +74,117 @@ static ssize_t store_companion(struct device *dev,
+ 	return 0;
  }
- static DEVICE_ATTR(companion, 0644, show_companion, store_companion);
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index ea6184b..d9e8d71 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -471,29 +471,6 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
  
-+
-+/*
-+ * Display / Set uframe_periodic_max
-+ */
-+static ssize_t show_uframe_periodic_max(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct ehci_hcd		*ehci;
-+	int			n;
-+
-+	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
-+	n = scnprintf(buf, PAGE_SIZE, "%d\n", ehci->uframe_periodic_max);
-+	return n;
-+}
-+
-+
-+static ssize_t store_uframe_periodic_max(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct ehci_hcd		*ehci;
-+	unsigned		uframe_periodic_max;
-+	unsigned		frame, uframe;
-+	unsigned short		allocated_max;
-+	unsigned long		flags;
-+	ssize_t			ret;
-+
-+	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
-+	if (kstrtouint(buf, 0, &uframe_periodic_max) < 0)
-+		return -EINVAL;
-+
-+	if (uframe_periodic_max < 100 || uframe_periodic_max >= 125) {
-+		ehci_info(ehci, "rejecting invalid request for "
-+				"uframe_periodic_max=%u\n", uframe_periodic_max);
-+		return -EINVAL;
-+	}
-+
-+	ret = -EINVAL;
-+
-+	/*
-+	 * lock, so that our checking does not race with possible periodic
-+	 * bandwidth allocation through submitting new urbs.
-+	 */
-+	spin_lock_irqsave (&ehci->lock, flags);
-+
-+	/*
-+	 * for request to decrease max periodic bandwidth, we have to check
-+	 * every microframe in the schedule to see whether the decrease is
-+	 * possible.
-+	 */
-+	if (uframe_periodic_max < ehci->uframe_periodic_max) {
-+		allocated_max = 0;
-+
-+		for (frame = 0; frame < ehci->periodic_size; ++frame)
-+			for (uframe = 0; uframe < 7; ++uframe)
-+				allocated_max = max(allocated_max,
-+						    periodic_usecs (ehci, frame, uframe));
-+
-+		if (allocated_max > uframe_periodic_max) {
-+			ehci_info(ehci,
-+				"cannot decrease uframe_periodic_max becase "
-+				"periodic bandwidth is already allocated "
-+				"(%u > %u)\n",
-+				allocated_max, uframe_periodic_max);
-+			goto out_unlock;
-+		}
-+	}
-+
-+	/* increasing is always ok */
-+
-+	ehci_info(ehci, "setting max periodic bandwidth to %u%% "
-+			"(== %u usec/uframe)\n",
-+			100*uframe_periodic_max/125, uframe_periodic_max);
-+
-+	if (uframe_periodic_max != 100)
-+		ehci_warn(ehci, "max periodic bandwidth set is non-standard\n");
-+
-+	ehci->uframe_periodic_max = uframe_periodic_max;
-+	ret = count;
-+
-+out_unlock:
-+	spin_unlock_irqrestore (&ehci->lock, flags);
-+	return ret;
-+}
-+static DEVICE_ATTR(uframe_periodic_max, 0644, show_uframe_periodic_max, store_uframe_periodic_max);
-+
-+
- static inline int create_sysfs_files(struct ehci_hcd *ehci)
- {
-+	struct device	*controller = ehci_to_hcd(ehci)->self.controller;
- 	int	i = 0;
+ /*-------------------------------------------------------------------------*/
  
- 	/* with integrated TT there is no companion! */
- 	if (!ehci_is_TDI(ehci))
+-/* Display the ports dedicated to the companion controller */
+-static ssize_t show_companion(struct device *dev,
+-			      struct device_attribute *attr,
+-			      char *buf)
+-{
+-	struct ehci_hcd		*ehci;
+-	int			nports, index, n;
+-	int			count = PAGE_SIZE;
+-	char			*ptr = buf;
+-
+-	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
+-	nports = HCS_N_PORTS(ehci->hcs_params);
+-
+-	for (index = 0; index < nports; ++index) {
+-		if (test_bit(index, &ehci->companion_ports)) {
+-			n = scnprintf(ptr, count, "%d\n", index + 1);
+-			ptr += n;
+-			count -= n;
+-		}
+-	}
+-	return ptr - buf;
+-}
+-
+ /*
+  * Sets the owner of a port
+  */
+@@ -528,58 +505,6 @@ static void set_owner(struct ehci_hcd *ehci, int portnum, int new_owner)
+ 	}
+ }
+ 
+-/*
+- * Dedicate or undedicate a port to the companion controller.
+- * Syntax is "[-]portnum", where a leading '-' sign means
+- * return control of the port to the EHCI controller.
+- */
+-static ssize_t store_companion(struct device *dev,
+-			       struct device_attribute *attr,
+-			       const char *buf, size_t count)
+-{
+-	struct ehci_hcd		*ehci;
+-	int			portnum, new_owner;
+-
+-	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
+-	new_owner = PORT_OWNER;		/* Owned by companion */
+-	if (sscanf(buf, "%d", &portnum) != 1)
+-		return -EINVAL;
+-	if (portnum < 0) {
+-		portnum = - portnum;
+-		new_owner = 0;		/* Owned by EHCI */
+-	}
+-	if (portnum <= 0 || portnum > HCS_N_PORTS(ehci->hcs_params))
+-		return -ENOENT;
+-	portnum--;
+-	if (new_owner)
+-		set_bit(portnum, &ehci->companion_ports);
+-	else
+-		clear_bit(portnum, &ehci->companion_ports);
+-	set_owner(ehci, portnum, new_owner);
+-	return count;
+-}
+-static DEVICE_ATTR(companion, 0644, show_companion, store_companion);
+-
+-static inline int create_companion_file(struct ehci_hcd *ehci)
+-{
+-	int	i = 0;
+-
+-	/* with integrated TT there is no companion! */
+-	if (!ehci_is_TDI(ehci))
 -		i = device_create_file(ehci_to_hcd(ehci)->self.controller,
 -				       &dev_attr_companion);
-+		i = device_create_file(controller, &dev_attr_companion);
-+	if (i)
-+		goto out;
-+
-+	i = device_create_file(controller, &dev_attr_uframe_periodic_max);
-+out:
- 	return i;
- }
- 
- static inline void remove_sysfs_files(struct ehci_hcd *ehci)
- {
-+	struct device	*controller = ehci_to_hcd(ehci)->self.controller;
-+
- 	/* with integrated TT there is no companion! */
- 	if (!ehci_is_TDI(ehci))
+-	return i;
+-}
+-
+-static inline void remove_companion_file(struct ehci_hcd *ehci)
+-{
+-	/* with integrated TT there is no companion! */
+-	if (!ehci_is_TDI(ehci))
 -		device_remove_file(ehci_to_hcd(ehci)->self.controller,
 -				   &dev_attr_companion);
-+		device_remove_file(controller, &dev_attr_companion);
-+
-+	device_remove_file(controller, &dev_attr_uframe_periodic_max);
- }
-diff --git a/drivers/usb/host/ehci.h b/drivers/usb/host/ehci.h
-index bd6ff48..fa3129f 100644
---- a/drivers/usb/host/ehci.h
-+++ b/drivers/usb/host/ehci.h
-@@ -87,6 +87,8 @@ struct ehci_hcd {			/* one per controller */
- 	union ehci_shadow	*pshadow;	/* mirror hw periodic table */
- 	int			next_uframe;	/* scan periodic, start here */
- 	unsigned		periodic_sched;	/* periodic activity count */
-+	unsigned		uframe_periodic_max; /* max periodic time per uframe */
-+
+-}
+-
+-
+ /*-------------------------------------------------------------------------*/
  
- 	/* list of itds & sitds completed while clock_frame was still active */
- 	struct list_head	cached_itd_list;
+ static int check_reset_complete (
+diff --git a/drivers/usb/host/ehci-sysfs.c b/drivers/usb/host/ehci-sysfs.c
+new file mode 100644
+index 0000000..29824a9
+--- /dev/null
++++ b/drivers/usb/host/ehci-sysfs.c
+@@ -0,0 +1,94 @@
++/*
++ * Copyright (C) 2007 by Alan Stern
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software Foundation,
++ * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++/* this file is part of ehci-hcd.c */
++
++
++/* Display the ports dedicated to the companion controller */
++static ssize_t show_companion(struct device *dev,
++			      struct device_attribute *attr,
++			      char *buf)
++{
++	struct ehci_hcd		*ehci;
++	int			nports, index, n;
++	int			count = PAGE_SIZE;
++	char			*ptr = buf;
++
++	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
++	nports = HCS_N_PORTS(ehci->hcs_params);
++
++	for (index = 0; index < nports; ++index) {
++		if (test_bit(index, &ehci->companion_ports)) {
++			n = scnprintf(ptr, count, "%d\n", index + 1);
++			ptr += n;
++			count -= n;
++		}
++	}
++	return ptr - buf;
++}
++
++/*
++ * Dedicate or undedicate a port to the companion controller.
++ * Syntax is "[-]portnum", where a leading '-' sign means
++ * return control of the port to the EHCI controller.
++ */
++static ssize_t store_companion(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t count)
++{
++	struct ehci_hcd		*ehci;
++	int			portnum, new_owner;
++
++	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
++	new_owner = PORT_OWNER;		/* Owned by companion */
++	if (sscanf(buf, "%d", &portnum) != 1)
++		return -EINVAL;
++	if (portnum < 0) {
++		portnum = - portnum;
++		new_owner = 0;		/* Owned by EHCI */
++	}
++	if (portnum <= 0 || portnum > HCS_N_PORTS(ehci->hcs_params))
++		return -ENOENT;
++	portnum--;
++	if (new_owner)
++		set_bit(portnum, &ehci->companion_ports);
++	else
++		clear_bit(portnum, &ehci->companion_ports);
++	set_owner(ehci, portnum, new_owner);
++	return count;
++}
++static DEVICE_ATTR(companion, 0644, show_companion, store_companion);
++
++static inline int create_sysfs_files(struct ehci_hcd *ehci)
++{
++	int	i = 0;
++
++	/* with integrated TT there is no companion! */
++	if (!ehci_is_TDI(ehci))
++		i = device_create_file(ehci_to_hcd(ehci)->self.controller,
++				       &dev_attr_companion);
++	return i;
++}
++
++static inline void remove_sysfs_files(struct ehci_hcd *ehci)
++{
++	/* with integrated TT there is no companion! */
++	if (!ehci_is_TDI(ehci))
++		device_remove_file(ehci_to_hcd(ehci)->self.controller,
++				   &dev_attr_companion);
++}
 -- 
 1.7.6.rc3
 
