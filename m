@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab1GAFh2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 01:37:28 -0400
+	id S1754715Ab1GAFha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 01:37:30 -0400
 Received: from mobile-166-190-108-096.mycingular.net ([166.190.108.96]:38470
 	"EHLO brontomerus.synaptics.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752745Ab1GAFhO (ORCPT
+	by vger.kernel.org with ESMTP id S1752801Ab1GAFhR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 01:37:14 -0400
+	Fri, 1 Jul 2011 01:37:17 -0400
 X-Greylist: delayed 920 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jul 2011 01:37:06 EDT
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
@@ -22,9 +22,9 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [PATCH 9/9] input/touchscreen: Synaptics RMI4 Touchscreen Driver
-Date: Thu, 30 Jun 2011 22:19:16 -0700
-Message-Id: <1309497556-7344-10-git-send-email-cheiny@synaptics.com>
+Subject: [PATCH 8/9] input/touchscreen: Synaptics RMI4 Touchscreen Driver
+Date: Thu, 30 Jun 2011 22:19:15 -0700
+Message-Id: <1309497556-7344-9-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1309497556-7344-1-git-send-email-cheiny@synaptics.com>
 References: <1309497556-7344-1-git-send-email-cheiny@synaptics.com>
@@ -50,22 +50,25 @@ Acked-by: Jean Delvare <khali@linux-fr.org>
 
 ---
 
-diff --git a/drivers/input/touchscreen/rmi_f34.h b/drivers/input/touchscreen/rmi_f34.h
+diff --git a/drivers/input/touchscreen/rmi_f19.h b/drivers/input/touchscreen/rmi_f19.h
 new file mode 100644
-index 0000000..c9e8b52
+index 0000000..b5964fe
 --- /dev/null
-+++ b/drivers/input/touchscreen/rmi_f34.h
-@@ -0,0 +1,48 @@
++++ b/drivers/input/touchscreen/rmi_f19.h
+@@ -0,0 +1,63 @@
 +/**
 + *
-+ * Synaptics Register Mapped Interface (RMI4) Function $34 header.
-+ * Copyright (c) 2007 - 2011, Synaptics Incorporated
++ * Synaptics Register Mapped Interface (RMI4) Function $11 header.
++ * Copyright (c) 2007 - 2010, Synaptics Incorporated
 + *
-+ * There is only one function $34 for each RMI4 sensor. This will be
-+ * the function that is used to reflash the firmware and get the
-+ * boot loader address and the boot image block size.
-+ *
-+ *
++ * For every RMI4 function that has a data source - like 2D sensors,
++ * buttons, LEDs, GPIOs, etc. - the user will create a new rmi_function_xx.c
++ * file and add these functions to perform the config(), init(), report()
++ * and detect() functionality. The function pointers are then srored under
++ * the RMI function info and these functions will automatically be called by
++ * the global config(), init(), report() and detect() functions that will
++ * loop through all data sources and call the data sources functions using
++ * these functions pointed to by the function ptrs.
 + */
 +/*
 + * This file is licensed under the GPL2 license.
@@ -85,36 +88,46 @@ index 0000000..c9e8b52
 + *#############################################################################
 + */
 +
-+#if !defined(_RMI_F34_H)
-+#define _RMI_F34_H
++#if !defined(_RMI_F19_H)
++#define _RMI_F19_H
 +
-+/* define fn $34 commands */
-+#define WRITE_FW_BLOCK            2
-+#define ERASE_ALL                 3
-+#define READ_CONFIG_BLOCK         5
-+#define WRITE_CONFIG_BLOCK        6
-+#define ERASE_CONFIG              7
-+#define ENABLE_FLASH_PROG         15
++/* This is the data read from the F19 query registers.
++ */
++struct rmi_F19_query {
++	bool has_hysteresis_threshold;
++	bool has_sensitivity_adjust;
++	bool configurable;
++	unsigned char button_count;
++};
 +
-+void FN_34_inthandler(struct rmi_function_info *rmifninfo,
++struct rmi_F19_control {
++	unsigned char button_usage;
++	unsigned char filter_mode;
++	unsigned char *interrupt_enable_registers;
++	unsigned char *single_button_control;
++	unsigned char *sensor_map;
++	unsigned char *single_button_sensitivity;
++	unsigned char global_sensitivity_adjustment;
++	unsigned char global_hysteresis_threshold;
++};
++
++
++void FN_19_inthandler(struct rmi_function_info *rmifninfo,
 +		      unsigned int asserted_IRQs);
-+int FN_34_config(struct rmi_function_info *rmifninfo);
-+int FN_34_init(struct rmi_function_device *function_device);
-+int FN_34_detect(struct rmi_function_info *rmifninfo);
-+void FN_34_attention(struct rmi_function_info *rmifninfo);
-+
++int FN_19_config(struct rmi_function_info *rmifninfo);
++int FN_19_init(struct rmi_function_device *function_device);
++int FN_19_detect(struct rmi_function_info *rmifninfo);
++/* No attention function for Fn $19 */
 +#endif
-diff --git a/drivers/input/touchscreen/rmi_f34.c b/drivers/input/touchscreen/rmi_f34.c
+diff --git a/drivers/input/touchscreen/rmi_f19.c b/drivers/input/touchscreen/rmi_f19.c
 new file mode 100644
-index 0000000..b41d591
+index 0000000..c8646aa
 --- /dev/null
-+++ b/drivers/input/touchscreen/rmi_f34.c
-@@ -0,0 +1,556 @@
++++ b/drivers/input/touchscreen/rmi_f19.c
+@@ -0,0 +1,629 @@
 +/**
 + *
-+ * Synaptics Register Mapped Interface (RMI4) Function $34 support for sensor
-+ * firmware reflashing.
-+ *
++ * Synaptics Register Mapped Interface (RMI4) Function $11 support for 2D.
 + * Copyright (c) 2007 - 2011, Synaptics Incorporated
 + *
 + */
@@ -139,248 +152,177 @@ index 0000000..b41d591
 +#include <linux/kernel.h>
 +#include <linux/device.h>
 +#include <linux/delay.h>
-+#include <linux/slab.h>
 +#include <linux/kthread.h>
 +#include <linux/freezer.h>
 +#include <linux/input.h>
-+#include <linux/sysfs.h>
-+#include <linux/math64.h>
++#include <linux/slab.h>
++
++#include "rmi.h"
 +#include "rmi_drvr.h"
 +#include "rmi_bus.h"
 +#include "rmi_sensor.h"
 +#include "rmi_function.h"
-+#include "rmi_f34.h"
++#include "rmi_f19.h"
++#include "rmi_platformdata.h"
 +
-+/* data specific to fn $34 that needs to be kept around */
-+struct rmi_fn_34_data {
-+	unsigned char status;
-+	unsigned char cmd;
-+	unsigned short bootloaderid;
-+	unsigned short blocksize;
-+	unsigned short imageblockcount;
-+	unsigned short configblockcount;
++struct f19_instance_data {
++	struct rmi_F19_query *device_info;
++	struct rmi_F19_control *control_registers;
++	bool *button_down;
++	unsigned char button_data_buffer_size;
++	unsigned char *button_data_buffer;
++	unsigned char *button_map;
++	int control_register_size;
++	int register_count_for_bit_per_button;
++	int usage_and_filter_mode_offset;
++	int interrupt_enable_offset;
++	int interrupt_enable_length;
++	int single_button_control_length;
++	int single_button_control_offset;
++	int sensor_map_control_offset;
++	int sensor_map_control_length;
++	int single_button_sensor_offset;
++	int single_button_sensor_length;
++	int global_sensor_offset;
++	int global_hysteresis_threshold_offset;
 +};
 +
-+static ssize_t rmi_fn_34_status_show(struct device *dev,
-+				     struct device_attribute *attr, char *buf);
++static ssize_t rmi_f19_button_count_show(struct device *dev,
++					 struct device_attribute *attr,
++					 char *buf);
 +
-+static ssize_t rmi_fn_34_cmd_show(struct device *dev,
-+				  struct device_attribute *attr, char *buf);
++static ssize_t rmi_f19_buttonMap_show(struct device *dev,
++				      struct device_attribute *attr, char *buf);
 +
-+static ssize_t rmi_fn_34_cmd_store(struct device *dev,
-+				   struct device_attribute *attr,
-+				   const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_34_data_read(struct file *data_file, struct kobject *kobj,
-+				   struct bin_attribute *attributes,
-+				   char *buf, loff_t pos, size_t count);
-+
-+static ssize_t rmi_fn_34_data_write(struct file *data_file,
-+				    struct kobject *kobj,
-+				    struct bin_attribute *attributes, char *buf,
-+				    loff_t pos, size_t count);
-+
-+static ssize_t rmi_fn_34_bootloaderid_show(struct device *dev,
-+					   struct device_attribute *attr,
-+					   char *buf);
-+
-+static ssize_t rmi_fn_34_bootloaderid_store(struct device *dev,
-+					    struct device_attribute *attr,
-+					    const char *buf, size_t count);
-+
-+static ssize_t rmi_fn_34_blocksize_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf);
-+
-+static ssize_t rmi_fn_34_imageblockcount_show(struct device *dev,
-+					      struct device_attribute *attr,
-+					      char *buf);
-+
-+static ssize_t rmi_fn_34_configblockcount_show(struct device *dev,
-+					       struct device_attribute *attr,
-+					       char *buf);
++static ssize_t rmi_f19_buttonMap_store(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t count);
 +
 +static struct device_attribute attrs[] = {
-+	__ATTR(status, 0444,
-+	       rmi_fn_34_status_show, rmi_store_error),	/* RO attr */
-+	/* Also, sysfs will need to have a file set up to distinguish
-+	 * between commands - like Config write/read, Image write/verify. */
-+	__ATTR(cmd, 0666,
-+	       rmi_fn_34_cmd_show, rmi_fn_34_cmd_store),	/* RW attr */
-+	__ATTR(bootloaderid, 0666,
-+	       rmi_fn_34_bootloaderid_show, rmi_fn_34_bootloaderid_store),
-+	       /* RW attr */
-+	__ATTR(blocksize, 0444,
-+	       rmi_fn_34_blocksize_show, rmi_store_error),	/* RO attr */
-+	__ATTR(imageblockcount, 0444,
-+	       rmi_fn_34_imageblockcount_show, rmi_store_error), /* RO attr */
-+	__ATTR(configblockcount, 0444,
-+	       rmi_fn_34_configblockcount_show, rmi_store_error) /* RO attr */
++	__ATTR(button_count, 0444,
++	       rmi_f19_button_count_show, rmi_store_error),	/* RO attr */
++	__ATTR(buttonMap, 0664,
++	       rmi_f19_buttonMap_show, rmi_f19_buttonMap_store)	/* RW attr */
 +};
 +
-+struct bin_attribute dev_attr_data = {
-+	.attr = {
-+		 .name = "data",
-+		 .mode = 0666},
-+	.size = 0,
-+	.read = rmi_fn_34_data_read,
-+	.write = rmi_fn_34_data_write,
-+};
-+
-+/* Helper fn to convert a byte array representing a short in the RMI
-+ * endian-ness to a short in the native processor's specific endianness.
-+ * We don't use ntohs/htons here because, well, we're not dealing with
-+ * a pair of shorts. And casting dest to short* wouldn't work, because
-+ * that would imply knowing the byte order of short in the first place.
++/*
++ * There is no attention function for F19 - it is left NULL
++ * in the function table so it is not called.
++ *
 + */
-+static void batohs(unsigned short *dest, unsigned char *src)
-+{
-+	*src = dest[1] * 0x100 + dest[0];
-+}
 +
-+/* Helper function to convert a short (in host processor endianess) to
-+ * a byte array in the RMI endianess for shorts.  See above comment for
-+ * why we dont us htons or something like that.
++/*
++ * This reads in a sample and reports the F19 source data to the
++ * input subsystem. It is used for both polling and interrupt driven
++ * operation. This is called a lot so don't put in any informational
++ * printks since they will slow things way down!
 + */
-+static void hstoba(unsigned char *dest, unsigned short src)
-+{
-+	dest[0] = src % 0x100;
-+	dest[1] = src / 0x100;
-+}
-+
-+/*.
-+ * The interrupt handler for Fn $34.
-+ */
-+void FN_34_inthandler(struct rmi_function_info *rmifninfo,
++void FN_19_inthandler(struct rmi_function_info *rmifninfo,
 +		      unsigned int asserted_IRQs)
 +{
-+	unsigned int status;
-+	struct rmi_fn_34_data *instance_data = rmifninfo->fndata;
++	struct f19_instance_data *instance_data = rmifninfo->fndata;
++	struct rmi_function_device *function_device =
++	    rmifninfo->function_device;
++	int button;
 +
-+	/* Read the Fn $34 status register to see whether the previous
-+	 * command executed OK. inform user space - through a sysfs param. */
++	/* Read the button data. */
++
 +	if (rmi_read_multiple(rmifninfo->sensor,
-+			rmifninfo->function_descriptor.data_base_addr + 3,
-+			(unsigned char *)&status, 1)) {
-+		pr_err("%s : Could not read status from 0x%x\n", __func__,
-+		       rmifninfo->function_descriptor.data_base_addr + 3);
-+		status = 0xff;	/* failure */
++			rmifninfo->function_descriptor.data_base_addr,
++			instance_data->button_data_buffer,
++			instance_data->button_data_buffer_size)) {
++		pr_err("%s: Failed to read button data registers.\n", __func__);
++		return;
 +	}
 +
-+	/* set a sysfs value that the user mode can read - only
-+	 * upper 4 bits are the status. successful is $80, anything
-+	 * else is failure */
-+	instance_data->status = status & 0xf0;
-+}
-+EXPORT_SYMBOL(FN_34_inthandler);
++	/* Generate events for buttons that change state. */
++	for (button = 0; button < instance_data->device_info->button_count;
++	     button++) {
++		int button_reg;
++		int button_shift;
++		bool button_status;
 +
-+/* This is a stub for now, and will be fleshed out or removed as the
-+ * implementation matures.
++		/* determine which data byte the button status is in */
++		button_reg = button / 4;
++		/* bit shift to get button's status */
++		button_shift = button % 8;
++		button_status =
++		    ((instance_data->
++		      button_data_buffer[button_reg] >> button_shift) & 0x01) !=
++		    0;
++
++		/* if the button state changed from the last time report it
++		 * and store the new state */
++		if (button_status != instance_data->button_down[button]) {
++			pr_debug("%s: Button %d (code %d) -> %d.", __func__,
++				 button, instance_data->button_map[button],
++				 button_status);
++			/* Generate an event here. */
++			input_report_key(function_device->input,
++					 instance_data->button_map[button],
++					 button_status);
++			instance_data->button_down[button] = button_status;
++		}
++	}
++
++	input_sync(function_device->input); /* sync after groups of events */
++}
++EXPORT_SYMBOL(FN_19_inthandler);
++
++/* This is a stub for now.  It will be filled in as the driver implementation
++ * evolves.
 + */
-+void FN_34_attention(struct rmi_function_info *rmifninfo)
-+{
-+
-+}
-+EXPORT_SYMBOL(FN_34_attention);
-+
-+/* This is a stub for now, and will be fleshed out or removed as the
-+ * implementation matures.
-+ */
-+int FN_34_config(struct rmi_function_info *rmifninfo)
-+{
-+	pr_debug("%s: RMI4 function $34 config\n", __func__);
-+	return 0;
-+}
-+EXPORT_SYMBOL(FN_34_config);
-+
-+int FN_34_init(struct rmi_function_device *function_device)
++int FN_19_config(struct rmi_function_info *rmifninfo)
 +{
 +	int retval = 0;
++
++	pr_debug("%s: RMI4 F19 config\n", __func__);
++
++	/* TODO: Perform configuration.  In particular, write any cached control
++	 * register values to the device. */
++
++	return retval;
++}
++EXPORT_SYMBOL(FN_19_config);
++
++/* Initialize any F19 specific params and settings - input
++ * settings, device settings, etc.
++ */
++int FN_19_init(struct rmi_function_device *function_device)
++{
++	int i, retval = 0;
 +	int attr_count = 0;
-+	unsigned char buf[2];
-+	struct rmi_function_info *rmifninfo = function_device->rfi;
-+	struct rmi_fn_34_data *instance_data;
++	struct f19_instance_data *instance_data = function_device->rfi->fndata;
++	struct rmi_f19_functiondata *functiondata =
++	    rmi_sensor_get_functiondata(function_device->sensor, RMI_F19_INDEX);
 +
-+	pr_debug("%s: RMI4 function $34 init\n", __func__);
++	pr_debug("%s: RMI4 F19 init\n", __func__);
 +
-+	if (rmifninfo->fndata) {
-+		/* detect routine should only ever be called once
-+		 * per rmifninfo. */
-+		pr_err("%s: WTF?!? F34 instance data is already present!",
-+		       __func__);
-+		return -EINVAL;
++	if (functiondata && functiondata->button_map) {
++		if (functiondata->button_map->nbuttons !=
++		    instance_data->device_info->button_count) {
++			pr_warning
++			    ("%s: Platformdata button map size (%d) != number "
++			     "of buttons on device (%d) - ignored.",
++			     __func__, functiondata->button_map->nbuttons,
++			     instance_data->device_info->button_count);
++		} else if (!functiondata->button_map->map) {
++			pr_warning("%s: Platformdata button map is missing!",
++				   __func__);
++		} else {
++			for (i = 0; i < functiondata->button_map->nbuttons; i++)
++				instance_data->button_map[i] =
++				    functiondata->button_map->map[i];
++		}
 +	}
 +
-+	instance_data = kzalloc(sizeof(struct rmi_fn_34_data), GFP_KERNEL);
-+	if (!instance_data) {
-+		pr_err("%s: Error allocating memory for rmi_fn_34_data.\n",
-+		       __func__);
-+		retval = -ENOMEM;
-+		goto error_exit;
-+	}
-+	rmifninfo->fndata = instance_data;
-+
-+	/* get the Bootloader ID and Block Size. */
-+	retval = rmi_read_multiple(rmifninfo->sensor,
-+		rmifninfo->function_descriptor.query_base_addr,
-+		buf, ARRAY_SIZE(buf));
-+	if (retval) {
-+		pr_err("%s : Could not read bootloaderid from 0x%04x\n",
-+		       __func__,
-+		       function_device->function->query_base_address);
-+		goto error_exit;
-+	}
-+	batohs(&instance_data->bootloaderid, buf);
-+
-+	retval = rmi_read_multiple(rmifninfo->sensor,
-+			rmifninfo->function_descriptor.query_base_addr + 3,
-+			buf, ARRAY_SIZE(buf));
-+	if (retval) {
-+		pr_err("%s: Could not read block size from 0x%04x\n",
-+		       __func__,
-+		       rmifninfo->function_descriptor.query_base_addr + 3);
-+		goto error_exit;
-+	}
-+	batohs(&instance_data->blocksize, buf);
-+
-+	/* Get firmware image block count and store it in the instance data */
-+	retval = rmi_read_multiple(rmifninfo->sensor,
-+			rmifninfo->function_descriptor.query_base_addr + 5,
-+			buf, ARRAY_SIZE(buf));
-+	if (retval) {
-+		pr_err("%s: Could not read image block count from 0x%x\n",
-+		       __func__,
-+		       rmifninfo->function_descriptor.query_base_addr + 5);
-+		goto error_exit;
-+	}
-+	batohs(&instance_data->imageblockcount, buf);
-+
-+	/* Get config block count and store it in the instance data */
-+	retval = rmi_read_multiple(rmifninfo->sensor,
-+			rmifninfo->function_descriptor.query_base_addr + 7,
-+			buf, ARRAY_SIZE(buf));
-+	if (retval) {
-+		pr_err("%s: Could not read config block count from 0x%x, "
-+			"error=%d.\n", __func__,
-+			rmifninfo->function_descriptor.query_base_addr + 7,
-+			retval);
-+		goto error_exit;
-+	}
-+	batohs(&instance_data->configblockcount, buf);
-+
-+	/* We need a sysfs file for the image/config block to write or read.
-+	 * Set up sysfs bin file for binary data block. Since the image is
-+	 * already in our format there is no need to convert the data for
-+	 * endianess. */
-+	retval = sysfs_create_bin_file(&function_device->dev.kobj,
-+				&dev_attr_data);
-+	if (retval < 0) {
-+		pr_err
-+		    ("%s: Failed to create sysfs file for fn 34 data "
-+		     "(error = %d).\n", __func__, retval);
-+		retval = -ENODEV;
-+		goto error_exit;
-+	}
++	/* Set up any input events. */
++	set_bit(EV_SYN, function_device->input->evbit);
++	set_bit(EV_KEY, function_device->input->evbit);
++	/* set bits for each button... */
++	for (i = 0; i < instance_data->device_info->button_count; i++)
++		set_bit(instance_data->button_map[i],
++			function_device->input->keybit);
 +
 +	pr_debug("%s: Creating sysfs files.", __func__);
 +	/* Set up sysfs device attributes. */
@@ -388,281 +330,427 @@ index 0000000..b41d591
 +		if (sysfs_create_file
 +		    (&function_device->dev.kobj, &attrs[attr_count].attr) < 0) {
 +			pr_err
-+			    ("%s: Failed to create sysfs file for  %s.",
++			    ("%s: Failed to create sysfs file for %s.",
 +			     __func__, attrs[attr_count].attr.name);
 +			retval = -ENODEV;
 +			goto error_exit;
 +		}
 +	}
 +
-+	return retval;
++	return 0;
 +
 +error_exit:
 +	for (attr_count--; attr_count >= 0; attr_count--)
 +		sysfs_remove_file(&function_device->dev.kobj,
 +				  &attrs[attr_count].attr);
-+	kfree(instance_data);
++	/* If you alloc anything, free it here. */
 +	return retval;
 +}
-+EXPORT_SYMBOL(FN_34_init);
++EXPORT_SYMBOL(FN_19_init);
 +
-+int FN_34_detect(struct rmi_function_info *rmifninfo)
++static int init_control_registers(struct rmi_function_info *rmifninfo)
 +{
++	struct f19_instance_data *instance_data = rmifninfo->fndata;
++	unsigned char *control_registers = NULL;
 +	int retval = 0;
 +
-+	pr_debug("%s: RMI4 function $34 detect\n", __func__);
-+	if (rmifninfo->sensor == NULL) {
-+		pr_err("%s: NULL sensor passed in!", __func__);
++	if (instance_data->control_registers) {
++		pr_err
++		    ("%s: WTF? F19 control regsiters are already initialized.",
++		     __func__);
 +		return -EINVAL;
 +	}
 +
-+	return retval;
-+}
-+EXPORT_SYMBOL(FN_34_detect);
-+
-+static ssize_t rmi_fn_34_bootloaderid_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->bootloaderid);
-+}
-+
-+static ssize_t rmi_fn_34_bootloaderid_store(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf,
-+					size_t count)
-+{
-+	int error;
-+	unsigned long val;
-+	unsigned char data[2];
-+	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
-+
-+	/* need to convert the string data to an actual value */
-+	error = strict_strtoul(buf, 10, &val);
-+
-+	if (error)
-+		return error;
-+
-+	instance_data->bootloaderid = val;
-+
-+	/* Write the Bootloader ID key data back to the first two Block
-+	 * Data registers (F34_Flash_Data2.0 and F34_Flash_Data2.1). */
-+	hstoba(data, (unsigned short)val);
-+	error =
-+	    rmi_write_multiple(fn->sensor, fn->function->data_base_address,
-+			       data, ARRAY_SIZE(data));
-+	if (error) {
-+		dev_err(dev, "%s : Could not write bootloader id to 0x%x\n",
-+		       __func__, fn->function->data_base_address);
-+		return error;
++	/* Allocate memory for the control registers. */
++	instance_data->control_registers =
++	    kzalloc(sizeof(struct rmi_F19_control), GFP_KERNEL);
++	if (!instance_data->control_registers) {
++		pr_err("%s: Error allocating F19 control registers.\n",
++		       __func__);
++		retval = -ENOMEM;
++		goto error_exit;
 +	}
 +
-+	return count;
++	instance_data->register_count_for_bit_per_button =
++	    (instance_data->device_info->button_count + 7) / 8;
++
++	/* Need to compute the amount of data to read since it varies with the
++	 * number of buttons */
++		/* 1 for filter mode and button usage bits */
++	instance_data->control_register_size = 1
++		/* interrupt enable bits and single button participation bits */
++	    + 2 * instance_data->register_count_for_bit_per_button
++		/* sensormap registers + single button sensitivity registers */
++	    + 2 * instance_data->device_info->button_count
++		/* 1 for global sensitivity adjust and
++		 * 1 for global hysteresis threshold */
++	    + 2;
++
++	/* Allocate a temp memory buffer to read the control registers into */
++	control_registers =
++	    kzalloc(instance_data->control_register_size, GFP_KERNEL);
++	if (!control_registers) {
++		pr_err
++		    ("%s: Error allocating temp storage to read "
++		     "fn19 control info.\n",
++		     __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++
++	/* Grab a copy of the control registers. */
++	retval = rmi_read_multiple(rmifninfo->sensor,
++			      rmifninfo->function_descriptor.control_base_addr,
++			      control_registers,
++			      instance_data->control_register_size);
++	if (retval) {
++		pr_err("%s: Failed to read F19 control registers.", __func__);
++		goto error_exit;
++	}
++
++	/* Copy over control registers data to the instance data */
++	instance_data->usage_and_filter_mode_offset = 0;
++	instance_data->control_registers->button_usage =
++	    control_registers[instance_data->
++			      usage_and_filter_mode_offset] & 0x3;
++	instance_data->control_registers->filter_mode =
++	    control_registers[instance_data->
++			      usage_and_filter_mode_offset] & 0xc;
++
++	/* Fill in interrupt enable registers */
++	instance_data->interrupt_enable_offset = 1;
++	instance_data->interrupt_enable_length =
++	    instance_data->register_count_for_bit_per_button;
++	instance_data->control_registers->interrupt_enable_registers =
++	    kzalloc(instance_data->interrupt_enable_length, GFP_KERNEL);
++	if (!instance_data->control_registers->interrupt_enable_registers) {
++		pr_err("%s: Error allocating storage for interrupt "
++		     "enable control info.\n", __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++	memcpy(instance_data->control_registers->interrupt_enable_registers,
++	       &control_registers[instance_data->interrupt_enable_offset],
++	       instance_data->interrupt_enable_length);
++
++	/* Fill in single button control registers */
++	instance_data->single_button_control_offset =
++	    instance_data->interrupt_enable_offset +
++	    instance_data->interrupt_enable_length;
++	instance_data->single_button_control_length =
++	    instance_data->register_count_for_bit_per_button;
++	instance_data->control_registers->single_button_control =
++	    kzalloc(instance_data->single_button_control_length, GFP_KERNEL);
++	if (!instance_data->control_registers->single_button_control) {
++		pr_err("%s: Error allocating storage for single button "
++		     "participation control info.\n", __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++	memcpy(instance_data->control_registers->single_button_control,
++	       &control_registers[instance_data->single_button_control_offset],
++	       instance_data->single_button_control_length);
++
++	/* Fill in sensor map registers */
++	instance_data->sensor_map_control_offset =
++	    instance_data->single_button_control_offset +
++	    instance_data->single_button_control_length;
++	instance_data->sensor_map_control_length =
++	    instance_data->device_info->button_count;
++	instance_data->control_registers->sensor_map =
++	    kzalloc(instance_data->sensor_map_control_length, GFP_KERNEL);
++	if (!instance_data->control_registers->sensor_map) {
++		pr_err("%s: Error allocating storage for sensor map "
++		     "control info.", __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++	memcpy(instance_data->control_registers->sensor_map,
++	       &control_registers[instance_data->sensor_map_control_offset],
++	       instance_data->sensor_map_control_length);
++
++	/* Fill in single button sensitivity registers */
++	instance_data->single_button_sensor_offset =
++	    instance_data->sensor_map_control_offset +
++	    instance_data->sensor_map_control_length;
++	instance_data->single_button_sensor_length =
++	    instance_data->device_info->button_count;
++	instance_data->control_registers->single_button_sensitivity =
++	    kzalloc(instance_data->single_button_sensor_length, GFP_KERNEL);
++	if (!instance_data->control_registers->single_button_sensitivity) {
++		pr_err
++		    ("%s: Error allocating storage for single button "
++		     "sensitivity control info.",
++		     __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++	memcpy(instance_data->control_registers->single_button_sensitivity,
++	       &control_registers[instance_data->single_button_sensor_offset],
++	       instance_data->single_button_sensor_length);
++
++	/* Fill in global sensitivity adjustment and global
++	 * hysteresis threshold values */
++	instance_data->global_sensor_offset =
++	    instance_data->single_button_sensor_offset +
++	    instance_data->single_button_sensor_length;
++	instance_data->global_hysteresis_threshold_offset =
++	    instance_data->global_sensor_offset + 1;
++	instance_data->control_registers->global_sensitivity_adjustment =
++	    control_registers[instance_data->global_sensor_offset] & 0x1f;
++	instance_data->control_registers->global_hysteresis_threshold =
++	    control_registers[instance_data->
++			      global_hysteresis_threshold_offset] & 0x0f;
++
++	/* Free up temp storage that held copy of control registers */
++	kfree(control_registers);
++
++	return 0;
++
++error_exit:
++	if (instance_data->control_registers) {
++		kfree(
++		  instance_data->control_registers->single_button_sensitivity);
++		kfree(
++		  instance_data->control_registers->interrupt_enable_registers);
++		kfree(instance_data->control_registers->sensor_map);
++		kfree(instance_data->control_registers->single_button_control);
++	}
++	kfree(instance_data->control_registers);
++	kfree(control_registers);
++	return retval;
 +}
 +
-+static ssize_t rmi_fn_34_blocksize_show(struct device *dev,
++int FN_19_detect(struct rmi_function_info *rmifninfo)
++{
++	unsigned char query_buffer[2];
++	int retval = 0;
++	int i;
++	struct f19_instance_data *instance_data;
++
++	pr_debug("%s: RMI4 F19 detect\n", __func__);
++
++	if (rmifninfo->fndata) {
++		/* detect routine should only ever be called once
++		 * per rmifninfo. */
++		pr_err("%s: WTF?!? F19 instance data is already present!",
++		       __func__);
++		return -EINVAL;
++	}
++	instance_data = kzalloc(sizeof(struct f19_instance_data), GFP_KERNEL);
++	if (!instance_data) {
++		pr_err("%s: Error allocating F19 instance data.\n", __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++	instance_data->device_info =
++	    kzalloc(sizeof(struct rmi_F19_query), GFP_KERNEL);
++	if (!instance_data->device_info) {
++		pr_err("%s: Error allocating F19 device query.\n", __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++	rmifninfo->fndata = instance_data;
++
++	/* need to get number of fingers supported, data size, etc. -
++	   to be used when getting data since the number of registers to
++	   read depends on the number of fingers supported and data size. */
++	retval =
++	    rmi_read_multiple(rmifninfo->sensor,
++			      rmifninfo->function_descriptor.query_base_addr,
++			      query_buffer, sizeof(query_buffer));
++	if (retval) {
++		pr_err("%s: RMI4 F19 detect: "
++		       "Could not read function query registers 0x%x\n",
++		       __func__,
++		       rmifninfo->function_descriptor.query_base_addr);
++		goto error_exit;
++	}
++
++	/* Extract device data. */
++	instance_data->device_info->configurable = query_buffer[0] & 0x01;
++	instance_data->device_info->has_sensitivity_adjust =
++	    query_buffer[0] & 0x02;
++	instance_data->device_info->has_hysteresis_threshold =
++	    query_buffer[0] & 0x04;
++	instance_data->device_info->button_count = query_buffer[1] & 0x01F;
++	pr_debug("%s: F19 device - %d buttons...", __func__,
++		 instance_data->device_info->button_count);
++
++	/* Figure out just how much data we'll need to read. */
++	instance_data->button_down =
++	    kcalloc(instance_data->device_info->button_count, sizeof(bool),
++		    GFP_KERNEL);
++	if (!instance_data->button_down) {
++		pr_err("%s: Error allocating F19 button state buffer.\n",
++		       __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++
++	instance_data->button_data_buffer_size =
++	    (instance_data->device_info->button_count + 7) / 8;
++	instance_data->button_data_buffer =
++	    kcalloc(instance_data->button_data_buffer_size,
++		    sizeof(unsigned char), GFP_KERNEL);
++	if (!instance_data->button_data_buffer) {
++		pr_err("%s: Failed to allocate button data buffer.", __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++
++	instance_data->button_map =
++	    kcalloc(instance_data->device_info->button_count,
++		    sizeof(unsigned char), GFP_KERNEL);
++	if (!instance_data->button_map) {
++		pr_err("%s: Error allocating F19 button map.\n", __func__);
++		retval = -ENOMEM;
++		goto error_exit;
++	}
++
++	for (i = 0; i < instance_data->device_info->button_count; i++)
++		instance_data->button_map[i] = BTN_0 + i; /* default values */
++
++	/* Grab the control register info. */
++	retval = init_control_registers(rmifninfo);
++	if (retval) {
++		pr_err("%s: Error %d getting fn19 control register info.\n",
++		       __func__, retval);
++		goto error_exit;
++	}
++
++	return 0;
++
++error_exit:
++	if (instance_data) {
++		kfree(instance_data->button_map);
++		kfree(instance_data->button_data_buffer);
++		kfree(instance_data->button_down);
++		kfree(instance_data->device_info);
++	}
++	kfree(instance_data);
++	return retval;
++}
++EXPORT_SYMBOL(FN_19_detect);
++
++static ssize_t rmi_f19_button_count_show(struct device *dev,
 +					struct device_attribute *attr,
 +					char *buf)
 +{
 +	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->blocksize);
-+}
-+
-+static ssize_t rmi_fn_34_imageblockcount_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->imageblockcount);
-+}
-+
-+static ssize_t rmi_fn_34_configblockcount_show(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
++	struct f19_instance_data *instance_data = fn->rfi->fndata;
 +
 +	return snprintf(buf, PAGE_SIZE, "%u\n",
-+			instance_data->configblockcount);
++			instance_data->device_info->button_count);
 +}
 +
-+static ssize_t rmi_fn_34_status_show(struct device *dev,
++static ssize_t rmi_f19_buttonMap_show(struct device *dev,
 +				struct device_attribute *attr,
 +				char *buf)
 +{
 +	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
++	struct f19_instance_data *instance_data = fn->rfi->fndata;
++	int i, len, total_len = 0;
++	char *current_buf = buf;
 +
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->status);
++	/* loop through each button map value and copy its
++	 * string representation into buf */
++	for (i = 0; i < instance_data->device_info->button_count; i++) {
++		/* get next button mapping value and write it to buf */
++		len = snprintf(current_buf, PAGE_SIZE - total_len,
++			"%u ", instance_data->button_map[i]);
++		/* bump up ptr to next location in buf if the
++		 * snprintf was valid.  Otherwise issue an error
++		 * and return. */
++		if (len > 0) {
++			current_buf += len;
++			total_len += len;
++		} else {
++			dev_err(dev, "%s: Failed to build button map buffer, "
++				"code = %d.\n", __func__, len);
++			return snprintf(buf, PAGE_SIZE, "unknown\n");
++		}
++	}
++	snprintf(current_buf, PAGE_SIZE - total_len, "\n");
++
++	return total_len;
 +}
 +
-+static ssize_t rmi_fn_34_cmd_show(struct device *dev,
-+				struct device_attribute *attr,
-+				char *buf)
-+{
-+	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
-+
-+	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->cmd);
-+}
-+
-+static ssize_t rmi_fn_34_cmd_store(struct device *dev,
++static ssize_t rmi_f19_buttonMap_store(struct device *dev,
 +				struct device_attribute *attr,
 +				const char *buf,
 +				size_t count)
 +{
 +	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
-+	unsigned long val;
-+	int error;
++	struct f19_instance_data *instance_data = fn->rfi->fndata;
++	unsigned int button;
++	int i;
++	int retval = count;
++	int button_count = 0;
++	unsigned char *temp_button_map;
 +
-+	/* need to convert the string data to an actual value */
-+	error = strict_strtoul(buf, 10, &val);
-+	if (error)
-+		return error;
++	/* Do validation on the button map data passed in.  Store button
++	 * mappings into a temp buffer and then verify button count and
++	 * data prior to clearing out old button mappings and storing the
++	 * new ones. */
++	temp_button_map =
++	    kzalloc(instance_data->device_info->button_count, GFP_KERNEL);
++	if (!temp_button_map) {
++		dev_err(dev, "%s: Error allocating temp button map.\n",
++			__func__);
++		retval = -ENOMEM;
++		goto err_ret;
++	}
 +
-+	instance_data->cmd = val;
++	for (i = 0; i < instance_data->device_info->button_count && *buf != 0;
++	     i++) {
++		/* get next button mapping value and store and bump up to
++		 * point to next item in buf */
++		sscanf(buf, "%u", &button);
 +
-+	/* Validate command value and (if necessary) write it to the command
-+	 * register.
-+	 */
-+	switch (instance_data->cmd) {
-+	case ENABLE_FLASH_PROG:
-+	case ERASE_ALL:
-+	case ERASE_CONFIG:
-+	case WRITE_FW_BLOCK:
-+	case READ_CONFIG_BLOCK:
-+	case WRITE_CONFIG_BLOCK:
-+		/* Issue a Write Firmware Block ($02) command to the Flash
-+		 * Command (F34_Flash_Data3, bits 3:0) field. */
-+		error = rmi_write_multiple(fn->sensor,
-+				fn->function->data_base_address + 3,
-+			     &instance_data->cmd, 1);
-+		if (error) {
-+			dev_err(dev, "%s: Could not write command 0x%02x "
-+				"to 0x%04x\n", __func__, instance_data->cmd,
-+				fn->function->data_base_address + 3);
-+			return error;
++		/* Make sure the key is a valid key */
++		if (button > KEY_MAX) {
++			dev_err(dev,
++				"%s: Error - button map for button %d is not a "
++				"valid value 0x%x.\n",
++				__func__, i, button);
++			retval = -EINVAL;
++			goto err_ret;
 +		}
-+		break;
-+	default:
-+		dev_dbg(dev, "%s: RMI4 function $34 - "
-+				"unknown command 0x%02lx.\n", __func__, val);
-+		count = -EINVAL;
-+		break;
-+	}
 +
-+	return count;
-+}
++		temp_button_map[i] = button;
++		button_count++;
 +
-+static ssize_t rmi_fn_34_data_read(struct file *data_file,
-+				struct kobject *kobj,
-+				struct bin_attribute *attributes,
-+				char *buf,
-+				loff_t pos,
-+				size_t count)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
-+	int error;
-+
-+	if (count != instance_data->blocksize) {
-+		dev_err(dev,
-+			"%s: Incorrect F34 block size %d. Expected size %d.\n",
-+			__func__, count, instance_data->blocksize);
-+		return -EINVAL;
-+	}
-+
-+	/* Read the data from flash into buf.  The app layer will be blocked
-+	 * at reading from the sysfs file.  When we return the count (or
-+	 * error if we fail) the app will resume. */
-+	error = rmi_read_multiple(fn->sensor,
-+			fn->function->data_base_address + pos,
-+			(unsigned char *)buf, count);
-+	if (error) {
-+		dev_err(dev, "%s : Could not read data from 0x%llx\n",
-+		       __func__, fn->function->data_base_address + pos);
-+		return error;
-+	}
-+
-+	return count;
-+}
-+
-+static ssize_t rmi_fn_34_data_write(struct file *data_file,
-+				struct kobject *kobj,
-+				struct bin_attribute *attributes,
-+				char *buf,
-+				loff_t pos,
-+				size_t count)
-+{
-+	struct device *dev = container_of(kobj, struct device, kobj);
-+	struct rmi_function_device *fn = dev_get_drvdata(dev);
-+	struct rmi_fn_34_data *instance_data = fn->rfi->fndata;
-+	unsigned int blocknum;
-+	int error;
-+	unsigned int remainder;
-+
-+	/* Write the data from buf to flash. The app layer will be
-+	 * blocked at writing to the sysfs file.  When we return the
-+	 * count (or error if we fail) the app will resume. */
-+
-+	if (count != instance_data->blocksize) {
-+		dev_err(dev,
-+			"%s: Incorrect F34 block size %d. Expected size %d.\n",
-+			__func__, count, instance_data->blocksize);
-+		return -EINVAL;
-+	}
-+
-+	/* Verify that the byte offset is always aligned on a block boundary
-+	 * and if not return an error.  We can't just use the mod operator %
-+	 * and do a (pos % instance_data->blocksize) because of a gcc
-+	 * bug that results in undefined symbols.  So we have to compute
-+	 * it the hard way.  Grumble. */
-+	div_u64_rem(pos, instance_data->blocksize, &remainder);
-+	if (remainder) {
-+		dev_err(dev,
-+			"%s: Invalid byte offset of %llx leads to invalid "
-+			"block number.\n", __func__, pos);
-+		return -EINVAL;
-+	}
-+
-+	/* Compute the block number using the byte offset (pos) and the
-+	 * block size.  Once again, we can't just do a divide due to a
-+	 * gcc bug. */
-+	blocknum = div_u64(pos, instance_data->blocksize);
-+
-+	/* Write the block number first */
-+	error = rmi_write_multiple(fn->sensor,
-+				fn->function->data_base_address,
-+				(unsigned char *)&blocknum, 2);
-+	if (error) {
-+		dev_err(dev, "%s: Could not write block number to 0x%x\n",
-+		       __func__, fn->function->data_base_address);
-+		return error;
-+	}
-+
-+	/* Write the data block - only if the count is non-zero  */
-+	if (count) {
-+		error = rmi_write_multiple(fn->sensor,
-+				fn->function->data_base_address + 2,
-+				(unsigned char *)buf, count);
-+		if (error) {
-+			dev_err(dev, "%s: Could not write block data "
-+				"to 0x%x\n", __func__,
-+				fn->function->data_base_address + 2);
-+			return error;
++		/* bump up buf to point to next item to read */
++		while (*buf != 0) {
++			buf++;
++			if (*(buf - 1) == ' ')
++				break;
 +		}
 +	}
 +
-+	return count;
++	/* Make sure the button count matches */
++	if (button_count != instance_data->device_info->button_count) {
++		dev_err(dev,
++		    "%s: Error - button map count of %d doesn't match device "
++		     "button count of %d.\n", __func__, button_count,
++		     instance_data->device_info->button_count);
++		retval = -EINVAL;
++		goto err_ret;
++	}
++
++	/* Switch to the new map. */
++	kfree(instance_data->button_map);
++	instance_data->button_map = temp_button_map;
++	temp_button_map = NULL;
++
++	/* Loop through the temp buffer and copy the button event and
++	 * set the key bit for the new mapping. */
++	for (i = 0; i < button_count; i++)
++		set_bit(instance_data->button_map[i], fn->input->keybit);
++
++err_ret:
++	kfree(temp_button_map);
++
++	return retval;
 +}
