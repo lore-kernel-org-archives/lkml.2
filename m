@@ -1,132 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab1GASDO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 14:03:14 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:63326 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486Ab1GASDN (ORCPT
+	id S1757524Ab1GASEP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 14:04:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55310 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756486Ab1GASEN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 14:03:13 -0400
-Message-ID: <4E0E0A76.4080204@gmail.com>
-Date: Fri, 01 Jul 2011 19:57:10 +0200
-From: Marco Stornelli <marco.stornelli@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Sergiu Iordache <sergiu@chromium.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 2/3] char drivers: ramoops record_size module parameter
-References: <1309483720-1407-1-git-send-email-sergiu@chromium.org> <1309483720-1407-3-git-send-email-sergiu@chromium.org>
-In-Reply-To: <1309483720-1407-3-git-send-email-sergiu@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	Fri, 1 Jul 2011 14:04:13 -0400
+X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=BMon_h8pASkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=_Ubq8_g_6hdqfwj8LL0A:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [PATCH v9 05/13] seccomp_filter: Document what seccomp_filter
+ is and how it works.
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Will Drewry <wad@chromium.org>
+Cc: Ingo Molnar <mingo@elte.hu>, James Morris <jmorris@namei.org>,
+        Chris Evans <scarybeasts@gmail.com>, linux-kernel@vger.kernel.org,
+        Linus Torvalds <torvalds@linux-foundation.org>, djm@mindrot.org,
+        segoon@openwall.com, kees.cook@canonical.com, fweisbec@gmail.com,
+        tglx@linutronix.de, Randy Dunlap <rdunlap@xenotime.net>,
+        linux-doc@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        linux-security-module@vger.kernel.org,
+        ksummit-2011-discuss@lists.linux-foundation.org
+In-Reply-To: <BANLkTikCaACO8o9HkAnkuaTuoKqqQWQrtw@mail.gmail.com>
+References: <1308875813-20122-1-git-send-email-wad@chromium.org>
+	 <1308875813-20122-5-git-send-email-wad@chromium.org>
+	 <BANLkTimtYUyXbZjWhjK61B_1WBXE4MoAeA@mail.gmail.com>
+	 <alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>
+	 <BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
+	 <alpine.LRH.2.00.1106301128590.13496@tundra.namei.org>
+	 <20110701115600.GK20990@elte.hu>
+	 <BANLkTim8CGx89nOg0HX=S1=arunBU3sEGQ@mail.gmail.com>
+	 <20110701130705.GG12605@elte.hu>
+	 <BANLkTimN0nEa2Bog2-vzCv=1XOG5OsJjLA@mail.gmail.com>
+	 <20110701161027.GA29035@elte.hu>
+	 <BANLkTikCaACO8o9HkAnkuaTuoKqqQWQrtw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Fri, 01 Jul 2011 14:04:08 -0400
+Message-ID: <1309543448.26417.156.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, 2011-07-01 at 11:43 -0500, Will Drewry wrote:
+> On Fri, Jul 1, 2011 at 11:10 AM, Ingo Molnar <mingo@elte.hu> wrote:
 
-Il 01/07/2011 03:28, Sergiu Iordache ha scritto:
-> The size of the dump is currently set using the RECORD_SIZE macro which
-> is set to a page size. This patch makes the record size a module
-> parameter and allows it to be set through platform data as well to allow
-> larger dumps if needed.
->
-> Signed-off-by: Sergiu Iordache<sergiu@chromium.org>
-> Change-Id: Ie5a53acb50d5881d51354f5d9d13e3d6bedf6a2e
-> ---
-> The patch was built on the 2.6.38 kernel and is based on the following
-> patches which were applied from the mmotm tree:
-> ramoops-add-new-line-to-each-print
-> ramoops-use-module-parameters-instead-of-platform-data-if-not-available
-> ramoops-use-module-parameters-instead-of-platform-data-if-not-available-checkpatch-fixes
->
->   drivers/char/ramoops.c  |   33 ++++++++++++++++++++++++++-------
->   include/linux/ramoops.h |    1 +
->   2 files changed, 27 insertions(+), 7 deletions(-)
->
-> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
-> index 5349d94..f34077e 100644
-> --- a/drivers/char/ramoops.c
-> +++ b/drivers/char/ramoops.c
-> @@ -32,8 +32,12 @@
->   #include<linux/ramoops.h>
->
->   #define RAMOOPS_KERNMSG_HDR "===="
-> +#define MIN_MEM_SIZE 4096UL
->
-> -#define RECORD_SIZE 4096UL
-> +static ulong record_size = 4096UL;
-> +module_param(record_size, ulong, 0400);
-> +MODULE_PARM_DESC(record_size,
-> +		"size of each dump done on oops/panic");
->
->   static ulong mem_address;
->   module_param(mem_address, ulong, 0400);
-> @@ -55,6 +59,7 @@ static struct ramoops_context {
->   	void *virt_addr;
->   	phys_addr_t phys_addr;
->   	unsigned long size;
-> +	unsigned long record_size;
->   	int dump_oops;
->   	int count;
->   	int max_count;
-> @@ -84,10 +89,10 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
->   	if (reason == KMSG_DUMP_OOPS&&  !cxt->dump_oops)
->   		return;
->
-> -	buf = cxt->virt_addr + (cxt->count * RECORD_SIZE);
-> +	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
->   	buf_orig = buf;
->
-> -	memset(buf, '\0', RECORD_SIZE);
-> +	memset(buf, '\0', cxt->record_size);
->   	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
->   	buf += res;
->   	do_gettimeofday(&timestamp);
-> @@ -95,8 +100,8 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
->   	buf += res;
->
->   	hdr_size = buf - buf_orig;
-> -	l2_cpy = min(l2, RECORD_SIZE - hdr_size);
-> -	l1_cpy = min(l1, RECORD_SIZE - hdr_size - l2_cpy);
-> +	l2_cpy = min(l2, cxt->record_size - hdr_size);
-> +	l1_cpy = min(l1, cxt->record_size - hdr_size - l2_cpy);
->
->   	s2_start = l2 - l2_cpy;
->   	s1_start = l1 - l1_cpy;
-> @@ -119,16 +124,29 @@ static int __init ramoops_probe(struct platform_device *pdev)
->   	}
->
->   	rounddown_pow_of_two(pdata->mem_size);
-> +	rounddown_pow_of_two(pdata->record_size);
->
-> -	if (pdata->mem_size<  RECORD_SIZE) {
-> +	/* Check for the minimum memory size */
-> +	if (pdata->mem_size<  MIN_MEM_SIZE) {
-> +		pr_err("memory size too small, min %lu\n", MIN_MEM_SIZE);
-> +		goto fail3;
-> +	}
-> +
-> +	if (pdata->mem_size<  pdata->record_size) {
->   		pr_err("size too small\n");
->   		goto fail3;
->   	}
->
-> -	cxt->max_count = pdata->mem_size / RECORD_SIZE;
-> +	if (pdata->record_size<= 0) {
-> +		pr_err("record size too small\n");
-> +		goto fail3;
-> +	}
+> I'd like to be able to move along security for the platform today and
+> not in two years, but if my only chance of any form of this being
+> ACK'd is to write it such that it shares code with perf and has a
+> shiny new ABI, then I'll queue up the work for when I can start trying
+> to tackle it.
 
-There is something wrong here. First of all if record_size is unsigned 
-it can't negative. In addition, if we are here, we know that:
+As this seems to be dragging on, and does not look to be solved by
+October, I would like to propose this topic for the Kernel Summit in
+Prague. I believe all parties involved may be there, and if not, I will
+push hard to get them there.
 
-record_size >= mem_size >= MIN_MEM_SIZE
+Email is not always the best median for discussions. Face to face can
+usually solve things much quicker.
 
-So this check have no sense.
+-- Steve
 
-Marco
+
