@@ -1,60 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757459Ab1GASAb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 14:00:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:28276 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756486Ab1GASAa (ORCPT
+	id S1757483Ab1GASDO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 14:03:14 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:63326 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756486Ab1GASDN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 14:00:30 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:x-system-of-record;
-	b=IAkhJGNTeLxi0J9Xqg0mVqNIOC77iRVKo/9XYjL7LwKMhw13f6+7QyWyptq/V/n+z
-	QSrhbX5b3N9Ot90gqb+0Q==
+	Fri, 1 Jul 2011 14:03:13 -0400
+Message-ID: <4E0E0A76.4080204@gmail.com>
+Date: Fri, 01 Jul 2011 19:57:10 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <BANLkTimEcPmH_XgLy5aEW+znwJyVZzfoCg@mail.gmail.com>
-References: <1308797024.23204.95.camel@debian> <BANLkTimEcPmH_XgLy5aEW+znwJyVZzfoCg@mail.gmail.com>
-From: Nikhil Rao <ncrao@google.com>
-Date: Fri, 1 Jul 2011 11:00:07 -0700
-Message-ID: <CAOM-RdN3cweRQnNxCaCGuyj2GMojix15XG5MVj8pxj7FHX79hg@mail.gmail.com>
-Subject: Re: power increase issue on light load
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: "Alex,Shi" <alex.shi@intel.com>, peterz@infradead.org, mingo@elte.hu,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: Sergiu Iordache <sergiu@chromium.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] char drivers: ramoops record_size module parameter
+References: <1309483720-1407-1-git-send-email-sergiu@chromium.org> <1309483720-1407-3-git-send-email-sergiu@chromium.org>
+In-Reply-To: <1309483720-1407-3-git-send-email-sergiu@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ming,
+Hi,
 
-On Thu, Jun 30, 2011 at 10:44 PM, Ming Lei <tom.leiming@gmail.com> wrote:
-> Hi,
+Il 01/07/2011 03:28, Sergiu Iordache ha scritto:
+> The size of the dump is currently set using the RECORD_SIZE macro which
+> is set to a page size. This patch makes the record size a module
+> parameter and allows it to be set through platform data as well to allow
+> larger dumps if needed.
 >
-> On Thu, Jun 23, 2011 at 10:43 AM, Alex,Shi <alex.shi@intel.com> wrote:
->> commit c8b281161dfa4bb5d5be63fb036ce19347b88c63 causes light load
->> benchmark use more than 10% system power on platform NHM-EP and laptop
->> Thinkpad T410 etc. The benchmarks are specpower and bltk office.
->>
->> I tried to track this issue, but only find deep C sate time reduced
->> much, about from 90% to 30~40%, the C0 or C1 state increase much on
->> different machines.
->>
->> Powertop just hints RES interrupts has a bit more. but when I try "perf
->> probe native_smp_send_reschedule". I didn't find much.
+> Signed-off-by: Sergiu Iordache<sergiu@chromium.org>
+> Change-Id: Ie5a53acb50d5881d51354f5d9d13e3d6bedf6a2e
+> ---
+> The patch was built on the 2.6.38 kernel and is based on the following
+> patches which were applied from the mmotm tree:
+> ramoops-add-new-line-to-each-print
+> ramoops-use-module-parameters-instead-of-platform-data-if-not-available
+> ramoops-use-module-parameters-instead-of-platform-data-if-not-available-checkpatch-fixes
 >
-> I see the problem on -rc5 in my T410 too, the fan has been ringing always
-> and powertop reports "Wakeups-from-idle per second : 508.6".
+>   drivers/char/ramoops.c  |   33 ++++++++++++++++++++++++++-------
+>   include/linux/ramoops.h |    1 +
+>   2 files changed, 27 insertions(+), 7 deletions(-)
 >
+> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+> index 5349d94..f34077e 100644
+> --- a/drivers/char/ramoops.c
+> +++ b/drivers/char/ramoops.c
+> @@ -32,8 +32,12 @@
+>   #include<linux/ramoops.h>
+>
+>   #define RAMOOPS_KERNMSG_HDR "===="
+> +#define MIN_MEM_SIZE 4096UL
+>
+> -#define RECORD_SIZE 4096UL
+> +static ulong record_size = 4096UL;
+> +module_param(record_size, ulong, 0400);
+> +MODULE_PARM_DESC(record_size,
+> +		"size of each dump done on oops/panic");
+>
+>   static ulong mem_address;
+>   module_param(mem_address, ulong, 0400);
+> @@ -55,6 +59,7 @@ static struct ramoops_context {
+>   	void *virt_addr;
+>   	phys_addr_t phys_addr;
+>   	unsigned long size;
+> +	unsigned long record_size;
+>   	int dump_oops;
+>   	int count;
+>   	int max_count;
+> @@ -84,10 +89,10 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+>   	if (reason == KMSG_DUMP_OOPS&&  !cxt->dump_oops)
+>   		return;
+>
+> -	buf = cxt->virt_addr + (cxt->count * RECORD_SIZE);
+> +	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
+>   	buf_orig = buf;
+>
+> -	memset(buf, '\0', RECORD_SIZE);
+> +	memset(buf, '\0', cxt->record_size);
+>   	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
+>   	buf += res;
+>   	do_gettimeofday(&timestamp);
+> @@ -95,8 +100,8 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+>   	buf += res;
+>
+>   	hdr_size = buf - buf_orig;
+> -	l2_cpy = min(l2, RECORD_SIZE - hdr_size);
+> -	l1_cpy = min(l1, RECORD_SIZE - hdr_size - l2_cpy);
+> +	l2_cpy = min(l2, cxt->record_size - hdr_size);
+> +	l1_cpy = min(l1, cxt->record_size - hdr_size - l2_cpy);
+>
+>   	s2_start = l2 - l2_cpy;
+>   	s1_start = l1 - l1_cpy;
+> @@ -119,16 +124,29 @@ static int __init ramoops_probe(struct platform_device *pdev)
+>   	}
+>
+>   	rounddown_pow_of_two(pdata->mem_size);
+> +	rounddown_pow_of_two(pdata->record_size);
+>
+> -	if (pdata->mem_size<  RECORD_SIZE) {
+> +	/* Check for the minimum memory size */
+> +	if (pdata->mem_size<  MIN_MEM_SIZE) {
+> +		pr_err("memory size too small, min %lu\n", MIN_MEM_SIZE);
+> +		goto fail3;
+> +	}
+> +
+> +	if (pdata->mem_size<  pdata->record_size) {
+>   		pr_err("size too small\n");
+>   		goto fail3;
+>   	}
+>
+> -	cxt->max_count = pdata->mem_size / RECORD_SIZE;
+> +	if (pdata->record_size<= 0) {
+> +		pr_err("record size too small\n");
+> +		goto fail3;
+> +	}
 
-Thanks for reporting this issue. Looks like the increased resolution
-has a negative impact on power savings balance. I'm looking into this
-issue based on Alex's data, but If you can give a trace or something
-that I can work with it will be really helpful.
+There is something wrong here. First of all if record_size is unsigned 
+it can't negative. In addition, if we are here, we know that:
 
--Thanks,
-Nikhil
+record_size >= mem_size >= MIN_MEM_SIZE
+
+So this check have no sense.
+
+Marco
