@@ -1,96 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757749Ab1GAV3Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:29:25 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:55469 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757690Ab1GAV3Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:29:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Bernard F6BVP <f6bvp@free.fr>, David Miller <davem@davemloft.net>
-Subject: [PATCH] 6pack,mkiss: fix lock inconsistency
-Date: Fri, 1 Jul 2011 23:28:46 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Ralf Baechle DL5RB <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
-        Linux Netdev List <netdev@vger.kernel.org>, linux-hams@vger.kernel.org
-References: <4B2CD772.1030106@upmc.fr> <20110625163942.GB20976@linux-mips.org> <4E0DC4F3.6010203@free.fr>
-In-Reply-To: <4E0DC4F3.6010203@free.fr>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107012328.46256.arnd@arndb.de>
-X-Provags-ID: V02:K0:qWTxtINPCn5uHXwqPhIcTgVgFnHRI0mSyNxOWvrW1v/
- 7mGoZKB+UpeHkgZOjnIqtG+DqHcmcwkuvSuOVnaWJB3VyXgj9S
- nI1M6AHgqUcKztNcXETchId0TiAW9RyFX4BqRczwxuunYdr88H
- sZseaCmSlI7MlIQoM2b3ReGyPu2Z8XFWA3tqT3xPFeCxF1e47K
- sC0PqngB83Xn9FhcInLxA==
+	id S1757820Ab1GAVaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 17:30:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22956 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757770Ab1GAVav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 17:30:51 -0400
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH v4 0/9] Steal time series again
+Date: Fri,  1 Jul 2011 17:22:40 -0400
+Message-Id: <1309555369-16867-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lockdep found a locking inconsistency in the mkiss_close function:
+Here follows the fourth version of the steal time series.
+Hope it is acceptable for all involved parties now. The main differences
+from v3 are:
 
-> kernel: [ INFO: inconsistent lock state ]
-> kernel: 2.6.39.1 #3
-> kernel: ---------------------------------
-> kernel: inconsistent {IN-SOFTIRQ-R} -> {SOFTIRQ-ON-W} usage.
-> kernel: ax25ipd/2813 [HC0[0]:SC0[0]:HE1:SE1] takes:
-> kernel: (disc_data_lock){+++?.-}, at: [<ffffffffa018552b>] mkiss_close+0x1b/0x90 [mkiss]
-> kernel: {IN-SOFTIRQ-R} state was registered at:
+* The Changelogs seem to have been writen by an actual person now, not of a
+monkey. Yet, I am the aforementioned person, so don't expect much.
+* Forcing delayacct on the hypervisor side allow us to simplify the guest
+code dramatically, since now we don't need to test for is_idle: if we're idle,
+we won't have steal time and end of story.
 
-The message hints that disc_data_lock is aquired with softirqs disabled,
-but does not itself disable softirqs, which can in rare circumstances
-lead to a deadlock. 
-The same problem is present in the 6pack driver, this patch fixes both
-by using write_lock_bh instead of write_lock.
+Hope you enjoy.
 
-Reported-by: Bernard F6BVP <f6bvp@free.fr>
-Tested-by: Bernard F6BVP <f6bvp@free.fr>
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Acked-by: Ralf Baechle<ralf@linux-mips.org>
-Cc: stable@kernel.org
----
-On Friday 01 July 2011 15:00:35 Bernard F6BVP wrote:
-> 
-> Now, who is going to commit this mkiss patch and the equivalent one for 
-> sixpack.c ?
+Glauber Costa (8):
+  KVM-HDR Add constant to represent KVM MSRs enabled bit
+  KVM-HDR: KVM Steal time implementation
+  KVM-HV: KVM Steal time implementation
+  KVM-GST: Add a pv_ops stub for steal time
+  add jump labels for ia64 paravirt
+  KVM-GST: KVM Steal time accounting
+  KVM-GST: adjust scheduler cpu power
+  KVM-GST: KVM Steal time registration
 
-Here's a formal patch with all the right tags, I assume that David Miller
-will apply that to the netdev tree.
+Gleb Natapov (1):
+  introduce kvm_read_guest_cached
 
-diff --git a/drivers/net/hamradio/6pack.c b/drivers/net/hamradio/6pack.c
-index 9624cbf..fea7cb4 100644
---- a/drivers/net/hamradio/6pack.c
-+++ b/drivers/net/hamradio/6pack.c
-@@ -694,10 +694,10 @@ static void sixpack_close(struct tty_struct *tty)
- {
- 	struct sixpack *sp;
- 
--	write_lock(&disc_data_lock);
-+	write_lock_bh(&disc_data_lock);
- 	sp = tty->disc_data;
- 	tty->disc_data = NULL;
--	write_unlock(&disc_data_lock);
-+	write_unlock_bh(&disc_data_lock);
- 	if (!sp)
- 		return;
- 
-diff --git a/drivers/net/hamradio/mkiss.c b/drivers/net/hamradio/mkiss.c
-index 9f84c83..324f7bf 100644
---- a/drivers/net/hamradio/mkiss.c
-+++ b/drivers/net/hamradio/mkiss.c
-@@ -813,10 +813,10 @@ static void mkiss_close(struct tty_struct *tty)
- {
- 	struct mkiss *ax;
- 
--	write_lock(&disc_data_lock);
-+	write_lock_bh(&disc_data_lock);
- 	ax = tty->disc_data;
- 	tty->disc_data = NULL;
--	write_unlock(&disc_data_lock);
-+	write_unlock_bh(&disc_data_lock);
- 
- 	if (!ax)
- 		return;
+ Documentation/kernel-parameters.txt   |    4 ++
+ Documentation/virtual/kvm/msr.txt     |   35 ++++++++++++++
+ arch/ia64/include/asm/paravirt.h      |    4 ++
+ arch/ia64/kernel/paravirt.c           |    2 +
+ arch/x86/Kconfig                      |   12 +++++
+ arch/x86/include/asm/kvm_host.h       |    8 +++
+ arch/x86/include/asm/kvm_para.h       |   15 ++++++
+ arch/x86/include/asm/paravirt.h       |    9 ++++
+ arch/x86/include/asm/paravirt_types.h |    1 +
+ arch/x86/kernel/kvm.c                 |   73 ++++++++++++++++++++++++++++++
+ arch/x86/kernel/kvmclock.c            |    2 +
+ arch/x86/kernel/paravirt.c            |    9 ++++
+ arch/x86/kvm/Kconfig                  |    1 +
+ arch/x86/kvm/x86.c                    |   56 ++++++++++++++++++++++-
+ include/linux/kvm_host.h              |    2 +
+ kernel/sched.c                        |   80 ++++++++++++++++++++++++++++----
+ kernel/sched_features.h               |    4 +-
+ virt/kvm/kvm_main.c                   |   20 ++++++++
+ 18 files changed, 322 insertions(+), 15 deletions(-)
+
+-- 
+1.7.3.4
+
