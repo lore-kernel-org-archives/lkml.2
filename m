@@ -1,117 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754539Ab1GADCJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 23:02:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:44190 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab1GADCI (ORCPT
+	id S1754613Ab1GADIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 23:08:04 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:34324 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754254Ab1GADIC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 23:02:08 -0400
+	Thu, 30 Jun 2011 23:08:02 -0400
 MIME-Version: 1.0
-In-Reply-To: <BANLkTi=DiVRV9dkTtYgq+CY-kxVs5ecoWw@mail.gmail.com>
-References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
-	<BANLkTimm7KDEU7WD7jVV=5vAGt2GbjgwGg@mail.gmail.com>
-	<20110630075716.GB3377@albatros>
-	<BANLkTik0DF5jUhOsP=Pnm+vMbHzEx+3L-Q@mail.gmail.com>
-	<BANLkTi=DiVRV9dkTtYgq+CY-kxVs5ecoWw@mail.gmail.com>
-Date: Fri, 1 Jul 2011 08:32:07 +0530
-Message-ID: <BANLkTimnP8L3kSoafdTtUhr9CXx9-WDVLQ@mail.gmail.com>
-Subject: Re: [Security] [PATCH 2/2] taskstats: restrict access to user
-From: Balbir Singh <bsingharora@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, Shailabh Nagar <nagar@us.ibm.com>,
-        linux-kernel@vger.kernel.org, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        David Rientjes <rientjes@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        kernel-hardening@lists.openwall.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <BANLkTi=v-axftYKJCJ33+9UnfF9NJDAykQ@mail.gmail.com>
+References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au>
+ <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com> <87boxshrwe.fsf@rustcorp.com.au>
+ <BANLkTinL4r3RfNuA5x6=UK4DCSSJNeZw7w@mail.gmail.com> <87r56m8w2b.fsf@rustcorp.com.au>
+ <BANLkTimNpDdp+JBXt0wUjuc0awypJSvXRg@mail.gmail.com> <87fwn18k9h.fsf@rustcorp.com.au>
+ <BANLkTi=v-axftYKJCJ33+9UnfF9NJDAykQ@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 1 Jul 2011 05:07:41 +0200
+Message-ID: <BANLkTimmTpcPefmWz=H7+4R6-7o4dZ+hnQ@mail.gmail.com>
+Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 10:10 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Jun 30, 2011 at 3:59 AM, Balbir Singh <bsingharora@gmail.com> wrote:
->> On Thu, Jun 30, 2011 at 1:27 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
->>> On Wed, Jun 29, 2011 at 13:09 -0700, Linus Torvalds wrote:
->>>> Ok, having looked at this some more, I'm quite ready to just mark the
->>>> whole TASKSTATS config option as BROKEN. It does seem to be a horrible
->>>> security hazard, and very little seems to use it.
->>>>
+On Thu, Jun 23, 2011 at 13:24, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> On Thu, Jun 23, 2011 at 02:27, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>> On Wed, 22 Jun 2011 12:17:49 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>>> On Wed, Jun 22, 2011 at 04:00, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+>>> > Now we've got that sorted, is there a reason why you changed all the
+>>> > signatures rather than just using mod->mkobj in store_uevent()?
+>>>
+>>> Because we should be able to use the same 'struct module_attribute'
+>>> for built-in modules and for loaded modules at the same time. The
+>>> current 'struct module_attribute' has 'struct module' references, but
+>>> 'struct module' will never exist for built-in modules.
+>>>
+>>> 'Struct module_kobject' has nice back-pointer to 'struct module', so
+>>> this was the simplest to do, and looks still fine, I thought.
 >>
->> I am not sure how you define BROKEN, BROKEN as per security rules?
->> /proc/$pid/xxx also expose similar information.
+>> Yes, it's weird.  The only reason it currently works is because we don't
+>> use the mod parameter in param_attr_show and param_attr_store; it's NULL
+>> for built-in modules.
+>>
+>> I'd prefer that patch first, I think: it's a sensible cleanup.
 >
-> No it doesn't.
->
-> /proc/$pid/xyz has always had proper security checks. Now, sometimes
-> they've been a bit too lax (iow, we've had cases where we just allowed
-> things we shouldn't - like this "io" file), but /proc/pid/ at least
-> *conceptually* has always had the "do I have permission to read this
-> or not". Do a "cat /proc/*/* > /dev/null" and you'll be getting a lot
-> of "permission denied" etc.
->
+> You want the patch split up in two? You want to remove the mod
+> parameter somehow?
 
-I've tried that, but fundamentally the statistics we export in
-taskstats is what a utility like top would need. Compare them against
-cat /proc/$pid/sched and /proc/$pid/status
+Can we get these 20 lines of code sorted out please? :)
 
-> TASKSTATS? Nothing. Nada. Completely open.
->
-> That's just broken.
->
-
-Except for the I/O part, which turned about to be a cause of concern,
-look at struct taskstats and please see the comment above. We have
-some additional delay statistics, but I don't see them as a core
-broken issue
-
-> TASKSTATS also isn't apparently used by any normal program, and so
-> never got updated to namespaces. Again, /proc/xyz/ at least *tries*:
-> I'm not guaranteeing that it doesn't have some gaping holes, but I can
-> at least find the logic that saves and uses namespace information.
->
-
-Or namespaces are not being used as much, I know a lot of users use
-iotop(), I've frequently gotten and handled requests to enable the
-feature across distros
-
-> Again, TASKSTATS? Not so much.
->
->> I must admit, I did not pay much attention to pid namespace changes as
->> they were being made to taskstats. I'll look at the code later this
->> week.
->
-> Some of the pid namespace issues could be fixed with the attached kind
-> of starting point.
->
-> But it's broken. See the comment I added. Why is it broken? Again -
-> taskstats is fundamentally broken, and doesn't seem to actually clean
-> up after itself. The "cleanup" depends on noticing at run-time that
-> some pid is stale and no longer listening. Again, that's just
-> fundamental brokenness in taskstats.
->
-
-That is lazy cleanup to avoid trapping exit events of listeners and
-then having to check against the list. But if the cleanup needs to be
-more active, it should be easy to fix. What I am saying is that it is
-not as BROKEN as you make it sound. The attached patch is definitely a
-step in the right direction and should be applied.
-
-> And it also only look sat pid namespaces. The network namespace issue
-> is separate.
->
-> So that's why I think it should be marked BROKEN. What applications
-> actually depend on this? iotop and what else? Because if it's just
-> iotop, I do suspect we might be better off telling people "ok,
-> disabling this will break iotop, but quite frankly, you're better off
-> without it".
-
-I beg to differ, due to the reasons above. I'd rather find time and
-fix the pending issues (network namespace), you've fixed the pid
-namespace issue. I'd also look for exiting listeners
-
-Balbir Singh
+Kay
