@@ -1,70 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab1GAOkh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:40:37 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43775 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756689Ab1GAOkf convert rfc822-to-8bit (ORCPT
+	id S1756894Ab1GAOmU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:42:20 -0400
+Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:53908
+	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756689Ab1GAOmR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:40:35 -0400
-Date: Fri, 1 Jul 2011 15:41:50 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Chris Wolfe <cwolfe@chromium.org>
-Cc: Alan Cox <alan@linux.intel.com>, Nathan Royer <nroyer@invensense.com>,
+	Fri, 1 Jul 2011 10:42:17 -0400
+Date: Fri, 1 Jul 2011 10:41:29 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Christoph Hellwig <hch@infradead.org>, Petr Tesarik <ptesarik@suse.cz>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
-        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: [PATCH 11/11] misc: Add slave driver for bma085 pressure sensor
-Message-ID: <20110701154150.0ac303a3@lxorguk.ukuu.org.uk>
-In-Reply-To: <CAN_12A8Za7r92=r3JHx3R=AwAA7xk6=NVVMiSp68HPatb1G3hg@mail.gmail.com>
-References: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
-	<1309486707-1658-11-git-send-email-nroyer@invensense.com>
-	<20110701085604.0aabd6f1@bob.linux.org.uk>
-	<CAN_12A8Za7r92=r3JHx3R=AwAA7xk6=NVVMiSp68HPatb1G3hg@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Fenghua Yu <fenghua.yu@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+Message-ID: <20110701144129.GA10052@infradead.org>
+References: <201106171038.25988.ptesarik@suse.cz>
+ <20110617093032.GA19235@elte.hu>
+ <201106291106.00070.ptesarik@suse.cz>
+ <20110701125802.GE12605@elte.hu>
+ <20110701134705.GA6175@infradead.org>
+ <20110701143735.GA21367@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110701143735.GA21367@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Just to field this quickly, since I've been playing with the hardware
+On Fri, Jul 01, 2011 at 04:37:35PM +0200, Ingo Molnar wrote:
+> After initial modules have loaded i essentially disable crash.ko via 
+> /proc/sys/kernel/modules_disabled so rootkits have to work a bit 
+> harder than that.
 
-(Ditto)
+Not sure for fedora as I don'[t have a kernel tree at hand right now,
+but for x86 systems at least RHEL6 has the module built in.  Either
+way we'll need some way to support crash properly in mainline,
+preferably in a boot-time opt-in way.  I'd tend slightly toward
+optionally enabling /dev/mem for it instead of a separate driver, but
+if people prefer a different route I'm fine, too.
 
-> Part of the reason I got started on the KXTF9 driver was to try and
-> understand how a normal kernel driver could cope with the "here and
-> gone again" behavior of being on the MPU's secondary bus.
-
-It's a hot pluggable bus - no different to an i2c bus on a hot pluggable
-device. 
-
-I would guess however that if you knew the device was going to be used for
-the mpu3050 only you'd not add the "slave" devices in your platform data
-in the first place as well so they didn't bounce in and out and you'd
-probably teach the mpu3050 code to not create the bus if it was then
-going to destroy it again a moment later.
-
-> The other note that may not have been made explicit yet is that the
-> 3050 will happily provide unprocessed gyro and slave data without
-> firmware loaded. The firmware sets up some additional processing
-> capabilities of the chip, which are used by InvenSense's user-space
-> products.
-
-Yes - and the current mpu3050 driver provides just these interfaces.
-
-Of the other stuff the slave drivers seem to be no problem as standard
-i²c bus devices, the MPU mode may depend upon whether there is open
-documentation, applying the standards we apply to everything else. That
-is "can someone write their own tools to use that interface based upon the
-documentation/source code examples available".
-
-Eg for the ektf driver which is pending the interface is all documented
-and provides rectangles of pressure data but you'll have to go write
-your own gesture recognizer parts if you want to do clever stuff with it.
-
-Alan
+Note that for normal crash usage read only access is just fine.
