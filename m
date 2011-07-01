@@ -1,72 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab1GAU0Y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 16:26:24 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:58142 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762Ab1GAU0W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 16:26:22 -0400
-Date: Fri, 1 Jul 2011 13:25:38 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Will Drewry <wad@chromium.org>, Ingo Molnar <mingo@elte.hu>,
-        James Morris <jmorris@namei.org>, Chris Evans <scarybeasts@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, djm@mindrot.org,
-        segoon@openwall.com, fweisbec@gmail.com, tglx@linutronix.de,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, linux-security-module@vger.kernel.org,
-        ksummit-2011-discuss@lists.linux-foundation.org
-Subject: Re: [PATCH v9 05/13] seccomp_filter: Document what seccomp_filter is
- and how it works.
-Message-ID: <20110701202538.GN32221@outflux.net>
-References: <alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>
- <BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
- <alpine.LRH.2.00.1106301128590.13496@tundra.namei.org>
- <20110701115600.GK20990@elte.hu>
- <BANLkTim8CGx89nOg0HX=S1=arunBU3sEGQ@mail.gmail.com>
- <20110701130705.GG12605@elte.hu>
- <BANLkTimN0nEa2Bog2-vzCv=1XOG5OsJjLA@mail.gmail.com>
- <20110701161027.GA29035@elte.hu>
- <BANLkTikCaACO8o9HkAnkuaTuoKqqQWQrtw@mail.gmail.com>
- <1309543448.26417.156.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309543448.26417.156.camel@gandalf.stny.rr.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1756089Ab1GAU3N (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 16:29:13 -0400
+Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35064 "EHLO
+	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755663Ab1GAU3L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 16:29:11 -0400
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+From: James Bottomley <James.Bottomley@HansenPartnership.com>
+To: Dave Jones <davej@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, axboe@kernel.dk, rjw@sisk.pl,
+        linux-usb@vger.kernel.org
+In-Reply-To: <20110701181406.GA1614@redhat.com>
+References: <20110701170531.GA3693@tassilo.jf.intel.com>
+	 <20110701181406.GA1614@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jul 2011 15:29:08 -0500
+Message-ID: <1309552148.2722.46.camel@mulgrave>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 02:04:08PM -0400, Steven Rostedt wrote:
-> On Fri, 2011-07-01 at 11:43 -0500, Will Drewry wrote:
-> > On Fri, Jul 1, 2011 at 11:10 AM, Ingo Molnar <mingo@elte.hu> wrote:
+On Fri, 2011-07-01 at 14:14 -0400, Dave Jones wrote:
+> On Fri, Jul 01, 2011 at 10:05:31AM -0700, Andi Kleen wrote:
 > 
-> > I'd like to be able to move along security for the platform today and
-> > not in two years, but if my only chance of any form of this being
-> > ACK'd is to write it such that it shares code with perf and has a
-> > shiny new ABI, then I'll queue up the work for when I can start trying
-> > to tackle it.
+>  > I found I can reliably crash a 3.0 system by pulling the
+>  > USB cable of a mounted USB cdrom (or rather a USB device which
+>  > has a builtin fake CD-ROM) 
+>  > 
+>  > I suspect it's a regression too.
 > 
-> As this seems to be dragging on, and does not look to be solved by
-> October, I would like to propose this topic for the Kernel Summit in
-> Prague. I believe all parties involved may be there, and if not, I will
-> push hard to get them there.
+> We've been seeing a lot of similar bugs in Fedora since we pushed
+> a 2.6.38.8 update.  Some of the traces are different, but some
+> look to be the same as yours. (here's one for eg: https://bugzilla.redhat.com/show_bug.cgi?id=712830)
 > 
-> Email is not always the best median for discussions. Face to face can
-> usually solve things much quicker.
+> The common cause seems to be 'device went away'. So USB CD drives,
+> USB memory sticks, and for some reason virtualbox shutdown.
 
-How about we put it in as-is and mark it experimental, and then folks
-can discuss improvements to it in Oct after all the API users have had
-a chance to play with it? Four months seems like a needless delay to me.
-I respect the objections, but it doesn't seem to balance against the
-demonstrated need for this feature when faced with a viable working patch
-series.
+I think it's something specific in the USB path.  I can't reproduce on
+3.0-rc5 with a SATA DVD hot unplug.  USB cc's added.
 
--Kees
+James
 
--- 
-Kees Cook
-Ubuntu Security Team
+
