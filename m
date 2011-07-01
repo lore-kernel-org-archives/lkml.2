@@ -1,30 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab1GAOI3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:08:29 -0400
-Received: from smtp103.prem.mail.ac4.yahoo.com ([76.13.13.42]:29814 "HELO
-	smtp103.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756481Ab1GAOI3 (ORCPT
+	id S1756702Ab1GAOLg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:11:36 -0400
+Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:45670 "HELO
+	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756481Ab1GAOLe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:08:29 -0400
+	Fri, 1 Jul 2011 10:11:34 -0400
 X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: pgaKRXoVM1kv9EWF_LHWVw.JtxUnPQ7FCzNo3B1B2R11Bph
- DJJXvFHzdna3bI_dgKTVWq._RK9ApgXlPAeud2jti6DPEYYHvIyJ4EVxxz5m
- jP7q3ERE1rA76nSw30duCQGUf6ZoNOHbkTZJMbqzUwlnWpGLMjJ487YjFTx4
- ykUnZIv9p_5Yxxmg7FDNMRIsawKz2PSOZdICQmJgwKgngYlSa8.3ZnFOi9lr
- mOJJJIGkTylZ3qP46yCAJlQw.yQa2m37dLwiAW3HihSjsDkux2zexdXdPqjz
- XOA3qcC1k9Og4.KrnTKTRfbUUsvz_5eNkclklyOfhOZ6FKDYb
+X-YMail-OSG: uhkmUqIVM1mVN7MwQ4mQ67KQDZ3TOe2sbdRPKa2j3TYiU_S
+ LbwuE7O8rOHDY3F2lXoXG9Rdnsjhxcsd3YN1aaCKucucQyLEcXdU4a17GCZT
+ XtDYP2Q9O.9lWdCJv0vXLNLaY96Vbvs.vF2qiZtVHgakGFrW7YvKwTBFVQPX
+ EwMPnmgeX2gX..XBoT4mHZ1aQ.jETAOiFpfLbP38_g9o95A6bT5Mn9ryEkq5
+ BjP.NzXK8kQSqPPbbofhFfQqjWSAyy1iD7C1w34_zqDGSQytQ9sxprna7eH_
+ Ql1ilQEUlwUs290LJ6GJjJPYTPzEx5T6keYPEZoGPRXsqacOj
 X-Yahoo-Newman-Property: ymail-3
-Date: Fri, 1 Jul 2011 09:08:26 -0500 (CDT)
+Date: Fri, 1 Jul 2011 09:11:31 -0500 (CDT)
 From: Christoph Lameter <cl@linux.com>
 X-X-Sender: cl@router.home
 To: Ben Greear <greearb@candelatech.com>
 cc: penberg@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2 1/2] slub: Enable backtrace for create/delete
- points.
-In-Reply-To: <1309308462-20124-2-git-send-email-greearb@candelatech.com>
-Message-ID: <alpine.DEB.2.00.1107010905350.2458@router.home>
-References: <1309308462-20124-1-git-send-email-greearb@candelatech.com> <1309308462-20124-2-git-send-email-greearb@candelatech.com>
+Subject: Re: [PATCH v2 2/2] slub:  Add method to verify memory is not
+ freed.
+In-Reply-To: <1309308462-20124-3-git-send-email-greearb@candelatech.com>
+Message-ID: <alpine.DEB.2.00.1107010909060.2458@router.home>
+References: <1309308462-20124-1-git-send-email-greearb@candelatech.com> <1309308462-20124-3-git-send-email-greearb@candelatech.com>
 User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -34,55 +34,57 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Tue, 28 Jun 2011, greearb@candelatech.com wrote:
 
+> diff --git a/include/linux/slab.h b/include/linux/slab.h
+> index ad4dd1c..916ce0f 100644
+> --- a/include/linux/slab.h
+> +++ b/include/linux/slab.h
+> @@ -302,6 +302,19 @@ extern void *__kmalloc_node_track_caller(size_t, gfp_t, int, unsigned long);
+>
+>  #endif /* CONFIG_NUMA */
+>
+> +/**
+> + * Calling this on allocated memory will check that the memory
+> + * is expected to be in use, and print warnings if not.
+> + */
+> +#if defined(CONFIG_SLUB) && defined(CONFIG_SLUB_DEBUG)
+> +extern bool verify_mem_not_deleted(const void *x);
+> +#else
+> +static inline bool verify_mem_not_deleted(const void *x)
+> +{
+> +	return true;
+> +}
+> +#endif
+> +
+
+Why is this in slab.h and not slub_def.h?
+
 > diff --git a/mm/slub.c b/mm/slub.c
-> index 35f351f..3477ce5 100644
+> index 3477ce5..f64caca 100644
 > --- a/mm/slub.c
 > +++ b/mm/slub.c
-> @@ -191,8 +191,12 @@ static LIST_HEAD(slab_caches);
->  /*
->   * Tracking user of a slab.
->   */
-> +#define TRACK_ADDRS_COUNT 16
->  struct track {
-> -	unsigned long addr;	/* Called from address */
-> +	unsigned long caddr;
-
-Keep the name the same since its role does not change. That makes the
-patch touch less code.
-
-> +#ifdef CONFIG_STACKTRACE
-> +	unsigned long addrs[TRACK_ADDRS_COUNT];	/* Called from address */
-> +#endif
->  	int cpu;		/* Was running on cpu */
->  	int pid;		/* Pid context */
->  	unsigned long when;	/* When did the operation occur */
-> @@ -420,7 +424,25 @@ static void set_track(struct kmem_cache *s, void *object,
->  	struct track *p = get_track(s, object, alloc);
+> @@ -2958,6 +2958,42 @@ size_t ksize(const void *object)
+>  }
+>  EXPORT_SYMBOL(ksize);
 >
->  	if (addr) {
-> -		p->addr = addr;
-> +#ifdef CONFIG_STACKTRACE
-> +		struct stack_trace trace;
-> +		int i;
+> +#ifdef CONFIG_SLUB_DEBUG
+> +bool verify_mem_not_deleted(const void *x)
+> +{
+> +	struct page *page;
+> +	void *object = (void *)x;
+> +	unsigned long flags;
+> +	bool rv;
 > +
-> +		trace.nr_entries = 0;
-> +		trace.max_entries = TRACK_ADDRS_COUNT;
-> +		trace.entries = p->addrs;
-> +		trace.skip = 3;
-> +		save_stack_trace(&trace);
+> +	if (unlikely(ZERO_OR_NULL_PTR(x)))
+> +		return false;
 > +
-> +		/* See rant in lockdep.c */
-> +		if (trace.nr_entries != 0 &&
-> +		    trace.entries[trace.nr_entries - 1] == ULONG_MAX)
-> +			trace.nr_entries--;
+> +	local_irq_save(flags);
 > +
-> +		for (i = trace.nr_entries; i < TRACK_ADDRS_COUNT; i++)
-> +			p->addrs[i] = 0;
-> +#endif
+> +	page = virt_to_head_page(x);
+> +	if (unlikely(!PageSlab(page))) {
+> +		/* maybe it was from stack? */
+> +		rv = true;
+> +		goto out_unlock;
+> +	}
 
-Hmmm... Is this really working on all architectures? I remember from years
-past that we had issues with adding the same functionality to slab.
-
-Otherwise the patch is quite straightforward (and it will be much cleaner
-if you do not change the name of "addr").
-
+The above check is problematic for slabs that have SLAB_DESTROY_BY_RCU
+set. PageSlab(page) may be true to the next rcu interval.
