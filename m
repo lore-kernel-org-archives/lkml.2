@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754737Ab1GADfv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 23:35:51 -0400
-Received: from mail.perches.com ([173.55.12.10]:3405 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750725Ab1GADfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 23:35:50 -0400
-Subject: Re: [PATCH 0/2] netpoll: Trivial updates
-From: Joe Perches <joe@perches.com>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <4E0D3E80.5080209@redhat.com>
-References: <cover.1309482314.git.joe@perches.com>
-	 <4E0D3E80.5080209@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 30 Jun 2011 20:35:49 -0700
-Message-ID: <1309491349.7277.22.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1754746Ab1GADmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 23:42:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60029 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752771Ab1GADms (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 23:42:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <1309479572.2665.1372.camel@sbsiddha-MOBL3.sc.intel.com>
+References: <1309479572.2665.1372.camel@sbsiddha-MOBL3.sc.intel.com>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 30 Jun 2011 20:42:09 -0700
+Message-ID: <BANLkTikekBSzT-fQGJEk-U5JEuTsGQsBvQ@mail.gmail.com>
+Subject: Re: [patch] x32, fpu: fix DNA exception during check_fpu()
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 11:26 +0800, Cong Wang wrote:
-> 于 2011年07月01日 09:08, Joe Perches 写道:
-> > cc: WANG Cong<amwang@redhat.com>
-> > Joe Perches (2):
-> >    netpoll: Remove unused EXPORT_SYMBOLs of netpoll_poll and netpoll_poll_dev
-> >    netpoll: Remove trivial wrapper function netpoll_poll
-> >   include/linux/netpoll.h |    2 --
-> >   net/core/netpoll.c      |   13 +++----------
-> >   2 files changed, 3 insertions(+), 12 deletions(-)
-> I am fine with patch 1/2, but not 2/2, since it is trivial,
-> why touch it? With netpoll_poll(), we don't need to explore the
-> details of struct netpoll, I think it is nice to have it.
+On Thu, Jun 30, 2011 at 5:19 PM, Suresh Siddha
+<suresh.b.siddha@intel.com> wrote:
+>
+> Before check_fpu() is called, we have cr0.TS bit set and hence the floating
+> point code to check the FDIV bug was generating a DNA exception.
+>
+> Use kernel_fpu_begin()/kernel_fpu_end() around the floating point
+> code to avoid this unnecessary device not available exception during
+> boot.
 
-Shrug.  Neither is used.  Keep things minimal.
+Looks sane to me. I didn't think we were supposed to set the TS bit
+this early, but if we do, Ack.
 
-> BTW, you can kill the export of netpoll_send_skb_on_dev() too.
-
-Not too sure about that.
-
-It's used in netpoll.h by netpoll_send_skb.
-It could be called from anywhere.
-It's currently called/used by bonding.h.
-
-cheers, Joe
-
-
-
+                 Linus
