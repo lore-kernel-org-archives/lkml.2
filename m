@@ -1,77 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754636Ab1GADKB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 23:10:01 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59759 "EHLO mx2.suse.de"
+	id S1754666Ab1GADLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 23:11:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40560 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754292Ab1GADKA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 23:10:00 -0400
-Date: Thu, 30 Jun 2011 20:09:04 -0700
-From: Greg KH <gregkh@suse.de>
-To: Nathan Royer <nroyer@invensense.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
-        Alan Cox <alan@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
-        linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 01/11] misc: inv_mpu primary header file and README file.
-Message-ID: <20110701030904.GA3748@suse.de>
-References: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753850Ab1GADLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 23:11:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,456,1304319600"; 
+   d="scan'208";a="22202193"
+Subject: Re: [PATCH 0/4] perf: Intel uncore pmu counting support
+From: Lin Ming <ming.m.lin@intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <CABPqkBRZf41wbJKq2PCdMzDhgNMn0VYkVsaZToS34AXpRzTGLw@mail.gmail.com>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
+	 <CABPqkBRs1nd7KptkVCg5QeG0AJJck=VHAgCpSOJKpOgdDuN-6A@mail.gmail.com>
+	 <CABPqkBRZf41wbJKq2PCdMzDhgNMn0VYkVsaZToS34AXpRzTGLw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jul 2011 11:17:10 +0800
+Message-ID: <1309490230.24590.93.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 07:18:17PM -0700, Nathan Royer wrote:
-> This files defines the userspace interface and how to integrate it into a
-> platform.
-> 
-> Signed-off-by: Nathan Royer <nroyer@invensense.com>
-> ---
-> 
-> This is the first of many patch files for the inv_mpu driver in its current
-> state.  This is our first time submitting this driver, so I expect there to be
-> a lot wrong with it, and expect to need to fix many things.
-> 
-> The inv_mpu driver attepts to implement a Motion Processing Unit interface.  As
-> a unit, an accelerometer, magnetometer, gyroscope, and/or altimiter data is
-> fused together to produce calibrated data and a quaternion.
-> 
-> The inv_mpu driver interface is currently implemented as a misc device, but may
-> need to change to include both sysfs attributes and input devices.  I think
-> that we will continue to need the ioctl interface, but many of the ioctls can
-> be replace by attributes and/or input devices.
-> 
-> The mpu3050 has an i2c master interface designed to control an accelerometer
-> and a Digital Motion Processor (DMP) used to perform sensor fusion on the
-> gyroscope and accelerometer.  This data is then read out of the mpu3050 fifo
-> and sent to userspace for distribution and optional propritary processing, such
-> as fusion with a compass to produce a 9 axis quaternion.
-> 
-> Some question I have at the start are:
-> 1) Is there a master design or standard interface for Motion Processing
-> devices, specifically ones that do calibration, sensor fusion, and or have a
-> micro-controller to do some of this work.
-> 2) Is there a standard way to integrate user space components with kernel side
-> components.
-> 3) Should data be pushed back to the driver from userspace, and made available
-> as an input device or should it remain as a character device.
-> 4) Can a 4 element quaternion be added to input.h:
-> ABS_QUATERNION_1 ABS_QUATERNION_I ABS_QUATERNION_J ABS_QUATERNION_K
-> for <1, i, j, k>
-> 5) Should we instead use a rotation vector as defined in the Android sensor:
-> http://developer.android.com/reference/android/hardware/SensorEvent.html
-> 6) Are there any other major design concerns?
+On Fri, 2011-07-01 at 00:27 +0800, Stephane Eranian wrote:
+> On Thu, Jun 30, 2011 at 2:10 PM, Stephane Eranian <eranian@google.com> wrote:
+> > On Thu, Jun 30, 2011 at 10:09 AM, Lin Ming <ming.m.lin@intel.com> wrote:
+> >> Hi, all
+> >>
+> >> I posted uncore patches months ago, but it was pended due to an uncore
+> >> interrupt problem.
+> >>
+> >> This series are cut to support uncore pmu counting only.
+> >> So uncore interrupt handling is not needed.
+> >>
+> > You're making the assumption that when counting, you can never construct
+> > a measurement that will cause a counter to overflow the 39 bits. If not, then
+> > you need interrupt handling even when counting.
+> >
+> The actual counter width is 48. But wrmsrl() can only write the bottom 32 bits
+> of a register. I think Intel fixed that only with SandyBridge (see Vol3b). Thus,
+> the risk of 'silent' wrap around is much higher now as you have only 31 bits
+> to play with.
 
-Shouldn't you be using the iio subsystem for the kernel/user interface
-as I think it handles most of this for you already, right?
+I just tested wrmsrl on uncore counters and it's surprised to me that it
+supports full write.
 
-> 7) Can an input device also have a character device interface for proprietary
-> customization.
+	val64.low  = 0xFFFFEEEE;
+	val64.high = 0x12345678;
 
-What do you mean by this?
+On Nehalem/Westmere:
 
-greg k-h
+	msr = 0x3b0; //NHM_MSR_UNCORE_PMC0
+	wrmsrl(msr, val64.full & 0xfffffffffff); //48 bits counter
+	rdmsrl(msr, val64.full);
+        printfk("counter value: 0x%llx\n", val64.full);
+
+I got:
+	counter value: 0x5678ffffeeee
+
+On SandyBridge:
+
+	msr = 0x716; //SNB_MSR_UNC_CBO_1_PER_CTR0
+	wrmsrl(msr, val64.full & 0xfffffffffff); //44 bits counter
+	rdmsrl(msr, val64.full);
+        printfk("counter value: 0x%llx\n", val64.full);
+
+I got:
+	counter value: 0x678ffffeeee
+
+> 
+> But if I read your patch correctly, it seems you are avoiding wrmsrl() on the
+> counter. Instead, you are reading it when you start (prev_count) and using
+> that value to compute the delta on stop.
+> 
+> Am I understanding your workaround correctly?
+
+Yes, but I didn't realize that it's a workaround.
+
+Lin Ming
+
+> 
+> 
+> >
+> >> The uncore pmu type is allocated dynamically and exported via sysfs.
+> >> $ cat /sys/bus/event_source/devices/uncore/type
+> >> 6
+> >>
+> >> You can count uncore raw events as below,
+> >> $ perf stat -e uncore:r0101 ls
+> >>
+> >> It reads uncore pmu type id from sysfs to setup perf_event_attr::type.
+> >>
+> >> Comments are appreciated.
+> >>
+> >> Thanks,
+> >> Lin Ming
+> >>
+> >>
+> >
+
+
