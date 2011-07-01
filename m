@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1GACTY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 22:19:24 -0400
-Received: from na3sys009aog117.obsmtp.com ([74.125.149.242]:49453 "HELO
-	na3sys009aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754461Ab1GACTP (ORCPT
+	id S1754534Ab1GACTV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 22:19:21 -0400
+Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:52535 "HELO
+	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1754458Ab1GACTN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 22:19:15 -0400
+	Thu, 30 Jun 2011 22:19:13 -0400
 From: Nathan Royer <nroyer@invensense.com>
 To: Nathan Royer <nroyer@invensense.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
@@ -14,413 +14,178 @@ Cc: Andrew Morton <akpm@linux-foundation.org>,
         Jonathan Cameron <jic23@cam.ac.uk>, Jiri Kosina <jkosina@suse.cz>,
         Alan Cox <alan@linux.intel.com>, Jean Delvare <khali@linux-fr.org>,
         linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [PATCH 02/11] misc: mpu3050 Register definition and Private data
-Date: Thu, 30 Jun 2011 19:18:18 -0700
-Message-Id: <1309486707-1658-2-git-send-email-nroyer@invensense.com>
+Subject: [PATCH 01/11] misc: inv_mpu primary header file and README file.
+Date: Thu, 30 Jun 2011 19:18:17 -0700
+Message-Id: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
 X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
-References: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MPU3050 registers and internal data configuration definion file for the
-inv_mpu driver.
+This files defines the userspace interface and how to integrate it into a
+platform.
 
 Signed-off-by: Nathan Royer <nroyer@invensense.com>
 ---
- drivers/misc/inv_mpu/mldl_cfg.h |  374 +++++++++++++++++++++++++++++++++++++++
- drivers/misc/inv_mpu/mpu3050.h  |  251 ++++++++++++++++++++++++++
- 2 files changed, 625 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/inv_mpu/mldl_cfg.h
- create mode 100644 drivers/misc/inv_mpu/mpu3050.h
 
-diff --git a/drivers/misc/inv_mpu/mldl_cfg.h b/drivers/misc/inv_mpu/mldl_cfg.h
+This is the first of many patch files for the inv_mpu driver in its current
+state.  This is our first time submitting this driver, so I expect there to be
+a lot wrong with it, and expect to need to fix many things.
+
+The inv_mpu driver attepts to implement a Motion Processing Unit interface.  As
+a unit, an accelerometer, magnetometer, gyroscope, and/or altimiter data is
+fused together to produce calibrated data and a quaternion.
+
+The inv_mpu driver interface is currently implemented as a misc device, but may
+need to change to include both sysfs attributes and input devices.  I think
+that we will continue to need the ioctl interface, but many of the ioctls can
+be replace by attributes and/or input devices.
+
+The mpu3050 has an i2c master interface designed to control an accelerometer
+and a Digital Motion Processor (DMP) used to perform sensor fusion on the
+gyroscope and accelerometer.  This data is then read out of the mpu3050 fifo
+and sent to userspace for distribution and optional propritary processing, such
+as fusion with a compass to produce a 9 axis quaternion.
+
+Some question I have at the start are:
+1) Is there a master design or standard interface for Motion Processing
+devices, specifically ones that do calibration, sensor fusion, and or have a
+micro-controller to do some of this work.
+2) Is there a standard way to integrate user space components with kernel side
+components.
+3) Should data be pushed back to the driver from userspace, and made available
+as an input device or should it remain as a character device.
+4) Can a 4 element quaternion be added to input.h:
+ABS_QUATERNION_1 ABS_QUATERNION_I ABS_QUATERNION_J ABS_QUATERNION_K
+for <1, i, j, k>
+5) Should we instead use a rotation vector as defined in the Android sensor:
+http://developer.android.com/reference/android/hardware/SensorEvent.html
+6) Are there any other major design concerns?
+7) Can an input device also have a character device interface for proprietary
+customization.
+
+ drivers/misc/inv_mpu/README |  104 ++++++++++++
+ include/linux/mpu.h         |  365 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 469 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/misc/inv_mpu/README
+ create mode 100644 include/linux/mpu.h
+
+diff --git a/drivers/misc/inv_mpu/README b/drivers/misc/inv_mpu/README
 new file mode 100644
-index 0000000..457477b
+index 0000000..ce592c8
 --- /dev/null
-+++ b/drivers/misc/inv_mpu/mldl_cfg.h
-@@ -0,0 +1,374 @@
-+/*
-+	$License:
-+	Copyright (C) 2011 InvenSense Corporation, All Rights Reserved.
++++ b/drivers/misc/inv_mpu/README
+@@ -0,0 +1,104 @@
++Kernel driver mpu
++=====================
 +
-+	This program is free software; you can redistribute it and/or modify
-+	it under the terms of the GNU General Public License as published by
-+	the Free Software Foundation; either version 2 of the License, or
-+	(at your option) any later version.
++Supported chips:
++  * InvenSense IMU3050
++    Prefix: 'mpu3050'
++    Datasheet:
++        PS-MPU-3000A-00.2.4b.pdf
 +
-+	This program is distributed in the hope that it will be useful,
-+	but WITHOUT ANY WARRANTY; without even the implied warranty of
-+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+	GNU General Public License for more details.
++Author: InvenSense <http://invensense.com>
 +
-+	You should have received a copy of the GNU General Public License
-+	along with this program.  If not, see <http://www.gnu.org/licenses/>.
-+	$
-+ */
++Description
++-----------
++The mpu is a motion processor unit that controls the mpu3050 gyroscope, a slave
++accelerometer, a compass and a pressure sensor.  This document describes how to
++install the driver into a Linux kernel.
 +
-+/**
-+ *  @addtogroup MLDL
-+ *
-+ *  @{
-+ *      @file   mldl_cfg.h
-+ *      @brief  The Motion Library Driver Layer Configuration header file.
-+ */
++Sysfs entries
++-------------
++/dev/mpu
++/dev/mpuirq
++/dev/accelirq
++/dev/compassirq
++/dev/pressureirq
 +
-+#ifndef __MLDL_CFG_H__
-+#define __MLDL_CFG_H__
++General Remarks MPU3050
++-----------------------
++* Valid addresses for the MPU3050 is 0x68.
++* Accelerometer must be on the secondary I2C bus for MPU3050, the
++  magnetometer must be on the primary bus and pressure sensor must
++  be on the primary bus.
 +
-+#include "mltypes.h"
-+#include "mlsl.h"
++Programming the chip using /dev/mpu
++----------------------------------
++Programming of MPU3050 is done by first opening the /dev/mpu file and
++then performing a series of IOCTLS on the handle returned.  The IOCTL codes can
++be found in mpu.h.  Typically this is done by the mllite library in user
++space.
++
++Board and Platform Data
++-----------------------
++
++In order for the driver to work, board and platform data specific to the device
++needs to be added to the board file.  A mpu_platform_data structure must
++be created and populated and set in the i2c_board_info_structure.  For details
++of each structure member see mpu.h.  All values below are simply an example and
++should be modified for your platform.
++
 +#include <linux/mpu.h>
-+#  include "mpu3050.h"
 +
-+#include "log.h"
-+
-+/*************************************************************************
-+ *  Sensors Bit definitions
-+ *************************************************************************/
-+
-+#define INV_X_GYRO			(0x0001)
-+#define INV_Y_GYRO			(0x0002)
-+#define INV_Z_GYRO			(0x0004)
-+#define INV_DMP_PROCESSOR		(0x0008)
-+
-+#define INV_X_ACCEL			(0x0010)
-+#define INV_Y_ACCEL			(0x0020)
-+#define INV_Z_ACCEL			(0x0040)
-+
-+#define INV_X_COMPASS			(0x0080)
-+#define INV_Y_COMPASS			(0x0100)
-+#define INV_Z_COMPASS			(0x0200)
-+
-+#define INV_X_PRESSURE			(0x0300)
-+#define INV_Y_PRESSURE			(0x0800)
-+#define INV_Z_PRESSURE			(0x1000)
-+
-+#define INV_TEMPERATURE			(0x2000)
-+#define INV_TIME			(0x4000)
-+
-+#define INV_THREE_AXIS_GYRO		(0x000F)
-+#define INV_THREE_AXIS_ACCEL		(0x0070)
-+#define INV_THREE_AXIS_COMPASS		(0x0380)
-+#define INV_THREE_AXIS_PRESSURE		(0x1C00)
-+
-+#define INV_FIVE_AXIS			(0x007B)
-+#define INV_SIX_AXIS_GYRO_ACCEL		(0x007F)
-+#define INV_SIX_AXIS_ACCEL_COMPASS	(0x03F0)
-+#define INV_NINE_AXIS			(0x03FF)
-+#define INV_ALL_SENSORS			(0x7FFF)
-+
-+#define MPL_PROD_KEY(ver, rev) (ver * 100 + rev)
-+
-+/* -------------------------------------------------------------------------- */
-+struct mpu_ram {
-+	__u16 length;
-+	__u8 *ram;
++static struct mpu_platform_data mpu3050_data = {
++	.int_config  = 0x10,
++	.orientation = {  -1,  0,  0,
++			   0,  1,  0,
++			   0,  0, -1 },
 +};
 +
-+struct mpu_gyro_cfg {
-+	__u8 int_config;
-+	__u8 ext_sync;
-+	__u8 full_scale;
-+	__u8 lpf;
-+	__u8 clk_src;
-+	__u8 divider;
-+	__u8 dmp_enable;
-+	__u8 fifo_enable;
-+	__u8 dmp_cfg1;
-+	__u8 dmp_cfg2;
++/* accel */
++static struct ext_slave_platform_data inv_mpu_kxtf9_data = {
++	.bus         = EXT_SLAVE_BUS_SECONDARY,
++	.orientation = {  -1,  0,  0,
++			  0,  1,  0,
++			  0,  0, -1 },
++};
++/* compass */
++static struct ext_slave_platform_data inv_mpu_ak8975_data = {
++	.bus         = EXT_SLAVE_BUS_PRIMARY,
++	.orientation = { 1, 0, 0,
++			 0, 1, 0,
++			 0, 0, 1 },
 +};
 +
-+/* Offset registers that can be calibrated */
-+struct mpu_offsets {
-+	__u8	tc[GYRO_NUM_AXES];
-+	__u16	gyro[GYRO_NUM_AXES];
++static struct i2c_board_info __initdata panda_inv_mpu_i2c4_boardinfo[] = {
++	{
++		I2C_BOARD_INFO("mpu3050", 0x68),
++		.irq = (IH_GPIO_BASE + MPUIRQ_GPIO),
++		.platform_data = &mpu3050_data,
++	},
++	{
++		I2C_BOARD_INFO("kxtf9", 0x0F),
++		.irq = (IH_GPIO_BASE + ACCEL_IRQ_GPIO),
++		.platform_data = &inv_mpu_kxtf9_data
++	},
++	{
++		I2C_BOARD_INFO("ak8975", 0x0E),
++		.irq = (IH_GPIO_BASE + COMPASS_IRQ_GPIO),
++		.platform_data = &inv_mpu_ak8975_data,
++	},
 +};
 +
-+/* Chip related information that can be read and verified */
-+struct mpu_chip_info {
-+	__u8 addr;
-+	__u8 product_revision;
-+	__u8 silicon_revision;
-+	__u8 product_id;
-+	__u16 gyro_sens_trim;
-+	/* Only used for MPU6050 */
-+	__u16 accel_sens_trim;
-+};
++Typically the IRQ is a GPIO input pin and needs to be configured properly.  If
++in the above example GPIO 168 corresponds to IRQ 299, the following should be
++done as well:
 +
++#define MPU_GPIO_IRQ 168
 +
-+struct inv_mpu_cfg {
-+	__u32 requested_sensors;
-+	__u8 ignore_system_suspend;
-+};
++    gpio_request(MPU_GPIO_IRQ,"MPUIRQ");
++    gpio_direction_input(MPU_GPIO_IRQ)
 +
-+/* Driver related state information */
-+struct inv_mpu_state {
-+#define MPU_GYRO_IS_SUSPENDED		(0x01 << EXT_SLAVE_TYPE_GYROSCOPE)
-+#define MPU_ACCEL_IS_SUSPENDED		(0x01 << EXT_SLAVE_TYPE_ACCEL)
-+#define MPU_COMPASS_IS_SUSPENDED	(0x01 << EXT_SLAVE_TYPE_COMPASS)
-+#define MPU_PRESSURE_IS_SUSPENDED	(0x01 << EXT_SLAVE_TYPE_PRESSURE)
-+#define MPU_GYRO_IS_BYPASSED		(0x10)
-+#define MPU_DMP_IS_SUSPENDED		(0x20)
-+#define MPU_GYRO_NEEDS_RESET		(0x40)
-+	__u8 status;
-+	/* 0-1 for 3050, bitfield of BIT_SLVx_DLY_EN, x = [0..4] */
-+	__u8 i2c_slaves_enabled;
-+};
++Dynamic Debug
++=============
 +
-+/* Platform data for the MPU */
-+struct mldl_cfg {
-+	struct mpu_ram			*mpu_ram;
-+	struct mpu_gyro_cfg		*mpu_gyro_cfg;
-+	struct mpu_offsets		*mpu_offsets;
-+	struct mpu_chip_info		*mpu_chip_info;
-+
-+	/* MPU Related stored status and info */
-+	struct inv_mpu_cfg		*inv_mpu_cfg;
-+	struct inv_mpu_state		*inv_mpu_state;
-+
-+	/* Slave related information */
-+	struct ext_slave_descr		*slave[EXT_SLAVE_NUM_TYPES];
-+	/* Platform Data */
-+	struct mpu_platform_data	*pdata;
-+	struct ext_slave_platform_data	*pdata_slave[EXT_SLAVE_NUM_TYPES];
-+};
-+
-+/* -------------------------------------------------------------------------- */
-+
-+int inv_mpu_open(struct mldl_cfg *mldl_cfg,
-+		 void *mlsl_handle,
-+		 void *accel_handle,
-+		 void *compass_handle,
-+		 void *pressure_handle);
-+int inv_mpu_close(struct mldl_cfg *mldl_cfg,
-+		  void *mlsl_handle,
-+		  void *accel_handle,
-+		  void *compass_handle,
-+		  void *pressure_handle);
-+int inv_mpu_resume(struct mldl_cfg *mldl_cfg,
-+		   void *gyro_handle,
-+		   void *accel_handle,
-+		   void *compass_handle,
-+		   void *pressure_handle,
-+		   unsigned long sensors);
-+int inv_mpu_suspend(struct mldl_cfg *mldl_cfg,
-+		    void *gyro_handle,
-+		    void *accel_handle,
-+		    void *compass_handle,
-+		    void *pressure_handle,
-+		    unsigned long sensors);
-+
-+/* Slave Read functions */
-+int inv_mpu_slave_read(struct mldl_cfg *mldl_cfg,
-+		       void *gyro_handle,
-+		       void *slave_handle,
-+		       struct ext_slave_descr *slave,
-+		       struct ext_slave_platform_data *pdata,
-+		       unsigned char *data);
-+static inline int inv_mpu_read_accel(struct mldl_cfg *mldl_cfg,
-+				     void *gyro_handle,
-+				     void *accel_handle, unsigned char *data)
-+{
-+	if (!mldl_cfg) {
-+		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
-+		return INV_ERROR_INVALID_PARAMETER;
-+	}
-+
-+	return inv_mpu_slave_read(
-+		mldl_cfg, gyro_handle, accel_handle,
-+		mldl_cfg->slave[EXT_SLAVE_TYPE_ACCEL],
-+		mldl_cfg->pdata_slave[EXT_SLAVE_TYPE_ACCEL],
-+		data);
-+}
-+
-+static inline int inv_mpu_read_compass(struct mldl_cfg *mldl_cfg,
-+				       void *gyro_handle,
-+				       void *compass_handle,
-+				       unsigned char *data)
-+{
-+	if (!mldl_cfg) {
-+		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
-+		return INV_ERROR_INVALID_PARAMETER;
-+	}
-+
-+	return inv_mpu_slave_read(
-+		mldl_cfg, gyro_handle, compass_handle,
-+		mldl_cfg->slave[EXT_SLAVE_TYPE_COMPASS],
-+		mldl_cfg->pdata_slave[EXT_SLAVE_TYPE_COMPASS],
-+		data);
-+}
-+
-+static inline int inv_mpu_read_pressure(struct mldl_cfg *mldl_cfg,
-+					void *gyro_handle,
-+					void *pressure_handle,
-+					unsigned char *data)
-+{
-+	if (!mldl_cfg) {
-+		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
-+		return INV_ERROR_INVALID_PARAMETER;
-+	}
-+
-+	return inv_mpu_slave_read(
-+		mldl_cfg, gyro_handle, pressure_handle,
-+		mldl_cfg->slave[EXT_SLAVE_TYPE_PRESSURE],
-+		mldl_cfg->pdata_slave[EXT_SLAVE_TYPE_PRESSURE],
-+		data);
-+}
-+
-+int gyro_config(void *mlsl_handle,
-+		struct mldl_cfg *mldl_cfg,
-+		struct ext_slave_config *data);
-+
-+/* Slave Config functions */
-+int inv_mpu_slave_config(struct mldl_cfg *mldl_cfg,
-+			 void *gyro_handle,
-+			 void *slave_handle,
-+			 struct ext_slave_config *data,
-+			 struct ext_slave_descr *slave,
-+			 struct ext_slave_platform_data *pdata);
-+static inline int inv_mpu_config_accel(struct mldl_cfg *mldl_cfg,
-+				       void *gyro_handle,
-+				       void *accel_handle,
-+				       struct ext_slave_config *data)
-+{
-+	if (!mldl_cfg) {
-+		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
-+		return INV_ERROR_INVALID_PARAMETER;
-+	}
-+
-+	return inv_mpu_slave_config(
-+		mldl_cfg, gyro_handle, accel_handle, data,
-+		mldl_cfg->slave[EXT_SLAVE_TYPE_ACCEL],
-+		mldl_cfg->pdata_slave[EXT_SLAVE_TYPE_ACCEL]);
-+}
-+
-+static inline int inv_mpu_config_compass(struct mldl_cfg *mldl_cfg,
-+					 void *gyro_handle,
-+					 void *compass_handle,
-+					 struct ext_slave_config *data)
-+{
-+	if (!mldl_cfg) {
-+		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
-+		return INV_ERROR_INVALID_PARAMETER;
-+	}
-+
-+	return inv_mpu_slave_config(
-+		mldl_cfg, gyro_handle, compass_handle, data,
-+		mldl_cfg->slave[EXT_SLAVE_TYPE_COMPASS],
-+		mldl_cfg->pdata_slave[EXT_SLAVE_TYPE_COMPASS]);
-+}
-+
-+static inline int inv_mpu_config_pressure(struct mldl_cfg *mldl_cfg,
-+					  void *gyro_handle,
-+					  void *pressure_handle,
-+					  struct ext_slave_config *data)
-+{
-+	if (!mldl_cfg) {
-+		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
-+		return INV_ERROR_INVALID_PARAMETER;
-+	}
-+
-+	return inv_mpu_slave_config(
-+		mldl_cfg, gyro_handle, pressure_handle, data,
-+		mldl_cfg->slave[EXT_SLAVE_TYPE_PRESSURE],
-+		mldl_cfg->pdata_slave[EXT_SLAVE_TYPE_PRESSURE]);
-+}
-+
-+int gyro_get_config(void *mlsl_handle,
-+		struct mldl_cfg *mldl_cfg,
-+		struct ext_slave_config *data);
-+
-+/* Slave get config functions */
-+int inv_mpu_get_slave_config(struct mldl_cfg *mldl_cfg,
-+			     void *gyro_handle,
-+			     void *slave_handle,
-+			     struct ext_slave_config *data,
-+			     struct ext_slave_descr *slave,
-+			     struct ext_slave_platform_data *pdata);
-+
-+static inline int inv_mpu_get_accel_config(struct mldl_cfg *mldl_cfg,
-+					   void *gyro_handle,
-+					   void *accel_handle,
-+					   struct ext_slave_config *data)
-+{
-+	if (!mldl_cfg) {
-+		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
-+		return INV_ERROR_INVALID_PARAMETER;
-+	}
-+
-+	return inv_mpu_get_slave_config(
-+		mldl_cfg, gyro_handle, accel_handle, data,
-+		mldl_cfg->slave[EXT_SLAVE_TYPE_ACCEL],
-+		mldl_cfg->pdata_slave[EXT_SLAVE_TYPE_ACCEL]);
-+}
-+
-+static inline int inv_mpu_get_compass_config(struct mldl_cfg *mldl_cfg,
-+					     void *gyro_handle,
-+					     void *compass_handle,
-+					     struct ext_slave_config *data)
-+{
-+	if (!mldl_cfg || !(mldl_cfg->pdata)) {
-+		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
-+		return INV_ERROR_INVALID_PARAMETER;
-+	}
-+
-+	return inv_mpu_get_slave_config(
-+		mldl_cfg, gyro_handle, compass_handle, data,
-+		mldl_cfg->slave[EXT_SLAVE_TYPE_COMPASS],
-+		mldl_cfg->pdata_slave[EXT_SLAVE_TYPE_COMPASS]);
-+}
-+
-+static inline int inv_mpu_get_pressure_config(struct mldl_cfg *mldl_cfg,
-+					      void *gyro_handle,
-+					      void *pressure_handle,
-+					      struct ext_slave_config *data)
-+{
-+	if (!mldl_cfg || !(mldl_cfg->pdata)) {
-+		LOG_RESULT_LOCATION(INV_ERROR_INVALID_PARAMETER);
-+		return INV_ERROR_INVALID_PARAMETER;
-+	}
-+
-+	return inv_mpu_get_slave_config(
-+		mldl_cfg, gyro_handle, pressure_handle, data,
-+		mldl_cfg->slave[EXT_SLAVE_TYPE_PRESSURE],
-+		mldl_cfg->pdata_slave[EXT_SLAVE_TYPE_PRESSURE]);
-+}
-+
-+/* -------------------------------------------------------------------------- */
-+
-+static inline
-+long inv_mpu_get_sampling_rate_hz(struct mpu_gyro_cfg *gyro_cfg)
-+{
-+	if (((gyro_cfg->lpf) == 0) || ((gyro_cfg->lpf) == 7))
-+		return 8000L / (gyro_cfg->divider + 1);
-+	else
-+		return 1000L / (gyro_cfg->divider + 1);
-+}
-+
-+static inline
-+long inv_mpu_get_sampling_period_us(struct mpu_gyro_cfg *gyro_cfg)
-+{
-+	if (((gyro_cfg->lpf) == 0) || ((gyro_cfg->lpf) == 7))
-+		return (long) (1000000L * (gyro_cfg->divider + 1)) / 8000L;
-+	else
-+		return (long) (1000000L * (gyro_cfg->divider + 1)) / 1000L;
-+}
-+
-+#endif				/* __MLDL_CFG_H__ */
-+
-+/**
-+ * @}
-+ */
-diff --git a/drivers/misc/inv_mpu/mpu3050.h b/drivers/misc/inv_mpu/mpu3050.h
++The mpu3050 makes use of dynamic debug.  For details on how to use this
++refer to Documentation/dynamic-debug-howto.txt
+diff --git a/include/linux/mpu.h b/include/linux/mpu.h
 new file mode 100644
-index 0000000..02af16e
+index 0000000..18d2da0
 --- /dev/null
-+++ b/drivers/misc/inv_mpu/mpu3050.h
-@@ -0,0 +1,251 @@
++++ b/include/linux/mpu.h
+@@ -0,0 +1,365 @@
 +/*
 +	$License:
 +	Copyright (C) 2011 InvenSense Corporation, All Rights Reserved.
@@ -441,237 +206,351 @@ index 0000000..02af16e
 + */
 +
 +#ifndef __MPU_H_
-+#error Do not include this file directly.  Include mpu.h instead.
-+#endif
-+
-+#ifndef __MPU3050_H_
-+#define __MPU3050_H_
++#define __MPU_H_
 +
 +#include <linux/types.h>
++#include <linux/ioctl.h>
 +
++/* Number of axes on each sensor */
++#define GYRO_NUM_AXES               (3)
++#define ACCEL_NUM_AXES              (3)
++#define COMPASS_NUM_AXES            (3)
 +
-+#define MPU_NAME "mpu3050"
-+#define DEFAULT_MPU_SLAVEADDR       0x68
-+
-+/*==== MPU REGISTER SET ====*/
-+enum mpu_register {
-+	MPUREG_WHO_AM_I = 0,	/* 00 0x00 */
-+	MPUREG_PRODUCT_ID,	/* 01 0x01 */
-+	MPUREG_02_RSVD,		/* 02 0x02 */
-+	MPUREG_03_RSVD,		/* 03 0x03 */
-+	MPUREG_04_RSVD,		/* 04 0x04 */
-+	MPUREG_XG_OFFS_TC,	/* 05 0x05 */
-+	MPUREG_06_RSVD,		/* 06 0x06 */
-+	MPUREG_07_RSVD,		/* 07 0x07 */
-+	MPUREG_YG_OFFS_TC,	/* 08 0x08 */
-+	MPUREG_09_RSVD,		/* 09 0x09 */
-+	MPUREG_0A_RSVD,		/* 10 0x0a */
-+	MPUREG_ZG_OFFS_TC,	/* 11 0x0b */
-+	MPUREG_X_OFFS_USRH,	/* 12 0x0c */
-+	MPUREG_X_OFFS_USRL,	/* 13 0x0d */
-+	MPUREG_Y_OFFS_USRH,	/* 14 0x0e */
-+	MPUREG_Y_OFFS_USRL,	/* 15 0x0f */
-+	MPUREG_Z_OFFS_USRH,	/* 16 0x10 */
-+	MPUREG_Z_OFFS_USRL,	/* 17 0x11 */
-+	MPUREG_FIFO_EN1,	/* 18 0x12 */
-+	MPUREG_FIFO_EN2,	/* 19 0x13 */
-+	MPUREG_AUX_SLV_ADDR,	/* 20 0x14 */
-+	MPUREG_SMPLRT_DIV,	/* 21 0x15 */
-+	MPUREG_DLPF_FS_SYNC,	/* 22 0x16 */
-+	MPUREG_INT_CFG,		/* 23 0x17 */
-+	MPUREG_ACCEL_BURST_ADDR,/* 24 0x18 */
-+	MPUREG_19_RSVD,		/* 25 0x19 */
-+	MPUREG_INT_STATUS,	/* 26 0x1a */
-+	MPUREG_TEMP_OUT_H,	/* 27 0x1b */
-+	MPUREG_TEMP_OUT_L,	/* 28 0x1c */
-+	MPUREG_GYRO_XOUT_H,	/* 29 0x1d */
-+	MPUREG_GYRO_XOUT_L,	/* 30 0x1e */
-+	MPUREG_GYRO_YOUT_H,	/* 31 0x1f */
-+	MPUREG_GYRO_YOUT_L,	/* 32 0x20 */
-+	MPUREG_GYRO_ZOUT_H,	/* 33 0x21 */
-+	MPUREG_GYRO_ZOUT_L,	/* 34 0x22 */
-+	MPUREG_23_RSVD,		/* 35 0x23 */
-+	MPUREG_24_RSVD,		/* 36 0x24 */
-+	MPUREG_25_RSVD,		/* 37 0x25 */
-+	MPUREG_26_RSVD,		/* 38 0x26 */
-+	MPUREG_27_RSVD,		/* 39 0x27 */
-+	MPUREG_28_RSVD,		/* 40 0x28 */
-+	MPUREG_29_RSVD,		/* 41 0x29 */
-+	MPUREG_2A_RSVD,		/* 42 0x2a */
-+	MPUREG_2B_RSVD,		/* 43 0x2b */
-+	MPUREG_2C_RSVD,		/* 44 0x2c */
-+	MPUREG_2D_RSVD,		/* 45 0x2d */
-+	MPUREG_2E_RSVD,		/* 46 0x2e */
-+	MPUREG_2F_RSVD,		/* 47 0x2f */
-+	MPUREG_30_RSVD,		/* 48 0x30 */
-+	MPUREG_31_RSVD,		/* 49 0x31 */
-+	MPUREG_32_RSVD,		/* 50 0x32 */
-+	MPUREG_33_RSVD,		/* 51 0x33 */
-+	MPUREG_34_RSVD,		/* 52 0x34 */
-+	MPUREG_DMP_CFG_1,	/* 53 0x35 */
-+	MPUREG_DMP_CFG_2,	/* 54 0x36 */
-+	MPUREG_BANK_SEL,	/* 55 0x37 */
-+	MPUREG_MEM_START_ADDR,	/* 56 0x38 */
-+	MPUREG_MEM_R_W,		/* 57 0x39 */
-+	MPUREG_FIFO_COUNTH,	/* 58 0x3a */
-+	MPUREG_FIFO_COUNTL,	/* 59 0x3b */
-+	MPUREG_FIFO_R_W,	/* 60 0x3c */
-+	MPUREG_USER_CTRL,	/* 61 0x3d */
-+	MPUREG_PWR_MGM,		/* 62 0x3e */
-+	MPUREG_3F_RSVD,		/* 63 0x3f */
-+	NUM_OF_MPU_REGISTERS	/* 64 0x40 */
++struct mpu_read_write {
++	/* Memory address or register address depending on ioctl */
++	__u16 address;
++	__u16 length;
++	__u8 *data;
 +};
 +
-+/*==== BITS FOR MPU ====*/
-+
-+/*---- MPU 'FIFO_EN1' register (12) ----*/
-+#define BIT_TEMP_OUT                0x80
-+#define BIT_GYRO_XOUT               0x40
-+#define BIT_GYRO_YOUT               0x20
-+#define BIT_GYRO_ZOUT               0x10
-+#define BIT_ACCEL_XOUT              0x08
-+#define BIT_ACCEL_YOUT              0x04
-+#define BIT_ACCEL_ZOUT              0x02
-+#define BIT_AUX_1OUT                0x01
-+/*---- MPU 'FIFO_EN2' register (13) ----*/
-+#define BIT_AUX_2OUT                0x02
-+#define BIT_AUX_3OUT                0x01
-+/*---- MPU 'DLPF_FS_SYNC' register (16) ----*/
-+#define BITS_EXT_SYNC_NONE          0x00
-+#define BITS_EXT_SYNC_TEMP          0x20
-+#define BITS_EXT_SYNC_GYROX         0x40
-+#define BITS_EXT_SYNC_GYROY         0x60
-+#define BITS_EXT_SYNC_GYROZ         0x80
-+#define BITS_EXT_SYNC_ACCELX        0xA0
-+#define BITS_EXT_SYNC_ACCELY        0xC0
-+#define BITS_EXT_SYNC_ACCELZ        0xE0
-+#define BITS_EXT_SYNC_MASK          0xE0
-+#define BITS_FS_250DPS              0x00
-+#define BITS_FS_500DPS              0x08
-+#define BITS_FS_1000DPS             0x10
-+#define BITS_FS_2000DPS             0x18
-+#define BITS_FS_MASK                0x18
-+#define BITS_DLPF_CFG_256HZ_NOLPF2  0x00
-+#define BITS_DLPF_CFG_188HZ         0x01
-+#define BITS_DLPF_CFG_98HZ          0x02
-+#define BITS_DLPF_CFG_42HZ          0x03
-+#define BITS_DLPF_CFG_20HZ          0x04
-+#define BITS_DLPF_CFG_10HZ          0x05
-+#define BITS_DLPF_CFG_5HZ           0x06
-+#define BITS_DLPF_CFG_2100HZ_NOLPF  0x07
-+#define BITS_DLPF_CFG_MASK          0x07
-+/*---- MPU 'INT_CFG' register (17) ----*/
-+#define BIT_ACTL                    0x80
-+#define BIT_ACTL_LOW                0x80
-+#define BIT_ACTL_HIGH               0x00
-+#define BIT_OPEN                    0x40
-+#define BIT_OPEN_DRAIN              0x40
-+#define BIT_PUSH_PULL               0x00
-+#define BIT_LATCH_INT_EN            0x20
-+#define BIT_INT_PULSE_WIDTH_50US    0x00
-+#define BIT_INT_ANYRD_2CLEAR        0x10
-+#define BIT_INT_STAT_READ_2CLEAR    0x00
-+#define BIT_MPU_RDY_EN              0x04
-+#define BIT_DMP_INT_EN              0x02
-+#define BIT_RAW_RDY_EN              0x01
-+/*---- MPU 'INT_STATUS' register (1A) ----*/
-+#define BIT_INT_STATUS_FIFO_OVERLOW 0x80
-+#define BIT_MPU_RDY                 0x04
-+#define BIT_DMP_INT                 0x02
-+#define BIT_RAW_RDY                 0x01
-+/*---- MPU 'BANK_SEL' register (37) ----*/
-+#define BIT_PRFTCH_EN               0x20
-+#define BIT_CFG_USER_BANK           0x10
-+#define BITS_MEM_SEL                0x0f
-+/*---- MPU 'USER_CTRL' register (3D) ----*/
-+#define BIT_DMP_EN                  0x80
-+#define BIT_FIFO_EN                 0x40
-+#define BIT_AUX_IF_EN               0x20
-+#define BIT_AUX_RD_LENG             0x10
-+#define BIT_AUX_IF_RST              0x08
-+#define BIT_DMP_RST                 0x04
-+#define BIT_FIFO_RST                0x02
-+#define BIT_GYRO_RST                0x01
-+/*---- MPU 'PWR_MGM' register (3E) ----*/
-+#define BIT_H_RESET                 0x80
-+#define BIT_SLEEP                   0x40
-+#define BIT_STBY_XG                 0x20
-+#define BIT_STBY_YG                 0x10
-+#define BIT_STBY_ZG                 0x08
-+#define BITS_CLKSEL                 0x07
-+
-+/*---- MPU Silicon Revision ----*/
-+#define MPU_SILICON_REV_A4           1	/* MPU A4 Device */
-+#define MPU_SILICON_REV_B1           2	/* MPU B1 Device */
-+#define MPU_SILICON_REV_B4           3	/* MPU B4 Device */
-+#define MPU_SILICON_REV_B6           4	/* MPU B6 Device */
-+
-+/*---- MPU Memory ----*/
-+#define MPU_MEM_BANK_SIZE           (256)
-+#define FIFO_HW_SIZE                (512)
-+
-+enum MPU_MEMORY_BANKS {
-+	MPU_MEM_RAM_BANK_0 = 0,
-+	MPU_MEM_RAM_BANK_1,
-+	MPU_MEM_RAM_BANK_2,
-+	MPU_MEM_RAM_BANK_3,
-+	MPU_MEM_NUM_RAM_BANKS,
-+	MPU_MEM_OTP_BANK_0 = MPU_MEM_NUM_RAM_BANKS,
-+	/* This one is always last */
-+	MPU_MEM_NUM_BANKS
++enum mpuirq_data_type {
++	MPUIRQ_DATA_TYPE_MPU_IRQ,
++	MPUIRQ_DATA_TYPE_SLAVE_IRQ,
++	MPUIRQ_DATA_TYPE_PM_EVENT,
++	MPUIRQ_DATA_TYPE_NUM_TYPES,
 +};
 +
-+/*---- structure containing control variables used by MLDL ----*/
-+/*---- MPU clock source settings ----*/
-+/*---- MPU filter selections ----*/
-+enum mpu_filter {
-+	MPU_FILTER_256HZ_NOLPF2 = 0,
-+	MPU_FILTER_188HZ,
-+	MPU_FILTER_98HZ,
-+	MPU_FILTER_42HZ,
-+	MPU_FILTER_20HZ,
-+	MPU_FILTER_10HZ,
-+	MPU_FILTER_5HZ,
-+	MPU_FILTER_2100HZ_NOLPF,
-+	NUM_MPU_FILTER
++/* User space PM event notification */
++#define MPU_PM_EVENT_SUSPEND_PREPARE (3)
++#define MPU_PM_EVENT_POST_SUSPEND    (4)
++
++struct mpuirq_data {
++	__u32 interruptcount;
++	__u64 irqtime;
++	__u32 data_type;
++	__s32 data;
 +};
 +
-+enum mpu_fullscale {
-+	MPU_FS_250DPS = 0,
-+	MPU_FS_500DPS,
-+	MPU_FS_1000DPS,
-+	MPU_FS_2000DPS,
-+	NUM_MPU_FS
++enum ext_slave_config_key {
++	MPU_SLAVE_CONFIG_ODR_SUSPEND,
++	MPU_SLAVE_CONFIG_ODR_RESUME,
++	MPU_SLAVE_CONFIG_FSR_SUSPEND,
++	MPU_SLAVE_CONFIG_FSR_RESUME,
++	MPU_SLAVE_CONFIG_MOT_THS,
++	MPU_SLAVE_CONFIG_NMOT_THS,
++	MPU_SLAVE_CONFIG_MOT_DUR,
++	MPU_SLAVE_CONFIG_NMOT_DUR,
++	MPU_SLAVE_CONFIG_IRQ_SUSPEND,
++	MPU_SLAVE_CONFIG_IRQ_RESUME,
++	MPU_SLAVE_WRITE_REGISTERS,
++	MPU_SLAVE_READ_REGISTERS,
++	MPU_SLAVE_CONFIG_INTERNAL_REFERENCE,
++	/* AMI 306 specific config keys */
++	MPU_SLAVE_PARAM,
++	MPU_SLAVE_WINDOW,
++	MPU_SLAVE_READWINPARAMS,
++	MPU_SLAVE_SEARCHOFFSET,
++	/* AKM specific config keys */
++	MPU_SLAVE_READ_SCALE,
++	/* MPU3050 and MPU6050 Keys */
++	MPU_SLAVE_INT_CONFIG,
++	MPU_SLAVE_EXT_SYNC,
++	MPU_SLAVE_FULL_SCALE,
++	MPU_SLAVE_LPF,
++	MPU_SLAVE_CLK_SRC,
++	MPU_SLAVE_DIVIDER,
++	MPU_SLAVE_DMP_ENABLE,
++	MPU_SLAVE_FIFO_ENABLE,
++	MPU_SLAVE_DMP_CFG1,
++	MPU_SLAVE_DMP_CFG2,
++	MPU_SLAVE_TC,
++	MPU_SLAVE_GYRO,
++	MPU_SLAVE_ADDR,
++	MPU_SLAVE_PRODUCT_REVISION,
++	MPU_SLAVE_SILICON_REVISION,
++	MPU_SLAVE_PRODUCT_ID,
++	MPU_SLAVE_GYRO_SENS_TRIM,
++	MPU_SLAVE_ACCEL_SENS_TRIM,
++	MPU_SLAVE_RAM,
++	/* -------------------------- */
++	MPU_SLAVE_CONFIG_NUM_CONFIG_KEYS
 +};
 +
-+enum mpu_clock_sel {
-+	MPU_CLK_SEL_INTERNAL = 0,
-+	MPU_CLK_SEL_PLLGYROX,
-+	MPU_CLK_SEL_PLLGYROY,
-+	MPU_CLK_SEL_PLLGYROZ,
-+	MPU_CLK_SEL_PLLEXT32K,
-+	MPU_CLK_SEL_PLLEXT19M,
-+	MPU_CLK_SEL_RESERVED,
-+	MPU_CLK_SEL_STOP,
-+	NUM_CLK_SEL
++/* For the MPU_SLAVE_CONFIG_IRQ_SUSPEND and MPU_SLAVE_CONFIG_IRQ_RESUME */
++enum ext_slave_config_irq_type {
++	MPU_SLAVE_IRQ_TYPE_NONE,
++	MPU_SLAVE_IRQ_TYPE_MOTION,
++	MPU_SLAVE_IRQ_TYPE_DATA_READY,
 +};
 +
-+enum mpu_ext_sync {
-+	MPU_EXT_SYNC_NONE = 0,
-+	MPU_EXT_SYNC_TEMP,
-+	MPU_EXT_SYNC_GYROX,
-+	MPU_EXT_SYNC_GYROY,
-+	MPU_EXT_SYNC_GYROZ,
-+	MPU_EXT_SYNC_ACCELX,
-+	MPU_EXT_SYNC_ACCELY,
-+	MPU_EXT_SYNC_ACCELZ,
-+	NUM_MPU_EXT_SYNC
++/* Structure for the following IOCTS's
++ * MPU_CONFIG_GYRO
++ * MPU_CONFIG_ACCEL
++ * MPU_CONFIG_COMPASS
++ * MPU_CONFIG_PRESSURE
++ * MPU_GET_CONFIG_GYRO
++ * MPU_GET_CONFIG_ACCEL
++ * MPU_GET_CONFIG_COMPASS
++ * MPU_GET_CONFIG_PRESSURE
++ *
++ * @key one of enum ext_slave_config_key
++ * @len length of data pointed to by data
++ * @apply zero if communication with the chip is not necessary, false otherwise
++ *        This flag can be used to select cached data or to refresh cashed data
++ *        cache data to be pushed later or push immediately.  If true and the
++ *        slave is on the secondary bus the MPU will first enger bypass mode
++ *        before calling the slaves .config or .get_config funcion
++ * @data pointer to the data to confgure or get
++ */
++struct ext_slave_config {
++	__u8 key;
++	__u16 len;
++	__u8 apply;
++	void *data;
 +};
 +
-+#define DLPF_FS_SYNC_VALUE(ext_sync, full_scale, lpf) \
-+	((ext_sync << 5) | (full_scale << 3) | lpf)
++enum ext_slave_type {
++	EXT_SLAVE_TYPE_GYROSCOPE,
++	EXT_SLAVE_TYPE_ACCEL,
++	EXT_SLAVE_TYPE_COMPASS,
++	EXT_SLAVE_TYPE_PRESSURE,
++	/*EXT_SLAVE_TYPE_TEMPERATURE */
 +
-+#endif				/* __MPU3050_H_ */
++	EXT_SLAVE_NUM_TYPES
++};
++
++enum ext_slave_id {
++	ID_INVALID = 0,
++
++	ACCEL_ID_LIS331,
++	ACCEL_ID_LSM303A,
++	ACCEL_ID_LIS3DH,
++	ACCEL_ID_KXSD9,
++	ACCEL_ID_KXTF9,
++	ACCEL_ID_BMA150,
++	ACCEL_ID_BMA222,
++	ACCEL_ID_BMA250,
++	ACCEL_ID_ADXL34X,
++	ACCEL_ID_MMA8450,
++	ACCEL_ID_MMA845X,
++	ACCEL_ID_MPU6050,
++
++	COMPASS_ID_AK8975,
++	COMPASS_ID_AK8972,
++	COMPASS_ID_AMI30X,
++	COMPASS_ID_AMI306,
++	COMPASS_ID_YAS529,
++	COMPASS_ID_YAS530,
++	COMPASS_ID_HMC5883,
++	COMPASS_ID_LSM303M,
++	COMPASS_ID_MMC314X,
++	COMPASS_ID_HSCDTD002B,
++	COMPASS_ID_HSCDTD004A,
++
++	PRESSURE_ID_BMA085,
++};
++
++enum ext_slave_endian {
++	EXT_SLAVE_BIG_ENDIAN,
++	EXT_SLAVE_LITTLE_ENDIAN,
++	EXT_SLAVE_FS8_BIG_ENDIAN,
++	EXT_SLAVE_FS16_BIG_ENDIAN,
++};
++
++enum ext_slave_bus {
++	EXT_SLAVE_BUS_INVALID = -1,
++	EXT_SLAVE_BUS_PRIMARY = 0,
++	EXT_SLAVE_BUS_SECONDARY = 1
++};
++
++
++/**
++ *  struct ext_slave_platform_data - Platform data for mpu3050 and mpu6050
++ *  slave devices
++ *
++ *  @get_slave_descr: Function pointer to retrieve the struct ext_slave_descr
++ *                    for this slave
++ *  @irq: the irq number attached to the slave if any.
++ *  @adapt_num: the I2C adapter number.
++ *  @bus: the bus the slave is attached to: enum ext_slave_bus
++ *  @address: the I2C slave address of the slave device.
++ *  @orientation: the mounting matrix of the device relative to MPU.
++ *  @irq_data: private data for the slave irq handler
++ *  @private_data: additional data, user customizable.  Not touched by the MPU
++ *                 driver.
++ *
++ * The orientation matricies are 3x3 rotation matricies
++ * that are applied to the data to rotate from the mounting orientation to the
++ * platform orientation.  The values must be one of 0, 1, or -1 and each row and
++ * column should have exactly 1 non-zero value.
++ */
++struct ext_slave_platform_data {
++	__u8 type;
++	__u32 irq;
++	__u32 adapt_num;
++	__u32 bus;
++	__u8 address;
++	__s8 orientation[9];
++	void *irq_data;
++	void *private_data;
++};
++
++struct fix_pnt_range {
++	__s32 mantissa;
++	__s32 fraction;
++};
++
++static inline long range_fixedpoint_to_long_mg(struct fix_pnt_range rng)
++{
++	return (long)(rng.mantissa * 1000 + rng.fraction / 10);
++}
++
++struct ext_slave_read_trigger {
++	__u8 reg;
++	__u8 value;
++};
++
++/**
++ *  struct ext_slave_descr - Description of the slave device for programming.
++ *
++ *  @suspend:	function pointer to put the device in suspended state
++ *  @resume:	function pointer to put the device in running state
++ *  @read:	function that reads the device data
++ *  @init:	function used to preallocate memory used by the driver
++ *  @exit:	function used to free memory allocated for the driver
++ *  @config:	function used to configure the device
++ *  @get_config:function used to get the device's configuration
++ *
++ *  @name:	text name of the device
++ *  @type:	device type. enum ext_slave_type
++ *  @id:	enum ext_slave_id
++ *  @read_reg:	starting register address to retrieve data.
++ *  @read_len:	length in bytes of the sensor data.  Typically  6.
++ *  @endian:	byte order of the data. enum ext_slave_endian
++ *  @range:	full scale range of the slave ouput: struct fix_pnt_range
++ *  @trigger:	If reading data first requires writing a register this is the
++ *		data to write.
++ *
++ *  Defines the functions and information about the slave the mpu3050 and
++ *  mpu6050 needs to use the slave device.
++ */
++struct ext_slave_descr {
++	int (*init) (void *mlsl_handle,
++		     struct ext_slave_descr *slave,
++		     struct ext_slave_platform_data *pdata);
++	int (*exit) (void *mlsl_handle,
++		     struct ext_slave_descr *slave,
++		     struct ext_slave_platform_data *pdata);
++	int (*suspend) (void *mlsl_handle,
++			struct ext_slave_descr *slave,
++			struct ext_slave_platform_data *pdata);
++	int (*resume) (void *mlsl_handle,
++		       struct ext_slave_descr *slave,
++		       struct ext_slave_platform_data *pdata);
++	int (*read) (void *mlsl_handle,
++		     struct ext_slave_descr *slave,
++		     struct ext_slave_platform_data *pdata,
++		     __u8 *data);
++	int (*config) (void *mlsl_handle,
++		       struct ext_slave_descr *slave,
++		       struct ext_slave_platform_data *pdata,
++		       struct ext_slave_config *config);
++	int (*get_config) (void *mlsl_handle,
++			   struct ext_slave_descr *slave,
++			   struct ext_slave_platform_data *pdata,
++			   struct ext_slave_config *config);
++
++	char *name;
++	__u8 type;
++	__u8 id;
++	__u8 read_reg;
++	__u8 read_len;
++	__u8 endian;
++	struct fix_pnt_range range;
++	struct ext_slave_read_trigger *trigger;
++};
++
++/**
++ * struct mpu_platform_data - Platform data for the mpu driver
++ * @int_config:		Bits [7:3] of the int config register.
++ * @level_shifter:	0: VLogic, 1: VDD
++ * @orientation:	Orientation matrix of the gyroscope
++ *
++ * Contains platform specific information on how to configure the MPU3050 to
++ * work on this platform.  The orientation matricies are 3x3 rotation matricies
++ * that are applied to the data to rotate from the mounting orientation to the
++ * platform orientation.  The values must be one of 0, 1, or -1 and each row and
++ * column should have exactly 1 non-zero value.
++ */
++struct mpu_platform_data {
++	__u8 int_config;
++	__u8 level_shifter;
++	__s8 orientation[GYRO_NUM_AXES * GYRO_NUM_AXES];
++};
++
++#define MPU_IOCTL (0x81) /* Magic number for MPU Iocts */
++/* IOCTL commands for /dev/mpu */
++
++/*--------------------------------------------------------------------------
++ * Deprecated, debugging only
++ */
++#define MPU_SET_MPU_PLATFORM_DATA	\
++	_IOWR(MPU_IOCTL, 0x01, struct mpu_platform_data)
++#define MPU_SET_EXT_SLAVE_PLATFORM_DATA	\
++	_IOWR(MPU_IOCTL, 0x01, struct ext_slave_platform_data)
++/*--------------------------------------------------------------------------*/
++#define MPU_GET_EXT_SLAVE_PLATFORM_DATA	\
++	_IOWR(MPU_IOCTL, 0x02, struct ext_slave_platform_data)
++#define MPU_GET_MPU_PLATFORM_DATA	\
++	_IOWR(MPU_IOCTL, 0x02, struct mpu_platform_data)
++#define MPU_GET_EXT_SLAVE_DESCR	\
++	_IOWR(MPU_IOCTL, 0x02, struct ext_slave_descr)
++
++#define MPU_READ		_IOWR(MPU_IOCTL, 0x10, struct mpu_read_write)
++#define MPU_WRITE		_IOW(MPU_IOCTL,  0x10, struct mpu_read_write)
++#define MPU_READ_MEM		_IOWR(MPU_IOCTL, 0x11, struct mpu_read_write)
++#define MPU_WRITE_MEM		_IOW(MPU_IOCTL,  0x11, struct mpu_read_write)
++#define MPU_READ_FIFO		_IOWR(MPU_IOCTL, 0x12, struct mpu_read_write)
++#define MPU_WRITE_FIFO		_IOW(MPU_IOCTL,  0x12, struct mpu_read_write)
++
++#define MPU_READ_COMPASS	_IOR(MPU_IOCTL, 0x12, __u8)
++#define MPU_READ_ACCEL		_IOR(MPU_IOCTL, 0x13, __u8)
++#define MPU_READ_PRESSURE	_IOR(MPU_IOCTL, 0x14, __u8)
++
++#define MPU_CONFIG_GYRO		_IOW(MPU_IOCTL, 0x20, struct ext_slave_config)
++#define MPU_CONFIG_ACCEL	_IOW(MPU_IOCTL, 0x21, struct ext_slave_config)
++#define MPU_CONFIG_COMPASS	_IOW(MPU_IOCTL, 0x22, struct ext_slave_config)
++#define MPU_CONFIG_PRESSURE	_IOW(MPU_IOCTL, 0x23, struct ext_slave_config)
++
++#define MPU_GET_CONFIG_GYRO	_IOWR(MPU_IOCTL, 0x20, struct ext_slave_config)
++#define MPU_GET_CONFIG_ACCEL	_IOWR(MPU_IOCTL, 0x21, struct ext_slave_config)
++#define MPU_GET_CONFIG_COMPASS	_IOWR(MPU_IOCTL, 0x22, struct ext_slave_config)
++#define MPU_GET_CONFIG_PRESSURE	_IOWR(MPU_IOCTL, 0x23, struct ext_slave_config)
++
++#define MPU_SUSPEND		_IOW(MPU_IOCTL, 0x30, __u32)
++#define MPU_RESUME		_IOW(MPU_IOCTL, 0x31, __u32)
++/* Userspace PM Event response */
++#define MPU_PM_EVENT_HANDLED	_IO(MPU_IOCTL, 0x32)
++
++#define MPU_GET_REQUESTED_SENSORS	_IOR(MPU_IOCTL, 0x40, __u8)
++#define MPU_SET_REQUESTED_SENSORS	_IOW(MPU_IOCTL, 0x40, __u8)
++#define MPU_GET_IGNORE_SYSTEM_SUSPEND	_IOR(MPU_IOCTL, 0x41, __u8)
++#define MPU_SET_IGNORE_SYSTEM_SUSPEND	_IOW(MPU_IOCTL, 0x41, __u8)
++#define MPU_GET_MLDL_STATUS		_IOR(MPU_IOCTL, 0x42, __u8)
++#define MPU_GET_I2C_SLAVES_ENABLED	_IOR(MPU_IOCTL, 0x43, __u8)
++
++
++#endif				/* __MPU_H_ */
 -- 
 1.7.4.1
 
