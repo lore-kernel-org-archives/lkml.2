@@ -1,62 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756608Ab1GANiH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:38:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55239 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756537Ab1GANiD convert rfc822-to-8bit (ORCPT
+	id S1756537Ab1GANjt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:39:49 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:51315 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752859Ab1GANjr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:38:03 -0400
-Subject: Re: [tip:perf/core] perf: Ignore non-sampling overflows
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Francis Moreau <francis.moro@gmail.com>,
-        "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "hpa@zytor.com" <hpa@zytor.com>, "mingo@redhat.com" <mingo@redhat.com>,
-        "tglx@linutronix.de" <tglx@linutronix.de>,
-        "mingo@elte.hu" <mingo@elte.hu>
-In-Reply-To: <20110630124752.GS4590@erda.amd.com>
-References: <tip-963988262c3c8f4234f64a0dde59446a295e07bb@git.kernel.org>
-	 <20110628105335.GA17199@erda.amd.com> <1309259105.6701.210.camel@twins>
-	 <BANLkTimcxGWasWqgem=5EYDKGAM+dq26xQ@mail.gmail.com>
-	 <20110629103714.GM4590@erda.amd.com> <1309344655.6701.1054.camel@twins>
-	 <20110629141056.GN4590@erda.amd.com> <1309358386.6701.1307.camel@twins>
-	 <20110630124752.GS4590@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 01 Jul 2011 15:36:56 +0200
-Message-ID: <1309527416.12449.729.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Fri, 1 Jul 2011 09:39:47 -0400
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+To: alsa-devel@alsa-project.org, broonie@opensource.wolfsonmicro.com,
+        lrg@ti.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Nicolas Ferre <nicolas.ferre@atmel.com>
+Subject: [PATCH V2 2/5] ASoC: atmel-ssc: add phybase in device structure
+Date: Fri,  1 Jul 2011 16:46:37 +0200
+Message-Id: <1309531597-2008-1-git-send-email-nicolas.ferre@atmel.com>
+X-Mailer: git-send-email 1.7.3
+In-Reply-To: <20110629174822.GB13051@opensource.wolfsonmicro.com>
+References: <20110629174822.GB13051@opensource.wolfsonmicro.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-06-30 at 14:47 +0200, Robert Richter wrote:
-> 
-> It covers the case there the sampling period may be specified in the
-> raw config register (line 286). I know, this is not the preferred way,
-> but this way you can directly set the config value in perf without
-> bypassing some bits through event->attr. As IBS events are sampling
-> events I will change the code so that it writes back the specified
-> period to event->attr.sample_period/event->hw.sample_period. Something
-> like:
-> 
->         if (event->hw.sample_period) {
->                 ...
->         } else {
->                 max_cnt = event->attr.config & map->cnt_mask;
->                 event->attr.sample_period = max_cnt << 4;
->                 event->hw.sample_period = event->attr.sample_period;
->         }
-> 
-> This will then proper identify IBS samples as samling event.
+Useful for future dmaengine use.
 
-Ah, being a naught boy then ;-), yeah passing stuff through like that
-will confuse bits and the fixup you propose will indeed work around
-that.
+Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+---
+V2: change type to phys_addr_t.
 
-But why complicate things like this? You just add extra code to the init
-path since you need to support attr.sample_period input as well.
+ drivers/misc/atmel-ssc.c  |    1 +
+ include/linux/atmel-ssc.h |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/misc/atmel-ssc.c b/drivers/misc/atmel-ssc.c
+index 4afffe6..27c9ffa 100644
+--- a/drivers/misc/atmel-ssc.c
++++ b/drivers/misc/atmel-ssc.c
+@@ -101,6 +101,7 @@ static int __init ssc_probe(struct platform_device *pdev)
+ 		retval = -EINVAL;
+ 		goto out_clk;
+ 	}
++	ssc->phybase = regs->start;
+ 
+ 	/* disable all interrupts */
+ 	clk_enable(ssc->clk);
+diff --git a/include/linux/atmel-ssc.h b/include/linux/atmel-ssc.h
+index 0602339..6ff634e 100644
+--- a/include/linux/atmel-ssc.h
++++ b/include/linux/atmel-ssc.h
+@@ -6,6 +6,7 @@
+ 
+ struct ssc_device {
+ 	struct list_head	list;
++	phys_addr_t		phybase;
+ 	void __iomem		*regs;
+ 	struct platform_device	*pdev;
+ 	struct clk		*clk;
+-- 
+1.7.3
+
