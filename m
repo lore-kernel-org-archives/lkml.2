@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754259Ab1GAFpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 01:45:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45413 "EHLO smtps.tip.net.au"
+	id S1754811Ab1GAF7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 01:59:37 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10857 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751762Ab1GAFpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 01:45:12 -0400
-Date: Fri, 1 Jul 2011 15:45:08 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jingoo Han <jg1.han@samsung.com>
-Subject: linux-next: build failure after merge of the final tree (akpm tree
- related)
-Message-Id: <20110701154508.92c8b685.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1752655Ab1GAF7g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 01:59:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,456,1304319600"; 
+   d="scan'208";a="22238827"
+Subject: Re: [PATCH 1/4] perf, x86: Add Intel Nehalem/Westmere uncore pmu
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1309442903.12449.55.camel@twins>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
+	 <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
+	 <1309442903.12449.55.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jul 2011 14:05:01 +0800
+Message-ID: <1309500301.24590.116.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Thu, 2011-06-30 at 22:08 +0800, Peter Zijlstra wrote:
+> On Thu, 2011-06-30 at 08:09 +0000, Lin Ming wrote:
+> > +static struct pmu uncore_pmu = {
+> 
+> 	.task_ctx_nr = perf_invalid_context,
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+OK.
 
-drivers/video/backlight/ams369fg06.o:(.bss+0x510): multiple definition of `before_power'
-drivers/video/backlight/s6e63m0.o:(.bss+0x5e0): first defined here
+usage: perf stat [<options>] [<command>]
 
-Caused by commit 45193c8486ef ("Add the ams369fg06 amoled panel driver.
-The ams369fg06 amoled panel (480").  The variable should probably be
-static in both files.
+Currently, "perf stat" always need a <command> to do counting.
+Need to change it to be optional.
 
-I have applied the following patch for today:
+So I may add a "P" option to specify which physical processor to count.
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 1 Jul 2011 15:34:22 +1000
-Subject: [PATCH] backlight: make some varibales static
+perf stat -P 3 -e uncore:rXXXX
 
-fixes this build error:
-
-drivers/video/backlight/ams369fg06.o:(.bss+0x510): multiple definition of `before_power'
-drivers/video/backlight/s6e63m0.o:(.bss+0x5e0): first defined here
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/video/backlight/ams369fg06.c |    2 +-
- drivers/video/backlight/s6e63m0.c    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/video/backlight/ams369fg06.c b/drivers/video/backlight/ams369fg06.c
-index 86a7daf..d1d8237 100644
---- a/drivers/video/backlight/ams369fg06.c
-+++ b/drivers/video/backlight/ams369fg06.c
-@@ -560,7 +560,7 @@ static int __devexit ams369fg06_remove(struct spi_device *spi)
- }
- 
- #if defined(CONFIG_PM)
--unsigned int before_power;
-+static unsigned int before_power;
- 
- static int ams369fg06_suspend(struct spi_device *spi, pm_message_t mesg)
- {
-diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
-index 322040f..e1803ba 100644
---- a/drivers/video/backlight/s6e63m0.c
-+++ b/drivers/video/backlight/s6e63m0.c
-@@ -840,7 +840,7 @@ static int __devexit s6e63m0_remove(struct spi_device *spi)
- }
- 
- #if defined(CONFIG_PM)
--unsigned int before_power;
-+static unsigned int before_power;
- 
- static int s6e63m0_suspend(struct spi_device *spi, pm_message_t mesg)
- {
--- 
-1.7.5.4
+> 
+> > +       .event_init     = uncore_pmu_event_init,
+> > +       .add            = uncore_pmu_add,
+> > +       .del            = uncore_pmu_del,
+> > +       .start          = uncore_pmu_start,
+> > +       .stop           = uncore_pmu_stop,
+> > +       .read           = uncore_pmu_read,
+> > +}; 
+> 
+> 
 
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
