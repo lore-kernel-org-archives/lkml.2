@@ -1,75 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932278Ab1GATpU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 15:45:20 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:58548 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932127Ab1GATpO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 15:45:14 -0400
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org, axboe@kernel.dk,
-        rjw@sisk.pl
-In-Reply-To: <1309548797.2722.37.camel@mulgrave>
-References: <20110701170531.GA3693@tassilo.jf.intel.com>
-	 <1309548044.2722.35.camel@mulgrave>  <1309548797.2722.37.camel@mulgrave>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 14:45:12 -0500
-Message-ID: <1309549512.2722.41.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
-Content-Transfer-Encoding: 7bit
+	id S932264Ab1GATow (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 15:44:52 -0400
+Received: from mail.perches.com ([173.55.12.10]:3474 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932172Ab1GATnv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 15:43:51 -0400
+From: Joe Perches <joe@perches.com>
+To: Vlad Yasevich <vladislav.yasevich@hp.com>,
+        Sridhar Samudrala <sri@us.ibm.com>
+Cc: "David S. Miller" <davem@davemloft.net>, linux-sctp@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/12] sctp: Reduce switch/case indent
+Date: Fri,  1 Jul 2011 12:43:11 -0700
+Message-Id: <4f9993c78618082b8ac4e1d9c55d6c1e23c7bd6b.1309549244.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.rc1
+In-Reply-To: <cover.1309549243.git.joe@perches.com>
+References: <cover.1309549243.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 14:33 -0500, James Bottomley wrote:
-> On Fri, 2011-07-01 at 14:20 -0500, James Bottomley wrote:
-> > I'll see if I can find the refcounting problem.
-> > 
-> > Likely it's a longstanding bug which we didn't actually notice until
-> > now.
-> 
-> OK, so it looks like we have correct refcounting on the sr_block ops,
-> but not on the actual cdrom ops, so the device is already gone by the
-> time the cdrom release function gets called.
-> 
-> This is my best guess at the fix (just add a get into the cdrom ops),
-> does it work?
+Make the case labels the same indent as the switch.
 
-Actually, forget that.  The cdrom ops open/release is entirely
-subordinate to the block one.
+git diff -w shows useless break;s removed after returns
+and a comment added to an unnecessary default: break;
+because of a dubious gcc warning.
 
-unless we have some type of double put, the sdev should be held by
-refcount right up until the cdrom code calls cdo->release().  However,
-there is one ioctl operation after that, but it's tray_move() not
-lock_door().  This should be the fix for that, but if we're oopsing in
-lock_door(), it's almost certain we've run into some refcounting
-imbalance.
-
-James
-
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
+ net/sctp/sm_statefuns.c |   51 ++++++++++++++++++++++++-----------------------
+ net/sctp/socket.c       |   10 ++++----
+ 2 files changed, 31 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/cdrom/cdrom.c b/drivers/cdrom/cdrom.c
-index 75fb965..512bd31 100644
---- a/drivers/cdrom/cdrom.c
-+++ b/drivers/cdrom/cdrom.c
-@@ -1220,12 +1220,12 @@ void cdrom_release(struct cdrom_device_info *cdi, fmode_t mode)
- 	if (CDROM_CAN(CDC_RAM) && !cdi->use_count && cdi->for_data)
- 		cdrom_close_write(cdi);
- 
--	cdo->release(cdi);
- 	if (cdi->use_count == 0) {      /* last process that closes dev*/
- 		if (opened_for_data &&
- 		    cdi->options & CDO_AUTO_EJECT && CDROM_CAN(CDC_OPEN_TRAY))
- 			cdo->tray_move(cdi, 1);
+diff --git a/net/sctp/sm_statefuns.c b/net/sctp/sm_statefuns.c
+index a297283..7d00b17 100644
+--- a/net/sctp/sm_statefuns.c
++++ b/net/sctp/sm_statefuns.c
+@@ -4008,31 +4008,32 @@ sctp_disposition_t sctp_sf_eat_auth(const struct sctp_endpoint *ep,
+ 	auth_hdr = (struct sctp_authhdr *)chunk->skb->data;
+ 	error = sctp_sf_authenticate(ep, asoc, type, chunk);
+ 	switch (error) {
+-		case SCTP_IERROR_AUTH_BAD_HMAC:
+-			/* Generate the ERROR chunk and discard the rest
+-			 * of the packet
+-			 */
+-			err_chunk = sctp_make_op_error(asoc, chunk,
+-							SCTP_ERROR_UNSUP_HMAC,
+-							&auth_hdr->hmac_id,
+-							sizeof(__u16), 0);
+-			if (err_chunk) {
+-				sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
+-						SCTP_CHUNK(err_chunk));
+-			}
+-			/* Fall Through */
+-		case SCTP_IERROR_AUTH_BAD_KEYID:
+-		case SCTP_IERROR_BAD_SIG:
+-			return sctp_sf_pdiscard(ep, asoc, type, arg, commands);
+-			break;
+-		case SCTP_IERROR_PROTO_VIOLATION:
+-			return sctp_sf_violation_chunklen(ep, asoc, type, arg,
+-							  commands);
+-			break;
+-		case SCTP_IERROR_NOMEM:
+-			return SCTP_DISPOSITION_NOMEM;
+-		default:
+-			break;
++	case SCTP_IERROR_AUTH_BAD_HMAC:
++		/* Generate the ERROR chunk and discard the rest
++		 * of the packet
++		 */
++		err_chunk = sctp_make_op_error(asoc, chunk,
++					       SCTP_ERROR_UNSUP_HMAC,
++					       &auth_hdr->hmac_id,
++					       sizeof(__u16), 0);
++		if (err_chunk) {
++			sctp_add_cmd_sf(commands, SCTP_CMD_REPLY,
++					SCTP_CHUNK(err_chunk));
++		}
++		/* Fall Through */
++	case SCTP_IERROR_AUTH_BAD_KEYID:
++	case SCTP_IERROR_BAD_SIG:
++		return sctp_sf_pdiscard(ep, asoc, type, arg, commands);
++
++	case SCTP_IERROR_PROTO_VIOLATION:
++		return sctp_sf_violation_chunklen(ep, asoc, type, arg,
++						  commands);
++
++	case SCTP_IERROR_NOMEM:
++		return SCTP_DISPOSITION_NOMEM;
++
++	default:			/* Prevent gcc warnings */
++		break;
  	}
-+	cdo->release(cdi);
- }
  
- static int cdrom_read_mech_status(struct cdrom_device_info *cdi, 
-
+ 	if (asoc->active_key_id != ntohs(auth_hdr->shkey_id)) {
+diff --git a/net/sctp/socket.c b/net/sctp/socket.c
+index fd31b36..1c6aec1 100644
+--- a/net/sctp/socket.c
++++ b/net/sctp/socket.c
+@@ -3257,11 +3257,11 @@ static int sctp_setsockopt_auth_chunk(struct sock *sk,
+ 		return -EFAULT;
+ 
+ 	switch (val.sauth_chunk) {
+-		case SCTP_CID_INIT:
+-		case SCTP_CID_INIT_ACK:
+-		case SCTP_CID_SHUTDOWN_COMPLETE:
+-		case SCTP_CID_AUTH:
+-			return -EINVAL;
++	case SCTP_CID_INIT:
++	case SCTP_CID_INIT_ACK:
++	case SCTP_CID_SHUTDOWN_COMPLETE:
++	case SCTP_CID_AUTH:
++		return -EINVAL;
+ 	}
+ 
+ 	/* add this chunk id to the endpoint */
+-- 
+1.7.6.rc1
 
