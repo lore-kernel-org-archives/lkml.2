@@ -1,98 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab1GAPZb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 11:25:31 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42630 "EHLO hera.kernel.org"
+	id S1756981Ab1GAPZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 11:25:56 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42646 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756534Ab1GAPZ2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 11:25:28 -0400
-Date: Fri, 1 Jul 2011 15:25:12 GMT
-From: tip-bot for Avi Kivity <avi@redhat.com>
-Message-ID: <tip-26ca5c11fb45ae2b2ac7e3574b8db6b3a3c7d350@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
-        avi@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, avi@redhat.com,
+	id S1752456Ab1GAPZx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 11:25:53 -0400
+Date: Fri, 1 Jul 2011 15:25:36 GMT
+From: tip-bot for Namhyung Kim <namhyung@gmail.com>
+Message-ID: <tip-ce2bec5f13bf16206184ed3188e278db45927cb3@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, hpa@zytor.com,
+        mingo@redhat.com, a.p.zijlstra@chello.nl, acme@ghostprotocols.net,
+        namhyung@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, tglx@linutronix.de, namhyung@gmail.com,
         mingo@elte.hu
-In-Reply-To: <1309362157-6596-4-git-send-email-avi@redhat.com>
-References: <1309362157-6596-4-git-send-email-avi@redhat.com>
+In-Reply-To: <1308847562-5100-1-git-send-email-namhyung@gmail.com>
+References: <1308847562-5100-1-git-send-email-namhyung@gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: export perf_event_refresh() to modules
-Git-Commit-ID: 26ca5c11fb45ae2b2ac7e3574b8db6b3a3c7d350
+Subject: [tip:perf/urgent] perf script: Rename old perf-trace to perf-script
+Git-Commit-ID: ce2bec5f13bf16206184ed3188e278db45927cb3
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:25:13 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:25:37 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  26ca5c11fb45ae2b2ac7e3574b8db6b3a3c7d350
-Gitweb:     http://git.kernel.org/tip/26ca5c11fb45ae2b2ac7e3574b8db6b3a3c7d350
-Author:     Avi Kivity <avi@redhat.com>
-AuthorDate: Wed, 29 Jun 2011 18:42:37 +0300
+Commit-ID:  ce2bec5f13bf16206184ed3188e278db45927cb3
+Gitweb:     http://git.kernel.org/tip/ce2bec5f13bf16206184ed3188e278db45927cb3
+Author:     Namhyung Kim <namhyung@gmail.com>
+AuthorDate: Fri, 24 Jun 2011 01:46:02 +0900
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 1 Jul 2011 11:06:40 +0200
+CommitDate: Fri, 1 Jul 2011 12:51:26 +0200
 
-perf: export perf_event_refresh() to modules
+perf script: Rename old perf-trace to perf-script
 
-KVM needs one-shot samples, since a PMC programmed to -X will fire after X
-events and then again after 2^40 events (i.e. variable period).
+Fix the leftovers from commit 133dc4c39c57 ("perf: Rename
+'perf trace' to 'perf script'").
 
-Signed-off-by: Avi Kivity <avi@redhat.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1309362157-6596-4-git-send-email-avi@redhat.com
+Signed-off-by: Namhyung Kim <namhyung@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+Link: http://lkml.kernel.org/r/1308847562-5100-1-git-send-email-namhyung@gmail.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/perf_event.h |    5 +++++
- kernel/events/core.c       |    3 ++-
- 2 files changed, 7 insertions(+), 1 deletions(-)
+ tools/perf/Documentation/perf-probe.txt            |    2 +-
+ .../util/scripting-engines/trace-event-python.c    |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 2a08cac..3f2711c 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -955,6 +955,7 @@ extern void perf_pmu_disable(struct pmu *pmu);
- extern void perf_pmu_enable(struct pmu *pmu);
- extern int perf_event_task_disable(void);
- extern int perf_event_task_enable(void);
-+extern int perf_event_refresh(struct perf_event *event, int refresh);
- extern void perf_event_update_userpage(struct perf_event *event);
- extern int perf_event_release_kernel(struct perf_event *event);
- extern struct perf_event *
-@@ -1149,6 +1150,10 @@ static inline void perf_event_delayed_put(struct task_struct *task)	{ }
- static inline void perf_event_print_debug(void)				{ }
- static inline int perf_event_task_disable(void)				{ return -EINVAL; }
- static inline int perf_event_task_enable(void)				{ return -EINVAL; }
-+static inline int perf_event_refresh(struct perf_event *event, int refresh)
-+{
-+	return -EINVAL;
-+}
+diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
+index 02bafce..41343d6 100644
+--- a/tools/perf/Documentation/perf-probe.txt
++++ b/tools/perf/Documentation/perf-probe.txt
+@@ -183,4 +183,4 @@ Delete all probes on schedule().
  
- static inline void
- perf_sw_event(u32 event_id, u64 nr, struct pt_regs *regs, u64 addr)	{ }
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index ba8e0f4..0567e32 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -1764,7 +1764,7 @@ out:
- 	raw_spin_unlock_irq(&ctx->lock);
- }
+ SEE ALSO
+ --------
+-linkperf:perf-trace[1], linkperf:perf-record[1]
++linkperf:perf-script[1], linkperf:perf-record[1]
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 6ccf70e..8173636 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -465,7 +465,7 @@ static int python_generate_script(const char *outfile)
+ 	fprintf(ofp, "# be retrieved using Python functions of the form "
+ 		"common_*(context).\n");
  
--static int perf_event_refresh(struct perf_event *event, int refresh)
-+int perf_event_refresh(struct perf_event *event, int refresh)
- {
- 	/*
- 	 * not supported on inherited events
-@@ -1777,6 +1777,7 @@ static int perf_event_refresh(struct perf_event *event, int refresh)
+-	fprintf(ofp, "# See the perf-trace-python Documentation for the list "
++	fprintf(ofp, "# See the perf-script-python Documentation for the list "
+ 		"of available functions.\n\n");
  
- 	return 0;
- }
-+EXPORT_SYMBOL_GPL(perf_event_refresh);
- 
- static void ctx_sched_out(struct perf_event_context *ctx,
- 			  struct perf_cpu_context *cpuctx,
+ 	fprintf(ofp, "import os\n");
