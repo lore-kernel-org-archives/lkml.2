@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756101Ab1GAJSZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:18:25 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:33137 "EHLO
+	id S1756119Ab1GAJSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 05:18:31 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:33190 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756010Ab1GAJSX (ORCPT
+	with ESMTP id S1756010Ab1GAJS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 05:18:23 -0400
+	Fri, 1 Jul 2011 05:18:27 -0400
 From: Stefan Bader <stefan.bader@canonical.com>
 To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Eric Anholt <eric@anholt.net>, Seth Forshee <seth.forshee@canonical.com>,
+Cc: Seth Forshee <seth.forshee@canonical.com>,
         Stefan Bader <stefan.bader@canonical.com>,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 06/10] drm/i915: Maintain LRU order of inactive objects upon access by CPU (v2)" has been added to staging queue
-Date: Fri,  1 Jul 2011 10:18:19 +0100
-Message-Id: <1309511899-3045-1-git-send-email-stefan.bader@canonical.com>
+Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 08/10] drm/i915: Periodically flush the active lists and requests" has been added to staging queue
+Date: Fri,  1 Jul 2011 10:18:25 +0100
+Message-Id: <1309511905-3115-1-git-send-email-stefan.bader@canonical.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -22,7 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    Subject: [PATCH 06/10] drm/i915: Maintain LRU order of inactive objects upon access by CPU (v2)
+    Subject: [PATCH 08/10] drm/i915: Periodically flush the active lists and requests
 
 to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
 
@@ -36,74 +36,49 @@ Thanks.
 
 ------
 
->From f8fd3ab5b8bf8f99ea13ebbecabd5c8e42c82948 Mon Sep 17 00:00:00 2001
+>From 41516474bc14ea128b05bf65c9cbdb04739582ac Mon Sep 17 00:00:00 2001
 From: Chris Wilson <chris@chris-wilson.co.uk>
 Date: Fri, 17 Jun 2011 10:04:22 -0500
-Subject: [PATCH 06/10] drm/i915: Maintain LRU order of inactive objects upon access by CPU (v2)
+Subject: [PATCH 08/10] drm/i915: Periodically flush the active lists and requests
 
 BugLink: http://bugs.launchpad.net/bugs/599017
 
-In order to reduce the penalty of fallbacks under memory pressure and to
-avoid a potential immediate ping-pong of evicting a mmaped buffer, we
-move the object to the tail of the inactive list when a page is freshly
-faulted or the object is moved into the CPU domain.
+In order to retire active buffers whilst no client is active, we need to
+insert our own flush requests onto the ring.
 
-We choose not to protect the CPU objects from casual eviction,
-preferring to keep the GPU active for as long as possible.
-
-v2: Daniel Vetter found a bug where I forgot that pinned objects are
-kept off the inactive list.
+This is useful for servers that queue up some rendering and then go to
+sleep as it allows us to the complete processing of those requests,
+potentially making that memory available again much earlier.
 
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Eric Anholt <eric@anholt.net>
-(backported from commit 7d1c4804ae98cdee572d7d10d8a5deaa2e686285 upstream)
+(backported from commit 0a58705b2fc3fa29525cf2fdae3d4276a5771280 upstream)
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 ---
- drivers/gpu/drm/i915/i915_gem.c |   16 ++++++++++++++++
- 1 files changed, 16 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/i915/i915_gem.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
-index 2e4ff69..b3c7bd1 100644
+index b3c7bd1..0314f7f 100644
 --- a/drivers/gpu/drm/i915/i915_gem.c
 +++ b/drivers/gpu/drm/i915/i915_gem.c
-@@ -55,6 +55,14 @@ static int i915_gem_phys_pwrite(struct drm_device *dev, struct drm_gem_object *o
- static LIST_HEAD(shrink_list);
- static DEFINE_SPINLOCK(shrink_list_lock);
+@@ -1862,9 +1862,16 @@ i915_gem_retire_work_handler(struct work_struct *work)
 
-+static inline bool
-+i915_gem_object_is_inactive(struct drm_i915_gem_object *obj_priv)
-+{
-+	return obj_priv->gtt_space &&
-+		!obj_priv->active &&
-+		obj_priv->pin_count == 0;
-+}
+ 	mutex_lock(&dev->struct_mutex);
+ 	i915_gem_retire_requests(dev);
 +
- int i915_gem_do_init(struct drm_device *dev, unsigned long start,
- 		     unsigned long end)
- {
-@@ -1068,6 +1076,11 @@ i915_gem_set_domain_ioctl(struct drm_device *dev, void *data,
- 		ret = i915_gem_object_set_to_cpu_domain(obj, write_domain != 0);
- 	}
-
++	if (!list_empty(&dev_priv->mm.gpu_write_list)) {
++		i915_gem_flush(dev, 0, I915_GEM_GPU_DOMAINS);
++		i915_add_request(dev, NULL, I915_GEM_GPU_DOMAINS);
++	}
 +
-+	/* Maintain LRU order of "inactive" objects */
-+	if (ret == 0 && i915_gem_object_is_inactive(obj_priv))
-+		list_move_tail(&obj_priv->list, &dev_priv->mm.inactive_list);
+ 	if (!dev_priv->mm.suspended &&
+ 	    !list_empty(&dev_priv->mm.request_list))
+ 		queue_delayed_work(dev_priv->wq, &dev_priv->mm.retire_work, HZ);
 +
- 	drm_gem_object_unreference(obj);
  	mutex_unlock(&dev->struct_mutex);
- 	return ret;
-@@ -1203,6 +1216,9 @@ int i915_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
- 			goto unlock;
- 	}
-
-+	if (i915_gem_object_is_inactive(obj_priv))
-+		list_move_tail(&obj_priv->list, &dev_priv->mm.inactive_list);
-+
- 	pfn = ((dev->agp->base + obj_priv->gtt_offset) >> PAGE_SHIFT) +
- 		page_offset;
+ }
 
 --
 1.7.4.1
