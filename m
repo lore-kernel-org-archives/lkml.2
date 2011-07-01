@@ -1,55 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757580Ab1GASd1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 14:33:27 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43045 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757536Ab1GASdX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757560Ab1GASdX (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 1 Jul 2011 14:33:23 -0400
-Date: Fri, 1 Jul 2011 20:33:14 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>,
-        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: AT91: Fix pull requset
-Message-ID: <20110701183313.GV11559@pengutronix.de>
-References: <20110701065411.GD14408@game.jcrosoft.org>
- <201107011709.40359.arnd@arndb.de>
+Received: from mx1.redhat.com ([209.132.183.28]:34783 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753546Ab1GASdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 14:33:21 -0400
+Date: Fri, 1 Jul 2011 14:32:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: linux-fsdevel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Li Shaohua <shaohua.li@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/9] writeback: bdi write bandwidth estimation
+Message-ID: <20110701183252.GC28563@redhat.com>
+References: <20110629145245.835998321@intel.com>
+ <20110629145553.906668553@intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201107011709.40359.arnd@arndb.de>
+In-Reply-To: <20110629145553.906668553@intel.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 05:09:40PM +0200, Arnd Bergmann wrote:
-> On Friday 01 July 2011, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > HI Linus, Russell, Arnd
-> For every bug fix you commit, please check if it applies to older
-> kernels as well, and mark with 'Cc: stable@kernel.org' if so. Do you
-> want to update the changelog and send another pull request?
-Or alternatively (i.e. if you don't want to rewrite your tree) just
-writing to stable@kernel.org and indicating the upstream commit ids is
-usually OK, too.
-The other extreme is to point out the affected versions, e.g. by using 
+On Wed, Jun 29, 2011 at 10:52:48PM +0800, Wu Fengguang wrote:
+> The estimation value will start from 100MB/s and adapt to the real
+> bandwidth in seconds.
+> 
+> It tries to update the bandwidth only when disk is fully utilized.
+> Any inactive period of more than one second will be skipped.
+> 
+> The estimated bandwidth will be reflecting how fast the device can
+> writeout when _fully utilized_, and won't drop to 0 when it goes idle.
+> The value will remain constant at disk idle time. At busy write time, if
+> not considering fluctuations, it will also remain high unless be knocked
+> down by possible concurrent reads that compete for the disk time and
+> bandwidth with async writes.
+> 
+> The estimation is not done purely in the flusher because there is no
+> guarantee for write_cache_pages() to return timely to update bandwidth.
+> 
+> The bdi->avg_write_bandwidth smoothing is very effective for filtering
+> out sudden spikes, however may be a little biased in long term.
+> 
+> The overheads are low because the bdi bandwidth update only occurs at
+> 200ms intervals.
+> 
+> The 200ms update interval is suitable, becuase it's not possible to get
+> the real bandwidth for the instance at all, due to large fluctuations.
+> 
+> The NFS commits can be as large as seconds worth of data. One XFS
+> completion may be as large as half second worth of data if we are going
+> to increase the write chunk to half second worth of data. In ext4,
+> fluctuations with time period of around 5 seconds is observed. And there
+> is another pattern of irregular periods of up to 20 seconds on SSD tests.
+> 
+> That's why we are not only doing the estimation at 200ms intervals, but
+> also averaging them over a period of 3 seconds and then go further to do
+> another level of smoothing in avg_write_bandwidth.
 
-	Cc: stable@kernel.org [2.6.xy+]
+What IO scheduler have you used for testing? CFQ now a days almost chokes
+async requests in presence of lots of sync IO. Have you done some testing
+with that scenario and see how quickly you adjust to that change.
 
-Best regards
-Uwe
+/me is trying to wrap his head around all the smoothing and bandwidth
+calculation functions. Wished there was more explanation to it.
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Thanks
+Vivek
