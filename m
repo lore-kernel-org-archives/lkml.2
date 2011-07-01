@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab1GAPlg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 11:41:36 -0400
-Received: from mailservice.tudelft.nl ([130.161.131.5]:60205 "EHLO
-	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab1GAPlb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 11:41:31 -0400
-X-Spam-Flag: NO
-X-Spam-Score: -22.9
-Message-ID: <4E0DEAA8.9020704@tudelft.nl>
-Date: Fri, 01 Jul 2011 17:41:28 +0200
-From: =?UTF-8?B?w4lyaWMgUGllbA==?= <E.A.B.Piel@tudelft.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.18) Gecko/20110621 Mandriva/3.1.11-1 (2011.0) Thunderbird/3.1.11
+	id S1753311Ab1GAPpO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 11:45:14 -0400
+Received: from mga02.intel.com ([134.134.136.20]:37088 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751523Ab1GAPpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 11:45:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,458,1304319600"; 
+   d="scan'208";a="20604787"
+Date: Fri, 1 Jul 2011 23:45:10 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 9/9] writeback: trace global_dirty_state
+Message-ID: <20110701154509.GB17881@localhost>
+References: <20110629145245.835998321@intel.com>
+ <20110629145554.698086654@intel.com>
+ <20110701151801.GA6661@infradead.org>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Regression 3.0-rc5+ : khubd blocked
-References: <Pine.LNX.4.44L0.1107011106380.1988-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1107011106380.1988-100000@iolanthe.rowland.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110701151801.GA6661@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Op 01-07-11 17:21, Alan Stern schreef:
-> On Fri, 1 Jul 2011, Éric Piel wrote:
->
-:
-> It appears that this was caused by Sarah's commit
-> fccf4e86200b8f5edd9a65da26f150e32ba79808 (USB: Free bandwidth when
-> usb_disable_device is called).  usb_disconnect() grabs the
-> bandwidth_mutex before calling usb_disable_device(), which calls down
-> indirectly to usb_set_interface(), which tries to acquire the
-> bandwidth_mutex.
->
-> This patch should fix the problem.  Still, this whole area cries out
-> for some serious rewriting.
->
-Thanks Alan,
+On Fri, Jul 01, 2011 at 11:18:01PM +0800, Christoph Hellwig wrote:
+> On Wed, Jun 29, 2011 at 10:52:54PM +0800, Wu Fengguang wrote:
+> > Add trace event balance_dirty_state for showing the global dirty page
+> > counts and thresholds at each global_dirty_limits() invocation.  This
+> > will cover the callers throttle_vm_writeout(), over_bground_thresh()
+> > and each balance_dirty_pages() loop.
+> 
+> Given that this is a rather uncontoversial diagnostics patch I'd
+> move it to the front of the queue.
 
-I was running the regression :-) I'll try the patch and confirm it works.
+Yeah it was.. since then it's expanded with the global dirty limit
+field, which is newly introduced in [PATCH 6/9].
 
-Éric
+I'll move it before the larger-chunk-size patch :)
+
+Thanks,
+Fengguang
