@@ -1,363 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab1GAPYn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 11:24:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57677 "EHLO hera.kernel.org"
+	id S1756893Ab1GAPZH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 11:25:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42609 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753311Ab1GAPYj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 11:24:39 -0400
-Date: Fri, 1 Jul 2011 15:24:22 GMT
+	id S1752456Ab1GAPZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 11:25:03 -0400
+Date: Fri, 1 Jul 2011 15:24:48 GMT
 From: tip-bot for Avi Kivity <avi@redhat.com>
-Message-ID: <tip-4dc0da86967d5463708631d02a70cfed5b104884@git.kernel.org>
+Message-ID: <tip-0af3ac1fdb9d5c297b4b07c9e0172531d42b6716@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
         avi@redhat.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         a.p.zijlstra@chello.nl, tglx@linutronix.de, avi@redhat.com,
         mingo@elte.hu
-In-Reply-To: <1309362157-6596-2-git-send-email-avi@redhat.com>
-References: <1309362157-6596-2-git-send-email-avi@redhat.com>
+In-Reply-To: <1309362157-6596-3-git-send-email-avi@redhat.com>
+References: <1309362157-6596-3-git-send-email-avi@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Add context field to perf_event
-Git-Commit-ID: 4dc0da86967d5463708631d02a70cfed5b104884
+Subject: [tip:perf/core] x86, perf: Add constraints for architectural PMU
+Git-Commit-ID: 0af3ac1fdb9d5c297b4b07c9e0172531d42b6716
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:24:22 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:24:48 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4dc0da86967d5463708631d02a70cfed5b104884
-Gitweb:     http://git.kernel.org/tip/4dc0da86967d5463708631d02a70cfed5b104884
+Commit-ID:  0af3ac1fdb9d5c297b4b07c9e0172531d42b6716
+Gitweb:     http://git.kernel.org/tip/0af3ac1fdb9d5c297b4b07c9e0172531d42b6716
 Author:     Avi Kivity <avi@redhat.com>
-AuthorDate: Wed, 29 Jun 2011 18:42:35 +0300
+AuthorDate: Wed, 29 Jun 2011 18:42:36 +0300
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 1 Jul 2011 11:06:38 +0200
+CommitDate: Fri, 1 Jul 2011 11:06:39 +0200
 
-perf: Add context field to perf_event
+x86, perf: Add constraints for architectural PMU
 
-The perf_event overflow handler does not receive any caller-derived
-argument, so many callers need to resort to looking up the perf_event
-in their local data structure.  This is ugly and doesn't scale if a
-single callback services many perf_events.
-
-Fix by adding a context parameter to perf_event_create_kernel_counter()
-(and derived hardware breakpoints APIs) and storing it in the perf_event.
-The field can be accessed from the callback as event->overflow_handler_context.
-All callers are updated.
+The v1 PMU does not have any fixed counters.  Using the v2 constraints,
+which do have fixed counters, causes an additional choice to be present
+in the weight calculation, but not when actually scheduling the event,
+leading to an event being not scheduled at all.
 
 Signed-off-by: Avi Kivity <avi@redhat.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Link: http://lkml.kernel.org/r/1309362157-6596-2-git-send-email-avi@redhat.com
+Link: http://lkml.kernel.org/r/1309362157-6596-3-git-send-email-avi@redhat.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/arm/kernel/ptrace.c                |    3 ++-
- arch/powerpc/kernel/ptrace.c            |    2 +-
- arch/sh/kernel/ptrace_32.c              |    3 ++-
- arch/x86/kernel/kgdb.c                  |    2 +-
- arch/x86/kernel/ptrace.c                |    3 ++-
- drivers/oprofile/oprofile_perf.c        |    2 +-
- include/linux/hw_breakpoint.h           |   10 ++++++++--
- include/linux/perf_event.h              |    4 +++-
- kernel/events/core.c                    |   21 +++++++++++++++------
- kernel/events/hw_breakpoint.c           |   10 +++++++---
- kernel/watchdog.c                       |    2 +-
- samples/hw_breakpoint/data_breakpoint.c |    2 +-
- 12 files changed, 44 insertions(+), 20 deletions(-)
+ arch/x86/kernel/cpu/perf_event_intel.c |   23 ++++++++++++++++++-----
+ 1 files changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/arch/arm/kernel/ptrace.c b/arch/arm/kernel/ptrace.c
-index 0c9b105..5c19961 100644
---- a/arch/arm/kernel/ptrace.c
-+++ b/arch/arm/kernel/ptrace.c
-@@ -479,7 +479,8 @@ static struct perf_event *ptrace_hbp_create(struct task_struct *tsk, int type)
- 	attr.bp_type	= type;
- 	attr.disabled	= 1;
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index bf6f92f..45fbb8f 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -112,6 +112,11 @@ static struct extra_reg intel_westmere_extra_regs[] __read_mostly =
+ 	EVENT_EXTRA_END
+ };
  
--	return register_user_hw_breakpoint(&attr, ptrace_hbptriggered, tsk);
-+	return register_user_hw_breakpoint(&attr, ptrace_hbptriggered, NULL,
-+					   tsk);
- }
- 
- static int ptrace_gethbpregs(struct task_struct *tsk, long num,
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index 3177617..05b7dd2 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -973,7 +973,7 @@ int ptrace_set_debugreg(struct task_struct *task, unsigned long addr,
- 								&attr.bp_type);
- 
- 	thread->ptrace_bps[0] = bp = register_user_hw_breakpoint(&attr,
--							ptrace_triggered, task);
-+					       ptrace_triggered, NULL, task);
- 	if (IS_ERR(bp)) {
- 		thread->ptrace_bps[0] = NULL;
- 		ptrace_put_breakpoints(task);
-diff --git a/arch/sh/kernel/ptrace_32.c b/arch/sh/kernel/ptrace_32.c
-index 8051976..92b3c27 100644
---- a/arch/sh/kernel/ptrace_32.c
-+++ b/arch/sh/kernel/ptrace_32.c
-@@ -91,7 +91,8 @@ static int set_single_step(struct task_struct *tsk, unsigned long addr)
- 		attr.bp_len = HW_BREAKPOINT_LEN_2;
- 		attr.bp_type = HW_BREAKPOINT_R;
- 
--		bp = register_user_hw_breakpoint(&attr, ptrace_triggered, tsk);
-+		bp = register_user_hw_breakpoint(&attr, ptrace_triggered,
-+						 NULL, tsk);
- 		if (IS_ERR(bp))
- 			return PTR_ERR(bp);
- 
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index 98da6a7..00354d4 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -638,7 +638,7 @@ void kgdb_arch_late(void)
- 	for (i = 0; i < HBP_NUM; i++) {
- 		if (breakinfo[i].pev)
- 			continue;
--		breakinfo[i].pev = register_wide_hw_breakpoint(&attr, NULL);
-+		breakinfo[i].pev = register_wide_hw_breakpoint(&attr, NULL, NULL);
- 		if (IS_ERR((void * __force)breakinfo[i].pev)) {
- 			printk(KERN_ERR "kgdb: Could not allocate hw"
- 			       "breakpoints\nDisabling the kernel debugger\n");
-diff --git a/arch/x86/kernel/ptrace.c b/arch/x86/kernel/ptrace.c
-index 11db2e9..8252879 100644
---- a/arch/x86/kernel/ptrace.c
-+++ b/arch/x86/kernel/ptrace.c
-@@ -715,7 +715,8 @@ static int ptrace_set_breakpoint_addr(struct task_struct *tsk, int nr,
- 		attr.bp_type = HW_BREAKPOINT_W;
- 		attr.disabled = 1;
- 
--		bp = register_user_hw_breakpoint(&attr, ptrace_triggered, tsk);
-+		bp = register_user_hw_breakpoint(&attr, ptrace_triggered,
-+						 NULL, tsk);
- 
- 		/*
- 		 * CHECKME: the previous code returned -EIO if the addr wasn't
-diff --git a/drivers/oprofile/oprofile_perf.c b/drivers/oprofile/oprofile_perf.c
-index 9046f7b..59acf9e 100644
---- a/drivers/oprofile/oprofile_perf.c
-+++ b/drivers/oprofile/oprofile_perf.c
-@@ -79,7 +79,7 @@ static int op_create_counter(int cpu, int event)
- 
- 	pevent = perf_event_create_kernel_counter(&counter_config[event].attr,
- 						  cpu, NULL,
--						  op_overflow_handler);
-+						  op_overflow_handler, NULL);
- 
- 	if (IS_ERR(pevent))
- 		return PTR_ERR(pevent);
-diff --git a/include/linux/hw_breakpoint.h b/include/linux/hw_breakpoint.h
-index d1e55fe..6ae9c63 100644
---- a/include/linux/hw_breakpoint.h
-+++ b/include/linux/hw_breakpoint.h
-@@ -73,6 +73,7 @@ static inline unsigned long hw_breakpoint_len(struct perf_event *bp)
- extern struct perf_event *
- register_user_hw_breakpoint(struct perf_event_attr *attr,
- 			    perf_overflow_handler_t triggered,
-+			    void *context,
- 			    struct task_struct *tsk);
- 
- /* FIXME: only change from the attr, and don't unregister */
-@@ -85,11 +86,13 @@ modify_user_hw_breakpoint(struct perf_event *bp, struct perf_event_attr *attr);
- extern struct perf_event *
- register_wide_hw_breakpoint_cpu(struct perf_event_attr *attr,
- 				perf_overflow_handler_t	triggered,
-+				void *context,
- 				int cpu);
- 
- extern struct perf_event * __percpu *
- register_wide_hw_breakpoint(struct perf_event_attr *attr,
--			    perf_overflow_handler_t triggered);
-+			    perf_overflow_handler_t triggered,
-+			    void *context);
- 
- extern int register_perf_hw_breakpoint(struct perf_event *bp);
- extern int __register_perf_hw_breakpoint(struct perf_event *bp);
-@@ -115,6 +118,7 @@ static inline int __init init_hw_breakpoint(void) { return 0; }
- static inline struct perf_event *
- register_user_hw_breakpoint(struct perf_event_attr *attr,
- 			    perf_overflow_handler_t triggered,
-+			    void *context,
- 			    struct task_struct *tsk)	{ return NULL; }
- static inline int
- modify_user_hw_breakpoint(struct perf_event *bp,
-@@ -122,10 +126,12 @@ modify_user_hw_breakpoint(struct perf_event *bp,
- static inline struct perf_event *
- register_wide_hw_breakpoint_cpu(struct perf_event_attr *attr,
- 				perf_overflow_handler_t	 triggered,
-+				void *context,
- 				int cpu)		{ return NULL; }
- static inline struct perf_event * __percpu *
- register_wide_hw_breakpoint(struct perf_event_attr *attr,
--			    perf_overflow_handler_t triggered)	{ return NULL; }
-+			    perf_overflow_handler_t triggered,
-+			    void *context)		{ return NULL; }
- static inline int
- register_perf_hw_breakpoint(struct perf_event *bp)	{ return -ENOSYS; }
- static inline int
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index a5f54b9..2a08cac 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -839,6 +839,7 @@ struct perf_event {
- 	u64				id;
- 
- 	perf_overflow_handler_t		overflow_handler;
-+	void				*overflow_handler_context;
- 
- #ifdef CONFIG_EVENT_TRACING
- 	struct ftrace_event_call	*tp_event;
-@@ -960,7 +961,8 @@ extern struct perf_event *
- perf_event_create_kernel_counter(struct perf_event_attr *attr,
- 				int cpu,
- 				struct task_struct *task,
--				perf_overflow_handler_t callback);
-+				perf_overflow_handler_t callback,
-+				void *context);
- extern u64 perf_event_read_value(struct perf_event *event,
- 				 u64 *enabled, u64 *running);
- 
-diff --git a/kernel/events/core.c b/kernel/events/core.c
-index 81de28d..ba8e0f4 100644
---- a/kernel/events/core.c
-+++ b/kernel/events/core.c
-@@ -5745,7 +5745,8 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- 		 struct task_struct *task,
- 		 struct perf_event *group_leader,
- 		 struct perf_event *parent_event,
--		 perf_overflow_handler_t overflow_handler)
-+		 perf_overflow_handler_t overflow_handler,
-+		 void *context)
++static struct event_constraint intel_v1_event_constraints[] __read_mostly =
++{
++	EVENT_CONSTRAINT_END
++};
++
+ static struct event_constraint intel_gen_event_constraints[] __read_mostly =
  {
- 	struct pmu *pmu;
- 	struct perf_event *event;
-@@ -5803,10 +5804,13 @@ perf_event_alloc(struct perf_event_attr *attr, int cpu,
- #endif
+ 	FIXED_EVENT_CONSTRAINT(0x00c0, 0), /* INST_RETIRED.ANY */
+@@ -1606,11 +1611,19 @@ static __init int intel_pmu_init(void)
+ 		break;
+ 
+ 	default:
+-		/*
+-		 * default constraints for v2 and up
+-		 */
+-		x86_pmu.event_constraints = intel_gen_event_constraints;
+-		pr_cont("generic architected perfmon, ");
++		switch (x86_pmu.version) {
++		case 1:
++			x86_pmu.event_constraints = intel_v1_event_constraints;
++			pr_cont("generic architected perfmon v1, ");
++			break;
++		default:
++			/*
++			 * default constraints for v2 and up
++			 */
++			x86_pmu.event_constraints = intel_gen_event_constraints;
++			pr_cont("generic architected perfmon, ");
++			break;
++		}
  	}
- 
--	if (!overflow_handler && parent_event)
-+	if (!overflow_handler && parent_event) {
- 		overflow_handler = parent_event->overflow_handler;
-+		context = parent_event->overflow_handler_context;
-+	}
- 
- 	event->overflow_handler	= overflow_handler;
-+	event->overflow_handler_context = context;
- 
- 	if (attr->disabled)
- 		event->state = PERF_EVENT_STATE_OFF;
-@@ -6073,7 +6077,8 @@ SYSCALL_DEFINE5(perf_event_open,
- 		}
- 	}
- 
--	event = perf_event_alloc(&attr, cpu, task, group_leader, NULL, NULL);
-+	event = perf_event_alloc(&attr, cpu, task, group_leader, NULL,
-+				 NULL, NULL);
- 	if (IS_ERR(event)) {
- 		err = PTR_ERR(event);
- 		goto err_task;
-@@ -6258,7 +6263,8 @@ err_fd:
- struct perf_event *
- perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
- 				 struct task_struct *task,
--				 perf_overflow_handler_t overflow_handler)
-+				 perf_overflow_handler_t overflow_handler,
-+				 void *context)
- {
- 	struct perf_event_context *ctx;
- 	struct perf_event *event;
-@@ -6268,7 +6274,8 @@ perf_event_create_kernel_counter(struct perf_event_attr *attr, int cpu,
- 	 * Get the target context (task or percpu):
- 	 */
- 
--	event = perf_event_alloc(attr, cpu, task, NULL, NULL, overflow_handler);
-+	event = perf_event_alloc(attr, cpu, task, NULL, NULL,
-+				 overflow_handler, context);
- 	if (IS_ERR(event)) {
- 		err = PTR_ERR(event);
- 		goto err;
-@@ -6552,7 +6559,7 @@ inherit_event(struct perf_event *parent_event,
- 					   parent_event->cpu,
- 					   child,
- 					   group_leader, parent_event,
--					   NULL);
-+				           NULL, NULL);
- 	if (IS_ERR(child_event))
- 		return child_event;
- 	get_ctx(child_ctx);
-@@ -6579,6 +6586,8 @@ inherit_event(struct perf_event *parent_event,
- 
- 	child_event->ctx = child_ctx;
- 	child_event->overflow_handler = parent_event->overflow_handler;
-+	child_event->overflow_handler_context
-+		= parent_event->overflow_handler_context;
- 
- 	/*
- 	 * Precalculate sample_data sizes
-diff --git a/kernel/events/hw_breakpoint.c b/kernel/events/hw_breakpoint.c
-index 086adf2..b7971d6 100644
---- a/kernel/events/hw_breakpoint.c
-+++ b/kernel/events/hw_breakpoint.c
-@@ -431,9 +431,11 @@ int register_perf_hw_breakpoint(struct perf_event *bp)
- struct perf_event *
- register_user_hw_breakpoint(struct perf_event_attr *attr,
- 			    perf_overflow_handler_t triggered,
-+			    void *context,
- 			    struct task_struct *tsk)
- {
--	return perf_event_create_kernel_counter(attr, -1, tsk, triggered);
-+	return perf_event_create_kernel_counter(attr, -1, tsk, triggered,
-+						context);
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(register_user_hw_breakpoint);
- 
-@@ -502,7 +504,8 @@ EXPORT_SYMBOL_GPL(unregister_hw_breakpoint);
-  */
- struct perf_event * __percpu *
- register_wide_hw_breakpoint(struct perf_event_attr *attr,
--			    perf_overflow_handler_t triggered)
-+			    perf_overflow_handler_t triggered,
-+			    void *context)
- {
- 	struct perf_event * __percpu *cpu_events, **pevent, *bp;
- 	long err;
-@@ -515,7 +518,8 @@ register_wide_hw_breakpoint(struct perf_event_attr *attr,
- 	get_online_cpus();
- 	for_each_online_cpu(cpu) {
- 		pevent = per_cpu_ptr(cpu_events, cpu);
--		bp = perf_event_create_kernel_counter(attr, cpu, NULL, triggered);
-+		bp = perf_event_create_kernel_counter(attr, cpu, NULL,
-+						      triggered, context);
- 
- 		*pevent = bp;
- 
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index a6708e6..a933e3a 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -375,7 +375,7 @@ static int watchdog_nmi_enable(int cpu)
- 	hw_nmi_watchdog_set_attr(wd_attr);
- 
- 	/* Try to register using hardware perf events */
--	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
-+	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback, NULL);
- 	if (!IS_ERR(event)) {
- 		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
- 		goto out_save;
-diff --git a/samples/hw_breakpoint/data_breakpoint.c b/samples/hw_breakpoint/data_breakpoint.c
-index 7b164d3..ef7f322 100644
---- a/samples/hw_breakpoint/data_breakpoint.c
-+++ b/samples/hw_breakpoint/data_breakpoint.c
-@@ -60,7 +60,7 @@ static int __init hw_break_module_init(void)
- 	attr.bp_len = HW_BREAKPOINT_LEN_4;
- 	attr.bp_type = HW_BREAKPOINT_W | HW_BREAKPOINT_R;
- 
--	sample_hbp = register_wide_hw_breakpoint(&attr, sample_hbp_handler);
-+	sample_hbp = register_wide_hw_breakpoint(&attr, sample_hbp_handler, NULL);
- 	if (IS_ERR((void __force *)sample_hbp)) {
- 		ret = PTR_ERR((void __force *)sample_hbp);
- 		goto fail;
