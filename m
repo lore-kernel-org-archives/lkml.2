@@ -1,140 +1,209 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab1GAJdn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:33:43 -0400
-Received: from bar.sig21.net ([80.81.252.164]:49198 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754978Ab1GAJdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 05:33:42 -0400
-Date: Fri, 1 Jul 2011 11:33:36 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Kevin Wolf <kwolf@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: [PATCH resend] compat_ioctl: fix warning caused by qemu
-Message-ID: <20110701093336.GA9582@sig21.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -3.8 (---)
-X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.636,BAYES_00=-2.599 autolearn=no
+	id S1756067Ab1GAJfd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 05:35:33 -0400
+Received: from fb1.tech.numericable.fr ([82.216.111.51]:40029 "EHLO
+	fb1.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755407Ab1GAJf3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 05:35:29 -0400
+From: Corentin Chary <corentin.chary@gmail.com>
+To: platform-driver-x86@vger.kernel.org
+Cc: Corentin Chary <corentincj@iksaif.net>, Nate Weibley <nweibley@gmail.com>,
+        Matthew Garrett <mjg@redhat.com> (maintainer:X86 PLATFORM DRIVERS),
+        acpi4asus-user@lists.sourceforge.net (open list:ASUS NOTEBOOKS AN...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 06/16] asus-wmi: add keyboard backlight support
+Date: Fri,  1 Jul 2011 11:34:31 +0200
+Message-Id: <1309512881-2901-7-git-send-email-corentin.chary@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1309512881-2901-1-git-send-email-corentin.chary@gmail.com>
+References: <1309512881-2901-1-git-send-email-corentin.chary@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Linux x86_64 host with 32bit userspace, running
-qemu or even just "qemu-img create -f qcow2 some.img 1G"
-causes a kernel warning:
+From: Corentin Chary <corentincj@iksaif.net>
 
-ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(00005326){t:'S';sz:0} arg(7fffffff) on some.img
-ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(801c0204){t:02;sz:28} arg(fff77350) on some.img
+Based on a patch from Nate Weibley. <nweibley@gmail.com>.
 
-ioctl 00005326 is CDROM_DRIVE_STATUS,
-ioctl 801c0204 is FDGETPRM.
-
-The warning appears because the Linux compat-ioctl handler for these
-ioctls only applies to block devices, while qemu also uses the ioctls on
-plain files.
-
-Signed-off-by: Johannes Stezenbach <js@sig21.net>
+Cc: Nate Weibley <nweibley@gmail.com>
+Signed-off-by: Corentin Chary <corentincj@iksaif.net>
 ---
-(resend with Cc: suggested by get_maintainer.pl)
+ drivers/platform/x86/asus-wmi.c |  130 +++++++++++++++++++++++++++++++++-----
+ 1 files changed, 113 insertions(+), 17 deletions(-)
 
-discussed in http://lkml.kernel.org/r/20110617090424.GA19345@sig21.net
-
-Arnd, is this what you had in mind, or did you mean to move
-all floppy compat definitions?  I decided to go with the
-minimal change.  Tested on both 2.6.39.2 and 3.0-rc5-63-g0d72c6f.
-
-
-diff --git a/block/compat_ioctl.c b/block/compat_ioctl.c
-index cc3eb78..7b72502 100644
---- a/block/compat_ioctl.c
-+++ b/block/compat_ioctl.c
-@@ -208,19 +208,6 @@ static int compat_blkpg_ioctl(struct block_device *bdev, fmode_t mode,
- #define BLKBSZSET_32		_IOW(0x12, 113, int)
- #define BLKGETSIZE64_32		_IOR(0x12, 114, int)
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index 688fcf7..619e3e3 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -66,6 +66,8 @@ MODULE_LICENSE("GPL");
+ #define NOTIFY_BRNUP_MAX		0x1f
+ #define NOTIFY_BRNDOWN_MIN		0x20
+ #define NOTIFY_BRNDOWN_MAX		0x2e
++#define NOTIFY_KBD_BRTUP		0xc4
++#define NOTIFY_KBD_BRTDWN		0xc5
  
--struct compat_floppy_struct {
--	compat_uint_t	size;
--	compat_uint_t	sect;
--	compat_uint_t	head;
--	compat_uint_t	track;
--	compat_uint_t	stretch;
--	unsigned char	gap;
--	unsigned char	rate;
--	unsigned char	spec1;
--	unsigned char	fmt_gap;
--	const compat_caddr_t name;
--};
--
- struct compat_floppy_drive_params {
- 	char		cmos;
- 	compat_ulong_t	max_dtr;
-@@ -288,7 +275,6 @@ struct compat_floppy_write_errors {
+ /* WMI Methods */
+ #define ASUS_WMI_METHODID_SPEC	        0x43455053 /* BIOS SPECification */
+@@ -174,8 +176,11 @@ struct asus_wmi {
  
- #define FDSETPRM32 _IOW(2, 0x42, struct compat_floppy_struct)
- #define FDDEFPRM32 _IOW(2, 0x43, struct compat_floppy_struct)
--#define FDGETPRM32 _IOR(2, 0x04, struct compat_floppy_struct)
- #define FDSETDRVPRM32 _IOW(2, 0x90, struct compat_floppy_drive_params)
- #define FDGETDRVPRM32 _IOR(2, 0x11, struct compat_floppy_drive_params)
- #define FDGETDRVSTAT32 _IOR(2, 0x12, struct compat_floppy_drive_struct)
-diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
-index 61abb63..8be086e 100644
---- a/fs/compat_ioctl.c
-+++ b/fs/compat_ioctl.c
-@@ -68,6 +68,8 @@
+ 	struct led_classdev tpd_led;
+ 	int tpd_led_wk;
++	struct led_classdev kbd_led;
++	int kbd_led_wk;
+ 	struct workqueue_struct *led_workqueue;
+ 	struct work_struct tpd_led_work;
++	struct work_struct kbd_led_work;
  
- #ifdef CONFIG_BLOCK
- #include <linux/loop.h>
-+#include <linux/cdrom.h>
-+#include <linux/fd.h>
- #include <scsi/scsi.h>
- #include <scsi/scsi_ioctl.h>
- #include <scsi/sg.h>
-@@ -944,6 +946,9 @@ COMPATIBLE_IOCTL(FIOQSIZE)
- IGNORE_IOCTL(LOOP_CLR_FD)
- /* md calls this on random blockdevs */
- IGNORE_IOCTL(RAID_VERSION)
-+/* qemu/qemu-img might call these two on plain files for probing */
-+IGNORE_IOCTL(CDROM_DRIVE_STATUS)
-+IGNORE_IOCTL(FDGETPRM32)
- /* SG stuff */
- COMPATIBLE_IOCTL(SG_SET_TIMEOUT)
- COMPATIBLE_IOCTL(SG_GET_TIMEOUT)
-diff --git a/include/linux/fd.h b/include/linux/fd.h
-index f5d194a..c6a68d0 100644
---- a/include/linux/fd.h
-+++ b/include/linux/fd.h
-@@ -3,6 +3,7 @@
+ 	struct asus_rfkill wlan;
+ 	struct asus_rfkill bluetooth;
+@@ -360,30 +365,79 @@ static enum led_brightness tpd_led_get(struct led_classdev *led_cdev)
+ 	return read_tpd_led_state(asus);
+ }
  
- #include <linux/ioctl.h>
- #include <linux/compiler.h>
-+#include <linux/compat.h>
+-static int asus_wmi_led_init(struct asus_wmi *asus)
++static void kbd_led_update(struct work_struct *work)
+ {
+-	int rv;
++	int ctrl_param = 0;
++	struct asus_wmi *asus;
  
- /* New file layout: Now the ioctl definitions immediately follow the
-  * definitions of the structures that they use */
-@@ -377,4 +378,21 @@ struct floppy_raw_cmd {
- #define FDEJECT _IO(2, 0x5a)
- /* eject the disk */
+-	if (read_tpd_led_state(asus) < 0)
+-		return 0;
++	asus = container_of(work, struct asus_wmi, kbd_led_work);
  
-+#ifdef CONFIG_COMPAT
-+struct compat_floppy_struct {
-+	compat_uint_t	size;
-+	compat_uint_t	sect;
-+	compat_uint_t	head;
-+	compat_uint_t	track;
-+	compat_uint_t	stretch;
-+	unsigned char	gap;
-+	unsigned char	rate;
-+	unsigned char	spec1;
-+	unsigned char	fmt_gap;
-+	const compat_caddr_t name;
-+};
+-	asus->led_workqueue = create_singlethread_workqueue("led_workqueue");
+-	if (!asus->led_workqueue)
+-		return -ENOMEM;
+-	INIT_WORK(&asus->tpd_led_work, tpd_led_update);
++	/*
++	 * bits 0-2: level
++	 * bit 7: light on/off
++	 */
++	if (asus->kbd_led_wk > 0)
++		ctrl_param = 0x80 | (asus->kbd_led_wk & 0x7F);
+ 
+-	asus->tpd_led.name = "asus::touchpad";
+-	asus->tpd_led.brightness_set = tpd_led_set;
+-	asus->tpd_led.brightness_get = tpd_led_get;
+-	asus->tpd_led.max_brightness = 1;
++	asus_wmi_set_devstate(ASUS_WMI_DEVID_KBD_BACKLIGHT, ctrl_param, NULL);
++}
+ 
+-	rv = led_classdev_register(&asus->platform_device->dev, &asus->tpd_led);
+-	if (rv) {
+-		destroy_workqueue(asus->led_workqueue);
+-		return rv;
++static int kbd_led_read(struct asus_wmi *asus, int *level, int *env)
++{
++	int retval;
 +
-+#define FDGETPRM32 _IOR(2, 0x04, struct compat_floppy_struct)
-+#endif
++	/*
++	 * bits 0-2: level
++	 * bit 7: light on/off
++	 * bit 8-10: environment (0: dark, 1: normal, 2: light)
++	 * bit 17: status unknown
++	 */
++	retval = asus_wmi_get_devstate_bits(asus, ASUS_WMI_DEVID_KBD_BACKLIGHT,
++					    0xFFFF);
 +
- #endif
++	if (retval == 0x8000)
++		retval = -ENODEV;
++
++	if (retval >= 0) {
++		if (level)
++			*level = retval & 0x80 ? retval & 0x7F : 0;
++		if (env)
++			*env = (retval >> 8) & 0x7F;
++		retval = 0;
+ 	}
+ 
+-	return 0;
++	return retval;
++}
++
++static void kbd_led_set(struct led_classdev *led_cdev,
++			enum led_brightness value)
++{
++	struct asus_wmi *asus;
++
++	asus = container_of(led_cdev, struct asus_wmi, kbd_led);
++
++	if (value > asus->kbd_led.max_brightness)
++		value = asus->kbd_led.max_brightness;
++	else if (value < 0)
++		value = 0;
++
++	asus->kbd_led_wk = value;
++	queue_work(asus->led_workqueue, &asus->kbd_led_work);
++}
++
++static enum led_brightness kbd_led_get(struct led_classdev *led_cdev)
++{
++	struct asus_wmi *asus;
++	int retval, value;
++
++	asus = container_of(led_cdev, struct asus_wmi, kbd_led);
++
++	retval = kbd_led_read(asus, &value, NULL);
++
++	if (retval < 0)
++		return retval;
++
++	return value;
+ }
+ 
+ static void asus_wmi_led_exit(struct asus_wmi *asus)
+@@ -394,6 +448,48 @@ static void asus_wmi_led_exit(struct asus_wmi *asus)
+ 		destroy_workqueue(asus->led_workqueue);
+ }
+ 
++static int asus_wmi_led_init(struct asus_wmi *asus)
++{
++	int rv = 0;
++
++	asus->led_workqueue = create_singlethread_workqueue("led_workqueue");
++	if (!asus->led_workqueue)
++		return -ENOMEM;
++
++	if (read_tpd_led_state(asus) >= 0) {
++		INIT_WORK(&asus->tpd_led_work, tpd_led_update);
++
++		asus->tpd_led.name = "asus::touchpad";
++		asus->tpd_led.brightness_set = tpd_led_set;
++		asus->tpd_led.brightness_get = tpd_led_get;
++		asus->tpd_led.max_brightness = 1;
++
++		rv = led_classdev_register(&asus->platform_device->dev,
++					   &asus->tpd_led);
++		if (rv)
++			goto error;
++	}
++
++	if (kbd_led_read(asus, NULL, NULL) >= 0) {
++		INIT_WORK(&asus->kbd_led_work, kbd_led_update);
++
++		asus->kbd_led.name = "asus::kbd_backlight";
++		asus->kbd_led.brightness_set = kbd_led_set;
++		asus->kbd_led.brightness_get = kbd_led_get;
++		asus->kbd_led.max_brightness = 3;
++
++		rv = led_classdev_register(&asus->platform_device->dev,
++					   &asus->kbd_led);
++	}
++
++error:
++	if (rv)
++		asus_wmi_led_exit(asus);
++
++	return rv;
++}
++
++
+ /*
+  * PCI hotplug (for wlan rfkill)
+  */
+-- 
+1.7.3.4
+
