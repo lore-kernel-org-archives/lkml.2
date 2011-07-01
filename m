@@ -1,71 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756288Ab1GAM4m (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 08:56:42 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:40682 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755148Ab1GAM4i convert rfc822-to-8bit (ORCPT
+	id S1756356Ab1GAM4x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 08:56:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58072 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755541Ab1GAM4u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 08:56:38 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110701115600.GK20990@elte.hu>
-References: <1308875813-20122-1-git-send-email-wad@chromium.org>
-	<1308875813-20122-5-git-send-email-wad@chromium.org>
-	<BANLkTimtYUyXbZjWhjK61B_1WBXE4MoAeA@mail.gmail.com>
-	<alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>
-	<BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
-	<alpine.LRH.2.00.1106301128590.13496@tundra.namei.org>
-	<20110701115600.GK20990@elte.hu>
-Date: Fri, 1 Jul 2011 07:56:37 -0500
-Message-ID: <BANLkTim8CGx89nOg0HX=S1=arunBU3sEGQ@mail.gmail.com>
-Subject: Re: [PATCH v9 05/13] seccomp_filter: Document what seccomp_filter is
- and how it works.
-From: Will Drewry <wad@chromium.org>
+	Fri, 1 Jul 2011 08:56:50 -0400
+Date: Fri, 1 Jul 2011 14:56:46 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: James Morris <jmorris@namei.org>, Chris Evans <scarybeasts@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, djm@mindrot.org,
-        segoon@openwall.com, kees.cook@canonical.com, rostedt@goodmis.org,
-        fweisbec@gmail.com, tglx@linutronix.de,
-        Randy Dunlap <rdunlap@xenotime.net>, linux-doc@vger.kernel.org,
-        Eric Paris <eparis@redhat.com>, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL v2] sched: Make sleep inside atomic detection work on
+ !PREEMPT
+Message-ID: <20110701125644.GD8508@somewhere>
+References: <1307712622-11104-1-git-send-email-fweisbec@gmail.com>
+ <20110622224844.GA3290@somewhere>
+ <20110701123629.GA12605@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110701123629.GA12605@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 1, 2011 at 6:56 AM, Ingo Molnar <mingo@elte.hu> wrote:
->
-> * James Morris <jmorris@namei.org> wrote:
->
->> On Wed, 29 Jun 2011, Will Drewry wrote:
->>
->> > Since it seems that there'll be consumers (openssh, vsftpd,
->> > kvm/qemu, chromium, chromium os) and feedback quieted down, what
->> > are the next steps to get this to a pull/no-pull decision points
->> > (or at least some Ack's or Nack's)?  I know this patch series
->> > crosses a number of maintainers, and I never know exactly what's
->> > next when the feedback slows down.
->>
->> Are there any outstanding objections to this approach?  How do the
->> tracing folk feel about it?
->
-> I think i outlined my objections a couple of times and haven't seen
-> them addressed.
+On Fri, Jul 01, 2011 at 02:36:29PM +0200, Ingo Molnar wrote:
+> 
+> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> 
+> > On Fri, Jun 10, 2011 at 03:30:18PM +0200, Frederic Weisbecker wrote:
+> > > Ingo,
+> > > 
+> > > Please pull the sched/core branch that can be found at:
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > > 	sched/core
+> > 
+> > Hi Ingo,
+> > 
+> > I have added Randy's ack on the last patch. To get it, please pull the v2 in
+> > the following branch:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> >        sched/core-v2
+> > 
+> > There are no other changes.
+> 
+> Hm, this triggers such warnings now:
+> 
+> Detected 2010.217 MHz processor.
+> Marking TSC unstable due to TSCs unsynchronized
+> Calibrating delay loop (skipped), value calculated using timer frequency.. 4022.95 BogoMIPS (lpj=6700723)
+> pid_max: default: 4096 minimum: 301
+> BUG: scheduling while atomic: swapper/0/0x10000002
+> no locks held by swapper/0.
+> Pid: 0, comm: swapper Not tainted 3.0.0-rc5-tip-01401-ga7adf5f-dirty #141020
+> Call Trace:
+>  [<ffffffff81ddb3b0>] __schedule_bug+0x60/0x65
+>  [<ffffffff81dee803>] schedule+0x953/0x980
+>  [<ffffffff81571e30>] ? serial8250_console_putchar+0x30/0x40
+>  [<ffffffff81df177b>] ? _raw_spin_unlock+0x2b/0x50
+>  [<ffffffff8107882a>] __cond_resched+0x2a/0x40
+>  [<ffffffff81dee8e2>] _cond_resched+0x32/0x40
+>  [<ffffffff81110ba8>] __alloc_pages_nodemask+0x1b8/0x880
+>  [<ffffffff81df23ce>] ? common_interrupt+0xe/0x13
+>  [<ffffffff81080649>] ? vprintk+0x359/0x530
+>  [<ffffffff8113b4e7>] slob_new_pages+0x17/0x80
+>  [<ffffffff8113bd13>] __kmalloc_node+0xa3/0x270
+>  [<ffffffff81ddb6d5>] ? printk+0x41/0x43
+>  [<ffffffff82738420>] pidmap_init+0x80/0xbf
+>  [<ffffffff8272aa54>] start_kernel+0x28b/0x300
+>  [<ffffffff8272a2ee>] x86_64_start_reservations+0xfe/0x102
+>  [<ffffffff8272a3e2>] x86_64_start_kernel+0xf0/0xf7
+> Security Framework initialized
+> AppArmor: AppArmor initialized
+> Mount-cache hash table entries: 256
+> Initializing cgroup subsys cpuacct
+> 
+> Not sure we want to warn about schedule during early init, or can it 
+> cause problems and should thus be fixed? I bet there's more such 
+> instances.
 
-After our last discussion, I suggested changes which I then undertook
-and reposted.  Those changes have been posted for over two weeks.
-I've continued to resolve any bugs with the patches and keep them
-rebased.
+I believe this is harmless because no other other tasks than init are queued at that
+time. But I don't know, may be calling schedule() involves some things that
+are not ready yet at that time.
 
-Is it just that you will not accept the prctl()-based approach?  If
-that's the case, I'm confused as it doesn't seem like there was
-support for a perf-based change or a change that was more fundamental.
-
-If you would re-outline the places where it falls down, that would be
-useful.  If it is just that you do not think we can reach agreement,
-that would be useful to know as well.
-
-thanks,
-will
+Either we add a system_state check in schedule_debug() or we fix the callers
+to not call schedule when system_state shows we are booting..
