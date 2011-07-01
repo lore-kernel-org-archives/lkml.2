@@ -1,96 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756547Ab1GAN33 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:29:29 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:58603 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756499Ab1GAN30 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:29:26 -0400
+	id S1756565Ab1GAN3o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:29:44 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59435 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755554Ab1GAN3m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 09:29:42 -0400
+Date: Fri, 1 Jul 2011 06:29:19 -0700
+From: Greg KH <gregkh@suse.de>
+To: =?iso-8859-1?Q?=C9ric?= Piel <E.A.B.Piel@tudelft.nl>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-usb@vger.kernel.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: Regression 3.0-rc5+ : khubd blocked
+Message-ID: <20110701132919.GB8902@suse.de>
+References: <4E0DC172.9010504@tudelft.nl>
 MIME-Version: 1.0
-In-Reply-To: <1309248717-14606-6-git-send-email-per.forlin@linaro.org>
-References: <1309248717-14606-1-git-send-email-per.forlin@linaro.org>
-	<1309248717-14606-6-git-send-email-per.forlin@linaro.org>
-Date: Fri, 1 Jul 2011 15:29:25 +0200
-Message-ID: <BANLkTi=-Nn0HjLgmTsCs9zoQt4By-6-KZw@mail.gmail.com>
-Subject: Re: [PATCH v8 05/12] mmc: mmc_test: add test for non-blocking transfers
-From: Per Forlin <per.forlin@linaro.org>
-To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org,
-        Nickolay Nickolaev <nicknickolaev@gmail.com>,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>
-Cc: Chris Ball <cjb@laptop.org>, Per Forlin <per.forlin@linaro.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4E0DC172.9010504@tudelft.nl>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28 June 2011 10:11, Per Forlin <per.forlin@linaro.org> wrote:
-> Add four tests for read and write performance per
-> different transfer size, 4k to 4M.
->  * Read using blocking mmc request
->  * Read using non-blocking mmc request
->  * Write using blocking mmc request
->  * Write using non-blocking mmc request
->
-> The host dirver must support pre_req() and post_req()
-> in order to run the non-blocking test cases.
->
-> Signed-off-by: Per Forlin <per.forlin@linaro.org>
-> ---
->  drivers/mmc/card/mmc_test.c |  311 +++++++++++++++++++++++++++++++++++++++++-
->  1 files changed, 303 insertions(+), 8 deletions(-)
->
-> diff --git a/drivers/mmc/card/mmc_test.c b/drivers/mmc/card/mmc_test.c
-> +static int mmc_test_nonblock_transfer(struct mmc_test_card *test,
-> +                                     struct scatterlist *sg, unsigned sg_len,
-> +                                     unsigned dev_addr, unsigned blocks,
-> +                                     unsigned blksz, int write, int count)
-> +{
-> +       struct mmc_request mrq1;
-> +       struct mmc_command cmd1;
-> +       struct mmc_command stop1;
-> +       struct mmc_data data1;
-> +
-> +       struct mmc_request mrq2;
-> +       struct mmc_command cmd2;
-> +       struct mmc_command stop2;
-> +       struct mmc_data data2;
-> +
-> +       struct mmc_test_async_req test_areq[2];
-> +       struct mmc_async_req *done_areq;
-> +       struct mmc_async_req *cur_areq = &test_areq[0].areq;
-> +       struct mmc_async_req *other_areq = &test_areq[1].areq;
-> +       int i;
-> +       int ret;
-> +
-> +       test_areq[0].test = test;
-> +       test_areq[1].test = test;
-> +
-> +       if (!test->card->host->ops->pre_req ||
-> +               !test->card->host->ops->post_req)
-> +               return -RESULT_UNSUP_HOST;
-Remove this error check. It is fine to run this test without these
-hooks, but there will be no performance gain compared to blocking
-request.
+On Fri, Jul 01, 2011 at 02:45:38PM +0200, Éric Piel wrote:
+> Hello,
+> I've come across to what looks like a regression in the kernel a
+> few commits after 3.0-rc5.
+> 
+> When I turn off a usb hub, to which my mouse and keyboard are connected,
+> and then turn it on again, they are not detected again. After unplugging
+> it and waiting a few minutes I get a "task khubd:621 blocked for more
+> than 120 seconds."
+> 
+> I haven't investigated much. It seems reproducible here on my x86_64
+> laptop. It doesn't seem to happen on a 3.0-rc4. Maybe important, my
+> kernel already has commit 2e34b429a404675dc4fc4ad2ee339eea028da3ca
+> "Merge branch 'usb-linus' of
+> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6"
+> 
+> Let me know if you need me to investigate more, or maybe there is
+> already a fix for that bug?
 
-...
+Can you run 'git bisect' to track it down to the exact patch that causes
+the problem?
 
-> +/*
-> + * Multiple blocking write 4k to 4 MB chunks
-> + */
-> +static int mmc_test_profile_mult_write_blocking_perf(struct mmc_test_card *test)
-> +{
-> +       unsigned int bs[] = {1 << 12, 1 << 13, 1 << 14, 1 << 15, 1 << 16,
-> +                            1 << 17, 1 << 18, 1 << 19, 1 << 20, 1 << 22};
-> +       struct mmc_test_multiple_rw test_data = {
-> +               .bs = bs,
-> +               .size = 128*1024*1024,
-I got this comment from Linus W.
-Use TEST_AREA_MAX_SIZE instead of hard coded 128*1024*1024. update all
-relevant functions.
+thanks,
 
-/Per
+greg k-h
