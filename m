@@ -1,80 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754473Ab1GAUDM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 16:03:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48625 "EHLO ogre.sisk.pl"
+	id S1753642Ab1GAUFh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 16:05:37 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48647 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751921Ab1GAUDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 16:03:10 -0400
+	id S1751874Ab1GAUFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 16:05:36 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@ti.com>
-Subject: Re: [PATCH 3/10 v6] PM / Domains: Support for generic I/O PM domains (v7)
-Date: Fri, 1 Jul 2011 22:03:58 +0200
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 7/10 v6] PM / Domains: Don't stop wakeup devices during system sleep transitions
+Date: Fri, 1 Jul 2011 22:06:42 +0200
 User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+Cc: Kevin Hilman <khilman@ti.com>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
         "Greg Kroah-Hartman" <gregkh@suse.de>,
         Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
         LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
         Paul Mundt <lethal@linux-sh.org>
-References: <201106112223.04972.rjw@sisk.pl> <201106252326.23837.rjw@sisk.pl> <87tyb5yipq.fsf@ti.com>
-In-Reply-To: <87tyb5yipq.fsf@ti.com>
+References: <Pine.LNX.4.44L0.1107011043410.1988-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1107011043410.1988-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107012203.58283.rjw@sisk.pl>
+Message-Id: <201107012206.42475.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 01, 2011, Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Friday, July 01, 2011, Alan Stern wrote:
+> On Fri, 1 Jul 2011, Rafael J. Wysocki wrote:
 > 
-> > From: Rafael J. Wysocki <rjw@sisk.pl>
-> >
-> > Introduce common headers, helper functions and callbacks allowing
-> > platforms to use simple generic power domains for runtime power
-> > management.
-> >
-> > Introduce struct generic_pm_domain to be used for representing
-> > power domains that each contain a number of devices and may be
-> > parent domains or subdomains with respect to other power domains.
-> > Among other things, this structure includes callbacks to be
-> > provided by platforms for performing specific tasks related to
-> > power management (i.e. ->stop_device() may disable a device's
-> > clocks, while ->start_device() may enable them, ->power_off() is
-> > supposed to remove power from the entire power domain
-> > and ->power_on() is supposed to restore it).
-> >
-> > Introduce functions that can be used as power domain runtime PM
-> > callbacks, pm_genpd_runtime_suspend() and pm_genpd_runtime_resume(),
-> > as well as helper functions for the initialization of a power
-> > domain represented by a struct generic_power_domain object,
-> > adding a device to or removing a device from it and adding or
-> > removing subdomains.
-> >
-> > Introduce configuration option CONFIG_PM_GENERIC_DOMAINS to be
-> > selected by the platforms that want to use the new code.
-> >
-> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> > Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > So the only way forward I can see is to add a special PM domain callback,
+> > say .active_wakeup(), that will return "true" if the device is to be left
+> > active if wakeup-enabled.  So the check you don't like will become
+> > something like:
+> > 
+> > if (device_may_wakeup(dev) && genpd->active_wakeup
+> >     && genpd->active_wakeup(dev))
+> >         return 0;
+> > 
+> > Would that be better?
 > 
-> Reviewed-by: Kevin Hilman <khilman@ti.com>
+> Another option, less flexible but perhaps easier to use, would be to 
+> set a couple of bitflags indicating whether the device needs power or 
+> clocks to handle wakeup signals.
 
-Thanks!
+Well, I agree, but I've decided to add the new callback after all.
 
-> While I still don't think this is generic enough for some more
-> complicated SoCs, it most certainly a huge step in the right direction,
-> and I think we can address the other complexities with additional
-> patches as needed.
-
-That's my intention.
-
-> Thanks Rafael for all your hard work on this and putting up with my
-> nagging. ;)
-
-I don't mind that at all, it kind of helps to focus on important stuff. ;-)
-
+Thanks,
 Rafael
-
