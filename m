@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab1GAJRw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:17:52 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:32818 "EHLO
+	id S1756072Ab1GAJSW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 05:18:22 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:33097 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755904Ab1GAJRv (ORCPT
+	with ESMTP id S1756010Ab1GAJST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 05:17:51 -0400
+	Fri, 1 Jul 2011 05:18:19 -0400
 From: Stefan Bader <stefan.bader@canonical.com>
-To: Daniel Vetter <daniel.vetter@ffwll.ch>
-Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
-        Seth Forshee <seth.forshee@canonical.com>,
+To: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Eric Anholt <eric@anholt.net>, Seth Forshee <seth.forshee@canonical.com>,
         Stefan Bader <stefan.bader@canonical.com>,
         linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 01/10] drm_mm: extract check_free_mm_node" has been added to staging queue
-Date: Fri,  1 Jul 2011 10:17:42 +0100
-Message-Id: <1309511862-2870-1-git-send-email-stefan.bader@canonical.com>
+Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 05/10] drm/i915: Implement fair lru eviction across both rings. (v2)" has been added to staging queue
+Date: Fri,  1 Jul 2011 10:18:09 +0100
+Message-Id: <1309511889-3010-1-git-send-email-stefan.bader@canonical.com>
 X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -23,7 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I have just added a patch titled
 
-    Subject: [PATCH 01/10] drm_mm: extract check_free_mm_node
+    Subject: [PATCH 05/10] drm/i915: Implement fair lru eviction across both rings. (v2)
 
 to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
 
@@ -37,145 +36,339 @@ Thanks.
 
 ------
 
->From d4a82251610c863bab7f457cb7a76a4bf01abb21 Mon Sep 17 00:00:00 2001
-From: Daniel Vetter <daniel.vetter@ffwll.ch>
-Date: Fri, 17 Jun 2011 10:04:19 -0500
-Subject: [PATCH 01/10] drm_mm: extract check_free_mm_node
+>From f42384c96e7e53c42615b16396c47edf40667b72 Mon Sep 17 00:00:00 2001
+From: Chris Wilson <chris@chris-wilson.co.uk>
+Date: Fri, 17 Jun 2011 10:04:21 -0500
+Subject: [PATCH 05/10] drm/i915: Implement fair lru eviction across both rings. (v2)
 
 BugLink: http://bugs.launchpad.net/bugs/599017
 
-There are already two copies of this logic. And the new scanning
-stuff will add some more. So extract it into a small helper
-function.
+Based in a large part upon Daniel Vetter's implementation and adapted
+for handling multiple rings in a single pass.
 
-Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
-Acked-by: Thomas Hellstrom <thellstrom@vmwgfx.com>
+This should lead to better gtt usage and fixes the page-fault-of-doom
+triggered. The fairness is provided by scanning through the GTT space
+amalgamating space in rendering order. As soon as we have a contiguous
+space in the GTT large enough for the new object (and its alignment),
+evict any object which lies within that space. This should keep more
+objects resident in the GTT.
+
+Doing throughput testing on a PineView machine with cairo-perf-trace
+indicates that there is very little difference with the new LRU scan,
+perhaps a small improvement... Except oddly for the poppler trace.
+
+Reference:
+
+  Bug 15911 - Intermittent X crash (freeze)
+  https://bugzilla.kernel.org/show_bug.cgi?id=15911
+
+  Bug 20152 - cannot view JPG in firefox when running UXA
+  https://bugs.freedesktop.org/show_bug.cgi?id=20152
+
+  Bug 24369 - Hang when scrolling firefox page with window in front
+  https://bugs.freedesktop.org/show_bug.cgi?id=24369
+
+  Bug 28478 - Intermittent graphics lockups due to overflow/loop
+  https://bugs.freedesktop.org/show_bug.cgi?id=28478
+
+v2: Attempt to clarify the logic and order of eviction through the use
+of comments and macros.
+
 Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
-Signed-off-by: Dave Airlie <airlied@redhat.com>
-(backported from commit 7a6b2896f261894dde287d3faefa4b432cddca53 upstream)
+Reviewed-by: Daniel Vetter <daniel@ffwll.ch>
+Signed-off-by: Eric Anholt <eric@anholt.net>
+(backported from commit cd377ea93f34cbd6ec49c868b66a5a7ab184775c upstream)
 
 Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
 Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
 ---
- drivers/gpu/drm/drm_mm.c |   69 ++++++++++++++++++++++-----------------------
- 1 files changed, 34 insertions(+), 35 deletions(-)
+ drivers/gpu/drm/i915/i915_drv.h       |    2 +
+ drivers/gpu/drm/i915/i915_gem_evict.c |  240 +++++++++++++++++----------------
+ 2 files changed, 127 insertions(+), 115 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_mm.c b/drivers/gpu/drm/drm_mm.c
-index 2ac074c8..4935e91 100644
---- a/drivers/gpu/drm/drm_mm.c
-+++ b/drivers/gpu/drm/drm_mm.c
-@@ -328,6 +328,27 @@ void drm_mm_put_block(struct drm_mm_node *cur)
+diff --git a/drivers/gpu/drm/i915/i915_drv.h b/drivers/gpu/drm/i915/i915_drv.h
+index f7e12ba..e0acd00 100644
+--- a/drivers/gpu/drm/i915/i915_drv.h
++++ b/drivers/gpu/drm/i915/i915_drv.h
+@@ -610,6 +610,8 @@ struct drm_i915_gem_object {
+ 	struct list_head list;
+ 	/** This object's place on GPU write list */
+ 	struct list_head gpu_write_list;
++	/** This object's place on eviction list */
++	struct list_head evict_list;
 
- EXPORT_SYMBOL(drm_mm_put_block);
+ 	/** This object's place on the fenced object LRU */
+ 	struct list_head fence_list;
+diff --git a/drivers/gpu/drm/i915/i915_gem_evict.c b/drivers/gpu/drm/i915/i915_gem_evict.c
+index 127a28a..84ed1a7 100644
+--- a/drivers/gpu/drm/i915/i915_gem_evict.c
++++ b/drivers/gpu/drm/i915/i915_gem_evict.c
+@@ -31,140 +31,150 @@
+ #include "i915_drv.h"
+ #include "i915_drm.h"
 
-+static int check_free_mm_node(struct drm_mm_node *entry, unsigned long size,
-+			      unsigned alignment)
+-static inline int
+-i915_gem_object_is_purgeable(struct drm_i915_gem_object *obj_priv)
+-{
+-	return obj_priv->madv == I915_MADV_DONTNEED;
+-}
+-
+-static int
+-i915_gem_scan_inactive_list_and_evict(struct drm_device *dev, int min_size,
+-				      unsigned alignment, int *found)
++static struct drm_i915_gem_object *
++i915_gem_next_active_object(struct drm_device *dev,
++			    struct list_head **iter)
+ {
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	struct drm_gem_object *obj;
+-	struct drm_i915_gem_object *obj_priv;
+-	struct drm_gem_object *best = NULL;
+-	struct drm_gem_object *first = NULL;
+-
+-	/* Try to find the smallest clean object */
+-	list_for_each_entry(obj_priv, &dev_priv->mm.inactive_list, list) {
+-		struct drm_gem_object *obj = obj_priv->obj;
+-		if (obj->size >= min_size) {
+-			if ((!obj_priv->dirty ||
+-			     i915_gem_object_is_purgeable(obj_priv)) &&
+-			    (!best || obj->size < best->size)) {
+-				best = obj;
+-				if (best->size == min_size)
+-					break;
+-			}
+-			if (!first)
+-			    first = obj;
+-		}
+-	}
+-
+-	obj = best ? best : first;
+-
+-	if (!obj) {
+-		*found = 0;
+-		return 0;
+-	}
++	struct drm_i915_gem_object *obj = NULL;
+
+-	*found = 1;
++	if (*iter != &dev_priv->mm.active_list)
++		obj = list_entry(*iter,
++				 struct drm_i915_gem_object,
++				 list);
+
+-#if WATCH_LRU
+-	DRM_INFO("%s: evicting %p\n", __func__, obj);
+-#endif
+-	obj_priv = obj->driver_private;
+-	BUG_ON(obj_priv->pin_count != 0);
+-	BUG_ON(obj_priv->active);
++	*iter = (*iter)->next;
++	return obj;
++}
+
+-	/* Wait on the rendering and unbind the buffer. */
+-	return i915_gem_object_unbind(obj);
++static bool
++mark_free(struct drm_i915_gem_object *obj_priv,
++	   struct list_head *unwind)
 +{
-+	unsigned wasted = 0;
++	list_add(&obj_priv->evict_list, unwind);
++	return drm_mm_scan_add_block(obj_priv->gtt_space);
+ }
+
++#define i915_for_each_active_object(OBJ, I) \
++	*(I) = dev_priv->mm.active_list.next; \
++	while (((OBJ) = i915_gem_next_active_object(dev, (I))) != NULL)
 +
-+	if (entry->size < size)
+ int
+-i915_gem_evict_something(struct drm_device *dev,
+-			 int min_size, unsigned alignment)
++i915_gem_evict_something(struct drm_device *dev, int min_size, unsigned alignment)
+ {
+ 	drm_i915_private_t *dev_priv = dev->dev_private;
+-	int ret, found;
+-
+-	for (;;) {
+-		i915_gem_retire_requests(dev);
+-
+-		/* If there's an inactive buffer available now, grab it
+-		 * and be done.
+-		 */
+-		ret = i915_gem_scan_inactive_list_and_evict(dev, min_size,
+-							    alignment,
+-							    &found);
+-		if (found)
+-			return ret;
++	struct list_head eviction_list, unwind_list;
++	struct drm_i915_gem_object *obj_priv, *tmp_obj_priv;
++	struct list_head *iter;
++	int ret = 0;
+
+-		/* If we didn't get anything, but the ring is still processing
+-		 * things, wait for the next to finish and hopefully leave us
+-		 * a buffer to evict.
+-		 */
+-		if (!list_empty(&dev_priv->mm.request_list)) {
+-			struct drm_i915_gem_request *request;
++	i915_gem_retire_requests(dev);
+
+-			request = list_first_entry(&dev_priv->mm.request_list,
+-						   struct drm_i915_gem_request,
+-						   list);
++	/* Re-check for free space after retiring requests */
++	if (drm_mm_search_free(&dev_priv->mm.gtt_space,
++			       min_size, alignment, 0))
 +		return 0;
+
+-			ret = i915_do_wait_request(dev, request->seqno, true);
+-			if (ret)
+-				return ret;
++	/*
++	 * The goal is to evict objects and amalgamate space in LRU order.
++	 * The oldest idle objects reside on the inactive list, which is in
++	 * retirement order. The next objects to retire are those on the
++	 * active list that do not have an outstanding flush. Once the
++	 * hardware reports completion (the seqno is updated after the
++	 * batchbuffer has been finished) the clean buffer objects would
++	 * be retired to the inactive list. Any dirty objects would be added
++	 * to the tail of the flushing list. So after processing the clean
++	 * active objects we need to emit a MI_FLUSH to retire the flushing
++	 * list, hence the retirement order of the flushing list is in
++	 * advance of the dirty objects on the active list.
++	 *
++	 * The retirement sequence is thus:
++	 *   1. Inactive objects (already retired)
++	 *   2. Clean active objects
++	 *   3. Flushing list
++	 *   4. Dirty active objects.
++	 *
++	 * On each list, the oldest objects lie at the HEAD with the freshest
++	 * object on the TAIL.
++	 */
 +
-+	if (alignment) {
-+		register unsigned tmp = entry->start % alignment;
-+		if (tmp)
-+			wasted = alignment - tmp;
++	INIT_LIST_HEAD(&unwind_list);
++	drm_mm_init_scan(&dev_priv->mm.gtt_space, min_size, alignment);
++
++	/* First see if there is a large enough contiguous idle region... */
++	list_for_each_entry(obj_priv, &dev_priv->mm.inactive_list, list) {
++		if (mark_free(obj_priv, &unwind_list))
++			goto found;
++	}
+
++	/* Now merge in the soon-to-be-expired objects... */
++	i915_for_each_active_object(obj_priv, &iter) {
++		/* Does the object require an outstanding flush? */
++		if (obj_priv->obj->write_domain || obj_priv->pin_count)
+ 			continue;
+-		}
+
+-		/* If we didn't have anything on the request list but there
+-		 * are buffers awaiting a flush, emit one and try again.
+-		 * When we wait on it, those buffers waiting for that flush
+-		 * will get moved to inactive.
+-		 */
+-		if (!list_empty(&dev_priv->mm.flushing_list)) {
+-			struct drm_gem_object *obj = NULL;
+-			struct drm_i915_gem_object *obj_priv;
+-
+-			/* Find an object that we can immediately reuse */
+-			list_for_each_entry(obj_priv, &dev_priv->mm.flushing_list, list) {
+-				obj = obj_priv->obj;
+-				if (obj->size >= min_size)
+-					break;
+-
+-				obj = NULL;
+-			}
+-
+-			if (obj != NULL) {
+-				uint32_t seqno;
+-
+-				i915_gem_flush(dev,
+-					       obj->write_domain,
+-					       obj->write_domain);
+-				seqno = i915_add_request(dev, NULL, obj->write_domain);
+-				if (seqno == 0)
+-					return -ENOMEM;
+-
+-				ret = i915_do_wait_request(dev, seqno, true);
+-				if (ret)
+-					return ret;
+-
+-				continue;
+-			}
++		if (mark_free(obj_priv, &unwind_list))
++			goto found;
 +	}
 +
-+	if (entry->size >= size + wasted) {
-+		return 1;
++	/* Finally add anything with a pending flush (in order of retirement) */
++	list_for_each_entry(obj_priv, &dev_priv->mm.flushing_list, list) {
++		if (obj_priv->pin_count)
++			continue;
++
++		if (mark_free(obj_priv, &unwind_list))
++			goto found;
 +	}
++	i915_for_each_active_object(obj_priv, &iter) {
++		if (! obj_priv->obj->write_domain || obj_priv->pin_count)
++			continue;
++
++		if (mark_free(obj_priv, &unwind_list))
++			goto found;
++	}
++
++	/* Nothing found, clean up and bail out! */
++	list_for_each_entry(obj_priv, &unwind_list, evict_list) {
++		ret = drm_mm_scan_remove_block(obj_priv->gtt_space);
++		BUG_ON(ret);
++	}
++
++	/* We expect the caller to unpin, evict all and try again, or give up.
++	 * So calling i915_gem_evict_everything() is unnecessary.
++	 */
++	return -ENOSPC;
++
++found:
++	INIT_LIST_HEAD(&eviction_list);
++	list_for_each_entry_safe(obj_priv, tmp_obj_priv,
++				 &unwind_list, evict_list) {
++		if (drm_mm_scan_remove_block(obj_priv->gtt_space)) {
++			/* drm_mm doesn't allow any other other operations while
++			 * scanning, therefore store to be evicted objects on a
++			 * temporary list. */
++			list_move(&obj_priv->evict_list, &eviction_list);
+ 		}
++	}
+
+-		/* If we didn't do any of the above, there's no single buffer
+-		 * large enough to swap out for the new one, so just evict
+-		 * everything and start again. (This should be rare.)
+-		 */
+-		if (!list_empty (&dev_priv->mm.inactive_list))
+-			return i915_gem_evict_inactive(dev);
+-		else
+-			return i915_gem_evict_everything(dev);
++	/* Unbinding will emit any required flushes */
++	list_for_each_entry_safe(obj_priv, tmp_obj_priv,
++				 &eviction_list, evict_list) {
++#if WATCH_LRU
++		DRM_INFO("%s: evicting %p\n", __func__, obj);
++#endif
++		ret = i915_gem_object_unbind(obj_priv->obj);
++		if (ret)
++			return ret;
+ 	}
++
++	/* The just created free hole should be on the top of the free stack
++	 * maintained by drm_mm, so this BUG_ON actually executes in O(1).
++	 * Furthermore all accessed data has just recently been used, so it
++	 * should be really fast, too. */
++	BUG_ON(!drm_mm_search_free(&dev_priv->mm.gtt_space, min_size,
++				   alignment, 0));
 +
 +	return 0;
-+}
-+
- struct drm_mm_node *drm_mm_search_free(const struct drm_mm *mm,
- 				       unsigned long size,
- 				       unsigned alignment, int best_match)
-@@ -337,31 +358,22 @@ struct drm_mm_node *drm_mm_search_free(const struct drm_mm *mm,
- 	struct drm_mm_node *entry;
- 	struct drm_mm_node *best;
- 	unsigned long best_size;
--	unsigned wasted;
+ }
 
- 	best = NULL;
- 	best_size = ~0UL;
-
- 	list_for_each(list, free_stack) {
- 		entry = list_entry(list, struct drm_mm_node, fl_entry);
--		wasted = 0;
-
--		if (entry->size < size)
-+		if (!check_free_mm_node(entry, size, alignment))
- 			continue;
-
--		if (alignment) {
--			register unsigned tmp = entry->start % alignment;
--			if (tmp)
--				wasted += alignment - tmp;
--		}
-+		if (!best_match)
-+			return entry;
-
--		if (entry->size >= size + wasted) {
--			if (!best_match)
--				return entry;
--			if (entry->size < best_size) {
--				best = entry;
--				best_size = entry->size;
--			}
-+		if (entry->size < best_size) {
-+			best = entry;
-+			best_size = entry->size;
- 		}
- 	}
-
-@@ -381,38 +393,25 @@ struct drm_mm_node *drm_mm_search_free_in_range(const struct drm_mm *mm,
- 	struct drm_mm_node *entry;
- 	struct drm_mm_node *best;
- 	unsigned long best_size;
--	unsigned wasted;
-
- 	best = NULL;
- 	best_size = ~0UL;
-
- 	list_for_each(list, free_stack) {
- 		entry = list_entry(list, struct drm_mm_node, fl_entry);
--		wasted = 0;
--
--		if (entry->size < size)
--			continue;
-
- 		if (entry->start > end || (entry->start+entry->size) < start)
- 			continue;
-
--		if (entry->start < start)
--			wasted += start - entry->start;
-+		if (!check_free_mm_node(entry, size, alignment))
-+			continue;
-
--		if (alignment) {
--			register unsigned tmp = (entry->start + wasted) % alignment;
--			if (tmp)
--				wasted += alignment - tmp;
--		}
-+		if (!best_match)
-+			return entry;
-
--		if (entry->size >= size + wasted &&
--		    (entry->start + wasted + size) <= end) {
--			if (!best_match)
--				return entry;
--			if (entry->size < best_size) {
--				best = entry;
--				best_size = entry->size;
--			}
-+		if (entry->size < best_size) {
-+			best = entry;
-+			best_size = entry->size;
- 		}
- 	}
-
+ int
 --
 1.7.4.1
 
