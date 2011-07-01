@@ -1,85 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627Ab1GAVWT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:22:19 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:43471 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755209Ab1GAVWS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:22:18 -0400
-Date: Fri, 1 Jul 2011 14:19:43 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Brian Gerst <brgerst@gmail.com>,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] x86: add missing verify_cpu to 32bit wakeup
-Message-ID: <20110701211943.GA7042@outflux.net>
+	id S1757749Ab1GAV3Z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 17:29:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55469 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757690Ab1GAV3Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 17:29:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Bernard F6BVP <f6bvp@free.fr>, David Miller <davem@davemloft.net>
+Subject: [PATCH] 6pack,mkiss: fix lock inconsistency
+Date: Fri, 1 Jul 2011 23:28:46 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Ralf Baechle DL5RB <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
+        Linux Netdev List <netdev@vger.kernel.org>, linux-hams@vger.kernel.org
+References: <4B2CD772.1030106@upmc.fr> <20110625163942.GB20976@linux-mips.org> <4E0DC4F3.6010203@free.fr>
+In-Reply-To: <4E0DC4F3.6010203@free.fr>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107012328.46256.arnd@arndb.de>
+X-Provags-ID: V02:K0:qWTxtINPCn5uHXwqPhIcTgVgFnHRI0mSyNxOWvrW1v/
+ 7mGoZKB+UpeHkgZOjnIqtG+DqHcmcwkuvSuOVnaWJB3VyXgj9S
+ nI1M6AHgqUcKztNcXETchId0TiAW9RyFX4BqRczwxuunYdr88H
+ sZseaCmSlI7MlIQoM2b3ReGyPu2Z8XFWA3tqT3xPFeCxF1e47K
+ sC0PqngB83Xn9FhcInLxA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some BIOSes will reset the Intel XD_DISABLE MSR bit when resuming from S3,
-which can interact poorly with ebba638ae723d8a8fc2f7abce5ec18b688b791d7.
-In 32bit PAE mode, this can lead to a fault when EFER is restored by
-the kernel wakeup routines, due to it setting the NX bit for a CPU
-that (thanks to the BIOS reset) now incorrectly thinks it lacks the NX
-feature. 64bit wakeup already handled this through its common call path
-that would hit verify_cpu(). 32bit has a separate path for restoring
-CPU state on S3 wakeup, and needed to call verify_cpu() to handle this
-situation.
+Lockdep found a locking inconsistency in the mkiss_close function:
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> kernel: [ INFO: inconsistent lock state ]
+> kernel: 2.6.39.1 #3
+> kernel: ---------------------------------
+> kernel: inconsistent {IN-SOFTIRQ-R} -> {SOFTIRQ-ON-W} usage.
+> kernel: ax25ipd/2813 [HC0[0]:SC0[0]:HE1:SE1] takes:
+> kernel: (disc_data_lock){+++?.-}, at: [<ffffffffa018552b>] mkiss_close+0x1b/0x90 [mkiss]
+> kernel: {IN-SOFTIRQ-R} state was registered at:
+
+The message hints that disc_data_lock is aquired with softirqs disabled,
+but does not itself disable softirqs, which can in rare circumstances
+lead to a deadlock. 
+The same problem is present in the 6pack driver, this patch fixes both
+by using write_lock_bh instead of write_lock.
+
+Reported-by: Bernard F6BVP <f6bvp@free.fr>
+Tested-by: Bernard F6BVP <f6bvp@free.fr>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Acked-by: Ralf Baechle<ralf@linux-mips.org>
 Cc: stable@kernel.org
 ---
- arch/x86/kernel/acpi/realmode/wakeup.S |    4 ++++
- arch/x86/kernel/verify_cpu.S           |    1 +
- 2 files changed, 5 insertions(+), 0 deletions(-)
+On Friday 01 July 2011 15:00:35 Bernard F6BVP wrote:
+> 
+> Now, who is going to commit this mkiss patch and the equivalent one for 
+> sixpack.c ?
 
-diff --git a/arch/x86/kernel/acpi/realmode/wakeup.S b/arch/x86/kernel/acpi/realmode/wakeup.S
-index ead21b6..19698da 100644
---- a/arch/x86/kernel/acpi/realmode/wakeup.S
-+++ b/arch/x86/kernel/acpi/realmode/wakeup.S
-@@ -94,6 +94,9 @@ wakeup_code:
- 	/* Do any other stuff... */
+Here's a formal patch with all the right tags, I assume that David Miller
+will apply that to the netdev tree.
+
+diff --git a/drivers/net/hamradio/6pack.c b/drivers/net/hamradio/6pack.c
+index 9624cbf..fea7cb4 100644
+--- a/drivers/net/hamradio/6pack.c
++++ b/drivers/net/hamradio/6pack.c
+@@ -694,10 +694,10 @@ static void sixpack_close(struct tty_struct *tty)
+ {
+ 	struct sixpack *sp;
  
- #ifndef CONFIG_64BIT
-+	/* Recheck NX bit overrides (64bit path does this in trampoline) */
-+	call	verify_cpu
-+
- 	/* This could also be done in C code... */
- 	movl	pmode_cr3, %eax
- 	movl	%eax, %cr3
-@@ -117,6 +120,7 @@ wakeup_code:
- 	movl	pmode_cr0, %eax
- 	movl	%eax, %cr0
- 	jmp	pmode_return
-+# include "../../verify_cpu.S"
- #else
- 	pushw	$0
- 	pushw	trampoline_segment
-diff --git a/arch/x86/kernel/verify_cpu.S b/arch/x86/kernel/verify_cpu.S
-index b9242ba..50c5edd 100644
---- a/arch/x86/kernel/verify_cpu.S
-+++ b/arch/x86/kernel/verify_cpu.S
-@@ -20,6 +20,7 @@
-  *	arch/x86/boot/compressed/head_64.S: Boot cpu verification
-  *	arch/x86/kernel/trampoline_64.S: secondary processor verification
-  *	arch/x86/kernel/head_32.S: processor startup
-+ *	arch/x86/kernel/acpi/realmode/wakeup.S: 32bit processor resume
-  *
-  *	verify_cpu, returns the status of longmode and SSE in register %eax.
-  *		0: Success    1: Failure
--- 
-1.7.4.1
-
--- 
-Kees Cook
-Ubuntu Security Team
+-	write_lock(&disc_data_lock);
++	write_lock_bh(&disc_data_lock);
+ 	sp = tty->disc_data;
+ 	tty->disc_data = NULL;
+-	write_unlock(&disc_data_lock);
++	write_unlock_bh(&disc_data_lock);
+ 	if (!sp)
+ 		return;
+ 
+diff --git a/drivers/net/hamradio/mkiss.c b/drivers/net/hamradio/mkiss.c
+index 9f84c83..324f7bf 100644
+--- a/drivers/net/hamradio/mkiss.c
++++ b/drivers/net/hamradio/mkiss.c
+@@ -813,10 +813,10 @@ static void mkiss_close(struct tty_struct *tty)
+ {
+ 	struct mkiss *ax;
+ 
+-	write_lock(&disc_data_lock);
++	write_lock_bh(&disc_data_lock);
+ 	ax = tty->disc_data;
+ 	tty->disc_data = NULL;
+-	write_unlock(&disc_data_lock);
++	write_unlock_bh(&disc_data_lock);
+ 
+ 	if (!ax)
+ 		return;
