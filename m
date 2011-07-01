@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab1GAFhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 01:37:38 -0400
+	id S1754823Ab1GAFiA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 01:38:00 -0400
 Received: from mobile-166-190-108-096.mycingular.net ([166.190.108.96]:38470
 	"EHLO brontomerus.synaptics.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752516Ab1GAFhf (ORCPT
+	by vger.kernel.org with ESMTP id S1752516Ab1GAFh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 01:37:35 -0400
+	Fri, 1 Jul 2011 01:37:57 -0400
 X-Greylist: delayed 920 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jul 2011 01:37:06 EDT
 From: Christopher Heiny <cheiny@synaptics.com>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
@@ -22,9 +22,9 @@ Cc: Jean Delvare <khali@linux-fr.org>,
         Mathieu Poirier <mathieu.poirier@linaro.org>,
         Linus Walleij <linus.walleij@stericsson.com>,
         Naveen Kumar Gaddipati <naveen.gaddipati@stericsson.com>
-Subject: [PATCH 2/9] input/touchscreen: Synaptics RMI4 Touchscreen Driver
-Date: Thu, 30 Jun 2011 22:19:09 -0700
-Message-Id: <1309497556-7344-3-git-send-email-cheiny@synaptics.com>
+Subject: [PATCH 3/9] input/touchscreen: Synaptics RMI4 Touchscreen Driver
+Date: Thu, 30 Jun 2011 22:19:10 -0700
+Message-Id: <1309497556-7344-4-git-send-email-cheiny@synaptics.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1309497556-7344-1-git-send-email-cheiny@synaptics.com>
 References: <1309497556-7344-1-git-send-email-cheiny@synaptics.com>
@@ -50,16 +50,15 @@ Acked-by: Jean Delvare <khali@linux-fr.org>
 
 ---
 
-diff --git a/drivers/input/touchscreen/rmi_i2c.c b/drivers/input/touchscreen/rmi_i2c.c
+diff --git a/drivers/input/touchscreen/rmi_function.c b/drivers/input/touchscreen/rmi_function.c
 new file mode 100644
-index 0000000..c9d248d
+index 0000000..e0f0bb1
 --- /dev/null
-+++ b/drivers/input/touchscreen/rmi_i2c.c
-@@ -0,0 +1,528 @@
++++ b/drivers/input/touchscreen/rmi_function.c
+@@ -0,0 +1,289 @@
 +/**
-+ *
-+ * Synaptics Register Mapped Interface (RMI4) I2C Physical Layer Driver.
-+ * Copyright (c) 2007-2011, Synaptics Incorporated
++ * Synaptics Register Mapped Interface (RMI4) - RMI Function Module.
++ * Copyright (C) 2007 - 2011, Synaptics Incorporated
 + *
 + */
 +/*
@@ -82,519 +81,282 @@ index 0000000..c9d248d
 +
 +#include <linux/kernel.h>
 +#include <linux/device.h>
-+#include <linux/module.h>
-+#include <linux/i2c.h>
-+#include <linux/platform_device.h>
-+#include <linux/interrupt.h>
++#include <linux/hrtimer.h>
++#include <linux/miscdevice.h>
++#include <linux/fs.h>
 +#include <linux/delay.h>
++#include <linux/uaccess.h>
 +#include <linux/slab.h>
-+#include "rmi_i2c.h"
++#include <linux/kthread.h>
++#include <linux/freezer.h>
++#include <linux/input.h>
++#include <linux/interrupt.h>
++
 +#include "rmi_drvr.h"
-+#include "rmi_platformdata.h"
++#include "rmi_function.h"
++#include "rmi_bus.h"
 +#include "rmi_sensor.h"
++#include "rmi_f01.h"
++#include "rmi_f05.h"
++#include "rmi_f11.h"
++#include "rmi_f19.h"
++#include "rmi_f34.h"
 +
-+#define DRIVER_NAME "rmi4_ts"
-+#define DEVICE_NAME "rmi4_ts"
 +
-+static const struct i2c_device_id rmi_i2c_id_table[] = {
-+	{RMI4_I2C_DEVICE_NAME, 0},
-+	{},
++#define FUNCTION_NAME_SIZE 10
++
++static int rmi_function_suspendable(struct rmi_function_info *rmifninfo);
++
++
++/* NOTE: Developer - add in any new RMI4 fn data info - function number
++ * and ptrs to report, config, init and detect functions.  This data is
++ * used to point to the functions that need to be called to config, init,
++ * detect and report data for the new RMI4 function. Refer to the RMI4
++ * specification for information on RMI4 functions.
++ */
++/* TODO: This will eventually be built dynamically, as individual function
++ * implementations registered.  For now, though we create it statically. */
++static struct rmi_function_ops supported_functions[] = {
++	/* Fn $01 - device control */
++	{
++		.function_number = RMI_F01_INDEX,
++		.inthandler = FN_01_inthandler,
++		.config = FN_01_config,
++		.init = FN_01_init,
++		.detect = FN_01_detect,
++		.attention = FN_01_attention,
++		.suspend = FN_01_suspend,
++		.resume = FN_01_resume,
++		.suspendable = rmi_function_suspendable},
++	/* Fn $05 - analog report */
++	{
++		.function_number = RMI_F05_INDEX,
++		.inthandler = FN_05_inthandler,
++		.config = FN_05_config,
++		.init = FN_05_init,
++		.detect = FN_05_detect,
++		.attention = NULL,
++		.suspend = NULL,
++		.resume = NULL,
++		.suspendable = rmi_function_suspendable},
++	 /* Fn $11 - 2D sensing */
++	 {
++		 .function_number = RMI_F11_INDEX,
++		 .inthandler = FN_11_inthandler,
++		 .config = FN_11_config,
++		 .init = FN_11_init,
++		 .detect = FN_11_detect,
++		 .attention = NULL,
++		 .suspend = NULL,
++		 .resume = NULL,
++		 .suspendable = rmi_function_suspendable},
++	/* Fn $19 - buttons */
++	{
++		.function_number = RMI_F19_INDEX,
++		.inthandler = FN_19_inthandler,
++		.config = FN_19_config,
++		.init = FN_19_init,
++		.detect = FN_19_detect,
++		.attention = NULL,
++		.suspend = NULL,
++		.resume = NULL,
++		.suspendable = rmi_function_suspendable},
++	/* Fn $34 - firmware reflash */
++	{
++		.function_number = RMI_F34_INDEX,
++		.inthandler = FN_34_inthandler,
++		.config = FN_34_config,
++		.init = FN_34_init,
++		.detect = FN_34_detect,
++		.attention = FN_34_attention,
++		.suspend = NULL,
++		.resume = NULL,
++		.suspendable = rmi_function_suspendable},
 +};
 +
-+MODULE_DEVICE_TABLE(i2c, rmi_i2c_id_table);
-+
-+/*
-+ * This is the data kept on a per instance (client) basis.  This data is
-+ * always accessible by using the container_of() macro of the various elements
-+ * inside.
++/* This function is here to provide a way for external modules to access the
++ * functions list.  It will try to find a matching function base on the passed
++ * in RMI4 function number and return  the pointer to the struct rmi_functions
++ * if a match is found or NULL if not found.
 + */
-+struct instance_data {
-+	int instance_no;
-+	int irq;
-+	struct rmi_phys_driver rmiphysdrvr;
-+	struct i2c_client *i2cclient;	/* pointer to client for later use in
-+					   read, write, read_multiple, etc. */
-+	struct mutex page_mutex;
-+	struct lock_class_key page_key;
-+	int page;
-+};
-+
-+/*
-+ * RMI devices have 16-bit addressing, but some of the physical
-+ * implementations (like SMBus) only have 8-bit addressing.  So RMI implements
-+ * a page address at 0xff of every page so we can reliable page addresses
-+ * every 256 registers.  This function sets the page.
-+ *
-+ * The page_mutex lock must be held when this function is entered.
-+ *
-+ * param[in] id - The pointer to the instance_data struct
-+ * param[in] page - The new page address.
-+ * returns zero on success, non-zero on failure.
-+ */
-+/* Writing to page select is giving errors in some configurations.  It's
-+ * not needed for basic operation [see note], so we've turned it off for the
-+ * moment. Once we figure out why this happening (is it a bug in our code? or
-+ * in some I2C chips?  or maybe in the driver for some chips?) we'll either
-+ * turn this opperation back on, move the choice to platform data, or
-+ * determine whether to use it based on I2C driver capability).
-+ *
-+ * [NOTE: The current driver feature set doesn't require us to access
-+ * addresses outside of the first page, so we're OK for the time being.
-+ * Obviously this must be remedied before implementing the more advanced
-+ * features that are in the pipeline.]
-+ */
-+#if	defined(USE_PAGESELECT)
-+int rmi_set_page(struct instance_data *instancedata, unsigned int page)
++struct rmi_function_ops *rmi_find_function(int function_number)
 +{
-+	char txbuf[2];
-+	int retval;
-+	txbuf[0] = 0xff;
-+	txbuf[1] = page;
-+	retval = i2c_master_send(instancedata->i2cclient,
-+				txbuf, ARRAY_SIZE(txbuf));
-+	if (retval != ARRAY_SIZE(txbuf)) {
-+		dev_err(&instancedata->i2cclient->dev,
-+			"%s: Set page failed: %d.", __func__, retval);
-+	} else {
-+		retval = 0;
-+		instancedata->page = page;
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(supported_functions); i++) {
++		if (function_number == supported_functions[i].function_number)
++			return &supported_functions[i];
 +	}
-+	return retval;
++
++	return NULL;
 +}
-+#else
-+int rmi_set_page(struct instance_data *instancedata, unsigned int page)
++EXPORT_SYMBOL(rmi_find_function);
++
++static int rmi_function_suspendable(struct rmi_function_info *rmifninfo)
 +{
++	return 1;
++}
++
++static void rmi_function_config(struct rmi_function_device *function)
++{
++	pr_debug("%s: rmi_function_config", __func__);
++}
++
++/* Just a stub for now.
++ */
++static int rmi_function_suspend(struct device *dev, pm_message_t state)
++{
++	pr_info("%s: function suspend called.", __func__);
 +	return 0;
 +}
-+#endif
 +
-+/*
-+ * Same as rmi_i2c_read, except that multiple bytes are allowed to be read.
-+ *
-+ * param[in] pd - The pointer to the rmi_phys_driver struct
-+ * param[in] address - The address at which to start the data read.
-+ * param[out] valp - Pointer to the buffer where the data will be stored.  This
-+ *     buffer must be at least size bytes long.
-+ * param[in] size - The number of bytes to be read.
-+ * returns zero upon success (with the byte read in valp), non-zero upon error.
-+ *
++/* Just a stub for now.
 + */
-+static int
-+rmi_i2c_read_multiple(struct rmi_phys_driver *physdrvr, unsigned short address,
-+		      char *valp, int size)
++static int rmi_function_resume(struct device *dev)
 +{
-+	struct instance_data *instancedata =
-+	    container_of(physdrvr, struct instance_data, rmiphysdrvr);
++	pr_info("%s: function resume called.", __func__);
++	return 0;
++}
 +
-+	char txbuf[2];
++int rmi_function_register_driver(struct rmi_function_driver *drv,
++				int function_number)
++{
 +	int retval = 0;
-+	int retry_count = 0;
++	char *driver_name;
 +
-+	/* Can't have anyone else changing the page behind our backs */
-+	mutex_lock(&instancedata->page_mutex);
++	pr_info("%s: Registering function driver for F%02x.\n", __func__,
++		function_number);
 +
-+	if (((address >> 8) & 0xff) != instancedata->page) {
-+		/* Switch pages */
-+		retval = rmi_set_page(instancedata, ((address >> 8) & 0xff));
-+		if (retval)
-+			goto exit;
-+	}
 +
-+retry:
-+	txbuf[0] = address & 0xff;
-+	retval = i2c_master_send(instancedata->i2cclient, txbuf, 1);
-+
-+	if (retval != 1) {
-+		dev_err(&instancedata->i2cclient->dev, "%s: Write fail: %d\n",
-+			__func__, retval);
-+		goto exit;
-+	}
-+	retval = i2c_master_recv(instancedata->i2cclient, valp, size);
-+
-+	if (retval != size) {
-+		if (++retry_count == 5) {
-+			dev_err(&instancedata->i2cclient->dev,
-+				"%s: Read of 0x%04x size %d fail: %d\n",
-+				__func__, address, size, retval);
-+		} else {
-+			mdelay(10);
-+			rmi_set_page(instancedata, ((address >> 8) & 0xff));
-+			goto retry;
-+		}
-+	} else {
-+		retval = 0;
-+	}
-+exit:
-+
-+	mutex_unlock(&instancedata->page_mutex);
-+	return retval;
-+}
-+
-+/*
-+ * Read a single register through i2c.
-+ *
-+ * param[in] pd - The pointer to the rmi_phys_driver struct
-+ * param[in] address - The address at which to start the data read.
-+ * param[out] valp - Pointer to the buffer where the data will be stored.
-+ * returns zero upon success (with the byte read in valp), non-zero upon error.
-+ */
-+static int
-+rmi_i2c_read(struct rmi_phys_driver *physdrvr, unsigned short address,
-+	     char *valp)
-+{
-+	return rmi_i2c_read_multiple(physdrvr, address, valp, 1);
-+}
-+
-+/*
-+ * Write multiple registers.
-+ *
-+ * param[in] pd - The pointer to the rmi_phys_driver struct
-+ * param[in] address - The address at which to start the write.
-+ * param[in] valp - A pointer to a buffer containing the data to be written.
-+ * param[in] size - The number of bytes to write.
-+ * returns one upon success, something else upon error.
-+ */
-+static int
-+rmi_i2c_write_multiple(struct rmi_phys_driver *physdrvr, unsigned short address,
-+		       char *valp, int size)
-+{
-+	struct instance_data *instancedata =
-+	    container_of(physdrvr, struct instance_data, rmiphysdrvr);
-+
-+	unsigned char txbuf[size+1];
-+	int retval = 0;
-+
-+	memcpy(txbuf+1, valp, size);
-+
-+	/* Can't have anyone else changing the page behind our backs */
-+	mutex_lock(&instancedata->page_mutex);
-+
-+	if (((address >> 8) & 0xff) != instancedata->page) {
-+		/* Switch pages */
-+		retval = rmi_set_page(instancedata, ((address >> 8) & 0xff));
-+		if (retval)
-+			goto exit;
-+	}
-+
-+	txbuf[0] = address & 0xff;	/* put the address in the first byte */
-+	retval = i2c_master_send(instancedata->i2cclient,
-+				txbuf, ARRAY_SIZE(txbuf));
-+
-+	/* TODO: Add in retry on writes only in certain error return values */
-+	if (retval != ARRAY_SIZE(txbuf)) {
-+		dev_err(&instancedata->i2cclient->dev, "%s: Write fail: %d\n",
-+			__func__, retval);
-+		goto exit;
-+	}
-+exit:
-+
-+	mutex_unlock(&instancedata->page_mutex);
-+	return retval;
-+}
-+
-+/*
-+ * Write a single register through i2c.
-+ *
-+ * param[in] pd - The pointer to the rmi_phys_driver structnew file (copy)
-+ * param[in] address - The address at which to start the write.
-+ * param[in] data - The data to be written.
-+ * returns one upon success, something else upon error.
-+ */
-+static int
-+rmi_i2c_write(struct rmi_phys_driver *physdrvr, unsigned short address,
-+	      char data)
-+{
-+	return rmi_i2c_write_multiple(physdrvr, address, &data, 1);
-+}
-+
-+/*
-+ * This is the Interrupt Service Routine.  It just notifies the application
-+ * layer that attention is required.
-+ */
-+static irqreturn_t i2c_attn_isr(int irq, void *info)
-+{
-+	struct instance_data *instancedata = info;
-+
-+	disable_irq_nosync(instancedata->irq);
-+
-+	if (instancedata->rmiphysdrvr.attention) {
-+		instancedata->rmiphysdrvr.attention(&instancedata->rmiphysdrvr,
-+						    instancedata->instance_no);
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+/* The Driver probe function - will allocate and initialize the instance
-+ * data and request the irq and set the instance data as the clients
-+ * platform data then register the physical driver which will do a scan of
-+ * the RMI4 Physical Device Table and enumerate any RMI4 functions that
-+ * have data sources associated with them.
-+ */
-+static int
-+rmi_i2c_probe(struct i2c_client *client, const struct i2c_device_id *dev_id)
-+{
-+	struct instance_data *instancedata;
-+	int retval = 0;
-+	struct rmi_i2c_platformdata *platformdata;
-+	struct rmi_sensordata *sensordata;
-+
-+	if (client == NULL) {
-+		pr_err("%s: Invalid NULL client received.", __func__);
-+		return -EINVAL;
-+	}
-+
-+	platformdata = client->dev.platform_data;
-+	if (platformdata == NULL) {
-+		dev_err(&client->dev, "%s: CONFIGURATION ERROR - "
-+		"platform data is NULL.\n", __func__);
-+		retval = -EINVAL;
-+	}
-+	sensordata = platformdata->sensordata;
-+
-+	dev_dbg(&client->dev, "%s: Probing i2c RMI device, addr: 0x%02x",
-+		  __func__, client->addr);
-+
-+	/* Allocate and initialize the instance data for this client */
-+	instancedata = kzalloc(sizeof(*instancedata), GFP_KERNEL);
-+	if (!instancedata) {
-+		dev_err(&client->dev,
-+			"%s: Failed to allocate instance_data.\n",
-+			__func__);
++	/* Create a function device and function driver for this Fn */
++	driver_name = kzalloc(FUNCTION_NAME_SIZE, GFP_KERNEL);
++	if (!driver_name) {
++		pr_err("%s: Error allocating memory for "
++		     "rmi_function_driver name.", __func__);
 +		return -ENOMEM;
 +	}
++	snprintf(driver_name, FUNCTION_NAME_SIZE, "fn%02x", function_number);
 +
-+	__mutex_init(&instancedata->page_mutex, "page_mutex",
-+		     &instancedata->page_key);
-+	instancedata->rmiphysdrvr.name = RMI4_I2C_DRIVER_NAME;
-+	instancedata->rmiphysdrvr.write = rmi_i2c_write;
-+	instancedata->rmiphysdrvr.read = rmi_i2c_read;
-+	instancedata->rmiphysdrvr.write_multiple = rmi_i2c_write_multiple;
-+	instancedata->rmiphysdrvr.read_multiple = rmi_i2c_read_multiple;
-+	instancedata->rmiphysdrvr.module = THIS_MODULE;
++	drv->drv.name = driver_name;
++	drv->module = drv->drv.owner;
 +
-+	/* Set default to polling in case no matching platform data is located
-+	   for this device. We'll still work but in polling mode since we didn't
-+	   find any irq info */
-+	instancedata->rmiphysdrvr.polling_required = true;
++	drv->drv.suspend = rmi_function_suspend;
++	drv->drv.resume = rmi_function_resume;
 +
-+	instancedata->page = 0xffff;	/* Force a set page the first time */
-+
-+	/* Egregiously horrible delay here that seems to prevent I2C disasters
-+	 * on certain broken dev systems.  In most cases, you can safely
-+	 * leave this as zero.
-+	 */
-+	if (platformdata->delay_ms > 0)
-+		mdelay(platformdata->delay_ms);
-+
-+	dev_dbg(&client->dev, "%s: sensor addr: 0x%02x irq: 0x%x type: %d\n",
-+		 __func__, platformdata->i2c_address, platformdata->irq,
-+		 platformdata->irq_type);
-+	if (client->addr != platformdata->i2c_address) {
-+		dev_err(&client->dev,
-+			"%s: CONFIGURATION ERROR - client I2C address 0x%02x "
-+			"doesn't match platform data address 0x%02x.\n",
-+			__func__, client->addr, platformdata->i2c_address);
-+		retval = -EINVAL;
-+		goto error_exit;
-+	}
-+
-+	instancedata->instance_no = rmi_next_sensor_id();
-+
-+	/* set the device name using the instance_no appended to DEVICE_NAME
-+	 * to make a unique name */
-+	dev_set_name(&client->dev, "%s%d", RMI4_I2C_DEVICE_NAME,
-+		     instancedata->instance_no);
-+
-+	/* Determine if we need to poll (inefficient) or use interrupts.
-+	 */
-+	if (platformdata->irq) {
-+		instancedata->irq = platformdata->irq;
-+		switch (platformdata->irq_type) {
-+		case IRQF_TRIGGER_NONE:
-+			dev_warn(&client->dev, "%s: Touchscreen ATTN IRQ was "
-+				"specified as IRQF_TRIGGER_NONE. IRQ trigger "
-+				"configuration will be defaulted.", __func__);
-+			break;
-+		case IRQF_TRIGGER_RISING:
-+		case IRQF_TRIGGER_FALLING:
-+		case IRQF_TRIGGER_HIGH:
-+		case IRQF_TRIGGER_LOW:
-+			break;
-+		default:
-+			dev_warn(&client->dev,
-+				 "%s: Invalid IRQ flags in platform data.\n",
-+				 __func__);
-+			retval = -ENXIO;
-+			goto error_exit;
-+		}
-+
-+		instancedata->rmiphysdrvr.polling_required = false;
-+		instancedata->rmiphysdrvr.irq = instancedata->irq;
-+
-+	} else {
-+		instancedata->rmiphysdrvr.polling_required = true;
-+		dev_info(&client->dev,
-+			 "%s: No IRQ info given. Polling required.\n",
-+			 __func__);
-+	}
-+
-+	/* Store the instance data in the i2c_client - we need to do this prior
-+	 * to calling register_physical_driver since it may use the read, write
-+	 * functions. If nothing was found then the id fields will be set to 0
-+	 * for the irq and the default  will be set to polling required so we
-+	 * will still work but in polling mode. */
-+	i2c_set_clientdata(client, instancedata);
-+
-+	/* Copy i2c_client pointer into instance_data's i2c_client pointer for
-+	   later use in rmi4_read, rmi4_write, etc. */
-+	instancedata->i2cclient = client;
-+
-+	/* Call the platform setup routine, to do any setup that is required
-+	 * before interacting with the device.  When we refined the bus
-+	 * architecture, this will be done elsewhere.
-+	 */
-+	if (sensordata && sensordata->rmi_sensor_setup) {
-+		retval = sensordata->rmi_sensor_setup();
-+		if (retval) {
-+			dev_err(&client->dev,
-+				"%s: sensor setup failed with code %d.",
-+			       __func__, retval);
-+			goto error_exit;
-+		}
-+	}
-+
-+	/* Register sensor drivers - this will call the detect function that
-+	 * will then scan the device and determine the supported RMI4 sensors
-+	 * and functions.
-+	 */
-+	retval =
-+	    rmi_register_sensor(&instancedata->rmiphysdrvr,
-+				platformdata->sensordata);
++	/* register the sensor driver */
++	retval = driver_register(&drv->drv);
 +	if (retval) {
-+		dev_err(&client->dev,
-+			"%s: Failed to Register %s sensor drivers\n", __func__,
-+			instancedata->rmiphysdrvr.name);
++		pr_err("%s: Failed driver_register %d\n", __func__, retval);
++		drv->drv.name = NULL;
++		kfree(driver_name);
++	}
++
++	return retval;
++}
++EXPORT_SYMBOL(rmi_function_register_driver);
++
++void rmi_function_unregister_driver(struct rmi_function_driver *drv)
++{
++	char *driver_name =  (char *) drv->drv.name;
++
++	pr_info("%s: Unregistering function driver.\n", __func__);
++
++	/* TODO: Unregister the devices first. */
++	driver_unregister(&drv->drv);
++	kfree(driver_name);
++}
++EXPORT_SYMBOL(rmi_function_unregister_driver);
++
++int rmi_function_register_device(struct rmi_function_device *function_device,
++				 int fnNumber)
++{
++	struct input_dev *input;
++	int retval = 0;
++
++	pr_info("%s: Registering function device for F%02x.\n", __func__,
++		fnNumber);
++
++	/* make name - fn11, fn19, etc. */
++	dev_set_name(&function_device->dev, "%sfn%02x",
++		     function_device->sensor->drv.name, fnNumber);
++	dev_set_drvdata(&function_device->dev, function_device);
++	retval = device_register(&function_device->dev);
++	if (retval) {
++		pr_err("%s:  Failed device_register for function device.\n",
++		       __func__);
++		return retval;
++	}
++
++	input = input_allocate_device();
++	if (input == NULL) {
++		pr_err("%s:  Failed to allocate memory for a "
++		       "new input device.\n", __func__);
++		retval = -ENOMEM;
 +		goto error_exit;
 +	}
 +
-+	if (instancedata->rmiphysdrvr.polling_required == false) {
-+		retval = request_irq(instancedata->irq, i2c_attn_isr,
-+				platformdata->irq_type, "rmi_i2c",
-+				instancedata);
-+		if (retval) {
-+			dev_err(&client->dev,
-+				"%s: failed to obtain IRQ %d. Result: %d.",
-+				__func__, instancedata->irq, retval);
-+			dev_info(&client->dev, "%s: Reverting to polling.\n",
-+				 __func__);
-+			instancedata->rmiphysdrvr.polling_required = true;
-+			/* TODO: Need to revert back to polling - create and
-+			 * start timer. */
-+		} else {
-+			dev_dbg(&client->dev, "%s: got irq.\n", __func__);
-+		}
++	input->name = dev_name(&function_device->dev);
++	input->phys = "rmi_function";
++	function_device->input = input;
++
++	/* init any input specific params for this function */
++	function_device->rmi_funcs->init(function_device);
++
++	retval = input_register_device(input);
++	if (retval) {
++		pr_err("%s:  Failed input_register_device.\n", __func__);
++		goto error_exit;
 +	}
 +
-+	dev_dbg(&client->dev, "%s: Successfully registered %s sensor driver.\n",
-+		__func__, instancedata->rmiphysdrvr.name);
-+
-+	pr_info("%s: Successfully registered %s sensor driver.\n", __func__,
-+		instancedata->rmiphysdrvr.name);
++	rmi_function_config(function_device);
 +
 +	return retval;
 +
 +error_exit:
-+	kfree(instancedata);
-+	/* return error for clean-up*/
++	kfree(input);
 +	return retval;
 +}
++EXPORT_SYMBOL(rmi_function_register_device);
 +
-+static int rmi_i2c_remove(struct i2c_client *client)
++void rmi_function_unregister_device(struct rmi_function_device *dev)
 +{
-+	struct instance_data *instancedata = i2c_get_clientdata(client);
++	pr_info("%s: Unregistering function device.n", __func__);
 +
-+	dev_dbg(&client->dev, "%s: Unregistering phys driver %s\n", __func__,
-+		instancedata->rmiphysdrvr.name);
++	input_unregister_device(dev->input);
++	device_unregister(&dev->dev);
++}
++EXPORT_SYMBOL(rmi_function_unregister_device);
 +
-+	rmi_unregister_sensors(&instancedata->rmiphysdrvr);
-+
-+	dev_dbg(&client->dev, "%s: Unregistered phys driver %s\n",
-+		__func__, instancedata->rmiphysdrvr.name);
-+
-+	/* only free irq if we have an irq - otherwise the instance_data
-+	   will be 0 for that field */
-+	if (instancedata->irq)
-+		free_irq(instancedata->irq, instancedata);
-+
-+	kfree(instancedata);
-+	dev_dbg(&client->dev, "%s: Remove successful\n", __func__);
++static int __init rmi_function_init(void)
++{
++	pr_debug("%s: RMI Function Init\n", __func__);
 +
 +	return 0;
 +}
 +
-+#ifdef CONFIG_PM
-+static int rmi_i2c_suspend(struct i2c_client *client, pm_message_t mesg)
++static void __exit rmi_function_exit(void)
 +{
-+	/* Touch sleep mode */
-+	return 0;
++	pr_debug("%s: RMI Function Exit\n", __func__);
 +}
 +
-+static int rmi_i2c_resume(struct i2c_client *client)
-+{
-+	/* Re-initialize upon resume */
-+	return 0;
-+}
-+#else
-+#define rmi_i2c_suspend	NULL
-+#define rmi_i2c_resume	NULL
-+#endif
-+
-+/*
-+ * This structure tells the i2c subsystem about us.
-+ *
-+ * TODO: we should add .suspend and .resume fns.
-+ *
-+ */
-+static struct i2c_driver rmi_i2c_driver = {
-+	.probe = rmi_i2c_probe,
-+	.remove = rmi_i2c_remove,
-+	.suspend = rmi_i2c_suspend,
-+	.resume = rmi_i2c_resume,
-+	.driver = {
-+		   .name = RMI4_I2C_DRIVER_NAME,
-+		   .owner = THIS_MODULE,
-+		   },
-+	.id_table = rmi_i2c_id_table,
-+};
-+
-+static int __init rmi_phys_i2c_init(void)
-+{
-+	return i2c_add_driver(&rmi_i2c_driver);
-+}
-+
-+static void __exit rmi_phys_i2c_exit(void)
-+{
-+	i2c_del_driver(&rmi_i2c_driver);
-+}
-+
-+module_init(rmi_phys_i2c_init);
-+module_exit(rmi_phys_i2c_exit);
++module_init(rmi_function_init);
++module_exit(rmi_function_exit);
 +
 +MODULE_AUTHOR("Synaptics, Inc.");
-+MODULE_DESCRIPTION("RMI4 Driver I2C Physical Layer");
++MODULE_DESCRIPTION("RMI4 Function Driver");
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/input/touchscreen/rmi_i2c.h b/drivers/input/touchscreen/rmi_i2c.h
+diff --git a/drivers/input/touchscreen/rmi_function.h b/drivers/input/touchscreen/rmi_function.h
 new file mode 100644
-index 0000000..66bc48c
+index 0000000..029f935
 --- /dev/null
-+++ b/drivers/input/touchscreen/rmi_i2c.h
-@@ -0,0 +1,67 @@
++++ b/drivers/input/touchscreen/rmi_function.h
+@@ -0,0 +1,175 @@
 +/**
 + *
-+ * Synaptics RMI over I2C Physical Layer Driver Header File.
++ * Synaptics Register Mapped Interface (RMI4) Function Device Header File.
 + * Copyright (c) 2007 - 2011, Synaptics Incorporated
 + *
++ *
 + */
 +/*
 + * This file is licensed under the GPL2 license.
@@ -614,59 +376,165 @@ index 0000000..66bc48c
 + *#############################################################################
 + */
 +
-+#if !defined(_RMI_I2C_H)
-+#define _RMI_I2C_H
++#if !defined(_RMI_FUNCTION_H)
++#define _RMI_FUNCTION_H
 +
-+#include "rmi_platformdata.h"
++#include <linux/input.h>
++#include <linux/device.h>
 +
-+/* In the future, we may change the device name.  If so, defining it here
-+ * makes life easier.
++/* For each function present on the RMI device, there will be a corresponding
++ * entry in the functions list of the rmi_sensor_driver structure.  This entry
++ * gives information about the number of data sources and the number of data
++ * registers associated with the function.
 + */
-+#define RMI4_I2C_DRIVER_NAME "rmi4_ts"
-+#define RMI4_I2C_DEVICE_NAME "rmi4_ts"
-+
-+/* Sensor-specific configuration data, to be included as the platform data
-+ * for the relevant i2c_board_info entry.
-+ *
-+ * This describes a single RMI4 sensor on an I2C bus, including:
-+ * its I2C address, IRQ (if any), the type of IRQ (if applicable), and an
-+ * optional list of any non-default settings (on a per function basis)
-+ * to be applied at start up.
-+ */
-+struct rmi_i2c_platformdata {
-+	/* The seven-bit i2c address of the sensor. */
-+	int i2c_address;
-+	/* The number of the irq.  Set to zero if polling is required. */
-+	int irq;
-+	/* The type of the irq.  This should be one of IRQF_TRIGGER_RISING,
-+	 * IRQF_TRIGGER_FALLING, IRQF_TRIGGER_HIGH, IRQF_TRIGGER_LOW.
-+	 * Recommended value is IRQF_TRIGGER_LOW, but may be different for
-+	 * specially configured sensors.
-+	 * Only valid if irq != 0 */
-+	int irq_type;
-+
-+	/* If >0, the driver will delay this many milliseconds before attempting
-+	 * I2C communications.  This is necessary because some horribly broken
-+	 * development systems don't bring their I2C up very fast after system
-+	 * power on or reboot.  In most cases, you can safely ignore this.
++struct rmi_function_info {
++	/* The sensor this function belongs to.
 +	 */
-+	int delay_ms;
++	struct rmi_sensor_driver *sensor;
 +
-+	/* Use this to specify platformdata that is not I2C specific. */
-+	struct rmi_sensordata *sensordata;
++	/* A device associated with this function.
++	 */
++	struct rmi_function_device *function_device;
++
++	unsigned char function_number;
++
++	/* This is the number of data sources associated with the function. */
++	unsigned char num_data_sources;
++
++	/* This is the interrupt register and mask - needed for enabling the
++	 *  interrupts and for checking what source had caused the attention
++	 * line interrupt.
++	 */
++	unsigned char interrupt_register;
++	unsigned char interrupt_mask;
++
++	/* This is the RMI function descriptor associated with this function.
++	 *  It contains the Base addresses for the functions query, command,
++	 *  control, and data registers.
++	 */
++	struct rmi_function_descriptor function_descriptor;
++
++	/* pointer to data specific to a functions implementation. */
++	void *fndata;
++
++	/* A list of the function information.
++	 *  This list uses the standard kernel linked list implementation.
++	 *  Documentation on on how to use it can be found at
++	 *  http://isis.poly.edu/kulesh/stuff/src/klist/.
++	 */
++	struct list_head link;
 +};
 +
++/* This struct is for creating a list of RMI4 functions that have data sources
++associated with them. This is to facilitate adding new support for other
++data sources besides 2D sensors.
++To add a new data source support, the developer will create a new file
++and add these 4 functions below with FN$## in front of the names - where
++## is the hex number for the function taken from the RMI4 specification.
++
++The function number will be associated with this and later will be used to
++match the RMI4 function to the 4 functions for that RMI4 function number.
++The user will also have to add code that adds the new rmi_functions item
++to the global list of RMI4 functions and stores the pointers to the 4
++functions in the function pointers.
++ */
++struct rmi_function_ops {
++	unsigned char function_number;
++
++	/* Pointers to function specific functions for interruptHandler,
++	 * config, init, detect and attention. These ptrs. need to be filled
++	 * in for every RMI4 function that has data source(s) associated with
++	 * it - like fn $11 (2D sensors), fn $19 (buttons), etc. Each RMI4
++	 * function that has data sources will be added into a list that is
++	 * used to match the function number against the number stored here.
++	 *
++	 * The sensor implementation will call this whenever and IRQ is
++	 * dispatched that this function is interested in.
++	 */
++	void (*inthandler) (struct rmi_function_info *rfi,
++			    unsigned int asserted_IRQs);
++
++	int (*config) (struct rmi_function_info *rmifninfo);
++	int (*init) (struct rmi_function_device *function_device);
++	int (*detect) (struct rmi_function_info *rmifninfo);
++	/* If this is non-null, the sensor implementation will call this
++	 * whenever the ATTN line is asserted.
++	 */
++	void (*attention) (struct rmi_function_info *rmifninfo);
++	/**
++	 *  suspend/resume provided from each function
++	 */
++	int (*suspend) (struct rmi_function_info *rmifninfo);
++	void (*resume) (struct rmi_function_info *rmifninfo);
++	/**
++	 *  suspendable
++	 *  return zero if the function cannot be suspended at the moment
++	 *  nonzero if the function can be suspended
++	 */
++	int (*suspendable)(struct rmi_function_info *rmifninfo);
++};
++
++struct rmi_function_ops *rmi_find_function(int function_number);
++int rmi_functions_init(struct input_dev *inputdev);
++
++struct rmi_function_driver {
++	struct module *module;
++	struct device_driver drv;
++
++	/* Probe Function
++	 *  This function is called to give the function driver layer an
++	 *  opportunity to claim an RMI function.
++	 */
++	int (*probe) (struct rmi_function_driver *function);
++	/* Config Function
++	 *  This function is called after a successful probe.  It gives the
++	 *  function driver an opportunity to query and/or configure an RMI
++	 *  function before data starts flowing.
++	 */
++	void (*config) (struct rmi_function_driver *function);
++
++	unsigned short query_base_address;
++	unsigned short control_base_address;
++	unsigned short command_base_address;
++	unsigned short data_base_address;
++	/* offset from start of interrupt registers */
++	unsigned int interrupt_register_offset;
++	unsigned int interrupt_mask;
++
++	/* Pointer to the corresponding phys driver info for this sensor.
++	 * The phys driver has the pointers to read, write, etc.  Probably
++	 * don't need it here - used down in bus driver and sensor driver. */
++	struct rmi_phys_driver *rpd;
++
++	struct list_head function_drivers;
++};
++
++struct rmi_function_device {
++	struct rmi_function_driver *function;
++	struct device dev;
++	struct input_dev *input;
++	/* need this to be bound to phys driver layer */
++	struct rmi_sensor_driver *sensor;
++
++	/* The function ptrs to the config, init, detect and
++	 * report functions for this rmi function device. */
++	struct rmi_function_ops *rmi_funcs;
++	struct rmi_function_info *rfi;
++	struct list_head functions;	/* link functions into list */
++};
++
++int rmi_function_register_device(struct rmi_function_device *dev,
++				 int function_number);
 +#endif
-diff --git a/drivers/input/touchscreen/rmi_spi.c b/drivers/input/touchscreen/rmi_spi.c
+diff --git a/drivers/input/touchscreen/rmi_sensor.c b/drivers/input/touchscreen/rmi_sensor.c
 new file mode 100644
-index 0000000..0d2453a
+index 0000000..c40ba37
 --- /dev/null
-+++ b/drivers/input/touchscreen/rmi_spi.c
-@@ -0,0 +1,711 @@
++++ b/drivers/input/touchscreen/rmi_sensor.c
+@@ -0,0 +1,1059 @@
 +/**
-+ *
-+ * Synaptics Register Mapped Interface (RMI4) SPI Physical Layer Driver.
-+ * Copyright (C) 2008-2011, Synaptics Incorporated
++ * Synaptics Register Mapped Interface (RMI4) - RMI Sensor Module.
++ * Copyright (C) 2007 - 2011, Synaptics Incorporated
 + *
 + */
 +/*
@@ -687,706 +555,1056 @@ index 0000000..0d2453a
 + *#############################################################################
 + */
 +
++#include <linux/kernel.h>
++#include <linux/gpio.h>
++#include <linux/list.h>
++#include <linux/device.h>
++#include <linux/hrtimer.h>
++#include <linux/miscdevice.h>
++#include <linux/fs.h>
 +#include <linux/delay.h>
++#include <linux/uaccess.h>
++#include <linux/slab.h>
++#include <linux/kthread.h>
++#include <linux/freezer.h>
++#include <linux/input.h>
 +#include <linux/interrupt.h>
-+#include <linux/spi/spi.h>
-+#include <linux/platform_device.h>
-+#include <linux/sched.h>
-+#include <linux/semaphore.h>
-+#include <linux/spi/spi.h>
-+#include <linux/wait.h>
-+#include "rmi_spi.h"
-+#include "rmi_platformdata.h"
++
 +#include "rmi_drvr.h"
++#include "rmi_bus.h"
++#include "rmi_function.h"
 +#include "rmi_sensor.h"
 +
-+#define COMM_DEBUG  0		/* Set to 1 to dump transfers. */
-+
-+/* For V1 protocol, the high bit in the address is set to indicate reads. */
-+#define SPI_V1_READ_FLAG 0x80
-+
-+/* For V2 protocol, first byte of transmission indicates what operation is
-+ * to be performed.
++/* Context data for each sensor.
 + */
-+#define SPI_V2_UNIFIED_READ       0xC0
-+#define SPI_V2_WRITE              0x40
-+#define SPI_V2_PREPARE_SPLIT_READ 0xC8
-+#define SPI_V2_EXECUTE_SPLIT_READ 0xCA
-+
-+/* Once the sensor has prepared a V2 split read, we always send the same
-+ * bytes to tell it to execute the read. For convenience, we keep a static
-+ * copy of those bytes around.
-+ */
-+static unsigned char execute_split_read[] = { SPI_V2_EXECUTE_SPLIT_READ, 0x00 };
-+
-+/* This is the data kept on a per instance (client) basis.  This data is
-+ * always accessible by using the container_of() macro of the various elements
-+ * inside.
-+ */
-+struct spi_device_instance_data {
-+	int instance_no;
-+	int irq;
-+	unsigned int byte_delay_us;
-+	unsigned int block_delay_us;
-+	unsigned int split_read_byte_delay_us;
-+	unsigned int split_read_block_delay_us;
-+	unsigned int buffer_size;
-+	unsigned char spi_version;
-+	int v2_transaction_size;
-+	wait_queue_head_t attn_event;
-+	bool attn_seen;
-+	bool split_read_pending;
-+	struct rmi_phys_driver rpd;
-+	struct spi_device *spidev;
-+	struct rmi_spi_platformdata *platformdata;
++struct sensor_instance_data {
++	unsigned char pdt_props;
++	unsigned char bsr;
 +};
 +
-+static int spi_xfer(struct spi_device_instance_data *instance_data,
-+		    const u8 *txbuf, unsigned n_tx, u8 *rxbuf, unsigned n_rx)
++#define HAS_BSR_MASK 0x20
++#define HAS_NONSTANDARD_PDT_MASK 0x40
++
++static bool has_bsr(struct sensor_instance_data *instance_data)
 +{
-+	struct spi_device *spi = instance_data->spidev;
-+#if COMM_DEBUG
-+	int i;
-+#endif
-+	int status;
-+	struct spi_message message;
-+	struct spi_transfer *xfer_list;
-+	const int total_bytes = n_tx + n_rx;
-+	u8 local_buf[total_bytes];
-+	int xfers_in_message = 0;
-+	int xfer_index = 0;
-+	int block_delay = n_rx > 0 ? instance_data->block_delay_us : 0;
-+	int byte_delay = n_tx > 1 ? instance_data->byte_delay_us : 0;
-+	if (instance_data->split_read_pending) {
-+		block_delay =
-+		    n_rx > 0 ? instance_data->split_read_block_delay_us : 0;
-+		byte_delay =
-+		    n_tx > 1 ? instance_data->split_read_byte_delay_us : 0;
-+	}
-+
-+	if (n_tx)
-+		xfers_in_message += 1;
-+	if (n_rx) {
-+		if (byte_delay)
-+			xfers_in_message += n_rx;
-+		else
-+			xfers_in_message += 1;
-+	}
-+
-+	xfer_list = kcalloc(xfers_in_message,
-+			    sizeof(struct spi_transfer), GFP_KERNEL);
-+	if (!xfer_list)
-+		return -ENOMEM;
-+
-+	spi_message_init(&message);
-+
-+	if (n_tx) {
-+		memset(&xfer_list[0], 0, sizeof(struct spi_transfer));
-+		xfer_list[0].len = n_tx;
-+		xfer_list[0].delay_usecs = block_delay;
-+		spi_message_add_tail(&xfer_list[0], &message);
-+		memcpy(local_buf, txbuf, n_tx);
-+		xfer_list[0].tx_buf = local_buf;
-+		xfer_index++;
-+	}
-+	if (n_rx) {
-+		if (byte_delay) {
-+			int buffer_offset = n_tx;
-+			for (; xfer_index < xfers_in_message; xfer_index++) {
-+				memset(&xfer_list[xfer_index], 0,
-+				       sizeof(struct spi_transfer));
-+				xfer_list[xfer_index].len = 1;
-+				xfer_list[xfer_index].delay_usecs = byte_delay;
-+				xfer_list[xfer_index].rx_buf =
-+				    local_buf + buffer_offset;
-+				buffer_offset++;
-+				spi_message_add_tail(&xfer_list[xfer_index],
-+						     &message);
-+			}
-+		} else {
-+			memset(&xfer_list[xfer_index], 0,
-+			       sizeof(struct spi_transfer));
-+			xfer_list[xfer_index].len = n_rx;
-+			xfer_list[xfer_index].rx_buf = local_buf + n_tx;
-+			spi_message_add_tail(&xfer_list[xfer_index], &message);
-+			xfer_index++;
-+		}
-+	}
-+#if COMM_DEBUG
-+	pr_info("%s: SPI transmits %d bytes...", __func__, n_tx);
-+	for (i = 0; i < n_tx; i++)
-+		pr_info("    0x%02X", local_buf[i]);
-+#endif
-+
-+	/* do the i/o */
-+	if (instance_data->platformdata->cs_assert) {
-+		status = instance_data->platformdata->cs_assert(
-+			instance_data->platformdata->cs_assert_data, true);
-+		if (!status) {
-+			pr_err("%s: Failed to assert CS.", __func__);
-+			goto error_exit;
-+		}
-+	}
-+	status = spi_sync(spi, &message);
-+	if (instance_data->platformdata->cs_assert) {
-+		status = instance_data->platformdata->cs_assert(
-+			instance_data->platformdata->cs_assert_data, false);
-+		if (!status) {
-+			pr_err("%s: Failed to deassert CS.", __func__);
-+			goto error_exit;
-+		}
-+	}
-+	if (status == 0) {
-+		memcpy(rxbuf, local_buf + n_tx, n_rx);
-+		status = message.status;
-+#if COMM_DEBUG
-+		if (n_rx) {
-+			pr_info("%s: SPI received %d bytes...", __func__, n_rx);
-+			for (i = 0; i < n_rx; i++)
-+				pr_info("    0x%02X", rxbuf[i]);
-+		}
-+#endif
-+	} else {
-+		pr_err("%s: spi_sync failed with error code %d.",
-+		       __func__, status);
-+	}
-+
-+error_exit:
-+	kfree(xfer_list);
-+	return status;
++	return (instance_data->pdt_props & HAS_BSR_MASK) != 0;
 +}
 +
-+/* Same as rmi_spi_read_v1, except that multiple bytes are allowed to be read.
-+ * \param[in] pd
-+ * \param[in] address The address at which to start the data read.
-+ * \param[out] valp Pointer to the buffer where the data will be stored.  This
-+ * buffer must be at least size bytes long.
-+ * \param[in] size The number of bytes to be read.
-+ * \return zero upon success (with the byte read in valp), non-zero upon error.
-+ */
-+static int
-+rmi_spi_read_multiple_v1(struct rmi_phys_driver *pd, unsigned short address,
-+			 char *valp, int size)
++long polltime = 25000000;	/* Shared with rmi_function.c. */
++EXPORT_SYMBOL(polltime);
++module_param(polltime, long, 0644);
++MODULE_PARM_DESC(polltime, "How long to wait between polls (in nano seconds).");
++
++#define PDT_START_SCAN_LOCATION 0x00E9
++#define PDT_END_SCAN_LOCATION 0x0005
++#define PDT_ENTRY_SIZE 0x0006
++#define PDT_PROPERTIES_LOCATION 0x00EF
++#define BSR_LOCATION 0x00FE
++
++static DEFINE_MUTEX(rfi_mutex);
++
++struct rmi_function_ops *rmi_find_function(int function_number);
++
++/* sysfs files for sensor attributes for BSR register value. */
++static ssize_t rmi_sensor_hasbsr_show(struct device *dev,
++				      struct device_attribute *attr, char *buf);
++
++static ssize_t rmi_sensor_bsr_show(struct device *dev,
++				   struct device_attribute *attr, char *buf);
++
++static ssize_t rmi_sensor_bsr_store(struct device *dev,
++				    struct device_attribute *attr,
++				    const char *buf, size_t count);
++
++static struct device_attribute attrs[] = {
++	__ATTR(hasbsr, 0444,
++	       rmi_sensor_hasbsr_show, rmi_store_error),	/* RO attr */
++	__ATTR(bsr, 0666,
++	       rmi_sensor_bsr_show, rmi_sensor_bsr_store)	/* RW attr */
++};
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++static void rmi_sensor_early_suspend(struct early_suspend *h);
++static void rmi_sensor_late_resume(struct early_suspend *h);
++#endif
++
++int rmi_read(struct rmi_sensor_driver *sensor, unsigned short address,
++	     char *dest)
 +{
-+	struct spi_device_instance_data *instance_data =
-+	    container_of(pd, struct spi_device_instance_data, rpd);
++	struct rmi_phys_driver *rpd = sensor->rpd;
++	if (!rpd)
++		return -ENODEV;
++	return rpd->read(rpd, address, dest);
++}
++EXPORT_SYMBOL(rmi_read);
++
++int rmi_write(struct rmi_sensor_driver *sensor, unsigned short address,
++	      unsigned char data)
++{
++	struct rmi_phys_driver *rpd = sensor->rpd;
++	if (!rpd)
++		return -ENODEV;
++	return rpd->write(rpd, address, data);
++}
++EXPORT_SYMBOL(rmi_write);
++
++int rmi_read_multiple(struct rmi_sensor_driver *sensor, unsigned short address,
++		      char *dest, int length)
++{
++	struct rmi_phys_driver *rpd = sensor->rpd;
++	if (!rpd)
++		return -ENODEV;
++	return rpd->read_multiple(rpd, address, dest, length);
++}
++EXPORT_SYMBOL(rmi_read_multiple);
++
++int rmi_write_multiple(struct rmi_sensor_driver *sensor, unsigned short address,
++		       unsigned char *data, int length)
++{
++	struct rmi_phys_driver *rpd = sensor->rpd;
++	if (!rpd)
++		return -ENODEV;
++	return rpd->write_multiple(rpd, address, data, length);
++}
++EXPORT_SYMBOL(rmi_write_multiple);
++
++/* Utility routine to set bits in a register. */
++int rmi_set_bits(struct rmi_sensor_driver *sensor, unsigned short address,
++		 unsigned char bits)
++{
++	unsigned char reg_contents;
 +	int retval;
-+	unsigned char txbuf[2];
 +
-+	txbuf[1] = address;
-+	txbuf[0] = address >> 8;
-+	txbuf[0] |= SPI_V1_READ_FLAG;
-+
-+	retval = spi_xfer(instance_data, txbuf, ARRAY_SIZE(txbuf), valp, size);
-+
++	retval = rmi_read(sensor, address, &reg_contents);
++	if (retval)
++		return retval;
++	reg_contents = reg_contents | bits;
++	retval = rmi_write(sensor, address, reg_contents);
++	if (retval == 1)
++		return 0;
++	else if (retval == 0)
++		return -EINVAL;	/* TODO: What should this be? */
 +	return retval;
++}
++EXPORT_SYMBOL(rmi_set_bits);
++
++/* Utility routine to clear bits in a register. */
++int rmi_clear_bits(struct rmi_sensor_driver *sensor, unsigned short address,
++		   unsigned char bits)
++{
++	unsigned char reg_contents;
++	int retval;
++
++	retval = rmi_read(sensor, address, &reg_contents);
++	if (retval)
++		return retval;
++	reg_contents = reg_contents & ~bits;
++	retval = rmi_write(sensor, address, reg_contents);
++	if (retval == 1)
++		return 0;
++	else if (retval == 0)
++		return -EINVAL;	/* TODO: What should this be? */
++	return retval;
++}
++EXPORT_SYMBOL(rmi_clear_bits);
++
++/* Utility routine to set the value of a bit field in a register. */
++int rmi_set_bit_field(struct rmi_sensor_driver *sensor, unsigned short address,
++		      unsigned char field_mask, unsigned char bits)
++{
++	unsigned char reg_contents;
++	int retval;
++
++	retval = rmi_read(sensor, address, &reg_contents);
++	if (retval)
++		return retval;
++	reg_contents = (reg_contents & ~field_mask) | bits;
++	retval = rmi_write(sensor, address, reg_contents);
++	if (retval == 1)
++		return 0;
++	else if (retval == 0)
++		return -EINVAL;	/* TODO: What should this be? */
++	return retval;
++}
++EXPORT_SYMBOL(rmi_set_bit_field);
++
++bool rmi_polling_required(struct rmi_sensor_driver *sensor)
++{
++	return sensor->polling_required;
++}
++EXPORT_SYMBOL(rmi_polling_required);
++
++/* Keeps track of how many sensors we've seen so far.  TODO: What happens
++ * if we disconnect from a sensor?  Does it sensor number get recycled?
++ */
++static int sensor_count;
++
++/* Sensors are identified starting at 0 and working up.  This will retrieve
++ * the current sensor number, and increment the sensor_count.
++ */
++int rmi_next_sensor_id()
++{
++	int id = sensor_count;
++	sensor_count++;
++	return id;
++}
++EXPORT_SYMBOL(rmi_next_sensor_id);
++
++/* Functions can call this in order to dispatch IRQs. */
++void dispatchIRQs(struct rmi_sensor_driver *sensor, unsigned int irq_status)
++{
++	struct rmi_function_info *function_info;
++
++	list_for_each_entry(function_info, &sensor->functions, link) {
++		if ((function_info->interrupt_mask & irq_status) &&
++				function_info->function_device->rmi_funcs->
++				inthandler) {
++			/* Call the function's interrupt handler. */
++			function_info->function_device->rmi_funcs->
++				inthandler(function_info,
++					(function_info->
++					interrupt_mask & irq_status));
++		}
++	}
 +}
 +
 +/*
-+ * Read a single register through SPI, V1 protocol.
-+ * \param[in] pd
-+ * \param[in] address The address at which to start the data read.
-+ * \param[out] valp Pointer to the buffer where the data will be stored.
-+ * \return zero upon success (with the byte read in valp), non-zero upon error.
++ * This is the function we pass to the RMI4 subsystem so we can be notified
++ * when attention is required.  It may be called in interrupt context.
 + */
-+static int
-+rmi_spi_read_v1(struct rmi_phys_driver *pd, unsigned short address, char *valp)
++static void attention(struct rmi_phys_driver *physdrvr, int instance)
 +{
-+	return rmi_spi_read_multiple_v1(pd, address, valp, 1);
++	/* All we have to do is schedule work. */
++	schedule_work(&(physdrvr->sensor->work));
 +}
 +
-+/* Write multiple registers using version 1 of the RMI4 SPI interface.
-+ * \param[in] pd
-+ * \param[in] address The address at which to start the write.
-+ * \param[in] valp A pointer to a buffer containing the data to be written.
-+ * \param[in] size The number of bytes to write.
-+ * \return one upon success, something else upon error.
++/* This notifies any interested functions that there is an Attention interrupt.
++ * The interested functions should take appropriate actions (such as reading
++ * the interrupt status register and dispatching any appropriate RMI4
++ * interrupts).
 + */
-+static int
-+rmi_spi_write_multiple_v1(struct rmi_phys_driver *pd, unsigned short address,
-+			  char *valp, int size)
++void attn_notify(struct rmi_sensor_driver *sensor)
 +{
-+	struct spi_device_instance_data *id =
-+	    container_of(pd, struct spi_device_instance_data, rpd);
-+	int buffer_size = size + 2;
-+	unsigned char txbuf[buffer_size];
-+	int retval;
-+	int i;
++	struct rmi_function_info *function_info;
 +
-+	txbuf[1] = address;
-+	txbuf[0] = address >> 8;
-+
-+	for (i = 0; i < size; i++)
-+		txbuf[i + 2] = valp[i];
-+
-+	retval = spi_xfer(id, txbuf, buffer_size, NULL, 0);
-+
-+	return retval ? 0 : 1;
-+}
-+
-+/* Write a single register through SPI using version 1 of the interface.
-+ * You can write multiple registers at once, but I made the functions for that
-+ * seperate for performance reasons.  Writing multiple requires allocation and
-+ * freeing.
-+ * \param[in] pd
-+ * \param[in] address The address at which to start the write.
-+ * \param[in] data The data to be written.
-+ * \return one upon success, something else upon error.
-+ */
-+static int
-+rmi_spi_write_v1(struct rmi_phys_driver *pd, unsigned short address, char data)
-+{
-+	return rmi_spi_write_multiple_v1(pd, address, &data, 1);
-+}
-+
-+/* Read multiple bytes using version 2 of the RMI4 SPI interface.
-+ *
-+ * \param[in] pd
-+ * \param[in] address The address at which to start the data read.
-+ * \param[out] valp Pointer to the buffer where the data will be stored.  This
-+ * buffer must be at least size bytes long.
-+ * \param[in] size The number of bytes to be read.
-+ * \return zero upon success (with the byte read in valp), non-zero upon error.
-+ */
-+static int
-+rmi_spi_read_multiple_v2(struct rmi_phys_driver *pd, unsigned short address,
-+			 char *valp, int size)
-+{
-+	struct spi_device_instance_data *instance_data =
-+	    container_of(pd, struct spi_device_instance_data, rpd);
-+	int retval;
-+	char header_buf[4];
-+
-+	header_buf[0] = SPI_V2_UNIFIED_READ;
-+	header_buf[1] = (address >> 8) & 0x00FF;
-+	header_buf[2] = address & 0x00ff;
-+	header_buf[3] = size;
-+
-+	retval = spi_xfer(instance_data, header_buf, ARRAY_SIZE(header_buf),
-+			  valp, size);
-+
-+	return retval;
-+}
-+
-+/* Read a single register (one byte) from the device, using version 2 of the
-+ * RMI4 SPI interface.
-+ * \param[in] pd
-+ * \param[in] address The address at which to start the data read.
-+ * \param[out] valp Pointer to the buffer where the data will be stored.
-+ * \return zero upon success (with the byte read in valp), non-zero upon error.
-+ */
-+static int
-+rmi_spi_read_v2(struct rmi_phys_driver *pd, unsigned short address, char *valp)
-+{
-+	return rmi_spi_read_multiple_v2(pd, address, valp, 1);
-+}
-+
-+/* Read multiple bytes using version 2 of the RMI4 SPI interface.
-+ *
-+ * \param[in] pd
-+ * \param[in] address The address at which to start the data read.
-+ * \param[out] valp Pointer to the buffer where the data will be stored.  This
-+ * buffer must be at least size bytes long.
-+ * \param[in] size The number of bytes to be read.
-+ * \return zero upon success (with the byte read in valp), non-zero upon error.
-+ */
-+static int
-+rmi_spi_split_read_v2(struct rmi_phys_driver *pd, unsigned short address,
-+		      char *valp, int size)
-+{
-+	struct spi_device_instance_data *instance_data =
-+	    container_of(pd, struct spi_device_instance_data, rpd);
-+	int retval;
-+	char header_buf[4];
-+	int read_size = size + 1; /* Add a byte for dummy byte at start. */
-+	char read_buf[read_size];
-+
-+	header_buf[0] = SPI_V2_PREPARE_SPLIT_READ;
-+	header_buf[1] = (address >> 8) & 0x00FF;
-+	header_buf[2] = address & 0x00ff;
-+	header_buf[3] = size;
-+
-+	instance_data->attn_seen = false;
-+	instance_data->split_read_pending = true;
-+
-+	retval = spi_xfer(instance_data, header_buf, ARRAY_SIZE(header_buf),
-+			  NULL, 0);
-+	if (retval) {
-+		instance_data->split_read_pending = false;
-+		return retval;
++	list_for_each_entry(function_info, &sensor->functions, link) {
++		if (function_info->function_device
++		    && function_info->function_device->rmi_funcs->attention) {
++			function_info->function_device->rmi_funcs->
++			    attention(function_info);
++		}
 +	}
-+
-+	enable_irq(pd->irq);
-+	wait_event_interruptible((instance_data->attn_event),
-+				 (instance_data->attn_seen == true));
-+
-+	retval = spi_xfer(instance_data,
-+			  execute_split_read, ARRAY_SIZE(execute_split_read),
-+			  read_buf, read_size);
-+	instance_data->split_read_pending = false;
-+	if (retval)
-+		return retval;
-+	if (read_buf[0] != size)
-+		return -EIO;
-+	memcpy(valp, &read_buf[1], size);
-+
-+	return retval;
 +}
 +
-+/* Write multiple registers using version 2 of the RMI4 SPI interface.
++/* This is the worker function - for now it simply has to call attn_notify.
++ * This work should be scheduled whenever an ATTN interrupt is asserted by
++ * the touch sensor.  We then call attn_notify to dispatch notification of
++ * the ATTN interrupt to all interested functions. After all the attention
++ * handling functions have returned, it is presumed safe to re-enable the
++ * Attention interrupt.
++ */
++static void sensor_work_func(struct work_struct *work)
++{
++	struct rmi_sensor_driver *sensor =
++			container_of(work, struct rmi_sensor_driver, work);
++	struct rmi_sensor_device *sensor_dev = sensor->sensor_device;
++
++	mutex_lock(&sensor->work_lock);
++	attn_notify(sensor);
++
++	/* we only need to enable the irq if doing interrupts */
++	/*
++	 * if suspend operation occurs and this is the function during execution
++	 * we cannot enable irq again
++	 */
++	if (!rmi_polling_required(sensor) && !sensor_dev->device_is_suspended)
++		enable_irq(sensor->rpd->irq);
++	mutex_unlock(&sensor->work_lock);
++}
++
++/* This is the timer function for polling - it simply has to schedule work
++ * and restart the timer. */
++static enum hrtimer_restart sensor_poll_timer_func(struct hrtimer *timer)
++{
++	struct rmi_sensor_driver *sensor =
++			container_of(timer, struct rmi_sensor_driver, timer);
++
++	if (!work_pending(&sensor->work))
++		schedule_work(&sensor->work);
++	hrtimer_start(&sensor->timer, ktime_set(0, polltime), HRTIMER_MODE_REL);
++	return HRTIMER_NORESTART;
++}
++
++/* This is the probe function passed to the RMI4 subsystem that gives us a
++ * chance to recognize an RMI4 device.  In this case, we're looking for
++ * Synaptics devices that have data sources - such as touch screens, buttons,
++ * etc.
 + *
-+ * \param[in] pd
-+ * \param[in] address The address at which to start the write.
-+ * \param[in] valp A pointer to a buffer containing the data to be written.
-+ * \param[in] size The number of bytes to write.
-+ * \return one upon success, something else upon error.
++ * TODO: Well, it used to do this.  I'm not sure it's required any more.
 + */
-+static int
-+rmi_spi_write_multiple_v2(struct rmi_phys_driver *pd, unsigned short address,
-+			  char *valp, int size)
++static int probe(struct rmi_sensor_driver *sensor)
 +{
-+	struct spi_device_instance_data *id =
-+	    container_of(pd, struct spi_device_instance_data, rpd);
-+	unsigned char txbuf[size + 4];
-+	int retval;
++	struct rmi_phys_driver *rpd = sensor->rpd;
++	pr_debug("%s: PROBE CALLED", __func__);
 +
-+	txbuf[0] = SPI_V2_WRITE;
-+	txbuf[1] = (address >> 8) & 0x00FF;
-+	txbuf[2] = address & 0x00FF;
-+	txbuf[3] = size;
-+
-+	memcpy(&txbuf[4], valp, size);
-+
-+	retval = spi_xfer(id, txbuf, size + 4, NULL, 0);
-+
-+	return retval ? 0 : 1;
-+}
-+
-+/* Write a single byte/register using version 2 of the RMI4 SPI interface.
-+ *
-+ * \param[in] pd
-+ * \param[in] address The address at which to start the write.
-+ * \param[in] data The data to be written.
-+ * \return one upon success, something else upon error.
-+ */
-+static int
-+rmi_spi_write_v2(struct rmi_phys_driver *pd, unsigned short address, char data)
-+{
-+	return rmi_spi_write_multiple_v2(pd, address, &data, 1);
-+}
-+
-+/* This is the Interrupt Service Routine.  It just notifies the physical device
-+ * that attention is required.
-+ */
-+static irqreturn_t spi_attn_isr(int irq, void *info)
-+{
-+	struct spi_device_instance_data *instance_data = info;
-+	disable_irq_nosync(instance_data->irq);
-+	if (instance_data->spi_version == 2 &&
-+	    instance_data->split_read_pending) {
-+		instance_data->attn_seen = true;
-+		wake_up(&instance_data->attn_event);
-+		return IRQ_HANDLED;
-+	}
-+	if (instance_data->rpd.attention)
-+		instance_data->rpd.attention(&instance_data->rpd,
-+					     instance_data->instance_no);
-+	return IRQ_HANDLED;
-+}
-+
-+static int __devinit rmi_spi_probe(struct spi_device *spi)
-+{
-+	struct spi_device_instance_data *instance_data;
-+	int retval;
-+	struct rmi_spi_platformdata *platformdata;
-+	struct rmi_sensordata *sensordata;
-+	char buf[6];
-+
-+	dev_info(&spi->dev, "%s: Probing RMI4 SPI device", __func__);
-+
-+	platformdata = spi->dev.platform_data;
-+	if (platformdata == NULL) {
-+		dev_err(&spi->dev,
-+			"%s: CONFIGURATION ERROR - platform data is NULL.",
-+		       __func__);
++	if (!rpd) {
++		pr_err("%s: Invalid rmi physical driver - null ptr: %p\n",
++		       __func__, rpd);
 +		return -EINVAL;
 +	}
 +
-+	spi->bits_per_word = 8;
-+	/* This should have already been set up in the board file,
-+	 * shouldn't it? */
-+	spi->mode = SPI_MODE_3;
++	return 0;
++}
 +
-+	retval = spi_setup(spi);
-+	if (retval < 0) {
-+		dev_err(&spi->dev,
-+			"%s: spi_setup failed with %d.", __func__, retval);
-+		return retval;
-+	}
++static void config(struct rmi_sensor_driver *sensor)
++{
++	/* For each data source we had detected print info and set up interrupts
++	   or polling. */
++	struct rmi_function_info *function_info;
++	struct rmi_phys_driver *rpd = sensor->rpd;
++	struct sensor_instance_data *instance_data =
++			sensor->sensor_device->sensordata;
++	int attr_count = 0;
 +
-+	instance_data = kzalloc(sizeof(*instance_data), GFP_KERNEL);
-+	if (!instance_data) {
-+		dev_err(&spi->dev,
-+			"%s: Failed to allocate memory for instance data.",
-+		       __func__);
-+		kfree(platformdata);
-+		return -ENOMEM;
-+	}
++	int retval;
 +
-+	instance_data->platformdata = platformdata;
-+	sensordata = platformdata->sensordata;
-+	instance_data->block_delay_us =
-+	    platformdata->block_delay_us ? platformdata->
-+	    block_delay_us : RMI_DEFAULT_BLOCK_DELAY_US;
-+	instance_data->byte_delay_us =
-+	    platformdata->byte_delay_us ? platformdata->
-+	    byte_delay_us : RMI_DEFAULT_BYTE_DELAY_US;
-+	instance_data->split_read_block_delay_us =
-+	    platformdata->split_read_block_delay_us;
-+	instance_data->split_read_byte_delay_us =
-+	    platformdata->split_read_byte_delay_us;
++	dev_dbg(&sensor->sensor_device->dev, "%s: CONFIG CALLED", __func__);
 +
-+	instance_data->spidev = spi;
-+	instance_data->rpd.name = RMI4_SPI_DRIVER_NAME;
-+	instance_data->rpd.write = rmi_spi_write_v1;
-+	instance_data->rpd.read = rmi_spi_read_v1;
-+	instance_data->rpd.write_multiple = rmi_spi_write_multiple_v1;
-+	instance_data->rpd.read_multiple = rmi_spi_read_multiple_v1;
-+	instance_data->rpd.module = THIS_MODULE;
-+		/* default to polling if irq not used */
-+	instance_data->rpd.polling_required = true;
-+
-+	/* Call the platform setup routine, to do any setup that is
-+	 * required before interacting with the device.
-+	 */
-+	if (sensordata && sensordata->rmi_sensor_setup) {
-+		retval = sensordata->rmi_sensor_setup();
-+		if (retval) {
-+			dev_err(&spi->dev,
-+				"%s: sensor setup failed with code %d.",
-+			       __func__, retval);
-+			kfree(instance_data);
-+			return retval;
++	list_for_each_entry(function_info, &sensor->functions, link) {
++		/* Get and print some info about the data sources... */
++		struct rmi_function_ops *fn;
++		/* check if function number matches - if so call that
++		   config function */
++		fn = rmi_find_function(function_info->function_number);
++		if (fn) {
++			if (fn->config) {
++				fn->config(function_info);
++			} else {
++				dev_warn(&sensor->sensor_device->dev,
++					"%s: no config function for "
++					"function 0x%02x.\n", __func__,
++					function_info->function_number);
++			}
++		} else {
++			/* if no support found for this RMI4 function
++			   it means the developer did not add the
++			   appropriate function pointer list into the
++			   rmi4_supported_data_src_functions array and/or
++			   did not bump up the number of supported RMI4
++			   functions in rmi.h as required */
++			dev_err(&sensor->sensor_device->dev,
++			       "%s: no support found for function 0x%02x.\n",
++			       __func__, function_info->function_number);
 +		}
 +	}
 +
-+	instance_data->instance_no = rmi_next_sensor_id();
-+	dev_set_name(&spi->dev, "%s%d", RMI4_SPI_DEVICE_NAME,
-+			instance_data->instance_no);
++	retval = rpd->read(rpd, PDT_PROPERTIES_LOCATION,
++			   (char *) &instance_data->pdt_props);
++	if (retval) {
++		dev_warn(&sensor->sensor_device->dev,
++			"%s: Could not read PDT propertys from 0x%04x. "
++			"Assuming 0x00.\n",
++		       __func__, PDT_PROPERTIES_LOCATION);
++	}
 +
-+	/* Determine if we need to poll (inefficient) or use interrupts.
-+	 */
-+	if (platformdata->irq) {
-+		instance_data->irq = platformdata->irq;
-+		switch (platformdata->irq_type) {
-+		case IRQF_TRIGGER_NONE:
-+			dev_warn(&spi->dev, "%s: Touchscreen ATTN IRQ was "
-+				"specified as IRQF_TRIGGER_NONE. IRQ trigger "
-+				"configuration will be defaulted.", __func__);
-+			break;
-+		case IRQF_TRIGGER_RISING:
-+		case IRQF_TRIGGER_FALLING:
-+		case IRQF_TRIGGER_HIGH:
-+		case IRQF_TRIGGER_LOW:
-+			break;
-+		default:
-+			dev_warn(&spi->dev,
-+				"%s: Invalid IRQ flags in platform data.\n",
-+				__func__);
-+			retval = -ENXIO;
++
++	dev_dbg(&sensor->sensor_device->dev, "%s: Creating sysfs files.",
++		__func__);
++	/* Set up sysfs device attributes. */
++	for (attr_count = 0; attr_count < ARRAY_SIZE(attrs); attr_count++) {
++		if (device_create_file(&sensor->sensor_device->dev,
++					&attrs[attr_count]) < 0) {
++			dev_err(&sensor->sensor_device->dev,
++				"%s: Failed to create sysfs file for %s.\n",
++				__func__, attrs[attr_count].attr.name);
 +			goto error_exit;
 +		}
++	}
 +
-+		instance_data->rpd.polling_required = false;
-+		instance_data->rpd.irq = instance_data->irq;
++	if (rmi_polling_required(sensor)) {
++		/* We're polling driven, so set up the polling timer
++		   and timer function. */
++		hrtimer_init(&sensor->timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++		sensor->timer.function = sensor_poll_timer_func;
++		hrtimer_start(&sensor->timer, ktime_set(1, 0),
++			      HRTIMER_MODE_REL);
++	}
++
++error_exit:
++	for (attr_count--; attr_count >= 0; attr_count--)
++		device_remove_file(&sensor->sensor_device->dev,
++				   &attrs[attr_count]);
++	/* If you alloc anything, free it here. */
++}
++void *rmi_sensor_get_functiondata(struct rmi_sensor_driver *driver,
++				  unsigned char function_index)
++{
++	int i;
++
++	if (!driver->perfunctiondata)
++		return NULL;
++
++	for (i = 0; i < driver->perfunctiondata->count; i++) {
++		if (driver->perfunctiondata->functiondata[i].function_index ==
++		    function_index)
++			return driver->perfunctiondata->functiondata[i].data;
++	}
++
++	return NULL;
++}
++
++/*
++ *  final implementation of suspend/early_suspend function
++ */
++static int rmi_sensor_suspend(struct device *dev, pm_message_t state)
++{
++	struct rmi_sensor_device *sensor_device =
++	    container_of(dev, struct rmi_sensor_device, dev);
++	struct rmi_phys_driver *phys_drvr = sensor_device->driver->rpd;
++	struct rmi_sensor_driver *sensor_drvr = sensor_device->driver;
++	struct rmi_sensor_suspend_custom_ops *custom_ops =
++	    sensor_drvr->custom_suspend_ops;
++	int retval;
++	struct rmi_function_info *function_info;
++	bool canSuspend = true;
++
++	mutex_lock(&sensor_drvr->sensor_device->setup_suspend_flag);
++
++	if (sensor_device->device_is_suspended) {
++		mutex_unlock(&sensor_drvr->sensor_device->setup_suspend_flag);
++		return 0;
++	}
++
++	/* iterates all of the functions to make sure that we
++	 * can enter suspend mode. */
++	list_for_each_entry(function_info, &sensor_drvr->functions, link) {
++		if (function_info->function_device
++			&& function_info->function_device->
++				rmi_funcs->suspendable) {
++
++			if (!(function_info->function_device->rmi_funcs->
++			    suspendable(function_info))) {
++				canSuspend = false;
++				dev_err(dev, "%s: suspend fails, F0x%02X is "
++					"not suspendable", __func__,
++					function_info->function_number);
++				break;
++			}
++
++		}
++	}
++
++	if (!canSuspend) {
++		mutex_unlock(&sensor_drvr->sensor_device->setup_suspend_flag);
++		return -1;
++	}
++
++	/* set flag before disabling irq */
++	sensor_device->device_is_suspended = 1;
++
++	if (rmi_polling_required(sensor_drvr)) {
++		hrtimer_cancel(&(sensor_drvr->timer));
 +	} else {
-+		instance_data->rpd.polling_required = true;
-+		dev_info(&spi->dev,
-+			 "%s: No IRQ info given. Polling required.\n",
-+	   __func__);
++		if (phys_drvr)
++			disable_irq(phys_drvr->irq);
++	}
++	retval = cancel_work_sync(&sensor_drvr->work);
++	if (retval && !(rmi_polling_required(sensor_drvr))) {
++		/* if work is pending ,suspend fail */
++		if (phys_drvr)
++			enable_irq(phys_drvr->irq);
++		/* reset suspend flag */
++		sensor_device->device_is_suspended = 0;
++		dev_err(dev, "%s: suspend fails, work pending", __func__);
++		retval = -1;
++		goto exit;
 +	}
 +
-+	/* Store instance data for later access. */
-+	if (instance_data)
-+		spi_set_drvdata(spi, instance_data);
++	/* invoke the suspend handler of each functions of this sensor */
++	/* ex. we will call suspend of F01 in the loop*/
++	list_for_each_entry(function_info, &sensor_drvr->functions, link) {
++		if (function_info->function_device
++			&& function_info->function_device->rmi_funcs->suspend) {
 +
-+#if	defined(CONFIG_MACH_OMAP3_BEAGLE)
-+	/* Fixes an issue on Beagleboard - first time read is all 0's,
-+	 * brief wait required afterwards. */
-+	retval = instance_data->rpd.read_multiple(&(instance_data->rpd),
-+					RMI_PDT_START_ADDRESS, (char *)buf,
-+					6);
-+	msleep(20);
-+#endif
++			retval = function_info->function_device->rmi_funcs->
++				suspend(function_info);
++			if (retval) {
++				/* reset suspend flag */
++				sensor_device->device_is_suspended = 0;
 +
-+	retval = instance_data->rpd.read_multiple(&(instance_data->rpd),
-+					RMI_PROTOCOL_VERSION_ADDRESS, buf,
-+					2);
-+	if (retval < 0) {
-+		dev_err(&spi->dev,
-+			"%s: Protocol discovery for SPI V2 failed with %d.",
-+			__func__, retval);
-+		goto error_exit;
-+	}
-+#if	COMM_DEBUG
-+	dev_info(&spi->dev,
-+		 "%s: SPI V2 probe got %02X %02X.", __func__, buf[0], buf[1]);
-+#endif
-+
-+	/* buf[0] is equal to SPI proto version - 1. */
-+	instance_data->spi_version = buf[0] + 1;
-+	switch (instance_data->spi_version) {
-+	case 1:
-+		break;
-+	case 2:
-+		instance_data->v2_transaction_size = (unsigned char)buf[1];
-+		instance_data->rpd.write = rmi_spi_write_v2;
-+		instance_data->rpd.write_multiple = rmi_spi_write_multiple_v2;
-+		instance_data->rpd.read = rmi_spi_read_v2;
-+		instance_data->rpd.read_multiple = rmi_spi_read_multiple_v2;
-+		dev_info(&spi->dev,
-+				"%s: Identified SPI V2, transaction size=%d.",
-+				__func__, instance_data->v2_transaction_size);
-+		break;
-+	default:
-+		instance_data->spi_version = 1;
-+		dev_warn(&spi->dev,
-+		    "%s: Unknown SPI version %d encountered. Assuming SPI V1.",
-+		     __func__, instance_data->spi_version);
-+	}
-+
-+	/* Register the sensor driver - which will trigger a scan of the PDT. */
-+	retval =
-+	    rmi_register_sensor(&instance_data->rpd, platformdata->sensordata);
-+	if (retval) {
-+		dev_err(&spi->dev,
-+			"%s: sensor registration failed with code %d.",
-+			__func__, retval);
-+		goto error_exit;
-+	}
-+
-+	if (instance_data->rpd.polling_required == false) {
-+		instance_data->irq = platformdata->irq;
-+		retval = request_irq(platformdata->irq, spi_attn_isr,
-+				platformdata->irq_type, dev_name(&spi->dev),
-+				instance_data);
-+		if (retval) {
-+			dev_err(&spi->dev,
-+				"%s: failed to obtain IRQ %d. Result: %d.",
-+				__func__, platformdata->irq, retval);
-+			dev_info(&spi->dev, "%s: Reverting to polling.\n",
-+				 __func__);
-+			instance_data->rpd.polling_required = true;
-+			instance_data->irq = 0;
-+			/* TODO: Need to revert back to polling -
-+			 * create and start timer. */
-+		} else {
-+			dev_dbg(&spi->dev, "%s: got irq.\n", __func__);
-+			instance_data->rpd.irq = instance_data->irq;
-+			if (instance_data->spi_version == 2) {
-+				init_waitqueue_head(&instance_data->attn_event);
-+				instance_data->rpd.read_multiple =
-+				    rmi_spi_split_read_v2;
++				if (rmi_polling_required(sensor_drvr)) {
++					/* restart polling timer*/
++					hrtimer_start(&(sensor_drvr->timer),
++							ktime_set(1, 0),
++							HRTIMER_MODE_REL);
++				} else {
++					if (phys_drvr) {
++						/* re-enalbe irq*/
++						enable_irq(phys_drvr->irq);
++					}
++				}
++				dev_err(dev, "%s: failed to suspend F0x%02x.",
++					__func__,
++					function_info->function_number);
++				retval = -1;
++				goto exit;
 +			}
 +		}
 +	}
 +
-+	dev_info(&spi->dev, "%s: Successfully registered %s.", __func__,
-+		instance_data->rpd.name);
++	/* apply customized settings */
++	if (custom_ops->rmi_sensor_custom_suspend)
++		custom_ops->rmi_sensor_custom_suspend();
 +
-+	return 0;
-+
-+error_exit:
-+	if (sensordata && sensordata->rmi_sensor_teardown)
-+		sensordata->rmi_sensor_teardown();
-+	if (instance_data->irq)
-+		free_irq(instance_data->irq, instance_data);
-+	kfree(instance_data);
++exit:
++	mutex_unlock(&sensor_drvr->sensor_device->setup_suspend_flag);
 +	return retval;
 +}
 +
-+static int rmi_spi_suspend(struct spi_device *spi, pm_message_t message)
++/*
++ *  final implementation of resume/late_resume function
++ */
++static int rmi_sensor_resume(struct device *dev)
 +{
-+	pr_info("%s: Suspending...", __func__);
++	struct rmi_sensor_device *sensor_device =
++	    container_of(dev, struct rmi_sensor_device, dev);
++	struct rmi_phys_driver *phys_drvr = sensor_device->driver->rpd;
++	struct rmi_sensor_driver *sensor_drvr = sensor_device->driver;
++	struct rmi_sensor_suspend_custom_ops *custom_ops =
++	    sensor_drvr->custom_suspend_ops;
++	struct rmi_function_info *function_info;
++
++	mutex_lock(&sensor_drvr->sensor_device->setup_suspend_flag);
++	if (sensor_device->device_is_suspended) {
++		/* reset suspend flag reenable irq */
++		sensor_device->device_is_suspended = 0;
++		/* apply customized settings */
++		if (custom_ops->rmi_sensor_custom_resume)
++			custom_ops->rmi_sensor_custom_resume();
++
++		/* invoke the resume handler of each functions of this sensor */
++		/* ex. we will call resume of F01 in the loop*/
++		list_for_each_entry(function_info,
++				&sensor_drvr->functions, link) {
++			if (function_info->function_device
++				&& function_info->function_device->
++					rmi_funcs->resume)
++				function_info->function_device->rmi_funcs->
++				    resume(function_info);
++		}
++
++		/* apply delay after setup hardware */
++		if (custom_ops->delay_resume)
++			mdelay(custom_ops->delay_resume);
++
++		if (rmi_polling_required(sensor_drvr)) {
++			hrtimer_start(&(sensor_drvr->timer), ktime_set(1, 0),
++				      HRTIMER_MODE_REL);
++		} else {
++			if (phys_drvr)
++				enable_irq(phys_drvr->irq);
++		}
++	}
++	mutex_unlock(&sensor_drvr->sensor_device->setup_suspend_flag);
 +	return 0;
 +}
 +
-+static int rmi_spi_resume(struct spi_device *spi)
++#ifdef CONFIG_HAS_EARLYSUSPEND
++/*
++ * Handler for early suspend
++ */
++static void rmi_sensor_early_suspend(struct early_suspend *h)
 +{
-+	pr_info("%s: Resuming...", __func__);
-+	return 0;
++	struct rmi_sensor_device *sensor_device =
++	    container_of(h, struct rmi_sensor_device, early_suspend_handler);
++	pm_message_t state;
++	state.event = PM_EVENT_SUSPEND;
++	(void)rmi_sensor_suspend(&(sensor_device->dev), state);
 +}
 +
-+static int __devexit rmi_spi_remove(struct spi_device *spi)
++/*
++ * Handler for late resume
++ */
++static void rmi_sensor_late_resume(struct early_suspend *h)
 +{
-+	struct spi_device_instance_data *instance_data = spi_get_drvdata(spi);
-+	pr_info("%s: RMI SPI device removed.", __func__);
++	struct rmi_sensor_device *sensor_device =
++	    container_of(h, struct rmi_sensor_device, early_suspend_handler);
++	(void)rmi_sensor_resume(&(sensor_device->dev));
++}
++#endif
++/*
++ * This method is called, whenever a new sensor device is added for the rmi
++ * bus.
++ *
++ * It will scan the devices PDT to determine the supported functions
++ * and create a new function device for each of these. It will read
++ * the query, control, command and data regsiters for the function
++ * to be used for each newly created function device.
++ *
++ * The sensor device is then bound to every function it supports.
++ *
++ */
++static int rmi_sensor_register_functions(struct rmi_sensor_driver *sensor)
++{
++	struct rmi_function_device *function;
++	unsigned int interrupt_register_count = 0;
++	struct rmi_phys_driver *rpd = sensor->rpd;
++	int i;
++	int j;
++	int interrupt_offset;
++	unsigned char interrupt_count = 0;
++	struct rmi_function_descriptor rmi_fd;
++	struct rmi_function_ops *fn;
++	int retval = 0;
++	struct device *dev = &sensor->sensor_device->dev;
++	struct rmi_function_info *function_info = NULL;
 +
-+	rmi_spi_suspend(spi, PMSG_SUSPEND);
++	/* Read the Page Descriptor Table to determine what functions
++	 * are present */
++	dev_dbg(dev, "%s: Scanning page descriptors.", __func__);
++	for (i = PDT_START_SCAN_LOCATION;
++	     i >= PDT_END_SCAN_LOCATION; i -= PDT_ENTRY_SIZE) {
 +
-+	rmi_unregister_sensors(&instance_data->rpd);
++		dev_dbg(dev, "%s: Reading page descriptor 0x%02x", __func__, i);
++		retval = rpd->read_multiple(rpd, i, (char *)&rmi_fd,
++					    sizeof(rmi_fd));
++		if (retval) {
++			/* failed to read next PDT entry - end PDT
++			   scan - this may result in an incomplete set
++			   of recognized functions - we could return
++			   an error here but the driver may still be
++			   viable for diagnostics and debugging so let's
++			   let it continue. */
++			dev_err(dev,
++			    "%s: Read error %d at PDT entry 0x%02x, "
++			     "ending scan.\n", __func__, retval, i);
++			break;
++		}
 +
-+	if (instance_data) {
-+		if (instance_data->irq)
-+			free_irq(instance_data->irq, instance_data);
-+		kfree(instance_data);
++		if (!RMI_IS_VALID_FUNCTION_ID(rmi_fd.function_number)) {
++			/* A zero or 0xff in the function number
++			   signals the end of the PDT */
++			dev_dbg(dev, "%s: Found end of PDT\n", __func__);
++			break;
++		}
++
++		dev_dbg(dev,
++			"%s: F%02x - queries %02x commands %02x control %02x "
++			"data %02x ints %02x",
++			__func__,
++			rmi_fd.function_number, rmi_fd.query_base_addr,
++			rmi_fd.command_base_addr, rmi_fd.control_base_addr,
++			rmi_fd.data_base_addr, rmi_fd.interrupt_source_count);
++
++		/* determine if the function is supported and if so
++		 * then bind this function device to the sensor */
++		function_info = kzalloc(sizeof(*function_info), GFP_KERNEL);
++		if (!function_info) {
++			dev_err(dev,
++			    "%s: out of memory for function F%02x.",
++			     __func__, rmi_fd.function_number);
++			retval = -ENOMEM;
++			goto exit_fail;
++		}
++		function_info->sensor = sensor;
++		function_info->function_number = rmi_fd.function_number & 0xff;
++		memcpy(&function_info->function_descriptor, &rmi_fd,
++				sizeof(rmi_fd));
++		function_info->num_data_sources =
++				rmi_fd.interrupt_source_count;
++		function_info->interrupt_register = interrupt_count / 8;
++		/* loop through interrupts for each source and or in a bit
++		 * to the interrupt mask for each. */
++		interrupt_offset = interrupt_count % 8;
++
++		for (j = interrupt_offset;
++				j < ((rmi_fd.interrupt_source_count & 0x7)
++					+ interrupt_offset);
++				j++) {
++			function_info->interrupt_mask |= 1 << j;
++		}
++		INIT_LIST_HEAD(&function_info->link);
++
++		/* Get the ptr to the detect function based on
++		 * the function number */
++		dev_dbg(dev, "%s: Checking for RMI function F%02x.", __func__,
++			rmi_fd.function_number);
++		fn = rmi_find_function(rmi_fd.function_number);
++		if (!fn) {
++			dev_err(dev,
++				"%s: couldn't find support for F%02X.",
++				__func__, rmi_fd.function_number);
++		} else {
++			retval = fn->detect(function_info);
++			if (retval)
++				dev_err(dev,
++				    "%s: Function detect for F%02x failed "
++				     "with %d.",
++				     __func__, rmi_fd.function_number, retval);
++
++			/* Create a function device and function driver. */
++			function = kzalloc(sizeof(*function), GFP_KERNEL);
++			if (!function) {
++				dev_err(dev,
++				    "%s: Error allocating memory for "
++				     "rmi_function_device.",
++				     __func__);
++				retval = -ENOMEM;
++				goto exit_fail;
++			}
++
++			function->dev.parent = &sensor->sensor_device->dev;
++			function->dev.bus = sensor->sensor_device->dev.bus;
++			function->rmi_funcs = fn;
++			function->sensor = sensor;
++			function->rfi = function_info;
++			function_info->function_device = function;
++
++			/* Check if we have an interrupt mask of 0 and a
++			 * non-NULL interrupt handler function and print a
++			 * debug message since we should never have this.
++			 */
++			if (function_info->interrupt_mask == 0
++			    && fn->inthandler != NULL) {
++				dev_warn(dev,
++				    "%s: Can't have a zero interrupt mask "
++				     "for function F%02x (which requires an "
++				     "interrupt handler).",
++				     __func__, rmi_fd.function_number);
++			}
++
++			/* Check if we have a non-zero interrupt mask and
++			 * a NULL interrupt handler function and print a debug
++			 * message since we should never have this.
++			 */
++			if (function_info->interrupt_mask != 0
++			    && fn->inthandler == NULL) {
++				dev_warn(dev,
++				    "%s: Can't have a non-zero interrupt "
++				     "mask %d for function F%02x with a NULL "
++				     "inthandler fn.\n",
++				     __func__, function_info->interrupt_mask,
++				     rmi_fd.function_number);
++			}
++
++			/* Register the rmi function device */
++			retval = rmi_function_register_device(function,
++						rmi_fd.function_number);
++			if (retval) {
++				dev_err(dev,
++				    "%s: Failed rmi_function_register_device.",
++				     __func__);
++				goto exit_fail;
++			}
++		}
++
++		/* bump interrupt count for next iteration. NOTE: The value 7
++		 * is reserved - for now, only bump up one for an interrupt
++		 * count of 7. */
++		if ((rmi_fd.interrupt_source_count & 0x7) == 0x7) {
++			interrupt_count += 1;
++		} else {
++			interrupt_count +=
++			    (rmi_fd.interrupt_source_count & 0x7);
++		}
++
++		/* link this function info to the RMI module infos list
++		 * of functions. */
++		if (function_info == NULL) {
++			dev_dbg(dev, "%s: WTF? function_info is null here.",
++				 __func__);
++		} else {
++			dev_dbg(dev, "%s: Adding F%02x with %d sources.",
++				 __func__, function_info->function_number,
++				 function_info->num_data_sources);
++
++			mutex_lock(&rfi_mutex);
++			list_add_tail(&function_info->link, &sensor->functions);
++			mutex_unlock(&rfi_mutex);
++		}
++		function_info = NULL;
 +	}
 +
++	dev_dbg(dev, "%s: Done scanning.", __func__);
++
++	/* calculate the interrupt register count - used in the
++	 * ISR to read the correct number of interrupt registers */
++	interrupt_register_count = (interrupt_count + 7) / 8;
++	/* TODO: Is interrupt_register_count needed by the sensor anymore? */
++	sensor->interrupt_register_count = interrupt_register_count;
++
 +	return 0;
++
++exit_fail:
++	kfree(function_info);
++	return retval;
 +}
 +
-+static struct spi_driver rmi_spi_driver = {
-+	.driver = {
-+		.name = RMI4_SPI_DRIVER_NAME,
-+		.bus = &spi_bus_type,
-+		.owner = THIS_MODULE,
-+		},
-+	.probe = rmi_spi_probe,
-+	.remove = __devexit_p(rmi_spi_remove),
-+	.suspend = rmi_spi_suspend,
-+	.resume = rmi_spi_resume,
-+};
++/* sysfs show and store fns for sensor dev */
++static ssize_t rmi_sensor_hasbsr_show(struct device *dev,
++				struct device_attribute *attr,
++				char *buf)
++{
++	struct rmi_sensor_device *sensor = dev_get_drvdata(dev);
++	struct sensor_instance_data *instance_data =
++	    (struct sensor_instance_data *)sensor->sensordata;
 +
-+static int __init rmi_spi_init(void)
++	return snprintf(buf, PAGE_SIZE, "%u\n", has_bsr(instance_data));
++}
++
++static ssize_t rmi_sensor_bsr_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct rmi_sensor_device *sensor = dev_get_drvdata(dev);
++	struct sensor_instance_data *instance_data =
++	    (struct sensor_instance_data *)sensor->sensordata;
++
++	return snprintf(buf, PAGE_SIZE, "%u\n", instance_data->bsr);
++}
++
++static ssize_t rmi_sensor_bsr_store(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
 +{
 +	int retval;
-+	pr_info("%s: RMI SPI physical layer initialization.", __func__);
-+	retval = spi_register_driver(&rmi_spi_driver);
-+	if (retval < 0) {
-+		pr_err("%s: Failed to register spi driver, code = %d.",
-+		       __func__, retval);
-+		return retval;
++	struct rmi_sensor_device *sensor = dev_get_drvdata(dev);
++	struct sensor_instance_data *instance_data =
++	    (struct sensor_instance_data *)sensor->sensordata;
++	unsigned long val;
++
++	/* need to convert the string data to an actual value */
++	strict_strtoul(buf, 10, &val);
++
++	retval = rmi_write(sensor->driver, BSR_LOCATION, (unsigned char)val);
++	if (retval) {
++		dev_err(dev, "%s : failed to write bsr %u to 0x%x\n",
++		       __func__, (unsigned int)val, BSR_LOCATION);
++		return -EIO;
 +	}
-+	pr_debug("%s: SPI initialization complete.", __func__);
-+	return retval;
++
++	instance_data->bsr = val;
++
++	return count;
 +}
 +
-+module_init(rmi_spi_init);
-+
-+static void __exit rmi_spi_exit(void)
++/* Call this to instantiate a new sensor driver.
++ */
++struct rmi_sensor_driver *rmi_sensor_create_driver(
++				struct rmi_sensor_device *sensor_device,
++				struct rmi_phys_driver *physical_driver,
++				struct rmi_sensordata *sensor_data)
 +{
-+	pr_info("%s: RMI SPI physical layer exits.", __func__);
-+	spi_unregister_driver(&rmi_spi_driver);
++	struct rmi_sensor_driver *driver =
++	    kzalloc(sizeof(struct rmi_sensor_driver), GFP_KERNEL);
++	if (!driver) {
++		dev_err(&sensor_device->dev,
++			"%s: Out of memory for rmi_sensor_driver\n",
++		       __func__);
++		goto error_exit;
++	}
++	driver->sensor_device = sensor_device;
++	driver->polling_required = physical_driver->polling_required;
++	driver->rpd = physical_driver;
++
++	mutex_init(&driver->work_lock);
++
++	if (sensor_data) {
++		driver->perfunctiondata = sensor_data->perfunctiondata;
++		/* pass reference to customized operations for suspend/resume */
++		driver->custom_suspend_ops = sensor_data->custom_suspend_ops;
++	}
++	INIT_LIST_HEAD(&driver->functions);
++
++	/* This will handle interrupts on the ATTN line (interrupt driven)
++	 * or will be called every poll interval (when we're not interrupt
++	 * driven).
++	 */
++	INIT_WORK(&driver->work, sensor_work_func);
++
++	return driver;
++
++error_exit:
++	rmi_sensor_destroy_driver(driver);
++	return NULL;
 +}
 +
-+module_exit(rmi_spi_exit);
++/* Call this when you're done with the sensor driver.  This will clean up any
++ * pending actions, cancel any running threads or works, and release all
++ * storage.
++ */
++void rmi_sensor_destroy_driver(struct rmi_sensor_driver *driver)
++{
++	kfree(driver);
++}
++
++int rmi_sensor_register_device(struct rmi_sensor_device *dev, int index)
++{
++	int status;
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	struct early_suspend *early_suspend_handler;
++#endif
++
++	pr_debug("%s: Registering sensor device.\n", __func__);
++
++	/* make name - sensor00, sensor01, etc. */
++	dev_set_name(&dev->dev, "sensor%02d", index);
++
++	dev->sensordata =
++	    kzalloc(sizeof(struct sensor_instance_data), GFP_KERNEL);
++	if (!dev->sensordata) {
++		dev_err(&dev->dev,
++		    "%s: Out of memory for sensor instance data.\n", __func__);
++		return -ENOMEM;
++	}
++
++	status = device_register(&dev->dev);
++
++	if (status < 0) {
++		dev_err(&dev->dev, "%s: device register failed with %d.",
++			__func__, status);
++		goto error_exit;
++	}
++
++	mutex_init(&dev->setup_suspend_flag);
++
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	/* register early_suspend handler after device is registered
++	 */
++	early_suspend_handler = &(dev->early_suspend_handler);
++	early_suspend_handler->level =
++		EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
++	early_suspend_handler->suspend = rmi_sensor_early_suspend;
++	early_suspend_handler->resume = rmi_sensor_late_resume;
++	register_early_suspend(early_suspend_handler);
++#endif /* CONFIG_HAS_EARLYSUSPEND */
++
++error_exit:
++	kfree(dev->sensordata);
++	return status;
++}
++EXPORT_SYMBOL(rmi_sensor_register_device);
++
++static void rmi_sensor_unregister_device(struct rmi_sensor_device *rmisensordev)
++{
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	struct early_suspend *early_suspend_handler;
++
++	/* unregister early_suspend handler before driver is unregistered
++	 */
++	early_suspend_handler =
++		    &(rmisensordev->early_suspend_handler);
++	unregister_early_suspend(early_suspend_handler);
++#endif /* CONFIG_HAS_EARLYSUSPEND */
++	dev_dbg(&rmisensordev->dev,
++		"%s: Unregistering sensor device.\n", __func__);
++
++	device_unregister(&rmisensordev->dev);
++}
++EXPORT_SYMBOL(rmi_sensor_unregister_device);
++
++#define DRIVER_NAME_CHARS	16
++
++int rmi_sensor_register_driver(struct rmi_sensor_driver *driver)
++{
++	static int index;
++	int ret;
++	char *drvrname;
++
++	pr_info("%s: Registering sensor driver.\n", __func__);
++	driver->dispatchIRQs = dispatchIRQs;
++	driver->attention = attention;
++	driver->config = config;
++	driver->probe = probe;
++
++	driver->drv.suspend = rmi_sensor_suspend;
++	driver->drv.resume = rmi_sensor_resume;
++	/* Create a function device and function driver for this Fn */
++	drvrname = kzalloc(DRIVER_NAME_CHARS, GFP_KERNEL);
++	if (!drvrname) {
++		pr_err
++		    ("%s: Error allocating memory for rmi_sensor_driver name.",
++		     __func__);
++		return -ENOMEM;
++	}
++	snprintf(drvrname, DRIVER_NAME_CHARS, "sensor%02d", index++);
++
++	driver->drv.name = drvrname;
++	driver->module = driver->drv.owner;
++
++	/* Register the sensor driver on the bus. */
++	ret = rmi_bus_register_sensor_driver(driver);
++	if (ret) {
++		pr_err("%s: Failed to register driver on bus, error = %d",
++		       __func__, ret);
++		goto exit_fail;
++	}
++
++	/* register the functions on the sensor */
++	ret = rmi_sensor_register_functions(driver);
++	if (ret) {
++		pr_err("%s: Failed rmi_sensor_register_functions %d",
++		       __func__, ret);
++		goto exit_fail;
++	}
++
++	/* configure the sensor - enable interrupts for each function,
++	 * init work, set polling timer or adjust report rate, etc. */
++	config(driver);
++
++	pr_debug("%s: sensor driver registration completed.", __func__);
++
++exit_fail:
++	kfree(drvrname);
++	return ret;
++}
++EXPORT_SYMBOL(rmi_sensor_register_driver);
++
++static void rmi_sensor_unregister_driver(struct rmi_sensor_driver *driver)
++{
++	pr_debug("%s: Unregistering sensor driver.\n", __func__);
++
++	/* Stop the polling timer if doing polling */
++	if (rmi_polling_required(driver))
++		hrtimer_cancel(&driver->timer);
++
++	flush_scheduled_work();	/* Make sure all scheduled work is stopped */
++
++	rmi_bus_register_sensor_driver(driver);
++}
++EXPORT_SYMBOL(rmi_sensor_unregister_driver);
++
++static int __init rmi_sensor_init(void)
++{
++	pr_debug("%s: RMI Sensor Init\n", __func__);
++	return 0;
++}
++
++static void __exit rmi_sensor_exit(void)
++{
++	pr_debug("%s: RMI Sensor Driver Exit\n", __func__);
++	flush_scheduled_work();	/* Make sure all scheduled work is stopped */
++}
++
++module_init(rmi_sensor_init);
++module_exit(rmi_sensor_exit);
 +
 +MODULE_AUTHOR("Synaptics, Inc.");
-+MODULE_DESCRIPTION("RMI4 Driver SPI Physical Layer");
++MODULE_DESCRIPTION("RMI4 Sensor Driver");
 +MODULE_LICENSE("GPL");
-diff --git a/drivers/input/touchscreen/rmi_spi.h b/drivers/input/touchscreen/rmi_spi.h
+diff --git a/drivers/input/touchscreen/rmi_sensor.h b/drivers/input/touchscreen/rmi_sensor.h
 new file mode 100644
-index 0000000..f650f0b
+index 0000000..9adc698
 --- /dev/null
-+++ b/drivers/input/touchscreen/rmi_spi.h
-@@ -0,0 +1,114 @@
++++ b/drivers/input/touchscreen/rmi_sensor.h
+@@ -0,0 +1,128 @@
 +/**
 + *
-+ * Register Mapped Interface SPI Physical Layer Driver Header File.
-+ * Copyright (C) 2008-2011, Synaptics Incorporated
++ * Synaptics Register Mapped Interface (RMI4) - RMI Sensor Module Header.
++ * Copyright (C) 2007 - 2011, Synaptics Incorporated
 + *
 + */
 +/*
++ *
 + * This file is licensed under the GPL2 license.
 + *
 + *#############################################################################
@@ -1404,93 +1622,106 @@ index 0000000..f650f0b
 + *#############################################################################
 + */
 +
-+#if !defined(_RMI_SPI_H)
-+#define _RMI_SPI_H
++#if !defined(_RMI_SENSOR_H)
++#define _RMI_SENSOR_H
++
++
++#include <linux/device.h>
++#include <linux/mutex.h>
++#ifdef CONFIG_HAS_EARLYSUSPEND
++#include <linux/earlysuspend.h>
++#endif
 +
 +#include "rmi_platformdata.h"
 +
-+#define RMI4_SPI_DRIVER_NAME "rmi4_ts"
-+#define RMI4_SPI_DEVICE_NAME "rmi4_ts"
++struct rmi_sensor_driver {
++	struct module *module;
++	struct device_driver drv;
++	struct rmi_sensor_device *sensor_device;
 +
-+/* Some RMI4 SPI devices require a delay between writing the address and
-+ * starting the read.  A subset of those required a delay between each
-+ * byte transferred during the read.
-+ */
-+
-+/* microseconds between header and start of read operation. */
-+#define RMI_DEFAULT_BLOCK_DELAY_US	65
-+
-+/* microseconds inter-byte delay between bytes during read. */
-+#define RMI_DEFAULT_BYTE_DELAY_US	65
-+
-+/* Use this to specify SPI interface dependent parameters on a per device basis.
-+ *
-+ * Interface independent data is given in the sensor_data field of this struct.
-+ */
-+struct rmi_spi_platformdata {
-+	/* The number of the irq.  Set to zero if polling is required. */
-+	int irq;
-+
-+	/* The type of the irq.  This should be one of IRQF_TRIGGER_RISING,
-+	 * IRQF_TRIGGER_FALLING, IRQF_TRIGGER_HIGH, IRQF_TRIGGER_LOW.
-+	 * Recommended value is IRQF_TRIGGER_LOW, but may be different for
-+	 * specially configured sensors.
-+	 * Only valid if irq != 0 */
-+	int irq_type;
-+
-+	/* RMI4 devices implement two different ways of talking to the
-+	 * device over SPI.  These are called SPIv1 and SPIv2.  Due to
-+	 * resource constraints on some ASICs, delays may be required when
-+	 * reading data from the chip.
-+	 *
-+	 * The block delay specifies the number of microseconds the
-+	 * driver should delay between sending the read request and
-+	 * the start of reading data from the ASIC.  If you don't know
-+	 * what value to use here, you should specify
-+	 * RMI_DEFAULT_BLOCK_DELAY_US.
-+	 *
-+	 * The byte delay specifies the number of microseconds the driver should
-+	 * delay between each byte of a read request.  If don't know what value
-+	 * to use here, you should specify RMI_DEFAULT_BLOCK_DELAY_US.
-+	 *
-+	 * Usually these two values should be the same, but in some cases
-+	 * it may be desirable to use different values.
++	/* Attention Function
++	 *  This function is called by the low level isr in the physical
++	 * driver. It merely schedules work to be done.
 +	 */
-+	unsigned int block_delay_us;
-+	unsigned int byte_delay_us;
-+
-+	/* SPIv2 supports a special "split read" operation, which can permit the
-+	 * SPI interface to run at full speed (subject to product specific
-+	 * limitations) with no delay between blocks and bytes.  In almost all
-+	 * cases, it is permissible to default these values to zero.
++	void (*attention) (struct rmi_phys_driver *physdrvr, int instance);
++	/* Probe Function
++	 *  This function is called to give the sensor driver layer an
++	 *  opportunity to claim an RMI device.  The sensor layer cannot
++	 *  read RMI registers at this point since the rmi physical driver
++	 *  has not been bound to it yet.  Defer that to the config
++	 *  function call which occurs immediately after a successful probe.
 +	 */
-+	unsigned int split_read_block_delay_us;
-+	unsigned int split_read_byte_delay_us;
-+
-+	/* Some SPI hardware and/or drivers do not manage the SSB/CS line in a
-+	 * reasonable way.  In particular, the problem is that SSB/CS will be
-+	 * deasserted in between every spi_transfer in an spi_message (despite
-+	 * whatever you might have set the spi_transfer.cs_change flag to),
-+	 * rather than asserting it at the start of the spi_message and leaving
-+	 * it asserted until all transfers are completed.  In this case, we
-+	 * have to manage the SSB/CS line manually, and you need to provide
-+	 * the cs_assert callback here.
-+	 *
-+	 * If the cs_assert function is non-null, it will be called before
-+	 * the driver submits an spi_message in order to assert the line (the
-+	 * assert parameter will be TRUE), and afterwards to clear it (the
-+	 * assert parameter will be FALSE).  cs_assert should return 0 for
-+	 * success, or a negative error code if it fails.
-+	 *
-+	 * You can provide any needed context data in the cs_assert_data
-+	 * variable, which will be passed into all cs_assert calls.
++	int (*probe) (struct rmi_sensor_driver *sensor);
++	/* Config Function
++	 *  This function is called after a successful probe.  It gives the
++	 *  sensor driver an opportunity to query and/or configure an RMI
++	 *  device before data starts flowing.
 +	 */
-+	void *cs_assert_data;
-+	int (*cs_assert) (const void *cs_assert_data, const bool assert);
++	void (*config) (struct rmi_sensor_driver *sensor);
 +
++	/* Functions can call this in order to dispatch IRQs. */
++	void (*dispatchIRQs) (struct rmi_sensor_driver *sensor,
++			      unsigned int irq_status);
 +
-+	/* Use this to specify platformdata that is not SPI specific. */
-+	struct rmi_sensordata *sensordata;
++	unsigned int interrupt_register_count;
++
++	bool polling_required;
++
++	/* pointer to the corresponding phys driver info for this sensor */
++	/* The phys driver has the pointers to read, write, etc. */
++	struct rmi_phys_driver *rpd;
++
++	struct hrtimer timer;
++	struct work_struct work;
++	struct mutex work_lock;
++
++	struct list_head functions;	/* List of rmi_function_infos */
++		/* Per function initialization data. */
++	struct rmi_functiondata_list *perfunctiondata;
++		/* non-default operation for suspend/resume */
++	struct rmi_sensor_suspend_custom_ops *custom_suspend_ops;
 +};
 +
++/* macro to get the pointer to the device_driver struct from the sensor */
++#define to_rmi_sensor_driver(drv) \
++	container_of(drv, struct rmi_sensor_driver, drv);
++
++struct rmi_sensor_device {
++	struct rmi_sensor_driver *driver;
++	struct device dev;
++
++	/* mutex for setting device_is_supended flag*/
++	struct mutex setup_suspend_flag;
++	int device_is_suspended;	/*it will be initialized to false(0) */
++#ifdef CONFIG_HAS_EARLYSUSPEND
++	/* handler to handle early_suspend and late_resume */
++	struct early_suspend early_suspend_handler;
++#endif
++	/* pointer to data specific to a sensor implementation. */
++	void *sensordata;
++
++	struct list_head sensors;	/* link sensors into list */
++};
++
++int rmi_sensor_register_device(struct rmi_sensor_device *dev, int index);
++int rmi_sensor_register_driver(struct rmi_sensor_driver *driver);
++bool rmi_polling_required(struct rmi_sensor_driver *sensor);
++int rmi_next_sensor_id(void);
++
++void *rmi_sensor_get_functiondata(struct rmi_sensor_driver *driver,
++				  unsigned char function_index);
++
++
++/* Call this to instantiate a new sensor driver.
++ */
++struct rmi_sensor_driver *rmi_sensor_create_driver(
++			struct rmi_sensor_device *sensor_device,
++			struct rmi_phys_driver *physical_driver,
++			struct rmi_sensordata *sensor_data);
++
++/* Call this when you're done with the sensor driver.  This will clean up any
++ * pending actions, cancel any running threads or works, and release all
++ * storage.
++ */
++void rmi_sensor_destroy_driver(struct rmi_sensor_driver *driver);
 +#endif
