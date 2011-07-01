@@ -1,94 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755608Ab1GAIt2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 04:49:28 -0400
-Received: from mail-out-2.pop.com.br ([200.175.8.253]:57619 "EHLO
-	pop-10.pop.com.br" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755526Ab1GAIt0 convert rfc822-to-8bit (ORCPT
+	id S1755667Ab1GAIw2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 04:52:28 -0400
+Received: from ppsw-41.csi.cam.ac.uk ([131.111.8.141]:45693 "EHLO
+	ppsw-41.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755646Ab1GAIw0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 04:49:26 -0400
-X-C3Mail-ID: 130950976452238
-Message-ID: <20110701054243.82206pgsb28g5hmr@wajax.pop.com.br>
-Date: Fri, 01 Jul 2011 05:42:43 -0300
-From: roseline edward <roseline_edward@pop.com.br>
-To: undisclosed-recipients:;
-Subject: Od pani Roseline Edward
+	Fri, 1 Jul 2011 04:52:26 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E0D8CA8.5040208@cam.ac.uk>
+Date: Fri, 01 Jul 2011 10:00:24 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: C3Mail(TM) - http://www.c3systems.com.br - 2000-2008
-X-Remote-IP: 200.175.8.71
+To: Greg KH <gregkh@suse.de>
+CC: Nathan Royer <nroyer@invensense.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jiri Kosina <jkosina@suse.cz>, Alan Cox <alan@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Torokhov <dmitry.torokhov@gmail.com>
+Subject: Re: [PATCH 01/11] misc: inv_mpu primary header file and README file.
+References: <1309486707-1658-1-git-send-email-nroyer@invensense.com> <20110701030904.GA3748@suse.de>
+In-Reply-To: <20110701030904.GA3748@suse.de>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Od pani Roseline Edward
-Rue de Canal Zone 4 | Macory)
-Strefa 4, Abid?an 225,
-Wybrze?e Ko?ci S?oniowej.
+On 07/01/11 04:09, Greg KH wrote:
+> On Thu, Jun 30, 2011 at 07:18:17PM -0700, Nathan Royer wrote:
+>> This files defines the userspace interface and how to integrate it into a
+>> platform.
+>>
+>> Signed-off-by: Nathan Royer <nroyer@invensense.com>
+>> ---
+>>
+>> This is the first of many patch files for the inv_mpu driver in its current
+>> state.  This is our first time submitting this driver, so I expect there to be
+>> a lot wrong with it, and expect to need to fix many things.
+>>
+>> The inv_mpu driver attepts to implement a Motion Processing Unit interface.  As
+>> a unit, an accelerometer, magnetometer, gyroscope, and/or altimiter data is
+>> fused together to produce calibrated data and a quaternion.
+>>
+>> The inv_mpu driver interface is currently implemented as a misc device, but may
+>> need to change to include both sysfs attributes and input devices.  I think
+>> that we will continue to need the ioctl interface, but many of the ioctls can
+>> be replace by attributes and/or input devices.
+>>
+>> The mpu3050 has an i2c master interface designed to control an accelerometer
+>> and a Digital Motion Processor (DMP) used to perform sensor fusion on the
+>> gyroscope and accelerometer.  This data is then read out of the mpu3050 fifo
+>> and sent to userspace for distribution and optional propritary processing, such
+>> as fusion with a compass to produce a 9 axis quaternion.
+>>
+>> Some question I have at the start are:
+>> 1) Is there a master design or standard interface for Motion Processing
+>> devices, specifically ones that do calibration, sensor fusion, and or have a
+>> micro-controller to do some of this work.
+Some of Analog's parts are doing a very basic form of this (bit of integration etc).
+Ultimately in their case it is transparent, so they just look like additional data
+channels.  Here it looks more sophisticated.
 
-
-NIEBIA?SKIEGO BOSKA!
-Drodzy Kochani,
-
-Jestem z wymienionych osób z Kuwejtu. Pani Roseline Edward, jestem  
-?onaty Patrick Edward, który pracowa? z Kuwejt ambasady w Wybrze?e  
-Ko?ci S?oniowej na dziewi?? lat przed ?mierci? na 09/05 / 2007.
-Byli?my ma??e?stwem przez jedena?cie lat bez dziecka. Zmar? po  
-krótkiej chorobie, ?e trwa? tylko cztery dni. Przed ?mierci? oboje  
-narodzi? si? ponownie Christian. Od czasu jego ?mierci,
-Postanowi?em nie o?eni? lub dosta? dziecko poza moim domu ma??e?skich,  
-które w Biblii jest przeciw.
-
-Kiedy mój m?? ?yje on z?o?ony sum? $ 2.5Million (dwa miliony pi??set  
-tysi?cy dolarów) z jednym z banków w Abid?anie. Obecnie tych pieni?dzy  
-jest jeszcze z bankiem.
-
-Ostatnio, mój lekarz powiedzia? mi, ?e nie potrwa przez nast?pne osiem  
-miesi?cy z powodu problemu raka. Ten, który mnie niepokoi najbardziej,  
-to mój skok choroby.
-Znaj?c mój stan postanowi?em oddanie tego funduszu do ko?cio?a, ?e  
-??b?dzie korzysta? z tych pieni?dzy sposób b?d? poleci? tutaj. Chc?  
-ko?cio?a / organizacja / osoba które b?d? korzysta? z tego funduszu  
-dla domów dziecka, wdowy, propagowanie s?owa Bo?ego i stara?, ?e dom  
-Bo?y jest zachowana. Biblia i Koran uczyni? nas do zrozumienia, ?e  
-??b?ogos?awiony jest r?ka, która daje.
-
-Wzi??em t? decyzj?, poniewa? nie mam dziecka, ?e ??b?dzie dziedziczy?  
-te pieni?dze i moja rodzina m??a s? bardzo chciwi i nie chc? m??a  
-stara?, aby by? u?ywane w taki sposób, wiem, ?e nie spotykaj? si?  
-przed ale chcesz, aby rozwa?y? t? spraw? jako Boskiej misji!
-
-Nie chc? sytuacji, gdy te pieni?dze zostan? wykorzystane w sposób  
-bezbo?ny. Dlatego jestem podj?cia takiej decyzji. Nie boj? si?  
-?mierci, wi?c wiem, gdzie id?. Wiem, ?e mam zamiar by? w ?onie Pana.  
-Exodus 14 vs 14 mówi, ?e "Pan b?dzie walczy? moim przypadku i trzymam  
-mojego pokoju". I nie potrzeba ?adnego telefonu w tej kwestii z powodu  
-mojego zdrowia. Z Bogiem wszystkie rzeczy s? mo?liwe.
-
-Jak tylko otrzymamy odpowied? dam ci kontakt z bankiem w Abid?anie.  
-B?d? równie? wystawi? list organ, który b?dzie udowodni?, ?e obecnie  
-beneficjentem tego funduszy. I want you i Ko?ció? zawsze modli? si? za  
-mnie, bo pan jest moim pasterzem. Moje szcz??cie jest to, ?e ?yli z
-godne chrze?cijanina. Kto, ?e chce s?u?y? Panu musi s?u?y? Mu w duchu  
-i prawdzie.
-
-Prosz? zawsze modlitw? przez ca?e swoje ?ycie Ka?de opó?nienie w  
-odpowiedzi da mi pokój w zaopatrywaniu innego ko?cio?a, w tym samym  
-celu. Prosz? mnie zapewni?, ?e b?d? dzia?a? odpowiednio jak  
-powiedzia?em tu Maj?c nadziej?, ?e otrzymamy odpowied?. Pozostanie  
-b?ogos?awiony w Panu.
-Twoje imi? i nazwiska ..........................
-Adres .......................................
-Wiek .............................................
-Occupaction ......................................
-
-
-
-Wasz w Chrystusie,
-Pani Roseline Edward
+>> 2) Is there a standard way to integrate user space components with kernel side
+>> components.
+>> 3) Should data be pushed back to the driver from userspace, and made available
+>> as an input device or should it remain as a character device.
+Depends on the use case.  If you have to do userspace processing, then uinput
+does this nicely.
+>> 4) Can a 4 element quaternion be added to input.h:
+>> ABS_QUATERNION_1 ABS_QUATERNION_I ABS_QUATERNION_J ABS_QUATERNION_K
+>> for <1, i, j, k>
+>> 5) Should we instead use a rotation vector as defined in the Android sensor:
+>> http://developer.android.com/reference/android/hardware/SensorEvent.html
+If you hardware is producing quaternions directly you are not going to want to
+the necessary sin / cos in kernel. Trivial in userspace though.
+>> 6) Are there any other major design concerns?
+The big one Alan and Jean have commented on.  This device just has slave i2c devices
+they should have their own drivers if at all possible.
+> 
+> Shouldn't you be using the iio subsystem for the kernel/user interface
+> as I think it handles most of this for you already, right?
+Few bits we haven't seen before, but nothing that can't be easily added.
+We do have a usual question here of whether this is better as an input device
+though. Dmitry, what is your view on this one?  Certainly doesn't want to end
+up in misc.  Alan (in other branch) has highlighted an existing driver for the
+mpu part.
+> 
+>> 7) Can an input device also have a character device interface for proprietary
+>> customization.
+> 
+> What do you mean by this?
+> 
+> greg k-h
+> 
 
