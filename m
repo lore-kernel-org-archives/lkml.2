@@ -1,119 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab1GAPRM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 11:17:12 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33136 "EHLO hera.kernel.org"
+	id S1753171Ab1GAPRk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 11:17:40 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33152 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752071Ab1GAPRI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 11:17:08 -0400
-Date: Fri, 1 Jul 2011 15:16:55 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Message-ID: <tip-307bf9803f25a8a3f53c1012110fb74e2f893eb0@git.kernel.org>
+	id S1752497Ab1GAPRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 11:17:36 -0400
+Date: Fri, 1 Jul 2011 15:17:21 GMT
+From: tip-bot for Yong Zhang <yong.zhang0@gmail.com>
+Message-ID: <tip-1c09ab0d257317f97e8629a3d0c8713d6dd9de4c@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        akpm@linux-foundation.org, torvalds@linux-foundation.org,
-        a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+        a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
+        yong.zhang0@gmail.com, chengxu@linux.vnet.ibm.com, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <alpine.LFD.2.02.1106101458350.11814@ionos>
-References: <alpine.LFD.2.02.1106101458350.11814@ionos>
+        a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
+        yong.zhang0@gmail.com, chengxu@linux.vnet.ibm.com, mingo@elte.hu
+In-Reply-To: <BANLkTi=87P3RoTF_UEtamNfc_XGxQXE__Q@mail.gmail.com>
+References: <BANLkTi=87P3RoTF_UEtamNfc_XGxQXE__Q@mail.gmail.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched: Simplify mutex_spin_on_owner()
-Git-Commit-ID: 307bf9803f25a8a3f53c1012110fb74e2f893eb0
+Subject: [tip:sched/core] sched: Skip autogroup when looking for all rt sched groups
+Git-Commit-ID: 1c09ab0d257317f97e8629a3d0c8713d6dd9de4c
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:16:55 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 01 Jul 2011 15:17:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  307bf9803f25a8a3f53c1012110fb74e2f893eb0
-Gitweb:     http://git.kernel.org/tip/307bf9803f25a8a3f53c1012110fb74e2f893eb0
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Fri, 10 Jun 2011 15:08:55 +0200
+Commit-ID:  1c09ab0d257317f97e8629a3d0c8713d6dd9de4c
+Gitweb:     http://git.kernel.org/tip/1c09ab0d257317f97e8629a3d0c8713d6dd9de4c
+Author:     Yong Zhang <yong.zhang0@gmail.com>
+AuthorDate: Tue, 28 Jun 2011 10:51:31 +0800
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 1 Jul 2011 10:39:07 +0200
+CommitDate: Fri, 1 Jul 2011 10:39:08 +0200
 
-sched: Simplify mutex_spin_on_owner()
+sched: Skip autogroup when looking for all rt sched groups
 
-It does not make sense to rcu_read_lock/unlock() in every loop
-iteration while spinning on the mutex.
+Since commit ec514c48 ("sched: Fix rt_rq runtime leakage bug")
+'cat /proc/sched_debug' will print data of root_task_group.rt_rq
+multiple times.
 
-Move the rcu protection outside the loop. Also simplify the
-return path to always check for lock->owner == NULL which
-meets the requirements of both owner changed and need_resched()
-caused loop exits.
+This is because autogroup does not have its own rt group, instead
+rt group of autogroup is linked to root_task_group.
 
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+So skip it when we are looking for all rt sched groups, and it
+will also save some noop operation against root_task_group when
+__disable_runtime()/__enable_runtime().
+
+-v2: Based on Cheng Xu's idea which uses less code.
+
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Cheng Xu <chengxu@linux.vnet.ibm.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/r/alpine.LFD.2.02.1106101458350.11814@ionos
+Link: http://lkml.kernel.org/r/BANLkTi=87P3RoTF_UEtamNfc_XGxQXE__Q@mail.gmail.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched.c |   25 +++++++++----------------
- 1 files changed, 9 insertions(+), 16 deletions(-)
+ kernel/sched_autogroup.h |    1 +
+ kernel/sched_rt.c        |   22 +++++++++++++++++-----
+ 2 files changed, 18 insertions(+), 5 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 5925275..e355ee7 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -4306,11 +4306,8 @@ EXPORT_SYMBOL(schedule);
+diff --git a/kernel/sched_autogroup.h b/kernel/sched_autogroup.h
+index 0557705..c2f0e72 100644
+--- a/kernel/sched_autogroup.h
++++ b/kernel/sched_autogroup.h
+@@ -13,6 +13,7 @@ struct autogroup {
+ 	int			nice;
+ };
  
- static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
++static inline bool task_group_is_autogroup(struct task_group *tg);
+ static inline struct task_group *
+ autogroup_task_group(struct task_struct *p, struct task_group *tg);
+ 
+diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
+index b03cd89..97540f0 100644
+--- a/kernel/sched_rt.c
++++ b/kernel/sched_rt.c
+@@ -185,11 +185,23 @@ static inline u64 sched_rt_period(struct rt_rq *rt_rq)
+ 
+ typedef struct task_group *rt_rq_iter_t;
+ 
+-#define for_each_rt_rq(rt_rq, iter, rq) \
+-	for (iter = list_entry_rcu(task_groups.next, typeof(*iter), list); \
+-	     (&iter->list != &task_groups) && \
+-	     (rt_rq = iter->rt_rq[cpu_of(rq)]); \
+-	     iter = list_entry_rcu(iter->list.next, typeof(*iter), list))
++static inline struct task_group *next_task_group(struct task_group *tg)
++{
++	do {
++		tg = list_entry_rcu(tg->list.next,
++			typeof(struct task_group), list);
++	} while (&tg->list != &task_groups && task_group_is_autogroup(tg));
++
++	if (&tg->list == &task_groups)
++		tg = NULL;
++
++	return tg;
++}
++
++#define for_each_rt_rq(rt_rq, iter, rq)					\
++	for (iter = container_of(&task_groups, typeof(*iter), list);	\
++		(iter = next_task_group(iter)) &&			\
++		(rt_rq = iter->rt_rq[cpu_of(rq)]);)
+ 
+ static inline void list_add_leaf_rt_rq(struct rt_rq *rt_rq)
  {
--	bool ret = false;
--
--	rcu_read_lock();
- 	if (lock->owner != owner)
--		goto fail;
-+		return false;
- 
- 	/*
- 	 * Ensure we emit the owner->on_cpu, dereference _after_ checking
-@@ -4320,11 +4317,7 @@ static inline bool owner_running(struct mutex *lock, struct task_struct *owner)
- 	 */
- 	barrier();
- 
--	ret = owner->on_cpu;
--fail:
--	rcu_read_unlock();
--
--	return ret;
-+	return owner->on_cpu;
- }
- 
- /*
-@@ -4336,21 +4329,21 @@ int mutex_spin_on_owner(struct mutex *lock, struct task_struct *owner)
- 	if (!sched_feat(OWNER_SPIN))
- 		return 0;
- 
-+	rcu_read_lock();
- 	while (owner_running(lock, owner)) {
- 		if (need_resched())
--			return 0;
-+			break;
- 
- 		arch_mutex_cpu_relax();
- 	}
-+	rcu_read_unlock();
- 
- 	/*
--	 * If the owner changed to another task there is likely
--	 * heavy contention, stop spinning.
-+	 * We break out the loop above on need_resched() and when the
-+	 * owner changed, which is a sign for heavy contention. Return
-+	 * success only when lock->owner is NULL.
- 	 */
--	if (lock->owner)
--		return 0;
--
--	return 1;
-+	return lock->owner == NULL;
- }
- #endif
- 
