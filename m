@@ -1,64 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab1GAAzz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 20:55:55 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:49529 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754313Ab1GAAzx convert rfc822-to-8bit (ORCPT
+	id S1754529Ab1GABBk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 21:01:40 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:32784 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687Ab1GABBj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 20:55:53 -0400
-MIME-Version: 1.0
-In-Reply-To: <ADE657CA350FB648AAC2C43247A983F001F383BB1705@AUSP01VMBX24.collaborationhost.net>
-References: <1309430517-23821-1-git-send-email-s.hauer@pengutronix.de>
- <1309430517-23821-2-git-send-email-s.hauer@pengutronix.de>
- <BANLkTikQGFA7XcuAtEEi7_4m-j6-00sZ6Q@mail.gmail.com> <201106301441.24493.arnd@arndb.de>
- <BANLkTin_htv2z3D9Bbf6N8Y7UKFRvPtvOg@mail.gmail.com> <20110630170229.GP6069@pengutronix.de>
- <4E0D0595.5070205@gmail.com> <ADE657CA350FB648AAC2C43247A983F001F383BB1705@AUSP01VMBX24.collaborationhost.net>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 30 Jun 2011 20:55:33 -0400
-Message-ID: <BANLkTin4Sbz=c7V9gu4Qfm3OzZCCpGxOjQ@mail.gmail.com>
-Subject: Re: [PATCH 1/3] PWM: add pwm framework support
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: Ryan Mallon <rmallon@gmail.com>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Bill Gatliff <bgat@billgatliff.com>, Arnd Bergmann <arnd@arndb.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ryan Mallon <ryan@bluewatersys.com>, Shawn Guo <shawn.guo@linaro.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Linus Walleij <linus.walleij@linaro.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 30 Jun 2011 21:01:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 1 Jul 2011 09:54:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+        akpm@linux-foundation.org, linux-mm@kvack.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: mmotm 2011-06-30-15-59 uploaded (mm/memcontrol.c)
+Message-Id: <20110701095433.71c2aa18.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20110701091525.bd8095f1.kamezawa.hiroyu@jp.fujitsu.com>
+References: <201106302259.p5UMxh5i019162@imap1.linux-foundation.org>
+	<20110630172054.49287627.randy.dunlap@oracle.com>
+	<20110701091525.bd8095f1.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 20:33, H Hartley Sweeten wrote:
-> On Thursday, June 30, 2011 4:24 PM, Ryan Mallon wrote:
->> On 01/07/11 03:02, Sascha Hauer wrote:
->>> I think that you made the fundamental mistake to completly ignore the
->>> existing pwm API and its users. With a competing api we are basically
->>> stuck. We can't convert the existing hardware drivers to the new API
->>> because leds-pwm.c, pwm_bl.c and others still depend on the old API and
->>> boards using it would break.
->>
->> I don't think this is really a blocker to Bill's patches. There are
->> three (that I can see) pwm users currently:
->> drivers/video/backlight/pwm_bl.c
->> drivers/leds/leds-pwm.c
->> drivers/input/misc/pwm-beeper.c
->>
->> All of those drivers are trivial and good easily be updated to work with
->> Bill's patches. Bill already provided a leds-pwm driver.
+On Fri, 1 Jul 2011 09:15:25 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+
+> On Thu, 30 Jun 2011 17:20:54 -0700
+> Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> 
+> > On Thu, 30 Jun 2011 15:59:43 -0700 akpm@linux-foundation.org wrote:
+> > 
+> > > The mm-of-the-moment snapshot 2011-06-30-15-59 has been uploaded to
+> > > 
+> > >    http://userweb.kernel.org/~akpm/mmotm/
+> > > 
+> > > and will soon be available at
+> > >    git://zen-kernel.org/kernel/mmotm.git
+> > > or
+> > >    git://git.cmpxchg.org/linux-mmotm.git
+> > > 
+> > > It contains the following patches against 3.0-rc5:
+> > 
+> > I see several of these build errors:
+> > 
+> > mmotm-2011-0630-1559/mm/memcontrol.c:1579: error: implicit declaration of function 'mem_cgroup_node_nr_file_lru_pages'
+> > mmotm-2011-0630-1559/mm/memcontrol.c:1583: error: implicit declaration of function 'mem_cgroup_node_nr_anon_lru_pages'
+> > 
+> 
+> Thanks...maybe !CONFIG_NUMA again. will post a fix soon.
+> 
+
+fix here. compiled and booted on !CONFIG_NUMA on my host.
+I think I should do total cleanup of functions in mm/memcontrol.c 
+in the next week..several functions implements similar logics....
+==
+>From 8773fc8b596dc56adf52fd0780c1b034291185ee Mon Sep 17 00:00:00 2001
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Date: Fri, 1 Jul 2011 09:49:54 +0900
+Subject: [PATCH]memcg-fix-reclaimable-lru-check-in-memcg-fix2.patch
+
+
+ memcg-fix-reclaimable-lru-check-in-memcg.patch
+ causes following error with !CONFIG_NUMA.
+
+> mmotm-2011-0630-1559/mm/memcontrol.c:1579: error: implicit declaration of function 'mem_cgroup_node_nr_file_lru_pages'
+> mmotm-2011-0630-1559/mm/memcontrol.c:1583: error: implicit declaration of function 'mem_cgroup_node_nr_anon_lru_pages'
 >
-> I agree with Ryan.  The three drivers listed above appear to be the only
-> pwm "user" drivers.  They are all trivial and could be updated easily.
 
-indeed ... the current pwm API is almost toy like in its simplicity.
+This patch fixes it by moving functions out of #ifdef.
 
-> The "core" drivers using the existing API appear to be:
-> arch/blackfin/kernel/pwm.c
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   23 +++++++++++------------
+ 1 files changed, 11 insertions(+), 12 deletions(-)
 
-i only wrote this because Bill's subsystem wasnt yet merged.  but i
-made sure that it was done in such a way that it's trivial to convert
-over to Bill's work once it's done.
--mike
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index db70176..fb7338f 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -1134,7 +1134,6 @@ unsigned long mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg,
+ 	return MEM_CGROUP_ZSTAT(mz, lru);
+ }
+ 
+-#ifdef CONFIG_NUMA
+ static unsigned long mem_cgroup_node_nr_file_lru_pages(struct mem_cgroup *memcg,
+ 							int nid)
+ {
+@@ -1146,6 +1145,17 @@ static unsigned long mem_cgroup_node_nr_file_lru_pages(struct mem_cgroup *memcg,
+ 	return ret;
+ }
+ 
++static unsigned long mem_cgroup_node_nr_anon_lru_pages(struct mem_cgroup *memcg,
++							int nid)
++{
++	unsigned long ret;
++
++	ret = mem_cgroup_get_zonestat_node(memcg, nid, LRU_INACTIVE_ANON) +
++		mem_cgroup_get_zonestat_node(memcg, nid, LRU_ACTIVE_ANON);
++	return ret;
++}
++
++#if MAX_NUMNODES > 1
+ static unsigned long mem_cgroup_nr_file_lru_pages(struct mem_cgroup *memcg)
+ {
+ 	u64 total = 0;
+@@ -1157,17 +1167,6 @@ static unsigned long mem_cgroup_nr_file_lru_pages(struct mem_cgroup *memcg)
+ 	return total;
+ }
+ 
+-static unsigned long mem_cgroup_node_nr_anon_lru_pages(struct mem_cgroup *memcg,
+-							int nid)
+-{
+-	unsigned long ret;
+-
+-	ret = mem_cgroup_get_zonestat_node(memcg, nid, LRU_INACTIVE_ANON) +
+-		mem_cgroup_get_zonestat_node(memcg, nid, LRU_ACTIVE_ANON);
+-
+-	return ret;
+-}
+-
+ static unsigned long mem_cgroup_nr_anon_lru_pages(struct mem_cgroup *memcg)
+ {
+ 	u64 total = 0;
+-- 
+1.7.4.1
+
+
+
+
