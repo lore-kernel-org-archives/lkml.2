@@ -1,196 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757185Ab1GAQXd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 12:23:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49516 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756831Ab1GAQXb (ORCPT
+	id S1757202Ab1GAQ1o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 12:27:44 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:32867 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757037Ab1GAQ1m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 12:23:31 -0400
-Date: Fri, 1 Jul 2011 18:23:27 +0200
-From: Tejun Heo <tj@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: Conny Seidel <conny.seidel@amd.com>, x86@kernel.org,
-        linux-kernel@vger.kernel.org, Hans Rosenfeld <hans.rosenfeld@amd.com>
-Subject: [PATCH x86/urgent 2/2] x86: Implement pfn -> nid mapping granularity
- check
-Message-ID: <20110701162327.GY3386@htj.dyndns.org>
-References: <20110621174131.054f0422.conny.seidel_amd.com@marah.osrc.amd.com>
- <20110626102235.GC12200@mtj.dyndns.org>
- <20110626223807.47cef5c6.conny.seidel_amd.com@marah.osrc.amd.com>
- <20110628174613.GP478@escobedo.osrc.amd.com>
- <20110629094451.GJ3386@htj.dyndns.org>
- <20110701162239.GX3386@htj.dyndns.org>
+	Fri, 1 Jul 2011 12:27:42 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -7.268
+Date: Fri, 01 Jul 2011 18:20:25 +0200
+Subject: Re: Regression 3.0-rc5+ : khubd blocked
+Message-ID: <yv9k2yk6fasx2kndcq3elqvq.1309537225091@email.android.com>
+Importance: normal
+From: =?ISO-8859-1?Q?=C9ric_Piel?= <e.a.b.piel@tudelft.nl>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: Greg KH <gregkh@suse.de>, LKML <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110701162239.GX3386@htj.dyndns.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=utf-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p61GRq7P002454
 
-Both SPARSEMEM and DISCONTIGMEM have limited granularity when mapping
-pfn to nid.  If NUMA nodes are laid out such that the mapping cannot
-be accurate, boot will fail triggering BUG_ON() in
-mminit_verify_page_links().
+Sorry, but from a quick look, it seems to not fix the bug.
 
-On 32bit, it's 512MiB w/ PAE and SPARSEMEM.  This seems to have been
-granular enough until commit 2706a0bf7b (x86, NUMA: Enable
-CONFIG_AMD_NUMA on 32bit too).  Apparently, there is a machine which
-aligns NUMA nodes to 128MiB and has only AMD NUMA but not SRAT.  As
-x86_64 has granularity of 128MiB, NUMA config worked fine on the
-machine; however, the commit enabled AMD NUMA config on 32bit too and
-the 512MiB granularity wasn't enough.
+I'll try further on Monday.
 
- On node 0 totalpages: 2096615
-   DMA zone: 32 pages used for memmap
-   DMA zone: 0 pages reserved
-   DMA zone: 3927 pages, LIFO batch:0
-   Normal zone: 1740 pages used for memmap
-   Normal zone: 220978 pages, LIFO batch:31
-   HighMem zone: 16405 pages used for memmap
-   HighMem zone: 1853533 pages, LIFO batch:31
- BUG: Int 6: CR2   (null)
-      EDI   (null)  ESI 00000002  EBP 00000002  ESP c1543ecc
-      EBX f2400000  EDX 00000006  ECX   (null)  EAX 00000001
-      err   (null)  EIP c16209aa   CS 00000060  flg 00010002
- Stack: f2400000 00220000 f7200800 c1620613 00220000 01000000 04400000 00238000
-          (null) f7200000 00000002 f7200b58 f7200800 c1620929 000375fe   (null)
-        f7200b80 c16395f0 00200a02 f7200a80   (null) 000375fe 00000002   (null)
- Pid: 0, comm: swapper Not tainted 2.6.39-rc5-00181-g2706a0b #17
- Call Trace:
-  [<c136b1e5>] ? early_fault+0x2e/0x2e
-  [<c16209aa>] ? mminit_verify_page_links+0x12/0x42
-  [<c1620613>] ? memmap_init_zone+0xaf/0x10c
-  [<c1620929>] ? free_area_init_node+0x2b9/0x2e3
-  [<c1607e99>] ? free_area_init_nodes+0x3f2/0x451
-  [<c1601d80>] ? paging_init+0x112/0x118
-  [<c15f578d>] ? setup_arch+0x791/0x82f
-  [<c15f43d9>] ? start_kernel+0x6a/0x257
+Cheers,
+Eric
 
-This patch implements node_map_pfn_alignment() which determines
-maximum internode alignment and update numa_register_memblks() to
-reject NUMA configuration if alignment exceeds the pfn -> nid mapping
-granularity of the memory model as determined by PAGES_PER_SECTION.
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-This makes the problematic machine boot w/ flatmem by rejecting the
-NUMA config and provides protection against crazy NUMA configurations.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-LKML-Reference: <20110628174613.GP478@escobedo.osrc.amd.com>
-Reported-and-Tested-by: Hans Rosenfeld <hans.rosenfeld@amd.com>
-Cc: Conny Seidel <conny.seidel@amd.com>
----
- arch/x86/mm/numa.c |   11 ++++++++++
- include/linux/mm.h |    1 
- mm/page_alloc.c    |   54 +++++++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 66 insertions(+)
-
-Index: work/arch/x86/mm/numa.c
-===================================================================
---- work.orig/arch/x86/mm/numa.c
-+++ work/arch/x86/mm/numa.c
-@@ -496,6 +496,7 @@ static bool __init numa_meminfo_cover_me
- 
- static int __init numa_register_memblks(struct numa_meminfo *mi)
- {
-+	unsigned long pfn_align;
- 	int i, nid;
- 
- 	/* Account for nodes with cpus and no memory */
-@@ -511,6 +512,16 @@ static int __init numa_register_memblks(
- 
- 	/* for out of order entries */
- 	sort_node_map();
-+
-+	/* check whether pfn -> nid mapping has enough granularity */
-+	pfn_align = node_map_pfn_alignment();
-+	if (pfn_align && pfn_align < PAGES_PER_SECTION) {
-+		printk(KERN_WARNING "Node alignment %LuMB < min %LuMB, rejecting NUMA config\n",
-+		       (u64)pfn_align << PAGE_SHIFT >> 20,
-+		       (u64)PAGES_PER_SECTION << PAGE_SHIFT >> 20);
-+		return -EINVAL;
-+	}
-+
- 	if (!numa_meminfo_cover_memory(mi))
- 		return -EINVAL;
- 
-Index: work/include/linux/mm.h
-===================================================================
---- work.orig/include/linux/mm.h
-+++ work/include/linux/mm.h
-@@ -1313,6 +1313,7 @@ extern void remove_active_range(unsigned
- 					unsigned long end_pfn);
- extern void remove_all_active_ranges(void);
- void sort_node_map(void);
-+unsigned long node_map_pfn_alignment(void);
- unsigned long __absent_pages_in_range(int nid, unsigned long start_pfn,
- 						unsigned long end_pfn);
- extern unsigned long absent_pages_in_range(unsigned long start_pfn,
-Index: work/mm/page_alloc.c
-===================================================================
---- work.orig/mm/page_alloc.c
-+++ work/mm/page_alloc.c
-@@ -4585,6 +4585,60 @@ void __init sort_node_map(void)
- 			cmp_node_active_region, NULL);
- }
- 
-+/**
-+ * node_map_pfn_alignment - determine the maximum internode alignment
-+ *
-+ * This function should be called after node map is populated and sorted.
-+ * It calculates the maximum power of two alignment which can distinguish
-+ * all the nodes.
-+ *
-+ * For example, if all nodes are 1GiB and aligned to 1GiB, the return value
-+ * would indicate 1GiB alignment with (1 << (30 - PAGE_SHIFT)).  If the
-+ * nodes are shifted by 256MiB, 256MiB.  Note that if only the last node is
-+ * shifted, 1GiB is enough and this function will indicate so.
-+ *
-+ * This is used to test whether pfn -> nid mapping of the chosen memory
-+ * model has fine enough granularity to avoid incorrect mapping for the
-+ * populated node map.
-+ *
-+ * Returns the determined alignment in pfn's.  0 if there is no alignment
-+ * requirement (single node).
-+ */
-+unsigned long __init node_map_pfn_alignment(void)
-+{
-+	unsigned long accl_mask = 0, last_end = 0;
-+	int last_nid = -1;
-+	int i;
-+
-+	for_each_active_range_index_in_nid(i, MAX_NUMNODES) {
-+		int nid = early_node_map[i].nid;
-+		unsigned long start = early_node_map[i].start_pfn;
-+		unsigned long end = early_node_map[i].end_pfn;
-+		unsigned long mask;
-+
-+		if (!start || last_nid < 0 || last_nid == nid) {
-+			last_nid = nid;
-+			last_end = end;
-+			continue;
-+		}
-+
-+		/*
-+		 * Start with a mask granular enough to pin-point to the
-+		 * start pfn and tick off bits one-by-one until it becomes
-+		 * too coarse to separate the current node from the last.
-+		 */
-+		mask = ~((1 << __ffs(start)) - 1);
-+		while (mask && last_end <= (start & (mask << 1)))
-+			mask <<= 1;
-+
-+		/* accumulate all internode masks */
-+		accl_mask |= mask;
-+	}
-+
-+	/* convert mask to number of pages */
-+	return ~accl_mask + 1;
-+}
-+
- /* Find the lowest pfn for a node */
- static unsigned long __init find_min_pfn_for_node(int nid)
- {
+>On Fri, 1 Jul 2011, √âric Piel wrote:
+>
+>> Hello,
+>> I've come across to what looks like a regression in the kernel a
+>> few commits after 3.0-rc5.
+>> 
+>> When I turn off a usb hub, to which my mouse and keyboard are connected,
+>> and then turn it on again, they are not detected again. After unplugging
+>> it and waiting a few minutes I get a "task khubd:621 blocked for more
+>> than 120 seconds."
+>> 
+>> I haven't investigated much. It seems reproducible here on my x86_64
+>> laptop. It doesn't seem to happen on a 3.0-rc4. Maybe important, my
+>> kernel already has commit 2e34b429a404675dc4fc4ad2ee339eea028da3ca
+>> "Merge branch 'usb-linus' of
+>> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6"
+>> 
+>> Let me know if you need me to investigate more, or maybe there is
+>> already a fix for that bug?
+>> 
+>> Below is the whole message of the hung. 
+>> 
+>> Cheers,
+>> √âric
+>> 
+>> 
+>> Jul  1 14:08:16 dutifh kernel: INFO: task khubd:621 blocked for more than 120 seconds.
+>> Jul  1 14:08:16 dutifh kernel: "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+>> Jul  1 14:08:16 dutifh kernel: khubd           D ffff88013a30dfd8     0   621      2 0x00000000
+>> Jul  1 14:08:16 dutifh kernel: ffff88013a30db00 0000000000000046 ffff88013a30da10 ffffffffa00dd852
+>> Jul  1 14:08:16 dutifh kernel: ffff88013b954320 ffff88013a30dfd8 ffff88013a30dfd8 ffff88013a30dfd8
+>> Jul  1 14:08:16 dutifh kernel: ffff88013b891660 ffff88013b954320 ffff8800bb0084c0 dead000000100100
+>> Jul  1 14:08:16 dutifh kernel: Call Trace:
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00dd852>] ? usb_hcd_giveback_urb+0x72/0xe0 [usbcore]
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffff8109e24f>] ? __rcu_read_unlock+0x2f/0x200
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffff81388634>] __mutex_lock_slowpath+0xf4/0x190
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffff8138806d>] mutex_lock+0x1d/0x40
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00e1e22>] usb_set_interface+0x62/0x250 [usbcore]
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00e3b9f>] usb_unbind_interface+0x10f/0x180 [usbcore]
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffff81269217>] __device_release_driver+0x77/0xd0
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffff81269297>] device_release_driver+0x27/0x40
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffff81268d83>] bus_remove_device+0x73/0xb0
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffff81266845>] device_del+0x125/0x1a0
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00e192c>] usb_disable_device+0x7c/0x1a0 [usbcore]
+>> Jul  1 14:08:16 dutifh kernel: [<ffffffffa00d9f80>] usb_disconnect+0xa0/0x140 [usbcore]
+>
+>It appears that this was caused by Sarah's commit 
+>fccf4e86200b8f5edd9a65da26f150e32ba79808 (USB: Free bandwidth when 
+>usb_disable_device is called).  usb_disconnect() grabs the 
+>bandwidth_mutex before calling usb_disable_device(), which calls down 
+>indirectly to usb_set_interface(), which tries to acquire the 
+>bandwidth_mutex.
+>
+>This patch should fix the problem.  Still, this whole area cries out 
+>for some serious rewriting.
+>
+>Alan Stern
+>
+>
+>
+>Index: usb-3.0/drivers/usb/core/message.c
+>===================================================================
+>--- usb-3.0.orig/drivers/usb/core/message.c
+>+++ usb-3.0/drivers/usb/core/message.c
+>@@ -1273,6 +1273,8 @@ int usb_set_interface(struct usb_device 
+> 			interface);
+> 		return -EINVAL;
+> 	}
+>+	if (iface->unregistering)
+>+		return -ENODEV;
+> 
+> 	alt = usb_altnum_to_altsetting(iface, alternate);
+> 	if (!alt) {
+>
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
