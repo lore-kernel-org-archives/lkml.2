@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757866Ab1GAVzS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 17:55:18 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:47752 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757831Ab1GAVzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 17:55:15 -0400
-Subject: Re: [PATCH v7 00/16] EVM
-From: Mimi Zohar <zohar@linux.vnet.ibm.com>
-To: Kyle Moffett <kyle@moffetthome.net>
-Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, James Morris <jmorris@namei.org>,
-        David Safford <safford@watson.ibm.com>
-In-Reply-To: <1309530873.3245.23.camel@localhost.localdomain>
-References: <1309377038-4550-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <BANLkTinSsqBqX7=jzwbw_=RfXeQz29h_+A@mail.gmail.com>
-	 <1309390941.3205.22.camel@localhost.localdomain>
-	 <BANLkTineYVKw9MMQUqRGJ6Q_yEfgmsgJxg@mail.gmail.com>
-	 <1309405895.3205.57.camel@localhost.localdomain>
-	 <BANLkTin-x1kkXiowUYjBS_tr4iwDrzNQkA@mail.gmail.com>
-	 <1309530873.3245.23.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 17:55:10 -0400
-Message-ID: <1309557310.3245.74.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 (2.30.3-1.fc13) 
-Content-Transfer-Encoding: 7bit
+	id S1757060Ab1GAWEZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 18:04:25 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:48270 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755520Ab1GAWEY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 18:04:24 -0400
+X-Sasl-enc: 0kXVwtno9VtSAEnTcZfJawbF87BqJrTEFHE7QK/PBNqY 1309557864
+Date: Fri, 1 Jul 2011 14:57:40 -0700
+From: Greg KH <greg@kroah.com>
+To: Bart Van Assche <bvanassche@acm.org>
+Cc: Jim Cromie <jim.cromie@gmail.com>, linux-kernel@vger.kernel.org,
+        gnb@fmeh.org, jbaron@redhat.com, gregkh@suse.de
+Subject: Re: [PATCH 01/11] dynamic_debug: allow changing of dynamic_debug
+ verbosity any time
+Message-ID: <20110701215740.GA13572@kroah.com>
+References: <1309244992-2305-1-git-send-email-jim.cromie@gmail.com>
+ <1309244992-2305-2-git-send-email-jim.cromie@gmail.com>
+ <BANLkTin-t=OTpOMsZDxokbPrYeOH4iQ6vA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <BANLkTin-t=OTpOMsZDxokbPrYeOH4iQ6vA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 10:34 -0400, Mimi Zohar wrote:
-> On Thu, 2011-06-30 at 18:31 -0400, Kyle Moffett wrote:
+On Wed, Jun 29, 2011 at 12:41:18PM +0200, Bart Van Assche wrote:
+> On Tue, Jun 28, 2011 at 9:09 AM, Jim Cromie <jim.cromie@gmail.com> wrote:
+> > allow changing dynamic_debug verbosity
+> > at boot-time, with: dynamic_debug.verbose=1
+> > or at runtime with:
+> > root@voyage:~# echo 1 > /sys/module/dynamic_debug/parameters/verbose
+> >
+> > Signed-off-by: Jim Cromie <jim.cromie@gmail.com>
+> > ---
+> >  lib/dynamic_debug.c |    1 +
+> >  1 files changed, 1 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+> > index 75ca78f..a3b08d5 100644
+> > --- a/lib/dynamic_debug.c
+> > +++ b/lib/dynamic_debug.c
+> > @@ -58,6 +58,7 @@ struct ddebug_iter {
+> >  static DEFINE_MUTEX(ddebug_lock);
+> >  static LIST_HEAD(ddebug_tables);
+> >  static int verbose = 0;
+> > +module_param(verbose, int, 0744);
 > 
-> > The problem is that you are assuming that a large chunk of filesystem
-> > code is capable of properly and securely handling untrusted and
-> > malicious
-> > content.  Historically filesystem drivers are NOT capable of handling
-> > such things, as evidenced by the large number of bugs that tools such
-> > as
-> > fsfuzzer tend to trigger.  If you want to use IMA as-designed then you
-> > need to perform a relatively extensive audit of filesystem and fsck
-> > code.
-> > 
-> > Furthermore, even when the filesystem does not have any security
-> > issues
-> > itself, you are assuming that intentionally malicious data-aliasing
-> > between "trusted" and "untrusted" files can have no potential security
-> > implications.  You should look at the prevalence of simple stupid
-> > "/tmp"
-> > symlink attacks for more counter-examples there.
-> > 
-> > In addition, IMA relies on the underlying attribute and data caching
-> > properties of the VFS, which won't hold true for intentionally
-> > malicious
-> > corrupted filesystems.  It effectively assumes that writing data or
-> > metadata for one file will not invalidate the cached data or metadata
-> > for
-> > another which is blatantly false when filesystem extents overlap each
-> > other.
-> > 
-> > Overall, the IMA architecture assumes that if it loads and validates
-> > the
-> > file data or metadata that it cannot be changed except through a
-> > kernel
-> > access to that particular inode.  For a corrupted filesystem that is
-> > absolutely untrue.
-> > 
-> > Cheers,
-> > Kyle Moffett
-> 
-> You've brought up a number of interesting scenarios, which I appreciate.
-> I will definitely take a closer look at fsfuzzer. It might be a good
-> starting point for an EVM/IMA-appraisal LTP testsuite. The bottom line,
-> as I said previously, is that EVM/IMA-appraisal doesn't need to prevent
-> these things from occurring.  It just needs to be able to detect them.
-> Caching the integrity verification results is a performance issue, be it
-> an important one.
-> 
-> Currently the integrity verification results are reset when the file
-> data or metadata changes and removed on __fput().  Based on your
-> scenarios, I am looking to see if there might be additional situations
-> where the verification results need to be reset.
+> Why 0744 and not 0644 ? Why to set the 'executable' bit ?
 
-I forgot to mention that the IMA-appraisal-directory extension,
-discussed in the Integrity whitepaper, will also address some of the
-concerns you raised.
-
-thanks,
-
-Mimi
+Yeah, that's wrong, Jim, care to fix this?
 
