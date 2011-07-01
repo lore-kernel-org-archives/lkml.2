@@ -1,94 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754088Ab1GAATl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 20:19:41 -0400
-Received: from smtp.microsoft.com ([131.107.115.214]:46431 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286Ab1GAATj convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 20:19:39 -0400
-From: KY Srinivasan <kys@microsoft.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-CC: Christoph Hellwig <hch@infradead.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
-Subject: RE: [PATCH 00/40] Staging: hv: Driver cleanup
-Thread-Topic: [PATCH 00/40] Staging: hv: Driver cleanup
-Thread-Index: AQHMNmfj17zjqSVuBEq2aM1XFV3FGpTWwcoA///MScCAAHrJAP//kvcw
-Date: Fri, 1 Jul 2011 00:19:38 +0000
-Message-ID: <6E21E5352C11B742B20C142EB499E0480816C3AF@TK5EX14MBXC126.redmond.corp.microsoft.com>
-References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
-	<20110630193346.GA22707@infradead.org>
-	<6E21E5352C11B742B20C142EB499E0480816C384@TK5EX14MBXC126.redmond.corp.microsoft.com>
- <20110630164808.17c506a4@nehalam.ftrdhcpuser.net>
-In-Reply-To: <20110630164808.17c506a4@nehalam.ftrdhcpuser.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.32]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753930Ab1GAATg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 20:19:36 -0400
+Received: from mga03.intel.com ([143.182.124.21]:52635 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753286Ab1GAATf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 20:19:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,455,1304319600"; 
+   d="scan'208";a="21224466"
+Subject: [patch] x32, fpu: fix DNA exception during check_fpu()
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Thu, 30 Jun 2011 17:19:32 -0700
+Message-Id: <1309479572.2665.1372.camel@sbsiddha-MOBL3.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+
+Before check_fpu() is called, we have cr0.TS bit set and hence the floating
+point code to check the FDIV bug was generating a DNA exception.
+
+Use kernel_fpu_begin()/kernel_fpu_end() around the floating point
+code to avoid this unnecessary device not available exception during
+boot.
+
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/kernel/cpu/bugs.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index 525514c..46674fb 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -62,6 +62,8 @@ static void __init check_fpu(void)
+ 		return;
+ 	}
+ 
++	kernel_fpu_begin();
++
+ 	/*
+ 	 * trap_init() enabled FXSR and company _before_ testing for FP
+ 	 * problems here.
+@@ -80,6 +82,8 @@ static void __init check_fpu(void)
+ 		: "=m" (*&fdiv_bug)
+ 		: "m" (*&x), "m" (*&y));
+ 
++	kernel_fpu_end();
++
+ 	boot_cpu_data.fdiv_bug = fdiv_bug;
+ 	if (boot_cpu_data.fdiv_bug)
+ 		printk(KERN_WARNING "Hmm, FPU with FDIV bug.\n");
 
 
-> -----Original Message-----
-> From: Stephen Hemminger [mailto:shemminger@vyatta.com]
-> Sent: Thursday, June 30, 2011 7:48 PM
-> To: KY Srinivasan
-> Cc: Christoph Hellwig; devel@linuxdriverproject.org; gregkh@suse.de; linux-
-> kernel@vger.kernel.org; virtualization@lists.osdl.org
-> Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
-> 
-> On Thu, 30 Jun 2011 23:32:34 +0000
-> KY Srinivasan <kys@microsoft.com> wrote:
-> 
-> >
-> > > -----Original Message-----
-> > > From: Christoph Hellwig [mailto:hch@infradead.org]
-> > > Sent: Thursday, June 30, 2011 3:34 PM
-> > > To: KY Srinivasan
-> > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
-> > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
-> > > Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
-> > >
-> > > On Wed, Jun 29, 2011 at 07:38:21AM -0700, K. Y. Srinivasan wrote:
-> > > > Further cleanup of the hv drivers:
-> > > >
-> > > > 	1) Cleanup the reference counting mess for both stor and net devices.
-> > >
-> > > I really don't understand the need for reference counting on the storage
-> > > side, especially now that you only have a SCSI driver.  The SCSI
-> > > midlayer does proper counting on it's objects (Scsi_Host, scsi_device,
-> > > scsi_cmnd), so you'll get that for free given that SCSI drivers just
-> > > piggyback on the midlayer lifetime rules.
-> > >
-> > > For now your patches should probably go in as-is, but mid-term you
-> > > should be able to completely remove that code on the storage side.
-> > >
-> >
-> > Greg,
-> >
-> > I am thinking of  going back to my original implementation where I had one scsi
-> host
-> > per IDE device. This will certainly simply the code. Let me know what you think.
-> If you
-> > agree with this approach, please drop this patch-set, I will send you a new set
-> of patches.
-> 
-> I think there ref counting on network devices is also unneeded
-> as long as the unregister logic handles RCU correctly. The network layer
-> calls the driver unregister routine after all packets are gone.
-On the networking side, what about incoming packets that may be racing
-with the device destruction. The current ref counting scheme deals with
-that case.
-
-Regards,
-
-K. Y
