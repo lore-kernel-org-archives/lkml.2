@@ -1,184 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754393Ab1GAAWu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 20:22:50 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:49269 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754353Ab1GAAWs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 20:22:48 -0400
-Subject: Re: [PATCH 1/8] regmap: Add generic non-memory mapped register
- access API
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org,
-        Dimitris Papastamos <dp@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>, Liam Girdwood <lrg@ti.com>,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Graeme Gregory <gg@slimlogic.co.uk>
-In-Reply-To: <1308768353-19372-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-References: <20110622184407.GC13847@sirena.org.uk>
-	 <1308768353-19372-1-git-send-email-broonie@opensource.wolfsonmicro.com>
-Content-Type: multipart/signed; micalg="pgp-sha512"; protocol="application/pgp-signature"; boundary="=-D2uhRO8mPNjP37YcyJ9b"
-Date: Fri, 01 Jul 2011 01:22:41 +0100
-Message-ID: <1309479761.3093.1659.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-X-SA-Exim-Connect-IP: 2001:470:1f08:1539:21c:bfff:fe03:f805
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
+	id S1754255Ab1GAAXd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 20:23:33 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44956 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753493Ab1GAAXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 20:23:31 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [PATCH 7/10 v6] PM / Domains: Don't stop wakeup devices during system sleep transitions
+Date: Fri, 1 Jul 2011 02:24:37 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+References: <201106112223.04972.rjw@sisk.pl> <201107010128.03732.rjw@sisk.pl> <8762nmc1hs.fsf@ti.com>
+In-Reply-To: <8762nmc1hs.fsf@ti.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107010224.37609.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Friday, July 01, 2011, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+...
+> > So the only way forward I can see is to add a special PM domain callback,
+> > say .active_wakeup(), that will return "true" if the device is to be left
+> > active when wakeup-enabled.  So the check you don't like will become
+> > something like:
+> >
+> > if (device_may_wakeup(dev) && genpd->active_wakeup
+> >     && genpd->active_wakeup(dev))
+> >         return 0;
+> >
+> > Would that be better?
+> 
+> Yes, much better.  And I like the default behavior if no hooks are provided.
 
---=-D2uhRO8mPNjP37YcyJ9b
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+So, what about the appended patch instead of the $subject one?
 
-On Wed, 2011-06-22 at 19:45 +0100, Mark Brown wrote:
-[...]
-> --- /dev/null
-> +++ b/drivers/regmap/regmap.c
-[...]
-> +static void regmap_format_4_12_write(struct regmap *map,
-> +				     unsigned int reg, unsigned int val)
-> +{
-> +	u16 *out =3D map->work_buf;
+Rafael
 
-__be16 *out
+---
+From: Rafael J. Wysocki <rjw@sisk.pl>
+Subject: PM / Domains: Wakeup devices support for system sleep transitions
 
-> +	*out =3D cpu_to_be16((reg << 12) | val);
-> +}
-> +
-> +static void regmap_format_7_9_write(struct regmap *map,
-> +				    unsigned int reg, unsigned int val)
-> +{
-> +	u16 *out =3D map->work_buf;
+There is the problem how to handle devices set up to wake up the
+system from sleep states during system-wide power transitions.
+In some cases, those devices can be turned off entirely, because the
+wakeup signals will be generated on their behalf anyway.  In some
+other cases, they will generate wakeup signals if their clocks are
+stopped, but only if power is not removed from them.  Finally, in
+some cases, they can only generate wakeup signals if power is not
+removed from them and their clocks are enabled.
 
-__be16 *out
+To allow platform-specific code to decide whether or not to put
+wakeup devices (and their PM domains) into low-power state during
+system-wide transitions, such as system suspend, introduce a new
+generic PM domain callback, .active_wakeup(), that will be used
+during the "noirq" phase of system suspend and hibernation (after
+image creation) to decide what to do with wakeup devices.
+Specifically, if this callback is present and returns "true", the
+generic PM domain code will not execute .stop_device() for the
+given wakeup device and its PM domain won't be powered off.
 
-> +	*out =3D cpu_to_be16((reg << 9) | val);
-> +}
-> +
-> +static void regmap_format_8(void *buf, unsigned int val)
-> +{
-> +	u8 *b =3D buf;
-> +
-> +	b[0] =3D val;
-> +}
-> +
-> +static void regmap_format_16(void *buf, unsigned int val)
-> +{
-> +	u16 *b =3D buf;
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/base/power/domain.c |    8 ++++++++
+ include/linux/pm_domain.h   |    1 +
+ 2 files changed, 9 insertions(+)
 
-__be16 *b
-
-> +	b[0] =3D cpu_to_be16(val);
-> +}
-> +
-> +static unsigned int regmap_parse_8(void *buf)
-> +{
-> +	u8 *b =3D buf;
-> +
-> +	return b[0];
-> +}
-> +
-> +static unsigned int regmap_parse_16(void *buf)
-> +{
-> +	u16 *b =3D buf;
-
-__be16 *b
-
-> +	b[0] =3D be16_to_cpu(b[0]);
-> +
-> +	return b[0];
-
-The assignment doesn't seem to be necessary and will irritate sparse,
-so:
-
-	return be16_to_cpu(b[0]);
-
-> +}
-> +
-> +/**
-> + * remap_init: Initialise register map
-
-Missing 'g' in 'regmap_init'.  And the first line's format must be:
-
-   regmap_init() - Initialise register map
-
-(The other functions all have this problem as well.)
-
-> + * dev: Device that will be interacted with
-> + * config: Configuration for register map
-
-Missing '@' before the parameter names.
-
-[...]
-> +static int _regmap_raw_write(struct regmap *map, unsigned int reg,
-> +			     const void *val, size_t val_len)
-> +{
-> +	void *buf;
-> +	int ret =3D -ENOTSUPP;
-> +	size_t len;
-> +
-> +	map->format.format_reg(map->work_buf, reg);
-> +
-> +	/* Try to do a gather write if we can */
-> +	if (map->bus->gather_write)
-> +		ret =3D map->bus->gather_write(map->dev, map->work_buf,
-> +					     map->format.reg_bytes,
-> +					     val, val_len);
-> +
-> +	/* Otherwise fall back on linearising by hand. */
-> +	if (ret =3D=3D -ENOTSUPP) {
-> +		len =3D map->format.reg_bytes + val_len;
-> +		buf =3D kmalloc(len, GFP_KERNEL);
-> +		if (!buf)
-> +			return -ENOMEM;
-> +		memcpy(buf, map->work_buf, map->format.reg_bytes);
-> +		memcpy(buf + map->format.reg_bytes, val, val_len);
-[...]
-
-If I understand correctly, this is usually called by _regmap_write() and
-val is already at the appropriate offset in work_buf.  Is it not worth
-avoiding the allocation in that case?
-
-General comments:
-
-- All the functions must be called in process context, but this isn't
-documented.
-- I think this could go in lib or drivers/base rather than in a new
-directory.  The specific support for I2C and SPI would go in their
-existing directories.
-
-Ben.
-
---=20
-Ben Hutchings
-If the facts do not conform to your theory, they must be disposed of.
-
---=-D2uhRO8mPNjP37YcyJ9b
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQIVAwUATg0TQ+e/yOyVhhEJAQpAghAAr2LFHaSkYqEJf8gcKhbi987D5BGjlwCh
-CEby2h8+8WLJV/d5GB+mzdR2SArO2+Z+sE43iVSZFKtWQ77ecKrNVjXSWhLRknzC
-yv8Cu1OCaoMzKw9jE23mDFiW0CgEEZgJ2hGV0vOj2KDsAu1UkyzGdVlJSwGcERam
-Y3jY1QbyW3sPZPFfP+mzh7D1uPg+biFM5maEgycOuaw2pgWj0qAM+wgiJRQkxomp
-IWlRDA49RgQd69XQ8AumPfOQLL2oRG3rc2vAxWk66uQjLaOhSW5xxiBysesBkKNh
-GlVqRjt4d8uHbOF3GPIgsvBudZyDQYi67+vbs5jKvWVMHHmqTZLNlchsFv+blXdg
-LfP3f1ob8UaWpcJzmvuE6wlq6LcptQR23i/748KSKySaJ1VLxHRIN0rbQEXwXxDI
-sWKZ5IsfLli4Yuaoo5zIw5T7UeKkwY6dtWAHLiGIJnpOHYGF8aGoqc+bn6AI/YG5
-BtHyMfA+s4SBsOICIF92HRt7p2eLMaXqMNrd8Xq0eMPnB6Vuc5IjBsLWdSTvv5AV
-F9BqrCuG39SmjmdC8YkQ2B2ikKLwU9t12ylaITSYyZBwgpbMY1+PIUxcZB+gvonm
-6qfqAywCFL5v0IeyMOzFtUzX4m4uQY6Jfbr1DIk9c0wRcsf/J7hoQesUuLwTkVBo
-2+aBoGoW14o=
-=XdGD
------END PGP SIGNATURE-----
-
---=-D2uhRO8mPNjP37YcyJ9b--
+Index: linux-2.6/drivers/base/power/domain.c
+===================================================================
+--- linux-2.6.orig/drivers/base/power/domain.c
++++ linux-2.6/drivers/base/power/domain.c
+@@ -450,6 +450,10 @@ static int pm_genpd_suspend_noirq(struct
+ 	if (ret)
+ 		return ret;
+ 
++	if (device_may_wakeup(dev)
++	    && genpd->active_wakeup && genpd->active_wakeup(dev))
++		return 0;
++
+ 	if (genpd->stop_device)
+ 		genpd->stop_device(dev);
+ 
+@@ -670,6 +674,10 @@ static int pm_genpd_dev_poweroff_noirq(s
+ 	if (ret)
+ 		return ret;
+ 
++	if (device_may_wakeup(dev)
++	    && genpd->active_wakeup && genpd->active_wakeup(dev))
++		return 0;
++
+ 	if (genpd->stop_device)
+ 		genpd->stop_device(dev);
+ 
+Index: linux-2.6/include/linux/pm_domain.h
+===================================================================
+--- linux-2.6.orig/include/linux/pm_domain.h
++++ linux-2.6/include/linux/pm_domain.h
+@@ -38,6 +38,7 @@ struct generic_pm_domain {
+ 	int (*power_on)(struct generic_pm_domain *domain);
+ 	int (*start_device)(struct device *dev);
+ 	int (*stop_device)(struct device *dev);
++	bool (*active_wakeup)(struct device *dev);
+ };
+ 
+ static inline struct generic_pm_domain *pd_to_genpd(struct dev_pm_domain *pd)
