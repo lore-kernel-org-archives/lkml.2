@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab1GAUAY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 16:00:24 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:49014 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751141Ab1GAUAX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 16:00:23 -0400
+	id S1754473Ab1GAUDM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 16:03:12 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48625 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751921Ab1GAUDK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 16:03:10 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@ti.com>
+Subject: Re: [PATCH 3/10 v6] PM / Domains: Support for generic I/O PM domains (v7)
+Date: Fri, 1 Jul 2011 22:03:58 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+References: <201106112223.04972.rjw@sisk.pl> <201106252326.23837.rjw@sisk.pl> <87tyb5yipq.fsf@ti.com>
+In-Reply-To: <87tyb5yipq.fsf@ti.com>
 MIME-Version: 1.0
-From: =?UTF-8?B?5L+e6aKQ6LaF?= <yyc1992@gmail.com>
-Date: Fri, 1 Jul 2011 16:00:02 -0400
-Message-ID: <BANLkTin4P7X0gbbShNTQNpV0khq3Bb9PhQ@mail.gmail.com>
-Subject: mistake about the cpufreq?
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107012203.58283.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following is what I get when I run the command in
-/sys/devices/system/cpu/cpu0/cpufreq
+On Friday, July 01, 2011, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> 
+> > From: Rafael J. Wysocki <rjw@sisk.pl>
+> >
+> > Introduce common headers, helper functions and callbacks allowing
+> > platforms to use simple generic power domains for runtime power
+> > management.
+> >
+> > Introduce struct generic_pm_domain to be used for representing
+> > power domains that each contain a number of devices and may be
+> > parent domains or subdomains with respect to other power domains.
+> > Among other things, this structure includes callbacks to be
+> > provided by platforms for performing specific tasks related to
+> > power management (i.e. ->stop_device() may disable a device's
+> > clocks, while ->start_device() may enable them, ->power_off() is
+> > supposed to remove power from the entire power domain
+> > and ->power_on() is supposed to restore it).
+> >
+> > Introduce functions that can be used as power domain runtime PM
+> > callbacks, pm_genpd_runtime_suspend() and pm_genpd_runtime_resume(),
+> > as well as helper functions for the initialization of a power
+> > domain represented by a struct generic_power_domain object,
+> > adding a device to or removing a device from it and adding or
+> > removing subdomains.
+> >
+> > Introduce configuration option CONFIG_PM_GENERIC_DOMAINS to be
+> > selected by the platforms that want to use the new code.
+> >
+> > Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> > Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+> 
+> Reviewed-by: Kevin Hilman <khilman@ti.com>
 
-$ sudo grep "" *
-affected_cpus:0
-bios_limit:800000
-cpuinfo_cur_freq:2800000
-cpuinfo_max_freq:2801000
-cpuinfo_min_freq:800000
-cpuinfo_transition_latency:10000
-related_cpus:0 1
-scaling_available_frequencies:2801000 2800000 2133000 1600000 800000
-scaling_available_governors:conservative ondemand userspace powersave
-performance
-scaling_cur_freq:800000
-scaling_driver:acpi-cpufreq
-scaling_governor:performance
-scaling_max_freq:800000
-scaling_min_freq:800000
-scaling_setspeed:<unsupported>
+Thanks!
 
-The problem is basically the scalings is different from cpuinfos. It
-appears when I unplug the power and still there when I have repluged
-the power.
-Does any know what probably the problem is and where can I look for
-more detail information.
+> While I still don't think this is generic enough for some more
+> complicated SoCs, it most certainly a huge step in the right direction,
+> and I think we can address the other complexities with additional
+> patches as needed.
 
-some basic info about my computer
+That's my intention.
 
-$ uname -a
-Linux yuyichao-PC 2.6.39-ARCH #1 SMP PREEMPT Mon Jun 27 21:26:22 CEST
-2011 x86_64 Intel(R) Core(TM)2 Duo CPU T9600 @ 2.80GHz GenuineIntel
-GNU/Linux
-(The kernel version should be 2.6.39.2)
+> Thanks Rafael for all your hard work on this and putting up with my
+> nagging. ;)
 
+I don't mind that at all, it kind of helps to focus on important stuff. ;-)
 
-Thanks.
+Rafael
 
-Yichao
