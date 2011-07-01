@@ -1,188 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755937Ab1GAJQW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:16:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43592 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755891Ab1GAJQV convert rfc822-to-8bit (ORCPT
+	id S1755946Ab1GAJRw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 05:17:52 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:32818 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755904Ab1GAJRv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 05:16:21 -0400
-MIME-Version: 1.0
-X-Originating-IP: [118.90.134.60]
-In-Reply-To: <1309511380-30242-1-git-send-email-chrisf@ijw.co.nz>
-References: <1309511380-30242-1-git-send-email-chrisf@ijw.co.nz>
-Date: Fri, 1 Jul 2011 21:16:20 +1200
-Message-ID: <BANLkTin_4UHOxAip2XWgiX5=f0dOG3S5wg@mail.gmail.com>
-Subject: Re: [PATCH] block: ioctl: Fix coding style issues
-From: Chris Forbes <chrisf@ijw.co.nz>
-To: Jens Axboe <axboe@kernel.dk>
-Cc: linux-kernel@vger.kernel.org, Chris Forbes <chrisf@ijw.co.nz>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Jul 2011 05:17:51 -0400
+From: Stefan Bader <stefan.bader@canonical.com>
+To: Daniel Vetter <daniel.vetter@ffwll.ch>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>, Dave Airlie <airlied@redhat.com>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Stefan Bader <stefan.bader@canonical.com>,
+        linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: [2.6.32+drm33-longterm] Patch "Subject: [PATCH 01/10] drm_mm: extract check_free_mm_node" has been added to staging queue
+Date: Fri,  1 Jul 2011 10:17:42 +0100
+Message-Id: <1309511862-2870-1-git-send-email-stefan.bader@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, please disregard -- indentation is still bogus.
+This is a note to let you know that I have just added a patch titled
 
--- Chris
+    Subject: [PATCH 01/10] drm_mm: extract check_free_mm_node
 
-On Fri, Jul 1, 2011 at 9:09 PM, Chris Forbes <chrisf@ijw.co.nz> wrote:
-> Fixed issues as flagged by checkpatch.pl
->
-> Signed-off-by: Chris Forbes <chrisf@ijw.co.nz>
-> ---
->  block/ioctl.c |  105 +++++++++++++++++++++++++++++----------------------------
->  1 files changed, 53 insertions(+), 52 deletions(-)
->
-> diff --git a/block/ioctl.c b/block/ioctl.c
-> index 1124cd2..fa284e5 100644
-> --- a/block/ioctl.c
-> +++ b/block/ioctl.c
-> @@ -6,10 +6,10 @@
->  #include <linux/backing-dev.h>
->  #include <linux/buffer_head.h>
->  #include <linux/blktrace_api.h>
-> -#include <asm/uaccess.h>
-> +#include <linux/uaccess.h>
->
-> -static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user *arg)
-> -{
-> +static int blkpg_ioctl(struct block_device *bdev,
-> +                       struct blkpg_ioctl_arg __user *arg) {
->        struct block_device *bdevp;
->        struct gendisk *disk;
->        struct hd_struct *part;
-> @@ -31,28 +31,29 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
->        partno = p.pno;
->        if (partno <= 0)
->                return -EINVAL;
-> +
->        switch (a.op) {
-> -               case BLKPG_ADD_PARTITION:
-> -                       start = p.start >> 9;
-> -                       length = p.length >> 9;
-> -                       /* check for fit in a hd_struct */
-> -                       if (sizeof(sector_t) == sizeof(long) &&
-> -                           sizeof(long long) > sizeof(long)) {
-> -                               long pstart = start, plength = length;
-> -                               if (pstart != start || plength != length
-> -                                   || pstart < 0 || plength < 0)
-> -                                       return -EINVAL;
-> -                       }
-> +       case BLKPG_ADD_PARTITION:
-> +               start = p.start >> 9;
-> +               length = p.length >> 9;
-> +               /* check for fit in a hd_struct */
-> +               if (sizeof(sector_t) == sizeof(long) &&
-> +                   sizeof(long long) > sizeof(long)) {
-> +                       long pstart = start, plength = length;
-> +                       if (pstart != start || plength != length
-> +                           || pstart < 0 || plength < 0)
-> +                               return -EINVAL;
-> +               }
->
-> -                       mutex_lock(&bdev->bd_mutex);
-> +               mutex_lock(&bdev->bd_mutex);
->
-> -                       /* overlap? */
-> -                       disk_part_iter_init(&piter, disk,
-> -                                           DISK_PITER_INCL_EMPTY);
-> -                       while ((part = disk_part_iter_next(&piter))) {
-> -                               if (!(start + length <= part->start_sect ||
-> -                                     start >= part->start_sect + part->nr_sects)) {
-> -                                       disk_part_iter_exit(&piter);
-> +               /* overlap? */
-> +               disk_part_iter_init(&piter, disk,
-> +                                   DISK_PITER_INCL_EMPTY);
-> +               while ((part = disk_part_iter_next(&piter))) {
-> +                       if (!(start + length <= part->start_sect ||
-> +                             start >= part->start_sect + part->nr_sects)) {
-> +                               disk_part_iter_exit(&piter);
->                                        mutex_unlock(&bdev->bd_mutex);
->                                        return -EBUSY;
->                                }
-> @@ -64,35 +65,35 @@ static int blkpg_ioctl(struct block_device *bdev, struct blkpg_ioctl_arg __user
->                                             ADDPART_FLAG_NONE, NULL);
->                        mutex_unlock(&bdev->bd_mutex);
->                        return IS_ERR(part) ? PTR_ERR(part) : 0;
-> -               case BLKPG_DEL_PARTITION:
-> -                       part = disk_get_part(disk, partno);
-> -                       if (!part)
-> -                               return -ENXIO;
-> -
-> -                       bdevp = bdget(part_devt(part));
-> -                       disk_put_part(part);
-> -                       if (!bdevp)
-> -                               return -ENOMEM;
-> -
-> -                       mutex_lock(&bdevp->bd_mutex);
-> -                       if (bdevp->bd_openers) {
-> -                               mutex_unlock(&bdevp->bd_mutex);
-> -                               bdput(bdevp);
-> -                               return -EBUSY;
-> -                       }
-> -                       /* all seems OK */
-> -                       fsync_bdev(bdevp);
-> -                       invalidate_bdev(bdevp);
-> -
-> -                       mutex_lock_nested(&bdev->bd_mutex, 1);
-> -                       delete_partition(disk, partno);
-> -                       mutex_unlock(&bdev->bd_mutex);
-> +       case BLKPG_DEL_PARTITION:
-> +               part = disk_get_part(disk, partno);
-> +               if (!part)
-> +                       return -ENXIO;
-> +
-> +               bdevp = bdget(part_devt(part));
-> +               disk_put_part(part);
-> +               if (!bdevp)
-> +                       return -ENOMEM;
-> +
-> +               mutex_lock(&bdevp->bd_mutex);
-> +               if (bdevp->bd_openers) {
->                        mutex_unlock(&bdevp->bd_mutex);
->                        bdput(bdevp);
-> +                       return -EBUSY;
-> +               }
-> +               /* all seems OK */
-> +               fsync_bdev(bdevp);
-> +               invalidate_bdev(bdevp);
->
-> -                       return 0;
-> -               default:
-> -                       return -EINVAL;
-> +               mutex_lock_nested(&bdev->bd_mutex, 1);
-> +               delete_partition(disk, partno);
-> +               mutex_unlock(&bdev->bd_mutex);
-> +               mutex_unlock(&bdevp->bd_mutex);
-> +               bdput(bdevp);
-> +
-> +               return 0;
-> +       default:
-> +               return -EINVAL;
->        }
->  }
->
-> @@ -189,7 +190,7 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
->        loff_t size;
->        int ret, n;
->
-> -       switch(cmd) {
-> +       switch (cmd) {
->        case BLKFLSBUF:
->                if (!capable(CAP_SYS_ADMIN))
->                        return -EACCES;
-> @@ -279,7 +280,7 @@ int blkdev_ioctl(struct block_device *bdev, fmode_t mode, unsigned cmd,
->                return put_ushort(arg, queue_max_sectors(bdev_get_queue(bdev)));
->        case BLKRASET:
->        case BLKFRASET:
-> -               if(!capable(CAP_SYS_ADMIN))
-> +               if (!capable(CAP_SYS_ADMIN))
->                        return -EACCES;
->                bdi = blk_get_backing_dev_info(bdev);
->                if (bdi == NULL)
-> --
-> 1.7.4.1
->
->
+to the drm-next branch of the 2.6.32+drm33-longterm tree which can be found at
+
+  http://git.kernel.org/?p=linux/kernel/git/smb/linux-2.6.32.y-drm33.z.git;a=shortlog;h=refs/heads/drm-next
+
+If you, or anyone else, feels it should not be added to the drm33-longterm tree,
+please reply to this email not later than 8 days after this email was sent.
+
+Thanks.
+-Stefan
+
+------
+
+>From d4a82251610c863bab7f457cb7a76a4bf01abb21 Mon Sep 17 00:00:00 2001
+From: Daniel Vetter <daniel.vetter@ffwll.ch>
+Date: Fri, 17 Jun 2011 10:04:19 -0500
+Subject: [PATCH 01/10] drm_mm: extract check_free_mm_node
+
+BugLink: http://bugs.launchpad.net/bugs/599017
+
+There are already two copies of this logic. And the new scanning
+stuff will add some more. So extract it into a small helper
+function.
+
+Signed-off-by: Daniel Vetter <daniel.vetter@ffwll.ch>
+Acked-by: Thomas Hellstrom <thellstrom@vmwgfx.com>
+Signed-off-by: Chris Wilson <chris@chris-wilson.co.uk>
+Signed-off-by: Dave Airlie <airlied@redhat.com>
+(backported from commit 7a6b2896f261894dde287d3faefa4b432cddca53 upstream)
+
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Stefan Bader <stefan.bader@canonical.com>
+---
+ drivers/gpu/drm/drm_mm.c |   69 ++++++++++++++++++++++-----------------------
+ 1 files changed, 34 insertions(+), 35 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_mm.c b/drivers/gpu/drm/drm_mm.c
+index 2ac074c8..4935e91 100644
+--- a/drivers/gpu/drm/drm_mm.c
++++ b/drivers/gpu/drm/drm_mm.c
+@@ -328,6 +328,27 @@ void drm_mm_put_block(struct drm_mm_node *cur)
+
+ EXPORT_SYMBOL(drm_mm_put_block);
+
++static int check_free_mm_node(struct drm_mm_node *entry, unsigned long size,
++			      unsigned alignment)
++{
++	unsigned wasted = 0;
++
++	if (entry->size < size)
++		return 0;
++
++	if (alignment) {
++		register unsigned tmp = entry->start % alignment;
++		if (tmp)
++			wasted = alignment - tmp;
++	}
++
++	if (entry->size >= size + wasted) {
++		return 1;
++	}
++
++	return 0;
++}
++
+ struct drm_mm_node *drm_mm_search_free(const struct drm_mm *mm,
+ 				       unsigned long size,
+ 				       unsigned alignment, int best_match)
+@@ -337,31 +358,22 @@ struct drm_mm_node *drm_mm_search_free(const struct drm_mm *mm,
+ 	struct drm_mm_node *entry;
+ 	struct drm_mm_node *best;
+ 	unsigned long best_size;
+-	unsigned wasted;
+
+ 	best = NULL;
+ 	best_size = ~0UL;
+
+ 	list_for_each(list, free_stack) {
+ 		entry = list_entry(list, struct drm_mm_node, fl_entry);
+-		wasted = 0;
+
+-		if (entry->size < size)
++		if (!check_free_mm_node(entry, size, alignment))
+ 			continue;
+
+-		if (alignment) {
+-			register unsigned tmp = entry->start % alignment;
+-			if (tmp)
+-				wasted += alignment - tmp;
+-		}
++		if (!best_match)
++			return entry;
+
+-		if (entry->size >= size + wasted) {
+-			if (!best_match)
+-				return entry;
+-			if (entry->size < best_size) {
+-				best = entry;
+-				best_size = entry->size;
+-			}
++		if (entry->size < best_size) {
++			best = entry;
++			best_size = entry->size;
+ 		}
+ 	}
+
+@@ -381,38 +393,25 @@ struct drm_mm_node *drm_mm_search_free_in_range(const struct drm_mm *mm,
+ 	struct drm_mm_node *entry;
+ 	struct drm_mm_node *best;
+ 	unsigned long best_size;
+-	unsigned wasted;
+
+ 	best = NULL;
+ 	best_size = ~0UL;
+
+ 	list_for_each(list, free_stack) {
+ 		entry = list_entry(list, struct drm_mm_node, fl_entry);
+-		wasted = 0;
+-
+-		if (entry->size < size)
+-			continue;
+
+ 		if (entry->start > end || (entry->start+entry->size) < start)
+ 			continue;
+
+-		if (entry->start < start)
+-			wasted += start - entry->start;
++		if (!check_free_mm_node(entry, size, alignment))
++			continue;
+
+-		if (alignment) {
+-			register unsigned tmp = (entry->start + wasted) % alignment;
+-			if (tmp)
+-				wasted += alignment - tmp;
+-		}
++		if (!best_match)
++			return entry;
+
+-		if (entry->size >= size + wasted &&
+-		    (entry->start + wasted + size) <= end) {
+-			if (!best_match)
+-				return entry;
+-			if (entry->size < best_size) {
+-				best = entry;
+-				best_size = entry->size;
+-			}
++		if (entry->size < best_size) {
++			best = entry;
++			best_size = entry->size;
+ 		}
+ 	}
+
+--
+1.7.4.1
+
