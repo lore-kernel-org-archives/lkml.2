@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754354Ab1GABiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 30 Jun 2011 21:38:22 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42526 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753514Ab1GABiV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 30 Jun 2011 21:38:21 -0400
-X-Authority-Analysis: v=1.1 cv=PfPQ8rIoTcZsncbPZjVSZ7K0hy8Zc4hmL68r4VPNpKE= c=1 sm=0 a=EAdfuy46jrwA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=36EdqO7F9hGmj-ZezaMA:9 a=bivkmJAksUN_cAdW5SQA:7 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [RFC][PATCH] kprobes: Add separate preempt_disabling for
- kprobes
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        yrl.pp-manager.tt@hitachi.com,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>, Tony Luck <tony.luck@intel.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        MartinSchwidefsky <schwidefsky@de.ibm.com>,
-        Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <4E0D2141.4080608@hitachi.com>
-References: <1309440213.26417.76.camel@gandalf.stny.rr.com>
-	 <1309449117.26417.90.camel@gandalf.stny.rr.com>
-	 <1309470997.12449.614.camel@twins>  <4E0D2141.4080608@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 30 Jun 2011 21:38:17 -0400
-Message-ID: <1309484297.26417.126.camel@gandalf.stny.rr.com>
+	id S1754461Ab1GABjw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 30 Jun 2011 21:39:52 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51531 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753514Ab1GABjv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 30 Jun 2011 21:39:51 -0400
+Date: Fri, 1 Jul 2011 11:39:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the powerpc tree
+Message-Id: <20110701113942.5cfed9a3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__1_Jul_2011_11_39_42_+1000_ew7+5yst42mNdnGK"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added some of the affected maintainers, left off David Howells and
-David Miller due to LKML Cc limit ]
+--Signature=_Fri__1_Jul_2011_11_39_42_+1000_ew7+5yst42mNdnGK
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, 2011-07-01 at 10:22 +0900, Masami Hiramatsu wrote:
-> (2011/07/01 6:56), Peter Zijlstra wrote:
-> > On Thu, 2011-06-30 at 11:51 -0400, Steven Rostedt wrote:
-> >>
-> >> To solve this, I've added a per_cpu variable called
-> >> kprobe_preempt_disabled, that is set by the kprobe code. If it is set,
-> >> the preempt_schedule() will not preempt the code.
-> 
-> Sorry for replying so late :(
+Hi all,
 
-Heh, who can blame you? Timezones make open source development a
-wait-and-see affair.
+After merging the powerpc tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-> 
-> > Damn this is ugly. Can we step back and see if we can make the
-> > requirement for kprobe to disable preemption go away?
-> 
-> As I replied right now, I think we can just eliminate that
-> disabling preemption code. At least we'd better try it.
-> I agree with you, introducing this kind of complexity
-> just for kprobes is not what I want. :(
+arch/powerpc/include/asm/setup.h: Assembler messages:
+arch/powerpc/include/asm/setup.h:6: Error: Unrecognized opcode: `extern'
+make[2]: *** [arch/powerpc/kernel/head_64.o] Error 1
 
-Note, I did clean up this patch, so it is not as fugly.
+Caused by commit a9c0f41b3a64 ("powerpc: Add printk companion for
+ppc_md.progress").  Clearly not build tested for 64 but powerpc :-(
 
-> 
-> > Why does it have to do that anyway? Isn't it keeping enough per-task
-> > state to allow preemption over the single step?
-> 
-> preemption itself must not happen on single stepping, but it seems
-> impossible to do heavy context switching with setting TF bit...
+I have used the version of the powerpc tree from next-20110630 for today.
 
-Yeah, if all archs single step with interrupts disabled, then we should
-be fine with removing preemption.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
--- Steve
+--Signature=_Fri__1_Jul_2011_11_39_42_+1000_ew7+5yst42mNdnGK
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
+iQEcBAEBAgAGBQJODSVeAAoJEDMEi1NhKgbsweoIAJ2bnrJWPwtkzJjEzmTLlyZV
+Yqqm2DBnGdEtx4Bqq1setmV/D2TNNEwslE0KTHcz48657TSHtjPBaCD3bctRDZau
+YCyTMEX6uXOPFTN9KXEh95nm4+PSsVWDhLMQPqYnAEu0Bqtw1hmOc/B10yHwvLUb
+ac68mXcnU89gG40GBZiSWZdpxLPvT0w0mDCKRc9POsVd25MNjQpW+qgEqx1i7fsC
+SBjc9rDtZXbg7RsBZQW1LG/NW1rBN8VCTp4hU8dXyD++kNmdRjLsc9Bgg+hAMs9h
+nL6edqrf83eE4wvl5xMEdhViFyXS4jxwvAks1p4oDb50bKdf1SuzoNJ7Q+3wc1s=
+=dii8
+-----END PGP SIGNATURE-----
 
+--Signature=_Fri__1_Jul_2011_11_39_42_+1000_ew7+5yst42mNdnGK--
