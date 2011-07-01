@@ -1,81 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756824Ab1GAOc4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 10:32:56 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:20009 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756679Ab1GAOcx convert rfc822-to-8bit (ORCPT
+	id S932120Ab1GAOeY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 10:34:24 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:51411 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756694Ab1GAOeV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 10:32:53 -0400
-Subject: Re: [PATCH V2] MMC: PM: add suspend/resume in atmel-mci
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        cjb@laptop.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@avr32linux.org
-In-Reply-To: <4E0DD816.7070104@atmel.com>
-References: <201106292339.12402.rjw@sisk.pl>
-	 <1309441781-11012-1-git-send-email-nicolas.ferre@atmel.com>
-	 <20110630131342.GK11559@pengutronix.de>  <4E0DD816.7070104@atmel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Atmel Corporation
-Date: Fri, 01 Jul 2011 16:32:34 +0200
-Message-ID: <1309530754.4373.3.camel@hcegtvedt.norway.atmel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8BIT
-X-OriginalArrivalTime: 01 Jul 2011 14:32:36.0283 (UTC) FILETIME=[B8C048B0:01CC37FB]
+	Fri, 1 Jul 2011 10:34:21 -0400
+From: Kevin Hilman <khilman@ti.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Magnus Damm <magnus.damm@gmail.com>, Paul Walmsley <paul@pwsan.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>, linux-sh@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 7/10 v6] PM / Domains: Don't stop wakeup devices during system sleep transitions
+Organization: Texas Instruments, Inc.
+References: <201106112223.04972.rjw@sisk.pl> <201107010128.03732.rjw@sisk.pl>
+	<8762nmc1hs.fsf@ti.com> <201107010224.37609.rjw@sisk.pl>
+Date: Fri, 01 Jul 2011 07:34:16 -0700
+In-Reply-To: <201107010224.37609.rjw@sisk.pl> (Rafael J. Wysocki's message of
+	"Fri, 1 Jul 2011 02:24:37 +0200")
+Message-ID: <87tyb66pef.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 16:22 +0200, Nicolas Ferre wrote:
-> Le 30/06/2011 15:13, Uwe Kleine-König :
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-<snipp>
+> On Friday, July 01, 2011, Kevin Hilman wrote:
+>> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> ...
+>> > So the only way forward I can see is to add a special PM domain callback,
+>> > say .active_wakeup(), that will return "true" if the device is to be left
+>> > active when wakeup-enabled.  So the check you don't like will become
+>> > something like:
+>> >
+>> > if (device_may_wakeup(dev) && genpd->active_wakeup
+>> >     && genpd->active_wakeup(dev))
+>> >         return 0;
+>> >
+>> > Would that be better?
+>> 
+>> Yes, much better.  And I like the default behavior if no hooks are provided.
+>
+> So, what about the appended patch instead of the $subject one?
+>
+> Rafael
+>
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM / Domains: Wakeup devices support for system sleep transitions
+>
+> There is the problem how to handle devices set up to wake up the
+> system from sleep states during system-wide power transitions.
+> In some cases, those devices can be turned off entirely, because the
+> wakeup signals will be generated on their behalf anyway.  In some
+> other cases, they will generate wakeup signals if their clocks are
+> stopped, but only if power is not removed from them.  Finally, in
+> some cases, they can only generate wakeup signals if power is not
+> removed from them and their clocks are enabled.
+>
+> To allow platform-specific code to decide whether or not to put
+> wakeup devices (and their PM domains) into low-power state during
+> system-wide transitions, such as system suspend, introduce a new
+> generic PM domain callback, .active_wakeup(), that will be used
+> during the "noirq" phase of system suspend and hibernation (after
+> image creation) to decide what to do with wakeup devices.
+> Specifically, if this callback is present and returns "true", the
+> generic PM domain code will not execute .stop_device() for the
+> given wakeup device and its PM domain won't be powered off.
+>
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-> Well, actually for the current implementation the only return code is... 0.
-> And here I try to have a king of best effort approach ;-)
-> 
-> >> +			}
-> >> +			return ret;
-> >> +		}
-> >> +	}
-> >> +
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static int atmci_resume(struct device *dev)
-> >> +{
-> >> +	struct atmel_mci *host = dev_get_drvdata(dev);
-> >> +	struct atmel_mci_slot *slot;
-> >> +	int i, ret;
-> >> +
-> >> +	for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-> >> +		slot = host->slot[i];
-> >> +		if (!slot)
-> >> +			continue;
-> >> +		ret = mmc_resume_host(slot->mmc);
-> >> +		if (ret < 0)
-> >> +			return ret;
-> > Maybe you should try to resume host 5 even if resuming host 4 failed?
-> 
-> In fact all other drivers that are dealing with multiple slots are doing
-> the same... So I have difficulties to know the truth.
-> The question is: is it better to return an error to the "resume"
-> function so that we are called later again or do we have to do our best
-> to thaw everything out?
+Acked-by: Kevin Hilman <khilman@ti.com>
 
-Detect failures and return the error value, but also try to resume the
-other slots.
+Thanks,
 
-You must however then keep track of which are restored for later calls
-to resume AFAICT.
-
-<snipp>
-
--- 
-Hans-Christian Egtvedt
-
+Kevin
