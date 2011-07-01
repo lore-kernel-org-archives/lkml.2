@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab1GAU3N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 16:29:13 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:35064 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755663Ab1GAU3L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 16:29:11 -0400
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Dave Jones <davej@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, axboe@kernel.dk, rjw@sisk.pl,
-        linux-usb@vger.kernel.org
-In-Reply-To: <20110701181406.GA1614@redhat.com>
-References: <20110701170531.GA3693@tassilo.jf.intel.com>
-	 <20110701181406.GA1614@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 15:29:08 -0500
-Message-ID: <1309552148.2722.46.camel@mulgrave>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+	id S1756146Ab1GAUeP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 16:34:15 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36763 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751929Ab1GAUeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 16:34:14 -0400
+Message-ID: <4E0E2F43.8040202@kernel.dk>
+Date: Fri, 01 Jul 2011 22:34:11 +0200
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Johannes Stezenbach <js@sig21.net>, Kevin Wolf <kwolf@redhat.com>,
+        kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org,
+        Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH resend] compat_ioctl: fix warning caused by qemu
+References: <20110701093336.GA9582@sig21.net> <201107011646.28918.arnd@arndb.de>
+In-Reply-To: <201107011646.28918.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2011-07-01 at 14:14 -0400, Dave Jones wrote:
-> On Fri, Jul 01, 2011 at 10:05:31AM -0700, Andi Kleen wrote:
-> 
->  > I found I can reliably crash a 3.0 system by pulling the
->  > USB cable of a mounted USB cdrom (or rather a USB device which
->  > has a builtin fake CD-ROM) 
->  > 
->  > I suspect it's a regression too.
-> 
-> We've been seeing a lot of similar bugs in Fedora since we pushed
-> a 2.6.38.8 update.  Some of the traces are different, but some
-> look to be the same as yours. (here's one for eg: https://bugzilla.redhat.com/show_bug.cgi?id=712830)
-> 
-> The common cause seems to be 'device went away'. So USB CD drives,
-> USB memory sticks, and for some reason virtualbox shutdown.
+On 2011-07-01 16:46, Arnd Bergmann wrote:
+> Yes, that should be fine, unless Jens would like to see a different
+> solution for the struct definitions, e.g. moving all of the floppy
+> compat ioctl numbers to fd.h. I'm fine with it either way.
 
-I think it's something specific in the USB path.  I can't reproduce on
-3.0-rc5 with a SATA DVD hot unplug.  USB cc's added.
+Looks OK to me, I've queued it up for 3.1 with your ack. Thanks
+Johannes.
 
-James
-
+-- 
+Jens Axboe
 
