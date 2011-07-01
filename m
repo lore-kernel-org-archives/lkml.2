@@ -1,54 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab1GAJcS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 05:32:18 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:34402 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754970Ab1GAJcR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 05:32:17 -0400
-Message-ID: <4E0D9401.1070300@atmel.com>
-Date: Fri, 01 Jul 2011 11:31:45 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	id S1755356Ab1GAJdn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 05:33:43 -0400
+Received: from bar.sig21.net ([80.81.252.164]:49198 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754978Ab1GAJdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 05:33:42 -0400
+Date: Fri, 1 Jul 2011 11:33:36 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Kevin Wolf <kwolf@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        Jens Axboe <axboe@kernel.dk>, Alexander Viro <viro@zeniv.linux.org.uk>
+Subject: [PATCH resend] compat_ioctl: fix warning caused by qemu
+Message-ID: <20110701093336.GA9582@sig21.net>
 MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: alsa-devel@alsa-project.org, lrg@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [PATCH 1/5] ASoC: wm8731: rework power management
-References: <1309370419-22810-1-git-send-email-nicolas.ferre@atmel.com> <ccd4b125244271af7978948689cf1dcef37bc06b.1309368631.git.nicolas.ferre@atmel.com> <20110629171148.GB10798@opensource.wolfsonmicro.com> <4E0C80B8.7030006@atmel.com> <20110630152203.GB3249@opensource.wolfsonmicro.com>
-In-Reply-To: <20110630152203.GB3249@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -3.8 (---)
+X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.636,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 30/06/2011 17:22, Mark Brown :
-> On Thu, Jun 30, 2011 at 03:57:12PM +0200, Nicolas Ferre wrote:
-> 
-> Please fix your mailer to line wrap within paragraphs.
-> 
->> First of all, I experienced issues while not having OSC enabled during
->> suspend/resume cycle. Am I right supposing that, if using oscillator
->> to clock the codec, I have to keep it running during a suspend/resume
->> cycle?
-> 
-> No, not at all.  What makes you believe that you would you need to do
-> that?
+On Linux x86_64 host with 32bit userspace, running
+qemu or even just "qemu-img create -f qcow2 some.img 1G"
+causes a kernel warning:
 
-Ok, I re-tested and for sure I was totally wrong! So we forget this part
-of the patch.
-I guess that this belief may come from my first implementation on 2.6.35
-where OSC was not part of the DAPM... Sory for the noise.
+ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(00005326){t:'S';sz:0} arg(7fffffff) on some.img
+ioctl32(qemu-img:5296): Unknown cmd fd(3) cmd(801c0204){t:02;sz:28} arg(fff77350) on some.img
 
-I repost the "active bit" part real-soon-now.
+ioctl 00005326 is CDROM_DRIVE_STATUS,
+ioctl 801c0204 is FDGETPRM.
 
-Thanks for your help, best regards,
--- 
-Nicolas Ferre
+The warning appears because the Linux compat-ioctl handler for these
+ioctls only applies to block devices, while qemu also uses the ioctls on
+plain files.
 
+Signed-off-by: Johannes Stezenbach <js@sig21.net>
+---
+(resend with Cc: suggested by get_maintainer.pl)
+
+discussed in http://lkml.kernel.org/r/20110617090424.GA19345@sig21.net
+
+Arnd, is this what you had in mind, or did you mean to move
+all floppy compat definitions?  I decided to go with the
+minimal change.  Tested on both 2.6.39.2 and 3.0-rc5-63-g0d72c6f.
+
+
+diff --git a/block/compat_ioctl.c b/block/compat_ioctl.c
+index cc3eb78..7b72502 100644
+--- a/block/compat_ioctl.c
++++ b/block/compat_ioctl.c
+@@ -208,19 +208,6 @@ static int compat_blkpg_ioctl(struct block_device *bdev, fmode_t mode,
+ #define BLKBSZSET_32		_IOW(0x12, 113, int)
+ #define BLKGETSIZE64_32		_IOR(0x12, 114, int)
+ 
+-struct compat_floppy_struct {
+-	compat_uint_t	size;
+-	compat_uint_t	sect;
+-	compat_uint_t	head;
+-	compat_uint_t	track;
+-	compat_uint_t	stretch;
+-	unsigned char	gap;
+-	unsigned char	rate;
+-	unsigned char	spec1;
+-	unsigned char	fmt_gap;
+-	const compat_caddr_t name;
+-};
+-
+ struct compat_floppy_drive_params {
+ 	char		cmos;
+ 	compat_ulong_t	max_dtr;
+@@ -288,7 +275,6 @@ struct compat_floppy_write_errors {
+ 
+ #define FDSETPRM32 _IOW(2, 0x42, struct compat_floppy_struct)
+ #define FDDEFPRM32 _IOW(2, 0x43, struct compat_floppy_struct)
+-#define FDGETPRM32 _IOR(2, 0x04, struct compat_floppy_struct)
+ #define FDSETDRVPRM32 _IOW(2, 0x90, struct compat_floppy_drive_params)
+ #define FDGETDRVPRM32 _IOR(2, 0x11, struct compat_floppy_drive_params)
+ #define FDGETDRVSTAT32 _IOR(2, 0x12, struct compat_floppy_drive_struct)
+diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+index 61abb63..8be086e 100644
+--- a/fs/compat_ioctl.c
++++ b/fs/compat_ioctl.c
+@@ -68,6 +68,8 @@
+ 
+ #ifdef CONFIG_BLOCK
+ #include <linux/loop.h>
++#include <linux/cdrom.h>
++#include <linux/fd.h>
+ #include <scsi/scsi.h>
+ #include <scsi/scsi_ioctl.h>
+ #include <scsi/sg.h>
+@@ -944,6 +946,9 @@ COMPATIBLE_IOCTL(FIOQSIZE)
+ IGNORE_IOCTL(LOOP_CLR_FD)
+ /* md calls this on random blockdevs */
+ IGNORE_IOCTL(RAID_VERSION)
++/* qemu/qemu-img might call these two on plain files for probing */
++IGNORE_IOCTL(CDROM_DRIVE_STATUS)
++IGNORE_IOCTL(FDGETPRM32)
+ /* SG stuff */
+ COMPATIBLE_IOCTL(SG_SET_TIMEOUT)
+ COMPATIBLE_IOCTL(SG_GET_TIMEOUT)
+diff --git a/include/linux/fd.h b/include/linux/fd.h
+index f5d194a..c6a68d0 100644
+--- a/include/linux/fd.h
++++ b/include/linux/fd.h
+@@ -3,6 +3,7 @@
+ 
+ #include <linux/ioctl.h>
+ #include <linux/compiler.h>
++#include <linux/compat.h>
+ 
+ /* New file layout: Now the ioctl definitions immediately follow the
+  * definitions of the structures that they use */
+@@ -377,4 +378,21 @@ struct floppy_raw_cmd {
+ #define FDEJECT _IO(2, 0x5a)
+ /* eject the disk */
+ 
++#ifdef CONFIG_COMPAT
++struct compat_floppy_struct {
++	compat_uint_t	size;
++	compat_uint_t	sect;
++	compat_uint_t	head;
++	compat_uint_t	track;
++	compat_uint_t	stretch;
++	unsigned char	gap;
++	unsigned char	rate;
++	unsigned char	spec1;
++	unsigned char	fmt_gap;
++	const compat_caddr_t name;
++};
++
++#define FDGETPRM32 _IOR(2, 0x04, struct compat_floppy_struct)
++#endif
++
+ #endif
