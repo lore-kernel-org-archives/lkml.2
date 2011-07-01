@@ -1,50 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756519Ab1GANXs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 09:23:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61821 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756460Ab1GANXp (ORCPT
+	id S1756530Ab1GANZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 09:25:29 -0400
+Received: from smtp.microsoft.com ([131.107.115.215]:20447 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756460Ab1GANZ1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 09:23:45 -0400
-Date: Fri, 1 Jul 2011 09:23:33 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] (xen) stable/bug.fixes for 3.0-rc5
-Message-ID: <20110701132333.GA14495@dumpdata.com>
+	Fri, 1 Jul 2011 09:25:27 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Stephen Hemminger <shemminger@vyatta.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 00/40] Staging: hv: Driver cleanup
+Thread-Topic: [PATCH 00/40] Staging: hv: Driver cleanup
+Thread-Index: AQHMNmfj17zjqSVuBEq2aM1XFV3FGpTWwcoA///MScCAAHrJAP//kvcwgADACQCAABqXUA==
+Date: Fri, 1 Jul 2011 13:25:26 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480816C4A5@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1309358301-8488-1-git-send-email-kys@microsoft.com>
+	<20110630193346.GA22707@infradead.org>
+	<6E21E5352C11B742B20C142EB499E0480816C384@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	<20110630164808.17c506a4@nehalam.ftrdhcpuser.net>
+	<6E21E5352C11B742B20C142EB499E0480816C3AF@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110630214512.1b9125b7@nehalam.ftrdhcpuser.net>
+In-Reply-To: <20110630214512.1b9125b7@nehalam.ftrdhcpuser.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.32]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4E0DCA5E.006A:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Linus,
 
-Please git pull the following branch:
 
-git pull git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git stable/bug.fixes
+> -----Original Message-----
+> From: Stephen Hemminger [mailto:shemminger@vyatta.com]
+> Sent: Friday, July 01, 2011 12:45 AM
+> To: KY Srinivasan
+> Cc: Christoph Hellwig; devel@linuxdriverproject.org; gregkh@suse.de; linux-
+> kernel@vger.kernel.org; virtualization@lists.osdl.org
+> Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
+> 
+> On Fri, 1 Jul 2011 00:19:38 +0000
+> KY Srinivasan <kys@microsoft.com> wrote:
+> 
+> >
+> >
+> > > -----Original Message-----
+> > > From: Stephen Hemminger [mailto:shemminger@vyatta.com]
+> > > Sent: Thursday, June 30, 2011 7:48 PM
+> > > To: KY Srinivasan
+> > > Cc: Christoph Hellwig; devel@linuxdriverproject.org; gregkh@suse.de; linux-
+> > > kernel@vger.kernel.org; virtualization@lists.osdl.org
+> > > Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
+> > >
+> > > On Thu, 30 Jun 2011 23:32:34 +0000
+> > > KY Srinivasan <kys@microsoft.com> wrote:
+> > >
+> > > >
+> > > > > -----Original Message-----
+> > > > > From: Christoph Hellwig [mailto:hch@infradead.org]
+> > > > > Sent: Thursday, June 30, 2011 3:34 PM
+> > > > > To: KY Srinivasan
+> > > > > Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> > > > > devel@linuxdriverproject.org; virtualization@lists.osdl.org
+> > > > > Subject: Re: [PATCH 00/40] Staging: hv: Driver cleanup
+> > > > >
+> > > > > On Wed, Jun 29, 2011 at 07:38:21AM -0700, K. Y. Srinivasan wrote:
+> > > > > > Further cleanup of the hv drivers:
+> > > > > >
+> > > > > > 	1) Cleanup the reference counting mess for both stor and net
+> devices.
+> > > > >
+> > > > > I really don't understand the need for reference counting on the storage
+> > > > > side, especially now that you only have a SCSI driver.  The SCSI
+> > > > > midlayer does proper counting on it's objects (Scsi_Host, scsi_device,
+> > > > > scsi_cmnd), so you'll get that for free given that SCSI drivers just
+> > > > > piggyback on the midlayer lifetime rules.
+> > > > >
+> > > > > For now your patches should probably go in as-is, but mid-term you
+> > > > > should be able to completely remove that code on the storage side.
+> > > > >
+> > > >
+> > > > Greg,
+> > > >
+> > > > I am thinking of  going back to my original implementation where I had one
+> scsi
+> > > host
+> > > > per IDE device. This will certainly simply the code. Let me know what you
+> think.
+> > > If you
+> > > > agree with this approach, please drop this patch-set, I will send you a new
+> set
+> > > of patches.
+> > >
+> > > I think there ref counting on network devices is also unneeded
+> > > as long as the unregister logic handles RCU correctly. The network layer
+> > > calls the driver unregister routine after all packets are gone.
+> > On the networking side, what about incoming packets that may be racing
+> > with the device destruction. The current ref counting scheme deals with
+> > that case.
+> 
+> Not sure how HV driver tells hypervisor to stop sending packets. But the
+> destructor is not called until after all other CPU's are done processing
+> packets from that device.
 
-which is based on git commit acd049c6e99d2ad1195666195230f6881d1c1588
-Konrad Rzeszutek Wilk (1):
+The issue I was concerned is one where, on packet reception, we need
+to de-reference the ext field in the struct hv_device (this is the pointer
+to the net device and this could happen concurrently with the guest
+trying to shut-down the device. In the current code we deal with this
+condition.
 
-    xen/setup: Fix for incorrect xen_extra_mem_start.
+Regards,
 
-which you had pulled in 3.0-rc4 time-frame.
-
-This git pull fixes two rare corner cases. One is a bootup where the INT_SRC_OVR global_irq
-!= source_irq for ACPI SCI causing the ACPI interpreter to abort and going in legacy IRQ mode.
-Tose machines are rare and most of them support a knob to turn it off: a BIOS option called
-'ACPI SCI: Enabled/Disabled'. The other is a linker issue if a user wants an UP kernel.
-
-Konrad Rzeszutek Wilk (2):
-      xen/mmu: Fix for linker errors when CONFIG_SMP is not defined.
-      xen/pci: Use the INT_SRC_OVR IRQ (instead of GSI) to preset the ACPI SCI IRQ.
-
- arch/x86/pci/xen.c |   26 ++++++++++++++++++++++++--
- arch/x86/xen/mmu.c |    4 ++++
- 2 files changed, 28 insertions(+), 2 deletions(-)
+K. Y  
