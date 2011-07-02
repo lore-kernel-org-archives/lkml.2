@@ -1,108 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754773Ab1GBQxx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 12:53:53 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54344 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab1GBQxt (ORCPT
+	id S1752675Ab1GBRE2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 13:04:28 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:61365 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751309Ab1GBRE0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 12:53:49 -0400
-Date: Sat, 2 Jul 2011 18:53:45 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>, Michal Marek <mmarek@suse.cz>,
-        Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [GIT PULL v2] sched: Make sleep inside atomic detection work on
- !PREEMPT
-Message-ID: <20110702165342.GA317@somewhere>
-References: <1307712622-11104-1-git-send-email-fweisbec@gmail.com>
- <20110622224844.GA3290@somewhere>
- <20110701123629.GA12605@elte.hu>
- <20110701125644.GD8508@somewhere>
- <20110701125926.GF12605@elte.hu>
- <20110701150517.GA24707@elte.hu>
- <20110701164425.GG8508@somewhere>
- <20110701172934.GA6240@elte.hu>
+	Sat, 2 Jul 2011 13:04:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110701172934.GA6240@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <1309625250.24186.1224.camel@localhost>
+References: <1309622006-28343-1-git-send-email-jonas@southpole.se>
+ <CAMjpGUfZwZu-ZCJj2cmq1w6B71-gQ8G27FpYdhseyq3hoZRL+Q@mail.gmail.com> <1309625250.24186.1224.camel@localhost>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Sat, 2 Jul 2011 13:04:05 -0400
+X-Google-Sender-Auth: 9fr8QIQY5iugPijy2k06z_E3GZE
+Message-ID: <CAMjpGUeMqVzcAWKpAojZVbj9ywH+4HmW4Hx-8D1WQmTqPSNqQA@mail.gmail.com>
+Subject: Re: [PATCH 1/2] asm-generic: add MMU variants of io.h functions
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        liqin.chen@sunplusct.com, gxt@mprc.pku.edu.cn
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 07:29:34PM +0200, Ingo Molnar wrote:
-> 
-> * Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> 
-> > On Fri, Jul 01, 2011 at 05:05:17PM +0200, Ingo Molnar wrote:
-> > > 
-> > > -tip testing also found that m32r fails to build:
-> > > 
-> > > /home/mingo/tip/kernel/sched.c: In function 'preempt_schedule':
-> > > /home/mingo/tip/kernel/sched.c:4364: error: implicit declaration of function 'add_preempt_count_notrace'
-> > > /home/mingo/tip/kernel/sched.c:4366: error: implicit declaration of function 'sub_preempt_count_notrace'
-> > > 
-> > > due to:
-> > > 
-> > > bdd4e85dc36cdbcfc1608a5b2a17c80a9db8986a is the first bad commit
-> > > commit bdd4e85dc36cdbcfc1608a5b2a17c80a9db8986a
-> > > Author: Frederic Weisbecker <fweisbec@gmail.com>
-> > > Date:   Wed Jun 8 01:13:27 2011 +0200
-> > > 
-> > >     sched: Isolate preempt counting in its own config option
-> > > 
-> > > Thanks,
-> > > 
-> > > 	Ingo
-> > 
-> > I have no clue how that did happen.
-> > 
-> > Can you send me your config?
-> 
-> Just the m32r defconfig: m32700ut.smp_defconfig.
-> 
-> My guess would be that one of these:
-> 
->  include/linux/bit_spinlock.h |    2 +-
->  include/linux/hardirq.h      |    4 ++--
->  include/linux/pagemap.h      |    4 ++--
->  include/linux/preempt.h      |   26 +++++++++++++++++---------
->  include/linux/rcupdate.h     |   12 ++++++------
->  include/linux/sched.h        |    2 +-
-> 
-> changed/exposed some header dependency quirk on m32r, failing the 
-> build. Or m32r has some strange .config combo.
-> 
-> Thanks,
-> 
-> 	Ingo
+On Sat, Jul 2, 2011 at 12:47, Jonas Bonn wrote:
+> On Sat, 2011-07-02 at 12:38 -0400, Mike Frysinger wrote:
+>> On Sat, Jul 2, 2011 at 11:53, Jonas Bonn wrote:
+>> > +#ifdef CONFIG_MMU
+>> > +#define xlate_dev_mem_ptr(p)   __va(p)
+>> > +#else
+>> >  #define xlate_dev_mem_ptr(p)   ((void *) (p))
+>> > +#endif
+>>
+>> i wonder if we could do:
+>> #ifndef __va
+>> #define __va(p) ((void *)(p))
+>> #endif
+>> #define xlate_dev_mem_ptr(p)   __va(p)
+>> -mike
+>
+> This seems to introduce an artificial definition of a "virtual" address
+> for systems without an MMU, which strikes me as a bit odd.  If this is
+> what people prefer, that's fine... I think I prefer the former variant,
+> though.
 
-That's weird.
+this isnt a problem.  we do this sort of thing in many places since
+people develop under MMU and use the API that exists there.
 
-We have this:
-
-	config PREEMPT
-		bool
-		select PREEMPT_COUNT
-
-	config PREEMPT_COUNT
-		bool
-
-Then I run "make ARCH=m32r defconfig" that has CONFIG_PREEMPT=y
-but it doesn't select PREEMPT_COUNT and happily runs to break few
-times after.
-
-Even running make ARCH=m32r oldconfig on the defconfig doesn't fix up
-the issue.
-
-I thought "select" was an unconditional action. What am I missing?
-
-I'm adding in Cc more people who know better kconfig/kbuild than me.
-Every time I finally consider I know well the Kconfig language, I quickly
-get caught up by the fate...
+however, i see that we already have __va() in asm-generic/page.h.  so
+you can assume __va() exists.  so just change the existing definition
+to:
+#define xlate_dev_mem_ptr(p)   __va(p)
+-mike
