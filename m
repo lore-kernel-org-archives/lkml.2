@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755825Ab1GBUrc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 16:47:32 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14928 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754217Ab1GBUr3 (ORCPT
+	id S1754466Ab1GBVJW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 17:09:22 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:40277 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752030Ab1GBVJV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 16:47:29 -0400
-Date: Sat, 2 Jul 2011 22:38:11 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Samuel Ortiz <sameo@linux.intel.com>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: [PATCH] mfd: remove dead code from
- drivers/mfd/max8997-irq.c:get_i2c()
-Message-ID: <alpine.LNX.2.00.1107022235380.16316@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 2 Jul 2011 17:09:21 -0400
+X-Sasl-enc: A/9zCgO2RMbR7g9yfaIp5ZH2mTPYkN/a2AhkWgiowDdG 1309640958
+Date: Sat, 2 Jul 2011 14:07:29 -0700
+From: Greg KH <greg@kroah.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>,
+        Frank Mori Hess <fmhess@users.sourceforge.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        driverdevel <devel@driverdev.osuosl.org>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -next] staging: fix comedi NI labpc driver build when
+ ISA_DMA_API is not enabled
+Message-ID: <20110702210729.GB18538@kroah.com>
+References: <20110701160523.5626201d.sfr@canb.auug.org.au>
+ <20110701154327.69c5b852.rdunlap@xenotime.net>
+ <20110701224604.GA7469@kroah.com>
+ <20110702114436.b2b8a70b.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110702114436.b2b8a70b.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We either hit one of the case's or the default in the switch statement
-in get_i2c(), so the 'return ERR_PTR(-EINVAL);' at the end of the
-function is just dead code - remove it.
+On Sat, Jul 02, 2011 at 11:44:36AM -0700, Randy Dunlap wrote:
+> On Fri, 1 Jul 2011 15:46:04 -0700 Greg KH wrote:
+> 
+> 
+> > Ick.
+> > Care to make a patch?
+> 
+> I'd rather that someone who has a strong interest in comedi (or NI labpc)
+> do that, but here it is anyway.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/mfd/max8997-irq.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+Thanks, I'll queue it up next week.
 
-diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
-index 638bf7e..09274cf 100644
---- a/drivers/mfd/max8997-irq.c
-+++ b/drivers/mfd/max8997-irq.c
-@@ -58,8 +58,6 @@ static struct i2c_client *get_i2c(struct max8997_dev *max8997,
- 	default:
- 		return ERR_PTR(-EINVAL);
- 	}
--
--	return ERR_PTR(-EINVAL);
- }
- 
- struct max8997_irq_data {
--- 
-1.7.6
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+greg k-h
