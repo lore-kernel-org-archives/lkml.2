@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755716Ab1GBUNs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 16:13:48 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:14787 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755198Ab1GBUNr (ORCPT
+	id S1755759Ab1GBUQW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 16:16:22 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:60140 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755595Ab1GBUQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 16:13:47 -0400
-Date: Sat, 2 Jul 2011 22:04:29 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: lm-sensors@lm-sensors.org, Guenter Roeck <guenter.roeck@ericsson.com>,
-        Jean Delvare <khali@linux-fr.org>
-Subject: [PATCH] hwmon: Don't leak info in adm1275_probe
-Message-ID: <alpine.LNX.2.00.1107022202520.16316@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sat, 2 Jul 2011 16:16:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Jonas Bonn <jonas@southpole.se>
+Subject: Re: [PATCH 2/2] iomap: make IOPORT/PCI mapping functions conditional
+Date: Sat, 2 Jul 2011 22:15:47 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+References: <1309622006-28343-1-git-send-email-jonas@southpole.se> <201107022146.15854.arnd@arndb.de> <1309636466.24186.1439.camel@localhost>
+In-Reply-To: <1309636466.24186.1439.camel@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107022215.47324.arnd@arndb.de>
+X-Provags-ID: V02:K0:MBMyFjDq7NQuat1YfYmXl+5KuUQaj7DkRLw1gXTMGM7
+ EUuC0QvCo/uXkpINqgUhTFihRhuRj7KNjCiRp5nl8KOLnOd8DO
+ JduRWmdR7W1Use+CfBVkptXXzrUnaakU05ams4ShixvOkMYUcl
+ 0JRf5qigfwDiKGlzHeGmPnZtV3p712QuEvvXZ/H+5cQ/RGSBgY
+ +AZk94G8EkZYgNpvvH7TQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In drivers/hwmon/adm1275.c:adm1275_probe() we'll leak the memory
-allocated to 'info' if the call to i2c_smbus_read_byte_data() returns
-less than zero.
+On Saturday 02 July 2011 21:54:26 Jonas Bonn wrote:
+> On Sat, 2011-07-02 at 21:46 +0200, Arnd Bergmann wrote:
+> > On Saturday 02 July 2011 17:53:26 Jonas Bonn wrote:
+> > > Use the CONFIG_HAS_IOPORT and CONFIG_PCI options to decide whether or
+> > > not functions for mapping these areas are provided.
+> > > 
+> > > Signed-off-by: Jonas Bonn <jonas@southpole.se>
+> > 
+> > Good catch!
+> > 
+> > Acked-by: Arnd Bergmann <arnd@arndb.de>
+> > 
+> > Did you get a build error without the two options, or did you just have an
+> > idea to save a bit of code size?
+> > 
+> 
+> There was no build error; I just figured it would aid in debugging if
+> you got a compile-time error when trying to build drivers that use these
+> functions for a platform that lacked them.  Smaller code is always nice,
+> too.
 
-This patch fixes the leak by simply calling kfree(info) when needed.
-I also considered just moving the 'info' memory allocation below the
-call to i2c_smbus_read_byte_data(), but I was not sure if it mattered
-to get the -ENOMEM first in that case or if it would be bad to first
-have a successful i2c_smbus_read_byte_data() call and then fail the
-mem alloc, so I stuck with the safe option.
+Right. Did you also see the related discussion at
+http://lkml.org/lkml/2011/7/1/422 ?
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/hwmon/adm1275.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-  Compile tested only.
-
-diff --git a/drivers/hwmon/adm1275.c b/drivers/hwmon/adm1275.c
-index c2ee204..2ebf255 100644
---- a/drivers/hwmon/adm1275.c
-+++ b/drivers/hwmon/adm1275.c
-@@ -43,8 +43,10 @@ static int adm1275_probe(struct i2c_client *client,
- 		return -ENOMEM;
- 
- 	config = i2c_smbus_read_byte_data(client, ADM1275_PMON_CONFIG);
--	if (config < 0)
-+	if (config < 0) {
-+		kfree(info);
- 		return config;
-+	}
- 
- 	info->pages = 1;
- 	info->direct[PSC_VOLTAGE_IN] = true;
--- 
-1.7.6
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+	Arnd
