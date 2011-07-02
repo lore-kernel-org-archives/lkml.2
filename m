@@ -1,26 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab1GAXve (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 19:51:34 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56358 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751135Ab1GAXvd (ORCPT
+	id S1751514Ab1GBAFn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 20:05:43 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:53936 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab1GBAFm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 19:51:33 -0400
+	Fri, 1 Jul 2011 20:05:42 -0400
 MIME-Version: 1.0
-In-Reply-To: <CAOM-RdN3cweRQnNxCaCGuyj2GMojix15XG5MVj8pxj7FHX79hg@mail.gmail.com>
-References: <1308797024.23204.95.camel@debian>
-	<BANLkTimEcPmH_XgLy5aEW+znwJyVZzfoCg@mail.gmail.com>
-	<CAOM-RdN3cweRQnNxCaCGuyj2GMojix15XG5MVj8pxj7FHX79hg@mail.gmail.com>
-Date: Sat, 2 Jul 2011 07:51:32 +0800
-Message-ID: <CACVXFVO6RNjEeb=yBF9ND3=dYg55-H3mfySh6t1JC_jGPmTFAw@mail.gmail.com>
-Subject: Re: power increase issue on light load
-From: Ming Lei <tom.leiming@gmail.com>
-To: Nikhil Rao <ncrao@google.com>
-Cc: "Alex,Shi" <alex.shi@intel.com>, peterz@infradead.org, mingo@elte.hu,
-        "Chen, Tim C" <tim.c.chen@intel.com>,
-        "Li, Shaohua" <shaohua.li@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sat, 2 Jul 2011 02:05:41 +0200
+Message-ID: <BANLkTinWkJa0zWgV7RVWtt4d3qf9dapFkg@mail.gmail.com>
+Subject: [PCI Driver]Physical address being returned as 0 in mmap
+From: newton mailinglist <newtonmailinglist@gmail.com>
+To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,15 +20,93 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-On Sat, Jul 2, 2011 at 2:00 AM, Nikhil Rao <ncrao@google.com> wrote:
-> Thanks for reporting this issue. Looks like the increased resolution
-> has a negative impact on power savings balance. I'm looking into this
-> issue based on Alex's data, but If you can give a trace or something
-> that I can work with it will be really helpful.
+I have written a PCI driver for my device. The device is an FPGA which
+is configured with a design that allows it to have direct access to
+memory of a host computer to which the fpga board is connected. My
+device driver is responsible for translating virtual addresses to
+physical addresses and sending these to the FPGA so the DMA unit in
+the FPGA can directly access pages in memory using the physical
+address.
 
-No problem if I can do it, which traces are needed for you to figure out
-the root cause?
+I want to send about 1 MB of data to the FPGA. I currently 1st mmap
+the required data file in my c program as follows :
 
-thanks,
--- 
-Ming Lei
+//Open the bitstream file
+	int fd = open(filename, O_RDWR);
+	if (fd < 0){
+		perror("molen_set : Filename Open");
+		return;
+	}
+	
+	//Get bitstream file size
+	fstat(fd, &buf);
+	length = buf.st_size;
+	if(length == 0){
+		fprintf(stderr, "\nmolen_set : Empty input file\n");
+		return;
+	}
+	
+	//Map bitstream file to memory to read it in via page faults(faster
+than explicit file I/O)
+	bs_map = mmap(NULL, length, PROT_WRITE | PROT_READ, MAP_PRIVATE, fd, 0);
+
+This allows the file to be read in via page faults.
+Then I get a suitable area from the kernel using another mmap which is
+called on the PCI device :
+
+//Get user space address of empty kernel memory of length bytes
+arg = mmap(NULL, length, PROT_WRITE | PROT_READ, MAP_PRIVATE, htex_handle, 0);
+
+Then I copy the data using memcpy and signal the PCI device to start
+reading the data using a IOCTL
+
+The problem I have is in the mmap implementation in the PCI driver :
+
+static int htex_mmap(struct file * file, struct vm_area_struct * vma)
+{
+   vma->vm_flags |= VM_RESERVED;
+
+   if (remap_pfn_range(vma, vma->vm_start, vma->vm_pgoff,
+		vma->vm_end - vma->vm_start,
+		vma->vm_page_prot))
+		return -EAGAIN;
+	
+   vma->vm_ops = &htex_vm_ops;
+   htex_vma_open(vma);
+	
+   return 0;
+}
+
+When the driver gets the above call then I assume the kernel has
+already allocated the required space and its details are in the vma
+parameter. When I try to view the physical address of the virtual
+address in the vma i use :
+
+virt_to_phys(vma->vm_start)
+
+But this gives me back the original address. A call like :
+ DEBUG_MSG("htex_mmap called start:%lx, end:%lx, size:%lx, pfn:%lx, pa:%lx\n",
+		vma->vm_start, vma->vm_end, vma->vm_end - vma->vm_start,
+	   vma->vm_pgoff, virt_to_phys(vma->vm_start));
+
+gives me
+
+start:7f14b5afc000, end:7f14b5c0d000, size:111000, pfn:0, pa:f714b5afc000
+
+I am able to get the page associated with vm_pgoff using :
+
+struct page *pg = pfn_to_page(vma->vm_pgoff);
+DEBUG_MSG("htex_mmap page: page address : %lx\n", page_address(pg));
+
+which gives me something like :
+ page address :: ffff880000000000
+
+But this does not appear to be the correct physical address.
+
+So how can I get the physical address of the space that the kernel
+just allocated in response to the user's mmap() call on the device ?
+
+I need the correct  physical address later to send to the FPGA as well.
+
+Thanks
+Abhi
