@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab1GBByo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 21:54:44 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:40061 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752179Ab1GBByn (ORCPT
+	id S1752609Ab1GBCDd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 22:03:33 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:42607 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751967Ab1GBCDc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 21:54:43 -0400
+	Fri, 1 Jul 2011 22:03:32 -0400
+Date: Fri, 1 Jul 2011 22:03:31 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Dave Jones <davej@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+        <linux-scsi@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        <axboe@kernel.dk>, <rjw@sisk.pl>, <linux-usb@vger.kernel.org>
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+In-Reply-To: <1309554818.2722.48.camel@mulgrave>
+Message-ID: <Pine.LNX.4.44L0.1107012200260.4273-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <BANLkTinWkJa0zWgV7RVWtt4d3qf9dapFkg@mail.gmail.com>
-References: <BANLkTinWkJa0zWgV7RVWtt4d3qf9dapFkg@mail.gmail.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Fri, 1 Jul 2011 21:54:22 -0400
-Message-ID: <BANLkTimF0AsS3=-S=gmbcjBC5JuKr=6Prw@mail.gmail.com>
-Subject: Re: [PCI Driver]Physical address being returned as 0 in mmap
-To: newton mailinglist <newtonmailinglist@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 1, 2011 at 20:05, newton mailinglist
-<newtonmailinglist@gmail.com> wrote:
-> I have written a PCI driver for my device. The device is an FPGA which
-> is configured with a design that allows it to have direct access to
-> memory of a host computer to which the fpga board is connected. My
-> device driver is responsible for translating virtual addresses to
-> physical addresses and sending these to the FPGA so the DMA unit in
-> the FPGA can directly access pages in memory using the physical
-> address.
->
-> [...snip...]
->
-> When the driver gets the above call then I assume the kernel has
-> already allocated the required space and its details are in the vma
-> parameter. When I try to view the physical address of the virtual
-> address in the vma i use :
->
-> virt_to_phys(vma->vm_start)
+On Fri, 1 Jul 2011, James Bottomley wrote:
 
-You should not use virt_to_phys().  On most systems it does not work
-for all memory, and on some (with an IOMMU) it would need to give a
-different result depending on the device.
+> On Fri, 2011-07-01 at 17:04 -0400, Alan Stern wrote:
+> > On Fri, 1 Jul 2011, James Bottomley wrote:
+> > 
+> > > On Fri, 2011-07-01 at 14:14 -0400, Dave Jones wrote:
+> > > > On Fri, Jul 01, 2011 at 10:05:31AM -0700, Andi Kleen wrote:
+> > > > 
+> > > >  > I found I can reliably crash a 3.0 system by pulling the
+> > > >  > USB cable of a mounted USB cdrom (or rather a USB device which
+> > > >  > has a builtin fake CD-ROM) 
+> > > >  > 
+> > > >  > I suspect it's a regression too.
+> > > > 
+> > > > We've been seeing a lot of similar bugs in Fedora since we pushed
+> > > > a 2.6.38.8 update.  Some of the traces are different, but some
+> > > > look to be the same as yours. (here's one for eg: https://bugzilla.redhat.com/show_bug.cgi?id=712830)
+> > > > 
+> > > > The common cause seems to be 'device went away'. So USB CD drives,
+> > > > USB memory sticks, and for some reason virtualbox shutdown.
+> > > 
+> > > I think it's something specific in the USB path.  I can't reproduce on
+> > > 3.0-rc5 with a SATA DVD hot unplug.  USB cc's added.
+> > 
+> > I just took a look at the Red Hat bugzilla entry mentioned above.  It 
+> > seems to be quite different from the issue addressed by the patch I 
+> > just posted -- a crash with invalid memory access rather than a lockdep 
+> > violation and hang of the khubd thread.
+> > 
+> > It's also notable that the stack dump in the bugzilla report doesn't 
+> > contain any functions in the USB subsystem.  Of course this doesn't 
+> > prove anything, but it is suggestive.
+> > 
+> > Evidently the sdev argument to scsi_prep_state_check() was NULL.  This
+> > looks like the problem that cropped up before, where q->queuedata was
+> > getting set to NULL while the queue was still in use.  I can't imagine
+> > how anything in usb-storage could have caused that.
+> 
+> Right ... the device release function has already been called, so it's
+> some type of refcounting cockup.  The fact that I can't reproduce with a
+> SATA unplug is what makes me think it might be USB specific ... of
+> course, that's not definitive.
 
-What you are looking for is the DMA API:
+I'm not able to reproduce it on a vanilla 3.0-rc5 system.  Can anybody
+give the exact sequence of steps you went through to trigger the bug?
 
-  http://lxr.linux.no/#linux/Documentation/DMA-API-HOWTO.txt
-  http://lxr.linux.no/#linux/Documentation/DMA-API.txt
+Alan Stern
 
-Specifically, you need to specify the DMA address mask of your FPGA
-since not all devices can access 100% of the address space, some
-are limited to 24/31/32/40-bit address spaces.  See dma_set_mask().
-
-If you don't need fully coherent memory (as described in those docs),
-then you can simply allow read() and write() on your device node and
-perform DMA mapping of the userspace memory using dma_map_*().
-
-Otherwise you will mmap() the device and use dma_alloc_coherent()
-or dma_pool_*(), this is typical for things like TX queues and such.
-
-Then make sure to insert calls to dma_sync_*() when switching
-between CPU access to memory and device access to memory,
-and ensure that you use appropriate IO memory barriers to order
-your register reads and writes.
-
-If you don't follow the DMA API specifications then your driver will
-mysteriously fail on many platforms, even x86 if an IOMMU is present,
-but particularly on processors like ARM with poor cache coherency.
-
-Cheers,
-Kyle Moffett
