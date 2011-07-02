@@ -1,65 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab1GBTyR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 15:54:17 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:48759 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753268Ab1GBTyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 15:54:16 -0400
-Date: Sat, 2 Jul 2011 21:54:12 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Shawn Starr <shawn.starr@rogers.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Bug #37232] [3.0-rc1][NMI/DMAR][iwlagn] errors - PCI system
- error (SERR) for reason a1 on CPU 0
-Message-ID: <20110702215412.00527491@schatten.dmk.lab>
-In-Reply-To: <4678134.li9aFGSxuF@segfault.sh0n.net>
-References: <VDRaLpg_NZ.A.tnC.JZ6BOB@chimera>
-	<2202361.0SXGgnGr4r@segfault.sh0n.net>
-	<201106292132.12265.rjw@sisk.pl>
-	<4678134.li9aFGSxuF@segfault.sh0n.net>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+	id S1755568Ab1GBTyg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 15:54:36 -0400
+Received: from mail.southpole.se ([193.12.106.18]:36398 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753268Ab1GBTye (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 15:54:34 -0400
+Subject: Re: [PATCH 2/2] iomap: make IOPORT/PCI mapping functions
+ conditional
+From: Jonas Bonn <jonas@southpole.se>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+In-Reply-To: <201107022146.15854.arnd@arndb.de>
+References: <1309622006-28343-1-git-send-email-jonas@southpole.se>
+	 <1309622006-28343-2-git-send-email-jonas@southpole.se>
+	 <201107022146.15854.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Organization: South Pole Consulting AB
+Date: Sat, 02 Jul 2011 21:54:26 +0200
+Message-ID: <1309636466.24186.1439.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
+X-Assp-Client-SSL: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 29 Jun 2011 23:57:57 -0400
-Shawn Starr <shawn.starr@rogers.com> wrote:
 
-> >>>On Wednesday, June 29, 2011 09:32:12 PM Rafael J. Wysocki wrote:
-> > > On Sunday, June 26, 2011 11:23:44 PM Rafael J. Wysocki wrote:
-> > > This message has been generated automatically as a part of a summary
-> > > report of recent regressions.
-> > > 
-> > > The following bug entry is on the current list of known regressions
-> > > from 2.6.39.  Please verify if it still should be listed and let the
-> > > tracking team know (either way).
-> > > 
-> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37232
-> > > Subject		: [3.0-rc1][NMI/DMAR][iwlagn] errors - PCI system error (SERR) for reason a1 on CPU 0
-> > > Submitter	: Shawn Starr <XXXX.XX@rogers.com>
-> > > Date		     : 2011-06-03 4:56 (24 days old)
-> > > Message-ID: <4478124.OuFNgaPiHS@segfault.sh0n.net>
-> > > References	: http://marc.info/?l=linux-kernel&m=130707737616116&w=2
+On Sat, 2011-07-02 at 21:46 +0200, Arnd Bergmann wrote:
+> On Saturday 02 July 2011 17:53:26 Jonas Bonn wrote:
+> > Use the CONFIG_HAS_IOPORT and CONFIG_PCI options to decide whether or
+> > not functions for mapping these areas are provided.
+> > 
+> > Signed-off-by: Jonas Bonn <jonas@southpole.se>
 > 
-> >>> Thanks for the update.
-> >>> Rafael
+> Good catch!
 > 
-> Hello Rafael/Linux devs,
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 > 
-> You can close this bug now, regression is gone now. Both the SERR and the DMAR  (coming from iwlagn)
-> errors are resolved.
-> 
-> Working in: -rc5 (Fedora rawhide 3.0-0.rc5.git0.1.fc16.x86_64)
+> Did you get a build error without the two options, or did you just have an
+> idea to save a bit of code size?
 > 
 
-Is this a vanilla linux kernel or has it out of tree patches?
+There was no build error; I just figured it would aid in debugging if
+you got a compile-time error when trying to build drivers that use these
+functions for a platform that lacked them.  Smaller code is always nice,
+too.
 
-> Thanks,
-> Shawn.
+/Jonas
+
