@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756025Ab1GBVRy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 17:17:54 -0400
-Received: from mail.southpole.se ([193.12.106.18]:45878 "EHLO
+	id S1756263Ab1GBVR7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 17:17:59 -0400
+Received: from mail.southpole.se ([193.12.106.18]:45889 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755963Ab1GBVQW (ORCPT
+	with ESMTP id S1755956Ab1GBVQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 2 Jul 2011 17:16:22 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH v2 17/19] OpenRISC: Library routines
-Date: Sat,  2 Jul 2011 23:15:50 +0200
-Message-Id: <1309641352-18714-18-git-send-email-jonas@southpole.se>
+Subject: [PATCH v2 15/19] OpenRISC: Traps
+Date: Sat,  2 Jul 2011 23:15:48 +0200
+Message-Id: <1309641352-18714-16-git-send-email-jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309641352-18714-1-git-send-email-jonas@southpole.se>
 References: <1309641352-18714-1-git-send-email-jonas@southpole.se>
@@ -24,86 +24,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 ---
- arch/openrisc/lib/delay.c  |   60 +++++++++++++
- arch/openrisc/lib/string.S |  204 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 264 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/lib/delay.c
- create mode 100644 arch/openrisc/lib/string.S
+ arch/openrisc/kernel/traps.c |  367 ++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 367 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/kernel/traps.c
 
-diff --git a/arch/openrisc/lib/delay.c b/arch/openrisc/lib/delay.c
+diff --git a/arch/openrisc/kernel/traps.c b/arch/openrisc/kernel/traps.c
 new file mode 100644
-index 0000000..01d9740
+index 0000000..e75ab98
 --- /dev/null
-+++ b/arch/openrisc/lib/delay.c
-@@ -0,0 +1,60 @@
++++ b/arch/openrisc/kernel/traps.c
+@@ -0,0 +1,367 @@
 +/*
-+ * OpenRISC Linux
-+ *
-+ * Linux architectural port borrowing liberally from similar works of
-+ * others.  All original copyrights apply as per the original source
-+ * declaration.
-+ *
-+ * Modifications for the OpenRISC architecture:
-+ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
-+ *
-+ *      This program is free software; you can redistribute it and/or
-+ *      modify it under the terms of the GNU General Public License
-+ *      version 2 as published by the Free Software Foundation
-+ *
-+ * Precise Delay Loops
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <asm/delay.h>
-+#include <asm/timex.h>
-+#include <asm/processor.h>
-+
-+int __devinit read_current_timer(unsigned long *timer_value)
-+{
-+	*timer_value = mfspr(SPR_TTCR);
-+	return 0;
-+}
-+
-+void __delay(unsigned long cycles)
-+{
-+	cycles_t target = get_cycles() + cycles;
-+
-+	while (get_cycles() < target)
-+		cpu_relax();
-+}
-+EXPORT_SYMBOL(__delay);
-+
-+inline void __const_udelay(unsigned long xloops)
-+{
-+	unsigned long long loops;
-+
-+	loops = xloops * loops_per_jiffy * HZ;
-+
-+	__delay(loops >> 32);
-+}
-+EXPORT_SYMBOL(__const_udelay);
-+
-+void __udelay(unsigned long usecs)
-+{
-+	__const_udelay(usecs * 0x10C7UL); /* 2**32 / 1000000 (rounded up) */
-+}
-+EXPORT_SYMBOL(__udelay);
-+
-+void __ndelay(unsigned long nsecs)
-+{
-+	__const_udelay(nsecs * 0x5UL); /* 2**32 / 1000000000 (rounded up) */
-+}
-+EXPORT_SYMBOL(__ndelay);
-diff --git a/arch/openrisc/lib/string.S b/arch/openrisc/lib/string.S
-new file mode 100644
-index 0000000..465f04b
---- /dev/null
-+++ b/arch/openrisc/lib/string.S
-@@ -0,0 +1,204 @@
-+/*
-+ * OpenRISC string.S
++ * OpenRISC traps.c
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
@@ -117,195 +49,358 @@ index 0000000..465f04b
 + *      modify it under the terms of the GNU General Public License
 + *      as published by the Free Software Foundation; either version
 + *      2 of the License, or (at your option) any later version.
++ *
++ *  Here we handle the break vectors not used by the system call
++ *  mechanism, as well as some general stack/register dumping
++ *  things.
++ *
 + */
 +
-+#include <linux/linkage.h>
-+#include <asm/errno.h>
++#include <linux/init.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/kmod.h>
++#include <linux/string.h>
++#include <linux/errno.h>
++#include <linux/ptrace.h>
++#include <linux/timer.h>
++#include <linux/mm.h>
++#include <linux/kallsyms.h>
++#include <asm/uaccess.h>
 +
++#include <asm/system.h>
++#include <asm/segment.h>
++#include <asm/io.h>
++#include <asm/pgtable.h>
++
++extern char _etext, _stext;
++
++int kstack_depth_to_print = 0x180;
++
++static inline int valid_stack_ptr(struct thread_info *tinfo, void *p)
++{
++	return p > (void *)tinfo && p < (void *)tinfo + THREAD_SIZE - 3;
++}
++
++void show_trace(struct task_struct *task, unsigned long *stack)
++{
++	struct thread_info *context;
++	unsigned long addr;
++
++	context = (struct thread_info *)
++	    ((unsigned long)stack & (~(THREAD_SIZE - 1)));
++
++	while (valid_stack_ptr(context, stack)) {
++		addr = *stack++;
++		if (__kernel_text_address(addr)) {
++			printk(" [<%08lx>]", addr);
++			print_symbol(" %s", addr);
++			printk("\n");
++		}
++	}
++	printk(" =======================\n");
++}
++
++/* displays a short stack trace */
++void show_stack(struct task_struct *task, unsigned long *esp)
++{
++	unsigned long addr, *stack;
++	int i;
++
++	if (esp == NULL)
++		esp = (unsigned long *)&esp;
++
++	stack = esp;
++
++	printk("Stack dump [0x%08lx]:\n", (unsigned long)esp);
++	for (i = 0; i < kstack_depth_to_print; i++) {
++		if (kstack_end(stack))
++			break;
++		if (__get_user(addr, stack)) {
++			/* This message matches "failing address" marked
++			   s390 in ksymoops, so lines containing it will
++			   not be filtered out by ksymoops.  */
++			printk("Failing address 0x%lx\n", (unsigned long)stack);
++			break;
++		}
++		stack++;
++
++		printk("sp + %02d: 0x%08lx\n", i * 4, addr);
++	}
++	printk("\n");
++
++	show_trace(task, esp);
++
++	return;
++}
++
++void show_trace_task(struct task_struct *tsk)
++{
 +	/*
-+	 * this can be optimized by doing gcc inline assemlby with
-+	 * proper constraints (no need to save args registers...)
-+	 *
++	 * TODO: SysRq-T trace dump...
 +	 */
-+
-+
-+/*
-+ *
-+ * int __copy_tofrom_user(void *to, const void *from, unsigned long size);
-+ *
-+ * NOTE: it returns number of bytes NOT copied !!!
-+ *
-+ */
-+	.global	__copy_tofrom_user
-+__copy_tofrom_user:
-+	l.addi  r1,r1,-12
-+	l.sw    0(r1),r6
-+	l.sw    4(r1),r4
-+	l.sw    8(r1),r3
-+
-+	l.addi  r11,r5,0
-+2:  	l.sfeq  r11,r0
-+	l.bf    1f
-+	l.addi  r11,r11,-1
-+8:    	l.lbz   r6,0(r4)
-+9:    	l.sb    0(r3),r6
-+	l.addi  r3,r3,1
-+	l.j     2b
-+	l.addi  r4,r4,1
-+1:
-+	l.addi  r11,r11,1               // r11 holds the return value
-+
-+	l.lwz   r6,0(r1)
-+	l.lwz   r4,4(r1)
-+	l.lwz   r3,8(r1)
-+	l.jr    r9
-+	l.addi  r1,r1,12
-+
-+	.section .fixup, "ax"
-+99:
-+		l.j     1b
-+		l.nop
-+	.previous
-+
-+	.section __ex_table, "a"
-+		.long 8b, 99b		// read fault
-+		.long 9b, 99b		// write fault
-+	.previous
++}
 +
 +/*
-+ * unsigned long clear_user(void *addr, unsigned long size) ;
-+ *
-+ * NOTE: it returns number of bytes NOT cleared !!!
++ * The architecture-independent backtrace generator
 + */
-+	.global	__clear_user
-+__clear_user:
-+	l.addi  r1,r1,-8
-+	l.sw    0(r1),r4
-+	l.sw    4(r1),r3
++void dump_stack(void)
++{
++	unsigned long stack;
 +
-+2:	l.sfeq	r4,r0
-+	l.bf	1f
-+	l.addi	r4,r4,-1
-+9:	l.sb	0(r3),r0
-+	l.j	2b
-+	l.addi  r3,r3,1
++	show_stack(current, &stack);
++}
 +
-+1:
-+	l.addi  r11,r4,1
++void show_registers(struct pt_regs *regs)
++{
++	int i;
++	int in_kernel = 1;
++	unsigned long esp;
 +
-+	l.lwz	r4,0(r1)
-+	l.lwz	r3,4(r1)
-+	l.jr	r9
-+	l.addi	r1,r1,8
++	esp = (unsigned long)(&regs->sp);
++	if (user_mode(regs))
++		in_kernel = 0;
 +
-+	.section .fixup, "ax"
-+99:
-+		l.j     1b
-+		l.nop
-+	.previous
++	printk("CPU #: %d\n"
++	       "   PC: %08lx    SR: %08lx    SP: %08lx\n",
++	       smp_processor_id(), regs->pc, regs->sr, regs->sp);
++	printk("GPR00: %08lx GPR01: %08lx GPR02: %08lx GPR03: %08lx\n",
++	       0L, regs->gpr[1], regs->gpr[2], regs->gpr[3]);
++	printk("GPR04: %08lx GPR05: %08lx GPR06: %08lx GPR07: %08lx\n",
++	       regs->gpr[4], regs->gpr[5], regs->gpr[6], regs->gpr[7]);
++	printk("GPR08: %08lx GPR09: %08lx GPR10: %08lx GPR11: %08lx\n",
++	       regs->gpr[8], regs->gpr[9], regs->gpr[10], regs->gpr[11]);
++	printk("GPR12: %08lx GPR13: %08lx GPR14: %08lx GPR15: %08lx\n",
++	       regs->gpr[12], regs->gpr[13], regs->gpr[14], regs->gpr[15]);
++	printk("GPR16: %08lx GPR17: %08lx GPR18: %08lx GPR19: %08lx\n",
++	       regs->gpr[16], regs->gpr[17], regs->gpr[18], regs->gpr[19]);
++	printk("GPR20: %08lx GPR21: %08lx GPR22: %08lx GPR23: %08lx\n",
++	       regs->gpr[20], regs->gpr[21], regs->gpr[22], regs->gpr[23]);
++	printk("GPR24: %08lx GPR25: %08lx GPR26: %08lx GPR27: %08lx\n",
++	       regs->gpr[24], regs->gpr[25], regs->gpr[26], regs->gpr[27]);
++	printk("GPR28: %08lx GPR29: %08lx GPR30: %08lx GPR31: %08lx\n",
++	       regs->gpr[28], regs->gpr[29], regs->gpr[30], regs->gpr[31]);
++	printk("  RES: %08lx oGPR11: %08lx syscallno: %08lx\n",
++	       regs->gpr[11], regs->orig_gpr11, regs->syscallno);
 +
-+	.section __ex_table, "a"
-+		.long 9b, 99b		// write fault
-+	.previous
++	printk("Process %s (pid: %d, stackpage=%08lx)\n",
++	       current->comm, current->pid, (unsigned long)current);
++	/*
++	 * When in-kernel, we also print out the stack and code at the
++	 * time of the fault..
++	 */
++	if (in_kernel) {
 +
-+/*
-+ * long strncpy_from_user(char *dst, const char *src, long count)
-+ *
-+ *
-+ */
-+	.global	__strncpy_from_user
-+__strncpy_from_user:
-+	l.addi  r1,r1,-16
-+	l.sw    0(r1),r6
-+	l.sw    4(r1),r5
-+	l.sw    8(r1),r4
-+	l.sw    12(r1),r3
++		printk("\nStack: ");
++		show_stack(NULL, (unsigned long *)esp);
 +
-+	l.addi  r11,r5,0
-+2:  	l.sfeq  r5,r0
-+	l.bf    1f
-+	l.addi  r5,r5,-1
-+8:    	l.lbz   r6,0(r4)
-+	l.sfeq  r6,r0
-+	l.bf    1f
-+9:    	l.sb    0(r3),r6
-+	l.addi  r3,r3,1
-+	l.j     2b
-+	l.addi  r4,r4,1
-+1:
-+	l.lwz   r6,0(r1)
-+	l.addi  r5,r5,1
-+	l.sub   r11,r11,r5              // r11 holds the return value
++		printk("\nCode: ");
++		if (regs->pc < PAGE_OFFSET)
++			goto bad;
 +
-+	l.lwz   r6,0(r1)
-+	l.lwz   r5,4(r1)
-+	l.lwz   r4,8(r1)
-+	l.lwz   r3,12(r1)
-+	l.jr    r9
-+	l.addi  r1,r1,16
++		for (i = -24; i < 24; i++) {
++			unsigned char c;
++			if (__get_user(c, &((unsigned char *)regs->pc)[i])) {
++bad:
++				printk(" Bad PC value.");
++				break;
++			}
 +
-+	.section .fixup, "ax"
-+99:
-+		l.movhi r11,hi(-EFAULT)
-+		l.ori   r11,r11,lo(-EFAULT)
++			if (i == 0)
++				printk("(%02x) ", c);
++			else
++				printk("%02x ", c);
++		}
++	}
++	printk("\n");
++}
 +
-+		l.lwz   r6,0(r1)
-+		l.lwz   r5,4(r1)
-+		l.lwz   r4,8(r1)
-+		l.lwz   r3,12(r1)
-+		l.jr	r9
-+		l.addi  r1,r1,16
-+	.previous
++void nommu_dump_state(struct pt_regs *regs,
++		      unsigned long ea, unsigned long vector)
++{
++	int i;
++	unsigned long addr, stack = regs->sp;
 +
-+	.section __ex_table, "a"
-+		.long 8b, 99b		// read fault
-+	.previous
++	printk("\n\r[nommu_dump_state] :: ea %lx, vector %lx\n\r", ea, vector);
 +
-+/*
-+ * extern int __strnlen_user(const char *str, long len, unsigned long top);
-+ *
-+ *
-+ * RTRN: - length of a string including NUL termination character
-+ *       - on page fault 0
-+ */
++	printk("CPU #: %d\n"
++	       "   PC: %08lx    SR: %08lx    SP: %08lx\n",
++	       0, regs->pc, regs->sr, regs->sp);
++	printk("GPR00: %08lx GPR01: %08lx GPR02: %08lx GPR03: %08lx\n",
++	       0L, regs->gpr[1], regs->gpr[2], regs->gpr[3]);
++	printk("GPR04: %08lx GPR05: %08lx GPR06: %08lx GPR07: %08lx\n",
++	       regs->gpr[4], regs->gpr[5], regs->gpr[6], regs->gpr[7]);
++	printk("GPR08: %08lx GPR09: %08lx GPR10: %08lx GPR11: %08lx\n",
++	       regs->gpr[8], regs->gpr[9], regs->gpr[10], regs->gpr[11]);
++	printk("GPR12: %08lx GPR13: %08lx GPR14: %08lx GPR15: %08lx\n",
++	       regs->gpr[12], regs->gpr[13], regs->gpr[14], regs->gpr[15]);
++	printk("GPR16: %08lx GPR17: %08lx GPR18: %08lx GPR19: %08lx\n",
++	       regs->gpr[16], regs->gpr[17], regs->gpr[18], regs->gpr[19]);
++	printk("GPR20: %08lx GPR21: %08lx GPR22: %08lx GPR23: %08lx\n",
++	       regs->gpr[20], regs->gpr[21], regs->gpr[22], regs->gpr[23]);
++	printk("GPR24: %08lx GPR25: %08lx GPR26: %08lx GPR27: %08lx\n",
++	       regs->gpr[24], regs->gpr[25], regs->gpr[26], regs->gpr[27]);
++	printk("GPR28: %08lx GPR29: %08lx GPR30: %08lx GPR31: %08lx\n",
++	       regs->gpr[28], regs->gpr[29], regs->gpr[30], regs->gpr[31]);
++	printk("  RES: %08lx oGPR11: %08lx syscallno: %08lx\n",
++	       regs->gpr[11], regs->orig_gpr11, regs->syscallno);
 +
-+	.global __strnlen_user
-+__strnlen_user:
-+	l.addi  r1,r1,-8
-+	l.sw    0(r1),r6
-+	l.sw    4(r1),r3
++	printk("Process %s (pid: %d, stackpage=%08lx)\n",
++	       ((struct task_struct *)(__pa(current)))->comm,
++	       ((struct task_struct *)(__pa(current)))->pid,
++	       (unsigned long)current);
 +
-+	l.addi  r11,r0,0
-+2:  	l.sfeq  r11,r4
-+	l.bf    1f
-+	l.addi  r11,r11,1
-+8:    	l.lbz   r6,0(r3)
-+	l.sfeq  r6,r0
-+	l.bf    1f
-+	l.sfgeu r3,r5                  // are we over the top ?
-+	l.bf    99f
-+	l.j     2b
-+	l.addi  r3,r3,1
++	printk("\nStack: ");
++	printk("Stack dump [0x%08lx]:\n", (unsigned long)stack);
++	for (i = 0; i < kstack_depth_to_print; i++) {
++		if (((long)stack & (THREAD_SIZE - 1)) == 0)
++			break;
++		stack++;
 +
-+1:
-+	l.lwz   r6,0(r1)
-+	l.lwz	r3,4(r1)
-+	l.jr    r9
-+	l.addi  r1,r1,8
++		printk("%lx :: sp + %02d: 0x%08lx\n", stack, i * 4,
++		       *((unsigned long *)(__pa(stack))));
++	}
++	printk("\n");
 +
-+	.section .fixup, "ax"
-+99:
-+		l.addi  r11,r0,0
++	printk("Call Trace:   ");
++	i = 1;
++	while (((long)stack & (THREAD_SIZE - 1)) != 0) {
++		addr = *((unsigned long *)__pa(stack));
++		stack++;
 +
-+		l.lwz   r6,0(r1)
-+		l.lwz	r3,4(r1)
-+		l.jr	r9
-+		l.addi  r1,r1,8
-+	.previous
++		if (kernel_text_address(addr)) {
++			if (i && ((i % 6) == 0))
++				printk("\n ");
++			printk(" [<%08lx>]", addr);
++			i++;
++		}
++	}
++	printk("\n");
 +
-+	.section __ex_table, "a"
-+		.long 8b, 99b		// read fault
-+	.previous
++	printk("\nCode: ");
++
++	for (i = -24; i < 24; i++) {
++		unsigned char c;
++		c = ((unsigned char *)(__pa(regs->pc)))[i];
++
++		if (i == 0)
++			printk("(%02x) ", c);
++		else
++			printk("%02x ", c);
++	}
++	printk("\n");
++}
++
++/* This is normally the 'Oops' routine */
++void die(const char *str, struct pt_regs *regs, long err)
++{
++
++	console_verbose();
++	printk("\n%s#: %04lx\n", str, err & 0xffff);
++	show_registers(regs);
++#ifdef CONFIG_JUMP_UPON_UNHANDLED_EXCEPTION
++	printk("\n\nUNHANDLED_EXCEPTION: entering infinite loop\n");
++
++	/* shut down interrupts */
++	local_irq_disable();
++
++	__asm__ __volatile__("l.nop   1");
++	do {} while(1);
++#endif
++	do_exit(SIGSEGV);
++}
++
++/* This is normally the 'Oops' routine */
++void die_if_kernel(const char *str, struct pt_regs *regs, long err)
++{
++	if (user_mode(regs))
++		return;
++
++	die(str, regs, err);
++}
++
++void unhandled_exception(struct pt_regs *regs, int ea, int vector)
++{
++	printk("Unable to handle exception at EA =0x%x, vector 0x%x",
++	       ea, vector);
++	die("Oops", regs, 9);
++}
++
++void __init trap_init(void)
++{
++	/* Nothing needs to be done */
++}
++
++asmlinkage void do_trap(struct pt_regs *regs, unsigned long address)
++{
++	siginfo_t info;
++	memset(&info, 0, sizeof(info));
++	info.si_signo = SIGTRAP;
++	info.si_code = TRAP_TRACE;
++	info.si_addr = (void *)address;
++	force_sig_info(SIGTRAP, &info, current);
++
++	if (!(test_tsk_thread_flag(current, TIF_SINGLESTEP)))
++		regs->pc += 4;
++}
++
++asmlinkage void do_unaligned_access(struct pt_regs *regs, unsigned long address)
++{
++	siginfo_t info;
++
++	if (user_mode(regs)) {
++		/* Send a SIGSEGV */
++		info.si_signo = SIGSEGV;
++		info.si_errno = 0;
++		/* info.si_code has been set above */
++		info.si_addr = (void *)address;
++		force_sig_info(SIGSEGV, &info, current);
++	} else {
++		printk("KERNEL: Unaligned Access 0x%.8lx\n", address);
++		show_registers(regs);
++		die("Die:", regs, address);
++	}
++
++}
++
++asmlinkage void do_bus_fault(struct pt_regs *regs, unsigned long address)
++{
++	siginfo_t info;
++
++	if (user_mode(regs)) {
++		/* Send a SIGBUS */
++		info.si_signo = SIGBUS;
++		info.si_errno = 0;
++		info.si_code = BUS_ADRERR;
++		info.si_addr = (void *)address;
++		force_sig_info(SIGBUS, &info, current);
++	} else {		/* Kernel mode */
++		printk("KERNEL: Bus error (SIGBUS) 0x%.8lx\n", address);
++		show_registers(regs);
++		die("Die:", regs, address);
++	}
++}
++
++asmlinkage void do_illegal_instruction(struct pt_regs *regs,
++				       unsigned long address)
++{
++	siginfo_t info;
++
++	if (user_mode(regs)) {
++		/* Send a SIGILL */
++		info.si_signo = SIGILL;
++		info.si_errno = 0;
++		info.si_code = ILL_ILLOPC;
++		info.si_addr = (void *)address;
++		force_sig_info(SIGBUS, &info, current);
++	} else {		/* Kernel mode */
++		printk("KERNEL: Illegal instruction (SIGILL) 0x%.8lx\n",
++		       address);
++		show_registers(regs);
++		die("Die:", regs, address);
++	}
++}
 -- 
 1.7.4.1
 
