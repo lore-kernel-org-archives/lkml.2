@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756224Ab1GBVQk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 17:16:40 -0400
-Received: from mail.southpole.se ([193.12.106.18]:45878 "EHLO
+	id S1756034Ab1GBVRQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 17:17:16 -0400
+Received: from mail.southpole.se ([193.12.106.18]:45890 "EHLO
 	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755857Ab1GBVQO (ORCPT
+	with ESMTP id S1755987Ab1GBVQY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 17:16:14 -0400
+	Sat, 2 Jul 2011 17:16:24 -0400
 From: Jonas Bonn <jonas@southpole.se>
 To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
 Cc: Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH v2 06/19] OpenRISC: PTrace
-Date: Sat,  2 Jul 2011 23:15:39 +0200
-Message-Id: <1309641352-18714-7-git-send-email-jonas@southpole.se>
+Subject: [PATCH v2 18/19] OpenRISC: Miscellaneous
+Date: Sat,  2 Jul 2011 23:15:51 +0200
+Message-Id: <1309641352-18714-19-git-send-email-jonas@southpole.se>
 X-Mailer: git-send-email 1.7.4.1
 In-Reply-To: <1309641352-18714-1-git-send-email-jonas@southpole.se>
 References: <1309641352-18714-1-git-send-email-jonas@southpole.se>
@@ -22,154 +22,163 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+Adds README file, TODO list, config file for or1ksim simulator, and a
+couple of other pieces that didn't seem to fit into any other patch.
+
 Signed-off-by: Jonas Bonn <jonas@southpole.se>
 ---
- arch/openrisc/include/asm/ptrace.h |  124 ++++++++
- arch/openrisc/kernel/ptrace.c      |  574 ++++++++++++++++++++++++++++++++++++
- arch/openrisc/kernel/ptrace.h      |   37 +++
- 3 files changed, 735 insertions(+), 0 deletions(-)
- create mode 100644 arch/openrisc/include/asm/ptrace.h
- create mode 100644 arch/openrisc/kernel/ptrace.c
- create mode 100644 arch/openrisc/kernel/ptrace.h
+ arch/openrisc/README.openrisc      |  102 ++++
+ arch/openrisc/TODO.openrisc        |   18 +
+ arch/openrisc/kernel/asm-offsets.c |   70 +++
+ arch/openrisc/kernel/or32_ksyms.c  |   46 ++
+ arch/openrisc/or1ksim.cfg          |  888 ++++++++++++++++++++++++++++++++++++
+ 5 files changed, 1124 insertions(+), 0 deletions(-)
+ create mode 100644 arch/openrisc/README.openrisc
+ create mode 100644 arch/openrisc/TODO.openrisc
+ create mode 100644 arch/openrisc/kernel/asm-offsets.c
+ create mode 100644 arch/openrisc/kernel/or32_ksyms.c
+ create mode 100644 arch/openrisc/or1ksim.cfg
 
-diff --git a/arch/openrisc/include/asm/ptrace.h b/arch/openrisc/include/asm/ptrace.h
+diff --git a/arch/openrisc/README.openrisc b/arch/openrisc/README.openrisc
 new file mode 100644
-index 0000000..d3f620e
+index 0000000..fbf656f
 --- /dev/null
-+++ b/arch/openrisc/include/asm/ptrace.h
-@@ -0,0 +1,124 @@
-+/*
-+ * OpenRISC Linux
-+ *
-+ * Linux architectural port borrowing liberally from similar works of
-+ * others.  All original copyrights apply as per the original source
-+ * declaration.
-+ *
-+ * OpenRISC implementation:
-+ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
-+ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
-+ * et al.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ */
++++ b/arch/openrisc/README.openrisc
+@@ -0,0 +1,102 @@
++OpenRISC Linux
++==============
 +
-+#ifndef __ASM_OPENRISC_PTRACE_H
-+#define __ASM_OPENRISC_PTRACE_H
++This is a port of Linux to the OpenRISC class of microprocessors; the initial
++target architecture, specifically, is the 32-bit OpenRISC 1000 family (or1k).
 +
-+#include <asm/spr_defs.h>
-+/*
-+ * This struct defines the way the registers are stored on the
-+ * kernel stack during a system call or other kernel entry.
-+ *
-+ * this should only contain volatile regs
-+ * since we can keep non-volatile in the thread_struct
-+ * should set this up when only volatiles are saved
-+ * by intr code.
-+ *
-+ * Since this is going on the stack, *CARE MUST BE TAKEN* to insure
-+ * that the overall structure is a multiple of 16 bytes in length.
-+ *
-+ * Note that the offsets of the fields in this struct correspond with
-+ * the values below.
-+ */
++For more information about OpenRISC processors and ongoing development:
 +
-+/*
-+ * These are 'magic' values for PTRACE_PEEKUSR that return info about where a
-+ * process is located in memory.
-+ */
-+#define PT_TEXT_ADDR            0x10000
-+#define PT_DATA_ADDR            0x10004
-+#define PT_TEXT_END_ADDR        0x10008
++	website		http://openrisc.net
 +
-+#ifndef __ASSEMBLY__
++Additional information, though not kept up to date by the site maintainers,
++can be found at http://opencores.org/openrisc
 +
-+struct pt_regs {
-+	union {
-+		struct {
-+			/* Named registers */
-+			long  sr;	/* Stored in place of r0 */
-+			long  sp;	/* r1 */
-+		};
-+		struct {
-+			/* Old style */
-+			long offset[2];
-+			long gprs[30];
-+		};
-+		struct {
-+			/* New style */
-+			long gpr[32];
-+		};
-+	};
-+	long  pc;
-+	long  orig_gpr11;  /* Used for restarting system calls */
-+	long  syscallno;  /* Syscall no. (used by strace) */
-+};
-+#endif /* __ASSEMBLY__ */
++For information about Linux on OpenRISC, please contact South Pole AB.
 +
-+#ifdef __KERNEL__
-+#define STACK_FRAME_OVERHEAD  128  /* size of minimum stack frame */
-+//#define STACK_FRAME_OVERHEAD  0  /* size of minimum stack frame */
++	email:		info@southpole.se
 +
-+#define instruction_pointer(regs)	((regs)->pc)
-+#define user_mode(regs)			(((regs)->sr & SPR_SR_SM) == 0)
-+#define user_stack_pointer(regs)	((unsigned long)(regs)->sp)
-+#define profile_pc(regs)		instruction_pointer(regs)
++	website:	http://southpole.se
++			http://southpoleconsulting.com
 +
-+#define arch_has_single_step()  (1)
++---------------------------------------------------------------------
 +
-+#endif /* __KERNEL__ */
++Build instructions for OpenRISC toolchain and Linux
++===================================================
 +
-+/*
-+ * Offsets used by 'ptrace' system call interface.
-+ */
-+#define PT_SR         0
-+#define PT_SP         4
-+#define PT_GPR2       8
-+#define PT_GPR3       12
-+#define PT_GPR4       16
-+#define PT_GPR5       20
-+#define PT_GPR6       24
-+#define PT_GPR7       28
-+#define PT_GPR8       32
-+#define PT_GPR9       36
-+#define PT_GPR10      40
-+#define PT_GPR11      44
-+#define PT_GPR12      48
-+#define PT_GPR13      52
-+#define PT_GPR14      56
-+#define PT_GPR15      60
-+#define PT_GPR16      64
-+#define PT_GPR17      68
-+#define PT_GPR18      72
-+#define PT_GPR19      76
-+#define PT_GPR20      80
-+#define PT_GPR21      84
-+#define PT_GPR22      88
-+#define PT_GPR23      92
-+#define PT_GPR24      96
-+#define PT_GPR25      100
-+#define PT_GPR26      104
-+#define PT_GPR27      108
-+#define PT_GPR28      112
-+#define PT_GPR29      116
-+#define PT_GPR30      120
-+#define PT_GPR31      124
-+#define PT_PC	      128
-+#define PT_ORIG_GPR11 132
-+#define PT_SYSCALLNO  136
++In order to build and run Linux for OpenRISC, you'll need at least a basic
++toolchain and, perhaps, the architectural simulator.  Steps to get these bits
++in place are outlined here.
 +
-+#endif /* __ASM_OPENRISC_PTRACE_H */
-diff --git a/arch/openrisc/kernel/ptrace.c b/arch/openrisc/kernel/ptrace.c
++1)  The toolchain can be obtained from openrisc.net.  Instructions for building
++a toolchain can be found at:
++
++http://openrisc.net/toolchain-build.html
++
++2) or1ksim (optional)
++
++or1ksim is the architectural simulator which will allow you to actually run
++your OpenRISC Linux kernel if you don't have an OpenRISC processor at hand.
++
++	git clone git://openrisc.net/jonas/or1ksim-svn
++
++	cd or1ksim
++	./configure --prefix=$OPENRISC_PREFIX
++	make
++	make install
++
++3)  Linux kernel
++
++Build the kernel as usual
++
++	make ARCH=openrisc defconfig
++	make ARCH=openrisc
++
++4)  Run in architectural simulator
++
++There's a configuration file for the architectural simulator (or1ksim) in the
++arch/openrisc directory, allowing you to run your kernel with the following
++incantation:
++
++	sim -f arch/openrisc/or1ksim.cfg vmlinux
++
++---------------------------------------------------------------------
++
++Terminology
++===========
++
++In the code, the following particles are used on symbols to limit the scope
++to more or less specific processor implementations:
++
++openrisc: the OpenRISC class of processors
++or1k:     the OpenRISC 1000 family of processors
++or1200:   the OpenRISC 1200 processor
++
++---------------------------------------------------------------------
++
++History
++========
++
++18. 11. 2003	Matjaz Breskvar (phoenix@bsemi.com)
++	initial port of linux to OpenRISC/or32 architecture.
++        all the core stuff is implemented and seams usable.
++
++08. 12. 2003	Matjaz Breskvar (phoenix@bsemi.com)
++	complete change of TLB miss handling.
++	rewrite of exceptions handling.
++	fully functional sash-3.6 in default initrd.
++	a much improved version with changes all around.
++
++10. 04. 2004	Matjaz Breskvar (phoenix@bsemi.com)
++	alot of bugfixes all over.
++	ethernet support, functional http and telnet servers.
++	running many standard linux apps.
++
++26. 06. 2004	Matjaz Breskvar (phoenix@bsemi.com)
++	port to 2.6.x
++
++30. 11. 2004	Matjaz Breskvar (phoenix@bsemi.com)
++	lots of bugfixes and enhancments.
++	added opencores framebuffer driver.
++
++09. 10. 2010    Jonas Bonn (jonas@southpole.se)
++	major rewrite to bring up to par with upstream Linux 2.6.36
+diff --git a/arch/openrisc/TODO.openrisc b/arch/openrisc/TODO.openrisc
 new file mode 100644
-index 0000000..a167a1e
+index 0000000..814ecc1
 --- /dev/null
-+++ b/arch/openrisc/kernel/ptrace.c
-@@ -0,0 +1,574 @@
++++ b/arch/openrisc/TODO.openrisc
+@@ -0,0 +1,18 @@
++The OpenRISC Linux port is fully functional and has been tracking upstream
++since 2.6.35.  There are, however, remaining items to be completed within
++the coming months.  Here's a list of known-to-be-less-than-stellar items
++that are due for investigation shortly, i.e. our TODO list:
++
++Implement the rest of the DMA API... dma_map_sg, etc.
++
++Consolidate usage of memblock and bootmem... move everything over to memblock.
++
++Clean up defconfigs:
++- remove initramfs, cross-compile, local version, etc.
++
++Finish the renaming cleanup... there are references to or32 in the code
++which was an older name for the architecture.  The name we've settled on is
++or1k and this change is slowly trickling through the stack.  For the time
++being, or32 is equivalent to or1k.
++
++Implement optimized version of memcpy and memset
+diff --git a/arch/openrisc/kernel/asm-offsets.c b/arch/openrisc/kernel/asm-offsets.c
+new file mode 100644
+index 0000000..08d6c1c
+--- /dev/null
++++ b/arch/openrisc/kernel/asm-offsets.c
+@@ -0,0 +1,70 @@
 +/*
-+ * OpenRISC ptrace.c
++ * OpenRISC asm-offsets.c
 + *
 + * Linux architectural port borrowing liberally from similar works of
 + * others.  All original copyrights apply as per the original source
@@ -177,8 +186,82 @@ index 0000000..a167a1e
 + *
 + * Modifications for the OpenRISC architecture:
 + * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
-+ * Copyright (C) 2005 Gyorgy Jeney <nog@bsemi.com>
-+ * Copyright (C) 2010 Julius Baxter <julius.baxter@orsoc.se>
++ * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
++ *
++ *      This program is free software; you can redistribute it and/or
++ *      modify it under the terms of the GNU General Public License
++ *      as published by the Free Software Foundation; either version
++ *      2 of the License, or (at your option) any later version.
++ *
++ * This program is used to generate definitions needed by
++ * assembly language modules.
++ *
++ * We use the technique used in the OSF Mach kernel code:
++ * generate asm statements containing #defines,
++ * compile this file to assembler, and then extract the
++ * #defines from the assembly-language output.
++ */
++
++#include <linux/signal.h>
++#include <linux/sched.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/types.h>
++#include <linux/ptrace.h>
++#include <linux/mman.h>
++#include <linux/mm.h>
++#include <asm/io.h>
++#include <asm/page.h>
++#include <asm/pgtable.h>
++#include <asm/processor.h>
++#include <asm/thread_info.h>
++
++#define DEFINE(sym, val) \
++		asm volatile("\n->" #sym " %0 " #val : : "i" (val))
++
++#define BLANK() asm volatile("\n->" : : )
++
++int main(void)
++{
++	/* offsets into the task_struct */
++	DEFINE(TASK_STATE, offsetof(struct task_struct, state));
++	DEFINE(TASK_FLAGS, offsetof(struct task_struct, flags));
++	DEFINE(TASK_PTRACE, offsetof(struct task_struct, ptrace));
++	DEFINE(TASK_THREAD, offsetof(struct task_struct, thread));
++	DEFINE(TASK_MM, offsetof(struct task_struct, mm));
++	DEFINE(TASK_ACTIVE_MM, offsetof(struct task_struct, active_mm));
++
++	/* offsets into thread_info */
++	DEFINE(TI_TASK, offsetof(struct thread_info, task));
++	DEFINE(TI_FLAGS, offsetof(struct thread_info, flags));
++	DEFINE(TI_PREEMPT, offsetof(struct thread_info, preempt_count));
++	DEFINE(TI_KSP, offsetof(struct thread_info, ksp));
++
++	DEFINE(PT_SIZE, sizeof(struct pt_regs));
++
++	/* Interrupt register frame */
++	DEFINE(STACK_FRAME_OVERHEAD, STACK_FRAME_OVERHEAD);
++	DEFINE(INT_FRAME_SIZE, STACK_FRAME_OVERHEAD + sizeof(struct pt_regs));
++
++	DEFINE(NUM_USER_SEGMENTS, TASK_SIZE >> 28);
++	return 0;
++}
+diff --git a/arch/openrisc/kernel/or32_ksyms.c b/arch/openrisc/kernel/or32_ksyms.c
+new file mode 100644
+index 0000000..83ccf7c
+--- /dev/null
++++ b/arch/openrisc/kernel/or32_ksyms.c
+@@ -0,0 +1,46 @@
++/*
++ * OpenRISC or32_ksyms.c
++ *
++ * Linux architectural port borrowing liberally from similar works of
++ * others.  All original copyrights apply as per the original source
++ * declaration.
++ *
++ * Modifications for the OpenRISC architecture:
++ * Copyright (C) 2003 Matjaz Breskvar <phoenix@bsemi.com>
 + * Copyright (C) 2010-2011 Jonas Bonn <jonas@southpole.se>
 + *
 + *      This program is free software; you can redistribute it and/or
@@ -187,604 +270,929 @@ index 0000000..a167a1e
 + *      2 of the License, or (at your option) any later version.
 + */
 +
-+#include <stddef.h>
-+#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/elfcore.h>
 +#include <linux/sched.h>
-+#include <linux/string.h>
-+
-+#include <linux/mm.h>
-+#include <linux/errno.h>
-+#include <linux/ptrace.h>
-+#include <linux/audit.h>
-+#include <linux/regset.h>
-+#include <linux/tracehook.h>
-+#include <linux/elf.h>
-+
-+#include <asm/thread_info.h>
-+#include <asm/segment.h>
-+#include <asm/page.h>
-+#include <asm/pgtable.h>
-+#include <asm/system.h>
-+
-+#include "ptrace.h"
-+
-+/*
-+ * retrieve the contents of OpenRISC userspace general registers
-+ */
-+static int genregs_get(struct task_struct *target,
-+		       const struct user_regset *regset,
-+		       unsigned int pos, unsigned int count,
-+		       void *kbuf, void __user * ubuf)
-+{
-+	const struct pt_regs *regs = task_pt_regs(target);
-+	int ret;
-+
-+#if 0
-+	/* r0 */
-+	ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
-+				       0, offsetof(struct pt_regs, regs));
-+#endif
-+
-+	ret = user_regset_copyout(&pos, &count, &kbuf, &ubuf,
-+				  regs, 0, sizeof(*regs));
-+
-+/* put PPC here */
-+
-+#if 0
-+	/* fill out rest of elf_gregset_t structure with zeroes */
-+	if (!ret)
-+		ret = user_regset_copyout_zero(&pos, &count, &kbuf, &ubuf,
-+					       sizeof(struct pt_regs), -1);
-+#endif
-+
-+	return ret;
-+}
-+
-+/*
-+ * update the contents of the OpenRISC userspace general registers
-+ */
-+static int genregs_set(struct task_struct *target,
-+		       const struct user_regset *regset,
-+		       unsigned int pos, unsigned int count,
-+		       const void *kbuf, const void __user * ubuf)
-+{
-+	struct pt_regs *regs = task_pt_regs(target);
-+	int ret;
-+
-+	/* PC */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 regs, 0, offsetof(struct pt_regs, sr));
-+
-+	/* skip SR */
-+	ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
-+					offsetof(struct pt_regs, sr),
-+					offsetof(struct pt_regs, sp));
-+
-+	/* SP, r2 - r31 */
-+	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
-+				 regs,
-+				 offsetof(struct pt_regs, sp),
-+				 sizeof(struct pt_regs));
-+
-+#if 0
-+	/* read out the rest of the elf_gregset_t structure */
-+	if (!ret)
-+		ret = user_regset_copyin_ignore(&pos, &count, &kbuf, &ubuf,
-+						sizeof(struct pt_regs), -1);
-+#endif
-+
-+	return ret;
-+}
-+
-+/*
-+ * Define the register sets available on OpenRISC under Linux
-+ */
-+enum openrisc_regset {
-+	REGSET_GENERAL,
-+};
-+
-+static const struct user_regset openrisc_regsets[] = {
-+	[REGSET_GENERAL] = {
-+			    .core_note_type = NT_PRSTATUS,
-+			    .n = ELF_NGREG,
-+			    .size = sizeof(long),
-+			    .align = sizeof(long),
-+			    .get = genregs_get,
-+			    .set = genregs_set,
-+			    },
-+};
-+
-+static const struct user_regset_view user_openrisc_native_view = {
-+	.name = "OpenRISC",
-+	.e_machine = EM_OPENRISC,
-+	.regsets = openrisc_regsets,
-+	.n = ARRAY_SIZE(openrisc_regsets),
-+};
-+
-+const struct user_regset_view *task_user_regset_view(struct task_struct *task)
-+{
-+	return &user_openrisc_native_view;
-+}
-+
-+void user_enable_single_step(struct task_struct *child)
-+{
-+	set_tsk_thread_flag(child, TIF_SINGLESTEP);
-+}
-+
-+void user_disable_single_step(struct task_struct *child)
-+{
-+	clear_tsk_thread_flag(child, TIF_SINGLESTEP);
-+}
-+
-+/*
-+ * does not yet catch signals sent when the child dies.
-+ * in exit.c or in signal.c.
-+ */
-+
-+#define OPC_MASK 0x3f
-+#define OPC_SHIFT 26
-+#define OPC_J    0x00
-+#define OPC_JAL  0x01
-+#define OPC_BNF  0x03
-+#define OPC_BF   0x04
-+#define OPC_SYSC 0x08
-+#define OPC_JR   0x11
-+#define OPC_JALR 0x12
-+
-+#define JUMP_IMM_MASK 0x03ffffff
-+#define JUMP_IMM_SIGN 0x02000000
-+
-+/* Trap instruction on bit 15 of SR, fixed one, unconditional */
-+#define OR1K_TRAP 0x2100000f
-+
-+/* Macro to extract branch offset with sign extension of immediate. */
-+#define BRANCH_OFFSET(insn) ((insn & JUMP_IMM_SIGN) ?			\
-+			     ((insn & JUMP_IMM_MASK) << 2) | 0xf0000000 : \
-+			     ((insn & JUMP_IMM_MASK) << 2))
-+
-+/* Get address of next instruction we can insert a breakpoint on */
-+/* pc passed to function is address of instruction we've now just trapped on.
-+   It is yet/next to be executed. We determine next instruction after PC to
-+   place a l.trap on. If we should take a branch, we must remember this.
-+*/
-+static unsigned long
-+get_next_address(struct task_struct *tsk, unsigned long pc, unsigned long insn)
-+{
-+	struct pt_regs *regs;
-+	struct debug_info *dbg;
-+	char opc;
-+	unsigned long npc;
-+	unsigned long rB;
-+
-+	dbg = &current_thread_info()->debug;
-+
-+	regs = task_pt_regs(tsk);
-+	/* Extract opcode from instruction */
-+	opc = (insn >> OPC_SHIFT) & OPC_MASK;
-+
-+	pr_debug(KERN_INFO
-+		 "ptrace get_next_address: pc 0x%.8lx insn. 0x%.8lx opc. 0x%.2x\n",
-+		 pc, insn, opc);
-+
-+	/*
-+	   Will always proceed to next instruction if this function was called
-+	   ie. we know we're not in a delay slot - the function calling this
-+	   checks dbg->branch_taken.
-+	 */
-+	npc = pc + 4;
-+
-+	/* Check if we're to record a branch */
-+	switch (opc) {
-+	case OPC_BNF:
-+		/* Check flag - we're branching if !flag */
-+		if (!(((regs)->sr) & SPR_SR_F)) {
-+			dbg->bp.branch = 1;
-+			dbg->bp.branch_target = pc + BRANCH_OFFSET(insn);
-+		}
-+		break;
-+	case OPC_BF:
-+		/* Check flag - we're branching if flag */
-+		if (((regs)->sr) & SPR_SR_F) {
-+			dbg->bp.branch = 1;
-+			dbg->bp.branch_target = pc + BRANCH_OFFSET(insn);
-+		}
-+		break;
-+	case OPC_J:
-+	case OPC_JAL:
-+		/* PC-relative branch target encoded in instruction. Extract
-+		   and add it. */
-+		dbg->bp.branch = 1;
-+		dbg->bp.branch_target = pc + BRANCH_OFFSET(insn);
-+		break;
-+	case OPC_JR:
-+	case OPC_JALR:
-+		/* Register number holding branch target is encoded in rB slot
-+		   of instruction. Extract it. */
-+		rB = (insn >> 11) & 0x1f;
-+		pr_debug(KERN_INFO
-+			 "ptrace get_next_address: jump reg from r%ld=0x%08lx\n",
-+			 rB,
-+			 /* *((unsigned long*)((char*)regs + (rB<<2) + 4)) */
-+			 regs->gprs[rB - 2]);
-+		if (rB < 2)
-+			pr_debug(KERN_WARNING
-+				 "ptrace get_next_address(): Warning, JR with GPR < 2");
-+		dbg->bp.branch = 1;
-+		dbg->bp.branch_target =
-+		    /* *((unsigned long*)((char*)regs + (rB<<2) + 4)) */
-+		    regs->gprs[rB - 2];
-+		break;
-+#if 0
-+	case OPC_SYSC:
-+		/* Not sure we want to do this */
-+		/* Remember - l.sys has no delay slot. */
-+		npc = 0x900;
-+		break;
-+#endif
-+	default:
-+		break;
-+	}
-+
-+	/* If setting a branch target, remember where branch was */
-+	if (dbg->bp.branch)
-+		dbg->bp.branch_insn_address = pc;
-+
-+	if (dbg->bp.branch)
-+		pr_debug(KERN_INFO
-+			 "ptrace get_next_address: branch detected to 0x%.8lx\n",
-+			 dbg->bp.branch_target);
-+	pr_debug(KERN_INFO "ptrace get_next_address: returning 0x%.8lx\n", npc);
-+
-+	return npc;
-+}
-+
-+static inline int
-+read_instr(struct task_struct *tsk, unsigned long addr, u32 * res)
-+{
-+	int ret;
-+	u32 val;
-+	ret = access_process_vm(tsk, addr & ~3, &val, sizeof(val), 0);
-+	ret = ret == sizeof(val) ? 0 : -EIO;
-+	*res = val;
-+	return ret;
-+}
-+
-+static int
-+swap_insn(struct task_struct *tsk, unsigned long addr,
-+	  void *old_insn, void *new_insn, int size)
-+{
-+	int ret;
-+
-+	ret = access_process_vm(tsk, addr, old_insn, size, 0);
-+	if (ret == size)
-+		ret = access_process_vm(tsk, addr, new_insn, size, 1);
-+	return ret;
-+}
-+
-+static void
-+add_breakpoint(struct task_struct *tsk, struct debug_info *dbg,
-+	       unsigned long addr)
-+{
-+	u32 new_insn = OR1K_TRAP;
-+	int res;
-+
-+	res = swap_insn(tsk, addr, &dbg->bp.insn, &new_insn, 4);
-+
-+	pr_debug(KERN_INFO
-+		 "ptrace add_breakpoint: addr 0x%.8lx insn 0x%.8lx %d\n\n",
-+		 addr, dbg->bp.insn, res);
-+
-+	if (res == 4) {
-+		dbg->bp.address = addr;
-+		dbg->bp.set = 1;
-+	}
-+}
-+
-+/*
-+ * Clear the breakpoint in the user program.
-+ */
-+static void clear_breakpoint(struct task_struct *tsk, struct debug_entry *bp)
-+{
-+	u32 old_insn;
-+	int ret;
-+	struct pt_regs *regs;
-+	unsigned long pc;
-+
-+	unsigned long addr = bp->address;
-+
-+	regs = task_pt_regs(tsk);
-+	pc = instruction_pointer(regs);	/* This is NPC */
-+
-+	/* Either at the breakpoint, or in delay slot (pc will be at address of
-+	 * branch instruction - OR1K exception handlers do that, for now.
-+	 * Perhaps FIXME
-+	 */
-+	if ((pc == addr) || ((bp->branch_insn_address == pc) && bp->branch))
-+		ret = swap_insn(tsk, addr & ~3, &old_insn, &bp->insn, 4);
-+	else {
-+		/* Trapped for some other reason. */
-+		pr_debug(KERN_INFO
-+			 "ptrace clear_breakpoint: not correct, pc 0x%.8lx bp 0x%.8lx\n",
-+			 pc, addr);
-+		pr_debug(KERN_INFO
-+			 "ptrace clear_breakpoint: 0x%.8lx 0x%.8lx %ld\n",
-+			 bp->branch_insn_address, bp->branch_target,
-+			 bp->branch);
-+		return;
-+	}
-+
-+	pr_debug(KERN_INFO
-+		 "ptrace clear_breakpoint: addr 0x%.8lx insn 0x%.8lx %d\n",
-+		 addr, bp->insn, ret);
-+
-+	if (ret != 4 || old_insn != OR1K_TRAP)
-+		pr_debug(KERN_ERR
-+			 "%s:%d: corrupted breakpoint at 0x%08lx (0x%08x)\n",
-+			 tsk->comm, task_pid_nr(tsk), addr, old_insn);
-+
-+	bp->set = 0;
-+}
-+
-+void ptrace_set_bpt(struct task_struct *tsk)
-+{
-+	struct pt_regs *regs;
-+	unsigned long pc;
-+	u32 insn;
-+	int res;
-+
-+	regs = task_pt_regs(tsk);
-+	pc = instruction_pointer(regs);	/* This is NPC */
-+
-+	res = read_instr(tsk, pc, &insn);
-+	if (!res) {
-+		struct debug_info *dbg = &current_thread_info()->debug;
-+		unsigned long npc;
-+
-+		/* First check if breakpoint is still set, if so, probably
-+		   just let us run until we hit it.
-+		   This can occur because perhaps we caused an exception before
-+		   a jump or in a delay slot, and the OR1K exception handlers
-+		   will rewind us to the branch before the delay slot or jump
-+		   target.
-+		   This way we skip everything that goes on during an exception
-+		   and can hopefully just track the program's execution.
-+		 */
-+		if (dbg->bp.set)
-+			return;
-+
-+		/* Are we in delay slot of branch we should take? */
-+		if (dbg->bp.branch == 1) {
-+			/* Branch target is already determined. Set l.trap. */
-+			npc = dbg->bp.branch_target;
-+
-+			/* Reset NPC to branch instruction - should be one
-+			 * before this one.
-+			 */
-+			instruction_pointer(regs) = dbg->bp.branch_insn_address;
-+
-+			/* Now mark this as no longer needing to be taken */
-+			dbg->bp.branch = 0;
-+		} else {
-+			npc = get_next_address(tsk, pc, insn);
-+		}
-+
-+		add_breakpoint(tsk, dbg, npc);
-+	}
-+}
-+
-+/*
-+ * Ensure no single-step breakpoint is pending.  Returns non-zero
-+ * value if child was being single-stepped.
-+ */
-+void ptrace_cancel_bpt(struct task_struct *tsk)
-+{
-+	clear_breakpoint(tsk,
-+			 (struct debug_entry *)&current_thread_info()->debug);
-+}
-+
-+/*
-+ * Called by kernel/ptrace.c when detaching..
-+ *
-+ * Make sure the single step bit is not set.
-+ */
-+void ptrace_disable(struct task_struct *child)
-+{
-+	pr_debug(KERN_WARNING "ptrace_disable(): TODO\n");
-+
-+	user_disable_single_step(child);
-+	clear_tsk_thread_flag(child, TIF_SYSCALL_TRACE);
-+}
-+
-+/*
-+ * Read the word at offset "off" into the "struct user".  We
-+ * actually access the pt_regs stored on the kernel stack.
-+ */
-+static int ptrace_read_user(struct task_struct *tsk, unsigned long off,
-+			    unsigned long __user *ret)
-+{
-+	struct pt_regs *regs;
-+	unsigned long tmp;
-+
-+	/*    if (off & 3 || off >= sizeof(struct user))
-+	   return -EIO; */
-+
-+	regs = task_pt_regs(tsk);
-+
-+	tmp = 0;
-+	if (off == PT_TEXT_ADDR)
-+		tmp = tsk->mm->start_code;
-+	else if (off == PT_DATA_ADDR)
-+		tmp = tsk->mm->start_data;
-+	else if (off == PT_TEXT_END_ADDR)
-+		tmp = tsk->mm->end_code;
-+	else if (off < sizeof(struct pt_regs))
-+		tmp = *((unsigned long *)((char *)regs + off));
-+
-+	return put_user(tmp, ret);
-+}
-+
-+/*
-+ * Write the word at offset "off" into "struct user".  We
-+ * actually access the pt_regs stored on the kernel stack.
-+ */
-+static int ptrace_write_user(struct task_struct *tsk, unsigned long off,
-+			     unsigned long val)
-+{
-+	struct pt_regs *regs;
-+
-+	/*if (off & 3 || off >= sizeof(struct user))
-+	   return -EIO; */
-+
-+	if (off >= sizeof(struct pt_regs))
-+		return 0;
-+
-+	regs = task_pt_regs(tsk);
-+
-+	if (off != offsetof(struct pt_regs, sr)) {
-+		*((unsigned long *)((char *)regs + off)) = val;
-+	} else {
-+		/* Prevent any process from setting the SR flags and
-+		 * thus elevating privileges
-+		 */
-+	}
-+
-+	return 0;
-+}
-+
-+long arch_ptrace(struct task_struct *child, long request, unsigned long addr,
-+		 unsigned long data)
-+{
-+	int ret;
-+	unsigned long __user *datap = (unsigned long __user *)data;
-+
-+	switch (request) {
-+		/* read the word at location addr in the USER area. */
-+	case PTRACE_PEEKUSR:
-+		ret = ptrace_read_user(child, addr, datap);
-+		break;
-+	case PTRACE_POKEUSR:
-+		ret = ptrace_write_user(child, addr, data);
-+		break;
-+	default:
-+		ret = ptrace_request(child, request, addr, data);
-+		break;
-+	}
-+
-+	single_step_set(current);
-+
-+	return ret;
-+}
-+
-+/* notification of system call entry/exit
-+ * - triggered by current->work.syscall_trace
-+ */
-+asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
-+{
-+	long ret = 0;
-+
-+	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
-+	    tracehook_report_syscall_entry(regs))
-+		/*
-+		 * Tracing decided this syscall should not happen.
-+		 * We'll return a bogus call number to get an ENOSYS
-+		 * error, but leave the original number in <something>.
-+		 */
-+		ret = -1L;
-+
-+/*	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-+		trace_sys_enter(regs, regs->syscallno);
-+*/
-+
-+	/* Are these regs right??? */
-+	if (unlikely(current->audit_context))
-+		audit_syscall_entry(audit_arch(), regs->syscallno,
-+				    regs->gpr[3], regs->gpr[4],
-+				    regs->gpr[5], regs->gpr[6]);
-+
-+	return ret ? : regs->syscallno;
-+
-+#if 0
-+/*FIXME : audit the rest of this */
-+
-+	/*
-+	 * this isn't the same as continuing with a signal, but it will do
-+	 * for normal use.  strace only continues with a signal if the
-+	 * stopping signal is not SIGTRAP.  -brl
-+	 */
-+	if (current->exit_code) {
-+		send_sig(current->exit_code, current, 1);
-+		current->exit_code = 0;
-+	}
-+out:
-+	/*FIXME: audit_arch isn't even defined for openrisc */
-+	/*FIXME:  What's with the register numbers here... makes no sense */
-+	if (unlikely(current->audit_context) && !entryexit)
-+		audit_syscall_entry(audit_arch(), regs->regs[2],
-+				    regs->regs[4], regs->regs[5],
-+				    regs->regs[6], regs->regs[7]);
-+	/*RGD*/
-+#endif
-+}
-+
-+asmlinkage void do_syscall_trace_leave(struct pt_regs *regs)
-+{
-+	int step;
-+
-+	if (unlikely(current->audit_context))
-+		audit_syscall_exit(AUDITSC_RESULT(regs->gpr[11]),
-+				   regs->gpr[11]);
-+
-+/*	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-+		trace_sys_exit(regs, regs->gprs[9]);
-+*/
-+
-+	step = test_thread_flag(TIF_SINGLESTEP);
-+	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
-+		tracehook_report_syscall_exit(regs, step);
-+}
-diff --git a/arch/openrisc/kernel/ptrace.h b/arch/openrisc/kernel/ptrace.h
++#include <linux/in6.h>
++#include <linux/interrupt.h>
++#include <linux/vmalloc.h>
++#include <linux/semaphore.h>
++
++#include <asm/processor.h>
++#include <asm/uaccess.h>
++#include <asm/checksum.h>
++#include <asm/io.h>
++#include <asm/hardirq.h>
++#include <asm/delay.h>
++#include <asm/pgalloc.h>
++
++#define DECLARE_EXPORT(name) extern void name(void); EXPORT_SYMBOL(name)
++
++/* compiler generated symbols */
++DECLARE_EXPORT(__udivsi3);
++DECLARE_EXPORT(__divsi3);
++DECLARE_EXPORT(__umodsi3);
++DECLARE_EXPORT(__modsi3);
++DECLARE_EXPORT(__muldi3);
++DECLARE_EXPORT(__ashrdi3);
++DECLARE_EXPORT(__ashldi3);
++DECLARE_EXPORT(__lshrdi3);
++
++EXPORT_SYMBOL(__copy_tofrom_user);
+diff --git a/arch/openrisc/or1ksim.cfg b/arch/openrisc/or1ksim.cfg
 new file mode 100644
-index 0000000..157d6ea
+index 0000000..65f5e87
 --- /dev/null
-+++ b/arch/openrisc/kernel/ptrace.h
-@@ -0,0 +1,37 @@
-+/*
-+ *  linux/arch/openrisc/kernel/ptrace.h
-+ *
-+ *  Copyright (C) 2000-2003 Russell King
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ */
-+#include <linux/ptrace.h>
++++ b/arch/openrisc/or1ksim.cfg
+@@ -0,0 +1,888 @@
++/* sim.cfg -- Simulator configuration script file
++   Copyright (C) 2001-2002, Marko Mlinar, markom@opencores.org
 +
-+extern void ptrace_cancel_bpt(struct task_struct *);
-+extern void ptrace_set_bpt(struct task_struct *);
-+extern void ptrace_break(struct task_struct *, struct pt_regs *);
++This file is part of OpenRISC 1000 Architectural Simulator.
++It contains the default configuration and help about configuring
++the simulator.
 +
-+/*
-+ * Send SIGTRAP if we're single-stepping
-+ */
-+static inline void single_step_trap(struct task_struct *task)
-+{
-+	if (test_tsk_thread_flag (task, TIF_SINGLESTEP)){
-+		ptrace_cancel_bpt(task);
-+		send_sig(SIGTRAP, task, 1);
-+	}
-+}
++This program is free software; you can redistribute it and/or modify
++it under the terms of the GNU General Public License as published by
++the Free Software Foundation; either version 2 of the License, or
++(at your option) any later version.
 +
-+static inline void single_step_clear(struct task_struct *task)
-+{
-+	if (test_tsk_thread_flag(task, TIF_SINGLESTEP))
-+		ptrace_cancel_bpt(task);
-+}
++This program is distributed in the hope that it will be useful,
++but WITHOUT ANY WARRANTY; without even the implied warranty of
++MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++GNU General Public License for more details.
 +
-+static inline void single_step_set(struct task_struct *task)
-+{
-+	if (test_tsk_thread_flag(task, TIF_SINGLESTEP))
-+		ptrace_set_bpt(task);
-+}
++You should have received a copy of the GNU General Public License
++along with this program; if not, write to the Free Software
++Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA. */
++
++
++/* INTRODUCTION
++
++   The ork1sim has various parameters, that are set in configuration files
++   like this one. The user can switch between configurations at startup by
++   specifying the required configuration file with the -f <filename.cfg> option.
++   If no configuration file is specified or1ksim searches for the default
++   configuration file sim.cfg. First it searches for './sim.cfg'. If this
++   file is not found, it searches for '~/or1k/sim.cfg'. If this file is
++   not found too, it reverts to the built-in default configuration.
++
++   NOTE: Users should not rely on the built-in configuration, since the
++         default configuration may differ between version.
++         Rather create a configuration file that sets all critical values.
++
++   This file may contain (standard C) comments only - no // support.
++
++   Configure files may be be included, using:
++   include "file_name_to_include"
++
++   Like normal configuration files, the included file is divided into
++   sections. Each section is described in detail also.
++
++   Some section have subsections. One example of such a subsection is:
++
++   device <index>
++     instance specific parameters...
++   enddevice
++
++   which creates a device instance.
++*/
++
++
++/* MEMORY SECTION
++
++   This section specifies how the memory is generated and the blocks
++   it consists of.
++
++   type = random/unknown/pattern
++      Specifies the initial memory values.
++      'random' generates random memory using seed 'random_seed'.
++      'pattern' fills memory with 'pattern'.
++      'unknown' does not specify how memory should be generated,
++      leaving the memory in a undefined state. This is the fastest
++      option.
++
++   random_seed = <value>
++      random seed for randomizer, used if type = 'random'.
++
++   pattern = <value>
++      pattern to fill memory, used if type = 'pattern'.
++
++   nmemories = <value>
++      number of memory instances connected
++
++   baseaddr = <hex_value>
++      memory start address
++
++   size = <hex_value>
++      memory size
++
++   name = "<string>"
++      memory block name
++
++   ce = <value>
++      chip enable index of the memory instance
++
++   mc = <value>
++      memory controller this memory is connected to
++
++   delayr = <value>
++      cycles, required for read access, -1 if instance does not support reading
++
++   delayw = <value>
++      cycles, required for write access, -1 if instance does not support writing
++
++   log = "<filename>"
++      filename, where to log memory accesses to, no log, if log command is not specified
++*/
++
++
++section memory
++  /*random_seed = 12345
++  type = random*/
++  pattern = 0x00
++  type = unknown /* Fastest */
++
++  name = "FLASH"
++  ce = 0
++  mc = 0
++  baseaddr = 0xf0000000
++  size = 0x01000000
++  delayr =  1
++  delayw = -1
++end
++
++section memory
++  /*random_seed = 12345
++  type = random*/
++  pattern = 0x00
++  type = unknown /* Fastest */
++
++  name = "RAM"
++  ce = 1
++  mc = 0
++  baseaddr = 0x00000000
++  size = 0x02000000
++  delayr = 1
++  delayw = 1
++end
++
++section memory
++  /*random_seed = 12345
++  type = random*/
++  pattern = 0x00
++  type = unknown /* Fastest */
++
++  name = "SRAM"
++  mc = 0
++  ce = 2
++  baseaddr = 0xa4000000
++  size = 0x00100000
++  delayr = 1
++  delayw = 2
++end
++
++
++/* IMMU SECTION
++
++    This section configures the Instruction Memory Manangement Unit
++
++    enabled = 0/1
++       '0': disabled
++       '1': enabled
++       (NOTE: UPR bit is set)
++
++    nsets = <value>
++       number of ITLB sets; must be power of two
++
++    nways = <value>
++       number of ITLB ways
++
++    pagesize = <value>
++       instruction page size; must be power of two
++
++    entrysize = <value>
++       instruction entry size in bytes
++
++    ustates = <value>
++       number of ITLB usage states (2, 3, 4 etc., max is 4)
++
++    hitdelay = <value>
++       number of cycles immu hit costs
++
++    missdelay = <value>
++       number of cycles immu miss costs
++*/
++
++section immu
++  enabled = 1
++  nsets = 64
++  nways = 1
++  pagesize = 8192
++  hitdelay = 0
++  missdelay = 0
++end
++
++
++/* DMMU SECTION
++
++    This section configures the Data Memory Manangement Unit
++
++    enabled = 0/1
++       '0': disabled
++       '1': enabled
++       (NOTE: UPR bit is set)
++
++    nsets = <value>
++       number of DTLB sets; must be power of two
++
++    nways = <value>
++       number of DTLB ways
++
++    pagesize = <value>
++       data page size; must be power of two
++
++    entrysize = <value>
++       data entry size in bytes
++
++    ustates = <value>
++       number of DTLB usage states (2, 3, 4 etc., max is 4)
++
++    hitdelay = <value>
++       number of cycles dmmu hit costs
++
++    missdelay = <value>
++       number of cycles dmmu miss costs
++*/
++
++section dmmu
++  enabled = 1
++  nsets = 64
++  nways = 1
++  pagesize = 8192
++  hitdelay = 0
++  missdelay = 0
++end
++
++
++/* IC SECTION
++
++   This section configures the Instruction Cache
++
++   enabled = 0/1
++       '0': disabled
++       '1': enabled
++      (NOTE: UPR bit is set)
++
++   nsets = <value>
++      number of IC sets; must be power of two
++
++   nways = <value>
++      number of IC ways
++
++   blocksize = <value>
++      IC block size in bytes; must be power of two
++
++   ustates = <value>
++      number of IC usage states (2, 3, 4 etc., max is 4)
++
++   hitdelay = <value>
++      number of cycles ic hit costs
++
++    missdelay = <value>
++      number of cycles ic miss costs
++*/
++
++section ic
++  enabled = 0
++  nsets = 512
++  nways = 1
++  blocksize = 16
++  hitdelay = 1
++  missdelay = 1
++end
++
++
++/* DC SECTION
++
++   This section configures the Data Cache
++
++   enabled = 0/1
++       '0': disabled
++       '1': enabled
++      (NOTE: UPR bit is set)
++
++   nsets = <value>
++      number of DC sets; must be power of two
++
++   nways = <value>
++      number of DC ways
++
++   blocksize = <value>
++      DC block size in bytes; must be power of two
++
++   ustates = <value>
++      number of DC usage states (2, 3, 4 etc., max is 4)
++
++   load_hitdelay = <value>
++      number of cycles dc load hit costs
++
++   load_missdelay = <value>
++      number of cycles dc load miss costs
++
++   store_hitdelay = <value>
++      number of cycles dc load hit costs
++
++   store_missdelay = <value>
++      number of cycles dc load miss costs
++*/
++
++section dc
++  enabled = 0
++  nsets = 512
++  nways = 1
++  blocksize = 16
++  load_hitdelay = 1
++  load_missdelay = 1
++  store_hitdelay = 1
++  store_missdelay = 1
++end
++
++
++/* SIM SECTION
++
++  This section specifies how or1ksim should behave.
++
++  verbose = 0/1
++       '0': don't print extra messages
++       '1': print extra messages
++
++  debug = 0-9
++      0  : no debug messages
++      1-9: debug message level.
++           higher numbers produce more messages
++
++  profile = 0/1
++      '0': don't generate profiling file 'sim.profile'
++      '1': don't generate profiling file 'sim.profile'
++
++  prof_fn = "<filename>"
++      optional filename for the profiling file.
++      valid only if 'profile' is set
++
++  mprofile = 0/1
++      '0': don't generate memory profiling file 'sim.mprofile'
++      '1': generate memory profiling file 'sim.mprofile'
++
++  mprof_fn = "<filename>"
++      optional filename for the memory profiling file.
++      valid only if 'mprofile' is set
++
++  history = 0/1
++      '0': don't track execution flow
++      '1': track execution flow
++      Execution flow can be tracked for the simulator's
++      'hist' command. Useful for back-trace debugging.
++
++  iprompt = 0/1
++     '0': start in <not interactive prompt> (so what do we start in ???)
++     '1': start in interactive prompt.
++
++  exe_log = 0/1
++      '0': don't generate execution log.
++      '1': generate execution log.
++
++  exe_log = default/hardware/simple/software
++      type of execution log, default is used when not specified
++
++  exe_log_start = <value>
++      index of first instruction to start logging, default = 0
++
++  exe_log_end = <value>
++      index of last instruction to end logging; not limited, if omitted
++
++  exe_log_marker = <value>
++      <value> specifies number of instructions before horizontal marker is
++      printed; if zero, markers are disabled (default)
++
++  exe_log_fn = "<filename>"
++      filename for the exection log file.
++      valid only if 'exe_log' is set
++
++  clkcycle = <value>[ps|ns|us|ms]
++      specifies time measurement for one cycle
++*/
++
++section sim
++  verbose = 1
++  debug = 0
++  profile = 0
++  history = 0
++
++  clkcycle = 10ns
++end
++
++
++/* SECTION VAPI
++
++    This section configures the Verification API, used for Advanced
++    Core Verification.
++
++    enabled = 0/1
++        '0': disbable VAPI server
++        '1': enable/start VAPI server
++
++    server_port = <value>
++        TCP/IP port to start VAPI server on
++
++    log_enabled = 0/1
++       '0': disable VAPI requests logging
++       '1': enable VAPI requests logging
++
++    hide_device_id = 0/1
++       '0': don't log device id (for compatability with old version)
++       '1': log device id
++
++
++    vapi_fn = <filename>
++       filename for the log file.
++       valid only if log_enabled is set
++*/
++
++section VAPI
++  enabled = 0
++  server_port = 9998
++  log_enabled = 0
++  vapi_log_fn = "vapi.log"
++end
++
++
++/* CPU SECTION
++
++   This section specifies various CPU parameters.
++
++   ver = <value>
++   rev = <value>
++      specifies version and revision of the CPU used
++
++   upr = <value>
++      changes the upr register
++
++   sr = <value>
++      sets the initial Supervision Register value
++      supervisor mode (SM) and fixed one (FO) set = 0x8001
++      exception prefix high (EPH, vectors@0xf0000000) = 0x4000
++      together, (SM | FO | EPH) = 0xc001
++   superscalar = 0/1
++      '0': CPU is scalar
++      '1': CPU is superscalar
++      (modify cpu/or32/execute.c to tune superscalar model)
++
++   hazards = 0/1
++      '0': don't track data hazards in superscalar CPU
++      '1': track data hazards in superscalar CPU
++      If tracked, data hazards can be displayed using the
++      simulator's 'r' command.
++
++   dependstats = 0/1
++      '0': don't calculate inter-instruction dependencies.
++      '1': calculate inter-instruction dependencies.
++      If calculated, inter-instruction dependencies can be
++      displayed using the simulator's 'stat' command.
++
++   sbuf_len = <value>
++      length of store buffer (<= 256), 0 = disabled
++*/
++
++section cpu
++  ver = 0x12
++  cfg = 0x00
++  rev = 0x01
++  sr =  0x8001 /*SPR_SR_FO  | SPR_SR_SM | SPR_SR_EPH */
++  /* upr = */
++  superscalar = 0
++  hazards = 0
++  dependstats = 0
++  sbuf_len = 0
++end
++
++
++/* PM SECTION
++
++   This section specifies Power Management parameters
++
++   enabled = 0/1
++      '0': disable power management
++      '1': enable power management
++*/
++
++section pm
++  enabled = 0
++end
++
++
++/* BPB SECTION
++
++   This section specifies how branch prediction should behave.
++
++   enabled = 0/1
++     '0': disable branch prediction
++     '1': enable branch prediction
++
++   btic = 0/1
++     '0': disable branch target instruction cache model
++     '1': enable branch target instruction cache model
++
++   sbp_bf_fwd = 0/1
++     Static branch prediction for 'l.bf'
++     '0': don't use forward prediction
++     '1': use forward prediction
++
++   sbp_bnf_fwd = 0/1
++     Static branch prediction for 'l.bnf'
++     '0': don't use forward prediction
++     '1': use forward prediction
++
++   hitdelay = <value>
++       number of cycles bpb hit costs
++
++   missdelay = <value>
++       number of cycles bpb miss costs
++*/
++
++section bpb
++  enabled = 0
++  btic = 0
++  sbp_bf_fwd = 0
++  sbp_bnf_fwd = 0
++  hitdelay = 0
++  missdelay = 0
++end
++
++
++/* DEBUG SECTION
++
++   This sections specifies how the debug unit should behave.
++
++   enabled = 0/1
++      '0': disable debug unit
++      '1': enable debug unit
++
++   gdb_enabled = 0/1
++      '0': don't start gdb server
++      '1': start gdb server at port 'server_port'
++
++   server_port = <value>
++      TCP/IP port to start gdb server on
++      valid only if gdb_enabled is set
++
++   vapi_id = <hex_value>
++      Used to create "fake" vapi log file containing the JTAG proxy messages.
++*/
++section debug
++  enabled = 0
++/*  gdb_enabled = 0 */
++/*  server_port = 9999*/
++  rsp_enabled = 1
++  rsp_port = 50001
++end
++
++
++/* MC SECTION
++
++   This section configures the memory controller
++
++   enabled = 0/1
++     '0': disable memory controller
++     '1': enable memory controller
++
++   baseaddr = <hex_value>
++      address of first MC register
++
++   POC = <hex_value>
++      Power On Configuration register
++
++   index = <value>
++      Index of this memory controller amongst all the memory controllers
++*/
++
++section mc
++  enabled = 0
++  baseaddr = 0x93000000
++  POC = 0x00000008                 /* Power on configuration register */
++  index = 0
++end
++
++
++/* UART SECTION
++
++   This section configures the UARTs
++
++     enabled = <0|1>
++        Enable/disable the peripheral.  By default if it is enabled.
++
++     baseaddr = <hex_value>
++        address of first UART register for this device
++
++
++     channel = <channeltype>:<args>
++
++        The channel parameter indicates the source of received UART characters
++        and the sink for transmitted UART characters.
++
++        The <channeltype> can be either "file", "xterm", "tcp", "fd", or "tty"
++        (without quotes).
++
++          A) To send/receive characters from a pair of files, use a file
++             channel:
++
++               channel=file:<rxfile>,<txfile>
++
++	  B) To create an interactive terminal window, use an xterm channel:
++
++               channel=xterm:[<xterm_arg>]*
++
++	  C) To create a bidirectional tcp socket which one could, for example,
++             access via telnet, use a tcp channel:
++
++               channel=tcp:<port number>
++
++	  D) To cause the UART to read/write from existing numeric file
++             descriptors, use an fd channel:
++
++               channel=fd:<rx file descriptor num>,<tx file descriptor num>
++
++          E) To connect the UART to a physical serial port, create a tty
++             channel:
++
++	       channel=tty:device=/dev/ttyS0,baud=9600
++
++     irq = <value>
++        irq number for this device
++
++     16550 = 0/1
++        '0': this device is a UART16450
++        '1': this device is a UART16550
++
++     jitter = <value>
++        in msecs... time to block, -1 to disable it
++
++     vapi_id = <hex_value>
++        VAPI id of this instance
++*/
++
++section uart
++  enabled = 1
++  baseaddr = 0x90000000
++  irq = 2
++  /* channel = "file:uart0.rx,uart0.tx" */
++  channel = "tcp:10084"
++/*   channel = "xterm:"  */
++  jitter = -1                     /* async behaviour */
++  16550 = 1
++end
++
++
++/* DMA SECTION
++
++   This section configures the DMAs
++
++     enabled = <0|1>
++        Enable/disable the peripheral.  By default if it is enabled.
++
++     baseaddr = <hex_value>
++        address of first DMA register for this device
++
++     irq = <value>
++        irq number for this device
++
++     vapi_id = <hex_value>
++        VAPI id of this instance
++*/
++
++section dma
++  enabled = 1
++  baseaddr = 0x9a000000
++  irq = 11
++end
++
++
++/* ETHERNET SECTION
++
++   This section configures the ETHERNETs
++
++     enabled = <0|1>
++        Enable/disable the peripheral.  By default if it is enabled.
++
++     baseaddr = <hex_value>
++        address of first ethernet register for this device
++
++     dma = <value>
++        which controller is this ethernet "connected" to
++
++     irq = <value>
++        ethernet mac IRQ level
++
++     rtx_type = <value>
++        use 0 - file interface, 1 - socket interface
++
++     rx_channel = <value>
++        DMA channel used for RX
++
++     tx_channel = <value>
++        DMA channel used for TX
++
++     rxfile = "<filename>"
++        filename, where to read data from
++
++     txfile = "<filename>"
++        filename, where to write data to
++
++     sockif = "<ifacename>"
++        interface name of ethernet socket
++
++     vapi_id = <hex_value>
++        VAPI id of this instance
++*/
++
++section ethernet
++  enabled = 1
++  baseaddr = 0x92000000
++  /* dma = 0 */
++  irq = 4
++  rtx_type = "tap"
++  tap_dev = "tap0"
++  /* tx_channel = 0 */
++  /* rx_channel = 1 */
++  rxfile = "eth0.rx"
++  txfile = "eth0.tx"
++  sockif = "eth0"
++end
++
++
++/* GPIO SECTION
++
++   This section configures the GPIOs
++
++     enabled = <0|1>
++        Enable/disable the peripheral.  By default if it is enabled.
++
++     baseaddr = <hex_value>
++        address of first GPIO register for this device
++
++     irq = <value>
++        irq number for this device
++
++     base_vapi_id = <hex_value>
++        first VAPI id of this instance
++	GPIO uses 8 consecutive VAPI IDs
++*/
++
++section gpio
++  enabled = 0
++  baseaddr = 0x91000000
++  irq = 3
++  base_vapi_id = 0x0200
++end
++
++/* VGA SECTION
++
++    This section configures the VGA/LCD controller
++
++      enabled = <0|1>
++        Enable/disable the peripheral.  By default if it is enabled.
++
++      baseaddr = <hex_value>
++        address of first VGA register
++
++      irq = <value>
++        irq number for this device
++
++      refresh_rate = <value>
++        number of cycles between screen dumps
++
++      filename = "<filename>"
++        template name for generated names (e.g. "primary" produces "primary0023.bmp")
++*/
++
++section vga
++  enabled = 0
++  baseaddr = 0x97100000
++  irq = 8
++  refresh_rate = 100000
++  filename = "primary"
++end
++
++
++/* TICK TIMER SECTION
++
++    This section configures tick timer
++
++    enabled = 0/1
++      whether tick timer is enabled
++*/
++
++section pic
++  enabled = 1
++  edge_trigger = 1
++end
++
++/* FB SECTION
++
++    This section configures the frame buffer
++
++    enabled = <0|1>
++      Enable/disable the peripheral.  By default if it is enabled.
++
++    baseaddr = <hex_value>
++      base address of frame buffer
++
++    paladdr = <hex_value>
++      base address of first palette entry
++
++    refresh_rate = <value>
++      number of cycles between screen dumps
++
++    filename = "<filename>"
++      template name for generated names (e.g. "primary" produces "primary0023.bmp")
++*/
++
++section fb
++  enabled = 0
++  baseaddr = 0x97000000
++  refresh_rate = 1000000
++  filename = "primary"
++end
++
++
++/* KBD SECTION
++
++    This section configures the PS/2 compatible keyboard
++
++    baseaddr = <hex_value>
++      base address of the keyboard device
++
++    rxfile = "<filename>"
++      filename, where to read data from
++*/
++
++section kbd
++  enabled = 0
++  irq = 5
++  baseaddr = 0x94000000
++  rxfile = "kbd.rx"
++end
++
++
++/* ATA SECTION
++
++    This section configures the ATA/ATAPI host controller
++
++      baseaddr = <hex_value>
++        address of first ATA register
++
++      enabled = <0|1>
++        Enable/disable the peripheral.  By default if it is enabled.
++
++      irq = <value>
++        irq number for this device
++
++      debug = <value>
++        debug level for ata models.
++	0: no debug messages
++	1: verbose messages
++	3: normal messages (more messages than verbose)
++        5: debug messages (normal debug messages)
++	7: flow control messages (debug statemachine flows)
++	9: low priority message (display everything the code does)
++
++      dev_type0/1 = <value>
++        ata device 0 type
++        0: NO_CONNeCT: none (not connected)
++	1: FILE      : simulated harddisk
++	2: LOCAL     : local system harddisk
++
++      dev_file0/1 = "<filename>"
++        filename for simulated ATA device
++	valid only if dev_type0 == 1
++
++      dev_size0/1 = <value>
++        size of simulated hard-disk (in MBytes)
++	valid only if dev_type0 == 1
++
++      dev_packet0/1 = <value>
++        0: simulated ATA device does NOT implement PACKET command feature set
++	1: simulated ATA device does implement PACKET command feature set
++
++   FIXME: irq number
++*/
++
++section ata
++  enabled = 0
++  baseaddr = 0x9e000000
++  irq = 15
++
++end
 -- 
 1.7.4.1
 
