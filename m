@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752738Ab1GBBVf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 21:21:35 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57228 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751967Ab1GBBVe (ORCPT
+	id S1752346Ab1GBBrt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 21:47:49 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:41010 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751833Ab1GBBrs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 21:21:34 -0400
-Subject: [GIT PULL] RTC changes for 3.1
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: lkml <linux-kernel@vger.kernel.org>, Wolfram Sang <w.sang@pengutronix.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 18:21:30 -0700
-Message-ID: <1309569690.2872.405.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Fri, 1 Jul 2011 21:47:48 -0400
+From: Arnaud Lacombe <lacombar@gmail.com>
+To: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+Cc: Arnaud Lacombe <lacombar@gmail.com>
+Subject: [RFC 0/7] Kconfig library check merge
+Date: Fri,  1 Jul 2011 21:47:32 -0400
+Message-Id: <1309571259-15241-1-git-send-email-lacombar@gmail.com>
+X-Mailer: git-send-email 1.7.3.4.574.g608b.dirty
+In-Reply-To: <1307387767-9237-1-git-send-email-lacombar@gmail.com>
+References: <1307387767-9237-1-git-send-email-lacombar@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hey Thomas,
-	I've got a few RTC changes queued in the git repository at:
-  git://git.linaro.org/people/jstultz/linux.git fortglx/3.1/tip/timers/rtc
+Hi Michal,
 
-Would you please consider queuing these into -tip for 3.1?
+You'll find hereafter a splitted-down version of my previous preliminary
+patch. I will eventually need to complete the second commit message, it is
+missing the purpose of the change, which AFAIR was a failure of something.
 
-thanks
--john
+Comments welcome!
 
-Wolfram Sang (6):
-      rtc: vt8500: Use define instead of hardcoded value for status bit
-      rtc: stmp3xxx: Restore register definitions
-      rtc: stmp3xxx: Port stmp-functions to mxs-equivalents
-      rtc: stmp3xxx: Initialize drvdata before registering device
-      rtc: stmp3xxx: Get rid of mach-specific accessors
-      rtc: stmp3xxx: Remove UIE handlers
+ - Arnaud
 
- drivers/rtc/Kconfig        |    6 +-
- drivers/rtc/rtc-stmp3xxx.c |  153 +++++++++++++++++++++++---------------------
- drivers/rtc/rtc-vt8500.c   |    6 +-
- 3 files changed, 86 insertions(+), 79 deletions(-)
+Arnaud Lacombe (7):
+  kconfig/Makefile: add pretty printer for moc(1)
+  kconfig/Makefile: ensure `conf' appears last in `hostprogs-y'
+  kconfig/check.sh: prepare for generic check
+  kconfig: move QT checks to `scripts/kconfig/check.sh'
+  kconfig: move GTK checks to `scripts/kconfig/check.sh'
+  kconfig: move ncurses checks to `scripts/kconfig/check.sh'
+  kconfig: add stub for nconf checks
 
+ scripts/kconfig/Makefile                   |  155 +++++-----------------
+ scripts/kconfig/check.sh                   |  199 ++++++++++++++++++++++++++--
+ scripts/kconfig/lxdialog/check-lxdialog.sh |   84 ------------
+ 3 files changed, 223 insertions(+), 215 deletions(-)
+
+-- 
+1.7.3.4.574.g608b.dirty
 
