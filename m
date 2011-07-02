@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755171Ab1GBRX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 13:23:27 -0400
-Received: from mail.lang.hm ([64.81.33.126]:39431 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752303Ab1GBRX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 13:23:26 -0400
-Date: Sat, 2 Jul 2011 10:23:23 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-cc: linux-kernel-mail <linux-kernel@vger.kernel.org>,
-        linux-newbie@vger.kernel.org
-Subject: Re: Question on syslogd and syslog
-In-Reply-To: <BANLkTi=tFc2uoGMNFAAFqpeka_otC6CsOQ@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1107021021090.26801@asgard.lang.hm>
-References: <BANLkTin_Yo+wnwWyMFoG3Nv5SSzJj8J1_w@mail.gmail.com> <alpine.DEB.2.02.1106281238210.7935@asgard.lang.hm> <BANLkTi=tFc2uoGMNFAAFqpeka_otC6CsOQ@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="680960-1374684458-1309627403=:26801"
+	id S1755202Ab1GBR2W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 13:28:22 -0400
+Received: from mail.pbcl.net ([88.198.119.4]:35305 "EHLO hetzner.pbcl.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752443Ab1GBR2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 13:28:21 -0400
+X-Greylist: delayed 1444 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Jul 2011 13:28:21 EDT
+Subject: Re: [PATCH 03/12] econet: Reduce switch/case indent
+From: Phil Blundell <philb@gnu.org>
+To: Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org
+In-Reply-To: <e2f659cf95b88abbdf35c7447d8a4d00d5c424dc.1309549244.git.joe@perches.com>
+References: <cover.1309549243.git.joe@perches.com>
+	 <e2f659cf95b88abbdf35c7447d8a4d00d5c424dc.1309549244.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 02 Jul 2011 18:04:04 +0100
+Message-ID: <1309626244.3651.0.camel@lenovo.internal.reciva.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Fri, 2011-07-01 at 12:43 -0700, Joe Perches wrote:
+> Make the case labels the same indent as the switch.
+> 
+> Simplify a default case / return (unreached)
+> Remove unnecessary break after return.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
---680960-1374684458-1309627403=:26801
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+Acked-by: Phil Blundell <philb@gnu.org>
 
-the problem is that in the syslog spec, the facility and severity get 
-combined into one 8 bit field (one of the two only has 12 values defined 
-instead of 16, but I don't remember off the top of my head which one)
+Thanks.
 
-so extending this is creating a new protocol.
+p.
 
-also, the reason I was talking about filtering is that other than 
-filtering, what purpose is there in settng the facility?
 
-David Lang
-
-On Sat, 2 Jul 2011, Sri Ram Vemulpali wrote:
-
-> Thanks for the replies. My question is more on how to extend
-> facilities, rather on how to filter the messages. It seems there is a
-> code in the toolchain syslog.h where the array representing the
-> facilities needs to be extended. Please correct me if I am wrong.
->
-> Sri.
->
-> On Tue, Jun 28, 2011 at 3:41 PM,  <david@lang.hm> wrote:
->> you would be creating a completely different over-the-wire protocol for your
->> syslog messages.
->>
->> however, note that newer syslog daemons (syslog-ng and rsyslog for example)
->> allow you to do filtering on just about anything in the message, not just
->> the facility and severity.
->>
->> David Lang
->>
->> On Tue, 28 Jun 2011, Sri Ram Vemulpali wrote:
->>
->>> Date: Tue, 28 Jun 2011 14:11:59 -0400
->>> From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
->>> To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
->>>    linux-newbie@vger.kernel.org
->>> Subject: Question on syslogd and syslog
->>>
->>> Hello All,
->>>
->>>   I am looking to modify number of facilities available in syslog so
->>> that for my application I can have much more array of them at disposal
->>> of my need. So currently only LOG_LOCAL0 - LOG_LOCAL7 are defined for
->>> user, what if I want to extend them, is there a way I can extend them.
->>> Or should I go ahead and modify the source code of syslog. Can any
->>> please point me in right direction and where can I get syslogd and
->>> syslog source code. Thanks in advance.
->>>
->>>
->>
->
->
->
->
---680960-1374684458-1309627403=:26801--
