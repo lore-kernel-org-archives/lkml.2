@@ -1,70 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753144Ab1GBDIe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 23:08:34 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62047 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751833Ab1GBDIa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 23:08:30 -0400
-From: Sasha Levin <levinsasha928@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sasha Levin <levinsasha928@gmail.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org
-Subject: [PATCH] virtio_balloon: Notify guest only after deflating the balloon
-Date: Sat,  2 Jul 2011 06:06:56 +0300
-Message-Id: <1309576016-22800-1-git-send-email-levinsasha928@gmail.com>
-X-Mailer: git-send-email 1.7.6
+	id S1753052Ab1GBD0U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 23:26:20 -0400
+Received: from smtp.dts.mg ([196.192.32.27]:54495 "EHLO smtp.dts.mg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751833Ab1GBD0T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 23:26:19 -0400
+X-Greylist: delayed 3736 seconds by postgrey-1.27 at vger.kernel.org; Fri, 01 Jul 2011 23:26:19 EDT
+Date: Sat, 2 Jul 2011 05:04:32 +0300 (EAT)
+From: WESTERN UNION MONEY TRANSFER <carbonnel@moov.mg>
+Reply-To: WESTERN UNION MONEY TRANSFER <wumt.claimf400@w.cn>
+MIME-Version: 1.0
+X-Originating-IP: [41.203.64.252]
+X-Mailer: Zimbra 6.0.9_GA_2686 (zclient/6.0.9_GA_2686)
+To: undisclosed-recipients:;
+X-SpamTest-Envelope-From: carbonnel@moov.mg
+X-SpamTest-Group-ID: 00000000
+X-SpamTest-Info: Profiles 23115 [Jul 02 2011]
+X-SpamTest-Info: {TO: undisclosed}
+X-SpamTest-Method: none
+X-SpamTest-Rate: 20
+X-SpamTest-Status: Not detected
+X-SpamTest-Status-Extended: not_detected
+X-SpamTest-Version: SMTP-Filter Version 3.0.0 [0284], KAS30/Release
+Message-ID: <593825904.228251.1309572272178.JavaMail.root@z05.dts.mg>
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+Subject: You have $250,000.00 in our office.
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE,
+	 bases: 20110303 #4966049, check: 20110702 clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Unless the host requires that requested pages won't be used until
-he us notified (VIRTIO_BALLOON_F_MUST_TELL_HOST), only notify after
-deflating the balloon.
 
-This will avoid having to take an exit before actually using the pages.
 
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: virtualization@lists.linux-foundation.org
-Cc: kvm@vger.kernel.org
-Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
----
- drivers/virtio/virtio_balloon.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-index e058ace..055f95d 100644
---- a/drivers/virtio/virtio_balloon.c
-+++ b/drivers/virtio/virtio_balloon.c
-@@ -148,14 +148,18 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
- 		vb->num_pages--;
- 	}
- 
--
- 	/*
--	 * Note that if
--	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
--	 * is true, we *have* to do it in this order
-+	 * If the host doesn't require us to notify him before using
-+	 * pages which belong to the balloon, update him only after
-+	 * freeing those pages for guest use.
- 	 */
--	tell_host(vb, vb->deflate_vq);
--	release_pages_by_pfn(vb->pfns, vb->num_pfns);
-+	if (virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST)) {
-+		tell_host(vb, vb->deflate_vq);
-+		release_pages_by_pfn(vb->pfns, vb->num_pfns);
-+	} else {
-+		release_pages_by_pfn(vb->pfns, vb->num_pfns);
-+		tell_host(vb, vb->deflate_vq);
-+	}
- }
- 
- static inline void update_stat(struct virtio_balloon *vb, int idx,
 -- 
-1.7.6
-
+RESPOND FOR DETAILS.
