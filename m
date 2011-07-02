@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753742Ab1GBHEz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 03:04:55 -0400
-Received: from lo.gmane.org ([80.91.229.12]:50068 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753556Ab1GBHEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 03:04:55 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Niels <zorglub_olsen@hotmail.com>
-Subject: Kernel panic with USB device
-Date: Sat, 02 Jul 2011 09:04:49 +0200
-Message-ID: <iumfu8$jmf$1@dough.gmane.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7Bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 0x4dd52733.adsl.cybercity.dk
-User-Agent: KNode/0.10.9
+	id S1753866Ab1GBHgd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 03:36:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:33293 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628Ab1GBHgc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 03:36:32 -0400
+Date: Sat, 2 Jul 2011 11:36:25 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Balbir Singh <bsingharora@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
+        Eric Paris <eparis@redhat.com>, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH 2/2] taskstats: restrict access to user
+Message-ID: <20110702073625.GA3318@albatros>
+References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
+ <BANLkTi=dTHGK1QVs+g2tA6WocQ64SPPF3g@mail.gmail.com>
+ <20110629201718.GA11071@albatros>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110629201718.GA11071@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, I've written about this before and it just happened again:
+On Thu, Jun 30, 2011 at 00:17 +0400, Vasiliy Kulikov wrote:
+> On Wed, Jun 29, 2011 at 06:57 +0530, Balbir Singh wrote:
+> > On Fri, Jun 24, 2011 at 5:39 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> > > +               task = find_task_by_vpid(s->pid);
+> > > +               if (!task || __task_cred(task)->euid != cred->euid) {
+> 
+> If consider this patch for inclusion, it also needs some check for
+> the listener root ability.  __task_cred(task)->euid == 0 or smth like
+> that.  But ptrace_task_may_access_current() is better.
 
-I have an AGK hard disk docking station, like this:
+So...  What to do with this patch?  Should I resend it with euid==0 and
+rcu optimication, wait for the new ptrace interface or what?
 
-http://www.agknordic.com/index.php?side_id=387
-
-Kernel is 2.6.38-gentoo-r6.
-
-The problem is that on rare occasions, the machine crashes when I power the
-device on. Like right now, Num lock and Caps lock blinking. There's nothing
-in the log, other that a couple of lines of ^@. The machine didn't respond
-to external ssh or pings.
-
->From now on, I'll try turning it on and then connecting its USB.
 
 Thanks,
-Niels
 
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
