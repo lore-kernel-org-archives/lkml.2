@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752094Ab1GBGJr (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 02:09:47 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:60469 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751120Ab1GBGJq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 02:09:46 -0400
-Date: Sat, 2 Jul 2011 11:39:29 +0530
-From: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        yrl.pp-manager.tt@hitachi.com
-Subject: Re: [RFC PATCH -tip ] [BUGFIX] x86: Remove preempt disabling from
-	kprobes
-Message-ID: <20110702060929.GA5511@in.ibm.com>
-Reply-To: ananth@in.ibm.com
-References: <4E0DC859.6050405@hitachi.com> <20110701131408.30886.45766.stgit@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110701131408.30886.45766.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1751890Ab1GBGir (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 02:38:47 -0400
+Received: from mail.perches.com ([173.55.12.10]:3495 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751109Ab1GBGiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 02:38:46 -0400
+Subject: [PATCH] MAINTAINERS: Orphan FrameRelay DLCI
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 01 Jul 2011 23:38:43 -0700
+Message-ID: <1309588723.18925.2.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 10:14:08PM +0900, Masami Hiramatsu wrote:
-> Steven Rostedt reported that putting kprobe on the instruction which
-> loads preempt_count causes the wrong result, as below.
-> 
-> Kprobes requires preemption to be disabled as it single steps the code
-> it replaced with a breakpoint. But because the code that is single
-> stepped could be reading the preempt count, the kprobe disabling of the
-> preempt count can cause the wrong value to end up as a result. Here's an
-> example:
+Mike McLagan hasn't contributed in many years
+and his email bounces.
 
-...
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ MAINTAINERS |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-> We just caused preempt count to increment twice when it should have only
-> incremented once, and this screws everything else up.
-> 
-> To solve this, I've removed preempt disabling code from kprobes,
-> since the breakpoint exception and kprobes single step routine
-> disables interrupts, it doesn't need to disable preemption while
-> single-stepping anymore.
-> 
-> This patch is for -tip tree, and it can be applied to linus tree too.
-> 
-> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-> Reported-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
+diff --git a/MAINTAINERS b/MAINTAINERS
+index c1d8b98..d1b88a4 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2626,9 +2626,8 @@ S:	Maintained
+ F:	arch/x86/math-emu/
+ 
+ FRAME RELAY DLCI/FRAD (Sangoma drivers too)
+-M:	Mike McLagan <mike.mclagan@linux.org>
+ L:	netdev@vger.kernel.org
+-S:	Maintained
++S:	Orphan
+ F:	drivers/net/wan/dlci.c
+ F:	drivers/net/wan/sdla.c
+ 
 
-Acked-by: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+
