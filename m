@@ -1,72 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754057Ab1GBJ7W (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 05:59:22 -0400
-Received: from mail.southpole.se ([193.12.106.18]:53325 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753660Ab1GBJ7T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 05:59:19 -0400
-From: Jonas Bonn <jonas@southpole.se>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: hans-christian.egtvedt@atmel.com, lethal@linux-sh.org,
-        Jonas Bonn <jonas@southpole.se>
-Subject: [PATCH 1/2] asm-generic: adapt delay.h to common implementation
-Date: Sat,  2 Jul 2011 11:59:13 +0200
-Message-Id: <1309600754-21217-1-git-send-email-jonas@southpole.se>
-X-Mailer: git-send-email 1.7.4.1
-X-Assp-Client-SSL: yes
+	id S1754111Ab1GBKIZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 06:08:25 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:53664 "EHLO mail.mnsspb.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751006Ab1GBKIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 06:08:23 -0400
+Date: Sat, 2 Jul 2011 14:07:12 +0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-uvc-devel@lists.berlios.de,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 2/2] USB: EHCI: Allow users to override 80% max
+	periodic bandwidth
+Message-ID: <20110702100712.GA18338@tugrik.mns.mnsspb.ru>
+References: <cover.1309520144.git.kirr@mns.spb.ru> <69ea2dd940481508f190419c53c780b626460b22.1309520144.git.kirr@mns.spb.ru> <20110701212427.GA11831@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110701212427.GA11831@kroah.com>
+Organization: Marine Bridge & Navigation Systems
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 01, 2011 at 02:24:27PM -0700, Greg KH wrote:
+> On Fri, Jul 01, 2011 at 03:47:11PM +0400, Kirill Smelkov wrote:
+> >  drivers/usb/host/ehci-sysfs.c |  104 +++++++++++++++++++++++++++++++++++++++--
+> 
+> As you are adding new sysfs files, it is required that you also add new
+> entries in the Documentation/ABI/ directory.
+> 
+> Please do that for these files so that people have an idea of what they
+> are, and how to use them.
+> 
+> Care to redo this series with that change?
 
-Several architectures are using a common delay.h implementation that
-appears to have originated with the x86 architecture.  This common
-implementation is a bit fuller than the current asm-generic version
-and has some compile-time checks that should be interesting for all
-architectures.
+Sure, I'll post v4 with documentation included.
 
-This patch takes the common delay.h version and replaces the rather
-trivial asm-generic version with it.  As no architecture was actually
-using asm-generic/delay.h, this change is rather innocuous; it will,
-however, allow us to switch at least four architectures over to using
-the asm-generic version.
-
-Signed-off-by: Jonas Bonn <jonas@southpole.se>
----
- include/asm-generic/delay.h |   16 +++++++++++++++-
- 1 files changed, 15 insertions(+), 1 deletions(-)
-
-diff --git a/include/asm-generic/delay.h b/include/asm-generic/delay.h
-index 4586fec..6511b99 100644
---- a/include/asm-generic/delay.h
-+++ b/include/asm-generic/delay.h
-@@ -1,9 +1,23 @@
- #ifndef __ASM_GENERIC_DELAY_H
- #define __ASM_GENERIC_DELAY_H
- 
-+/* Undefined functions to get compile-time errors */
-+extern void __bad_udelay(void);
-+extern void __bad_ndelay(void);
-+
- extern void __udelay(unsigned long usecs);
-+extern void __ndelay(unsigned long nsecs);
-+extern void __const_udelay(unsigned long xloops);
- extern void __delay(unsigned long loops);
- 
--#define udelay(n) __udelay(n)
-+/* 0x10c7 is 2**32 / 1000000 (rounded up) */
-+#define udelay(n) (__builtin_constant_p(n) ? \
-+	((n) > 20000 ? __bad_udelay() : __const_udelay((n) * 0x10c7ul)) : \
-+	__udelay(n))
-+
-+/* 0x5 is 2**32 / 1000000000 (rounded up) */
-+#define ndelay(n) (__builtin_constant_p(n) ? \
-+	((n) > 20000 ? __bad_ndelay() : __const_udelay((n) * 5ul)) : \
-+	__ndelay(n))
- 
- #endif /* __ASM_GENERIC_DELAY_H */
--- 
-1.7.4.1
-
+Thanks,
+Kirill
