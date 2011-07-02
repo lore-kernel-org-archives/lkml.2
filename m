@@ -1,73 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753999Ab1GBJwx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 05:52:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:60198 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753865Ab1GBJww (ORCPT
+	id S1753997Ab1GBJ6O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 05:58:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:35952 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753660Ab1GBJ6N convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 05:52:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH] AT91: add AT91SAM9X5 dummy configuration variable
-Date: Sat, 2 Jul 2011 11:49:41 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: balbi@ti.com, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, plagnioj@jcrosoft.com,
-        avictor.za@gmail.com
-References: <1309260927-11411-1-git-send-email-nicolas.ferre@atmel.com> <20110628122650.GK2612@legolas.emea.dhcp.ti.com> <4E0B43BA.803@atmel.com>
-In-Reply-To: <4E0B43BA.803@atmel.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107021149.41703.arnd@arndb.de>
-X-Provags-ID: V02:K0:8QIVg9d+LH99fWc5z2hMz2+K+8tdsqUgmh/4fxe+zgM
- Ht3IskXLY6YcNEdz3fbZhZrfinG/fOssGZkYwY6YlwFatcPSwj
- upw85ItRsOfT1v0/TIidGm++84uX5TqMBsbEluE9Dlw6JknbuU
- xs7YVIEWzksGwbHrtbVKlVEnwzf3sTS26iFZgpVJL7Cmulu/mg
- pf4ATafoDeGDtW8P9X09A==
+	Sat, 2 Jul 2011 05:58:13 -0400
+Subject: Re: [patch 1/1] sched: update_curr versus correct cfs_rq in
+ check_preempt_wakeup
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Mike Galbraith <efault@gmx.de>
+In-Reply-To: <20110702090817.GB17482@elte.hu>
+References: <20110702005222.262883892@google.com>
+	 <20110702005228.481583467@google.com>  <20110702090817.GB17482@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 02 Jul 2011 11:57:05 +0200
+Message-ID: <1309600625.10073.8.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 29 June 2011 17:24:42 Nicolas Ferre wrote:
-> > Here are a few questions:
-> > i) The drivers you're willing to send, are those for Atmel's IPs or are
-> >       the IPs sourced from some other company ?
-> > ii) Even if they are Atmel-specific, do you see the possibility of Atmel
-> >       licensing them ?
-> > iii) Does your driver current depend on asm/ or mach/ headers ?
-> > iv) Is there a generic header which you could use instead of asm/ mach/ ?
+On Sat, 2011-07-02 at 11:08 +0200, Ingo Molnar wrote:
+> * Paul Turner <pjt@google.com> wrote:
 > 
-> I just want to hide drivers that are not relevant for others: I have the feeling
-> that it is a good practice. This tiny patch will ease this during my publication
-> flow. Do you seriously care?
+> > We update_curr() versus the current entity as the preemption 
+> > decision is based on the relative vruntime.  However, update_curr() 
+> > is not hierarchical and in the group scheduling case 
+> > find_matching_se() will have us making the comparison on a cfs_rq 
+> > different to the one just updated.
+> 
+> Would be nice to include more contextual information in the 
+> changelog: how did you find it, what effect (if any) did you
+> see from this patch, what effect do you expect others to see
+> (if any).
 
-I think Felipe is right on this one, but both views are common in the kernel
-today: Some people want dependencies to mean "you cannot build this driver
-unless the dependencies are fulfilled", others like them more broadly to
-mean "there is no point to ever enable this driver because I know you won't
-need it".
+Agreed that the Changelog can be improved. From talking to pjt on IRC
+though, I think he spotted this by reading through the code.
 
-Both views are understandable, but I favor the first one because
+The effect of not updating the correct se for comparison is that you
+compare the new task to old data of the existing task, thereby giving a
+slight preference to the old task (its further to the left than it
+should be and thus more desirable to run).
 
-* it's the more common view these days and we should be consistent
+That said, I'm not quite sure the patch is correct though, both se and
+pse can change in find_match_se(), maybe we should do update_curr() on
+every se we traverse in there, or at least the final two.
 
-* it exposes drivers to more build testing. If something changes in
-  the kernel that exposes new warnings in your driver or causes a
-  build error, that is more likely to get fixed when more people
-  find it by doing allyesconfig or randconfig builds.
 
-* If there is an actual build dependency between the driver and the
-  platform that causes you to need the explicit Kconfig depends, that
-  is in many cases a hint that the driver author is doing something
-  wrong, like hardcoding MMIO addresses or referencing custom
-  symbols exported by the platform.
-
-I don't think anyone really objects your patch to introduce the extra
-Kconfig symbol, but I'd hope that we can eventually get a consensus
-on the idea that you shouldn't use Kconfig dependencies based on
-whether a driver is relevant or not.
-
-	Arnd
