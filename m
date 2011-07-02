@@ -1,87 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752115Ab1GBPxl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 11:53:41 -0400
-Received: from mail.southpole.se ([193.12.106.18]:44908 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750994Ab1GBPxj (ORCPT
+	id S1752105Ab1GBQL0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 12:11:26 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:60848 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751504Ab1GBQLZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 11:53:39 -0400
-From: Jonas Bonn <jonas@southpole.se>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Jonas Bonn <jonas@southpole.se>, vapier@gentoo.org,
-        liqin.chen@sunplusct.com, gxt@mprc.pku.edu.cn
-Subject: [PATCH 1/2] asm-generic: add MMU variants of io.h functions
-Date: Sat,  2 Jul 2011 17:53:25 +0200
-Message-Id: <1309622006-28343-1-git-send-email-jonas@southpole.se>
-X-Mailer: git-send-email 1.7.4.1
-X-Assp-Client-SSL: yes
+	Sat, 2 Jul 2011 12:11:25 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=PKUarE_T-c8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=CHiZ6g6q5NVKZL7A0iQA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [patch 03/11] blackfin/irqs: Do not trace arch_local_{*,irq_*}
+ functions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <CAMjpGUfHw-CO=ydCew5FqG0RLQOMk8+NpVjvBdV4Nv-tiDavqg@mail.gmail.com>
+References: <20110702030435.308336775@goodmis.org>
+	 <20110702033853.220897627@goodmis.org>
+	 <CAMjpGUfHw-CO=ydCew5FqG0RLQOMk8+NpVjvBdV4Nv-tiDavqg@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 02 Jul 2011 12:11:22 -0400
+Message-ID: <1309623082.26417.163.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 2011-07-02 at 02:50 -0400, Mike Frysinger wrote:
+> On Fri, Jul 1, 2011 at 23:04, Steven Rostedt wrote:
+> > Do not trace arch_local_save_flags(), arch_local_irq_*() and friends.
+> > Although they are marked inline, gcc may still make a function out of
+> > them and add it to the pool of functions that are traced by the function
+> > tracer. This can cause undesirable results (kernel panic, triple faults,
+> > etc).
+> >
+> > Add the notrace notation to prevent them from ever being traced.
+> 
+> what about putting the markings in include/asm-generic/irqflags.h ?
+> then you wouldnt have to update every arch (or at least, not as much).
 
-Some of the implementations, in particular the ioremap variants, in
-asm-generic/io.h are for systems with an MMU.  In order to be able to
-use the generic header file for systems with an MMU, this patch wraps
-these implementations in checks for CONFIG_MMU.
+One of my patches do that, but it only helps superH, as that's the only
+arch that uses that header and implements function tracing.
 
-Tested on OpenRISC.
+-- Steve
 
-Signed-off-by: Jonas Bonn <jonas@southpole.se>
-Cc: vapier@gentoo.org
-Cc: liqin.chen@sunplusct.com
-Cc: gxt@mprc.pku.edu.cn
----
-
-I'm not totally certain that this doesn't have implications for the
-other architectures, in particular Score which seems to have an MMU yet
-uses these ioremap functions anyway...  Comments on this would be
-appreciated.
-
-Thanks,
-Jonas
-
- include/asm-generic/io.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index e0ffa3d..50f4f43 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -307,7 +307,11 @@ static inline void *phys_to_virt(unsigned long address)
- 
- /*
-  * Change "struct page" to physical address.
-+ *
-+ * This implementation is for the no-MMU case only... if you have an MMU
-+ * you'll need to provide your own definitions.
-  */
-+#ifndef CONFIG_MMU
- static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
- {
- 	return (void __iomem*) (unsigned long)offset;
-@@ -326,6 +330,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
- static inline void iounmap(void *addr)
- {
- }
-+#endif /* CONFIG_MMU */
- 
- #ifndef CONFIG_GENERIC_IOMAP
- static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
-@@ -342,7 +347,12 @@ extern void ioport_unmap(void __iomem *p);
- #endif /* CONFIG_GENERIC_IOMAP */
- 
- #define xlate_dev_kmem_ptr(p)	p
-+
-+#ifdef CONFIG_MMU
-+#define xlate_dev_mem_ptr(p)	__va(p)
-+#else
- #define xlate_dev_mem_ptr(p)	((void *) (p))
-+#endif
- 
- #ifndef virt_to_bus
- static inline unsigned long virt_to_bus(volatile void *address)
--- 
-1.7.4.1
 
