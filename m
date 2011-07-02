@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755237Ab1GBTqw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 15:46:52 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55917 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751340Ab1GBTqu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 15:46:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Bonn <jonas@southpole.se>
-Subject: Re: [PATCH 2/2] iomap: make IOPORT/PCI mapping functions conditional
-Date: Sat, 2 Jul 2011 21:46:15 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1309622006-28343-1-git-send-email-jonas@southpole.se> <1309622006-28343-2-git-send-email-jonas@southpole.se>
-In-Reply-To: <1309622006-28343-2-git-send-email-jonas@southpole.se>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+	id S1755400Ab1GBTyR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 15:54:17 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:48759 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753268Ab1GBTyQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 15:54:16 -0400
+Date: Sat, 2 Jul 2011 21:54:12 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Shawn Starr <shawn.starr@rogers.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>
+Subject: Re: [Bug #37232] [3.0-rc1][NMI/DMAR][iwlagn] errors - PCI system
+ error (SERR) for reason a1 on CPU 0
+Message-ID: <20110702215412.00527491@schatten.dmk.lab>
+In-Reply-To: <4678134.li9aFGSxuF@segfault.sh0n.net>
+References: <VDRaLpg_NZ.A.tnC.JZ6BOB@chimera>
+	<2202361.0SXGgnGr4r@segfault.sh0n.net>
+	<201106292132.12265.rjw@sisk.pl>
+	<4678134.li9aFGSxuF@segfault.sh0n.net>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107022146.15854.arnd@arndb.de>
-X-Provags-ID: V02:K0:yM9XOHSlP34/Oy98Baqn99oip7E/aY4uFhrQemKW8XG
- fca6QYTzFKXDRWSnuvqaB7x+ZEoTUHIKhxdCFQe515KdEwEQkN
- f3ADbhMkZ+nn3RrJ+mH9/XyPlAkaKwDtl/WF829bjlk0pM9dXQ
- d0/qktZVB89GzuFsHrTZ4EoZJKoamFttKgm/Y1yJo30r0y4YnV
- vTPBM+O+Cq1PeBNpderhg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 02 July 2011 17:53:26 Jonas Bonn wrote:
-> Use the CONFIG_HAS_IOPORT and CONFIG_PCI options to decide whether or
-> not functions for mapping these areas are provided.
+On Wed, 29 Jun 2011 23:57:57 -0400
+Shawn Starr <shawn.starr@rogers.com> wrote:
+
+> >>>On Wednesday, June 29, 2011 09:32:12 PM Rafael J. Wysocki wrote:
+> > > On Sunday, June 26, 2011 11:23:44 PM Rafael J. Wysocki wrote:
+> > > This message has been generated automatically as a part of a summary
+> > > report of recent regressions.
+> > > 
+> > > The following bug entry is on the current list of known regressions
+> > > from 2.6.39.  Please verify if it still should be listed and let the
+> > > tracking team know (either way).
+> > > 
+> > > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=37232
+> > > Subject		: [3.0-rc1][NMI/DMAR][iwlagn] errors - PCI system error (SERR) for reason a1 on CPU 0
+> > > Submitter	: Shawn Starr <XXXX.XX@rogers.com>
+> > > Date		     : 2011-06-03 4:56 (24 days old)
+> > > Message-ID: <4478124.OuFNgaPiHS@segfault.sh0n.net>
+> > > References	: http://marc.info/?l=linux-kernel&m=130707737616116&w=2
 > 
-> Signed-off-by: Jonas Bonn <jonas@southpole.se>
+> >>> Thanks for the update.
+> >>> Rafael
+> 
+> Hello Rafael/Linux devs,
+> 
+> You can close this bug now, regression is gone now. Both the SERR and the DMAR  (coming from iwlagn)
+> errors are resolved.
+> 
+> Working in: -rc5 (Fedora rawhide 3.0-0.rc5.git0.1.fc16.x86_64)
+> 
 
-Good catch!
+Is this a vanilla linux kernel or has it out of tree patches?
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
-
-Did you get a build error without the two options, or did you just have an
-idea to save a bit of code size?
-
-	Arnd
+> Thanks,
+> Shawn.
