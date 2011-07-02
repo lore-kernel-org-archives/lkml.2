@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751687Ab1GBAGx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 20:06:53 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:35822 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab1GBAGw convert rfc822-to-8bit (ORCPT
+	id S1751675Ab1GBAbJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 20:31:09 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:38482 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab1GBAbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 20:06:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTimGAuyMP43eDUet7Ts0XU9WQRYbyQ@mail.gmail.com>
-References: <BANLkTimGAuyMP43eDUet7Ts0XU9WQRYbyQ@mail.gmail.com>
-Date: Sat, 2 Jul 2011 08:06:51 +0800
-Message-ID: <BANLkTinDh+JXmy=vdy3XgNzurt2PuHrKfw@mail.gmail.com>
-Subject: tick_setup_device in tick-common.c
-From: chao xie <xiechao.linux@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 1 Jul 2011 20:31:08 -0400
+Date: Fri, 01 Jul 2011 17:30:57 -0700 (PDT)
+Message-Id: <20110701.173057.2255930046909364966.davem@davemloft.net>
+To: arnd@arndb.de
+Cc: f6bvp@free.fr, ralf@linux-mips.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-hams@vger.kernel.org
+Subject: Re: [PATCH] 6pack,mkiss: fix lock inconsistency
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201107012328.46256.arnd@arndb.de>
+References: <20110625163942.GB20976@linux-mips.org>
+	<4E0DC4F3.6010203@free.fr>
+	<201107012328.46256.arnd@arndb.de>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Fri, 01 Jul 2011 17:30:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi
-I am very strange about this function.
-In this function, it has
-/*
-        * When the device is not per cpu, pin the interrupt to the
-        * current cpu:
-        */
-       if (!cpumask_equal(newdev->cpumask, cpumask))
-               irq_set_affinity(newdev->irq, cpumask);
+From: Arnd Bergmann <arnd@arndb.de>
+Date: Fri, 1 Jul 2011 23:28:46 +0200
 
-When the clock event device has cpu_mask set to be cpumask_of(1), it
-means that the device is bound to cpu1. So above code has covered it,
-but why we have "!cpumask_equal(newdev->cpumask, cpumask)"?
-if the "newdev->cpumask" equals "cpumask", cpumask_equal will return
-1, and at this situation we will set the irq affinity because the
-device is bound to the dedicated cpu.
+> Lockdep found a locking inconsistency in the mkiss_close function:
+> 
+>> kernel: [ INFO: inconsistent lock state ]
+>> kernel: 2.6.39.1 #3
+>> kernel: ---------------------------------
+>> kernel: inconsistent {IN-SOFTIRQ-R} -> {SOFTIRQ-ON-W} usage.
+>> kernel: ax25ipd/2813 [HC0[0]:SC0[0]:HE1:SE1] takes:
+>> kernel: (disc_data_lock){+++?.-}, at: [<ffffffffa018552b>] mkiss_close+0x1b/0x90 [mkiss]
+>> kernel: {IN-SOFTIRQ-R} state was registered at:
+> 
+> The message hints that disc_data_lock is aquired with softirqs disabled,
+> but does not itself disable softirqs, which can in rare circumstances
+> lead to a deadlock. 
+> The same problem is present in the 6pack driver, this patch fixes both
+> by using write_lock_bh instead of write_lock.
+> 
+> Reported-by: Bernard F6BVP <f6bvp@free.fr>
+> Tested-by: Bernard F6BVP <f6bvp@free.fr>
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Ralf Baechle<ralf@linux-mips.org>
+> Cc: stable@kernel.org
 
-Is there a bug, or i understand wrong about cpumask of clock_event_device?
-Thanks.
+Applied, thanks!
