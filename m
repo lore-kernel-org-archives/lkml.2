@@ -1,47 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751890Ab1GBGir (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 02:38:47 -0400
-Received: from mail.perches.com ([173.55.12.10]:3495 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751109Ab1GBGiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 02:38:46 -0400
-Subject: [PATCH] MAINTAINERS: Orphan FrameRelay DLCI
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 01 Jul 2011 23:38:43 -0700
-Message-ID: <1309588723.18925.2.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1753652Ab1GBGuW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 02:50:22 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:39680 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753564Ab1GBGuV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 02:50:21 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110702033853.220897627@goodmis.org>
+References: <20110702030435.308336775@goodmis.org> <20110702033853.220897627@goodmis.org>
+From: Mike Frysinger <vapier@gentoo.org>
+Date: Sat, 2 Jul 2011 02:50:00 -0400
+X-Google-Sender-Auth: AOc9UiBznS2zaAQXcOde6Lj05nE
+Message-ID: <CAMjpGUfHw-CO=ydCew5FqG0RLQOMk8+NpVjvBdV4Nv-tiDavqg@mail.gmail.com>
+Subject: Re: [patch 03/11] blackfin/irqs: Do not trace arch_local_{*,irq_*} functions
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike McLagan hasn't contributed in many years
-and his email bounces.
+On Fri, Jul 1, 2011 at 23:04, Steven Rostedt wrote:
+> Do not trace arch_local_save_flags(), arch_local_irq_*() and friends.
+> Although they are marked inline, gcc may still make a function out of
+> them and add it to the pool of functions that are traced by the function
+> tracer. This can cause undesirable results (kernel panic, triple faults,
+> etc).
+>
+> Add the notrace notation to prevent them from ever being traced.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index c1d8b98..d1b88a4 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -2626,9 +2626,8 @@ S:	Maintained
- F:	arch/x86/math-emu/
- 
- FRAME RELAY DLCI/FRAD (Sangoma drivers too)
--M:	Mike McLagan <mike.mclagan@linux.org>
- L:	netdev@vger.kernel.org
--S:	Maintained
-+S:	Orphan
- F:	drivers/net/wan/dlci.c
- F:	drivers/net/wan/sdla.c
- 
-
-
+what about putting the markings in include/asm-generic/irqflags.h ?
+then you wouldnt have to update every arch (or at least, not as much).
+-mike
