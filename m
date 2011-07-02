@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab1GBQrm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 12:47:42 -0400
-Received: from mail.southpole.se ([193.12.106.18]:41139 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752308Ab1GBQrk (ORCPT
+	id S1754897Ab1GBQuv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 12:50:51 -0400
+Received: from mother.openwall.net ([195.42.179.200]:32977 "HELO
+	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752455Ab1GBQur (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 12:47:40 -0400
-Subject: Re: [PATCH 1/2] asm-generic: add MMU variants of io.h functions
-From: Jonas Bonn <jonas@southpole.se>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        liqin.chen@sunplusct.com, gxt@mprc.pku.edu.cn
-In-Reply-To: <CAMjpGUfZwZu-ZCJj2cmq1w6B71-gQ8G27FpYdhseyq3hoZRL+Q@mail.gmail.com>
-References: <1309622006-28343-1-git-send-email-jonas@southpole.se>
-	 <CAMjpGUfZwZu-ZCJj2cmq1w6B71-gQ8G27FpYdhseyq3hoZRL+Q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: South Pole Consulting AB
-Date: Sat, 02 Jul 2011 18:47:30 +0200
-Message-ID: <1309625250.24186.1224.camel@localhost>
+	Sat, 2 Jul 2011 12:50:47 -0400
+Date: Sat, 2 Jul 2011 20:50:35 +0400
+From: Solar Designer <solar@openwall.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        kernel-hardening@lists.openwall.com,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-security-module@vger.kernel.org
+Subject: Re: [RFC] ipc: introduce shm_rmid_forced sysctl
+Message-ID: <20110702165035.GC26232@openwall.com>
+References: <20110622152514.GA9521@albatros> <20110629151436.9be479fb.akpm@linux-foundation.org> <20110701112534.GG20990@elte.hu> <20110701113533.GA19945@albatros>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
-X-Assp-Client-SSL: yes
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110701113533.GA19945@albatros>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Sat, 2011-07-02 at 12:38 -0400, Mike Frysinger wrote:
-> On Sat, Jul 2, 2011 at 11:53, Jonas Bonn wrote:
-> > Some of the implementations, in particular the ioremap variants, in
-> > asm-generic/io.h are for systems with an MMU.
+On Fri, Jul 01, 2011 at 03:35:33PM +0400, Vasiliy Kulikov wrote:
+> From -ow readme:
 > 
-> do you mean "without an MMU" ?
-
-Yes, of course... that's supposed to be _without_ an MMU.
-
+> "Of course, this breaks the way things are defined, so some applications
+> might stop working. In particular, expect most commercial databases to
+> break. Apache and PostgreSQL are known to work, though. :-)"
 > 
-> > +#ifdef CONFIG_MMU
-> > +#define xlate_dev_mem_ptr(p)   __va(p)
-> > +#else
-> >  #define xlate_dev_mem_ptr(p)   ((void *) (p))
-> > +#endif
+> http://www.openwall.com/linux/README.shtml
 > 
-> i wonder if we could do:
-> #ifndef __va
-> #define __va(p) ((void *)(p))
-> #endif
-> #define xlate_dev_mem_ptr(p)   __va(p)
-> -mike
+> But as it was written in days of Linux 2.4.x, the situation could have
+> changed.  A desktop system seems to work.
 
-This seems to introduce an artificial definition of a "virtual" address
-for systems without an MMU, which strikes me as a bit odd.  If this is
-what people prefer, that's fine... I think I prefer the former variant,
-though.
+I wrote the above in 2.0.x days (circa 1998) and it was based on FUD
+rather than on any real evidence of any breakage.  Apache and PostgreSQL
+were a couple of known users of shared memory segments, and these did
+not break.  I was not aware of any programs that presumably did break.
+Of course, those probably do exist, but I don't recall anyone ever
+reporting any to me (as maintainer of -ow patches), although the warning
+quoted above might have played a role in such non-reporting.
 
-/Jonas
-
+Alexander
