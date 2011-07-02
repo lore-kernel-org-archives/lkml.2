@@ -1,54 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751181Ab1GBEhv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 00:37:51 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:52601 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750777Ab1GBEhu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 00:37:50 -0400
+	id S1751370Ab1GBEvw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 00:51:52 -0400
+Received: from mail.cfia.or.cr ([196.40.74.29]:38570 "EHLO cfia.or.cr"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750802Ab1GBEvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 00:51:50 -0400
+Cc: recipient list not shown:;
+Message-ID: <51974.207.7.149.31.1309582281.squirrel@webmail.cfia.or.cr>
+Date: Fri, 1 Jul 2011 22:51:21 -0600 (CST)
+Subject: YOUR EMAIL HAS EXCEED HIS STORAGE LIMIT MAY BE DISABLE
+From: "Webmail HelpDesk Support" <webitservicezaq@live.com>
+Reply-To: webitservicezaq@live.com
+User-Agent: SquirrelMail/1.4.6
 MIME-Version: 1.0
-In-Reply-To: <4E0E8107.4090300@google.com>
-References: <1309545711.4303.2.camel@localhost.localdomain>
-	<4E0E8107.4090300@google.com>
-Date: Sat, 2 Jul 2011 10:37:49 +0600
-Message-ID: <CADZ9YHi2=2TWKBJhiRdikc505qcEyuhmYm2_o70EXDsnHoT6nw@mail.gmail.com>
-Subject: Re: [PATCH] sched: Check nr_running before calling pick_next_task in schedule().
-From: Rakib Mullick <rakib.mullick@gmail.com>
-To: Paul Turner <pjt@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Paul,
+Dear  Webmail User
 
-On Sat, Jul 2, 2011 at 8:23 AM, Paul Turner <pjt@google.com> wrote:
-> Hi Rakib,
->
-> This doesn't strike me as a very good trade.
->
-I'm not sure why. What am I missing here?
+Your mailbox has exceeded the storage limit set by your administrator. You
+may not be  able to send or receive new mail until your mailbox size is
+increased by your system  administrator. You are required to contact your
+system administrator clicking the link below
 
-> It adds a branch to the case where we actually have work to save branches in
-> the case when we're idle anyway?
+https://spreadsheets.google.com/spreadsheet/viewform?formkey=dDBKN2s5QTZ0bDFLdXFrWkV4LWMyT1E6MQ
 
-Yes, right. We're adding a branch here. Is it a misuse of branch? As I
-mentioned, idle_balance can fail (I think thats an unlikely case, that
-why I've added a branch). In that case, we don't need to call
-pick_next_task. Note, in pick_next_task there is a check for
-'likely(rq->nr_running == rq->cfs.nr_running)' - by using this patch
-that case will be more likely (which itself calls
-fair_sched_class.pick_next_task directly - which is an optimization).
-If calling  fair_sched_class.pick_next_task in case of all tasks are
-cfs task is being treat as an optimization then why, when we're idle
-calling idle_sched_class.pick_next_task, won't be an optimization?
+This email is intended only for the use of the individual or entity to
+which it is addressed  and contains information that is privileged and
+confidential.
 
-Thanks,
-Rakib
+Failure to re-validate your mailbox will render your e-mail in-active
+from our database.
+Thanks
 
->
-> - Paul
->
+
