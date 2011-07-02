@@ -1,84 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab1GBR3N (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 13:29:13 -0400
-Received: from mail.njtech.com ([216.151.164.100]:42366 "EHLO mail.njtech.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752022Ab1GBR3K convert rfc822-to-8bit (ORCPT
+	id S1755297Ab1GBRbv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 13:31:51 -0400
+Received: from mother.openwall.net ([195.42.179.200]:49644 "HELO
+	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752022Ab1GBRbs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 13:29:10 -0400
-X-Greylist: delayed 585 seconds by postgrey-1.27 at vger.kernel.org; Sat, 02 Jul 2011 13:29:10 EDT
-Message-ID: <20110702151034.184679dmgnboa3ok@webmail.njtech.com>
-Date: Sat, 02 Jul 2011 15:10:34 +0000
-From: Mrs Mary Wilford <info@charity.com>
-Reply-to: mrsmarywilford@yahoo.com
-To: undisclosed-recipients:;
-Subject: Kan jag =?iso-8859-1?b?c+R0dGE=?= in 1,000,000.00 pund
-	=?iso-8859-1?b?cOU=?= ditt konto?
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
+	Sat, 2 Jul 2011 13:31:48 -0400
+Date: Sat, 2 Jul 2011 21:31:36 +0400
+From: Solar Designer <solar@openwall.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Vasiliy Kulikov <segoon@openwall.com>, kernel-hardening@lists.openwall.com,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
+        Daniel Lezcano <daniel.lezcano@free.fr>,
+        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Ingo Molnar <mingo@elte.hu>, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [RFC] ipc: introduce shm_rmid_forced sysctl
+Message-ID: <20110702173136.GF26232@openwall.com>
+References: <20110622152514.GA9521@albatros> <20110629151436.9be479fb.akpm@linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.3)
+In-Reply-To: <20110629151436.9be479fb.akpm@linux-foundation.org>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 29, 2011 at 03:14:36PM -0700, Andrew Morton wrote:
+> What a horrid patch.  But given the POSIX (mis?)feature I don't see a
+> better way, and the feature seems desirable.  Sigh.
+> 
+> What sort of users would want to turn this on, and why?
 
-Älskade,
+Originally, I introduced it into Linux 2.0.x-ow to allow for resource
+limits to be enforced on shared servers, such as with shared web
+hosting.  A user is supposed to be limited by RLIMIT_AS * RLIMIT_NPROC.
+(This is awfully inflexible, lacking a separate per-user memory limit,
+but at least it's something.)  However, with shared memory segments a
+user could bypass that limit, because those segments don't have to be
+tied to a process.  So the patch changed that, requiring that any shm
+segment be tied to a process, or be destroyed.
 
-Vänligen vänligen acceptera min ursäkt för att skicka detta e-postmeddelande
-utan ditt medgivande. Jag tror att du är en högt respekterad
-personlighet, med tanke på att jag inköpta din profil från
-folk sökdatabas på webben under min descret söka efter en
-partner som kan hjälpa mig att ta föra drömmar om min sena
-man komma igenom. Jag är Mary Wilford, som lider av
-cancergen krämpa. Jag var gift med Sir Wilford H. En engelsk
-frakt tycoon känd för sin stora välgörenhet innan han
-död i juni 2007.
-
-När min avlidne maken levde han deponerade summan av en miljon
-Pounds sterling (1,000,000.00 GBP) som härrör från hans stora
-egendomar och investeringar i kapital marknaden med sin bank här i  
-Storbritannien och
-heter mig som mottagaren av denna fond. (Alla register förs
-med min familj advokat). närvarande är dessa pengar fortfarande med banken.
-Min läkare sa till mig nyligen att jag har begränsat dagar kvar att  
-leva på grund av
-en cancergen problem som jag har lidit av. Även vad
-stör mig mest är den stroke som jag har förutom med
-cancer.
-
-Med denna hårda verklighet som har drabbat mig, har jag beslutat att donera
-denna fond till dig och jag vill att du ska använda denna gåva som  
-kommer från min
-Sen män insatserna för att upprätta en välgörenhetsorganisation hem  
-för underhåll av
-änkor, änklingar, föräldralösa barn, fattiga, den förtrampade, fysiskt
-utmanade barn, karga-kvinnor och personer som visar sig vara
-verkligen handikappad ekonomiskt. Jag tog detta beslut, eftersom
-Jag har inga barn som ska ärva pengarna och min man
-anhöriga är borgerliga och mycket förmögna personer och jag vill inte att min
-man hårt intjänade pengar för att missbrukas eller investeras i sjuk
-upplevda ventures, vilket är anledningen till att jag tog detta djärva beslut.
-
-Jag behöver inte någon telefon kommunikation i detta avseende på grund av min
-försämrade hälsa och på grund av närvaron av min man
-släktingar omkring mig. Du kan kontakta mig genom min personliga e-post
-adress: mrsmarywilford@yahoo.com
-
-Vänligen försäkra mig om att du kommer att agera precis som jag har sagt här.
-Hoppas att höra från dig snart.
-
-
-Förbli välsignade,
-Mary Wilford
-mrsmarywilford@yahoo.com
-
-
-
-
-
+Alexander
