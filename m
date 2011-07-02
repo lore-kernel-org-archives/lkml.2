@@ -1,56 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab1GBUQW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 16:16:22 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:60140 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755595Ab1GBUQU (ORCPT
+	id S1755738Ab1GBUe6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 16:34:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47067 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753937Ab1GBUe5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 16:16:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Bonn <jonas@southpole.se>
-Subject: Re: [PATCH 2/2] iomap: make IOPORT/PCI mapping functions conditional
-Date: Sat, 2 Jul 2011 22:15:47 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1309622006-28343-1-git-send-email-jonas@southpole.se> <201107022146.15854.arnd@arndb.de> <1309636466.24186.1439.camel@localhost>
-In-Reply-To: <1309636466.24186.1439.camel@localhost>
+	Sat, 2 Jul 2011 16:34:57 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107022215.47324.arnd@arndb.de>
-X-Provags-ID: V02:K0:MBMyFjDq7NQuat1YfYmXl+5KuUQaj7DkRLw1gXTMGM7
- EUuC0QvCo/uXkpINqgUhTFihRhuRj7KNjCiRp5nl8KOLnOd8DO
- JduRWmdR7W1Use+CfBVkptXXzrUnaakU05ams4ShixvOkMYUcl
- 0JRf5qigfwDiKGlzHeGmPnZtV3p712QuEvvXZ/H+5cQ/RGSBgY
- +AZk94G8EkZYgNpvvH7TQ==
+In-Reply-To: <20110702203323.03462aef@lxorguk.ukuu.org.uk>
+References: <20110626194618.GA21740@elte.hu> <20110626202518.GA4915@albatros>
+ <20110626220126.GA24004@elte.hu> <20110627083633.GA5846@albatros>
+ <20110627104058.45e93c41@pyx> <20110627183829.GA16033@albatros>
+ <BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com> <20110701120059.GL20990@elte.hu>
+ <20110701125411.GA21551@albatros> <20110701152051.763fd594@lxorguk.ukuu.org.uk>
+ <20110702164243.GB26232@openwall.com> <20110702203323.03462aef@lxorguk.ukuu.org.uk>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 2 Jul 2011 13:34:33 -0700
+Message-ID: <CA+55aFx6ShKkDjt=xdLPY1iVr4u06DMs41g-6HEqsPO8NhZAjA@mail.gmail.com>
+Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in printk()
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Solar Designer <solar@openwall.com>, kernel-hardening@lists.openwall.com,
+        Vasiliy Kulikov <segoon@openwall.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 02 July 2011 21:54:26 Jonas Bonn wrote:
-> On Sat, 2011-07-02 at 21:46 +0200, Arnd Bergmann wrote:
-> > On Saturday 02 July 2011 17:53:26 Jonas Bonn wrote:
-> > > Use the CONFIG_HAS_IOPORT and CONFIG_PCI options to decide whether or
-> > > not functions for mapping these areas are provided.
-> > > 
-> > > Signed-off-by: Jonas Bonn <jonas@southpole.se>
-> > 
-> > Good catch!
-> > 
-> > Acked-by: Arnd Bergmann <arnd@arndb.de>
-> > 
-> > Did you get a build error without the two options, or did you just have an
-> > idea to save a bit of code size?
-> > 
-> 
-> There was no build error; I just figured it would aid in debugging if
-> you got a compile-time error when trying to build drivers that use these
-> functions for a platform that lacked them.  Smaller code is always nice,
-> too.
+On Sat, Jul 2, 2011 at 12:33 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>
+> No but you could make "dmesg" do filtering.
 
-Right. Did you also see the related discussion at
-http://lkml.org/lkml/2011/7/1/422 ?
+So I really hate doing the filtering at the level that the original
+patch did, but I would _not_ mind doing the filtering at "vsnprintf()"
+time.
 
-	Arnd
+Even without some magic "safe" flag, in fact.
+
+So I would not even be opposed to "%s" just doing filtering (including
+considering "\n" to be a control character) by default. So "\n" would
+be ok in the format string (where it is pretty common), but not for
+%s.
+
+For kernel uses that really want raw strings, we could have a %p
+sequence, the way we handle other special formats.
+
+However, that would be a patch that would need a lot more testing,
+since we'd have to find the users that really do want control
+characters.
+
+                              Linus
