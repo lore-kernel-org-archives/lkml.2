@@ -1,137 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab1GBAj5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 20:39:57 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34188 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751240Ab1GBAj4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 20:39:56 -0400
-Message-ID: <4E0E6916.50406@gmail.com>
-Date: Sat, 02 Jul 2011 10:40:54 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1752062Ab1GBAuj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 20:50:39 -0400
+Received: from isrv.corpit.ru ([86.62.121.231]:55509 "EHLO isrv.corpit.ru"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751735Ab1GBAug (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 20:50:36 -0400
+Message-ID: <4E0E6B59.2000303@msgid.tls.msk.ru>
+Date: Sat, 02 Jul 2011 04:50:33 +0400
+From: Michael Tokarev <mjt@tls.msk.ru>
+Organization: Telecom Service, JSC
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.16) Gecko/20110506 Icedove/3.0.11
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Bill Gatliff <bgat@billgatliff.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Ryan Mallon <ryan@bluewatersys.com>
-Subject: Re: [PATCH 1/3] PWM: add pwm framework support
-References: <1309430517-23821-1-git-send-email-s.hauer@pengutronix.de> <1309430517-23821-2-git-send-email-s.hauer@pengutronix.de> <BANLkTikQGFA7XcuAtEEi7_4m-j6-00sZ6Q@mail.gmail.com> <201106301441.24493.arnd@arndb.de> <BANLkTin_htv2z3D9Bbf6N8Y7UKFRvPtvOg@mail.gmail.com> <20110630170229.GP6069@pengutronix.de> <4E0D0595.5070205@gmail.com> <20110701073755.GR6069@pengutronix.de> <4E0D8540.2020200@gmail.com> <20110701085414.GV6069@pengutronix.de>
-In-Reply-To: <20110701085414.GV6069@pengutronix.de>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        viro@ZenIV.linux.org.uk
+Subject: Re: [-v3] vfs: make unlink() and rmdir() return ENOENT in preference
+ to EROFS
+References: <1307402380-14166-1-git-send-email-tytso@mit.edu>
+In-Reply-To: <1307402380-14166-1-git-send-email-tytso@mit.edu>
+X-Enigmail-Version: 1.0.1
+OpenPGP: id=804465C5
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 01/07/11 18:54, Sascha Hauer wrote:
-> On Fri, Jul 01, 2011 at 06:28:48PM +1000, Ryan Mallon wrote:
->> On 01/07/11 17:37, Sascha Hauer wrote:
->>> On Fri, Jul 01, 2011 at 09:24:05AM +1000, Ryan Mallon wrote:
->>>> On 01/07/11 03:02, Sascha Hauer wrote:
->>>>> Bill,
->>>>>
->>>>> On Thu, Jun 30, 2011 at 11:17:54AM -0500, Bill Gatliff wrote:
->>>>>> Guys:
->>>>>>
->>>>>> On Thu, Jun 30, 2011 at 7:41 AM, Arnd Bergmann<arnd@arndb.de>  wrote:
->>>>>>
->>>>>>> A lot of people want to see a framework get merged, and I think it's
->>>>>>> great that Sascha has volunteered to do the work to push that
->>>>>>> through this time, especially since you have not been able to
->>>>>>> finish your work.
->>>>>> Sascha is wasting his time by reinventing the wheel.  He's traveling
->>>>>> over exactly the same path I have already covered.  In fact, some of
->>>>>> his reviewer comments are almost word-for-word the same as those I
->>>>>> have received and addressed in the past.
->>>>>>
->>>>>> My patches were always kept current in this mailing list and others,
->>>>>> and Sascha clearly has the skills necessary to make improvements and
->>>>>> corrections should he have chosen to do so.
->>>>> I think that you made the fundamental mistake to completly ignore the
->>>>> existing pwm API and its users. With a competing api we are basically
->>>>> stuck. We can't convert the existing hardware drivers to the new API
->>>>> because leds-pwm.c, pwm_bl.c and others still depend on the old API and
->>>>> boards using it would break.
->>>> I don't think this is really a blocker to Bill's patches. There are
->>>> three (that I can see) pwm users currently:
->>>> drivers/video/backlight/pwm_bl.c
->>>> drivers/leds/leds-pwm.c
->>>> drivers/input/misc/pwm-beeper.c
->>>>
->>>> All of those drivers are trivial and good easily be updated to work
->>>> with Bill's patches. Bill already provided a leds-pwm driver.
->>> Yes, it is easy but that's not my point. The point is that you can't
->>> convert the drivers without converting *all* hardware drivers in a
->>> *single* step. If you choose to have two competing APIs in the tree
->>> for one purpose you can't convert the drivers but instead you have
->>> to copy them, either with cp or ifdefs. I have just looked at the
->>> leds-pwm driver Bill provided. Applying it immediately breaks all
->>> users.
->>>
->> At _any_ point that you change the pwm api you will need to change all
->> of the drivers. How do you plan to adapt the api in the future to
->> support the oddball pwm drivers without having to change all of the
->> drivers in one go?
-> It is a framework between hardware drivers and user drivers and as such
-> it is able to abstract between the API to the hardware drivers and the
-> API to the user drivers. You can change one of those without touching
-> the other.
+07.06.2011 03:19, Theodore Tso wrote:
+> If user space attempts to remove a non-existent file or directory, and
+> the file system is mounted read-only, return ENOENT instead of EROFS.
+> Either error code is arguably valid/correct, but ENOENT is a more
+> specific error message.
+> 
+> Reported-by: Michael Tokarev <mjt@tls.msk.ru>
+> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+> 
+> ---
+> fs/namei.c |   11 +++++++----
+>  1 files changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/namei.c b/fs/namei.c
+> index 1ab641f..647ca6e 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -2623,6 +2623,10 @@ static long do_rmdir(int dfd, const char __user *pathname)
+>  	error = PTR_ERR(dentry);
+>  	if (IS_ERR(dentry))
+>  		goto exit2;
+> +	if (!dentry->d_inode) {
+> +		error = -ENOENT;
+> +		goto exit3;
+> +	}
+>  	error = mnt_want_write(nd.path.mnt);
+>  	if (error)
+>  		goto exit3;
+> @@ -2708,11 +2712,10 @@ static long do_unlinkat(int dfd, const char __user *pathname)
+>  	error = PTR_ERR(dentry);
+>  	if (!IS_ERR(dentry)) {
+>  		/* Why not before? Because we want correct error value */
+> -		if (nd.last.name[nd.last.len])
+> -			goto slashes;
+>  		inode = dentry->d_inode;
+> -		if (inode)
+> -			ihold(inode);
+> +		if (nd.last.name[nd.last.len] || !inode)
+> +			goto slashes;
+> +		ihold(inode);
+>  		error = mnt_want_write(nd.path.mnt);
+>  		if (error)
+>  			goto exit2;
 
-You are missing the point. For example, the current in-kernel api to
-configure a pwm is this:
+With this patch applied on top of 2.6.39 I can trigger a BUG_ON
+condition like this:
 
-int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns);
+[  211.506827] ------------[ cut here ]------------
+[  211.506919] kernel BUG at fs/inode.c:1409!
+[  211.507003] invalid opcode: 0000 [#1] SMP
+[  211.507095] last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/host5/target5:0:0/5:0:0:0/block/sdb/uevent
+[  211.507284] CPU 0
+[  211.507318] Modules linked in: bnep rfcomm bluetooth rfkill autofs4 quota_v2 quota_tree fuse nfsd nfs lockd fscache auth_rpcgss
+[  211.509512]
+[  211.509547] Pid: 3159, comm: rm Not tainted 2.6.39-amd64 #1 System manufacturer System Product Name/M3A78-EM
+[  211.509761] RIP: 0010:[<ffffffff81137e58>]  [<ffffffff81137e58>] iput+0x198/0x1d0
+[  211.509918] RSP: 0018:ffff880169af3e88  EFLAGS: 00010202
+[  211.509983] RAX: 0000000000000000 RBX: ffff8801809988a0 RCX: 00000000ffff984e
+[  211.509983] RDX: ffff8801877075a8 RSI: ffffffffa012f1b0 RDI: ffff8801809988a0
+[  211.509983] RBP: ffff8801809988a0 R08: d018000000000000 R09: ffff8801809987f0
+[  211.509983] R10: ffff88012c258338 R11: 0000000000000000 R12: ffff880131062ec0
+[  211.509983] R13: ffff880131062ec0 R14: ffff88019e836080 R15: ffff88012b6f5f10
+[  211.509983] FS:  0000000000000000(0000) GS:ffff88019fc00000(0063) knlGS:00000000f765f8d0
+[  211.509983] CS:  0010 DS: 002b ES: 002b CR0: 000000008005003b
+[  211.509983] CR2: 00000000082390ac CR3: 000000018734c000 CR4: 00000000000006f0
+[  211.509983] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[  211.509983] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[  211.509983] Process rm (pid: 3159, threadinfo ffff880169af2000, task ffff88018734a0c0)
+[  211.509983] Stack:
+[  211.509983]  ffff8801877075e8 ffff880180997c00 ffff8801809988a0 ffff880131062ec0
+[  211.509983]  ffff880131062ec0 ffffffff811333b0 ffff880180997c00 ffff8801809988a0
+[  211.509983]  ffff880180997c5c ffffffff811345aa ffff88012b6f5f00 ffff88012b6f5f00
+[  211.509983] Call Trace:
+[  211.509983]  [<ffffffff811333b0>] ? d_kill+0xf0/0x130
+[  211.509983]  [<ffffffff811345aa>] ? dput+0xca/0x180
+[  211.509983]  [<ffffffff81121054>] ? fput+0x1b4/0x270
+[  211.509983]  [<ffffffff8111d43c>] ? filp_close+0x5c/0x90
+[  211.509983]  [<ffffffff8111d4fb>] ? sys_close+0x8b/0xe0
+[  211.509983]  [<ffffffff8134f8a0>] ? cstar_dispatch+0x7/0x2e
+[  211.509983] Code: d1 48 8b 15 8b ab 35 00 48 89 42 08 48 89 53 78 48 c7 83 80 00 00 00 c0 29 49 81 48 89 05 71 ab 35 00 83 05 e
+[  211.509983] RIP  [<ffffffff81137e58>] iput+0x198/0x1d0
+[  211.509983]  RSP <ffff880169af3e88>
+[  211.546040] ---[ end trace f3b7c3bd13474628 ]---
 
-Bill's proposed change to the api, which is more flexible, looks like this:
+This is happening on a debian system when running update-menus while
+lxde is running.  When update-menus is run it executes
 
-int pwm_config(struct pwm_channel *p,
-        struct pwm_channel_config *c)
+ rm -rf /var/lib/menu-xdg/desktop-directories/menu-xdg/
 
-If you want to change the api in this way at any time, you will need to
-change all of the pwm drivers and all of the users (pwm-bl, pwm-leds,
-etc) at the same time, or introduce some sort of wrapper layer to ease
-the conversion. Either way, if you do it now or do it after your patch
-set it is still the same amount of work.
+and regenerates it, and lxde is watching that directory somehow
+in order to notice updates (I think anyway).  I can't trigger
+this BUG_ON without my X running (but I did not try other
+desktop environments).
 
-We do want a better api for pwm drivers, if only to support oddball
-hardware like the atmel. The process I see is this if we go with Bill's
-patches:
- - Introduce new api with common framework
- - Move drivers to new api
+The place where this BUG_ON is looks like this:
 
-With your patches we get this:
- - Introduce common framework
- - Move drivers to common framework
- - Modify api
- - Rewrite drivers for new api
+void iput(struct inode *inode)
+{
+        if (inode) {
+                BUG_ON(inode->i_state & I_CLEAR);
 
-The problem we have seen with these processes in the past is they get
-left half way with some drivers moving to the new framework and some
-trailing behind and some having their own hand-rolled approach because
-the common api doesn't meet their needs.
+                if (atomic_dec_and_lock(&inode->i_count, &inode->i_lock))
+                        iput_final(inode);
+        }
+}
 
->>> I don't say at all that the end result Bill is aiming at is bad because
->>> it isn't. We are not talking about the end result, but only the way to
->>> get there. And getting from a to b in bisectable small steps is a well
->>> established development model in the Kernel, or have I missed something?
->> The bi-sectable steps is fine. But what we have is a patch series which
->> introduces a new framework with a vague promise that the existing
->> drivers will get converted and the api will be improved later. Again,
->> the number of in-kernel users is so small that we may as well do it all
->> in one series.
-> I don't understand you. On one hand you argue that it's trivial enough to
-> port all drivers over the a new API in a single series and on the other
-> hand you argue that we have to wait for several subsystem maintainers
-> to port the drivers over to an existing-but-now-in-a-framework API.
->
 
-No, I am saying that if we don't port all the drivers and leave it up to
-the maintainers then it won't get done and we get left with some drivers
-using the old approach and some using the new approach. For example, we
-still have platforms which aren't using gpiolib yet and that was
-introduced 3 years ago.
+Something fishy is going on there...
 
-~Ryan
+Thank you!
+
+/mjt
