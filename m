@@ -1,76 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752234Ab1GBQYa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 12:24:30 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34862 "EHLO
+	id S1754370Ab1GBQ34 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 12:29:56 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:52746 "EHLO
 	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751538Ab1GBQY3 convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752032Ab1GBQ3x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 12:24:29 -0400
-MIME-Version: 1.0
-In-Reply-To: <BANLkTikO+cUbCFPAuNSE01xSmOzhwWP0mQ@mail.gmail.com>
-References: <BANLkTinWkJa0zWgV7RVWtt4d3qf9dapFkg@mail.gmail.com>
- <BANLkTimF0AsS3=-S=gmbcjBC5JuKr=6Prw@mail.gmail.com> <BANLkTimp2cafUrALLdqeSBWeMsA+ybiUpQ@mail.gmail.com>
- <BANLkTikO+cUbCFPAuNSE01xSmOzhwWP0mQ@mail.gmail.com>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Sat, 2 Jul 2011 12:24:08 -0400
-Message-ID: <BANLkTimAHc6+ZPd7gUpr0-eHGpyLSwJFEA@mail.gmail.com>
-Subject: Re: [PCI Driver]Physical address being returned as 0 in mmap
-To: newton mailinglist <newtonmailinglist@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 2 Jul 2011 12:29:53 -0400
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/6] x86: Save stack pointer in perf live regs savings
+Date: Sat,  2 Jul 2011 18:29:39 +0200
+Message-Id: <1309624184-9790-2-git-send-email-fweisbec@gmail.com>
+X-Mailer: git-send-email 1.7.5.4
+In-Reply-To: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
+References: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please reply inline, top-posting is unwelcome on LKML.
+In order to prepare for fetching the stack pointer from the
+regs when possible in dump_trace() instead of taking the
+local one, save the current stack pointer in perf live regs saving.
 
-On Sat, Jul 2, 2011 at 11:27, newton mailinglist
-<newtonmailinglist@gmail.com> wrote:
-> ok thanks Kyle, I will try the DMA API now.
->
->  I was wondering, when my driver gets the mmap() call then has the
->  kernel already allocated memory and put its details in the vma
->  parameter or do I need to allocate memory myself ?
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ arch/x86/include/asm/perf_event.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-Hmm, I'm not exactly clear what you are asking here... I would need
-to see your driver code to be able to give you better advice, but let
-me give it a shot anyways:
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index d9d4dae..094fb30 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -152,6 +152,11 @@ extern unsigned long perf_misc_flags(struct pt_regs *regs);
+ 	(regs)->bp = caller_frame_pointer();			\
+ 	(regs)->cs = __KERNEL_CS;				\
+ 	regs->flags = 0;					\
++	asm volatile(						\
++		_ASM_MOV "%%"_ASM_SP ", %0\n"			\
++		: "=m" ((regs)->sp)				\
++		:: "memory"					\
++	);							\
+ }
+ 
+ #else
+-- 
+1.7.5.4
 
-The "vma" is a vm_area_struct which describes the user side of the
-memory-map, and in your "mmap()" call you essentially populate that
-"vma" with information about the physical CPU memory addresses.
-Typically that means memory allocated with dma_alloc_coherent(),
-and I think the DMA API docs have some example code for this.
-
-
-> I am already using the driver read and write functions to read/write
-> some other parameters to the FPGA, so I will setup the DMA in mmap()
-
-The reason I suggest read()/write() is because you are talking about
-using mmap() and then doing memcpy(), whereas if you implement
-your read()/write() handlers properly then you might not need to do
-a memcpy() at all.
-
-If you're just using read()/write() for parameter data, I would switch
-those to an ioctl() call and use read()/write() for your bulk data transfer.
-Even if you elect to use mmap() the way you have described, you
-will still need to implement some ioctl() calls to allow your userspace
-program to trigger the appropriate dma_sync_*() API calls on the
-memory when communicating with the hardware.
-
-Ideally, for streaming large amounts of data out of a device, you
-would call read() from the device onto a large multiple-page buffer
-in your userspace program.  The userspace addresses get passed
-down into your kernel driver, and you use the appropriate APIs to
-get the page structs for those addresses and directly DMA-map
-those pages.
-
-That means that in the best case your device will read directly into
-user memory.  If the user memory is not accessible to your device
-then the kernel will use the "swiotlb" driver to bounce-buffer it for
-you.
-
-Cheers,
-Kyle Moffett
