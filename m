@@ -1,28 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752769Ab1GBCSl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 22:18:41 -0400
-Received: from lo.gmane.org ([80.91.229.12]:38950 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751844Ab1GBCSk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 22:18:40 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
+	id S1753034Ab1GBCXM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 22:23:12 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4393 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752071Ab1GBCXJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 22:23:09 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:message-id:date:from:user-agent:
+	mime-version:newsgroups:to:cc:subject:references:in-reply-to:
+	content-type:content-transfer-encoding:x-system-of-record;
+	b=dWzzVi1tRqiX5deoT7ZfEwrerEc4Oob7EJC6Bzwosvej6zJ1xRBE4JCj4N/XMNt41
+	3DZv9DXbVLASqTpnM221A==
+Message-ID: <4E0E8107.4090300@google.com>
+Date: Fri, 01 Jul 2011 19:23:03 -0700
 From: Paul Turner <pjt@google.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+Newsgroups: gmane.linux.kernel
+To: Rakib Mullick <rakib.mullick@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
 Subject: Re: [PATCH] sched: Check nr_running before calling pick_next_task
  in schedule().
-Date: Fri, 01 Jul 2011 19:18:26 -0700
-Message-ID: <4E0E7FF2.5030209@google.com>
 References: <1309545711.4303.2.camel@localhost.localdomain>
-Mime-Version: 1.0
+In-Reply-To: <1309545711.4303.2.camel@localhost.localdomain>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-X-Gmane-NNTP-Posting-Host: 216-239-45-4.google.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-In-Reply-To: <1309545711.4303.2.camel@localhost.localdomain>
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -65,5 +71,4 @@ On 07/01/11 11:41, Rakib Mullick wrote:
 >
 >
 >
-
 
