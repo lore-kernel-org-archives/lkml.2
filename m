@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab1GBRbv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 13:31:51 -0400
-Received: from mother.openwall.net ([195.42.179.200]:49644 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752022Ab1GBRbs (ORCPT
+	id S1754881Ab1GBRgc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 13:36:32 -0400
+Received: from mail.southpole.se ([193.12.106.18]:48466 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab1GBRg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 13:31:48 -0400
-Date: Sat, 2 Jul 2011 21:31:36 +0400
-From: Solar Designer <solar@openwall.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Vasiliy Kulikov <segoon@openwall.com>, kernel-hardening@lists.openwall.com,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Daniel Lezcano <daniel.lezcano@free.fr>,
-        Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [RFC] ipc: introduce shm_rmid_forced sysctl
-Message-ID: <20110702173136.GF26232@openwall.com>
-References: <20110622152514.GA9521@albatros> <20110629151436.9be479fb.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110629151436.9be479fb.akpm@linux-foundation.org>
-User-Agent: Mutt/1.4.2.3i
+	Sat, 2 Jul 2011 13:36:29 -0400
+From: Jonas Bonn <jonas@southpole.se>
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
+Cc: Jonas Bonn <jonas@southpole.se>, vapier@gentoo.org,
+        liqin.chen@sunplusct.com, gxt@mprc.pku.edu.cn
+Subject: [PATCH v2 1/1] asm-generic: add MMU variants of io.h functions
+Date: Sat,  2 Jul 2011 19:36:08 +0200
+Message-Id: <1309628168-3413-1-git-send-email-jonas@southpole.se>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <CAMjpGUeMqVzcAWKpAojZVbj9ywH+4HmW4Hx-8D1WQmTqPSNqQA@mail.gmail.com>
+References: <CAMjpGUeMqVzcAWKpAojZVbj9ywH+4HmW4Hx-8D1WQmTqPSNqQA@mail.gmail.com>
+X-Assp-Client-SSL: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 03:14:36PM -0700, Andrew Morton wrote:
-> What a horrid patch.  But given the POSIX (mis?)feature I don't see a
-> better way, and the feature seems desirable.  Sigh.
-> 
-> What sort of users would want to turn this on, and why?
 
-Originally, I introduced it into Linux 2.0.x-ow to allow for resource
-limits to be enforced on shared servers, such as with shared web
-hosting.  A user is supposed to be limited by RLIMIT_AS * RLIMIT_NPROC.
-(This is awfully inflexible, lacking a separate per-user memory limit,
-but at least it's something.)  However, with shared memory segments a
-user could bypass that limit, because those segments don't have to be
-tied to a process.  So the patch changed that, requiring that any shm
-segment be tied to a process, or be destroyed.
+Some of the implementations, in particular the ioremap variants, in
+asm-generic/io.h are for systems without an MMU.  In order to be able to
+use the generic header file for systems with an MMU, this patch wraps
+these implementations in checks for CONFIG_MMU.
 
-Alexander
+Tested on OpenRISC.
+
+Signed-off-by: Jonas Bonn <jonas@southpole.se>
+Cc: vapier@gentoo.org
+Cc: liqin.chen@sunplusct.com
+Cc: gxt@mprc.pku.edu.cn
+---
+ include/asm-generic/io.h |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+index e0ffa3d..a1caf2d 100644
+--- a/include/asm-generic/io.h
++++ b/include/asm-generic/io.h
+@@ -307,7 +307,11 @@ static inline void *phys_to_virt(unsigned long address)
+ 
+ /*
+  * Change "struct page" to physical address.
++ *
++ * This implementation is for the no-MMU case only... if you have an MMU
++ * you'll need to provide your own definitions.
+  */
++#ifndef CONFIG_MMU
+ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+ {
+ 	return (void __iomem*) (unsigned long)offset;
+@@ -326,6 +330,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+ static inline void iounmap(void *addr)
+ {
+ }
++#endif /* CONFIG_MMU */
+ 
+ #ifndef CONFIG_GENERIC_IOMAP
+ static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
+@@ -342,7 +347,7 @@ extern void ioport_unmap(void __iomem *p);
+ #endif /* CONFIG_GENERIC_IOMAP */
+ 
+ #define xlate_dev_kmem_ptr(p)	p
+-#define xlate_dev_mem_ptr(p)	((void *) (p))
++#define xlate_dev_mem_ptr(p)	__va(p)
+ 
+ #ifndef virt_to_bus
+ static inline unsigned long virt_to_bus(volatile void *address)
+-- 
+1.7.4.1
+
