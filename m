@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab1GBRJb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 13:09:31 -0400
-Received: from bedivere.hansenpartnership.com ([66.63.167.143]:50943 "EHLO
-	bedivere.hansenpartnership.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754866Ab1GBRJa (ORCPT
+	id S1755136Ab1GBRLX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 13:11:23 -0400
+Received: from mail.southpole.se ([193.12.106.18]:34923 "EHLO
+	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752308Ab1GBRLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 13:09:30 -0400
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-From: James Bottomley <James.Bottomley@HansenPartnership.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Dave Jones <davej@redhat.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        axboe@kernel.dk, rjw@sisk.pl, linux-usb@vger.kernel.org
-In-Reply-To: <20110702170554.GJ23059@one.firstfloor.org>
-References: <1309554818.2722.48.camel@mulgrave>
-	 <Pine.LNX.4.44L0.1107012200260.4273-100000@netrider.rowland.org>
-	 <20110702060846.GH23059@one.firstfloor.org>
-	 <1309609482.2554.8.camel@mulgrave>
-	 <20110702170554.GJ23059@one.firstfloor.org>
+	Sat, 2 Jul 2011 13:11:19 -0400
+Subject: Re: [PATCH 1/2] asm-generic: adapt delay.h to common implementation
+From: Jonas Bonn <jonas@southpole.se>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        hans-christian.egtvedt@atmel.com, lethal@linux-sh.org
+In-Reply-To: <201107021321.10786.arnd@arndb.de>
+References: <1309600754-21217-1-git-send-email-jonas@southpole.se>
+	 <201107021321.10786.arnd@arndb.de>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 02 Jul 2011 12:09:26 -0500
-Message-ID: <1309626567.2554.11.camel@mulgrave>
+Organization: South Pole Consulting AB
+Date: Sat, 02 Jul 2011 19:11:15 +0200
+Message-ID: <1309626675.24186.1268.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 (2.32.2-1.fc14) 
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
+X-Assp-Client-SSL: yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2011-07-02 at 19:05 +0200, Andi Kleen wrote:
-> > Which goes from the device unplug to the oops.  However, there are puts
-> > missing from this; particularly the one where the reference goes to
-> > zero.
+
+On Sat, 2011-07-02 at 13:21 +0200, Arnd Bergmann wrote:
+> Very nice. Do you want to keep that in your own tree for your convenience,
+> and merge it along with your architecture, or do you prefer me to
+> take them into the asm-generic tree?
+
+I can hang on to them for now.  If the architecture isn't ready for 3.1,
+we can move them to your tree then.
+
 > 
-> The count was always one off because it dumps it before the actual
-> put.
+> If you want to add them to your tree, please add my
+> 
+> Acked-by: Arnd Bergmann <arnd@arndb.de>
 
-I know this.  What I mean is the last seen put count before the oops is
-3 (not 1).
-
-And the transition after unplug goes
-
-13->12->10->8->7->6->5->3
-
-implying we're missing put events.
-
-James
-
+Done.  Thanks,
+Jonas
 
