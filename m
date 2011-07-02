@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755738Ab1GBUe6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 16:34:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47067 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753937Ab1GBUe5 (ORCPT
+	id S1754344Ab1GBUfV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 16:35:21 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:40254 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755814Ab1GBUfQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 16:34:57 -0400
+	Sat, 2 Jul 2011 16:35:16 -0400
+Date: Sat, 2 Jul 2011 16:35:15 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Matthieu CASTET <castet.matthieu@free.fr>
+cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
+        <linux-usb@vger.kernel.org>
+Subject: Re: [PATCH 1/2] EHCI : introduce a common ehci_setup
+In-Reply-To: <1309633186-31693-1-git-send-email-castet.matthieu@free.fr>
+Message-ID: <Pine.LNX.4.44L0.1107021633160.16190-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20110702203323.03462aef@lxorguk.ukuu.org.uk>
-References: <20110626194618.GA21740@elte.hu> <20110626202518.GA4915@albatros>
- <20110626220126.GA24004@elte.hu> <20110627083633.GA5846@albatros>
- <20110627104058.45e93c41@pyx> <20110627183829.GA16033@albatros>
- <BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com> <20110701120059.GL20990@elte.hu>
- <20110701125411.GA21551@albatros> <20110701152051.763fd594@lxorguk.ukuu.org.uk>
- <20110702164243.GB26232@openwall.com> <20110702203323.03462aef@lxorguk.ukuu.org.uk>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sat, 2 Jul 2011 13:34:33 -0700
-Message-ID: <CA+55aFx6ShKkDjt=xdLPY1iVr4u06DMs41g-6HEqsPO8NhZAjA@mail.gmail.com>
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in printk()
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Solar Designer <solar@openwall.com>, kernel-hardening@lists.openwall.com,
-        Vasiliy Kulikov <segoon@openwall.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 2, 2011 at 12:33 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->
-> No but you could make "dmesg" do filtering.
+On Sat, 2 Jul 2011, Matthieu CASTET wrote:
 
-So I really hate doing the filtering at the level that the original
-patch did, but I would _not_ mind doing the filtering at "vsnprintf()"
-time.
+> This allow to clean duplicated code in most of SOC driver.
+> 
+> Signed-off-by: Matthieu CASTET <castet.matthieu@free.fr>
+> ---
+>  drivers/usb/host/ehci-hcd.c |   29 +++++++++++++++++++++++++++++
+>  1 files changed, 29 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+> index f8030ee..f990b0f 100644
+> --- a/drivers/usb/host/ehci-hcd.c
+> +++ b/drivers/usb/host/ehci-hcd.c
+> @@ -763,6 +763,35 @@ static int ehci_run (struct usb_hcd *hcd)
+>  	return 0;
+>  }
+>  
+> +static int __maybe_unused ehci_setup (struct usb_hcd *hcd)
+> +{
+> +	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
+> +	int retval;
 
-Even without some magic "safe" flag, in fact.
+...
 
-So I would not even be opposed to "%s" just doing filtering (including
-considering "\n" to be a control character) by default. So "\n" would
-be ok in the format string (where it is pretty common), but not for
-%s.
+> +}
+> +
 
-For kernel uses that really want raw strings, we could have a %p
-sequence, the way we handle other special formats.
+Instead of putting this routine in ehci-hcd.c, where it will silently 
+use up unnecessary codespace on thousands or millions of desktop 
+systems, why not put it into a new separate source file?  Then the SOC 
+drivers can #include that file.
 
-However, that would be a patch that would need a lot more testing,
-since we'd have to find the users that really do want control
-characters.
+Alan Stern
 
-                              Linus
