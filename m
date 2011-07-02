@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752840Ab1GBQmv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 12:42:51 -0400
-Received: from mother.openwall.net ([195.42.179.200]:50359 "HELO
-	mother.openwall.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752140Ab1GBQmu (ORCPT
+	id S1754755Ab1GBQnm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 12:43:42 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:46171 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752442Ab1GBQnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 12:42:50 -0400
-Date: Sat, 2 Jul 2011 20:42:43 +0400
-From: Solar Designer <solar@openwall.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: kernel-hardening@lists.openwall.com, Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in printk()
-Message-ID: <20110702164243.GB26232@openwall.com>
-References: <20110626194618.GA21740@elte.hu> <20110626202518.GA4915@albatros> <20110626220126.GA24004@elte.hu> <20110627083633.GA5846@albatros> <20110627104058.45e93c41@pyx> <20110627183829.GA16033@albatros> <BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com> <20110701120059.GL20990@elte.hu> <20110701125411.GA21551@albatros> <20110701152051.763fd594@lxorguk.ukuu.org.uk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110701152051.763fd594@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.4.2.3i
+	Sat, 2 Jul 2011 12:43:39 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=subject:to:from:cc:date:message-id:user-agent:
+	mime-version:content-type:content-transfer-encoding;
+	b=oZO7Ng79MdVZLe8hAVjXv0zEoeOjYh30IxzTdLzoHQw9quXjdF603FsClq7iIC8Ux
+	Bkk+Xp/gohSdLmYcmLA0A==
+Subject: [PATCH] Series short description
+To: Wim Van Sebroeck <wim@iguana.be>
+From: Bjorn Helgaas <bhelgaas@google.com>
+Cc: linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
+Date: Sat, 02 Jul 2011 10:43:35 -0600
+Message-ID: <20110701212404.25544.84384.stgit@bhelgaas.mtv.corp.google.com>
+User-Agent: StGit/0.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 03:20:51PM +0100, Alan Cox wrote:
-> > $ dmesg | tail
-> > ...
-> > [16291.982492] init[21579]: segfault at 0 ip 00007f527186028a sp 00007fff08251dd8 error 4 in libc-2.11.1.so[7f52717d8000+17a000]
-> > [16379.001357] fail[21586]: segfault at 0 ip 00007f332831028a sp 00007fffc52de568 error 4 in libc-2.11.1.so[7f3328288000+17a000]
-> > $ 
-> > (see 1234 => init change)
-> > 
-> > As you see here, the previous log entry was showed not as it was
-> > initally logged.  Core dump message was chosen fully arbitrary, just to
-> > show that some specific part of it can be "edited".
-> 
-> Your syslog daemon appears to need improvement
+The following series implements...
 
-syslogd definitely should (and does) perform escaping of control chars
-for logs written through it.
+---
 
-> and that would be the right fix for dmesg etc.
+Bjorn Helgaas (1):
+      x86/PCI: reduce severity of host bridge window conflict warnings
 
-How?  We can't realistically expect everyone to stop invoking dmesg
-directly.  Moreover, this is sometimes useful, although someone who is
-aware of the risk and who cares about it would do "dmesg | less".  The
-problem is that most people are not aware, and we can't change that.
 
-> The other case is the actual printk direct to console case, particularly
-> on a serial port. That one actually has more potential for actual
-> annoyance.
+ arch/x86/pci/acpi.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
-Right.
-
-Alexander
+-- 
+Signature
