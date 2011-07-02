@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab1GBQam (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 12:30:42 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52746 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752032Ab1GBQ36 (ORCPT
+	id S1752508Ab1GBQ3z (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 12:29:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:39758 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab1GBQ3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 12:29:58 -0400
+	Sat, 2 Jul 2011 12:29:51 -0400
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
@@ -15,47 +15,50 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Jan Beulich <JBeulich@novell.com>
-Subject: [PATCH 4/6] x86,64: Separate arg1 from rbp handling in SAVE_REGS_IRQ
-Date: Sat,  2 Jul 2011 18:29:42 +0200
-Message-Id: <1309624184-9790-5-git-send-email-fweisbec@gmail.com>
+Subject: [RFC GIT PULL] x86 entry / perf stacktrace changes
+Date: Sat,  2 Jul 2011 18:29:38 +0200
+Message-Id: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
 X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
-References: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Just for clarity in the code. Have a first block that handles
-the frame pointer and a separate one that handles pt_regs
-pointer and its use.
+Ingo,
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: H. Peter Anvin <hpa@zytor.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Jan Beulich <JBeulich@novell.com>
+Please pull the perf/stacktrace branch that can be found at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/stacktrace
+
+Or may be not yet. It's still in RFC because I would like
+to ensure I did not break cfi annotations. I hope Jan beulich
+or others can have a look.
+
+Sorry to mess up irq entry and perf stacktrace changes in the same
+topic. But the changes happen to be very interconnected.
+
+Several cleanups, fixes and optimizations for the x86-64
+stacktraces and irq entry.
+
+Last patch seems to add a bit of overhead in the irq entry
+(one more "push") but given the changes made in previous
+patches, the end result is a more optimized and more clear irq
+entry.
+
+Thanks,
+	Frederic
 ---
- arch/x86/kernel/entry_64.S |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b6b2e85..20dc8e6 100644
---- a/arch/x86/kernel/entry_64.S
-+++ b/arch/x86/kernel/entry_64.S
-@@ -310,9 +310,10 @@ ENDPROC(native_usergs_sysret64)
- 	movq_cfi r10, R10-RBP
- 	movq_cfi r11, R11-RBP
- 
--	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
- 	movq_cfi rbp, 0		/* push %rbp */
- 	movq %rsp, %rbp
-+
-+	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
- 	testl $3, CS(%rdi)
- 	je 1f
- 	SWAPGS
--- 
-1.7.5.4
+Frederic Weisbecker (6):
+      x86: Save stack pointer in perf live regs savings
+      x86: Fetch stack from regs when possible in dump_trace()
+      x86,64: Simplify save_regs()
+      x86,64: Separate arg1 from rbp handling in SAVE_REGS_IRQ
+      x86: Remove useless unwinder backlink from irq regs saving
+      x86: Don't use frame pointer to save old stack on irq entry
 
+
+ arch/x86/include/asm/perf_event.h |    5 +++
+ arch/x86/kernel/dumpstack_64.c    |   37 +++-----------------
+ arch/x86/kernel/entry_64.S        |   69 ++++++++++++++++--------------------
+ 3 files changed, 41 insertions(+), 70 deletions(-)
