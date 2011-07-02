@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab1GBTbZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 15:31:25 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49960 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752895Ab1GBTbX (ORCPT
+	id S1753691Ab1GBTiO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 15:38:14 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:58744 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752832Ab1GBTiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 15:31:23 -0400
-Date: Sat, 2 Jul 2011 20:33:23 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Solar Designer <solar@openwall.com>
-Cc: kernel-hardening@lists.openwall.com, Vasiliy Kulikov <segoon@openwall.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110702203323.03462aef@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110702164243.GB26232@openwall.com>
-References: <20110626194618.GA21740@elte.hu>
-	<20110626202518.GA4915@albatros>
-	<20110626220126.GA24004@elte.hu>
-	<20110627083633.GA5846@albatros>
-	<20110627104058.45e93c41@pyx>
-	<20110627183829.GA16033@albatros>
-	<BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com>
-	<20110701120059.GL20990@elte.hu>
-	<20110701125411.GA21551@albatros>
-	<20110701152051.763fd594@lxorguk.ukuu.org.uk>
-	<20110702164243.GB26232@openwall.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 2 Jul 2011 15:38:10 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH v8 00/12] use nonblock mmc requests to minimize latency
+Date: Sat, 2 Jul 2011 21:37:29 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org,
+        Nicolas Pitre <nicolas.pitre@linaro.org>, linaro-dev@lists.linaro.org,
+        Linus Walleij <linus.walleij@linaro.org>, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Chris Ball <cjb@laptop.org>,
+        Per Forlin <per.forlin@linaro.org>,
+        Nickolay Nickolaev <nicknickolaev@gmail.com>
+References: <1309248717-14606-1-git-send-email-per.forlin@linaro.org> <201107011844.44058.arnd@arndb.de> <20110702122938.GI21898@n2100.arm.linux.org.uk>
+In-Reply-To: <20110702122938.GI21898@n2100.arm.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201107022137.30138.arnd@arndb.de>
+X-Provags-ID: V02:K0:EML+osaVD3eN+WlWgMI5cbSGiWYljM5i4XKAuXzGCq2
+ IwefOI5qM54h2s3E7xShxW9rE5je+X0sjqnJD07FSHfnYkRbsC
+ WB2ZE0WFl8hCfCVweUqR6x3QKM+yF3ztoh7c+yUa4BoFbyq8Tz
+ C9Hn8HNJRUwJPVnyaDDPhdS1ftipPoEwvDwmTb19nvLiWG+0Vg
+ SV4ex/cQCxdZaJasjxDwg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Your syslog daemon appears to need improvement
+On Saturday 02 July 2011 14:29:38 Russell King - ARM Linux wrote:
+> One other thing to be considered here is whether this idea should be
+> limited to just MMC or whether it should be extended further, to
+> move the DMA mapping stuff out of the hot path for other block devices
+> too.
 > 
-> syslogd definitely should (and does) perform escaping of control chars
-> for logs written through it.
-> 
-> > and that would be the right fix for dmesg etc.
-> 
-> How?  We can't realistically expect everyone to stop invoking dmesg
-> directly.  Moreover, this is sometimes useful, although someone who is
+> There are ARM systems with SATA which do 28MB/s - which could be
+> improved by this technique.
 
-No but you could make "dmesg" do filtering.
+Excellent point. We had discussed SATA items in the context of Linaro
+work before, and the conclusion was always that we wouldn't need to
+do any work for it in the common code. I'll make sure that we bring
+it up at the meeting next month in Cambridge so we can officially
+assign someone to do this.
 
-Alan
+	Arnd
