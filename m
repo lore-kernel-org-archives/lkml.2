@@ -1,90 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab1GBIKc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 04:10:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:65114 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab1GBIK2 (ORCPT
+	id S1752708Ab1GBIKr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 04:10:47 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:54206 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752337Ab1GBIKo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 04:10:28 -0400
-Date: Sat, 2 Jul 2011 12:10:22 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110702081022.GA2755@albatros>
-References: <20110626190622.GB4217@albatros>
- <20110626194618.GA21740@elte.hu>
- <20110626202518.GA4915@albatros>
- <20110626220126.GA24004@elte.hu>
- <20110627083633.GA5846@albatros>
- <20110627104058.45e93c41@pyx>
- <20110627183829.GA16033@albatros>
- <BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com>
- <20110701143757.GA22567@albatros>
- <20110701154947.133c30f5@lxorguk.ukuu.org.uk>
+	Sat, 2 Jul 2011 04:10:44 -0400
+Message-ID: <4E0ED11A.6030905@gmail.com>
+Date: Sat, 02 Jul 2011 10:04:42 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110701154947.133c30f5@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Sergiu Iordache <sergiu@google.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/3] char drivers: ramoops record_size module parameter
+References: <1309483720-1407-1-git-send-email-sergiu@chromium.org> <1309483720-1407-3-git-send-email-sergiu@chromium.org> <4E0E0A76.4080204@gmail.com> <BANLkTi=HqKggFkcLgN22qgTr5drz3_5vO+Q9bM+NqsOYVK5uag@mail.gmail.com>
+In-Reply-To: <BANLkTi=HqKggFkcLgN22qgTr5drz3_5vO+Q9bM+NqsOYVK5uag@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 15:49 +0100, Alan Cox wrote:
-> >  of the multiline feature.  Intoducing new "%S" format for single lines
-> >  makes little sense as there are tons of printk() calls that should be
-> >  already restricted to one line.
-> 
-> You don't need a new format string surely. Your expectation for printk is 
-> 
-> "multiple new lines are cool providing they are in the format string"
-> 
-> So that bit isn't hard to deal with, 
-> 
-> You make vprintk take an extra arg (trusted/untrusted args)
+Il 01/07/2011 20:41, Sergiu Iordache ha scritto:
+> On Fri, Jul 1, 2011 at 10:57 AM, Marco Stornelli
+> <marco.stornelli@gmail.com>  wrote:
+>> Hi,
+>>
+>> Il 01/07/2011 03:28, Sergiu Iordache ha scritto:
+>>>
+>>> The size of the dump is currently set using the RECORD_SIZE macro which
+>>> is set to a page size. This patch makes the record size a module
+>>> parameter and allows it to be set through platform data as well to allow
+>>> larger dumps if needed.
+>>>
+>>> Signed-off-by: Sergiu Iordache<sergiu@chromium.org>
+>>> Change-Id: Ie5a53acb50d5881d51354f5d9d13e3d6bedf6a2e
+>>> ---
+>>> The patch was built on the 2.6.38 kernel and is based on the following
+>>> patches which were applied from the mmotm tree:
+>>> ramoops-add-new-line-to-each-print
+>>> ramoops-use-module-parameters-instead-of-platform-data-if-not-available
+>>>
+>>> ramoops-use-module-parameters-instead-of-platform-data-if-not-available-checkpatch-fixes
+>>>
+>>>   drivers/char/ramoops.c  |   33 ++++++++++++++++++++++++++-------
+>>>   include/linux/ramoops.h |    1 +
+>>>   2 files changed, 27 insertions(+), 7 deletions(-)
+>>>
+>>> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
+>>> index 5349d94..f34077e 100644
+>>> --- a/drivers/char/ramoops.c
+>>> +++ b/drivers/char/ramoops.c
+>>> @@ -32,8 +32,12 @@
+>>>   #include<linux/ramoops.h>
+>>>
+>>>   #define RAMOOPS_KERNMSG_HDR "===="
+>>> +#define MIN_MEM_SIZE 4096UL
+>>>
+>>> -#define RECORD_SIZE 4096UL
+>>> +static ulong record_size = 4096UL;
+>>> +module_param(record_size, ulong, 0400);
+>>> +MODULE_PARM_DESC(record_size,
+>>> +               "size of each dump done on oops/panic");
+>>>
+>>>   static ulong mem_address;
+>>>   module_param(mem_address, ulong, 0400);
+>>> @@ -55,6 +59,7 @@ static struct ramoops_context {
+>>>         void *virt_addr;
+>>>         phys_addr_t phys_addr;
+>>>         unsigned long size;
+>>> +       unsigned long record_size;
+>>>         int dump_oops;
+>>>         int count;
+>>>         int max_count;
+>>> @@ -84,10 +89,10 @@ static void ramoops_do_dump(struct kmsg_dumper
+>>> *dumper,
+>>>         if (reason == KMSG_DUMP_OOPS&&    !cxt->dump_oops)
+>>>                 return;
+>>>
+>>> -       buf = cxt->virt_addr + (cxt->count * RECORD_SIZE);
+>>> +       buf = cxt->virt_addr + (cxt->count * cxt->record_size);
+>>>         buf_orig = buf;
+>>>
+>>> -       memset(buf, '\0', RECORD_SIZE);
+>>> +       memset(buf, '\0', cxt->record_size);
+>>>         res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
+>>>         buf += res;
+>>>         do_gettimeofday(&timestamp);
+>>> @@ -95,8 +100,8 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
+>>>         buf += res;
+>>>
+>>>         hdr_size = buf - buf_orig;
+>>> -       l2_cpy = min(l2, RECORD_SIZE - hdr_size);
+>>> -       l1_cpy = min(l1, RECORD_SIZE - hdr_size - l2_cpy);
+>>> +       l2_cpy = min(l2, cxt->record_size - hdr_size);
+>>> +       l1_cpy = min(l1, cxt->record_size - hdr_size - l2_cpy);
+>>>
+>>>         s2_start = l2 - l2_cpy;
+>>>         s1_start = l1 - l1_cpy;
+>>> @@ -119,16 +124,29 @@ static int __init ramoops_probe(struct
+>>> platform_device *pdev)
+>>>         }
+>>>
+>>>         rounddown_pow_of_two(pdata->mem_size);
+>>> +       rounddown_pow_of_two(pdata->record_size);
+>>>
+>>> -       if (pdata->mem_size<    RECORD_SIZE) {
+>>> +       /* Check for the minimum memory size */
+>>> +       if (pdata->mem_size<    MIN_MEM_SIZE) {
+>>> +               pr_err("memory size too small, min %lu\n", MIN_MEM_SIZE);
+>>> +               goto fail3;
+>>> +       }
+>>> +
+>>> +       if (pdata->mem_size<    pdata->record_size) {
+>>>                 pr_err("size too small\n");
+>>>                 goto fail3;
+>>>         }
+>>>
+>>> -       cxt->max_count = pdata->mem_size / RECORD_SIZE;
+>>> +       if (pdata->record_size<= 0) {
+>>> +               pr_err("record size too small\n");
+>>> +               goto fail3;
+>>> +       }
+>>
+>> There is something wrong here. First of all if record_size is unsigned it
+>> can't negative. In addition, if we are here, we know that:
+>>
+>> record_size>= mem_size>= MIN_MEM_SIZE
+>>
+>> So this check have no sense.
+>
+> The pdata->record size<= 0 check is indeed redundant and should be removed.
+>
+> I didn't completely understand the second comment, the module errors
+> if mem_size<  MIN_MEM_SIZE or mem_size<  record_size, which means that
+> mem_size should be larger than MIN_MEM_SIZE and record_size (which
+> leads to record_size being between 0 and mem_size). Am I missing
+> something?
+>
+> (Resent after not reply-ing to all by mistake)
+>
+> Sergiu
+>
 
-Not vprintk, but vscnprintf(), vsnprintf() and string() because
-vprintk() is used in tens of places besides of printk().  Or better
-implement _vscnprintf(.., bool untrusted) and 
+Yes, my fault. I meant we should check that mem_size *and* record_size 
+are bigger or equals than MIN_MEM_SIZE. After that, we can check that 
+record_size is lesser than mem_size (I guess has no sense to use 
+record_size lesser than MIN_MEM_SIZE).
 
-vscnprintf(...) { return _vscnprintf(..., false); }
-
-to leave current users of it as is.
-
-But yes, I got the idea.
-
-
-> You make printk pass 'untrusted'
-> You make %s quote the arguments for control codes
-
-What to do with CSI?  It is a valid byte inside of a UTF-8 string.
-Parsing a supplied string assuming it is UTF-8 string and filtering CSI
-iff it is not a part of UTF-8 symbol is something a bit ugly IMO.
-
-
-Greg - do you know any devices supplying multibyte strings, but not in
-UTF-8 encoding?  If yes, then CSI filtering is a bad idea :\
-
-
-> At which point your attacker has more work to do but given a long string
-> yawns and stars using the right number of spaces for the likely 80 col
-> screen :)
-
-Yeah, but introducing some artificial limit for string length is IMO
-more harmfull: there is no universal limit for all situations, somewhere
-the resulting string is already 70 chars and even 20 bytes would
-overflow the col;  in rare cases a string of 50 bytes might be still
-acceptable.
-
-
-Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Marco
