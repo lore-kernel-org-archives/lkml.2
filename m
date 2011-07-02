@@ -1,74 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752796Ab1GBBxn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 1 Jul 2011 21:53:43 -0400
-Received: from lucidpixels.com ([72.73.18.11]:42727 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751977Ab1GBBxm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 1 Jul 2011 21:53:42 -0400
-Date: Fri, 1 Jul 2011 21:53:41 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: "Ronciak, John" <john.ronciak@intel.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>
-Subject: RE: [E1000-devel] 2.6.39.2: skb_over_panic: kernel BUG at
- net/core/skbuff.c:127!
-In-Reply-To: <alpine.DEB.2.02.1107012149480.8312@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1107012153140.8312@p34.internal.lan>
-References: <alpine.DEB.2.02.1106271742310.6721@p34.internal.lan> <D38E8E86660E514AB505863C19C9287C03A525@ORSMSX101.amr.corp.intel.com> <alpine.DEB.2.02.1106271814200.6721@p34.internal.lan> <D38E8E86660E514AB505863C19C9287C03A585@ORSMSX101.amr.corp.intel.com>
- <alpine.DEB.2.02.1106271831060.6721@p34.internal.lan> <alpine.DEB.2.02.1106272006310.6864@p34.internal.lan> <alpine.DEB.2.02.1107012149480.8312@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1753082Ab1GBByo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 1 Jul 2011 21:54:44 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40061 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752179Ab1GBByn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 1 Jul 2011 21:54:43 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <BANLkTinWkJa0zWgV7RVWtt4d3qf9dapFkg@mail.gmail.com>
+References: <BANLkTinWkJa0zWgV7RVWtt4d3qf9dapFkg@mail.gmail.com>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Fri, 1 Jul 2011 21:54:22 -0400
+Message-ID: <BANLkTimF0AsS3=-S=gmbcjBC5JuKr=6Prw@mail.gmail.com>
+Subject: Re: [PCI Driver]Physical address being returned as 0 in mmap
+To: newton mailinglist <newtonmailinglist@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Fri, 1 Jul 2011, Justin Piszcz wrote:
-
+On Fri, Jul 1, 2011 at 20:05, newton mailinglist
+<newtonmailinglist@gmail.com> wrote:
+> I have written a PCI driver for my device. The device is an FPGA which
+> is configured with a design that allows it to have direct access to
+> memory of a host computer to which the fpga board is connected. My
+> device driver is responsible for translating virtual addresses to
+> physical addresses and sending these to the FPGA so the DMA unit in
+> the FPGA can directly access pages in memory using the physical
+> address.
 >
+> [...snip...]
 >
-> On Mon, 27 Jun 2011, Justin Piszcz wrote:
+> When the driver gets the above call then I assume the kernel has
+> already allocated the required space and its details are in the vma
+> parameter. When I try to view the physical address of the virtual
+> address in the vma i use :
 >
->> 
->> On Mon, 27 Jun 2011, Justin Piszcz wrote:
->> 
->>> 
->>> 
->>> On Mon, 27 Jun 2011, Ronciak, John wrote:
->>> 
->> 
->> Hi,
->> 
->> Here's another crash: (see the dmesg, its right when powering the disks up)
->> http://home.comcast.net/~jpiszcz/20110627/IMG_2704.JPG
->> 
->> In this case, I was mkfs.xfs -f (some disks attached to a sata dock) over
->> an Sil 3132 card, I disconnected the card and re-ran it w/ the on-board
->> SATA controller and the problem no longer occurred (crashed repeatedly
->> everytime with the NIC error), strange.
->> 
->> In any case, will let you know if there are any further crashes after
->> removing that PCI-e card.
->> 
->> Justin.
->> 
->> 
->
+> virt_to_phys(vma->vm_start)
 
+You should not use virt_to_phys().  On most systems it does not work
+for all memory, and on some (with an IOMMU) it would need to give a
+different result depending on the device.
 
-Hello,
+What you are looking for is the DMA API:
 
-Please ignore all my bug reports concerning kernel crashes for the past 3-4
-weeks, my PSU from 2008 failed, I replaced it and my system is back up and
-running, I'm sure it will be fine now.
+  http://lxr.linux.no/#linux/Documentation/DMA-API-HOWTO.txt
+  http://lxr.linux.no/#linux/Documentation/DMA-API.txt
 
-I'll also update the bugzilla entry, for 2.6.38->2.6.39.
+Specifically, you need to specify the DMA address mask of your FPGA
+since not all devices can access 100% of the address space, some
+are limited to 24/31/32/40-bit address spaces.  See dma_set_mask().
 
-Thanks,
+If you don't need fully coherent memory (as described in those docs),
+then you can simply allow read() and write() on your device node and
+perform DMA mapping of the userspace memory using dma_map_*().
 
-Justin.
+Otherwise you will mmap() the device and use dma_alloc_coherent()
+or dma_pool_*(), this is typical for things like TX queues and such.
 
+Then make sure to insert calls to dma_sync_*() when switching
+between CPU access to memory and device access to memory,
+and ensure that you use appropriate IO memory barriers to order
+your register reads and writes.
+
+If you don't follow the DMA API specifications then your driver will
+mysteriously fail on many platforms, even x86 if an IOMMU is present,
+but particularly on processors like ARM with poor cache coherency.
+
+Cheers,
+Kyle Moffett
