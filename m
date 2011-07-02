@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754170Ab1GBKJ7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 06:09:59 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:53674 "EHLO mail.mnsspb.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753904Ab1GBKJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 06:09:57 -0400
-Date: Sat, 2 Jul 2011 14:09:03 +0400
-From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        USB list <linux-usb@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/2] USB: EHCI: Move sysfs related bits into
-	ehci-sysfs.c
-Message-ID: <20110702100903.GB18338@tugrik.mns.mnsspb.ru>
-References: <20110701114927.GA15802@tugrik.mns.mnsspb.ru> <Pine.LNX.4.44L0.1107011139560.1988-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1107011139560.1988-100000@iolanthe.rowland.org>
-Organization: Marine Bridge & Navigation Systems
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754178Ab1GBKLJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 06:11:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:37549 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754077Ab1GBKLH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 06:11:07 -0400
+Subject: Re: [PATCH] plist: add mutex to the blessed lock type for plists
+From: Peter Zijlstra <peterz@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Dima Zavin <dima@android.com>, Andi Kleen <andi@firstfloor.org>,
+        linux-kernel@vger.kernel.org, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1309473918.26417.115.camel@gandalf.stny.rr.com>
+References: <1309376033-32005-1-git-send-email-dima@android.com>
+	 <m2tyb81jml.fsf@firstfloor.org>
+	 <CAPz4a6CbzEm3QJZ-5wsaiSH1H9g7tgo7E7-HyRB8Fv5=NfGDRQ@mail.gmail.com>
+	 <1309380221.26417.50.camel@gandalf.stny.rr.com>
+	 <CAPz4a6AHuBLfXPx4aXew0BCa3bQ-_kAnrpw_3f2r-5A9OhTTsg@mail.gmail.com>
+	 <1309473918.26417.115.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 02 Jul 2011 12:09:50 +0200
+Message-ID: <1309601390.10073.13.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 11:41:05AM -0400, Alan Stern wrote:
-> On Fri, 1 Jul 2011, Kirill Smelkov wrote:
+On Thu, 2011-06-30 at 18:45 -0400, Steven Rostedt wrote:
+> On Thu, 2011-06-30 at 15:14 -0700, Dima Zavin wrote:
+> > Steve,
+> > 
+> > So what would do you recommend I do? Is this patch acceptable or do
+> > you want me to remove all the debug stuff and modify all the users to
+> > not provide a lock?
+> > 
 > 
-> > > > The checking is not a priority for me here, so if you think it's better not
-> > > > to check or do it under #ifdef - let's do it. Though of course we all
-> > > > have our preferences :)
-> > > 
-> > > Yes, it's just a matter of taste.  I prefer to add as little code as 
-> > > possible for a feature that won't be used much.
-> > 
-> > 
-> > Look: we have 3 choices: to check or not to check, and if we are
-> > checking whether it is under #ifdef DEBUG. Not checking at all makes the
-> > code inconsistent with the check in periodic_usecs(). Then, if we are
-> > checking, putting it under #ifdef DEBUG goes against minimum complexity /
-> > "to add as little code as possible ...". It looks the good balance is to
-> > leave the checking as is module you above remark.
-> > 
-> > And with the above-mentioned correction and comments inspired by Sarah's
-> > concern I'm resending the whole series as v3. Can we do it this way,
-> > please?
-> 
-> Okay, you can add my Acked-by to the 2/2 patch.
+> I'm fine either way. I would like to know what Thomas, Ingo and Peter
+> think.
 
-Thanks a lot!
-
-By the way, is it "Acked-off-by" (as you wrote for 1/2) or "Acked-by"
-(as you write here)?
-
-
-Thanks again,
-Kirill
+I've always been annoyed with that check, just rip it out.
