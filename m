@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754111Ab1GBKIZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 06:08:25 -0400
-Received: from mail.mnsspb.ru ([84.204.75.2]:53664 "EHLO mail.mnsspb.ru"
+	id S1754170Ab1GBKJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 06:09:59 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:53674 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751006Ab1GBKIX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 06:08:23 -0400
-Date: Sat, 2 Jul 2011 14:07:12 +0400
+	id S1753904Ab1GBKJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 2 Jul 2011 06:09:57 -0400
+Date: Sat, 2 Jul 2011 14:09:03 +0400
 From: Kirill Smelkov <kirr@mns.spb.ru>
-To: Greg KH <greg@kroah.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org, linux-uvc-devel@lists.berlios.de,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 2/2] USB: EHCI: Allow users to override 80% max
-	periodic bandwidth
-Message-ID: <20110702100712.GA18338@tugrik.mns.mnsspb.ru>
-References: <cover.1309520144.git.kirr@mns.spb.ru> <69ea2dd940481508f190419c53c780b626460b22.1309520144.git.kirr@mns.spb.ru> <20110701212427.GA11831@kroah.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        USB list <linux-usb@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/2] USB: EHCI: Move sysfs related bits into
+	ehci-sysfs.c
+Message-ID: <20110702100903.GB18338@tugrik.mns.mnsspb.ru>
+References: <20110701114927.GA15802@tugrik.mns.mnsspb.ru> <Pine.LNX.4.44L0.1107011139560.1988-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110701212427.GA11831@kroah.com>
+In-Reply-To: <Pine.LNX.4.44L0.1107011139560.1988-100000@iolanthe.rowland.org>
 Organization: Marine Bridge & Navigation Systems
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 02:24:27PM -0700, Greg KH wrote:
-> On Fri, Jul 01, 2011 at 03:47:11PM +0400, Kirill Smelkov wrote:
-> >  drivers/usb/host/ehci-sysfs.c |  104 +++++++++++++++++++++++++++++++++++++++--
+On Fri, Jul 01, 2011 at 11:41:05AM -0400, Alan Stern wrote:
+> On Fri, 1 Jul 2011, Kirill Smelkov wrote:
 > 
-> As you are adding new sysfs files, it is required that you also add new
-> entries in the Documentation/ABI/ directory.
+> > > > The checking is not a priority for me here, so if you think it's better not
+> > > > to check or do it under #ifdef - let's do it. Though of course we all
+> > > > have our preferences :)
+> > > 
+> > > Yes, it's just a matter of taste.  I prefer to add as little code as 
+> > > possible for a feature that won't be used much.
+> > 
+> > 
+> > Look: we have 3 choices: to check or not to check, and if we are
+> > checking whether it is under #ifdef DEBUG. Not checking at all makes the
+> > code inconsistent with the check in periodic_usecs(). Then, if we are
+> > checking, putting it under #ifdef DEBUG goes against minimum complexity /
+> > "to add as little code as possible ...". It looks the good balance is to
+> > leave the checking as is module you above remark.
+> > 
+> > And with the above-mentioned correction and comments inspired by Sarah's
+> > concern I'm resending the whole series as v3. Can we do it this way,
+> > please?
 > 
-> Please do that for these files so that people have an idea of what they
-> are, and how to use them.
-> 
-> Care to redo this series with that change?
+> Okay, you can add my Acked-by to the 2/2 patch.
 
-Sure, I'll post v4 with documentation included.
+Thanks a lot!
 
-Thanks,
+By the way, is it "Acked-off-by" (as you wrote for 1/2) or "Acked-by"
+(as you write here)?
+
+
+Thanks again,
 Kirill
