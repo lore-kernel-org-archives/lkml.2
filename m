@@ -1,76 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754881Ab1GBRgc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 13:36:32 -0400
-Received: from mail.southpole.se ([193.12.106.18]:48466 "EHLO
-	mail.southpole.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751095Ab1GBRg3 (ORCPT
+	id S1755235Ab1GBRiC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 13:38:02 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:53183 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752022Ab1GBRiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 13:36:29 -0400
-From: Jonas Bonn <jonas@southpole.se>
-To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-Cc: Jonas Bonn <jonas@southpole.se>, vapier@gentoo.org,
-        liqin.chen@sunplusct.com, gxt@mprc.pku.edu.cn
-Subject: [PATCH v2 1/1] asm-generic: add MMU variants of io.h functions
-Date: Sat,  2 Jul 2011 19:36:08 +0200
-Message-Id: <1309628168-3413-1-git-send-email-jonas@southpole.se>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <CAMjpGUeMqVzcAWKpAojZVbj9ywH+4HmW4Hx-8D1WQmTqPSNqQA@mail.gmail.com>
-References: <CAMjpGUeMqVzcAWKpAojZVbj9ywH+4HmW4Hx-8D1WQmTqPSNqQA@mail.gmail.com>
-X-Assp-Client-SSL: yes
+	Sat, 2 Jul 2011 13:38:00 -0400
+Date: Sat, 2 Jul 2011 13:37:59 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: axboe@kernel.dk, James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Andi Kleen <andi@firstfloor.org>, Dave Jones <davej@redhat.com>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+In-Reply-To: <1309609482.2554.8.camel@mulgrave>
+Message-ID: <Pine.LNX.4.44L0.1107021320180.14703-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Okay, I found the source of the problem.  Or more accurately, I found
+two separate bugs.
 
-Some of the implementations, in particular the ioremap variants, in
-asm-generic/io.h are for systems without an MMU.  In order to be able to
-use the generic header file for systems with an MMU, this patch wraps
-these implementations in checks for CONFIG_MMU.
+The first bug is triggered in scsi_request_fn().  At the start of that
+routine we have:
 
-Tested on OpenRISC.
+	struct scsi_device *sdev = q->queuedata;
+	...
 
-Signed-off-by: Jonas Bonn <jonas@southpole.se>
-Cc: vapier@gentoo.org
-Cc: liqin.chen@sunplusct.com
-Cc: gxt@mprc.pku.edu.cn
----
- include/asm-generic/io.h |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+	if (!sdev) {
+		printk("scsi: killing requests for dead queue\n");
+		while ((req = blk_peek_request(q)) != NULL)
+			scsi_kill_request(req, q);
+		return;
+	}
 
-diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
-index e0ffa3d..a1caf2d 100644
---- a/include/asm-generic/io.h
-+++ b/include/asm-generic/io.h
-@@ -307,7 +307,11 @@ static inline void *phys_to_virt(unsigned long address)
- 
- /*
-  * Change "struct page" to physical address.
-+ *
-+ * This implementation is for the no-MMU case only... if you have an MMU
-+ * you'll need to provide your own definitions.
-  */
-+#ifndef CONFIG_MMU
- static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
- {
- 	return (void __iomem*) (unsigned long)offset;
-@@ -326,6 +330,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
- static inline void iounmap(void *addr)
- {
- }
-+#endif /* CONFIG_MMU */
- 
- #ifndef CONFIG_GENERIC_IOMAP
- static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
-@@ -342,7 +347,7 @@ extern void ioport_unmap(void __iomem *p);
- #endif /* CONFIG_GENERIC_IOMAP */
- 
- #define xlate_dev_kmem_ptr(p)	p
--#define xlate_dev_mem_ptr(p)	((void *) (p))
-+#define xlate_dev_mem_ptr(p)	__va(p)
- 
- #ifndef virt_to_bus
- static inline unsigned long virt_to_bus(volatile void *address)
--- 
-1.7.4.1
+The problem is that blk_peek_request() calls scsi_prep_fn(), which 
+does this:
+
+	struct scsi_device *sdev = q->queuedata;
+	int ret = BLKPREP_KILL;
+
+	if (req->cmd_type == REQ_TYPE_BLOCK_PC)
+		ret = scsi_setup_blk_pc_cmnd(sdev, req);
+	return scsi_prep_return(q, req, ret);
+
+It doesn't check to see if sdev is NULL, nor does 
+scsi_setup_blk_pc_cmnd().  That accounts for this error:
+
+On Sat, 2 Jul 2011, James Bottomley wrote:
+
+> On Sat, 2011-07-02 at 08:08 +0200, Andi Kleen wrote:
+> > > I'm not able to reproduce it on a vanilla 3.0-rc5 system.  Can anybody
+> > > give the exact sequence of steps you went through to trigger the bug?
+> > 
+> > Connect USB storage device with builtin fake CD rom. Wait for udisk
+> > to mount it. Pull cable. udisk does umount. Oops.
+> > 
+> > I also got a log of the refcounting now if you want it.
+> 
+> So I've got the log, but this is the relevant section:
+> 
+> ---
+> usb 2-1.5: USB disconnect, device number 4
+> sr 5:0:0:1: scsi put_device 13 from device_del+0x177/0x1c0
+> sr 5:0:0:1: scsi put_device 12 from bsg_kref_release_function+0x28/0x30
+> sr 5:0:0:1: scsi put_device 10 from device_del+0x177/0x1c0
+> sr 5:0:0:1: scsi put_device 8 from device_del+0x177/0x1c0
+> sr 5:0:0:1: scsi put_device 7 from scsi_device_cls_release+0x15/0x20
+> sr 5:0:0:1: scsi put_device 6 from klist_children_put+0x12/0x20
+> sr 5:0:0:1: scsi put_device 5 from klist_devices_put+0x12/0x20
+> sr 5:0:0:1: scsi put_device 3 from device_del+0x177/0x1c0
+> scsi: killing requests for dead queue
+> BUG: sleeping function called from invalid context
+> at /home/ak/lsrc/git/linux-2.6/arch/x86/mm/fault.c:1103
+> in_atomic(): 0, irqs_disabled(): 1, pid: 2527, name: umount
+> Pid: 2527, comm: umount Not tainted 3.0.0-rc5+ #8
+> Call Trace:
+>  [<ffffffff8103af8c>] __might_sleep+0xcc/0xf0
+>  [<ffffffff8155af42>] do_page_fault+0x142/0x4c0
+>  [<ffffffffa01d5385>] ? write_msg+0x105/0x120 [netconsole]
+>  [<ffffffff810514f7>] ? __call_console_drivers+0x97/0xb0
+>  [<ffffffff81079692>] ? up+0x32/0x50
+>  [<ffffffff81557f5f>] page_fault+0x1f/0x30
+>  [<ffffffff81389a70>] ? scsi_setup_blk_pc_cmnd+0x170/0x170
+>  [<ffffffff81388e19>] ? scsi_prep_state_check+0x9/0x90
+>  [<ffffffff8138992b>] scsi_setup_blk_pc_cmnd+0x2b/0x170
+>  [<ffffffff81389abd>] scsi_prep_fn+0x4d/0x60
+>  [<ffffffff812847ad>] blk_peek_request+0xbd/0x230
+>  [<ffffffff8138a1ea>] scsi_request_fn+0x44a/0x470
+>  [<ffffffff8127e42b>] __blk_run_queue+0x1b/0x20
+>  [<ffffffff812885a3>] blk_execute_rq_nowait+0x63/0xb0
+>  [<ffffffff81288676>] blk_execute_rq+0x86/0xf0
+>  [<ffffffff8128430d>] ? blk_get_request+0x6d/0xa0
+>  [<ffffffff81389c6c>] scsi_execute+0xfc/0x160
+>  [<ffffffff8138a40a>] scsi_execute_req+0xca/0x140
+>  [<ffffffff81383ea8>] ioctl_internal_command.clone.4+0x68/0x1a0
+>  [<ffffffff81103f82>] ? pagevec_lookup+0x22/0x30
+>  [<ffffffff8138405e>] scsi_set_medium_removal+0x7e/0xb0
+>  [<ffffffff8139b390>] sr_lock_door+0x20/0x30
+>  [<ffffffff813c4d63>] cdrom_release+0xa3/0x260
+
+An easy fix is to have scsi_prep_fn() check if sdev is NULL and return 
+BLKPREP_KILL if it is.
+
+The second bug, which hit me but apparently not any of you, is that the 
+request_queue's elevator gets deallocated while it is still in use.  
+That's because __scsi_remove_device() calls scsi_free_queue(), which 
+does blk_cleanup_queue(), which calls elevator_exit(), even though the 
+device file is still open and more requests will be submitted when the 
+file is closed.
+
+I'm not sure of the right fix for this.  One possibility is to move the 
+scsi_free_queue() call to scsi_device_dev_release_usercontext().  Or 
+maybe the elevator_exit() call should be moved to blk_release_queue().
+
+Also, I have no idea why this shows up with USB drives but not other 
+SCSI transports.  A fluke of timing?
+
+Alan Stern
 
