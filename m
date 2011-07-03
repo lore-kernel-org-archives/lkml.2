@@ -1,167 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752388Ab1GCW1u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 18:27:50 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51824 "EHLO ogre.sisk.pl"
+	id S1751916Ab1GCXZS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 19:25:18 -0400
+Received: from wnohang.net ([178.79.154.173]:38844 "EHLO mail.wnohang.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751610Ab1GCW1r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 18:27:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andrea Righi <andrea@betterlinux.com>
-Subject: Re: [PATCH v2] ACPI: fix acpi_power_off lockdep splat
-Date: Mon, 4 Jul 2011 00:28:23 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, linux-acpi@vger.kernel.org,
+	id S1751318Ab1GCXZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 19:25:16 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 99A69F0008
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 05E2EF0003
+Date: Mon, 4 Jul 2011 04:55:08 +0530
+From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: jeremy.fitzhardinge@citrix.com, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-References: <1309684450-24549-1-git-send-email-andrea@betterlinux.com> <201107032259.05722.rjw@sisk.pl> <201107040011.32254.rjw@sisk.pl>
-In-Reply-To: <201107040011.32254.rjw@sisk.pl>
+Subject: [PATCH] Modpost section mismatch fix
+Message-ID: <20110703232508.GB4440@Xye>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107040028.23569.rjw@sisk.pl>
+Content-Type: multipart/mixed; boundary="xXmbgvnjoT4axfJE"
+Content-Disposition: inline
+X-Operating-System: Arch linux x86_64 3.0.0-rc5-LYM
+X-Editor: VIM - Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 04, 2011, Rafael J. Wysocki wrote:
-> On Sunday, July 03, 2011, Rafael J. Wysocki wrote:
-> > On Sunday, July 03, 2011, Andrea Righi wrote:
-> > > Implement acpi_os_create_lock() as a C-preprocessor macro to suppress
-> > > lockdep false positive.
-> > > 
-> > > When lockdep is enabled the spin_lock_init macro stringifies it's
-> > > argument and uses that as a name for the lock in the debugging.
-> > > 
-> > > By executing spin_lock_init in a macro the key changes from "lock" for
-> > > all locks to the actual argument of acpi_os_create_lock()
-> > > ("&acpi_gbl_global_lock_pending_lock", "&acpi_gbl_gpe_lock" or
-> > > "&acpi_gbl_hardware_lock" for now).
-> > > 
-> > > This fixes:
-> > > https://bugzilla.kernel.org/show_bug.cgi?id=38152
-> > > 
-> > > ChangeLog (v1 -> v2):
-> > >  - avoid to call spin_lock_init multiple times on the same lock
-> > >  - rewrite patch description (thanks to Florian for providing a better
-> > >    description of the patch)
-> > > 
-> > > Reported-by: Borislav Petkov <bp@alien8.de>
-> > > CC: Florian Mickler <florian@mickler.org>
-> > > Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-> > > ---
-> > >  drivers/acpi/osl.c      |    3 +--
-> > >  include/acpi/acpiosxf.h |   12 +++++++++++-
-> > >  2 files changed, 12 insertions(+), 3 deletions(-)
-> > > 
-> > > diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> > > index 52ca964..4c985d3 100644
-> > > --- a/drivers/acpi/osl.c
-> > > +++ b/drivers/acpi/osl.c
-> > > @@ -1336,14 +1336,13 @@ EXPORT_SYMBOL(acpi_resources_are_enforced);
-> > >   * Create and initialize a spinlock.
-> > >   */
-> > >  acpi_status
-> > > -acpi_os_create_lock(acpi_spinlock *out_handle)
-> > > +__acpi_os_create_lock(acpi_spinlock *out_handle)
-> > >  {
-> > 
-> > I would rename this to acpi_os_allocate_lock() or acpi_os_alloc_lock(),
-> > so that it doesn't suggest the lock is initialized by this function.
-> > 
-> > Hmm.  There's one more thing we need to take into account here.  Namely,
-> > include/acpi/acpiosxf.h is used by other OSes, so we shouldn't put
-> > Linux-specific stuff into it.
-> > 
-> > I'm not sure how to work around that at the moment.
-> 
-> OK, the patch below builds for me and seems to work even, although I haven't
-> tested it with lockdep on.
 
-Below is a cleaned-up version, still untested with lockdep on.
+--xXmbgvnjoT4axfJE
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
 
-Thanks,
-Rafael
+[Sorry if duplicate, one earlier was corrupt]
 
+Hi,
+     I got section mismatches reported by modpost in latest build. It got
+     reported for xen_register_pirq and xen_unplug_emulated_devices
+     functions. xen_register_pirq makes reference to
+     acpi_sci_override_gsi in init.data section; marking
+     xen_register_pirq with __init is not feasible since calls are made
+     to it from acpi_register_gsi in non-init contexts. So marking it
+     __refdata based on assumption that when acpi_sci_override_gsi is
+     referenced, it is in  early stages where it is alive.
+
+
+--------------------------
+Raghavendra Prabhu
+GPG Id : 0xD72BE977
+Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
+www: wnohang.net
+
+--xXmbgvnjoT4axfJE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: attachment; filename="0001-xen-pci-Fix-modpost-warnings-regarding-section-misma.patch"
+
+>From 7dfd47575fd695fe8ddba951515cfac01a2ab8bc Mon Sep 17 00:00:00 2001
+Message-Id: <7dfd47575fd695fe8ddba951515cfac01a2ab8bc.1309641255.git.rprabhu@wnohang.net>
+From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+Date: Sun, 3 Jul 2011 01:48:50 +0530
+Subject: [PATCH] xen/pci: Fix modpost warnings regarding section mismatch
+
+Marking xen_register_pirq with __refdata since it is referencing
+acpi_sci_override_gsi, an __initdata variable.  Removing __init from
+check_platform_magic since it is called by xen_unplug_emulated_devices in
+non-init contexts (It probably gets inlined because of
+-finline-functions-called-once, removing __init is more to avoid mismatch being
+reported).
+
+Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
 ---
- drivers/acpi/osl.c              |   17 -----------------
- include/acpi/acpiosxf.h         |    3 +++
- include/acpi/platform/aclinux.h |   18 ++++++++++++++++++
- 3 files changed, 21 insertions(+), 17 deletions(-)
+ arch/x86/pci/xen.c                 |    2 +-
+ arch/x86/xen/platform-pci-unplug.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-Index: linux-2.6/drivers/acpi/osl.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/osl.c
-+++ linux-2.6/drivers/acpi/osl.c
-@@ -1333,23 +1333,6 @@ int acpi_resources_are_enforced(void)
- EXPORT_SYMBOL(acpi_resources_are_enforced);
+diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+index fe00830..fb5eeb0 100644
+--- a/arch/x86/pci/xen.c
++++ b/arch/x86/pci/xen.c
+@@ -327,7 +327,7 @@ int __init pci_xen_hvm_init(void)
+ }
  
- /*
-- * Create and initialize a spinlock.
-- */
--acpi_status
--acpi_os_create_lock(acpi_spinlock *out_handle)
--{
--	spinlock_t *lock;
--
--	lock = ACPI_ALLOCATE(sizeof(spinlock_t));
--	if (!lock)
--		return AE_NO_MEMORY;
--	spin_lock_init(lock);
--	*out_handle = lock;
--
--	return AE_OK;
--}
--
--/*
-  * Deallocate the memory for a spinlock.
-  */
- void acpi_os_delete_lock(acpi_spinlock handle)
-Index: linux-2.6/include/acpi/acpiosxf.h
-===================================================================
---- linux-2.6.orig/include/acpi/acpiosxf.h
-+++ linux-2.6/include/acpi/acpiosxf.h
-@@ -98,8 +98,11 @@ acpi_os_table_override(struct acpi_table
- /*
-  * Spinlock primitives
-  */
-+
-+#ifndef acpi_os_create_lock
- acpi_status
- acpi_os_create_lock(acpi_spinlock *out_handle);
-+#endif
+ #ifdef CONFIG_XEN_DOM0
+-static int xen_register_pirq(u32 gsi, int triggering)
++static  __refdata  int xen_register_pirq(u32 gsi, int triggering)
+ {
+ 	int rc, pirq, irq = -1;
+ 	struct physdev_map_pirq map_irq;
+diff --git a/arch/x86/xen/platform-pci-unplug.c b/arch/x86/xen/platform-pci-unplug.c
+index 25c52f9..ffcf261 100644
+--- a/arch/x86/xen/platform-pci-unplug.c
++++ b/arch/x86/xen/platform-pci-unplug.c
+@@ -35,7 +35,7 @@ EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
+ #ifdef CONFIG_XEN_PVHVM
+ static int xen_emul_unplug;
  
- void acpi_os_delete_lock(acpi_spinlock handle);
- 
-Index: linux-2.6/include/acpi/platform/aclinux.h
-===================================================================
---- linux-2.6.orig/include/acpi/platform/aclinux.h
-+++ linux-2.6/include/acpi/platform/aclinux.h
-@@ -159,6 +159,24 @@ static inline void *acpi_os_acquire_obje
- 	} while (0)
- #endif
- 
-+/*
-+ * When lockdep is enabled, the spin_lock_init() macro stringifies it's
-+ * argument and uses that as a name for the lock in debugging.
-+ * By executing spin_lock_init() in a macro the key changes from "lock" for
-+ * all locks to the name of the argument of acpi_os_create_lock(), which
-+ * prevents lockdep from reporting false positives for ACPICA locks.
-+ */
-+#define acpi_os_create_lock(__handle)				\
-+({								\
-+	spinlock_t *lock = ACPI_ALLOCATE(sizeof(*lock));	\
-+								\
-+	if (lock) {						\
-+		*(__handle) = lock;				\
-+		spin_lock_init(*(__handle));			\
-+	}							\
-+	lock ? AE_OK : AE_NO_MEMORY;				\
-+})
-+
- #endif /* __KERNEL__ */
- 
- #endif /* __ACLINUX_H__ */
+-static int __init check_platform_magic(void)
++static int check_platform_magic(void)
+ {
+ 	short magic;
+ 	char protocol;
+-- 
+1.7.6
+
+
+--xXmbgvnjoT4axfJE--
