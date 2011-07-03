@@ -1,54 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754142Ab1GCMfW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 08:35:22 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55098 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752661Ab1GCMfV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 08:35:21 -0400
-Date: Sun, 3 Jul 2011 13:37:32 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org,
-        Thomas Hellstrom <thomas@tungstengraphics.com>,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        devel@driverdev.osuosl.org
-Subject: Re: [PATCH] gma500: fix compiler warnings and format string
-Message-ID: <20110703133732.4e2ed436@lxorguk.ukuu.org.uk>
-In-Reply-To: <alpine.LNX.2.00.1107030914100.16316@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107030914100.16316@swampdragon.chaosbits.net>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+	id S1753980Ab1GCNUo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 09:20:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46274 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752599Ab1GCNUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 09:20:43 -0400
+Message-ID: <4E106C9B.6020403@redhat.com>
+Date: Sun, 03 Jul 2011 16:20:27 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>, Jeff Law <law@redhat.com>
+Subject: Re: [PATCH v4 8/9] KVM-GST: adjust scheduler cpu power
+References: <1309555369-16867-1-git-send-email-glommer@redhat.com>	 <1309555369-16867-9-git-send-email-glommer@redhat.com> <1309602291.10073.22.camel@twins>
+In-Reply-To: <1309602291.10073.22.camel@twins>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Jul 2011 09:16:13 +0200 (CEST)
-Jesper Juhl <jj@chaosbits.net> wrote:
+On 07/02/2011 01:24 PM, Peter Zijlstra wrote:
+> static void update_rq_clock_task(struct rq *rq, s64 delta)
+> {
+> 	s64 irq_delta = 0, steal = 0;
+>
+> 	rq->clock_task += delta;
+>
+> 	if ((irq_delta + steal)&&  sched_feat(NONTASK_POWER))
+> 		sched_rt_avg_update(rq, irq_delta + steal);
+> }
+>
+> And we want it to emit the equivalent of:
+>
+> static void update_rq_clock_task(struct rq *rq, s64 delta)
+> {
+> 	rq->clock_task += delta;
+> }
+>
+> Now Glauber is properly paranoid and doesn't trust his compiler (this is
+> very hot code in the kernel so any extra code emitted here is sad) and
+> chose the heavy handed CPP solution.
+>
+> Now without checking a all relevant gcc versions on all relevant
+> architectures (see you in a few weeks etc..) can we actually rely on gcc
+> doing such relatively simple things correct, or should we stick with CPP
+> just to make sure?
 
-> This patch fixes these compiler warnings:
-> 
->   CC      drivers/staging/gma500/psb_gtt.o
-> drivers/staging/gma500/psb_gtt.c: In function ¡psb_gtt_insert¢:
-> drivers/staging/gma500/psb_gtt.c:81:33: warning: unused variable ¡dev_priv¢ [-Wunused-variable]
-> drivers/staging/gma500/psb_gtt.c: In function ¡psb_gtt_pin¢:
-> drivers/staging/gma500/psb_gtt.c:237:2: warning: ¡ret¢ may be used uninitialized in this function [-Wuninitialized]
-> 
-> It also fixes up the format string used in DRM_DEBUG() in
-> drivers/staging/gma500/psb_gtt.c:psb_gtt_init() - the string required
-> two arguments but only one was supplied.
-> 
-> While reading through the file I also deleted what trailing whitespace
-> I encountered.
+I'm pretty sure any relevant version of gcc will do the right optimizations.
 
-Unfortunately this file doesn't even exist in the working tree any more.
-Please wait until Greg has taken the patch set I sent him to replace the
-one that didn't apply, and the patch series after that (and quite
-possibly the one after that assuming I can get Cedartrail to work next
-week).
+-- 
+error compiling committee.c: too many arguments to function
 
-Alan
