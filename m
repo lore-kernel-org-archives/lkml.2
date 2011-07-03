@@ -1,30 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753461Ab1GCUHA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 16:07:00 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:42660 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab1GCUG6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 16:06:58 -0400
+	id S1756467Ab1GCUUL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 16:20:11 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51672 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752930Ab1GCUUI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 16:20:08 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] Power management documentation fixes for 3.0
+Date: Sun, 3 Jul 2011 22:20:56 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Kevin Hilman <khilman@ti.com>, Alan Stern <stern@rowland.harvard.edu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linux PM mailing list <linux-pm@lists.linux-foundation.org>
 MIME-Version: 1.0
-X-Originating-IP: [202.78.240.10]
-In-Reply-To: <20110703191404.GL2544@shale.localdomain>
-References: <1309667900-2225-1-git-send-email-chrisf@ijw.co.nz>
-	<20110703191404.GL2544@shale.localdomain>
-Date: Mon, 4 Jul 2011 08:06:57 +1200
-Message-ID: <CAH3ygc0iLVu4oyEzf0P+uLGv8i_PFQhHm8MKT4bct+C+Di8Q-g@mail.gmail.com>
-Subject: Re: [PATCH] drivers: staging: bcm: sort: kill handrolled bubblesort
-From: Chris Forbes <chrisf@ijw.co.nz>
-To: Dan Carpenter <error27@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107032220.56409.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No, it has not been tested. I have checked that it builds cleanly and
-passes checkpatch though.
+Hi Linus,
 
--- Chris
+Please pull power management documentation fixes for 3.0 from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-fixes
+
+One of them makes documentation match the code again after a recent change
+and it depends on the other one, which fixes a typo.
+
+
+ Documentation/power/runtime_pm.txt |   26 +++++++++++++++++++++-----
+ 1 files changed, 21 insertions(+), 5 deletions(-)
+
+---------------
+
+Kevin Hilman (1):
+      PM: Documentation: fix typo: pm_runtime_idle_sync() doesn't exist.
+
+Rafael J. Wysocki (1):
+      PM / Runtime: Update documentation regarding driver removal
+
