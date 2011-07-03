@@ -1,36 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756323Ab1GCTqr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 15:46:47 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:55067 "EHLO mx3.mail.elte.hu"
+	id S1755261Ab1GCTuM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 15:50:12 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:36258 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752284Ab1GCTqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 15:46:45 -0400
-Date: Sun, 3 Jul 2011 21:46:18 +0200
+	id S1752284Ab1GCTuJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 15:50:09 -0400
+Date: Sun, 3 Jul 2011 21:49:49 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Petr Tesarik <ptesarik@suse.cz>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Christoph Hellwig <hch@infradead.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
-        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-        Dave Jones <davej@redhat.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
- physical addresses
-Message-ID: <20110703194618.GB27022@elte.hu>
-References: <201106171038.25988.ptesarik@suse.cz>
- <201107012134.45881.ptesarik@suse.cz>
- <20110701195629.GA19057@elte.hu>
- <201107012244.57593.ptesarik@suse.cz>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Michal Marek <mmarek@suse.cz>, Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [GIT PULL v2] sched: Make sleep inside atomic detection work on
+ !PREEMPT
+Message-ID: <20110703194949.GC27022@elte.hu>
+References: <1307712622-11104-1-git-send-email-fweisbec@gmail.com>
+ <20110622224844.GA3290@somewhere>
+ <20110701123629.GA12605@elte.hu>
+ <20110701125644.GD8508@somewhere>
+ <20110701125926.GF12605@elte.hu>
+ <20110701150517.GA24707@elte.hu>
+ <20110701164425.GG8508@somewhere>
+ <20110701172934.GA6240@elte.hu>
+ <20110702165342.GA317@somewhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201107012244.57593.ptesarik@suse.cz>
+In-Reply-To: <20110702165342.GA317@somewhere>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -44,34 +44,86 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Petr Tesarik <ptesarik@suse.cz> wrote:
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> > Do you expect distros to enable this boot option by default? I.e. 
-> > would SuSE be willing to ship with a restrictive /dev/mem by 
-> > default? That's really the wider goal we want to work towards.
+> On Fri, Jul 01, 2011 at 07:29:34PM +0200, Ingo Molnar wrote:
+> > 
+> > * Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > 
+> > > On Fri, Jul 01, 2011 at 05:05:17PM +0200, Ingo Molnar wrote:
+> > > > 
+> > > > -tip testing also found that m32r fails to build:
+> > > > 
+> > > > /home/mingo/tip/kernel/sched.c: In function 'preempt_schedule':
+> > > > /home/mingo/tip/kernel/sched.c:4364: error: implicit declaration of function 'add_preempt_count_notrace'
+> > > > /home/mingo/tip/kernel/sched.c:4366: error: implicit declaration of function 'sub_preempt_count_notrace'
+> > > > 
+> > > > due to:
+> > > > 
+> > > > bdd4e85dc36cdbcfc1608a5b2a17c80a9db8986a is the first bad commit
+> > > > commit bdd4e85dc36cdbcfc1608a5b2a17c80a9db8986a
+> > > > Author: Frederic Weisbecker <fweisbec@gmail.com>
+> > > > Date:   Wed Jun 8 01:13:27 2011 +0200
+> > > > 
+> > > >     sched: Isolate preempt counting in its own config option
+> > > > 
+> > > > Thanks,
+> > > > 
+> > > > 	Ingo
+> > > 
+> > > I have no clue how that did happen.
+> > > 
+> > > Can you send me your config?
+> > 
+> > Just the m32r defconfig: m32700ut.smp_defconfig.
+> > 
+> > My guess would be that one of these:
+> > 
+> >  include/linux/bit_spinlock.h |    2 +-
+> >  include/linux/hardirq.h      |    4 ++--
+> >  include/linux/pagemap.h      |    4 ++--
+> >  include/linux/preempt.h      |   26 +++++++++++++++++---------
+> >  include/linux/rcupdate.h     |   12 ++++++------
+> >  include/linux/sched.h        |    2 +-
+> > 
+> > changed/exposed some header dependency quirk on m32r, failing the 
+> > build. Or m32r has some strange .config combo.
+> > 
+> > Thanks,
+> > 
+> > 	Ingo
 > 
-> I'm not really the decision-maker on this, but even though I don't 
-> need it for crash, there are several other users which would have 
-> to be fixed:
+> That's weird.
 > 
-> 1. hwinfo (EFI, MPTABLE and ACPI table parsing, analyzing video BIOS)
-> 2. dmidecode (SMBIOS, DMI)
-> 3. possibly others
-
-But those tables wont be in regular RAM (they will be in ROM or in 
-RAM marked non-RAM in a special way in the e820 tables).
-
-dmidecode certainly works on Fedora.
-
-> > Hm, why would the ability "dirty and/or flush an arbitrary 
-> > physical cache line for testing purposes" be a DoS?
+> We have this:
 > 
-> Effectively switching off CPU caches can slow things down quite a 
-> bit... especially on a large SMP system. ;)
+> 	config PREEMPT
+> 		bool
+> 		select PREEMPT_COUNT
+> 
+> 	config PREEMPT_COUNT
+> 		bool
+> 
+> Then I run "make ARCH=m32r defconfig" that has CONFIG_PREEMPT=y
+> but it doesn't select PREEMPT_COUNT and happily runs to break few
+> times after.
+> 
+> Even running make ARCH=m32r oldconfig on the defconfig doesn't fix up
+> the issue.
+> 
+> I thought "select" was an unconditional action. What am I missing?
+> 
+> I'm adding in Cc more people who know better kconfig/kbuild than me.
+> Every time I finally consider I know well the Kconfig language, I quickly
+> get caught up by the fate...
 
-Flushing a cacheline isnt switching it off. You can already 'flush' 
-the cache from user-space as well, by trashing it for example. So i 
-don't see the DoS angle.
+Architectures have to include kernel/Kconfig.preempt explicitly, 
+like:
+
+  arch/x86/Kconfig:source "kernel/Kconfig.preempt"
+
+m32r does not appear to do this - so it does not know about 
+PREEMPT_COUNT.
 
 Thanks,
 
