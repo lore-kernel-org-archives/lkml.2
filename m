@@ -1,71 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755606Ab1GCKev (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 06:34:51 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:24758 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755440Ab1GCKeu (ORCPT
+	id S1755633Ab1GCKjd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 06:39:33 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59615 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755531Ab1GCKja (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 06:34:50 -0400
-Date: Sun, 3 Jul 2011 12:25:31 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: dri-devel@lists.freedesktop.org, Ben Skeggs <bskeggs@redhat.com>,
-        David Airlie <airlied@linux.ie>,
-        Francisco Jerez <currojerez@riseup.net>
-Subject: [PATCH] nouveau: Do not leak in nv20_graph_create
-Message-ID: <alpine.LNX.2.00.1107031224030.16316@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Sun, 3 Jul 2011 06:39:30 -0400
+Date: Sun, 3 Jul 2011 14:39:25 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        viro@zeniv.linux.org.uk, rientjes@google.com, wilsons@start.ca,
+        security@kernel.org, kernel-hardening@lists.openwall.com
+Subject: [PATCH] proc: fix a race in do_io_accounting()
+Message-ID: <20110703103925.GA2283@albatros>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If we return due to an unknown chipset in 
-drivers/gpu/drm/nouveau/nv20_graph.c:nv20_graph_create() we'll leak the 
-memory allocated to 'pgraph'.
+There is a ptrace_may_access() check in do_io_accounting() to prevent
+gathering information of setuid'ed and similar binaries.  However, there
+is a race against execve().  Holding task->signal->cred_guard_mutex
+while gathering the information should protect against the race.
 
-This patch should fix the leak and it also disambiguates the "PGRAPH:
-unknown chipset\n" error message - it's nice to be able to tell which
-branch created the error which is impossible if the error messages are
-100% identical.
+The order of locking is similar to the one inside of
+ptrace_attach(): first goes cred_guard_mutex, then lock_task_sighand().
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+Cc: stable@kernel.org
 ---
- drivers/gpu/drm/nouveau/nv20_graph.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+ fs/proc/base.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
 
-  Don't have the hardware, so compile tested only.
-
-diff --git a/drivers/gpu/drm/nouveau/nv20_graph.c b/drivers/gpu/drm/nouveau/nv20_graph.c
-index affc7d7..059ad65 100644
---- a/drivers/gpu/drm/nouveau/nv20_graph.c
-+++ b/drivers/gpu/drm/nouveau/nv20_graph.c
-@@ -752,6 +752,7 @@ nv20_graph_create(struct drm_device *dev)
- 			pgraph->grctx_user = 0x0000;
- 			break;
- 		default:
-+			kfree(pgraph);
- 			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
- 			return 0;
- 		}
-@@ -773,7 +774,8 @@ nv20_graph_create(struct drm_device *dev)
- 			pgraph->grctx_size = NV35_36_GRCTX_SIZE;
- 			break;
- 		default:
--			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
-+			kfree(pgraph);
-+			NV_ERROR(dev, "PGRAPH: unknown chipset.\n");
- 			return 0;
- 		}
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 083a4f2..c605ee1 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -2711,9 +2711,12 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
+ {
+ 	struct task_io_accounting acct = task->ioac;
+ 	unsigned long flags;
++	int result = -EACCES;
++
++	mutex_lock(&task->signal->cred_guard_mutex);
+ 
+ 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
+-		return -EACCES;
++		goto out_unlock;
+ 
+ 	if (whole && lock_task_sighand(task, &flags)) {
+ 		struct task_struct *t = task;
+@@ -2724,7 +2727,7 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
+ 
+ 		unlock_task_sighand(task, &flags);
  	}
+-	return sprintf(buffer,
++	result = sprintf(buffer,
+ 			"rchar: %llu\n"
+ 			"wchar: %llu\n"
+ 			"syscr: %llu\n"
+@@ -2739,6 +2742,9 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
+ 			(unsigned long long)acct.read_bytes,
+ 			(unsigned long long)acct.write_bytes,
+ 			(unsigned long long)acct.cancelled_write_bytes);
++out_unlock:
++	mutex_unlock(&task->signal->cred_guard_mutex);
++	return result;
+ }
+ 
+ static int proc_tid_io_accounting(struct task_struct *task, char *buffer)
 -- 
-1.7.6
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
+1.7.0.4
