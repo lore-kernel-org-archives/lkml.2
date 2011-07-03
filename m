@@ -1,98 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab1GCL0z (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 07:26:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:46434 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750999Ab1GCL0w (ORCPT
+	id S1752089Ab1GCLbQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 07:31:16 -0400
+Received: from swampdragon.chaosbits.net ([90.184.90.115]:43881 "EHLO
+	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751168Ab1GCLbP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 07:26:52 -0400
-Date: Sun, 3 Jul 2011 15:26:47 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Jeff Garzik <jgarzik@pobox.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH -resend] ata: sata_dwc_460ex: fix error path
-Message-ID: <20110703112647.GA3769@albatros>
+	Sun, 3 Jul 2011 07:31:15 -0400
+Date: Sun, 3 Jul 2011 13:21:55 +0200 (CEST)
+From: Jesper Juhl <jj@chaosbits.net>
+To: Paul Menzel <paulepanter@users.sourceforge.net>
+cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] nouveau: Do not leak in nv20_graph_create
+In-Reply-To: <alpine.LNX.2.00.1107031315520.18279@swampdragon.chaosbits.net>
+Message-ID: <alpine.LNX.2.00.1107031321150.18279@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107031224030.16316@swampdragon.chaosbits.net> <1309690311.20270.27.camel@mattotaupa> <alpine.LNX.2.00.1107031315520.18279@swampdragon.chaosbits.net>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed hsdev memleak on sata_dwc_probe() error.
-As dma_dwc_exit() can be called multiple times without sata_dma_regs and
-irq_dma changes, it might lead to double free on sequential
-dma_dwc_exit() calls.  So, zero these fields after free calls.
+On Sun, 3 Jul 2011, Jesper Juhl wrote:
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> On Sun, 3 Jul 2011, Paul Menzel wrote:
+> 
+> > Dear Jesper,
+> > 
+> > 
+> > Am Sonntag, den 03.07.2011, 12:25 +0200 schrieb Jesper Juhl:
+> > > If we return due to an unknown chipset in 
+> > > drivers/gpu/drm/nouveau/nv20_graph.c:nv20_graph_create() we'll leak the 
+> > > memory allocated to 'pgraph'.
+> > > 
+> > > This patch should fix the leak and it also disambiguates the "PGRAPH:
+> > > unknown chipset\n" error message - it's nice to be able to tell which
+> > > branch created the error which is impossible if the error messages are
+> > > 100% identical.
+> > > 
+> > > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> > > ---
+> > >  drivers/gpu/drm/nouveau/nv20_graph.c |    4 +++-
+> > >  1 files changed, 3 insertions(+), 1 deletions(-)
+> > > 
+> > >   Don't have the hardware, so compile tested only.
+> > > 
+> > > diff --git a/drivers/gpu/drm/nouveau/nv20_graph.c b/drivers/gpu/drm/nouveau/nv20_graph.c
+> > > index affc7d7..059ad65 100644
+> > > --- a/drivers/gpu/drm/nouveau/nv20_graph.c
+> > > +++ b/drivers/gpu/drm/nouveau/nv20_graph.c
+> > > @@ -752,6 +752,7 @@ nv20_graph_create(struct drm_device *dev)
+> > >  			pgraph->grctx_user = 0x0000;
+> > >  			break;
+> > >  		default:
+> > > +			kfree(pgraph);
+> > >  			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
+> > >  			return 0;
+> > >  		}
+> > > @@ -773,7 +774,8 @@ nv20_graph_create(struct drm_device *dev)
+> > >  			pgraph->grctx_size = NV35_36_GRCTX_SIZE;
+> > >  			break;
+> > >  		default:
+> > > -			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
+> > > +			kfree(pgraph);
+> > > +			NV_ERROR(dev, "PGRAPH: unknown chipset.\n");
+> > 
+> > so the only disambiguation is the full stop at the end?
+> > 
+> Yeah. I guess I could have reworded the text, but I settled on just adding 
+> that "."...
+> 
+I guess this is better : 
+
+
+From: Jesper Juhl <jj@chaosbits.net>
+Subject: [PATCH] nouveau: Do not leak in nv20_graph_create
+
+If we return due to an unknown chipset in drivers/gpu/drm/nouveau/nv20_graph.c:nv20_graph_create() we'll leak the memory allocated to 'pgraph'.
+
+This patch should fix the leak and it also disambiguates the "PGRAPH:
+unknown chipset\n" error message - it's nice to be able to tell which
+branch created the error which is impossible if the error messages are
+100% identical.
+
+Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 ---
- drivers/ata/sata_dwc_460ex.c |   21 ++++++++++++++-------
- 1 files changed, 14 insertions(+), 7 deletions(-)
+ drivers/gpu/drm/nouveau/nv20_graph.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/ata/sata_dwc_460ex.c b/drivers/ata/sata_dwc_460ex.c
-index 1c4b3aa..6ca6f2c 100644
---- a/drivers/ata/sata_dwc_460ex.c
-+++ b/drivers/ata/sata_dwc_460ex.c
-@@ -766,11 +766,15 @@ static int dma_dwc_xfer_setup(struct scatterlist *sg, int num_elems,
- static void dma_dwc_exit(struct sata_dwc_device *hsdev)
- {
- 	dev_dbg(host_pvt.dwc_dev, "%s:\n", __func__);
--	if (host_pvt.sata_dma_regs)
-+	if (host_pvt.sata_dma_regs) {
- 		iounmap(host_pvt.sata_dma_regs);
-+		host_pvt.sata_dma_regs = NULL;
-+	}
- 
--	if (hsdev->irq_dma)
-+	if (hsdev->irq_dma) {
- 		free_irq(hsdev->irq_dma, hsdev);
-+		hsdev->irq_dma = 0;
-+	}
- }
- 
- /*
-@@ -1642,7 +1646,7 @@ static int sata_dwc_probe(struct platform_device *ofdev)
- 	if (hsdev == NULL) {
- 		dev_err(&ofdev->dev, "kmalloc failed for hsdev\n");
- 		err = -ENOMEM;
--		goto error_out;
-+		goto error;
+diff --git a/drivers/gpu/drm/nouveau/nv20_graph.c b/drivers/gpu/drm/nouveau/nv20_graph.c
+index affc7d7..53cbe84 100644
+--- a/drivers/gpu/drm/nouveau/nv20_graph.c
++++ b/drivers/gpu/drm/nouveau/nv20_graph.c
+@@ -752,6 +752,7 @@ nv20_graph_create(struct drm_device *dev)
+ 			pgraph->grctx_user = 0x0000;
+ 			break;
+ 		default:
++			kfree(pgraph);
+ 			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
+ 			return 0;
+ 		}
+@@ -773,7 +774,8 @@ nv20_graph_create(struct drm_device *dev)
+ 			pgraph->grctx_size = NV35_36_GRCTX_SIZE;
+ 			break;
+ 		default:
+-			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
++			kfree(pgraph);
++			NV_ERROR(dev, "PGRAPH: chipset unknown.\n");
+ 			return 0;
+ 		}
  	}
- 	memset(hsdev, 0, sizeof(*hsdev));
- 
-@@ -1652,7 +1656,7 @@ static int sata_dwc_probe(struct platform_device *ofdev)
- 		dev_err(&ofdev->dev, "ioremap failed for SATA register"
- 			" address\n");
- 		err = -ENODEV;
--		goto error_out;
-+		goto error_kmalloc;
- 	}
- 	hsdev->reg_base = base;
- 	dev_dbg(&ofdev->dev, "ioremap done for SATA register address\n");
-@@ -1665,7 +1669,7 @@ static int sata_dwc_probe(struct platform_device *ofdev)
- 	if (!host) {
- 		dev_err(&ofdev->dev, "ata_host_alloc_pinfo failed\n");
- 		err = -ENOMEM;
--		goto error_out;
-+		goto error_iomap;
- 	}
- 
- 	host->private_data = hsdev;
-@@ -1733,8 +1737,11 @@ error_out:
- 	/* Free SATA DMA resources */
- 	dma_dwc_exit(hsdev);
- 
--	if (base)
--		iounmap(base);
-+error_iomap:
-+	iounmap(base);
-+error_kmalloc:
-+	kfree(hsdev);
-+error:
- 	return err;
- }
- 
 -- 
-1.7.0.4
+1.7.6
+
+
+
+-- 
+Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+Plain text mails only, please.
+
