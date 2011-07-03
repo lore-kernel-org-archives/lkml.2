@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab1GCG55 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 02:57:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50803 "EHLO ogre.sisk.pl"
+	id S1752271Ab1GCHD2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 03:03:28 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50819 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751647Ab1GCG5z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 02:57:55 -0400
+	id S1751690Ab1GCHD1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 03:03:27 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Andrea Righi <andrea@betterlinux.com>
-Subject: Re: [PATCH] ACPI: fix acpi_power_off lockdep splat
-Date: Sun, 3 Jul 2011 08:58:41 +0200
+To: deepak.sikri79@gmail.com
+Subject: Re: [linux-pm] Suspend to RAm query
+Date: Sun, 3 Jul 2011 09:04:08 +0200
 User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: Len Brown <lenb@kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@redhat.com>, Borislav Petkov <bp@alien8.de>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, linux-acpi@vger.kernel.org,
+Cc: linux-pm@lists.linux-foundation.org, deepaksi <deepak.sikri@st.com>,
         linux-kernel@vger.kernel.org
-References: <1309620681-25173-1-git-send-email-andrea@betterlinux.com>
-In-Reply-To: <1309620681-25173-1-git-send-email-andrea@betterlinux.com>
+References: <4E09DE03.3090100@st.com>
+In-Reply-To: <4E09DE03.3090100@st.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-2"
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107030858.41459.rjw@sisk.pl>
+Message-Id: <201107030904.08190.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 02, 2011, Andrea Righi wrote:
-> Implement acpi_os_create_lock() as a C-preprocessor macro to assign
-> unique lock_class_key to dynamically allocated locks and suppress wrong
-> lockdep warnings.
+Hi,
+
+On Tuesday, June 28, 2011, deepaksi wrote:
+> Hi All,
 > 
-> This fixes:
-> https://bugzilla.kernel.org/show_bug.cgi?id=38152
+> I have a very basic query w.r.t the place to handle the standby/suspend
+> process for the devices in the system.
 > 
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Signed-off-by: Andrea Righi <andrea@betterlinux.com>
-
-So, how exactly does it work?
-
-> ---
->  drivers/acpi/osl.c      |    2 +-
->  include/acpi/acpiosxf.h |   12 +++++++++++-
->  2 files changed, 12 insertions(+), 2 deletions(-)
+> Should it be done at the driver level or in the machine/platform
+> specific code ?
 > 
-> diff --git a/drivers/acpi/osl.c b/drivers/acpi/osl.c
-> index 52ca964..2a67602 100644
-> --- a/drivers/acpi/osl.c
-> +++ b/drivers/acpi/osl.c
-> @@ -1336,7 +1336,7 @@ EXPORT_SYMBOL(acpi_resources_are_enforced);
->   * Create and initialize a spinlock.
->   */
->  acpi_status
-> -acpi_os_create_lock(acpi_spinlock *out_handle)
-> +__acpi_os_create_lock(acpi_spinlock *out_handle)
->  {
->  	spinlock_t *lock;
->  
-> diff --git a/include/acpi/acpiosxf.h b/include/acpi/acpiosxf.h
-> index a756bc8..4a0385d 100644
-> --- a/include/acpi/acpiosxf.h
-> +++ b/include/acpi/acpiosxf.h
-> @@ -99,7 +99,17 @@ acpi_os_table_override(struct acpi_table_header *existing_table,
->   * Spinlock primitives
->   */
->  acpi_status
-> -acpi_os_create_lock(acpi_spinlock *out_handle);
-> +__acpi_os_create_lock(acpi_spinlock *out_handle);
-> +
-> +#define acpi_os_create_lock(__handle)			\
-> +({							\
-> +	acpi_status ret;				\
-> +							\
-> +	ret = __acpi_os_create_lock(__handle);		\
-> +	if (ret == AE_OK)				\
-> +		spin_lock_init(*(__handle));		\
+> There are instances where I need some specific functionality in the
+> standby mode, or some extra functionality
+> in the suspend mode at the device level. Is that the reason for
+> differentiating between the suspend and standby at
+> the platform code level, because in platform code we get different
+> states signifying a suspend or a standby ?
 
-It seems that spin_lock_init() has already been done on *__handle, right?
+Yes, it is.
 
-> +	ret;						\
-> +})
->  
->  void acpi_os_delete_lock(acpi_spinlock handle);
+The platform suspend callbacks in strcut platform_suspend_ops (as defined
+in include/linux/suspend.h) take a suspend_state_t argument indicating
+what state is being requested.  You can get the information from there,
+if I understood your problem description correctly.
 
+Thanks,
 Rafael
