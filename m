@@ -1,55 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1GCMC1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 08:02:27 -0400
-Received: from zone0.gcu-squad.org ([212.85.147.21]:1150 "EHLO
-	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752699Ab1GCMC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 08:02:26 -0400
-Date: Sun, 3 Jul 2011 14:02:13 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        LM Sensors <lm-sensors@lm-sensors.org>
-Subject: [GIT PULL] hwmon fixes for 3.0
-Message-ID: <20110703140213.71def431@endymion.delvare>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753900Ab1GCMLm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 08:11:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18331 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753106Ab1GCMLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 08:11:40 -0400
+Date: Sun, 3 Jul 2011 15:11:37 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+        dave@linux.vnet.ibm.com, Amit Shah <amit.shah@redhat.com>,
+        Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] virtio_balloon: Notify guest only after deflating the
+ balloon
+Message-ID: <20110703121137.GA15826@redhat.com>
+References: <1309576016-22800-1-git-send-email-levinsasha928@gmail.com>
+ <20110703082748.GD13183@redhat.com>
+ <1309686419.2250.8.camel@sasha>
+ <20110703103051.GA15537@redhat.com>
+ <1309690349.2250.21.camel@sasha>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309690349.2250.21.camel@sasha>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Sun, Jul 03, 2011 at 01:52:29PM +0300, Sasha Levin wrote:
+> On Sun, 2011-07-03 at 13:30 +0300, Michael S. Tsirkin wrote:
+> > On Sun, Jul 03, 2011 at 12:46:59PM +0300, Sasha Levin wrote:
+> > > On Sun, 2011-07-03 at 11:27 +0300, Michael S. Tsirkin wrote:
+> > > > Doesn't this basically just revert
+> > > > bf50e69f63d21091e525185c3ae761412be0ba72?
+> > > > 
+> > > 
+> > > Yes. I haven't noticed that commit.
+> > > 
+> > > Ignoring the VIRTIO_BALLOON_F_MUST_TELL_HOST feature flag causes an
+> > > unnecessary delay due to having to kick and wait for the host to process
+> > > the deflate vq before actually using the memory pages.
+> > 
+> > OTOH, as the commit points out:
+> > 	Without this feature, we might free a page (and have another
+> > 	user touch it) while the hypervisor is unprepared for it
+> > 
+> > Are you doing so many deflates that the speed is important?
+> > 
+> 
+> In the case of kvm tools and qemu for example, the hypervisor doesn't
+> need to be 'prepared' for it.
+> 
+> When the balloon if inflated, the pages are madvise(MADV_DONTNEED),
+> which means that we can access those pages immediately when deflating
+> without having to do anything special to prepare for it.
+> 
+> I'm not saying that speed is critical here, I'm just saying that the
+> feature was added to the spec for a reason - to prevent unnecessary
+> overhead like in the case of kvm tools and qemu, and we just choose to
+> ignore it completely.
+> 
+> > > I've stumbled on it when writing the virtio_balloon driver for kvm
+> > > tools. Initially my plan was to ignore the deflate vq completely, since
+> > > the virtio spec says that unless we set the MUST_TELL_HOST flag,
+> > > "deflation advice is merely a courtesy".
+> > > 
+> > > I've noticed that if I don't process the deflate vq the guest doesn't
+> > > use the deflated pages at all - something which contradicts the feature
+> > > that lets him use the deflated pages without waiting for the deflate vq.
+> > 
+> > OK, so you have a host that does not process the vq.
+> > As a result tell_host blocks forever.
+> > With your patch, guest will block after releasing the
+> > page, so the next deflate request will get stuck.
+> > This doesn't seem to be a huge improvement so
+> > we can conclude such a host is broken?
+> > 
+> 
+> No, the host is not doing anything wrong by not processing deflate vq.
+> 
+> This just leads me to believe that we should either not notify the host,
+> or not wait_for_completion() when telling the host.
 
-Please pull hwmon subsystem fixes for Linux 3.0 from:
+Interesting. The spec says
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git hwmon-for-linus
+(a) The driver constructs an array of addresses of memory pages it has
+previously given to the balloon, as described above. This descriptor
+is added to the deflateq.
+(b) If the VIRTIO_BALLOON_F_MUST_TELL_HOST feature is set,
+the guest may not use these requested pages until that descriptor in
+the deflateq has been used by the device.
+(c) Otherwise, the guest may begin to re-use pages previously given to
+the balloon before the device has acknowledged their withdrawl.
+ 21 In this case, deflation advice is merely a courtesy
 
- Documentation/hwmon/f71882fg |    4 +++
- Documentation/hwmon/k10temp  |    8 ++++-
- drivers/hwmon/Kconfig        |    2 +-
- drivers/hwmon/emc6w201.c     |   58 +++++++++++++++++++++++++++++++----------
- drivers/hwmon/f71882fg.c     |   19 +++++++++++--
- drivers/hwmon/hwmon-vid.c    |    2 +-
- drivers/hwmon/sch5627.c      |    2 +-
- 7 files changed, 73 insertions(+), 22 deletions(-)
+This does not discuss the following issue: what happens
+if the device never uses the descriptor in the deflateq
+and VIRTIO_BALLOON_F_MUST_TELL_HOST is not set?
 
----------------
+Rusty, any comments?
 
-Clemens Ladisch (1):
-      hwmon: (k10temp) Update documentation for Fam12h
+As far as I can tell, linux drivers assume that
+devices acknowledge all descriptors, and did this
+from the very beginning, so if you want the
+device not to process that queue at all,
+you will probably need a new flag for this rather than reuse
+MUST_TELL_HOST.
 
-Hans de Goede (2):
-      hwmon: Use <> rather than () around my e-mail address
-      hwmon: (f71882fg) Add support for the F71869A
 
-Jean Delvare (2):
-      hwmon: (emc6w201) Properly handle all errors
-      hwmon-vid: Fix typo in VIA CPU name
-
-Thanks,
--- 
-Jean Delvare
+> > 
+> > 
+> > 
+> > > > 
+> > > > On Sat, Jul 02, 2011 at 06:06:56AM +0300, Sasha Levin wrote:
+> > > > > Unless the host requires that requested pages won't be used until
+> > > > > he us notified (VIRTIO_BALLOON_F_MUST_TELL_HOST), only notify after
+> > > > > deflating the balloon.
+> > > > > 
+> > > > > This will avoid having to take an exit before actually using the pages.
+> > > > > 
+> > > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
+> > > > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
+> > > > > Cc: virtualization@lists.linux-foundation.org
+> > > > > Cc: kvm@vger.kernel.org
+> > > > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
+> > > > > ---
+> > > > >  drivers/virtio/virtio_balloon.c |   16 ++++++++++------
+> > > > >  1 files changed, 10 insertions(+), 6 deletions(-)
+> > > > > 
+> > > > > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
+> > > > > index e058ace..055f95d 100644
+> > > > > --- a/drivers/virtio/virtio_balloon.c
+> > > > > +++ b/drivers/virtio/virtio_balloon.c
+> > > > > @@ -148,14 +148,18 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
+> > > > >  		vb->num_pages--;
+> > > > >  	}
+> > > > >  
+> > > > > -
+> > > > >  	/*
+> > > > > -	 * Note that if
+> > > > > -	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
+> > > > > -	 * is true, we *have* to do it in this order
+> > > > > +	 * If the host doesn't require us to notify him before using
+> > > > > +	 * pages which belong to the balloon, update him only after
+> > > > > +	 * freeing those pages for guest use.
+> > > > >  	 */
+> > > > > -	tell_host(vb, vb->deflate_vq);
+> > > > > -	release_pages_by_pfn(vb->pfns, vb->num_pfns);
+> > > > > +	if (virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST)) {
+> > > > > +		tell_host(vb, vb->deflate_vq);
+> > > > > +		release_pages_by_pfn(vb->pfns, vb->num_pfns);
+> > > > > +	} else {
+> > > > > +		release_pages_by_pfn(vb->pfns, vb->num_pfns);
+> > > > > +		tell_host(vb, vb->deflate_vq);
+> > > > > +	}
+> > > > >  }
+> > > > >  
+> > > > >  static inline void update_stat(struct virtio_balloon *vb, int idx,
+> > > > > -- 
+> > > > > 1.7.6
+> > > 
+> > > 
+> > > -- 
+> > > 
+> > > Sasha.
+> 
+> 
+> -- 
+> 
+> Sasha.
