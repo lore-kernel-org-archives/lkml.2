@@ -1,54 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753956Ab1GCMVL (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 08:21:11 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44606 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752612Ab1GCMVJ (ORCPT
+	id S1753981Ab1GCM0B (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 08:26:01 -0400
+Received: from atrey.karlin.mff.cuni.cz ([195.113.26.193]:34790 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752612Ab1GCM0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 08:21:09 -0400
-Date: Sun, 3 Jul 2011 13:23:11 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110703132311.3c184354@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110703100131.GA2472@albatros>
-References: <20110626190622.GB4217@albatros>
-	<20110626194618.GA21740@elte.hu>
-	<20110626202518.GA4915@albatros>
-	<20110626220126.GA24004@elte.hu>
-	<20110627083633.GA5846@albatros>
-	<20110627104058.45e93c41@pyx>
-	<20110627183829.GA16033@albatros>
-	<BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com>
-	<20110701143757.GA22567@albatros>
-	<20110701154947.133c30f5@lxorguk.ukuu.org.uk>
-	<20110703100131.GA2472@albatros>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sun, 3 Jul 2011 08:26:00 -0400
+X-Greylist: delayed 609 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Jul 2011 08:26:00 EDT
+Date: Sun, 3 Jul 2011 14:15:49 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Brian Gerst <brgerst@gmail.com>,
+        Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] x86: add missing verify_cpu to 32bit wakeup
+Message-ID: <20110703121549.GA21127@elf.ucw.cz>
+References: <20110701211943.GA7042@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110701211943.GA7042@outflux.net>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Also, the problem with CSI code is still here.  It cannot be filtered
-> because it is a valid byte inside of UTF-8 character.  For a console
-> with IUTF bit set all dangerous characters are filtered, but for the
-> rest they are not.  As at the stage of vscnprintf the presence of IUTF
-> bit is not clear, users of non-IUTF console should still use "| less" or
-> similar.  Obviously, \n is filtered for all consoles.
+Hi!
 
-This is why the filter pattern has to come from the console. Your patch
-also for example doesn't fix anything on a 7bit serial console.. only the
-hardware driver really knows what the filter rules are.
+> Some BIOSes will reset the Intel XD_DISABLE MSR bit when resuming from S3,
+> which can interact poorly with ebba638ae723d8a8fc2f7abce5ec18b688b791d7.
+> In 32bit PAE mode, this can lead to a fault when EFER is restored by
+> the kernel wakeup routines, due to it setting the NX bit for a CPU
+> that (thanks to the BIOS reset) now incorrectly thinks it lacks the NX
+> feature. 64bit wakeup already handled this through its common call path
+> that would hit verify_cpu(). 32bit has a separate path for restoring
+> CPU state on S3 wakeup, and needed to call verify_cpu() to handle this
+> situation.
+> 
+> Signed-off-by: Kees Cook <kees.cook@canonical.com>
+> Cc: stable@kernel.org
 
-Looks a very good starting point though, and the embedded \n's mostly
-want fixing up anyway.
+Looks ok to me, but I'm not sure it is stable material.
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
