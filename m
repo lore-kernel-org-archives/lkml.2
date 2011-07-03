@@ -1,174 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab1GCMLm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 08:11:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18331 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753106Ab1GCMLk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 08:11:40 -0400
-Date: Sun, 3 Jul 2011 15:11:37 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        dave@linux.vnet.ibm.com, Amit Shah <amit.shah@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH] virtio_balloon: Notify guest only after deflating the
- balloon
-Message-ID: <20110703121137.GA15826@redhat.com>
-References: <1309576016-22800-1-git-send-email-levinsasha928@gmail.com>
- <20110703082748.GD13183@redhat.com>
- <1309686419.2250.8.camel@sasha>
- <20110703103051.GA15537@redhat.com>
- <1309690349.2250.21.camel@sasha>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309690349.2250.21.camel@sasha>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753956Ab1GCMVL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 08:21:11 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44606 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752612Ab1GCMVJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 08:21:09 -0400
+Date: Sun, 3 Jul 2011 13:23:11 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
+ printk()
+Message-ID: <20110703132311.3c184354@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110703100131.GA2472@albatros>
+References: <20110626190622.GB4217@albatros>
+	<20110626194618.GA21740@elte.hu>
+	<20110626202518.GA4915@albatros>
+	<20110626220126.GA24004@elte.hu>
+	<20110627083633.GA5846@albatros>
+	<20110627104058.45e93c41@pyx>
+	<20110627183829.GA16033@albatros>
+	<BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com>
+	<20110701143757.GA22567@albatros>
+	<20110701154947.133c30f5@lxorguk.ukuu.org.uk>
+	<20110703100131.GA2472@albatros>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 03, 2011 at 01:52:29PM +0300, Sasha Levin wrote:
-> On Sun, 2011-07-03 at 13:30 +0300, Michael S. Tsirkin wrote:
-> > On Sun, Jul 03, 2011 at 12:46:59PM +0300, Sasha Levin wrote:
-> > > On Sun, 2011-07-03 at 11:27 +0300, Michael S. Tsirkin wrote:
-> > > > Doesn't this basically just revert
-> > > > bf50e69f63d21091e525185c3ae761412be0ba72?
-> > > > 
-> > > 
-> > > Yes. I haven't noticed that commit.
-> > > 
-> > > Ignoring the VIRTIO_BALLOON_F_MUST_TELL_HOST feature flag causes an
-> > > unnecessary delay due to having to kick and wait for the host to process
-> > > the deflate vq before actually using the memory pages.
-> > 
-> > OTOH, as the commit points out:
-> > 	Without this feature, we might free a page (and have another
-> > 	user touch it) while the hypervisor is unprepared for it
-> > 
-> > Are you doing so many deflates that the speed is important?
-> > 
-> 
-> In the case of kvm tools and qemu for example, the hypervisor doesn't
-> need to be 'prepared' for it.
-> 
-> When the balloon if inflated, the pages are madvise(MADV_DONTNEED),
-> which means that we can access those pages immediately when deflating
-> without having to do anything special to prepare for it.
-> 
-> I'm not saying that speed is critical here, I'm just saying that the
-> feature was added to the spec for a reason - to prevent unnecessary
-> overhead like in the case of kvm tools and qemu, and we just choose to
-> ignore it completely.
-> 
-> > > I've stumbled on it when writing the virtio_balloon driver for kvm
-> > > tools. Initially my plan was to ignore the deflate vq completely, since
-> > > the virtio spec says that unless we set the MUST_TELL_HOST flag,
-> > > "deflation advice is merely a courtesy".
-> > > 
-> > > I've noticed that if I don't process the deflate vq the guest doesn't
-> > > use the deflated pages at all - something which contradicts the feature
-> > > that lets him use the deflated pages without waiting for the deflate vq.
-> > 
-> > OK, so you have a host that does not process the vq.
-> > As a result tell_host blocks forever.
-> > With your patch, guest will block after releasing the
-> > page, so the next deflate request will get stuck.
-> > This doesn't seem to be a huge improvement so
-> > we can conclude such a host is broken?
-> > 
-> 
-> No, the host is not doing anything wrong by not processing deflate vq.
-> 
-> This just leads me to believe that we should either not notify the host,
-> or not wait_for_completion() when telling the host.
+> Also, the problem with CSI code is still here.  It cannot be filtered
+> because it is a valid byte inside of UTF-8 character.  For a console
+> with IUTF bit set all dangerous characters are filtered, but for the
+> rest they are not.  As at the stage of vscnprintf the presence of IUTF
+> bit is not clear, users of non-IUTF console should still use "| less" or
+> similar.  Obviously, \n is filtered for all consoles.
 
-Interesting. The spec says
+This is why the filter pattern has to come from the console. Your patch
+also for example doesn't fix anything on a 7bit serial console.. only the
+hardware driver really knows what the filter rules are.
 
-(a) The driver constructs an array of addresses of memory pages it has
-previously given to the balloon, as described above. This descriptor
-is added to the deflateq.
-(b) If the VIRTIO_BALLOON_F_MUST_TELL_HOST feature is set,
-the guest may not use these requested pages until that descriptor in
-the deflateq has been used by the device.
-(c) Otherwise, the guest may begin to re-use pages previously given to
-the balloon before the device has acknowledged their withdrawl.
- 21 In this case, deflation advice is merely a courtesy
-
-This does not discuss the following issue: what happens
-if the device never uses the descriptor in the deflateq
-and VIRTIO_BALLOON_F_MUST_TELL_HOST is not set?
-
-Rusty, any comments?
-
-As far as I can tell, linux drivers assume that
-devices acknowledge all descriptors, and did this
-from the very beginning, so if you want the
-device not to process that queue at all,
-you will probably need a new flag for this rather than reuse
-MUST_TELL_HOST.
-
-
-> > 
-> > 
-> > 
-> > > > 
-> > > > On Sat, Jul 02, 2011 at 06:06:56AM +0300, Sasha Levin wrote:
-> > > > > Unless the host requires that requested pages won't be used until
-> > > > > he us notified (VIRTIO_BALLOON_F_MUST_TELL_HOST), only notify after
-> > > > > deflating the balloon.
-> > > > > 
-> > > > > This will avoid having to take an exit before actually using the pages.
-> > > > > 
-> > > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> > > > > Cc: virtualization@lists.linux-foundation.org
-> > > > > Cc: kvm@vger.kernel.org
-> > > > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> > > > > ---
-> > > > >  drivers/virtio/virtio_balloon.c |   16 ++++++++++------
-> > > > >  1 files changed, 10 insertions(+), 6 deletions(-)
-> > > > > 
-> > > > > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> > > > > index e058ace..055f95d 100644
-> > > > > --- a/drivers/virtio/virtio_balloon.c
-> > > > > +++ b/drivers/virtio/virtio_balloon.c
-> > > > > @@ -148,14 +148,18 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
-> > > > >  		vb->num_pages--;
-> > > > >  	}
-> > > > >  
-> > > > > -
-> > > > >  	/*
-> > > > > -	 * Note that if
-> > > > > -	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
-> > > > > -	 * is true, we *have* to do it in this order
-> > > > > +	 * If the host doesn't require us to notify him before using
-> > > > > +	 * pages which belong to the balloon, update him only after
-> > > > > +	 * freeing those pages for guest use.
-> > > > >  	 */
-> > > > > -	tell_host(vb, vb->deflate_vq);
-> > > > > -	release_pages_by_pfn(vb->pfns, vb->num_pfns);
-> > > > > +	if (virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST)) {
-> > > > > +		tell_host(vb, vb->deflate_vq);
-> > > > > +		release_pages_by_pfn(vb->pfns, vb->num_pfns);
-> > > > > +	} else {
-> > > > > +		release_pages_by_pfn(vb->pfns, vb->num_pfns);
-> > > > > +		tell_host(vb, vb->deflate_vq);
-> > > > > +	}
-> > > > >  }
-> > > > >  
-> > > > >  static inline void update_stat(struct virtio_balloon *vb, int idx,
-> > > > > -- 
-> > > > > 1.7.6
-> > > 
-> > > 
-> > > -- 
-> > > 
-> > > Sasha.
-> 
-> 
-> -- 
-> 
-> Sasha.
+Looks a very good starting point though, and the embedded \n's mostly
+want fixing up anyway.
