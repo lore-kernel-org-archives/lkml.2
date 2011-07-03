@@ -1,39 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab1GCSEq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 14:04:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58220 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752201Ab1GCSEp convert rfc822-to-8bit (ORCPT
+	id S1754421Ab1GCSQU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 14:16:20 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:52125 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751857Ab1GCSQR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 14:04:45 -0400
-Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110703150430.GV4590@erda.amd.com>
-References: <20110703150430.GV4590@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sun, 03 Jul 2011 20:04:31 +0200
-Message-ID: <1309716271.3282.6.camel@twins>
+	Sun, 3 Jul 2011 14:16:17 -0400
+Date: Sun, 3 Jul 2011 20:16:15 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Dan Williams <dan.j.williams@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, axboe@kernel.dk,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        Andi Kleen <andi@firstfloor.org>, Dave Jones <davej@redhat.com>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+Message-ID: <20110703181615.GC15637@one.firstfloor.org>
+References: <1309609482.2554.8.camel@mulgrave> <Pine.LNX.4.44L0.1107021320180.14703-100000@netrider.rowland.org> <CAA9_cmd7KV_CkvbB+nsc7LHui8gECB-0d4oWt+6cA0x21=crDg@mail.gmail.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAA9_cmd7KV_CkvbB+nsc7LHui8gECB-0d4oWt+6cA0x21=crDg@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-03 at 17:04 +0200, Robert Richter wrote:
+> Not sure it's related, but it sounds like the hotplug failures being
+> seen with libsas hotplug.  Have not had a chance yet to track it down
+> further with isci, but mvsas developer Xiangliang Yu is reporting:
+
+It looks somewhat different: he has a bad pointer, not a NULL pointer,
+and it's in elv_completed_request() (but that may be related to 
+the different request types)
+
 > 
-> this is a prototype implementation for attaching an event to a
-> specific PMU. If there is a general acceptance for this approach I
-> will create patches for upstream integration and base my current IBS
-> patches on it. 
+> http://marc.info/?l=linux-scsi&m=130707166512002&w=2
+> 
+> He tracked it down to a suspected regression between .39-rc4 and
+> .39-rc5 but did not finalize the bisect.
 
-But there's already an infrastructure to do this, simply stick the
-contents of /sys/bus/event_source/devices/*/type in
-perf_event_attr::type and you're done.
+I can check if it disappears with .39-rc4.
 
-I don't see the need for /dev crap.
+> The isci driver sees this and other signatures all seemingly related
+> to early device tear down and only when pulling a drive with in-flight
+> i/o.
+
+In my case it's not really in flight IO, but umount after pull with an
+idle drive.
+
+-Andi
