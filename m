@@ -1,51 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab1GCQGn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 12:06:43 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:49211 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755954Ab1GCQGl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 12:06:41 -0400
-Date: Sun, 3 Jul 2011 12:06:40 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Andi Kleen <andi@firstfloor.org>
-cc: James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Dave Jones <davej@redhat.com>, <linux-scsi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <axboe@kernel.dk>, <rjw@sisk.pl>,
-        <linux-usb@vger.kernel.org>
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-In-Reply-To: <Pine.LNX.4.44L0.1107031121440.28411-100000@netrider.rowland.org>
-Message-ID: <Pine.LNX.4.44L0.1107031201200.28411-100000@netrider.rowland.org>
+	id S1756203Ab1GCQXw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 12:23:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36329 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755991Ab1GCQXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 12:23:51 -0400
+Date: Sun, 3 Jul 2011 09:23:29 -0700
+From: Greg KH <gregkh@suse.de>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [PATCH 2/7] debugfs: add debugfs_create_int
+Message-ID: <20110703162329.GA28131@suse.de>
+References: <1309702581-16863-1-git-send-email-akinobu.mita@gmail.com>
+ <1309702581-16863-3-git-send-email-akinobu.mita@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309702581-16863-3-git-send-email-akinobu.mita@gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Jul 2011, Alan Stern wrote:
+On Sun, Jul 03, 2011 at 11:16:16PM +0900, Akinobu Mita wrote:
+> Introduce debugfs_create_int() for creating a debugfs file that is used to
+> read and write an int value.
 
-> > Your explanation completely contradicts what James wrote earlier.
-> 
-> Yes, it does.  I'm claiming that James was on a wrong track or looking
-> in the wrong direction.
+Um, what's wrong with the existing s32 and s64 versions that debugfs
+already provides?
 
-To amplify: James wrote:
+userspace doesn't know what "int" means for the kernel as it might be
+running in 32bit mode with a 64bit kernel.  That is why this isn't a
+good idea, so please convert your other patch to use the existing api
+and change the variable type in your patch.
 
-> Right, that wouldn't work.  The sdev in question comes from
-> request_queue->queuedata.  That only goes to null when the last
-> reference to the sdev has been released.  So the root cause is something
-> in sd holding a reference to sdev without actually getting an additional
-> refcount.
-
-The third sentence is clearly wrong, because queuedata is set to NULL
-when sdev is removed from visibility, not when the last reference to it
-has been released, i.e., in __scsi_remove_device() rather than
-scsi_device_dev_release_usercontext().
-
-Maybe this means the assignment to queuedata should be moved.  I don't 
-know; unlike James, I'm not an expert on the details of the SCSI stack.
-
-Alan Stern
-
+greg k-h
