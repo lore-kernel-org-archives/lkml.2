@@ -1,73 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab1GCXmq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 19:42:46 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:52481 "EHLO
+	id S1752109Ab1GCXqw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 19:46:52 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52409 "EHLO
 	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751430Ab1GCXmp convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1751470Ab1GCXqv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 19:42:45 -0400
+	Sun, 3 Jul 2011 19:46:51 -0400
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1107031156450.16316@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107031156450.16316@swampdragon.chaosbits.net>
-Date: Mon, 4 Jul 2011 09:42:44 +1000
-Message-ID: <CACAvsv6s9HbZmA4wGnZOMx1mxnJxroH1=+PyO+5Mi=kTbf3uMQ@mail.gmail.com>
-Subject: Re: [PATCH] nouveau: Don't leak in nva3_pm_clock_pre()
+In-Reply-To: <20110703143913.GA3217@joi.lan>
+References: <alpine.LNX.2.00.1107031224030.16316@swampdragon.chaosbits.net>
+	<1309690311.20270.27.camel@mattotaupa>
+	<alpine.LNX.2.00.1107031315520.18279@swampdragon.chaosbits.net>
+	<alpine.LNX.2.00.1107031321150.18279@swampdragon.chaosbits.net>
+	<20110703143913.GA3217@joi.lan>
+Date: Mon, 4 Jul 2011 09:46:51 +1000
+Message-ID: <CACAvsv7r5wEiTpzbHZKNCdG3ueF8BR6EPe-bi2LR9FcrDN+kBQ@mail.gmail.com>
+Subject: Re: [PATCH] nouveau: Do not leak in nv20_graph_create
 From: Ben Skeggs <skeggsb@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: linux-kernel@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>,
-        dri-devel@lists.freedesktop.org
+To: Marcin Slusarz <marcin.slusarz@gmail.com>
+Cc: Jesper Juhl <jj@chaosbits.net>,
+        Paul Menzel <paulepanter@users.sourceforge.net>,
+        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 3, 2011 at 7:58 PM, Jesper Juhl <jj@chaosbits.net> wrote:
-> If nva3_calc_pll() returns less than 0 in
-> drivers/gpu/drm/nouveau/nva3_pm.c:nva3_pm_clock_pre() we'll return
-> without freeing 'pll'.
-> This patch should fix the leak.
-Firstly, thank you for the patch.
+On Mon, Jul 4, 2011 at 12:39 AM, Marcin Slusarz
+<marcin.slusarz@gmail.com> wrote:
+> On Sun, Jul 03, 2011 at 01:21:55PM +0200, Jesper Juhl wrote:
+>> From: Jesper Juhl <jj@chaosbits.net>
+>> Subject: [PATCH] nouveau: Do not leak in nv20_graph_create
+>>
+>> If we return due to an unknown chipset in drivers/gpu/drm/nouveau/nv20_graph.c:nv20_graph_create() we'll leak the memory allocated to 'pgraph'.
+>>
+>> This patch should fix the leak and it also disambiguates the "PGRAPH:
+>> unknown chipset\n" error message - it's nice to be able to tell which
+>> branch created the error which is impossible if the error messages are
+>> 100% identical.
+>
+> There's no need to change these strings. Nouveau prints chipset id earlier.
+> For patch with only kfrees:
+> Reviewed-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+Agreed, I've pulled just the kfree()s into my tree.  They'll hit
+nouveau git either today or tomorrow.
 
-This issue however, no longer exists in nouveau git.  The patches
-fixing it will make their way to Linus' tree.
-
+Thank you!
 Ben.
 
 >
-> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> ---
->  drivers/gpu/drm/nouveau/nva3_pm.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
->
->  Compile tested only - no hardware to test for real.
->
-> diff --git a/drivers/gpu/drm/nouveau/nva3_pm.c b/drivers/gpu/drm/nouveau/nva3_pm.c
-> index e4b2b9e..80443d2 100644
-> --- a/drivers/gpu/drm/nouveau/nva3_pm.c
-> +++ b/drivers/gpu/drm/nouveau/nva3_pm.c
-> @@ -137,8 +137,10 @@ nva3_pm_clock_pre(struct drm_device *dev, struct nouveau_pm_level *perflvl,
->
->        if (!pll->new_div) {
->                ret = nva3_calc_pll(dev, &limits, khz, &N, NULL, &M, &P);
-> -               if (ret < 0)
-> +               if (ret < 0) {
-> +                       kfree(pll);
->                        return ERR_PTR(ret);
-> +               }
->
->                pll->new_pnm = (P << 16) | (N << 8) | M;
->                pll->new_div = 2 - 1;
-> --
-> 1.7.6
->
->
-> --
-> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
->
+>> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+>> ---
+>>  drivers/gpu/drm/nouveau/nv20_graph.c |    4 +++-
+>>  1 files changed, 3 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/gpu/drm/nouveau/nv20_graph.c b/drivers/gpu/drm/nouveau/nv20_graph.c
+>> index affc7d7..53cbe84 100644
+>> --- a/drivers/gpu/drm/nouveau/nv20_graph.c
+>> +++ b/drivers/gpu/drm/nouveau/nv20_graph.c
+>> @@ -752,6 +752,7 @@ nv20_graph_create(struct drm_device *dev)
+>>                       pgraph->grctx_user = 0x0000;
+>>                       break;
+>>               default:
+>> +                     kfree(pgraph);
+>>                       NV_ERROR(dev, "PGRAPH: unknown chipset\n");
+>>                       return 0;
+>>               }
+>> @@ -773,7 +774,8 @@ nv20_graph_create(struct drm_device *dev)
+>>                       pgraph->grctx_size = NV35_36_GRCTX_SIZE;
+>>                       break;
+>>               default:
+>> -                     NV_ERROR(dev, "PGRAPH: unknown chipset\n");
+>> +                     kfree(pgraph);
+>> +                     NV_ERROR(dev, "PGRAPH: chipset unknown.\n");
+>>                       return 0;
+>>               }
+>>       }
+>> --
 > _______________________________________________
 > dri-devel mailing list
 > dri-devel@lists.freedesktop.org
