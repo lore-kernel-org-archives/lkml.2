@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab1GCN6s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 09:58:48 -0400
+	id S1755316Ab1GCN6g (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 09:58:36 -0400
 Received: from mail-pv0-f174.google.com ([74.125.83.174]:61248 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755362Ab1GCN6m (ORCPT
+	with ESMTP id S1754403Ab1GCN6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 09:58:42 -0400
+	Sun, 3 Jul 2011 09:58:32 -0400
 From: Akinobu Mita <akinobu.mita@gmail.com>
 To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>, Jens Axboe <axboe@kernel.dk>
-Subject: [PATCH 7/7] fail_make_request: cleanup should_fail_request
-Date: Sun,  3 Jul 2011 22:59:48 +0900
-Message-Id: <1309701588-16588-8-git-send-email-akinobu.mita@gmail.com>
+Cc: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: [PATCH 4/7] fault-injection: use debugfs_remove_recursive
+Date: Sun,  3 Jul 2011 22:59:45 +0900
+Message-Id: <1309701588-16588-5-git-send-email-akinobu.mita@gmail.com>
 X-Mailer: git-send-email 1.7.4.4
 In-Reply-To: <1309701588-16588-1-git-send-email-akinobu.mita@gmail.com>
 References: <1309701588-16588-1-git-send-email-akinobu.mita@gmail.com>
@@ -20,84 +20,219 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This changes should_fail_request() to more usable wrapper function of
-should_fail(). It can avoid putting #ifdef CONFIG_FAIL_MAKE_REQUEST in
-the middle of a function.
+Use debugfs_remove_recursive() to simplify initialization and
+deinitialization of fault injection debugfs files.
 
 Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>
 ---
- block/blk-core.c |   26 ++++++++++++--------------
- 1 files changed, 12 insertions(+), 14 deletions(-)
+ include/linux/fault-inject.h |   18 +------
+ lib/fault-inject.c           |  115 ++++++++++--------------------------------
+ mm/failslab.c                |    2 +-
+ mm/page_alloc.c              |    2 +-
+ 4 files changed, 30 insertions(+), 107 deletions(-)
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index d2f8f40..f7c34f5 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -1357,14 +1357,9 @@ static int __init setup_fail_make_request(char *str)
- }
- __setup("fail_make_request=", setup_fail_make_request);
+diff --git a/include/linux/fault-inject.h b/include/linux/fault-inject.h
+index 7b72328..a842db6 100644
+--- a/include/linux/fault-inject.h
++++ b/include/linux/fault-inject.h
+@@ -27,23 +27,7 @@ struct fault_attr {
+ 	unsigned long count;
  
--static int should_fail_request(struct bio *bio)
-+static bool should_fail_request(struct hd_struct *part, unsigned int bytes)
- {
--	struct hd_struct *part = bio->bi_bdev->bd_part;
+ #ifdef CONFIG_FAULT_INJECTION_DEBUG_FS
 -
--	if (part_to_disk(part)->part0.make_it_fail || part->make_it_fail)
--		return should_fail(&fail_make_request, bio->bi_size);
+-	struct {
+-		struct dentry *dir;
 -
--	return 0;
-+	return part->make_it_fail && should_fail(&fail_make_request, bytes);
- }
+-		struct dentry *probability_file;
+-		struct dentry *interval_file;
+-		struct dentry *times_file;
+-		struct dentry *space_file;
+-		struct dentry *verbose_file;
+-		struct dentry *task_filter_file;
+-		struct dentry *stacktrace_depth_file;
+-		struct dentry *require_start_file;
+-		struct dentry *require_end_file;
+-		struct dentry *reject_start_file;
+-		struct dentry *reject_end_file;
+-	} dentries;
+-
++	struct dentry *dir;
+ #endif
+ };
  
- static int __init fail_make_request_debugfs(void)
-@@ -1377,9 +1372,10 @@ late_initcall(fail_make_request_debugfs);
+diff --git a/lib/fault-inject.c b/lib/fault-inject.c
+index 882fd3b..2577b12 100644
+--- a/lib/fault-inject.c
++++ b/lib/fault-inject.c
+@@ -199,48 +199,7 @@ static struct dentry *debugfs_create_atomic_t(const char *name, mode_t mode,
  
- #else /* CONFIG_FAIL_MAKE_REQUEST */
- 
--static inline int should_fail_request(struct bio *bio)
-+static inline bool should_fail_request(struct hd_struct *part,
-+					unsigned int bytes)
+ void cleanup_fault_attr_dentries(struct fault_attr *attr)
  {
--	return 0;
-+	return false;
+-	debugfs_remove(attr->dentries.probability_file);
+-	attr->dentries.probability_file = NULL;
+-
+-	debugfs_remove(attr->dentries.interval_file);
+-	attr->dentries.interval_file = NULL;
+-
+-	debugfs_remove(attr->dentries.times_file);
+-	attr->dentries.times_file = NULL;
+-
+-	debugfs_remove(attr->dentries.space_file);
+-	attr->dentries.space_file = NULL;
+-
+-	debugfs_remove(attr->dentries.verbose_file);
+-	attr->dentries.verbose_file = NULL;
+-
+-	debugfs_remove(attr->dentries.task_filter_file);
+-	attr->dentries.task_filter_file = NULL;
+-
+-#ifdef CONFIG_FAULT_INJECTION_STACKTRACE_FILTER
+-
+-	debugfs_remove(attr->dentries.stacktrace_depth_file);
+-	attr->dentries.stacktrace_depth_file = NULL;
+-
+-	debugfs_remove(attr->dentries.require_start_file);
+-	attr->dentries.require_start_file = NULL;
+-
+-	debugfs_remove(attr->dentries.require_end_file);
+-	attr->dentries.require_end_file = NULL;
+-
+-	debugfs_remove(attr->dentries.reject_start_file);
+-	attr->dentries.reject_start_file = NULL;
+-
+-	debugfs_remove(attr->dentries.reject_end_file);
+-	attr->dentries.reject_end_file = NULL;
+-
+-#endif /* CONFIG_FAULT_INJECTION_STACKTRACE_FILTER */
+-
+-	if (attr->dentries.dir)
+-		WARN_ON(!simple_empty(attr->dentries.dir));
+-
+-	debugfs_remove(attr->dentries.dir);
+-	attr->dentries.dir = NULL;
++	debugfs_remove_recursive(attr->dir);
  }
  
- #endif /* CONFIG_FAIL_MAKE_REQUEST */
-@@ -1462,6 +1458,7 @@ static inline void __generic_make_request(struct bio *bio)
- 	old_dev = 0;
- 	do {
- 		char b[BDEVNAME_SIZE];
-+		struct hd_struct *part;
+ int init_fault_attr_dentries(struct fault_attr *attr, const char *name)
+@@ -248,66 +207,46 @@ int init_fault_attr_dentries(struct fault_attr *attr, const char *name)
+ 	mode_t mode = S_IFREG | S_IRUSR | S_IWUSR;
+ 	struct dentry *dir;
  
- 		q = bdev_get_queue(bio->bi_bdev);
- 		if (unlikely(!q)) {
-@@ -1485,7 +1482,10 @@ static inline void __generic_make_request(struct bio *bio)
- 		if (unlikely(test_bit(QUEUE_FLAG_DEAD, &q->queue_flags)))
- 			goto end_io;
+-	memset(&attr->dentries, 0, sizeof(attr->dentries));
+-
+ 	dir = debugfs_create_dir(name, NULL);
+ 	if (!dir)
+-		goto fail;
+-	attr->dentries.dir = dir;
+-
+-	attr->dentries.probability_file =
+-		debugfs_create_ul("probability", mode, dir, &attr->probability);
++		return -ENOMEM;
  
--		if (should_fail_request(bio))
-+		part = bio->bi_bdev->bd_part;
-+		if (should_fail_request(part, bio->bi_size) ||
-+		    should_fail_request(&part_to_disk(part)->part0,
-+					bio->bi_size))
- 			goto end_io;
+-	attr->dentries.interval_file =
+-		debugfs_create_ul("interval", mode, dir, &attr->interval);
++	attr->dir = dir;
  
- 		/*
-@@ -1700,11 +1700,9 @@ int blk_insert_cloned_request(struct request_queue *q, struct request *rq)
- 	if (blk_rq_check_limits(q, rq))
- 		return -EIO;
+-	attr->dentries.times_file =
+-		debugfs_create_atomic_t("times", mode, dir, &attr->times);
+-
+-	attr->dentries.space_file =
+-		debugfs_create_atomic_t("space", mode, dir, &attr->space);
+-
+-	attr->dentries.verbose_file =
+-		debugfs_create_ul("verbose", mode, dir, &attr->verbose);
+-
+-	attr->dentries.task_filter_file = debugfs_create_bool("task-filter",
+-						mode, dir, &attr->task_filter);
+-
+-	if (!attr->dentries.probability_file || !attr->dentries.interval_file ||
+-	    !attr->dentries.times_file || !attr->dentries.space_file ||
+-	    !attr->dentries.verbose_file || !attr->dentries.task_filter_file)
++	if (!debugfs_create_ul("probability", mode, dir, &attr->probability))
++		goto fail;
++	if (!debugfs_create_ul("interval", mode, dir, &attr->interval))
++		goto fail;
++	if (!debugfs_create_atomic_t("times", mode, dir, &attr->times))
++		goto fail;
++	if (!debugfs_create_atomic_t("space", mode, dir, &attr->space))
++		goto fail;
++	if (!debugfs_create_ul("verbose", mode, dir, &attr->verbose))
++		goto fail;
++	if (!debugfs_create_bool("task-filter", mode, dir, &attr->task_filter))
+ 		goto fail;
  
--#ifdef CONFIG_FAIL_MAKE_REQUEST
--	if (rq->rq_disk && rq->rq_disk->part0.make_it_fail &&
--	    should_fail(&fail_make_request, blk_rq_bytes(rq)))
-+	if (rq->rq_disk &&
-+	    should_fail_request(&rq->rq_disk->part0, blk_rq_bytes(rq)))
- 		return -EIO;
--#endif
+ #ifdef CONFIG_FAULT_INJECTION_STACKTRACE_FILTER
  
- 	spin_lock_irqsave(q->queue_lock, flags);
+-	attr->dentries.stacktrace_depth_file =
+-		debugfs_create_stacktrace_depth(
+-			"stacktrace-depth", mode, dir, &attr->stacktrace_depth);
+-
+-	attr->dentries.require_start_file =
+-		debugfs_create_ul("require-start", mode, dir, &attr->require_start);
+-
+-	attr->dentries.require_end_file =
+-		debugfs_create_ul("require-end", mode, dir, &attr->require_end);
+-
+-	attr->dentries.reject_start_file =
+-		debugfs_create_ul("reject-start", mode, dir, &attr->reject_start);
+-
+-	attr->dentries.reject_end_file =
+-		debugfs_create_ul("reject-end", mode, dir, &attr->reject_end);
+-
+-	if (!attr->dentries.stacktrace_depth_file ||
+-	    !attr->dentries.require_start_file ||
+-	    !attr->dentries.require_end_file ||
+-	    !attr->dentries.reject_start_file ||
+-	    !attr->dentries.reject_end_file)
++	if (!debugfs_create_stacktrace_depth("stacktrace-depth", mode, dir,
++				&attr->stacktrace_depth))
++		goto fail;
++	if (!debugfs_create_ul("require-start", mode, dir,
++				&attr->require_start))
++		goto fail;
++	if (!debugfs_create_ul("require-end", mode, dir, &attr->require_end))
++		goto fail;
++	if (!debugfs_create_ul("reject-start", mode, dir, &attr->reject_start))
++		goto fail;
++	if (!debugfs_create_ul("reject-end", mode, dir, &attr->reject_end))
+ 		goto fail;
  
+ #endif /* CONFIG_FAULT_INJECTION_STACKTRACE_FILTER */
+ 
+ 	return 0;
+ fail:
+-	cleanup_fault_attr_dentries(attr);
++	debugfs_remove_recursive(attr->dir);
++
+ 	return -ENOMEM;
+ }
+ 
+diff --git a/mm/failslab.c b/mm/failslab.c
+index c5f88f2..7df9f7f 100644
+--- a/mm/failslab.c
++++ b/mm/failslab.c
+@@ -45,7 +45,7 @@ static int __init failslab_debugfs_init(void)
+ 	err = init_fault_attr_dentries(&failslab.attr, "failslab");
+ 	if (err)
+ 		return err;
+-	dir = failslab.attr.dentries.dir;
++	dir = failslab.attr.dir;
+ 
+ 	failslab.ignore_gfp_wait_file =
+ 		debugfs_create_bool("ignore-gfp-wait", mode, dir,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 4e8985a..71159b2 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -1424,7 +1424,7 @@ static int __init fail_page_alloc_debugfs(void)
+ 				       "fail_page_alloc");
+ 	if (err)
+ 		return err;
+-	dir = fail_page_alloc.attr.dentries.dir;
++	dir = fail_page_alloc.attr.dir;
+ 
+ 	fail_page_alloc.ignore_gfp_wait_file =
+ 		debugfs_create_bool("ignore-gfp-wait", mode, dir,
 -- 
 1.7.4.4
 
