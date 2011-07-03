@@ -1,65 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753543Ab1GCLms (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 07:42:48 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35252 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753083Ab1GCLmp (ORCPT
+	id S1753636Ab1GCLuN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 07:50:13 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:53523 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752565Ab1GCLuK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 07:42:45 -0400
-Date: Sun, 3 Jul 2011 15:42:39 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-        James Morris <jmorris@namei.org>, Namhyung Kim <namhyung@gmail.com>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        kernel-hardening@lists.openwall.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] kernel: escape non-ASCII and control characters in
- printk()
-Message-ID: <20110703114239.GA4074@albatros>
-References: <20110626194618.GA21740@elte.hu>
- <20110626202518.GA4915@albatros>
- <20110626220126.GA24004@elte.hu>
- <20110627083633.GA5846@albatros>
- <20110627104058.45e93c41@pyx>
- <20110627183829.GA16033@albatros>
- <BANLkTikyzxXgfFuwBRdDLvrRN4+fExMwWA@mail.gmail.com>
- <20110701143757.GA22567@albatros>
- <20110701154947.133c30f5@lxorguk.ukuu.org.uk>
- <20110703100131.GA2472@albatros>
+	Sun, 3 Jul 2011 07:50:10 -0400
+X-Sasl-enc: VvyytxC9MSwGDtBeKzI/sAkzKiOSysWB9Jf3riyLGS6j 1309693809
+Date: Sun, 3 Jul 2011 08:50:06 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-thinkpad@linux-thinkpad.org
+Subject: Re: [PATCH v2] PNPACPI: Register disabled resources
+Message-ID: <20110703115006.GA11298@khazad-dum.debian.net>
+References: <4E04FB69.3000206@gmx.net>
+ <20110625025419.GB25126@khazad-dum.debian.net>
+ <4E104966.3030002@gmx.net>
+ <4E10533A.4080707@gmx.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110703100131.GA2472@albatros>
+In-Reply-To: <4E10533A.4080707@gmx.net>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 03, 2011 at 14:01 +0400, Vasiliy Kulikov wrote:
-> diff --git a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
-> index fc2cdb6..b2a659b 100644
-> --- a/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
-> +++ b/drivers/scsi/cxgbi/cxgb3i/cxgb3i.c
-> @@ -38,7 +38,7 @@ static unsigned int dbg_level;
->  
->  static char version[] =
->  	DRV_MODULE_DESC " " DRV_MODULE_NAME
-> -	" v" DRV_MODULE_VERSION " (" DRV_MODULE_RELDATE ")\n";
-> +	" v" DRV_MODULE_VERSION " (" DRV_MODULE_RELDATE ")";
->  
->  MODULE_AUTHOR("Chelsio Communications, Inc.");
->  MODULE_DESCRIPTION(DRV_MODULE_DESC);
-> @@ -1402,7 +1402,7 @@ static int __init cxgb3i_init_module(void)
->  {
->  	int rc;
->  
-> -	printk(KERN_INFO "%s", version);
-> +	printk(KERN_INFO "%s\b", version);
-
-Surely this and init/main.c should have \n, sorry.
+Thank you for the extended description.  Unfortunately, I don't know
+enough about the PNPBIPS/PNPACPI subsystem to comment further on the
+patch, but it does look useful.
 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
