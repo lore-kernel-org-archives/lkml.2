@@ -1,44 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756262Ab1GCQgs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 12:36:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35871 "EHLO mx1.redhat.com"
+	id S1756408Ab1GCQiQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 12:38:16 -0400
+Received: from mail.mnsspb.ru ([84.204.75.2]:35626 "EHLO mail.mnsspb.ru"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756015Ab1GCQgp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 12:36:45 -0400
-Date: Sun, 3 Jul 2011 19:36:54 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sasha Levin <levinsasha928@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        dave@linux.vnet.ibm.com, Amit Shah <amit.shah@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>
-Subject: Re: [PATCH] virtio_balloon: Notify guest only after deflating the
- balloon
-Message-ID: <20110703163653.GA25750@redhat.com>
-References: <1309576016-22800-1-git-send-email-levinsasha928@gmail.com>
- <20110703082748.GD13183@redhat.com>
- <1309686419.2250.8.camel@sasha>
- <20110703103051.GA15537@redhat.com>
- <1309690349.2250.21.camel@sasha>
- <20110703121137.GA15826@redhat.com>
- <1309696356.2250.31.camel@sasha>
- <20110703134439.GA22493@redhat.com>
- <1309705961.2250.36.camel@sasha>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309705961.2250.36.camel@sasha>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756106Ab1GCQiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 12:38:11 -0400
+From: Kirill Smelkov <kirr@mns.spb.ru>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>,
+        matt mooney <mfm@muteddisk.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org, linux-uvc-devel@lists.berlios.de,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kirill Smelkov <kirr@mns.spb.ru>
+Subject: [PATCH v4 1/2] USB: EHCI: Move sysfs related bits into ehci-sysfs.c
+Date: Sun,  3 Jul 2011 20:36:56 +0400
+Message-Id: <0f7b5fa21a812cd4ca73a17d137170247a0867e1.1309710420.git.kirr@mns.spb.ru>
+X-Mailer: git-send-email 1.7.6.131.g99019
+In-Reply-To: <cover.1309710420.git.kirr@mns.spb.ru>
+References: <cover.1309710420.git.kirr@mns.spb.ru>
+In-Reply-To: <cover.1309710420.git.kirr@mns.spb.ru>
+References: <cover.1309710420.git.kirr@mns.spb.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 03, 2011 at 06:12:41PM +0300, Sasha Levin wrote:
-> If we choose to
-> leave it this way we can just go ahead and remove MUST_TELL_HOST.
+The only sysfs attr implemented so far is "companion" from ehci-hub.c,
+but in the next patch we are going to add another sysfs file, so prior
+to that let's structure things and move already-in-there sysfs code to
+separate file.
 
-It probably needs to stay so that the host can detect that
-the guest does guarantee telling it first.
+NOTE: All the code I'm moving into this new file was written by Alan
+Stern (in 57e06c11 "EHCI: force high-speed devices to run at full
+speed"; Jan 16 2007), that's why I'm putting
+
+    Copyright (C) 2007 by Alan Stern
+
+there after explicit request from the author.
+
+Signed-off-by: Kirill Smelkov <kirr@mns.spb.ru>
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+---
+ drivers/usb/host/ehci-hcd.c   |    5 +-
+ drivers/usb/host/ehci-hub.c   |   75 --------------------------------
+ drivers/usb/host/ehci-sysfs.c |   94 +++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 97 insertions(+), 77 deletions(-)
+ create mode 100644 drivers/usb/host/ehci-sysfs.c
+
+diff --git a/drivers/usb/host/ehci-hcd.c b/drivers/usb/host/ehci-hcd.c
+index e18862c..8306155 100644
+--- a/drivers/usb/host/ehci-hcd.c
++++ b/drivers/usb/host/ehci-hcd.c
+@@ -336,6 +336,7 @@ static void ehci_work(struct ehci_hcd *ehci);
+ #include "ehci-mem.c"
+ #include "ehci-q.c"
+ #include "ehci-sched.c"
++#include "ehci-sysfs.c"
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+@@ -520,7 +521,7 @@ static void ehci_stop (struct usb_hcd *hcd)
+ 	ehci_reset (ehci);
+ 	spin_unlock_irq(&ehci->lock);
+ 
+-	remove_companion_file(ehci);
++	remove_sysfs_files(ehci);
+ 	remove_debug_files (ehci);
+ 
+ 	/* root hub is shut down separately (first, when possible) */
+@@ -754,7 +755,7 @@ static int ehci_run (struct usb_hcd *hcd)
+ 	 * since the class device isn't created that early.
+ 	 */
+ 	create_debug_files(ehci);
+-	create_companion_file(ehci);
++	create_sysfs_files(ehci);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/usb/host/ehci-hub.c b/drivers/usb/host/ehci-hub.c
+index ea6184b..d9e8d71 100644
+--- a/drivers/usb/host/ehci-hub.c
++++ b/drivers/usb/host/ehci-hub.c
+@@ -471,29 +471,6 @@ static int ehci_bus_resume (struct usb_hcd *hcd)
+ 
+ /*-------------------------------------------------------------------------*/
+ 
+-/* Display the ports dedicated to the companion controller */
+-static ssize_t show_companion(struct device *dev,
+-			      struct device_attribute *attr,
+-			      char *buf)
+-{
+-	struct ehci_hcd		*ehci;
+-	int			nports, index, n;
+-	int			count = PAGE_SIZE;
+-	char			*ptr = buf;
+-
+-	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
+-	nports = HCS_N_PORTS(ehci->hcs_params);
+-
+-	for (index = 0; index < nports; ++index) {
+-		if (test_bit(index, &ehci->companion_ports)) {
+-			n = scnprintf(ptr, count, "%d\n", index + 1);
+-			ptr += n;
+-			count -= n;
+-		}
+-	}
+-	return ptr - buf;
+-}
+-
+ /*
+  * Sets the owner of a port
+  */
+@@ -528,58 +505,6 @@ static void set_owner(struct ehci_hcd *ehci, int portnum, int new_owner)
+ 	}
+ }
+ 
+-/*
+- * Dedicate or undedicate a port to the companion controller.
+- * Syntax is "[-]portnum", where a leading '-' sign means
+- * return control of the port to the EHCI controller.
+- */
+-static ssize_t store_companion(struct device *dev,
+-			       struct device_attribute *attr,
+-			       const char *buf, size_t count)
+-{
+-	struct ehci_hcd		*ehci;
+-	int			portnum, new_owner;
+-
+-	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
+-	new_owner = PORT_OWNER;		/* Owned by companion */
+-	if (sscanf(buf, "%d", &portnum) != 1)
+-		return -EINVAL;
+-	if (portnum < 0) {
+-		portnum = - portnum;
+-		new_owner = 0;		/* Owned by EHCI */
+-	}
+-	if (portnum <= 0 || portnum > HCS_N_PORTS(ehci->hcs_params))
+-		return -ENOENT;
+-	portnum--;
+-	if (new_owner)
+-		set_bit(portnum, &ehci->companion_ports);
+-	else
+-		clear_bit(portnum, &ehci->companion_ports);
+-	set_owner(ehci, portnum, new_owner);
+-	return count;
+-}
+-static DEVICE_ATTR(companion, 0644, show_companion, store_companion);
+-
+-static inline int create_companion_file(struct ehci_hcd *ehci)
+-{
+-	int	i = 0;
+-
+-	/* with integrated TT there is no companion! */
+-	if (!ehci_is_TDI(ehci))
+-		i = device_create_file(ehci_to_hcd(ehci)->self.controller,
+-				       &dev_attr_companion);
+-	return i;
+-}
+-
+-static inline void remove_companion_file(struct ehci_hcd *ehci)
+-{
+-	/* with integrated TT there is no companion! */
+-	if (!ehci_is_TDI(ehci))
+-		device_remove_file(ehci_to_hcd(ehci)->self.controller,
+-				   &dev_attr_companion);
+-}
+-
+-
+ /*-------------------------------------------------------------------------*/
+ 
+ static int check_reset_complete (
+diff --git a/drivers/usb/host/ehci-sysfs.c b/drivers/usb/host/ehci-sysfs.c
+new file mode 100644
+index 0000000..29824a9
+--- /dev/null
++++ b/drivers/usb/host/ehci-sysfs.c
+@@ -0,0 +1,94 @@
++/*
++ * Copyright (C) 2007 by Alan Stern
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License as published by the
++ * Free Software Foundation; either version 2 of the License, or (at your
++ * option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
++ * or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software Foundation,
++ * Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
++ */
++
++/* this file is part of ehci-hcd.c */
++
++
++/* Display the ports dedicated to the companion controller */
++static ssize_t show_companion(struct device *dev,
++			      struct device_attribute *attr,
++			      char *buf)
++{
++	struct ehci_hcd		*ehci;
++	int			nports, index, n;
++	int			count = PAGE_SIZE;
++	char			*ptr = buf;
++
++	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
++	nports = HCS_N_PORTS(ehci->hcs_params);
++
++	for (index = 0; index < nports; ++index) {
++		if (test_bit(index, &ehci->companion_ports)) {
++			n = scnprintf(ptr, count, "%d\n", index + 1);
++			ptr += n;
++			count -= n;
++		}
++	}
++	return ptr - buf;
++}
++
++/*
++ * Dedicate or undedicate a port to the companion controller.
++ * Syntax is "[-]portnum", where a leading '-' sign means
++ * return control of the port to the EHCI controller.
++ */
++static ssize_t store_companion(struct device *dev,
++			       struct device_attribute *attr,
++			       const char *buf, size_t count)
++{
++	struct ehci_hcd		*ehci;
++	int			portnum, new_owner;
++
++	ehci = hcd_to_ehci(bus_to_hcd(dev_get_drvdata(dev)));
++	new_owner = PORT_OWNER;		/* Owned by companion */
++	if (sscanf(buf, "%d", &portnum) != 1)
++		return -EINVAL;
++	if (portnum < 0) {
++		portnum = - portnum;
++		new_owner = 0;		/* Owned by EHCI */
++	}
++	if (portnum <= 0 || portnum > HCS_N_PORTS(ehci->hcs_params))
++		return -ENOENT;
++	portnum--;
++	if (new_owner)
++		set_bit(portnum, &ehci->companion_ports);
++	else
++		clear_bit(portnum, &ehci->companion_ports);
++	set_owner(ehci, portnum, new_owner);
++	return count;
++}
++static DEVICE_ATTR(companion, 0644, show_companion, store_companion);
++
++static inline int create_sysfs_files(struct ehci_hcd *ehci)
++{
++	int	i = 0;
++
++	/* with integrated TT there is no companion! */
++	if (!ehci_is_TDI(ehci))
++		i = device_create_file(ehci_to_hcd(ehci)->self.controller,
++				       &dev_attr_companion);
++	return i;
++}
++
++static inline void remove_sysfs_files(struct ehci_hcd *ehci)
++{
++	/* with integrated TT there is no companion! */
++	if (!ehci_is_TDI(ehci))
++		device_remove_file(ehci_to_hcd(ehci)->self.controller,
++				   &dev_attr_companion);
++}
 -- 
-MST
+1.7.6.rc3
+
