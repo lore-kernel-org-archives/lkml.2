@@ -1,103 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754005Ab1GCRyO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 13:54:14 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40048 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751941Ab1GCRyI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 13:54:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.02.1107021021090.26801@asgard.lang.hm>
-References: <BANLkTin_Yo+wnwWyMFoG3Nv5SSzJj8J1_w@mail.gmail.com>
-	<alpine.DEB.2.02.1106281238210.7935@asgard.lang.hm>
-	<BANLkTi=tFc2uoGMNFAAFqpeka_otC6CsOQ@mail.gmail.com>
-	<alpine.DEB.2.02.1107021021090.26801@asgard.lang.hm>
-Date: Sun, 3 Jul 2011 13:54:07 -0400
-Message-ID: <CALyraeO1N3rvtHkRd9YWWV6azg-Y42dM3W9ytwo-nV4Rik3=9g@mail.gmail.com>
-Subject: Re: Question on syslogd and syslog
-From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-To: david@lang.hm
-Cc: linux-kernel-mail <linux-kernel@vger.kernel.org>,
-        linux-newbie@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754221Ab1GCSEM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 14:04:12 -0400
+Received: from gate.crashing.org ([63.228.1.57]:38861 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752135Ab1GCSEK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 14:04:10 -0400
+In-Reply-To: <1309641352-18714-3-git-send-email-jonas@southpole.se>
+References: <1309641352-18714-1-git-send-email-jonas@southpole.se> <1309641352-18714-3-git-send-email-jonas@southpole.se>
+Mime-Version: 1.0 (Apple Message framework v753.1)
+Content-Type: text/plain; charset=US-ASCII; delsp=yes; format=flowed
+Message-Id: <61570CA6-9450-4B9C-A472-FE62A5B23B49@kernel.crashing.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        devicetree-discuss@lists.ozlabs.org
+Content-Transfer-Encoding: 7bit
+From: Segher Boessenkool <segher@kernel.crashing.org>
+Subject: Re: [PATCH v2 02/19] OpenRISC: Device tree
+Date: Sun, 3 Jul 2011 20:07:45 +0200
+To: Jonas Bonn <jonas@southpole.se>
+X-Mailer: Apple Mail (2.753.1)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Facilities of syslogd are associated to a particular file. So, in my
-application there are 20 tasks which needs to have a separate log file
-for every task. So, mapping every task to one facility fills my
-requirement. So, this is the reason I want to extend the facilities of
-level LOGLOCAL0-7.
+> The OpenRISC architecture uses the device tree infrastructure for the
+> platform description.
 
-Coming to previous question, the purpose is to fulfill the above requirement.
+Hurray, world domination is one step closer ;-)
 
-Thanks,
-Sri.
+> +	memory {
+> +		device_type = "memory";
+> +		reg = <0x00000000 0x8000000>;
+> +	};
 
-On Sat, Jul 2, 2011 at 1:23 PM,  <david@lang.hm> wrote:
-> the problem is that in the syslog spec, the facility and severity get
-> combined into one 8 bit field (one of the two only has 12 values defined
-> instead of 16, but I don't remember off the top of my head which one)
->
-> so extending this is creating a new protocol.
->
-> also, the reason I was talking about filtering is that other than filtering,
-> what purpose is there in settng the facility?
->
-> David Lang
->
-> On Sat, 2 Jul 2011, Sri Ram Vemulpali wrote:
->
->> Thanks for the replies. My question is more on how to extend
->> facilities, rather on how to filter the messages. It seems there is a
->> code in the toolchain syslog.h where the array representing the
->> facilities needs to be extended. Please correct me if I am wrong.
->>
->> Sri.
->>
->> On Tue, Jun 28, 2011 at 3:41 PM,  <david@lang.hm> wrote:
->>>
->>> you would be creating a completely different over-the-wire protocol for
->>> your
->>> syslog messages.
->>>
->>> however, note that newer syslog daemons (syslog-ng and rsyslog for
->>> example)
->>> allow you to do filtering on just about anything in the message, not just
->>> the facility and severity.
->>>
->>> David Lang
->>>
->>> On Tue, 28 Jun 2011, Sri Ram Vemulpali wrote:
->>>
->>>> Date: Tue, 28 Jun 2011 14:11:59 -0400
->>>> From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
->>>> To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
->>>>    linux-newbie@vger.kernel.org
->>>> Subject: Question on syslogd and syslog
->>>>
->>>> Hello All,
->>>>
->>>>   I am looking to modify number of facilities available in syslog so
->>>> that for my application I can have much more array of them at disposal
->>>> of my need. So currently only LOG_LOCAL0 - LOG_LOCAL7 are defined for
->>>> user, what if I want to extend them, is there a way I can extend them.
->>>> Or should I go ahead and modify the source code of syslog. Can any
->>>> please point me in right direction and where can I get syslogd and
->>>> syslog source code. Thanks in advance.
->>>>
->>>>
->>>
->>
->>
->>
->
+Might want to write this as 0x08000000 (easier to read).
+
+> +	cpus {
+> +		cpu@0 {
+
+Any node with a textual unit address (@0) needs to have a "reg" property
+with the same address (and then the parent node, "cpus", should have
+#address-cells and #size-cells defined, probably to 1 and 0 resp. in  
+this
+case).
+
+You can just name the node "cpu" here.
+
+> +		pic: pic@0 {
+> +			compatible = "opencores,or1k-pic";
+> +			#interrupt-cells = <1>;
+> +			interrupt-controller;
+> +		};
+
+Same thing here.  Although, does your interrupt controller have any  
+registers?
+You should describe them then.
+
+> +
+> +		serial0: serial@90000000 {
+> +			/* FIXME: device_type is still needed here...
+> +			   should remove requirement from of_serial driver */
+> +			device_type = "serial";
+> +			compatible = "opencores,uart", "ns16550a";
+
+Opencores has and always will have only one UART implementation?  You  
+should
+make the "compatible" name more specific ("opencores,uart-16550a"  
+perhaps).
+
+> +		enet0: ethoc@92000000 {
+> +			compatible = "opencores,ethoc", "ethoc";
+
+Probably shouldn't have the "ethoc" there, way too generic a name.
+
+> +			reg = <0x92000000 0x53>;
+
+0x53?  Usually you write the size of the register block that is decoded,
+not just the size of the defined registers; so it would be 0x100 or  
+something
+like that.
 
 
+Segher
 
--- 
-Regards,
-Sri.
