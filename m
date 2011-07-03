@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab1GCCqm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 22:46:42 -0400
-Received: from 21.98.mail-out.ovh.net ([178.32.119.154]:48538 "EHLO
-	98.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754840Ab1GCCqk (ORCPT
+	id S1751028Ab1GCETU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 00:19:20 -0400
+Received: from sarigua.uspnet.usp.br ([200.144.190.149]:59997 "EHLO
+	sarigua.uspnet.usp.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750704Ab1GCETS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 22:46:40 -0400
-Date: Sun, 3 Jul 2011 04:31:16 +0200
-From: Jean-Christophe PLAGNIOL-VILLARD <plagnioj@jcrosoft.com>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Russell King <linux@arm.linux.org.uk>
-Subject: Re: AT91: Fix pull requset
-Message-ID: <20110703023116.GD28000@game.jcrosoft.org>
-References: <20110701065411.GD14408@game.jcrosoft.org>
- <201107011709.40359.arnd@arndb.de>
- <20110701183313.GV11559@pengutronix.de>
+	Sun, 3 Jul 2011 00:19:18 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Jul 2011 00:19:17 EDT
+X-Mail-Scanner: Scanned by qSheff-II-2.1-r3 (http://www.enderunix.org/qsheff/)
+Message-ID: <20110703011233.56966f16ofr8s1td@webmail.usp.br>
+Date: Sun, 03 Jul 2011 01:12:33 -0300
+From: Money Gram Malaysia <xisconsolmagno@usp.br>
+Reply-to: money_gramlimited@mspil.edu.cn
+To: undisclosed-recipients:;
+Subject: Re.funds
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain;
+ charset=ISO-8859-1;
+ DelSp="Yes";
+ format="flowed"
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20110701183313.GV11559@pengutronix.de>
-X-PGP-Key: http://uboot.jcrosoft.org/plagnioj.asc
-X-PGP-key-fingerprint: 6309 2BBA 16C8 3A07 1772 CC24 DEFC FFA3 279C CE7C
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Ovh-Tracer-Id: 15567536538590882656
-X-Ovh-Remote: 213.251.161.87 (ns32433.ovh.net)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -200
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.9)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20:33 Fri 01 Jul     , Uwe Kleine-König wrote:
-> On Fri, Jul 01, 2011 at 05:09:40PM +0200, Arnd Bergmann wrote:
-> > On Friday 01 July 2011, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > > HI Linus, Russell, Arnd
-> > For every bug fix you commit, please check if it applies to older
-> > kernels as well, and mark with 'Cc: stable@kernel.org' if so. Do you
-> > want to update the changelog and send another pull request?
-> Or alternatively (i.e. if you don't want to rewrite your tree) just
-> writing to stable@kernel.org and indicating the upstream commit ids is
-> usually OK, too.
-> The other extreme is to point out the affected versions, e.g. by using 
-> 
-> 	Cc: stable@kernel.org [2.6.xy+]
 
-I known and will have done if needed but those fixes are for this release only
+My associate has helped me to send your first payment
+of $5000 USD to you as instructed by the Malaysian
+Government and Mr. David Cameron the United Kingdom
+prime minister after the last G20 meeting that was
+held in Malaysia, making you one of the beneficiaries.
+Here is the information below.
 
-Best Regards,
-J.
+Refrence Numbers: 86147516
+Sender Name Is = Patrick Lee Chun
+
+I told him to keep sending you $5000 USD twice a week
+until the FULL payment of ($820000.00 United State Dollars)
+is completed.
+
+A certificate will be made to change the Receivers Name
+to your name as stated by the Malaysian Government,reconfirm
+your {1}Full Names {2}address {3}Mobile Number
+
+via Email to:money_gramlimited@mspil.edu.cn Allan Davis
+to proceed.
+
+        Note:
+
+You cannot pickup the money until the certificate is
+obtained by you.
+
+Regards
+Mr. Allan Davis.
+Tel: +(60)163544376.
+
+For more info: www.g20.org
+
+
+
+
+
