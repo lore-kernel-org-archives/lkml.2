@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753980Ab1GCNUo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 09:20:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46274 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752599Ab1GCNUn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 09:20:43 -0400
-Message-ID: <4E106C9B.6020403@redhat.com>
-Date: Sun, 03 Jul 2011 16:20:27 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+	id S1754155Ab1GCNaI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 09:30:08 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:63601 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753288Ab1GCNaF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 09:30:05 -0400
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+Subject: Re: 3.0rc3-rc5: usb stops working after resume from suspend to ram
+Date: Sun, 3 Jul 2011 15:29:58 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc4; KDE/4.6.3; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+References: <201106292121.34523.a.miskiewicz@gmail.com>
+In-Reply-To: <201106292121.34523.a.miskiewicz@gmail.com>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Glauber Costa <glommer@redhat.com>, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>, Jeff Law <law@redhat.com>
-Subject: Re: [PATCH v4 8/9] KVM-GST: adjust scheduler cpu power
-References: <1309555369-16867-1-git-send-email-glommer@redhat.com>	 <1309555369-16867-9-git-send-email-glommer@redhat.com> <1309602291.10073.22.camel@twins>
-In-Reply-To: <1309602291.10073.22.camel@twins>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201107031529.58958.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/02/2011 01:24 PM, Peter Zijlstra wrote:
-> static void update_rq_clock_task(struct rq *rq, s64 delta)
-> {
-> 	s64 irq_delta = 0, steal = 0;
->
-> 	rq->clock_task += delta;
->
-> 	if ((irq_delta + steal)&&  sched_feat(NONTASK_POWER))
-> 		sched_rt_avg_update(rq, irq_delta + steal);
-> }
->
-> And we want it to emit the equivalent of:
->
-> static void update_rq_clock_task(struct rq *rq, s64 delta)
-> {
-> 	rq->clock_task += delta;
-> }
->
-> Now Glauber is properly paranoid and doesn't trust his compiler (this is
-> very hot code in the kernel so any extra code emitted here is sad) and
-> chose the heavy handed CPP solution.
->
-> Now without checking a all relevant gcc versions on all relevant
-> architectures (see you in a few weeks etc..) can we actually rely on gcc
-> doing such relatively simple things correct, or should we stick with CPP
-> just to make sure?
-
-I'm pretty sure any relevant version of gcc will do the right optimizations.
-
+On środa, 29 czerwca 2011 o 21:21:34 Arkadiusz Miskiewicz wrote:
+> Hi,
+> 
+> Something broke between rc3 and rc5. Thinkpad t400, logitech usb mouse.
+> After resume from ram usb device no longer works. Somewhere around rc3 it
+> was working fine.
+> 
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=38722
+for your bug report, please add your address to the CC list in there, thanks!
 -- 
-error compiling committee.c: too many arguments to function
-
+Maciej Rutecki
+http://www.maciek.unixy.pl
