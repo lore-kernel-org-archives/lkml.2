@@ -1,127 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752487Ab1GCHZf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 03:25:35 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:22053 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751989Ab1GCHZe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 03:25:34 -0400
-Date: Sun, 3 Jul 2011 09:16:13 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: linux-kernel@vger.kernel.org
-cc: Thomas Hellstrom <thomas@tungstengraphics.com>,
-        Alan Cox <alan@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        devel@driverdev.osuosl.org
-Subject: [PATCH] gma500: fix compiler warnings and format string
-Message-ID: <alpine.LNX.2.00.1107030914100.16316@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1752751Ab1GCH2m (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 03:28:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50856 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751989Ab1GCH2j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 03:28:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: linux-pm@lists.linux-foundation.org
+Subject: LPC2011 Power Management Micro Conf
+Date: Sun, 3 Jul 2011 09:29:28 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Arnd Bergmann <arnd@arndb.de>, Stephen Boyd <sboyd@codeaurora.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Arjan van de Ven <arjan@infradead.org>, Kevin Hilman <khilman@ti.com>,
+        Magnus Damm <magnus.damm@gmail.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>, Paul Walmsley <paul@pwsan.com>,
+        LKML <linux-kernel@vger.kernel.org>, Jean Pihet <j-pihet@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>, Len Brown <lenb@kernel.org>,
+        Mark Brown <broonie@sirena.org.uk>
+References: <201105011353.44809.rjw@sisk.pl>
+In-Reply-To: <201105011353.44809.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1261404430-1309677374=:16316"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107030929.28555.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---8323328-1261404430-1309677374=:16316
-Content-Type: TEXT/PLAIN; charset=ISO-8859-7
-Content-Transfer-Encoding: 8BIT
+Some time ago I sent the following to linux-pm and wasn't really satisfied
+with the response, so here it goes again.  It is slightly outdated, because
+we've already started to plan a PM meeting at the Kernel Summit, but I hope
+some of you will be able to participate in the LPC PM Mini Conf too.
 
-This patch fixes these compiler warnings:
+In the previous years we used to organize Power Management Mini Summits to
+discuss PM-related issues, the last of which took place during LinuxCon in
+Boston in 2010.  Unfortunately, however, it wasn't particularly well attended
+and some of the participants generally felt that it had failed its purpose.
+The power management track at the last LPC, on the other hand, was generally
+regarded as interesting and successful, so there only seems to be room for
+one event devoted to power management a year.  For this reason, there won't
+be a PM Mini Summit in 2011 and the LPC PM Mini Conference will play the role
+of it.  To this end, in addition to the plenary sessions within the LPC PM
+track there will be a possibility to discuss specific problems related to
+power management in smaller groups.
 
-  CC      drivers/staging/gma500/psb_gtt.o
-drivers/staging/gma500/psb_gtt.c: In function ¡psb_gtt_insert¢:
-drivers/staging/gma500/psb_gtt.c:81:33: warning: unused variable ¡dev_priv¢ [-Wunused-variable]
-drivers/staging/gma500/psb_gtt.c: In function ¡psb_gtt_pin¢:
-drivers/staging/gma500/psb_gtt.c:237:2: warning: ¡ret¢ may be used uninitialized in this function [-Wuninitialized]
+If there's anything you'd like to discuss or give a presentation on related to
+Power Management, please let me know, preferably by replying to this message.
 
-It also fixes up the format string used in DRM_DEBUG() in
-drivers/staging/gma500/psb_gtt.c:psb_gtt_init() - the string required
-two arguments but only one was supplied.
+We have 1.5 hours allocated in the LPC schedule for the plenary session, but
+we will be able to move to another room (or a number of rooms if that's more
+suitable) afterwards to discuss things in detail.
 
-While reading through the file I also deleted what trailing whitespace
-I encountered.
+At the moment, there are two items proposed for the plenary session.  One of
+them will cover the power management development during the last year, but in
+that context I also would like things that are still missing and problems to
+solve to be mentioned, so please tell me what they are from your point of view.
+The second one will cover the idle power consumption problem and will be led
+by Len Brown.  Len has a lot of experience in that area, but mostly with systems
+based on Intel hardware, so if you want to contribute your own observations
+and/or results related to idle power, please let me know.
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/staging/gma500/psb_gtt.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
+Anyway, if you are going to attend the LPC and have anything PM-related to
+talk about or discuss, please let me know. 
 
-diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
-index 74c5a65..398df80 100644
---- a/drivers/staging/gma500/psb_gtt.c
-+++ b/drivers/staging/gma500/psb_gtt.c
-@@ -52,7 +52,7 @@ static inline uint32_t psb_gtt_mask_pte(uint32_t pfn, int type)
-  *	psb_gtt_entry		-	find the GART entries for a gtt_range
-  *	@dev: our DRM device
-  *	@r: our GTT range
-- * 
-+ *
-  *	Given a gtt_range object return the GART offset of the page table
-  *	entries for this gtt_range
-  */
-@@ -78,7 +78,6 @@ u32 *psb_gtt_entry(struct drm_device *dev, struct gtt_range *r)
-  */
- static int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
- {
--        struct drm_psb_private *dev_priv = dev->dev_private;
- 	u32 *gtt_slot, pte;
- 	int numpages = (r->resource.end + 1 - r->resource.start) >> PAGE_SHIFT;
- 	struct page **pages;
-@@ -104,7 +103,7 @@ static int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
- 	}
- 	/* Make sure all the entries are set before we return */
- 	ioread32(gtt_slot - 1);
--	
-+
- 	return 0;
- }
- 
-@@ -215,7 +214,7 @@ static void psb_gtt_detach_pages(struct gtt_range *gt)
-  */
- int psb_gtt_pin(struct gtt_range *gt)
- {
--	int ret;
-+	int ret = 0;
- 	struct drm_device *dev = gt->gem.dev;
- 	struct drm_psb_private *dev_priv = dev->dev_private;
- 
-@@ -264,7 +263,7 @@ void psb_gtt_unpin(struct gtt_range *gt)
- 	}
- 	mutex_unlock(&dev_priv->gtt_mutex);
- }
--	
-+
- /*
-  *	GTT resource allocator - allocate and manage GTT address space
-  */
-@@ -291,7 +290,7 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
- 	struct resource *r = dev_priv->gtt_mem;
- 	int ret;
- 	unsigned long start, end;
--	
-+
- 	if (backed) {
- 	        /* The start of the GTT is the stolen pages */
- 	        start = r->start;
-@@ -490,7 +489,7 @@ int psb_gtt_init(struct drm_device *dev, int resume)
- 		goto out_err;
- 	}
- 
--	DRM_DEBUG("%s: vram kernel virtual address %p\n", dev_priv->vram_addr);
-+	DRM_DEBUG("vram kernel virtual address: %p\n", dev_priv->vram_addr);
- 
- 	tt_pages = (pg->gatt_pages < PSB_TT_PRIV0_PLIMIT) ?
- 		(pg->gatt_pages) : PSB_TT_PRIV0_PLIMIT;
--- 
-1.7.6
-
-
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
-
---8323328-1261404430-1309677374=:16316--
+Best regards,
+Rafael
