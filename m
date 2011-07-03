@@ -1,78 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755633Ab1GCKjd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 06:39:33 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59615 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755531Ab1GCKja (ORCPT
+	id S1755674Ab1GCKua (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 06:50:30 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:43550 "HELO
+	mailout-de.gmx.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755567Ab1GCKu3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 06:39:30 -0400
-Date: Sun, 3 Jul 2011 14:39:25 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, rientjes@google.com, wilsons@start.ca,
-        security@kernel.org, kernel-hardening@lists.openwall.com
-Subject: [PATCH] proc: fix a race in do_io_accounting()
-Message-ID: <20110703103925.GA2283@albatros>
+	Sun, 3 Jul 2011 06:50:29 -0400
+X-Authenticated: #787645
+X-Provags-ID: V01U2FsdGVkX18hc8s3ec0hq+cngK/fRvwrAtuzAUkuWZ3BTIzgUe
+	8xyFx5Ey4+5xJ7
+Message-ID: <4E104966.3030002@gmx.net>
+Date: Sun, 03 Jul 2011 12:50:14 +0200
+From: Witold Szczeponik <Witold.Szczeponik@gmx.net>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.0; de; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+CC: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] PNPACPI: Register disabled resources
+References: <4E04FB69.3000206@gmx.net> <20110625025419.GB25126@khazad-dum.debian.net>
+In-Reply-To: <20110625025419.GB25126@khazad-dum.debian.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a ptrace_may_access() check in do_io_accounting() to prevent
-gathering information of setuid'ed and similar binaries.  However, there
-is a race against execve().  Holding task->signal->cred_guard_mutex
-while gathering the information should protect against the race.
+Am 25.06.2011 04:54, schrieb Henrique de Moraes Holschuh:
 
-The order of locking is similar to the one inside of
-ptrace_attach(): first goes cred_guard_mutex, then lock_task_sighand().
+>
+> Maybe you could post to the linux-thinkpad ML a follow up, mentioning this
+> patch and how these thinkpad users should use it plus whatever userspace to
+> improve the suport for their boxes?
+>
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Cc: stable@kernel.org
----
- fs/proc/base.c |   10 ++++++++--
- 1 files changed, 8 insertions(+), 2 deletions(-)
+Hi Henrique,
 
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 083a4f2..c605ee1 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2711,9 +2711,12 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
- {
- 	struct task_io_accounting acct = task->ioac;
- 	unsigned long flags;
-+	int result = -EACCES;
-+
-+	mutex_lock(&task->signal->cred_guard_mutex);
- 
- 	if (!ptrace_may_access(task, PTRACE_MODE_READ))
--		return -EACCES;
-+		goto out_unlock;
- 
- 	if (whole && lock_task_sighand(task, &flags)) {
- 		struct task_struct *t = task;
-@@ -2724,7 +2727,7 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
- 
- 		unlock_task_sighand(task, &flags);
- 	}
--	return sprintf(buffer,
-+	result = sprintf(buffer,
- 			"rchar: %llu\n"
- 			"wchar: %llu\n"
- 			"syscr: %llu\n"
-@@ -2739,6 +2742,9 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
- 			(unsigned long long)acct.read_bytes,
- 			(unsigned long long)acct.write_bytes,
- 			(unsigned long long)acct.cancelled_write_bytes);
-+out_unlock:
-+	mutex_unlock(&task->signal->cred_guard_mutex);
-+	return result;
- }
- 
- static int proc_tid_io_accounting(struct task_struct *task, char *buffer)
--- 
-1.7.0.4
+I will send out a more detailed patch description shortly.  Since a 
+subtle typo sneaked into the original patch, resending the entire patch 
+makes sense (to me).  I will also include the linux-thinkpad ML.
+
+--- Witold
