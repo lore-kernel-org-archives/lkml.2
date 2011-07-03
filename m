@@ -1,148 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755717Ab1GCKwi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 06:52:38 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:61627 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755536Ab1GCKwg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 06:52:36 -0400
-Subject: Re: [PATCH] virtio_balloon: Notify guest only after deflating the
- balloon
-From: Sasha Levin <levinsasha928@gmail.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-        dave@linux.vnet.ibm.com, Amit Shah <amit.shah@redhat.com>,
-        Pekka Enberg <penberg@kernel.org>
-In-Reply-To: <20110703103051.GA15537@redhat.com>
-References: <1309576016-22800-1-git-send-email-levinsasha928@gmail.com>
-	 <20110703082748.GD13183@redhat.com> <1309686419.2250.8.camel@sasha>
-	 <20110703103051.GA15537@redhat.com>
-Content-Type: text/plain; charset="us-ascii"
-Date: Sun, 03 Jul 2011 13:52:29 +0300
-Message-ID: <1309690349.2250.21.camel@sasha>
+	id S1755836Ab1GCLIO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 07:08:14 -0400
+Received: from mail.gw90.de ([188.40.100.199]:38337 "EHLO mail.gw90.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755010Ab1GCLIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 07:08:09 -0400
+X-Greylist: delayed 974 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Jul 2011 07:08:09 EDT
+Subject: Re: [PATCH] nouveau: Do not leak in nv20_graph_create
+From: Paul Menzel <paulepanter@users.sourceforge.net>
+To: dri-devel@lists.freedesktop.org
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1107031224030.16316@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107031224030.16316@swampdragon.chaosbits.net>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-BQ+fUV5upBHNEss0EG2E"
+Date: Sun, 03 Jul 2011 12:51:51 +0200
+Message-ID: <1309690311.20270.27.camel@mattotaupa>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2011-07-03 at 13:30 +0300, Michael S. Tsirkin wrote:
-> On Sun, Jul 03, 2011 at 12:46:59PM +0300, Sasha Levin wrote:
-> > On Sun, 2011-07-03 at 11:27 +0300, Michael S. Tsirkin wrote:
-> > > Doesn't this basically just revert
-> > > bf50e69f63d21091e525185c3ae761412be0ba72?
-> > > 
-> > 
-> > Yes. I haven't noticed that commit.
-> > 
-> > Ignoring the VIRTIO_BALLOON_F_MUST_TELL_HOST feature flag causes an
-> > unnecessary delay due to having to kick and wait for the host to process
-> > the deflate vq before actually using the memory pages.
-> 
-> OTOH, as the commit points out:
-> 	Without this feature, we might free a page (and have another
-> 	user touch it) while the hypervisor is unprepared for it
-> 
-> Are you doing so many deflates that the speed is important?
-> 
 
-In the case of kvm tools and qemu for example, the hypervisor doesn't
-need to be 'prepared' for it.
+--=-BQ+fUV5upBHNEss0EG2E
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-When the balloon if inflated, the pages are madvise(MADV_DONTNEED),
-which means that we can access those pages immediately when deflating
-without having to do anything special to prepare for it.
-
-I'm not saying that speed is critical here, I'm just saying that the
-feature was added to the spec for a reason - to prevent unnecessary
-overhead like in the case of kvm tools and qemu, and we just choose to
-ignore it completely.
+Dear Jesper,
 
 
-> > I've stumbled on it when writing the virtio_balloon driver for kvm
-> > tools. Initially my plan was to ignore the deflate vq completely, since
-> > the virtio spec says that unless we set the MUST_TELL_HOST flag,
-> > "deflation advice is merely a courtesy".
-> > 
-> > I've noticed that if I don't process the deflate vq the guest doesn't
-> > use the deflated pages at all - something which contradicts the feature
-> > that lets him use the deflated pages without waiting for the deflate vq.
-> 
-> OK, so you have a host that does not process the vq.
-> As a result tell_host blocks forever.
-> With your patch, guest will block after releasing the
-> page, so the next deflate request will get stuck.
-> This doesn't seem to be a huge improvement so
-> we can conclude such a host is broken?
-> 
+Am Sonntag, den 03.07.2011, 12:25 +0200 schrieb Jesper Juhl:
+> If we return due to an unknown chipset in=20
+> drivers/gpu/drm/nouveau/nv20_graph.c:nv20_graph_create() we'll leak the=
+=20
+> memory allocated to 'pgraph'.
+>=20
+> This patch should fix the leak and it also disambiguates the "PGRAPH:
+> unknown chipset\n" error message - it's nice to be able to tell which
+> branch created the error which is impossible if the error messages are
+> 100% identical.
+>=20
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  drivers/gpu/drm/nouveau/nv20_graph.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+>=20
+>   Don't have the hardware, so compile tested only.
+>=20
+> diff --git a/drivers/gpu/drm/nouveau/nv20_graph.c b/drivers/gpu/drm/nouve=
+au/nv20_graph.c
+> index affc7d7..059ad65 100644
+> --- a/drivers/gpu/drm/nouveau/nv20_graph.c
+> +++ b/drivers/gpu/drm/nouveau/nv20_graph.c
+> @@ -752,6 +752,7 @@ nv20_graph_create(struct drm_device *dev)
+>  			pgraph->grctx_user =3D 0x0000;
+>  			break;
+>  		default:
+> +			kfree(pgraph);
+>  			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
+>  			return 0;
+>  		}
+> @@ -773,7 +774,8 @@ nv20_graph_create(struct drm_device *dev)
+>  			pgraph->grctx_size =3D NV35_36_GRCTX_SIZE;
+>  			break;
+>  		default:
+> -			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
+> +			kfree(pgraph);
+> +			NV_ERROR(dev, "PGRAPH: unknown chipset.\n");
 
-No, the host is not doing anything wrong by not processing deflate vq.
+so the only disambiguation is the full stop at the end?
 
-This just leads me to believe that we should either not notify the host,
-or not wait_for_completion() when telling the host.
-
-> 
-> 
-> 
-> > > 
-> > > On Sat, Jul 02, 2011 at 06:06:56AM +0300, Sasha Levin wrote:
-> > > > Unless the host requires that requested pages won't be used until
-> > > > he us notified (VIRTIO_BALLOON_F_MUST_TELL_HOST), only notify after
-> > > > deflating the balloon.
-> > > > 
-> > > > This will avoid having to take an exit before actually using the pages.
-> > > > 
-> > > > Cc: Rusty Russell <rusty@rustcorp.com.au>
-> > > > Cc: "Michael S. Tsirkin" <mst@redhat.com>
-> > > > Cc: virtualization@lists.linux-foundation.org
-> > > > Cc: kvm@vger.kernel.org
-> > > > Signed-off-by: Sasha Levin <levinsasha928@gmail.com>
-> > > > ---
-> > > >  drivers/virtio/virtio_balloon.c |   16 ++++++++++------
-> > > >  1 files changed, 10 insertions(+), 6 deletions(-)
-> > > > 
-> > > > diff --git a/drivers/virtio/virtio_balloon.c b/drivers/virtio/virtio_balloon.c
-> > > > index e058ace..055f95d 100644
-> > > > --- a/drivers/virtio/virtio_balloon.c
-> > > > +++ b/drivers/virtio/virtio_balloon.c
-> > > > @@ -148,14 +148,18 @@ static void leak_balloon(struct virtio_balloon *vb, size_t num)
-> > > >  		vb->num_pages--;
-> > > >  	}
-> > > >  
-> > > > -
-> > > >  	/*
-> > > > -	 * Note that if
-> > > > -	 * virtio_has_feature(vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST);
-> > > > -	 * is true, we *have* to do it in this order
-> > > > +	 * If the host doesn't require us to notify him before using
-> > > > +	 * pages which belong to the balloon, update him only after
-> > > > +	 * freeing those pages for guest use.
-> > > >  	 */
-> > > > -	tell_host(vb, vb->deflate_vq);
-> > > > -	release_pages_by_pfn(vb->pfns, vb->num_pfns);
-> > > > +	if (virtio_has_feature(vb->vdev, VIRTIO_BALLOON_F_MUST_TELL_HOST)) {
-> > > > +		tell_host(vb, vb->deflate_vq);
-> > > > +		release_pages_by_pfn(vb->pfns, vb->num_pfns);
-> > > > +	} else {
-> > > > +		release_pages_by_pfn(vb->pfns, vb->num_pfns);
-> > > > +		tell_host(vb, vb->deflate_vq);
-> > > > +	}
-> > > >  }
-> > > >  
-> > > >  static inline void update_stat(struct virtio_balloon *vb, int idx,
-> > > > -- 
-> > > > 1.7.6
-> > 
-> > 
-> > -- 
-> > 
-> > Sasha.
+>  			return 0;
+>  		}
+>  	}
+> --=20
+> 1.7.6
 
 
--- 
+Thanks,
 
-Sasha.
+Paul
+
+--=-BQ+fUV5upBHNEss0EG2E
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iEUEABECAAYFAk4QSccACgkQPX1aK2wOHVheBwCVEs8WOncc+mF218URHfDcbG35
+4QCaAhj0FZwryY9OaJ5FxqovdKi6Tfg=
+=Y6f3
+-----END PGP SIGNATURE-----
+
+--=-BQ+fUV5upBHNEss0EG2E--
 
