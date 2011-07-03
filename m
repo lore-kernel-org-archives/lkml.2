@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751916Ab1GCXZS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 19:25:18 -0400
-Received: from wnohang.net ([178.79.154.173]:38844 "EHLO mail.wnohang.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751318Ab1GCXZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 19:25:16 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 99A69F0008
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 05E2EF0003
-Date: Mon, 4 Jul 2011 04:55:08 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: jeremy.fitzhardinge@citrix.com, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] Modpost section mismatch fix
-Message-ID: <20110703232508.GB4440@Xye>
+	id S1751889Ab1GCXmq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 19:42:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:52481 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751430Ab1GCXmp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 19:42:45 -0400
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="xXmbgvnjoT4axfJE"
-Content-Disposition: inline
-X-Operating-System: Arch linux x86_64 3.0.0-rc5-LYM
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-12-30)
+In-Reply-To: <alpine.LNX.2.00.1107031156450.16316@swampdragon.chaosbits.net>
+References: <alpine.LNX.2.00.1107031156450.16316@swampdragon.chaosbits.net>
+Date: Mon, 4 Jul 2011 09:42:44 +1000
+Message-ID: <CACAvsv6s9HbZmA4wGnZOMx1mxnJxroH1=+PyO+5Mi=kTbf3uMQ@mail.gmail.com>
+Subject: Re: [PATCH] nouveau: Don't leak in nva3_pm_clock_pre()
+From: Ben Skeggs <skeggsb@gmail.com>
+To: Jesper Juhl <jj@chaosbits.net>
+Cc: linux-kernel@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>,
+        dri-devel@lists.freedesktop.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jul 3, 2011 at 7:58 PM, Jesper Juhl <jj@chaosbits.net> wrote:
+> If nva3_calc_pll() returns less than 0 in
+> drivers/gpu/drm/nouveau/nva3_pm.c:nva3_pm_clock_pre() we'll return
+> without freeing 'pll'.
+> This patch should fix the leak.
+Firstly, thank you for the patch.
 
---xXmbgvnjoT4axfJE
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
+This issue however, no longer exists in nouveau git.  The patches
+fixing it will make their way to Linus' tree.
 
-[Sorry if duplicate, one earlier was corrupt]
+Ben.
 
-Hi,
-     I got section mismatches reported by modpost in latest build. It got
-     reported for xen_register_pirq and xen_unplug_emulated_devices
-     functions. xen_register_pirq makes reference to
-     acpi_sci_override_gsi in init.data section; marking
-     xen_register_pirq with __init is not feasible since calls are made
-     to it from acpi_register_gsi in non-init contexts. So marking it
-     __refdata based on assumption that when acpi_sci_override_gsi is
-     referenced, it is in  early stages where it is alive.
-
-
---------------------------
-Raghavendra Prabhu
-GPG Id : 0xD72BE977
-Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
-www: wnohang.net
-
---xXmbgvnjoT4axfJE
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: attachment; filename="0001-xen-pci-Fix-modpost-warnings-regarding-section-misma.patch"
-
->From 7dfd47575fd695fe8ddba951515cfac01a2ab8bc Mon Sep 17 00:00:00 2001
-Message-Id: <7dfd47575fd695fe8ddba951515cfac01a2ab8bc.1309641255.git.rprabhu@wnohang.net>
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-Date: Sun, 3 Jul 2011 01:48:50 +0530
-Subject: [PATCH] xen/pci: Fix modpost warnings regarding section mismatch
-
-Marking xen_register_pirq with __refdata since it is referencing
-acpi_sci_override_gsi, an __initdata variable.  Removing __init from
-check_platform_magic since it is called by xen_unplug_emulated_devices in
-non-init contexts (It probably gets inlined because of
--finline-functions-called-once, removing __init is more to avoid mismatch being
-reported).
-
-Signed-off-by: Raghavendra D Prabhu <rprabhu@wnohang.net>
----
- arch/x86/pci/xen.c                 |    2 +-
- arch/x86/xen/platform-pci-unplug.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index fe00830..fb5eeb0 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -327,7 +327,7 @@ int __init pci_xen_hvm_init(void)
- }
- 
- #ifdef CONFIG_XEN_DOM0
--static int xen_register_pirq(u32 gsi, int triggering)
-+static  __refdata  int xen_register_pirq(u32 gsi, int triggering)
- {
- 	int rc, pirq, irq = -1;
- 	struct physdev_map_pirq map_irq;
-diff --git a/arch/x86/xen/platform-pci-unplug.c b/arch/x86/xen/platform-pci-unplug.c
-index 25c52f9..ffcf261 100644
---- a/arch/x86/xen/platform-pci-unplug.c
-+++ b/arch/x86/xen/platform-pci-unplug.c
-@@ -35,7 +35,7 @@ EXPORT_SYMBOL_GPL(xen_platform_pci_unplug);
- #ifdef CONFIG_XEN_PVHVM
- static int xen_emul_unplug;
- 
--static int __init check_platform_magic(void)
-+static int check_platform_magic(void)
- {
- 	short magic;
- 	char protocol;
--- 
-1.7.6
-
-
---xXmbgvnjoT4axfJE--
+>
+> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
+> ---
+>  drivers/gpu/drm/nouveau/nva3_pm.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+>
+>  Compile tested only - no hardware to test for real.
+>
+> diff --git a/drivers/gpu/drm/nouveau/nva3_pm.c b/drivers/gpu/drm/nouveau/nva3_pm.c
+> index e4b2b9e..80443d2 100644
+> --- a/drivers/gpu/drm/nouveau/nva3_pm.c
+> +++ b/drivers/gpu/drm/nouveau/nva3_pm.c
+> @@ -137,8 +137,10 @@ nva3_pm_clock_pre(struct drm_device *dev, struct nouveau_pm_level *perflvl,
+>
+>        if (!pll->new_div) {
+>                ret = nva3_calc_pll(dev, &limits, khz, &N, NULL, &M, &P);
+> -               if (ret < 0)
+> +               if (ret < 0) {
+> +                       kfree(pll);
+>                        return ERR_PTR(ret);
+> +               }
+>
+>                pll->new_pnm = (P << 16) | (N << 8) | M;
+>                pll->new_div = 2 - 1;
+> --
+> 1.7.6
+>
+>
+> --
+> Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
+> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
+> Plain text mails only, please.
+>
+> _______________________________________________
+> dri-devel mailing list
+> dri-devel@lists.freedesktop.org
+> http://lists.freedesktop.org/mailman/listinfo/dri-devel
+>
