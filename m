@@ -1,40 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754692Ab1GCBSD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 2 Jul 2011 21:18:03 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:55619 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753587Ab1GCBR7 (ORCPT
+	id S1754640Ab1GCBaU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 2 Jul 2011 21:30:20 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58541 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753587Ab1GCBaT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 2 Jul 2011 21:17:59 -0400
-Date: Sun, 3 Jul 2011 03:17:58 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Andi Kleen <andi@firstfloor.org>, axboe@kernel.dk,
-        James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Dave Jones <davej@redhat.com>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-Message-ID: <20110703011758.GB15637@one.firstfloor.org>
-References: <20110702181146.GM23059@one.firstfloor.org> <Pine.LNX.4.44L0.1107021544550.16190-100000@netrider.rowland.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1107021544550.16190-100000@netrider.rowland.org>
-User-Agent: Mutt/1.4.2.2i
+	Sat, 2 Jul 2011 21:30:19 -0400
+From: Chris Forbes <chrisf@ijw.co.nz>
+To: Massimo Dal Zotto <dz@debian.org>
+Cc: linux-kernel@vger.kernel.org, Chris Forbes <chrisf@ijw.co.nz>
+Subject: [PATCH] drivers: char: i8k: Use __packed
+Date: Sun,  3 Jul 2011 13:30:05 +1200
+Message-Id: <1309656605-20812-1-git-send-email-chrisf@ijw.co.nz>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Would you like to try this patch to see if it fixes the problem?  As I 
-> said before, I'm not certain it's the best thing to do, but it worked 
-> on my system.
+Replaced __attribute__ ((packed)) with __packed
 
-I can try next week.
+Signed-off-by: Chris Forbes <chrisf@ijw.co.nz>
+---
+ drivers/char/i8k.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-Is this patch likely to fix the RCU stall?
+diff --git a/drivers/char/i8k.c b/drivers/char/i8k.c
+index 6e40072..d9c93d4 100644
+--- a/drivers/char/i8k.c
++++ b/drivers/char/i8k.c
+@@ -103,11 +103,11 @@ static const struct file_operations i8k_fops = {
+ 
+ struct smm_regs {
+ 	unsigned int eax;
+-	unsigned int ebx __attribute__ ((packed));
+-	unsigned int ecx __attribute__ ((packed));
+-	unsigned int edx __attribute__ ((packed));
+-	unsigned int esi __attribute__ ((packed));
+-	unsigned int edi __attribute__ ((packed));
++	unsigned int ebx __packed;
++	unsigned int ecx __packed;
++	unsigned int edx __packed;
++	unsigned int esi __packed;
++	unsigned int edi __packed;
+ };
+ 
+ static inline const char *i8k_get_dmi_data(int field)
+-- 
+1.7.4.1
 
--Andi
