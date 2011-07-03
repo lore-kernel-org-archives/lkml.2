@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753636Ab1GCLuN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 07:50:13 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:53523 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752565Ab1GCLuK (ORCPT
+	id S1753337Ab1GCMC1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 08:02:27 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:1150 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752699Ab1GCMC0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 07:50:10 -0400
-X-Sasl-enc: VvyytxC9MSwGDtBeKzI/sAkzKiOSysWB9Jf3riyLGS6j 1309693809
-Date: Sun, 3 Jul 2011 08:50:06 -0300
-From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
-To: Witold Szczeponik <Witold.Szczeponik@gmx.net>
-Cc: "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-thinkpad@linux-thinkpad.org
-Subject: Re: [PATCH v2] PNPACPI: Register disabled resources
-Message-ID: <20110703115006.GA11298@khazad-dum.debian.net>
-References: <4E04FB69.3000206@gmx.net>
- <20110625025419.GB25126@khazad-dum.debian.net>
- <4E104966.3030002@gmx.net>
- <4E10533A.4080707@gmx.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E10533A.4080707@gmx.net>
-X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
- 1CDB 0FE3
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 3 Jul 2011 08:02:26 -0400
+Date: Sun, 3 Jul 2011 14:02:13 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        LM Sensors <lm-sensors@lm-sensors.org>
+Subject: [GIT PULL] hwmon fixes for 3.0
+Message-ID: <20110703140213.71def431@endymion.delvare>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank you for the extended description.  Unfortunately, I don't know
-enough about the PNPBIPS/PNPACPI subsystem to comment further on the
-patch, but it does look useful.
+Hi Linus,
 
+Please pull hwmon subsystem fixes for Linux 3.0 from:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git hwmon-for-linus
+
+ Documentation/hwmon/f71882fg |    4 +++
+ Documentation/hwmon/k10temp  |    8 ++++-
+ drivers/hwmon/Kconfig        |    2 +-
+ drivers/hwmon/emc6w201.c     |   58 +++++++++++++++++++++++++++++++----------
+ drivers/hwmon/f71882fg.c     |   19 +++++++++++--
+ drivers/hwmon/hwmon-vid.c    |    2 +-
+ drivers/hwmon/sch5627.c      |    2 +-
+ 7 files changed, 73 insertions(+), 22 deletions(-)
+
+---------------
+
+Clemens Ladisch (1):
+      hwmon: (k10temp) Update documentation for Fam12h
+
+Hans de Goede (2):
+      hwmon: Use <> rather than () around my e-mail address
+      hwmon: (f71882fg) Add support for the F71869A
+
+Jean Delvare (2):
+      hwmon: (emc6w201) Properly handle all errors
+      hwmon-vid: Fix typo in VIA CPU name
+
+Thanks,
 -- 
-  "One disk to rule them all, One disk to find them. One disk to bring
-  them all and in the darkness grind them. In the Land of Redmond
-  where the shadows lie." -- The Silicon Valley Tarot
-  Henrique Holschuh
+Jean Delvare
