@@ -1,72 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755484Ab1GCOjX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 10:39:23 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:64920 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753641Ab1GCOjV (ORCPT
+	id S1755542Ab1GCOzw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 10:55:52 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:58564 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab1GCOzs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 10:39:21 -0400
-Date: Sun, 3 Jul 2011 16:39:13 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Jesper Juhl <jj@chaosbits.net>
-Cc: Paul Menzel <paulepanter@users.sourceforge.net>,
-        linux-kernel@vger.kernel.org, dri-devel@lists.freedesktop.org
-Subject: Re: [PATCH] nouveau: Do not leak in nv20_graph_create
-Message-ID: <20110703143913.GA3217@joi.lan>
-References: <alpine.LNX.2.00.1107031224030.16316@swampdragon.chaosbits.net>
- <1309690311.20270.27.camel@mattotaupa>
- <alpine.LNX.2.00.1107031315520.18279@swampdragon.chaosbits.net>
- <alpine.LNX.2.00.1107031321150.18279@swampdragon.chaosbits.net>
-MIME-Version: 1.0
+	Sun, 3 Jul 2011 10:55:48 -0400
+X-Greylist: delayed 2761 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Jul 2011 10:55:48 EDT
+Subject: Re: [PATCH] nfs: Don't deref potentially NULL pointer returned by strsep
+Mime-Version: 1.0 (Apple Message framework v1084)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LNX.2.00.1107031321150.18279@swampdragon.chaosbits.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+From: Chuck Lever <chuck.lever@oracle.com>
+In-Reply-To: <alpine.LNX.2.00.1107030938430.16316@swampdragon.chaosbits.net>
+Date: Sun, 3 Jul 2011 10:09:32 -0400
+Cc: linux-nfs@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
+        linux-kernel@vger.kernel.org, Gero Kuhlmann <gero@gkminix.han.de>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <14B45086-2D98-4706-B1FE-7EBB8E777EEF@oracle.com>
+References: <alpine.LNX.2.00.1107030938430.16316@swampdragon.chaosbits.net>
+To: Jesper Juhl <jj@chaosbits.net>
+X-Mailer: Apple Mail (2.1084)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4E107826.0066:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 03, 2011 at 01:21:55PM +0200, Jesper Juhl wrote:
-> From: Jesper Juhl <jj@chaosbits.net>
-> Subject: [PATCH] nouveau: Do not leak in nv20_graph_create
-> 
-> If we return due to an unknown chipset in drivers/gpu/drm/nouveau/nv20_graph.c:nv20_graph_create() we'll leak the memory allocated to 'pgraph'.
-> 
-> This patch should fix the leak and it also disambiguates the "PGRAPH:
-> unknown chipset\n" error message - it's nice to be able to tell which
-> branch created the error which is impossible if the error messages are
-> 100% identical.
 
-There's no need to change these strings. Nouveau prints chipset id earlier.
-For patch with only kfrees:
-Reviewed-by: Marcin Slusarz <marcin.slusarz@gmail.com>
+On Jul 3, 2011, at 3:40 AM, Jesper Juhl wrote:
 
+> In fs/nfs/nfsroot.c:root_nfs_parse_options() we call strsep(), which
+> may return NULL, but we do not test the return value before
+> dereferencing the pointer.
+> 
 > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
 > ---
->  drivers/gpu/drm/nouveau/nv20_graph.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
+> fs/nfs/nfsroot.c |    2 ++
+> 1 files changed, 2 insertions(+), 0 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/nouveau/nv20_graph.c b/drivers/gpu/drm/nouveau/nv20_graph.c
-> index affc7d7..53cbe84 100644
-> --- a/drivers/gpu/drm/nouveau/nv20_graph.c
-> +++ b/drivers/gpu/drm/nouveau/nv20_graph.c
-> @@ -752,6 +752,7 @@ nv20_graph_create(struct drm_device *dev)
->  			pgraph->grctx_user = 0x0000;
->  			break;
->  		default:
-> +			kfree(pgraph);
->  			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
->  			return 0;
->  		}
-> @@ -773,7 +774,8 @@ nv20_graph_create(struct drm_device *dev)
->  			pgraph->grctx_size = NV35_36_GRCTX_SIZE;
->  			break;
->  		default:
-> -			NV_ERROR(dev, "PGRAPH: unknown chipset\n");
-> +			kfree(pgraph);
-> +			NV_ERROR(dev, "PGRAPH: chipset unknown.\n");
->  			return 0;
->  		}
->  	}
-> -- 
+>  Compile tested only.
+> 
+> diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
+> index c4744e1..b6ac860 100644
+> --- a/fs/nfs/nfsroot.c
+> +++ b/fs/nfs/nfsroot.c
+> @@ -191,6 +191,8 @@ static int __init root_nfs_parse_options(char *incoming, char *exppath,
+> 	 * Set the NFS remote path
+> 	 */
+> 	p = strsep(&incoming, ",");
+> +	if (!p)
+> +		return -1;
+
+strsep() may return NULL only if the value of "incoming" is NULL.  But callers ensure that "incoming" always contains the address of a fixed buffer.  Thus if strsep() returns NULL here there is some kind of programming error; it's not the result of invalid input.
+
+Do you have a reproducible test case to make this fail?
+
+> 	if (*p != '\0' && strcmp(p, "default") != 0)
+> 		if (root_nfs_copy(exppath, p, exppathlen))
+> 			return -1;
+
+--
+Chuck Lever
+chuck[dot]lever[at]oracle[dot]com
+
+
+
