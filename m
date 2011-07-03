@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab1GCS2u (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 14:28:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42037 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754533Ab1GCS2i (ORCPT
+	id S1754791Ab1GCSbS (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 14:31:18 -0400
+Received: from crusader.seven.com.br ([200.229.15.36]:36512 "EHLO
+	crusader.seven.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664Ab1GCSbQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 14:28:38 -0400
+	Sun, 3 Jul 2011 14:31:16 -0400
+X-Greylist: delayed 604 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Jul 2011 14:31:16 EDT
+Message-ID: <7d95b6a5f652dd223a8f924da2705121.squirrel@webmail.seven.com.br>
+Date: Sun, 3 Jul 2011 15:21:10 -0300
+Subject: The Google-UK 12th Anniversary Giveaway Celebration ( Confirm the
+ usage of this account! )
+From: "Google-UK Giveaway Team" <thegoogle.giveawayteam@london.com>
+User-Agent: SquirrelMail/1.4.19
 MIME-Version: 1.0
-In-Reply-To: <20110703111028.GA2862@albatros>
-References: <20110703111028.GA2862@albatros>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Sun, 3 Jul 2011 11:27:47 -0700
-Message-ID: <CA+55aFzXEoTyK0Sm-y=6xGmLMWzQiSQ7ELJ2-WL_PrP3r44MSg@mail.gmail.com>
-Subject: Re: [RFC v1] implement SL*B and stack usercopy runtime checks
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: kernel-hardening@lists.openwall.com, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        x86@kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@kernel.org>, Matt Mackall <mpm@selenic.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-        linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-That patch is entirely insane. No way in hell will that ever get merged.
 
-copy_to/from_user() is some of the most performance-critical code, and
-runs a *lot*, often for fairly small structures (ie 'fstat()' etc).
 
-Adding random ad-hoc tests to it is entirely inappropriate. Doing so
-unconditionally is insane.
 
-So NAK, NAK, NAK.
+We urgently wish to inform you that your e-mail has w o n £850,000 UK
+Pounds  in our on-going 12th Anniversary Online Giveaway draws.
 
-If you seriously clean it up (that at a minimum includes things like
-making it configurable using some pretty helper function that just
-compiles away for all the normal cases, and not writing out
+E-mail w i n n i n g info:
+L u c k y # :12-12-23-35-40-41(12) &
+T i c k e t # :008 695 757 336 64}
 
-   if (!slab_access_ok(to, n) || !stack_access_ok(to, n))
+For further information to be provided, you have to reply this notice
+immediately to confirm this email account is still active.
 
-multiple times, for chrissake) it _might_ be acceptable.
+Ms. Helena
+Giveaway Online Announcer
+Inquiry : +44 702 409 9916
 
-But in its current form it's just total crap. It's exactly the kind of
-"crazy security people who don't care about anything BUT security"
-crap that I refuse to see.
 
-Some balance and sanity.
-
-                      Linus
