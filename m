@@ -1,45 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1GDOIY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 10:08:24 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:40336 "EHLO bear.ext.ti.com"
+	id S1754877Ab1GDOJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 10:09:16 -0400
+Received: from mga09.intel.com ([134.134.136.24]:49926 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752980Ab1GDOIU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 10:08:20 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: Samuel Ortiz <sameo@linux.intel.com>
-CC: "Girdwood, Liam" <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Lopez Cruz, Misael" <misael.lopez@ti.com>
-Subject: Re: Re: [PATCH v6 08/18] mfd: twl6040: Add initial support
-Date: Mon, 4 Jul 2011 17:08:17 +0300
-Message-ID: <1650114.SY7VdjHPHs@barack>
-User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
-In-Reply-To: <20110704114844.GA3021@sortiz-mobl>
-References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com> <1308663556-29120-9-git-send-email-peter.ujfalusi@ti.com> <20110704114844.GA3021@sortiz-mobl>
+	id S1752046Ab1GDOJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 10:09:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,472,1304319600"; 
+   d="scan'208";a="23238597"
+Date: Mon, 4 Jul 2011 16:09:37 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Donggeun Kim <dg77.kim@samsung.com>
+Cc: cbouatmailru@gmail.com, broonie@opensource.wolfsonmicro.com,
+        linux-kernel@vger.kernel.org, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com
+Subject: Re: [PATCH] power_supply: Add charger driver for MAX8997/8966
+Message-ID: <20110704140937.GD3021@sortiz-mobl>
+References: <1308739206-7802-1-git-send-email-dg77.kim@samsung.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308739206-7802-1-git-send-email-dg77.kim@samsung.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel,
+On Wed, Jun 22, 2011 at 07:40:06PM +0900, Donggeun Kim wrote:
+> MAX8997/8966 chip is a multi-function device which includes
+> PMIC, RTC, Fuel Gauge, MUIC, Haptic, Flash control, and
+> Battery charging control.
+> The driver for it is located at drivers/mfd.
+> 
+> This patch supports battery charging control of MAX8997/8966 chip and
+> provides power supply class information to userspace.
+> 
+> Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
+In case Anton needs it, for the MFD part:
 
-On Monday 04 July 2011 13:48:44 Samuel Ortiz wrote:
-> I don't see the value of those 3 inline functions. Removing them would make
-> the code actually more understandable (especially for the 2nd one).
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-Is it OK for you if I fix these as a follow-up series, so I do not need to 
-rewrite this series, and resend it?
+Cheers,
+Samuel.
 
 -- 
-Péter
-
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
