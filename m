@@ -1,119 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753251Ab1GDCX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 22:23:27 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61440 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690Ab1GDCX0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 22:23:26 -0400
-MIME-Version: 1.0
-In-Reply-To: <4E0D9B5E.3010901@windriver.com>
-References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com>
-	<1308911347.531.56.camel@gandalf.stny.rr.com>
-	<4E074671.7060100@hitachi.com>
-	<20110627100104.GA24705@in.ibm.com>
-	<BANLkTimYej4_dmBqvPBCLej=JA5atLrZVA@mail.gmail.com>
-	<4E0D9B5E.3010901@windriver.com>
-Date: Mon, 4 Jul 2011 10:23:25 +0800
-Message-ID: <CAM2zO=AO2bxvBgZopZAkhhr++VNby9MvvLv-dae8t=QUu8_C0w@mail.gmail.com>
-Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
- lead to system crash/freeze
-From: Yong Zhang <yong.zhang0@gmail.com>
-To: "tiejun.chen" <tiejun.chen@windriver.com>
-Cc: ananth@in.ibm.com, Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, paulus@samba.org,
-        yrl.pp-manager.tt@hitachi.com,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Kumar Gala <galak@kernel.crashing.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1753298Ab1GDC2t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 22:28:49 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:46572 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751690Ab1GDC2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 22:28:47 -0400
+Subject: Re: [PATCH v2 1/1] asm-generic: add MMU variants of io.h functions
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        vapier@gentoo.org, liqin.chen@sunplusct.com
+In-Reply-To: <1309628168-3413-1-git-send-email-jonas@southpole.se>
+References: <CAMjpGUeMqVzcAWKpAojZVbj9ywH+4HmW4Hx-8D1WQmTqPSNqQA@mail.gmail.com>
+	 <1309628168-3413-1-git-send-email-jonas@southpole.se>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Mon, 04 Jul 2011 10:28:17 +0800
+Message-ID: <1309746497.2291.3.camel@epip-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 1, 2011 at 6:03 PM, tiejun.chen <tiejun.chen@windriver.com> wrote:
->> root@unknown:/root> insmod kprobe_example.ko func=show_interrupts
->> Planted kprobe at c009be18
->> root@unknown:/root> cat /proc/interrupts
->> pre_handler: p->addr = 0xc009be18, nip = 0xc009be18, msr = 0x29000
->> post_handler: p->addr = 0xc009be18, msr = 0x29000,boostable = 1
->> Oops: Exception in kernel mode, sig: 11 [#1]
->> PREEMPT MPC8536 DS
->> Modules linked in: kprobe_example
->> NIP: df159e74 LR: c0106f40 CTR: c009be18
->> REGS: df159d90 TRAP: 0700   Not tainted  (3.0.0-rc4-00001-ge8ffcca-dirty)
->> MSR: 00029000 <EE,ME,CE>  CR: 20202688  XER: 00000000
->> TASK = dfaa5340[613] 'cat' THREAD: df158000
->> GPR00: fffff000 df159e40 dfaa5340 df024a00 df159e78 00000000 df159f20 00000001
->> GPR08: c10060d0 c009be18 00029000 df159e70 00000000 1001ca74 1ffb5f00 100a01cc
->> GPR16: 00000000 00000000 00000000 00000000 df024a28 df159f20 00000000 dfbff080
->> GPR24: 10016000 00001000 df159f20 df159e78 dfbff080 df159e78 df024a00 df159e70
->> NIP [df159e74] 0xdf159e74
->> LR [c0106f40] seq_read+0x2a4/0x568
->> Call Trace:
->> [df159e40] [00029000] 0x29000 (unreliable)
->> [df159e74] [00000000]   (null)
->> Instruction dump:
->> XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX
->> XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX
->> ---[ end trace 60026bfc1fe79aed ]---
->> Segmentation fault
->
-> Maybe I can understand this problem.
->
-> When we kprobe these operations such as store-and-update-word for SP(r1),
->
-> stwu r1, -A(r1)
->
-> The program exception is triggered then PPC always allocate an exception frame
-> as shown as the follows:
->
-> old r1 --------
->         ...
->         nip
->         gpr[2]~gpr[31]
->         gpr[1] <--------- old r1 is stored here.
->         gpr[0]
->       -------- <-- pr_regs @offset 16 bytes
->       padding
->       STACK_FRAME_REGS_MARKER
->       LR
->       back chain
-> new r1 --------
->
-> Here emulate_step() is called to emulate 'stwu'. Actually this is equivalent to
-> 1> update pr_regs->gpr[1] = mem(old r1 + (-A))
-> 2> 'stw <old r1>, mem<(old r1 + (-A)) >
->
-> You should notice the stack based on new r1 would be covered with mem<old r1
-> +(-A)>. So after this, the kernel exit from post_krpobe, something would be
-> broken. This should depend on sizeof(-A).
->
-> For kprobe show_interrupts, you can see pregs->nip is re-written violently so
-> kernel issued.
+It's very good to me, thanks.
 
-Yeah, my debug also show this, so this is the root cause.
-Thanks for your explanation.
+Guan Xuetao
 
->
-> But sometimes we may only re-write some violate registers the kernel still
-> alive. And so this is just why the kernel works well for some kprobed point
-> after you change some kernel options/toolchains.
->
-> If I'm correct its difficult to kprobe these stwu sp operation since the
-> sizeof(-A) is undermined for the kernel. So we have to implement in-depend
-> interrupt stack like PPC64.
-
-Hmmm, a dedicated exception stack will smooth the concern IMHO,
-Ben, Kuma?
-
-Thanks,
-Yong
+On Sat, 2011-07-02 at 19:36 +0200, Jonas Bonn wrote:
+> Some of the implementations, in particular the ioremap variants, in
+> asm-generic/io.h are for systems without an MMU.  In order to be able to
+> use the generic header file for systems with an MMU, this patch wraps
+> these implementations in checks for CONFIG_MMU.
+> 
+> Tested on OpenRISC.
+> 
+> Signed-off-by: Jonas Bonn <jonas@southpole.se>
+> Cc: vapier@gentoo.org
+> Cc: liqin.chen@sunplusct.com
+> Cc: gxt@mprc.pku.edu.cn
+> ---
+>  include/asm-generic/io.h |    7 ++++++-
+>  1 files changed, 6 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/asm-generic/io.h b/include/asm-generic/io.h
+> index e0ffa3d..a1caf2d 100644
+> --- a/include/asm-generic/io.h
+> +++ b/include/asm-generic/io.h
+> @@ -307,7 +307,11 @@ static inline void *phys_to_virt(unsigned long address)
+>  
+>  /*
+>   * Change "struct page" to physical address.
+> + *
+> + * This implementation is for the no-MMU case only... if you have an MMU
+> + * you'll need to provide your own definitions.
+>   */
+> +#ifndef CONFIG_MMU
+>  static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>  {
+>  	return (void __iomem*) (unsigned long)offset;
+> @@ -326,6 +330,7 @@ static inline void __iomem *ioremap(phys_addr_t offset, unsigned long size)
+>  static inline void iounmap(void *addr)
+>  {
+>  }
+> +#endif /* CONFIG_MMU */
+>  
+>  #ifndef CONFIG_GENERIC_IOMAP
+>  static inline void __iomem *ioport_map(unsigned long port, unsigned int nr)
+> @@ -342,7 +347,7 @@ extern void ioport_unmap(void __iomem *p);
+>  #endif /* CONFIG_GENERIC_IOMAP */
+>  
+>  #define xlate_dev_kmem_ptr(p)	p
+> -#define xlate_dev_mem_ptr(p)	((void *) (p))
+> +#define xlate_dev_mem_ptr(p)	__va(p)
+>  
+>  #ifndef virt_to_bus
+>  static inline unsigned long virt_to_bus(volatile void *address)
 
 
--- 
-Only stand for myself
