@@ -1,88 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757536Ab1GDN10 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 09:27:26 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:36848 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753044Ab1GDN1Y (ORCPT
+	id S1757568Ab1GDN2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 09:28:06 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:34012 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753044Ab1GDN2C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 09:27:24 -0400
-Date: Mon, 4 Jul 2011 16:27:20 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: =?iso-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>, "Girdwood, Liam" <lrg@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Lopez Cruz, Misael" <misael.lopez@ti.com>
-Subject: Re: Re: [PATCH v6 08/18] mfd: twl6040: Add initial support
-Message-ID: <20110704132714.GM2820@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1308663556-29120-1-git-send-email-peter.ujfalusi@ti.com>
- <1308663556-29120-9-git-send-email-peter.ujfalusi@ti.com>
- <20110704125330.GI2820@legolas.emea.dhcp.ti.com>
- <4014234.U3Af1Vqyz9@barack>
+	Mon, 4 Jul 2011 09:28:02 -0400
+Date: Mon, 4 Jul 2011 18:57:46 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 2/6] hw_breakpoints: Migrate breakpoint conditional build
+ under new config
+Message-ID: <20110704132746.GA2963@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <1306273947-8410-1-git-send-email-fweisbec@gmail.com>
+ <1306273947-8410-3-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="R+Rs1qz93vBJxC1z"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4014234.U3Af1Vqyz9@barack>
+In-Reply-To: <1306273947-8410-3-git-send-email-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, May 24, 2011 at 11:52:23PM +0200, Frederic Weisbecker wrote:
+> Migrate conditional hw_breakpoint code compilation under
+> the new config to prepare for letting the user chose whether
+> or not to build this feature
+> 
+> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> Acked-by: Will Deacon <will.deacon@arm.com>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Prasad <prasad@linux.vnet.ibm.com>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> ---
+>  arch/arm/include/asm/hw_breakpoint.h     |    4 ++--
+>  arch/arm/include/asm/processor.h         |    2 +-
+>  arch/arm/kernel/Makefile                 |    2 +-
+>  arch/arm/kernel/entry-header.S           |    2 +-
+>  arch/arm/kernel/ptrace.c                 |    4 ++--
+>  arch/powerpc/include/asm/cputable.h      |    4 ++--
+>  arch/powerpc/include/asm/hw_breakpoint.h |    6 +++---
+>  arch/powerpc/include/asm/processor.h     |    4 ++--
+>  arch/powerpc/kernel/Makefile             |    2 +-
+>  arch/powerpc/kernel/process.c            |   18 +++++++++---------
+>  arch/powerpc/kernel/ptrace.c             |   13 +++++++------
+>  arch/powerpc/lib/Makefile                |    2 +-
+>  arch/sh/kernel/Makefile                  |    2 +-
+>  arch/sh/kernel/cpu/sh4a/Makefile         |    2 +-
+>  include/linux/hw_breakpoint.h            |    6 +++---
+>  include/linux/perf_event.h               |    4 ++--
+>  include/linux/ptrace.h                   |    6 +++---
+>  include/linux/sched.h                    |    2 +-
+>  kernel/events/Makefile                   |    2 +-
+>  kernel/events/core.c                     |    4 ++--
+>  kernel/ptrace.c                          |    4 ++--
+>  samples/Kconfig                          |    2 +-
+>  22 files changed, 49 insertions(+), 48 deletions(-)
+> 
 
---R+Rs1qz93vBJxC1z
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Making the hardware breakpoint patches modular has always been a goal.
+I've looked at the PowerPC parts of the code and they look harmless.
 
-Hi,
+Acked-by: K.Prasad <prasad@linux.vnet.ibm.com>
 
-On Mon, Jul 04, 2011 at 04:09:30PM +0300, P=E9ter Ujfalusi wrote:
-> Hi Felipe, Samuel,
->=20
-> On Monday 04 July 2011 14:53:30 Balbi, Felipe wrote:
-> > > +		ret =3D twl6040_request_irq(twl6040, TWL6040_IRQ_READY,
-> > > +					  twl6040_naudint_handler, 0,
-> > > +					  "twl6040_irq_ready", twl6040);
-> >=20
-> > why don't you use the normal request_threaded_irq() ?? This is a bit of
-> > obfuscation IMO.
->=20
-> I have left this 'macro' in since it is also used within the twl6040-vibr=
-a,=20
-> and twl6040 ASoC codec driver to request the irq for them.
-> But if you think it is better to replace the twl6040_request_irq with dir=
-ect=20
-> request_threaded_irq in those drivers as well, I'll do that.
+Thanks,
+K.Prasad
 
-IMO, yes it's better. But you can do it on a separate patch, of course
-;-)
-
---=20
-balbi
-
---R+Rs1qz93vBJxC1z
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOEb+yAAoJEAv8Txj19kN1RSoIAKGmPZyMvUUyiNwDbH9x85RQ
-Bt9iYYe+epDCvgrURK3aNLsBB2Csnkp1Higdn4GBCpHxgAeylT90W/gaX+O+flCp
-skJRQ3P3uBlzXE8NITzZFJsqjT7auwakrux9qrgpFfrt9ncLw/uzpX6gFmrDTl55
-eZ3gAYw1tih7jRQnZ6sCd1heohxjZa1yFv9MdNt3VXEk36kbtSCGTbL5hNKwVwvJ
-FA8sNlCHkfemfJCF4ahvZreuBDleVrd4fFUqj9uYVChubXb2lgwPeNCRXDtcY8XO
-7eqnJclbVWRNb2gciLqQTQ+uedyZ6N8+vuRXv/Yj70RUi4WHK5K64t0FG6acSEE=
-=SVrX
------END PGP SIGNATURE-----
-
---R+Rs1qz93vBJxC1z--
