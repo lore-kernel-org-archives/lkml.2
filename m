@@ -1,54 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758039Ab1GDPmZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 11:42:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34343 "EHLO mx2.suse.de"
+	id S1757854Ab1GDPk7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 11:40:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57014 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757937Ab1GDPlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 11:41:06 -0400
-Date: Mon, 4 Jul 2011 08:32:24 -0700
-From: Greg KH <gregkh@suse.de>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 2/7] debugfs: add debugfs_create_int
-Message-ID: <20110704153224.GA17358@suse.de>
-References: <1309702581-16863-1-git-send-email-akinobu.mita@gmail.com>
- <1309702581-16863-3-git-send-email-akinobu.mita@gmail.com>
- <20110703162329.GA28131@suse.de>
- <CAC5umyh_25z9LV=T86807ey8yZRGwmhsPG44OqZdtcR-3wzb4Q@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAC5umyh_25z9LV=T86807ey8yZRGwmhsPG44OqZdtcR-3wzb4Q@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757779Ab1GDPkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 11:40:55 -0400
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH v5 3/9] KVM-HDR: KVM Steal time implementation
+Date: Mon,  4 Jul 2011 11:32:22 -0400
+Message-Id: <1309793548-16714-4-git-send-email-glommer@redhat.com>
+In-Reply-To: <1309793548-16714-1-git-send-email-glommer@redhat.com>
+References: <1309793548-16714-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 02:31:25PM +0900, Akinobu Mita wrote:
-> 2011/7/4 Greg KH <gregkh@suse.de>:
-> > On Sun, Jul 03, 2011 at 11:16:16PM +0900, Akinobu Mita wrote:
-> >> Introduce debugfs_create_int() for creating a debugfs file that is used to
-> >> read and write an int value.
-> >
-> > Um, what's wrong with the existing s32 and s64 versions that debugfs
-> > already provides?
-> 
-> I couldn't find s32 version in linux/debugfs.h
-> 
-> > userspace doesn't know what "int" means for the kernel as it might be
-> > running in 32bit mode with a 64bit kernel.  That is why this isn't a
-> > good idea, so please convert your other patch to use the existing api
-> > and change the variable type in your patch.
-> 
-> Shoud I add debugfs_create_s32() instead of debugfs_create_int() for
-> this?
+To implement steal time, we need the hypervisor to pass the guest information
+about how much time was spent running other processes outside the VM.
+This is per-vcpu, and using the kvmclock structure for that is an abuse
+we decided not to make.
 
-Does it have to be a signed value?  If not, just use the
-debugfs_create_u32() function.  Or use that and just cast the result,
-right?
+In this patchset, I am introducing a new msr, KVM_MSR_STEAL_TIME, that
+holds the memory area address containing information about steal time
 
-thanks,
+This patch contains the headers for it. I am keeping it separate to facilitate
+backports to people who wants to backport the kernel part but not the
+hypervisor, or the other way around.
 
-greg k-h
+Signed-off-by: Glauber Costa <glommer@redhat.com>
+CC: Rik van Riel <riel@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Avi Kivity <avi@redhat.com>
+CC: Anthony Liguori <aliguori@us.ibm.com>
+CC: Eric B Munson <emunson@mgebm.net>
+---
+ Documentation/virtual/kvm/msr.txt |   35 +++++++++++++++++++++++++++++++++++
+ arch/x86/include/asm/kvm_para.h   |    9 +++++++++
+ 2 files changed, 44 insertions(+), 0 deletions(-)
+
+diff --git a/Documentation/virtual/kvm/msr.txt b/Documentation/virtual/kvm/msr.txt
+index d079aed..38db3f8 100644
+--- a/Documentation/virtual/kvm/msr.txt
++++ b/Documentation/virtual/kvm/msr.txt
+@@ -185,3 +185,38 @@ MSR_KVM_ASYNC_PF_EN: 0x4b564d02
+ 
+ 	Currently type 2 APF will be always delivered on the same vcpu as
+ 	type 1 was, but guest should not rely on that.
++
++MSR_KVM_STEAL_TIME: 0x4b564d03
++
++	data: 64-byte alignment physical address of a memory area which must be
++	in guest RAM, plus an enable bit in bit 0. This memory is expected to
++	hold a copy of the following structure:
++
++	struct kvm_steal_time {
++	  	__u64 steal;
++ 		__u32 version;
++ 		__u32 flags;
++	 	__u32 pad[12];
++	}
++
++	whose data will be filled in by the hypervisor periodically. Only one
++	write, or registration, is needed for each VCPU. The interval between
++	updates of this structure is arbitrary and implementation-dependent.
++	The hypervisor may update this structure at any time it sees fit until
++	anything with bit0 == 0 is written to it. Guest is required to make sure
++	this structure is initialized to zero.
++
++	Fields have the following meanings:
++
++		version: a sequence counter. In other words, guest has to check
++		this field before and after grabbing time information and make 
++		sure they are both equal and even. An odd version indicates an
++		in-progress update.
++
++		flags: At this point, always zero. May be used to indicate
++		changes in this structure in the future.
++
++		steal: the amount of time in which this vCPU did not run, in
++		nanoseconds. Time during which the vcpu is idle, will not be
++		reported as steal time.
++
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index d6cd79b..65f8bb9 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -21,6 +21,7 @@
+  */
+ #define KVM_FEATURE_CLOCKSOURCE2        3
+ #define KVM_FEATURE_ASYNC_PF		4
++#define KVM_FEATURE_STEAL_TIME		5
+ 
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+@@ -35,6 +36,14 @@
+ #define MSR_KVM_WALL_CLOCK_NEW  0x4b564d00
+ #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
+ #define MSR_KVM_ASYNC_PF_EN 0x4b564d02
++#define MSR_KVM_STEAL_TIME  0x4b564d03
++
++struct kvm_steal_time {
++	__u64 steal;
++	__u32 version;
++	__u32 flags;
++	__u32 pad[12];
++};
+ 
+ #define KVM_MAX_MMU_OP_BATCH           32
+ 
+-- 
+1.7.3.4
+
