@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752723Ab1GDXiW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 19:38:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57721 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752560Ab1GDXiT (ORCPT
+	id S1752778Ab1GDXzy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 19:55:54 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:48144 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab1GDXzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 19:38:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <000001cc3a16$4cec0710$e6c41530$%szyprowski@samsung.com>
-References: <1309743708-1505-1-git-send-email-pullip.cho@samsung.com>
-	<000001cc3a16$4cec0710$e6c41530$%szyprowski@samsung.com>
-Date: Tue, 5 Jul 2011 08:38:17 +0900
-X-Google-Sender-Auth: f9Jj0QGFZKjEWX6mTplvEgiGtp0
-Message-ID: <CAHQjnOPMCMh3fO7RXP7pbD8_nuDEG9ksLhtCcAy=2Z2bTarT9A@mail.gmail.com>
-Subject: Re: [PATCH 0/6+1] ARM: EXYNOS4: SYSMMU: Improvements on SYSMMU driver
-From: KyongHo Cho <pullip.cho@samsung.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
-        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Joerg Roedel <joro@8bytes.org>, Kukjin Kim <kgene.kim@samsung.com>,
-        Sanghyun Lee <sanghyun75.lee@samsung.com>,
-        Ilho Lee <ilho215.lee@samsung.com>, Kwanghyun La <nala.la@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Jul 2011 19:55:52 -0400
+Date: Mon, 4 Jul 2011 16:55:35 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-scsi <linux-scsi@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] scsi fixes for 3.0-rc5
+Message-Id: <20110704165535.ce364909.randy.dunlap@oracle.com>
+In-Reply-To: <1309813216.2606.32.camel@mulgrave>
+References: <1309813216.2606.32.camel@mulgrave>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
+X-CT-RefId: str=0001.0A090202.4E125304.0096:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
-On Mon, Jul 4, 2011 at 3:47 PM, Marek Szyprowski
-<m.szyprowski@samsung.com> wrote:
-> Hello,
->
-> I really don't get why do You persist in creating one monster platform
-> device with resources for ALL SYSMMU/IOMMU controllers that are available
-> on Exynos4 CPU. We (SPRC, see Andrzej's SYSMMU patches) already proposed
-> a clean solution for making the SYSMMU controllers independent of each
-> other as well as making the main SYSMMU driver simpler and more
-> independent of the particular Exynos4 platform definition. In Linux
-> device model if the device/controller exist in the system in more than
-> one instance, there should by one generic driver for it and a set of
-> platform definitions for each instance.
->
-Did you find this patch? "[PATCH 3/6] ARM: EXYNOS4: SYSMMU"
-I Cced you because it includes your suggestion.
+On Mon, 04 Jul 2011 16:00:16 -0500 James Bottomley wrote:
 
-> Here is the link to our SYSMMU updated driver (implementing common
-> iommu API):
-> http://www.spinics.net/lists/linux-samsung-soc/msg04508.html
-> The driver still needs some cleanup, but this has been delayed until
-> the dma-mapping framework update is finished.
->
-> I also don't get why do you want to keep the completely custom sysmmu
-> driver and implement iommu API on top of it. Is it really required for
-> anything? Mainline kernel is not a place for custom APIs if there is
-> already a common, generic one.
+> This is a couple of driver fixes and the addition of the isci intel SAS
+> driver under the new driver merge exception.  The isci tree is cleanly
+> separated with everything under drivers/scsi/isci (plus the
+> Makefile/Kconfig plumbing and one firmware file under firmware/isci).
+> The driver itself weighs in at around 23k lines, which is on the heavy
+> side, but Christoph Hellwig and I think it's ready enough to accept now
+> so that we have a working driver by the time the motherboards ship
+> (estimated to be in the 3.0 release timeframe).
+> 
+> The patch is available here:
+> 
+> master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
+> 
+> The shortlog for just the driver fixes (lest they get lost in the flood) is:
+> 
+> Brian King (1):
+>       ibmvfc: Fix Virtual I/O failover hang
+> 
+> Stephen M. Cameron (2):
+>       hpsa: fix potential overrun while memcpy'ing sense data
+>       hpsa: fix dma unmap error in hpsa_passthru_ioctl
 
-I did not exposed any custom API.
-The global function in the last patch is just for IOMMU API implemenation.
-The header file in the last patch is not for the device drivers but
-for the IOMMU API implementation.
-Actually, they can be merged into one single file.
-But I just wanted to change the kernel code stepwise.
+Hi James,
+
+Did you do anything with these 2 scsi section mismatch patches from June 21?
+I don't see them in any of your scsi git trees, although I could have
+missed them.
+
+Subject: [PATCH] scsi: fix NCR_Q720 section mismatch warning
+http://marc.info/?l=linux-scsi&m=130868730409600&w=2
+
+Subject: [PATCH] scsi: fix sim710 section mismatch warnings
+http://marc.info/?l=linux-scsi&m=130868736409676&w=2
+
+
+Thanks,
+~Randy
