@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757598Ab1GDOTd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 10:19:33 -0400
-Received: from gate.eia.be ([194.78.71.18]:11340 "EHLO mail.eia.be"
+	id S1757681Ab1GDOUX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 10:20:23 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:39343 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797Ab1GDOTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 10:19:31 -0400
-Date: Mon, 4 Jul 2011 16:19:24 +0200
-From: Kurt Van Dijck <kurt.van.dijck@eia.be>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Ryan Mallon <rmallon@gmail.com>, Sascha Hauer <s.hauer@pengutronix.de>,
-        Bill Gatliff <bgat@billgatliff.com>, linux-kernel@vger.kernel.org,
-        Ryan Mallon <ryan@bluewatersys.com>, Shawn Guo <shawn.guo@linaro.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 1/3] PWM: add pwm framework support
-Message-ID: <20110704141924.GF316@e-circ.dyndns.org>
-Mail-Followup-To: Arnd Bergmann <arnd@arndb.de>,
-	Ryan Mallon <rmallon@gmail.com>,
-	Sascha Hauer <s.hauer@pengutronix.de>,
-	Bill Gatliff <bgat@billgatliff.com>, linux-kernel@vger.kernel.org,
-	Ryan Mallon <ryan@bluewatersys.com>,
-	Shawn Guo <shawn.guo@linaro.org>,
-	linux-arm-kernel@lists.infradead.org
-References: <201106301441.24493.arnd@arndb.de>
- <4E11994B.7070103@gmail.com>
- <20110704110523.GB316@e-circ.dyndns.org>
- <201107041553.07643.arnd@arndb.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <201107041553.07643.arnd@arndb.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 04 Jul 2011 14:19:28.0515 (UTC) FILETIME=[6271AD30:01CC3A55]
+	id S1755160Ab1GDOUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 10:20:22 -0400
+From: Julia Lawall <julia@diku.dk>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: kernel-janitors@vger.kernel.org,
+        Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+        Tadashi Abe <tabe@mvista.com>,
+        Lucas De Marchi <lucas.demarchi@profusion.mobi>,
+        Stefani Seibold <stefani@seibold.net>, linux-mtd@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] drivers/mtd/lpddr/lpddr_cmds.c: eliminate double free
+Date: Mon,  4 Jul 2011 16:20:17 +0200
+Message-Id: <1309789217-22947-1-git-send-email-julia@diku.dk>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 03:53:07PM +0200, Arnd Bergmann wrote:
-> On Monday 04 July 2011, Kurt Van Dijck wrote:
-> > With socketCAN, we encountered a similar problem. Every chip maker
-> > tries to create added value by means of special options. You can't
-> > support them all in the framework. Therefore, sysfs can be added
-> > to configure special things.
-> 
-> I would expect that pwm is much simpler than CAN,
-ack
-> so the amount
-> of creativity there is also limited.
-That is true for a single PWM channel.
-With multiple PWM channels, hardware design tends to be creative in coupling
-several channels together somehow in order to create some diesel engine
-control signal ...
-> 
-> 	Arnd
+From: Julia Lawall <julia@diku.dk>
 
-Anyway, I explained my concern. It's just _an_ opinion.
-Kurt
+The only call to lpddr_cmdset is in the function defined in lpddr_probe
+drivers/mtd/lpddr/qinfo_probe.c.  If the result of calling lpddr_cmdset is
+NULL, this function frees lpddr.  So lpddr should not be freed in
+lpddr_cmdset.
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/mtd/lpddr/lpddr_cmds.c |    1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/drivers/mtd/lpddr/lpddr_cmds.c b/drivers/mtd/lpddr/lpddr_cmds.c
+index 65655dd..b7f265e 100644
+--- a/drivers/mtd/lpddr/lpddr_cmds.c
++++ b/drivers/mtd/lpddr/lpddr_cmds.c
+@@ -89,7 +89,6 @@ struct mtd_info *lpddr_cmdset(struct map_info *map)
+ 	shared = kmalloc(sizeof(struct flchip_shared) * lpddr->numchips,
+ 						GFP_KERNEL);
+ 	if (!shared) {
+-		kfree(lpddr);
+ 		kfree(mtd);
+ 		return NULL;
+ 	}
+
