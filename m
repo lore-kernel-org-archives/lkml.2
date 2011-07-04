@@ -1,84 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758167Ab1GDQBA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:01:00 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:62564 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755700Ab1GDQA5 convert rfc822-to-8bit (ORCPT
+	id S1758196Ab1GDQB0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 12:01:26 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:44331 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756875Ab1GDQBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:00:57 -0400
+	Mon, 4 Jul 2011 12:01:24 -0400
+Date: Mon, 4 Jul 2011 12:01:24 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Partha Basak <p-basak2@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Anand Gadiyar <gadiyar@ti.com>,
+        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>,
+        Vishwanath Sripathy <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
+ of ehci and ohci
+In-Reply-To: <20110704093056.GD25295@legolas.emea.dhcp.ti.com>
+Message-ID: <Pine.LNX.4.44L0.1107041157360.12242-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <19985.57715.78894.466149@ipc1.ka-ro>
-References: <1309522131-2237-1-git-send-email-LW@KARO-electronics.de>
- <1309522131-2237-2-git-send-email-LW@KARO-electronics.de> <20110704064844.GM15152@ponder.secretlab.ca>
- <19985.35317.629981.97373@ipc1.ka-ro> <20110704153944.GD29977@ponder.secretlab.ca>
- <19985.57715.78894.466149@ipc1.ka-ro>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Mon, 4 Jul 2011 10:00:37 -0600
-X-Google-Sender-Auth: uN_UShGHl3I9TM_iiZ5ZjeHIrc8
-Message-ID: <CACxGe6v87WboQwZn9L0QtND2=B6g6ScQcPgTPnU_2whn=-B9HA@mail.gmail.com>
-Subject: Re: [PATCH] add missing intialisation of bgc->dir
-To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 4, 2011 at 9:51 AM, Lothar Waﬂmann <LW@karo-electronics.de> wrote:
-> Hi,
->
-> Grant Likely writes:
->> On Mon, Jul 04, 2011 at 11:37:57AM +0200, Lothar Waﬂmann wrote:
->> > Hi,
->> >
->> > Grant Likely writes:
->> > > On Fri, Jul 01, 2011 at 02:08:51PM +0200, Lothar Waﬂmann wrote:
->> > > > ---
->> > > > †drivers/gpio/basic_mmio_gpio.c | † †1 +
->> > > > †1 files changed, 1 insertions(+), 0 deletions(-)
->> > > >
->> > > > diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
->> > > > index 8152e9f..e69a453 100644
->> > > > --- a/drivers/gpio/basic_mmio_gpio.c
->> > > > +++ b/drivers/gpio/basic_mmio_gpio.c
->> > > > @@ -399,6 +399,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
->> > > > † † † † † † † † return ret;
->> > > >
->> > > > † † † † bgc->data = bgc->read_reg(bgc->reg_dat);
->> > > > + † † † bgc->dir = bgc->read_reg(bgc->reg_dir);
->> > >
->> > > Hi Lothar.
->> > >
->> > > You'll need to double check your email setup. †The patch got emailed
->> > > separately from the description.
->> > >
->> > git-send-email did that.
->>
->> It appears that you asked it to send a cover letter, which you usually
->> don't want when sending a single patch. †The patch description should
->> be part of the git commit itself.
->>
-> Yes, I noticed that already.
->
->> > > I don't know if this is a valid thing to do or not. †Not every GPIO
->> > > controller supports reading back the initial state from the direction
->> > > register. †I suspect it is better to leave initialization of the
->> > > direction to the gpio controller driver itself.
->> > >
->> > That would mean, that external software would have to have access to
->> > the bgpio internal data structures which is a Bad Thing(TM) IMO. Or we
->> > need a function that allows to explicitly initialize the internal
->> > shadow registers.
->>
->> What device are you using this for. †Are you using the basic gpio
->> platform_driver, or do you have a driver using the library part of the
->> basic gpio code?
->>
-> I'm using it via drivers/gpio/gpio-mxc.
+On Mon, 4 Jul 2011, Felipe Balbi wrote:
 
-You can safely do the "bgc->dir = bgc->read_reg(bgc->reg_dir);" in
-gpio-mxc after bgpio_init returns.
+> sounds to me like a bug on pm runtime ? If you're calling
+> pm_runtime_*_sync() family, shouldn't all calls be _sync() too ?
 
-g.
+No.  This was a deliberate design decision.  It minimizes stack usage 
+and it gives a chance for some other child to resume before the parent 
+is powered down.
+
+> > static int rpm_suspend(struct device *dev, int rpmflags)
+> > 	__releases(&dev->power.lock) __acquires(&dev->power.lock)
+> > {
+> > .
+> > .
+> > .
+> > no_callback:
+> > .
+> > .
+> > .
+> > 	/* Maybe the parent is now able to suspend. */
+> > 	if (parent && !parent->power.ignore_children &&
+> > !dev->power.irq_safe) {
+> > 		spin_unlock(&dev->power.lock);
+> > 
+> > 		spin_lock(&parent->power.lock);
+> > 		rpm_idle(parent, RPM_ASYNC);
+> 
+> to me this is bogus, if you called pm_runtime_put_sync() should should
+> be sync too. Shouldn't it ?
+
+No, it shouldn't.
+
+> > 		spin_unlock(&parent->power.lock);
+> > 
+> > 		spin_lock(&dev->power.lock);
+> > 	}
+> > This is the reason of directly calling the parent Runtime PM calls from
+> > the children.
+> > If directly calling Runtime PM APIs with parent dev-pointer isn't
+> > acceptable,
+> > this can be achieved by exporting wrapper APIs from the
+> > parent and calling them from the chidren .suspend/.resume routines.
+> 
+> Still no good, IMHO.
+
+The real problem here is that you guys are trying to use the runtime PM
+framework to carry out activities during system suspend.  That won't
+work; it's just a bad idea all round.  Use the proper callbacks to do
+what you want.
+
+Alan Stern
+
