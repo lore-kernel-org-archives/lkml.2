@@ -1,65 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752545Ab1GDWRg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 18:17:36 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:50146 "EHLO radon.swed.at"
+	id S1752639Ab1GDWnG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 18:43:06 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:53765 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752067Ab1GDWRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 18:17:34 -0400
-From: Richard Weinberger <richard@nod.at>
-To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Subject: Re: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
-Date: Tue, 5 Jul 2011 00:17:29 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.4; x86_64; ; )
-Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-References: <1309779003-8668-1-git-send-email-richard@nod.at> <201107041707.23165.richard@nod.at> <201107050703.EGJ13561.OFQHOOVMJtLFSF@I-love.SAKURA.ne.jp>
-In-Reply-To: <201107050703.EGJ13561.OFQHOOVMJtLFSF@I-love.SAKURA.ne.jp>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107050017.30365.richard@nod.at>
+	id S1752569Ab1GDWnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 18:43:03 -0400
+From: Kees Cook <kees.cook@canonical.com>
+To: x86@kernel.org, linux-kernel@vger.kernel.org
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: [PATCH 2/2] x86: restore MISC_ENABLE MSR in realmode wakeup
+Date: Mon,  4 Jul 2011 15:35:53 -0700
+Message-Id: <1309818953-769-3-git-send-email-kees.cook@canonical.com>
+X-Mailer: git-send-email 1.7.4.1
+In-Reply-To: <1309818953-769-1-git-send-email-kees.cook@canonical.com>
+References: <1309818953-769-1-git-send-email-kees.cook@canonical.com>
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 05 Juli 2011, 00:03:47 schrieb Tetsuo Handa:
-> Richard Weinberger wrote:
-> > Am Montag 04 Juli 2011, 16:59:32 schrieb Richard Weinberger:
-> > > Here the second boot log:
-> > > http://userweb.kernel.org/~rw/boot2.log
-> > > 
-> > > The interesting part is:
-> > > ---cut---
-> > > VFS: Mounted root (ext2 filesystem) readonly on device 98:0.
-> > > Calling request_module() swapper 1 /sbin/init 1 3
-> > > Calling request_module() kworker/u:0 211 /sbin/modprobe 4 3
-> > > ...
-> > > Calling request_module() kworker/u:0 8741 /sbin/modprobe 4 3
-> > > ---cut---
-> > > 
-> > > After the last "Calling request_module..." message no more messages
-> > > appear and the kernel seems to loop for ever.
-> > 
-> > Please ignore this.
-> > The "Calling request_module..." messages continue for ever.
-> > In the first case my terminal locked up...
-> > current->pid also wraps around.
-> 
-> Please note that the each PID is printed for twice.
-> This means that each thread within the loop tries to create a thread.
-> Therefore, it will repeat for (1 << MAX_KMOD_CONCURRENT) times.
-> It is large enough to wrap the PID.
-> Well, try with smaller MAX_KMOD_CONCURRENT (e.g. 3).
-> 
+Some BIOSes will reset the Intel MISC_ENABLE MSR (specifically the
+XD_DISABLE bit) when resuming from S3, which can interact poorly with
+ebba638ae723d8a8fc2f7abce5ec18b688b791d7. In 32bit PAE mode, this can
+lead to a fault when EFER is restored by the kernel wakeup routines,
+due to it setting the NX bit for a CPU that (thanks to the BIOS reset)
+now incorrectly thinks it lacks the NX feature. (64bit is not affected
+because it uses a common CPU bring-up that specifically handles the
+XD_DISABLE bit.)
 
-With MAX_KMOD_CONCURRENT=3 it takes only a few seconds until 
-the modprobe storm ends.
+The need for MISC_ENABLE being restored so early is specific to the S3
+resume path. Normally, MISC_ENABLE is saved in save_processor_state(),
+but this happens after the resume header is created, so just reproduce
+the logic here. (acpi_suspend_lowlevel() creates the header, calls
+do_suspend_lowlevel, which calls save_processor_state(), so the saved
+processor context isn't available during resume header creation.)
 
-How shall we proceed?
-Applying my ad-hoc patch 
-or lowering MAX_KMOD_CONCURRENT?
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+---
+ arch/x86/kernel/acpi/realmode/wakeup.S |   14 ++++++++++++++
+ arch/x86/kernel/acpi/realmode/wakeup.h |    6 ++++++
+ arch/x86/kernel/acpi/sleep.c           |    6 ++++++
+ 3 files changed, 26 insertions(+), 0 deletions(-)
 
-Thanks,
-//richard
+diff --git a/arch/x86/kernel/acpi/realmode/wakeup.S b/arch/x86/kernel/acpi/realmode/wakeup.S
+index ead21b6..b4fd836 100644
+--- a/arch/x86/kernel/acpi/realmode/wakeup.S
++++ b/arch/x86/kernel/acpi/realmode/wakeup.S
+@@ -28,6 +28,8 @@ pmode_cr3:	.long	0	/* Saved %cr3 */
+ pmode_cr4:	.long	0	/* Saved %cr4 */
+ pmode_efer:	.quad	0	/* Saved EFER */
+ pmode_gdt:	.quad	0
++pmode_misc_en:	.quad	0	/* Saved MISC_ENABLE MSR */
++pmode_behavior:	.long	0	/* Wakeup behavior flags */
+ realmode_flags:	.long	0
+ real_magic:	.long	0
+ trampoline_segment:	.word 0
+@@ -91,6 +93,18 @@ wakeup_code:
+ 	/* Call the C code */
+ 	calll	main
+ 
++	/* Restore MISC_ENABLE before entering protected mode, in case
++	   BIOS decided to clear XD_DISABLE during S3. */
++	movl	pmode_behavior, %eax
++	btl	$WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE, %eax
++	jnc	1f
++
++	movl	pmode_misc_en, %eax
++	movl	pmode_misc_en + 4, %edx
++	movl	$MSR_IA32_MISC_ENABLE, %ecx
++	wrmsr
++1:
++
+ 	/* Do any other stuff... */
+ 
+ #ifndef CONFIG_64BIT
+diff --git a/arch/x86/kernel/acpi/realmode/wakeup.h b/arch/x86/kernel/acpi/realmode/wakeup.h
+index 88f0e6c..5487db0 100644
+--- a/arch/x86/kernel/acpi/realmode/wakeup.h
++++ b/arch/x86/kernel/acpi/realmode/wakeup.h
+@@ -21,6 +21,9 @@ struct wakeup_header {
+ 	u32 pmode_efer_low;	/* Protected mode EFER */
+ 	u32 pmode_efer_high;
+ 	u64 pmode_gdt;
++	u32 pmode_misc_en_low;	/* Protected mode MISC_ENABLE */
++	u32 pmode_misc_en_high;
++	u32 pmode_behavior;	/* Wakeup routine behavior flags */
+ 	u32 realmode_flags;
+ 	u32 real_magic;
+ 	u16 trampoline_segment;	/* segment with trampoline code, 64-bit only */
+@@ -43,4 +46,7 @@ extern struct wakeup_header wakeup_header;
+ #define WAKEUP_FLAG_MODE        2
+ #define WAKEUP_FLAG_BEEP        4
+ 
++/* Wakeup behavior bits */
++#define WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE     0
++
+ #endif /* ARCH_X86_KERNEL_ACPI_RM_WAKEUP_H */
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index cb968e5..12115a9 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -77,6 +77,12 @@ int acpi_suspend_lowlevel(void)
+ 
+ 	header->pmode_cr0 = read_cr0();
+ 	header->pmode_cr4 = read_cr4_safe();
++	header->pmode_behavior = 0;
++	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
++			&header->pmode_misc_en_low,
++			&header->pmode_misc_en_high))
++		header->pmode_behavior |=
++			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
+ 	header->realmode_flags = acpi_realmode_flags;
+ 	header->real_magic = 0x12345678;
+ 
+-- 
+1.7.4.1
+
