@@ -1,44 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab1GDJg4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 05:36:56 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:35784 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752379Ab1GDJgy (ORCPT
+	id S1756892Ab1GDJhM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 05:37:12 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:30680 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756819Ab1GDJhK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 05:36:54 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E118B9D.2070104@cam.ac.uk>
-Date: Mon, 04 Jul 2011 10:45:01 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	Mon, 4 Jul 2011 05:37:10 -0400
+Message-ID: <4E1189BD.509@atmel.com>
+Date: Mon, 04 Jul 2011 11:37:01 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>
-CC: Chris Forbes <chrisf@ijw.co.nz>, devel@driverdev.osuosl.org,
-        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers: staging: iio: adc: fix uninitialized use
-References: <1309657621-21711-1-git-send-email-chrisf@ijw.co.nz> <4E118157.3020906@cam.ac.uk> <20110704091016.GM2544@shale.localdomain>
-In-Reply-To: <20110704091016.GM2544@shale.localdomain>
-X-Enigmail-Version: 1.1.2
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        patrice.vilchez@atmel.com
+Subject: Re: [PATCH for 3.0] AT91: Change nand buswidth logic to match hardware
+ default configuration
+References: <1309515924-22531-1-git-send-email-nicolas.ferre@atmel.com>
+In-Reply-To: <1309515924-22531-1-git-send-email-nicolas.ferre@atmel.com>
+X-Enigmail-Version: 1.1.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/11 10:10, Dan Carpenter wrote:
-> On Mon, Jul 04, 2011 at 10:01:11AM +0100, Jonathan Cameron wrote:
->> On 07/03/11 02:47, Chris Forbes wrote:
->>> Fixed an uninitialized variable access. In the first two error paths in
->>> max1363_probe(), 'st' is not yet initialized, but its 'reg' member is
->>> accessed anyway. This would most likely crash.
->> Good spot. Please tech TODO files for staging patches. In this case it would
->> have given you the mailing list, now cc'd.
+Le 01/07/2011 12:25, Nicolas Ferre :
+> The recently modified nand buswitth configuration is not aligned with
+> board reality: the double footprint on boards is always populated with 8bits
+> buswidth nand flashes.
+> So we have to consider that without particular configuration the 8bits
+> buswidth is selected by default.
+> Moreover, the previous logic was always using !board_have_nand_8bit(), we
+> change it to a simpler: board_have_nand_16bit().
 > 
-> It would better to add an entry to MAINTAINERS so that
-> ./scripts/get_maintainer.pl gave the right lists.
-Perhaps, but Greg KH is anti, so it isn't going to happen.
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+> Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+
+Arnd,
+
+Can you please handle this parch for 3.0-final as a bug fix through the
+arm-soc.git tree?
+
+You can queue it in addition of the pull request sent by
+Jean-Christophe: "AT91: Fix pull requset".
+
+Thanks, best regards,
+
+> ---
+>  arch/arm/mach-at91/board-cap9adk.c           |    2 +-
+>  arch/arm/mach-at91/board-sam9260ek.c         |    2 +-
+>  arch/arm/mach-at91/board-sam9261ek.c         |    2 +-
+>  arch/arm/mach-at91/board-sam9263ek.c         |    2 +-
+>  arch/arm/mach-at91/board-sam9g20ek.c         |    2 +-
+>  arch/arm/mach-at91/board-sam9m10g45ek.c      |    2 +-
+>  arch/arm/mach-at91/include/mach/system_rev.h |   10 +++++-----
+>  7 files changed, 11 insertions(+), 11 deletions(-)
+> 
+> diff --git a/arch/arm/mach-at91/board-cap9adk.c b/arch/arm/mach-at91/board-cap9adk.c
+> index 1904fdf..cdb65d4 100644
+> --- a/arch/arm/mach-at91/board-cap9adk.c
+> +++ b/arch/arm/mach-at91/board-cap9adk.c
+> @@ -215,7 +215,7 @@ static void __init cap9adk_add_device_nand(void)
+>  	csa = at91_sys_read(AT91_MATRIX_EBICSA);
+>  	at91_sys_write(AT91_MATRIX_EBICSA, csa | AT91_MATRIX_EBI_VDDIOMSEL_3_3V);
+>  
+> -	cap9adk_nand_data.bus_width_16 = !board_have_nand_8bit();
+> +	cap9adk_nand_data.bus_width_16 = board_have_nand_16bit();
+>  	/* setup bus-width (8 or 16) */
+>  	if (cap9adk_nand_data.bus_width_16)
+>  		cap9adk_nand_smc_config.mode |= AT91_SMC_DBW_16;
+> diff --git a/arch/arm/mach-at91/board-sam9260ek.c b/arch/arm/mach-at91/board-sam9260ek.c
+> index d600dc1..5c24074 100644
+> --- a/arch/arm/mach-at91/board-sam9260ek.c
+> +++ b/arch/arm/mach-at91/board-sam9260ek.c
+> @@ -214,7 +214,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+>  
+>  static void __init ek_add_device_nand(void)
+>  {
+> -	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
+> +	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+>  	/* setup bus-width (8 or 16) */
+>  	if (ek_nand_data.bus_width_16)
+>  		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+> diff --git a/arch/arm/mach-at91/board-sam9261ek.c b/arch/arm/mach-at91/board-sam9261ek.c
+> index f897f84..b60c22b 100644
+> --- a/arch/arm/mach-at91/board-sam9261ek.c
+> +++ b/arch/arm/mach-at91/board-sam9261ek.c
+> @@ -220,7 +220,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+>  
+>  static void __init ek_add_device_nand(void)
+>  {
+> -	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
+> +	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+>  	/* setup bus-width (8 or 16) */
+>  	if (ek_nand_data.bus_width_16)
+>  		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+> diff --git a/arch/arm/mach-at91/board-sam9263ek.c b/arch/arm/mach-at91/board-sam9263ek.c
+> index 605b26f..9bbdc92 100644
+> --- a/arch/arm/mach-at91/board-sam9263ek.c
+> +++ b/arch/arm/mach-at91/board-sam9263ek.c
+> @@ -221,7 +221,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+>  
+>  static void __init ek_add_device_nand(void)
+>  {
+> -	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
+> +	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+>  	/* setup bus-width (8 or 16) */
+>  	if (ek_nand_data.bus_width_16)
+>  		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+> diff --git a/arch/arm/mach-at91/board-sam9g20ek.c b/arch/arm/mach-at91/board-sam9g20ek.c
+> index 7624cf0..1325a50 100644
+> --- a/arch/arm/mach-at91/board-sam9g20ek.c
+> +++ b/arch/arm/mach-at91/board-sam9g20ek.c
+> @@ -198,7 +198,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+>  
+>  static void __init ek_add_device_nand(void)
+>  {
+> -	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
+> +	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+>  	/* setup bus-width (8 or 16) */
+>  	if (ek_nand_data.bus_width_16)
+>  		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+> diff --git a/arch/arm/mach-at91/board-sam9m10g45ek.c b/arch/arm/mach-at91/board-sam9m10g45ek.c
+> index 063c95d..33eaa13 100644
+> --- a/arch/arm/mach-at91/board-sam9m10g45ek.c
+> +++ b/arch/arm/mach-at91/board-sam9m10g45ek.c
+> @@ -178,7 +178,7 @@ static struct sam9_smc_config __initdata ek_nand_smc_config = {
+>  
+>  static void __init ek_add_device_nand(void)
+>  {
+> -	ek_nand_data.bus_width_16 = !board_have_nand_8bit();
+> +	ek_nand_data.bus_width_16 = board_have_nand_16bit();
+>  	/* setup bus-width (8 or 16) */
+>  	if (ek_nand_data.bus_width_16)
+>  		ek_nand_smc_config.mode |= AT91_SMC_DBW_16;
+> diff --git a/arch/arm/mach-at91/include/mach/system_rev.h b/arch/arm/mach-at91/include/mach/system_rev.h
+> index b855ee7..8f48660 100644
+> --- a/arch/arm/mach-at91/include/mach/system_rev.h
+> +++ b/arch/arm/mach-at91/include/mach/system_rev.h
+> @@ -13,13 +13,13 @@
+>   * the 16-31 bit are reserved for at91 generic information
+>   *
+>   * bit 31:
+> - *	0 => nand 16 bit
+> - *	1 => nand 8 bit
+> + *	0 => nand 8 bit
+> + *	1 => nand 16 bit
+>   */
+> -#define BOARD_HAVE_NAND_8BIT	(1 << 31)
+> -static int inline board_have_nand_8bit(void)
+> +#define BOARD_HAVE_NAND_16BIT	(1 << 31)
+> +static inline int board_have_nand_16bit(void)
+>  {
+> -	return system_rev & BOARD_HAVE_NAND_8BIT;
+> +	return system_rev & BOARD_HAVE_NAND_16BIT;
+>  }
+>  
+>  #endif /* __ARCH_SYSTEM_REV_H__ */
+
+
+-- 
+Nicolas Ferre
 
