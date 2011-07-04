@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757565Ab1GDNcc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 09:32:32 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:48488 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753265Ab1GDNcb (ORCPT
+	id S1756898Ab1GDNfz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 09:35:55 -0400
+Received: from 61-96-236-77.server-home.net ([77.236.96.61]:49173 "EHLO
+	webbox1416.server-home.net" rhost-flags-OK-FAIL-OK-OK)
+	by vger.kernel.org with ESMTP id S1751118Ab1GDNfy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 09:32:31 -0400
-Date: Mon, 4 Jul 2011 19:02:23 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 4/6] hw_breakpoints: Breakpoints arch ability don't need
- perf events
-Message-ID: <20110704133223.GB2963@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <1306273947-8410-1-git-send-email-fweisbec@gmail.com>
- <1306273947-8410-5-git-send-email-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1306273947-8410-5-git-send-email-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Jul 2011 09:35:54 -0400
+From: Alexander Stein <alexander.stein@systec-electronic.com>
+To: Alan Cox <alan@linux.intel.com>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
+        trivial@kernel.org,
+        Alexander Stein <alexander.stein@systec-electronic.com>
+Subject: [PATCH resend] pch_uart: add missing comment about OKI ML7223
+Date: Mon,  4 Jul 2011 15:35:51 +0200
+Message-Id: <1309786551-5879-1-git-send-email-alexander.stein@systec-electronic.com>
+X-Mailer: git-send-email 1.7.3.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 24, 2011 at 11:52:25PM +0200, Frederic Weisbecker wrote:
-> The breakpoint support ability in an arch is not related
-> to the fact perf events is built or not. HAVE_HW_BREAKPOINT
-> only shows an ability so this dependency makes no sense
-> anymore. Archs that select HAVE_HW_BREAKPOINT already
-> ensure that perf event is built.
-> 
-> Remove that dependency.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Will Deacon <will.deacon@arm.com>
-> Cc: Prasad <prasad@linux.vnet.ibm.com>
-> Cc: Paul Mundt <lethal@linux-sh.org>
-> ---
->  arch/Kconfig |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/Kconfig b/arch/Kconfig
-> index f78c2be..ce4be89 100644
-> --- a/arch/Kconfig
-> +++ b/arch/Kconfig
-> @@ -149,7 +149,6 @@ config HAVE_DEFAULT_NO_SPIN_MUTEXES
-> 
->  config HAVE_HW_BREAKPOINT
->  	bool
-> -	depends on PERF_EVENTS
-> 
->  config HAVE_MIXED_BREAKPOINTS_REGS
->  	bool
-> -- 
+Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
+Reviewed-by: Jesper Juhl <jj@chaosbits.net>
+---
+ drivers/tty/serial/pch_uart.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Just a thought you might want to consider...
-
-The need to keep the ability (HAVE_HW_BREAKPOINT) and the user-choice to
-enable hardware breakpoints (through HW_BREAKPOINT) in separate config
-options isn't very clear to me (and is a bit confusing with very similar
-names).
-
-Why not make HAVE_HW_BREAKPOINT selectable by the user (which in turn
-would turn on PERF_EVENTS) for a given architecture?
-
-Thanks,
-K.Prasad
+diff --git a/drivers/tty/serial/pch_uart.c b/drivers/tty/serial/pch_uart.c
+index d3ba85b..91da2a9 100644
+--- a/drivers/tty/serial/pch_uart.c
++++ b/drivers/tty/serial/pch_uart.c
+@@ -44,6 +44,7 @@ enum {
+ /* Set the max number of UART port
+  * Intel EG20T PCH: 4 port
+  * OKI SEMICONDUCTOR ML7213 IOH: 3 port
++ * OKI SEMICONDUCTOR ML7223 IOH: 2 port
+ */
+ #define PCH_UART_NR	4
+ 
+-- 
+1.7.3.4
 
