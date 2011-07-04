@@ -1,136 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758059Ab1GDPlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 11:41:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20760 "EHLO mx1.redhat.com"
+	id S1758088Ab1GDPlQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 11:41:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34347 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757746Ab1GDPky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 11:40:54 -0400
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
-        Anthony Liguori <aliguori@us.ibm.com>,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH v5 7/9] KVM-GST: KVM Steal time accounting
-Date: Mon,  4 Jul 2011 11:32:26 -0400
-Message-Id: <1309793548-16714-8-git-send-email-glommer@redhat.com>
-In-Reply-To: <1309793548-16714-1-git-send-email-glommer@redhat.com>
-References: <1309793548-16714-1-git-send-email-glommer@redhat.com>
+	id S1757799Ab1GDPlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 11:41:11 -0400
+Date: Mon, 4 Jul 2011 08:34:35 -0700
+From: Greg KH <gregkh@suse.de>
+To: Jonathan Cameron <jic23@cam.ac.uk>
+Cc: Dan Carpenter <error27@gmail.com>, Chris Forbes <chrisf@ijw.co.nz>,
+        devel@driverdev.osuosl.org,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: staging: iio: adc: fix uninitialized use
+Message-ID: <20110704153435.GA17475@suse.de>
+References: <1309657621-21711-1-git-send-email-chrisf@ijw.co.nz>
+ <4E118157.3020906@cam.ac.uk>
+ <20110704091016.GM2544@shale.localdomain>
+ <4E118B9D.2070104@cam.ac.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E118B9D.2070104@cam.ac.uk>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch accounts steal time time in account_process_tick.
-If one or more tick is considered stolen in the current
-accounting cycle, user/system accounting is skipped. Idle is fine,
-since the hypervisor does not report steal time if the guest
-is halted.
+On Mon, Jul 04, 2011 at 10:45:01AM +0100, Jonathan Cameron wrote:
+> On 07/04/11 10:10, Dan Carpenter wrote:
+> > On Mon, Jul 04, 2011 at 10:01:11AM +0100, Jonathan Cameron wrote:
+> >> On 07/03/11 02:47, Chris Forbes wrote:
+> >>> Fixed an uninitialized variable access. In the first two error paths in
+> >>> max1363_probe(), 'st' is not yet initialized, but its 'reg' member is
+> >>> accessed anyway. This would most likely crash.
+> >> Good spot. Please tech TODO files for staging patches. In this case it would
+> >> have given you the mailing list, now cc'd.
+> > 
+> > It would better to add an entry to MAINTAINERS so that
+> > ./scripts/get_maintainer.pl gave the right lists.
+> Perhaps, but Greg KH is anti, so it isn't going to happen.
 
-Accounting steal time from the core scheduler give us the
-advantage of direct acess to the runqueue data. In a later
-opportunity, it can be used to tweak cpu power and make
-the scheduler aware of the time it lost.
+I'm coming around on this, for larger chunks of code, like iio, I don't
+mind it, so feel free to send me an entry.
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
-CC: Rik van Riel <riel@redhat.com>
-CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Avi Kivity <avi@redhat.com>
-CC: Anthony Liguori <aliguori@us.ibm.com>
-CC: Eric B Munson <emunson@mgebm.net>
----
- kernel/sched.c |   41 +++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 41 insertions(+), 0 deletions(-)
+thanks,
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3f2e502..aa6c030 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -75,6 +75,7 @@
- #include <asm/tlb.h>
- #include <asm/irq_regs.h>
- #include <asm/mutex.h>
-+#include <asm/paravirt.h>
- 
- #include "sched_cpupri.h"
- #include "workqueue_sched.h"
-@@ -528,6 +529,9 @@ struct rq {
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
- 	u64 prev_irq_time;
- #endif
-+#ifdef CONFIG_PARAVIRT
-+	u64 prev_steal_time;
-+#endif
- 
- 	/* calc_load related fields */
- 	unsigned long calc_load_update;
-@@ -1953,6 +1957,18 @@ void account_system_vtime(struct task_struct *curr)
- }
- EXPORT_SYMBOL_GPL(account_system_vtime);
- 
-+#endif /* CONFIG_IRQ_TIME_ACCOUNTING */
-+
-+#ifdef CONFIG_PARAVIRT
-+static inline u64 steal_ticks(u64 steal)
-+{
-+	if (unlikely(steal > NSEC_PER_SEC))
-+		return div_u64(steal, TICK_NSEC);
-+
-+	return __iter_div_u64_rem(steal, TICK_NSEC, &steal);
-+}
-+#endif
-+
- static void update_rq_clock_task(struct rq *rq, s64 delta)
- {
- 	s64 irq_delta;
-@@ -3845,6 +3861,25 @@ void account_idle_time(cputime_t cputime)
- 		cpustat->idle = cputime64_add(cpustat->idle, cputime64);
- }
- 
-+static __always_inline bool steal_account_process_tick(void)
-+{
-+#ifdef CONFIG_PARAVIRT
-+	if (static_branch(&paravirt_steal_enabled)) {
-+		u64 steal, st = 0;
-+
-+		steal = paravirt_steal_clock(smp_processor_id());
-+		steal -= this_rq()->prev_steal_time;
-+
-+		st = steal_ticks(steal);
-+		this_rq()->prev_steal_time += st * TICK_NSEC;
-+
-+		account_steal_time(st);
-+		return st;
-+	}
-+#endif
-+	return false;
-+}
-+
- #ifndef CONFIG_VIRT_CPU_ACCOUNTING
- 
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
-@@ -3876,6 +3911,9 @@ static void irqtime_account_process_tick(struct task_struct *p, int user_tick,
- 	cputime64_t tmp = cputime_to_cputime64(cputime_one_jiffy);
- 	struct cpu_usage_stat *cpustat = &kstat_this_cpu.cpustat;
- 
-+	if (steal_account_process_tick())
-+		return;
-+
- 	if (irqtime_account_hi_update()) {
- 		cpustat->irq = cputime64_add(cpustat->irq, tmp);
- 	} else if (irqtime_account_si_update()) {
-@@ -3929,6 +3967,9 @@ void account_process_tick(struct task_struct *p, int user_tick)
- 		return;
- 	}
- 
-+	if (steal_account_process_tick())
-+		return;
-+
- 	if (user_tick)
- 		account_user_time(p, cputime_one_jiffy, one_jiffy_scaled);
- 	else if ((p != rq->idle) || (irq_count() != HARDIRQ_OFFSET))
--- 
-1.7.3.4
-
+greg k-h
