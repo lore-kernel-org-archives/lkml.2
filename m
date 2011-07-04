@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753389Ab1GDFeP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 01:34:15 -0400
-Received: from ozlabs.org ([203.10.76.45]:56913 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751667Ab1GDFeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 01:34:11 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Greg KH <greg@kroah.com>, Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
-In-Reply-To: <20110701211449.GB19805@kroah.com>
-References: <1308434431.1050.5.camel@mop> <20110701211449.GB19805@kroah.com>
-User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
-Date: Mon, 04 Jul 2011 14:26:21 +0930
-Message-ID: <87k4bysky2.fsf@rustcorp.com.au>
+	id S1753348Ab1GDFfJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 01:35:09 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58954 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751939Ab1GDFfF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 01:35:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110703171626.GG21127@elf.ucw.cz>
+References: <1309702581-16863-1-git-send-email-akinobu.mita@gmail.com>
+	<1309702581-16863-4-git-send-email-akinobu.mita@gmail.com>
+	<20110703171626.GG21127@elf.ucw.cz>
+Date: Mon, 4 Jul 2011 14:35:04 +0900
+Message-ID: <CAC5umyhKafTgUe6T2vfLupwmBwt5COj6X2nUH2b5ekhzQNi5mg@mail.gmail.com>
+Subject: Re: [PATCH 3/7] fault-injection: notifier error injection
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>, linux-pm@lists.linux-foundation.org,
+        linux-mm@kvack.org, linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jul 2011 14:14:49 -0700, Greg KH <greg@kroah.com> wrote:
-> On Sun, Jun 19, 2011 at 12:00:29AM +0200, Kay Sievers wrote:
-> > From: Kay Sievers <kay.sievers@vrfy.org>
-> > Subject: module: sysfs - add 'uevent' file to allow built-in coldplug
-> > 
-> > Userspace wants to manage module parameters with udev rules.
-> > This currently only works for loaded modules, but not for
-> > built-in ones.
-> > 
-> > To allow access to the built-in modules we need to
-> > re-trigger all module load events that happened before any
-> > userspace was running. We already do the same thing for all
-> > devices, subsystems(buses) and drivers.
-> > 
-> > This adds the currently missing /sys/module/<name>/uevent files
-> > to all module entries.
-> > 
-> > Signed-off-by: Kay Sievers <kay.sievers@vrfy.org>
-> 
-> Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-> 
-> Rusty, are you going to take this in your tree?
+2011/7/4 Pavel Machek <pavel@ucw.cz>:
+>
+>> +     for (action = enb->actions; action->name; action++) {
+>> +             struct dentry *file = debugfs_create_int(action->name, mode,
+>> +                                             enb->dir, &action->error);
+>> +
+>> +             if (!file) {
+>> +                     debugfs_remove_recursive(enb->dir);
+>> +                     return -ENOMEM;
+>> +             }
+>
+> Few lines how this work would be welcome...?
 
-Yep, done.
+OK, I'll add a comment like below.
 
-Thanks,
-Rusty.
-
+/*
+ * Create debugfs r/w file containing action->error. If notifier call
+ * chain is called with action->val, it will fail with the error code
+ */
