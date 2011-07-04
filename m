@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932145Ab1GDRLr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 13:11:47 -0400
-Received: from mtagate6.uk.ibm.com ([194.196.100.166]:58492 "EHLO
-	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757520Ab1GDRKA (ORCPT
+	id S932092Ab1GDRLq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 13:11:46 -0400
+Received: from mtagate5.uk.ibm.com ([194.196.100.165]:32985 "EHLO
+	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757535Ab1GDRKA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Jul 2011 13:10:00 -0400
-Message-Id: <20110704170959.054287190@linux.vnet.ibm.com>
+Message-Id: <20110704170958.874632821@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 04 Jul 2011 19:09:25 +0200
+Date: Mon, 04 Jul 2011 19:09:24 +0200
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 To: ebiederm@xmission.com, vgoyal@redhat.com, hbabu@us.ibm.com,
         mahesh@linux.vnet.ibm.com
 Cc: oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: [patch 3/9] kdump: Make kimage_load_crash_segment() weak
+Subject: [patch 2/9] kdump: Add machine_kexec_finish()
 References: <20110704170922.976299676@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=03-s390-kdump-common-load_crash_segment.patch
+Content-Disposition: inline; filename=02-s390-kdump-common-kexec_finish.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-On s390 we do not create page tables at all for the crashkernel memory.
-This requires a s390 specific version for kimage_load_crash_segment().
-Therefore this patch declares this function as "__weak". The s390 version is
-very simple. It just copies the kexec segment to real memory without using
-page tables:
-
-int kimage_load_crash_segment(struct kimage *image,
-                              struct kexec_segment *segment)
-{
-        return copy_from_user_real((void *) segment->mem, segment->buf,
-                                   segment->bufsz);
-}
-
-There are two main advantages of not creating page tables for the
-crashkernel memory:
-
-a) It saves memory. We have scenarios in mind, where crashkernel
-   memory can be very large and saving page table space is important.
-b) We protect the crashkernel memory from being overwritten.
+On s390 we create checksums for the loaded kexec segments case of kdump.
+Therefore we need an additional callback at the end of the kexec_load()
+system call. This patch introduces machine_kexec_finish() with an empty
+implementation for all architectures that do not need the callback.
 
 Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 ---
- kernel/kexec.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ include/linux/kexec.h |    1 +
+ kernel/kexec.c        |    8 ++++++++
+ 2 files changed, 9 insertions(+)
 
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -115,6 +115,7 @@ struct kimage {
+ /* kexec interface functions */
+ extern void machine_kexec(struct kimage *image);
+ extern int machine_kexec_prepare(struct kimage *image);
++extern void machine_kexec_finish(struct kimage *image, int flags);
+ extern void machine_kexec_cleanup(struct kimage *image);
+ extern asmlinkage long sys_kexec_load(unsigned long entry,
+ 					unsigned long nr_segments,
 --- a/kernel/kexec.c
 +++ b/kernel/kexec.c
-@@ -842,8 +842,8 @@ out:
+@@ -1017,6 +1017,7 @@ SYSCALL_DEFINE4(kexec_load, unsigned lon
+ 		kimage_terminate(image);
+ 	}
+ 	/* Install the new kernel, and  Uninstall the old */
++	machine_kexec_finish(image, flags);
+ 	image = xchg(dest_image, image);
+ 
+ out:
+@@ -1026,6 +1027,13 @@ out:
  	return result;
  }
  
--static int kimage_load_crash_segment(struct kimage *image,
--					struct kexec_segment *segment)
-+int __weak kimage_load_crash_segment(struct kimage *image,
-+				     struct kexec_segment *segment)
- {
- 	/* For crash dumps kernels we simply copy the data from
- 	 * user space to it's destination.
++/*
++ * provide an empty default implementation here -- architecture
++ * code may override this
++ */
++void __weak machine_kexec_finish(struct kimage *image, int flags)
++{}
++
+ #ifdef CONFIG_COMPAT
+ asmlinkage long compat_sys_kexec_load(unsigned long entry,
+ 				unsigned long nr_segments,
 
