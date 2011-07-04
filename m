@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757980Ab1GDPxj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 11:53:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:28944 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756902Ab1GDPxi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 11:53:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,473,1304319600"; 
-   d="scan'208";a="26131249"
-Date: Mon, 4 Jul 2011 17:54:06 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Jin Park <jinyoungp@nvidia.com>
-Cc: Richard Purdie <rpurdie@rpsys.net>, Liam Girdwood <lrg@ti.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] mfd: aat2870: Add AAT2870 mfd driver
-Message-ID: <20110704155406.GO3021@sortiz-mobl>
-References: <1309356412-23881-1-git-send-email-jinyoungp@nvidia.com>
- <1309356412-23881-2-git-send-email-jinyoungp@nvidia.com>
+	id S1758067Ab1GDP4r (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 11:56:47 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:48199 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756902Ab1GDP4p (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 11:56:45 -0400
+Date: Mon, 4 Jul 2011 11:56:44 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: 3.0rc3-rc5: usb stops working after resume from suspend to ram
+In-Reply-To: <201107041054.36890.a.miskiewicz@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1107041155080.12242-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309356412-23881-2-git-send-email-jinyoungp@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jin,
+On Mon, 4 Jul 2011, Arkadiusz Miskiewicz wrote:
 
-On Wed, Jun 29, 2011 at 11:06:50PM +0900, Jin Park wrote:
-> Add mfd core driver for AnalogicTech AAT2870.
-> The AAT2870 is communication through I2C and contains backlight and
-> regulator components.
-At first glance, the patch looks good now. I'll wait for your regulator fixes
-according to Mark's comments and apply the serie.
+> On Thursday 30 of June 2011, Alan Stern wrote:
+> 
+> > And now you know why, more or less -- we still have to figure out the
+> > reason for the hang.  Probably something goes wrong when cdc-ether is
+> > unbound from the wireless device.
+> 
+> Reverting patch below fixes hang.
+> 
+> commit fccf4e86200b8f5edd9a65da26f150e32ba79808
+> Author: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> Date:   Sun Jun 5 23:22:22 2011 -0700
+> 
+>     USB: Free bandwidth when usb_disable_device is called.
 
-Cheers,
-Samuel.
+Ah, very good!  That explains everything.  Someone else reported a 
+similar problem that was tracked down to this commit, and I submitted a 
+fix a few days ago:
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+	http://marc.info/?l=linux-usb&m=130955300211987&w=2
+
+I bet this will fix your problem too.
+
+Alan Stern
+
