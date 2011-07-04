@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752977Ab1GDBay (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 21:30:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752588Ab1GDBax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 21:30:53 -0400
-Message-ID: <4E1117C0.4020500@redhat.com>
-Date: Mon, 04 Jul 2011 09:30:40 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+	id S1753031Ab1GDBhF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 21:37:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39422 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752646Ab1GDBhC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 21:37:02 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the akpm tree
-References: <20110701151931.4c2d78b5.sfr@canb.auug.org.au>	<4E0D5BD4.6080403@redhat.com>	<20110701170843.bd60e326.sfr@canb.auug.org.au>	<4E0D9D16.7020508@redhat.com> <20110701203702.a15ecf19.sfr@canb.auug.org.au>
-In-Reply-To: <20110701203702.a15ecf19.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Reply-To: myungjoo.ham@gmail.com
+In-Reply-To: <201107022358.58319.rjw@sisk.pl>
+References: <1306471995-4048-1-git-send-email-myungjoo.ham@samsung.com>
+	<1306471995-4048-2-git-send-email-myungjoo.ham@samsung.com>
+	<201107022358.58319.rjw@sisk.pl>
+Date: Mon, 4 Jul 2011 10:37:00 +0900
+X-Google-Sender-Auth: PFaa45WhHE92LDqgJkwUKj8K4TQ
+Message-ID: <CAJ0PZbQuiwkW-Z+1Wrqmr3r_U+LdWS312RggkkjFBGFHES4wCw@mail.gmail.com>
+Subject: Re: [PATCH v3 2/3] PM / DEVFREQ: add example governors
+From: MyungJoo Ham <myungjoo.ham@samsung.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Jiejing Zhang <kzjeef@gmail.com>, Colin Cross <ccross@google.com>,
+        Nishanth Menon <nm@ti.com>, Thomas Gleixner <tglx@linutronix.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011年07月01日 18:37, Stephen Rothwell 写道:
+Hello,
+
+2011/7/3 Rafael J. Wysocki <rjw@sisk.pl>:
 > Hi,
 >
-> On Fri, 01 Jul 2011 18:10:30 +0800 Cong Wang<amwang@redhat.com>  wrote:
+> On Friday, May 27, 2011, MyungJoo Ham wrote:
+>> Three CPUFREQ-like governors are provided as examples.
 >>
->> 于 2011年07月01日 15:08, Stephen Rothwell 写道:
->>>
->>> On Fri, 01 Jul 2011 13:32:04 +0800 Cong Wang<amwang@redhat.com>   wrote:
->>>>
->>>> 于 2011年07月01日 13:19, Stephen Rothwell 写道:
->>>>>
->>>>> After merging the akpm tree, today's linux-next build (powerpc
->>>>> ppc64_defconfig) failed like this:
->>>>>
->>>>> arch/powerpc/kernel/rtas.c: In function 'rtas_restart':
->>>>> arch/powerpc/kernel/rtas.c:655:24: error: 'SYS_RESTART' undeclared (first use in this function)
->>>>> arch/powerpc/kernel/rtas.c: In function 'rtas_power_off':
->>>>> arch/powerpc/kernel/rtas.c:664:24: error: 'SYS_POWER_OFF' undeclared (first use in this function)
->>>>> arch/powerpc/kernel/rtas.c: In function 'rtas_halt':
->>>>> arch/powerpc/kernel/rtas.c:674:24: error: 'SYS_HALT' undeclared (first use in this function)
->>>>>
->>>>> Caused by commit ac050ff2a176 ("It is not necessary to share the same
->>>>> notifier.h").
->>>>
->>>> I think the following patch will fix this.
->>>
->>> Please find all the other files that need that include as well (there is
->>> at least one more).
->>>
+>> powersave: use the lowest frequency possible. The user (device) should
+>> set the polling_ms as 0 because polling is useless for this governor.
 >>
->> Ok, I will do a cross-compilation.
+>> performance: use the highest freqeuncy possible. The user (device)
+>> should set the polling_ms as 0 because polling is useless for this
+>> governor.
+>>
+>> simple_ondemand: simplified version of CPUFREQ's ONDEMAND governor.
+>>
+>> When a user updates OPP entries (enable/disable/add), OPP framework
+>> automatically notifies DEVFREQ to update operating frequency
+>> accordingly. Thus, DEVFREQ users (device drivers) do not need to update
+>> DEVFREQ manually with OPP entry updates or set polling_ms for powersave
+>> , performance, or any other "static" governors.
+>>
+>> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+>> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+[]
+>> +
+>> +     /* Set the desired frequency based on the load */
+>> +     a = (unsigned long long) stat.busy_time * stat.current_frequency;
 >
-> Well, really any file that references any of those defines should be
-> including linux/reboot.h, now - whether a compilation gets errors or
-> not.  A change in CONFIG options or different platforms/architectures can
-> change what file get implictly included.
+> What's the purpose of the conversion?
+
+Assuming that the work speed of a device is proportional to its
+frequency, it measures the amount of work done.
+It's time * work/time. For example, during the last 10 second, if the
+busy_time was 5 sec and frequency was 10MHz,
+it's "50M", which is same as 20MHz and 2.5 sec.
+
 >
-> See Rule 1 in Documentation/SubmitChecklist.
+>> +     b = div_u64(a, stat.total_time);
+>> +     b *= 100;
+>> +     b = div_u64(b, (DFSO_UPTHRESHOLD - DFSO_DOWNDIFFERENCTIAL / 2));
+>> +     *freq = (unsigned long) b;
+>> +
+>> +     return 0;
+>> +}
+>
+> Rafael
+>
 
-Yeah, I did allyesconfig test on x86. Fortunately there are few
-files that needs to be fixed since they include reboot.h implicitly.
 
-Thanks.
+
+-- 
+MyungJoo Ham (함명주), Ph.D.
+Mobile Software Platform Lab,
+Digital Media and Communications (DMC) Business
+Samsung Electronics
+cell: 82-10-6714-2858
