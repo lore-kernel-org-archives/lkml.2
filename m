@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752981Ab1GEAiX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 20:38:23 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:46133 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752847Ab1GEAiW (ORCPT
+	id S1752875Ab1GDXPq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 19:15:46 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:43241 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab1GDXPp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 20:38:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110704130838.27757.87486.stgit@localhost6>
-References: <20110704130838.27757.87486.stgit@localhost6>
-Date: Tue, 5 Jul 2011 08:38:21 +0800
-X-Google-Sender-Auth: kafnluUkBRz-CnubmjmZe56g8Is
-Message-ID: <CANejiEV75k9SrkQFsb5H3n_307j7yA941WMgymioPOT-vxhWcQ@mail.gmail.com>
-Subject: Re: [PATCH RFC 1/2] cfq: request-deadline policy
-From: Shaohua Li <shli@kernel.org>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org,
-        Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 4 Jul 2011 19:15:45 -0400
+Subject: [PATCH 1/4] uml: cow_user.c warning corrections
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+Reply-To: vitalivanov@gmail.com
+To: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Cc: user-mode-linux-devel@lists.sourceforge.net,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 05 Jul 2011 02:15:41 +0300
+Message-ID: <1309821341.4527.5.camel@vitaliy-Vostro-1400>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/4 Konstantin Khlebnikov <khlebnikov@openvz.org>:
-> CFQ is designed for sharing disk bandwidth proportionally between queues and groups
-> and for reordering requests to reduce disks seek time. Currently it cannot
-> gurantee or estimate latency for individual requests, even if latencies are low
-> for almost all requests, some of them can stuck inside scheduler for a long time.
-> The fair policy is good as long as someone luckless begins to die due to a timeout.
->
-> This patch implements fifo requests dispatching with deadline policy: now cfq
-> obliged to dispatch request if it stuck in the queue for more than deadline.
->
-> This way now cfq can try to ensure the expected latency of requests execution.
-> It is like a safety valve, it should not work all time, but it should keep latency
-> in sane range when the scheduler is unable to effectively handle flow of requests,
-> especially in cases when the "noop" or "deadline" shows better performance.
->
-> deadline can be tuned via /sys/block/<device>/queue/iosched/deadline_{sync,async}
-> it by default 2000ms for sync and 4000ms for async requests, use 0 to disable it.
-I'm afraid this takes too far away. It completed breaks fairness of
-CFQ. The sync/async and priority of queues lose meaning.
-Even deadline is meaningful of some kind, maybe we should add a policy
-in preempt. If a queue has very old requests, don't preempt such
-queue. But we should be careful to tune how long slice the queue can
-take so fairness isn't broken.
+>From 6201d3e862fca8670b206338dc90303ea0acc77d Mon Sep 17 00:00:00 2001
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+Date: Tue, 5 Jul 2011 01:57:51 +0300
+Subject: [PATCH 1/4] uml: cow_user.c warning corrections
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 
-Thanks,
-Shaohua
+arch/um/drivers/cow_user.c: In function ‘absolutize’:
+arch/um/drivers/cow_user.c:189:7: warning: ignoring return value of ‘chdir’, declared with attribute warn_unused_result
+
+Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+---
+ arch/um/drivers/cow_user.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+diff --git a/arch/um/drivers/cow_user.c b/arch/um/drivers/cow_user.c
+index 93f227a..9cbb426 100644
+--- a/arch/um/drivers/cow_user.c
++++ b/arch/um/drivers/cow_user.c
+@@ -186,7 +186,11 @@ static int absolutize(char *to, int size, char *from)
+ 		strcat(to, "/");
+ 		strcat(to, from);
+ 	}
+-	chdir(save_cwd);
++	if (chdir(save_cwd)) {
++		cow_printf("absolutize : Can't cd to '%s' - "
++			   "errno = %d\n", save_cwd, errno);
++		return -1;
++	}
+ 	return 0;
+ }
+ 
+-- 
+1.7.4.1
+
+
+
