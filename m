@@ -1,82 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758196Ab1GDQB0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:01:26 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:44331 "HELO
+	id S1758149Ab1GDQE4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 12:04:56 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:47440 "HELO
 	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756875Ab1GDQBY (ORCPT
+	with SMTP id S1756875Ab1GDQEz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:01:24 -0400
-Date: Mon, 4 Jul 2011 12:01:24 -0400 (EDT)
+	Mon, 4 Jul 2011 12:04:55 -0400
+Date: Mon, 4 Jul 2011 12:04:54 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@netrider.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Partha Basak <p-basak2@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
-        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Anand Gadiyar <gadiyar@ti.com>,
-        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        <paul@pwsan.com>, <johnstul@us.ibm.com>,
-        Vishwanath Sripathy <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
- of ehci and ohci
-In-Reply-To: <20110704093056.GD25295@legolas.emea.dhcp.ti.com>
-Message-ID: <Pine.LNX.4.44L0.1107041157360.12242-100000@netrider.rowland.org>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+cc: axboe@kernel.dk, James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andi Kleen <andi@firstfloor.org>, Dave Jones <davej@redhat.com>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+In-Reply-To: <20110704112727.GA2557@osiris.boeblingen.de.ibm.com>
+Message-ID: <Pine.LNX.4.44L0.1107041202170.12242-100000@netrider.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jul 2011, Felipe Balbi wrote:
+On Mon, 4 Jul 2011, Heiko Carstens wrote:
 
-> sounds to me like a bug on pm runtime ? If you're calling
-> pm_runtime_*_sync() family, shouldn't all calls be _sync() too ?
-
-No.  This was a deliberate design decision.  It minimizes stack usage 
-and it gives a chance for some other child to resume before the parent 
-is powered down.
-
-> > static int rpm_suspend(struct device *dev, int rpmflags)
-> > 	__releases(&dev->power.lock) __acquires(&dev->power.lock)
-> > {
-> > .
-> > .
-> > .
-> > no_callback:
-> > .
-> > .
-> > .
-> > 	/* Maybe the parent is now able to suspend. */
-> > 	if (parent && !parent->power.ignore_children &&
-> > !dev->power.irq_safe) {
-> > 		spin_unlock(&dev->power.lock);
+> On Sat, Jul 02, 2011 at 01:37:59PM -0400, Alan Stern wrote:
+> > The second bug, which hit me but apparently not any of you, is that the 
+> > request_queue's elevator gets deallocated while it is still in use.  
+> > That's because __scsi_remove_device() calls scsi_free_queue(), which 
+> > does blk_cleanup_queue(), which calls elevator_exit(), even though the 
+> > device file is still open and more requests will be submitted when the 
+> > file is closed.
 > > 
-> > 		spin_lock(&parent->power.lock);
-> > 		rpm_idle(parent, RPM_ASYNC);
-> 
-> to me this is bogus, if you called pm_runtime_put_sync() should should
-> be sync too. Shouldn't it ?
-
-No, it shouldn't.
-
-> > 		spin_unlock(&parent->power.lock);
+> > I'm not sure of the right fix for this.  One possibility is to move the 
+> > scsi_free_queue() call to scsi_device_dev_release_usercontext().  Or 
+> > maybe the elevator_exit() call should be moved to blk_release_queue().
 > > 
-> > 		spin_lock(&dev->power.lock);
-> > 	}
-> > This is the reason of directly calling the parent Runtime PM calls from
-> > the children.
-> > If directly calling Runtime PM APIs with parent dev-pointer isn't
-> > acceptable,
-> > this can be achieved by exporting wrapper APIs from the
-> > parent and calling them from the chidren .suspend/.resume routines.
+> > Also, I have no idea why this shows up with USB drives but not other 
+> > SCSI transports.  A fluke of timing?
 > 
-> Still no good, IMHO.
+> FWIW, I reported a bug where the request_queue's elevator got deallocated
+> while it was still in use (fc transport with device hotplug):
+> 
+> http://www.spinics.net/lists/linux-scsi/msg52879.html
 
-The real problem here is that you guys are trying to use the runtime PM
-framework to carry out activities during system suspend.  That won't
-work; it's just a bad idea all round.  Use the proper callbacks to do
-what you want.
+That does sound like the second bug I encountered.  Can you reproduce 
+it?  Does the patch here:
+
+	http://marc.info/?l=linux-kernel&m=130963676907731&w=2
+
+fix the problem?
 
 Alan Stern
 
