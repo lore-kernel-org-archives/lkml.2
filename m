@@ -1,46 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755001Ab1GDLQt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 07:16:49 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:55495 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab1GDLQr convert rfc822-to-8bit (ORCPT
+	id S1756936Ab1GDL1y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 07:27:54 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:55528 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754494Ab1GDL1v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 07:16:47 -0400
-Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 04 Jul 2011 13:16:32 +0200
-Message-ID: <1309778192.3282.27.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Mon, 4 Jul 2011 07:27:51 -0400
+Date: Mon, 4 Jul 2011 13:27:27 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: axboe@kernel.dk, James Bottomley <James.Bottomley@HansenPartnership.com>,
+        Andi Kleen <andi@firstfloor.org>, Dave Jones <davej@redhat.com>,
+        SCSI development list <linux-scsi@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        USB list <linux-usb@vger.kernel.org>
+Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
+Message-ID: <20110704112727.GA2557@osiris.boeblingen.de.ibm.com>
+References: <1309609482.2554.8.camel@mulgrave>
+ <Pine.LNX.4.44L0.1107021320180.14703-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1107021320180.14703-100000@netrider.rowland.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
-> +#define MEM_STORE_DCU_HIT              (1ULL << 0)
+On Sat, Jul 02, 2011 at 01:37:59PM -0400, Alan Stern wrote:
+> The second bug, which hit me but apparently not any of you, is that the 
+> request_queue's elevator gets deallocated while it is still in use.  
+> That's because __scsi_remove_device() calls scsi_free_queue(), which 
+> does blk_cleanup_queue(), which calls elevator_exit(), even though the 
+> device file is still open and more requests will be submitted when the 
+> file is closed.
+> 
+> I'm not sure of the right fix for this.  One possibility is to move the 
+> scsi_free_queue() call to scsi_device_dev_release_usercontext().  Or 
+> maybe the elevator_exit() call should be moved to blk_release_queue().
+> 
+> Also, I have no idea why this shows up with USB drives but not other 
+> SCSI transports.  A fluke of timing?
 
-I'm pretty sure that's not Dublin City University, but what is it?
-Data-Cache-Unit? what does that mean, L1/L2 or also L3? 
+FWIW, I reported a bug where the request_queue's elevator got deallocated
+while it was still in use (fc transport with device hotplug):
 
-> +#define MEM_STORE_STLB_HIT             (1ULL << 1)
-
-What's an sTLB? I know iTLB and dTLB's but sTLBs I've not heard of yet.
-
-> +#define MEM_STORE_LOCKED_ACCESS                (1ULL << 2) 
-
-Presumably that's about LOCK'ed ops?
-
-So now you're just tacking bits on the end without even attempting to
-generalize/unify things, not charmed at all.
-
+http://www.spinics.net/lists/linux-scsi/msg52879.html
