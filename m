@@ -1,118 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757579Ab1GDN3R (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 09:29:17 -0400
-Received: from 61-96-236-77.server-home.net ([77.236.96.61]:41216 "EHLO
-	webbox1416.server-home.net" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1753265Ab1GDN3O (ORCPT
+	id S1757615Ab1GDN3Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 09:29:25 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:65005 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753044Ab1GDN3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 09:29:14 -0400
-From: Alexander Stein <alexander.stein@systec-electronic.com>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
-        Samuel Ortiz <sameo@linux.intel.com>, linux-watchdog@vger.kernel.org,
-        Alexander Stein <alexander.stein@systec-electronic.com>
-Subject: [PATCH 1/2 v2] Add Intel E6XX watchdog to lpc_sch devices
-Date: Mon,  4 Jul 2011 15:29:07 +0200
-Message-Id: <1309786148-5138-1-git-send-email-alexander.stein@systec-electronic.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <20110701110002.GA9326@infomag.iguana.be>
-References: <20110701110002.GA9326@infomag.iguana.be>
+	Mon, 4 Jul 2011 09:29:19 -0400
+Date: Mon, 4 Jul 2011 15:29:14 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "K.Prasad" <prasad@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@lists.ozlabs.org,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 2/6] hw_breakpoints: Migrate breakpoint conditional build
+ under new config
+Message-ID: <20110704132912.GB5551@somewhere>
+References: <1306273947-8410-1-git-send-email-fweisbec@gmail.com>
+ <1306273947-8410-3-git-send-email-fweisbec@gmail.com>
+ <20110704132746.GA2963@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110704132746.GA2963@in.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexander Stein <alexander.stein@systec-electronic.com>
----
-Changes in v2:
-* Changed subject to use E6XX instead of tunnelcreek
-* Changed watchdog driver to ie6xx_wdt
+On Mon, Jul 04, 2011 at 06:57:46PM +0530, K.Prasad wrote:
+> On Tue, May 24, 2011 at 11:52:23PM +0200, Frederic Weisbecker wrote:
+> > Migrate conditional hw_breakpoint code compilation under
+> > the new config to prepare for letting the user chose whether
+> > or not to build this feature
+> > 
+> > Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+> > Acked-by: Will Deacon <will.deacon@arm.com>
+> > Cc: Ingo Molnar <mingo@elte.hu>
+> > Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Cc: Prasad <prasad@linux.vnet.ibm.com>
+> > Cc: Paul Mundt <lethal@linux-sh.org>
+> > ---
+> >  arch/arm/include/asm/hw_breakpoint.h     |    4 ++--
+> >  arch/arm/include/asm/processor.h         |    2 +-
+> >  arch/arm/kernel/Makefile                 |    2 +-
+> >  arch/arm/kernel/entry-header.S           |    2 +-
+> >  arch/arm/kernel/ptrace.c                 |    4 ++--
+> >  arch/powerpc/include/asm/cputable.h      |    4 ++--
+> >  arch/powerpc/include/asm/hw_breakpoint.h |    6 +++---
+> >  arch/powerpc/include/asm/processor.h     |    4 ++--
+> >  arch/powerpc/kernel/Makefile             |    2 +-
+> >  arch/powerpc/kernel/process.c            |   18 +++++++++---------
+> >  arch/powerpc/kernel/ptrace.c             |   13 +++++++------
+> >  arch/powerpc/lib/Makefile                |    2 +-
+> >  arch/sh/kernel/Makefile                  |    2 +-
+> >  arch/sh/kernel/cpu/sh4a/Makefile         |    2 +-
+> >  include/linux/hw_breakpoint.h            |    6 +++---
+> >  include/linux/perf_event.h               |    4 ++--
+> >  include/linux/ptrace.h                   |    6 +++---
+> >  include/linux/sched.h                    |    2 +-
+> >  kernel/events/Makefile                   |    2 +-
+> >  kernel/events/core.c                     |    4 ++--
+> >  kernel/ptrace.c                          |    4 ++--
+> >  samples/Kconfig                          |    2 +-
+> >  22 files changed, 49 insertions(+), 48 deletions(-)
+> > 
+> 
+> Making the hardware breakpoint patches modular has always been a goal.
+> I've looked at the PowerPC parts of the code and they look harmless.
+> 
+> Acked-by: K.Prasad <prasad@linux.vnet.ibm.com>
 
- drivers/mfd/lpc_sch.c |   49 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 48 insertions(+), 1 deletions(-)
+Great!
 
-diff --git a/drivers/mfd/lpc_sch.c b/drivers/mfd/lpc_sch.c
-index ea3f52c..6c9a256 100644
---- a/drivers/mfd/lpc_sch.c
-+++ b/drivers/mfd/lpc_sch.c
-@@ -37,6 +37,9 @@
- #define GPIOBASE	0x44
- #define GPIO_IO_SIZE	64
- 
-+#define WDTBASE		0x84
-+#define WDT_IO_SIZE	64
-+
- static struct resource smbus_sch_resource = {
- 		.flags = IORESOURCE_IO,
- };
-@@ -59,6 +62,18 @@ static struct mfd_cell lpc_sch_cells[] = {
- 	},
- };
- 
-+static struct resource wdt_sch_resource = {
-+		.flags = IORESOURCE_IO,
-+};
-+
-+static struct mfd_cell tunnelcreek_cells[] = {
-+	{
-+		.name = "ie6xx_wdt",
-+		.num_resources = 1,
-+		.resources = &wdt_sch_resource,
-+	},
-+};
-+
- static struct pci_device_id lpc_sch_ids[] = {
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_SCH_LPC) },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_ITC_LPC) },
-@@ -72,6 +87,7 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
- 	unsigned int base_addr_cfg;
- 	unsigned short base_addr;
- 	int i;
-+	int ret;
- 
- 	pci_read_config_dword(dev, SMBASE, &base_addr_cfg);
- 	if (!(base_addr_cfg & (1 << 31))) {
-@@ -104,8 +120,39 @@ static int __devinit lpc_sch_probe(struct pci_dev *dev,
- 	for (i=0; i < ARRAY_SIZE(lpc_sch_cells); i++)
- 		lpc_sch_cells[i].id = id->device;
- 
--	return mfd_add_devices(&dev->dev, 0,
-+	ret = mfd_add_devices(&dev->dev, 0,
- 			lpc_sch_cells, ARRAY_SIZE(lpc_sch_cells), NULL, 0);
-+	if (ret)
-+		goto out_dev;
-+
-+	if (id->device == PCI_DEVICE_ID_INTEL_ITC_LPC) {
-+		pci_read_config_dword(dev, WDTBASE, &base_addr_cfg);
-+		if (!(base_addr_cfg & (1 << 31))) {
-+			dev_err(&dev->dev, "Decode of the WDT I/O range disabled\n");
-+			ret = -ENODEV;
-+			goto out_dev;
-+		}
-+		base_addr = (unsigned short)base_addr_cfg;
-+		if (base_addr == 0) {
-+			dev_err(&dev->dev, "I/O space for WDT uninitialized\n");
-+			ret = -ENODEV;
-+			goto out_dev;
-+		}
-+
-+		wdt_sch_resource.start = base_addr;
-+		wdt_sch_resource.end = base_addr + WDT_IO_SIZE - 1;
-+
-+		for (i = 0; i < ARRAY_SIZE(tunnelcreek_cells); i++)
-+			tunnelcreek_cells[i].id = id->device;
-+
-+		ret = mfd_add_devices(&dev->dev, 0, tunnelcreek_cells,
-+			ARRAY_SIZE(tunnelcreek_cells), NULL, 0);
-+	}
-+
-+	return ret;
-+out_dev:
-+	mfd_remove_devices(&dev->dev);
-+	return ret;
- }
- 
- static void __devexit lpc_sch_remove(struct pci_dev *dev)
--- 
-1.7.3.4
-
+I'll push that soon, thanks guys for your acks!
