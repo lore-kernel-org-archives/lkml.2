@@ -1,87 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752259Ab1GDVke (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 17:40:34 -0400
-Received: from smtprelay-b22.telenor.se ([195.54.99.213]:36927 "EHLO
-	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751846Ab1GDVkd (ORCPT
+	id S1752429Ab1GDVws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 17:52:48 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48959 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752243Ab1GDVwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 17:40:33 -0400
-X-SENDER-IP: [85.230.173.76]
-X-LISTENER: [smtp.bredband.net]
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AshyAKwyEk5V5q1MPGdsb2JhbABTiQqPf45yCwEBAQE3Moh6AsFTDoYoBJc8izI
-X-IronPort-AV: E=Sophos;i="4.65,475,1304287200"; 
-   d="scan'208";a="26766508"
-From: "Henrik Rydberg" <rydberg@euromail.se>
-Date: Mon, 4 Jul 2011 23:42:20 +0200
-To: djkurtz@chromium.org
-Cc: dmitry.torokhov@gmail.com, chase.douglas@canonical.com,
-        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
-        daniel.stone@collabora.co.uk, olofj@chromium.org
-Subject: Re: [PATCH 09/12] Input: synaptics - add image sensor support
-Message-ID: <20110704214220.GE23915@polaris.bitmath.org>
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
- <1309324042-22943-10-git-send-email-djkurtz@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309324042-22943-10-git-send-email-djkurtz@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Jul 2011 17:52:46 -0400
+Date: Mon, 4 Jul 2011 22:55:20 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 7/7] serial/8250: make PIO support optional
+Message-ID: <20110704225520.2d0004f3@lxorguk.ukuu.org.uk>
+In-Reply-To: <201107042237.05295.arnd@arndb.de>
+References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
+	<201107042127.31649.arnd@arndb.de>
+	<20110704205336.09547e1f@lxorguk.ukuu.org.uk>
+	<201107042237.05295.arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+> How are people using those ISA cards today? The version of setserial
+> that I found is not able to set MMIO mode on those. I suppose you
 
-> Synaptics makes (at least) two kinds of touchpad sensors:
->  * Older pads use a profile sensor that could only infer the location
->    of individual fingers based on the projection of their profiles
->    onto row and column sensors.
->  * Newer pads use an image sensor that can track true finger position
->    using a two-dimensional sensor grid.
-> 
-> Both sensor types support an "Advanced Gesture Mode":
->  When multiple fingers are detected, the touchpad sends alternating
->  "Advanced Gesture Mode" (AGM) and "Simple Gesture Mode" (SGM)
->  packets.
->  The AGM packets have w=2, and contain reduced resolution finger data
->  The SGM packets have w={0,1} and contain full resolution finger data
-> 
-> Profile sensors try to report the "upper" (larger y value) finger in
->  the SGM packet, and the lower (smaller y value) in the AGM packet.
->  However, due to the nature of the profile sensor, they easily get
->  confused when fingers cross, and can start reporting the x-coordinate
->  of one with the y-coordinate of the other.  Thus, for profile
->  sensors, "semi-mt" was created, which reports a "bounding box"
->  created by pairing min and max coordinates of the two pairs of
->  reported fingers.
-> 
-> Image sensors can report the actual coordinates of two of the fingers
->  present.  This patch detects if the touchpad is an image sensor and
->  reports finger data using the MT-B protocol.
-> 
-> NOTE: This patch only adds partial support for 2-finger gestures.
->       The proper interpretation of the slot contents when more than
->       two fingers are present is left to later patches.  Also,
->       handling of 'number of fingers' transitions is incomplete.
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+Various ugly hacks, if its tricky we can drop support and see who screams
 
-I guess the real question here is: do the following patches really
-help? Creating additional logic to band-aid yet another special case,
-which still does not give full MT support, seems to create more
-problems than it solves. If the code was needed to ensure proper five
-finger support to userspace, then maybe one could live with
-it. However, as it stands, keeping the semi-mt behavior also for the
-slightly better devices may not be such a bad idea, after all.
+> are not talking about isapnp cards, right? Those should not need to
+> be handled through the ISA driver at all.
 
-_Iff_ the whole series can be formulated as true protocol B support
-(no special flags, please), and _iff_ it helps to use software finger
-tracking for less than four fingers, then please do tell, and we can
-add that part to the input core to simplify the synaptics
-implementation a bit.
+ISAPnP will do it automatically so the ISAPnP case isn't a problem. I've
+never sen an ISAPnP port that was anything but standard.
 
-Thanks.
-Henrik
