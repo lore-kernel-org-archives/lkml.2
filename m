@@ -1,115 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab1GDIyo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 04:54:44 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:39367 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089Ab1GDIym convert rfc822-to-8bit (ORCPT
+	id S1756739Ab1GDIzI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 04:55:08 -0400
+Received: from mho-04-ewr.mailhop.org ([204.13.248.74]:31227 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756632Ab1GDIzH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 04:54:42 -0400
-From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: 3.0rc3-rc5: usb stops working after resume from suspend to ram
-Date: Mon, 4 Jul 2011 10:54:36 +0200
-User-Agent: KMail/1.13.7 (Linux/3.0.0-rc5-00170-gba466c7-dirty; KDE/4.6.5; x86_64; ; )
-Cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-References: <Pine.LNX.4.44L0.1106301158310.1957-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1106301158310.1957-100000@iolanthe.rowland.org>
+	Mon, 4 Jul 2011 04:55:07 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 98.234.237.12
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1/RUiH4/btFgWhtATu98QnW
+Date: Mon, 4 Jul 2011 01:55:04 -0700
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Rajendra Nayak <rnayak@ti.com>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>,
+        Michael Buesch <mb@bu3sch.de>
+Subject: Re: [PATCH] OMAP: hwmod: add kernel cmdline flag to avoid
+ resetting IP blocks during init
+Message-ID: <20110704085503.GQ23145@atomide.com>
+References: <20110703010204.19046.85186.stgit@dusk>
+ <20110703010206.19046.85293.stgit@dusk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107041054.36890.a.miskiewicz@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110703010206.19046.85293.stgit@dusk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 30 of June 2011, Alan Stern wrote:
+* Paul Walmsley <paul@pwsan.com> [110702 17:58]:
+> On some boards, it's not possible to reset certain IP blocks during
+> kernel initialization.  Some boards connect GPIO lines to external
+> voltage controllers, so resetting them may cause voltage to drop on a
+> critical supply[1].  Other boards connect GPIO lines to reset pins on
+> external devices without open documentation, so if the GPIO blocks are
+> reset, the external devices cannot currently be reconfigured[2].
+> 
+> The correct way to fix these issues on OMAP is to add a
+> hwmod_no_setup_reset(hwmod) call to the board file, that references
+> the IP block that must preserve its state.  This allows the OMAP core
+> code to reset the remaining IP blocks.
+> 
+> However, during initial bring-up of a new board, it may be desirable
+> to not reset any IP block, for ease of debugging.  This patch adds a
+> kernel command line parameter, 'hwmod_no_setup_reset', that prevents
+> the OMAP hwmod code from resetting any IP block during init.
+> 
+> 1. Nayak, Rajendra.  _[PATCH 7/7] 4460sdp/blaze/panda: hwmod: Prevent
+>    gpio1 reset during hwmod init_.  1 July 2011.  E-mail to the
+>    linux-omap@vger.kernel.org mailing list.  Retrieved from
+>    http://www.mail-archive.com/linux-omap@vger.kernel.org/msg51992.html
+> 
+> 2. Buesch, Michael.  _Nokia n810 LCD (MIPID/blizzard) on 2.6.38_.  28
+>    Feb 2011.  E-mail to the linux-omap@vger.kernel.org mailing list.
+>    Retrieved from http://www.spinics.net/lists/linux-omap/msg47277.html
 
-> And now you know why, more or less -- we still have to figure out the
-> reason for the hang.  Probably something goes wrong when cdc-ether is
-> unbound from the wireless device.
+Also related is the gptimer12 on secure omaps as reported by Aaro.
+ 
+> +	hwmod_no_setup_reset
+> +			[OMAP] During kernel initialization,
+> +			prevent the subarchitecture code from resetting
+> +			IP blocks before the driver loads.  Useful for
+> +			initial bring-up of boards which require some
+> +			bootloader configuration to be retained on GPIO or
+> +			other IP blocks.
+> +
 
-Reverting patch below fixes hang.
+How about just make it hwmod_reset=1 with 0 being the default value
+for now?
 
-commit fccf4e86200b8f5edd9a65da26f150e32ba79808
-Author: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Date:   Sun Jun 5 23:22:22 2011 -0700
+Regards,
 
-    USB: Free bandwidth when usb_disable_device is called.
-    
-    Tanya ran into an issue when trying to switch a UAS device from the BOT
-    configuration to the UAS configuration via the bConfigurationValue sysfs
-    file.  Before installing the UAS configuration, set_bConfigurationValue()
-    calls usb_disable_device().  That function is supposed to remove all host
-    controller resources associated with that device, but it leaves some state
-    in the xHCI host controller.
-    
-    Commit 0791971ba8fbc44e4f476079f856335ed45e6324
-        usb: allow drivers to use allocated bandwidth until unbound
-    added a call to usb_disable_device() in usb_set_configuration(), before
-    the xHCI bandwidth functions were invoked.  That commit fixed a bug, but
-    also introduced a bug that is triggered when a configured device is
-    switched to a new configuration.
-    
-    usb_disable_device() goes through all the motions of unbinding the drivers
-    attached to active interfaces and removing the USB core structures
-    associated with those interfaces, but it doesn't actually remove the
-    endpoints from the internal xHCI host controller bandwidth structures.
-    
-    When usb_disable_device() calls usb_disable_endpoint() with reset_hardware
-    set to true, the entries in udev->ep_out and udev->ep_in will be set to
-    NULL.  Usually, when the USB core installs a new configuration,
-    usb_hcd_alloc_bandwidth() will drop all non-NULL endpoints in udev->ep_out
-    and udev->ep_in before adding any new endpoints.  However, when the new
-    UAS configuration was added, all those entries were null, so none of the
-    old endpoints in the BOT configuration were dropped.
-    
-    The xHCI driver blindly added the UAS configuration endpoints, and some of
-    the endpoint addresses overlapped with the old BOT configuration
-    endpoints.  This caused the xHCI host to reject the Configure Endpoint
-    command.  Now that the xHCI driver code is cleaned up to reject a
-    double-add of active endpoints, we need to fix the USB core to properly
-    drop old endpoints in usb_disable_device().
-    
-    If the host controller driver needs bandwidth checking support, make
-    usb_disable_device() call usb_disable_endpoint() with
-    reset_hardware set to false, drop the endpoints from the xHCI host
-    controller, and then call usb_disable_endpoint() again with
-    reset_hardware set to true.
-    
-    The first call to usb_disable_endpoint() will cancel any pending URBs and
-    wait on them to be freed in usb_hcd_disable_endpoint(), but will keep the
-    pointers in udev->ep_out and udev->ep in intact.  Then
-    usb_hcd_alloc_bandwidth() will use those pointers to know which endpoints
-    to drop.
-    
-    The final call to usb_disable_endpoint() will do two things:
-    
-    1. It will call usb_hcd_disable_endpoint() again, which should be harmless
-    since the ep->urb_list should be empty after the first call to
-    usb_disable_endpoint() returns.
-    
-    2. It will set the entries in udev->ep_out and udev->ep in to NULL, and call
-    usb_hcd_disable_endpoint().  That call will have no effect, since the xHCI
-    driver doesn't set the endpoint_disable function pointer.
-    
-    Note that usb_disable_device() will now need to be called with
-    hcd->bandwidth_mutex held.
-    
-    This should be backported to kernels as old as 2.6.32.
-    
-    Signed-off-by: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-    Reported-by: Tanya Brokhman <tlinder@codeaurora.org>
-    Cc: ablay@codeaurora.org
-    Cc: Alan Stern <stern@rowland.harvard.edu>
-    Cc: stable@kernel.org
-
-
-> Alan Stern
-
--- 
-Arkadiusz Miśkiewicz        PLD/Linux Team
-arekm / maven.pl            http://ftp.pld-linux.org/
+Tony
