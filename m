@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab1GDHpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 03:45:15 -0400
-Received: from 50.23.254.54-static.reverse.softlayer.com ([50.23.254.54]:55349
-	"EHLO softlayer.compulab.co.il" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753736Ab1GDHpM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 03:45:12 -0400
-Message-ID: <4E116F7F.5010508@compulab.co.il>
-Date: Mon, 04 Jul 2011 10:45:03 +0300
-From: Igor Grinberg <grinberg@compulab.co.il>
-Organization: CompuLab Ltd.
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en; rv:1.9.2.13) Gecko/20101211 Lightning/1.0b2 Thunderbird/3.1.7
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: Christian Gmeiner <christian.gmeiner@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: pca953x: support working w/o platform data
-References: <BANLkTimSkDEzPvRMmX1O0YjjpoPzQt6_+w@mail.gmail.com> <4E0E0138.8060400@compulab.co.il> <20110704064347.GL15152@ponder.secretlab.ca>
-In-Reply-To: <20110704064347.GL15152@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755260Ab1GDHqd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 03:46:33 -0400
+Received: from mail.perches.com ([173.55.12.10]:3523 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753751Ab1GDHqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 03:46:31 -0400
+Subject: Re: [PATCH 1/2] netpoll: Remove unused EXPORT_SYMBOLs of
+ netpoll_poll and netpoll_poll_dev
+From: Joe Perches <joe@perches.com>
+To: Harry Wei <jiaweiwei.xiyou@gmail.com>
+Cc: amwang@redhat.com, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        netdev@vger.kernel.org
+In-Reply-To: <20110704065320.GA2588@gmail.com>
+References: <cover.1309482314.git.joe@perches.com>
+	 <282ce7d68b97c4dbfb759c1c0752e6cbddfeeafc.1309482314.git.joe@perches.com>
+	 <20110704065320.GA2588@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Jul 2011 00:46:29 -0700
+Message-ID: <1309765589.18925.42.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - softlayer.compulab.co.il
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/11 09:43, Grant Likely wrote:
+On Mon, 2011-07-04 at 14:53 +0800, Harry Wei wrote:
+> On Thu, Jun 30, 2011 at 06:08:57PM -0700, Joe Perches wrote:
+> > Unused symbols waste space.
+> > Commit 0e34e93177fb
+> > "(netpoll: add generic support for bridge and bonding devices)"
+> > added the symbol more than a year ago with the promise of "future use".
+> > Because it is so far unused, remove it for now.
+> > It can be easily readded if or when it actually needs to be used.
+> > cc: WANG Cong <amwang@redhat.com>
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >  include/linux/netpoll.h |    2 --
+> >  net/core/netpoll.c      |    6 ++----
+> >  2 files changed, 2 insertions(+), 6 deletions(-)
+> > diff --git a/include/linux/netpoll.h b/include/linux/netpoll.h
+[]
+> > @@ -40,8 +40,6 @@ struct netpoll_info {
+> >  	struct netpoll *netpoll;
+> >  };
+> >  
+> > -void netpoll_poll_dev(struct net_device *dev);
+> > -void netpoll_poll(struct netpoll *np);
+> >  void netpoll_send_udp(struct netpoll *np, const char *msg, int len);
+> >  void netpoll_print_options(struct netpoll *np);
+> >  int netpoll_parse_options(struct netpoll *np, char *opt);
+> > diff --git a/net/core/netpoll.c b/net/core/netpoll.c
+> > index 18d9cbd..4ce595e 100644
+> > --- a/net/core/netpoll.c
+> > +++ b/net/core/netpoll.c
+> > @@ -177,7 +177,7 @@ static void service_arp_queue(struct netpoll_info *npi)
+> >  	}
+> >  }
+> >  
+> > -void netpoll_poll_dev(struct net_device *dev)
+> > +static void netpoll_poll_dev(struct net_device *dev)
+> You have removed the function declaration in include/linux/netpoll.h.
 
-> On Fri, Jul 01, 2011 at 08:17:44PM +0300, Igor Grinberg wrote:
->> On 07/01/11 14:33, Christian Gmeiner wrote:
->>
->>> Provide defaults for pca953x, so the driver can be used w/o
->>> providing platform data.
->> Wouldn't it be better to provide a default pdata structure inside the driver
->> and use it in case no pdata supplied, so you will not have to patch the
->> driver all around checking each time if pdata is valid?
->
-> I would agree.  However, you will need to adjust the structure of the
-> driver somewhat to do so.  Once a device is registered, the data
-> pointed to by platform_device->dev.platform_data must be treated as
-> immutable by the driver, otherwise driver unbind/rebind can become
-> horribly broken.
+Because it's unused by anything in the tree
+but netpoll.c
 
-The driver already copies several field from pdata to the chip structure.
-Also, chip->dyn_pdata can be used for this purpose, but instead of
-allocating it dynamically, it just can be  a part of the chip structure.
+> And you changed the function like 
+> static void netpoll_poll_dev(...)
+> {
+> 	...
+> }
+> But i don't know its usage.
 
-> I often solve this by keeping a full copy of the pdata structure in
-> the driver's private data structure, and always referencing the 'safe'
-> local copy instead of dereferencing dev->platform_data every time.
+It's now a local function to netpoll.c
 
-If this is done and the chip structure will contain all the information
-needed (either flat, or in some kind of dyn_pdata), then indeed there
-will be no need to access the pdata anymore.
-Also, there will be no need to allocate pdata in pca953x_get_alt_pdata()
-function.
-I think this would be the most clean and safe way.
+> The 'static' before this function just says the active area of 'netpoll_poll_dev'
+> is in the file net/core/netpoll.c. What is the purpose? Could you please tell me?
 
--- 
-Regards,
-Igor.
+It prods the device to perform network work.
+
+	/* Process pending work on NIC */
+	ops->ndo_poll_controller(dev);
+
+	poll_napi(dev);
+
+
 
