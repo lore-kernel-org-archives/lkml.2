@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab1GDWnG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 18:43:06 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:53765 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752569Ab1GDWnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 18:43:03 -0400
-From: Kees Cook <kees.cook@canonical.com>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 2/2] x86: restore MISC_ENABLE MSR in realmode wakeup
-Date: Mon,  4 Jul 2011 15:35:53 -0700
-Message-Id: <1309818953-769-3-git-send-email-kees.cook@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1309818953-769-1-git-send-email-kees.cook@canonical.com>
-References: <1309818953-769-1-git-send-email-kees.cook@canonical.com>
-X-HELO: www.outflux.net
+	id S1752594Ab1GDW5W (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 18:57:22 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:36275 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752501Ab1GDW5U (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 18:57:20 -0400
+Date: Mon, 04 Jul 2011 18:55:23 -0400 (EDT)
+From: Peter Foley <pefoley2@verizon.net>
+To: Michal Marek <mmarek@suse.cz>
+Cc: Peter Foley <pefoley2@verizon.net>, Arnaud Lacombe <lacombar@gmail.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Kbuild Mailing List <linux-kbuild@vger.kernel.org>
+Subject: Re: [PATCH V3] kbuild: silence generated makefile message
+In-reply-to: <20110701134733.GB25895@sepie.suse.cz>
+Message-id: <alpine.LNX.2.00.1107041852390.20463@linux>
+References: <alpine.LNX.2.00.1106271619350.24034@linux>
+ <BANLkTimrUYk-8GSsf35mUmLVBAaO84R6dA@mail.gmail.com>
+ <alpine.LNX.2.00.1106271915160.38876@linux>
+ <alpine.LNX.2.00.1106271932480.13060@linux>
+ <20110701134733.GB25895@sepie.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some BIOSes will reset the Intel MISC_ENABLE MSR (specifically the
-XD_DISABLE bit) when resuming from S3, which can interact poorly with
-ebba638ae723d8a8fc2f7abce5ec18b688b791d7. In 32bit PAE mode, this can
-lead to a fault when EFER is restored by the kernel wakeup routines,
-due to it setting the NX bit for a CPU that (thanks to the BIOS reset)
-now incorrectly thinks it lacks the NX feature. (64bit is not affected
-because it uses a common CPU bring-up that specifically handles the
-XD_DISABLE bit.)
+This patch silences the "make -C /usr/src/git O=/usr/src/git/build/." 
+message shown when using the generated makefile in KBUILD_OUTDIR.
 
-The need for MISC_ENABLE being restored so early is specific to the S3
-resume path. Normally, MISC_ENABLE is saved in save_processor_state(),
-but this happens after the resume header is created, so just reproduce
-the logic here. (acpi_suspend_lowlevel() creates the header, calls
-do_suspend_lowlevel, which calls save_processor_state(), so the saved
-processor context isn't available during resume header creation.)
-
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
+Signed-off-by: Peter Foley <pefoley2@verizon.net>
 ---
- arch/x86/kernel/acpi/realmode/wakeup.S |   14 ++++++++++++++
- arch/x86/kernel/acpi/realmode/wakeup.h |    6 ++++++
- arch/x86/kernel/acpi/sleep.c           |    6 ++++++
- 3 files changed, 26 insertions(+), 0 deletions(-)
+V2: Show message when V=1
+V3: Check if V=1 comes from the commandline
 
-diff --git a/arch/x86/kernel/acpi/realmode/wakeup.S b/arch/x86/kernel/acpi/realmode/wakeup.S
-index ead21b6..b4fd836 100644
---- a/arch/x86/kernel/acpi/realmode/wakeup.S
-+++ b/arch/x86/kernel/acpi/realmode/wakeup.S
-@@ -28,6 +28,8 @@ pmode_cr3:	.long	0	/* Saved %cr3 */
- pmode_cr4:	.long	0	/* Saved %cr4 */
- pmode_efer:	.quad	0	/* Saved EFER */
- pmode_gdt:	.quad	0
-+pmode_misc_en:	.quad	0	/* Saved MISC_ENABLE MSR */
-+pmode_behavior:	.long	0	/* Wakeup behavior flags */
- realmode_flags:	.long	0
- real_magic:	.long	0
- trampoline_segment:	.word 0
-@@ -91,6 +93,18 @@ wakeup_code:
- 	/* Call the C code */
- 	calll	main
+ scripts/mkmakefile |    9 ++++++++-
+ 1 files changed, 8 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/mkmakefile b/scripts/mkmakefile
+index 5325423..0cc0442 100644
+--- a/scripts/mkmakefile
++++ b/scripts/mkmakefile
+@@ -30,6 +30,13 @@ PATCHLEVEL = $4
+ lastword = \$(word \$(words \$(1)),\$(1))
+ makedir := \$(dir \$(call lastword,\$(MAKEFILE_LIST)))
  
-+	/* Restore MISC_ENABLE before entering protected mode, in case
-+	   BIOS decided to clear XD_DISABLE during S3. */
-+	movl	pmode_behavior, %eax
-+	btl	$WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE, %eax
-+	jnc	1f
++ifeq ("\$(origin V)", "command line")
++VERBOSE := \$(V)
++endif
++ifneq (\$(VERBOSE),1)
++Q := @
++endif
 +
-+	movl	pmode_misc_en, %eax
-+	movl	pmode_misc_en + 4, %edx
-+	movl	$MSR_IA32_MISC_ENABLE, %ecx
-+	wrmsr
-+1:
-+
- 	/* Do any other stuff... */
+ MAKEARGS := -C $1
+ MAKEARGS += O=\$(if \$(patsubst /%,,\$(makedir)),\$(CURDIR)/)\$(patsubst %/,%,\$(makedir))
  
- #ifndef CONFIG_64BIT
-diff --git a/arch/x86/kernel/acpi/realmode/wakeup.h b/arch/x86/kernel/acpi/realmode/wakeup.h
-index 88f0e6c..5487db0 100644
---- a/arch/x86/kernel/acpi/realmode/wakeup.h
-+++ b/arch/x86/kernel/acpi/realmode/wakeup.h
-@@ -21,6 +21,9 @@ struct wakeup_header {
- 	u32 pmode_efer_low;	/* Protected mode EFER */
- 	u32 pmode_efer_high;
- 	u64 pmode_gdt;
-+	u32 pmode_misc_en_low;	/* Protected mode MISC_ENABLE */
-+	u32 pmode_misc_en_high;
-+	u32 pmode_behavior;	/* Wakeup routine behavior flags */
- 	u32 realmode_flags;
- 	u32 real_magic;
- 	u16 trampoline_segment;	/* segment with trampoline code, 64-bit only */
-@@ -43,4 +46,7 @@ extern struct wakeup_header wakeup_header;
- #define WAKEUP_FLAG_MODE        2
- #define WAKEUP_FLAG_BEEP        4
+@@ -40,7 +47,7 @@ MAKEFLAGS += --no-print-directory
+ all	:= \$(filter-out all Makefile,\$(MAKECMDGOALS))
  
-+/* Wakeup behavior bits */
-+#define WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE     0
-+
- #endif /* ARCH_X86_KERNEL_ACPI_RM_WAKEUP_H */
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index cb968e5..12115a9 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -77,6 +77,12 @@ int acpi_suspend_lowlevel(void)
+ all:
+-	\$(MAKE) \$(MAKEARGS) \$(all)
++	\$(Q)\$(MAKE) \$(MAKEARGS) \$(all)
  
- 	header->pmode_cr0 = read_cr0();
- 	header->pmode_cr4 = read_cr4_safe();
-+	header->pmode_behavior = 0;
-+	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
-+			&header->pmode_misc_en_low,
-+			&header->pmode_misc_en_high))
-+		header->pmode_behavior |=
-+			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
- 	header->realmode_flags = acpi_realmode_flags;
- 	header->real_magic = 0x12345678;
+ Makefile:;
  
 -- 
-1.7.4.1
+1.7.6
+
 
