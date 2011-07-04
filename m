@@ -1,60 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757569Ab1GDQ7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:59:43 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36066 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755997Ab1GDQ7m (ORCPT
+	id S1758125Ab1GDRKH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 13:10:07 -0400
+Received: from mtagate6.uk.ibm.com ([194.196.100.166]:58480 "EHLO
+	mtagate6.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757228Ab1GDRJ7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:59:42 -0400
-Date: Mon, 4 Jul 2011 18:02:16 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 7/7] serial/8250: make PIO support optional
-Message-ID: <20110704180216.4dc9c79d@lxorguk.ukuu.org.uk>
-In-Reply-To: <201107041835.22660.arnd@arndb.de>
-References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
-	<201106281352.01459.arnd@arndb.de>
-	<20110628132255.71dcb72a@lxorguk.ukuu.org.uk>
-	<201107041835.22660.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 4 Jul 2011 13:09:59 -0400
+Message-Id: <20110704170922.976299676@linux.vnet.ibm.com>
+User-Agent: quilt/0.48-1
+Date: Mon, 04 Jul 2011 19:09:22 +0200
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+To: ebiederm@xmission.com, vgoyal@redhat.com, hbabu@us.ibm.com,
+        mahesh@linux.vnet.ibm.com
+Cc: oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
+        heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
+Subject: [patch 0/9] kdump: Patch series for s390 support
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Where I failed so far is the dynamic configuration of ports using
-> setserial. This intentionally allows changing the io_type setting
-> as well as the actual resources (ioport, mapbase, irq, ...).
-> Changing the io_type is not supported by /bin/setserial, but
-> other tools might be doing it.
-> My question is whether we should still care about those. If
-> we can remove the reconfiguration of existing ports or move
-> it to one of the more obscure parts of the driver, it's possible
-> to confine the dependencies on the ioport_ops to the front-end
-> drivers, while the core 8250 library driver would not need it
-> any more.
+This patch series adds kdump support for the s390 architecture (64 bit). There
+are a few common code changes necessary because the s390 implementation is
+different to other architectures in some points. Especially these common code
+patches (1-7) should be reviewed. Patch 8 "s390: kdump backend code" contains
+the s390 specific part. Patch 9 includes the necessary changes for the kexec
+tool.
 
-otherwise you need a table that drivers register their port types
-in and to take module references on the table entry to pin the relevant
-driver code ?
- 
-> Today, most ports don't set the UPF_FIXED flag, even though
-> the ports definitely have fixed resources, e.g. all of the
-> 8250-platform drivers in arch/ or the 8250_pnp and 8250_cs
-> front-ends. Do you think it would be reasonable to mark all
-> 8250 ports except the ISA ones as UPF_FIXED, and move the
-> reconfiguration logic into the 8250_isa driver along with
-> old_serial_port, serial8250_isa_devs,  and
-> serial8250_isa_init_ports?
+In the following I describe the main differences of the s390 implementation:
 
-I suspect one or two people will scream about some peculiar configuration
-that should be handled automatically anyway and those are best fixed
-properly if so rather than by allowing setserial incantations to work
-around stuff like unknown PCI idents
+The s390 kernel is not relocatable therefore the crashkernel memory is swapped
+with the area [0 - crashkernel memory] before the kdump kernel is started.
+Architectures other than s390 run the kdump kernel at a memory location that is
+disjunct to the standard location for the kernel image and to all memory that
+might be in use for I/O by the production system. The main reason for this
+seems to be that these architectures do not have a means to clear all ongoing
+I/O. If active memory of the production system is reused by the kdump kernel
+they run into memory corruption issues. On s390 with diagnose call 308 or boot
+(IPL) there is the possibility to stop all ongoing I/O. Therefore we can safely
+run the kdump kernel at the old location.
 
+On s390 we do not create page tables for the crashkernel memory and use a
+memcpy_real() function to load the kdump kernel and ramdisk in kexec_load()
+system call.
+
+On s390 we have external kdump triggers. For example stand-alone dump tools.
+The address range information of crashkernel memory is stored at a well defined
+storage location that can be used by the external dump triggers to find the
+kdump entry point. To export the address range for the crashkernel memory we
+introduce a new mechanism that we call meminfo. This allows to define checksum
+secured information in memory that is accessible via an s390 ABI defined
+storage address. The following information is currently stored via meminfo:
+* Crashkernel memory range
+* kexec segments for kdump
+* Pointer to vmcoreinfo note
+
+Checksums for the loaded kexec segments are stored. This can be used to verify
+that kdump is not corrupted. The check is done e.g. by the s390 stand-alone
+dump tools via meminfo. If kdump has NOT been overwritten, the checksums are
+valid and kdump is started, otherwise a full-blown s390 stand-alone dump is
+created as backup dump mechanism.
+
+On s390 the ELF header is created dynamically at kdump startup in the kdump
+(2nd) kernel. This is possible, because the memory detection and collection of
+the CPU register sets can be done on s390 in the 2nd kernel. Therefore on s390
+the ELF header is NOT prepared by the kexec tool. The address for vmcoreinfo
+can be found via meminfo and is used by the kdump kernel for ELF header
+initialization.
+
+On s390 no additional kernel parameter is needed for kdump. Everything kdump
+needs to know can be determined dynamically when the 2nd kernel starts.
+
+If you agree with the approach of this patch series, how should this go
+upstream?
+
+Thanks,
+
+Michael
