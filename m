@@ -1,72 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755562Ab1GDG2f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 02:28:35 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45304 "EHLO smtps.tip.net.au"
+	id S1753721Ab1GDGdP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 02:33:15 -0400
+Received: from mga01.intel.com ([192.55.52.88]:40774 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753466Ab1GDG2e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 02:28:34 -0400
-Date: Mon, 4 Jul 2011 16:28:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: linux-next: fixes while rebasing the akpm tree
-Message-Id: <20110704162816.fef0b1cb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	id S1750955Ab1GDGdO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 02:33:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,471,1304319600"; 
+   d="scan'208";a="23461869"
+Subject: Re: [PATCH 1/4] perf, x86: Add Intel Nehalem/Westmere uncore pmu
+From: Lin Ming <ming.m.lin@intel.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110630165849.GE23059@one.firstfloor.org>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
+	 <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
+	 <20110630165849.GE23059@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Jul 2011 14:39:01 +0800
+Message-ID: <1309761541.18875.40.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__4_Jul_2011_16_28_16_+1000_eequDVLOCTI3RHhb"
+X-Mailer: Evolution 2.30.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__4_Jul_2011_16_28_16_+1000_eequDVLOCTI3RHhb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2011-07-01 at 00:58 +0800, Andi Kleen wrote:
+> On Thu, Jun 30, 2011 at 08:09:53AM +0000, Lin Ming wrote:
+> > +static u64 uncore_perf_event_update(struct perf_event *event)
+> > +{
+> > +	struct hw_perf_event *hwc = &event->hw;
+> > +	int shift = 64 - intel_uncore_pmu.cntval_bits;
+> > +	u64 prev_raw_count, new_raw_count;
+> > +	s64 delta;
+> > +
+> > +	/*
+> > +	 * Careful: an NMI might modify the previous event value.
+> 
+> There are no NMIs without sampling, so at least the comment seems bogus.
+> Perhaps the code could be a bit simplified now without atomics.
 
-Hi Andrew,
+I'm not sure if uncore PMU interrupt need to be enabled for counting
+only. What do you think?
 
-While rebasing the akpm tree onto today's linux-next, I discovered the
-following:
+> 
+> > +static int uncore_pmu_event_init(struct perf_event *event)
+> > +{
+> > +	struct hw_perf_event *hwc = &event->hw;
+> > +
+> > +	if (!uncore_pmu_initialized)
+> > +		return -ENOENT;
+> > +
+> > +	if (event->attr.type != uncore_pmu.type)
+> > +		return -ENOENT;
+> > +
+> > +	/*
+> > +	 * Uncore PMU does measure at all privilege level all the time.
+> > +	 * So it doesn't make sense to specify any exclude bits.
+> > +	 */
+> > +	if (event->attr.exclude_user || event->attr.exclude_kernel
+> > +	    || event->attr.exclude_hv || event->attr.exclude_idle)
+> > +		return -ENOENT;
+> > +
+> > +	/* Sampling not supported yet */
+> > +	if (hwc->sample_period)
+> > +		return -EINVAL;
+> 
+> Don't we need a "is root" check here? uncore counts everything, so
+> it cannot be limited to a single process.
 
-The patch hfsplus-add-missing-call-to-bio_put.patch appears to be already
-applied (as commit 50176ddefa4a ("hfsplus: add missing call to bio_put()"
-from the hfsplus tree).
+Yes, will add a "is root" check.
 
-The patches
-x86-mtrr-lock-stop-machine-during-mtrr-rendezvous-sequence.patch,
-stop_machine-reorganize-stop_cpus-implementation.patch and
-stop_machine-implement-stop_machine_from_inactive_cpu.patch seem to be
-already applied (as commits 6d3321e8e2b3 ("x86, mtrr: lock stop machine
-during MTRR rendezvous sequence"), fd7355ba1e93 ("stop_machine:
-reorganize stop_cpus() implementation") and f740e6cd0cb5 ("stop_machine:
-implement stop_machine_from_inactive_cpu()") from the tip tree)
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Will add .task_ctx_nr = perf_invalid_context to disallow per-process
+counting.
 
---Signature=_Mon__4_Jul_2011_16_28_16_+1000_eequDVLOCTI3RHhb
-Content-Type: application/pgp-signature
+> 
+> > +static void uncore_pmu_cpu_starting(int cpu)
+> > +{
+> > +	struct cpu_uncore_events *cpuc = &per_cpu(cpu_uncore_events, cpu);
+> > +	struct intel_uncore *uncore;
+> > +	int i, uncore_id;
+> > +
+> > +	if (boot_cpu_data.x86_max_cores < 2)
+> > +		return;
+> 
+> Why that check? uncore counting should work on a single core system too.
+> 
+> I think you should remove all of those.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+Agree, will remove it.
 
-iQEcBAEBAgAGBQJOEV2AAAoJEDMEi1NhKgbsvOkIAJA1hlbu9se68fGDzgcn6Uyt
-nKe5Ktn1QQ5EYqIaOU18Ky+r0nY3b/i/2Qap9JLiQn6nI1p4PaPwF5UtA5rB8+dd
-YtPMHPldEqdCcpTD0qMv6s+8wnI8mKBecXSbttXIjran88IQBL7tHEj9kWz3ejr4
-tBBHJ4Z4op40L5M81VFKATva3/5thDZUy4xYMRqksCIiQTf71MiQO6ifqNYW8V5L
-a5eJB/f1W/wDndSHcnTFmRzCKTKW68swwkicy1Lb8sptEn3BhU4Rb3Gi2ySS8Lxp
-HzyuXze7F88zZOXUABjOo0BWl7zOm1yp/qEJpZj2bYlZnGIaubPpA7izajLA8t8=
-=gMjE
------END PGP SIGNATURE-----
+> 
+> > +
+> > +	uncore_id = topology_physical_package_id(cpu);
+> > +	WARN_ON_ONCE(uncore_id == BAD_APICID);
+> > +
+> > +	raw_spin_lock(&intel_uncore_lock);
+> 
+> Does this really need to be a raw spinlock? 
 
---Signature=_Mon__4_Jul_2011_16_28_16_+1000_eequDVLOCTI3RHhb--
+I think spinlock is enough.
+
+> 
+> > +#define NHM_MSR_UNCORE_PERF_GLOBAL_CTRL    	0x391
+> > +#define NHM_MSR_UNCORE_PMC0			0x3b0
+> > +#define NHM_MSR_UNCORE_PERFEVTSEL0		0x3c0
+> 
+> These should be in msr-index.h
+
+Will move these.
+
+Thanks,
+Lin Ming
+
+> 
+> 
+> -Andi
+
+
