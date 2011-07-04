@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752396Ab1GDVwr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 17:52:47 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:53925 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752244Ab1GDVwq (ORCPT
+	id S1752339Ab1GDVzN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 17:55:13 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62010 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab1GDVzL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 17:52:46 -0400
-Date: Mon, 4 Jul 2011 23:52:40 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
-Message-ID: <20110704215240.GG15637@one.firstfloor.org>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com> <1309766525-14089-2-git-send-email-ming.m.lin@intel.com> <1309778192.3282.27.camel@twins>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309778192.3282.27.camel@twins>
-User-Agent: Mutt/1.4.2.2i
+	Mon, 4 Jul 2011 17:55:11 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 7/7] serial/8250: make PIO support optional
+Date: Mon, 4 Jul 2011 23:54:30 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+References: <1309211120-2803-1-git-send-email-arnd@arndb.de> <201107042237.05295.arnd@arndb.de> <20110704225520.2d0004f3@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110704225520.2d0004f3@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107042354.31321.arnd@arndb.de>
+X-Provags-ID: V02:K0:lb2vRFbqDXoIHguQCHjJk5L7H+TCQJX4XYXJTtsgjU2
+ qgDkt+mlHYYxPKX5CvbXXjgzD6oCQRS7VKyFBhFusjFAvuiSBi
+ LMy4jDzULlTMjJyqhZt5/XCFi8L+Ga26wXgInBwl9/+Gcxdkqr
+ 4e3iXxuYTe4Jk9ZomwQXmhAUqdEcKgtksE6YdOeeQX8CnsiFlJ
+ 5peEvVzQlKYeWSeqijoBA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 01:16:32PM +0200, Peter Zijlstra wrote:
-> On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
-> > +#define MEM_STORE_DCU_HIT              (1ULL << 0)
+On Monday 04 July 2011 23:55:20 Alan Cox wrote:
+> > How are people using those ISA cards today? The version of setserial
+> > that I found is not able to set MMIO mode on those. I suppose you
 > 
-> I'm pretty sure that's not Dublin City University, but what is it?
-> Data-Cache-Unit? 
+> Various ugly hacks, if its tricky we can drop support and see who screams
 
-Yes
+I don't think it's much of a problem, I just didn't expect these to exit.
 
-> what does that mean, L1/L2 or also L3? 
-
-DCU is L1D
-
-(L2 would be MLC, L3 is LLC in Intelnese)
-
-> > +#define MEM_STORE_STLB_HIT             (1ULL << 1)
-> 
-> What's an sTLB? I know iTLB and dTLB's but sTLBs I've not heard of yet.
-
-Second Level TLB (for both i and d)
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+	Arnd
