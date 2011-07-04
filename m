@@ -1,50 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754986Ab1GDOhF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 10:37:05 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63756 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751914Ab1GDOhC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 10:37:02 -0400
-Date: Mon, 4 Jul 2011 16:36:57 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Will Deacon <will.deacon@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
-        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
-        Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: [PATCH 1/3] perf: add context field to perf_event
-Message-ID: <20110704143655.GE5551@somewhere>
-References: <1309362157-6596-1-git-send-email-avi@redhat.com>
- <1309362157-6596-2-git-send-email-avi@redhat.com>
- <20110629160841.GA2032@somewhere>
- <20110629162725.GH15521@e102144-lin.cambridge.arm.com>
- <20110704135820.GD5551@somewhere>
- <4E11C9CC.2070909@redhat.com>
+	id S1755499Ab1GDOl7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 10:41:59 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:7053 "EHLO sjogate2.atmel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751424Ab1GDOl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 10:41:57 -0400
+Message-ID: <4E11D123.9070409@atmel.com>
+Date: Mon, 04 Jul 2011 16:41:39 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E11C9CC.2070909@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, patrice.vilchez@atmel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH for 3.0] AT91: Change nand buswidth logic to match hardware
+ default configuration
+References: <1309515924-22531-1-git-send-email-nicolas.ferre@atmel.com> <4E1189BD.509@atmel.com> <201107041625.25972.arnd@arndb.de>
+In-Reply-To: <201107041625.25972.arnd@arndb.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 05:10:20PM +0300, Avi Kivity wrote:
-> On 07/04/2011 04:58 PM, Frederic Weisbecker wrote:
-> >Another thing I would like to do in the even longer term is to not use perf anymore
-> >for ptrace breakpoints, because that involves a heavy dependency and few people are
-> >happy with that. Instead we should just have a generic hook into the sched_switch()
-> >and handle pure ptrace breakpoints there. The central breakpoint API would still be
-> >there to reserve/schedule breakpoint resources between ptrace and perf.
-> >
+Le 04/07/2011 16:25, Arnd Bergmann :
+> On Monday 04 July 2011, Nicolas Ferre wrote:
+>> Le 01/07/2011 12:25, Nicolas Ferre :
+>>> The recently modified nand buswitth configuration is not aligned with
+>>> board reality: the double footprint on boards is always populated with 8bits
+>>> buswidth nand flashes.
+>>> So we have to consider that without particular configuration the 8bits
+>>> buswidth is selected by default.
+>>> Moreover, the previous logic was always using !board_have_nand_8bit(), we
+>>> change it to a simpler: board_have_nand_16bit().
+>>>
+>>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+>>> Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
+>>
+>> Arnd,
+>>
+>> Can you please handle this parch for 3.0-final as a bug fix through the
+>> arm-soc.git tree?
+>>
+>> You can queue it in addition of the pull request sent by
+>> Jean-Christophe: "AT91: Fix pull requset".
 > 
-> 'struct preempt_notifier' may be the hook you're looking for.
+> Ok, I've integrated it in the branch and will send the pull request.
+> 
+> My preference would be to see fixes this late in the cycle more
+> minmal. This patch does two things: 1. change the polarity of the
+> system_rev bit as a bug fix and 2. change the polarity of the
+> function reading it as a cleanup. Both changes look absolutely
+> ok, but it's better to do the cleanup for the next kernel.
+> 
+> In this case, studying the patch more closely shows that it's
+> very harmless, but I'd rather not have to look that closely.
 
-Yeah looks like a perfect fit as it's per task.
+Well, in fact it is a fix against what was introduced in a 3.0 patch
+which I found to be wrong.
+The reason because I do not want to be in next kernel is the fact that
+it can puzzle the user (people that want to use kernel without changing
+the system_rev between 2.6.39 -> 3.0 and again revert their changes for
+3.0 -> 3.1).
 
-Thanks.
+> Am I correct that the bug is a regression against 2.6.39?
+
+No, in fact it was introduced during 3.0 early -rc.
+
+Anyway, thanks a lot Arnd.
+Best regards,
+-- 
+Nicolas Ferre
+
