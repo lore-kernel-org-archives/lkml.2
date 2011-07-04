@@ -1,43 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753370Ab1GDC3X (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 22:29:23 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:58110 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751690Ab1GDC3T convert rfc822-to-8bit (ORCPT
+	id S1753426Ab1GDC5t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 22:57:49 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:62846 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753172Ab1GDC5r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 22:29:19 -0400
+	Sun, 3 Jul 2011 22:57:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <CADApbeg7pR5gvVx352rgZP2MiH5VG9zPq1L5tX3LUX4YEgQtLw@mail.gmail.com>
-References: <CADApbeg7pR5gvVx352rgZP2MiH5VG9zPq1L5tX3LUX4YEgQtLw@mail.gmail.com>
-Date: Mon, 4 Jul 2011 10:29:19 +0800
-Message-ID: <CADApbeicWd8g7XFoy9thuD-3Jfz3ROtsHJsVTxKMTs9MR-s2=A@mail.gmail.com>
-Subject: tick_setup_device in tick_common.c
-From: Chao Xie <xiechao.mail@gmail.com>
-To: tglx@linutronix.de, mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20110702073625.GA3318@albatros>
+References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
+	<BANLkTi=dTHGK1QVs+g2tA6WocQ64SPPF3g@mail.gmail.com>
+	<20110629201718.GA11071@albatros>
+	<20110702073625.GA3318@albatros>
+Date: Mon, 4 Jul 2011 08:27:47 +0530
+Message-ID: <CAKTCnzmjaddz-ihxJ_qme28S==BAPGRmC2j3iE5fqm8TPi0knA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] taskstats: restrict access to user
+From: Balbir Singh <bsingharora@gmail.com>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
+        Eric Paris <eparis@redhat.com>, kernel-hardening@lists.openwall.com
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi
-I am very strange about this function.
-In this function, it has
-/*
-        * When the device is not per cpu, pin the interrupt to the
-        * current cpu:
-        */
-       if (!cpumask_equal(newdev->cpumask, cpumask))
-               irq_set_affinity(newdev->irq, cpumask);
+On Sat, Jul 2, 2011 at 1:06 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> On Thu, Jun 30, 2011 at 00:17 +0400, Vasiliy Kulikov wrote:
+>> On Wed, Jun 29, 2011 at 06:57 +0530, Balbir Singh wrote:
+>> > On Fri, Jun 24, 2011 at 5:39 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+>> > > +               task = find_task_by_vpid(s->pid);
+>> > > +               if (!task || __task_cred(task)->euid != cred->euid) {
+>>
+>> If consider this patch for inclusion, it also needs some check for
+>> the listener root ability.  __task_cred(task)->euid == 0 or smth like
+>> that.  But ptrace_task_may_access_current() is better.
+>
+> So...  What to do with this patch?  Should I resend it with euid==0 and
+> rcu optimication, wait for the new ptrace interface or what?
+>
+>
+Hi, Vasiliy,
 
-When the clock event device has cpu_mask set to be cpumask_of(1), it
-means that the device is bound to cpu1. So above code has covered it,
-but why we have "!cpumask_equal(newdev->cpumask, cpumask)"?
-if the "newdev->cpumask" equals "cpumask", cpumask_equal will return
-1, and at this situation we will set the irq affinity because the
-device is bound to the dedicated cpu.
+Would it be possible to audit the entire taskstats structure to see
+what fields should and should not be exposed. If a particular field
+should not be exposed, we can fill it in with a special value
+indicating additional permission is required to see it and fill in
+those fields only when credentials match like you've shown
 
-Is there a bug, or i understand wrong about cpumask of clock_event_device?
-Thanks.
+Does that make sense?
+Balbir Singh
