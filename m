@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756370Ab1GDPNg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 11:13:36 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:60163 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751996Ab1GDPNf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 11:13:35 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: Re: [PATCH for 3.0] AT91: Change nand buswidth logic to match hardware default configuration
-Date: Mon, 4 Jul 2011 17:13:23 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, patrice.vilchez@atmel.com,
-        linux-kernel@vger.kernel.org
-References: <1309515924-22531-1-git-send-email-nicolas.ferre@atmel.com> <201107041625.25972.arnd@arndb.de> <4E11D123.9070409@atmel.com>
-In-Reply-To: <4E11D123.9070409@atmel.com>
+	id S1756800Ab1GDPOM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 11:14:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:48241 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754319Ab1GDPOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 11:14:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,472,1304319600"; 
+   d="scan'208";a="26121718"
+Date: Mon, 4 Jul 2011 17:14:36 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 1/3] mfd: Add Makefile and Kconfig Entries for tps65911
+ comparator
+Message-ID: <20110704151436.GG3021@sortiz-mobl>
+References: <1308795351.15248.2.camel@phoenix>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107041713.23982.arnd@arndb.de>
-X-Provags-ID: V02:K0:e8no0qWvTj/t52M/+odYxJbYUAj0BUzzGoaxhuzy4W3
- dm1gSrlJWiEYecGbKqdHgyL2Qq8kXNWCGGnD+ZcpmT7HITv8lQ
- 6SfvxPZtYN1M4o4rT6FNcaXxbGqxvBrfaJ4iiMTHqy2BEJpKj4
- pCPgcnXbVO8C3duejzkxPi9cm9HAA1bkMdBn+nKibPnf/gfvq5
- mEK1d65e/c6Tzyi+yb60Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1308795351.15248.2.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 04 July 2011, Nicolas Ferre wrote:
-> > In this case, studying the patch more closely shows that it's
-> > very harmless, but I'd rather not have to look that closely.
-> 
-> Well, in fact it is a fix against what was introduced in a 3.0 patch
-> which I found to be wrong.
-> The reason because I do not want to be in next kernel is the fact that
-> it can puzzle the user (people that want to use kernel without changing
-> the system_rev between 2.6.39 -> 3.0 and again revert their changes for
-> 3.0 -> 3.1).
-> 
-> > Am I correct that the bug is a regression against 2.6.39?
-> 
-> No, in fact it was introduced during 3.0 early -rc.
+Hi Axel,
 
-That's what I mean by 'regression against 2.6.39': it was working in 2.6.39,
-but later kernels are broken without this fix.
+On Thu, Jun 23, 2011 at 10:15:51AM +0800, Axel Lin wrote:
+> Base on Mark's comment [1], I make the Kconfig entry invisible to users.
+> [1] https://lkml.org/lkml/2011/5/14/136
+Thanks for the patches. All 3 applied, with #1 and #2 queued to my for-linus
+branch.
 
-	Arnd
+Cheers,
+Samuel.
+
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
