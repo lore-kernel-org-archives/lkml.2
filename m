@@ -1,67 +1,407 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756484Ab1GDIoo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 04:44:44 -0400
-Received: from merlin.infradead.org ([205.233.59.134]:36730 "EHLO
-	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755424Ab1GDIon convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 04:44:43 -0400
-Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Anton Blanchard <anton@samba.org>, paulus <paulus@samba.org>
-In-Reply-To: <1309768420.3282.8.camel@twins>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
-	 <1309768420.3282.8.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 04 Jul 2011 10:44:26 +0200
-Message-ID: <1309769066.3282.14.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1756231Ab1GDIr6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 04:47:58 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53202 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752184Ab1GDIr5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 04:47:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: myungjoo.ham@gmail.com
+Subject: Re: [PATCH v3 3/3] PM / DEVFREQ: add sysfs interface (including user tickling)
+Date: Mon, 4 Jul 2011 10:48:46 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Jiejing Zhang <kzjeef@gmail.com>, Colin Cross <ccross@google.com>,
+        Nishanth Menon <nm@ti.com>, Thomas Gleixner <tglx@linutronix.de>
+References: <1306471995-4048-1-git-send-email-myungjoo.ham@samsung.com> <201107030013.10438.rjw@sisk.pl> <CAJ0PZbQJadxCu=b4JWun29gdPpdsJPiP0WdqmSJK5px5nQRpgA@mail.gmail.com>
+In-Reply-To: <CAJ0PZbQJadxCu=b4JWun29gdPpdsJPiP0WdqmSJK5px5nQRpgA@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107041048.46969.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-04 at 10:33 +0200, Peter Zijlstra wrote:
-> On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
-> > +/*
-> > + * Memory load operation info encoding
-> > + */
-> > +
-> > +/* Bits(0-1) {L1, L2, L3, RAM} or {unknown, IO, uncached, reserved}
-> > */
-> > +#define MEM_LOAD_L1                    0x00
-> > +#define MEM_LOAD_L2                    0x01
-> > +#define MEM_LOAD_L3                    0x02
-> > +#define MEM_LOAD_RAM                   0x03
-> > +#define MEM_LOAD_UNKNOWN               0x00
-> > +#define MEM_LOAD_IO                    0x01
-> > +#define MEM_LOAD_UNCACHED              0x02
-> > +#define MEM_LOAD_RESERVED              0x03
-> > +
-> > +/* Bits(2-3) {toggle, snoop, local, remote} */
-> > +#define MEM_LOAD_TOGGLE                        (0x00 << 2)
-> > +#define MEM_LOAD_SNOOP                 (0x01 << 2)
-> > +#define MEM_LOAD_LOCAL                 (0x02 << 2)
-> > +#define MEM_LOAD_REMOTE                        (0x03 << 2)
-> > +
-> > +/* Bits(4-5) {modified, exclusive, shared, invalid} */
-> > +#define MEM_LOAD_MODIFIED              (0x00 << 4)
-> > +#define MEM_LOAD_EXCLUSIVE             (0x01 << 4)
-> > +#define MEM_LOAD_SHARED                        (0x02 << 4)
-> > +#define MEM_LOAD_INVALID               (0x03 << 4) 
+On Monday, July 04, 2011, MyungJoo Ham wrote:
+> Hello,
 > 
-> Did anybody check with the other PMUs that have similar features like
-> PowerPC and possibly IA64?
+> 2011/7/3 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Friday, May 27, 2011, MyungJoo Ham wrote:
+> >> 1. System-wide sysfs interface
+> >> - tickle_all  R: number of tickle_all execution
+> >>               W: tickle all devfreq devices
+> >> - min_interval        R: devfreq monitoring base interval in ms
+> >> - monitoring  R: shows whether devfreq monitoring is active or
+> >>   not.
+> >>
+> >> 2. Device specific sysfs interface
+> >> - tickle      R: number of tickle execution for the device
+> >>               W: tickle the device
+> >>
+> >> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> >>
+> >> --
+> >> Changed from v2
+> >> - add ABI entries for devfreq sysfs interface
+> >> ---
+> >>  Documentation/ABI/testing/sysfs-devices-devfreq |   21 ++++
+> >>  Documentation/ABI/testing/sysfs-power           |   43 ++++++++
+> >>  drivers/base/power/devfreq.c                    |  133 ++++++++++++++++++++++-
+> >>  include/linux/devfreq.h                         |    3 +
+> >>  4 files changed, 199 insertions(+), 1 deletions(-)
+> >>  create mode 100644 Documentation/ABI/testing/sysfs-devices-devfreq
+> >>
+> >> diff --git a/Documentation/ABI/testing/sysfs-devices-devfreq b/Documentation/ABI/testing/sysfs-devices-devfreq
+> >> new file mode 100644
+> >> index 0000000..7f35a64
+> >> --- /dev/null
+> >> +++ b/Documentation/ABI/testing/sysfs-devices-devfreq
+> >> @@ -0,0 +1,21 @@
+> >> +What:                /sys/devices/.../devfreq/
+> >> +Date:                May 2011
+> >> +Contact:     MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> +Description:
+> >> +             The /sys/device/.../devfreq directory will contain files
+> >> +             that provide interfaces to DEVFREQ for a specific device.
+> >> +
+> >> +What:                /sys/devices/.../devfreq/tickle
+> >> +Date:                May 2011
+> >> +Contact:     MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> +Description:
+> >> +             The /sys/devices/.../devfreq/tickle file allows user space
+> >> +             to force the corresponding device to operate at its maximum
+> >> +             operable frequency instaneously and temporarily. After a
+> >> +             designated duration has passed, the operating frequency returns
+> >> +             to normal. When a user reads the tickle entry, it returns
+> >> +             the number of tickle executions for the device. When a user
+> >> +             writes to the tickle entry with the tickle duration in ms,
+> >> +             the effect of device tickling is held for the designated
+> >> +             duration. Note that the duration is rounded-up by
+> >> +             the value DEVFREQ_INTERVAL defined in devfreq.c
+> >> diff --git a/Documentation/ABI/testing/sysfs-power b/Documentation/ABI/testing/sysfs-power
+> >> index b464d12..4d8434b 100644
+> >> --- a/Documentation/ABI/testing/sysfs-power
+> >> +++ b/Documentation/ABI/testing/sysfs-power
+> >> @@ -172,3 +172,46 @@ Description:
+> >>
+> >>               Reading from this file will display the current value, which is
+> >>               set to 1 MB by default.
+> >> +
+> >> +What:                /sys/power/devfreq/
+> >> +Date:                May 2011
+> >> +Contact:     MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> +Description:
+> >> +             The /sys/power/devfreq directory will contain files that will
+> >> +             provide a unified interface to the DEVFREQ, a generic DVFS
+> >> +             (dynamic voltage and frequency scaling) framework.
+> >> +
+> >> +What:                /sys/power/devfreq/tickle_all
+> >> +Date:                May 2011
+> >> +Contact:     MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> +Description:
+> >> +             The /sys/power/devfreq/tickle_all file allows user space to
+> >> +             force every device with DEVFREQ to operate at the maximum
+> >> +             frequency of the device instaneously and temporarily. After
+> >> +             a designated delay has passed, the operating frequency returns
+> >> +             to normal. If a user reads the tickle_all entry, it returns
+> >> +             the number of tickle_all executions. When writing to the
+> >> +             tickle_all entry, the user should supply with the duration of
+> >> +             tickle in ms (the "designated delay" mentioned before). Then,
+> >> +             the effect of tickle_all will hold for the denoted duration.
+> >> +             Note that the duration is rounded by the monitoring period
+> >> +             defined by DEVFREQ_INTERVAL in /drivers/base/power/devfreq.c.
+> >> +
+> >> +What:                /sys/power/devfreq/min_interval
+> >> +Date:                May 2011
+> >> +Contact:     MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> +Description:
+> >> +             The /sys/power/devfreq/min_interval file shows the monitoring
+> >> +             period defined by DEVFREQ_INTERVAL in
+> >> +             /drivers/base/power/devfreq.c. The duration of device tickling
+> >> +             is rounded-up by DEVFREQ_INTERVAL.
+> >> +
+> >> +What:                /sys/power/devfreq/monitoring
+> >> +Date:                May 2011
+> >> +Contact:     MyungJoo Ham <myungjoo.ham@samsung.com>
+> >> +Description:
+> >> +             The /sys/power/devfreq/monitoring file shows whether DEVFREQ
+> >> +             is periodically monitoring. Periodic monitoring is activated
+> >> +             if there is a device that wants periodic monitoring for DVFS or
+> >> +             there is a device that is tickled (and the tickling duration is
+> >> +             not yet expired).
+> >> diff --git a/drivers/base/power/devfreq.c b/drivers/base/power/devfreq.c
+> >> index 7648a94..709c138 100644
+> >> --- a/drivers/base/power/devfreq.c
+> >> +++ b/drivers/base/power/devfreq.c
+> >> @@ -40,6 +40,9 @@ static LIST_HEAD(devfreq_list);
+> >>  /* Exclusive access to devfreq_list and its elements */
+> >>  static DEFINE_MUTEX(devfreq_list_lock);
+> >>
+> >> +static struct kobject *devfreq_kobj;
+> >> +static struct attribute_group dev_attr_group;
+> >> +
+> >>  /**
+> >>   * find_device_devfreq() - find devfreq struct using device pointer
+> >>   * @dev:     device pointer used to lookup device DEVFREQ.
+> >> @@ -237,6 +240,8 @@ int devfreq_add_device(struct device *dev, struct devfreq_dev_profile *profile,
+> >>               queue_delayed_work(devfreq_wq, &devfreq_work,
+> >>                                  msecs_to_jiffies(DEVFREQ_INTERVAL));
+> >>       }
+> >> +
+> >> +     sysfs_update_group(&dev->kobj, &dev_attr_group);
+> >
+> > This appears to modify the attributes of the device, but anything like it is
+> > not mentioned in the documentation.  What's up?
 > 
-> I keep mentioning this, nobody seems interested.
+> It is mentioned "Documentation/ABI/testing/sysfs-devices-devfreq".
 
-Anton, Paulus, IIRC PowerPC had some sort of Data-Source indication,
-would you have some docs available on the PowerPC PMU?
+Yes, it is, sorry.  But it should be under /sys/devices/.../power/ .
+
+> >
+> >>  out:
+> >>       mutex_unlock(&devfreq_list_lock);
+> >>
+> >> @@ -263,6 +268,8 @@ int devfreq_remove_device(struct device *dev)
+> >>               return -EINVAL;
+> >>       }
+> >>
+> >> +     sysfs_remove_group(&dev->kobj, &dev_attr_group);
+> >> +
+> >>       list_del(&devfreq->node);
+> >>
+> >>       kfree(devfreq);
+> >> @@ -344,7 +351,7 @@ static int _devfreq_tickle_device(struct devfreq *df, unsigned long delay)
+> >>       if (devfreq_wq && !polling) {
+> >>               polling = true;
+> >>               queue_delayed_work(devfreq_wq, &devfreq_work,
+> >> -                             msecs_to_jiffies(DEVFREQ_INTERVAL));
+> >> +                                msecs_to_jiffies(DEVFREQ_INTERVAL));
+> >
+> > This change doesn't seem to belong to this patch.
+> 
+> Oops. I'll rearrange the patch series.
+> 
+> >
+> >>       }
+> >>
+> >>       return err;
+> >> @@ -382,6 +389,116 @@ int devfreq_tickle_device(struct device *dev, unsigned long duration_ms)
+> >>       return err;
+> >>  }
+> >>
+> >> +static int num_tickle_all;
+> >> +static ssize_t tickle_all(struct device *dev, struct device_attribute *attr,
+> >> +                       const char *buf, size_t count)
+> >> +{
+> >> +     int duration = 0;
+> >> +     struct devfreq *tmp;
+> >> +     unsigned long delay;
+> >> +
+> >> +     sscanf(buf, "%d", &duration);
+> >> +     if (duration < DEVFREQ_INTERVAL)
+> >> +             duration = DEVFREQ_INTERVAL;
+> >> +
+> >> +     if (unlikely(IS_ERR_OR_NULL(dev))) {
+> >> +             pr_err("%s: Invalid parameters\n", __func__);
+> >
+> > Please say "null device" instead of in addition to the above.
+> 
+> Ok. I'll let it say "Null or invalid device" as it's IS_ERR_OR_NULL.
+
+OK
+
+> >
+> >> +             return -EINVAL;
+> >> +     }
+> >> +
+> >> +     delay = DIV_ROUND_UP(duration, DEVFREQ_INTERVAL);
+> >> +
+> >> +     mutex_lock(&devfreq_list_lock);
+> >> +     list_for_each_entry(tmp, &devfreq_list, node) {
+> >> +             _devfreq_tickle_device(tmp, delay);
+> >> +     }
+> >> +     mutex_unlock(&devfreq_list_lock);
+> >> +
+> >> +     num_tickle_all++;
+> >> +     return count;
+> >> +}
+> >> +
+> >> +static ssize_t show_num_tickle_all(struct device *dev,
+> >> +                                struct device_attribute *attr, char *buf)
+> >> +{
+> >> +     return sprintf(buf, "%d\n", num_tickle_all);
+> >> +}
+> >> +
+> >> +static ssize_t show_min_interval(struct device *dev,
+> >> +                              struct device_attribute *attr, char *buf)
+> >> +{
+> >> +     return sprintf(buf, "%d\n", DEVFREQ_INTERVAL);
+> >> +}
+> >> +
+> >> +static ssize_t show_monitoring(struct device *dev,
+> >> +                            struct device_attribute *attr, char *buf)
+> >> +{
+> >> +     return sprintf(buf, "%d\n", monitoring ? 1 : 0);
+> >> +}
+> >> +
+> >> +static DEVICE_ATTR(tickle_all, 0644, show_num_tickle_all, tickle_all);
+> >> +static DEVICE_ATTR(min_interval, 0444, show_min_interval, NULL);
+> >> +static DEVICE_ATTR(monitoring, 0444, show_monitoring, NULL);
+> >> +static struct attribute *devfreq_entries[] = {
+> >> +     &dev_attr_tickle_all.attr,
+> >> +     &dev_attr_min_interval.attr,
+> >> +     &dev_attr_monitoring.attr,
+> >> +     NULL,
+> >> +};
+> >> +static struct attribute_group devfreq_attr_group = {
+> >> +     .name   = NULL,
+> >> +     .attrs  = devfreq_entries,
+> >> +};
+> >> +
+> >> +static ssize_t tickle(struct device *dev, struct device_attribute *attr,
+> >> +                   const char *buf, size_t count)
+> >> +{
+> >> +     int duration;
+> >> +     struct devfreq *df;
+> >> +     unsigned long delay;
+> >> +
+> >> +     sscanf(buf, "%d", &duration);
+> >> +     if (duration < DEVFREQ_INTERVAL)
+> >> +             duration = DEVFREQ_INTERVAL;
+> >> +
+> >> +     if (unlikely(IS_ERR_OR_NULL(dev))) {
+> >> +             pr_err("%s: Invalid parameters\n", __func__);
+> >
+> > Like above.
+> 
+> Yup.
+> 
+> >
+> >> +             return -EINVAL;
+> >> +     }
+> >> +
+> >> +     delay = DIV_ROUND_UP(duration, DEVFREQ_INTERVAL);
+> >> +
+> >> +     mutex_lock(&devfreq_list_lock);
+> >> +     df = find_device_devfreq(dev);
+> >> +     _devfreq_tickle_device(df, delay);
+> >> +     mutex_unlock(&devfreq_list_lock);
+> >> +
+> >> +     return count;
+> >> +}
+> >> +
+> >> +static ssize_t show_num_tickle(struct device *dev,
+> >> +                            struct device_attribute *attr, char *buf)
+> >> +{
+> >> +     struct devfreq *df;
+> >> +
+> >> +     df = find_device_devfreq(dev);
+> >> +
+> >> +     if (!IS_ERR(df))
+> >> +             return sprintf(buf, "%d\n", df->num_tickle);
+> >> +
+> >> +     return PTR_ERR(df);
+> >> +}
+> >> +
+> >> +static DEVICE_ATTR(tickle, 0644, show_num_tickle, tickle);
+> >> +static struct attribute *dev_entries[] = {
+> >> +     &dev_attr_tickle.attr,
+> >> +     NULL,
+> >> +};
+> >> +static struct attribute_group dev_attr_group = {
+> >> +     .name   = "devfreq",
+> >> +     .attrs  = dev_entries,
+> >> +};
+> >> +
+> >>  static int __init devfreq_init(void)
+> >>  {
+> >>       mutex_lock(&devfreq_list_lock);
+> >> @@ -389,6 +506,20 @@ static int __init devfreq_init(void)
+> >>       polling = false;
+> >>       devfreq_wq = create_freezable_workqueue("devfreq_wq");
+> >>       INIT_DELAYED_WORK_DEFERRABLE(&devfreq_work, devfreq_monitor);
+> >> +
+> >> +#ifdef CONFIG_PM
+> >> +     /* Create sysfs */
+> >> +     devfreq_kobj = kobject_create_and_add("devfreq", power_kobj);
+> >
+> > Hmm, so power_kobj is global?  It shouldn't be.
+> 
+> Yes, it is global and it's declared at include/linux/kobject.h.
+
+Oh, well.
+
+> >
+> > Generally, whatever adds attributes to /sys/power should be located in
+> > kernel/power/ .
+> 
+> I've put it at /sys/power because these attributes are global to every
+> device with devfreq.
+
+That's fine.
+
+What I wanted to say was that all code adding attributes into /sys/power
+should be located under kernel/power/ in the kernel source tree.
+
+Otherwise we'll end up with a mess of dependencies that's hard to maintain.
+
+> Anyway, if you think that's a weird location for it, could you please
+> give me some hints on where would be proper to locate system-wide
+> devfreq sysfs attributes?
+> Or, do you think kernel/power/devfreq.c would be a proper location for devfreq?
+> 
+> Or, what about allowing every /sys/devices/.../devfreq/global/* to be
+> the same "global" attributes of devfreq?
+> 
+> >
+> >> +     if (!devfreq_kobj) {
+> >> +             pr_err("Unable to create DEVFREQ kobject.\n");
+> >> +             goto out;
+> >> +     }
+> >> +     if (sysfs_create_group(devfreq_kobj, &devfreq_attr_group)) {
+> >> +             pr_err("Unable to create DEVFREQ sysfs entries.\n");
+> >> +             goto out;
+> >> +     }
+> >> +#endif
+> >> +out:
+> >>       mutex_unlock(&devfreq_list_lock);
+> >>
+> >>       devfreq_monitor(&devfreq_work.work);
+> >> diff --git a/include/linux/devfreq.h b/include/linux/devfreq.h
+> >> index 1ec9a40..69334e7 100644
+> >> --- a/include/linux/devfreq.h
+> >> +++ b/include/linux/devfreq.h
+> >> @@ -59,6 +59,7 @@ struct devfreq_governor {
+> >>   *           at each executino of devfreq_monitor, tickle is decremented.
+> >>   *           User may tickle a device-devfreq in order to set maximum
+> >>   *           frequency instaneously with some guaranteed duration.
+> >> + * @num_tickle       number of tickle calls.
+> >>   *
+> >>   * This structure stores the DEVFREQ information for a give device.
+> >>   */
+> >> @@ -72,6 +73,8 @@ struct devfreq {
+> >>       unsigned long previous_freq;
+> >>       unsigned int next_polling;
+> >>       unsigned int tickle;
+> >> +
+> >> +     unsigned int num_tickle;
+> >>  };
+> >>
+> >>  #if defined(CONFIG_PM_DEVFREQ)
+> >
+> > It looks like the above two changes should be moved to a separate patch.
+> 
+> These two changes are for the sysfs interface as counting number of
+> tickle is added with sysfs interface.
+
+OK
+
+Thanks,
+Rafael
