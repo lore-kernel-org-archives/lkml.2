@@ -1,85 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab1GDBQy (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 21:16:54 -0400
-Received: from mailout4.samsung.com ([203.254.224.34]:31800 "EHLO
-	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752537Ab1GDBQx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 21:16:53 -0400
-X-AuditID: cbfee60e-b7cc8ae000005af0-7f-4e11147ed9d3
-Date: Mon, 04 Jul 2011 01:16:46 +0000 (GMT)
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-Subject: Re: [PATCH] mfd: remove dead code from
- drivers/mfd/max8997-irq.c:get_i2c()
-To: Jesper Juhl <jj@chaosbits.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Samuel Ortiz <sameo@linux.intel.com>
-Reply-to: myungjoo.ham@samsung.com
-MIME-version: 1.0
-X-MTR: 20110704011038038@myungjoo.ham
-Msgkey: 20110704011038038@myungjoo.ham
-X-EPLocale: ko_KR.euc-kr
-X-Priority: 3
-X-EPWebmail-Msg-Type: personal
-X-EPWebmail-Reply-Demand: 0
-X-EPApproval-Locale: 
-X-EPHeader: ML
-X-EPTrCode: 
-X-EPTrName: 
-X-MLAttribute: 
-X-RootMTR: 20110704011038038@myungjoo.ham
-X-ParentMTR: 
-Content-type: text/plain; charset=euc-kr
-MIME-version: 1.0
-Message-id: <1124989.304951309742206025.JavaMail.weblogic@epml27>
-X-Brightmail-Tracker: AAAAAA==
+	id S1752977Ab1GDBay (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 21:30:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3291 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752588Ab1GDBax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 21:30:53 -0400
+Message-ID: <4E1117C0.4020500@redhat.com>
+Date: Mon, 04 Jul 2011 09:30:40 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc14 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the akpm tree
+References: <20110701151931.4c2d78b5.sfr@canb.auug.org.au>	<4E0D5BD4.6080403@redhat.com>	<20110701170843.bd60e326.sfr@canb.auug.org.au>	<4E0D9D16.7020508@redhat.com> <20110701203702.a15ecf19.sfr@canb.auug.org.au>
+In-Reply-To: <20110701203702.a15ecf19.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p641HAGL009456
 
-Sender : Jesper Juhl<jj@chaosbits.net> Date : 2011-07-03 05:38 (GMT+09:00)
-> 
-> We either hit one of the case's or the default in the switch statement
-> in get_i2c(), so the 'return ERR_PTR(-EINVAL);' at the end of the
-> function is just dead code - remove it.
-> 
-> Signed-off-by: Jesper Juhl 
+äº 2011å¹´07æœˆ01æ—¥ 18:37, Stephen Rothwell å†™é“:
+> Hi,
+>
+> On Fri, 01 Jul 2011 18:10:30 +0800 Cong Wang<amwang@redhat.com>  wrote:
+>>
+>> äº 2011å¹´07æœˆ01æ—¥ 15:08, Stephen Rothwell å†™é“:
+>>>
+>>> On Fri, 01 Jul 2011 13:32:04 +0800 Cong Wang<amwang@redhat.com>   wrote:
+>>>>
+>>>> äº 2011å¹´07æœˆ01æ—¥ 13:19, Stephen Rothwell å†™é“:
+>>>>>
+>>>>> After merging the akpm tree, today's linux-next build (powerpc
+>>>>> ppc64_defconfig) failed like this:
+>>>>>
+>>>>> arch/powerpc/kernel/rtas.c: In function 'rtas_restart':
+>>>>> arch/powerpc/kernel/rtas.c:655:24: error: 'SYS_RESTART' undeclared (first use in this function)
+>>>>> arch/powerpc/kernel/rtas.c: In function 'rtas_power_off':
+>>>>> arch/powerpc/kernel/rtas.c:664:24: error: 'SYS_POWER_OFF' undeclared (first use in this function)
+>>>>> arch/powerpc/kernel/rtas.c: In function 'rtas_halt':
+>>>>> arch/powerpc/kernel/rtas.c:674:24: error: 'SYS_HALT' undeclared (first use in this function)
+>>>>>
+>>>>> Caused by commit ac050ff2a176 ("It is not necessary to share the same
+>>>>> notifier.h").
+>>>>
+>>>> I think the following patch will fix this.
+>>>
+>>> Please find all the other files that need that include as well (there is
+>>> at least one more).
+>>>
+>>
+>> Ok, I will do a cross-compilation.
+>
+> Well, really any file that references any of those defines should be
+> including linux/reboot.h, now - whether a compilation gets errors or
+> not.  A change in CONFIG options or different platforms/architectures can
+> change what file get implictly included.
+>
+> See Rule 1 in Documentation/SubmitChecklist.
 
-Looks good.
+Yeah, I did allyesconfig test on x86. Fortunately there are few
+files that needs to be fixed since they include reboot.h implicitly.
 
-Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-
-> ---
-> drivers/mfd/max8997-irq.c |    2 --
-> 1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/mfd/max8997-irq.c b/drivers/mfd/max8997-irq.c
-> index 638bf7e..09274cf 100644
-> --- a/drivers/mfd/max8997-irq.c
-> +++ b/drivers/mfd/max8997-irq.c
-> @@ -58,8 +58,6 @@ static struct i2c_client *get_i2c(struct max8997_dev *max8997,
-> default:
-> return ERR_PTR(-EINVAL);
-> }
-> -
-> - return ERR_PTR(-EINVAL);
-> }
-> 
-> struct max8997_irq_data {
-> -- 
-> 1.7.6
-> 
-> 
-> -- 
-> Jesper Juhl        http://www.chaosbits.net/
-> Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-> Plain text mails only, please.
-
- MyungJoo Ham (ÇÔ¸íÁÖ)
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: +82-10-6714-2858 / office: +82-31-279-8033ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Thanks.
