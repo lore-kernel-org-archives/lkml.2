@@ -1,276 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab1GDVhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 17:37:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45817 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752055Ab1GDVhh (ORCPT
+	id S1752259Ab1GDVke (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 17:40:34 -0400
+Received: from smtprelay-b22.telenor.se ([195.54.99.213]:36927 "EHLO
+	smtprelay-b22.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751846Ab1GDVkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 17:37:37 -0400
-Date: Mon, 4 Jul 2011 22:43:57 +0100
-From: Frederick van der Wyck <fvanderwyck@gmail.com>
-To: mjg59@srcf.ucam.org
-Cc: gregkh@suse.de, dmitry.torokhov@gmail.com,
-        platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH v3] Platform: Samsung Q10 backlight driver
-Message-ID: <20110704214357.GA17428@ntl>
+	Mon, 4 Jul 2011 17:40:33 -0400
+X-SENDER-IP: [85.230.173.76]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AshyAKwyEk5V5q1MPGdsb2JhbABTiQqPf45yCwEBAQE3Moh6AsFTDoYoBJc8izI
+X-IronPort-AV: E=Sophos;i="4.65,475,1304287200"; 
+   d="scan'208";a="26766508"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Mon, 4 Jul 2011 23:42:20 +0200
+To: djkurtz@chromium.org
+Cc: dmitry.torokhov@gmail.com, chase.douglas@canonical.com,
+        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
+        daniel.stone@collabora.co.uk, olofj@chromium.org
+Subject: Re: [PATCH 09/12] Input: synaptics - add image sensor support
+Message-ID: <20110704214220.GE23915@polaris.bitmath.org>
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
+ <1309324042-22943-10-git-send-email-djkurtz@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1309324042-22943-10-git-send-email-djkurtz@chromium.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver adds backlight control on the Samsung Q10 laptop,
-which does not support the SABI interface. Also tested
-successfully on Samsung Q20, Samsung Q25 and Dell Latitude X200.
+Hi Daniel,
 
-v3: Add Samsung Q20 and Samsung Q25 to dmi check.
+> Synaptics makes (at least) two kinds of touchpad sensors:
+>  * Older pads use a profile sensor that could only infer the location
+>    of individual fingers based on the projection of their profiles
+>    onto row and column sensors.
+>  * Newer pads use an image sensor that can track true finger position
+>    using a two-dimensional sensor grid.
+> 
+> Both sensor types support an "Advanced Gesture Mode":
+>  When multiple fingers are detected, the touchpad sends alternating
+>  "Advanced Gesture Mode" (AGM) and "Simple Gesture Mode" (SGM)
+>  packets.
+>  The AGM packets have w=2, and contain reduced resolution finger data
+>  The SGM packets have w={0,1} and contain full resolution finger data
+> 
+> Profile sensors try to report the "upper" (larger y value) finger in
+>  the SGM packet, and the lower (smaller y value) in the AGM packet.
+>  However, due to the nature of the profile sensor, they easily get
+>  confused when fingers cross, and can start reporting the x-coordinate
+>  of one with the y-coordinate of the other.  Thus, for profile
+>  sensors, "semi-mt" was created, which reports a "bounding box"
+>  created by pairing min and max coordinates of the two pairs of
+>  reported fingers.
+> 
+> Image sensors can report the actual coordinates of two of the fingers
+>  present.  This patch detects if the touchpad is an image sensor and
+>  reports finger data using the MT-B protocol.
+> 
+> NOTE: This patch only adds partial support for 2-finger gestures.
+>       The proper interpretation of the slot contents when more than
+>       two fingers are present is left to later patches.  Also,
+>       handling of 'number of fingers' transitions is incomplete.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 
-v2: Changes suggested by Greg and Dmitry, in particular use i8042 instead 
-of port IO and add DMI detection.
+I guess the real question here is: do the following patches really
+help? Creating additional logic to band-aid yet another special case,
+which still does not give full MT support, seems to create more
+problems than it solves. If the code was needed to ensure proper five
+finger support to userspace, then maybe one could live with
+it. However, as it stands, keeping the semi-mt behavior also for the
+slightly better devices may not be such a bad idea, after all.
 
-v1: The Samsung Q10 does not support the SABI interface, so the
-samsung-laptop driver cannot be used to control the
-backlight. Backlight control is not exposed via ACPI either. This
-driver works in the same way as the SMI handler triggered by
-pressing the brightness function keys.
+_Iff_ the whole series can be formulated as true protocol B support
+(no special flags, please), and _iff_ it helps to use software finger
+tracking for less than four fingers, then please do tell, and we can
+add that part to the input core to simplify the synaptics
+implementation a bit.
 
-
-Signed-off-by: Frederick van der Wyck <fvanderwyck@gmail.com>
----
- drivers/platform/x86/Kconfig       |    7 ++
- drivers/platform/x86/Makefile      |    1 +
- drivers/platform/x86/samsung-q10.c |  196 ++++++++++++++++++++++++++++++++++++
- 3 files changed, 204 insertions(+), 0 deletions(-)
- create mode 100644 drivers/platform/x86/samsung-q10.c
-
-diff --git a/drivers/platform/x86/Kconfig b/drivers/platform/x86/Kconfig
-index 45e0191..d52968f 100644
---- a/drivers/platform/x86/Kconfig
-+++ b/drivers/platform/x86/Kconfig
-@@ -769,4 +769,11 @@ config INTEL_OAKTRAIL
- 	  enable/disable the Camera, WiFi, BT etc. devices. If in doubt, say Y
- 	  here; it will only load on supported platforms.
- 
-+config SAMSUNG_Q10
-+	tristate "Samsung Q10 Extras"
-+	select BACKLIGHT_CLASS_DEVICE
-+	---help---
-+	  This driver provides support for backlight control on Samsung Q10
-+	  and related laptops, including Dell Latitude X200.
-+
- endif # X86_PLATFORM_DEVICES
-diff --git a/drivers/platform/x86/Makefile b/drivers/platform/x86/Makefile
-index afc1f83..293a320 100644
---- a/drivers/platform/x86/Makefile
-+++ b/drivers/platform/x86/Makefile
-@@ -44,3 +44,4 @@ obj-$(CONFIG_SAMSUNG_LAPTOP)	+= samsung-laptop.o
- obj-$(CONFIG_MXM_WMI)		+= mxm-wmi.o
- obj-$(CONFIG_INTEL_MID_POWER_BUTTON)	+= intel_mid_powerbtn.o
- obj-$(CONFIG_INTEL_OAKTRAIL)	+= intel_oaktrail.o
-+obj-$(CONFIG_SAMSUNG_Q10)	+= samsung-q10.o
-diff --git a/drivers/platform/x86/samsung-q10.c b/drivers/platform/x86/samsung-q10.c
-new file mode 100644
-index 0000000..54cf3d6
---- /dev/null
-+++ b/drivers/platform/x86/samsung-q10.c
-@@ -0,0 +1,196 @@
-+/*
-+ *  Driver for Samsung Q10 and related laptops: controls the backlight
-+ *
-+ *  Copyright (c) 2011 Frederick van der Wyck <fvanderwyck@gmail.com>
-+ *
-+ *  This program is free software; you can redistribute it and/or modify
-+ *  it under the terms of the GNU General Public License version 2 as
-+ *  published by the Free Software Foundation.
-+ *
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/backlight.h>
-+#include <linux/i8042.h>
-+#include <linux/dmi.h>
-+
-+#define SAMSUNGQ10_BL_MAX_INTENSITY      255
-+#define SAMSUNGQ10_BL_DEFAULT_INTENSITY  185
-+
-+#define SAMSUNGQ10_BL_8042_CMD           0xbe
-+#define SAMSUNGQ10_BL_8042_DATA          { 0x89, 0x91 }
-+
-+static int samsungq10_bl_brightness;
-+
-+static bool force;
-+module_param(force, bool, 0);
-+MODULE_PARM_DESC(force,
-+		"Disable the DMI check and force the driver to be loaded");
-+
-+static int samsungq10_bl_set_intensity(struct backlight_device *bd)
-+{
-+
-+	int brightness = bd->props.brightness;
-+	unsigned char c[3] = SAMSUNGQ10_BL_8042_DATA;
-+
-+	c[2] = (unsigned char)brightness;
-+	i8042_lock_chip();
-+	i8042_command(c, (0x30 << 8) | SAMSUNGQ10_BL_8042_CMD);
-+	i8042_unlock_chip();
-+	samsungq10_bl_brightness = brightness;
-+
-+	return 0;
-+}
-+
-+static int samsungq10_bl_get_intensity(struct backlight_device *bd)
-+{
-+	return samsungq10_bl_brightness;
-+}
-+
-+static const struct backlight_ops samsungq10_bl_ops = {
-+	.get_brightness = samsungq10_bl_get_intensity,
-+	.update_status	= samsungq10_bl_set_intensity,
-+};
-+
-+#ifdef CONFIG_PM_SLEEP
-+static int samsungq10_suspend(struct device *dev)
-+{
-+	return 0;
-+}
-+
-+static int samsungq10_resume(struct device *dev)
-+{
-+
-+	struct backlight_device *bd = dev_get_drvdata(dev);
-+
-+	samsungq10_bl_set_intensity(bd);
-+	return 0;
-+}
-+#else
-+#define samsungq10_suspend NULL
-+#define samsungq10_resume  NULL
-+#endif
-+
-+static SIMPLE_DEV_PM_OPS(samsungq10_pm_ops,
-+			  samsungq10_suspend, samsungq10_resume);
-+
-+static int __devinit samsungq10_probe(struct platform_device *pdev)
-+{
-+
-+	struct backlight_properties props;
-+	struct backlight_device *bd;
-+
-+	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.type = BACKLIGHT_PLATFORM;
-+	props.max_brightness = SAMSUNGQ10_BL_MAX_INTENSITY;
-+	bd = backlight_device_register("samsung", &pdev->dev, NULL,
-+				       &samsungq10_bl_ops, &props);
-+	if (IS_ERR(bd))
-+		return PTR_ERR(bd);
-+
-+	platform_set_drvdata(pdev, bd);
-+
-+	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
-+	samsungq10_bl_set_intensity(bd);
-+
-+	return 0;
-+}
-+
-+static int __devexit samsungq10_remove(struct platform_device *pdev)
-+{
-+
-+	struct backlight_device *bd = platform_get_drvdata(pdev);
-+
-+	bd->props.brightness = SAMSUNGQ10_BL_DEFAULT_INTENSITY;
-+	samsungq10_bl_set_intensity(bd);
-+
-+	backlight_device_unregister(bd);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver samsungq10_driver = {
-+	.driver		= {
-+		.name	= KBUILD_MODNAME,
-+		.owner	= THIS_MODULE,
-+		.pm	= &samsungq10_pm_ops,
-+	},
-+	.probe		= samsungq10_probe,
-+	.remove		= __devexit_p(samsungq10_remove),
-+};
-+
-+static struct platform_device *samsungq10_device;
-+
-+static int __init dmi_check_callback(const struct dmi_system_id *id)
-+{
-+	printk(KERN_INFO KBUILD_MODNAME ": found model '%s'\n", id->ident);
-+	return 0;
-+}
-+
-+static struct dmi_system_id __initdata samsungq10_dmi_table[] = {
-+	{
-+		.ident = "Samsung Q10",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Samsung"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "SQ10"),
-+		},
-+		.callback = dmi_check_callback,
-+	},
-+	{
-+		.ident = "Samsung Q20",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG Electronics"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "SENS Q20"),
-+		},
-+		.callback = dmi_check_callback,
-+	},
-+	{
-+		.ident = "Samsung Q25",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "SAMSUNG Electronics"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "NQ25"),
-+		},
-+		.callback = dmi_check_callback,
-+	},
-+	{
-+		.ident = "Dell Latitude X200",
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "Dell Computer Corporation"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "X200"),
-+		},
-+		.callback = dmi_check_callback,
-+	},
-+	{ },
-+};
-+MODULE_DEVICE_TABLE(dmi, samsungq10_dmi_table);
-+
-+static int __init samsungq10_init(void)
-+{
-+	if (!force && !dmi_check_system(samsungq10_dmi_table))
-+		return -ENODEV;
-+
-+	samsungq10_device = platform_create_bundle(&samsungq10_driver,
-+						   samsungq10_probe,
-+						   NULL, 0, NULL, 0);
-+
-+	if (IS_ERR(samsungq10_device))
-+		return PTR_ERR(samsungq10_device);
-+
-+	return 0;
-+}
-+
-+static void __exit samsungq10_exit(void)
-+{
-+	platform_device_unregister(samsungq10_device);
-+	platform_driver_unregister(&samsungq10_driver);
-+}
-+
-+module_init(samsungq10_init);
-+module_exit(samsungq10_exit);
-+
-+MODULE_AUTHOR("Frederick van der Wyck <fvanderwyck@gmail.com>");
-+MODULE_DESCRIPTION("Samsung Q10 Driver");
-+MODULE_LICENSE("GPL");
--- 
+Thanks.
+Henrik
