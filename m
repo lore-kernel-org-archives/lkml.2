@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756963Ab1GDJzs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 05:55:48 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:46213 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756901Ab1GDJzr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 05:55:47 -0400
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: linux-kernel@vger.kernel.org
-Cc: Wolfram Sang <w.sang@pengutronix.de>,
-        Richard Purdie <richard.purdie@linuxfoundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH RESEND] leds: pca9532: change driver name to be unique
-Date: Mon,  4 Jul 2011 11:55:41 +0200
-Message-Id: <1309773341-8503-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.5.4
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1757034Ab1GDKD2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 06:03:28 -0400
+Received: from bar.sig21.net ([80.81.252.164]:39128 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753902Ab1GDKD0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 06:03:26 -0400
+Date: Mon, 4 Jul 2011 12:03:17 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH] compat_ioctl: fix make headers_check regression
+Message-ID: <20110704100316.GA15894@sig21.net>
+References: <20110704134842.7ab89126.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110704134842.7ab89126.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -3.8 (---)
+X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.635,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This driver handles the variants pca9530-pca9533, so it chose the name
-"pca953x". However, there is a gpio driver which decided on the same
-name. As a result, those two can't be loaded at the same time. Add a
-subsystem prefix to make the driver name unique. Device matching will
-not suffer, because both are I2C drivers which match using a
-i2c_device_id-table which is not altered.
+Fix headers_check error introduced by 390192b30057:
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Acked-by: Jean Delvare <khali@linux-fr.org>
-Cc: Richard Purdie <richard.purdie@linuxfoundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
+include/linux/fd.h:6: included file 'linux/compat.h' is not exported
+
+Signed-off-by: Johannes Stezenbach <js@sig21.net>
 ---
+I used the same style as in linux/usbdevice_fs.h, hope
+that's OK.
 
-No changes, added Andrew to CC since most led patches seem to have gone
-via his tree in the last time. A similar patch for the gpio driver has
-been dropped [1], so this one would be really nice to have in 3.0.
+ include/linux/fd.h |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
 
-[1] http://www.gossamer-threads.com/lists/linux/kernel/1401070
-
- drivers/leds/leds-pca9532.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/leds/leds-pca9532.c b/drivers/leds/leds-pca9532.c
-index d8d3a1e..a2c8746 100644
---- a/drivers/leds/leds-pca9532.c
-+++ b/drivers/leds/leds-pca9532.c
-@@ -88,7 +88,7 @@ static const struct pca9532_chip_info pca9532_chip_info_tbl[] = {
+diff --git a/include/linux/fd.h b/include/linux/fd.h
+index c6a68d0..72202b1 100644
+--- a/include/linux/fd.h
++++ b/include/linux/fd.h
+@@ -3,7 +3,6 @@
  
- static struct i2c_driver pca9532_driver = {
- 	.driver = {
--		.name = "pca953x",
-+		.name = "leds-pca953x",
- 	},
- 	.probe = pca9532_probe,
- 	.remove = pca9532_remove,
--- 
-1.7.5.4
-
+ #include <linux/ioctl.h>
+ #include <linux/compiler.h>
+-#include <linux/compat.h>
+ 
+ /* New file layout: Now the ioctl definitions immediately follow the
+  * definitions of the structures that they use */
+@@ -378,7 +377,11 @@ struct floppy_raw_cmd {
+ #define FDEJECT _IO(2, 0x5a)
+ /* eject the disk */
+ 
++
++#ifdef __KERNEL__
+ #ifdef CONFIG_COMPAT
++#include <linux/compat.h>
++
+ struct compat_floppy_struct {
+ 	compat_uint_t	size;
+ 	compat_uint_t	sect;
+@@ -394,5 +397,6 @@ struct compat_floppy_struct {
+ 
+ #define FDGETPRM32 _IOR(2, 0x04, struct compat_floppy_struct)
+ #endif
++#endif
+ 
+ #endif
