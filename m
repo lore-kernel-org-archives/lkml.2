@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756849Ab1GDJiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 05:38:04 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:52932 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752606Ab1GDJiB (ORCPT
+	id S1756909Ab1GDJrF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 05:47:05 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:56523 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753762Ab1GDJrC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 05:38:01 -0400
-Message-ID: <19985.35317.629981.97373@ipc1.ka-ro>
-Date: Mon, 4 Jul 2011 11:37:57 +0200
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] add missing intialisation of bgc->dir
-In-Reply-To: <20110704064844.GM15152@ponder.secretlab.ca>
-References: <1309522131-2237-1-git-send-email-LW@KARO-electronics.de>
-	<1309522131-2237-2-git-send-email-LW@KARO-electronics.de>
-	<20110704064844.GM15152@ponder.secretlab.ca>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	Mon, 4 Jul 2011 05:47:02 -0400
+Message-ID: <4E118BF6.6010205@atmel.com>
+Date: Mon, 04 Jul 2011 11:46:30 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com
+CC: alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] ASoC: wm8731: set the ACTIVE bit if bias ON entered
+References: <ccd4b125244271af7978948689cf1dcef37bc06b.1309368631.git.nicolas.ferre@atmel.com> <1309517034-26110-1-git-send-email-nicolas.ferre@atmel.com> <20110701161506.GC23784@opensource.wolfsonmicro.com>
+In-Reply-To: <20110701161506.GC23784@opensource.wolfsonmicro.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Grant Likely writes:
-> On Fri, Jul 01, 2011 at 02:08:51PM +0200, Lothar Waßmann wrote:
-> > ---
-> >  drivers/gpio/basic_mmio_gpio.c |    1 +
-> >  1 files changed, 1 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-> > index 8152e9f..e69a453 100644
-> > --- a/drivers/gpio/basic_mmio_gpio.c
-> > +++ b/drivers/gpio/basic_mmio_gpio.c
-> > @@ -399,6 +399,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
-> >  		return ret;
-> >  
-> >  	bgc->data = bgc->read_reg(bgc->reg_dat);
-> > +	bgc->dir = bgc->read_reg(bgc->reg_dir);
+Le 01/07/2011 18:15, Mark Brown :
+> On Fri, Jul 01, 2011 at 12:43:54PM +0200, Nicolas Ferre wrote:
+>> Resuming from a suspend/resume cycle, the ACTIVE bit was not set even if a
+>> stream had actually been processing.
+>> Setting this bit at entering SND_SOC_BIAS_ON level will ensure this.
 > 
-> Hi Lothar.
-> 
-> You'll need to double check your email setup.  The patch got emailed
-> separately from the description.
-> 
-git-send-email did that.
+> This will set the bit even for analogue bypass paths which don't need
+> it.  I'd suggest making the active bit a supply widget supplying the DAC
+> and ADC rather than something open coded, that should do the right thing
+> I think.
 
-> I don't know if this is a valid thing to do or not.  Not every GPIO
-> controller supports reading back the initial state from the direction
-> register.  I suspect it is better to leave initialization of the
-> direction to the gpio controller driver itself.
-> 
-That would mean, that external software would have to have access to
-the bgpio internal data structures which is a Bad Thing(TM) IMO. Or we
-need a function that allows to explicitly initialize the internal
-shadow registers.
+Ah, ok... but I fear that I do not know the whole system enough for this
+addition ;-(
+Do you think you can code this modification, I will be happy to test it,
+if you want...
 
-
-
-Lothar Waßmann
+Best regards,
 -- 
-___________________________________________________________
+Nicolas Ferre
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
-
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
