@@ -1,86 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab1GDKmV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 06:42:21 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:62281 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757262Ab1GDKmU (ORCPT
+	id S1754742Ab1GDLBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 07:01:51 -0400
+Received: from na3sys009aob106.obsmtp.com ([74.125.149.76]:47700 "EHLO
+	na3sys009aog106.obsmtp.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752455Ab1GDLBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 06:42:20 -0400
-Message-ID: <4E11994B.7070103@gmail.com>
-Date: Mon, 04 Jul 2011 20:43:23 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	Mon, 4 Jul 2011 07:01:49 -0400
+From: Partha Basak <p-basak2@ti.com>
+References: <1309546474-15363-7-git-send-email-keshava_mgowda@ti.com>
+ <Pine.LNX.4.44L0.1107011504530.1624-100000@iolanthe.rowland.org>
+ <11640ef76f97628579e457b5c6a74cc3@mail.gmail.com> <20110704082553.GH15044@legolas.emea.dhcp.ti.com>
+ <99b22453092fc32b751c3e7d0223c7eb@mail.gmail.com> <20110704093056.GD25295@legolas.emea.dhcp.ti.com>
+In-Reply-To: <20110704093056.GD25295@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-To: Sascha Hauer <s.hauer@pengutronix.de>
-CC: Bill Gatliff <bgat@billgatliff.com>, Arnd Bergmann <arnd@arndb.de>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
-        Ryan Mallon <ryan@bluewatersys.com>
-Subject: Re: [PATCH 1/3] PWM: add pwm framework support
-References: <1309430517-23821-2-git-send-email-s.hauer@pengutronix.de> <BANLkTikQGFA7XcuAtEEi7_4m-j6-00sZ6Q@mail.gmail.com> <201106301441.24493.arnd@arndb.de> <BANLkTin_htv2z3D9Bbf6N8Y7UKFRvPtvOg@mail.gmail.com> <20110630170229.GP6069@pengutronix.de> <4E0D0595.5070205@gmail.com> <20110701073755.GR6069@pengutronix.de> <4E0D8540.2020200@gmail.com> <20110701085414.GV6069@pengutronix.de> <4E0E6916.50406@gmail.com> <20110704075556.GD6069@pengutronix.de>
-In-Reply-To: <20110704075556.GD6069@pengutronix.de>
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: Acw6LT99+5Hs/h5jSriBLY4njNywZQACnSSw
+Date: Mon, 4 Jul 2011 16:31:45 +0530
+Message-ID: <c026265b1b15473e41ea3c8cd72abf07@mail.gmail.com>
+Subject: RE: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
+ of ehci and ohci
+To: balbi@ti.com
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
+        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Anand Gadiyar <gadiyar@ti.com>, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, Kevin Hilman <khilman@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, paul@pwsan.com, johnstul@us.ibm.com,
+        Vishwanath Sripathy <vishwanath.bs@ti.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/07/11 17:55, Sascha Hauer wrote:
-> I am tired of discussing this. It seems we can't agree and unless
-> someone else jumps in here we will probably have to wait for another
-> year until something moves in the PWM area.
+>-----Original Message-----
+>From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
+>owner@vger.kernel.org] On Behalf Of Felipe Balbi
+>Sent: Monday, July 04, 2011 3:01 PM
+>To: Partha Basak
+>Cc: balbi@ti.com; Alan Stern; Keshava Munegowda; linux-
+>usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
+>kernel@vger.kernel.org; Anand Gadiyar; sameo@linux.intel.com;
+>parthab@india.ti.com; tony@atomide.com; Kevin Hilman; Benoit Cousson;
+>paul@pwsan.com; johnstul@us.ibm.com; Vishwanath Sripathy
+>Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume
+>support of ehci and ohci
+>
+>Hi,
+>
+>On Mon, Jul 04, 2011 at 02:56:30PM +0530, Partha Basak wrote:
+>> >> Both for EHCI & OHCI, the clocks are owned by the parent (uhh-tll).
+>> >>
+>> >> Calling pm_runtime_put_sync(dev->parent) within omap_ehci_suspend
+>> >> will turn-off the parent clocks in the Suspend path.
+>> >>
+>> >> Similarly, calling pm_runtime_get_sync(dev->parent) within
+>> >> omap_ehci_resume will turn-on the parent clocks in the resume path.
+>> >>
+>> >> This way, all reference counting are implicit within the Runtime PM
+>> >> layer and takes care of all combinations of only EHCI insmoded,
+>> >> OHCI insmoded, both insmoded etc.
+>> >>
+>> >> When both EHCI & OHCI are suspended, parent clocks will actually be
+>> >> turned OFF and vice-versa.
+>> >
+>> >not sure this is necessary. I would expect:
+>> >
+>> >pm_runtime_get_sync(dev) to propagate up the parent tree and enable
+>> >all necessary resources to get the child in a working state. IOW, you
+>> >shouldn't need to manuall access the parent device.
+>> >
+>> Refer to the description in Patch(5/6) <snip> In fact, the runtime
+>> framework takes care the get sync and put sync of the child in turn
+>> call the get sync and put sync of parent too; but calling get sync and
+>> put sync of parent is by ASYNC mode; This mode queues the work item in
+>> runtime pm work queue, which not getting scheduled in case of global
+>> suspend path.
+>> <snip>
+>> This approach was tried, but did not work in the Suspend path
+>
+>sounds to me like a bug on pm runtime ? If you're calling
+>pm_runtime_*_sync() family, shouldn't all calls be _sync() too ?
+>
+>> static int rpm_suspend(struct device *dev, int rpmflags)
+>> 	__releases(&dev->power.lock) __acquires(&dev->power.lock) { .
+>> .
+>> .
+>> no_callback:
+>> .
+>> .
+>> .
+>> 	/* Maybe the parent is now able to suspend. */
+>> 	if (parent && !parent->power.ignore_children &&
+>> !dev->power.irq_safe) {
+>> 		spin_unlock(&dev->power.lock);
+>>
+>> 		spin_lock(&parent->power.lock);
+>> 		rpm_idle(parent, RPM_ASYNC);
+>
+>to me this is bogus, if you called pm_runtime_put_sync() should should
+>be sync too. Shouldn't it ?
+>
+>> 		spin_unlock(&parent->power.lock);
+>>
+>> 		spin_lock(&dev->power.lock);
+>> 	}
+>> This is the reason of directly calling the parent Runtime PM calls
+>> from the children.
+>> If directly calling Runtime PM APIs with parent dev-pointer isn't
+>> acceptable, this can be achieved by exporting wrapper APIs from the
+>> parent and calling them from the chidren .suspend/.resume routines.
+>
+>Still no good, IMHO.
 
-If we are going to introduce a new framework for pwms then we should
-create one which meets the needs of at least all of the in kernel
-drivers. This patch series provides no solution for either the atmel or
-ep93xx drivers, so it is not a complete solution. At some point the
-api/framework _must_ be changed. If we can introduce transition layers
-then we should do that now so they we can provide a common framework
-along with some forward thinking about how the other drivers are going
-to be migrated to the new framework. This patch series doesn't even
-migrate _any_ of the existing drivers.
+Kevin, any comments?
 
-It doesn't have to be an all or nothing approach. Possibly Bill's series
-is perhaps too involved by changing the api, introducing sysfs support
-and reworking the pwm users. But your series is at the opposite end of
-the spectrum. It does too little. It will take a few release cycles to
-get all of the existing drivers migrated and since we can't change the
-api until that happens the atmel and ep93xx drivers will take longer
-still. At the very least your series should migrate some of the drivers.
-
-The timeline argument is a bit poor. Yes, there has been discussion for
-a lengthy time about how the pwm api should be developed, but I think
-that is because it is non-trivial to come up with a framework which is
-good enough to support all of the pwm hardware (some of which is already
-in the mainline). Getting something merged now just because it can be
-done quickly is not a good idea if it all has to get reworked in the
-future so that it can support all the hardware.
-
-The pwm framework needs to incorporate at least the following:
- - sysfs access (ep93xx driver)
- - Multiple channels per device (atmel driver)
-
-The mxs driver you introduce looks like it could be implemented as a
-single device (continuous mmio space) with multiple channels rather than
-the pwm core/driver approach you have. I also can't see anything in this
-patch set which hooks up the mxs pwms to an actual board (i.e. nothing
-calls mxs_add_mxs_pwm)?
-
-The other nice things to have for the pwm framework are:
- - More fine grained control of pwms: pwm_period_ns, period_duty_ns, etc
- - Polarity control
- - Synchronisation support for multi-channel devices
- - Interrupt handler support
- - Sleeping vs non-sleeping configuration api
-
-The fine-grained control api could be added now. pwm_config could be
-left as is for the time being (the new api could be a wrapper around it
-to start with). Polarity control and interrupt handling apis could also
-be defined without affecting the drivers which don't need to implement
-them. Multiple channels and the sleeping/non-sleeping api are the more
-difficult ones, but at least having some sort of indication about how
-these plan to be solved would be useful.
-
-~Ryan
-
+Shouldn't the framework ensure that if put_sync(dev) is called
+it should ensure that the parent is rmp_idled synchronously?
+>
+>--
+>balbi
