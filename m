@@ -1,122 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758281Ab1GDQTW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:19:22 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51714 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755695Ab1GDQTT (ORCPT
+	id S932084Ab1GDQT2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 12:19:28 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:63261 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758287Ab1GDQT0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:19:19 -0400
-Date: Mon, 4 Jul 2011 10:19:14 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, sodaville@linutronix.de
-Subject: Re: [PATCH v2 2/2] gpio: Add a driver for Sodaville GPIO controller
-Message-ID: <20110704161914.GH29977@ponder.secretlab.ca>
-References: <1309159583-11339-1-git-send-email-bigeasy@linutronix.de>
- <1309159583-11339-2-git-send-email-bigeasy@linutronix.de>
-MIME-Version: 1.0
+	Mon, 4 Jul 2011 12:19:26 -0400
+Message-ID: <19985.59397.631201.89451@ipc1.ka-ro>
+Date: Mon, 4 Jul 2011 18:19:17 +0200
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org
+Mime-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1309159583-11339-2-git-send-email-bigeasy@linutronix.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Subject: Re: [PATCH] add missing intialisation of bgc->dir
+In-Reply-To: <CACxGe6v87WboQwZn9L0QtND2=B6g6ScQcPgTPnU_2whn=-B9HA@mail.gmail.com>
+References: <1309522131-2237-1-git-send-email-LW@KARO-electronics.de>
+	<1309522131-2237-2-git-send-email-LW@KARO-electronics.de>
+	<20110704064844.GM15152@ponder.secretlab.ca>
+	<19985.35317.629981.97373@ipc1.ka-ro>
+	<20110704153944.GD29977@ponder.secretlab.ca>
+	<19985.57715.78894.466149@ipc1.ka-ro>
+	<CACxGe6v87WboQwZn9L0QtND2=B6g6ScQcPgTPnU_2whn=-B9HA@mail.gmail.com>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 27, 2011 at 09:26:23AM +0200, Sebastian Andrzej Siewior wrote:
-> Sodaville has GPIO controller behind the PCI bus. To my suprissed it is
-> not the same as on PXA.
+Hi,
+
+Grant Likely writes:
+> On Mon, Jul 4, 2011 at 9:51 AM, Lothar Waßmann <LW@karo-electronics.de> wrote:
+> > Hi,
+> >
+> >> > > I don't know if this is a valid thing to do or not.  Not every GPIO
+> >> > > controller supports reading back the initial state from the direction
+> >> > > register.  I suspect it is better to leave initialization of the
+> >> > > direction to the gpio controller driver itself.
+> >> > >
+> >> > That would mean, that external software would have to have access to
+> >> > the bgpio internal data structures which is a Bad Thing(TM) IMO. Or we
+> >> > need a function that allows to explicitly initialize the internal
+> >> > shadow registers.
+> >>
+> >> What device are you using this for.  Are you using the basic gpio
+> >> platform_driver, or do you have a driver using the library part of the
+> >> basic gpio code?
+> >>
+> > I'm using it via drivers/gpio/gpio-mxc.
 > 
-> The interrupt & gpio chip can be referenced from the device tree like
-> from any other driver. Unfortunately the driver which uses the gpio
-> interrupt has to use irq_of_parse_and_map() instead of
-> platform_get_irq(). The problem is that the platform device (which is
-> created from the device tree) is most likely created before the
-> interrupt chip is registered and therefore irq_of_parse_and_map() fails.
+> You can safely do the "bgc->dir = bgc->read_reg(bgc->reg_dir);" in
+> gpio-mxc after bgpio_init returns.
 > 
-> In theory the driver works as module. In reality most of the irq
-> functions are not exported to modules and it is possible that _this_
-> module is unloaded while the provided irqs are still in use.
-> 
-> Signed-off-by: Hans J. Koch <hjk@linutronix.de>
-> [torbenh@linutronix.de: make it work after the irq namespace cleanup,
-> 	                add some device tree entries.]
-> Signed-off-by: Torben Hohn <torbenh@linutronix.de>
-> [bigeasy@linutronix.de: convert to generic irq & gpio chip]
-> Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-> ---
->  .../devicetree/bindings/gpio/sodaville.txt         |   48 +++
->  arch/x86/platform/ce4100/falconfalls.dts           |    7 +-
->  drivers/gpio/Kconfig                               |    8 +
->  drivers/gpio/Makefile                              |    1 +
->  drivers/gpio/gpio-sodaville.c                      |  302 ++++++++++++++++++++
+I know I can do that, but IMO it's a horrible way of programming, to
+let a higher SW layer freely mess with the data structures of another
+SW layer. There should be accessor functions to do that!
 
-I tried to apply this, but it failed to build:
 
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:101:36:
-error: expected declaration specifiers or ‘...’ before
-‘irq_hw_number_t’
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c: In
-function ‘sdv_xlate’:
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:106:15:
-error: ‘struct irq_domain’ has no member named ‘of_node’
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:113:3:
-error: ‘out_hwirq’ undeclared (first use in this function)
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:113:3:
-note: each undeclared identifier is reported only once for each
-function it appears in
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c: At top
-level:
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:129:15:
-error: variable ‘irq_domain_sdv_ops’ has initializer but incomplete
-type
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:130:2:
-error: unknown field ‘dt_translate’ specified in initializer
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:130:2:
-warning: excess elements in struct initializer
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:130:2:
-warning: (near initialization for ‘irq_domain_sdv_ops’)
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c: In
-function ‘sdv_register_irqsupport’:
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:152:8:
-error: ‘struct irq_domain’ has no member named ‘irq_base’
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:153:8:
-error: ‘struct irq_domain’ has no member named ‘of_node’
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:154:8:
-error: ‘struct irq_domain’ has no member named ‘ops’
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:182:2:
-error: implicit declaration of function ‘irq_domain_add’
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c: In
-function ‘sdv_gpio_remove’:
-/home/grant/hacking/linux-2.6/drivers/gpio/gpio-sodaville.c:263:2:
-error: implicit declaration of function ‘irq_domain_del’
-make[3]: *** [drivers/gpio/gpio-sodaville.o] Error 1
-make[3]: *** Waiting for unfinished jobs....
-  CC      kernel/trace/trace_export.o
-  make[2]: *** [drivers/gpio] Error 2
-  make[2]: *** Waiting for unfinished jobs....
+Lothar Waßmann
+-- 
+___________________________________________________________
 
-I assume there is a missing #include, you can either send a fixup
-patch or a new version, your choice.
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
 
-Also...
-
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index 0fbdd75..cc6d662 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -41,6 +41,7 @@ obj-$(CONFIG_GPIO_S5PV210)	+= gpio-s5pv210.o
->  
->  obj-$(CONFIG_GPIO_SCH)		+= gpio-sch.o
->  obj-$(CONFIG_GPIO_STMPE)	+= gpio-stmpe.o
-> +obj-$(CONFIG_GPIO_SODAVILLE)	+= gpio-sodaville.o
->  obj-$(CONFIG_GPIO_SX150X)	+= gpio-sx150x.o
->  obj-$(CONFIG_GPIO_TC3589X)	+= gpio-tc3589x.o
->  obj-$(CONFIG_ARCH_TEGRA)	+= gpio-tegra.o
-
-Last I checked, SO comes before ST in alphabetized lists.  :-)
-
-g.
-
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
