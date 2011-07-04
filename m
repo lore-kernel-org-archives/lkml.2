@@ -1,60 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab1GDNDM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 09:03:12 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:46809 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756461Ab1GDNDL (ORCPT
+	id S1757237Ab1GDNIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 09:08:43 -0400
+Received: from relay.parallels.com ([195.214.232.42]:47174 "EHLO
+	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756898Ab1GDNIk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 09:03:11 -0400
-Message-ID: <4E11B9F7.5080606@atmel.com>
-Date: Mon, 04 Jul 2011 15:02:47 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
+	Mon, 4 Jul 2011 09:08:40 -0400
+Subject: [PATCH RFC 1/2] cfq: request-deadline policy
+To: Jens Axboe <axboe@kernel.dk>, <linux-kernel@vger.kernel.org>,
+        Vivek Goyal <vgoyal@redhat.com>
+From: Konstantin Khlebnikov <khlebnikov@openvz.org>
+Date: Mon, 4 Jul 2011 17:08:38 +0400
+Message-ID: <20110704130838.27757.87486.stgit@localhost6>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: =?ISO-8859-1?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        hong.xu@atmel.com, linux-mtd@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC PATCH] MTD: atmel_nand: optimize read/write buffer	functions
-References: <1309261856-27402-1-git-send-email-nicolas.ferre@atmel.com> <20110628111043.GH6588@pengutronix.de> <20110628145937.GG21898@n2100.arm.linux.org.uk> <4E0B2427.9020202@atmel.com> <20110629133124.GO21898@n2100.arm.linux.org.uk>
-In-Reply-To: <20110629133124.GO21898@n2100.arm.linux.org.uk>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 29/06/2011 15:31, Russell King - ARM Linux :
-> On Wed, Jun 29, 2011 at 03:09:59PM +0200, Nicolas Ferre wrote:
->> Le 28/06/2011 16:59, Russell King - ARM Linux :
->>> I think you need to read Documentation/bus-virt-phys-mapping.txt,
->>> particularly the part after "NOTE NOTE NOTE".
->>>
->>> Dereferencing ioremap'd memory is not permitted.  That includes passing
->>> it to memcpy.  Even with a cast.
->>
->> So that means that I should use memcpy_fromio() even if the code if far
->> less optimized.
->>
->> Shouldn't I re-implement some kind of IO copying function to deal with
->> this IO memory so that I could take advantage of 8 words bursts?
-> 
-> You could improve the IO memcpy/set etc implementations, which are
-> currently mostly unloved - I think that's a catch-22 which really needs
-> solving.  They're not efficient because no one has taken the time to use
-> them, and everyone's avoiding them because they're not very efficient.
-> So, as no one's using them no one's motivated to improve them.
+CFQ is designed for sharing disk bandwidth proportionally between queues and groups
+and for reordering requests to reduce disks seek time. Currently it cannot
+gurantee or estimate latency for individual requests, even if latencies are low
+for almost all requests, some of them can stuck inside scheduler for a long time.
+The fair policy is good as long as someone luckless begins to die due to a timeout.
 
-Ok, so I use them in my following patch.
+This patch implements fifo requests dispatching with deadline policy: now cfq
+obliged to dispatch request if it stuck in the queue for more than deadline.
 
-And as a long-term exercise, I will try to have a look at those IO
-memcpy/set functions for ARM...
+This way now cfq can try to ensure the expected latency of requests execution.
+It is like a safety valve, it should not work all time, but it should keep latency
+in sane range when the scheduler is unable to effectively handle flow of requests,
+especially in cases when the "noop" or "deadline" shows better performance.
 
-Thanks for you advices, best regards,
--- 
-Nicolas Ferre
+deadline can be tuned via /sys/block/<device>/queue/iosched/deadline_{sync,async}
+it by default 2000ms for sync and 4000ms for async requests, use 0 to disable it.
+
+Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
+---
+ block/cfq-iosched.c |   93 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 93 insertions(+), 0 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index f379943..8e68079 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -22,6 +22,7 @@
+ /* max queue in one round of service */
+ static const int cfq_quantum = 8;
+ static const int cfq_fifo_expire[2] = { HZ / 4, HZ / 8 };
++static const int cfq_deadline[2] = { HZ * 4, HZ * 2 };
+ /* maximum backwards seek, in KiB */
+ static const int cfq_back_max = 16 * 1024;
+ /* penalty of a backwards seek */
+@@ -120,6 +121,11 @@ struct cfq_queue {
+ 	/* fifo list of requests in sort_list */
+ 	struct list_head fifo;
+ 
++	/* cached rq_fifo_time() for first rq in fifo */
++	unsigned long fifo_key;
++	/* cfqd->fifo_tree member */
++	struct rb_node fifo_node;
++
+ 	/* time when queue got scheduled in to dispatch first request. */
+ 	unsigned long dispatch_start;
+ 	unsigned int allocated_slice;
+@@ -238,6 +244,11 @@ struct cfq_data {
+ 	 */
+ 	struct rb_root prio_trees[CFQ_PRIO_LISTS];
+ 
++	/* queues sorted by cfqq->fifo_key */
++	struct rb_root fifo_tree[2];
++	/* leftmost queue in fifo_tree */
++	struct cfq_queue *fifo_first[2];
++
+ 	unsigned int busy_queues;
+ 	unsigned int busy_sync_queues;
+ 
+@@ -280,6 +291,7 @@ struct cfq_data {
+ 	 */
+ 	unsigned int cfq_quantum;
+ 	unsigned int cfq_fifo_expire[2];
++	unsigned int cfq_deadline[2];
+ 	unsigned int cfq_back_penalty;
+ 	unsigned int cfq_back_max;
+ 	unsigned int cfq_slice[2];
+@@ -1416,6 +1428,46 @@ static void cfq_prio_tree_add(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 		cfqq->p_root = NULL;
+ }
+ 
++static void cfq_resort_fifo_tree(struct cfq_data *cfqd, struct cfq_queue *cfqq)
++{
++	struct rb_node **p, *parent;
++	struct cfq_queue *__cfqq;
++	int sync = cfq_cfqq_sync(cfqq);
++	int new_first = 1;
++
++	if (!RB_EMPTY_NODE(&cfqq->fifo_node)) {
++		if (cfqq == cfqd->fifo_first[sync]) {
++			parent = rb_next(&cfqq->fifo_node);
++			__cfqq = rb_entry(parent, struct cfq_queue, fifo_node);
++			cfqd->fifo_first[sync] = parent ? __cfqq : NULL;
++		}
++		rb_erase_init(&cfqq->fifo_node, &cfqd->fifo_tree[sync]);
++	}
++
++	if (list_empty(&cfqq->fifo) || !cfqd->cfq_deadline[sync] ||
++			cfq_class_idle(cfqq))
++		return;
++
++	cfqq->fifo_key = rq_fifo_time(rq_entry_fifo(cfqq->fifo.next));
++
++	parent = NULL;
++	p = &cfqd->fifo_tree[sync].rb_node;
++	while (*p) {
++		parent = *p;
++		__cfqq = rb_entry(parent, struct cfq_queue, fifo_node);
++		if (time_before_eq(__cfqq->fifo_key, cfqq->fifo_key)) {
++			p = &(*p)->rb_right;
++			new_first = 0;
++		} else
++			p = &(*p)->rb_left;
++	}
++	rb_link_node(&cfqq->fifo_node, parent, p);
++	rb_insert_color(&cfqq->fifo_node, &cfqd->fifo_tree[sync]);
++
++	if (new_first)
++		cfqd->fifo_first[sync] = cfqq;
++}
++
+ /*
+  * Update cfqq's position in the service tree.
+  */
+@@ -1444,6 +1496,7 @@ static void cfq_add_cfqq_rr(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 		cfqd->busy_sync_queues++;
+ 
+ 	cfq_resort_rr_list(cfqd, cfqq);
++	cfq_resort_fifo_tree(cfqd, cfqq);
+ }
+ 
+ /*
+@@ -1588,11 +1641,16 @@ static void cfq_deactivate_request(struct request_queue *q, struct request *rq)
+ static void cfq_remove_request(struct request *rq)
+ {
+ 	struct cfq_queue *cfqq = RQ_CFQQ(rq);
++	int fifo_first = rq->queuelist.prev == &cfqq->fifo;
+ 
+ 	if (cfqq->next_rq == rq)
+ 		cfqq->next_rq = cfq_find_next_rq(cfqq->cfqd, cfqq, rq);
+ 
+ 	list_del_init(&rq->queuelist);
++
++	if (fifo_first && !RB_EMPTY_NODE(&cfqq->fifo_node))
++		cfq_resort_fifo_tree(cfqq->cfqd, cfqq);
++
+ 	cfq_del_rq_rb(rq);
+ 
+ 	cfqq->cfqd->rq_queued--;
+@@ -2573,6 +2631,27 @@ static bool cfq_dispatch_request(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 	return true;
+ }
+ 
++static bool cfq_dispatch_deadline(struct cfq_data *cfqd, int sync)
++{
++	struct cfq_queue *cfqq = cfqd->fifo_first[sync];
++	unsigned int deadline = cfqd->cfq_deadline[sync];
++
++	if (!cfqq || !deadline)
++		return false;
++
++	if (time_before(jiffies, cfqq->fifo_key + deadline))
++		return false;
++
++	cfq_log_cfqq(cfqd, cfqq, "dispatch deadline");
++	cfq_dispatch_insert(cfqd->queue, rq_entry_fifo(cfqq->fifo.next));
++
++	/* remove empty queue from service tree and expire its slices */
++	if (RB_EMPTY_ROOT(&cfqq->sort_list))
++		__cfq_slice_expired(cfqd, cfqq, 0);
++
++	return true;
++}
++
+ /*
+  * Find the cfqq that we need to service and move a request from that to the
+  * dispatch list
+@@ -2588,6 +2667,9 @@ static int cfq_dispatch_requests(struct request_queue *q, int force)
+ 	if (unlikely(force))
+ 		return cfq_forced_dispatch(cfqd);
+ 
++	if (cfq_dispatch_deadline(cfqd, 1) || cfq_dispatch_deadline(cfqd, 0))
++		return 1;
++
+ 	cfqq = cfq_select_queue(cfqd);
+ 	if (!cfqq)
+ 		return 0;
+@@ -2924,6 +3006,7 @@ static void cfq_init_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ {
+ 	RB_CLEAR_NODE(&cfqq->rb_node);
+ 	RB_CLEAR_NODE(&cfqq->p_node);
++	RB_CLEAR_NODE(&cfqq->fifo_node);
+ 	INIT_LIST_HEAD(&cfqq->fifo);
+ 
+ 	cfqq->ref = 0;
+@@ -4033,6 +4116,8 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	for (i = 0; i < CFQ_PRIO_LISTS; i++)
+ 		cfqd->prio_trees[i] = RB_ROOT;
+ 
++	cfqd->fifo_tree[0] = cfqd->fifo_tree[1] = RB_ROOT;
++
+ 	/*
+ 	 * Our fallback cfqq if cfq_find_alloc_queue() runs into OOM issues.
+ 	 * Grab a permanent reference to it, so that the normal code flow
+@@ -4055,6 +4140,8 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	cfqd->cfq_quantum = cfq_quantum;
+ 	cfqd->cfq_fifo_expire[0] = cfq_fifo_expire[0];
+ 	cfqd->cfq_fifo_expire[1] = cfq_fifo_expire[1];
++	cfqd->cfq_deadline[0] = cfq_deadline[0];
++	cfqd->cfq_deadline[1] = cfq_deadline[1];
+ 	cfqd->cfq_back_max = cfq_back_max;
+ 	cfqd->cfq_back_penalty = cfq_back_penalty;
+ 	cfqd->cfq_slice[0] = cfq_slice_async;
+@@ -4130,6 +4217,8 @@ static ssize_t __FUNC(struct elevator_queue *e, char *page)		\
+ SHOW_FUNCTION(cfq_quantum_show, cfqd->cfq_quantum, 0);
+ SHOW_FUNCTION(cfq_fifo_expire_sync_show, cfqd->cfq_fifo_expire[1], 1);
+ SHOW_FUNCTION(cfq_fifo_expire_async_show, cfqd->cfq_fifo_expire[0], 1);
++SHOW_FUNCTION(cfq_deadline_sync_show, cfqd->cfq_deadline[1], 1);
++SHOW_FUNCTION(cfq_deadline_async_show, cfqd->cfq_deadline[0], 1);
+ SHOW_FUNCTION(cfq_back_seek_max_show, cfqd->cfq_back_max, 0);
+ SHOW_FUNCTION(cfq_back_seek_penalty_show, cfqd->cfq_back_penalty, 0);
+ SHOW_FUNCTION(cfq_slice_idle_show, cfqd->cfq_slice_idle, 1);
+@@ -4161,6 +4250,8 @@ STORE_FUNCTION(cfq_fifo_expire_sync_store, &cfqd->cfq_fifo_expire[1], 1,
+ 		UINT_MAX, 1);
+ STORE_FUNCTION(cfq_fifo_expire_async_store, &cfqd->cfq_fifo_expire[0], 1,
+ 		UINT_MAX, 1);
++STORE_FUNCTION(cfq_deadline_sync_store, &cfqd->cfq_deadline[1], 0, UINT_MAX, 1);
++STORE_FUNCTION(cfq_deadline_async_store, &cfqd->cfq_deadline[0], 0, UINT_MAX, 1);
+ STORE_FUNCTION(cfq_back_seek_max_store, &cfqd->cfq_back_max, 0, UINT_MAX, 0);
+ STORE_FUNCTION(cfq_back_seek_penalty_store, &cfqd->cfq_back_penalty, 1,
+ 		UINT_MAX, 0);
+@@ -4180,6 +4271,8 @@ static struct elv_fs_entry cfq_attrs[] = {
+ 	CFQ_ATTR(quantum),
+ 	CFQ_ATTR(fifo_expire_sync),
+ 	CFQ_ATTR(fifo_expire_async),
++	CFQ_ATTR(deadline_sync),
++	CFQ_ATTR(deadline_async),
+ 	CFQ_ATTR(back_seek_max),
+ 	CFQ_ATTR(back_seek_penalty),
+ 	CFQ_ATTR(slice_sync),
 
