@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756923Ab1GDJtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 05:49:19 -0400
-Received: from trent.utfs.org ([194.246.123.103]:47935 "EHLO trent.utfs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754481Ab1GDJtQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 05:49:16 -0400
-Date: Mon, 4 Jul 2011 02:49:10 -0700 (PDT)
-From: Christian Kujau <lists@nerdbynature.de>
-To: LKML <linux-kernel@vger.kernel.org>
-cc: mmarek@suse.cz
-Subject: .tmp_depmod owned by root after modules_install
-Message-ID: <alpine.DEB.2.01.1107040242180.9183@trent.utfs.org>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AV-Checked: ClamAV using ClamSMTP (127.0.0.1)
+	id S1756963Ab1GDJzs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 05:55:48 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:46213 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756901Ab1GDJzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 05:55:47 -0400
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: linux-kernel@vger.kernel.org
+Cc: Wolfram Sang <w.sang@pengutronix.de>,
+        Richard Purdie <richard.purdie@linuxfoundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH RESEND] leds: pca9532: change driver name to be unique
+Date: Mon,  4 Jul 2011 11:55:41 +0200
+Message-Id: <1309773341-8503-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: git-send-email 1.7.5.4
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:221:70ff:fe71:1890
+X-SA-Exim-Mail-From: w.sang@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This driver handles the variants pca9530-pca9533, so it chose the name
+"pca953x". However, there is a gpio driver which decided on the same
+name. As a result, those two can't be loaded at the same time. Add a
+subsystem prefix to make the driver name unique. Device matching will
+not suffer, because both are I2C drivers which match using a
+i2c_device_id-table which is not altered.
 
-when building a kernel with O=$DIR, I noticed that "modules_install" now 
-creates files under $DIR as root:
+Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+Acked-by: Jean Delvare <khali@linux-fr.org>
+Cc: Richard Purdie <richard.purdie@linuxfoundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+---
 
-$ sudo make -C /usr/local/src/linux-2.6-git O=$HOME/trash/tmp/. modules_install
-[...]
+No changes, added Andrew to CC since most led patches seem to have gone
+via his tree in the last time. A similar patch for the gpio driver has
+been dropped [1], so this one would be really nice to have in 3.0.
 
-When trying to build a new kernel, removing $DIR as a normal user does no 
-longer work as everything under $HOME/trash/tmp/.tmp_depmod/ is now owned 
-by root (because of the "sudo"). This did not occur before and may be a 
-consequence of:
+[1] http://www.gossamer-threads.com/lists/linux/kernel/1401070
 
-  commit bfe5424a8b31624e7a476f959d552999f931e7c7
-  Author: Michal Marek <mmarek@suse.cz>
-  Date:   Thu Jun 9 16:35:41 2011 +0200
+ drivers/leds/leds-pca9532.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-    kbuild: Hack for depmod not handling X.Y versions
-
-Can this be changed somehow so that "make modules_install" does not write 
-anything under $DIR, as before?
-
-Thanks,
-Christian.
+diff --git a/drivers/leds/leds-pca9532.c b/drivers/leds/leds-pca9532.c
+index d8d3a1e..a2c8746 100644
+--- a/drivers/leds/leds-pca9532.c
++++ b/drivers/leds/leds-pca9532.c
+@@ -88,7 +88,7 @@ static const struct pca9532_chip_info pca9532_chip_info_tbl[] = {
+ 
+ static struct i2c_driver pca9532_driver = {
+ 	.driver = {
+-		.name = "pca953x",
++		.name = "leds-pca953x",
+ 	},
+ 	.probe = pca9532_probe,
+ 	.remove = pca9532_remove,
 -- 
-BOFH excuse #274:
+1.7.5.4
 
-It was OK before you touched it.
