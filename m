@@ -1,54 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751988Ab1GDGsu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 02:48:50 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:34675 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751277Ab1GDGsr (ORCPT
+	id S1752367Ab1GDGwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 02:52:41 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58280 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab1GDGwk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 02:48:47 -0400
-Date: Mon, 4 Jul 2011 00:48:44 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Lothar =?iso-8859-1?Q?Wa=DFmann?= <LW@KARO-electronics.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] add missing intialisation of bgc->dir
-Message-ID: <20110704064844.GM15152@ponder.secretlab.ca>
-References: <1309522131-2237-1-git-send-email-LW@KARO-electronics.de>
- <1309522131-2237-2-git-send-email-LW@KARO-electronics.de>
+	Mon, 4 Jul 2011 02:52:40 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1309522131-2237-2-git-send-email-LW@KARO-electronics.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110701210915.GE21898@n2100.arm.linux.org.uk>
+References: <1309499010-2049-1-git-send-email-vincent.guittot@linaro.org>
+	<20110701210915.GE21898@n2100.arm.linux.org.uk>
+Date: Mon, 4 Jul 2011 08:52:40 +0200
+Message-ID: <CAKfTPtCePxOMGtwz_8XNJZyZK4iqDb32WageUWXYuBuQWrh5Yw@mail.gmail.com>
+Subject: Re: [PATCH v4] Add ARM cpu topology definition
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 02:08:51PM +0200, Lothar Waßmann wrote:
-> ---
->  drivers/gpio/basic_mmio_gpio.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
-> index 8152e9f..e69a453 100644
-> --- a/drivers/gpio/basic_mmio_gpio.c
-> +++ b/drivers/gpio/basic_mmio_gpio.c
-> @@ -399,6 +399,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
->  		return ret;
->  
->  	bgc->data = bgc->read_reg(bgc->reg_dat);
-> +	bgc->dir = bgc->read_reg(bgc->reg_dir);
+On 1 July 2011 23:09, Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+> On Fri, Jul 01, 2011 at 07:43:30AM +0200, Vincent Guittot wrote:
+>> Changes since v3 :
+>> * Update the format of printk message
+>> * Remove blank line
+>
+> Can I trouble you to check the patch for more instances of the 'blank line
+> at end of function' thing... Also, let's get rid of unnecessary parens.
+>
 
-Hi Lothar.
+ok, I will update the patch with your comments
 
-You'll need to double check your email setup.  The patch got emailed
-separately from the description.
-
-I don't know if this is a valid thing to do or not.  Not every GPIO
-controller supports reading back the initial state from the direction
-register.  I suspect it is better to leave initialization of the
-direction to the gpio controller driver itself.
-
-g.
-
+>> diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
+>> index accbd7c..63a7454 100644
+>> --- a/arch/arm/include/asm/topology.h
+>> +++ b/arch/arm/include/asm/topology.h
+>> @@ -1,6 +1,39 @@
+>>  #ifndef _ASM_ARM_TOPOLOGY_H
+>>  #define _ASM_ARM_TOPOLOGY_H
+>>
+>> +#ifdef CONFIG_ARM_CPU_TOPOLOGY
+>> +
+>> +#include <linux/cpumask.h>
+>> +
+>> +struct cputopo_arm {
+>> +     int thread_id;
+>> +     int core_id;
+>> +     int socket_id;
+>> +     cpumask_t thread_sibling;
+>> +     cpumask_t core_sibling;
+>> +};
+>> +
+>> +extern struct cputopo_arm cpu_topology[NR_CPUS];
+>> +
+>> +#define topology_physical_package_id(cpu)    (cpu_topology[cpu].socket_id)
+>> +#define topology_core_id(cpu)                (cpu_topology[cpu].core_id)
+>> +#define topology_core_cpumask(cpu)   (&(cpu_topology[cpu].core_sibling))
+>> +#define topology_thread_cpumask(cpu) (&(cpu_topology[cpu].thread_sibling))
+>
+> The inner-most parens aren't required.
+>
+>> +
+>> +#define mc_capable() (cpu_topology[0].socket_id != -1)
+>> +#define smt_capable()        (cpu_topology[0].thread_id != -1)
+>> +
+>> +void init_cpu_topology(void);
+>> +void store_cpu_topology(unsigned int cpuid);
+>> +const struct cpumask *cpu_coregroup_mask(unsigned int cpu);
+>> +
+>> +#else
+>> +
+>> +static inline void init_cpu_topology(void) { };
+>> +static inline void store_cpu_topology(unsigned int cpuid) { };
+>
+> Functions don't need a ; after the }
+>
+>> +
+>> +#endif
+>> +
+>>  #include <asm-generic/topology.h>
+>>
+>>  #endif /* _ASM_ARM_TOPOLOGY_H */
+>> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+>> index a5b31af..816a481 100644
+>> --- a/arch/arm/kernel/Makefile
+>> +++ b/arch/arm/kernel/Makefile
+>> @@ -61,6 +61,7 @@ obj-$(CONFIG_IWMMXT)                += iwmmxt.o
+>>  obj-$(CONFIG_CPU_HAS_PMU)    += pmu.o
+>>  obj-$(CONFIG_HW_PERF_EVENTS) += perf_event.o
+>>  AFLAGS_iwmmxt.o                      := -Wa,-mcpu=iwmmxt
+>> +obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
+>>
+>>  ifneq ($(CONFIG_ARCH_EBSA110),y)
+>>    obj-y              += io.o
+>> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+>> index 344e52b..3e8dc3b 100644
+>> --- a/arch/arm/kernel/smp.c
+>> +++ b/arch/arm/kernel/smp.c
+>> @@ -31,6 +31,7 @@
+>>  #include <asm/cacheflush.h>
+>>  #include <asm/cpu.h>
+>>  #include <asm/cputype.h>
+>> +#include <asm/topology.h>
+>>  #include <asm/mmu_context.h>
+>>  #include <asm/pgtable.h>
+>>  #include <asm/pgalloc.h>
+>> @@ -268,6 +269,9 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
+>>       struct cpuinfo_arm *cpu_info = &per_cpu(cpu_data, cpuid);
+>>
+>>       cpu_info->loops_per_jiffy = loops_per_jiffy;
+>> +
+>> +     store_cpu_topology(cpuid);
+>> +
+>
+> Don't need this blank line.
+>
+>>  }
+>>
+>>  /*
+>> @@ -354,6 +358,8 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+>>  {
+>>       unsigned int ncores = num_possible_cpus();
+>>
+>> +     init_cpu_topology();
+>> +
+>>       smp_store_cpu_info(smp_processor_id());
+>>
+>>       /*
+>> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+>> new file mode 100644
+>> index 0000000..e8f3b95
+>> --- /dev/null
+>> +++ b/arch/arm/kernel/topology.c
+>> @@ -0,0 +1,149 @@
+>> +/*
+>> + * arch/arm/kernel/topology.c
+>> + *
+>> + * Copyright (C) 2011 Linaro Limited.
+>> + * Written by: Vincent Guittot
+>> + *
+>> + * based on arch/sh/kernel/topology.c
+>> + *
+>> + * This file is subject to the terms and conditions of the GNU General Public
+>> + * License.  See the file "COPYING" in the main directory of this archive
+>> + * for more details.
+>> + */
+>> +
+>> +#include <linux/cpu.h>
+>> +#include <linux/cpumask.h>
+>> +#include <linux/init.h>
+>> +#include <linux/percpu.h>
+>> +#include <linux/node.h>
+>> +#include <linux/nodemask.h>
+>> +#include <linux/sched.h>
+>> +
+>> +#include <asm/cputype.h>
+>> +#include <asm/topology.h>
+>> +
+>> +#define MPIDR_SMP_BITMASK (0x3 << 30)
+>> +#define MPIDR_SMP_VALUE (0x2 << 30)
+>> +
+>> +#define MPIDR_MT_BITMASK (0x1 << 24)
+>> +
+>> +/*
+>> + * These masks reflect the current use of the affinity levels.
+>> + * The affinity level can be up to 16 bits according to ARM ARM
+>> + */
+>> +
+>> +#define MPIDR_LEVEL0_MASK 0x3
+>> +#define MPIDR_LEVEL0_SHIFT 0
+>> +
+>> +#define MPIDR_LEVEL1_MASK 0xF
+>> +#define MPIDR_LEVEL1_SHIFT 8
+>> +
+>> +#define MPIDR_LEVEL2_MASK 0xFF
+>> +#define MPIDR_LEVEL2_SHIFT 16
+>> +
+>> +struct cputopo_arm cpu_topology[NR_CPUS];
+>> +
+>> +const struct cpumask *cpu_coregroup_mask(unsigned int cpu)
+>> +{
+>> +     return &(cpu_topology[cpu].core_sibling);
+>
+> These parens aren't required.
+>
+>> +}
+>> +
+>> +/*
+>> + * store_cpu_topology is called at boot when only one cpu is running
+>> + * and with the mutex cpu_hotplug.lock locked, when several cpus have booted,
+>> + * which prevents simultaneous write access to cpu_topology array
+>> + */
+>> +void store_cpu_topology(unsigned int cpuid)
+>> +{
+>> +     struct cputopo_arm *cpuid_topo = &(cpu_topology[cpuid]);
+>
+> Neither are these.
+>
+>> +     unsigned int mpidr;
+>> +     unsigned int cpu;
+>> +
+>> +     /* If the cpu topology has been already set, just return */
+>> +     if (cpuid_topo->core_id != -1)
+>> +             return;
+>> +
+>> +     mpidr = read_cpuid_mpidr();
+>> +
+>> +     /* create cpu topology mapping */
+>> +     if ((mpidr & MPIDR_SMP_BITMASK) == MPIDR_SMP_VALUE) {
+>> +             /*
+>> +              * This is a multiprocessor system
+>> +              * multiprocessor format & multiprocessor mode field are set
+>> +              */
+>> +
+>> +             if (mpidr & MPIDR_MT_BITMASK) {
+>> +                     /* core performance interdependency */
+>> +                     cpuid_topo->thread_id = ((mpidr >> MPIDR_LEVEL0_SHIFT)
+>> +                             & MPIDR_LEVEL0_MASK);
+>> +                     cpuid_topo->core_id =  ((mpidr >> MPIDR_LEVEL1_SHIFT)
+>> +                             & MPIDR_LEVEL1_MASK);
+>> +                     cpuid_topo->socket_id = ((mpidr >> MPIDR_LEVEL2_SHIFT)
+>> +                             & MPIDR_LEVEL2_MASK);
+>
+> Outer set aren't required.
+>
+>> +             } else {
+>> +                     /* largely independent cores */
+>> +                     cpuid_topo->thread_id = -1;
+>> +                     cpuid_topo->core_id = ((mpidr >> MPIDR_LEVEL0_SHIFT)
+>> +                             & MPIDR_LEVEL0_MASK);
+>> +                     cpuid_topo->socket_id = ((mpidr >> MPIDR_LEVEL1_SHIFT)
+>> +                             & MPIDR_LEVEL1_MASK);
+>
+> Outer set aren't required.
+>
+>> +             }
+>> +     } else {
+>> +             /*
+>> +              * This is an uniprocessor system
+>> +              * we are in multiprocessor format but uniprocessor system
+>> +              * or in the old uniprocessor format
+>> +              */
+>> +
+>
+> This blank line isn't necessary.
+>
+>> +             cpuid_topo->thread_id = -1;
+>> +             cpuid_topo->core_id = 0;
+>> +             cpuid_topo->socket_id = -1;
+>> +     }
+>> +
+>> +     /* update core and thread sibling masks */
+>> +     for_each_possible_cpu(cpu) {
+>> +             struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
+>
+> Parens not required.
+>
+>> +
+>> +             if (cpuid_topo->socket_id == cpu_topo->socket_id) {
+>> +                     cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
+>> +                     if (cpu != cpuid)
+>> +                             cpumask_set_cpu(cpu,
+>> +                                     &cpuid_topo->core_sibling);
+>> +
+>> +                     if (cpuid_topo->core_id == cpu_topo->core_id) {
+>> +                             cpumask_set_cpu(cpuid,
+>> +                                     &cpu_topo->thread_sibling);
+>> +                             if (cpu != cpuid)
+>> +                                     cpumask_set_cpu(cpu,
+>> +                                             &cpuid_topo->thread_sibling);
+>> +                     }
+>> +             }
+>> +     }
+>> +     smp_wmb();
+>> +
+>> +     printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
+>> +             cpuid, cpu_topology[cpuid].thread_id,
+>> +             cpu_topology[cpuid].core_id,
+>> +             cpu_topology[cpuid].socket_id, mpidr);
+>
+> Thanks for changing that.
+>
+>> +}
+>> +
+>> +/*
+>> + * init_cpu_topology is called at boot when only one cpu is running
+>> + * which prevent simultaneous write access to cpu_topology array
+>> + */
+>> +void init_cpu_topology(void)
+>> +{
+>> +     unsigned int cpu;
+>> +
+>> +     /* init core mask */
+>> +     for_each_possible_cpu(cpu) {
+>> +             struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
+>> +
+>> +             cpu_topo->thread_id = -1;
+>> +             cpu_topo->core_id =  -1;
+>> +             cpu_topo->socket_id = -1;
+>> +             cpumask_clear(&cpu_topo->core_sibling);
+>> +             cpumask_clear(&cpu_topo->thread_sibling);
+>> +     }
+>> +     smp_wmb();
+>> +}
+>
