@@ -1,54 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752706Ab1GDBHe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 21:07:34 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:33653 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752558Ab1GDBHd (ORCPT
+	id S1752865Ab1GDBJk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 21:09:40 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46133 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752333Ab1GDBJj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 21:07:33 -0400
-Date: Sun, 3 Jul 2011 21:07:23 -0400 (EDT)
-From: Nicolas Pitre <nicolas.pitre@linaro.org>
-X-X-Sender: nico@xanadu.home
-To: Per Forlin <per.forlin@linaro.org>
-cc: Arnd Bergmann <arnd@arndb.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, linaro-dev@lists.linaro.org,
-        Linus Walleij <linus.walleij@linaro.org>, linux-mmc@vger.kernel.org,
-        lkml <linux-kernel@vger.kernel.org>, Chris Ball <cjb@laptop.org>,
-        Nickolay Nickolaev <nicknickolaev@gmail.com>
-Subject: Re: [PATCH v8 00/12] use nonblock mmc requests to minimize latency
-In-Reply-To: <CAJ0pr1_Rd754qJ+jP9rqbez-9NAOwbxorziQrGDA0yrSMpPsxw@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1107032105010.14596@xanadu.home>
-References: <1309248717-14606-1-git-send-email-per.forlin@linaro.org> <201107011844.44058.arnd@arndb.de> <20110702122938.GI21898@n2100.arm.linux.org.uk> <201107022137.30138.arnd@arndb.de> <CAJ0pr1_Rd754qJ+jP9rqbez-9NAOwbxorziQrGDA0yrSMpPsxw@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sun, 3 Jul 2011 21:09:39 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110703135812I.fujita.tomonori@lab.ntt.co.jp>
+References: <BANLkTi=OkgWYJz-29yALe=11L8_UEcBvfA@mail.gmail.com> <20110703135812I.fujita.tomonori@lab.ntt.co.jp>
+From: Jim Cromie <jim.cromie@gmail.com>
+Date: Sun, 3 Jul 2011 19:09:09 -0600
+Message-ID: <CAJfuBxxP1cOgJHW7ujGfeHE2CxDcoCe1qb5eZQWCgkyhgLYBWw@mail.gmail.com>
+Subject: Re: dma-debug report/error on natsemi eth0
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: linux-kernel@vger.kernel.org, linux-netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Jul 2011, Per Forlin wrote:
+On Sat, Jul 2, 2011 at 11:06 PM, FUJITA Tomonori
+<fujita.tomonori@lab.ntt.co.jp> wrote:
+> On Thu, 30 Jun 2011 12:34:52 -0600
+> Jim Cromie <jim.cromie@gmail.com> wrote:
+>
+>> since adding DMA-debug to my config, Ive been seeing these.
+>> I suspect it goes back a ways..
+>>
+>> its on my list to do some investigating,
+>> but I figured Id report in the meantime.
+>>
+>> ------------[ cut here ]------------
+>> WARNING: at /home/jimc/projects/lx/linux-2.6/lib/dma-debug.c:820
+>> check_unmap+0x1fe/0x56a()
+>> natsemi 0000:00:06.0: DMA-API: device driver frees DMA memory with
+>> different size [device address=0x0000000006ef0040] [map size=1538
+>> bytes] [unmap size=1522 bytes]
+>> Modules linked in: pc8736x_gpio pc87360 hwmon_vid scx200_gpio nsc_gpio
+>> scx200_hrt scx200_acb i2c_core arc4 rtl8180 mac80211 eeprom_93cx6
+>> cfg80211 pcspkr rfkill scx200 ide_gd_mod ide_pci_generic ohci_hcd
+>> usbcore sc1200 ide_core
+>> Pid: 870, comm: collector Not tainted 3.0.0-rc5-sk-00080-gca56a95 #1
+>> Call Trace:
+>>  [<c011a556>] warn_slowpath_common+0x4a/0x5f
+>>  [<c02565cb>] ? check_unmap+0x1fe/0x56a
+>>  [<c011a5cf>] warn_slowpath_fmt+0x26/0x2a
+>
+> The following patch silences the warning?
 
-> On 2 July 2011 21:37, Arnd Bergmann <arnd@arndb.de> wrote:
-> > On Saturday 02 July 2011 14:29:38 Russell King - ARM Linux wrote:
-> >> One other thing to be considered here is whether this idea should be
-> >> limited to just MMC or whether it should be extended further, to
-> >> move the DMA mapping stuff out of the hot path for other block devices
-> >> too.
-> >>
-> >> There are ARM systems with SATA which do 28MB/s - which could be
-> >> improved by this technique.
-> >
-> > Excellent point. We had discussed SATA items in the context of Linaro
-> > work before, and the conclusion was always that we wouldn't need to
-> > do any work for it in the common code. I'll make sure that we bring
-> > it up at the meeting next month in Cambridge so we can officially
-> > assign someone to do this.
-> >
-> Arnd, do you know if any of the Linaro boards have SATA?
 
-The latest i.mx53 boards have SATA.
+yes it does, thanks.
 
+Reported-by: Jim Cromie <jim.cromie@gmail.com>
+Tested-by: Jim Cromie <jim.cromie@gmail.com>
 
-Nicolas
+>
+> diff --git a/drivers/net/natsemi.c b/drivers/net/natsemi.c
+> index b78be08..1019379 100644
+> --- a/drivers/net/natsemi.c
+> +++ b/drivers/net/natsemi.c
+> @@ -2360,7 +2360,8 @@ static void netdev_rx(struct net_device *dev, int *work_done, int work_to_do)
+>                                        PCI_DMA_FROMDEVICE);
+>                        } else {
+>                                pci_unmap_single(np->pci_dev, np->rx_dma[entry],
+> -                                       buflen, PCI_DMA_FROMDEVICE);
+> +                                                buflen+NATSEMI_PADDING,
+> +                                                PCI_DMA_FROMDEVICE);
+>                                skb_put(skb = np->rx_skbuff[entry], pkt_len);
+>                                np->rx_skbuff[entry] = NULL;
+>                        }
+>
