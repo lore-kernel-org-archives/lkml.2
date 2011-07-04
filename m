@@ -1,74 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753787Ab1GDHeP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 03:34:15 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:23788 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752689Ab1GDHeK convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Mon, 4 Jul 2011 03:34:10 -0400
-Message-Id: <4E11890D020000780004BF40@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Mon, 04 Jul 2011 08:34:05 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Frederic Weisbecker" <fweisbec@gmail.com>
-Cc: "Peter Zijlstra" <a.p.zijlstra@chello.nl>, "Ingo Molnar" <mingo@elte.hu>,
-        "Thomas Gleixner" <tglx@linutronix.de>,
-        "Arnaldo Carvalho de Melo" <acme@redhat.com>,
-        "LKML" <linux-kernel@vger.kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 4/6] x86,64: Separate arg1 from rbp handling in
-	 SAVE_REGS_IRQ
-References: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
- <1309624184-9790-5-git-send-email-fweisbec@gmail.com>
-In-Reply-To: <1309624184-9790-5-git-send-email-fweisbec@gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1754156Ab1GDHhz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 03:37:55 -0400
+Received: from ozlabs.org ([203.10.76.45]:54261 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751335Ab1GDHhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 03:37:53 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: "Michael S. Tsirkin" <mst@redhat.com>,
+        Sasha Levin <levinsasha928@gmail.com>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        kvm@vger.kernel.org, dave@linux.vnet.ibm.com,
+        Amit Shah <amit.shah@redhat.com>, Pekka Enberg <penberg@kernel.org>
+Subject: Re: [PATCH] virtio_balloon: Notify guest only after deflating the balloon
+In-Reply-To: <20110703121137.GA15826@redhat.com>
+References: <1309576016-22800-1-git-send-email-levinsasha928@gmail.com> <20110703082748.GD13183@redhat.com> <1309686419.2250.8.camel@sasha> <20110703103051.GA15537@redhat.com> <1309690349.2250.21.camel@sasha> <20110703121137.GA15826@redhat.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Mon, 04 Jul 2011 17:07:12 +0930
+Message-ID: <87boxasdhz.fsf@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 02.07.11 at 18:29, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> Just for clarity in the code. Have a first block that handles
-> the frame pointer and a separate one that handles pt_regs
-> pointer and its use.
-
-While possible indeed making the code easier to read, it increases the
-chance of a latency related stall (due to the write to %rdi immediately
-preceding its use as a memory operand's address).
-
-Jan
-
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Jan Beulich <JBeulich@novell.com>
-> ---
->  arch/x86/kernel/entry_64.S |    3 ++-
->  1 files changed, 2 insertions(+), 1 deletions(-)
+On Sun, 3 Jul 2011 15:11:37 +0300, "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> On Sun, Jul 03, 2011 at 01:52:29PM +0300, Sasha Levin wrote:
+> > This just leads me to believe that we should either not notify the host,
+> > or not wait_for_completion() when telling the host.
 > 
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index b6b2e85..20dc8e6 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -310,9 +310,10 @@ ENDPROC(native_usergs_sysret64)
->  	movq_cfi r10, R10-RBP
->  	movq_cfi r11, R11-RBP
->  
-> -	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
->  	movq_cfi rbp, 0		/* push %rbp */
->  	movq %rsp, %rbp
-> +
-> +	leaq -RBP(%rsp),%rdi	/* arg1 for handler */
->  	testl $3, CS(%rdi)
->  	je 1f
->  	SWAPGS
+> Interesting. The spec says
+> 
+> (a) The driver constructs an array of addresses of memory pages it has
+> previously given to the balloon, as described above. This descriptor
+> is added to the deflateq.
+> (b) If the VIRTIO_BALLOON_F_MUST_TELL_HOST feature is set,
+> the guest may not use these requested pages until that descriptor in
+> the deflateq has been used by the device.
+> (c) Otherwise, the guest may begin to re-use pages previously given to
+> the balloon before the device has acknowledged their withdrawl.
+>  21 In this case, deflation advice is merely a courtesy
+> 
+> This does not discuss the following issue: what happens
+> if the device never uses the descriptor in the deflateq
+> and VIRTIO_BALLOON_F_MUST_TELL_HOST is not set?
+> 
+> Rusty, any comments?
 
+The device still *has* a queue.  It should process it!
 
+The feature should be called VIRTIO_BALLOON_F_ASK_HOST_BEFORE_REUSE.
 
+If we didn't want the information at *all*, we would have made the queue
+not exist in that case...
 
+Thanks,
+Rusty.
