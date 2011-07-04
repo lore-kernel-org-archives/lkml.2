@@ -1,78 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943Ab1GDPut (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 11:50:49 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:39579 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757197Ab1GDPur (ORCPT
+	id S1758031Ab1GDPvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 11:51:20 -0400
+Received: from mail.karo-electronics.de ([81.173.242.67]:62906 "EHLO
+	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757235Ab1GDPvS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 11:50:47 -0400
-Date: Mon, 4 Jul 2011 11:50:47 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Partha Basak <p-basak2@ti.com>
-cc: Keshava Munegowda <keshava_mgowda@ti.com>, <linux-usb@vger.kernel.org>,
-        <linux-omap@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Felipe Balbi <balbi@ti.com>, Anand Gadiyar <gadiyar@ti.com>,
-        <sameo@linux.intel.com>, <parthab@india.ti.com>, <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        <paul@pwsan.com>, <johnstul@us.ibm.com>,
-        Vishwanath Sripathy <vishwanath.bs@ti.com>
-Subject: RE: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
- of ehci and ohci
-In-Reply-To: <11640ef76f97628579e457b5c6a74cc3@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1107041147510.12242-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 4 Jul 2011 11:51:18 -0400
+Message-ID: <19985.57715.78894.466149@ipc1.ka-ro>
+Date: Mon, 4 Jul 2011 17:51:15 +0200
+From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-kernel@vger.kernel.org
+Mime-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+Subject: Re: [PATCH] add missing intialisation of bgc->dir
+In-Reply-To: <20110704153944.GD29977@ponder.secretlab.ca>
+References: <1309522131-2237-1-git-send-email-LW@KARO-electronics.de>
+	<1309522131-2237-2-git-send-email-LW@KARO-electronics.de>
+	<20110704064844.GM15152@ponder.secretlab.ca>
+	<19985.35317.629981.97373@ipc1.ka-ro>
+	<20110704153944.GD29977@ponder.secretlab.ca>
+X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jul 2011, Partha Basak wrote:
+Hi,
 
-> >I don't see any point in these routines (and likewise for
-> >omap_ohci_suspend/resume).  When the whole system is going to sleep
-> >anyway, what reason is there for enabling runtime PM on the parent
-> >device?
+Grant Likely writes:
+> On Mon, Jul 04, 2011 at 11:37:57AM +0200, Lothar Waßmann wrote:
+> > Hi,
+> > 
+> > Grant Likely writes:
+> > > On Fri, Jul 01, 2011 at 02:08:51PM +0200, Lothar Waßmann wrote:
+> > > > ---
+> > > >  drivers/gpio/basic_mmio_gpio.c |    1 +
+> > > >  1 files changed, 1 insertions(+), 0 deletions(-)
+> > > > 
+> > > > diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
+> > > > index 8152e9f..e69a453 100644
+> > > > --- a/drivers/gpio/basic_mmio_gpio.c
+> > > > +++ b/drivers/gpio/basic_mmio_gpio.c
+> > > > @@ -399,6 +399,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
+> > > >  		return ret;
+> > > >  
+> > > >  	bgc->data = bgc->read_reg(bgc->reg_dat);
+> > > > +	bgc->dir = bgc->read_reg(bgc->reg_dir);
+> > > 
+> > > Hi Lothar.
+> > > 
+> > > You'll need to double check your email setup.  The patch got emailed
+> > > separately from the description.
+> > > 
+> > git-send-email did that.
 > 
-> Both for EHCI & OHCI, the clocks are owned by the parent (uhh-tll).
+> It appears that you asked it to send a cover letter, which you usually
+> don't want when sending a single patch.  The patch description should
+> be part of the git commit itself.
+>
+Yes, I noticed that already.
+
+> > > I don't know if this is a valid thing to do or not.  Not every GPIO
+> > > controller supports reading back the initial state from the direction
+> > > register.  I suspect it is better to leave initialization of the
+> > > direction to the gpio controller driver itself.
+> > > 
+> > That would mean, that external software would have to have access to
+> > the bgpio internal data structures which is a Bad Thing(TM) IMO. Or we
+> > need a function that allows to explicitly initialize the internal
+> > shadow registers.
 > 
-> Calling pm_runtime_put_sync(dev->parent) within omap_ehci_suspend
-> will turn-off the parent clocks in the Suspend path.
+> What device are you using this for.  Are you using the basic gpio
+> platform_driver, or do you have a driver using the library part of the
+> basic gpio code?
 > 
-> Similarly, calling pm_runtime_get_sync(dev->parent) within
-> omap_ehci_resume
-> will turn-on the parent clocks in the resume path.
-> 
-> This way, all reference counting are implicit within the Runtime PM layer
-> and takes care of all combinations of only EHCI insmoded, OHCI insmoded,
-> both insmoded etc.
-> 
-> When both EHCI & OHCI are suspended, parent clocks will actually be
-> turned OFF and vice-versa.
-> 
-> Note that the parent per-se does not have any .suspend & .resume hooked
-> up.
+I'm using it via drivers/gpio/gpio-mxc.
 
-Why not?  That sounds like a big bug.
 
-> At the end of the _probe of parent, the clocks are turned OFF.
-> Subsequently, enabling
-> the parent clocks are entirely done implicitly by the children get_sync()
-> in their _probe.
-> 
-> Therefore while .suspend/.resume of children are called they call back
-> into the parent to turn-off the clocks.
+Lothar Waßmann
+-- 
+___________________________________________________________
 
-You have ignored a few very important points:
+Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
+Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
+Geschäftsführer: Matthias Kaussen
+Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
 
-Firstly, system suspend is supposed to work even when runtime PM is not 
-configured.
-
-Secondly, the user can disable runtime PM via sysfs at any time.  This 
-shouldn't mess up system suspend.
-
-Basically, it's a bad idea to mix up system suspend with runtime PM.
-
-Alan Stern
-
+www.karo-electronics.de | info@karo-electronics.de
+___________________________________________________________
