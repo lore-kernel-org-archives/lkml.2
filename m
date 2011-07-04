@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab1GDWnF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 18:43:05 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:38223 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752435Ab1GDWnD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 18:43:03 -0400
-From: Kees Cook <kees.cook@canonical.com>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH 1/2] x86: give names to realmode wakeup flags
-Date: Mon,  4 Jul 2011 15:35:52 -0700
-Message-Id: <1309818953-769-2-git-send-email-kees.cook@canonical.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1309818953-769-1-git-send-email-kees.cook@canonical.com>
-References: <1309818953-769-1-git-send-email-kees.cook@canonical.com>
-X-HELO: www.outflux.net
+	id S1752723Ab1GDXiW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 19:38:22 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57721 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752560Ab1GDXiT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 19:38:19 -0400
+MIME-Version: 1.0
+In-Reply-To: <000001cc3a16$4cec0710$e6c41530$%szyprowski@samsung.com>
+References: <1309743708-1505-1-git-send-email-pullip.cho@samsung.com>
+	<000001cc3a16$4cec0710$e6c41530$%szyprowski@samsung.com>
+Date: Tue, 5 Jul 2011 08:38:17 +0900
+X-Google-Sender-Auth: f9Jj0QGFZKjEWX6mTplvEgiGtp0
+Message-ID: <CAHQjnOPMCMh3fO7RXP7pbD8_nuDEG9ksLhtCcAy=2Z2bTarT9A@mail.gmail.com>
+Subject: Re: [PATCH 0/6+1] ARM: EXYNOS4: SYSMMU: Improvements on SYSMMU driver
+From: KyongHo Cho <pullip.cho@samsung.com>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-samsung-soc@vger.kernel.org,
+        iommu@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        Joerg Roedel <joro@8bytes.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        Sanghyun Lee <sanghyun75.lee@samsung.com>,
+        Ilho Lee <ilho215.lee@samsung.com>, Kwanghyun La <nala.la@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrzej Pietrasiewicz <andrzej.p@samsung.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using literals, use a common set of names for the
-user-controlled realmode wakeup flags.
+Hi.
+On Mon, Jul 4, 2011 at 3:47 PM, Marek Szyprowski
+<m.szyprowski@samsung.com> wrote:
+> Hello,
+>
+> I really don't get why do You persist in creating one monster platform
+> device with resources for ALL SYSMMU/IOMMU controllers that are available
+> on Exynos4 CPU. We (SPRC, see Andrzej's SYSMMU patches) already proposed
+> a clean solution for making the SYSMMU controllers independent of each
+> other as well as making the main SYSMMU driver simpler and more
+> independent of the particular Exynos4 platform definition. In Linux
+> device model if the device/controller exist in the system in more than
+> one instance, there should by one generic driver for it and a set of
+> platform definitions for each instance.
+>
+Did you find this patch? "[PATCH 3/6] ARM: EXYNOS4: SYSMMU"
+I Cced you because it includes your suggestion.
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
- arch/x86/kernel/acpi/realmode/wakemain.c |    6 +++---
- arch/x86/kernel/acpi/realmode/wakeup.h   |    4 ++++
- arch/x86/kernel/acpi/sleep.c             |    6 +++---
- 3 files changed, 10 insertions(+), 6 deletions(-)
+> Here is the link to our SYSMMU updated driver (implementing common
+> iommu API):
+> http://www.spinics.net/lists/linux-samsung-soc/msg04508.html
+> The driver still needs some cleanup, but this has been delayed until
+> the dma-mapping framework update is finished.
+>
+> I also don't get why do you want to keep the completely custom sysmmu
+> driver and implement iommu API on top of it. Is it really required for
+> anything? Mainline kernel is not a place for custom APIs if there is
+> already a common, generic one.
 
-diff --git a/arch/x86/kernel/acpi/realmode/wakemain.c b/arch/x86/kernel/acpi/realmode/wakemain.c
-index 883962d..1749cde 100644
---- a/arch/x86/kernel/acpi/realmode/wakemain.c
-+++ b/arch/x86/kernel/acpi/realmode/wakemain.c
-@@ -67,13 +67,13 @@ void main(void)
- 	if (wakeup_header.real_magic != 0x12345678)
- 		while (1);
- 
--	if (wakeup_header.realmode_flags & 4)
-+	if (wakeup_header.realmode_flags & WAKE_FLAG_BEEP)
- 		send_morse("...-");
- 
--	if (wakeup_header.realmode_flags & 1)
-+	if (wakeup_header.realmode_flags & WAKE_FLAG_BIOS)
- 		asm volatile("lcallw   $0xc000,$3");
- 
--	if (wakeup_header.realmode_flags & 2) {
-+	if (wakeup_header.realmode_flags & WAKE_FLAG_MODE) {
- 		/* Need to call BIOS */
- 		probe_cards(0);
- 		set_mode(wakeup_header.video_mode);
-diff --git a/arch/x86/kernel/acpi/realmode/wakeup.h b/arch/x86/kernel/acpi/realmode/wakeup.h
-index e1828c0..88f0e6c 100644
---- a/arch/x86/kernel/acpi/realmode/wakeup.h
-+++ b/arch/x86/kernel/acpi/realmode/wakeup.h
-@@ -39,4 +39,8 @@ extern struct wakeup_header wakeup_header;
- #define WAKEUP_HEADER_SIGNATURE 0x51ee1111
- #define WAKEUP_END_SIGNATURE	0x65a22c82
- 
-+#define WAKEUP_FLAG_BIOS        1
-+#define WAKEUP_FLAG_MODE        2
-+#define WAKEUP_FLAG_BEEP        4
-+
- #endif /* ARCH_X86_KERNEL_ACPI_RM_WAKEUP_H */
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 18a857b..cb968e5 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -104,11 +104,11 @@ static int __init acpi_sleep_setup(char *str)
- {
- 	while ((str != NULL) && (*str != '\0')) {
- 		if (strncmp(str, "s3_bios", 7) == 0)
--			acpi_realmode_flags |= 1;
-+			acpi_realmode_flags |= WAKEUP_FLAG_BIOS;
- 		if (strncmp(str, "s3_mode", 7) == 0)
--			acpi_realmode_flags |= 2;
-+			acpi_realmode_flags |= WAKEUP_FLAG_MODE;
- 		if (strncmp(str, "s3_beep", 7) == 0)
--			acpi_realmode_flags |= 4;
-+			acpi_realmode_flags |= WAKEUP_FLAG_BEEP;
- #ifdef CONFIG_HIBERNATION
- 		if (strncmp(str, "s4_nohwsig", 10) == 0)
- 			acpi_no_s4_hw_signature();
--- 
-1.7.4.1
-
+I did not exposed any custom API.
+The global function in the last patch is just for IOMMU API implemenation.
+The header file in the last patch is not for the device drivers but
+for the IOMMU API implementation.
+Actually, they can be merged into one single file.
+But I just wanted to change the kernel code stepwise.
