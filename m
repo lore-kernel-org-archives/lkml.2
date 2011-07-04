@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab1GDVws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 17:52:48 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48959 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752243Ab1GDVwq (ORCPT
+	id S1752396Ab1GDVwr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 17:52:47 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:53925 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab1GDVwq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 4 Jul 2011 17:52:46 -0400
-Date: Mon, 4 Jul 2011 22:55:20 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        linux-serial@vger.kernel.org
-Subject: Re: [PATCH 7/7] serial/8250: make PIO support optional
-Message-ID: <20110704225520.2d0004f3@lxorguk.ukuu.org.uk>
-In-Reply-To: <201107042237.05295.arnd@arndb.de>
-References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
-	<201107042127.31649.arnd@arndb.de>
-	<20110704205336.09547e1f@lxorguk.ukuu.org.uk>
-	<201107042237.05295.arnd@arndb.de>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Date: Mon, 4 Jul 2011 23:52:40 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
+Message-ID: <20110704215240.GG15637@one.firstfloor.org>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com> <1309766525-14089-2-git-send-email-ming.m.lin@intel.com> <1309778192.3282.27.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309778192.3282.27.camel@twins>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> How are people using those ISA cards today? The version of setserial
-> that I found is not able to set MMIO mode on those. I suppose you
+On Mon, Jul 04, 2011 at 01:16:32PM +0200, Peter Zijlstra wrote:
+> On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
+> > +#define MEM_STORE_DCU_HIT              (1ULL << 0)
+> 
+> I'm pretty sure that's not Dublin City University, but what is it?
+> Data-Cache-Unit? 
 
-Various ugly hacks, if its tricky we can drop support and see who screams
+Yes
 
-> are not talking about isapnp cards, right? Those should not need to
-> be handled through the ISA driver at all.
+> what does that mean, L1/L2 or also L3? 
 
-ISAPnP will do it automatically so the ISAPnP case isn't a problem. I've
-never sen an ISAPnP port that was anything but standard.
+DCU is L1D
 
+(L2 would be MLC, L3 is LLC in Intelnese)
+
+> > +#define MEM_STORE_STLB_HIT             (1ULL << 1)
+> 
+> What's an sTLB? I know iTLB and dTLB's but sTLBs I've not heard of yet.
+
+Second Level TLB (for both i and d)
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
