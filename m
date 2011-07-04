@@ -1,137 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756854Ab1GDJbI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 05:31:08 -0400
-Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:54582 "EHLO
-	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754177Ab1GDJbF (ORCPT
+	id S1756822Ab1GDJg4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 05:36:56 -0400
+Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:35784 "EHLO
+	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab1GDJgy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 05:31:05 -0400
-Date: Mon, 4 Jul 2011 12:30:57 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Partha Basak <p-basak2@ti.com>
-Cc: balbi@ti.com, Alan Stern <stern@rowland.harvard.edu>,
-        Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anand Gadiyar <gadiyar@ti.com>, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, Kevin Hilman <khilman@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, paul@pwsan.com, johnstul@us.ibm.com,
-        Vishwanath Sripathy <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
- of ehci and ohci
-Message-ID: <20110704093056.GD25295@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1309546474-15363-7-git-send-email-keshava_mgowda@ti.com>
- <Pine.LNX.4.44L0.1107011504530.1624-100000@iolanthe.rowland.org>
- <11640ef76f97628579e457b5c6a74cc3@mail.gmail.com>
- <20110704082553.GH15044@legolas.emea.dhcp.ti.com>
- <99b22453092fc32b751c3e7d0223c7eb@mail.gmail.com>
+	Mon, 4 Jul 2011 05:36:54 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E118B9D.2070104@cam.ac.uk>
+Date: Mon, 04 Jul 2011 10:45:01 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="DiL7RhKs8rK9YGuF"
-Content-Disposition: inline
-In-Reply-To: <99b22453092fc32b751c3e7d0223c7eb@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dan Carpenter <error27@gmail.com>
+CC: Chris Forbes <chrisf@ijw.co.nz>, devel@driverdev.osuosl.org,
+        "linux-iio@vger.kernel.org" <linux-iio@vger.kernel.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] drivers: staging: iio: adc: fix uninitialized use
+References: <1309657621-21711-1-git-send-email-chrisf@ijw.co.nz> <4E118157.3020906@cam.ac.uk> <20110704091016.GM2544@shale.localdomain>
+In-Reply-To: <20110704091016.GM2544@shale.localdomain>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/04/11 10:10, Dan Carpenter wrote:
+> On Mon, Jul 04, 2011 at 10:01:11AM +0100, Jonathan Cameron wrote:
+>> On 07/03/11 02:47, Chris Forbes wrote:
+>>> Fixed an uninitialized variable access. In the first two error paths in
+>>> max1363_probe(), 'st' is not yet initialized, but its 'reg' member is
+>>> accessed anyway. This would most likely crash.
+>> Good spot. Please tech TODO files for staging patches. In this case it would
+>> have given you the mailing list, now cc'd.
+> 
+> It would better to add an entry to MAINTAINERS so that
+> ./scripts/get_maintainer.pl gave the right lists.
+Perhaps, but Greg KH is anti, so it isn't going to happen.
 
---DiL7RhKs8rK9YGuF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Mon, Jul 04, 2011 at 02:56:30PM +0530, Partha Basak wrote:
-> >> Both for EHCI & OHCI, the clocks are owned by the parent (uhh-tll).
-> >>
-> >> Calling pm_runtime_put_sync(dev->parent) within omap_ehci_suspend will
-> >> turn-off the parent clocks in the Suspend path.
-> >>
-> >> Similarly, calling pm_runtime_get_sync(dev->parent) within
-> >> omap_ehci_resume will turn-on the parent clocks in the resume path.
-> >>
-> >> This way, all reference counting are implicit within the Runtime PM
-> >> layer and takes care of all combinations of only EHCI insmoded, OHCI
-> >> insmoded, both insmoded etc.
-> >>
-> >> When both EHCI & OHCI are suspended, parent clocks will actually be
-> >> turned OFF and vice-versa.
-> >
-> >not sure this is necessary. I would expect:
-> >
-> >pm_runtime_get_sync(dev) to propagate up the parent tree and enable all
-> >necessary resources to get the child in a working state. IOW, you
-> >shouldn't need to manuall access the parent device.
-> >
-> Refer to the description in Patch(5/6)
-> <snip>
-> In fact, the runtime framework takes care the get sync and put sync of the
-> child
-> in turn call the get sync and put sync of parent too; but calling get sync
-> and
-> put sync of parent is by ASYNC mode;
-> This mode queues the work item in runtime pm work queue,
-> which not getting scheduled in case of global suspend path.
-> <snip>
-> This approach was tried, but did not work in the Suspend path
-
-sounds to me like a bug on pm runtime ? If you're calling
-pm_runtime_*_sync() family, shouldn't all calls be _sync() too ?
-
-> static int rpm_suspend(struct device *dev, int rpmflags)
-> 	__releases(&dev->power.lock) __acquires(&dev->power.lock)
-> {
-> .
-> .
-> .
-> no_callback:
-> .
-> .
-> .
-> 	/* Maybe the parent is now able to suspend. */
-> 	if (parent && !parent->power.ignore_children &&
-> !dev->power.irq_safe) {
-> 		spin_unlock(&dev->power.lock);
->=20
-> 		spin_lock(&parent->power.lock);
-> 		rpm_idle(parent, RPM_ASYNC);
-
-to me this is bogus, if you called pm_runtime_put_sync() should should
-be sync too. Shouldn't it ?
-
-> 		spin_unlock(&parent->power.lock);
->=20
-> 		spin_lock(&dev->power.lock);
-> 	}
-> This is the reason of directly calling the parent Runtime PM calls from
-> the children.
-> If directly calling Runtime PM APIs with parent dev-pointer isn't
-> acceptable,
-> this can be achieved by exporting wrapper APIs from the
-> parent and calling them from the chidren .suspend/.resume routines.
-
-Still no good, IMHO.
-
---=20
-balbi
-
---DiL7RhKs8rK9YGuF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOEYhQAAoJEAv8Txj19kN1/UIH/127HFZWPHj+eerNxAGfhuNh
-Lc6DDE7q6H/09qlPEPUl0MLwtNmchh1SRsCRgjZJ4GwJdR28nmuuxShvSQ8vwK2f
-5ZF3FWdDKsvOtovrZBcEi45lsWvbaQ/CCGoAEb2lmsqFPSGOymngXDnKbKIpWQJW
-+zVI3xHyYyBLzfZkjNds1JDMZHQHfJAyxOcu0UIaNdAADdHHhFulBLxWiSbhT26a
-FFUGbWL8Tam7zk4Mrye5o4DWENRZkqBEOj8KswMd4pvp83yDO78/T8NYIIxqGv3I
-gb4IPcpOZ2xpw3kPw1vZY/lDA4NTjP3/YYuI+gVGrTKNVz6vGaTwVbZPFYbfyes=
-=PIdr
------END PGP SIGNATURE-----
-
---DiL7RhKs8rK9YGuF--
