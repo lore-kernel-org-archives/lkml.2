@@ -1,76 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758369Ab1GDRps (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 13:45:48 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60149 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758118Ab1GDRpq (ORCPT
+	id S1758436Ab1GDRqN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 13:46:13 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42027 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757927Ab1GDRqM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 13:45:46 -0400
-Date: Mon, 4 Jul 2011 21:45:40 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Balbir Singh <bsingharora@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH 2/2] taskstats: restrict access to user
-Message-ID: <20110704174540.GA3321@albatros>
-References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
- <BANLkTi=dTHGK1QVs+g2tA6WocQ64SPPF3g@mail.gmail.com>
- <20110629201718.GA11071@albatros>
- <20110702073625.GA3318@albatros>
- <CAKTCnzmjaddz-ihxJ_qme28S==BAPGRmC2j3iE5fqm8TPi0knA@mail.gmail.com>
+	Mon, 4 Jul 2011 13:46:12 -0400
+Date: Mon, 4 Jul 2011 10:46:00 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org, Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: Re: [PATCH 6/6] ASoC: twl6040: No need to convert the PLL ID
+Message-ID: <20110704174556.GI28726@opensource.wolfsonmicro.com>
+References: <1309773958-14608-1-git-send-email-peter.ujfalusi@ti.com>
+ <1309773958-14608-7-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <CAKTCnzmjaddz-ihxJ_qme28S==BAPGRmC2j3iE5fqm8TPi0knA@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1309773958-14608-7-git-send-email-peter.ujfalusi@ti.com>
+X-Cookie: You will have long and healthy life.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Balbir,
+On Mon, Jul 04, 2011 at 01:05:58PM +0300, Peter Ujfalusi wrote:
+> Since the PLL handling has been simplified, and
+> rebased on 0, there is no longer need for converting
+> the PLL ID.
 
-On Mon, Jul 04, 2011 at 08:27 +0530, Balbir Singh wrote:
-> Would it be possible to audit the entire taskstats structure to see
-> what fields should and should not be exposed. If a particular field
-> should not be exposed, we can fill it in with a special value
-> indicating additional permission is required to see it and fill in
-> those fields only when credentials match like you've shown
-> 
-> Does that make sense?
+These are all
 
-I'm afraid there is no universal opinion about it.  My point is
-(almost) all this information (unless it can be gathered more simple
-way) can be used by an attacker in one or another situation (highly
-conditional, he might have to win a race(s), etc.), which might not be
-approved by other developers without a proof.
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-The review would be reduced to trying to exploit some programs using
-this information (so, it would be still incomplete).  I don't feel
-myself enough experienced in such types of exploitation to (a) imagine
-the abstract attack scenario and (b) find a program this attack would be
-targeted to.
-
-The already known danger is these io fields.  I *suspect* scheduler,
-timer, page faults, exit status, and memory related information can be
-used in situations where changing these fields might reveal the very
-fact of some private computation.  These are only my thoughts and I
-couldn't find any more or less realistic scenario of exploitation.
-
-ac_comm and credential fields values show the same information as procfs
-files, but I still want to introduce configuration mechanism with a
-separate patch to restrict these fields (both in taskstats and procfs)
-to complicate attacker's job of probing system specific information.
-
-
-So, I cannot fully answer to your question, sorry.
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+though I do generally prefer to have the IDs based off 1 as this means
+that we catch people just shoving 0 in as an ID when it's not
+appropriate.
