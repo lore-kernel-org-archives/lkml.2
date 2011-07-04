@@ -1,121 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757311Ab1GDKbX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 06:31:23 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:18381 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753762Ab1GDKbW (ORCPT
+	id S1757359Ab1GDKmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 06:42:21 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:62281 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757262Ab1GDKmU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 06:31:22 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org,
-        hans-christian.egtvedt@atmel.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@avr32linux.org, u.kleine-koenig@pengutronix.de,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH V3] MMC: PM: add suspend/resume in atmel-mci
-Date: Mon,  4 Jul 2011 13:38:25 +0200
-Message-Id: <1309779505-25509-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <1309530754.4373.3.camel@hcegtvedt.norway.atmel.com>
-References: <1309530754.4373.3.camel@hcegtvedt.norway.atmel.com>
+	Mon, 4 Jul 2011 06:42:20 -0400
+Message-ID: <4E11994B.7070103@gmail.com>
+Date: Mon, 04 Jul 2011 20:43:23 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Sascha Hauer <s.hauer@pengutronix.de>
+CC: Bill Gatliff <bgat@billgatliff.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        viresh kumar <viresh.kumar@st.com>, Shawn Guo <shawn.guo@linaro.org>,
+        Ryan Mallon <ryan@bluewatersys.com>
+Subject: Re: [PATCH 1/3] PWM: add pwm framework support
+References: <1309430517-23821-2-git-send-email-s.hauer@pengutronix.de> <BANLkTikQGFA7XcuAtEEi7_4m-j6-00sZ6Q@mail.gmail.com> <201106301441.24493.arnd@arndb.de> <BANLkTin_htv2z3D9Bbf6N8Y7UKFRvPtvOg@mail.gmail.com> <20110630170229.GP6069@pengutronix.de> <4E0D0595.5070205@gmail.com> <20110701073755.GR6069@pengutronix.de> <4E0D8540.2020200@gmail.com> <20110701085414.GV6069@pengutronix.de> <4E0E6916.50406@gmail.com> <20110704075556.GD6069@pengutronix.de>
+In-Reply-To: <20110704075556.GD6069@pengutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Take care of slots while going to suspend state.
+On 04/07/11 17:55, Sascha Hauer wrote:
+> I am tired of discussing this. It seems we can't agree and unless
+> someone else jumps in here we will probably have to wait for another
+> year until something moves in the PWM area.
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
----
-V3: take care of each slot SUSPENDED state
-    (adding a status bit in the slot "flags")
-V2: move to pm_ops
+If we are going to introduce a new framework for pwms then we should
+create one which meets the needs of at least all of the in kernel
+drivers. This patch series provides no solution for either the atmel or
+ep93xx drivers, so it is not a complete solution. At some point the
+api/framework _must_ be changed. If we can introduce transition layers
+then we should do that now so they we can provide a common framework
+along with some forward thinking about how the other drivers are going
+to be migrated to the new framework. This patch series doesn't even
+migrate _any_ of the existing drivers.
 
- drivers/mmc/host/atmel-mci.c |   60 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 60 insertions(+), 0 deletions(-)
+It doesn't have to be an all or nothing approach. Possibly Bill's series
+is perhaps too involved by changing the api, introducing sysfs support
+and reworking the pwm users. But your series is at the opposite end of
+the spectrum. It does too little. It will take a few release cycles to
+get all of the existing drivers migrated and since we can't change the
+api until that happens the atmel and ep93xx drivers will take longer
+still. At the very least your series should migrate some of the drivers.
 
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index aa8039f..ed63bcd 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -203,6 +203,7 @@ struct atmel_mci_slot {
- #define ATMCI_CARD_PRESENT	0
- #define ATMCI_CARD_NEED_INIT	1
- #define ATMCI_SHUTDOWN		2
-+#define ATMCI_SUSPENDED		3
- 
- 	int			detect_pin;
- 	int			wp_pin;
-@@ -1878,10 +1879,69 @@ static int __exit atmci_remove(struct platform_device *pdev)
- 	return 0;
- }
- 
-+#ifdef CONFIG_PM
-+static int atmci_suspend(struct device *dev)
-+{
-+	struct atmel_mci *host = dev_get_drvdata(dev);
-+	int i;
-+
-+	 for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-+		struct atmel_mci_slot *slot = host->slot[i];
-+		int ret;
-+
-+		if (!slot)
-+			continue;
-+		ret = mmc_suspend_host(slot->mmc);
-+		if (ret < 0) {
-+			while (--i >= 0) {
-+				slot = host->slot[i];
-+				if (slot
-+				&& test_bit(ATMCI_SUSPENDED, &slot->flags)) {
-+					mmc_resume_host(host->slot[i]->mmc);
-+					clear_bit(ATMCI_SUSPENDED, &slot->flags);
-+				}
-+			}
-+			return ret;
-+		} else {
-+			set_bit(ATMCI_SUSPENDED, &slot->flags);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int atmci_resume(struct device *dev)
-+{
-+	struct atmel_mci *host = dev_get_drvdata(dev);
-+	int i;
-+	int ret = 0;
-+
-+	for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-+		struct atmel_mci_slot *slot = host->slot[i];
-+		int err;
-+
-+		slot = host->slot[i];
-+		if (!slot)
-+			continue;
-+		if (!test_bit(ATMCI_SUSPENDED, &slot->flags))
-+			continue;
-+		err = mmc_resume_host(slot->mmc);
-+		if (err < 0)
-+			ret = err;
-+		else
-+			clear_bit(ATMCI_SUSPENDED, &slot->flags);
-+	}
-+
-+	return ret;
-+}
-+#endif
-+static SIMPLE_DEV_PM_OPS(atmci_pm, atmci_suspend, atmci_resume);
-+
- static struct platform_driver atmci_driver = {
- 	.remove		= __exit_p(atmci_remove),
- 	.driver		= {
- 		.name		= "atmel_mci",
-+		.pm		= &atmci_pm,
- 	},
- };
- 
--- 
-1.7.3
+The timeline argument is a bit poor. Yes, there has been discussion for
+a lengthy time about how the pwm api should be developed, but I think
+that is because it is non-trivial to come up with a framework which is
+good enough to support all of the pwm hardware (some of which is already
+in the mainline). Getting something merged now just because it can be
+done quickly is not a good idea if it all has to get reworked in the
+future so that it can support all the hardware.
+
+The pwm framework needs to incorporate at least the following:
+ - sysfs access (ep93xx driver)
+ - Multiple channels per device (atmel driver)
+
+The mxs driver you introduce looks like it could be implemented as a
+single device (continuous mmio space) with multiple channels rather than
+the pwm core/driver approach you have. I also can't see anything in this
+patch set which hooks up the mxs pwms to an actual board (i.e. nothing
+calls mxs_add_mxs_pwm)?
+
+The other nice things to have for the pwm framework are:
+ - More fine grained control of pwms: pwm_period_ns, period_duty_ns, etc
+ - Polarity control
+ - Synchronisation support for multi-channel devices
+ - Interrupt handler support
+ - Sleeping vs non-sleeping configuration api
+
+The fine-grained control api could be added now. pwm_config could be
+left as is for the time being (the new api could be a wrapper around it
+to start with). Polarity control and interrupt handling apis could also
+be defined without affecting the drivers which don't need to implement
+them. Multiple channels and the sleeping/non-sleeping api are the more
+difficult ones, but at least having some sort of indication about how
+these plan to be solved would be useful.
+
+~Ryan
 
