@@ -1,66 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab1GDOm3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 10:42:29 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63373 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753974Ab1GDOmZ (ORCPT
+	id S1756317Ab1GDOq2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 10:46:28 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60264 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab1GDOqZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 10:42:25 -0400
-X-Nat-Received: from [202.181.97.72]:54846 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1309790531.25346
-To: richard@nod.at
-Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-References: <1309779003-8668-1-git-send-email-richard@nod.at>
-	<201107041357.43481.richard@nod.at>
-	<201107042110.EDI30723.OLFHOtQSMOFFJV@I-love.SAKURA.ne.jp>
-	<201107041420.31049.richard@nod.at>
-In-Reply-To: <201107041420.31049.richard@nod.at>
-Message-Id: <201107042342.HDH34381.OFtHSLOMVFJFOQ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Mon, 4 Jul 2011 23:42:09 +0900
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 04072011 #5726947, status: clean
+	Mon, 4 Jul 2011 10:46:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Ankita Garg <ankita@in.ibm.com>
+Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory Allocator added
+Date: Mon, 4 Jul 2011 16:45:29 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Larry Bassel <lbassel@codeaurora.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Zach Pfeffer'" <zach.pfeffer@linaro.org>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Daniel Stone'" <daniels@collabora.com>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com> <201106160006.07742.arnd@arndb.de> <20110704052539.GK12667@in.ibm.com>
+In-Reply-To: <20110704052539.GK12667@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107041645.29385.arnd@arndb.de>
+X-Provags-ID: V02:K0:QfxzRzbAzfe/CEdY5KcJoCxY31lMiZt2d7qUGRa66cT
+ jaQNbOSobzzEH3mHk0c9DUnTS1SDIuGPogs2uJd1OBZ50ePJd1
+ 2ppw2Hn/kPyB/U4f8hzZ0EbR3qn3QlhMPURcCmBsOeUUoSmtTw
+ 3npjW2vpOY3/2nypLtWPaiEYWEijthzsI+3bNOTGaFxaV0AWJF
+ m9aybBteBIdgZ1YibgiPQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard Weinberger wrote:
-> > That's strange... Would you show us printk() output like
+On Monday 04 July 2011, Ankita Garg wrote:
+> > It still sounds to me that this can be done using the NUMA properties
+> > that Linux already understands, and teaching more subsystems about it,
+> > but maybe the memory hotplug developers have already come up with
+> > another scheme. The way that memory hotplug and CMA choose their
+> > memory regions certainly needs to take both into account. As far as
+> > I can see there are both conflicting and synergistic effects when
+> > you combine the two.
 > > 
-> > 	printk(KERN_INFO "Calling request_module()\n");
-> > 	request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
-> > 	printk(KERN_INFO "Returned from request_module()\n");
-> > 
-> > for demonstrating that __request_module() cannot stop at
-> > MAX_KMOD_CONCURRENT levels of nesting?
 > 
-> There you go!
-> http://userweb.kernel.org/~rw/boot.log
+> Recently, we proposed a generic 'memory regions' framework to exploit
+> the memory power management capabilities on the embedded boards. Think
+> of some of the above CMA requirements could be met by this fraemwork.
+> One of the main goals of regions is to make the VM aware of the hardware
+> memory boundaries, like bank. For managing memory power consumption,
+> memory regions are created aligned to the hardware granularity at which
+> the power can be managed (ie, the memory power consumption operations
+> like on/off can be performed). If attributed are associated with each of
+> these regions, some of these regions could be marked as CMA-only,
+> ensuring that only movable and per-bank memory is allocated. More
+> details on the design can be found here:
 > 
-> I did not count all messages, but they are more than 50. :-)
+> http://lkml.org/lkml/2011/5/27/177
+> http://lkml.org/lkml/2011/6/29/202
+> http://lwn.net/Articles/446493/
 
-Thank you.
+Thanks for the pointers, that is exactly what I was looking for.
 
-$ grep -F 'Calling request_module()' boot.log | wc -l
-25819
-$ grep -F 'Returned from request_module()' boot.log | wc -l
-25770
-
-So, __request_module() is stopping at MAX_KMOD_CONCURRENT levels
-of nesting. Eventually the process that triggered the first
-request_module() will return from search_binary_handler().
-I don't think this is an infinite loop inside search_binary_handler().
-
-But it would look like an infinite loop bug if the caller of execve()
-repeats forever. Printing additional information like
-
-  printk(KERN_INFO "Calling request_module() %s %d %s %d %d\n", current->comm,
-         current->pid, bprm->filename, bprm->argc, bprm->envc);
-
-would help.
+	Arnd
