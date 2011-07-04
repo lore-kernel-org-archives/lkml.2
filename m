@@ -1,88 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752069Ab1GDUNr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 16:13:47 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38196 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab1GDUNp (ORCPT
+	id S1752110Ab1GDU2y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 16:28:54 -0400
+Received: from rcsinet14.oracle.com ([148.87.113.126]:18813 "EHLO
+	rcsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751911Ab1GDU2v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 16:13:45 -0400
-Date: Tue, 5 Jul 2011 00:13:39 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-        viro@zeniv.linux.org.uk, rientjes@google.com, wilsons@start.ca,
-        security@kernel.org, kernel-hardening@lists.openwall.com
-Subject: [PATCH v2] proc: fix a race in do_io_accounting()
-Message-ID: <20110704201339.GA5645@albatros>
-References: <20110703103925.GA2283@albatros>
- <CA+55aFwfr-oAa-2L9O_rd9iZDyVr0b+gFQS=_R5PUxmhh3JEsg@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFwfr-oAa-2L9O_rd9iZDyVr0b+gFQS=_R5PUxmhh3JEsg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 4 Jul 2011 16:28:51 -0400
+Date: Mon, 4 Jul 2011 13:26:50 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: linux-kernel@vger.kernel.org, sfr@canb.auug.org.au
+Cc: akpm@linux-foundation.org, kamezawa.hiroyu@jp.fujitsu.com
+Subject: Re: + memcg-fix-reclaimable-lru-check-in-memcg-fix-2.patch added to
+ -mm tree
+Message-Id: <20110704132650.da7329c5.randy.dunlap@oracle.com>
+In-Reply-To: <201107011936.p61JaKZE010589@imap1.linux-foundation.org>
+References: <201107011936.p61JaKZE010589@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4E122214.0047:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There is a ptrace_may_access() check in do_io_accounting() to prevent
-gathering information of setuid'ed and similar binaries.  However, there
-is a race against execve().  Holding task->signal->cred_guard_mutex
-while gathering the information should protect against the race.
+On Fri, 01 Jul 2011 12:36:20 -0700 akpm@linux-foundation.org wrote:
 
-The order of locking is similar to the one inside of
-ptrace_attach(): first goes cred_guard_mutex, then lock_task_sighand().
+> 
+> The patch titled
+>      memcg-fix-reclaimable-lru-check-in-memcg-fix-2
+> has been added to the -mm tree.  Its filename is
+>      memcg-fix-reclaimable-lru-check-in-memcg-fix-2.patch
+> 
 
-v2 - use mutex_lock_killable() instead of mutex_lock().
+Is there some way to get this patch added to linux-next?
 
-Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
-Cc: stable@kernel.org
+thanks.
+
+> ------------------------------------------------------
+> Subject: memcg-fix-reclaimable-lru-check-in-memcg-fix-2
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+>  memcg-fix-reclaimable-lru-check-in-memcg.patch
+>  causes following error with !CONFIG_NUMA.
+> 
+> > mmotm-2011-0630-1559/mm/memcontrol.c:1579: error: implicit declaration of function 'mem_cgroup_node_nr_file_lru_pages'
+> > mmotm-2011-0630-1559/mm/memcontrol.c:1583: error: implicit declaration of function 'mem_cgroup_node_nr_anon_lru_pages'
+> >
+> 
+> This patch fixes it by moving functions out of #ifdef.
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> cked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  mm/memcontrol.c |   23 +++++++++++------------
+>  1 file changed, 11 insertions(+), 12 deletions(-)
+> 
+> diff -puN mm/memcontrol.c~memcg-fix-reclaimable-lru-check-in-memcg-fix-2 mm/memcontrol.c
+> --- a/mm/memcontrol.c~memcg-fix-reclaimable-lru-check-in-memcg-fix-2
+> +++ a/mm/memcontrol.c
+> @@ -1120,7 +1120,6 @@ unsigned long mem_cgroup_zone_nr_lru_pag
+>  	return MEM_CGROUP_ZSTAT(mz, lru);
+>  }
+>  
+> -#ifdef CONFIG_NUMA
+>  static unsigned long mem_cgroup_node_nr_file_lru_pages(struct mem_cgroup *memcg,
+>  							int nid)
+>  {
+> @@ -1132,6 +1131,17 @@ static unsigned long mem_cgroup_node_nr_
+>  	return ret;
+>  }
+>  
+> +static unsigned long mem_cgroup_node_nr_anon_lru_pages(struct mem_cgroup *memcg,
+> +							int nid)
+> +{
+> +	unsigned long ret;
+> +
+> +	ret = mem_cgroup_get_zonestat_node(memcg, nid, LRU_INACTIVE_ANON) +
+> +		mem_cgroup_get_zonestat_node(memcg, nid, LRU_ACTIVE_ANON);
+> +	return ret;
+> +}
+> +
+> +#if MAX_NUMNODES > 1
+>  static unsigned long mem_cgroup_nr_file_lru_pages(struct mem_cgroup *memcg)
+>  {
+>  	u64 total = 0;
+> @@ -1143,17 +1153,6 @@ static unsigned long mem_cgroup_nr_file_
+>  	return total;
+>  }
+>  
+> -static unsigned long mem_cgroup_node_nr_anon_lru_pages(struct mem_cgroup *memcg,
+> -							int nid)
+> -{
+> -	unsigned long ret;
+> -
+> -	ret = mem_cgroup_get_zonestat_node(memcg, nid, LRU_INACTIVE_ANON) +
+> -		mem_cgroup_get_zonestat_node(memcg, nid, LRU_ACTIVE_ANON);
+> -
+> -	return ret;
+> -}
+> -
+>  static unsigned long mem_cgroup_nr_anon_lru_pages(struct mem_cgroup *memcg)
+>  {
+>  	u64 total = 0;
+> _
+
+
 ---
- fs/proc/base.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/fs/proc/base.c b/fs/proc/base.c
-index 083a4f2..4b9f159 100644
---- a/fs/proc/base.c
-+++ b/fs/proc/base.c
-@@ -2711,9 +2711,16 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
- {
- 	struct task_io_accounting acct = task->ioac;
- 	unsigned long flags;
-+	int result;
- 
--	if (!ptrace_may_access(task, PTRACE_MODE_READ))
--		return -EACCES;
-+	result = mutex_lock_killable(&task->signal->cred_guard_mutex);
-+	if (result)
-+		return result;
-+
-+	if (!ptrace_may_access(task, PTRACE_MODE_READ)) {
-+		result = -EACCES;
-+		goto out_unlock;
-+	}
- 
- 	if (whole && lock_task_sighand(task, &flags)) {
- 		struct task_struct *t = task;
-@@ -2724,7 +2731,7 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
- 
- 		unlock_task_sighand(task, &flags);
- 	}
--	return sprintf(buffer,
-+	result = sprintf(buffer,
- 			"rchar: %llu\n"
- 			"wchar: %llu\n"
- 			"syscr: %llu\n"
-@@ -2739,6 +2746,9 @@ static int do_io_accounting(struct task_struct *task, char *buffer, int whole)
- 			(unsigned long long)acct.read_bytes,
- 			(unsigned long long)acct.write_bytes,
- 			(unsigned long long)acct.cancelled_write_bytes);
-+out_unlock:
-+	mutex_unlock(&task->signal->cred_guard_mutex);
-+	return result;
- }
- 
- static int proc_tid_io_accounting(struct task_struct *task, char *buffer)
--- 
-1.7.0.4
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
