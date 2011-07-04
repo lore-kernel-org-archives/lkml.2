@@ -1,55 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab1GDP5U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 11:57:20 -0400
-Received: from www.linutronix.de ([62.245.132.108]:52917 "EHLO
-	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758008Ab1GDP5S (ORCPT
+	id S1758136Ab1GDP44 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 11:56:56 -0400
+Received: from filtromx7.unal.edu.co ([168.176.5.176]:42387 "EHLO
+	filtromx7.unal.edu.co" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757224Ab1GDP4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 11:57:18 -0400
-Message-ID: <4E11E2DC.2070601@linutronix.de>
-Date: Mon, 04 Jul 2011 17:57:16 +0200
-From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: linux-kernel@vger.kernel.org, sodaville@linutronix.de
-Subject: Re: [PATCH 1/2] gpio/gpio-generic: read set register for caching
- if available
-References: <1309159583-11339-1-git-send-email-bigeasy@linutronix.de> <20110704154447.GG29977@ponder.secretlab.ca>
-In-Reply-To: <20110704154447.GG29977@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Linutronix-Spam-Score: -1.0
-X-Linutronix-Spam-Level: -
-X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
+	Mon, 4 Jul 2011 11:56:51 -0400
+X-Greylist: delayed 901 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Jul 2011 11:56:51 EDT
+X-AuditID: a8b005af-b7bcfae000004f4b-04-4e11df3c3453
+To: undisclosed-recipients:;
+Date: Mon, 04 Jul 2011 08:41:46 -0700
+From: Laura Andrea Gonzalez Fajardo <lagonzalezf@unal.edu.co>
+Subject: RE
+Message-id: <f9bdaac25b87.4e117cca@unal.edu.co>
+MIME-version: 1.0
+X-Mailer: Sun Java(tm) System Messenger Express 6.2-8.04 (built Feb 28 2007)
+Content-type: text/plain; charset=us-ascii
+Content-language: en
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+X-Accept-Language: en
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant Likely wrote:
->> diff --git a/drivers/gpio/gpio-generic.c b/drivers/gpio/gpio-generic.c
->> index 231714d..9f8b5c6 100644
->> --- a/drivers/gpio/gpio-generic.c
->> +++ b/drivers/gpio/gpio-generic.c
->> @@ -398,7 +398,10 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
->>  	if (ret)
->>  		return ret;
->>  
->> -	bgc->data = bgc->read_reg(bgc->reg_dat);
->> +	if (bgc->reg_set)
->> +		bgc->data = bgc->read_reg(bgc->reg_set);
-> 
-> On most of the gpio controllers that I've seen, the 'set' register
-> isn't something that you can actually read.  I don't think this is
-> something that can be done for all gpio controllers.
 
-I see. So
 
-	if (bgc->reg_set && ! bgc->reg_clr)
-
-instead should be fine, right?
-
-> g.
-> 
-Sebastian
+Your Email ID was awarded 1,000,000.00 GBP in the Mega Ball Promo send your:
+Names...
+Country...
+Tel...
