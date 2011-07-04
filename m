@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932084Ab1GDQT2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:19:28 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:63261 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758287Ab1GDQT0 (ORCPT
+	id S1758304Ab1GDQ1F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 12:27:05 -0400
+Received: from na3sys010aog110.obsmtp.com ([74.125.245.88]:52430 "HELO
+	na3sys010aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1758293Ab1GDQ1D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:19:26 -0400
-Message-ID: <19985.59397.631201.89451@ipc1.ka-ro>
-Date: Mon, 4 Jul 2011 18:19:17 +0200
-From: =?utf-8?Q?Lothar_Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org
-Mime-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] add missing intialisation of bgc->dir
-In-Reply-To: <CACxGe6v87WboQwZn9L0QtND2=B6g6ScQcPgTPnU_2whn=-B9HA@mail.gmail.com>
-References: <1309522131-2237-1-git-send-email-LW@KARO-electronics.de>
-	<1309522131-2237-2-git-send-email-LW@KARO-electronics.de>
-	<20110704064844.GM15152@ponder.secretlab.ca>
-	<19985.35317.629981.97373@ipc1.ka-ro>
-	<20110704153944.GD29977@ponder.secretlab.ca>
-	<19985.57715.78894.466149@ipc1.ka-ro>
-	<CACxGe6v87WboQwZn9L0QtND2=B6g6ScQcPgTPnU_2whn=-B9HA@mail.gmail.com>
-X-Mailer: VM 8.0.9 under Emacs 22.2.1 (i486-pc-linux-gnu)
+	Mon, 4 Jul 2011 12:27:03 -0400
+From: Roland Dreier <roland@kernel.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-rdma@vger.kernel.org
+Subject: RDMA: Check for NULL mode in .devnode methods
+Date: Mon,  4 Jul 2011 09:26:57 -0700
+Message-Id: <1309796817-25293-1-git-send-email-roland@kernel.org>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Goldwyn Rodrigues <rgoldwyn@suse.de>
 
-Grant Likely writes:
-> On Mon, Jul 4, 2011 at 9:51 AM, Lothar Waßmann <LW@karo-electronics.de> wrote:
-> > Hi,
-> >
-> >> > > I don't know if this is a valid thing to do or not.  Not every GPIO
-> >> > > controller supports reading back the initial state from the direction
-> >> > > register.  I suspect it is better to leave initialization of the
-> >> > > direction to the gpio controller driver itself.
-> >> > >
-> >> > That would mean, that external software would have to have access to
-> >> > the bgpio internal data structures which is a Bad Thing(TM) IMO. Or we
-> >> > need a function that allows to explicitly initialize the internal
-> >> > shadow registers.
-> >>
-> >> What device are you using this for.  Are you using the basic gpio
-> >> platform_driver, or do you have a driver using the library part of the
-> >> basic gpio code?
-> >>
-> > I'm using it via drivers/gpio/gpio-mxc.
-> 
-> You can safely do the "bgc->dir = bgc->read_reg(bgc->reg_dir);" in
-> gpio-mxc after bgpio_init returns.
-> 
-I know I can do that, but IMO it's a horrible way of programming, to
-let a higher SW layer freely mess with the data structures of another
-SW layer. There should be accessor functions to do that!
+Commits 71c29bd5c235 ("IB/uverbs: Add devnode method to set
+path/mode") and c3af0980ce01 ("IB: Add devnode methods to cm_class and
+umad_class") added devnode methods that set the mode.  However, these
+methods don't check for a NULL mode, and so we get a crash when
+unloading modules because devtmpfs_delete_node() calls
+device_get_devnode() with mode == NULL.
 
+Add the missing checks.
 
-Lothar Waßmann
--- 
-___________________________________________________________
+Signed-off-by: Goldwyn Rodrigues <rgoldwyn@suse.de>
 
-Ka-Ro electronics GmbH | Pascalstraße 22 | D - 52076 Aachen
-Phone: +49 2408 1402-0 | Fax: +49 2408 1402-10
-Geschäftsführer: Matthias Kaussen
-Handelsregistereintrag: Amtsgericht Aachen, HRB 4996
+[ Also fix cm.c.  - Roland ]
 
-www.karo-electronics.de | info@karo-electronics.de
-___________________________________________________________
+Signed-off-by: Roland Dreier <roland@purestorage.com>
+---
+Linus, please apply -- this fixes a regression introduced in 3.0-rc1.
+
+ drivers/infiniband/core/cm.c          |    3 ++-
+ drivers/infiniband/core/uverbs_main.c |    3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/infiniband/core/cm.c b/drivers/infiniband/core/cm.c
+index f62f52f..fc0f2bd 100644
+--- a/drivers/infiniband/core/cm.c
++++ b/drivers/infiniband/core/cm.c
+@@ -3641,7 +3641,8 @@ static struct kobj_type cm_port_obj_type = {
+ 
+ static char *cm_devnode(struct device *dev, mode_t *mode)
+ {
+-	*mode = 0666;
++	if (mode)
++		*mode = 0666;
+ 	return kasprintf(GFP_KERNEL, "infiniband/%s", dev_name(dev));
+ }
+ 
+diff --git a/drivers/infiniband/core/uverbs_main.c b/drivers/infiniband/core/uverbs_main.c
+index e49a85f..56898b6 100644
+--- a/drivers/infiniband/core/uverbs_main.c
++++ b/drivers/infiniband/core/uverbs_main.c
+@@ -826,7 +826,8 @@ static void ib_uverbs_remove_one(struct ib_device *device)
+ 
+ static char *uverbs_devnode(struct device *dev, mode_t *mode)
+ {
+-	*mode = 0666;
++	if (mode)
++		*mode = 0666;
+ 	return kasprintf(GFP_KERNEL, "infiniband/%s", dev_name(dev));
+ }
+ 
