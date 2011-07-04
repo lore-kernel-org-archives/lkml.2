@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755430Ab1GDFgl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 01:36:41 -0400
-Received: from mga02.intel.com ([134.134.136.20]:61668 "EHLO mga02.intel.com"
+	id S1754847Ab1GDFhA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 01:37:00 -0400
+Received: from mga14.intel.com ([143.182.124.37]:12280 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755053Ab1GDFgj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 01:36:39 -0400
+	id S1753500Ab1GDFgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 01:36:36 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.65,471,1304319600"; 
-   d="scan'208";a="21242872"
-Subject: [PATCH 3/3]Subject: CFQ: add think time check for group
+   d="scan'208";a="22320952"
+Subject: [PATCH 2/3]CFQ: add think time check for service tree
 From: Shaohua Li <shaohua.li@intel.com>
 To: lkml <linux-kernel@vger.kernel.org>
 Cc: Jens Axboe <jaxboe@fusionio.com>, Vivek Goyal <vgoyal@redhat.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Jul 2011 13:36:36 +0800
-Message-ID: <1309757796.15392.239.camel@sli10-conroe>
+Date: Mon, 04 Jul 2011 13:36:34 +0800
+Message-ID: <1309757794.15392.238.camel@sli10-conroe>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.3 
 Content-Transfer-Encoding: 7bit
@@ -23,114 +23,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: CFQ: add think time check for group
+Subject: CFQ: add think time check for service tree
 
-Currently when the last queue of a group has no request, we don't expire
-the queue to hope request from the group comes soon, so the group doesn't
-miss its share. But if the think time is big, the assumption isn't correct
-and we just waste bandwidth. In such case, we don't do idle.
+Currently when the last queue of a service tree has no request, we don't
+expire the queue to hope request from the service tree comes soon, so the
+service tree doesn't miss its share. But if the think time is big, the
+assumption isn't correct and we just waste bandwidth. In such case, we
+don't do idle.
 
 [global]
-runtime=30
+runtime=10
 direct=1
 
 [test1]
-cgroup=test1
-cgroup_weight=1000
 rw=randread
 ioengine=libaio
 size=500m
-runtime=30
 directory=/mnt
 filename=file1
 thinktime=9000
 
 [test2]
-cgroup=test2
-cgroup_weight=1000
-rw=randread
+rw=read
 ioengine=libaio
-size=500m
-runtime=30
+size=1G
 directory=/mnt
 filename=file2
 
 	patched		base
-test1	64k		39k
-test2	540k		540k
-total	604k		578k
+test1	41k/s		33k/s
+test2	15868k/s	15789k/s
+total	15902k/s	15817k/s
 
-group1 gets much better throughput because it waits less time.
+A slightly better
 
 Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+
 ---
- block/cfq-iosched.c |   19 ++++++++++++++++---
- 1 file changed, 16 insertions(+), 3 deletions(-)
+ block/cfq-iosched.c |   26 ++++++++++++++++++++++----
+ 1 file changed, 22 insertions(+), 4 deletions(-)
 
 Index: linux/block/cfq-iosched.c
 ===================================================================
---- linux.orig/block/cfq-iosched.c	2011-07-01 13:45:24.000000000 +0800
-+++ linux/block/cfq-iosched.c	2011-07-01 13:48:18.000000000 +0800
-@@ -215,6 +215,7 @@ struct cfq_group {
- #endif
- 	/* number of requests that are on the dispatch list or inside driver */
- 	int dispatched;
-+	struct cfq_ttime ttime;
- };
+--- linux.orig/block/cfq-iosched.c	2011-07-01 13:43:34.000000000 +0800
++++ linux/block/cfq-iosched.c	2011-07-01 13:45:24.000000000 +0800
+@@ -74,6 +74,8 @@ static DEFINE_IDA(cic_index_ida);
+ 
+ #define sample_valid(samples)	((samples) > 80)
+ #define rb_entry_cfqg(node)	rb_entry((node), struct cfq_group, rb_node)
++#define cfq_io_thinktime_big(ttime, slice) \
++	(sample_valid((ttime).ttime_samples) && (ttime).ttime_mean > (slice))
  
  /*
-@@ -1062,6 +1063,8 @@ static struct cfq_group * cfq_alloc_cfqg
- 		*st = CFQ_RB_ROOT;
- 	RB_CLEAR_NODE(&cfqg->rb_node);
+  * Most of our rbtree usage is for sorting with min extraction, so
+@@ -87,9 +89,10 @@ struct cfq_rb_root {
+ 	unsigned count;
+ 	unsigned total_weight;
+ 	u64 min_vdisktime;
++	struct cfq_ttime ttime;
+ };
+-#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
+-			.count = 0, .min_vdisktime = 0, }
++#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, \
++			.ttime = {.last_end_request = jiffies,},}
  
-+	cfqg->ttime.last_end_request = jiffies;
-+
- 	/*
- 	 * Take the initial reference that will be released on destroy
- 	 * This can be thought of a joint reference by cgroup and
-@@ -2385,8 +2388,9 @@ static struct cfq_queue *cfq_select_queu
- 	 * this group, wait for requests to complete.
+ /*
+  * Per process-grouping structure
+@@ -1969,7 +1972,8 @@ static bool cfq_should_idle(struct cfq_d
+ 	 * Otherwise, we do only if they are the last ones
+ 	 * in their service tree.
  	 */
- check_group_idle:
--	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
--	    && cfqq->cfqg->dispatched) {
-+	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1 &&
-+	    cfqq->cfqg->dispatched && !cfq_io_thinktime_big(cfqq->cfqg->ttime,
-+	    cfqd->cfq_group_idle)) {
- 		cfqq = NULL;
- 		goto keep_queue;
- 	}
-@@ -3245,6 +3249,9 @@ cfq_update_io_thinktime(struct cfq_data
- 		__cfq_update_io_thinktime(&service_tree->ttime,
- 			cfqd->cfq_slice_idle);
- 	}
-+#ifdef CONFIG_CFQ_GROUP_IOSCHED
-+	__cfq_update_io_thinktime(&cfqg->ttime, cfqd->cfq_group_idle);
-+#endif
+-	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
++	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq) &&
++	   !cfq_io_thinktime_big(service_tree->ttime, cfqd->cfq_slice_idle))
+ 		return true;
+ 	cfq_log_cfqq(cfqd, cfqq, "Not idling. st->count:%d",
+ 			service_tree->count);
+@@ -3231,8 +3235,16 @@ static void
+ cfq_update_io_thinktime(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+ 	struct cfq_io_context *cic)
+ {
+-	if (cfq_cfqq_sync(cfqq))
++	struct cfq_rb_root *service_tree;
++	struct cfq_group *cfqg = cfqq->cfqg;
++
++	if (cfq_cfqq_sync(cfqq)) {
+ 		__cfq_update_io_thinktime(&cic->ttime, cfqd->cfq_slice_idle);
++		service_tree = service_tree_for(cfqg, cfqq_prio(cfqq),
++			cfqq_type(cfqq));
++		__cfq_update_io_thinktime(&service_tree->ttime,
++			cfqd->cfq_slice_idle);
++	}
  }
  
  static void
-@@ -3536,7 +3543,9 @@ static bool cfq_should_wait_busy(struct
- 	if (cfqq->cfqg->nr_cfqq > 1)
- 		return false;
+@@ -3570,7 +3582,13 @@ static void cfq_completed_request(struct
+ 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
  
--	if (cfq_slice_used(cfqq))
-+	/* we are the only queue in the group */
-+	if (cfq_slice_used(cfqq) &&
-+	    !cfq_io_thinktime_big(cfqq->cfqg->ttime, cfqd->cfq_group_idle))
- 		return true;
- 
- 	/* if slice left is less than think time, wait busy */
-@@ -3593,6 +3602,10 @@ static void cfq_completed_request(struct
+ 	if (sync) {
++		struct cfq_rb_root *service_tree;
++
+ 		RQ_CIC(rq)->ttime.last_end_request = now;
++
++		service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
++			cfqq_type(cfqq));
++		service_tree->ttime.last_end_request = now;
+ 		if (!time_after(rq->start_time + cfqd->cfq_fifo_expire[1], now))
  			cfqd->last_delayed_sync = now;
  	}
- 
-+#ifdef CONFIG_CFQ_GROUP_IOSCHED
-+	cfqq->cfqg->ttime.last_end_request = now;
-+#endif
-+
- 	/*
- 	 * If this is the active queue, check if it needs to be expired,
- 	 * or if we want to idle in case it has no pending requests.
 
 
