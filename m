@@ -1,43 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab1GDAnM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 20:43:12 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:52145 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752524Ab1GDAnK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 20:43:10 -0400
-MIME-Version: 1.0
-In-Reply-To: <1309721963-5577-1-git-send-email-dmitry.fink@palm.com>
-References: <1309721963-5577-1-git-send-email-dmitry.fink@palm.com>
-Date: Mon, 4 Jul 2011 09:43:09 +0900
-Message-ID: <CAEwNFnAYAWy4tabCuzGUwXjLpZVbxhKMmPXnhmCuH5pckOXBRw@mail.gmail.com>
-Subject: Re: [PATCH 1/1] mmap: Don't count shmem pages as free in __vm_enough_memory
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dmitry Fink <finikk@gmail.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        Dmitry Fink <dmitry.fink@palm.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752814Ab1GDApf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 20:45:35 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58334 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752524Ab1GDApe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 20:45:34 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,469,1304319600"; 
+   d="scan'208";a="25866558"
+Subject: Re: power increase issue on light load
+From: "Alex,Shi" <alex.shi@intel.com>
+To: Nikhil Rao <ncrao@google.com>
+Cc: Ming Lei <tom.leiming@gmail.com>,
+        "peterz@infradead.org" <peterz@infradead.org>,
+        "mingo@elte.hu" <mingo@elte.hu>, "Chen, Tim C" <tim.c.chen@intel.com>,
+        "Li, Shaohua" <shaohua.li@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAOM-RdN3cweRQnNxCaCGuyj2GMojix15XG5MVj8pxj7FHX79hg@mail.gmail.com>
+References: <1308797024.23204.95.camel@debian>
+	 <BANLkTimEcPmH_XgLy5aEW+znwJyVZzfoCg@mail.gmail.com>
+	 <CAOM-RdN3cweRQnNxCaCGuyj2GMojix15XG5MVj8pxj7FHX79hg@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Jul 2011 08:45:27 +0800
+Message-ID: <1309740327.567.46.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 4, 2011 at 4:39 AM, Dmitry Fink <finikk@gmail.com> wrote:
-> shmem pages can't be reclaimed and if they are swapped out
-> that doesn't affect the overall available memory in the system,
-> so don't count them along with the rest of the file backed pages.
->
-> Signed-off-by: Dmitry Fink <dmitry.fink@palm.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Sat, 2011-07-02 at 02:00 +0800, Nikhil Rao wrote:
+> Hi Ming,
+> 
+> On Thu, Jun 30, 2011 at 10:44 PM, Ming Lei <tom.leiming@gmail.com> wrote:
+> > Hi,
+> >
+> > On Thu, Jun 23, 2011 at 10:43 AM, Alex,Shi <alex.shi@intel.com> wrote:
+> >> commit c8b281161dfa4bb5d5be63fb036ce19347b88c63 causes light load
+> >> benchmark use more than 10% system power on platform NHM-EP and laptop
+> >> Thinkpad T410 etc. The benchmarks are specpower and bltk office.
+> >>
+> >> I tried to track this issue, but only find deep C sate time reduced
+> >> much, about from 90% to 30~40%, the C0 or C1 state increase much on
+> >> different machines.
+> >>
+> >> Powertop just hints RES interrupts has a bit more. but when I try "perf
+> >> probe native_smp_send_reschedule". I didn't find much.
+> >
+> > I see the problem on -rc5 in my T410 too, the fan has been ringing always
+> > and powertop reports "Wakeups-from-idle per second : 508.6".
+> >
+> 
+> Thanks for reporting this issue. Looks like the increased resolution
+> has a negative impact on power savings balance. I'm looking into this
+> issue based on Alex's data, but If you can give a trace or something
+> that I can work with it will be really helpful.
 
-I am not sure the description is good. :(
-But I think this patch is reasonable.
+Ops, I didn't aware that my evolution didn't send out the trace code to
+you, until this e-mail. I just resend them and it should be OK this
+time. Please check it and give me a response. 
+Thanks!
 
-In swapless system,guessing overcommit can have a problem.
-And in current implementation of OVERCOMMIT_GUESS, we consider anon
-pages as empty space of swap so shmem pages should be accounted by
-that.
+> 
+> -Thanks,
+> Nikhil
 
--- 
-Kind regards,
-Minchan Kim
+
