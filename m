@@ -1,340 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758361Ab1GDQaZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:30:25 -0400
-Received: from na3sys009aog108.obsmtp.com ([74.125.149.199]:59456 "EHLO
-	na3sys009aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758335Ab1GDQaW (ORCPT
+	id S1758341Ab1GDQbm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 12:31:42 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:44946 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757314Ab1GDQbl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:30:22 -0400
-From: James Nuss <jamesnuss@nanometrics.ca>
-To: Rodolfo Giometti <rodolfo.giometti@enneenne.com>
-Cc: Ricardo Martins <rasm@fe.up.pt>, Ben Gardiner <bengardiner@nanometrics.ca>,
-        linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Igor Plyatov <plyatov@gmail.com>,
-        James Nuss <jamesnuss@nanometrics.ca>
-Subject: [PATCH v2 2/2] pps: new client driver using GPIO
-Date: Mon,  4 Jul 2011 12:29:29 -0400
-Message-Id: <1309796969-31708-3-git-send-email-jamesnuss@nanometrics.ca>
-X-Mailer: git-send-email 1.7.1
+	Mon, 4 Jul 2011 12:31:41 -0400
+Date: Mon, 4 Jul 2011 10:31:37 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+Cc: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        tglx@linutronix.de
+Subject: Re: [PATCH v4] pch_gpio: Support interrupt function
+Message-ID: <20110704163137.GA28042@ponder.secretlab.ca>
+References: <1309486572-2789-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309486572-2789-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This client driver allows you to use a GPIO pin as a source for PPS
-signals. Platform data [1] are used to specify the GPIO pin number, label,
-assert event edge type, and whether clear events are captured.
+On Fri, Jul 01, 2011 at 11:16:12AM +0900, Tomoya MORINAGA wrote:
+> Support interrupt function using irq_chip_generic
+> 
+> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+> ---
+> v4: add free_irq in remove()
 
-This driver is based on the work by Ricardo Martins <rasm@fe.up.pt> who
-submitted an initial implementation [2] of a PPS IRQ client driver to
-the linuxpps mailing-list on Dec 3 2010.
+Make sure you cc linux-kernel and Thomas Gleixner on IRQ controller patches.
 
-[1] include/linux/pps-gpio.h
-[2] http://ml.enneenne.com/pipermail/linuxpps/2010-December/004155.html
+> ---
+>  drivers/gpio/Kconfig    |    1 +
+>  drivers/gpio/pch_gpio.c |  175 +++++++++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 176 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+> index 2967002..bd64a55 100644
+> --- a/drivers/gpio/Kconfig
+> +++ b/drivers/gpio/Kconfig
+> @@ -352,6 +352,7 @@ config GPIO_LANGWELL
+>  config GPIO_PCH
+>  	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GPIO"
+>  	depends on PCI && X86
+> +	select GENERIC_IRQ_CHIP
+>  	help
+>  	  This driver is for PCH(Platform controller Hub) GPIO of Intel Topcliff
+>  	  which is an IOH(Input/Output Hub) for x86 embedded processor.
+> diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
+> index 36919e7..46e0576 100644
+> --- a/drivers/gpio/pch_gpio.c
+> +++ b/drivers/gpio/pch_gpio.c
+> @@ -17,10 +17,21 @@
+>  #include <linux/kernel.h>
+>  #include <linux/pci.h>
+>  #include <linux/gpio.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/irq.h>
+>  
+>  #define PCH_GPIO_ALL_PINS	0xfff /* Mask for GPIO pins 0 to 11 */
+>  #define GPIO_NUM_PINS	12	/* Specifies number of GPIO PINS GPIO0-GPIO11 */
+>  
+> +#define PCH_EDGE_FALLING	0
+> +#define PCH_EDGE_RISING		BIT(0)
+> +#define PCH_LEVEL_L		BIT(1)
+> +#define PCH_LEVEL_H		(BIT(0) | BIT(1))
+> +#define PCH_EDGE_BOTH		BIT(2)
+> +#define PCH_IM_MASK		(BIT(0) | BIT(1) | BIT(2))
+> +
+> +#define PCH_IRQ_BASE		23
 
-Signed-off-by: James Nuss <jamesnuss@nanometrics.ca>
-CC: Ricardo Martins <rasm@fe.up.pt>
----
- drivers/pps/clients/Kconfig    |    9 ++
- drivers/pps/clients/Makefile   |    1 +
- drivers/pps/clients/pps-gpio.c |  218 ++++++++++++++++++++++++++++++++++++++++
- include/linux/pps-gpio.h       |   32 ++++++
- 4 files changed, 260 insertions(+), 0 deletions(-)
- create mode 100644 drivers/pps/clients/pps-gpio.c
- create mode 100644 include/linux/pps-gpio.h
+Yikes!  IRQ ranges should really be dynamically assigned.  Don't hard
+code an irq base.
 
-diff --git a/drivers/pps/clients/Kconfig b/drivers/pps/clients/Kconfig
-index 8520a7f..c2e0f1e 100644
---- a/drivers/pps/clients/Kconfig
-+++ b/drivers/pps/clients/Kconfig
-@@ -29,4 +29,13 @@ config PPS_CLIENT_PARPORT
- 	  If you say yes here you get support for a PPS source connected
- 	  with the interrupt pin of your parallel port.
- 
-+config PPS_CLIENT_GPIO
-+	tristate "PPS client using GPIO"
-+	depends on PPS
-+	help
-+	  If you say yes here you get support for a PPS source using
-+	  GPIO. To be useful you must also register a platform device
-+	  specifying the GPIO pin and other options, usually in your board
-+	  setup.
-+
- endif
-diff --git a/drivers/pps/clients/Makefile b/drivers/pps/clients/Makefile
-index 4feb7e9..a461d15 100644
---- a/drivers/pps/clients/Makefile
-+++ b/drivers/pps/clients/Makefile
-@@ -5,5 +5,6 @@
- obj-$(CONFIG_PPS_CLIENT_KTIMER)	+= pps-ktimer.o
- obj-$(CONFIG_PPS_CLIENT_LDISC)	+= pps-ldisc.o
- obj-$(CONFIG_PPS_CLIENT_PARPORT) += pps_parport.o
-+obj-$(CONFIG_PPS_CLIENT_GPIO)	+= pps-gpio.o
- 
- ccflags-$(CONFIG_PPS_DEBUG) := -DDEBUG
-diff --git a/drivers/pps/clients/pps-gpio.c b/drivers/pps/clients/pps-gpio.c
-new file mode 100644
-index 0000000..fe9d913
---- /dev/null
-+++ b/drivers/pps/clients/pps-gpio.c
-@@ -0,0 +1,218 @@
-+/*
-+ * pps-gpio.c -- PPS client driver using GPIO
-+ *
-+ *
-+ * Copyright (C) 2010 Ricardo Martins <rasm@fe.up.pt>
-+ * Copyright (C) 2011 James Nuss <jamesnuss@nanometrics.ca>
-+ *
-+ *   This program is free software; you can redistribute it and/or modify
-+ *   it under the terms of the GNU General Public License as published by
-+ *   the Free Software Foundation; either version 2 of the License, or
-+ *   (at your option) any later version.
-+ *
-+ *   This program is distributed in the hope that it will be useful,
-+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *   GNU General Public License for more details.
-+ *
-+ *   You should have received a copy of the GNU General Public License
-+ *   along with this program; if not, write to the Free Software
-+ *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
-+
-+#include <linux/init.h>
-+#include <linux/kernel.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/slab.h>
-+#include <linux/pps_kernel.h>
-+#include <linux/pps-gpio.h>
-+#include <linux/gpio.h>
-+#include <linux/list.h>
-+
-+#define PPS_GPIO_NAME		"pps-gpio"
-+#define PPS_GPIO_VERSION	"1.0.0"
-+
-+/* Info for each registered platform device */
-+struct pps_gpio_device_data {
-+	int irq;			/* IRQ used as PPS source */
-+	struct pps_device *pps;		/* PPS source device */
-+	struct pps_source_info info;	/* PPS source information */
-+	const struct pps_gpio_platform_data *pdata;
-+};
-+
-+/*
-+ * Report the PPS event
-+ */
-+
-+static irqreturn_t pps_gpio_irq_handler(int irq, void *data)
-+{
-+	const struct pps_gpio_device_data *info;
-+	struct pps_event_time ts;
-+	int rising_edge;
-+
-+	/* Get the time stamp first */
-+	pps_get_ts(&ts);
-+
-+	info = (const struct pps_gpio_device_data *)data;
-+
-+	rising_edge = gpio_get_value(info->pdata->gpio_pin);
-+	if ((rising_edge && !info->pdata->assert_falling_edge) ||
-+			(!rising_edge && info->pdata->assert_falling_edge))
-+		pps_event(info->pps, &ts, PPS_CAPTUREASSERT, NULL);
-+	else if (info->pdata->capture_clear &&
-+			((rising_edge && info->pdata->assert_falling_edge) ||
-+			 (!rising_edge && !info->pdata->assert_falling_edge)))
-+		pps_event(info->pps, &ts, PPS_CAPTURECLEAR, NULL);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int pps_gpio_setup(struct platform_device *pdev)
-+{
-+	int ret;
-+	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
-+
-+	ret = gpio_request(pdata->gpio_pin, pdata->gpio_label);
-+	if (ret) {
-+		pr_warning("failed to request GPIO %u\n", pdata->gpio_pin);
-+		return -1;
-+	}
-+
-+	ret = gpio_direction_input(pdata->gpio_pin);
-+	if (ret) {
-+		pr_warning("failed to set pin direction\n");
-+		return -1;
-+	}
-+
-+	return 0;
-+}
-+
-+static unsigned long
-+get_irqf_trigger_flags(const struct pps_gpio_platform_data *pdata)
-+{
-+	unsigned long flags = pdata->assert_falling_edge ?
-+		IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
-+
-+	if (pdata->capture_clear) {
-+		flags |= ((flags & IRQF_TRIGGER_RISING) ?
-+				IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING);
-+	}
-+
-+	return flags;
-+}
-+
-+static int pps_gpio_probe(struct platform_device *pdev)
-+{
-+	struct pps_gpio_device_data *data;
-+	int irq;
-+	int ret;
-+	int pps_default_params;
-+	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
-+
-+
-+	/* GPIO setup */
-+	ret = pps_gpio_setup(pdev);
-+	if (ret)
-+		return -EINVAL;
-+
-+	/* IRQ setup */
-+	irq = gpio_to_irq(pdata->gpio_pin);
-+	if (irq < 0) {
-+		pr_err("failed to map GPIO to IRQ: %d\n", irq);
-+		return -EINVAL;
-+	}
-+
-+	/* allocate space for device info */
-+	data = kzalloc(sizeof(struct pps_gpio_device_data), GFP_KERNEL);
-+	if (data == NULL)
-+		return -ENOMEM;
-+
-+	/* initialize PPS specific parts of the bookkeeping data structure. */
-+	data->info.mode = PPS_CAPTUREASSERT | PPS_OFFSETASSERT |
-+		PPS_ECHOASSERT | PPS_CANWAIT | PPS_TSFMT_TSPEC;
-+	if (pdata->capture_clear)
-+		data->info.mode |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR |
-+			PPS_ECHOCLEAR;
-+	data->info.owner = THIS_MODULE;
-+	snprintf(data->info.name, PPS_MAX_NAME_LEN - 1, "%s.%d",
-+		 pdev->name, pdev->id);
-+
-+	/* register PPS source */
-+	pps_default_params = PPS_CAPTUREASSERT | PPS_OFFSETASSERT;
-+	if (pdata->capture_clear)
-+		pps_default_params |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR;
-+	data->pps = pps_register_source(&data->info, pps_default_params);
-+	if (data->pps == NULL) {
-+		kfree(data);
-+		pr_err("failed to register IRQ %d as PPS source\n", irq);
-+		return -EINVAL;
-+	}
-+
-+	data->irq = irq;
-+	data->pdata = pdata;
-+
-+	/* register IRQ interrupt handler */
-+	ret = request_irq(irq, pps_gpio_irq_handler,
-+			get_irqf_trigger_flags(pdata), data->info.name, data);
-+	if (ret) {
-+		pps_unregister_source(data->pps);
-+		kfree(data);
-+		pr_err("failed to acquire IRQ %d\n", irq);
-+		return -EINVAL;
-+	}
-+
-+	platform_set_drvdata(pdev, data);
-+	dev_info(data->pps->dev, "Registered IRQ %d as PPS source\n", irq);
-+
-+	return 0;
-+}
-+
-+static int pps_gpio_remove(struct platform_device *pdev)
-+{
-+	struct pps_gpio_device_data *data = platform_get_drvdata(pdev);
-+	const struct pps_gpio_platform_data *pdata = data->pdata;
-+
-+	platform_set_drvdata(pdev, NULL);
-+	free_irq(data->irq, data);
-+	gpio_free(pdata->gpio_pin);
-+	pps_unregister_source(data->pps);
-+	pr_info("removed IRQ %d as PPS source\n", data->irq);
-+	kfree(data);
-+	return 0;
-+}
-+
-+static struct platform_driver pps_gpio_driver = {
-+	.probe		= pps_gpio_probe,
-+	.remove		=  __devexit_p(pps_gpio_remove),
-+	.driver		= {
-+		.name	= PPS_GPIO_NAME,
-+		.owner	= THIS_MODULE
-+	},
-+};
-+
-+static int __init pps_gpio_init(void)
-+{
-+	int ret = platform_driver_register(&pps_gpio_driver);
-+	if (ret < 0)
-+		pr_err("failed to register platform driver\n");
-+	return ret;
-+}
-+
-+static void __exit pps_gpio_exit(void)
-+{
-+	platform_driver_unregister(&pps_gpio_driver);
-+	pr_debug("unregistered platform driver\n");
-+}
-+
-+module_init(pps_gpio_init);
-+module_exit(pps_gpio_exit);
-+
-+MODULE_AUTHOR("Ricardo Martins <rasm@fe.up.pt>");
-+MODULE_AUTHOR("James Nuss <jamesnuss@nanometrics.ca>");
-+MODULE_DESCRIPTION("Use GPIO pin as PPS source");
-+MODULE_LICENSE("GPL");
-+MODULE_VERSION(PPS_GPIO_VERSION);
-diff --git a/include/linux/pps-gpio.h b/include/linux/pps-gpio.h
-new file mode 100644
-index 0000000..0035abe
---- /dev/null
-+++ b/include/linux/pps-gpio.h
-@@ -0,0 +1,32 @@
-+/*
-+ * pps-gpio.h -- PPS client for GPIOs
-+ *
-+ *
-+ * Copyright (C) 2011 James Nuss <jamesnuss@nanometrics.ca>
-+ *
-+ *   This program is free software; you can redistribute it and/or modify
-+ *   it under the terms of the GNU General Public License as published by
-+ *   the Free Software Foundation; either version 2 of the License, or
-+ *   (at your option) any later version.
-+ *
-+ *   This program is distributed in the hope that it will be useful,
-+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ *   GNU General Public License for more details.
-+ *
-+ *   You should have received a copy of the GNU General Public License
-+ *   along with this program; if not, write to the Free Software
-+ *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-+ */
-+
-+#ifndef _PPS_GPIO_H
-+#define _PPS_GPIO_H
-+
-+struct pps_gpio_platform_data {
-+	bool assert_falling_edge;
-+	bool capture_clear;
-+	unsigned int gpio_pin;
-+	const char *gpio_label;
-+};
-+
-+#endif
--- 
-1.7.1
+> +
+>  struct pch_regs {
+>  	u32	ien;
+>  	u32	istatus;
+> @@ -55,6 +66,10 @@ struct pch_gpio_reg_data {
+>   * @gpio:			Data for GPIO infrastructure.
+>   * @pch_gpio_reg:		Memory mapped Register data is saved here
+>   *				when suspend.
+> + * @lock:			mutex_lock variable
+> + * @irq_base:		Save base of IRQ number for interrupt
+> + * @spinlock:		spin_lock variable
+> + * @irq_mask:		IRQ mask variable
 
+These comments just state the obvious rather that describing what the
+irq_mask, spin lock and mutex are actually used to protect.
+
+>   */
+>  struct pch_gpio {
+>  	void __iomem *base;
+> @@ -63,6 +78,9 @@ struct pch_gpio {
+>  	struct gpio_chip gpio;
+>  	struct pch_gpio_reg_data pch_gpio_reg;
+>  	struct mutex lock;
+> +	int irq_base;
+> +	spinlock_t spinlock;
+> +	unsigned int irq_mask;
+>  };
+>  
+>  static void pch_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
+> @@ -146,6 +164,12 @@ static void pch_gpio_restore_reg_conf(struct pch_gpio *chip)
+>  	iowrite32(chip->pch_gpio_reg.pm_reg, &chip->reg->pm);
+>  }
+>  
+> +static int pch_gpio_to_irq(struct gpio_chip *gpio, unsigned offset)
+> +{
+> +	struct pch_gpio *chip =	container_of(gpio, struct pch_gpio, gpio);
+
+nit: inconsistent whitespace.
+
+> +	return chip->irq_base + offset;
+> +}
+> +
+>  static void pch_gpio_setup(struct pch_gpio *chip)
+>  {
+>  	struct gpio_chip *gpio = &chip->gpio;
+> @@ -160,6 +184,124 @@ static void pch_gpio_setup(struct pch_gpio *chip)
+>  	gpio->base = -1;
+>  	gpio->ngpio = GPIO_NUM_PINS;
+>  	gpio->can_sleep = 0;
+> +	gpio->to_irq = pch_gpio_to_irq;
+> +}
+> +
+> +static int pch_irq_type(struct irq_data *d, unsigned int type)
+> +{
+> +	u32 im;
+> +	u32 *im_reg;
+> +	u32 ien;
+> +	u32 im_pos;
+> +	int ch;
+> +	unsigned long flags;
+> +	u32 val;
+> +	int irq = d->irq;
+> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> +	struct pch_gpio *chip = gc->private;
+> +
+> +	ch = irq - chip->irq_base;
+> +	if (irq <= chip->irq_base + 7) {
+> +		im_reg = &chip->reg->im0;
+> +		im_pos = ch;
+> +	} else {
+> +		im_reg = &chip->reg->im1;
+> +		im_pos = ch - 8;
+> +	}
+> +	dev_dbg(chip->dev, "%s:irq=%d type=%d ch=%d pos=%d\n",
+> +		__func__, irq, type, ch, im_pos);
+> +
+> +	spin_lock_irqsave(&chip->spinlock, flags);
+> +
+> +	if (type == IRQ_TYPE_EDGE_RISING)
+> +		val = PCH_EDGE_RISING;
+> +	else if (type == IRQ_TYPE_EDGE_FALLING)
+> +		val = PCH_EDGE_FALLING;
+> +	else if (type == IRQ_TYPE_EDGE_BOTH)
+> +		val = PCH_EDGE_BOTH;
+> +	else if (type == IRQ_TYPE_LEVEL_HIGH)
+> +		val = PCH_LEVEL_L;
+> +	else if (type == IRQ_TYPE_LEVEL_LOW)
+> +		val = PCH_LEVEL_H;
+> +	else if (type == IRQ_TYPE_PROBE)
+> +		goto end;
+> +	else {
+> +		dev_warn(chip->dev, "%s: unknown type(%dd)", __func__, type);
+> +		goto end;
+> +	}
+
+A switch() statement would go well here.
+
+> +
+> +	/* Set interrupt mode */
+> +	im = ioread32(im_reg) & ~(PCH_IM_MASK << (im_pos * 4));
+> +	iowrite32(im | (val << (im_pos * 4)), im_reg);
+> +
+> +	/* iclr */
+> +	iowrite32(BIT(ch), &chip->reg->iclr);
+> +
+> +	/* IMASKCLR */
+> +	iowrite32(BIT(ch), &chip->reg->imaskclr);
+> +
+> +	/* Enable interrupt */
+> +	ien = ioread32(&chip->reg->ien);
+> +	iowrite32(ien | BIT(ch), &chip->reg->ien);
+> +end:
+> +	spin_unlock_irqrestore(&chip->spinlock, flags);
+> +
+> +	return 0;
+> +}
+> +
+> +static void pch_irq_unmask(struct irq_data *d)
+> +{
+> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> +	struct pch_gpio *chip = gc->private;
+> +
+> +	chip->irq_mask |= 1 << (d->irq - chip->irq_base);
+
+?  This isn't actually doing anything other than modifying a private
+data value.  This function needs to arrange to mask out the interrupt
+on the actual hardware, even if it means masking the interrupt on the
+interrupt controller this one is cascaded to.
+
+> +}
+> +
+> +static void pch_irq_mask(struct irq_data *d)
+> +{
+> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
+> +	struct pch_gpio *chip = gc->private;
+> +
+> +	chip->irq_mask &= ~(1 << (d->irq - chip->irq_base));
+> +}
+> +
+> +static irqreturn_t pch_gpio_handler(int irq, void *dev_id)
+> +{
+> +	struct pch_gpio *chip = dev_id;
+> +	u32 reg_val = ioread32(&chip->reg->istatus);
+> +	int i;
+> +	int ret = IRQ_NONE;
+> +
+> +	for (i = 0; i < GPIO_NUM_PINS; i++) {
+> +		if (reg_val & BIT(i) & chip->irq_mask) {
+> +			dev_dbg(chip->dev, "%s:[%d]:irq=%d  status=0x%x\n",
+> +				__func__, i, irq, reg_val);
+> +			iowrite32(BIT(i), &chip->reg->iclr);
+> +			generic_handle_irq(chip->irq_base + i);
+> +			ret = IRQ_HANDLED;
+> +		}
+> +	}
+> +	return ret;
+> +}
+> +
+> +static __devinit void
+> +pch_gpio_alloc_generic_chip(struct pch_gpio *chip, unsigned int irq_start,
+> +			    unsigned int num)
+
+Nit: when breaking long function declarations, please put the newlines
+in the parameters list.  I prefer the return type to remain on the
+same line as the function name so that it shows up when I grep.
+
+> +{
+> +	struct irq_chip_generic *gc;
+> +	struct irq_chip_type *ct;
+> +
+> +	gc = irq_alloc_generic_chip("pch_gpio", 1, irq_start, chip->base,
+> +				    handle_simple_irq);
+> +	gc->private = chip;
+> +	ct = gc->chip_types;
+> +
+> +	ct->chip.irq_mask = pch_irq_mask;
+> +	ct->chip.irq_unmask = pch_irq_unmask;
+> +	ct->chip.irq_set_type = pch_irq_type;
+> +
+> +	irq_setup_generic_chip(gc, IRQ_MSK(num), IRQ_GC_INIT_MASK_CACHE,
+> +			       IRQ_NOREQUEST | IRQ_NOPROBE, 0);
+>  }
+>  
+>  static int __devinit pch_gpio_probe(struct pci_dev *pdev,
+> @@ -167,6 +309,7 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
+>  {
+>  	s32 ret;
+>  	struct pch_gpio *chip;
+> +	int irq_base;
+>  
+>  	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
+>  	if (chip == NULL)
+> @@ -202,8 +345,36 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
+>  		goto err_gpiochip_add;
+>  	}
+>  
+> +	irq_base = irq_alloc_descs(-1, PCH_IRQ_BASE, GPIO_NUM_PINS, GFP_KERNEL);
+> +	if (irq_base < 0) {
+> +		dev_err(&pdev->dev, "PCH gpio: Failed to get IRQ base num\n");
+> +		goto err_irq_alloc_descs;
+> +	}
+> +	chip->irq_base = irq_base;
+
+This looks like it will cause the driver probe to completely fail,
+even if the GPIO portion of the chip was setup correctly.  I would
+think that if GPIO works the driver should at least enable that bit
+even if IRQs are broken.
+
+> +
+> +	ret = request_irq(pdev->irq, pch_gpio_handler,
+> +			     IRQF_SHARED, KBUILD_MODNAME, chip);
+> +	if (ret != 0) {
+> +		dev_err(&pdev->dev,
+> +			"%s request_irq failed\n", __func__);
+> +		goto err_request_irq;
+> +	}
+> +
+> +	pch_gpio_alloc_generic_chip(chip, irq_base, GPIO_NUM_PINS);
+> +
+> +	/* Initialize interrupt ien register */
+> +	iowrite32(0, &chip->reg->ien);
+> +
+>  	return 0;
+>  
+> +err_request_irq:
+> +	irq_free_descs(irq_base, GPIO_NUM_PINS);
+> +
+> +err_irq_alloc_descs:
+> +	ret = gpiochip_remove(&chip->gpio);
+> +	if (ret)
+> +		dev_err(&pdev->dev, "%s gpiochip_remove failed\n", __func__);
+> +
+>  err_gpiochip_add:
+>  	pci_iounmap(pdev, chip->base);
+>  
+> @@ -224,6 +395,10 @@ static void __devexit pch_gpio_remove(struct pci_dev *pdev)
+>  	int err;
+>  	struct pch_gpio *chip = pci_get_drvdata(pdev);
+>  
+> +	free_irq(pdev->irq, chip);
+> +
+> +	irq_free_descs(chip->irq_base, GPIO_NUM_PINS);
+> +
+>  	err = gpiochip_remove(&chip->gpio);
+>  	if (err)
+>  		dev_err(&pdev->dev, "Failed gpiochip_remove\n");
+> -- 
+> 1.7.4.4
+> 
