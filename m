@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758223Ab1GDRKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 13:10:18 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:43208 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757969Ab1GDRKD (ORCPT
+	id S1758495Ab1GDRLR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 13:11:17 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:58024 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757027Ab1GDRKG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 13:10:03 -0400
-Message-Id: <20110704170958.711474761@linux.vnet.ibm.com>
+	Mon, 4 Jul 2011 13:10:06 -0400
+Message-Id: <20110704170959.733121710@linux.vnet.ibm.com>
 User-Agent: quilt/0.48-1
-Date: Mon, 04 Jul 2011 19:09:23 +0200
+Date: Mon, 04 Jul 2011 19:09:29 +0200
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 To: ebiederm@xmission.com, vgoyal@redhat.com, hbabu@us.ibm.com,
         mahesh@linux.vnet.ibm.com
 Cc: oomichi@mxs.nes.nec.co.jp, horms@verge.net.au, schwidefsky@de.ibm.com,
         heiko.carstens@de.ibm.com, kexec@lists.infradead.org,
         linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org
-Subject: [patch 1/9] kdump: Add KEXEC_CRASH_CONTROL_MEMORY_LIMIT
+Subject: [patch 7/9] kdump: Trigger kdump via panic notifier chain on s390
 References: <20110704170922.976299676@linux.vnet.ibm.com>
-Content-Disposition: inline; filename=01-s390-kdump-common-control-limit.patch
+Content-Disposition: inline; filename=07-s390-kdump-common-shutdown-action.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-On s390 there is a different KEXEC_CONTROL_MEMORY_LIMIT for the normal and
-the kdump kexec case. Therefore this patch introduces a new macro
-KEXEC_CRASH_CONTROL_MEMORY_LIMIT. This is set to
-KEXEC_CONTROL_MEMORY_LIMIT for all architectures that do not define
-KEXEC_CRASH_CONTROL_MEMORY_LIMIT.
+On s390 we have the possibility to configure actions that are executed in
+case of a kernel panic. E.g. it is possible to automatically trigger an s390
+stand-alone dump. The actions are called via a panic notifier.  We also want
+to trigger kdump via the notifier call chain. Therefore this patch disables
+for s390 the direct kdump invocation in the panic() function.
 
 Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 ---
- include/linux/kexec.h |    4 ++++
- kernel/kexec.c        |    2 +-
- 2 files changed, 5 insertions(+), 1 deletion(-)
+ kernel/panic.c |    3 +++
+ 1 file changed, 3 insertions(+)
 
---- a/include/linux/kexec.h
-+++ b/include/linux/kexec.h
-@@ -33,6 +33,10 @@
- #error KEXEC_ARCH not defined
- #endif
- 
-+#ifndef KEXEC_CRASH_CONTROL_MEMORY_LIMIT
-+#define KEXEC_CRASH_CONTROL_MEMORY_LIMIT KEXEC_CONTROL_MEMORY_LIMIT
+--- a/kernel/panic.c
++++ b/kernel/panic.c
+@@ -84,9 +84,12 @@ NORET_TYPE void panic(const char * fmt,
+ 	/*
+ 	 * If we have crashed and we have a crash kernel loaded let it handle
+ 	 * everything else.
++	 * For s390 kdump is triggered via the panic notifier call chain.
+ 	 * Do we want to call this before we try to display a message?
+ 	 */
++#if !defined(CONFIG_S390)
+ 	crash_kexec(NULL);
 +#endif
-+
- #define KEXEC_NOTE_HEAD_BYTES ALIGN(sizeof(struct elf_note), 4)
- #define KEXEC_CORE_NOTE_NAME "CORE"
- #define KEXEC_CORE_NOTE_NAME_BYTES ALIGN(sizeof(KEXEC_CORE_NOTE_NAME), 4)
---- a/kernel/kexec.c
-+++ b/kernel/kexec.c
-@@ -498,7 +498,7 @@ static struct page *kimage_alloc_crash_c
- 	while (hole_end <= crashk_res.end) {
- 		unsigned long i;
  
--		if (hole_end > KEXEC_CONTROL_MEMORY_LIMIT)
-+		if (hole_end > KEXEC_CRASH_CONTROL_MEMORY_LIMIT)
- 			break;
- 		if (hole_end > crashk_res.end)
- 			break;
+ 	kmsg_dump(KMSG_DUMP_PANIC);
+ 
 
