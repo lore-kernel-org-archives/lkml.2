@@ -1,91 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753031Ab1GDBhF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 21:37:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:39422 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab1GDBhC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 21:37:02 -0400
-MIME-Version: 1.0
-Reply-To: myungjoo.ham@gmail.com
-In-Reply-To: <201107022358.58319.rjw@sisk.pl>
-References: <1306471995-4048-1-git-send-email-myungjoo.ham@samsung.com>
-	<1306471995-4048-2-git-send-email-myungjoo.ham@samsung.com>
-	<201107022358.58319.rjw@sisk.pl>
-Date: Mon, 4 Jul 2011 10:37:00 +0900
-X-Google-Sender-Auth: PFaa45WhHE92LDqgJkwUKj8K4TQ
-Message-ID: <CAJ0PZbQuiwkW-Z+1Wrqmr3r_U+LdWS312RggkkjFBGFHES4wCw@mail.gmail.com>
-Subject: Re: [PATCH v3 2/3] PM / DEVFREQ: add example governors
-From: MyungJoo Ham <myungjoo.ham@samsung.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Jiejing Zhang <kzjeef@gmail.com>, Colin Cross <ccross@google.com>,
-        Nishanth Menon <nm@ti.com>, Thomas Gleixner <tglx@linutronix.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1752145Ab1GDB6P (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 21:58:15 -0400
+Received: from mprc.pku.edu.cn ([162.105.203.9]:40838 "EHLO mprc.pku.edu.cn"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751565Ab1GDB6O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 21:58:14 -0400
+Subject: Re: [patch 10/11] sh/unicore32/irqs: Do not trace
+ arch_local_{*,irq_*} functions
+From: Guan Xuetao <gxt@mprc.pku.edu.cn>
+Reply-To: gxt@mprc.pku.edu.cn
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <20110702033854.432833160@goodmis.org>
+References: <20110702030435.308336775@goodmis.org>
+	 <20110702033854.432833160@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: MPRC, PKU
+Date: Mon, 04 Jul 2011 09:56:39 +0800
+Message-ID: <1309744599.2291.1.camel@epip-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+It looks good to me.
 
-2011/7/3 Rafael J. Wysocki <rjw@sisk.pl>:
-> Hi,
->
-> On Friday, May 27, 2011, MyungJoo Ham wrote:
->> Three CPUFREQ-like governors are provided as examples.
->>
->> powersave: use the lowest frequency possible. The user (device) should
->> set the polling_ms as 0 because polling is useless for this governor.
->>
->> performance: use the highest freqeuncy possible. The user (device)
->> should set the polling_ms as 0 because polling is useless for this
->> governor.
->>
->> simple_ondemand: simplified version of CPUFREQ's ONDEMAND governor.
->>
->> When a user updates OPP entries (enable/disable/add), OPP framework
->> automatically notifies DEVFREQ to update operating frequency
->> accordingly. Thus, DEVFREQ users (device drivers) do not need to update
->> DEVFREQ manually with OPP entry updates or set polling_ms for powersave
->> , performance, or any other "static" governors.
->>
->> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
->> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-[]
->> +
->> +     /* Set the desired frequency based on the load */
->> +     a = (unsigned long long) stat.busy_time * stat.current_frequency;
->
-> What's the purpose of the conversion?
+Thanks & Regards.
 
-Assuming that the work speed of a device is proportional to its
-frequency, it measures the amount of work done.
-It's time * work/time. For example, during the last 10 second, if the
-busy_time was 5 sec and frequency was 10MHz,
-it's "50M", which is same as 20MHz and 2.5 sec.
+Guan Xuetao
 
->
->> +     b = div_u64(a, stat.total_time);
->> +     b *= 100;
->> +     b = div_u64(b, (DFSO_UPTHRESHOLD - DFSO_DOWNDIFFERENCTIAL / 2));
->> +     *freq = (unsigned long) b;
->> +
->> +     return 0;
->> +}
->
-> Rafael
->
+On Fri, 2011-07-01 at 23:04 -0400, Steven Rostedt wrote:
+> plain text document attachment
+> (0010-sh-unicore32-irqs-Do-not-trace-arch_local_-irq_-func.patch)
+> From: Steven Rostedt <srostedt@redhat.com>
+> 
+> Do not trace arch_local_save_flags(), arch_local_irq_*() and friends.
+> Although they are marked inline, gcc may still make a function out of
+> them and add it to the pool of functions that are traced by the function
+> tracer. This can cause undesirable results (kernel panic, triple faults,
+> etc).
+> 
+> Add the notrace notation to prevent them from ever being traced.
+> 
+> This patch only updates include/asm-generic/irqflags.h, but the only archs
+> to use it is superH and unicore32.
+> 
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Paul Mundt <lethal@linux-sh.org>
+> Cc: Guan Xuetao <gxt@mprc.pku.edu.cn>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  include/asm-generic/irqflags.h |   12 +++++++-----
+>  1 files changed, 7 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/asm-generic/irqflags.h b/include/asm-generic/irqflags.h
+> index 1f40d002..092b27e 100644
+> --- a/include/asm-generic/irqflags.h
+> +++ b/include/asm-generic/irqflags.h
+> @@ -1,6 +1,8 @@
+>  #ifndef __ASM_GENERIC_IRQFLAGS_H
+>  #define __ASM_GENERIC_IRQFLAGS_H
+>  
+> +#include <linux/types.h>
+> +
+>  /*
+>   * All architectures should implement at least the first two functions,
+>   * usually inline assembly will be the best way.
+> @@ -22,7 +24,7 @@ void arch_local_irq_restore(unsigned long flags);
+>  
+>  /* get status and disable interrupts */
+>  #ifndef arch_local_irq_save
+> -static inline unsigned long arch_local_irq_save(void)
+> +static inline notrace unsigned long arch_local_irq_save(void)
+>  {
+>  	unsigned long flags;
+>  	flags = arch_local_save_flags();
+> @@ -33,7 +35,7 @@ static inline unsigned long arch_local_irq_save(void)
+>  
+>  /* test flags */
+>  #ifndef arch_irqs_disabled_flags
+> -static inline int arch_irqs_disabled_flags(unsigned long flags)
+> +static inline notrace int arch_irqs_disabled_flags(unsigned long flags)
+>  {
+>  	return flags == ARCH_IRQ_DISABLED;
+>  }
+> @@ -41,7 +43,7 @@ static inline int arch_irqs_disabled_flags(unsigned long flags)
+>  
+>  /* unconditionally enable interrupts */
+>  #ifndef arch_local_irq_enable
+> -static inline void arch_local_irq_enable(void)
+> +static inline notrace void arch_local_irq_enable(void)
+>  {
+>  	arch_local_irq_restore(ARCH_IRQ_ENABLED);
+>  }
+> @@ -49,7 +51,7 @@ static inline void arch_local_irq_enable(void)
+>  
+>  /* unconditionally disable interrupts */
+>  #ifndef arch_local_irq_disable
+> -static inline void arch_local_irq_disable(void)
+> +static inline notrace void arch_local_irq_disable(void)
+>  {
+>  	arch_local_irq_restore(ARCH_IRQ_DISABLED);
+>  }
+> @@ -57,7 +59,7 @@ static inline void arch_local_irq_disable(void)
+>  
+>  /* test hardware interrupt enable bit */
+>  #ifndef arch_irqs_disabled
+> -static inline int arch_irqs_disabled(void)
+> +static inline notrace int arch_irqs_disabled(void)
+>  {
+>  	return arch_irqs_disabled_flags(arch_local_save_flags());
+>  }
 
 
-
--- 
-MyungJoo Ham (함명주), Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
