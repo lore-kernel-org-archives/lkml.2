@@ -1,116 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656Ab1GDH5O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 03:57:14 -0400
-Received: from mga01.intel.com ([192.55.52.88]:47700 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755508Ab1GDH4s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 03:56:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,471,1304319600"; 
-   d="scan'208";a="23490049"
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] perf, x86: Add Intel SandyBridge pricise store support
-Date: Mon,  4 Jul 2011 08:02:04 +0000
-Message-Id: <1309766525-14089-4-git-send-email-ming.m.lin@intel.com>
-X-Mailer: git-send-email 1.7.5.1
-In-Reply-To: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	id S1755676Ab1GDIJu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 04:09:50 -0400
+Received: from mtagate2.uk.ibm.com ([194.196.100.162]:53838 "EHLO
+	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab1GDIJs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 04:09:48 -0400
+Date: Mon, 4 Jul 2011 10:09:29 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-s390@vger.kernel.org,
+        Jiri Slaby <jslaby@suse.cz>, Len Brown <lenb@kernel.org>
+Subject: Re: [patch 1/1] [PATCH] include storage keys in hibernation image.
+Message-ID: <20110704100929.68674ea3@mschwide>
+In-Reply-To: <20110703174616.GB26790@elf.ucw.cz>
+References: <20110608074523.211912903@de.ibm.com>
+	<201106121441.35059.rjw@sisk.pl>
+	<20110614105001.2f991377@mschwide>
+	<201106142250.15041.rjw@sisk.pl>
+	<20110615093629.07f01779@mschwide>
+	<20110703174616.GB26790@elf.ucw.cz>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implements Intel memory store event for SandyBridge.
+On Sun, 3 Jul 2011 19:46:16 +0200
+Pavel Machek <pavel@ucw.cz> wrote:
 
-$ perf mem -t store record make -j8
+> Hi!
+> 
+> > > I think, however, that we really should try to merge them.  The only
+> > > difference seems to be how the additionally allocated pages will be populated
+> > > and what's going to happen to their contents during restore.
+> > > 
+> > > ACPI will simply copy the NVS memory to those pages, while S390 will save
+> > > the relevant storage key bits in there.
+> > 
+> > One complication to keep in mind is that we need to know which storage key
+> > goes to which page frame. We need something like the orig_bm/copy_bm or
+> > we'd have to store the pfn with the key. Simply storing the key for every
+> > page will make the array unnecessarily big.
+> 
+> How big is the overhead? In percent / in megabytes?
 
-<building kernel ..., monitoring memory store opeartion>
+Well, that depends on the ratio of the size of the hibernation image and
+the total size of the ram. Consider a 1TB machine with a hibernation image
+size of lets say 128 GB. The hibernation image would require 32 MB worth
+of storage keys (0.024%), for 1TB the array size would be 256 MB (0.19%).
 
-$ perf mem -t store report
-
-Memory store operation statistics
-=================================
-                data-cache hit:     8138
-               data-cache miss:        0
-                      STLB hit:     8138
-                     STLB miss:        0
-                 Locked access:        0
-               Unlocked access:     8138
-
-Signed-off-by: Lin Ming <ming.m.lin@intel.com>
----
- arch/x86/kernel/cpu/perf_event_intel.c    |    3 +-
- arch/x86/kernel/cpu/perf_event_intel_ds.c |   30 +++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
-index dde9041..eede1f3 100644
---- a/arch/x86/kernel/cpu/perf_event_intel.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel.c
-@@ -1523,8 +1523,9 @@ static __init int intel_pmu_init(void)
- 		/* UOPS_DISPATCHED.THREAD,c=1,i=1 to count stall cycles*/
- 		intel_perfmon_event_map[PERF_COUNT_HW_STALLED_CYCLES_BACKEND] = 0x18001b1;
- 
--		/* Memory load latency */
-+		/* Memory load latency and precise store*/
- 		intel_perfmon_event_map[PERF_COUNT_HW_MEM_LOAD] = 0x01cd;
-+		intel_perfmon_event_map[PERF_COUNT_HW_MEM_STORE] = 0x02cd;
- 
- 		pr_cont("SandyBridge events, ");
- 		break;
-diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-index d2d3155..bd7289b 100644
---- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
-+++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
-@@ -23,6 +23,26 @@ static u64 load_latency_data_source[] = {
- 
- #define LOAD_LATENCY_DATA_SOURCE_MASK	0x0FULL
- 
-+#define PRECISE_STORE_DCU_HIT		(1ULL << 0)
-+#define PRECISE_STORE_STLB_MISS		(1ULL << 4)
-+#define PRECISE_STORE_LOCKED_ACCESS	(1ULL << 5)
-+
-+static u64 precise_store_data(u64 status)
-+{
-+	u64 extra = 0;
-+
-+	if (status & PRECISE_STORE_DCU_HIT)
-+		extra |= MEM_STORE_DCU_HIT;
-+
-+	if (!(status & PRECISE_STORE_STLB_MISS))
-+		extra |= MEM_STORE_STLB_HIT;
-+
-+	if (status & PRECISE_STORE_LOCKED_ACCESS)
-+		extra |= MEM_STORE_LOCKED_ACCESS;
-+
-+	return extra;
-+}
-+
- /* The maximal number of PEBS events: */
- #define MAX_PEBS_EVENTS		4
- 
-@@ -637,6 +657,16 @@ static void __intel_pmu_pebs_event(struct perf_event *event,
- 					LOAD_LATENCY_DATA_SOURCE_MASK];
- 	}
- 
-+	if (event->attr.config == PERF_COUNT_HW_MEM_STORE) {
-+		sample_type = event->attr.sample_type;
-+
-+		if (sample_type & PERF_SAMPLE_ADDR)
-+			data.addr = pebs->dla;
-+
-+		if (sample_type & PERF_SAMPLE_EXTRA)
-+			data.extra = precise_store_data(pebs->dse);
-+	}
-+
- 	/*
- 	 * We use the interrupt regs as a base because the PEBS record
- 	 * does not contain a full regs set, specifically it seems to
 -- 
-1.7.5.1
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
