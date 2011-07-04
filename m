@@ -1,119 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751944Ab1GDFG7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 01:06:59 -0400
-Received: from na3sys009aog107.obsmtp.com ([74.125.149.197]:51642 "EHLO
-	na3sys009aog107.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750944Ab1GDFG5 (ORCPT
+	id S1752180Ab1GDFZw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 01:25:52 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:58697 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab1GDFZt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 01:06:57 -0400
-From: Partha Basak <p-basak2@ti.com>
-References: <1309546474-15363-7-git-send-email-keshava_mgowda@ti.com> <Pine.LNX.4.44L0.1107011504530.1624-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1107011504530.1624-100000@iolanthe.rowland.org>
+	Mon, 4 Jul 2011 01:25:49 -0400
+Date: Mon, 4 Jul 2011 10:55:39 +0530
+From: Ankita Garg <ankita@in.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Larry Bassel <lbassel@codeaurora.org>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Zach Pfeffer'" <zach.pfeffer@linaro.org>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Daniel Stone'" <daniels@collabora.com>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
+ Allocator added
+Message-ID: <20110704052539.GK12667@in.ibm.com>
+Reply-To: Ankita Garg <ankita@in.ibm.com>
+References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
+ <000901cc2b37$4c21f030$e465d090$%szyprowski@samsung.com>
+ <20110615213958.GB28032@labbmf-linux.qualcomm.com>
+ <201106160006.07742.arnd@arndb.de>
 MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acw4Ig3kOE9LZVj4Qe2EWXpRSl4wNwB5As0Q
-Date: Mon, 4 Jul 2011 10:36:54 +0530
-Message-ID: <11640ef76f97628579e457b5c6a74cc3@mail.gmail.com>
-Subject: RE: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
- of ehci and ohci
-To: Alan Stern <stern@rowland.harvard.edu>,
-        Keshava Munegowda <keshava_mgowda@ti.com>
-Cc: linux-usb@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Felipe Balbi <balbi@ti.com>,
-        Anand Gadiyar <gadiyar@ti.com>, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com, Kevin Hilman <khilman@ti.com>,
-        Benoit Cousson <b-cousson@ti.com>, paul@pwsan.com, johnstul@us.ibm.com,
-        Vishwanath Sripathy <vishwanath.bs@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106160006.07742.arnd@arndb.de>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Alan Stern [mailto:stern@rowland.harvard.edu]
->Sent: Saturday, July 02, 2011 12:37 AM
->To: Keshava Munegowda
->Cc: linux-usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
->kernel@vger.kernel.org; balbi@ti.com; gadiyar@ti.com;
->sameo@linux.intel.com; parthab@india.ti.com; tony@atomide.com;
->khilman@ti.com; b-cousson@ti.com; paul@pwsan.com; johnstul@us.ibm.com;
->vishwanath.bs@ti.com
->Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume
->support of ehci and ohci
->
->On Sat, 2 Jul 2011, Keshava Munegowda wrote:
->
->> From: Keshava Munegowda <Keshava_mgowda@ti.com>
->>
->> The global suspend and resume functions for ehci and ohci
->> drivers are implemented; these functions does the
->> pm_runtime_get_sync and pm_runtime_put_sync of the
->> parent device usbhs core driver respectively.
->>
->> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
->> ---
->>  drivers/usb/host/ehci-omap.c  |   22 ++++++++++++++++++++--
->>  drivers/usb/host/ohci-omap3.c |   21 +++++++++++++++++++++
->>  2 files changed, 41 insertions(+), 2 deletions(-)
->>
->> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-
->omap.c
->> index 178f63e..a02a684 100644
->> --- a/drivers/usb/host/ehci-omap.c
->> +++ b/drivers/usb/host/ehci-omap.c
->> @@ -259,14 +259,32 @@ static void ehci_hcd_omap_shutdown(struct
->platform_device *pdev)
->>  		hcd->driver->shutdown(hcd);
->>  }
->>
->> +static int omap_ehci_resume(struct device *dev)
->> +{
->> +	if (dev->parent)
->> +		pm_runtime_get_sync(dev->parent);
->> +	return 0;
->> +}
->> +
->> +static int omap_ehci_suspend(struct device *dev)
->> +{
->> +	if (dev->parent)
->> +		pm_runtime_put_sync(dev->parent);
->> +	return 0;
->> +}
->
->I don't see any point in these routines (and likewise for
->omap_ohci_suspend/resume).  When the whole system is going to sleep
->anyway, what reason is there for enabling runtime PM on the parent
->device?
+Hi,
 
-Both for EHCI & OHCI, the clocks are owned by the parent (uhh-tll).
+On Thu, Jun 16, 2011 at 12:06:07AM +0200, Arnd Bergmann wrote:
+> On Wednesday 15 June 2011 23:39:58 Larry Bassel wrote:
+> > On 15 Jun 11 10:36, Marek Szyprowski wrote:
+> > > On Tuesday, June 14, 2011 10:42 PM Arnd Bergmann wrote:
+> > > 
+> > > > On Tuesday 14 June 2011 20:58:25 Zach Pfeffer wrote:
+> > > > > I've seen this split bank allocation in Qualcomm and TI SoCs, with
+> > > > > Samsung, that makes 3 major SoC vendors (I would be surprised if
+> > > > > Nvidia didn't also need to do this) - so I think some configurable
+> > > > > method to control allocations is necessarily. The chips can't do
+> > > > > decode without it (and by can't do I mean 1080P and higher decode is
+> > > > > not functionally useful). Far from special, this would appear to be
+> > > > > the default.
+> > 
+> > We at Qualcomm have some platforms that have memory of different
+> > performance characteristics, some drivers will need a way of
+> > specifying that they need fast memory for an allocation (and would prefer
+> > an error if it is not available rather than a fallback to slower
+> > memory). It would also be bad if allocators who don't need fast
+> > memory got it "accidentally", depriving those who really need it.
+> 
+> Can you describe how the memory areas differ specifically?
+> Is there one that is always faster but very small, or are there
+> just specific circumstances under which some memory is faster than
+> another?
+> 
+> > > > The possible conflict that I still see with per-bank CMA regions are:
+> > > > 
+> > > > * It completely destroys memory power management in cases where that
+> > > >   is based on powering down entire memory banks.
+> > > 
+> We already established that we have to know something about the banks,
+> and your additional input makes it even clearer that we need to consider
+> the bigger picture here: We need to describe parts of memory separately
+> regarding general performance, device specific allocations and hotplug
+> characteristics.
+> 
+> It still sounds to me that this can be done using the NUMA properties
+> that Linux already understands, and teaching more subsystems about it,
+> but maybe the memory hotplug developers have already come up with
+> another scheme. The way that memory hotplug and CMA choose their
+> memory regions certainly needs to take both into account. As far as
+> I can see there are both conflicting and synergistic effects when
+> you combine the two.
+> 
 
-Calling pm_runtime_put_sync(dev->parent) within omap_ehci_suspend
-will turn-off the parent clocks in the Suspend path.
+Recently, we proposed a generic 'memory regions' framework to exploit
+the memory power management capabilities on the embedded boards. Think
+of some of the above CMA requirements could be met by this fraemwork.
+One of the main goals of regions is to make the VM aware of the hardware
+memory boundaries, like bank. For managing memory power consumption,
+memory regions are created aligned to the hardware granularity at which
+the power can be managed (ie, the memory power consumption operations
+like on/off can be performed). If attributed are associated with each of
+these regions, some of these regions could be marked as CMA-only,
+ensuring that only movable and per-bank memory is allocated. More
+details on the design can be found here:
 
-Similarly, calling pm_runtime_get_sync(dev->parent) within
-omap_ehci_resume
-will turn-on the parent clocks in the resume path.
+http://lkml.org/lkml/2011/5/27/177
+http://lkml.org/lkml/2011/6/29/202
+http://lwn.net/Articles/446493/
 
-This way, all reference counting are implicit within the Runtime PM layer
-and takes care of all combinations of only EHCI insmoded, OHCI insmoded,
-both insmoded etc.
-
-When both EHCI & OHCI are suspended, parent clocks will actually be
-turned OFF and vice-versa.
-
-Note that the parent per-se does not have any .suspend & .resume hooked
-up.
-At the end of the _probe of parent, the clocks are turned OFF.
-Subsequently, enabling
-the parent clocks are entirely done implicitly by the children get_sync()
-in their _probe.
-
-Therefore while .suspend/.resume of children are called they call back
-into the parent to turn-off the clocks.
-
-FYI, Keshava is out of office due to some emergency this week,
-there will be some delays in replying from his side.
-
->
->Alan Stern
+-- 
+Regards,
+Ankita Garg (ankita@in.ibm.com)
+Linux Technology Center
+IBM India Systems & Technology Labs,
+Bangalore, India
