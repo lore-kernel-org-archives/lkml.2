@@ -1,66 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758095Ab1GDPlf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 11:41:35 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39692 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757191Ab1GDPlc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 11:41:32 -0400
-Date: Mon, 4 Jul 2011 09:41:29 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Igor Grinberg <grinberg@compulab.co.il>
-Cc: Christian Gmeiner <christian.gmeiner@gmail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: pca953x: support working w/o platform data
-Message-ID: <20110704154129.GF29977@ponder.secretlab.ca>
-References: <BANLkTimSkDEzPvRMmX1O0YjjpoPzQt6_+w@mail.gmail.com>
- <4E0E0138.8060400@compulab.co.il>
- <20110704064347.GL15152@ponder.secretlab.ca>
- <4E116F7F.5010508@compulab.co.il>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E116F7F.5010508@compulab.co.il>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1758017Ab1GDPlK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 11:41:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36607 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757758Ab1GDPky (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 11:40:54 -0400
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Rik van Riel <riel@redhat.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
+        Anthony Liguori <aliguori@us.ibm.com>,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH v5 5/9] KVM-GST: Add a pv_ops stub for steal time
+Date: Mon,  4 Jul 2011 11:32:24 -0400
+Message-Id: <1309793548-16714-6-git-send-email-glommer@redhat.com>
+In-Reply-To: <1309793548-16714-1-git-send-email-glommer@redhat.com>
+References: <1309793548-16714-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 10:45:03AM +0300, Igor Grinberg wrote:
-> On 07/04/11 09:43, Grant Likely wrote:
-> 
-> > On Fri, Jul 01, 2011 at 08:17:44PM +0300, Igor Grinberg wrote:
-> >> On 07/01/11 14:33, Christian Gmeiner wrote:
-> >>
-> >>> Provide defaults for pca953x, so the driver can be used w/o
-> >>> providing platform data.
-> >> Wouldn't it be better to provide a default pdata structure inside the driver
-> >> and use it in case no pdata supplied, so you will not have to patch the
-> >> driver all around checking each time if pdata is valid?
-> >
-> > I would agree.  However, you will need to adjust the structure of the
-> > driver somewhat to do so.  Once a device is registered, the data
-> > pointed to by platform_device->dev.platform_data must be treated as
-> > immutable by the driver, otherwise driver unbind/rebind can become
-> > horribly broken.
-> 
-> The driver already copies several field from pdata to the chip structure.
-> Also, chip->dyn_pdata can be used for this purpose, but instead of
-> allocating it dynamically, it just can be  a part of the chip structure.
-> 
-> > I often solve this by keeping a full copy of the pdata structure in
-> > the driver's private data structure, and always referencing the 'safe'
-> > local copy instead of dereferencing dev->platform_data every time.
-> 
-> If this is done and the chip structure will contain all the information
-> needed (either flat, or in some kind of dyn_pdata), then indeed there
-> will be no need to access the pdata anymore.
-> Also, there will be no need to allocate pdata in pca953x_get_alt_pdata()
-> function.
-> I think this would be the most clean and safe way.
+This patch adds a function pointer in one of the many paravirt_ops
+structs, to allow guests to register a steal time function. Besides
+a steal time function, we also declare two jump_labels. They will be
+used to allow the steal time code to be easily bypassed when not
+in use.
 
-Yup!  :-)
+Signed-off-by: Glauber Costa <glommer@redhat.com>
+CC: Rik van Riel <riel@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Avi Kivity <avi@redhat.com>
+CC: Anthony Liguori <aliguori@us.ibm.com>
+CC: Eric B Munson <emunson@mgebm.net>
+---
+ arch/x86/include/asm/paravirt.h       |    9 +++++++++
+ arch/x86/include/asm/paravirt_types.h |    1 +
+ arch/x86/kernel/paravirt.c            |    9 +++++++++
+ 3 files changed, 19 insertions(+), 0 deletions(-)
 
-g.
+diff --git a/arch/x86/include/asm/paravirt.h b/arch/x86/include/asm/paravirt.h
+index ebbc4d8..a7d2db9 100644
+--- a/arch/x86/include/asm/paravirt.h
++++ b/arch/x86/include/asm/paravirt.h
+@@ -230,6 +230,15 @@ static inline unsigned long long paravirt_sched_clock(void)
+ 	return PVOP_CALL0(unsigned long long, pv_time_ops.sched_clock);
+ }
+ 
++struct jump_label_key;
++extern struct jump_label_key paravirt_steal_enabled;
++extern struct jump_label_key paravirt_steal_rq_enabled;
++
++static inline u64 paravirt_steal_clock(int cpu)
++{
++	return PVOP_CALL1(u64, pv_time_ops.steal_clock, cpu);
++}
++
+ static inline unsigned long long paravirt_read_pmc(int counter)
+ {
+ 	return PVOP_CALL1(u64, pv_cpu_ops.read_pmc, counter);
+diff --git a/arch/x86/include/asm/paravirt_types.h b/arch/x86/include/asm/paravirt_types.h
+index 8288509..2c76521 100644
+--- a/arch/x86/include/asm/paravirt_types.h
++++ b/arch/x86/include/asm/paravirt_types.h
+@@ -89,6 +89,7 @@ struct pv_lazy_ops {
+ 
+ struct pv_time_ops {
+ 	unsigned long long (*sched_clock)(void);
++	unsigned long long (*steal_clock)(int cpu);
+ 	unsigned long (*get_tsc_khz)(void);
+ };
+ 
+diff --git a/arch/x86/kernel/paravirt.c b/arch/x86/kernel/paravirt.c
+index 869e1ae..613a793 100644
+--- a/arch/x86/kernel/paravirt.c
++++ b/arch/x86/kernel/paravirt.c
+@@ -202,6 +202,14 @@ static void native_flush_tlb_single(unsigned long addr)
+ 	__native_flush_tlb_single(addr);
+ }
+ 
++struct jump_label_key paravirt_steal_enabled;
++struct jump_label_key paravirt_steal_rq_enabled;
++
++static u64 native_steal_clock(int cpu)
++{
++	return 0;
++}
++
+ /* These are in entry.S */
+ extern void native_iret(void);
+ extern void native_irq_enable_sysexit(void);
+@@ -307,6 +315,7 @@ struct pv_init_ops pv_init_ops = {
+ 
+ struct pv_time_ops pv_time_ops = {
+ 	.sched_clock = native_sched_clock,
++	.steal_clock = native_steal_clock,
+ };
+ 
+ struct pv_irq_ops pv_irq_ops = {
+-- 
+1.7.3.4
 
