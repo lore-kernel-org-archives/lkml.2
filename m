@@ -1,58 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab1GDCWK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 22:22:10 -0400
-Received: from tundra.namei.org ([65.99.196.166]:36527 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751650Ab1GDCWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 22:22:08 -0400
-Date: Mon, 4 Jul 2011 12:19:52 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-cc: Will Drewry <wad@chromium.org>, Ingo Molnar <mingo@elte.hu>,
-        Chris Evans <scarybeasts@gmail.com>, linux-kernel@vger.kernel.org,
-        Linus Torvalds <torvalds@linux-foundation.org>, djm@mindrot.org,
-        segoon@openwall.com, kees.cook@canonical.com, fweisbec@gmail.com,
-        tglx@linutronix.de, Randy Dunlap <rdunlap@xenotime.net>,
-        linux-doc@vger.kernel.org, Eric Paris <eparis@redhat.com>,
-        linux-security-module@vger.kernel.org,
-        ksummit-2011-discuss@lists.linux-foundation.org
-Subject: Re: [PATCH v9 05/13] seccomp_filter: Document what seccomp_filter
- is and how it works.
-In-Reply-To: <1309546099.26417.159.camel@gandalf.stny.rr.com>
-Message-ID: <alpine.LRH.2.00.1107041207570.7474@tundra.namei.org>
-References: <1308875813-20122-1-git-send-email-wad@chromium.org>  <1308875813-20122-5-git-send-email-wad@chromium.org>  <BANLkTimtYUyXbZjWhjK61B_1WBXE4MoAeA@mail.gmail.com>  <alpine.LRH.2.00.1106270919290.30367@tundra.namei.org>  <BANLkTi=sB2R-gWM30a0KKSGXz5p7OHRfeA@mail.gmail.com>
-  <alpine.LRH.2.00.1106301128590.13496@tundra.namei.org>  <20110701115600.GK20990@elte.hu>  <BANLkTim8CGx89nOg0HX=S1=arunBU3sEGQ@mail.gmail.com>  <20110701130705.GG12605@elte.hu>  <BANLkTimN0nEa2Bog2-vzCv=1XOG5OsJjLA@mail.gmail.com>  <20110701161027.GA29035@elte.hu>
-  <BANLkTikCaACO8o9HkAnkuaTuoKqqQWQrtw@mail.gmail.com>  <1309543448.26417.156.camel@gandalf.stny.rr.com>  <BANLkTin6rpBvbA1OuVHWy9ViZ-WPnwuXNw@mail.gmail.com> <1309546099.26417.159.camel@gandalf.stny.rr.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753251Ab1GDCX1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 22:23:27 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:61440 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751690Ab1GDCX0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 3 Jul 2011 22:23:26 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4E0D9B5E.3010901@windriver.com>
+References: <BANLkTi=gx73d6-s-jqeke05SQYorpnzLVw@mail.gmail.com>
+	<1308911347.531.56.camel@gandalf.stny.rr.com>
+	<4E074671.7060100@hitachi.com>
+	<20110627100104.GA24705@in.ibm.com>
+	<BANLkTimYej4_dmBqvPBCLej=JA5atLrZVA@mail.gmail.com>
+	<4E0D9B5E.3010901@windriver.com>
+Date: Mon, 4 Jul 2011 10:23:25 +0800
+Message-ID: <CAM2zO=AO2bxvBgZopZAkhhr++VNby9MvvLv-dae8t=QUu8_C0w@mail.gmail.com>
+Subject: Re: [BUG?]3.0-rc4+ftrace+kprobe: set kprobe at instruction 'stwu'
+ lead to system crash/freeze
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: "tiejun.chen" <tiejun.chen@windriver.com>
+Cc: ananth@in.ibm.com, Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, paulus@samba.org,
+        yrl.pp-manager.tt@hitachi.com,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        linuxppc-dev@lists.ozlabs.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Kumar Gala <galak@kernel.crashing.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jul 2011, Steven Rostedt wrote:
+On Fri, Jul 1, 2011 at 6:03 PM, tiejun.chen <tiejun.chen@windriver.com> wrote:
+>> root@unknown:/root> insmod kprobe_example.ko func=show_interrupts
+>> Planted kprobe at c009be18
+>> root@unknown:/root> cat /proc/interrupts
+>> pre_handler: p->addr = 0xc009be18, nip = 0xc009be18, msr = 0x29000
+>> post_handler: p->addr = 0xc009be18, msr = 0x29000,boostable = 1
+>> Oops: Exception in kernel mode, sig: 11 [#1]
+>> PREEMPT MPC8536 DS
+>> Modules linked in: kprobe_example
+>> NIP: df159e74 LR: c0106f40 CTR: c009be18
+>> REGS: df159d90 TRAP: 0700   Not tainted  (3.0.0-rc4-00001-ge8ffcca-dirty)
+>> MSR: 00029000 <EE,ME,CE>  CR: 20202688  XER: 00000000
+>> TASK = dfaa5340[613] 'cat' THREAD: df158000
+>> GPR00: fffff000 df159e40 dfaa5340 df024a00 df159e78 00000000 df159f20 00000001
+>> GPR08: c10060d0 c009be18 00029000 df159e70 00000000 1001ca74 1ffb5f00 100a01cc
+>> GPR16: 00000000 00000000 00000000 00000000 df024a28 df159f20 00000000 dfbff080
+>> GPR24: 10016000 00001000 df159f20 df159e78 dfbff080 df159e78 df024a00 df159e70
+>> NIP [df159e74] 0xdf159e74
+>> LR [c0106f40] seq_read+0x2a4/0x568
+>> Call Trace:
+>> [df159e40] [00029000] 0x29000 (unreliable)
+>> [df159e74] [00000000]   (null)
+>> Instruction dump:
+>> XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX
+>> XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX XXXXXXXX
+>> ---[ end trace 60026bfc1fe79aed ]---
+>> Segmentation fault
+>
+> Maybe I can understand this problem.
+>
+> When we kprobe these operations such as store-and-update-word for SP(r1),
+>
+> stwu r1, -A(r1)
+>
+> The program exception is triggered then PPC always allocate an exception frame
+> as shown as the follows:
+>
+> old r1 --------
+>         ...
+>         nip
+>         gpr[2]~gpr[31]
+>         gpr[1] <--------- old r1 is stored here.
+>         gpr[0]
+>       -------- <-- pr_regs @offset 16 bytes
+>       padding
+>       STACK_FRAME_REGS_MARKER
+>       LR
+>       back chain
+> new r1 --------
+>
+> Here emulate_step() is called to emulate 'stwu'. Actually this is equivalent to
+> 1> update pr_regs->gpr[1] = mem(old r1 + (-A))
+> 2> 'stw <old r1>, mem<(old r1 + (-A)) >
+>
+> You should notice the stack based on new r1 would be covered with mem<old r1
+> +(-A)>. So after this, the kernel exit from post_krpobe, something would be
+> broken. This should depend on sizeof(-A).
+>
+> For kprobe show_interrupts, you can see pregs->nip is re-written violently so
+> kernel issued.
 
-> On Fri, 2011-07-01 at 13:09 -0500, Will Drewry wrote:
-> 
-> > I have a panel reserved on system/kernel hardening with Kees at the
-> > Linux Security Summit as part of the LPC (thanks to the LSS
-> > committee).  Will the relevant people be able to attend that in
-> > September?
-> 
-> No, unfortunately most of the key players will not be there.
+Yeah, my debug also show this, so this is the root cause.
+Thanks for your explanation.
 
-Hold on, do we know this for sure?  And that they will all definitely be 
-at KS?  I'd really prefer to see this resolved via email, it's more 
-scalable, transparent and timely.
+>
+> But sometimes we may only re-write some violate registers the kernel still
+> alive. And so this is just why the kernel works well for some kprobed point
+> after you change some kernel options/toolchains.
+>
+> If I'm correct its difficult to kprobe these stwu sp operation since the
+> sizeof(-A) is undermined for the kernel. So we have to implement in-depend
+> interrupt stack like PPC64.
 
-In any case, Plumbers and LSS should have some of the key people.
+Hmmm, a dedicated exception stack will smooth the concern IMHO,
+Ben, Kuma?
 
-Ingo & Linus: will you be there?
+Thanks,
+Yong
 
 
-
-- James
 -- 
-James Morris
-<jmorris@namei.org>
+Only stand for myself
