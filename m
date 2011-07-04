@@ -1,45 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756800Ab1GDPOM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 11:14:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48241 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754319Ab1GDPOI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 11:14:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,472,1304319600"; 
-   d="scan'208";a="26121718"
-Date: Mon, 4 Jul 2011 17:14:36 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 1/3] mfd: Add Makefile and Kconfig Entries for tps65911
- comparator
-Message-ID: <20110704151436.GG3021@sortiz-mobl>
-References: <1308795351.15248.2.camel@phoenix>
+	id S1757019Ab1GDPSJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 11:18:09 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:22244 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756451Ab1GDPSF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 11:18:05 -0400
+Message-ID: <4E11D99D.7040005@atmel.com>
+Date: Mon, 04 Jul 2011 17:17:49 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308795351.15248.2.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: linux-arm-kernel@lists.infradead.org, patrice.vilchez@atmel.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH for 3.0] AT91: Change nand buswidth logic to match hardware
+ default configuration
+References: <1309515924-22531-1-git-send-email-nicolas.ferre@atmel.com> <201107041625.25972.arnd@arndb.de> <4E11D123.9070409@atmel.com> <201107041713.23982.arnd@arndb.de>
+In-Reply-To: <201107041713.23982.arnd@arndb.de>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel,
+Le 04/07/2011 17:13, Arnd Bergmann :
+> On Monday 04 July 2011, Nicolas Ferre wrote:
+>>> In this case, studying the patch more closely shows that it's
+>>> very harmless, but I'd rather not have to look that closely.
+>>
+>> Well, in fact it is a fix against what was introduced in a 3.0 patch
+>> which I found to be wrong.
+>> The reason because I do not want to be in next kernel is the fact that
+>> it can puzzle the user (people that want to use kernel without changing
+>> the system_rev between 2.6.39 -> 3.0 and again revert their changes for
+>> 3.0 -> 3.1).
+>>
+>>> Am I correct that the bug is a regression against 2.6.39?
+>>
+>> No, in fact it was introduced during 3.0 early -rc.
+> 
+> That's what I mean by 'regression against 2.6.39': it was working in 2.6.39,
+> but later kernels are broken without this fix.
 
-On Thu, Jun 23, 2011 at 10:15:51AM +0800, Axel Lin wrote:
-> Base on Mark's comment [1], I make the Kconfig entry invisible to users.
-> [1] https://lkml.org/lkml/2011/5/14/136
-Thanks for the patches. All 3 applied, with #1 and #2 queued to my for-linus
-branch.
+Absolutely (here broken = not easily understandable by user).
 
-Cheers,
-Samuel.
-
+Bye,
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Nicolas Ferre
+
