@@ -1,146 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755867Ab1GDI0E (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 04:26:04 -0400
-Received: from na3sys009aog126.obsmtp.com ([74.125.149.155]:49152 "EHLO
-	na3sys009aog126.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752037Ab1GDI0B (ORCPT
+	id S1753925Ab1GDIeA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 04:34:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:49467 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752037Ab1GDId7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 04:26:01 -0400
-Date: Mon, 4 Jul 2011 11:25:54 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Partha Basak <p-basak2@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Anand Gadiyar <gadiyar@ti.com>,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        paul@pwsan.com, johnstul@us.ibm.com,
-        Vishwanath Sripathy <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
- of ehci and ohci
-Message-ID: <20110704082553.GH15044@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1309546474-15363-7-git-send-email-keshava_mgowda@ti.com>
- <Pine.LNX.4.44L0.1107011504530.1624-100000@iolanthe.rowland.org>
- <11640ef76f97628579e457b5c6a74cc3@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="81JctsDUVPekGcy+"
-Content-Disposition: inline
-In-Reply-To: <11640ef76f97628579e457b5c6a74cc3@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Jul 2011 04:33:59 -0400
+Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 04 Jul 2011 10:33:40 +0200
+Message-ID: <1309768420.3282.8.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
+> +/*
+> + * Memory load operation info encoding
+> + */
+> +
+> +/* Bits(0-1) {L1, L2, L3, RAM} or {unknown, IO, uncached, reserved}
+> */
+> +#define MEM_LOAD_L1                    0x00
+> +#define MEM_LOAD_L2                    0x01
+> +#define MEM_LOAD_L3                    0x02
+> +#define MEM_LOAD_RAM                   0x03
+> +#define MEM_LOAD_UNKNOWN               0x00
+> +#define MEM_LOAD_IO                    0x01
+> +#define MEM_LOAD_UNCACHED              0x02
+> +#define MEM_LOAD_RESERVED              0x03
+> +
+> +/* Bits(2-3) {toggle, snoop, local, remote} */
+> +#define MEM_LOAD_TOGGLE                        (0x00 << 2)
+> +#define MEM_LOAD_SNOOP                 (0x01 << 2)
+> +#define MEM_LOAD_LOCAL                 (0x02 << 2)
+> +#define MEM_LOAD_REMOTE                        (0x03 << 2)
+> +
+> +/* Bits(4-5) {modified, exclusive, shared, invalid} */
+> +#define MEM_LOAD_MODIFIED              (0x00 << 4)
+> +#define MEM_LOAD_EXCLUSIVE             (0x01 << 4)
+> +#define MEM_LOAD_SHARED                        (0x02 << 4)
+> +#define MEM_LOAD_INVALID               (0x03 << 4) 
 
---81JctsDUVPekGcy+
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Did anybody check with the other PMUs that have similar features like
+PowerPC and possibly IA64?
 
-Hi,
-
-On Mon, Jul 04, 2011 at 10:36:54AM +0530, Partha Basak wrote:
-> >-----Original Message-----
-> >From: Alan Stern [mailto:stern@rowland.harvard.edu]
-> >Sent: Saturday, July 02, 2011 12:37 AM
-> >To: Keshava Munegowda
-> >Cc: linux-usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
-> >kernel@vger.kernel.org; balbi@ti.com; gadiyar@ti.com;
-> >sameo@linux.intel.com; parthab@india.ti.com; tony@atomide.com;
-> >khilman@ti.com; b-cousson@ti.com; paul@pwsan.com; johnstul@us.ibm.com;
-> >vishwanath.bs@ti.com
-> >Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume
-> >support of ehci and ohci
-> >
-> >On Sat, 2 Jul 2011, Keshava Munegowda wrote:
-> >
-> >> From: Keshava Munegowda <Keshava_mgowda@ti.com>
-> >>
-> >> The global suspend and resume functions for ehci and ohci
-> >> drivers are implemented; these functions does the
-> >> pm_runtime_get_sync and pm_runtime_put_sync of the
-> >> parent device usbhs core driver respectively.
-> >>
-> >> Signed-off-by: Keshava Munegowda <keshava_mgowda@ti.com>
-> >> ---
-> >>  drivers/usb/host/ehci-omap.c  |   22 ++++++++++++++++++++--
-> >>  drivers/usb/host/ohci-omap3.c |   21 +++++++++++++++++++++
-> >>  2 files changed, 41 insertions(+), 2 deletions(-)
-> >>
-> >> diff --git a/drivers/usb/host/ehci-omap.c b/drivers/usb/host/ehci-
-> >omap.c
-> >> index 178f63e..a02a684 100644
-> >> --- a/drivers/usb/host/ehci-omap.c
-> >> +++ b/drivers/usb/host/ehci-omap.c
-> >> @@ -259,14 +259,32 @@ static void ehci_hcd_omap_shutdown(struct
-> >platform_device *pdev)
-> >>  		hcd->driver->shutdown(hcd);
-> >>  }
-> >>
-> >> +static int omap_ehci_resume(struct device *dev)
-> >> +{
-> >> +	if (dev->parent)
-> >> +		pm_runtime_get_sync(dev->parent);
-> >> +	return 0;
-> >> +}
-> >> +
-> >> +static int omap_ehci_suspend(struct device *dev)
-> >> +{
-> >> +	if (dev->parent)
-> >> +		pm_runtime_put_sync(dev->parent);
-> >> +	return 0;
-> >> +}
-> >
-> >I don't see any point in these routines (and likewise for
-> >omap_ohci_suspend/resume).  When the whole system is going to sleep
-> >anyway, what reason is there for enabling runtime PM on the parent
-> >device?
->=20
-> Both for EHCI & OHCI, the clocks are owned by the parent (uhh-tll).
->=20
-> Calling pm_runtime_put_sync(dev->parent) within omap_ehci_suspend
-> will turn-off the parent clocks in the Suspend path.
->=20
-> Similarly, calling pm_runtime_get_sync(dev->parent) within
-> omap_ehci_resume
-> will turn-on the parent clocks in the resume path.
->=20
-> This way, all reference counting are implicit within the Runtime PM layer
-> and takes care of all combinations of only EHCI insmoded, OHCI insmoded,
-> both insmoded etc.
->=20
-> When both EHCI & OHCI are suspended, parent clocks will actually be
-> turned OFF and vice-versa.
-
-not sure this is necessary. I would expect:
-
-pm_runtime_get_sync(dev) to propagate up the parent tree and enable all
-necessary resources to get the child in a working state. IOW, you
-shouldn't need to manuall access the parent device.
-
-Kevin ? Paul ?
-
---=20
-balbi
-
---81JctsDUVPekGcy+
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOEXkRAAoJEAv8Txj19kN1sBoH/R27TmiRxy57oUe/Uhme6Gsq
-GhOWyoBSGPewW58lF/+GXcWMDiD8/KmMkOmJ8hO6IXbGVebeJp4spyviURmT5GqH
-xZNWLQ5N6FDy981s1cSzBv9ZoLnSCCnhs2NqfpwappLYujEkOPaqyp6dl/fbFlXo
-mZkRIo70WJYT8lIrHuWVlITGXoBaQslVVP8tXAahma6rvPNxJ3nVJwldYcTIcwdR
-Dji5F9fdJyJvxcn06wPzXPdYLVwsVwAV333dXne2RPVjfjpZUGroWl50PWJ9TlKp
-IrRwDbQPJR2tPAz5Y0cemmCxP0l4SwEMiE61t5oQYIU6VdzAsgwGyaU+LWnqcOI=
-=GCbv
------END PGP SIGNATURE-----
-
---81JctsDUVPekGcy+--
+I keep mentioning this, nobody seems interested.
