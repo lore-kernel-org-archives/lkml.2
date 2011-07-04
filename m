@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752080Ab1GDUcM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 16:32:12 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:33139 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751676Ab1GDUcK (ORCPT
+	id S1751811Ab1GDUht (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 16:37:49 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58244 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751438Ab1GDUhr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 16:32:10 -0400
-X-Greylist: delayed 300 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Jul 2011 16:32:10 EDT
-Date: Mon, 4 Jul 2011 13:31:57 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for July 4 (media/radio)
-Message-Id: <20110704133157.7a37d8d9.randy.dunlap@oracle.com>
-In-Reply-To: <20110704170952.1024e89b.sfr@canb.auug.org.au>
-References: <20110704170952.1024e89b.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 4 Jul 2011 16:37:47 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH 7/7] serial/8250: make PIO support optional
+Date: Mon, 4 Jul 2011 22:37:05 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+References: <1309211120-2803-1-git-send-email-arnd@arndb.de> <201107042127.31649.arnd@arndb.de> <20110704205336.09547e1f@lxorguk.ukuu.org.uk>
+In-Reply-To: <20110704205336.09547e1f@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4E122347.0025:SCFMA922111,ss=1,re=-4.000,fgs=0
+Message-Id: <201107042237.05295.arnd@arndb.de>
+X-Provags-ID: V02:K0:PJuJ/jWCEmROmhWCqTG2TFRyioJauIIwfDI57cKlNxP
+ twxQ96tqJDb9bLhaH+ehT5BnEleY06YFqbdX40XET0hYwH/NLV
+ eA0rySSSvbO78wPOaokLZ2KpgKIhcaKeIBKKULRRS5SKhwYDjm
+ C5X9YEH2nREQEC57SaR08qcgY7KKwHs25MqIINpSXLeir6BME5
+ hRZVOwVNpZ3v+CH9GmM8w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jul 2011 17:09:52 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On Monday 04 July 2011 21:53:36 Alan Cox wrote:
+> > Ok, makes sense. If I split this out to the ISA driver, I would
+> > probably also disallow changing io_type, as ISA 8250 ports are
+> > all based on PIO mode.
 > 
-> Changes since 20110701:
-> 
-> The v4l-dvb tree gained a build failure so I used the version from
-> next-20110701.
+> Alas not, they also come in MMIO form now and then, not often but just
+> enough to be annoyingly unignorable. However the ISA driver can handle
+> that 'in-house' and I've never seen anything but PIO or simple MMIO.
 
+Ok.
 
-drivers/media/radio/radio-rtrack2.c:31:17: error: invalid suffix "c" on integer constant
-make[4]: [drivers/media/radio/radio-rtrack2.o] Error 1 (ignored)
-drivers/media/radio/radio-aimslab.c:49:17: error: invalid suffix "f" on integer constant
-make[4]: [drivers/media/radio/radio-aimslab.o] Error 1 (ignored)
-drivers/media/radio/radio-gemtek.c:51:18: error: invalid suffix "c" on integer constant
-make[4]: [drivers/media/radio/radio-gemtek.o] Error 1 (ignored)
-drivers/media/radio/radio-zoltrix.c:51:17: error: invalid suffix "c" on integer constant
+How are people using those ISA cards today? The version of setserial
+that I found is not able to set MMIO mode on those. I suppose you
+are not talking about isapnp cards, right? Those should not need to
+be handled through the ISA driver at all.
 
-
-These drivers do not handle hex CONFIG_ values correctly.
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	Arnd
