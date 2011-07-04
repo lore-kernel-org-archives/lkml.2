@@ -1,113 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752180Ab1GDFZw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 01:25:52 -0400
-Received: from e28smtp07.in.ibm.com ([122.248.162.7]:58697 "EHLO
-	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab1GDFZt (ORCPT
+	id S1752477Ab1GDFb1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 01:31:27 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:62004 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab1GDFb0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 01:25:49 -0400
-Date: Mon, 4 Jul 2011 10:55:39 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Larry Bassel <lbassel@codeaurora.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Zach Pfeffer'" <zach.pfeffer@linaro.org>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Daniel Stone'" <daniels@collabora.com>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
-Subject: Re: [Linaro-mm-sig] [PATCH 08/10] mm: cma: Contiguous Memory
- Allocator added
-Message-ID: <20110704052539.GK12667@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <1307699698-29369-1-git-send-email-m.szyprowski@samsung.com>
- <000901cc2b37$4c21f030$e465d090$%szyprowski@samsung.com>
- <20110615213958.GB28032@labbmf-linux.qualcomm.com>
- <201106160006.07742.arnd@arndb.de>
+	Mon, 4 Jul 2011 01:31:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201106160006.07742.arnd@arndb.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110703162329.GA28131@suse.de>
+References: <1309702581-16863-1-git-send-email-akinobu.mita@gmail.com>
+	<1309702581-16863-3-git-send-email-akinobu.mita@gmail.com>
+	<20110703162329.GA28131@suse.de>
+Date: Mon, 4 Jul 2011 14:31:25 +0900
+Message-ID: <CAC5umyh_25z9LV=T86807ey8yZRGwmhsPG44OqZdtcR-3wzb4Q@mail.gmail.com>
+Subject: Re: [PATCH 2/7] debugfs: add debugfs_create_int
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+2011/7/4 Greg KH <gregkh@suse.de>:
+> On Sun, Jul 03, 2011 at 11:16:16PM +0900, Akinobu Mita wrote:
+>> Introduce debugfs_create_int() for creating a debugfs file that is used to
+>> read and write an int value.
+>
+> Um, what's wrong with the existing s32 and s64 versions that debugfs
+> already provides?
 
-On Thu, Jun 16, 2011 at 12:06:07AM +0200, Arnd Bergmann wrote:
-> On Wednesday 15 June 2011 23:39:58 Larry Bassel wrote:
-> > On 15 Jun 11 10:36, Marek Szyprowski wrote:
-> > > On Tuesday, June 14, 2011 10:42 PM Arnd Bergmann wrote:
-> > > 
-> > > > On Tuesday 14 June 2011 20:58:25 Zach Pfeffer wrote:
-> > > > > I've seen this split bank allocation in Qualcomm and TI SoCs, with
-> > > > > Samsung, that makes 3 major SoC vendors (I would be surprised if
-> > > > > Nvidia didn't also need to do this) - so I think some configurable
-> > > > > method to control allocations is necessarily. The chips can't do
-> > > > > decode without it (and by can't do I mean 1080P and higher decode is
-> > > > > not functionally useful). Far from special, this would appear to be
-> > > > > the default.
-> > 
-> > We at Qualcomm have some platforms that have memory of different
-> > performance characteristics, some drivers will need a way of
-> > specifying that they need fast memory for an allocation (and would prefer
-> > an error if it is not available rather than a fallback to slower
-> > memory). It would also be bad if allocators who don't need fast
-> > memory got it "accidentally", depriving those who really need it.
-> 
-> Can you describe how the memory areas differ specifically?
-> Is there one that is always faster but very small, or are there
-> just specific circumstances under which some memory is faster than
-> another?
-> 
-> > > > The possible conflict that I still see with per-bank CMA regions are:
-> > > > 
-> > > > * It completely destroys memory power management in cases where that
-> > > >   is based on powering down entire memory banks.
-> > > 
-> We already established that we have to know something about the banks,
-> and your additional input makes it even clearer that we need to consider
-> the bigger picture here: We need to describe parts of memory separately
-> regarding general performance, device specific allocations and hotplug
-> characteristics.
-> 
-> It still sounds to me that this can be done using the NUMA properties
-> that Linux already understands, and teaching more subsystems about it,
-> but maybe the memory hotplug developers have already come up with
-> another scheme. The way that memory hotplug and CMA choose their
-> memory regions certainly needs to take both into account. As far as
-> I can see there are both conflicting and synergistic effects when
-> you combine the two.
-> 
+I couldn't find s32 version in linux/debugfs.h
 
-Recently, we proposed a generic 'memory regions' framework to exploit
-the memory power management capabilities on the embedded boards. Think
-of some of the above CMA requirements could be met by this fraemwork.
-One of the main goals of regions is to make the VM aware of the hardware
-memory boundaries, like bank. For managing memory power consumption,
-memory regions are created aligned to the hardware granularity at which
-the power can be managed (ie, the memory power consumption operations
-like on/off can be performed). If attributed are associated with each of
-these regions, some of these regions could be marked as CMA-only,
-ensuring that only movable and per-bank memory is allocated. More
-details on the design can be found here:
+> userspace doesn't know what "int" means for the kernel as it might be
+> running in 32bit mode with a 64bit kernel.  That is why this isn't a
+> good idea, so please convert your other patch to use the existing api
+> and change the variable type in your patch.
 
-http://lkml.org/lkml/2011/5/27/177
-http://lkml.org/lkml/2011/6/29/202
-http://lwn.net/Articles/446493/
-
--- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
+Shoud I add debugfs_create_s32() instead of debugfs_create_int() for
+this?
