@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755980Ab1GDILV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 04:11:21 -0400
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:53676 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755810Ab1GDILS (ORCPT
+	id S1755668Ab1GDIMd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 04:12:33 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54435 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755372Ab1GDIMc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 04:11:18 -0400
-Date: Mon, 4 Jul 2011 10:10:53 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [patch 09/11] s390/irqs: Do not trace arch_local_{*,irq_*}
- functions
-Message-ID: <20110704101053.38717f0b@mschwide>
-In-Reply-To: <20110702033854.283591061@goodmis.org>
-References: <20110702030435.308336775@goodmis.org>
-	<20110702033854.283591061@goodmis.org>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.4; i486-pc-linux-gnu)
+	Mon, 4 Jul 2011 04:12:32 -0400
+Subject: [PATCH] ARM: DMA: Silence declared inside parameter list warning
+ for !CONFIG_MMU
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Russell King <linux@arm.linux.org.uk>,
+        Sergei Shtylyov <sshtylyov@mvista.com>,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Jul 2011 16:12:21 +0800
+Message-ID: <1309767141.3964.1.camel@phoenix>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.32.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 01 Jul 2011 23:04:44 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+Fix below warning, the struct dma_coherent_area takes no space if !CONFIG_MMU.
 
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> Do not trace arch_local_save_flags(), arch_local_irq_*() and friends.
-> Although they are marked inline, gcc may still make a function out of
-> them and add it to the pool of functions that are traced by the function
-> tracer. This can cause undesirable results (kernel panic, triple faults,
-> etc).
-> 
-> Add the notrace notation to prevent them from ever being traced.
-> 
-> Cc: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+  CC      arch/arm/mm/dma-mapping.o
+arch/arm/mm/dma-mapping.c:309: warning: 'struct dma_coherent_area' declared inside parameter list
+arch/arm/mm/dma-mapping.c:309: warning: its scope is only this definition or declaration, which is probably not what you want
+arch/arm/mm/dma-mapping.c:334: warning: 'struct dma_coherent_area' declared inside parameter list
+arch/arm/mm/dma-mapping.c:374: warning: 'struct dma_coherent_area' declared inside parameter list
 
-Applied to git390, thanks Steven.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ arch/arm/mm/dma-mapping.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
+diff --git a/arch/arm/mm/dma-mapping.c b/arch/arm/mm/dma-mapping.c
+index 8089499..da3b33a 100644
+--- a/arch/arm/mm/dma-mapping.c
++++ b/arch/arm/mm/dma-mapping.c
+@@ -297,6 +297,8 @@ static void dma_free_area(void *cpu_addr, size_t size, struct dma_coherent_area
+ #define coherent_wc_area NULL
+ #define coherent_dma_area NULL
+ 
++struct dma_coherent_area { };
++
+ void dma_coherent_reserve(void)
+ {
+ }
 -- 
-blue skies,
-   Martin.
+1.7.4.1
 
-"Reality continues to ruin my life." - Calvin.
+
 
