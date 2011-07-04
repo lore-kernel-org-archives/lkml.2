@@ -1,89 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755260Ab1GDHqd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 03:46:33 -0400
-Received: from mail.perches.com ([173.55.12.10]:3523 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753751Ab1GDHqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 03:46:31 -0400
-Subject: Re: [PATCH 1/2] netpoll: Remove unused EXPORT_SYMBOLs of
- netpoll_poll and netpoll_poll_dev
-From: Joe Perches <joe@perches.com>
-To: Harry Wei <jiaweiwei.xiyou@gmail.com>
-Cc: amwang@redhat.com, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        netdev@vger.kernel.org
-In-Reply-To: <20110704065320.GA2588@gmail.com>
-References: <cover.1309482314.git.joe@perches.com>
-	 <282ce7d68b97c4dbfb759c1c0752e6cbddfeeafc.1309482314.git.joe@perches.com>
-	 <20110704065320.GA2588@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Jul 2011 00:46:29 -0700
-Message-ID: <1309765589.18925.42.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1755315Ab1GDHuL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 03:50:11 -0400
+Received: from fb2.tech.numericable.fr ([82.216.111.50]:44431 "EHLO
+	fb2.tech.numericable.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab1GDHuJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 03:50:09 -0400
+From: Corentin Chary <corentin.chary@gmail.com>
+To: platform-driver-x86@vger.kernel.org
+Cc: Seth Forshee <seth.forshee@canonical.com>,
+        Corentin Chary <corentin.chary@gmail.com>,
+        Corentin Chary <corentincj@iksaif.net> (maintainer:ASUS NOTEBOOKS
+	AN...),
+        Matthew Garrett <mjg@redhat.com> (maintainer:X86 PLATFORM DRIVERS),
+        acpi4asus-user@lists.sourceforge.net (open list:ASUS NOTEBOOKS AN...),
+        linux-kernel@vger.kernel.org (open list)
+Subject: [PATCH 04/16] asus-wmi: Enable autorepeat for hotkey input device
+Date: Mon,  4 Jul 2011 09:49:20 +0200
+Message-Id: <1309765760-22045-1-git-send-email-corentin.chary@gmail.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <20110701141558.GB1363@srcf.ucam.org>
+References: <20110701141558.GB1363@srcf.ucam.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-04 at 14:53 +0800, Harry Wei wrote:
-> On Thu, Jun 30, 2011 at 06:08:57PM -0700, Joe Perches wrote:
-> > Unused symbols waste space.
-> > Commit 0e34e93177fb
-> > "(netpoll: add generic support for bridge and bonding devices)"
-> > added the symbol more than a year ago with the promise of "future use".
-> > Because it is so far unused, remove it for now.
-> > It can be easily readded if or when it actually needs to be used.
-> > cc: WANG Cong <amwang@redhat.com>
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >  include/linux/netpoll.h |    2 --
-> >  net/core/netpoll.c      |    6 ++----
-> >  2 files changed, 2 insertions(+), 6 deletions(-)
-> > diff --git a/include/linux/netpoll.h b/include/linux/netpoll.h
-[]
-> > @@ -40,8 +40,6 @@ struct netpoll_info {
-> >  	struct netpoll *netpoll;
-> >  };
-> >  
-> > -void netpoll_poll_dev(struct net_device *dev);
-> > -void netpoll_poll(struct netpoll *np);
-> >  void netpoll_send_udp(struct netpoll *np, const char *msg, int len);
-> >  void netpoll_print_options(struct netpoll *np);
-> >  int netpoll_parse_options(struct netpoll *np, char *opt);
-> > diff --git a/net/core/netpoll.c b/net/core/netpoll.c
-> > index 18d9cbd..4ce595e 100644
-> > --- a/net/core/netpoll.c
-> > +++ b/net/core/netpoll.c
-> > @@ -177,7 +177,7 @@ static void service_arp_queue(struct netpoll_info *npi)
-> >  	}
-> >  }
-> >  
-> > -void netpoll_poll_dev(struct net_device *dev)
-> > +static void netpoll_poll_dev(struct net_device *dev)
-> You have removed the function declaration in include/linux/netpoll.h.
+From: Seth Forshee <seth.forshee@canonical.com>
 
-Because it's unused by anything in the tree
-but netpoll.c
+The T101MT Home/Express Gate key autorepeats in hardware, but
+sparse-keymap does not support hardware autorepeat. Enable the
+input core's software autorepeat to emulate the hardware behavior.
+Normal hotkeys are autoreleased, so the behavior of these keys
+will not be affected.
 
-> And you changed the function like 
-> static void netpoll_poll_dev(...)
-> {
-> 	...
-> }
-> But i don't know its usage.
+Signed-off-by: Seth Forshee <seth.forshee@canonical.com>
+Signed-off-by: Corentin Chary <corentin.chary@gmail.com>
+---
+ drivers/platform/x86/asus-wmi.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-It's now a local function to netpoll.c
-
-> The 'static' before this function just says the active area of 'netpoll_poll_dev'
-> is in the file net/core/netpoll.c. What is the purpose? Could you please tell me?
-
-It prods the device to perform network work.
-
-	/* Process pending work on NIC */
-	ops->ndo_poll_controller(dev);
-
-	poll_napi(dev);
-
-
+diff --git a/drivers/platform/x86/asus-wmi.c b/drivers/platform/x86/asus-wmi.c
+index a09271d..35eeb69 100644
+--- a/drivers/platform/x86/asus-wmi.c
++++ b/drivers/platform/x86/asus-wmi.c
+@@ -205,6 +205,7 @@ static int asus_wmi_input_init(struct asus_wmi *asus)
+ 	asus->inputdev->phys = asus->driver->input_phys;
+ 	asus->inputdev->id.bustype = BUS_HOST;
+ 	asus->inputdev->dev.parent = &asus->platform_device->dev;
++	set_bit(EV_REP, asus->inputdev->evbit);
+ 
+ 	err = sparse_keymap_setup(asus->inputdev, asus->driver->keymap, NULL);
+ 	if (err)
+-- 
+1.7.3.4
 
