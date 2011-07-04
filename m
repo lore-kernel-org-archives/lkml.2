@@ -1,26 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab1GDJOB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 05:14:01 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:47662 "EHLO mx3.mail.elte.hu"
+	id S1756733Ab1GDJR4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 05:17:56 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:33559 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753583Ab1GDJN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 05:13:59 -0400
-Date: Mon, 4 Jul 2011 11:13:45 +0200
+	id S1755570Ab1GDJRz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 05:17:55 -0400
+Date: Mon, 4 Jul 2011 11:17:42 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Jan Beulich <JBeulich@novell.com>
-Subject: Re: [RFC GIT PULL] x86 entry / perf stacktrace changes
-Message-ID: <20110704091345.GB22943@elte.hu>
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 5/6] x86: Remove useless unwinder backlink from irq regs
+ saving
+Message-ID: <20110704091742.GC22943@elte.hu>
 References: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
+ <1309624184-9790-6-git-send-email-fweisbec@gmail.com>
+ <4E1187E4020000780004BF2C@nat28.tlf.novell.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
+In-Reply-To: <4E1187E4020000780004BF2C@nat28.tlf.novell.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,51 +37,29 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+* Jan Beulich <JBeulich@novell.com> wrote:
 
-> Ingo,
+> >>> On 02.07.11 at 18:29, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > The unwinder backlink in interrupt entry is very useless.
+> > It's actually not part of the stack frame chain and thus is
+> > never used.
 > 
-> Please pull the perf/stacktrace branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/stacktrace
-> 
-> Or may be not yet. It's still in RFC because I would like
-> to ensure I did not break cfi annotations. I hope Jan beulich
-> or others can have a look.
-> 
-> Sorry to mess up irq entry and perf stacktrace changes in the same
-> topic. But the changes happen to be very interconnected.
-> 
-> Several cleanups, fixes and optimizations for the x86-64
-> stacktraces and irq entry.
-> 
-> Last patch seems to add a bit of overhead in the irq entry
-> (one more "push") but given the changes made in previous
-> patches, the end result is a more optimized and more clear irq
-> entry.
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (6):
->       x86: Save stack pointer in perf live regs savings
->       x86: Fetch stack from regs when possible in dump_trace()
->       x86,64: Simplify save_regs()
->       x86,64: Separate arg1 from rbp handling in SAVE_REGS_IRQ
->       x86: Remove useless unwinder backlink from irq regs saving
->       x86: Don't use frame pointer to save old stack on irq entry
-> 
-> 
->  arch/x86/include/asm/perf_event.h |    5 +++
->  arch/x86/kernel/dumpstack_64.c    |   37 +++-----------------
->  arch/x86/kernel/entry_64.S        |   69 ++++++++++++++++--------------------
->  3 files changed, 41 insertions(+), 70 deletions(-)
+> I very much doubt this - see dump_trace()'s comment in its IRQ-stack
+> related code portion (and the corresponding use of irq_stack_end[-1]).
 
-Pulled, thanks a lot Frederic! The irq backtrace fixes look pretty 
-important - if there's any CFI annotation detail to be fixed we can 
-do it in a delta.
+> > +++ b/arch/x86/kernel/entry_64.S
+> > @@ -327,7 +327,6 @@ ENDPROC(native_usergs_sysret64)
+> >  	jne 2f
+> >  	mov PER_CPU_VAR(irq_stack_ptr),%rsp
+> >  	EMPTY_FRAME 0
+> > -	pushq_cfi %rbp			/* backlink for unwinder */
+> >  	/*
+> >  	 * We entered an interrupt context - irqs are off:
+> >  	 */
+
+Frederic, please add it back with a much better comment in the .S 
+showing where it's used and how. Perhaps even try to trigger the 
+usage of this backlink and document the effect in the changelog.
 
 Thanks,
 
