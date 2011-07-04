@@ -1,51 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab1GDNW3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 09:22:29 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:33826 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756267Ab1GDNW2 (ORCPT
+	id S1757518Ab1GDNZp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 09:25:45 -0400
+Received: from mailout02.t-online.de ([194.25.134.17]:43102 "EHLO
+	mailout02.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757402Ab1GDNZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 09:22:28 -0400
-Date: Mon, 4 Jul 2011 15:22:23 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 5/6] x86: Remove useless unwinder backlink from irq regs
- saving
-Message-ID: <20110704132158.GA5551@somewhere>
-References: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
- <1309624184-9790-6-git-send-email-fweisbec@gmail.com>
- <4E1187E4020000780004BF2C@nat28.tlf.novell.com>
+	Mon, 4 Jul 2011 09:25:42 -0400
+X-Greylist: delayed 1125 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Jul 2011 09:25:41 EDT
+Message-ID: <4E11BAE0.5020208@t-online.de>
+Date: Mon, 04 Jul 2011 15:06:40 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E1187E4020000780004BF2C@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: gregkh@suse.de
+CC: axboe@kernel.dk, kay.sievers@vrfy.org,
+        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [BUG 2.6.38.8] Bisected to commit 5fb46ae7b8c51b05a12c6a66108e8d398c20ee09
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-ID: VOYdyuZcrhLzSwvCY3BGr+EsWd+ucWsNzmeAoMVroI4moesE0cWUrWaG+dfFhcZweI
+X-TOI-MSGID: c85a4cc5-8417-462d-978d-b3585ae8b7a8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 08:29:08AM +0100, Jan Beulich wrote:
-> >>> On 02.07.11 at 18:29, Frederic Weisbecker <fweisbec@gmail.com> wrote:
-> > The unwinder backlink in interrupt entry is very useless.
-> > It's actually not part of the stack frame chain and thus is
-> > never used.
-> 
-> I very much doubt this - see dump_trace()'s comment in its IRQ-stack
-> related code portion (and the corresponding use of irq_stack_end[-1]).
-> 
-> Jan
+Hi everybody!
 
-Good point. I misunderstood that.
+An openSuse 11.2 system reliably refused to boot properly with kernel 2.6.38.8
+although the prior 2.6.38.y kernels worked fine.  After a few seconds booting
+stopped. Several <ctrl-c> did help, but a lot of services were not started properly,
+only the root partition was available. Nothing unusual could be found in the
+kernel messages.
 
-But then I believe I accidentally fixed it back in
-"x86: Don't use frame pointer to save old stack on irq entry" by
-pushing %rsi instead in the new stack. It contains the backlink to
-the old stack.
+I bisected the problem to commit 5fb46ae7b8c51b05a12c6a66108e8d398c20ee09.
 
-If we keep the macro as-is, I'll add a comment to explain further
-what is involved there.
+That gave me the idea to disconnect the Plextor PX-755A dvd drive  and to
+try 2.6.38.8 again. It booted without problem.
+
+As I do use the dvd drive only once or twice a year on that system I checked the
+hardware - it seems that the drive has a mechanical or optical problem.
+
+No kernel can repair a broken dvd drive, but I strongly believe that at least
+error handling should be restored to something more reasonable.
+
+cu,
+  Knut
+
+knut@linux:~/git/linux-2.6.38.y> git bisect bad
+5fb46ae7b8c51b05a12c6a66108e8d398c20ee09 is the first bad commit
+commit 5fb46ae7b8c51b05a12c6a66108e8d398c20ee09
+Author: Tejun Heo <tj@kernel.org>
+Date:   Wed Mar 9 19:54:27 2011 +0100
+
+    ide: Convert to bdops->check_events()
+
+    commit 5b03a1b140e13a28ff6be1526892a9dc538ddef6 upstream.
+
+    Convert ->media_changed() to the new ->check_events() method.  The
+    conversion is mostly mechanical.  The only notable change is that
+    cdrom now doesn't generate any event if @slot_nr isn't CDSL_CURRENT.
+    It used to return -EINVAL which would be treated as media changed.  As
+    media changer isn't supported anyway, this doesn't make any
+    difference.
+
+    This makes ide emit the standard disk events and allows kernel event
+    polling.  Currently, only MEDIA_CHANGE event is implemented.  Adding
+    support for EJECT_REQUEST shouldn't be difficult; however, given that
+    ide driver is already deprecated, it probably is best to leave it
+    alone.
+
+    Signed-off-by: Tejun Heo <tj@kernel.org>
+    Acked-by: Jens Axboe <axboe@kernel.dk>
+    Cc: Kay Sievers <kay.sievers@vrfy.org>
+    Cc: "David S. Miller" <davem@davemloft.net>
+    Cc: linux-ide@vger.kernel.org
+    Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
