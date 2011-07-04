@@ -1,73 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab1GDOMf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 10:12:35 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35344 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753305Ab1GDOLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 10:11:51 -0400
-From: Julia Lawall <julia@diku.dk>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-janitors@vger.kernel.org
-Subject: [PATCH 4/5] drivers/parport/parport_gsc.c: add missing kfree
-Date: Mon,  4 Jul 2011 16:11:44 +0200
-Message-Id: <1309788705-22278-4-git-send-email-julia@diku.dk>
-X-Mailer: git-send-email 1.7.1
+	id S1755521Ab1GDOSj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 10:18:39 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:30930 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752981Ab1GDOSi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 10:18:38 -0400
+Subject: Re: [PATCH 2/2] asm-generic: move archictures to common delay.h
+From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
+To: Jonas Bonn <jonas@southpole.se>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+        lethal@linux-sh.org
+In-Reply-To: <1309600754-21217-2-git-send-email-jonas@southpole.se>
+References: <1309600754-21217-1-git-send-email-jonas@southpole.se>
+	 <1309600754-21217-2-git-send-email-jonas@southpole.se>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Atmel Corporation
+Date: Mon, 04 Jul 2011 16:18:08 +0200
+Message-ID: <1309789088.4373.26.camel@hcegtvedt.norway.atmel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Jul 2011 14:18:11.0715 (UTC) FILETIME=[34AAED30:01CC3A55]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Sat, 2011-07-02 at 11:59 +0200, Jonas Bonn wrote:
 
-ops was allocated previously in this function, so it should be freed before
-leaving the function, as done in other nearby error-handling code.
+Hello Jonas,
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Please use the latest email address from MAINTAINERS, I will only have
+access to my Atmel account for one more week.
 
-// <smpl>
-@r@
-identifier x;
-@@
+> This patch moves the in-tree architectures that were using the 'generic'
+> delay.h over to using the header file in asm-generic.
+> 
+> This is not done using the generic-y mechanism as none of these arch's
+> have started using that mechanism yet.  This is a trivial change to make
+> later when the arch begins using generic-y.
+> 
+> Note the subtle change to the avr32 and SH architectures where the argument
+> to __const_udelay was previously using the rounded down constant value
+> instead of the rounded up value.
 
-kfree(x)
+My guess is that the AVR32 implementation is copied from x86, hence the
+Copyright to Linus. Thanks for cleaning up.
 
-@@
-identifier r.x;
-expression E1!=0,E2,E3,E4;
-statement S;
-@@
+> Signed-off-by: Jonas Bonn <jonas@southpole.se>
+>
 
-(
-if (<+...x...+>) S
-|
-if (...) { ... when != kfree(x)
-               when != if (...) { ... kfree(x); ... }
-               when != x = E3
-* return E1;
-}
-... when != x = E2
-if (...) { ... when != x = E4
- kfree(x); ... return ...; }
-)
-// </smpl>
+Acked-by: Hans-Christian Egtvedt <egtvedt@samfundet.no>
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+<snipp>
 
----
- drivers/parport/parport_gsc.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/drivers/parport/parport_gsc.c b/drivers/parport/parport_gsc.c
-index 5d6de38..352f961 100644
---- a/drivers/parport/parport_gsc.c
-+++ b/drivers/parport/parport_gsc.c
-@@ -271,6 +271,7 @@ struct parport *__devinit parport_gsc_probe_port (unsigned long base,
- 	if (!parport_SPP_supported (p)) {
- 		/* No port. */
- 		kfree (priv);
-+		kfree(ops);
- 		return NULL;
- 	}
- 	parport_PS2_supported (p);
+-- 
+Hans-Christian Egtvedt
 
