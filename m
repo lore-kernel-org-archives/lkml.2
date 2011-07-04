@@ -1,140 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751910Ab1GEEaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 00:30:19 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:15946 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab1GEEaP convert rfc822-to-8bit (ORCPT
+	id S1752507Ab1GEEgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 00:36:54 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:37085 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752034Ab1GEEgx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 00:30:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=eeCOSfvosyE4l5IsL++F14yEFMeQU4MVkR7/RRr5p2r4sMQxRyQpSl4zLxAtVsJmI
-	YE3CgobNcm/A0TkXlLxwA==
+	Tue, 5 Jul 2011 00:36:53 -0400
+Date: Mon, 4 Jul 2011 16:44:47 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+        linux-input@vger.kernel.org, xen-devel@lists.xensource.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] [PATCH] xen-kbdfront: enable xen-kbdfront for HVM
+ guests
+Message-ID: <20110704234447.GB2724@core.coreip.homeip.net>
+References: <alpine.DEB.2.00.1106241730220.12963@kaball-desktop>
+ <20110627155252.GL6978@dumpdata.com>
 MIME-Version: 1.0
-In-Reply-To: <20110704210838.GA23915@polaris.bitmath.org>
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
- <1309324042-22943-3-git-send-email-djkurtz@chromium.org> <20110704210838.GA23915@polaris.bitmath.org>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Tue, 5 Jul 2011 12:29:51 +0800
-X-Google-Sender-Auth: 3B9ADRPJwMgRXTZEjmL8A7Tdi2k
-Message-ID: <CAGS+omDXhiZz2i5eniu_eOCES1Eq_fKs4JVWU-+wz6ot7kyhSA@mail.gmail.com>
-Subject: Re: [PATCH 02/12] Input: synaptics - do not invert y if 0
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: dmitry.torokhov@gmail.com, chase.douglas@canonical.com,
-        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
-        daniel.stone@collabora.co.uk, olofj@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110627155252.GL6978@dumpdata.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik
-Thanks for the review.
+On Mon, Jun 27, 2011 at 11:52:52AM -0400, Konrad Rzeszutek Wilk wrote:
+> On Fri, Jun 24, 2011 at 05:33:16PM +0100, Stefano Stabellini wrote:
+> > xen-kbdfront: enable xen-kbdfront for HVM guests too
+> 
+> Acked-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+> Dmitry, can you pick this up for 3.1 please?
+> 
 
-On Tue, Jul 5, 2011 at 5:08 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->
-> Hi Daniel,
->
-> > Synaptics touchpads report increasing y from bottom to top.
-> > This is inverted from normal userspace "top of screen is 0" coordinates.
-> > Thus, the kernel driver reports inverted y coordinates to userspace.
-> >
-> > In some cases, however, y = 0 is sent by the touchpad.
-> > In these cases, the kernel driver should not invert, and just report 0.
-> >
-> > This patch also refactors the inversion into a macro, and moves it
-> > into packet processing instead of during position reporting.
->
-> The patch seems to invert the current output?
+Done.
 
-By 'current' do you mean referenced from the previous implementation?
-Or referenced from the raw input.
-It does indeed invert the raw input.
-This is the same as the previous implementation did.
-The difference is that it does not also invert the special 'y=0' into
-an arbitrarily large value.
-Is this your concern?
--Dan
+Thanks.
 
->
-> >
-> > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> > ---
-> >  drivers/input/mouse/synaptics.c |   16 +++++++++-------
-> >  1 files changed, 9 insertions(+), 7 deletions(-)
-> >
-> > diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> > index e06e045..f6d0c04 100644
-> > --- a/drivers/input/mouse/synaptics.c
-> > +++ b/drivers/input/mouse/synaptics.c
-> > @@ -44,6 +44,8 @@
-> >  #define YMIN_NOMINAL 1408
-> >  #define YMAX_NOMINAL 4448
-> >
-> > +#define INVERT_Y(y) (((y) != 0) ? (YMAX_NOMINAL + YMIN_NOMINAL - (y)) : 0)
-> > +
-> >
-> >  /*****************************************************************************
-> >   *   Stuff we need even when we do not want native Synaptics support
-> > @@ -409,9 +411,9 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
-> >               hw->x = (((buf[3] & 0x10) << 8) |
-> >                        ((buf[1] & 0x0f) << 8) |
-> >                        buf[4]);
-> > -             hw->y = (((buf[3] & 0x20) << 7) |
-> > +             hw->y = INVERT_Y((((buf[3] & 0x20) << 7) |
-> >                        ((buf[1] & 0xf0) << 4) |
-> > -                      buf[5]);
-> > +                      buf[5]));
-> >
-> >               hw->z = buf[2];
-> >               hw->w = (((buf[0] & 0x30) >> 2) |
-> > @@ -421,7 +423,8 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
-> >               if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
-> >                       /* Gesture packet: (x, y, z) at half resolution */
-> >                       priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
-> > -                     priv->mt.y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
-> > +                     priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
-> > +                                           | buf[2]) << 1);
-> >                       priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
-> >                       return 1;
-> >               }
-> > @@ -473,7 +476,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
-> >               }
-> >       } else {
-> >               hw->x = (((buf[1] & 0x1f) << 8) | buf[2]);
-> > -             hw->y = (((buf[4] & 0x1f) << 8) | buf[5]);
-> > +             hw->y = INVERT_Y(((buf[4] & 0x1f) << 8) | buf[5]);
-> >
-> >               hw->z = (((buf[0] & 0x30) << 2) | (buf[3] & 0x3F));
-> >               hw->w = (((buf[1] & 0x80) >> 4) | ((buf[0] & 0x04) >> 1));
-> > @@ -491,8 +494,7 @@ static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
-> >       input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
-> >       if (active) {
-> >               input_report_abs(dev, ABS_MT_POSITION_X, x);
-> > -             input_report_abs(dev, ABS_MT_POSITION_Y,
-> > -                              YMAX_NOMINAL + YMIN_NOMINAL - y);
-> > +             input_report_abs(dev, ABS_MT_POSITION_Y, y);
-> >       }
-> >  }
-> >
-> > @@ -584,7 +586,7 @@ static void synaptics_process_packet(struct psmouse *psmouse)
-> >
-> >       if (num_fingers > 0) {
-> >               input_report_abs(dev, ABS_X, hw.x);
-> > -             input_report_abs(dev, ABS_Y, YMAX_NOMINAL + YMIN_NOMINAL - hw.y);
-> > +             input_report_abs(dev, ABS_Y, hw.y);
-> >       }
-> >       input_report_abs(dev, ABS_PRESSURE, hw.z);
-> >
-> > --
-> > 1.7.3.1
-> >
->
-> Thanks,
-> Henrik
+-- 
+Dmitry
