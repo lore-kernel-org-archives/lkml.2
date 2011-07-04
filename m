@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751753Ab1GDTrR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 15:47:17 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:47249 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637Ab1GDTrP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 15:47:15 -0400
-Message-ID: <4E1218C1.5030403@kernel.dk>
-Date: Mon, 04 Jul 2011 21:47:13 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Maxim Patlasov <maxim.patlasov@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: bi_end_io() is called with lock held: bug or feature?
-References: <CA+X1aCRtR8gdLj5ekUL3_gBeULEPMedjNyNreABEmoCnceFV0Q@mail.gmail.com>
-In-Reply-To: <CA+X1aCRtR8gdLj5ekUL3_gBeULEPMedjNyNreABEmoCnceFV0Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751775Ab1GDTvE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 15:51:04 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:55076 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751585Ab1GDTvC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 15:51:02 -0400
+Date: Mon, 4 Jul 2011 20:53:36 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-serial@vger.kernel.org
+Subject: Re: [PATCH 7/7] serial/8250: make PIO support optional
+Message-ID: <20110704205336.09547e1f@lxorguk.ukuu.org.uk>
+In-Reply-To: <201107042127.31649.arnd@arndb.de>
+References: <1309211120-2803-1-git-send-email-arnd@arndb.de>
+	<201107041835.22660.arnd@arndb.de>
+	<20110704180216.4dc9c79d@lxorguk.ukuu.org.uk>
+	<201107042127.31649.arnd@arndb.de>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2011-07-04 17:56, Maxim Patlasov wrote:
-> Hi Jens,
-> 
-> While experimenting with some third-party driver, I noticed that
-> sometimes (at least for empty flush requests) bi_end_io callback is
-> called with IRQs locally disabled. The cause turned out to be in
-> blk_end_bidi_request():
-> 
->> 	spin_lock_irqsave(q->queue_lock, flags);
->> 	blk_finish_request(rq, error);
->> 	spin_unlock_irqrestore(q->queue_lock, flags);
-> 
-> A relevant part of stack trace is:
-> 
->> bio_endio+0x18/0x30
->> dec_pending+0x172/0x2b0
->> clone_endio+0x99/0xd0
->> bio_endio+0x18/0x30
->> req_bio_endio+0x83/0xc0
->> blk_update_request+0xff/0x470
->> blk_update_bidi_request+0x22/0xa0
->> __blk_end_bidi_request+0x1c/0x40
->> __blk_end_request_all+0x1a/0x30
->> blk_flush_complete_seq+0x258/0x280
->> flush_end_io+0xe5/0x170
->> blk_finish_request+0x86/0x280
->> blk_end_bidi_request+0x4f/0x80
-> 
-> At first glance it looks a bit weird that in most cases bi_end_io
-> callback is called w/o any locks held but under some conditions (e.g.
-> completing empty REQ_FLUSH bio) - with q->queue_lock acquired. Is it a
-> bug or expected behaviour?
+> Ok, makes sense. If I split this out to the ISA driver, I would
+> probably also disallow changing io_type, as ISA 8250 ports are
+> all based on PIO mode.
 
-There's generally not any guarentees as to whether bi_end_io is called
-with the queue lock held (and ints disabled) or not. It largely depends
-on the driver.
+Alas not, they also come in MMIO form now and then, not often but just
+enough to be annoyingly unignorable. However the ISA driver can handle
+that 'in-house' and I've never seen anything but PIO or simple MMIO.
 
-IOW, you cannot rely on process context. That is also why eg
-bio_set_pages_dirty() is punted to a work queue.
-
--- 
-Jens Axboe
-
+Alan
