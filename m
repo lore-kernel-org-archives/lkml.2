@@ -1,329 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758341Ab1GDQbm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:31:42 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:44946 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757314Ab1GDQbl (ORCPT
+	id S1758394Ab1GDQcE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 12:32:04 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:35155 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758328Ab1GDQcD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:31:41 -0400
-Date: Mon, 4 Jul 2011 10:31:37 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        tglx@linutronix.de
-Subject: Re: [PATCH v4] pch_gpio: Support interrupt function
-Message-ID: <20110704163137.GA28042@ponder.secretlab.ca>
-References: <1309486572-2789-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+	Mon, 4 Jul 2011 12:32:03 -0400
+X-Sasl-enc: lSiXJ6cVKxPA+2rc4GvawpX+9vysDW8nxz352uNW+p66 1309797121
+Date: Mon, 4 Jul 2011 09:31:50 -0700
+From: Greg KH <greg@kroah.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: USB console broken in -next ?
+Message-ID: <20110704163150.GA18935@kroah.com>
+References: <20110704171959.0aa2cafa@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1309486572-2789-1-git-send-email-tomoya-linux@dsn.okisemi.com>
+In-Reply-To: <20110704171959.0aa2cafa@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 01, 2011 at 11:16:12AM +0900, Tomoya MORINAGA wrote:
-> Support interrupt function using irq_chip_generic
+On Mon, Jul 04, 2011 at 05:19:59PM +0100, Alan Cox wrote:
+> I'm seeing the USB console hang part way through the boot up. It looks as
+> if it hangs the box solid about the point the standard USB setup/binding
+> would occur for the serial driver it is using in console mode
 > 
-> Signed-off-by: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-> ---
-> v4: add free_irq in remove()
+> Any ideas - not sure how old the problem is as I've not needed USB
+> console for a long time.
 
-Make sure you cc linux-kernel and Thomas Gleixner on IRQ controller patches.
+No ideas, sorry, but I haven't tried a USB console out in a long time
+either.
 
-> ---
->  drivers/gpio/Kconfig    |    1 +
->  drivers/gpio/pch_gpio.c |  175 +++++++++++++++++++++++++++++++++++++++++++++++
->  2 files changed, 176 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index 2967002..bd64a55 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -352,6 +352,7 @@ config GPIO_LANGWELL
->  config GPIO_PCH
->  	tristate "Intel EG20T PCH / OKI SEMICONDUCTOR ML7223 IOH GPIO"
->  	depends on PCI && X86
-> +	select GENERIC_IRQ_CHIP
->  	help
->  	  This driver is for PCH(Platform controller Hub) GPIO of Intel Topcliff
->  	  which is an IOH(Input/Output Hub) for x86 embedded processor.
-> diff --git a/drivers/gpio/pch_gpio.c b/drivers/gpio/pch_gpio.c
-> index 36919e7..46e0576 100644
-> --- a/drivers/gpio/pch_gpio.c
-> +++ b/drivers/gpio/pch_gpio.c
-> @@ -17,10 +17,21 @@
->  #include <linux/kernel.h>
->  #include <linux/pci.h>
->  #include <linux/gpio.h>
-> +#include <linux/interrupt.h>
-> +#include <linux/irq.h>
->  
->  #define PCH_GPIO_ALL_PINS	0xfff /* Mask for GPIO pins 0 to 11 */
->  #define GPIO_NUM_PINS	12	/* Specifies number of GPIO PINS GPIO0-GPIO11 */
->  
-> +#define PCH_EDGE_FALLING	0
-> +#define PCH_EDGE_RISING		BIT(0)
-> +#define PCH_LEVEL_L		BIT(1)
-> +#define PCH_LEVEL_H		(BIT(0) | BIT(1))
-> +#define PCH_EDGE_BOTH		BIT(2)
-> +#define PCH_IM_MASK		(BIT(0) | BIT(1) | BIT(2))
-> +
-> +#define PCH_IRQ_BASE		23
-
-Yikes!  IRQ ranges should really be dynamically assigned.  Don't hard
-code an irq base.
-
-> +
->  struct pch_regs {
->  	u32	ien;
->  	u32	istatus;
-> @@ -55,6 +66,10 @@ struct pch_gpio_reg_data {
->   * @gpio:			Data for GPIO infrastructure.
->   * @pch_gpio_reg:		Memory mapped Register data is saved here
->   *				when suspend.
-> + * @lock:			mutex_lock variable
-> + * @irq_base:		Save base of IRQ number for interrupt
-> + * @spinlock:		spin_lock variable
-> + * @irq_mask:		IRQ mask variable
-
-These comments just state the obvious rather that describing what the
-irq_mask, spin lock and mutex are actually used to protect.
-
->   */
->  struct pch_gpio {
->  	void __iomem *base;
-> @@ -63,6 +78,9 @@ struct pch_gpio {
->  	struct gpio_chip gpio;
->  	struct pch_gpio_reg_data pch_gpio_reg;
->  	struct mutex lock;
-> +	int irq_base;
-> +	spinlock_t spinlock;
-> +	unsigned int irq_mask;
->  };
->  
->  static void pch_gpio_set(struct gpio_chip *gpio, unsigned nr, int val)
-> @@ -146,6 +164,12 @@ static void pch_gpio_restore_reg_conf(struct pch_gpio *chip)
->  	iowrite32(chip->pch_gpio_reg.pm_reg, &chip->reg->pm);
->  }
->  
-> +static int pch_gpio_to_irq(struct gpio_chip *gpio, unsigned offset)
-> +{
-> +	struct pch_gpio *chip =	container_of(gpio, struct pch_gpio, gpio);
-
-nit: inconsistent whitespace.
-
-> +	return chip->irq_base + offset;
-> +}
-> +
->  static void pch_gpio_setup(struct pch_gpio *chip)
->  {
->  	struct gpio_chip *gpio = &chip->gpio;
-> @@ -160,6 +184,124 @@ static void pch_gpio_setup(struct pch_gpio *chip)
->  	gpio->base = -1;
->  	gpio->ngpio = GPIO_NUM_PINS;
->  	gpio->can_sleep = 0;
-> +	gpio->to_irq = pch_gpio_to_irq;
-> +}
-> +
-> +static int pch_irq_type(struct irq_data *d, unsigned int type)
-> +{
-> +	u32 im;
-> +	u32 *im_reg;
-> +	u32 ien;
-> +	u32 im_pos;
-> +	int ch;
-> +	unsigned long flags;
-> +	u32 val;
-> +	int irq = d->irq;
-> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> +	struct pch_gpio *chip = gc->private;
-> +
-> +	ch = irq - chip->irq_base;
-> +	if (irq <= chip->irq_base + 7) {
-> +		im_reg = &chip->reg->im0;
-> +		im_pos = ch;
-> +	} else {
-> +		im_reg = &chip->reg->im1;
-> +		im_pos = ch - 8;
-> +	}
-> +	dev_dbg(chip->dev, "%s:irq=%d type=%d ch=%d pos=%d\n",
-> +		__func__, irq, type, ch, im_pos);
-> +
-> +	spin_lock_irqsave(&chip->spinlock, flags);
-> +
-> +	if (type == IRQ_TYPE_EDGE_RISING)
-> +		val = PCH_EDGE_RISING;
-> +	else if (type == IRQ_TYPE_EDGE_FALLING)
-> +		val = PCH_EDGE_FALLING;
-> +	else if (type == IRQ_TYPE_EDGE_BOTH)
-> +		val = PCH_EDGE_BOTH;
-> +	else if (type == IRQ_TYPE_LEVEL_HIGH)
-> +		val = PCH_LEVEL_L;
-> +	else if (type == IRQ_TYPE_LEVEL_LOW)
-> +		val = PCH_LEVEL_H;
-> +	else if (type == IRQ_TYPE_PROBE)
-> +		goto end;
-> +	else {
-> +		dev_warn(chip->dev, "%s: unknown type(%dd)", __func__, type);
-> +		goto end;
-> +	}
-
-A switch() statement would go well here.
-
-> +
-> +	/* Set interrupt mode */
-> +	im = ioread32(im_reg) & ~(PCH_IM_MASK << (im_pos * 4));
-> +	iowrite32(im | (val << (im_pos * 4)), im_reg);
-> +
-> +	/* iclr */
-> +	iowrite32(BIT(ch), &chip->reg->iclr);
-> +
-> +	/* IMASKCLR */
-> +	iowrite32(BIT(ch), &chip->reg->imaskclr);
-> +
-> +	/* Enable interrupt */
-> +	ien = ioread32(&chip->reg->ien);
-> +	iowrite32(ien | BIT(ch), &chip->reg->ien);
-> +end:
-> +	spin_unlock_irqrestore(&chip->spinlock, flags);
-> +
-> +	return 0;
-> +}
-> +
-> +static void pch_irq_unmask(struct irq_data *d)
-> +{
-> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> +	struct pch_gpio *chip = gc->private;
-> +
-> +	chip->irq_mask |= 1 << (d->irq - chip->irq_base);
-
-?  This isn't actually doing anything other than modifying a private
-data value.  This function needs to arrange to mask out the interrupt
-on the actual hardware, even if it means masking the interrupt on the
-interrupt controller this one is cascaded to.
-
-> +}
-> +
-> +static void pch_irq_mask(struct irq_data *d)
-> +{
-> +	struct irq_chip_generic *gc = irq_data_get_irq_chip_data(d);
-> +	struct pch_gpio *chip = gc->private;
-> +
-> +	chip->irq_mask &= ~(1 << (d->irq - chip->irq_base));
-> +}
-> +
-> +static irqreturn_t pch_gpio_handler(int irq, void *dev_id)
-> +{
-> +	struct pch_gpio *chip = dev_id;
-> +	u32 reg_val = ioread32(&chip->reg->istatus);
-> +	int i;
-> +	int ret = IRQ_NONE;
-> +
-> +	for (i = 0; i < GPIO_NUM_PINS; i++) {
-> +		if (reg_val & BIT(i) & chip->irq_mask) {
-> +			dev_dbg(chip->dev, "%s:[%d]:irq=%d  status=0x%x\n",
-> +				__func__, i, irq, reg_val);
-> +			iowrite32(BIT(i), &chip->reg->iclr);
-> +			generic_handle_irq(chip->irq_base + i);
-> +			ret = IRQ_HANDLED;
-> +		}
-> +	}
-> +	return ret;
-> +}
-> +
-> +static __devinit void
-> +pch_gpio_alloc_generic_chip(struct pch_gpio *chip, unsigned int irq_start,
-> +			    unsigned int num)
-
-Nit: when breaking long function declarations, please put the newlines
-in the parameters list.  I prefer the return type to remain on the
-same line as the function name so that it shows up when I grep.
-
-> +{
-> +	struct irq_chip_generic *gc;
-> +	struct irq_chip_type *ct;
-> +
-> +	gc = irq_alloc_generic_chip("pch_gpio", 1, irq_start, chip->base,
-> +				    handle_simple_irq);
-> +	gc->private = chip;
-> +	ct = gc->chip_types;
-> +
-> +	ct->chip.irq_mask = pch_irq_mask;
-> +	ct->chip.irq_unmask = pch_irq_unmask;
-> +	ct->chip.irq_set_type = pch_irq_type;
-> +
-> +	irq_setup_generic_chip(gc, IRQ_MSK(num), IRQ_GC_INIT_MASK_CACHE,
-> +			       IRQ_NOREQUEST | IRQ_NOPROBE, 0);
->  }
->  
->  static int __devinit pch_gpio_probe(struct pci_dev *pdev,
-> @@ -167,6 +309,7 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
->  {
->  	s32 ret;
->  	struct pch_gpio *chip;
-> +	int irq_base;
->  
->  	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
->  	if (chip == NULL)
-> @@ -202,8 +345,36 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
->  		goto err_gpiochip_add;
->  	}
->  
-> +	irq_base = irq_alloc_descs(-1, PCH_IRQ_BASE, GPIO_NUM_PINS, GFP_KERNEL);
-> +	if (irq_base < 0) {
-> +		dev_err(&pdev->dev, "PCH gpio: Failed to get IRQ base num\n");
-> +		goto err_irq_alloc_descs;
-> +	}
-> +	chip->irq_base = irq_base;
-
-This looks like it will cause the driver probe to completely fail,
-even if the GPIO portion of the chip was setup correctly.  I would
-think that if GPIO works the driver should at least enable that bit
-even if IRQs are broken.
-
-> +
-> +	ret = request_irq(pdev->irq, pch_gpio_handler,
-> +			     IRQF_SHARED, KBUILD_MODNAME, chip);
-> +	if (ret != 0) {
-> +		dev_err(&pdev->dev,
-> +			"%s request_irq failed\n", __func__);
-> +		goto err_request_irq;
-> +	}
-> +
-> +	pch_gpio_alloc_generic_chip(chip, irq_base, GPIO_NUM_PINS);
-> +
-> +	/* Initialize interrupt ien register */
-> +	iowrite32(0, &chip->reg->ien);
-> +
->  	return 0;
->  
-> +err_request_irq:
-> +	irq_free_descs(irq_base, GPIO_NUM_PINS);
-> +
-> +err_irq_alloc_descs:
-> +	ret = gpiochip_remove(&chip->gpio);
-> +	if (ret)
-> +		dev_err(&pdev->dev, "%s gpiochip_remove failed\n", __func__);
-> +
->  err_gpiochip_add:
->  	pci_iounmap(pdev, chip->base);
->  
-> @@ -224,6 +395,10 @@ static void __devexit pch_gpio_remove(struct pci_dev *pdev)
->  	int err;
->  	struct pch_gpio *chip = pci_get_drvdata(pdev);
->  
-> +	free_irq(pdev->irq, chip);
-> +
-> +	irq_free_descs(chip->irq_base, GPIO_NUM_PINS);
-> +
->  	err = gpiochip_remove(&chip->gpio);
->  	if (err)
->  		dev_err(&pdev->dev, "Failed gpiochip_remove\n");
-> -- 
-> 1.7.4.4
-> 
+greg k-h
