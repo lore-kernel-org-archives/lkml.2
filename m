@@ -1,50 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756936Ab1GDL1y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 07:27:54 -0400
-Received: from mtagate3.uk.ibm.com ([194.196.100.163]:55528 "EHLO
-	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754494Ab1GDL1v (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 07:27:51 -0400
-Date: Mon, 4 Jul 2011 13:27:27 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: axboe@kernel.dk, James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andi Kleen <andi@firstfloor.org>, Dave Jones <davej@redhat.com>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-Message-ID: <20110704112727.GA2557@osiris.boeblingen.de.ibm.com>
-References: <1309609482.2554.8.camel@mulgrave>
- <Pine.LNX.4.44L0.1107021320180.14703-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1107021320180.14703-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1757131Ab1GDLaP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 07:30:15 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:33714 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754905Ab1GDLaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 07:30:13 -0400
+From: Richard Weinberger <richard@nod.at>
+To: viro@zeniv.linux.org.uk
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Richard Weinberger <richard@nod.at>
+Subject: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
+Date: Mon,  4 Jul 2011 13:30:03 +0200
+Message-Id: <1309779003-8668-1-git-send-email-richard@nod.at>
+X-Mailer: git-send-email 1.7.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 02, 2011 at 01:37:59PM -0400, Alan Stern wrote:
-> The second bug, which hit me but apparently not any of you, is that the 
-> request_queue's elevator gets deallocated while it is still in use.  
-> That's because __scsi_remove_device() calls scsi_free_queue(), which 
-> does blk_cleanup_queue(), which calls elevator_exit(), even though the 
-> device file is still open and more requests will be submitted when the 
-> file is closed.
-> 
-> I'm not sure of the right fix for this.  One possibility is to move the 
-> scsi_free_queue() call to scsi_device_dev_release_usercontext().  Or 
-> maybe the elevator_exit() call should be moved to blk_release_queue().
-> 
-> Also, I have no idea why this shows up with USB drives but not other 
-> SCSI transports.  A fluke of timing?
+When search_binary_handler() is called to find a handler
+for /sbin/modprobe it will end up in an infinite loop because
+it executes request_module() to load a binfmt module with
+/sbin/modprobe...
 
-FWIW, I reported a bug where the request_queue's elevator got deallocated
-while it was still in use (fc transport with device hotplug):
+Running a x86_64 kernel without ia32 emulation and a x86 user land
+triggers this issue.
 
-http://www.spinics.net/lists/linux-scsi/msg52879.html
+Signed-off-by: Richard Weinberger <richard@nod.at>
+---
+ fs/exec.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/fs/exec.c b/fs/exec.c
+index 97e0d52..7271b22 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1411,7 +1411,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			    printable(bprm->buf[2]) &&
+ 			    printable(bprm->buf[3]))
+ 				break; /* -ENOEXEC */
+-			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
++
++			/* Avoid an infinite loop */
++			if (strcmp(modprobe_path, bprm->filename))
++				request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
+ #endif
+ 		}
+ 	}
+-- 
+1.7.5.4
+
