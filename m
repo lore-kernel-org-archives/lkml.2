@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758122Ab1GDQAt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:00:49 -0400
-Received: from acsinet14.oracle.com ([141.146.126.236]:41989 "EHLO
-	acsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755700Ab1GDQAq convert rfc822-to-8bit (ORCPT
+	id S1758167Ab1GDQBA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 12:01:00 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:62564 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755700Ab1GDQA5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:00:46 -0400
-X-Greylist: delayed 5119 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Jul 2011 12:00:46 EDT
-Subject: Re: [PATCH] nfs: Don't deref potentially NULL pointer returned by strsep
-Mime-Version: 1.0 (Apple Message framework v1084)
-Content-Type: text/plain; charset=us-ascii
-From: Chuck Lever <chuck.lever@oracle.com>
-In-Reply-To: <alpine.LNX.2.00.1107041102001.24059@swampdragon.chaosbits.net>
-Date: Mon, 4 Jul 2011 10:34:48 -0400
-Cc: linux-nfs@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org, Gero Kuhlmann <gero@gkminix.han.de>
+	Mon, 4 Jul 2011 12:00:57 -0400
+MIME-Version: 1.0
+In-Reply-To: <19985.57715.78894.466149@ipc1.ka-ro>
+References: <1309522131-2237-1-git-send-email-LW@KARO-electronics.de>
+ <1309522131-2237-2-git-send-email-LW@KARO-electronics.de> <20110704064844.GM15152@ponder.secretlab.ca>
+ <19985.35317.629981.97373@ipc1.ka-ro> <20110704153944.GD29977@ponder.secretlab.ca>
+ <19985.57715.78894.466149@ipc1.ka-ro>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 4 Jul 2011 10:00:37 -0600
+X-Google-Sender-Auth: uN_UShGHl3I9TM_iiZ5ZjeHIrc8
+Message-ID: <CACxGe6v87WboQwZn9L0QtND2=B6g6ScQcPgTPnU_2whn=-B9HA@mail.gmail.com>
+Subject: Re: [PATCH] add missing intialisation of bgc->dir
+To: =?ISO-8859-1?Q?Lothar_Wa=DFmann?= <LW@karo-electronics.de>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Message-Id: <EEDBC51B-F721-451D-9156-0B5B28240015@oracle.com>
-References: <alpine.LNX.2.00.1107030938430.16316@swampdragon.chaosbits.net> <14B45086-2D98-4706-B1FE-7EBB8E777EEF@oracle.com> <alpine.LNX.2.00.1107041102001.24059@swampdragon.chaosbits.net>
-To: Jesper Juhl <jj@chaosbits.net>
-X-Mailer: Apple Mail (2.1084)
-X-Source-IP: rtcsinet22.oracle.com [66.248.204.30]
-X-CT-RefId: str=0001.0A090201.4E11CF94.0089:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 4, 2011 at 9:51 AM, Lothar Waﬂmann <LW@karo-electronics.de> wrote:
+> Hi,
+>
+> Grant Likely writes:
+>> On Mon, Jul 04, 2011 at 11:37:57AM +0200, Lothar Waﬂmann wrote:
+>> > Hi,
+>> >
+>> > Grant Likely writes:
+>> > > On Fri, Jul 01, 2011 at 02:08:51PM +0200, Lothar Waﬂmann wrote:
+>> > > > ---
+>> > > > †drivers/gpio/basic_mmio_gpio.c | † †1 +
+>> > > > †1 files changed, 1 insertions(+), 0 deletions(-)
+>> > > >
+>> > > > diff --git a/drivers/gpio/basic_mmio_gpio.c b/drivers/gpio/basic_mmio_gpio.c
+>> > > > index 8152e9f..e69a453 100644
+>> > > > --- a/drivers/gpio/basic_mmio_gpio.c
+>> > > > +++ b/drivers/gpio/basic_mmio_gpio.c
+>> > > > @@ -399,6 +399,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
+>> > > > † † † † † † † † return ret;
+>> > > >
+>> > > > † † † † bgc->data = bgc->read_reg(bgc->reg_dat);
+>> > > > + † † † bgc->dir = bgc->read_reg(bgc->reg_dir);
+>> > >
+>> > > Hi Lothar.
+>> > >
+>> > > You'll need to double check your email setup. †The patch got emailed
+>> > > separately from the description.
+>> > >
+>> > git-send-email did that.
+>>
+>> It appears that you asked it to send a cover letter, which you usually
+>> don't want when sending a single patch. †The patch description should
+>> be part of the git commit itself.
+>>
+> Yes, I noticed that already.
+>
+>> > > I don't know if this is a valid thing to do or not. †Not every GPIO
+>> > > controller supports reading back the initial state from the direction
+>> > > register. †I suspect it is better to leave initialization of the
+>> > > direction to the gpio controller driver itself.
+>> > >
+>> > That would mean, that external software would have to have access to
+>> > the bgpio internal data structures which is a Bad Thing(TM) IMO. Or we
+>> > need a function that allows to explicitly initialize the internal
+>> > shadow registers.
+>>
+>> What device are you using this for. †Are you using the basic gpio
+>> platform_driver, or do you have a driver using the library part of the
+>> basic gpio code?
+>>
+> I'm using it via drivers/gpio/gpio-mxc.
 
-On Jul 4, 2011, at 5:04 AM, Jesper Juhl wrote:
+You can safely do the "bgc->dir = bgc->read_reg(bgc->reg_dir);" in
+gpio-mxc after bgpio_init returns.
 
-> On Sun, 3 Jul 2011, Chuck Lever wrote:
-> 
->> 
->> On Jul 3, 2011, at 3:40 AM, Jesper Juhl wrote:
->> 
->>> In fs/nfs/nfsroot.c:root_nfs_parse_options() we call strsep(), which
->>> may return NULL, but we do not test the return value before
->>> dereferencing the pointer.
->>> 
->>> Signed-off-by: Jesper Juhl <jj@chaosbits.net>
->>> ---
->>> fs/nfs/nfsroot.c |    2 ++
->>> 1 files changed, 2 insertions(+), 0 deletions(-)
->>> 
->>> Compile tested only.
->>> 
->>> diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
->>> index c4744e1..b6ac860 100644
->>> --- a/fs/nfs/nfsroot.c
->>> +++ b/fs/nfs/nfsroot.c
->>> @@ -191,6 +191,8 @@ static int __init root_nfs_parse_options(char *incoming, char *exppath,
->>> 	 * Set the NFS remote path
->>> 	 */
->>> 	p = strsep(&incoming, ",");
->>> +	if (!p)
->>> +		return -1;
->> 
->> strsep() may return NULL only if the value of "incoming" is NULL.  But 
->> callers ensure that "incoming" always contains the address of a fixed 
->> buffer.  Thus if strsep() returns NULL here there is some kind of 
->> programming error; it's not the result of invalid input.
->> 
->> Do you have a reproducible test case to make this fail?
->> 
-> Nope. I simply spotted the unchecked strsep() call and thought that it 
-> would be better to be defensive and check it in case callers change in the 
-> future and a bug creeps in that causes a NULL incoming to be passed. 
-> Perhaps a BUG_ON(!incoming) would be better - or perhaps just forget about 
-> it.
-
-While I personally prefer an explicit assertion in cases like this one, the community preference is to avoid cluttering the code with BUG_ONs, since the code would crash anyway in that case.
-
---
-Chuck Lever
-chuck[dot]lever[at]oracle[dot]com
-
-
-
+g.
