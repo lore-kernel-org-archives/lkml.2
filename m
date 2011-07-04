@@ -1,135 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab1GDFhA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 01:37:00 -0400
-Received: from mga14.intel.com ([143.182.124.37]:12280 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753500Ab1GDFgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 01:36:36 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,471,1304319600"; 
-   d="scan'208";a="22320952"
-Subject: [PATCH 2/3]CFQ: add think time check for service tree
-From: Shaohua Li <shaohua.li@intel.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>, Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 04 Jul 2011 13:36:34 +0800
-Message-ID: <1309757794.15392.238.camel@sli10-conroe>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
-Content-Transfer-Encoding: 7bit
+	id S1754495Ab1GDFjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 01:39:24 -0400
+Received: from relay03.digicable.hu ([92.249.128.185]:58462 "EHLO
+	relay03.digicable.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753333Ab1GDFjV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 01:39:21 -0400
+Message-ID: <4E1151BD.5010907@freemail.hu>
+Date: Mon, 04 Jul 2011 07:38:05 +0200
+From: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; hu-HU; rv:1.8.1.21) Gecko/20090402 SeaMonkey/1.1.16
+MIME-Version: 1.0
+To: David Chang <DChang@novell.com>, Matt Mooney <mfm@muteddisk.com>,
+        Matt Chen <machen@novell.com>
+CC: Greg KH <greg@kroah.com>, Matthew Wilcox <matthew@wil.cx>,
+        Max Vozeler <max@vozeler.com>, Joe Perches <joe@perches.com>,
+        linux-usb@vger.kernel.org, usbip-devel@lists.sourceforge.net,
+        devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, RFC] USBIP protocol documentation
+References: <4DDBF8BD.3000603@freemail.hu>	<20110524183448.GA18511@kroah.com>	<4DDC142E.6070003@freemail.hu>	<20110525031222.GB14290@haskell.muteddisk.com>	<4DDC93D5.9070607@freemail.hu>	<4DDDFDA7.6030900@freemail.hu>	<4E097A32.1000504@freemail.hu>	<BANLkTimG_kWr_YPVMasUr+7+KRFPnnbjNw@mail.gmail.com> <CAL-cBk1L8dgAtP2hMwkL2B-cU76mKaaWib=QVbVKei2DaoB3Dw@mail.gmail.com>
+In-Reply-To: <CAL-cBk1L8dgAtP2hMwkL2B-cU76mKaaWib=QVbVKei2DaoB3Dw@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
+X-Original: 94.21.49.34
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: CFQ: add think time check for service tree
+Hi David, Matt Chen and Matt Mooney,
 
-Currently when the last queue of a service tree has no request, we don't
-expire the queue to hope request from the service tree comes soon, so the
-service tree doesn't miss its share. But if the think time is big, the
-assumption isn't correct and we just waste bandwidth. In such case, we
-don't do idle.
+it looks like we four are actively dealing with the USBIP protocol documentation.
 
-[global]
-runtime=10
-direct=1
+David, are you working at the same place like Matt Chen? Then you can easily
+see what you two has been done and not working parallel on the same thing.
 
-[test1]
-rw=randread
-ioengine=libaio
-size=500m
-directory=/mnt
-filename=file1
-thinktime=9000
+I'm currently not actively modifying the USBIP protocol description.
 
-[test2]
-rw=read
-ioengine=libaio
-size=1G
-directory=/mnt
-filename=file2
+Matt Mooney wanted to restructure the USBIP protocol documentation. Matt, do
+you have anything already done? If yes, maybe it would be good if you could
+send it so David can do the changes on your version. If you haven't worked on
+it then please tell and David can add the necessary modifications he suggested.
 
-	patched		base
-test1	41k/s		33k/s
-test2	15868k/s	15789k/s
-total	15902k/s	15817k/s
+Regards,
 
-A slightly better
+	Márton Németh
 
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-
----
- block/cfq-iosched.c |   26 ++++++++++++++++++++++----
- 1 file changed, 22 insertions(+), 4 deletions(-)
-
-Index: linux/block/cfq-iosched.c
-===================================================================
---- linux.orig/block/cfq-iosched.c	2011-07-01 13:43:34.000000000 +0800
-+++ linux/block/cfq-iosched.c	2011-07-01 13:45:24.000000000 +0800
-@@ -74,6 +74,8 @@ static DEFINE_IDA(cic_index_ida);
- 
- #define sample_valid(samples)	((samples) > 80)
- #define rb_entry_cfqg(node)	rb_entry((node), struct cfq_group, rb_node)
-+#define cfq_io_thinktime_big(ttime, slice) \
-+	(sample_valid((ttime).ttime_samples) && (ttime).ttime_mean > (slice))
- 
- /*
-  * Most of our rbtree usage is for sorting with min extraction, so
-@@ -87,9 +89,10 @@ struct cfq_rb_root {
- 	unsigned count;
- 	unsigned total_weight;
- 	u64 min_vdisktime;
-+	struct cfq_ttime ttime;
- };
--#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
--			.count = 0, .min_vdisktime = 0, }
-+#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, \
-+			.ttime = {.last_end_request = jiffies,},}
- 
- /*
-  * Per process-grouping structure
-@@ -1969,7 +1972,8 @@ static bool cfq_should_idle(struct cfq_d
- 	 * Otherwise, we do only if they are the last ones
- 	 * in their service tree.
- 	 */
--	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
-+	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq) &&
-+	   !cfq_io_thinktime_big(service_tree->ttime, cfqd->cfq_slice_idle))
- 		return true;
- 	cfq_log_cfqq(cfqd, cfqq, "Not idling. st->count:%d",
- 			service_tree->count);
-@@ -3231,8 +3235,16 @@ static void
- cfq_update_io_thinktime(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	struct cfq_io_context *cic)
- {
--	if (cfq_cfqq_sync(cfqq))
-+	struct cfq_rb_root *service_tree;
-+	struct cfq_group *cfqg = cfqq->cfqg;
-+
-+	if (cfq_cfqq_sync(cfqq)) {
- 		__cfq_update_io_thinktime(&cic->ttime, cfqd->cfq_slice_idle);
-+		service_tree = service_tree_for(cfqg, cfqq_prio(cfqq),
-+			cfqq_type(cfqq));
-+		__cfq_update_io_thinktime(&service_tree->ttime,
-+			cfqd->cfq_slice_idle);
-+	}
- }
- 
- static void
-@@ -3570,7 +3582,13 @@ static void cfq_completed_request(struct
- 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
- 
- 	if (sync) {
-+		struct cfq_rb_root *service_tree;
-+
- 		RQ_CIC(rq)->ttime.last_end_request = now;
-+
-+		service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
-+			cfqq_type(cfqq));
-+		service_tree->ttime.last_end_request = now;
- 		if (!time_after(rq->start_time + cfqd->cfq_fifo_expire[1], now))
- 			cfqd->last_delayed_sync = now;
- 	}
-
+David Chang wrote:
+> Hi Németh,
+> 
+> 2011/6/29 David Chang <dchang@novell.com>:
+>> Hi,
+>>
+>> Thanks for your great effort.
+>> Just a little comment on UNLINK pdu size.
+[...]
+> Would you add this field into your path or should I send another patch
+> to add it?
 
