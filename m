@@ -1,97 +1,363 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758419Ab1GDQhc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:37:32 -0400
-Received: from na3sys009aog123.obsmtp.com ([74.125.149.149]:39046 "EHLO
-	na3sys009aog123.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756971Ab1GDQhb (ORCPT
+	id S932075Ab1GDQuR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 12:50:17 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:35785 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757356Ab1GDQuQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:37:31 -0400
-X-Greylist: delayed 439 seconds by postgrey-1.27 at vger.kernel.org; Mon, 04 Jul 2011 12:37:30 EDT
-From: James Nuss <jamesnuss@nanometrics.ca>
-To: Rodolfo Giometti <rodolfo.giometti@enneenne.com>
-Cc: Ricardo Martins <rasm@fe.up.pt>, Ben Gardiner <bengardiner@nanometrics.ca>,
-        linux-kernel@vger.kernel.org, linuxpps@ml.enneenne.com,
-        Alexander Gordeev <lasaine@lvk.cs.msu.su>,
-        Igor Plyatov <plyatov@gmail.com>,
-        James Nuss <jamesnuss@nanometrics.ca>
-Subject: [PATCH v2 0/2] New PPS client driver using GPIO
-Date: Mon,  4 Jul 2011 12:29:27 -0400
-Message-Id: <1309796969-31708-1-git-send-email-jamesnuss@nanometrics.ca>
-X-Mailer: git-send-email 1.7.1
+	Mon, 4 Jul 2011 12:50:16 -0400
+From: Vincent Guittot <vincent.guittot@linaro.org>
+To: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, linux@arm.linux.org.uk
+Cc: patches@linaro.org, Vincent Guittot <vincent.guittot@linaro.org>
+Subject: [PATCH v5] Add ARM cpu topology definition
+Date: Mon,  4 Jul 2011 18:49:45 +0200
+Message-Id: <1309798185-1984-1-git-send-email-vincent.guittot@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changes since v1:
-. rename module to pps-gpio
-. add platform data options for gpio pin number, gpio pin label, assert edge type,
-and clear event capture.
-. no need to setup gpio and IRQ resource in platform device. This is performed by
-the driver.
-. cleanup as per comments
+The affinity between ARM processors is defined in the MPIDR register.
+We can identify which processors are in the same cluster,
+and which ones have performance interdependency. We can define the
+cpu topology of ARM platform, that is then used by sched_mc and sched_smt.
 
+The default state of sched_mc and sched_smt config is disable.
+When enabled, the behavior of the scheduler can be modified with
+sched_mc_power_savings and sched_smt_power_savings sysfs interfaces.
+
+Changes since v4 :
+*  Remove unnecessary parentheses and blank lines
+
+Changes since v3 :
+* Update the format of printk message
+* Remove blank line
+
+Changes since v2 :
+* Update the commit message and some comments
+
+Changes since v1 :
+* Update the commit message
+* Add read_cpuid_mpidr in arch/arm/include/asm/cputype.h
+* Modify header of arch/arm/kernel/topology.c
+* Modify tests and manipulation of MPIDR's bitfields
+* Modify the place and dependancy of the config
+* Modify Noop functions
+
+Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+Reviewed-by: Amit Kucheria <amit.kucheria@linaro.org>
 ---
+ arch/arm/Kconfig                |   25 +++++++
+ arch/arm/include/asm/cputype.h  |    6 ++
+ arch/arm/include/asm/topology.h |   33 +++++++++
+ arch/arm/kernel/Makefile        |    1 +
+ arch/arm/kernel/smp.c           |    5 ++
+ arch/arm/kernel/topology.c      |  148 +++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 218 insertions(+), 0 deletions(-)
+ create mode 100644 arch/arm/kernel/topology.c
 
-This patchset contains 2 patches.  It is based on the work done by
-Ricardo Martins <rasm@fe.up.pt> who submitted an initial implementation [1]
-of a PPS IRQ client driver to the linuxpps mailing-list on Dec 3 2010. Most
-of the work was in removing the platform device registration from the
-driver itself as this is not the standard way of platform driver/device
-registration.
-
-[1] http://ml.enneenne.com/pipermail/linuxpps/2010-December/004155.html
-
-[PATCH 1/2] is mostly a cleanup and contains refactoring of the echo
-function definition interface. A default echo function has been defined
-so all you need to do is set one of the ECHO flags and this function will
-be used. Alternatively, don't set the ECHO flags or override the echo
-function as required.
-
-[PATCH 2/2] adds a new PPS client driver for use with GPIO. The module is
-implemented as a platform driver therefore it is necessary to register
-platform device(s) to make use of it. Usually this is performed
-in your specific board setup.
-
-TESTING:
-Testing was performed using the Texas Instruments OMAP-L138 based DA850
-evaluation board. GPIO6.6 was selected as the GPIO pin with assert events
-on the rising edge and also capturing clear events.  The platform device was
-registered in arch/arm/mach-davinci/board-da850-evm.c.
-This GPIO was connected to a Trimble Lassen IQ generating real PPS signals.
-The dmesg output with PPS debugging enabled is as follows:
-
-...
-pps_core: LinuxPPS API ver. 1 registered
-pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
-pps_core: source pps-gpio.0 got cdev (253:0)
-pps pps0: new PPS source pps-gpio.0
-pps pps0: Registered IRQ 203 as PPS source
-...
-pps pps0: PPS event at 1309287783.084940917
-pps pps0: capture assert seq #29
-pps pps0: PPS event at 1309287783.085086500
-pps pps0: capture clear seq #31
-pps pps0: PPS event at 1309287784.084908209
-pps pps0: capture assert seq #30
-pps pps0: PPS event at 1309287784.085053209
-pps pps0: capture clear seq #32
-...
-
-This patchset applies cleanly (using 'git am') against v2.6.39.
-
-James Nuss (2):
-  pps: default echo function
-  pps: new client driver using GPIO
-
- drivers/pps/clients/Kconfig       |    9 ++
- drivers/pps/clients/Makefile      |    1 +
- drivers/pps/clients/pps-gpio.c    |  218 +++++++++++++++++++++++++++++++++++++
- drivers/pps/clients/pps-ktimer.c  |   12 --
- drivers/pps/clients/pps_parport.c |    9 --
- drivers/pps/kapi.c                |   20 ++-
- include/linux/pps-gpio.h          |   32 ++++++
- 7 files changed, 273 insertions(+), 28 deletions(-)
- create mode 100644 drivers/pps/clients/pps-gpio.c
- create mode 100644 include/linux/pps-gpio.h
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 9adc278..f327e55 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -1344,6 +1344,31 @@ config SMP_ON_UP
+ 
+ 	  If you don't know what to do here, say Y.
+ 
++config ARM_CPU_TOPOLOGY
++	bool "Support cpu topology definition"
++	depends on SMP && CPU_V7
++	default y
++	help
++	  Support ARM cpu topology definition. The MPIDR register defines
++	  affinity between processors which is then used to describe the cpu
++	  topology of an ARM System.
++
++config SCHED_MC
++	bool "Multi-core scheduler support"
++	depends on ARM_CPU_TOPOLOGY
++	help
++	  Multi-core scheduler support improves the CPU scheduler's decision
++	  making when dealing with multi-core CPU chips at a cost of slightly
++	  increased overhead in some places. If unsure say N here.
++
++config SCHED_SMT
++	bool "SMT scheduler support"
++	depends on ARM_CPU_TOPOLOGY
++	help
++	  Improves the CPU scheduler's decision making when dealing with
++	  MultiThreading at a cost of slightly increased overhead in some
++	  places. If unsure say N here.
++
+ config HAVE_ARM_SCU
+ 	bool
+ 	depends on SMP
+diff --git a/arch/arm/include/asm/cputype.h b/arch/arm/include/asm/cputype.h
+index cd4458f..cb47d28 100644
+--- a/arch/arm/include/asm/cputype.h
++++ b/arch/arm/include/asm/cputype.h
+@@ -8,6 +8,7 @@
+ #define CPUID_CACHETYPE	1
+ #define CPUID_TCM	2
+ #define CPUID_TLBTYPE	3
++#define CPUID_MPIDR	5
+ 
+ #define CPUID_EXT_PFR0	"c1, 0"
+ #define CPUID_EXT_PFR1	"c1, 1"
+@@ -70,6 +71,11 @@ static inline unsigned int __attribute_const__ read_cpuid_tcmstatus(void)
+ 	return read_cpuid(CPUID_TCM);
+ }
+ 
++static inline unsigned int __attribute_const__ read_cpuid_mpidr(void)
++{
++	return read_cpuid(CPUID_MPIDR);
++}
++
+ /*
+  * Intel's XScale3 core supports some v6 features (supersections, L2)
+  * but advertises itself as v5 as it does not support the v6 ISA.  For
+diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
+index accbd7c..a7e457e 100644
+--- a/arch/arm/include/asm/topology.h
++++ b/arch/arm/include/asm/topology.h
+@@ -1,6 +1,39 @@
+ #ifndef _ASM_ARM_TOPOLOGY_H
+ #define _ASM_ARM_TOPOLOGY_H
+ 
++#ifdef CONFIG_ARM_CPU_TOPOLOGY
++
++#include <linux/cpumask.h>
++
++struct cputopo_arm {
++	int thread_id;
++	int core_id;
++	int socket_id;
++	cpumask_t thread_sibling;
++	cpumask_t core_sibling;
++};
++
++extern struct cputopo_arm cpu_topology[NR_CPUS];
++
++#define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
++#define topology_core_id(cpu)		(cpu_topology[cpu].core_id)
++#define topology_core_cpumask(cpu)	(&cpu_topology[cpu].core_sibling)
++#define topology_thread_cpumask(cpu)	(&cpu_topology[cpu].thread_sibling)
++
++#define mc_capable()	(cpu_topology[0].socket_id != -1)
++#define smt_capable()	(cpu_topology[0].thread_id != -1)
++
++void init_cpu_topology(void);
++void store_cpu_topology(unsigned int cpuid);
++const struct cpumask *cpu_coregroup_mask(unsigned int cpu);
++
++#else
++
++static inline void init_cpu_topology(void) { }
++static inline void store_cpu_topology(unsigned int cpuid) { }
++
++#endif
++
+ #include <asm-generic/topology.h>
+ 
+ #endif /* _ASM_ARM_TOPOLOGY_H */
+diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+index a5b31af..816a481 100644
+--- a/arch/arm/kernel/Makefile
++++ b/arch/arm/kernel/Makefile
+@@ -61,6 +61,7 @@ obj-$(CONFIG_IWMMXT)		+= iwmmxt.o
+ obj-$(CONFIG_CPU_HAS_PMU)	+= pmu.o
+ obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
+ AFLAGS_iwmmxt.o			:= -Wa,-mcpu=iwmmxt
++obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
+ 
+ ifneq ($(CONFIG_ARCH_EBSA110),y)
+   obj-y		+= io.o
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index 344e52b..051fd36 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -31,6 +31,7 @@
+ #include <asm/cacheflush.h>
+ #include <asm/cpu.h>
+ #include <asm/cputype.h>
++#include <asm/topology.h>
+ #include <asm/mmu_context.h>
+ #include <asm/pgtable.h>
+ #include <asm/pgalloc.h>
+@@ -268,6 +269,8 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
+ 	struct cpuinfo_arm *cpu_info = &per_cpu(cpu_data, cpuid);
+ 
+ 	cpu_info->loops_per_jiffy = loops_per_jiffy;
++
++	store_cpu_topology(cpuid);
+ }
+ 
+ /*
+@@ -354,6 +357,8 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+ {
+ 	unsigned int ncores = num_possible_cpus();
+ 
++	init_cpu_topology();
++
+ 	smp_store_cpu_info(smp_processor_id());
+ 
+ 	/*
+diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+new file mode 100644
+index 0000000..1040c00
+--- /dev/null
++++ b/arch/arm/kernel/topology.c
+@@ -0,0 +1,148 @@
++/*
++ * arch/arm/kernel/topology.c
++ *
++ * Copyright (C) 2011 Linaro Limited.
++ * Written by: Vincent Guittot
++ *
++ * based on arch/sh/kernel/topology.c
++ *
++ * This file is subject to the terms and conditions of the GNU General Public
++ * License.  See the file "COPYING" in the main directory of this archive
++ * for more details.
++ */
++
++#include <linux/cpu.h>
++#include <linux/cpumask.h>
++#include <linux/init.h>
++#include <linux/percpu.h>
++#include <linux/node.h>
++#include <linux/nodemask.h>
++#include <linux/sched.h>
++
++#include <asm/cputype.h>
++#include <asm/topology.h>
++
++#define MPIDR_SMP_BITMASK (0x3 << 30)
++#define MPIDR_SMP_VALUE (0x2 << 30)
++
++#define MPIDR_MT_BITMASK (0x1 << 24)
++
++/*
++ * These masks reflect the current use of the affinity levels.
++ * The affinity level can be up to 16 bits according to ARM ARM
++ */
++
++#define MPIDR_LEVEL0_MASK 0x3
++#define MPIDR_LEVEL0_SHIFT 0
++
++#define MPIDR_LEVEL1_MASK 0xF
++#define MPIDR_LEVEL1_SHIFT 8
++
++#define MPIDR_LEVEL2_MASK 0xFF
++#define MPIDR_LEVEL2_SHIFT 16
++
++struct cputopo_arm cpu_topology[NR_CPUS];
++
++const struct cpumask *cpu_coregroup_mask(unsigned int cpu)
++{
++	return &cpu_topology[cpu].core_sibling;
++}
++
++/*
++ * store_cpu_topology is called at boot when only one cpu is running
++ * and with the mutex cpu_hotplug.lock locked, when several cpus have booted,
++ * which prevents simultaneous write access to cpu_topology array
++ */
++void store_cpu_topology(unsigned int cpuid)
++{
++	struct cputopo_arm *cpuid_topo = &cpu_topology[cpuid];
++	unsigned int mpidr;
++	unsigned int cpu;
++
++	/* If the cpu topology has been already set, just return */
++	if (cpuid_topo->core_id != -1)
++		return;
++
++	mpidr = read_cpuid_mpidr();
++
++	/* create cpu topology mapping */
++	if ((mpidr & MPIDR_SMP_BITMASK) == MPIDR_SMP_VALUE) {
++		/*
++		 * This is a multiprocessor system
++		 * multiprocessor format & multiprocessor mode field are set
++		 */
++
++		if (mpidr & MPIDR_MT_BITMASK) {
++			/* core performance interdependency */
++			cpuid_topo->thread_id = (mpidr >> MPIDR_LEVEL0_SHIFT)
++				& MPIDR_LEVEL0_MASK;
++			cpuid_topo->core_id = (mpidr >> MPIDR_LEVEL1_SHIFT)
++				& MPIDR_LEVEL1_MASK;
++			cpuid_topo->socket_id = (mpidr >> MPIDR_LEVEL2_SHIFT)
++				& MPIDR_LEVEL2_MASK;
++		} else {
++			/* largely independent cores */
++			cpuid_topo->thread_id = -1;
++			cpuid_topo->core_id = (mpidr >> MPIDR_LEVEL0_SHIFT)
++				& MPIDR_LEVEL0_MASK;
++			cpuid_topo->socket_id = (mpidr >> MPIDR_LEVEL1_SHIFT)
++				& MPIDR_LEVEL1_MASK;
++		}
++	} else {
++		/*
++		 * This is an uniprocessor system
++		 * we are in multiprocessor format but uniprocessor system
++		 * or in the old uniprocessor format
++		 */
++		cpuid_topo->thread_id = -1;
++		cpuid_topo->core_id = 0;
++		cpuid_topo->socket_id = -1;
++	}
++
++	/* update core and thread sibling masks */
++	for_each_possible_cpu(cpu) {
++		struct cputopo_arm *cpu_topo = &cpu_topology[cpu];
++
++		if (cpuid_topo->socket_id == cpu_topo->socket_id) {
++			cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
++			if (cpu != cpuid)
++				cpumask_set_cpu(cpu,
++					&cpuid_topo->core_sibling);
++
++			if (cpuid_topo->core_id == cpu_topo->core_id) {
++				cpumask_set_cpu(cpuid,
++					&cpu_topo->thread_sibling);
++				if (cpu != cpuid)
++					cpumask_set_cpu(cpu,
++						&cpuid_topo->thread_sibling);
++			}
++		}
++	}
++	smp_wmb();
++
++	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
++		cpuid, cpu_topology[cpuid].thread_id,
++		cpu_topology[cpuid].core_id,
++		cpu_topology[cpuid].socket_id, mpidr);
++}
++
++/*
++ * init_cpu_topology is called at boot when only one cpu is running
++ * which prevent simultaneous write access to cpu_topology array
++ */
++void init_cpu_topology(void)
++{
++	unsigned int cpu;
++
++	/* init core mask */
++	for_each_possible_cpu(cpu) {
++		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
++
++		cpu_topo->thread_id = -1;
++		cpu_topo->core_id =  -1;
++		cpu_topo->socket_id = -1;
++		cpumask_clear(&cpu_topo->core_sibling);
++		cpumask_clear(&cpu_topo->thread_sibling);
++	}
++	smp_wmb();
++}
+-- 
+1.7.4.1
 
