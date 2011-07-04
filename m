@@ -1,118 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755369Ab1GDDLH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 3 Jul 2011 23:11:07 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:63960 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab1GDDLD convert rfc822-to-8bit (ORCPT
+	id S1755219Ab1GDDUn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 3 Jul 2011 23:20:43 -0400
+Received: from smtp-relay1.palm.com ([63.80.53.70]:24048 "EHLO
+	smtp-relay1.palm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752978Ab1GDDUm convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 3 Jul 2011 23:11:03 -0400
-MIME-Version: 1.0
-Reply-To: DChang@novell.com
-In-Reply-To: <BANLkTimG_kWr_YPVMasUr+7+KRFPnnbjNw@mail.gmail.com>
-References: <4DDBF8BD.3000603@freemail.hu>
-	<20110524183448.GA18511@kroah.com>
-	<4DDC142E.6070003@freemail.hu>
-	<20110525031222.GB14290@haskell.muteddisk.com>
-	<4DDC93D5.9070607@freemail.hu>
-	<4DDDFDA7.6030900@freemail.hu>
-	<4E097A32.1000504@freemail.hu>
-	<BANLkTimG_kWr_YPVMasUr+7+KRFPnnbjNw@mail.gmail.com>
-Date: Mon, 4 Jul 2011 11:11:01 +0800
-X-Google-Sender-Auth: Won6GkOX2kBcHfRqLqG6jJwvcdM
-Message-ID: <CAL-cBk1L8dgAtP2hMwkL2B-cU76mKaaWib=QVbVKei2DaoB3Dw@mail.gmail.com>
-Subject: Re: [PATCH, RFC] USBIP protocol documentation
-From: David Chang <dchang@novell.com>
-To: =?ISO-8859-1?Q?N=E9meth_M=E1rton?= <nm127@freemail.hu>
-Cc: Greg KH <greg@kroah.com>, Matthew Wilcox <matthew@wil.cx>,
-        Max Vozeler <max@vozeler.com>, Matt Mooney <mfm@muteddisk.com>,
-        Joe Perches <joe@perches.com>, linux-usb@vger.kernel.org,
-        usbip-devel@lists.sourceforge.net, devel@driverdev.osuosl.org,
-        LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 3 Jul 2011 23:20:42 -0400
+X-Greylist: delayed 596 seconds by postgrey-1.27 at vger.kernel.org; Sun, 03 Jul 2011 23:20:42 EDT
+X-IronPort-AV: E=Sophos;i="4.65,470,1304319600"; 
+   d="scan'208";a="37002322"
+From: "Dmitry Fink (Palm GBU)" <Dmitry.Fink@palm.com>
+To: Minchan Kim <minchan.kim@gmail.com>, Dmitry Fink <finikk@gmail.com>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Sun, 3 Jul 2011 20:10:32 -0700
+Subject: Re: [PATCH 1/1] mmap: Don't count shmem pages as free in
+ __vm_enough_memory
+Thread-Topic: [PATCH 1/1] mmap: Don't count shmem pages as free in
+ __vm_enough_memory
+Thread-Index: Acw59/FNaTrVXhvITjS7iydQbOLIxw==
+Message-ID: <CA367A4F.1479D%dmitry.fink@palm.com>
+In-Reply-To: <CAEwNFnAYAWy4tabCuzGUwXjLpZVbxhKMmPXnhmCuH5pckOXBRw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+user-agent: Microsoft-MacOutlook/14.12.0.110505
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Németh,
+If I understand the logic correctly, even systems with swap set to
+OVERCOMMIT_GUESS are equally affected,
+what we are trying to do here is count the amount of immediately available
+and
+"potentially" available space both in memory and in swap. shmem is not
+immediately
+available, but it is not potentially available either, even if we swap it
+out, it will
+just be relocated from memory into swap, total amount of immediate and
+potentially
+available memory is not going to be affected, so we shouldn't count it as
+available
+in the first place.
 
-2011/6/29 David Chang <dchang@novell.com>:
-> Hi,
->
-> Thanks for your great effort.
-> Just a little comment on UNLINK pdu size.
->
-> 2011/6/28 Németh Márton <nm127@freemail.hu>:
->> From: Márton Németh <nm127@freemail.hu>
+Dmitry
+
+On 7/3/11 5:43 PM, "Minchan Kim" <minchan.kim@gmail.com> wrote:
+
+>On Mon, Jul 4, 2011 at 4:39 AM, Dmitry Fink <finikk@gmail.com> wrote:
+>> shmem pages can't be reclaimed and if they are swapped out
+>> that doesn't affect the overall available memory in the system,
+>> so don't count them along with the rest of the file backed pages.
 >>
->> USBIP v1.0.0 protocol documentation.
->>
->> Signed-off-by: Márton Németh <nm127@freemail.hu>
->> ---
->> +USBIP_CMD_UNLINK: Unlink an URB
->> +
->> + Offset    | Length | Value      | Meaning
->> +-----------+--------+------------+---------------------------------------------------
->> + 0         | 4      | 0x00000003 | command: URB unlink command
->> +-----------+--------+------------+---------------------------------------------------
->> + 4         | 4      |            | seqnum: URB sequence number to unlink: FIXME: is this so?
->> +-----------+--------+------------+---------------------------------------------------
->> + 8         | 4      |            | devid
->> +-----------+--------+------------+---------------------------------------------------
->> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
->> +           |        |            |            1: USBIP_DIR_OUT
->> +-----------+--------+------------+---------------------------------------------------
->> + 0x10      | 4      |            | ep: endpoint number: zero
->> +-----------+--------+------------+---------------------------------------------------
->> + 0x14      | 4      |            | seqnum: the URB sequence number given previously
->> +           |        |            |   at USBIP_CMD_SUBMIT.seqnum field
------------+--------+------------+---------------------------------------------------
-0x30       | n        |                 | URB data bytes. For ISO
-transfers the padding
-               |           |                 |   between each ISO
-packets is not transmitted.
-
->> +
->> +USBIP_RET_UNLINK: Reply for URB unlink
->> +
->> + Offset    | Length | Value      | Meaning
->> +-----------+--------+------------+---------------------------------------------------
->> + 0         | 4      | 0x00000004 | command: reply for the URB unlink command
->> +-----------+--------+------------+---------------------------------------------------
->> + 4         | 4      |            | seqnum: the unlinked URB sequence number
->> +-----------+--------+------------+---------------------------------------------------
->> + 8         | 4      |            | devid
->> +-----------+--------+------------+---------------------------------------------------
->> + 0xC       | 4      |            | direction: 0: USBIP_DIR_IN
->> +           |        |            |            1: USBIP_DIR_OUT
->> +-----------+--------+------------+---------------------------------------------------
->> + 0x10      | 4      |            | ep: endpoint number
->> +-----------+--------+------------+---------------------------------------------------
->> + 0x14      | 4      |            | status: This is the value contained in the
->> +           |        |            |   urb->status in the URB completition handler.
->> +           |        |            |   FIXME: a better explanation needed.
------------+--------+------------+---------------------------------------------------
-0x30       | n        |                 | URB data bytes. For ISO
-transfers the padding
-              |           |                 |   between each ISO
-packets is not transmitted.
-
-Would you add this field into your path or should I send another patch
-to add it?
-Thanks.
-
-Regards,
-David Chang
-
+>> Signed-off-by: Dmitry Fink <dmitry.fink@palm.com>
+>Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 >
-> Regards,
-> David Chang
+>I am not sure the description is good. :(
+>But I think this patch is reasonable.
 >
->>
->> _______________________________________________
->> devel mailing list
->> devel@linuxdriverproject.org
->> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
->>
+>In swapless system,guessing overcommit can have a problem.
+>And in current implementation of OVERCOMMIT_GUESS, we consider anon
+>pages as empty space of swap so shmem pages should be accounted by
+>that.
 >
+>-- 
+>Kind regards,
+>Minchan Kim
+
