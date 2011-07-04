@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab1GDOLy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 10:11:54 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35335 "EHLO mgw2.diku.dk"
+	id S1754488Ab1GDOLw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 10:11:52 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35331 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751424Ab1GDOLu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 10:11:50 -0400
+	id S1751145Ab1GDOLt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 10:11:49 -0400
 From: Julia Lawall <julia@diku.dk>
-To: Tony Lindgren <tony@atomide.com>
-Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 3/5] arch/arm/mach-omap2/smartreflex.c: add missing error-handling code
-Date: Mon,  4 Jul 2011 16:11:43 +0200
-Message-Id: <1309788705-22278-3-git-send-email-julia@diku.dk>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: kernel-janitors@vger.kernel.org, Hans Verkuil <hverkuil@xs4all.nl>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/5] drivers/media/video: add missing kfree
+Date: Mon,  4 Jul 2011 16:11:42 +0200
+Message-Id: <1309788705-22278-2-git-send-email-julia@diku.dk>
 X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -21,8 +20,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-At this point, the ioremap has taken place, so the error handling code at
-the label err_iounmap should be used rather than returning directly.
+Free the recently allocated qcam in each case.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -57,20 +55,32 @@ if (...) { ... when != x = E4
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- arch/arm/mach-omap2/smartreflex.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/media/video/bw-qcam.c |    1 +
+ drivers/media/video/c-qcam.c  |    1 +
+ 2 files changed, 2 insertions(+)
 
-diff --git a/arch/arm/mach-omap2/smartreflex.c b/arch/arm/mach-omap2/smartreflex.c
-index fb7dc52..e8280df 100644
---- a/arch/arm/mach-omap2/smartreflex.c
-+++ b/arch/arm/mach-omap2/smartreflex.c
-@@ -891,7 +891,7 @@ static int __init omap_sr_probe(struct platform_device *pdev)
- 		ret = sr_late_init(sr_info);
- 		if (ret) {
- 			pr_warning("%s: Error in SR late init\n", __func__);
--			return ret;
-+			goto err_iounmap;
- 		}
+diff --git a/drivers/media/video/bw-qcam.c b/drivers/media/video/bw-qcam.c
+index c119350..0aad9cc 100644
+--- a/drivers/media/video/bw-qcam.c
++++ b/drivers/media/video/bw-qcam.c
+@@ -895,6 +895,7 @@ static struct qcam *qcam_init(struct parport *port)
+ 
+ 	if (v4l2_device_register(NULL, v4l2_dev) < 0) {
+ 		v4l2_err(v4l2_dev, "Could not register v4l2_device\n");
++		kfree(qcam);
+ 		return NULL;
+ 	}
+ 
+diff --git a/drivers/media/video/c-qcam.c b/drivers/media/video/c-qcam.c
+index 24fc009..351b2db 100644
+--- a/drivers/media/video/c-qcam.c
++++ b/drivers/media/video/c-qcam.c
+@@ -752,6 +752,7 @@ static struct qcam *qcam_init(struct parport *port)
+ 
+ 	if (v4l2_device_register(NULL, v4l2_dev) < 0) {
+ 		v4l2_err(v4l2_dev, "Could not register v4l2_device\n");
++		kfree(qcam);
+ 		return NULL;
  	}
  
 
