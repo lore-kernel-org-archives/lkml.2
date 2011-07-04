@@ -1,172 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754846Ab1GDLHA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 07:07:00 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:42556 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752455Ab1GDLG6 (ORCPT
+	id S1756015Ab1GDLIx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 07:08:53 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41940 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753401Ab1GDLIw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 07:06:58 -0400
-Date: Mon, 4 Jul 2011 14:06:52 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: cjb@laptop.org, linux-mmc@vger.kernel.org,
-        hans-christian.egtvedt@atmel.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, kernel@avr32linux.org,
-        u.kleine-koenig@pengutronix.de
-Subject: Re: [PATCH V3] MMC: PM: add suspend/resume in atmel-mci
-Message-ID: <20110704110651.GC2820@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1309530754.4373.3.camel@hcegtvedt.norway.atmel.com>
- <1309779505-25509-1-git-send-email-nicolas.ferre@atmel.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="NKoe5XOeduwbEQHU"
-Content-Disposition: inline
-In-Reply-To: <1309779505-25509-1-git-send-email-nicolas.ferre@atmel.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Mon, 4 Jul 2011 07:08:52 -0400
+Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+In-Reply-To: <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 04 Jul 2011 13:08:30 +0200
+Message-ID: <1309777710.3282.21.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---NKoe5XOeduwbEQHU
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Mon, Jul 04, 2011 at 01:38:25PM +0200, Nicolas Ferre wrote:
-> Take care of slots while going to suspend state.
->=20
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> ---
-> V3: take care of each slot SUSPENDED state
->     (adding a status bit in the slot "flags")
-> V2: move to pm_ops
->=20
->  drivers/mmc/host/atmel-mci.c |   60 ++++++++++++++++++++++++++++++++++++=
-++++++
->  1 files changed, 60 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-> index aa8039f..ed63bcd 100644
-> --- a/drivers/mmc/host/atmel-mci.c
-> +++ b/drivers/mmc/host/atmel-mci.c
-> @@ -203,6 +203,7 @@ struct atmel_mci_slot {
->  #define ATMCI_CARD_PRESENT	0
->  #define ATMCI_CARD_NEED_INIT	1
->  #define ATMCI_SHUTDOWN		2
-> +#define ATMCI_SUSPENDED		3
-> =20
->  	int			detect_pin;
->  	int			wp_pin;
-> @@ -1878,10 +1879,69 @@ static int __exit atmci_remove(struct platform_de=
-vice *pdev)
->  	return 0;
->  }
-> =20
-> +#ifdef CONFIG_PM
-> +static int atmci_suspend(struct device *dev)
-> +{
-> +	struct atmel_mci *host =3D dev_get_drvdata(dev);
-> +	int i;
+On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
+> +/*
+> + * Memory load operation info encoding
+> + */
 > +
-> +	 for (i =3D 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-> +		struct atmel_mci_slot *slot =3D host->slot[i];
-> +		int ret;
+> +/* Bits(0-1) {L1, L2, L3, RAM} or {unknown, IO, uncached, reserved}
+> */
+> +#define MEM_LOAD_L1                    0x00
+> +#define MEM_LOAD_L2                    0x01
+> +#define MEM_LOAD_L3                    0x02
+> +#define MEM_LOAD_RAM                   0x03
+> +#define MEM_LOAD_UNKNOWN               0x00
+> +#define MEM_LOAD_IO                    0x01
+> +#define MEM_LOAD_UNCACHED              0x02
+> +#define MEM_LOAD_RESERVED              0x03
 > +
-> +		if (!slot)
-> +			continue;
-> +		ret =3D mmc_suspend_host(slot->mmc);
-> +		if (ret < 0) {
-> +			while (--i >=3D 0) {
-> +				slot =3D host->slot[i];
-> +				if (slot
-> +				&& test_bit(ATMCI_SUSPENDED, &slot->flags)) {
-> +					mmc_resume_host(host->slot[i]->mmc);
-> +					clear_bit(ATMCI_SUSPENDED, &slot->flags);
-> +				}
-> +			}
-> +			return ret;
-> +		} else {
-> +			set_bit(ATMCI_SUSPENDED, &slot->flags);
-> +		}
-> +	}
+> +/* Bits(2-3) {toggle, snoop, local, remote} */
+> +#define MEM_LOAD_TOGGLE                        (0x00 << 2)
+> +#define MEM_LOAD_SNOOP                 (0x01 << 2)
+> +#define MEM_LOAD_LOCAL                 (0x02 << 2)
+> +#define MEM_LOAD_REMOTE                        (0x03 << 2)
 > +
-> +	return 0;
-> +}
-> +
-> +static int atmci_resume(struct device *dev)
-> +{
-> +	struct atmel_mci *host =3D dev_get_drvdata(dev);
-> +	int i;
-> +	int ret =3D 0;
-> +
-> +	for (i =3D 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-> +		struct atmel_mci_slot *slot =3D host->slot[i];
-> +		int err;
-> +
-> +		slot =3D host->slot[i];
-> +		if (!slot)
-> +			continue;
-> +		if (!test_bit(ATMCI_SUSPENDED, &slot->flags))
-> +			continue;
-> +		err =3D mmc_resume_host(slot->mmc);
-> +		if (err < 0)
-> +			ret =3D err;
-> +		else
-> +			clear_bit(ATMCI_SUSPENDED, &slot->flags);
-> +	}
-> +
-> +	return ret;
-> +}
-> +#endif
-> +static SIMPLE_DEV_PM_OPS(atmci_pm, atmci_suspend, atmci_resume);
+> +/* Bits(4-5) {modified, exclusive, shared, invalid} */
+> +#define MEM_LOAD_MODIFIED              (0x00 << 4)
+> +#define MEM_LOAD_EXCLUSIVE             (0x01 << 4)
+> +#define MEM_LOAD_SHARED                        (0x02 << 4)
+> +#define MEM_LOAD_INVALID               (0x03 << 4) 
 
-if you disable CONFIG_PM this won't work. atmci_resume and atmci_suspend
-will be undefined.
+AMD IBS also has load/store source information, from their data format a
+single op can even be both a load and a store (atomic RMW ops might
+qualify).
 
->  static struct platform_driver atmci_driver =3D {
->  	.remove		=3D __exit_p(atmci_remove),
->  	.driver		=3D {
->  		.name		=3D "atmel_mci",
-> +		.pm		=3D &atmci_pm,
+The problem with mapping this to IBS is that they don't have the L1/L2
+split but simply say data-cache miss (but imply L3 is excluded from that
+by having separate L3/DRAM bits).
 
-this pointer will also be invalid.
+Also, I really don't like the EXTRA name you gave it, if we're going to
+do something like this it should really be about data source.
 
-what most people do is:
 
-#ifdef CONFIG_PM
-
-suspend()
-resume()
-
-static SIMPLE_DEV_PM_OPS(atmci_pm, suspend, resume);
-
-#define DEV_PM_OPS	(&atmci_pm)
-#else
-#define DEV_PM_OPS	NULL
-#endif
-
---=20
-balbi
-
---NKoe5XOeduwbEQHU
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOEZ7LAAoJEAv8Txj19kN1XnYH/i23o2IAwgT9yjxzOH/id0ob
-x3nLkAStugXfZIeRL00l7Dh+r7tMlxgJHnOEaNUMoXo1gUND3Y2h7YZFtRHaoEOx
-Y1i3Vx9akQ4OONpHbtmXwLVmXgYy8rD7Bwl/Brc6scSLQzFZspCxXml4zknomwmw
-3CFJLztMR+gXmcy5/o/rHYoWQtboUJKclCWpNoBfsAHLarNYh8COpIx8QJL94Cgc
-mW2pCen3SOFDNs1vHwLYX+f2SRdvnXYYFiLugDQOYzS7cFxqnO+1Ebb60JSlMtxo
-IrPNX0AfsEgeyRTZwf6IJX2Us0cIgQXbZeaIKBdEOyTHZAg8WxcIum0XDs4RTuM=
-=gLEm
------END PGP SIGNATURE-----
-
---NKoe5XOeduwbEQHU--
