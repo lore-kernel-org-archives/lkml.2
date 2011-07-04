@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758149Ab1GDQE4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 12:04:56 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:47440 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756875Ab1GDQEz (ORCPT
+	id S1758193Ab1GDQFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 12:05:47 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60026 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757927Ab1GDQFq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 12:04:55 -0400
-Date: Mon, 4 Jul 2011 12:04:54 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-cc: axboe@kernel.dk, James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andi Kleen <andi@firstfloor.org>, Dave Jones <davej@redhat.com>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        USB list <linux-usb@vger.kernel.org>
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-In-Reply-To: <20110704112727.GA2557@osiris.boeblingen.de.ibm.com>
-Message-ID: <Pine.LNX.4.44L0.1107041202170.12242-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 4 Jul 2011 12:05:46 -0400
+Subject: Re: [PATCH] regulator: max8952 - fix wrong gpio valid check
+From: Liam Girdwood <lrg@kernel.org>
+To: MyungJoo Ham <myungjoo.ham@samsung.com>
+Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        jhbird.choi@samsung.com, myungjoo.ham@gmail.com
+In-Reply-To: <1308128052-27739-1-git-send-email-myungjoo.ham@samsung.com>
+References: <1308128052-27739-1-git-send-email-myungjoo.ham@samsung.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 04 Jul 2011 17:05:40 +0100
+Message-ID: <1309795541.3272.6.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jul 2011, Heiko Carstens wrote:
-
-> On Sat, Jul 02, 2011 at 01:37:59PM -0400, Alan Stern wrote:
-> > The second bug, which hit me but apparently not any of you, is that the 
-> > request_queue's elevator gets deallocated while it is still in use.  
-> > That's because __scsi_remove_device() calls scsi_free_queue(), which 
-> > does blk_cleanup_queue(), which calls elevator_exit(), even though the 
-> > device file is still open and more requests will be submitted when the 
-> > file is closed.
-> > 
-> > I'm not sure of the right fix for this.  One possibility is to move the 
-> > scsi_free_queue() call to scsi_device_dev_release_usercontext().  Or 
-> > maybe the elevator_exit() call should be moved to blk_release_queue().
-> > 
-> > Also, I have no idea why this shows up with USB drives but not other 
-> > SCSI transports.  A fluke of timing?
+On Wed, 2011-06-15 at 17:54 +0900, MyungJoo Ham wrote:
+> From: Jonghwan Choi <jhbird.choi@samsung.com>
 > 
-> FWIW, I reported a bug where the request_queue's elevator got deallocated
-> while it was still in use (fc transport with device hotplug):
+> Signed-off-by: Jonghwan Choi <jhbird.choi@samsung.com>
+> Acked-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> ---
+>  drivers/regulator/max8952.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> http://www.spinics.net/lists/linux-scsi/msg52879.html
+> diff --git a/drivers/regulator/max8952.c b/drivers/regulator/max8952.c
+> index daff7fd..486ed81 100644
+> --- a/drivers/regulator/max8952.c
+> +++ b/drivers/regulator/max8952.c
+> @@ -139,7 +139,7 @@ static int max8952_set_voltage(struct regulator_dev *rdev,
+>  	s8 vid = -1, i;
+>  
+>  	if (!gpio_is_valid(max8952->pdata->gpio_vid0) ||
+> -			!gpio_is_valid(max8952->pdata->gpio_vid0)) {
+> +			!gpio_is_valid(max8952->pdata->gpio_vid1)) {
+>  		/* DVS not supported */
+>  		return -EPERM;
+>  	}
 
-That does sound like the second bug I encountered.  Can you reproduce 
-it?  Does the patch here:
+Applied.
 
-	http://marc.info/?l=linux-kernel&m=130963676907731&w=2
+Thanks
 
-fix the problem?
-
-Alan Stern
+Liam
 
