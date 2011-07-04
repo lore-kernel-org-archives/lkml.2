@@ -1,51 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758067Ab1GDP4r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 11:56:47 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:48199 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756902Ab1GDP4p (ORCPT
+	id S1758157Ab1GDP45 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 11:56:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36694 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758102Ab1GDP4v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 11:56:45 -0400
-Date: Mon, 4 Jul 2011 11:56:44 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-cc: Kernel development list <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Subject: Re: 3.0rc3-rc5: usb stops working after resume from suspend to ram
-In-Reply-To: <201107041054.36890.a.miskiewicz@gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1107041155080.12242-100000@netrider.rowland.org>
+	Mon, 4 Jul 2011 11:56:51 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 4 Jul 2011 19:56:51 +0400
+Message-ID: <CA+X1aCRtR8gdLj5ekUL3_gBeULEPMedjNyNreABEmoCnceFV0Q@mail.gmail.com>
+Subject: bi_end_io() is called with lock held: bug or feature?
+From: Maxim Patlasov <maxim.patlasov@gmail.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jul 2011, Arkadiusz Miskiewicz wrote:
+Hi Jens,
 
-> On Thursday 30 of June 2011, Alan Stern wrote:
-> 
-> > And now you know why, more or less -- we still have to figure out the
-> > reason for the hang.  Probably something goes wrong when cdc-ether is
-> > unbound from the wireless device.
-> 
-> Reverting patch below fixes hang.
-> 
-> commit fccf4e86200b8f5edd9a65da26f150e32ba79808
-> Author: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-> Date:   Sun Jun 5 23:22:22 2011 -0700
-> 
->     USB: Free bandwidth when usb_disable_device is called.
+While experimenting with some third-party driver, I noticed that
+sometimes (at least for empty flush requests) bi_end_io callback is
+called with IRQs locally disabled. The cause turned out to be in
+blk_end_bidi_request():
 
-Ah, very good!  That explains everything.  Someone else reported a 
-similar problem that was tracked down to this commit, and I submitted a 
-fix a few days ago:
+>	spin_lock_irqsave(q->queue_lock, flags);
+>	blk_finish_request(rq, error);
+>	spin_unlock_irqrestore(q->queue_lock, flags);
 
-	http://marc.info/?l=linux-usb&m=130955300211987&w=2
+A relevant part of stack trace is:
 
-I bet this will fix your problem too.
+> bio_endio+0x18/0x30
+> dec_pending+0x172/0x2b0
+> clone_endio+0x99/0xd0
+> bio_endio+0x18/0x30
+> req_bio_endio+0x83/0xc0
+> blk_update_request+0xff/0x470
+> blk_update_bidi_request+0x22/0xa0
+> __blk_end_bidi_request+0x1c/0x40
+> __blk_end_request_all+0x1a/0x30
+> blk_flush_complete_seq+0x258/0x280
+> flush_end_io+0xe5/0x170
+> blk_finish_request+0x86/0x280
+> blk_end_bidi_request+0x4f/0x80
 
-Alan Stern
+At first glance it looks a bit weird that in most cases bi_end_io
+callback is called w/o any locks held but under some conditions (e.g.
+completing empty REQ_FLUSH bio) - with q->queue_lock acquired. Is it a
+bug or expected behaviour?
 
+Thanks in advance,
+Maxim
