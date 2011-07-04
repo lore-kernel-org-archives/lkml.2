@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755499Ab1GDOl7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 10:41:59 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:7053 "EHLO sjogate2.atmel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751424Ab1GDOl5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 10:41:57 -0400
-Message-ID: <4E11D123.9070409@atmel.com>
-Date: Mon, 04 Jul 2011 16:41:39 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-arm-kernel@lists.infradead.org, patrice.vilchez@atmel.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH for 3.0] AT91: Change nand buswidth logic to match hardware
- default configuration
-References: <1309515924-22531-1-git-send-email-nicolas.ferre@atmel.com> <4E1189BD.509@atmel.com> <201107041625.25972.arnd@arndb.de>
-In-Reply-To: <201107041625.25972.arnd@arndb.de>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1755896Ab1GDOm3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 10:42:29 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:63373 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753974Ab1GDOmZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 10:42:25 -0400
+X-Nat-Received: from [202.181.97.72]:54846 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1309790531.25346
+To: richard@nod.at
+Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1309779003-8668-1-git-send-email-richard@nod.at>
+	<201107041357.43481.richard@nod.at>
+	<201107042110.EDI30723.OLFHOtQSMOFFJV@I-love.SAKURA.ne.jp>
+	<201107041420.31049.richard@nod.at>
+In-Reply-To: <201107041420.31049.richard@nod.at>
+Message-Id: <201107042342.HDH34381.OFtHSLOMVFJFOQ@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Mon, 4 Jul 2011 23:42:09 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 04072011 #5726947, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 04/07/2011 16:25, Arnd Bergmann :
-> On Monday 04 July 2011, Nicolas Ferre wrote:
->> Le 01/07/2011 12:25, Nicolas Ferre :
->>> The recently modified nand buswitth configuration is not aligned with
->>> board reality: the double footprint on boards is always populated with 8bits
->>> buswidth nand flashes.
->>> So we have to consider that without particular configuration the 8bits
->>> buswidth is selected by default.
->>> Moreover, the previous logic was always using !board_have_nand_8bit(), we
->>> change it to a simpler: board_have_nand_16bit().
->>>
->>> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
->>> Tested-by: Ludovic Desroches <ludovic.desroches@atmel.com>
->>
->> Arnd,
->>
->> Can you please handle this parch for 3.0-final as a bug fix through the
->> arm-soc.git tree?
->>
->> You can queue it in addition of the pull request sent by
->> Jean-Christophe: "AT91: Fix pull requset".
+Richard Weinberger wrote:
+> > That's strange... Would you show us printk() output like
+> > 
+> > 	printk(KERN_INFO "Calling request_module()\n");
+> > 	request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
+> > 	printk(KERN_INFO "Returned from request_module()\n");
+> > 
+> > for demonstrating that __request_module() cannot stop at
+> > MAX_KMOD_CONCURRENT levels of nesting?
 > 
-> Ok, I've integrated it in the branch and will send the pull request.
+> There you go!
+> http://userweb.kernel.org/~rw/boot.log
 > 
-> My preference would be to see fixes this late in the cycle more
-> minmal. This patch does two things: 1. change the polarity of the
-> system_rev bit as a bug fix and 2. change the polarity of the
-> function reading it as a cleanup. Both changes look absolutely
-> ok, but it's better to do the cleanup for the next kernel.
-> 
-> In this case, studying the patch more closely shows that it's
-> very harmless, but I'd rather not have to look that closely.
+> I did not count all messages, but they are more than 50. :-)
 
-Well, in fact it is a fix against what was introduced in a 3.0 patch
-which I found to be wrong.
-The reason because I do not want to be in next kernel is the fact that
-it can puzzle the user (people that want to use kernel without changing
-the system_rev between 2.6.39 -> 3.0 and again revert their changes for
-3.0 -> 3.1).
+Thank you.
 
-> Am I correct that the bug is a regression against 2.6.39?
+$ grep -F 'Calling request_module()' boot.log | wc -l
+25819
+$ grep -F 'Returned from request_module()' boot.log | wc -l
+25770
 
-No, in fact it was introduced during 3.0 early -rc.
+So, __request_module() is stopping at MAX_KMOD_CONCURRENT levels
+of nesting. Eventually the process that triggered the first
+request_module() will return from search_binary_handler().
+I don't think this is an infinite loop inside search_binary_handler().
 
-Anyway, thanks a lot Arnd.
-Best regards,
--- 
-Nicolas Ferre
+But it would look like an infinite loop bug if the caller of execve()
+repeats forever. Printing additional information like
 
+  printk(KERN_INFO "Calling request_module() %s %d %s %d %d\n", current->comm,
+         current->pid, bprm->filename, bprm->argc, bprm->envc);
+
+would help.
