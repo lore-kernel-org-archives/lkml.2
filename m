@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab1GDNPd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 09:15:33 -0400
-Received: from lo.gmane.org ([80.91.229.12]:41929 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752811Ab1GDNPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 09:15:32 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Lukasz <el.es.cr@gmail.com>
-Subject: Re: [PATCH 3/7] xfs: there is no =?utf-8?b?Q09ORklHX0tEQl9NT0RVTEVT?=
-Date: Mon, 4 Jul 2011 13:15:17 +0000 (UTC)
-Message-ID: <loom.20110704T150945-305@post.gmane.org>
-References: <1309643272-364-1-git-send-email-ext-phil.2.carmody@nokia.com> <1309643272-364-2-git-send-email-ext-phil.2.carmody@nokia.com> <1309643272-364-3-git-send-email-ext-phil.2.carmody@nokia.com> <1309643272-364-4-git-send-email-ext-phil.2.carmody@nokia.com> <20110704045820.GE1026@dastard> <20110704085126.GI19426@pcarmody2.research.nokia.com>
-Mime-Version: 1.0
+	id S1757482Ab1GDNW3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 09:22:29 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:33826 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756267Ab1GDNW2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 09:22:28 -0400
+Date: Mon, 4 Jul 2011 15:22:23 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 5/6] x86: Remove useless unwinder backlink from irq regs
+ saving
+Message-ID: <20110704132158.GA5551@somewhere>
+References: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
+ <1309624184-9790-6-git-send-email-fweisbec@gmail.com>
+ <4E1187E4020000780004BF2C@nat28.tlf.novell.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: sea.gmane.org
-User-Agent: Loom/3.14 (http://gmane.org/)
-X-Loom-IP: 81.139.75.101 (Mozilla/5.0 (Windows NT 5.1; rv:5.0) Gecko/20100101 Firefox/5.0)
+Content-Disposition: inline
+In-Reply-To: <4E1187E4020000780004BF2C@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Phil Carmody <ext-phil.2.carmody <at> nokia.com> writes:
-
- 
-> Yeah, I was wondering how to do that. The idea of cc:ing about 30
-> people for the whole set seemed a bit too spammy, and wasn't sure if
-> individually-selected cc:lists for eack of the patches made sense.
-> The alternative was to make it 7 (or more...) independent patchsets, 
-> but that turned the task into too much of a game of chess. I chickened 
-> out of thinking more, and cowardly went for the 'trivial' route.
+On Mon, Jul 04, 2011 at 08:29:08AM +0100, Jan Beulich wrote:
+> >>> On 02.07.11 at 18:29, Frederic Weisbecker <fweisbec@gmail.com> wrote:
+> > The unwinder backlink in interrupt entry is very useless.
+> > It's actually not part of the stack frame chain and thus is
+> > never used.
 > 
+> I very much doubt this - see dump_trace()'s comment in its IRQ-stack
+> related code portion (and the corresponding use of irq_stack_end[-1]).
+> 
+> Jan
 
-There is a script that parses MAINTAINERS (and AFAIR not only that) that
-gives you a list of people responsible (and their emails) :)
-( linux/scripts/get_maintainer.pl )
+Good point. I misunderstood that.
 
-L.
+But then I believe I accidentally fixed it back in
+"x86: Don't use frame pointer to save old stack on irq entry" by
+pushing %rsi instead in the new stack. It contains the backlink to
+the old stack.
 
+If we keep the macro as-is, I'll add a comment to explain further
+what is involved there.
