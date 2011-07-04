@@ -1,71 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab1GDJNk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 05:13:40 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:10915 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753583Ab1GDJNi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 05:13:38 -0400
-Date: Mon, 4 Jul 2011 11:04:15 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Chuck Lever <chuck.lever@oracle.com>
-cc: linux-nfs@vger.kernel.org, Trond Myklebust <Trond.Myklebust@netapp.com>,
-        linux-kernel@vger.kernel.org, Gero Kuhlmann <gero@gkminix.han.de>
-Subject: Re: [PATCH] nfs: Don't deref potentially NULL pointer returned by
- strsep
-In-Reply-To: <14B45086-2D98-4706-B1FE-7EBB8E777EEF@oracle.com>
-Message-ID: <alpine.LNX.2.00.1107041102001.24059@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107030938430.16316@swampdragon.chaosbits.net> <14B45086-2D98-4706-B1FE-7EBB8E777EEF@oracle.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756782Ab1GDJOB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 05:14:01 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:47662 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753583Ab1GDJN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 05:13:59 -0400
+Date: Mon, 4 Jul 2011 11:13:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Jan Beulich <JBeulich@novell.com>
+Subject: Re: [RFC GIT PULL] x86 entry / perf stacktrace changes
+Message-ID: <20110704091345.GB22943@elte.hu>
+References: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 3 Jul 2011, Chuck Lever wrote:
 
-> 
-> On Jul 3, 2011, at 3:40 AM, Jesper Juhl wrote:
-> 
-> > In fs/nfs/nfsroot.c:root_nfs_parse_options() we call strsep(), which
-> > may return NULL, but we do not test the return value before
-> > dereferencing the pointer.
-> > 
-> > Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-> > ---
-> > fs/nfs/nfsroot.c |    2 ++
-> > 1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> >  Compile tested only.
-> > 
-> > diff --git a/fs/nfs/nfsroot.c b/fs/nfs/nfsroot.c
-> > index c4744e1..b6ac860 100644
-> > --- a/fs/nfs/nfsroot.c
-> > +++ b/fs/nfs/nfsroot.c
-> > @@ -191,6 +191,8 @@ static int __init root_nfs_parse_options(char *incoming, char *exppath,
-> > 	 * Set the NFS remote path
-> > 	 */
-> > 	p = strsep(&incoming, ",");
-> > +	if (!p)
-> > +		return -1;
-> 
-> strsep() may return NULL only if the value of "incoming" is NULL.  But 
-> callers ensure that "incoming" always contains the address of a fixed 
-> buffer.  Thus if strsep() returns NULL here there is some kind of 
-> programming error; it's not the result of invalid input.
-> 
-> Do you have a reproducible test case to make this fail?
-> 
-Nope. I simply spotted the unchecked strsep() call and thought that it 
-would be better to be defensive and check it in case callers change in the 
-future and a bug creeps in that causes a NULL incoming to be passed. 
-Perhaps a BUG_ON(!incoming) would be better - or perhaps just forget about 
-it.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+> Ingo,
+> 
+> Please pull the perf/stacktrace branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/stacktrace
+> 
+> Or may be not yet. It's still in RFC because I would like
+> to ensure I did not break cfi annotations. I hope Jan beulich
+> or others can have a look.
+> 
+> Sorry to mess up irq entry and perf stacktrace changes in the same
+> topic. But the changes happen to be very interconnected.
+> 
+> Several cleanups, fixes and optimizations for the x86-64
+> stacktraces and irq entry.
+> 
+> Last patch seems to add a bit of overhead in the irq entry
+> (one more "push") but given the changes made in previous
+> patches, the end result is a more optimized and more clear irq
+> entry.
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Frederic Weisbecker (6):
+>       x86: Save stack pointer in perf live regs savings
+>       x86: Fetch stack from regs when possible in dump_trace()
+>       x86,64: Simplify save_regs()
+>       x86,64: Separate arg1 from rbp handling in SAVE_REGS_IRQ
+>       x86: Remove useless unwinder backlink from irq regs saving
+>       x86: Don't use frame pointer to save old stack on irq entry
+> 
+> 
+>  arch/x86/include/asm/perf_event.h |    5 +++
+>  arch/x86/kernel/dumpstack_64.c    |   37 +++-----------------
+>  arch/x86/kernel/entry_64.S        |   69 ++++++++++++++++--------------------
+>  3 files changed, 41 insertions(+), 70 deletions(-)
 
+Pulled, thanks a lot Frederic! The irq backtrace fixes look pretty 
+important - if there's any CFI annotation detail to be fixed we can 
+do it in a delta.
+
+Thanks,
+
+	Ingo
