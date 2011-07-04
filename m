@@ -1,52 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757131Ab1GDLaP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 07:30:15 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:33714 "EHLO radon.swed.at"
+	id S1757371Ab1GDLai (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 07:30:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45136 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754905Ab1GDLaN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 07:30:13 -0400
-From: Richard Weinberger <richard@nod.at>
-To: viro@zeniv.linux.org.uk
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Richard Weinberger <richard@nod.at>
-Subject: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
-Date: Mon,  4 Jul 2011 13:30:03 +0200
-Message-Id: <1309779003-8668-1-git-send-email-richard@nod.at>
-X-Mailer: git-send-email 1.7.6
+	id S1756559Ab1GDLag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 07:30:36 -0400
+From: Marcus Meissner <meissner@novell.com>
+To: davem@davemloft.net, kuznet@ms2.inr.ac.ru, pekkas@netcore.fi,
+        jmorris@namei.org, yoshfuji@linux-ipv6.org, kaber@trash.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Marcus Meissner <meissner@novell.com>, Marcus Meissner <meissner@suse.de>,
+        Reinhard Max <max@suse.de>
+Subject: [PATCH] net: bind() fix error return on wrong address family
+Date: Mon,  4 Jul 2011 13:30:29 +0200
+Message-Id: <1309779029-15403-1-git-send-email-meissner@novell.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When search_binary_handler() is called to find a handler
-for /sbin/modprobe it will end up in an infinite loop because
-it executes request_module() to load a binfmt module with
-/sbin/modprobe...
+Hi,
 
-Running a x86_64 kernel without ia32 emulation and a x86 user land
-triggers this issue.
+Reinhard Max also pointed out that the error should EAFNOSUPPORT according
+to POSIX.
 
-Signed-off-by: Richard Weinberger <richard@nod.at>
+The Linux manpages have it as EINVAL, some other OSes (Minix, HPUX, perhaps BSD) use
+EAFNOSUPPORT. Windows uses WSAEFAULT according to MSDN.
+
+Other protocols error values in their af bind() methods in current mainline git as far
+as a brief look shows:
+	EAFNOSUPPORT: atm, appletalk, l2tp, llc, phonet, rxrpc
+	EINVAL: ax25, bluetooth, decnet, econet, ieee802154, iucv, netlink, netrom, packet, rds, rose, unix, x25, 
+	No check?: can/raw, ipv6/raw, irda, l2tp/l2tp_ip
+
+Ciao, Marcus
+
+Signed-off-by: Marcus Meissner <meissner@suse.de>
+Cc: Reinhard Max <max@suse.de>
 ---
- fs/exec.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ net/ipv4/af_inet.c  |    4 +++-
+ net/ipv6/af_inet6.c |    2 +-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/fs/exec.c b/fs/exec.c
-index 97e0d52..7271b22 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1411,7 +1411,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 			    printable(bprm->buf[2]) &&
- 			    printable(bprm->buf[3]))
- 				break; /* -ENOEXEC */
--			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
-+
-+			/* Avoid an infinite loop */
-+			if (strcmp(modprobe_path, bprm->filename))
-+				request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
- #endif
- 		}
- 	}
+diff --git a/net/ipv4/af_inet.c b/net/ipv4/af_inet.c
+index eae1f67..ef1528a 100644
+--- a/net/ipv4/af_inet.c
++++ b/net/ipv4/af_inet.c
+@@ -465,8 +465,10 @@ int inet_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 	if (addr_len < sizeof(struct sockaddr_in))
+ 		goto out;
+ 
+-	if (addr->sin_family != AF_INET)
++	if (addr->sin_family != AF_INET) {
++		err = -EAFNOSUPPORT;
+ 		goto out;
++	}
+ 
+ 	chk_addr_ret = inet_addr_type(sock_net(sk), addr->sin_addr.s_addr);
+ 
+diff --git a/net/ipv6/af_inet6.c b/net/ipv6/af_inet6.c
+index d450a2f..3b5669a 100644
+--- a/net/ipv6/af_inet6.c
++++ b/net/ipv6/af_inet6.c
+@@ -274,7 +274,7 @@ int inet6_bind(struct socket *sock, struct sockaddr *uaddr, int addr_len)
+ 		return -EINVAL;
+ 
+ 	if (addr->sin6_family != AF_INET6)
+-		return -EINVAL;
++		return -EAFNOSUPPORT;
+ 
+ 	addr_type = ipv6_addr_type(&addr->sin6_addr);
+ 	if ((addr_type & IPV6_ADDR_MULTICAST) && sock->type == SOCK_STREAM)
 -- 
 1.7.5.4
 
