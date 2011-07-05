@@ -1,138 +1,231 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075Ab1GERmn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 13:42:43 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:48852 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749Ab1GERmm (ORCPT
+	id S1752189Ab1GERnJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 13:43:09 -0400
+Received: from na3sys009aog118.obsmtp.com ([74.125.149.244]:53663 "EHLO
+	na3sys009aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752093Ab1GERnH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 13:42:42 -0400
-Message-ID: <4E134D0C.7060500@canonical.com>
-Date: Tue, 05 Jul 2011 10:42:36 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	Tue, 5 Jul 2011 13:43:07 -0400
+X-Greylist: delayed 312 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jul 2011 13:43:06 EDT
+From: Kevin Hilman <khilman@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Partha Basak <p-basak2@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
+        <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Felipe Balbi <balbi@ti.com>,
+        Anand Gadiyar <gadiyar@ti.com>, <sameo@linux.intel.com>,
+        <parthab@india.ti.com>, <tony@atomide.com>,
+        Benoit Cousson <b-cousson@ti.com>, <paul@pwsan.com>,
+        <johnstul@us.ibm.com>, Vishwanath Sripathy <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support of ehci and ohci
+Organization: Texas Instruments, Inc.
+References: <Pine.LNX.4.44L0.1107051018580.2060-100000@iolanthe.rowland.org>
+Date: Tue, 05 Jul 2011 10:37:40 -0700
+In-Reply-To: <Pine.LNX.4.44L0.1107051018580.2060-100000@iolanthe.rowland.org>
+	(Alan Stern's message of "Tue, 5 Jul 2011 10:22:09 -0400 (EDT)")
+Message-ID: <8762ngtyqj.fsf@ti.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: djkurtz@chromium.org
-CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
-        olofj@chromium.org
-Subject: Re: [PATCH 02/12] Input: synaptics - do not invert y if 0
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org> <1309324042-22943-3-git-send-email-djkurtz@chromium.org>
-In-Reply-To: <1309324042-22943-3-git-send-email-djkurtz@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2011 10:07 PM, djkurtz@chromium.org wrote:
-> From: Daniel Kurtz <djkurtz@chromium.org>
-> 
-> Synaptics touchpads report increasing y from bottom to top.
-> This is inverted from normal userspace "top of screen is 0" coordinates.
-> Thus, the kernel driver reports inverted y coordinates to userspace.
-> 
-> In some cases, however, y = 0 is sent by the touchpad.
-> In these cases, the kernel driver should not invert, and just report 0.
+Alan Stern <stern@rowland.harvard.edu> writes:
 
-Under what cases is y sent as 0, and why do we want to report it as 0 to
-userspace?
+[...]
 
-> 
-> This patch also refactors the inversion into a macro, and moves it
-> into packet processing instead of during position reporting.
+>>>You have ignored a few very important points:
+>>>
+>>>Firstly, system suspend is supposed to work even when runtime PM is
+>>>not configured.
+>>>
+>>>Secondly, the user can disable runtime PM via sysfs at any time.
+>>>This shouldn't mess up system suspend.
+>>>
+>>>Basically, it's a bad idea to mix up system suspend with runtime PM.
+>> 
+>> Your observations are correct but this is a generic limitation and
+>> Kevin is working on this problem in parallel.
+>> 
+>> As of now, all OMAP drivers are mandated to use ONLY runtime pm framework
+>> for enabling/disabling clocks. I will let Kevin comment further.
+>
+> Okay, let's see what Kevin says.
 
-It's getting really hard to read the bit transformations with a macro.
-I'd prefer an approach that splits the computation. Maybe:
+While I did design the OMAP PM core to be runtime PM centric, and we
+implemented several drivers based on runtime PM alone, after some long
+discussions on linux-pm[1] with Alan and Rafael (PM maintainer) over the
+last couple weeks, I'm now convinced I had the wrong design/approach.
 
-hw->y = bit_manipulations;
-hw->y = INVERT_Y(hw->y);
+Rafael and Alan have been patient with my stubborness, but now I've been
+pursuaded.  Rafael has detailed on linux-pm the various
+problems/limitations/races between runtime PM and system PM[2], so I
+don't plan debating them again here.
 
-(could use a temporary variable too)
+That being said, today we have several drivers that use runtime PM calls
+in their suspend/resume path and our PM domain implementation (inside
+omap_device) deals with most of the limitations fine.  However, there
+are 2 main problems/limitation with this that we've chosen to live with
+(for now):
+        
+1) synchronous calls must be used in the suspend/resume path (because
+   PM workqueue is frozen during suspend/resumea)
+2) disabling runtime PM from userspace will prevent that device
+   from hitting its low-power state during suspend.
 
-Or maybe define a static inline function that takes the hw state as an arg:
+For v3.1 (and before), we've lived with these limitations, and I'm OK
+with merging other drivers for v3.1 with these limitations.  After 3.1,
+this will be changing (more on this below.)  
 
-hw->y = bit_manipulations;
-fix_y(hw);
+So, while I've been OK with merging drivers with the above limitations
+for one more merge window, $SUBJECT patch adds a new twist by forcibly
+managing the parent device from the child device.  Personally, I really
+don't like that approach and it serves as a good illustration of yet
+another reason why system PM and runtime PM need understood as
+conceptually very different.
 
-I'd prefer this implementation if every scenario involved manipulating
-the y value of the hw state struct.
+For v3.2, the PM core will change[2] to futher limit/protect
+interactions between runtime PM and system PM, and I will be reworking
+our PM domain (omap_device) implementation accordingly.  
 
-Also, it would be great if you could add your explanation of why Y is
-inverted as a comment above INVERT_Y (or whatever function/macro it
-eventually becomes).
+Basically, what that will mean is that our PM domain layer (omap_device)
+will also call omap_device_idle() in the suspend path, but only if the
+device is *not* already idle (from previous runtime suspend.)  The PM
+domain layer will then omap_device_enable() the device in the system
+resume path if it was suspended in the system suspend path.  A minimally
+tested patch to do this is below.
 
-Thanks!
+So, the driver still does not have to care about it's specific clocks
+etc. (which should address Felipe's concern), clocks and other
+IP-specific PM details will all continue to be handled by omap_device,
+just like it is with runtime PM.
 
--- Chase
+The primary change to the driver, is that whatever needs to be done to
+prepare for both runtime PM and system PM (including context
+save/restore etc.) will have to be done in a common function(s) that
+will be called by *both* of its ->runtime_suspend() and ->suspend()
+callbacks, and similar for ->runtime_resume() and ->resume().  
 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/input/mouse/synaptics.c |   16 +++++++++-------
->  1 files changed, 9 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index e06e045..f6d0c04 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -44,6 +44,8 @@
->  #define YMIN_NOMINAL 1408
->  #define YMAX_NOMINAL 4448
->  
-> +#define INVERT_Y(y) (((y) != 0) ? (YMAX_NOMINAL + YMIN_NOMINAL - (y)) : 0)
-> +
->  
->  /*****************************************************************************
->   *	Stuff we need even when we do not want native Synaptics support
-> @@ -409,9 +411,9 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->  		hw->x = (((buf[3] & 0x10) << 8) |
->  			 ((buf[1] & 0x0f) << 8) |
->  			 buf[4]);
-> -		hw->y = (((buf[3] & 0x20) << 7) |
-> +		hw->y = INVERT_Y((((buf[3] & 0x20) << 7) |
->  			 ((buf[1] & 0xf0) << 4) |
-> -			 buf[5]);
-> +			 buf[5]));
->  
->  		hw->z = buf[2];
->  		hw->w = (((buf[0] & 0x30) >> 2) |
-> @@ -421,7 +423,8 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->  		if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
->  			/* Gesture packet: (x, y, z) at half resolution */
->  			priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
-> -			priv->mt.y = (((buf[4] & 0xf0) << 4) | buf[2]) << 1;
-> +			priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
-> +					      | buf[2]) << 1);
->  			priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
->  			return 1;
->  		}
-> @@ -473,7 +476,7 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->  		}
->  	} else {
->  		hw->x = (((buf[1] & 0x1f) << 8) | buf[2]);
-> -		hw->y = (((buf[4] & 0x1f) << 8) | buf[5]);
-> +		hw->y = INVERT_Y(((buf[4] & 0x1f) << 8) | buf[5]);
->  
->  		hw->z = (((buf[0] & 0x30) << 2) | (buf[3] & 0x3F));
->  		hw->w = (((buf[1] & 0x80) >> 4) | ((buf[0] & 0x04) >> 1));
-> @@ -491,8 +494,7 @@ static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
->  	input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
->  	if (active) {
->  		input_report_abs(dev, ABS_MT_POSITION_X, x);
-> -		input_report_abs(dev, ABS_MT_POSITION_Y,
-> -				 YMAX_NOMINAL + YMIN_NOMINAL - y);
-> +		input_report_abs(dev, ABS_MT_POSITION_Y, y);
->  	}
->  }
->  
-> @@ -584,7 +586,7 @@ static void synaptics_process_packet(struct psmouse *psmouse)
->  
->  	if (num_fingers > 0) {
->  		input_report_abs(dev, ABS_X, hw.x);
-> -		input_report_abs(dev, ABS_Y, YMAX_NOMINAL + YMIN_NOMINAL - hw.y);
-> +		input_report_abs(dev, ABS_Y, hw.y);
->  	}
->  	input_report_abs(dev, ABS_PRESSURE, hw.z);
->  
+Some drivers will have additional work to do for system PM though.  This
+is mainly because system PM can happen at *any* time, including in the
+middle of ongoing activity, whereas runtime PM transitions happen when
+the device is known to be idle.  What that means is that for example, a
+drivers ->suspend() method might need to wait for (or forcibly stop) any
+ongoing activity in order to be sure the device is ready to be suspended.
+
+Frankly, this is not a very big change for the drivers, as the
+device-specific idle work will still be handled by the PM domain layer.
+
+Hope that helps clarify the background.
+
+As for this particular patch, since it is rather late in the development
+cycle for v3.1, I would recommend that it wait until the omap_device
+changes, and then let the PM core (for system PM and runtime PM) handle
+the parent/child relationships as they are designed to.   But that is up
+to Felipe and USB maintainers to decide.
+
+Kevin
+
+[1] https://lists.linux-foundation.org/pipermail/linux-pm/2011-June/031559.html
+[2] https://lists.linux-foundation.org/pipermail/linux-pm/2011-June/031977.html
+
+
+>From 6696e9a2b106ca9c9936e5c2ad89650010120e10 Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@ti.com>
+Date: Tue, 7 Jun 2011 16:07:28 -0700
+Subject: [PATCH] OMAP: PM: omap_device: add system PM methods for PM domain handling
+
+Using PM domain callbacks, use omap_device idle/enable to
+automatically suspend/resume devices.  Also use pm_generic_* routines
+to ensure driver's callbacks are correctly called.
+
+Driver ->suspend callback is needed to ensure the driver is in a state
+that it can be suspended.
+
+If device is already idle (typically because of previous runtime PM
+activity), there's nothing extra to do.
+
+KJH: The omap_device_* calls should probably actually be done in the
+     _noirq() methods.
+
+Not-yet-Signed-off-by: Kevin Hilman <khilman@ti.com>
+---
+ arch/arm/plat-omap/include/plat/omap_device.h |    4 +++
+ arch/arm/plat-omap/omap_device.c              |   32 +++++++++++++++++++++++++
+ 2 files changed, 36 insertions(+), 0 deletions(-)
+
+diff --git a/arch/arm/plat-omap/include/plat/omap_device.h b/arch/arm/plat-omap/include/plat/omap_device.h
+index e4c349f..bc36d05 100644
+--- a/arch/arm/plat-omap/include/plat/omap_device.h
++++ b/arch/arm/plat-omap/include/plat/omap_device.h
+@@ -44,6 +44,9 @@ extern struct device omap_device_parent;
+ #define OMAP_DEVICE_STATE_IDLE		2
+ #define OMAP_DEVICE_STATE_SHUTDOWN	3
+ 
++/* omap_device.flags values */
++#define OMAP_DEVICE_SUSPENDED BIT(0)
++
+ /**
+  * struct omap_device - omap_device wrapper for platform_devices
+  * @pdev: platform_device
+@@ -73,6 +76,7 @@ struct omap_device {
+ 	s8				pm_lat_level;
+ 	u8				hwmods_cnt;
+ 	u8				_state;
++	u8                              flags;
+ };
+ 
+ /* Device driver interface (call via platform_data fn ptrs) */
+diff --git a/arch/arm/plat-omap/omap_device.c b/arch/arm/plat-omap/omap_device.c
+index 49fc0df..f2711c3 100644
+--- a/arch/arm/plat-omap/omap_device.c
++++ b/arch/arm/plat-omap/omap_device.c
+@@ -564,12 +564,44 @@ static int _od_runtime_resume(struct device *dev)
+ 	return pm_generic_runtime_resume(dev);
+ }
+ 
++static int _od_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct omap_device *od = to_omap_device(pdev);
++	int ret;
++
++	ret = pm_generic_suspend(dev);
++
++	od->flags &= ~OMAP_DEVICE_SUSPENDED;
++
++	if (od->_state == OMAP_DEVICE_STATE_ENABLED) {
++		omap_device_idle(pdev);
++		od->flags |= OMAP_DEVICE_SUSPENDED;
++	}
++
++	return ret;
++}
++
++static int _od_resume(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct omap_device *od = to_omap_device(pdev);
++
++	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
++	    (od->_state == OMAP_DEVICE_STATE_IDLE))
++		omap_device_enable(pdev);
++	
++	return pm_generic_resume(dev);
++}
++
+ static struct dev_power_domain omap_device_power_domain = {
+ 	.ops = {
+ 		.runtime_suspend = _od_runtime_suspend,
+ 		.runtime_idle = _od_runtime_idle,
+ 		.runtime_resume = _od_runtime_resume,
+ 		USE_PLATFORM_PM_SLEEP_OPS
++		.suspend = _od_suspend,
++		.resume = _od_resume,
+ 	}
+ };
+ 
+-- 
+1.7.6
 
