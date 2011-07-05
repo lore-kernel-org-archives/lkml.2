@@ -1,62 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab1GEOoA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:44:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:62257 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753060Ab1GEOnt (ORCPT
+	id S1753426Ab1GEOoS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:44:18 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54145 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753060Ab1GEOoO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:43:49 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linaro-dev@lists.linaro.org, ashish.jangam@kpitcummins.com
-Subject: Re: [PATCH 02/11] GPIO: DA9052 GPIO module v2
-Date: Tue, 5 Jul 2011 16:43:44 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
-Cc: grant@secretlab.ca, Dajun <dajun.chen@diasemi.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>, jic23@cam.ac.uk,
-        linux-kernel@vger.kernel.org
-References: <1309872878.960.106.camel@L-0532.kpit.com>
-In-Reply-To: <1309872878.960.106.camel@L-0532.kpit.com>
+	Tue, 5 Jul 2011 10:44:14 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 03/49] gma500: Do sane FB cleanup
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Tue, 05 Jul 2011 15:34:28 +0100
+Message-ID: <20110705143426.23872.48948.stgit@localhost.localdomain>
+In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
+References: <20110705141038.23872.55303.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107051643.45158.arnd@arndb.de>
-X-Provags-ID: V02:K0:fdh/l0zfqcXL1Pi/qDN6kbT3Ui+QM5whZWy3CRDGPm/
- FaXoEDaqVoIpL26c6SLCmLJ5DEJlzQKAfpqYaCYgawab3ItTOg
- OdrWuHazOXWolaOJVIJXRTdcnZOAZqJyc3Xss/ywNJQay7cl3l
- jJwJcw9EjMKIzv+F8DbZ428536/vUpaPmnhfqkE45dxzfcBJZx
- Zs422gjsZvdYO3f32eVJQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 July 2011, ashishj3 wrote:
-> DA9052 PMIC has 16 bit GPIO bus for peripheral control.
-> 
-> This patch add support for the GPIO pins on the DA9052.
-> 
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> ---
-> Changes since v2
-> - change of file name
-> - correct reference to irq_base in function to_irq()
-> - remove pdata dependency
-> ---
->  drivers/gpio/Kconfig            |    6 +
->  drivers/gpio/Makefile           |    1 +
->  drivers/gpio/gpio-da9052.c      |  259 +++++++++++++++++++++++++++++++++++++++
->  include/linux/mfd/da9052/gpio.h |   47 +++++++
->  4 files changed, 313 insertions(+), 0 deletions(-)
+From: Alan Cox <alan@linux.intel.com>
 
-I think I commented on this before, but please remove any header files
-in include/linux that are not used as an interface between different
-modules. If a header just describes properties of the hardware and is
-used by a single source file, move the contents into that source file.
+If we get a user frame buffer destroyed which is being displayed then clean
+up the mess nicely. We can now run a slightly modified modetest including setting
+modes, and handling crashes.
 
-If a header is used by multiple files in one directory, make it a local
-header in that directory.
+Modetest still blows up but this is because libdrm 2.4.25 is busted.
 
-	Arnd
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+
+ drivers/staging/gma500/psb_fb.c            |   24 +++++++++++++++++++++++-
+ drivers/staging/gma500/psb_intel_display.c |   22 +++++++++++++---------
+ 2 files changed, 36 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
+index 5977add..d005025 100644
+--- a/drivers/staging/gma500/psb_fb.c
++++ b/drivers/staging/gma500/psb_fb.c
+@@ -719,16 +719,38 @@ static void psb_user_framebuffer_destroy(struct drm_framebuffer *fb)
+ {
+ 	struct psb_framebuffer *psbfb = to_psb_fb(fb);
+ 	struct gtt_range *r = psbfb->gtt;
++	struct drm_device *dev = fb->dev;
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	struct psb_fbdev *fbdev = dev_priv->fbdev;
++	struct drm_crtc *crtc;
++	int reset = 0;
+ 
+ 	/* Should never get stolen memory for a user fb */
+ 	WARN_ON(r->stolen);
+ 	pr_err("user framebuffer destroy %p, fbdev %p\n",
+ 						psbfb, psbfb->fbdev);
++	/* Check if we are erroneously live */
++	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
++		if (crtc->fb == fb)
++			reset = 1;
++
++	if (reset)
++		pr_err("DRM: gma500, forcing reset\n");
++
++	if (reset)
++		/* 
++		 * Now force a sane response before we permit the DRM crc layer to
++		 * do stupid things like blank the display. Instead we reset this
++		 * framebuffer as if the user had forced a reset. We must do this
++		 * before the cleanup so that the DRM layer doesn't get a chance
++		 * to stick its oar in where it isn't wanted.
++		 */
++		drm_fb_helper_restore_fbdev_mode(&fbdev->psb_fb_helper);
++
+         /* Let DRM do its clean up */
+ 	drm_framebuffer_cleanup(fb);
+ 	/*  We are no longer using the resource in GEM */
+ 	drm_gem_object_unreference_unlocked(&r->gem);
+-
+ 	kfree(fb);
+ }
+ 
+diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
+index a358987..540304c 100644
+--- a/drivers/staging/gma500/psb_intel_display.c
++++ b/drivers/staging/gma500/psb_intel_display.c
+@@ -352,15 +352,15 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
+ 
+ 	PSB_DEBUG_ENTRY("\n");
+ 
++	if (!gma_power_begin(dev, true))
++		return 0;
++
+ 	/* no fb bound */
+ 	if (!crtc->fb) {
+ 		DRM_DEBUG("No FB bound\n");
+-		return 0;
++		goto psb_intel_pipe_cleaner;
+ 	}
+ 
+-	if (!gma_power_begin(dev, true))
+-		return 0;
+-
+ 	/* We are displaying this buffer, make sure it is actually loaded
+ 	   into the GTT */
+ 	ret = psb_gtt_pin(psbfb->gtt);
+@@ -409,6 +409,7 @@ int psb_intel_pipe_set_base(struct drm_crtc *crtc,
+ 		REG_READ(dspbase);
+ 	}
+ 
++psb_intel_pipe_cleaner:
+ 	/* If there was a previous display we can now unpin it */
+ 	if (old_fb)
+ 		psb_gtt_unpin(to_psb_fb(old_fb)->gtt);
+@@ -588,6 +589,7 @@ static int psb_intel_crtc_mode_set(struct drm_crtc *crtc,
+ {
+ 	struct drm_device *dev = crtc->dev;
+ 	struct psb_intel_crtc *psb_intel_crtc = to_psb_intel_crtc(crtc);
++	struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
+ 	int pipe = psb_intel_crtc->pipe;
+ 	int fp_reg = (pipe == 0) ? FPA0 : FPB0;
+ 	int dpll_reg = (pipe == 0) ? DPLL_A : DPLL_B;
+@@ -610,6 +612,12 @@ static int psb_intel_crtc_mode_set(struct drm_crtc *crtc,
+ 	struct drm_mode_config *mode_config = &dev->mode_config;
+ 	struct drm_connector *connector;
+ 
++	/* No scan out no play */
++	if (crtc->fb == NULL) {
++	        crtc_funcs->mode_set_base(crtc, x, y, old_fb);
++                return 0;
++        }
++
+ 	list_for_each_entry(connector, &mode_config->connector_list, head) {
+ 		struct psb_intel_output *psb_intel_output =
+ 		    to_psb_intel_output(connector);
+@@ -786,11 +794,7 @@ static int psb_intel_crtc_mode_set(struct drm_crtc *crtc,
+ 	REG_WRITE(dspcntr_reg, dspcntr);
+ 
+ 	/* Flush the plane changes */
+-	{
+-		struct drm_crtc_helper_funcs *crtc_funcs =
+-		    crtc->helper_private;
+-		crtc_funcs->mode_set_base(crtc, x, y, old_fb);
+-	}
++	crtc_funcs->mode_set_base(crtc, x, y, old_fb);
+ 
+ 	psb_intel_wait_for_vblank(dev);
+ 
+
