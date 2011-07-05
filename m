@@ -1,75 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752671Ab1GEOPh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:15:37 -0400
-Received: from rcsinet14.oracle.com ([148.87.113.126]:38476 "EHLO
-	rcsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752552Ab1GEOPf (ORCPT
+	id S1752708Ab1GEORR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:17:17 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:50674 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752552Ab1GEORP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:15:35 -0400
-Date: Tue, 5 Jul 2011 10:13:23 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Raghavendra D Prabhu <rprabhu@wnohang.net>
-Cc: Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
-        jeremy.fitzhardinge@citrix.com, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] Modpost section mismatch fix
-Message-ID: <20110705141323.GG2972@dumpdata.com>
-References: <20110703232508.GB4440@Xye>
- <1309769388.634.51.camel@zakaz.uk.xensource.com>
- <20110704221646.GB4490@Xye>
+	Tue, 5 Jul 2011 10:17:15 -0400
+Date: Tue, 5 Jul 2011 10:17:14 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Partha Basak <p-basak2@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
+        USB list <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Anand Gadiyar <gadiyar@ti.com>, <sameo@linux.intel.com>,
+        <parthab@india.ti.com>, <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>,
+        Vishwanath Sripathy <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
+ of ehci and ohci
+In-Reply-To: <20110705125227.GI2820@legolas.emea.dhcp.ti.com>
+Message-ID: <Pine.LNX.4.44L0.1107050958090.2060-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110704221646.GB4490@Xye>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4E131C10.005A:SCFMA922111,ss=1,re=-4.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 03:46:46AM +0530, Raghavendra D Prabhu wrote:
-> * On Mon, Jul 04, 2011 at 09:49:48AM +0100, Ian Campbell <ijc@hellion.org.uk> wrote:
-> >On Mon, 2011-07-04 at 04:55 +0530, Raghavendra D Prabhu wrote:
-> >>[Sorry if duplicate, one earlier was corrupt]
-> 
-> >>Hi,
-> >>     I got section mismatches reported by modpost in latest build. It got
-> >>     reported for xen_register_pirq and xen_unplug_emulated_devices
-> >>     functions.
-> >
-> >
-> >> xen_register_pirq makes reference to
-> >>     acpi_sci_override_gsi in init.data section; marking
-> >>     xen_register_pirq with __init is not feasible since calls are made
-> >>     to it from acpi_register_gsi in non-init contexts. So marking it
-> >>     __refdata based on assumption that when acpi_sci_override_gsi is
-> >>     referenced, it is in  early stages where it is alive.
-> >
-> >I don't think this assumption holds, since xen_register_pirq can be
-> >called at any time and basically unconditionally references
-> >acpi_sci_override_gsi.
-> 
-> Yeah, that has been my guess as well, however I am not privy to the
-> inner workings of Xen, so was not sure.
-> >
-> >If we don't want to remove the __init from acpi_sci_override_gsi then
-> >perhaps xen_setup_acpi_sci needs to stash it somewhere?
-> >
-> >Or maybe xen_register_pirq could take an "int force_irq" which, if not
-> >-1, would force a particular IRQ. The callsite in xen_setup_acpi_sci
-> >(actually via xen_register_gsi so the param would need to be propagated
-> >there) would be the only actual user?
-> 
-> xen_register_gsi and hence, xen_register_pirq are called from
-> init (with xen_setup_acpi_sci) and non-init (with
-> acpi_register_gsi_xen); since xen_set_acpi_sci calls it with gsi ==
-> acpi_sci_override_gsi and is marked __init, the best way would be to
-> call xen_register_gsi and xen_register_pirq with a boolean argument like
-> sci_override to obviate the need to use acpi_sci_override_gsi in
-> register_pirq. I will send the patch with this change if it looks good.
+On Tue, 5 Jul 2011, Felipe Balbi wrote:
 
-Hold on, let me rebase #stable/pci.cleanups and see if the issue
-here disappears.
+> > The real problem here is that you guys are trying to use the runtime PM
+> > framework to carry out activities during system suspend.  That won't
+> > work; it's just a bad idea all round.  Use the proper callbacks to do
+> > what you want.
+> 
+> then what's the point in even having runtime PM if we will still have to
+> implement the same functionality on the other callbacks ?
+
+You don't have to duplicate the functionality.  You can use exactly the
+same functions for both sets of callbacks if you want; just make sure
+the callbacks point to them.
+
+>  Well, of
+> course runtime PM will conserve power on runtime, but system suspend
+> should be no different other than an "always deepest sleep state"
+> decision.
+
+No, it is significantly different for several reasons.  Some of the
+most important differences are concerned with freezing userspace and
+deciding what events should be allowed to wake up the system.  Also, 
+there are systems which can achieve greater power savings by system 
+sleep than they can by runtime PM + cpuidle.
+
+> The thing now is that pm_runtime was done so that drivers would stop
+> caring about clocks, which is a big plus, but if we still have to handle
+> ->suspend()/->resume() differently, we will still need to clk_get();
+> clk_enable(); clk_disable(); Then what was the big deal with runtime PM?
+
+I don't know about that.  Clock usage has always been internal to the
+implementation you guys have been working on, and I haven't followed
+it.  If your implementation was designed incorrectly, well, that's a
+shame but it's understandable.  Things like that happen.  It shouldn't
+be too hard to fix.
+
+But first you do need to understand that system suspend really _is_ 
+different from runtime suspend.  Sure, you may be able to share some 
+code between them, but you should not expect to be able to use one in 
+place of the other.
+
+> IMHO, we should have only one PM layer. System suspend/resume should be
+> implemented so that core PM "forcefully" calls
+> ->runtime_suspend()/->runtime_resume() of call drivers, all
+> synchronously. Maybe we need an extra
+> RPM_STATIC_SUSPEND_PLEASE_HANDLE_IT_ALL_SYNCHRONOUSLY flag, but that's
+> another detail.
+
+Statements like this should be posted to linux-pm where they can be 
+discussed properly.  It certainly isn't fair to make such claims 
+without even CC-ing the PM maintainer.
+
+Besides, handling runtime PM synchronously won't do you any good if the 
+user has disabled runtime PM via sysfs or not enabled 
+CONFIG_PM_RUNTIME in the first place.  Have you forgotten about those 
+possibilities?
+
+Furthermore, from what I've gathered so far from this thread, the
+_real_ problem is that nobody has written suspend and resume callbacks
+for the parent device.  You're relying on runtime PM to do things with
+the parent, but instead you should make use of the usual system sleep
+mechanism: Parents are always suspended after their children and
+awakened before.  Have the parent's suspend routine disable the clocks 
+and have the resume routine enable them.  Problem solved, no changes 
+needed in the child's driver code.
+
+> If drivers are really supposed to stop handling clocks directly, then
+> runtime PM is THE framework to do that, but if we still have system
+> suspend/resume the old way, I don't see the benefit for the driver
+> (other than the uAmps saved during runtime, which is great, don't get me
+> wrong ;-) that this will bring. Having two PM layers which, in fact, are
+> doing the same thing - reducing power consumption - is just too much
+> IMO.
+
+They aren't doing the same thing.  If you don't believe me, ask the PM 
+maintainer.
+
+And if you actually do need your callbacks to do the same thing, simply
+use shared subroutines.
+
+Alan Stern
+
