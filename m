@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753052Ab1GESUD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 14:20:03 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:58889 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751847Ab1GESUB (ORCPT
+	id S1753211Ab1GESWq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 14:22:46 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:2345 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab1GESWo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 14:20:01 -0400
-Message-ID: <4E1355CB.9070504@canonical.com>
-Date: Tue, 05 Jul 2011 11:19:55 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	Tue, 5 Jul 2011 14:22:44 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp06.nvidia.com on Tue, 05 Jul 2011 11:22:37 -0700
+From: Stephen Warren <swarren@nvidia.com>
+To: "Grant Likely (grant.likely@secretlab.ca)" 
+	<grant.likely@secretlab.ca>
+CC: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 5 Jul 2011 11:22:30 -0700
+Subject: Tegra device name for device tree
+Thread-Topic: Tegra device name for device tree
+Thread-Index: Acw7PqdLt3r4QwwLQT+Qh5CCihv6QA==
+Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049E21BE97@HQMAIL01.nvidia.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Daniel Kurtz <djkurtz@chromium.org>, dmitry.torokhov@gmail.com,
-        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
-        daniel.stone@collabora.co.uk, olofj@chromium.org
-Subject: Re: [PATCH 05/12] Input: synaptics - process button bits in AGM packets
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org> <1309324042-22943-6-git-send-email-djkurtz@chromium.org> <20110704212404.GC23915@polaris.bitmath.org> <CAGS+omALkYhzS+rvWhsXCwuWMHWpJJJ7j9Z9cBQ1Gem5HnH_fg@mail.gmail.com> <20110705181843.GA29296@polaris.bitmath.org>
-In-Reply-To: <20110705181843.GA29296@polaris.bitmath.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2011 11:18 AM, Henrik Rydberg wrote:
->>> Any particular reason to move these and leave them unassigned for clickpads?
->>
->> Yes.  The current implementation incorrectly parses the x, y, z of AGM
->> packets and assigns junk values to the corresponding fields of the
->> temporary hw struct.  Luckily, this struct is then just discarded upon
->> return (synaptics_parse_hw_state returns 1 causing
->> synaptics_process_packet() to exit immediately).
->>
->> Instead, this patch parses the w value first to determine the packet
->> type, and then use this packet type information to parse the remaining
->> position and pressure fields correctly...
->>
->> Notice that the "else" clause is taken for SGM packets (w != 2), even
->> for clickpads.
-> 
-> Functionally, there is no difference between assigning new junk or
-> reusing old junk, hence that part of the patch is not strictly needed.
+Grant et. al.,
 
-True, it's not necessary, but I do like the new flow better. I was
-reviewing the patch myself when I started wondering why we ever assigned
-junk that was incorrect. I think this will help clean up the code and
-make it more readable.
+It recently dawned on me that all the Tegra DeviceTree support is using a
+marketing name for the SoC ("tegra250"). NVIDIA would prefer that we use
+engineering names for the SoC (e.g. "tegra20" now, "tegra30" for an
+upcoming SoC). The primary motivation for this is that engineering names
+tend to be more stable and map more directly to the HW design.
 
--- Chase
+Is it still possible to make this change, if I submit the appropriate
+patches to do this? 
+
+So, far, I see devicetree/next only refers to the Tegra serial port,
+whereas devicetree/arm and devicetree/test refer to more Tegra devices in
+this way. I'm not quite sure how the flow of patches works between these 3
+trees. For the serial port, I obviously need to submit a patch against
+devicetree/next, but I'm not so sure about which of devicetree/arm or
+devicetree/test to target for the other devices.
+
+Sorry for bringing this up so late in the game.
+
+Thanks!
+
+-- 
+nvpublic
+
