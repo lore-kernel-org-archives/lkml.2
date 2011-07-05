@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab1GEOyL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:54:11 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50606 "EHLO
+	id S1754881Ab1GEOye (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:54:34 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50613 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab1GEOyG (ORCPT
+	with ESMTP id S1753034Ab1GEOyc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:54:06 -0400
+	Tue, 5 Jul 2011 10:54:32 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 45/49] gma500: Add the HDMI bits
+Subject: [PATCH 47/49] gma500: Workaround for Medfield/Cedarview cursor bug
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jul 2011 15:44:20 +0100
-Message-ID: <20110705144417.23872.83419.stgit@localhost.localdomain>
+Date: Tue, 05 Jul 2011 15:44:46 +0100
+Message-ID: <20110705144444.23872.19208.stgit@localhost.localdomain>
 In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
 References: <20110705141038.23872.55303.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -24,58 +24,42 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-This adds the basic HDMI support for Cedarview.
-
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/Makefile        |    3 ++-
- drivers/staging/gma500/cdv_device.c    |    4 ++--
- drivers/staging/gma500/psb_intel_drv.h |    2 +-
- 3 files changed, 5 insertions(+), 4 deletions(-)
+ drivers/staging/gma500/psb_intel_display.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/staging/gma500/Makefile b/drivers/staging/gma500/Makefile
-index 507aaaf..e515edf 100644
---- a/drivers/staging/gma500/Makefile
-+++ b/drivers/staging/gma500/Makefile
-@@ -25,8 +25,9 @@ psb_gfx-y += gem_glue.o \
- 	  mid_bios.o
- 
- psb_gfx-$(CONFIG_DRM_PSB_CDV) +=  cdv_device.o \
--	  cdv_intel_display.o \
- 	  cdv_intel_crt.o \
-+	  cdv_intel_display.o \
-+	  cdv_intel_hdmi.o \
- 	  cdv_intel_lvds.o
- 
- psb_gfx-$(CONFIG_DRM_PSB_MRST) += mrst_device.o \
-diff --git a/drivers/staging/gma500/cdv_device.c b/drivers/staging/gma500/cdv_device.c
-index 622c955..680f1bb 100644
---- a/drivers/staging/gma500/cdv_device.c
-+++ b/drivers/staging/gma500/cdv_device.c
-@@ -58,9 +58,9 @@ static int cdv_output_init(struct drm_device *dev)
- 	/* These bits indicate HDMI not SDVO on CDV, but we don't yet support
- 	   the HDMI interface */
- 	if (REG_READ(SDVOB) & SDVO_DETECTED)
--		DRM_ERROR("HDMI not supported yet\n");
-+		cdv_hdmi_init(dev, &dev_priv->mode_dev, SDVOB);
- 	if (REG_READ(SDVOC) & SDVO_DETECTED)
--		DRM_ERROR("HDMI not supported yet\n");
-+		cdv_hdmi_init(dev, &dev_priv->mode_dev, SDVOC);
- 	return 0;
- }
- 
-diff --git a/drivers/staging/gma500/psb_intel_drv.h b/drivers/staging/gma500/psb_intel_drv.h
-index 9d7151a..36b554b 100644
---- a/drivers/staging/gma500/psb_intel_drv.h
-+++ b/drivers/staging/gma500/psb_intel_drv.h
-@@ -105,7 +105,7 @@ struct psb_intel_output {
- 	void *dev_priv;
- 
- 	struct psb_intel_mode_device *mode_dev;
--
-+	struct i2c_adapter *hdmi_i2c_adapter;	/* for control functions */
+diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
+index bd0a4bc..8b84462 100644
+--- a/drivers/staging/gma500/psb_intel_display.c
++++ b/drivers/staging/gma500/psb_intel_display.c
+@@ -1278,6 +1278,19 @@ const struct drm_crtc_funcs psb_intel_crtc_funcs = {
+ 	.destroy = psb_intel_crtc_destroy,
  };
  
- struct psb_intel_crtc_state {
++/*
++ * Set the default value of cursor control and base register
++ * to zero. This is a workaround for h/w defect on Oaktrail
++ */
++static void psb_intel_cursor_init(struct drm_device *dev, int pipe)
++{
++        u32 control[3] = { CURACNTR, CURBCNTR, CURCCNTR };
++        u32 base[3] = { CURABASE, CURBBASE, CURCBASE };
++        
++	REG_WRITE(control[pipe], 0);
++	REG_WRITE(base[pipe], 0);
++}
++
+ void psb_intel_crtc_init(struct drm_device *dev, int pipe,
+ 		     struct psb_intel_mode_device *mode_dev)
+ {
+@@ -1341,6 +1354,7 @@ void psb_intel_crtc_init(struct drm_device *dev, int pipe,
+ 	psb_intel_crtc->mode_set.connectors =
+ 	    (struct drm_connector **) (psb_intel_crtc + 1);
+ 	psb_intel_crtc->mode_set.num_connectors = 0;
++	psb_intel_cursor_init(dev, pipe);
+ }
+ 
+ int psb_intel_get_pipe_from_crtc_id(struct drm_device *dev, void *data,
 
