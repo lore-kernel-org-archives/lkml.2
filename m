@@ -1,99 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754672Ab1GEJUF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 05:20:05 -0400
-Received: from 87-126-246-48.btc-net.bg ([87.126.246.48]:1260 "HELO
-	taner.local" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1754222Ab1GEJUD convert rfc822-to-8bit (ORCPT
+	id S1754783Ab1GEJ2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 05:28:31 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:44866 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754467Ab1GEJ2a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 05:20:03 -0400
-X-Greylist: delayed 798 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jul 2011 05:20:02 EDT
-Reply-To: tpurkir@hotmail.com
-Message-ID: <5933b7feabef1cace8c1a3eb26c4352e@gmail.com>
-From: "PURKIR" <tpurkir@gmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: YURT DISI TEMSILCILIGI
-Date: Tue, 5 Jul 2011 12:19:05 +0300
+	Tue, 5 Jul 2011 05:28:30 -0400
+From: Richard Weinberger <richard@nod.at>
+To: vitalivanov@gmail.com
+Subject: Re: [PATCH 1/4] uml: cow_user.c warning corrections
+Date: Tue, 5 Jul 2011 11:28:24 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.4; x86_64; ; )
+Cc: Jeff Dike <jdike@addtoit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        lkml <linux-kernel@vger.kernel.org>
+References: <1309821341.4527.5.camel@vitaliy-Vostro-1400>
+In-Reply-To: <1309821341.4527.5.camel@vitaliy-Vostro-1400>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-X-Antivirus: avast! (VPS 110704-1, 07/04/2011), Outbound message
-X-Antivirus-Status: Clean
+Message-Id: <201107051128.25262.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ÝÞLETMENÝZÝN BULGARÝSTAN DA TEMSÝLCÝLÝÐÝ OLMASINI  ÝSTER MÝSÝNÝZ?
+Am Dienstag 05 Juli 2011, 01:15:41 schrieb Vitaliy Ivanov:
+> From 6201d3e862fca8670b206338dc90303ea0acc77d Mon Sep 17 00:00:00 2001
+> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+> Date: Tue, 5 Jul 2011 01:57:51 +0300
+> Subject: [PATCH 1/4] uml: cow_user.c warning corrections
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+> 
+> arch/um/drivers/cow_user.c: In function â€˜absolutizeâ€™:
+> arch/um/drivers/cow_user.c:189:7: warning: ignoring return value of
+> â€˜chdirâ€™, declared with attribute warn_unused_result
 
-Yurtdýþýnda Ofis-Maðaza Açma, Ýþletme ve Marka Tanýtým Faaliyetlerinin Desteklenmesi
-Yurtdýþýnda Ofis-Maðaza Açma, Ýþletme ve Marka Tanýtým Faaliyetlerinin Desteklenmesi Hakkýnda Teblið(2005/4 sayýlý Teblið)
-. Yurtdýþý Onay Merci : Ticaret Müþ./Ataþeliði veya Kons.
-. Yetkili Kuruluþ : Dýþ Ticaret Müsteþarlýðý
-. Baþvuru Mercii : Ýhracatçý Birlikleri
-. Baþvuru süresi : 6 ay
-. Yararlananlar : Türkiye'de yerleþik, sýnai/ticari veya ticari 
-. faaliyette bulunan firmalar, SDÞ'ler, DTSÞ'ler ve yazýlým sektöründe iþtigal eden þirketler.
+What compiler flags are you using?
+Using the default settings this warning does not show up.
+Most of the "ignoring return value" are totally useless.
 
-Desteðin Kapsamý
-Maðazalarýn Desteklenmesi
+> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+> ---
+>  arch/um/drivers/cow_user.c |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/um/drivers/cow_user.c b/arch/um/drivers/cow_user.c
+> index 93f227a..9cbb426 100644
+> --- a/arch/um/drivers/cow_user.c
+> +++ b/arch/um/drivers/cow_user.c
+> @@ -186,7 +186,11 @@ static int absolutize(char *to, int size, char *from)
+>  		strcat(to, "/");
+>  		strcat(to, from);
+>  	}
+> -	chdir(save_cwd);
+> +	if (chdir(save_cwd)) {
+> +		cow_printf("absolutize : Can't cd to '%s' - "
+> +			   "errno = %d\n", save_cwd, errno);
+> +		return -1;
+> +	}
 
-. Sýnai/Ticari veya yazýlým þirketleri ile DTSÞ'ler :
-* Demirbaþ ve dekorasyon giderleri, % 50 oranýnda ve en fazla 40.000 $
-* Kira giderleri, % 50 oranýnda ve yýllýk en fazla 80.000 $
+I don't think that this check is needed nor chdir() to save_cwd can fail.
+Because we obtain it by calling getcwd() and never change it...
 
-. Ticari þirketler :
-* Demirbaþ ve dekorasyon giderleri, % 50 oranýnda ve en fazla 30.000$
-* Kira giderleri, % 50 oranýnda ve yýllýk en fazla 60.000 $
-
-. SDÞ'ler :
-* Demirbaþ ve dekorasyon giderleri, % 60 oranýnda ve en fazla 60.000 $,
-* Kira giderleri, % 60 oranýnda ve yýllýk en fazla 120.000 $.
-
-Ofis ve Showroomlarýn Desteklenmesi
-
-. Sýnai/Ticari veya yazýlým þirketleri ile DTSÞ'ler :
-* Demirbaþ ve dekorasyon giderleri, % 50 oranýnda ve en fazla 25.000 $
-* Kira giderleri, % 50 oranýnda ve yýllýk en fazla 50.000 $
-
-. Ticari þirketler:
-* Demirbaþ ve dekorasyon giderleri, % 50 oranýnda ve en fazla 20.000 $
-* Kira giderleri, % 50 oranýnda ve yýllýk en fazla 40.000 $
-
-. SDÞ'ler :
-*Demirbaþ ve dekorasyon giderleri % 60 oranýnda ve yýllýk en fazla 30.000 $ 
-* Kira giderleri, % 60 oranýnda ve yýllýk en fazla 60.000 $
-Depolarýn Desteklenmesi
-
-. Sýnai/Ticari veya yazýlým þirketleri ile DTSÞ'ler:
-* Demirbaþ giderleri, % 50 oranýnda ve en fazla 25.000 $
-* Kira ve/veya hizmet giderleri, % 50 oranýnda ve yýllýk en fazla 50.000 $
-
-. Ticari þirketler:
-* Demirbaþ giderleri, % 50 oranýnda ve en fazla 20.000 $
-* Kira ve/veya hizmet giderleri, % 50 oranýnda ve yýllýk en fazla 40.000 $
-
-. SDÞ'ler :
-* Demirbaþ giderleri, % 60 oranýnda ve en fazla 30.000 $
-
-* Kira ve/veya hizmet giderleri, % 60 oranýnda ve yýllýk en fazla 60.000 $
-Tanýtým Faaliyetlerinin Desteklenmesi
-
-. Yurtdýþý birimi bulunan;
-* DTSÞ ve SDÞ'lerin ürünleriyle ilgili olarak yurtdýþýnda gerçekleþtireceði reklam, tanýtým ve pazarlama giderleri, % 50 oranýnda ve yýllýk en fazla 300.000 $
-* Yurtiçi marka tescil belgesine sahip þirketlerin ürünleriyle ilgili olarak yurtdýþýnda gerçekleþtireceði reklam, tanýtým ve pazarlama giderleri, % 50 oranýnda ve yýllýk en fazla 150.000 $
-* Yurtiçi marka tescil belgesi bulunmayan þirketlerin Türk ürünleriyle ilgili olarak yurtdýþýnda gerçekleþtireceði reklam, tanýtým ve pazarlama giderleri, % 50 oranýnda ve yýllýk en fazla 75.000 $
-
-. Yurtdýþý birimi bulunmayan ancak yurtiçi ve tanýtým yapacaðý ülkede marka tescil belgesine sahip;
-*DTSÞ, SDÞ ve þirketlerin ürünleriyle ilgili olarak yurtdýþýnda gerçekleþtireceði reklam, tanýtým ve pazarlama giderleri % 50 oranýnda ve yýllýk en fazla 50.000 $
-Yurtdýþý Marka Tescil Faaliyetlerinin Desteklenmesi
-
-. DTSÞ, SDÞ ve þirketlerin; 
-* Yurt içi marka tescil belgesine sahip olduklarý markalarýnýn yurtdýþýnda tescili ve korunmasýna iliþkin giderleri, % 50 oranýnda ve yýllýk en fazla 20.000 $
-
-. DTSÞ, SDÞ ve þirketler;
-* Kira ve/veya hizmet giderleri desteðinden her bir birim için en fazla üç yýl süresince yararlandýrýlýr. Þirketler en fazla 7, DTSÞ ve SDÞ'ler en fazla 15 adet yurtdýþý birimi için 
-desteklenmektedir.
-
-
-
+Thanks,
+//richard
