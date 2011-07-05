@@ -1,95 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755943Ab1GELov (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:44:51 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:60668 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755740Ab1GELot (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:44:49 -0400
-Date: Tue, 5 Jul 2011 13:44:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
- sake of nmi-watchdog on P4
-Message-ID: <20110705114437.GC15654@elte.hu>
-References: <20110705100320.GK17941@sun>
- <20110705102017.GA12458@elte.hu>
- <20110705103403.GN17941@sun>
- <20110705105959.GA14435@elte.hu>
- <20110705110550.GQ17941@sun>
- <20110705112002.GA15654@elte.hu>
- <20110705113620.GS17941@sun>
+	id S1756037Ab1GELpL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:45:11 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:52715 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755930Ab1GELpI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 07:45:08 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 4/8] mm: MIGRATE_CMA migration type added
+Date: Tue, 5 Jul 2011 13:44:31 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-5-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1309851710-3828-5-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705113620.GS17941@sun>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107051344.31298.arnd@arndb.de>
+X-Provags-ID: V02:K0:n+C2O5IPJHbsbE7tnybXGxNXt5kK8E7MXFDprNFLrnv
+ RWopLRDfWhfcbeba1hp33DSBhz2FBOjU3Rw68943wBYchntg7f
+ P87L7+kwoL9/m0ubUK1/wePTnCVRpJ3YPFojxtrM9gFWTt1OZJ
+ RYefzDCeK3DwuQsOdf/NOtcvM+ClLvBtul5dZGpQQVZGZPc/UL
+ 1/QKC+IUs5l1n7gmhNmNw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-
-> On Tue, Jul 05, 2011 at 01:20:02PM +0200, Ingo Molnar wrote:
-> > 
-> > * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> > 
-> > > On Tue, Jul 05, 2011 at 12:59:59PM +0200, Ingo Molnar wrote:
-> > > ...
-> > > > 
-> > > > are 'non-sleeping ticks' non-halted cycles - i.e. cycles that 
-> > > > always count with CPU frequency and can thus be used for periodic 
-> > > > frequencies?
-> > > 
-> > > Yes, I think so (btw, as far as I remember oprofile does the same 
-> > > 'threshold' gaming for nmi-watchdog).
-> > 
-> > But the NMI watchdog does not need a constant frequency event - it 
-> > can use unhalted cycles just fine. Why does it need unhalted cycles 
-> > on P4?
-> > 
+On Tuesday 05 July 2011, Marek Szyprowski wrote:
+> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
 > 
-> Ingo, the main problem there is not halted or unhalted events but rather
-> inability of p4 architecture to move events between counters, with core
-> or nehalem you can (if constraints allow) simply move nmi-watchdog event
-> to another free counter and assign cpu cycles to a free slot. With p4 the
-> situation is radically different -- every event has a number of contraints
-> and once nmi-watchdog armed (it could be halted or unhaled event, whatever)
-> ESCR/CCCR/counter registers tuple borrowed forever and we need to find out
-> some different non-intersected ESCR/CCCR/counter tuple to count cpu-cycles
-> in a sake of perf utility purpose. That is why this assignments done in
-> a such weird way -- just to be able to run nmi-watchdog and cpu-cycles
-> simultaneously.
+> The MIGRATE_CMA migration type has two main characteristics:
+> (i) only movable pages can be allocated from MIGRATE_CMA
+> pageblocks and (ii) page allocator will never change migration
+> type of MIGRATE_CMA pageblocks.
 > 
-> Probably I miss something and you mean something completely different?
+> This guarantees that page in a MIGRATE_CMA page block can
+> always be migrated somewhere else (unless there's no memory left
+> in the system).
+> 
+> It is designed to be used with Contiguous Memory Allocator
+> (CMA) for allocating big chunks (eg. 10MiB) of physically
+> contiguous memory. Once driver requests contiguous memory,
+> CMA will migrate pages from MIGRATE_CMA pageblocks.
+> 
+> To minimise number of migrations, MIGRATE_CMA migration type
+> is the last type tried when page allocator falls back to other
+> migration types then requested.
+> 
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> [m.szyprowski: cleaned up Kconfig, renamed some functions]
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
 
-What i am missing is that you have not pointed out the *core problem* 
-you are fixing and it's not obvious from the changelog either!
+Acked-by: Arnd Bergmann <arnd@arndb.de>, but I noticed a few things:
 
-That the P4 has weird event constraints is not a problem users care 
-about...
+> cma migrate fixup
 
-What 'bad thing' happens in practice without this patch, what 
-limitations arise in perf or in the NMI watchdog? Does it lock up? 
-Does it not work? Does 'perf top' get confused?
+This text doesn't belong here.
 
-Conversely, what 'good thing' happens if the patch is applied and are 
-there any limitations left?
+> +enum {
+> +	MIGRATE_UNMOVABLE,
+> +	MIGRATE_RECLAIMABLE,
+> +	MIGRATE_MOVABLE,
+> +	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
+> +	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
+> +#ifdef CONFIG_CMA_MIGRATE_TYPE
+> +	/*
+> +	 * MIGRATE_CMA migration type is designed to mimic the way
+> +	 * ZONE_MOVABLE works.  Only movable pages can be allocated
+> +	 * from MIGRATE_CMA pageblocks and page allocator never
+> +	 * implicitly change migration type of MIGRATE_CMA pageblock.
+> +	 *
+> +	 * The way to use it is to change migratetype of a range of
+> +	 * pageblocks to MIGRATE_CMA which can be done by
+> +	 * __free_pageblock_cma() function.  What is important though
+> +	 * is that a range of pageblocks must be aligned to
+> +	 * MAX_ORDER_NR_PAGES should biggest page be bigger then
+> +	 * a single pageblock.
+> +	 */
+> +	MIGRATE_CMA,
+> +#endif
+> +	MIGRATE_ISOLATE,	/* can't allocate from here */
+> +	MIGRATE_TYPES
+> +};
 
-Thanks,
+It's not clear to me why you need this #ifdef. Does it hurt if the
+migration type is defined but not used?
 
-	Ingo
+> @@ -198,6 +198,12 @@ config MIGRATION
+>  	  pages as migration can relocate pages to satisfy a huge page
+>  	  allocation instead of reclaiming.
+>  
+> +config CMA_MIGRATE_TYPE
+> +	bool
+> +	help
+> +	  This enables the use the MIGRATE_CMA migrate type, which lets lets CMA
+> +	  work on almost arbitrary memory range and not only inside ZONE_MOVABLE.
+> +
+>  config PHYS_ADDR_T_64BIT
+>  	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
+
+This is currently only selected on ARM with your patch set. 
+
+> diff --git a/mm/compaction.c b/mm/compaction.c
+> index 6cc604b..9e5cc59 100644
+> --- a/mm/compaction.c
+> +++ b/mm/compaction.c
+> @@ -119,6 +119,16 @@ static bool suitable_migration_target(struct page *page)
+>  	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
+>  		return false;
+>  
+> +	/* Keep MIGRATE_CMA alone as well. */
+> +	/*
+> +	 * XXX Revisit.  We currently cannot let compaction touch CMA
+> +	 * pages since compaction insists on changing their migration
+> +	 * type to MIGRATE_MOVABLE (see split_free_page() called from
+> +	 * isolate_freepages_block() above).
+> +	 */
+> +	if (is_migrate_cma(migratetype))
+> +		return false;
+> +
+>  	/* If the page is a large free page, then allow migration */
+>  	if (PageBuddy(page) && page_order(page) >= pageblock_order)
+>  		return true;
+
+Do you plan to fix address this before merging the patch set, or is
+it harmless enough to get in this way?
+
+>  /*
+>   * The order of subdivision here is critical for the IO subsystem.
+> @@ -827,11 +852,15 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
+>   * This array describes the order lists are fallen back to when
+>   * the free lists for the desirable migrate type are depleted
+>   */
+> -static int fallbacks[MIGRATE_TYPES][MIGRATE_TYPES-1] = {
+> +static int fallbacks[MIGRATE_TYPES][4] = {
+>  	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
+>  	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
+> +#ifdef CONFIG_CMA_MIGRATE_TYPE
+> +	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_CMA    , MIGRATE_RESERVE },
+> +#else
+>  	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
+> -	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE,     MIGRATE_RESERVE,   MIGRATE_RESERVE }, /* Never used */
+> +#endif
+> +	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
+>  };
+>  
+>  /*
+> @@ -1044,7 +1086,12 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
+>  			list_add(&page->lru, list);
+>  		else
+>  			list_add_tail(&page->lru, list);
+> -		set_page_private(page, migratetype);
+> +#ifdef CONFIG_CMA_MIGRATE_TYPE
+> +		if (is_pageblock_cma(page))
+> +			set_page_private(page, MIGRATE_CMA);
+> +		else
+> +#endif
+> +			set_page_private(page, migratetype);
+>  		list = &page->lru;
+>  	}
+
+I guess if you can get rid of the first #ifdef I mentioned above, these two can be
+removed as well, without causing any run-time overhead.
+
+	Arnd
