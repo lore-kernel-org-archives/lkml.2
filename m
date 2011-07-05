@@ -1,69 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751676Ab1GERgB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 13:36:01 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:44900 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab1GERf6 convert rfc822-to-8bit (ORCPT
+	id S1751875Ab1GERi1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 13:38:27 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:55829 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751792Ab1GERi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 13:35:58 -0400
+	Tue, 5 Jul 2011 13:38:26 -0400
+X-Sasl-enc: /+EMU2xTuilC/SbWp/pCnBo8pFUz0DCQ3be+AUKVpNFi 1309887505
+Date: Tue, 5 Jul 2011 10:38:04 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Clark <sclark46@earthlink.net>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kernel -2.6.35.13 longterm
+Message-ID: <20110705173804.GA11421@kroah.com>
+References: <4E13212D.3020005@earthlink.net>
+ <20110705150557.GA2348@kroah.com>
+ <4E134ACB.9020002@earthlink.net>
 MIME-Version: 1.0
-In-Reply-To: <20110705172903.GB1155@suse.de>
-References: <20110704170949.11059.92774.stgit@ponder> <20110704180159.GA11278@ponder.secretlab.ca>
- <20110705142149.GA3498@suse.de> <201107051721.02079.arnd@arndb.de>
- <20110705155040.GB16682@suse.de> <CAPXgP12eg1diui_78rqaVijKbxvRcpZhsC35i9w_Js9vr2OGWA@mail.gmail.com>
- <CACxGe6sypBwP6aKoaxq1ipoEfqvnqq2RMhi9d0KU=LHjJm9x_g@mail.gmail.com>
- <20110705163628.GB31984@suse.de> <CACxGe6v_HVWcci2cPDyNALWST0E3_iXWZzrhi49e_cUX1VCt+Q@mail.gmail.com>
- <20110705172903.GB1155@suse.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 5 Jul 2011 11:35:37 -0600
-X-Google-Sender-Auth: 9CM7CquyZqhDTJIE7JzrbK5EZJI
-Message-ID: <CACxGe6u4CaJj+pGmRbqSqT18ATsU3-h0+1mELThfxt6cpLmEaQ@mail.gmail.com>
-Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
-To: Greg KH <gregkh@suse.de>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Arnd Bergmann <arnd@arndb.de>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E134ACB.9020002@earthlink.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 5, 2011 at 11:29 AM, Greg KH <gregkh@suse.de> wrote:
-> On Tue, Jul 05, 2011 at 11:17:46AM -0600, Grant Likely wrote:
->> On Tue, Jul 5, 2011 at 10:36 AM, Greg KH <gregkh@suse.de> wrote:
->> > On Tue, Jul 05, 2011 at 10:28:37AM -0600, Grant Likely wrote:
->> >> On Tue, Jul 5, 2011 at 10:11 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
->> >> > On Tue, Jul 5, 2011 at 17:50, Greg KH <gregkh@suse.de> wrote:
->> >> >
->> >> >> I wonder if doing this all from a workqueue in the first place is going
->> >> >> to cause problems as probe isn't normally done this way at all.
->> >> >
->> >> > Yeah, I would expect unforeseen problems with the async thread too.
->> >> > It's probably all solvable, but it sounds troublesome to find out if
->> >> > things go wrong.
->> >> >
->> >> > We have sync hooks (BUS_NOTIFY_*) where any kind of code can subscribe
->> >> > to when devices get added or get bound to a driver. Can't the code
->> >> > that relies on later hookups to already existing devices/bindings not
->> >> > just plug into that?
->> >>
->> >> I tried that.  It resulted in a lot of complexity that each driver
->> >> needs to implement correctly which is why I started looking for a
->> >> different way to go about it.
->> >
->> > No, the bus that wants this just has to do it, not the drivers
->> > themselves, right?
->>
->> It's not about the bus_type, and there is nothing that the bus can do
->> to solve this problem because it the dependencies are completely
->> orthogonal to the bus.  ie. what does an i2c bus know about the audio
->> path to a codec?  The problem must be solved at the driver scope.
->
-> Ok, let's look at your next implementation and see how it goes.
+On Tue, Jul 05, 2011 at 01:32:59PM -0400, Stephen Clark wrote:
+> On 07/05/2011 11:05 AM, Greg KH wrote:
+> >On Tue, Jul 05, 2011 at 10:35:25AM -0400, Stephen Clark wrote:
+> >
+> >>Hello,
+> >>
+> >>Is it possible to get the following patches included in the longterm kernel
+> >>2.6.35.13?
+> >>
+> >Possibly, but you need to email the correct person and email address,
+> >none of which you did :)
+> >
+> >Try stable@kernel.org, and the .35-longterm maintainer (hint, it's not
+> >me.)
+> >
+> >
+> Ok - hmmm maintainers in 2.6.35.13 still lists you - but I'll look
+> at a later kernel maintainers file.
 
-Okay, thanks.  I'll get it posted soon.
+It's not really obvious who is in charge, the -longterm maintainer
+really should put their name there.  I think for .35 it's Andi Kleen.
 
-g.
+> >>They let linux behave according to:
+> >>
+> >>"Basic Requirements for IPv6 Customer Edge Routers
+> >>    draft-ietf-v6ops-ipv6-cpe-router-09"
+> >>
+> >That looks like a new feature, not a regression or bugfix, right?
+> >
+> >Did you read Documentation/stable_kernel_rules.txt?
+> >
+> >
+> Not til just now. Yes it is a new feature, but with IPV6 it is seems
+> that it would be of use.
+> I know that my company needs it as we are moving off of FreeBSD to Linux for our
+> fw/vpn/router appliance. The alternative is to just keep applying the patch myself.
+
+As described above, new features are not for stable or longterm kernels,
+sorry.  I recommend just applying it yourself if you really are stuck
+with the .35 kernel.
+
+> >>From: Thomas Graf
+> >>Subject: [PATCH] ipv6: add special mode accept_ra=2 to accept RA
+> >>while configured as router
+> >>Date: Friday, September 3, 2010 - 5:59 am
+> >>
+> >>
+> >You forgot to mention what the git commit id this is upstream in Linus's
+> >branch, and to copy the people involved in the original patch (author,
+> >subsystem maintainer, etc.) to see if they agree it should go in.
+> >
+> >
+> How in the world do you get the commit info?
+
+>From the original patch and Linus's git tree?  Also, look at
+scripts/get_maintainer.pl it will show you who to send stuff to.
+
+Hope this helps,
+
+greg k-h
