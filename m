@@ -1,191 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754535Ab1GEPYr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 11:24:47 -0400
-Received: from void.printf.net ([89.145.121.20]:48621 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752181Ab1GEPYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 11:24:45 -0400
-From: Chris Ball <cjb@laptop.org>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH] mmc: documentation of mmc non-blocking request usage and design.
-References: <1309878894-2700-1-git-send-email-per.forlin@linaro.org>
-Date: Tue, 05 Jul 2011 11:24:18 -0400
-In-Reply-To: <1309878894-2700-1-git-send-email-per.forlin@linaro.org> (Per
-	Forlin's message of "Tue, 5 Jul 2011 17:14:54 +0200")
-Message-ID: <m2liwc21jx.fsf@bob.laptop.org>
-User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
+	id S1754959Ab1GEPZW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 11:25:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38242 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754797Ab1GEPZV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 11:25:21 -0400
+Date: Tue, 5 Jul 2011 19:25:16 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Don Zickus <dzickus@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
+ sake of nmi-watchdog on P4
+Message-ID: <20110705152515.GE4060@sun>
+References: <20110705112002.GA15654@elte.hu>
+ <20110705113620.GS17941@sun>
+ <20110705114437.GC15654@elte.hu>
+ <20110705114944.GT17941@sun>
+ <20110705121421.GU17941@sun>
+ <20110705131005.GA5843@elte.hu>
+ <1309871841.3282.148.camel@twins>
+ <20110705133105.GB5843@elte.hu>
+ <1309876851.3282.235.camel@twins>
+ <20110705145656.GA18116@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110705145656.GA18116@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Per, minor proofreading,
-
-On Tue, Jul 05 2011, Per Forlin wrote:
-> Documentation about the background and the design of mmc non-blocking.
-> Host driver guide lines to minimize request preparation over head.
-
-guidelines, overhead
-
+On Tue, Jul 05, 2011 at 04:56:56PM +0200, Ingo Molnar wrote:
+> 
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> 
+> > On Tue, 2011-07-05 at 15:31 +0200, Ingo Molnar wrote:
+> > > So there's lots of options to fix/improve this more intelligently.
+> > 
+> > Sure, and I like the alternative encoding thing best, but doing 
+> > that will take time, in the meantime this patch, which is 
+> > relatively small (and easy to revert once we get something better 
+> > going) does fix a problem for those few unfortunate souls still 
+> > using P4 hardware.
+> 
+> Well, the BUS_CYCLES thing looks similarly straightforward and should 
+> result in an even simpler patch.
 >
-> Signed-off-by: Per Forlin <per.forlin@linaro.org>
-> ---
->  Documentation/mmc/00-INDEX          |    2 +
->  Documentation/mmc/mmc-async-req.txt |   85 +++++++++++++++++++++++++++++++++++
->  2 files changed, 87 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/mmc/mmc-async-req.txt
->
-> diff --git a/Documentation/mmc/00-INDEX b/Documentation/mmc/00-INDEX
-> index 93dd7a7..11bc2cf 100644
-> --- a/Documentation/mmc/00-INDEX
-> +++ b/Documentation/mmc/00-INDEX
-> @@ -4,3 +4,5 @@ mmc-dev-attrs.txt
->          - info on SD and MMC device attributes
->  mmc-dev-parts.txt
->          - info on SD and MMC device partitions
-> +mmc-async-req.txt
-> +        - info on mmc asynchronous request
-> diff --git a/Documentation/mmc/mmc-async-req.txt b/Documentation/mmc/mmc-async-req.txt
-> new file mode 100644
-> index 0000000..d139a51
-> --- /dev/null
-> +++ b/Documentation/mmc/mmc-async-req.txt
-> @@ -0,0 +1,85 @@
-> +Rationale
-> +=========
-> +
-> +How significant is the cache maintenance over head?
 
-overhead
+nope, bus cycles count fsb driving which is not the same as execution unit
+productions, so I fear it is not that reliable and i guess (note _guess_ here
+since I can't prove it without hardware handy :) if cpus are stuck with endless
+loop inside kernel we might miss such lockup (hard scenario, since there
+will be activity on fsb anyway, but still).
 
-> +It depends, fast eMMC and multiple cache levels with speculative cache pre-fetch
+> On P4 BUS_CYCLES would be able to co-exist with CPU_CYCLES so it will 
+> solve the P4 issue naturally as well.
+> 
+> Thanks,
+> 
+> 	Ingo
 
-This line is over 80 cols.  Please wrap at around 76 cols.
+i don't think it changes much, Ingo, if I change it to bus cycles I still
+will have to setup nmi-watchdog event separately (but simply with bus
+event).
 
-> +makes the cache overhead relatively significant. If the DMA preparations
-> +for the next request is done in parallel to the current transfer
+so an only option is the aliases, i'll try to deal with it but no milestones
 
-are done
-
-> +the DMA preparation overhead would not affect the MMC performance.
-> +The intention of non-blocking (asynchronous) mmc requests is to minimize the
-> +time between a mmc request ends and another mmc request begins.
-
-between when an
-
-> +Using mmc_wait_for_req() the MMC controller is idle when dma_map_sg and
-
-s/when/while/
-
-> +dma_unmap_sg is processing. Using non-blocking mmc request makes it
-
-requests
-
-> +possible to prepare the caches for next job in parallel to an active
-> +mmc request.
-> +
-> +MMC block driver
-> +================
-> +
-> +The issue_rw_rq() in the mmc block driver is made non-blocking.
-> +The increase in throughput is proportional to the time it takes to
-> +prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
-> +a request and how fast the memory is. The faster the MMC/SD is
-> +the more significant the prepare request time becomes. Roughly the expected
-> +performance gain is 5% for large writes and 10% on large reads on a L2 cache
-> +platform. In power save mode, when clocks run on a lower frequency, the DMA
-> +preparation may cost even more. As long as these slower preparations are run
-> +in parallel to the transfer performance wont be affected.
-> +
-> +Details on measurements from IOZone and mmc_test
-> +================================================
-> +
-> +https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
-> +
-> +MMC core API extension
-> +======================
-> +
-> +There is one new public function mmc_start_req()
-> +Is starts a new MMC command request for a host. The function isn't
-
-s/Is/It/
-
-> +truely non-blocking. If there is on ongoing async request it waits
-
-truly
-
-> +for completion of that request and starts the new one and return. It
-
-start
-
-> +Doesn't wait for the new request to complete. If there is no ongoing
-
-s/Doesn't/doesn't/
-
-> +request it starts the new request and returns immediately.
-> +
-> +MMC host extensions
-> +===================
-> +
-> +There are two optional hooks pre_req() and post_req() that the host driver
-> +may implement in order to move work to before and after the actual mmc_request
-> +function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
-> +the dma descriptor, and post_req runs the dma_unmap_sg.
-> +
-> +Optimize for the first request
-> +==============================
-> +
-> +The first request in a series of requests can't be prepared in parallel to the
-> +previous transfer, since there is no previous request.
-> +The argument is_first_req in pre_req() indicates that there is no previous
-> +request. The host driver may optimize for this scenario to minimize
-> +the performance loss. A way to optimize for this is to split the current
-> +request in two chunks, prepare the first chunk and start the request,
-> +and finally prepare the second chunk and start the transfer.
-> +
-> +Pseudocode to handle is_first_req scenario with minimal prepare over head:
-
-overhead
-
-> +if (is_first_req && req->size > threshold)
-> +   /* start MMC transfer for the complete transfer size */
-> +   mmc_start_command(MMC_CMD_TRANSFER_FULL_SIZE)
-> +
-> +   /*
-> +    * Begin to prepare DMA while cmd is being processed by MMC.
-> +    * The first chunk of the request should take the same time
-> +    * to prepare as the "MMC process command time".
-> +    * If prepare time exceeds MMC cmd time
-> +    * the transfer is delayed, guesstimate max 4k as first chunk size.
-> +    */
-> +    prepare_1st_chunk_for_dma(req)
-> +    /* flush pending desc to the DMAC (dmaengine.h) */
-> +    dma_issue_pending(req->dma_desc);
-> +
-> +    prepare_2st_chunk_for_dma(req)
-
-2nd, not 2st
-
-> +    /*
-> +     * The second issue_pending should be called before MMC runs out
-> +     * of the first chunk. If the MMC runs out of the first data chunk before
-> +     * this call, the transfer is delayed.
-> +     */
-> +    dma_issue_pending(req->dma_desc);
-
-Thanks,
-
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>   <http://printf.net/>
-One Laptop Per Child
+	Cyrill
