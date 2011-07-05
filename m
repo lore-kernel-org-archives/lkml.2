@@ -1,408 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab1GEOwy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:52:54 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50591 "EHLO
+	id S1754897Ab1GEOxK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:53:10 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50594 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754216Ab1GEOww (ORCPT
+	with ESMTP id S1754178Ab1GEOxG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:52:52 -0400
+	Tue, 5 Jul 2011 10:53:06 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 40/49] gma500: move the i2c code
+Subject: [PATCH 41/49] gma500: tidying up the power stuff a spot
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jul 2011 15:43:07 +0100
-Message-ID: <20110705144303.23872.63842.stgit@localhost.localdomain>
+Date: Tue, 05 Jul 2011 15:43:21 +0100
+Message-ID: <20110705144318.23872.7219.stgit@localhost.localdomain>
 In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
 References: <20110705141038.23872.55303.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-This again is similar to upstream so give it a sensible name ready to look
-at any merging or synchronization
+In particular don't destroy static mutexes, it upsets things
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/Makefile        |    2 
- drivers/staging/gma500/intel_i2c.c     |  169 ++++++++++++++++++++++++++++++++
- drivers/staging/gma500/psb_intel_i2c.c |  169 --------------------------------
- 3 files changed, 170 insertions(+), 170 deletions(-)
- create mode 100644 drivers/staging/gma500/intel_i2c.c
- delete mode 100644 drivers/staging/gma500/psb_intel_i2c.c
+ drivers/staging/gma500/power.c |   33 +++++++++++++--------------------
+ 1 files changed, 13 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/staging/gma500/Makefile b/drivers/staging/gma500/Makefile
-index d4a87c0..961a60c 100644
---- a/drivers/staging/gma500/Makefile
-+++ b/drivers/staging/gma500/Makefile
-@@ -10,12 +10,12 @@ psb_gfx-y += gem_glue.o \
- 	  gem.o \
- 	  gtt.o \
- 	  intel_bios.o \
-+	  intel_i2c.o \
- 	  intel_opregion.o \
- 	  mmu.o \
- 	  power.o \
- 	  psb_drv.o \
- 	  psb_intel_display.o \
--	  psb_intel_i2c.o \
- 	  psb_intel_lvds.o \
- 	  psb_intel_modes.o \
- 	  psb_intel_sdvo.o \
-diff --git a/drivers/staging/gma500/intel_i2c.c b/drivers/staging/gma500/intel_i2c.c
-new file mode 100644
-index 0000000..e33432d
---- /dev/null
-+++ b/drivers/staging/gma500/intel_i2c.c
-@@ -0,0 +1,169 @@
-+/*
-+ * Copyright © 2006-2007 Intel Corporation
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms and conditions of the GNU General Public License,
-+ * version 2, as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program; if not, write to the Free Software Foundation, Inc.,
-+ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ * Authors:
-+ *	Eric Anholt <eric@anholt.net>
-+ */
+diff --git a/drivers/staging/gma500/power.c b/drivers/staging/gma500/power.c
+index fc2324e..0eee7fb 100644
+--- a/drivers/staging/gma500/power.c
++++ b/drivers/staging/gma500/power.c
+@@ -27,6 +27,7 @@
+  * Massively reworked
+  *    Alan Cox <alan@linux.intel.com>
+  */
 +
-+#include <linux/i2c.h>
-+#include <linux/i2c-algo-bit.h>
-+
-+#include "psb_drv.h"
-+#include "psb_intel_reg.h"
-+
-+/*
-+ * Intel GPIO access functions
-+ */
-+
-+#define I2C_RISEFALL_TIME 20
-+
-+static int get_clock(void *data)
-+{
-+	struct psb_intel_i2c_chan *chan = data;
-+	struct drm_device *dev = chan->drm_dev;
-+	u32 val;
-+
-+	val = REG_READ(chan->reg);
-+	return (val & GPIO_CLOCK_VAL_IN) != 0;
-+}
-+
-+static int get_data(void *data)
-+{
-+	struct psb_intel_i2c_chan *chan = data;
-+	struct drm_device *dev = chan->drm_dev;
-+	u32 val;
-+
-+	val = REG_READ(chan->reg);
-+	return (val & GPIO_DATA_VAL_IN) != 0;
-+}
-+
-+static void set_clock(void *data, int state_high)
-+{
-+	struct psb_intel_i2c_chan *chan = data;
-+	struct drm_device *dev = chan->drm_dev;
-+	u32 reserved = 0, clock_bits;
-+
-+	/* On most chips, these bits must be preserved in software. */
-+	reserved =
-+		    REG_READ(chan->reg) & (GPIO_DATA_PULLUP_DISABLE |
-+					   GPIO_CLOCK_PULLUP_DISABLE);
-+
-+	if (state_high)
-+		clock_bits = GPIO_CLOCK_DIR_IN | GPIO_CLOCK_DIR_MASK;
-+	else
-+		clock_bits = GPIO_CLOCK_DIR_OUT | GPIO_CLOCK_DIR_MASK |
-+		    GPIO_CLOCK_VAL_MASK;
-+	REG_WRITE(chan->reg, reserved | clock_bits);
-+	udelay(I2C_RISEFALL_TIME);	/* wait for the line to change state */
-+}
-+
-+static void set_data(void *data, int state_high)
-+{
-+	struct psb_intel_i2c_chan *chan = data;
-+	struct drm_device *dev = chan->drm_dev;
-+	u32 reserved = 0, data_bits;
-+
-+	/* On most chips, these bits must be preserved in software. */
-+	reserved =
-+		    REG_READ(chan->reg) & (GPIO_DATA_PULLUP_DISABLE |
-+					   GPIO_CLOCK_PULLUP_DISABLE);
-+
-+	if (state_high)
-+		data_bits = GPIO_DATA_DIR_IN | GPIO_DATA_DIR_MASK;
-+	else
-+		data_bits =
-+		    GPIO_DATA_DIR_OUT | GPIO_DATA_DIR_MASK |
-+		    GPIO_DATA_VAL_MASK;
-+
-+	REG_WRITE(chan->reg, reserved | data_bits);
-+	udelay(I2C_RISEFALL_TIME);	/* wait for the line to change state */
-+}
-+
-+/**
-+ * psb_intel_i2c_create - instantiate an Intel i2c bus using the specified GPIO reg
-+ * @dev: DRM device
-+ * @output: driver specific output device
-+ * @reg: GPIO reg to use
-+ * @name: name for this bus
-+ *
-+ * Creates and registers a new i2c bus with the Linux i2c layer, for use
-+ * in output probing and control (e.g. DDC or SDVO control functions).
-+ *
-+ * Possible values for @reg include:
-+ *   %GPIOA
-+ *   %GPIOB
-+ *   %GPIOC
-+ *   %GPIOD
-+ *   %GPIOE
-+ *   %GPIOF
-+ *   %GPIOG
-+ *   %GPIOH
-+ * see PRM for details on how these different busses are used.
-+ */
-+struct psb_intel_i2c_chan *psb_intel_i2c_create(struct drm_device *dev,
-+					const u32 reg, const char *name)
-+{
-+	struct psb_intel_i2c_chan *chan;
-+
-+	chan = kzalloc(sizeof(struct psb_intel_i2c_chan), GFP_KERNEL);
-+	if (!chan)
-+		goto out_free;
-+
-+	chan->drm_dev = dev;
-+	chan->reg = reg;
-+	snprintf(chan->adapter.name, I2C_NAME_SIZE, "intel drm %s", name);
-+	chan->adapter.owner = THIS_MODULE;
-+	chan->adapter.algo_data = &chan->algo;
-+	chan->adapter.dev.parent = &dev->pdev->dev;
-+	chan->algo.setsda = set_data;
-+	chan->algo.setscl = set_clock;
-+	chan->algo.getsda = get_data;
-+	chan->algo.getscl = get_clock;
-+	chan->algo.udelay = 20;
-+	chan->algo.timeout = usecs_to_jiffies(2200);
-+	chan->algo.data = chan;
-+
-+	i2c_set_adapdata(&chan->adapter, chan);
-+
-+	if (i2c_bit_add_bus(&chan->adapter))
-+		goto out_free;
-+
-+	/* JJJ:  raise SCL and SDA? */
-+	set_data(chan, 1);
-+	set_clock(chan, 1);
-+	udelay(20);
-+
-+	return chan;
-+
-+out_free:
-+	kfree(chan);
-+	return NULL;
-+}
-+
-+/**
-+ * psb_intel_i2c_destroy - unregister and free i2c bus resources
-+ * @output: channel to free
-+ *
-+ * Unregister the adapter from the i2c layer, then free the structure.
-+ */
-+void psb_intel_i2c_destroy(struct psb_intel_i2c_chan *chan)
-+{
-+	if (!chan)
-+		return;
-+
-+	i2c_del_adapter(&chan->adapter);
-+	kfree(chan);
-+}
-diff --git a/drivers/staging/gma500/psb_intel_i2c.c b/drivers/staging/gma500/psb_intel_i2c.c
-deleted file mode 100644
-index e33432d..0000000
---- a/drivers/staging/gma500/psb_intel_i2c.c
-+++ /dev/null
-@@ -1,169 +0,0 @@
--/*
-- * Copyright © 2006-2007 Intel Corporation
+ #include "psb_powermgmt.h"
+ #include "psb_drv.h"
+ #include "psb_reg.h"
+@@ -34,7 +35,8 @@
+ #include <linux/mutex.h>
+ #include <linux/pm_runtime.h>
+ 
+-static struct mutex power_mutex;
++static struct mutex power_mutex;	/* Serialize power ops */
++static struct mutex power_ctrl_mutex;	/* Serialize power claim */
+ 
+ /**
+  *	gma_power_init		-	initialise power manager
+@@ -46,8 +48,7 @@ void gma_power_init(struct drm_device *dev)
+ {
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 
+-	/* FIXME: need to sort out fetching apm_reg for both platforms ?? */
+-
++	/* FIXME: Move APM/OSPM base into relevant device code */
+ 	dev_priv->apm_base = dev_priv->apm_reg & 0xffff;
+ 	dev_priv->ospm_base &= 0xffff;
+ 
+@@ -55,6 +56,7 @@ void gma_power_init(struct drm_device *dev)
+ 	dev_priv->display_count = 0;	/* Currently no users */
+ 	dev_priv->suspended = false;	/* And not suspended */
+ 	mutex_init(&power_mutex);
++	mutex_init(&power_ctrl_mutex);
+ 
+ 	dev_priv->ops->init_pm(dev);
+ }
+@@ -67,23 +69,15 @@ void gma_power_init(struct drm_device *dev)
+  */
+ void gma_power_uninit(struct drm_device *dev)
+ {
+-	mutex_destroy(&power_mutex);
+ 	pm_runtime_disable(&dev->pdev->dev);
+ 	pm_runtime_set_suspended(&dev->pdev->dev);
+ }
+ 
+-
+-
+-
+ /**
+  *	gma_suspend_display	-	suspend the display logic
+  *	@dev: our DRM device
+  *
+  *	Suspend the display logic of the graphics interface
 - *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
+- *	FIXME: This ought to be replaced by a dev_priv-> ops interface
+- *	where the various platforms register their save/restore methods
+- *	and keep them in their own support files.
+  */
+ static void gma_suspend_display(struct drm_device *dev)
+ {
+@@ -210,7 +204,6 @@ int gma_power_suspend(struct pci_dev *pdev, pm_message_t state)
+ 	return 0;
+ }
+ 
+-
+ /**
+  *	gma_power_resume		-	resume power
+  *	@pdev: PCI device
+@@ -230,8 +223,6 @@ int gma_power_resume(struct pci_dev *pdev)
+ 	return 0;
+ }
+ 
+-
+-
+ /**
+  *	gma_power_is_on		-	returne true if power is on
+  *	@dev: our DRM device
+@@ -244,7 +235,6 @@ bool gma_power_is_on(struct drm_device *dev)
+ 	return dev_priv->display_power;
+ }
+ 
+-
+ /**
+  *	gma_power_begin		-	begin requiring power
+  *	@dev: our DRM device
+@@ -252,22 +242,22 @@ bool gma_power_is_on(struct drm_device *dev)
+  *
+  *	Begin an action that requires the display power island is enabled.
+  *	We refcount the islands.
 - *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- * Authors:
-- *	Eric Anholt <eric@anholt.net>
-- */
+- *	FIXME: locking
+  */
+ bool gma_power_begin(struct drm_device *dev, bool force_on)
+ {
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	int ret;
+ 
++	mutex_lock(&power_ctrl_mutex);
+ 	/* Power already on ? */
+ 	if (dev_priv->display_power) {
+ 		dev_priv->display_count++;
+ 		pm_runtime_get(&dev->pdev->dev);
++		mutex_unlock(&power_ctrl_mutex);
+ 		return true;
+ 	}
+ 	if (force_on == false)
+-		return false;
++		goto out_false;
+ 
+ 	/* Ok power up needed */
+ 	ret = gma_resume_pci(dev->pdev);
+@@ -276,12 +266,14 @@ bool gma_power_begin(struct drm_device *dev, bool force_on)
+ 		psb_irq_postinstall(dev);
+ 		pm_runtime_get(&dev->pdev->dev);
+ 		dev_priv->display_count++;
++		mutex_unlock(&power_ctrl_mutex);
+ 		return true;
+ 	}
++out_false:
++	mutex_unlock(&power_ctrl_mutex);
+ 	return false;
+ }
+ 
 -
--#include <linux/i2c.h>
--#include <linux/i2c-algo-bit.h>
+ /**
+  *	gma_power_end		-	end use of power
+  *	@dev: Our DRM device
+@@ -292,8 +284,10 @@ bool gma_power_begin(struct drm_device *dev, bool force_on)
+ void gma_power_end(struct drm_device *dev)
+ {
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
++	mutex_lock(&power_ctrl_mutex);
+ 	dev_priv->display_count--;
+ 	WARN_ON(dev_priv->display_count < 0);
++	mutex_unlock(&power_ctrl_mutex);
+ 	pm_runtime_put(&dev->pdev->dev);
+ }
+ 
+@@ -317,4 +311,3 @@ int psb_runtime_idle(struct device *dev)
+ 	else
+ 		return 1;
+ }
 -
--#include "psb_drv.h"
--#include "psb_intel_reg.h"
--
--/*
-- * Intel GPIO access functions
-- */
--
--#define I2C_RISEFALL_TIME 20
--
--static int get_clock(void *data)
--{
--	struct psb_intel_i2c_chan *chan = data;
--	struct drm_device *dev = chan->drm_dev;
--	u32 val;
--
--	val = REG_READ(chan->reg);
--	return (val & GPIO_CLOCK_VAL_IN) != 0;
--}
--
--static int get_data(void *data)
--{
--	struct psb_intel_i2c_chan *chan = data;
--	struct drm_device *dev = chan->drm_dev;
--	u32 val;
--
--	val = REG_READ(chan->reg);
--	return (val & GPIO_DATA_VAL_IN) != 0;
--}
--
--static void set_clock(void *data, int state_high)
--{
--	struct psb_intel_i2c_chan *chan = data;
--	struct drm_device *dev = chan->drm_dev;
--	u32 reserved = 0, clock_bits;
--
--	/* On most chips, these bits must be preserved in software. */
--	reserved =
--		    REG_READ(chan->reg) & (GPIO_DATA_PULLUP_DISABLE |
--					   GPIO_CLOCK_PULLUP_DISABLE);
--
--	if (state_high)
--		clock_bits = GPIO_CLOCK_DIR_IN | GPIO_CLOCK_DIR_MASK;
--	else
--		clock_bits = GPIO_CLOCK_DIR_OUT | GPIO_CLOCK_DIR_MASK |
--		    GPIO_CLOCK_VAL_MASK;
--	REG_WRITE(chan->reg, reserved | clock_bits);
--	udelay(I2C_RISEFALL_TIME);	/* wait for the line to change state */
--}
--
--static void set_data(void *data, int state_high)
--{
--	struct psb_intel_i2c_chan *chan = data;
--	struct drm_device *dev = chan->drm_dev;
--	u32 reserved = 0, data_bits;
--
--	/* On most chips, these bits must be preserved in software. */
--	reserved =
--		    REG_READ(chan->reg) & (GPIO_DATA_PULLUP_DISABLE |
--					   GPIO_CLOCK_PULLUP_DISABLE);
--
--	if (state_high)
--		data_bits = GPIO_DATA_DIR_IN | GPIO_DATA_DIR_MASK;
--	else
--		data_bits =
--		    GPIO_DATA_DIR_OUT | GPIO_DATA_DIR_MASK |
--		    GPIO_DATA_VAL_MASK;
--
--	REG_WRITE(chan->reg, reserved | data_bits);
--	udelay(I2C_RISEFALL_TIME);	/* wait for the line to change state */
--}
--
--/**
-- * psb_intel_i2c_create - instantiate an Intel i2c bus using the specified GPIO reg
-- * @dev: DRM device
-- * @output: driver specific output device
-- * @reg: GPIO reg to use
-- * @name: name for this bus
-- *
-- * Creates and registers a new i2c bus with the Linux i2c layer, for use
-- * in output probing and control (e.g. DDC or SDVO control functions).
-- *
-- * Possible values for @reg include:
-- *   %GPIOA
-- *   %GPIOB
-- *   %GPIOC
-- *   %GPIOD
-- *   %GPIOE
-- *   %GPIOF
-- *   %GPIOG
-- *   %GPIOH
-- * see PRM for details on how these different busses are used.
-- */
--struct psb_intel_i2c_chan *psb_intel_i2c_create(struct drm_device *dev,
--					const u32 reg, const char *name)
--{
--	struct psb_intel_i2c_chan *chan;
--
--	chan = kzalloc(sizeof(struct psb_intel_i2c_chan), GFP_KERNEL);
--	if (!chan)
--		goto out_free;
--
--	chan->drm_dev = dev;
--	chan->reg = reg;
--	snprintf(chan->adapter.name, I2C_NAME_SIZE, "intel drm %s", name);
--	chan->adapter.owner = THIS_MODULE;
--	chan->adapter.algo_data = &chan->algo;
--	chan->adapter.dev.parent = &dev->pdev->dev;
--	chan->algo.setsda = set_data;
--	chan->algo.setscl = set_clock;
--	chan->algo.getsda = get_data;
--	chan->algo.getscl = get_clock;
--	chan->algo.udelay = 20;
--	chan->algo.timeout = usecs_to_jiffies(2200);
--	chan->algo.data = chan;
--
--	i2c_set_adapdata(&chan->adapter, chan);
--
--	if (i2c_bit_add_bus(&chan->adapter))
--		goto out_free;
--
--	/* JJJ:  raise SCL and SDA? */
--	set_data(chan, 1);
--	set_clock(chan, 1);
--	udelay(20);
--
--	return chan;
--
--out_free:
--	kfree(chan);
--	return NULL;
--}
--
--/**
-- * psb_intel_i2c_destroy - unregister and free i2c bus resources
-- * @output: channel to free
-- *
-- * Unregister the adapter from the i2c layer, then free the structure.
-- */
--void psb_intel_i2c_destroy(struct psb_intel_i2c_chan *chan)
--{
--	if (!chan)
--		return;
--
--	i2c_del_adapter(&chan->adapter);
--	kfree(chan);
--}
 
