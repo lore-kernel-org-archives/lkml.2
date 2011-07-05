@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab1GEJO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 05:14:59 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:40206 "EHLO comal.ext.ti.com"
+	id S1754806Ab1GEJOv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 05:14:51 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40199 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754824Ab1GEJOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 05:14:52 -0400
+	id S1754733Ab1GEJOt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 05:14:49 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -13,9 +13,9 @@ To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
 CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
         Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH 5/5] MFD: twl6040: Remove wrapper for threaded irq request
-Date: Tue, 5 Jul 2011 12:14:26 +0300
-Message-ID: <1309857266-3663-6-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH 4/5] MFD: twl6040: Demand valid interrupt configuration
+Date: Tue, 5 Jul 2011 12:14:25 +0300
+Message-ID: <1309857266-3663-5-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1309857266-3663-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1309857266-3663-1-git-send-email-peter.ujfalusi@ti.com>
@@ -25,84 +25,126 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the twl6040_request_irq/free_irq inline functions,
-and use direct calls instead in the core driver to
-register the threaded irq.
+In order to operate correctly twl6040 needs correct
+interrupt configuration.
+The slave drivers (vibra, and ASoC codec) will refuse
+to probe, if the interrupt configuration is not correct.
+In this way some checks can be removed from the code.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl6040-core.c  |   10 +++++-----
- include/linux/mfd/twl6040.h |   22 ----------------------
- 2 files changed, 5 insertions(+), 27 deletions(-)
+ drivers/mfd/twl6040-core.c |   42 +++++++++++++++++++++---------------------
+ drivers/mfd/twl6040-irq.c  |   16 +---------------
+ 2 files changed, 22 insertions(+), 36 deletions(-)
 
 diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index 9bf85d5..66e8710 100644
+index 8607793..9bf85d5 100644
 --- a/drivers/mfd/twl6040-core.c
 +++ b/drivers/mfd/twl6040-core.c
-@@ -490,9 +490,9 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
- 	if (ret)
- 		goto gpio2_err;
+@@ -447,6 +447,12 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+ 		return -EINVAL;
+ 	}
  
--	ret = twl6040_request_irq(twl6040, TWL6040_IRQ_READY,
--					twl6040_naudint_handler, 0,
--					"twl6040_irq_ready", twl6040);
-+	ret = request_threaded_irq(twl6040->irq_base + TWL6040_IRQ_READY,
-+				   NULL, twl6040_naudint_handler, 0,
-+				   "twl6040_irq_ready", twl6040);
- 	if (ret) {
- 		dev_err(twl6040->dev, "READY IRQ request failed: %d\n",
- 			ret);
-@@ -534,7 +534,7 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
++	/* In order to operate correctly we need valid interrupt config */
++	if (!pdata->naudint_irq || !pdata->irq_base) {
++		dev_err(&pdev->dev, "Invalid IRQ configuration\n");
++		return -EINVAL;
++	}
++
+ 	twl6040 = kzalloc(sizeof(struct twl6040), GFP_KERNEL);
+ 	if (!twl6040)
+ 		return -ENOMEM;
+@@ -479,20 +485,18 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+ 	if (twl6040->rev == TWL6040_REV_ES1_0)
+ 		twl6040->audpwron = -EINVAL;
+ 
+-	if (twl6040->irq) {
+-		/* codec interrupt */
+-		ret = twl6040_irq_init(twl6040);
+-		if (ret)
+-			goto gpio2_err;
+-
+-		ret = twl6040_request_irq(twl6040, TWL6040_IRQ_READY,
+-					  twl6040_naudint_handler, 0,
+-					  "twl6040_irq_ready", twl6040);
+-		if (ret) {
+-			dev_err(twl6040->dev, "READY IRQ request failed: %d\n",
+-				ret);
+-			goto irq_err;
+-		}
++	/* codec interrupt */
++	ret = twl6040_irq_init(twl6040);
++	if (ret)
++		goto gpio2_err;
++
++	ret = twl6040_request_irq(twl6040, TWL6040_IRQ_READY,
++					twl6040_naudint_handler, 0,
++					"twl6040_irq_ready", twl6040);
++	if (ret) {
++		dev_err(twl6040->dev, "READY IRQ request failed: %d\n",
++			ret);
++		goto irq_err;
+ 	}
+ 
+ 	/* dual-access registers controlled by I2C only */
+@@ -530,11 +534,9 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
  	return 0;
  
  mfd_err:
--	twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
-+	free_irq(twl6040->irq_base + TWL6040_IRQ_READY, twl6040);
+-	if (twl6040->irq)
+-		twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
++	twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
  irq_err:
- 	twl6040_irq_exit(twl6040);
+-	if (twl6040->irq)
+-		twl6040_irq_exit(twl6040);
++	twl6040_irq_exit(twl6040);
  gpio2_err:
-@@ -557,7 +557,7 @@ static int __devexit twl6040_remove(struct platform_device *pdev)
  	if (gpio_is_valid(twl6040->audpwron))
  		gpio_free(twl6040->audpwron);
+@@ -556,9 +558,7 @@ static int __devexit twl6040_remove(struct platform_device *pdev)
+ 		gpio_free(twl6040->audpwron);
  
--	twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
-+	free_irq(twl6040->irq_base + TWL6040_IRQ_READY, twl6040);
- 	twl6040_irq_exit(twl6040);
+ 	twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
+-
+-	if (twl6040->irq)
+-		twl6040_irq_exit(twl6040);
++	twl6040_irq_exit(twl6040);
  
  	mfd_remove_devices(&pdev->dev);
-diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
-index c3c1de5..df890a2 100644
---- a/include/linux/mfd/twl6040.h
-+++ b/include/linux/mfd/twl6040.h
-@@ -215,28 +215,6 @@ struct twl6040 {
- 	u8 irq_masks_cache;
- };
+ 	platform_set_drvdata(pdev, NULL);
+diff --git a/drivers/mfd/twl6040-irq.c b/drivers/mfd/twl6040-irq.c
+index 9380535..b3f8dda 100644
+--- a/drivers/mfd/twl6040-irq.c
++++ b/drivers/mfd/twl6040-irq.c
+@@ -148,19 +148,6 @@ int twl6040_irq_init(struct twl6040 *twl6040)
+ 	twl6040->irq_masks_cache = TWL6040_ALLINT_MSK;
+ 	twl6040_reg_write(twl6040, TWL6040_REG_INTMR, TWL6040_ALLINT_MSK);
  
--static inline int twl6040_request_irq(struct twl6040 *twl6040, int irq,
--				      irq_handler_t handler,
--				      unsigned long irqflags,
--				      const char *name,
--				      void *data)
--{
--	if (!twl6040->irq_base)
--		return -EINVAL;
+-	if (!twl6040->irq) {
+-		dev_warn(twl6040->dev,
+-			 "no interrupt specified, no interrupts\n");
+-		twl6040->irq_base = 0;
+-		return 0;
+-	}
 -
--	return request_threaded_irq(twl6040->irq_base + irq, NULL, handler,
--				    irqflags, name, data);
--}
+-	if (!twl6040->irq_base) {
+-		dev_err(twl6040->dev,
+-			"no interrupt base specified, no interrupts\n");
+-		return 0;
+-	}
 -
--static inline void twl6040_free_irq(struct twl6040 *twl6040, int irq,
--				    void *data)
--{
--	if (!twl6040->irq_base)
--		return;
--
--	free_irq(twl6040->irq_base + irq, data);
--}
--
- int twl6040_reg_read(struct twl6040 *twl6040, unsigned int reg);
- int twl6040_reg_write(struct twl6040 *twl6040, unsigned int reg,
- 		      u8 val);
+ 	/* Register them with genirq */
+ 	for (cur_irq = twl6040->irq_base;
+ 	     cur_irq < twl6040->irq_base + ARRAY_SIZE(twl6040_irqs);
+@@ -199,7 +186,6 @@ EXPORT_SYMBOL(twl6040_irq_init);
+ 
+ void twl6040_irq_exit(struct twl6040 *twl6040)
+ {
+-	if (twl6040->irq)
+-		free_irq(twl6040->irq, twl6040);
++	free_irq(twl6040->irq, twl6040);
+ }
+ EXPORT_SYMBOL(twl6040_irq_exit);
 -- 
 1.7.6
 
