@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752121Ab1GERxS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 13:53:18 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:40975 "EHLO
+	id S1751932Ab1GERyN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 13:54:13 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40299 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab1GERxR (ORCPT
+	with ESMTP id S1750749Ab1GERyM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 13:53:17 -0400
-Message-ID: <4E134F87.6080504@canonical.com>
-Date: Tue, 05 Jul 2011 10:53:11 -0700
+	Tue, 5 Jul 2011 13:54:12 -0400
+Message-ID: <4E134FBF.7050002@canonical.com>
+Date: Tue, 05 Jul 2011 10:54:07 -0700
 From: Chase Douglas <chase.douglas@canonical.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
@@ -17,10 +17,9 @@ CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
         linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
         derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
         olofj@chromium.org
-Subject: Re: [PATCH 07/12] Input: synaptics - rename synaptics_data.mt to
- agm
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org> <1309324042-22943-8-git-send-email-djkurtz@chromium.org>
-In-Reply-To: <1309324042-22943-8-git-send-email-djkurtz@chromium.org>
+Subject: Re: [PATCH 08/12] Input: synaptics - rename set_slot to be more descriptive
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org> <1309324042-22943-9-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1309324042-22943-9-git-send-email-djkurtz@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -30,68 +29,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 On 06/28/2011 10:07 PM, djkurtz@chromium.org wrote:
 > From: Daniel Kurtz <djkurtz@chromium.org>
 > 
-> Rename the synaptics_data.mt field to priv->agm to indicate it is the
-> hardware state reported in a synaptics AGM packet.
-> 
-> When a Synaptics touchpad is in "AGM" mode, and multiple fingers are
-> detected, the touchpad sends alternating "Advanced Gesture Mode" (AGM) and
-> "Simple Gesture Mode" (SGM) packets.
->   The AGM packets have w=2, and contain reduced resolution finger data.
->   The SGM packets have w={0,1} and contain full resolution finger data.
-> 
 > Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
-> ---
->  drivers/input/mouse/synaptics.c |    9 +++++----
->  drivers/input/mouse/synaptics.h |    2 +-
->  2 files changed, 6 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index dc54675..4e5e454 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -436,10 +436,10 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->  
->  		if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
->  			/* Gesture packet: (x, y, z) at half resolution */
-> -			priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
-> -			priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
-> +			priv->agm.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
-> +			priv->agm.y = INVERT_Y((((buf[4] & 0xf0) << 4)
->  					      | buf[2]) << 1);
-> -			priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
-> +			priv->agm.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
->  			return 1;
->  		} else {
->  			hw->x = (((buf[3] & 0x10) << 8) |
-> @@ -576,7 +576,8 @@ static void synaptics_process_packet(struct psmouse *psmouse)
->  	}
->  
->  	if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c))
-> -		synaptics_report_semi_mt_data(dev, &hw, &priv->mt, num_fingers);
-> +		synaptics_report_semi_mt_data(dev, &hw, &priv->agm,
-> +					      num_fingers);
->  
->  	/* Post events
->  	 * BTN_TOUCH has to be first as mousedev relies on it when doing
-> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
-> index 8a68e66..e367239 100644
-> --- a/drivers/input/mouse/synaptics.h
-> +++ b/drivers/input/mouse/synaptics.h
-> @@ -147,7 +147,7 @@ struct synaptics_data {
->  
->  	struct serio *pt_port;			/* Pass-through serio port */
->  
-> -	struct synaptics_hw_state mt;		/* current gesture packet */
-> +	struct synaptics_hw_state agm;		/* last AGM packet */
->  };
->  
->  void synaptics_module_init(void);
 
-I'm fine with changing the name of the element, especially if it
-conforms to some protocol documentation. I'd like to ask that AGM be
-spelled out in the comment, with a note that it contains half-resolution
-second-touch data.
-
-Otherwise:
+I like the new name much better :).
 
 Acked-by: Chase Douglas <chase.douglas@canonical.com>
+
+> ---
+>  drivers/input/mouse/synaptics.c |   17 ++++++++++-------
+>  1 files changed, 10 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> index 4e5e454..0a51b0ba 100644
+> --- a/drivers/input/mouse/synaptics.c
+> +++ b/drivers/input/mouse/synaptics.c
+> @@ -489,7 +489,8 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>  	return 0;
+>  }
+>  
+> -static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
+> +static void synaptics_report_semi_mt_slot(struct input_dev *dev, int slot,
+> +					  bool active, int x, int y)
+>  {
+>  	input_mt_slot(dev, slot);
+>  	input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
+> @@ -505,14 +506,16 @@ static void synaptics_report_semi_mt_data(struct input_dev *dev,
+>  					  int num_fingers)
+>  {
+>  	if (num_fingers >= 2) {
+> -		set_slot(dev, 0, true, min(a->x, b->x), min(a->y, b->y));
+> -		set_slot(dev, 1, true, max(a->x, b->x), max(a->y, b->y));
+> +		synaptics_report_semi_mt_slot(dev, 0, true, min(a->x, b->x),
+> +					      min(a->y, b->y));
+> +		synaptics_report_semi_mt_slot(dev, 1, true, max(a->x, b->x),
+> +					      max(a->y, b->y));
+>  	} else if (num_fingers == 1) {
+> -		set_slot(dev, 0, true, a->x, a->y);
+> -		set_slot(dev, 1, false, 0, 0);
+> +		synaptics_report_semi_mt_slot(dev, 0, true, a->x, a->y);
+> +		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
+>  	} else {
+> -		set_slot(dev, 0, false, 0, 0);
+> -		set_slot(dev, 1, false, 0, 0);
+> +		synaptics_report_semi_mt_slot(dev, 0, false, 0, 0);
+> +		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
+>  	}
+>  }
+>  
+
