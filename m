@@ -1,77 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753889Ab1GEGVz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 02:21:55 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60896 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753633Ab1GEGVy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 02:21:54 -0400
-Date: Tue, 5 Jul 2011 14:21:48 +0800
-From: wzt <wzt.wzt@gmail.com>
-To: mingo@redhat.com
-Cc: linux-kernel@vger.kernel.org, x86@kernel.org, ak@linux.intel.com,
-        tglx@linutronix.de, hpa@zytor.com
-Subject: [PATCH] x86: Fix memory leak of init_vdso_vars()
-Message-ID: <20110705062148.GA6056@program>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753830Ab1GEGbh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 02:31:37 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53274 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753533Ab1GEGbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 02:31:35 -0400
+Date: Tue, 5 Jul 2011 16:31:21 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Seth Forshee <seth.forshee@canonical.com>,
+        Christoph Hellwig <hch@lst.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>
+Subject: Re: linux-next: fixes while rebasing the akpm tree
+Message-Id: <20110705163121.608aa8ed.sfr@canb.auug.org.au>
+In-Reply-To: <20110704162816.fef0b1cb.sfr@canb.auug.org.au>
+References: <20110704162816.fef0b1cb.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__5_Jul_2011_16_31_21_+1000__P2U7Jzj/XosJdZ."
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix memory leak of init_vdso_vars().
+--Signature=_Tue__5_Jul_2011_16_31_21_+1000__P2U7Jzj/XosJdZ.
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Zhitong Wang <zhitong.wangzt@alibaba-inc.com>
+Hi all,
 
----
- arch/x86/vdso/vma.c |   14 ++++++++++----
- 1 files changed, 10 insertions(+), 4 deletions(-)
+On Mon, 4 Jul 2011 16:28:16 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
+rote:
+>
+> While rebasing the akpm tree onto today's linux-next, I discovered the
+> following:
+>=20
+> The patch hfsplus-add-missing-call-to-bio_put.patch appears to be already
+> applied (as commit 50176ddefa4a ("hfsplus: add missing call to bio_put()"
+> from the hfsplus tree).
+>=20
+> The patches
+> x86-mtrr-lock-stop-machine-during-mtrr-rendezvous-sequence.patch,
+> stop_machine-reorganize-stop_cpus-implementation.patch and
+> stop_machine-implement-stop_machine_from_inactive_cpu.patch seem to be
+> already applied (as commits 6d3321e8e2b3 ("x86, mtrr: lock stop machine
+> during MTRR rendezvous sequence"), fd7355ba1e93 ("stop_machine:
+> reorganize stop_cpus() implementation") and f740e6cd0cb5 ("stop_machine:
+> implement stop_machine_from_inactive_cpu()") from the tip tree)
 
-diff --git a/arch/x86/vdso/vma.c b/arch/x86/vdso/vma.c
-index 4b5d26f..c6b0308 100644
---- a/arch/x86/vdso/vma.c
-+++ b/arch/x86/vdso/vma.c
-@@ -44,19 +44,19 @@ static int __init init_vdso_vars(void)
- 	vdso_size = npages << PAGE_SHIFT;
- 	vdso_pages = kmalloc(sizeof(struct page *) * npages, GFP_KERNEL);
- 	if (!vdso_pages)
--		goto oom;
-+		goto oom1;
- 	for (i = 0; i < npages; i++) {
- 		struct page *p;
- 		p = alloc_page(GFP_KERNEL);
- 		if (!p)
--			goto oom;
-+			goto oom2;
- 		vdso_pages[i] = p;
- 		copy_page(page_address(p), vdso_start + i*PAGE_SIZE);
- 	}
- 
- 	vbase = vmap(vdso_pages, npages, 0, PAGE_KERNEL);
- 	if (!vbase)
--		goto oom;
-+		goto oom2;
- 
- 	if (memcmp(vbase, "\177ELF", 4)) {
- 		printk("VDSO: I'm broken; not ELF\n");
-@@ -70,7 +70,13 @@ static int __init init_vdso_vars(void)
- 	vunmap(vbase);
- 	return 0;
- 
-- oom:
-+oom2:
-+	i--;
-+	for (; i >= 0; i--)
-+		__free_page(vdso_pages[i]);
-+	__free_page(vdso_pages);
-+
-+oom1:
- 	printk("Cannot allocate vdso\n");
- 	vdso_enabled = 0;
- 	return -ENOMEM;
--- 
-1.7.4.1
+I have removed all the above patches from the akpm tree today as well as
+x86-mtrr-use-stop_machine-apis-for-doing-mtrr-rendezvous.patch which is
+also in the tip tree.
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__5_Jul_2011_16_31_21_+1000__P2U7Jzj/XosJdZ.
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOEq+5AAoJEDMEi1NhKgbspasH/36zYep8O37/rQzdQMazCNpp
+f83WfpxKJ1DKATcuKQje9NlKbI0WEfZpd/eNb7X5lWeW+9Sti24vvXKhKtMVYfZB
+4+mY0+x/Ux6kxiqldmdQ8XzuUFYflcP3Ct5zAZQYAdXsJM5T6wmEtP+EW+LY+ZuK
+8armJq3YP8VkvpBlHYoLLeb28ocPAZ/0+UHMvR6pmj18w8qsMrRBTs8hnZrbBkZ0
+vrYQqxkiJwzp50ciftbWxPhu6NttCQ/6Kjxku6OnFzMCjc+En8bYPZM0wWy72SVs
+OSPErey09BSNsQdBqfk8pBNw8GlY41N3ET5ENBIVzIoh/8N3UJNdV6Q09f1wo1I=
+=Ywwr
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__5_Jul_2011_16_31_21_+1000__P2U7Jzj/XosJdZ.--
