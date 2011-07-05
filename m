@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753298Ab1GEOnu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:43:50 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54140 "EHLO
+	id S1753375Ab1GEOoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:44:03 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:54143 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab1GEOnt (ORCPT
+	with ESMTP id S1753060Ab1GEOoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:43:49 -0400
+	Tue, 5 Jul 2011 10:44:01 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 01/49] gma500: Ensure the frame buffer has a linear virtual
- mapping
+Subject: [PATCH 02/49] gma500: revamp frame buffer creation and handling
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jul 2011 15:34:03 +0100
-Message-ID: <20110705143359.23872.34687.stgit@localhost.localdomain>
+Date: Tue, 05 Jul 2011 15:34:15 +0100
+Message-ID: <20110705143414.23872.10278.stgit@localhost.localdomain>
 In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
 References: <20110705141038.23872.55303.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -25,203 +24,520 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-We need this for the framebuffer in order to ensure that the kernel
-framebuffer layer can handle it when using KMS. Except for the base
-framebuffer this isn't a concern.
+Restructure this to work the same way as the i915 frame buffer does. That
+cleans up various chunks of code.
 
-Add an npage field to the gtt as too many copies of the page calculation
-are getting spread around the code.
+We can now set a mode in modetest but mode restore is a bit iffy
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/psb_fb.c  |   47 ++++++++++++++++++++++++--------------
- drivers/staging/gma500/psb_fb.h  |    1 +
- drivers/staging/gma500/psb_gtt.c |   18 ++++++---------
- drivers/staging/gma500/psb_gtt.h |    5 ++--
- 4 files changed, 42 insertions(+), 29 deletions(-)
+ drivers/staging/gma500/psb_2d.c  |   13 +--
+ drivers/staging/gma500/psb_fb.c  |  195 +++++++++++++++++++++-----------------
+ drivers/staging/gma500/psb_fb.h  |    2 
+ drivers/staging/gma500/psb_gem.c |   18 +++-
+ drivers/staging/gma500/psb_gtt.c |    2 
+ 5 files changed, 133 insertions(+), 97 deletions(-)
 
+diff --git a/drivers/staging/gma500/psb_2d.c b/drivers/staging/gma500/psb_2d.c
+index 0bd834c..060eeaf 100644
+--- a/drivers/staging/gma500/psb_2d.c
++++ b/drivers/staging/gma500/psb_2d.c
+@@ -148,7 +148,7 @@ static void psbfb_fillrect_accel(struct fb_info *info,
+ 				 const struct fb_fillrect *r)
+ {
+ 	struct psb_fbdev *fbdev = info->par;
+-	struct psb_framebuffer *psbfb = fbdev->pfb;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
+ 	struct drm_device *dev = psbfb->base.dev;
+ 	struct drm_framebuffer *fb = fbdev->psb_fb_helper.fb;
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+@@ -291,7 +291,7 @@ static void psbfb_copyarea_accel(struct fb_info *info,
+ 				 const struct fb_copyarea *a)
+ {
+ 	struct psb_fbdev *fbdev = info->par;
+-	struct psb_framebuffer *psbfb = fbdev->pfb;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
+ 	struct drm_device *dev = psbfb->base.dev;
+ 	struct drm_framebuffer *fb = fbdev->psb_fb_helper.fb;
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+@@ -360,19 +360,12 @@ void psbfb_imageblit(struct fb_info *info, const struct fb_image *image)
+ int psbfb_sync(struct fb_info *info)
+ {
+ 	struct psb_fbdev *fbdev = info->par;
+-	struct psb_framebuffer *psbfb = fbdev->pfb;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
+ 	struct drm_device *dev = psbfb->base.dev;
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	unsigned long _end = jiffies + DRM_HZ;
+ 	int busy = 0;
+ 
+-#if 0
+-        /* Just a way to quickly test if cmd issue explodes */
+-	u32 test[2] = {
+-	        PSB_2D_FENCE_BH,
+-        };
+-	psbfb_2d_submit(dev_priv, test, 1);
+-#endif	
+ 	/*
+ 	 * First idle the 2D engine.
+ 	 */
 diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
-index b276fe9..4b05cdc 100644
+index 4b05cdc..5977add 100644
 --- a/drivers/staging/gma500/psb_fb.c
 +++ b/drivers/staging/gma500/psb_fb.c
-@@ -254,17 +254,13 @@ static int psbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
- 				vma->vm_pgoff, fb_screen_base,
-                                 dev_priv->vram_addr);
- 
--        /* FIXME: ultimately this needs to become 'if entirely stolen memory' */
--	if (1 || fb_screen_base == dev_priv->vram_addr) {
--		vma->vm_ops = &psbfb_vm_ops;
--		vma->vm_private_data = (void *)psbfb;
--		vma->vm_flags |= VM_RESERVED | VM_IO |
--						VM_MIXEDMAP | VM_DONTEXPAND;
--	} else {
--	        /* GTT memory backed by kernel/user pages, needs a different
--	           approach ? - GEM ? */
--	}
--
-+        /* If this is a GEM object then info->screen_base is the virtual
-+           kernel remapping of the object. FIXME: Review if this is
-+           suitable for our mmap work */
-+	vma->vm_ops = &psbfb_vm_ops;
-+	vma->vm_private_data = (void *)psbfb;
-+	vma->vm_flags |= VM_RESERVED | VM_IO |
-+					VM_MIXEDMAP | VM_DONTEXPAND;
- 	return 0;
- }
- 
-@@ -349,8 +345,6 @@ err:
-  *
-  *	FIXME: console speed up - allocate twice the space if room and use
-  *	hardware scrolling for acceleration.
-- *	FIXME: we need to vm_map_ram  a linear mapping if the object has to
-- *	be GEM host mapped, otherwise the cfb layer's brain will fall out.
-  */
- static struct gtt_range *psbfb_alloc(struct drm_device *dev, int aligned_size)
+@@ -235,7 +235,7 @@ static struct vm_operations_struct psbfb_vm_ops = {
+ static int psbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
  {
-@@ -439,10 +433,22 @@ static int psbfb_create(struct psb_fbdev *fbdev,
- 	info->fix.smem_start = dev->mode_config.fb_base;
- 	info->fix.smem_len = size;
- 
--	/* Accessed via stolen memory directly, This only works for stolem
--	   memory however. Need to address this once we start using gtt
--	   pages we allocate. FIXME: vm_map_ram for that case */
--	info->screen_base = (char *)dev_priv->vram_addr + backing->offset;
-+	if (backing->stolen) {
-+		/* Accessed stolen memory directly */
-+		info->screen_base = (char *)dev_priv->vram_addr +
-+							backing->offset;
-+	} else {
-+		/* Pin the pages into the GTT and create a mapping to them */
-+		psb_gtt_pin(backing);
-+		info->screen_base = vm_map_ram(backing->pages, backing->npage,
-+				-1, PAGE_KERNEL);
-+		if (info->screen_base == NULL) {
-+			psb_gtt_unpin(backing);
-+			ret = -ENOMEM;
-+			goto out_err0;
-+		}
-+		psbfb->vm_map = 1;
-+	}
- 	info->screen_size = size;
- 	memset(info->screen_base, 0, size);
- 
-@@ -570,6 +576,13 @@ int psb_fbdev_destroy(struct drm_device *dev, struct psb_fbdev *fbdev)
- 
- 	if (fbdev->psb_fb_helper.fbdev) {
- 		info = fbdev->psb_fb_helper.fbdev;
-+
-+		/* If this is our base framebuffer then kill any virtual map
-+		   for the framebuffer layer and unpin it */
-+		if (psbfb->vm_map) {
-+			vm_unmap_ram(info->screen_base, psbfb->gtt->npage);
-+			psb_gtt_unpin(psbfb->gtt);
-+		}
- 		/* FIXME: this is a bit more inside knowledge than I'd like
- 		   but I don't see how to make a fake GEM object of the
- 		   stolen space nicely */
-diff --git a/drivers/staging/gma500/psb_fb.h b/drivers/staging/gma500/psb_fb.h
-index c8ec0d6..2153c74 100644
---- a/drivers/staging/gma500/psb_fb.h
-+++ b/drivers/staging/gma500/psb_fb.h
-@@ -33,6 +33,7 @@ struct psb_framebuffer {
- 	struct address_space *addr_space;
- 	struct fb_info *fbdev;
- 	struct gtt_range *gtt;
-+	bool vm_map;		/* True if we must undo a vm_map_ram */
+ 	struct psb_fbdev *fbdev = info->par;
+-	struct psb_framebuffer *psbfb = fbdev->pfb;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
+ 	char *fb_screen_base = NULL;
+ 	struct drm_device *dev = psbfb->base.dev;
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+@@ -267,7 +267,7 @@ static int psbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+ static int psbfb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
+ {
+ 	struct psb_fbdev *fbdev = info->par;
+-	struct psb_framebuffer *psbfb = fbdev->pfb;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
+ 	struct drm_device *dev = psbfb->base.dev;
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	u32 __user *p = (u32 __user *)arg;
+@@ -304,8 +304,58 @@ static struct fb_ops psbfb_ops = {
+ 	.fb_ioctl = psbfb_ioctl,
  };
  
- struct psb_fbdev {
-diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
-index 15a51f1..5a296e1 100644
---- a/drivers/staging/gma500/psb_gtt.c
-+++ b/drivers/staging/gma500/psb_gtt.c
-@@ -79,7 +79,6 @@ u32 *psb_gtt_entry(struct drm_device *dev, struct gtt_range *r)
- static int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
++/**
++ *	psb_framebuffer_init	-	initialize a framebuffer
++ *	@dev: our DRM device
++ *	@fb: framebuffer to set up
++ *	@mode_cmd: mode description
++ *	@gt: backing object
++ *
++ *	Configure and fill in the boilerplate for our frame buffer. Return
++ *	0 on success or an error code if we fail.
++ */
++static int psb_framebuffer_init(struct drm_device *dev,
++                                struct psb_framebuffer *fb,
++                                struct drm_mode_fb_cmd *mode_cmd,
++                                struct gtt_range *gt)
++{
++        int ret;
++
++        if (mode_cmd->pitch & 63)
++                return -EINVAL;
++        switch (mode_cmd->bpp) {
++        case 8:
++        case 16:
++        case 24:
++        case 32:
++                break;
++        default:
++                return -EINVAL;
++        }
++        ret = drm_framebuffer_init(dev, &fb->base, &psb_fb_funcs);
++        if (ret) {
++                dev_err(dev->dev, "framebuffer init failed: %d\n", ret);
++                return ret;
++        }
++        drm_helper_mode_fill_fb_struct(&fb->base, mode_cmd);
++        fb->gtt = gt;
++        return 0;
++}
++                
++/**
++ *	psb_framebuffer_create	-	create a framebuffer backed by gt
++ *	@dev: our DRM device
++ *	@mode_cmd: the description of the requested mode
++ *	@gt: the backing object
++ *
++ *	Create a framebuffer object backed by the gt, and fill in the
++ *	boilerplate required
++ *
++ *	TODO: review object references
++ */
+ static struct drm_framebuffer *psb_framebuffer_create
+-			(struct drm_device *dev, struct drm_mode_fb_cmd *r,
++			(struct drm_device *dev,
++			 struct drm_mode_fb_cmd *mode_cmd,
+ 			 struct gtt_range *gt)
  {
- 	u32 *gtt_slot, pte;
--	int numpages = (r->resource.end + 1 - r->resource.start) >> PAGE_SHIFT;
- 	struct page **pages;
- 	int i;
+ 	struct psb_framebuffer *fb;
+@@ -313,22 +363,14 @@ static struct drm_framebuffer *psb_framebuffer_create
  
-@@ -94,10 +93,10 @@ static int psb_gtt_insert(struct drm_device *dev, struct gtt_range *r)
- 	pages = r->pages;
+ 	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
+ 	if (!fb)
+-		return NULL;
+-
+-	ret = drm_framebuffer_init(dev, &fb->base, &psb_fb_funcs);
+-
+-	if (ret)
+-		goto err;
+-
+-	drm_helper_mode_fill_fb_struct(&fb->base, r);
+-
+-	fb->gtt = gt;
+-
+-	return &fb->base;
++		return ERR_PTR(-ENOMEM);
  
- 	/* Make sure changes are visible to the GPU */
--	set_pages_array_uc(pages, numpages);
-+	set_pages_array_uc(pages, r->npage);
- 
- 	/* Write our page entries into the GTT itself */
--	for (i = 0; i < numpages; i++) {
-+	for (i = 0; i < r->npage; i++) {
- 		pte = psb_gtt_mask_pte(page_to_pfn(*pages++), 0/*type*/);
- 		iowrite32(pte, gtt_slot++);
- 	}
-@@ -120,7 +119,6 @@ static void psb_gtt_remove(struct drm_device *dev, struct gtt_range *r)
- {
- 	struct drm_psb_private *dev_priv = dev->dev_private;
- 	u32 *gtt_slot, pte;
--	int numpages = (r->resource.end + 1 - r->resource.start) >> PAGE_SHIFT;
- 	int i;
- 
- 	WARN_ON(r->stolen);
-@@ -128,10 +126,10 @@ static void psb_gtt_remove(struct drm_device *dev, struct gtt_range *r)
- 	gtt_slot = psb_gtt_entry(dev, r);
- 	pte = psb_gtt_mask_pte(page_to_pfn(dev_priv->scratch_page), 0);
- 
--	for (i = 0; i < numpages; i++)
-+	for (i = 0; i < r->npage; i++)
- 		iowrite32(pte, gtt_slot++);
- 	ioread32(gtt_slot - 1);
--	set_pages_array_wb(r->pages, numpages);
-+	set_pages_array_wb(r->pages, r->npage);
+-err:
+-	kfree(fb);
+-	return NULL;
++	ret = psb_framebuffer_init(dev, fb, mode_cmd, gt);
++	if (ret) {
++	        kfree(fb);
++	        return ERR_PTR(ret);
++        }
++        return &fb->base;
  }
  
  /**
-@@ -149,7 +147,7 @@ static int psb_gtt_attach_pages(struct gtt_range *gt)
- 	struct address_space *mapping;
- 	int i;
- 	struct page *p;
--	int pages = (gt->resource.end + 1 - gt->resource.start) >> PAGE_SHIFT;
-+	int pages = gt->gem.size / PAGE_SIZE;
+@@ -380,56 +422,63 @@ static int psbfb_create(struct psb_fbdev *fbdev,
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+ 	struct fb_info *info;
+ 	struct drm_framebuffer *fb;
+-	struct psb_framebuffer *psbfb;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
+ 	struct drm_mode_fb_cmd mode_cmd;
+ 	struct device *device = &dev->pdev->dev;
+-	int size, aligned_size;
++	int size;
+ 	int ret;
+ 	struct gtt_range *backing;
  
- 	WARN_ON(gt->pages);
- 
-@@ -160,6 +158,8 @@ static int psb_gtt_attach_pages(struct gtt_range *gt)
- 	gt->pages = kmalloc(pages * sizeof(struct page *), GFP_KERNEL);
- 	if (gt->pages == NULL)
- 		return -ENOMEM;
-+	gt->npage = pages;
+ 	mode_cmd.width = sizes->surface_width;
+ 	mode_cmd.height = sizes->surface_height;
++	mode_cmd.bpp = sizes->surface_bpp;
 +
- 	for (i = 0; i < pages; i++) {
- 		/* FIXME: review flags later */
- 		p = read_cache_page_gfp(mapping, i,
-@@ -191,9 +191,7 @@ err:
- static void psb_gtt_detach_pages(struct gtt_range *gt)
- {
- 	int i;
--	int pages = (gt->resource.end + 1 - gt->resource.start) >> PAGE_SHIFT;
++	/* No 24bit packed */
++	if (mode_cmd.bpp == 24)
++        	mode_cmd.bpp = 32;
+ 
+-	mode_cmd.bpp = 32;
+ 	/* HW requires pitch to be 64 byte aligned */
+-	mode_cmd.pitch =  ALIGN(mode_cmd.width * ((mode_cmd.bpp + 1) / 8), 64);
+-	mode_cmd.depth = 24;
++	mode_cmd.pitch =  ALIGN(mode_cmd.width * ((mode_cmd.bpp + 7) / 8), 64);
++	mode_cmd.depth = sizes->surface_depth;
+ 
+ 	size = mode_cmd.pitch * mode_cmd.height;
+-	aligned_size = ALIGN(size, PAGE_SIZE);
++	size = ALIGN(size, PAGE_SIZE);
+ 
+ 	/* Allocate the framebuffer in the GTT with stolen page backing */
+-	backing = psbfb_alloc(dev, aligned_size);
++	backing = psbfb_alloc(dev, size);
+ 	if (backing == NULL)
+ 	        return -ENOMEM;
+ 
+ 	mutex_lock(&dev->struct_mutex);
+-	fb = psb_framebuffer_create(dev, &mode_cmd, backing);
+-	if (!fb) {
+-		DRM_ERROR("failed to allocate fb.\n");
+-		ret = -ENOMEM;
+-		goto out_err1;
+-	}
+-	psbfb = to_psb_fb(fb);
+ 
+-	info = framebuffer_alloc(sizeof(struct psb_fbdev), device);
++	info = framebuffer_alloc(0, device);
+ 	if (!info) {
+ 		ret = -ENOMEM;
+-		goto out_err0;
++		goto out_err1;
+ 	}
 -
--	for (i = 0; i < pages; i++) {
-+	for (i = 0; i < gt->npage; i++) {
- 		/* FIXME: do we need to force dirty */
- 		set_page_dirty(gt->pages[i]);
- 		/* Undo the reference we took when populating the table */
-diff --git a/drivers/staging/gma500/psb_gtt.h b/drivers/staging/gma500/psb_gtt.h
-index 535ae00..37287eb 100644
---- a/drivers/staging/gma500/psb_gtt.h
-+++ b/drivers/staging/gma500/psb_gtt.h
-@@ -46,9 +46,10 @@ struct gtt_range {
- 	struct kref kref;
- 	struct drm_gem_object gem;	/* GEM high level stuff */
- 	int in_gart;			/* Currently in the GART (ref ct) */
--        bool stolen;			/* Backed from stolen RAM */
--        bool mmapping;			/* Is mmappable */
-+	bool stolen;			/* Backed from stolen RAM */
-+	bool mmapping;			/* Is mmappable */
- 	struct page **pages;		/* Backing pages if present */
-+	int npage;			/* Number of backing pages */
+ 	info->par = fbdev;
+ 
++	ret = psb_framebuffer_init(dev, psbfb, &mode_cmd, backing);
++	if (ret)
++		goto out_unref;
++
++        fb = &psbfb->base;
+ 	psbfb->fbdev = info;
+ 
+ 	fbdev->psb_fb_helper.fb = fb;
+ 	fbdev->psb_fb_helper.fbdev = info;
+-	fbdev->pfb = psbfb;
+ 
+ 	strcpy(info->fix.id, "psbfb");
+ 
+ 	info->flags = FBINFO_DEFAULT;
+ 	info->fbops = &psbfb_ops;
++
++	ret = fb_alloc_cmap(&info->cmap, 256, 0);
++	if (ret) {
++		ret = -ENOMEM;
++		goto out_unref;
++	}
++
+ 	info->fix.smem_start = dev->mode_config.fb_base;
+ 	info->fix.smem_len = size;
+ 
+@@ -445,18 +494,18 @@ static int psbfb_create(struct psb_fbdev *fbdev,
+ 		if (info->screen_base == NULL) {
+ 			psb_gtt_unpin(backing);
+ 			ret = -ENOMEM;
+-			goto out_err0;
++			goto out_unref;
+ 		}
+ 		psbfb->vm_map = 1;
+ 	}
+ 	info->screen_size = size;
+-	memset(info->screen_base, 0, size);
++/*	memset(info->screen_base, 0, size); */
+ 
+ 	if (dev_priv->pg->stolen_size) {
+ 		info->apertures = alloc_apertures(1);
+ 		if (!info->apertures) {
+ 			ret = -ENOMEM;
+-			goto out_err0;
++			goto out_unref;
+ 		}
+ 		info->apertures->ranges[0].base = dev->mode_config.fb_base;
+ 		info->apertures->ranges[0].size = dev_priv->pg->stolen_size;
+@@ -484,8 +533,14 @@ static int psbfb_create(struct psb_fbdev *fbdev,
+ 	mutex_unlock(&dev->struct_mutex);
+ 
+ 	return 0;
+-out_err0:
+-	fb->funcs->destroy(fb);
++out_unref:
++        if (backing->stolen)
++                psb_gtt_free_range(dev, backing);
++        else {
++                if (psbfb->vm_map)
++                        vm_unmap_ram(info->screen_base, backing->npage);
++                drm_gem_object_unreference(&backing->gem);
++        }
+ out_err1:
+ 	mutex_unlock(&dev->struct_mutex);
+ 	psb_gtt_free_range(dev, backing);
+@@ -506,7 +561,6 @@ static struct drm_framebuffer *psb_user_framebuffer_create
+ {
+         struct gtt_range *r;
+         struct drm_gem_object *obj;
+-        struct psb_framebuffer *psbfb;
+ 
+         /* Find the GEM object and thus the gtt range object that is
+            to back this space */
+@@ -514,23 +568,9 @@ static struct drm_framebuffer *psb_user_framebuffer_create
+ 	if (obj == NULL)
+ 	        return ERR_PTR(-ENOENT);
+ 
+-        /* Allocate a framebuffer */
+-        psbfb = kzalloc(sizeof(*psbfb), GFP_KERNEL);
+-        if (psbfb == NULL) {
+-                drm_gem_object_unreference_unlocked(obj);
+-                return ERR_PTR(-ENOMEM);
+-        }
+-        
+         /* Let the core code do all the work */
+         r = container_of(obj, struct gtt_range, gem);
+-	if (psb_framebuffer_create(dev, cmd, r) == NULL) {
+-                drm_gem_object_unreference_unlocked(obj);
+-                kfree(psbfb);
+-                return ERR_PTR(-EINVAL);
+-        }
+-        /* Return the drm_framebuffer contained within the psb fbdev which
+-           has been initialized by the framebuffer creation */
+-        return &psbfb->base;
++	return psb_framebuffer_create(dev, cmd, r);
+ }
+ 
+ static void psbfb_gamma_set(struct drm_crtc *crtc, u16 red, u16 green,
+@@ -572,7 +612,7 @@ struct drm_fb_helper_funcs psb_fb_helper_funcs = {
+ int psb_fbdev_destroy(struct drm_device *dev, struct psb_fbdev *fbdev)
+ {
+ 	struct fb_info *info;
+-	struct psb_framebuffer *psbfb = fbdev->pfb;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
+ 
+ 	if (fbdev->psb_fb_helper.fbdev) {
+ 		info = fbdev->psb_fb_helper.fbdev;
+@@ -583,6 +623,15 @@ int psb_fbdev_destroy(struct drm_device *dev, struct psb_fbdev *fbdev)
+ 			vm_unmap_ram(info->screen_base, psbfb->gtt->npage);
+ 			psb_gtt_unpin(psbfb->gtt);
+ 		}
++		unregister_framebuffer(info);
++		if (info->cmap.len)
++		        fb_dealloc_cmap(&info->cmap);
++		framebuffer_release(info);
++	}
++	drm_fb_helper_fini(&fbdev->psb_fb_helper);
++	drm_framebuffer_cleanup(&psbfb->base);
++	
++	if (psbfb->gtt) {
+ 		/* FIXME: this is a bit more inside knowledge than I'd like
+ 		   but I don't see how to make a fake GEM object of the
+ 		   stolen space nicely */
+@@ -590,13 +639,7 @@ int psb_fbdev_destroy(struct drm_device *dev, struct psb_fbdev *fbdev)
+ 			psb_gtt_free_range(dev, psbfb->gtt);
+ 		else
+ 			drm_gem_object_unreference(&psbfb->gtt->gem);
+-		unregister_framebuffer(info);
+-		iounmap(info->screen_base);
+-		framebuffer_release(info);
+-	}
+-
+-	drm_fb_helper_fini(&fbdev->psb_fb_helper);
+-	drm_framebuffer_cleanup(&psbfb->base);
++        }
+ 	return 0;
+ }
+ 
+@@ -644,22 +687,6 @@ static void psbfb_output_poll_changed(struct drm_device *dev)
+ 	drm_fb_helper_hotplug_event(&fbdev->psb_fb_helper);
+ }
+ 
+-int psbfb_remove(struct drm_device *dev, struct drm_framebuffer *fb)
+-{
+-	struct fb_info *info;
+-	struct psb_framebuffer *psbfb = to_psb_fb(fb);
+-
+-	if (drm_psb_no_fb)
+-		return 0;
+-
+-	info = psbfb->fbdev;
+-
+-	if (info)
+-		framebuffer_release(info);
+-	return 0;
+-}
+-/*EXPORT_SYMBOL(psbfb_remove); */
+-
+ /**
+  *	psb_user_framebuffer_create_handle - add hamdle to a framebuffer
+  *	@fb: framebuffer
+@@ -690,15 +717,13 @@ static int psb_user_framebuffer_create_handle(struct drm_framebuffer *fb,
+  */
+ static void psb_user_framebuffer_destroy(struct drm_framebuffer *fb)
+ {
+-	struct drm_device *dev = fb->dev;
+ 	struct psb_framebuffer *psbfb = to_psb_fb(fb);
+ 	struct gtt_range *r = psbfb->gtt;
+ 
++	/* Should never get stolen memory for a user fb */
++	WARN_ON(r->stolen);
+ 	pr_err("user framebuffer destroy %p, fbdev %p\n",
+ 						psbfb, psbfb->fbdev);
+-	if (psbfb->fbdev)
+-		psbfb_remove(dev, fb);
+-
+         /* Let DRM do its clean up */
+ 	drm_framebuffer_cleanup(fb);
+ 	/*  We are no longer using the resource in GEM */
+diff --git a/drivers/staging/gma500/psb_fb.h b/drivers/staging/gma500/psb_fb.h
+index 2153c74..fd7e51a 100644
+--- a/drivers/staging/gma500/psb_fb.h
++++ b/drivers/staging/gma500/psb_fb.h
+@@ -38,7 +38,7 @@ struct psb_framebuffer {
+ 
+ struct psb_fbdev {
+ 	struct drm_fb_helper psb_fb_helper;
+-	struct psb_framebuffer *pfb;
++	struct psb_framebuffer pfb;
  };
  
- extern struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
+ 
+diff --git a/drivers/staging/gma500/psb_gem.c b/drivers/staging/gma500/psb_gem.c
+index 98d8ab3..b24b964 100644
+--- a/drivers/staging/gma500/psb_gem.c
++++ b/drivers/staging/gma500/psb_gem.c
+@@ -51,6 +51,7 @@ void psb_gem_free_object(struct drm_gem_object *obj)
+ 	}
+ 	drm_gem_object_release(obj);
+ 	/* This must occur last as it frees up the memory of the GEM object */
++	pr_err("GEM destroyed %p, %p\n", gtt, obj);
+ 	psb_gtt_free_range(obj->dev, gtt);
+ }
+ 
+@@ -176,21 +177,28 @@ static int psb_gem_create(struct drm_file *file,
+ 
+ 	size = roundup(size, PAGE_SIZE);
+ 
++	dev_err(dev->dev, "GEM creating %lld\n", size);
++
+ 	/* Allocate our object - for now a direct gtt range which is not 
+ 	   stolen memory backed */
+ 	r = psb_gtt_alloc_range(dev, size, "gem", 0);
+-	if (r == NULL)
++	if (r == NULL) {
++		dev_err(dev->dev, "no memory for %lld byte GEM object\n", size);
+ 		return -ENOSPC;
++	}
+ 	/* Initialize the extra goodies GEM needs to do all the hard work */
+ 	if (drm_gem_object_init(dev, &r->gem, size) != 0) {
+ 		psb_gtt_free_range(dev, r);
+ 		/* GEM doesn't give an error code and we don't have an
+ 		   EGEMSUCKS so make something up for now - FIXME */
++		dev_err(dev->dev, "GEM init failed for %lld\n", size);
+ 		return -ENOMEM;
+ 	}
+ 	/* Give the object a handle so we can carry it more easily */
+ 	ret = drm_gem_handle_create(file, &r->gem, &handle);
+ 	if (ret) {
++		dev_err(dev->dev, "GEM handle failed for %p, %lld\n",
++							&r->gem, size);
+ 		drm_gem_object_release(&r->gem);
+ 		psb_gtt_free_range(dev, r);
+ 		return ret;
+@@ -198,6 +206,8 @@ static int psb_gem_create(struct drm_file *file,
+ 	/* We have the initial and handle reference but need only one now */
+ 	drm_gem_object_unreference(&r->gem);
+ 	*handlep = handle;
++	dev_err(dev->dev, "GEM handle %x for %p OK\n",
++				handle, &r->gem);
+ 	return 0;
+ }
+ 
+@@ -273,9 +283,12 @@ int psb_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	   something from beneath our feet */
+ 	mutex_lock(&dev->struct_mutex);
+ 
++	dev_err(dev->dev, "Fault on GTT %p\n", r);
++
+ 	/* For now the mmap pins the object and it stays pinned. As things
+ 	   stand that will do us no harm */
+ 	if (r->mmapping == 0) {
++		dev_err(dev->dev, "Need to pin %p\n", r);
+ 		ret = psb_gtt_pin(r);
+ 		if (ret < 0) {
+ 		        DRM_ERROR("gma500: pin failed: %d\n", ret);
+@@ -289,10 +302,13 @@ int psb_gem_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+ 	page_offset = ((unsigned long) vmf->virtual_address - vma->vm_start)
+ 				>> PAGE_SHIFT;
+ 
++	dev_err(dev->dev, "Page offset %p %d\n", r, (int)page_offset);
+         /* CPU view of the page, don't go via the GART for CPU writes */
+ 	pfn = page_to_phys(r->pages[page_offset]) >> PAGE_SHIFT;
+ 	ret = vm_insert_pfn(vma, (unsigned long)vmf->virtual_address, pfn);
+ 
++	dev_err(dev->dev, "PFN %ld for VA %p = %d\n", pfn, vmf->virtual_address, ret);
++
+ fail:
+         mutex_unlock(&dev->struct_mutex);
+ 	switch (ret) {
+diff --git a/drivers/staging/gma500/psb_gtt.c b/drivers/staging/gma500/psb_gtt.c
+index 5a296e1..c6a7492 100644
+--- a/drivers/staging/gma500/psb_gtt.c
++++ b/drivers/staging/gma500/psb_gtt.c
+@@ -314,6 +314,7 @@ struct gtt_range *psb_gtt_alloc_range(struct drm_device *dev, int len,
+ 				len, start, end, PAGE_SIZE, NULL, NULL);
+ 	if (ret == 0) {
+ 		gt->offset = gt->resource.start - r->start;
++		dev_err(dev->dev, "GTT new %p, %d\n", gt, gt->stolen);
+ 		return gt;
+ 	}
+ 	kfree(gt);
+@@ -340,6 +341,7 @@ static void psb_gtt_destroy(struct kref *kref)
+ 	}
+ 	WARN_ON(gt->in_gart && !gt->stolen);
+ 	release_resource(&gt->resource);
++	pr_err("GTT destroyed %p, %d\n", gt, gt->stolen);
+ 	kfree(gt);
+ }
+ 
 
