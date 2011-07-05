@@ -1,96 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754707Ab1GEIcQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 04:32:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:37739 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753869Ab1GEIcO convert rfc822-to-8bit (ORCPT
+	id S1754216Ab1GEIn5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 04:43:57 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:41338 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753788Ab1GEIn4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 04:32:14 -0400
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Ryan Mallon <rmallon@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hilman, Kevin" <khilman@ti.com>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "Chemparathy, Cyril" <cyril@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Date: Tue, 5 Jul 2011 14:02:00 +0530
-Subject: RE: [RFC/RFT 1/2] gpio/basic_mmio: add support for enable register
-Thread-Topic: [RFC/RFT 1/2] gpio/basic_mmio: add support for enable register
-Thread-Index: Acw62v/W1sm042e7RiGgnacPW4rksQAD2aSg
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024D91A45E@dbde02.ent.ti.com>
-References: <cover.1309840042.git.nsekhar@ti.com>
- <83915224c24e43224272b1bf570cddb9545279a6.1309840042.git.nsekhar@ti.com>
- <4E12AC10.9020206@gmail.com>
-In-Reply-To: <4E12AC10.9020206@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
+	Tue, 5 Jul 2011 04:43:56 -0400
+Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110704220123.GJ15637@one.firstfloor.org>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
+	 <1309768420.3282.8.camel@twins> <20110704220123.GJ15637@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Date: Tue, 05 Jul 2011 10:43:33 +0200
+Message-ID: <1309855413.3282.35.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ryan,
+On Tue, 2011-07-05 at 00:01 +0200, Andi Kleen wrote:
+> > Did anybody check with the other PMUs that have similar features like
+> > PowerPC and possibly IA64?
+> 
+> IA64 has a similar feature I believe, but I'm not aware of anyone
+> working on that.
 
-On Tue, Jul 05, 2011 at 11:45:44, Ryan Mallon wrote:
-> On 05/07/11 15:10, Sekhar Nori wrote:
-> > Some GPIO controllers have an enable register
-> > which needs to be written to before a GPIO
-> > can be used.
-> >
-> > Add support for enabling the GPIO. At this
-> > time inverted logic for enabling the GPIO
-> > is not supported. This can be done by adding
-> > a disable register as and when a controller
-> > with this comes along.
-> >
-> > Signed-off-by: Sekhar Nori<nsekhar@ti.com>
-> > ---
-> >
-> <snip>
-> 
-> > static int bgpio_setup_io(struct bgpio_chip *bgc,
-> >   			  void __iomem *dat,
-> > @@ -369,6 +401,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
-> >   			 void __iomem *clr,
-> >   			 void __iomem *dirout,
-> >   			 void __iomem *dirin,
-> > +			 void __iomem *en,
-> >   			 bool big_endian)
-> 
-> The arguments to this function are getting a bit unwieldy :-). Maybe we 
-> need to introduce something like:
-> 
-> struct bgpio_chip_info {
->      struct device *dev;
->      unsigned long sz;
->      void __iomem *dat;
->      void __iomem *set;
->      void __iomem *clr;
->      void __iomem *dirout;
->      void __iomem *dirin;
->      void __iomem *en;
->      bool big_endian;
-> };
-> 
-> and pass that to bgpio_init instead. It would have the added benefits of 
-> making the drivers more readable and that bgpio_chip_info structs in the 
-> drivers can probably be marked __initdata also.
-> 
-> Since you are already having to touch all of the call sites for 
-> bgpio_init this could be done as a separate patch along with this series.
-
-Agreed. I can do this if Grant too thinks this is a
-pre-requisite to adding new functionality.
-
-Thanks,
-Sekhar
-
+Working on it isn't the important part, the important part is that we
+don't make it impossible to implement would someone be willing to work
+on it.
