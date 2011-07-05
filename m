@@ -1,73 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752141Ab1GENx1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 09:53:27 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:42199 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab1GENxZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1752083Ab1GENxZ (ORCPT <rfc822;w@1wt.eu>);
 	Tue, 5 Jul 2011 09:53:25 -0400
-Message-ID: <4E13174B.30403@gmail.com>
-Date: Tue, 05 Jul 2011 21:53:15 +0800
-From: Gong Chen <clumsycg@gmail.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; zh-CN; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: Len Brown <lenb@kernel.org>, linux-kernel@vger.kernel.org,
-        Andi Kleen <andi@firstfloor.org>, Tony Luck <tony.luck@intel.com>,
-        linux-acpi@vger.kernel.org, Thomas Renninger <trenn@novell.com>
-Subject: Re: [RFC 1/2] ACPI, APEI, Add apei_exec_run_optional
-References: <1309846023-16459-1-git-send-email-ying.huang@intel.com>
-In-Reply-To: <1309846023-16459-1-git-send-email-ying.huang@intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46756 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751831Ab1GENxY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 09:53:24 -0400
+From: ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH] Staging: comedi: fix prink warning style issue in ni_daq_700.c
+Date: Tue,  5 Jul 2011 19:22:49 +0530
+Message-Id: <1309873969-4690-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <[PATCH] Staging: comedi: fix prink warning issues in ni_daq_700.c>
+References: <[PATCH] Staging: comedi: fix prink warning issues in ni_daq_700.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-于 2011/7/5 14:07, Huang Ying 写道:
-> Some actions in APEI ERST and EINJ tables are optional, for example,
-> ACPI_EINJ_BEGIN_OPERATION action is used to do some preparation for
-> error injection, and firmware may choose to do nothing here.  While
-> some other actions are mandatory, for example, firmware must provide
-> ACPI_EINJ_GET_ERROR_TYPE implementation.
->
-> Original implementation treats all actions as optional (that is, can
-> have no instructions), that may cause issue if firmware does not
-> provide some mandatory actions.  To fix this, this patch adds
-> apei_exec_run_optional, which should be used for optional actions.
-> The original apei_exec_run should be used for mandatory actions.
->
-> Cc: Thomas Renninger<trenn@novell.com>
-> Signed-off-by: Huang Ying<ying.huang@intel.com>
-> ---
->   drivers/acpi/apei/apei-base.c     |    9 +++++----
->   drivers/acpi/apei/apei-internal.h |   13 ++++++++++++-
->   2 files changed, 17 insertions(+), 5 deletions(-)
->
-> --- a/drivers/acpi/apei/apei-base.c
-> +++ b/drivers/acpi/apei/apei-base.c
-> @@ -157,9 +157,10 @@ EXPORT_SYMBOL_GPL(apei_exec_noop);
->    * Interpret the specified action. Go through whole action table,
->    * execute all instructions belong to the action.
->    */
-> -int apei_exec_run(struct apei_exec_context *ctx, u8 action)
-> +int __apei_exec_run(struct apei_exec_context *ctx, u8 action,
-> +		    bool optional)
->   {
-> -	int rc;
-> +	int rc = -ENOENT;
->   	u32 i, ip;
->   	struct acpi_whea_header *entry;
->   	apei_exec_ins_func_t run;
-> @@ -198,9 +199,9 @@ rewind:
->   			goto rewind;
->   	}
->
-> -	return 0;
-> +	return !optional&&  rc<  0 ? rc : 0;
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-if one operation is optional but running into errors when executing this 
-kind of command,
-here just ignoring it. Is it reasonable ?
+This is a patch to the ni_daq_700.c file that fixes up a prink  warning found by the checkpatch.pl tool
+
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/ni_daq_700.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
+index 2672629..e242012 100644
+--- a/drivers/staging/comedi/drivers/ni_daq_700.c
++++ b/drivers/staging/comedi/drivers/ni_daq_700.c
+@@ -51,7 +51,7 @@ IRQ is assigned but not used.
+ #include <pcmcia/cisreg.h>
+ #include <pcmcia/ds.h>
+ 
+-static struct pcmcia_device *pcmcia_cur_dev = NULL;
++static struct pcmcia_device *pcmcia_cur_dev;
+ 
+ #define DIO700_SIZE 8		/*  size of io region used by board */
+ 
+@@ -381,11 +381,11 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ #endif
+ 		break;
+ 	default:
+-		printk("bug! couldn't determine board type\n");
++		printk(KERN_ERR "bug! couldn't determine board type\n");
+ 		return -EINVAL;
+ 		break;
+ 	}
+-	printk("comedi%d: ni_daq_700: %s, io 0x%lx", dev->minor,
++	printk(KERN_ERR "comedi%d: ni_daq_700: %s, io 0x%lx", dev->minor,
+ 	       thisboard->name, iobase);
+ #ifdef incomplete
+ 	if (irq)
+@@ -396,7 +396,7 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	printk("\n");
+ 
+ 	if (iobase == 0) {
+-		printk("io base address is zero!\n");
++		printk(KERN_ERR "io base address is zero!\n");
+ 		return -EINVAL;
+ 	}
+ 
+@@ -421,7 +421,7 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 
+ static int dio700_detach(struct comedi_device *dev)
+ {
+-	printk("comedi%d: ni_daq_700: cs-remove\n", dev->minor);
++	printk(KERN_ERR "comedi%d: ni_daq_700: cs-remove\n", dev->minor);
+ 
+ 	if (dev->subdevices)
+ 		subdev_700_cleanup(dev, dev->subdevices + 0);
+-- 
+1.7.1.1
 
