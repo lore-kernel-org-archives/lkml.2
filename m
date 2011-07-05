@@ -1,155 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752655Ab1GEOKp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:10:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33981 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752270Ab1GEOKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:10:44 -0400
-Date: Tue, 5 Jul 2011 10:10:41 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>
-Subject: Re: [PATCH 2/3]CFQ: add think time check for service tree
-Message-ID: <20110705141041.GB24348@redhat.com>
-References: <1309757794.15392.238.camel@sli10-conroe>
+	id S1752671Ab1GEOPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:15:37 -0400
+Received: from rcsinet14.oracle.com ([148.87.113.126]:38476 "EHLO
+	rcsinet14.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752552Ab1GEOPf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 10:15:35 -0400
+Date: Tue, 5 Jul 2011 10:13:23 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Raghavendra D Prabhu <rprabhu@wnohang.net>
+Cc: Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
+        jeremy.fitzhardinge@citrix.com, xen-devel@lists.xensource.com,
+        virtualization@lists.linux-foundation.org
+Subject: Re: [PATCH] Modpost section mismatch fix
+Message-ID: <20110705141323.GG2972@dumpdata.com>
+References: <20110703232508.GB4440@Xye>
+ <1309769388.634.51.camel@zakaz.uk.xensource.com>
+ <20110704221646.GB4490@Xye>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1309757794.15392.238.camel@sli10-conroe>
+In-Reply-To: <20110704221646.GB4490@Xye>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: acsinet22.oracle.com [141.146.126.238]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4E131C10.005A:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 01:36:34PM +0800, Shaohua Li wrote:
-> Subject: CFQ: add think time check for service tree
+On Tue, Jul 05, 2011 at 03:46:46AM +0530, Raghavendra D Prabhu wrote:
+> * On Mon, Jul 04, 2011 at 09:49:48AM +0100, Ian Campbell <ijc@hellion.org.uk> wrote:
+> >On Mon, 2011-07-04 at 04:55 +0530, Raghavendra D Prabhu wrote:
+> >>[Sorry if duplicate, one earlier was corrupt]
 > 
-> Currently when the last queue of a service tree has no request, we don't
-> expire the queue to hope request from the service tree comes soon, so the
-> service tree doesn't miss its share. But if the think time is big, the
-> assumption isn't correct and we just waste bandwidth. In such case, we
-> don't do idle.
+> >>Hi,
+> >>     I got section mismatches reported by modpost in latest build. It got
+> >>     reported for xen_register_pirq and xen_unplug_emulated_devices
+> >>     functions.
+> >
+> >
+> >> xen_register_pirq makes reference to
+> >>     acpi_sci_override_gsi in init.data section; marking
+> >>     xen_register_pirq with __init is not feasible since calls are made
+> >>     to it from acpi_register_gsi in non-init contexts. So marking it
+> >>     __refdata based on assumption that when acpi_sci_override_gsi is
+> >>     referenced, it is in  early stages where it is alive.
+> >
+> >I don't think this assumption holds, since xen_register_pirq can be
+> >called at any time and basically unconditionally references
+> >acpi_sci_override_gsi.
 > 
-> [global]
-> runtime=10
-> direct=1
+> Yeah, that has been my guess as well, however I am not privy to the
+> inner workings of Xen, so was not sure.
+> >
+> >If we don't want to remove the __init from acpi_sci_override_gsi then
+> >perhaps xen_setup_acpi_sci needs to stash it somewhere?
+> >
+> >Or maybe xen_register_pirq could take an "int force_irq" which, if not
+> >-1, would force a particular IRQ. The callsite in xen_setup_acpi_sci
+> >(actually via xen_register_gsi so the param would need to be propagated
+> >there) would be the only actual user?
 > 
-> [test1]
-> rw=randread
-> ioengine=libaio
-> size=500m
-> directory=/mnt
-> filename=file1
-> thinktime=9000
-> 
-> [test2]
-> rw=read
-> ioengine=libaio
-> size=1G
-> directory=/mnt
-> filename=file2
-> 
-> 	patched		base
-> test1	41k/s		33k/s
-> test2	15868k/s	15789k/s
-> total	15902k/s	15817k/s
-> 
-> A slightly better
-> 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-> 
-> ---
->  block/cfq-iosched.c |   26 ++++++++++++++++++++++----
->  1 file changed, 22 insertions(+), 4 deletions(-)
-> 
-> Index: linux/block/cfq-iosched.c
-> ===================================================================
-> --- linux.orig/block/cfq-iosched.c	2011-07-01 13:43:34.000000000 +0800
-> +++ linux/block/cfq-iosched.c	2011-07-01 13:45:24.000000000 +0800
-> @@ -74,6 +74,8 @@ static DEFINE_IDA(cic_index_ida);
->  
->  #define sample_valid(samples)	((samples) > 80)
->  #define rb_entry_cfqg(node)	rb_entry((node), struct cfq_group, rb_node)
-> +#define cfq_io_thinktime_big(ttime, slice) \
-> +	(sample_valid((ttime).ttime_samples) && (ttime).ttime_mean > (slice))
->  
+> xen_register_gsi and hence, xen_register_pirq are called from
+> init (with xen_setup_acpi_sci) and non-init (with
+> acpi_register_gsi_xen); since xen_set_acpi_sci calls it with gsi ==
+> acpi_sci_override_gsi and is marked __init, the best way would be to
+> call xen_register_gsi and xen_register_pirq with a boolean argument like
+> sci_override to obviate the need to use acpi_sci_override_gsi in
+> register_pirq. I will send the patch with this change if it looks good.
 
-I think instead of a macro, a inline function to check this will be better.
-Also you don't have to pass slice_idle value as parameter as funciton
-can directly access it from cfqd.
-
->  /*
->   * Most of our rbtree usage is for sorting with min extraction, so
-> @@ -87,9 +89,10 @@ struct cfq_rb_root {
->  	unsigned count;
->  	unsigned total_weight;
->  	u64 min_vdisktime;
-> +	struct cfq_ttime ttime;
->  };
-> -#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
-> -			.count = 0, .min_vdisktime = 0, }
-> +#define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, \
-> +			.ttime = {.last_end_request = jiffies,},}
->  
->  /*
->   * Per process-grouping structure
-> @@ -1969,7 +1972,8 @@ static bool cfq_should_idle(struct cfq_d
->  	 * Otherwise, we do only if they are the last ones
->  	 * in their service tree.
->  	 */
-> -	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
-> +	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq) &&
-> +	   !cfq_io_thinktime_big(service_tree->ttime, cfqd->cfq_slice_idle))
->  		return true;
->  	cfq_log_cfqq(cfqd, cfqq, "Not idling. st->count:%d",
->  			service_tree->count);
-> @@ -3231,8 +3235,16 @@ static void
->  cfq_update_io_thinktime(struct cfq_data *cfqd, struct cfq_queue *cfqq,
->  	struct cfq_io_context *cic)
->  {
-> -	if (cfq_cfqq_sync(cfqq))
-> +	struct cfq_rb_root *service_tree;
-> +	struct cfq_group *cfqg = cfqq->cfqg;
-> +
-> +	if (cfq_cfqq_sync(cfqq)) {
->  		__cfq_update_io_thinktime(&cic->ttime, cfqd->cfq_slice_idle);
-> +		service_tree = service_tree_for(cfqg, cfqq_prio(cfqq),
-> +			cfqq_type(cfqq));
-
-I think by now cfqq is already on the service tree and cfqq->service_tree
-should be set. So we should be able to just acess that instead of calling
-service_tree_for().
-
-I have noticed that cfqq might be queued on one service tree but we can
-change the idling on queue and cfqq_type() can return a different value
-and different service tree. So trying to avoid use of service_tree_for()
-when cfqq is already on a service tree should be good.
-
-> +		__cfq_update_io_thinktime(&service_tree->ttime,
-> +			cfqd->cfq_slice_idle);
-> +	}
->  }
->  
->  static void
-> @@ -3570,7 +3582,13 @@ static void cfq_completed_request(struct
->  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
->  
->  	if (sync) {
-> +		struct cfq_rb_root *service_tree;
-> +
->  		RQ_CIC(rq)->ttime.last_end_request = now;
-> +
-> +		service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
-> +			cfqq_type(cfqq));
-
-Ditto.
-
-> +		service_tree->ttime.last_end_request = now;
->  		if (!time_after(rq->start_time + cfqd->cfq_fifo_expire[1], now))
->  			cfqd->last_delayed_sync = now;
->  	}
-> 
-
-Thanks
-Vivek
+Hold on, let me rebase #stable/pci.cleanups and see if the issue
+here disappears.
