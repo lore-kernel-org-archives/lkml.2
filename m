@@ -1,78 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754296Ab1GEIwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 04:52:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39566 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab1GEIv7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 04:51:59 -0400
-Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110704175927.GZ4590@erda.amd.com>
-References: <20110703150430.GV4590@erda.amd.com>
-	 <1309716271.3282.6.camel@twins>  <20110704175927.GZ4590@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 05 Jul 2011 10:51:45 +0200
-Message-ID: <1309855905.3282.42.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	id S1754364Ab1GEIxT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 04:53:19 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:42702 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754054Ab1GEIxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 04:53:18 -0400
+Date: Tue, 5 Jul 2011 10:52:52 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Hu Tao <hutao@cn.fujitsu.com>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [patch 00/16] CFS Bandwidth Control v7
+Message-ID: <20110705085252.GA5274@elte.hu>
+References: <20110621071649.862846205@google.com>
+ <4E01BE6B.2090701@jp.fujitsu.com>
+ <1308830816.1022.112.camel@twins>
+ <20110623124310.GA15430@elte.hu>
+ <4E041C6A.4000701@jp.fujitsu.com>
+ <20110626103526.GA11093@elte.hu>
+ <20110629040521.GG4186@localhost.localdomain>
+ <20110701122824.GE28008@elte.hu>
+ <20110705035813.GC4656@localhost.localdomain>
+ <20110705085032.GA3169@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110705085032.GA3169@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-04 at 19:59 +0200, Robert Richter wrote:
 
-> First of all, it follows the idea of grouping events. Attaching events
-> to a specific pmu is not different from attaching them to a specific
-> event group. It is actually the same if we think of one group for
-> events that may be scheduled on only one pmu. Thus, treating a pmu
-> like a group event is the logical step for intuitive usage of the
-> perf_open syscall. This way we have symmetrical implementations for
-> binding events to groups or pmus.
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-That's not a good analogy. Grouping is about events being together, not
-about events being on a particular pmu.
+> 
+> * Hu Tao <hutao@cn.fujitsu.com> wrote:
+> 
+> > perf diff output:
+> > 
+> > # Baseline  Delta          Shared Object                       Symbol
+> > # ........ ..........  .................  ...........................
+> > #
+> >      0.00%    +10.07%  [kernel.kallsyms]  [k] __lock_acquire
+> >      0.00%     +5.90%  [kernel.kallsyms]  [k] lock_release
+> >      0.00%     +4.86%  [kernel.kallsyms]  [k] trace_hardirqs_off_caller
+> >      0.00%     +4.06%  [kernel.kallsyms]  [k] debug_smp_processor_id
+> >      0.00%     +4.00%  [kernel.kallsyms]  [k] lock_acquire
+> >      0.00%     +3.81%  [kernel.kallsyms]  [k] lock_acquired
+> >      0.00%     +3.71%  [kernel.kallsyms]  [k] lock_is_held
+> >      0.00%     +3.04%  [kernel.kallsyms]  [k] validate_chain
+> >      0.00%     +2.68%  [kernel.kallsyms]  [k] check_chain_key
+> >      0.00%     +2.41%  [kernel.kallsyms]  [k] trace_hardirqs_off
+> >      0.00%     +2.01%  [kernel.kallsyms]  [k] trace_hardirqs_on_caller
+> 
+> Oh, please measure with lockdep (CONFIG_PROVE_LOCKING) turned off. No 
+> production kernel has it enabled and it has quite some overhead (as 
+> visible in the profile), skewing results.
+> 
+> >      2.04%     -0.09%  pipe-test-100k     [.] main
+> >      0.00%     +1.79%  [kernel.kallsyms]  [k] add_preempt_count
+> 
+> I'd also suggest to turn off CONFIG_PREEMPT_DEBUG.
 
-> Device nodes are the general approach for controlling devices from
-> user-space, they are integral part of the Linux device driver model.
-> With a device file descriptor opened from a device node we can
-> explicitly point to a pmu device.
+The best way to get a good 'reference config' to measure scheduler 
+overhead on do something like:
 
-Yeah, but we already have a /sys interface, so this ship has sailed.
+	make defconfig
+	make localyesconfig
 
-> Representing a device with a device node is common programming
-> practice. Usage of device nodes is not deprecated. There are existing
-> frameworks to easily create such devices. With dynamically device node
-> allocation and udev there are solutions for drawbacks of /dev. Why not
-> having a device node for pmus? What are your concerns using /dev?
+The first step will configure a sane default kernel, the second one 
+will enable all drivers that are needed on that box. You should be 
+able to boot the resulting bzImage and all drivers should be built-in 
+and are easily profilable.
 
-Its impossible to represent events using that /dev interface,
-furthermore we already have a /sys interface, so this is pure
-duplication of a 
+Thanks,
 
-> The implementation only needs about 150 lines of kernel code. It is
-> straight and separated. There is nothing special what makes it hard to
-> read or maintain. The code is using typical kernel device allocation
-> methods. Do you think this patch makes kernel code too complex?
-
-It adds a redundant interface.
-
-> Beside of that, using /sys/ is racy. There is no protection against
-> unregistering the pmu. Probably this might not cause big problems in
-> practice, but it can be done better. With open/close we can protect
-> the pmu from being removed.
-
-Why can't the open/close of the sysfs file provide the same? It just
-means you have to close after sys_perf_event_open()
-
-> Overall, my approach improves the perf design. It adds a better and
-> more intuitve access to perf from user space with clear and common
-> methods and interfaces. Please let me know the concerns you have.
-
-Its redundant, this interface ship has sailed, its not going to happen.
+	Ingo
