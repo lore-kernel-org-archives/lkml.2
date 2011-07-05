@@ -1,54 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751851Ab1GEPXJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 11:23:09 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:52275 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751148Ab1GEPXH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 11:23:07 -0400
-X-Sasl-enc: s2t4b65OVNz0Dqi0XQ31Vcf0mcjgFrjoYeTgT84ljf/x 1309879386
-Date: Tue, 5 Jul 2011 08:23:02 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/49] GMA50 series update
-Message-ID: <20110705152302.GA30891@kroah.com>
-References: <20110705141038.23872.55303.stgit@localhost.localdomain>
+	id S1754535Ab1GEPYr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 11:24:47 -0400
+Received: from void.printf.net ([89.145.121.20]:48621 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752181Ab1GEPYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 11:24:45 -0400
+From: Chris Ball <cjb@laptop.org>
+To: Per Forlin <per.forlin@linaro.org>
+Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        Venkatraman S <svenkatr@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
+        Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH] mmc: documentation of mmc non-blocking request usage and design.
+References: <1309878894-2700-1-git-send-email-per.forlin@linaro.org>
+Date: Tue, 05 Jul 2011 11:24:18 -0400
+In-Reply-To: <1309878894-2700-1-git-send-email-per.forlin@linaro.org> (Per
+	Forlin's message of "Tue, 5 Jul 2011 17:14:54 +0200")
+Message-ID: <m2liwc21jx.fsf@bob.laptop.org>
+User-Agent: Gnus/5.110018 (No Gnus v0.18) Emacs/23.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 03:33:48PM +0100, Alan Cox wrote:
-> (Rebased versus the patches Greg took earlier)
-> 
-> The main things here are modularisation and support for Cedarview (this is
-> unaccelerated as it has no 2D acceleration). I have some crazy ideas about using
-> the GTT to do 2D console acceleration however but not much can be done for X.
-> 
-> At this point I think the Poulsbo (GMA500) and Cedarview code are probably ready
-> to move out of staging - hence the modularisation work. The MID platforms need
-> more cleaning up.
-> 
-> HDMI support at this point is pretty basic with no HDMI audio support. I'm hoping
-> that will be something that can be addressed in future and now the basic bits
-> are there I need to take a look at Oaktrail (Atom Z760/GMA600) and see if the
-> same code can be used to bring up HDMI on that device too.
+Hi Per, minor proofreading,
 
-I've applied this series, but I get the following error when building:
+On Tue, Jul 05 2011, Per Forlin wrote:
+> Documentation about the background and the design of mmc non-blocking.
+> Host driver guide lines to minimize request preparation over head.
 
-make[2]: *** No rule to make target `drivers/staging/gma500/cdv_intel_crt.o', needed by `drivers/staging/gma500/psb_gfx.o'.  Stop.
+guidelines, overhead
 
-Care to send a follow-on patch fixing this?
+>
+> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> ---
+>  Documentation/mmc/00-INDEX          |    2 +
+>  Documentation/mmc/mmc-async-req.txt |   85 +++++++++++++++++++++++++++++++++++
+>  2 files changed, 87 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/mmc/mmc-async-req.txt
+>
+> diff --git a/Documentation/mmc/00-INDEX b/Documentation/mmc/00-INDEX
+> index 93dd7a7..11bc2cf 100644
+> --- a/Documentation/mmc/00-INDEX
+> +++ b/Documentation/mmc/00-INDEX
+> @@ -4,3 +4,5 @@ mmc-dev-attrs.txt
+>          - info on SD and MMC device attributes
+>  mmc-dev-parts.txt
+>          - info on SD and MMC device partitions
+> +mmc-async-req.txt
+> +        - info on mmc asynchronous request
+> diff --git a/Documentation/mmc/mmc-async-req.txt b/Documentation/mmc/mmc-async-req.txt
+> new file mode 100644
+> index 0000000..d139a51
+> --- /dev/null
+> +++ b/Documentation/mmc/mmc-async-req.txt
+> @@ -0,0 +1,85 @@
+> +Rationale
+> +=========
+> +
+> +How significant is the cache maintenance over head?
 
-Also, should I be able to select all of the different platforms even
-though I'm only building for a x86-64 platform?
+overhead
 
-thanks,
+> +It depends, fast eMMC and multiple cache levels with speculative cache pre-fetch
 
-greg k-h
+This line is over 80 cols.  Please wrap at around 76 cols.
+
+> +makes the cache overhead relatively significant. If the DMA preparations
+> +for the next request is done in parallel to the current transfer
+
+are done
+
+> +the DMA preparation overhead would not affect the MMC performance.
+> +The intention of non-blocking (asynchronous) mmc requests is to minimize the
+> +time between a mmc request ends and another mmc request begins.
+
+between when an
+
+> +Using mmc_wait_for_req() the MMC controller is idle when dma_map_sg and
+
+s/when/while/
+
+> +dma_unmap_sg is processing. Using non-blocking mmc request makes it
+
+requests
+
+> +possible to prepare the caches for next job in parallel to an active
+> +mmc request.
+> +
+> +MMC block driver
+> +================
+> +
+> +The issue_rw_rq() in the mmc block driver is made non-blocking.
+> +The increase in throughput is proportional to the time it takes to
+> +prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
+> +a request and how fast the memory is. The faster the MMC/SD is
+> +the more significant the prepare request time becomes. Roughly the expected
+> +performance gain is 5% for large writes and 10% on large reads on a L2 cache
+> +platform. In power save mode, when clocks run on a lower frequency, the DMA
+> +preparation may cost even more. As long as these slower preparations are run
+> +in parallel to the transfer performance wont be affected.
+> +
+> +Details on measurements from IOZone and mmc_test
+> +================================================
+> +
+> +https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
+> +
+> +MMC core API extension
+> +======================
+> +
+> +There is one new public function mmc_start_req()
+> +Is starts a new MMC command request for a host. The function isn't
+
+s/Is/It/
+
+> +truely non-blocking. If there is on ongoing async request it waits
+
+truly
+
+> +for completion of that request and starts the new one and return. It
+
+start
+
+> +Doesn't wait for the new request to complete. If there is no ongoing
+
+s/Doesn't/doesn't/
+
+> +request it starts the new request and returns immediately.
+> +
+> +MMC host extensions
+> +===================
+> +
+> +There are two optional hooks pre_req() and post_req() that the host driver
+> +may implement in order to move work to before and after the actual mmc_request
+> +function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
+> +the dma descriptor, and post_req runs the dma_unmap_sg.
+> +
+> +Optimize for the first request
+> +==============================
+> +
+> +The first request in a series of requests can't be prepared in parallel to the
+> +previous transfer, since there is no previous request.
+> +The argument is_first_req in pre_req() indicates that there is no previous
+> +request. The host driver may optimize for this scenario to minimize
+> +the performance loss. A way to optimize for this is to split the current
+> +request in two chunks, prepare the first chunk and start the request,
+> +and finally prepare the second chunk and start the transfer.
+> +
+> +Pseudocode to handle is_first_req scenario with minimal prepare over head:
+
+overhead
+
+> +if (is_first_req && req->size > threshold)
+> +   /* start MMC transfer for the complete transfer size */
+> +   mmc_start_command(MMC_CMD_TRANSFER_FULL_SIZE)
+> +
+> +   /*
+> +    * Begin to prepare DMA while cmd is being processed by MMC.
+> +    * The first chunk of the request should take the same time
+> +    * to prepare as the "MMC process command time".
+> +    * If prepare time exceeds MMC cmd time
+> +    * the transfer is delayed, guesstimate max 4k as first chunk size.
+> +    */
+> +    prepare_1st_chunk_for_dma(req)
+> +    /* flush pending desc to the DMAC (dmaengine.h) */
+> +    dma_issue_pending(req->dma_desc);
+> +
+> +    prepare_2st_chunk_for_dma(req)
+
+2nd, not 2st
+
+> +    /*
+> +     * The second issue_pending should be called before MMC runs out
+> +     * of the first chunk. If the MMC runs out of the first data chunk before
+> +     * this call, the transfer is delayed.
+> +     */
+> +    dma_issue_pending(req->dma_desc);
+
+Thanks,
+
+- Chris.
+-- 
+Chris Ball   <cjb@laptop.org>   <http://printf.net/>
+One Laptop Per Child
