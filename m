@@ -1,46 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab1GELFz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:05:55 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:54501 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755757Ab1GELFy (ORCPT
+	id S932117Ab1GELKh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:10:37 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:54341 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932100Ab1GELKg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:05:54 -0400
-Date: Tue, 5 Jul 2011 15:05:50 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
- sake of nmi-watchdog on P4
-Message-ID: <20110705110550.GQ17941@sun>
-References: <20110705100320.GK17941@sun>
- <20110705102017.GA12458@elte.hu>
- <20110705103403.GN17941@sun>
- <20110705105959.GA14435@elte.hu>
+	Tue, 5 Jul 2011 07:10:36 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705105959.GA14435@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201107051128.25262.richard@nod.at>
+References: <1309821341.4527.5.camel@vitaliy-Vostro-1400>
+	<201107051128.25262.richard@nod.at>
+Date: Tue, 5 Jul 2011 14:10:34 +0300
+Message-ID: <CAGTPOqcAETWHG3DEOwDZkMG8_qd-opf90psCi=+U+tYcGV=7=A@mail.gmail.com>
+Subject: Re: [PATCH 1/4] uml: cow_user.c warning corrections
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Jeff Dike <jdike@addtoit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        user-mode-linux-devel@lists.sourceforge.net,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 12:59:59PM +0200, Ingo Molnar wrote:
-...
-> 
-> are 'non-sleeping ticks' non-halted cycles - i.e. cycles that always 
-> count with CPU frequency and can thus be used for periodic 
-> frequencies?
-> 
+On Tue, Jul 5, 2011 at 12:28 PM, Richard Weinberger <richard@nod.at> wrote:
+> Am Dienstag 05 Juli 2011, 01:15:41 schrieb Vitaliy Ivanov:
+>> From 6201d3e862fca8670b206338dc90303ea0acc77d Mon Sep 17 00:00:00 2001
+>> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+>> Date: Tue, 5 Jul 2011 01:57:51 +0300
+>> Subject: [PATCH 1/4] uml: cow_user.c warning corrections
+>> MIME-Version: 1.0
+>> Content-Type: text/plain; charset=UTF-8
+>> Content-Transfer-Encoding: 8bit
+>>
+>> arch/um/drivers/cow_user.c: In function ‘absolutize’:
+>> arch/um/drivers/cow_user.c:189:7: warning: ignoring return value of
+>> ‘chdir’, declared with attribute warn_unused_result
+>
+> What compiler flags are you using?
+> Using the default settings this warning does not show up.
+> Most of the "ignoring return value" are totally useless.
 
-Yes, I think so (btw, as far as I remember oprofile does the same 'threshold'
-gaming for nmi-watchdog).
+chdir is defined with warn_unused_result attribute and my gcc on
+Ubuntu 11.04 issues warnings.
+I don't use any additional flags on compiling UML.
 
-	Cyrill
+Vitaliy
