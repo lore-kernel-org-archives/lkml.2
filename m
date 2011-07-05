@@ -1,60 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754272Ab1GEPEa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 11:04:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5143 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab1GEPE3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 11:04:29 -0400
-Date: Tue, 5 Jul 2011 11:04:20 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC 1/2] cfq: request-deadline policy
-Message-ID: <20110705150420.GD24348@redhat.com>
-References: <20110704130838.27757.87486.stgit@localhost6>
+	id S1755239Ab1GEPGT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 11:06:19 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:43496 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753593Ab1GEPGS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 11:06:18 -0400
+X-Sasl-enc: nfBCv9yBmXH8H4vpkXDH6db1qfCmVALKBWeMcDU7V5e9 1309878377
+Date: Tue, 5 Jul 2011 08:05:57 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Clark <sclark46@earthlink.net>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: kernel -2.6.35.13 longterm
+Message-ID: <20110705150557.GA2348@kroah.com>
+References: <4E13212D.3020005@earthlink.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110704130838.27757.87486.stgit@localhost6>
+In-Reply-To: <4E13212D.3020005@earthlink.net>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 05:08:38PM +0400, Konstantin Khlebnikov wrote:
-> CFQ is designed for sharing disk bandwidth proportionally between queues and groups
-> and for reordering requests to reduce disks seek time. Currently it cannot
-> gurantee or estimate latency for individual requests, even if latencies are low
-> for almost all requests, some of them can stuck inside scheduler for a long time.
-> The fair policy is good as long as someone luckless begins to die due to a timeout.
+On Tue, Jul 05, 2011 at 10:35:25AM -0400, Stephen Clark wrote:
+> Hello,
 > 
-> This patch implements fifo requests dispatching with deadline policy: now cfq
-> obliged to dispatch request if it stuck in the queue for more than deadline.
+> Is it possible to get the following patches included in the longterm kernel
+> 2.6.35.13?
+
+Possibly, but you need to email the correct person and email address,
+none of which you did :)
+
+Try stable@kernel.org, and the .35-longterm maintainer (hint, it's not
+me.)
+
+> They let linux behave according to:
 > 
-> This way now cfq can try to ensure the expected latency of requests execution.
-> It is like a safety valve, it should not work all time, but it should keep latency
-> in sane range when the scheduler is unable to effectively handle flow of requests,
-> especially in cases when the "noop" or "deadline" shows better performance.
-> 
-> deadline can be tuned via /sys/block/<device>/queue/iosched/deadline_{sync,async}
-> it by default 2000ms for sync and 4000ms for async requests, use 0 to disable it.
+> "Basic Requirements for IPv6 Customer Edge Routers
+>    draft-ietf-v6ops-ipv6-cpe-router-09"
 
-What's the workload where you are running into issues with existing
-policy?
+That looks like a new feature, not a regression or bugfix, right?
 
-We have low_latency=1 by default and which tries to schedule every 
-queue once in 300ms atleast. And with-in queue we already have the
-notion of looking at fifo and dispatch the expired request first.
+Did you read Documentation/stable_kernel_rules.txt?
 
-So to me sync queue scheduling shold be pretty good. Async queues
-can get starved though. With-in sync queue, if some requests have
-expired, it is probably because of the fact that disk is slow and
-we are throwing too much IO at it. So if we start always dispatching
-expired requests first, then the notion of fairness is out of the
-window.
+> From: Thomas Graf
+> Subject: [PATCH] ipv6: add special mode accept_ra=2 to accept RA
+> while configured as router
+> Date: Friday, September 3, 2010 - 5:59 am
+>
 
-Why not use deadline scheduler for your case?
+You forgot to mention what the git commit id this is upstream in Linus's
+branch, and to copy the people involved in the original patch (author,
+subsystem maintainer, etc.) to see if they agree it should go in.
 
-Thanks
-Vivek
+greg k-h
