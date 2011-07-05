@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab1GEQqE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 12:46:04 -0400
-Received: from mail.perches.com ([173.55.12.10]:3530 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755895Ab1GEQmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 12:42:18 -0400
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Cc: devel@driverdev.osuosl.org
-Subject: [PATCH 01/14] MAINTAINERS: Add STAGING - ASUS OLED
-Date: Tue,  5 Jul 2011 09:42:01 -0700
-Message-Id: <90fc4de7cb8280d3f11c92bbe696bd1cdffd1699.1309883752.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.6.131.g99019
-In-Reply-To: <cover.1309883752.git.joe@perches.com>
-References: <20110704153435.GA17475@suse.de> <cover.1309883752.git.joe@perches.com>
+	id S1756010Ab1GEQzD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 12:55:03 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:37638 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab1GEQzA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 12:55:00 -0400
+From: "Grosen, Mark" <mgrosen@ti.com>
+To: "Nori, Sekhar" <nsekhar@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>
+CC: Ohad Ben-Cohen <ohad@wizery.com>,
+        davinci-linux-open-source 
+	<davinci-linux-open-source@linux.davincidsp.com>,
+        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+Subject: RE: [RFC 5/8] remoteproc: add davinci implementation
+Thread-Topic: [RFC 5/8] remoteproc: add davinci implementation
+Thread-Index: AQHML+P0Hfr3a08OpEW7Q/TK8TF6jpTLaEUAgAB6tVCAARO0AIAACGCAgASPneCAC7mBkIAAv+Jw
+Date: Tue, 5 Jul 2011 16:54:14 +0000
+Message-ID: <FFF198FBBF957F4393BA834040FEFFA2032F69@DFLE35.ent.ti.com>
+References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
+	<1308640714-17961-6-git-send-email-ohad@wizery.com>
+	<4E035B78.3080200@mvista.com>
+	<FFF198FBBF957F4393BA834040FEFFA202D66E@DFLE35.ent.ti.com>
+ <4E04A9AE.3030801@mvista.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024D6C2F29@dbde02.ent.ti.com>
+ <FFF198FBBF957F4393BA834040FEFFA202EC99@DFLE35.ent.ti.com>
+ <B85A65D85D7EB246BE421B3FB0FBB593024D91A2BE@dbde02.ent.ti.com>
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024D91A2BE@dbde02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [128.247.5.50]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+> From: Nori, Sekhar
+> Sent: Monday, July 04, 2011 10:30 PM
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 7fe708d..6f0d683 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -6069,6 +6069,11 @@ L:	devel@driverdev.osuosl.org
- S:	Maintained
- F:	drivers/staging/
- 
-+STAGING - ASUS OLED
-+M:	Jakub Schmidtke <sjakub@gmail.com>
-+S:	Odd Fixes
-+F:	drivers/staging/asus_oled/
-+
- STARFIRE/DURALAN NETWORK DRIVER
- M:	Ion Badulescu <ionut@badula.org>
- S:	Odd Fixes
--- 
-1.7.6.131.g99019
+...
+> > > https://patchwork.kernel.org/patch/662941/
+> >
+> > Yes, I like this idea - much cleaner. For example, the start() method
+> > becomes (pseudo-code):
+> >
+> > start()
+> > {
+> >     /* bootaddrreg derived from platform data */
+> >     bootaddrreg = boot_address;
+> >
+> >     clk_enable();
+> > }
+> >
+> > Referring to your patch above, would it be better to just pass
+> > the flags into the davinci_psc_config() function rather than breaking
+> out more
+> > arguments for each flag?
+> 
+> I did dwell on this quite a bit while writing that
+> patch, but finally decided on passing an argument
+> instead since I was not sure if there are going
+> to be more modifiers required.
+> 
+> Now that you have the need for one more flag, I
+> think we should go ahead and pass the flags directly
+> to davinci_psc_config(). My original patch is not
+> upstream yet. I will re-spin it and you can build
+> on top of it.
+
+Thanks, Sekhar, this sounds good. I'll look for your patch and utilize
+it in the next rev of this patch.
+
+Mark
 
