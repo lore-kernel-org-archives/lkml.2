@@ -1,76 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752277Ab1GEPwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 11:52:34 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48318 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751124Ab1GEPwd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 11:52:33 -0400
-Date: Tue, 5 Jul 2011 08:50:40 -0700
-From: Greg KH <gregkh@suse.de>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
-Message-ID: <20110705155040.GB16682@suse.de>
-References: <20110704170949.11059.92774.stgit@ponder>
- <20110704180159.GA11278@ponder.secretlab.ca>
- <20110705142149.GA3498@suse.de>
- <201107051721.02079.arnd@arndb.de>
+	id S1753395Ab1GEPxZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 11:53:25 -0400
+Received: from na3sys009aog121.obsmtp.com ([74.125.149.145]:49248 "EHLO
+	na3sys009aog121.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751031Ab1GEPxY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 11:53:24 -0400
+Date: Tue, 5 Jul 2011 18:53:14 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <balbi@ti.com>, Partha Basak <p-basak2@ti.com>,
+        Keshava Munegowda <keshava_mgowda@ti.com>,
+        USB list <linux-usb@vger.kernel.org>, linux-omap@vger.kernel.org,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Anand Gadiyar <gadiyar@ti.com>, sameo@linux.intel.com,
+        parthab@india.ti.com, tony@atomide.com, Kevin Hilman <khilman@ti.com>,
+        Benoit Cousson <b-cousson@ti.com>, paul@pwsan.com, johnstul@us.ibm.com,
+        Vishwanath Sripathy <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
+ of ehci and ohci
+Message-ID: <20110705155312.GQ2820@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <20110705125227.GI2820@legolas.emea.dhcp.ti.com>
+ <Pine.LNX.4.44L0.1107050958090.2060-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AGgF02x1jLHCLk2P"
 Content-Disposition: inline
-In-Reply-To: <201107051721.02079.arnd@arndb.de>
+In-Reply-To: <Pine.LNX.4.44L0.1107050958090.2060-100000@iolanthe.rowland.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 05:21:01PM +0200, Arnd Bergmann wrote:
-> On Tuesday 05 July 2011, Greg KH wrote:
-> > So the driver core is just going to sit and spin and continue to try to
-> > probe drivers for as long as it gets that error value returned?  What is
-> > going to ever cause that loop to terminate?  It seems a bit hacky to
-> > just keep looping over and over and hoping that sometime everything will
-> > all settle down so that we can go to sleep again.
-> 
-> Well, it only needs to try as long as there are still new devices
-> succeeding to get probed. The order that I think this should happen
-> in is:
-> 
-> * go through all initcalls, record any devices that are not yet ready
-> * retry all devices on the list as long as at least one of them has
->   succeeded.
-> * when a new device gets matched from a module load, do that loop again
 
-You don't know when init calls are finished, or if a module is loaded,
-the driver core isn't that smart at all.
+--AGgF02x1jLHCLk2P
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> If I read the patch correctly, the workqueue would be scheduled
-> every time a new device gets added, which retries the devices
-> more often than necessary and can have significant boot time
-> impact, and it also introduces more asynchronicity that may expose
-> new bugs.
-> 
-> Maybe we can have a late_initcall that enables the automatic retry
-> and probes everything once:
-> 
-> static bool deferred_probe;
-> static int __init deferred_probe_start(void)
-> {
-> 	deferred_probe = true;
-> 	mutex_lock(&deferred_probe_mutex);
-> 	if (!list_empty(&deferred_probe_list))
-> 		schedule_work(&deferred_probe_work);
-> 	mutex_unlock(&deferred_probe_mutex);
-> 	flush_work_sync(&deferred_probe_work);
-> }
-> late_initcall(retry_devices);
+Hi,
 
-I wonder if doing this all from a workqueue in the first place is going
-to cause problems as probe isn't normally done this way at all.
+On Tue, Jul 05, 2011 at 10:17:14AM -0400, Alan Stern wrote:
+> On Tue, 5 Jul 2011, Felipe Balbi wrote:
+>=20
+> > > The real problem here is that you guys are trying to use the runtime =
+PM
+> > > framework to carry out activities during system suspend.  That won't
+> > > work; it's just a bad idea all round.  Use the proper callbacks to do
+> > > what you want.
+> >=20
+> > then what's the point in even having runtime PM if we will still have to
+> > implement the same functionality on the other callbacks ?
+>=20
+> You don't have to duplicate the functionality.  You can use exactly the
+> same functions for both sets of callbacks if you want; just make sure
+> the callbacks point to them.
 
-greg k-h
+true, good point.
+
+> >  Well, of
+> > course runtime PM will conserve power on runtime, but system suspend
+> > should be no different other than an "always deepest sleep state"
+> > decision.
+>=20
+> No, it is significantly different for several reasons.  Some of the
+> most important differences are concerned with freezing userspace and
+> deciding what events should be allowed to wake up the system.  Also,=20
+> there are systems which can achieve greater power savings by system=20
+> sleep than they can by runtime PM + cpuidle.
+
+I remember we've been through this discussion before and it's just
+nonsensical to make such statement. What does freezing userspace have to
+do with power consumption ? If you can't reach lower power consumption
+with runtime PM it only means userspace is waking the system too much.
+
+> > The thing now is that pm_runtime was done so that drivers would stop
+> > caring about clocks, which is a big plus, but if we still have to handle
+> > ->suspend()/->resume() differently, we will still need to clk_get();
+> > clk_enable(); clk_disable(); Then what was the big deal with runtime PM?
+>=20
+> I don't know about that.  Clock usage has always been internal to the
+> implementation you guys have been working on, and I haven't followed
+> it.  If your implementation was designed incorrectly, well, that's a
+> shame but it's understandable.  Things like that happen.  It shouldn't
+> be too hard to fix.
+>=20
+> But first you do need to understand that system suspend really _is_=20
+> different from runtime suspend.  Sure, you may be able to share some=20
+> code between them, but you should not expect to be able to use one in=20
+> place of the other.
+
+I really fail to see why not, and maybe it's only my fault and I need to
+read the Documentation/ more carefully :-s
+
+> > IMHO, we should have only one PM layer. System suspend/resume should be
+> > implemented so that core PM "forcefully" calls
+> > ->runtime_suspend()/->runtime_resume() of call drivers, all
+> > synchronously. Maybe we need an extra
+> > RPM_STATIC_SUSPEND_PLEASE_HANDLE_IT_ALL_SYNCHRONOUSLY flag, but that's
+> > another detail.
+>=20
+> Statements like this should be posted to linux-pm where they can be=20
+> discussed properly.  It certainly isn't fair to make such claims=20
+> without even CC-ing the PM maintainer.
+>=20
+> Besides, handling runtime PM synchronously won't do you any good if the=
+=20
+> user has disabled runtime PM via sysfs or not enabled=20
+> CONFIG_PM_RUNTIME in the first place.  Have you forgotten about those=20
+> possibilities?
+
+I thought that the "we should have only one PM layer" already carried
+the idea that CONFIG_PM and CONFIG_PM_RUNTIME would be combined into
+one, and sysfs would need a little re-factoring...
+
+> Furthermore, from what I've gathered so far from this thread, the
+> _real_ problem is that nobody has written suspend and resume callbacks
+> for the parent device.  You're relying on runtime PM to do things with
+> the parent, but instead you should make use of the usual system sleep
+> mechanism: Parents are always suspended after their children and
+> awakened before.  Have the parent's suspend routine disable the clocks=20
+> and have the resume routine enable them.  Problem solved, no changes=20
+> needed in the child's driver code.
+
+that's currently hidden on the omap rutime pm support. No driver is to
+talk to clk API directly anymore. Granted, now that I read what I just
+wrote it does sound like it's a limitation, although it's really nice
+not to have to remember all the numerous clocks needed for a particular
+device to work properly. So, if there would be a way, other than
+pm_runtime_resume(), to enable all clocks a particular device has
+without really having to clk_get(); clk_enable() each one of them, fine,
+this would be solved. But as of today, we only have pm_runtime_resume()
+to achieve that, unless I'm missing something.
+
+--=20
+balbi
+
+--AGgF02x1jLHCLk2P
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOEzNoAAoJEAv8Txj19kN18bwH/iJYhNwdFImykIxMFtrUh2gN
+2iIwbEIYMaZZFClQFsyunW3uoLrSS7bhXAu1lzqgfMTEwe9TSeCYutZ6nnf7v/q1
+LI0jhx6u+9AilxIbSg48y3BDK+bqNKNehdS5W8JthXI07g2rqDIEAcInOgAgoJuk
+zgqfpQ6VayjWZufWQ87vkHbYqj/g+e5hYDlyeOGCxbUV8C9ZbluQd4VMPbVWb+dr
+zc6jisoNLbBXCyvrFMDsuAWuCdgtfiG+xBkJ0TBSP+u4joMYxwp4uMYswokW3JFf
+i+EaSD7Waa6SN6/PgJsZEH0FN8SjFB6akCUKGzgSIzBlif/QS9InY9mq0Wg6UzI=
+=3yuM
+-----END PGP SIGNATURE-----
+
+--AGgF02x1jLHCLk2P--
