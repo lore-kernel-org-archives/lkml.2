@@ -1,132 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab1GELgt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:36:49 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:37316 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932175Ab1GELgs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:36:48 -0400
-Date: Tue, 5 Jul 2011 13:36:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86/EFI: properly pre-initialize table pointers
-Message-ID: <20110705113642.GB15654@elte.hu>
-References: <4E12DC26020000780004C1C1@nat28.tlf.novell.com>
- <20110705093343.GB5725@elte.hu>
- <4E130EA0020000780004C24A@nat28.tlf.novell.com>
+	id S932256Ab1GELhS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:37:18 -0400
+Received: from ch1ehsobe004.messaging.microsoft.com ([216.32.181.184]:33265
+	"EHLO CH1EHSOBE017.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932242Ab1GELhQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 07:37:16 -0400
+X-SpamScore: -23
+X-BigFish: VPS-23(zz9371M542M154dM1432N98dKzz1202hzz8275bh8275dhz32i2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:220.225.38.51;KIP:(null);UIP:(null);IPVD:NLI;H:kcinpunhjhc02.kpit.com;RD:none;EFVD:NLI
+From: Ashish Jangam <Ashish.Jangam@kpitcummins.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "sameo@openedhand.com" <sameo@openedhand.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Dajun <dajun.chen@diasemi.com>,
+        "linaro-dev@lists.linaro.org" <linaro-dev@lists.linaro.org>
+Date: Tue, 5 Jul 2011 17:07:06 +0530
+Subject: RE: [PATCH 1/11] MFD: DA9052 MFD core module v1
+Thread-Topic: [PATCH 1/11] MFD: DA9052 MFD core module v1
+Thread-Index: Acw2V+21TU4PuLHpRr+zto4T2nWgKQErmZAA
+Message-ID: <E2CAE7F7B064EA49B5CE7EE9A4BB167D18F6DB1B06@KCINPUNHJCMS01.kpit.com>
+References: <1309270609.376.226.camel@L-0532.kpit.com>
+ <201106291427.11534.arnd@arndb.de>
+In-Reply-To: <201106291427.11534.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E130EA0020000780004C24A@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p65BbQ0p015674
 
-
-* Jan Beulich <JBeulich@novell.com> wrote:
-
-> >>> On 05.07.11 at 11:33, Ingo Molnar <mingo@elte.hu> wrote:
+> -----Original Message-----
+> From: Arnd Bergmann [mailto:arnd@arndb.de]
+> Sent: Wednesday, June 29, 2011 5:57 PM
+> To: Ashish Jangam
+> Cc: Mark Brown; sameo@openedhand.com; linux-kernel@vger.kernel.org; Dajun;
+> linaro-dev@lists.linaro.org
+> Subject: Re: [PATCH 1/11] MFD: DA9052 MFD core module v1
 > 
-> > * Jan Beulich <JBeulich@novell.com> wrote:
-> > 
-> >> Consumers of the table pointers in struct efi check for
-> >> EFI_INVALID_TABLE_ADDR to determine validity, hence these pointers
-> >> should all be pre-initialized to this value (rather than zero).
-> >> 
-> >> Signed-off-by: Jan Beulich <jbeulich@novell.com>
-> >> 
-> >> ---
-> >>  arch/x86/platform/efi/efi.c |   12 +++++++++++-
-> >>  1 file changed, 11 insertions(+), 1 deletion(-)
-> > 
-> > This changelog is missing some key information:
-> > 
-> >  - how did you find the bug (by chance via code review or did you see
-> >    some actual badness?)
+> On Tuesday 28 June 2011, ashishj3 wrote:
+> > The DA9052 is a highly integrated PMIC subsystem with supply domain
+> flexibility
+> > to support wide range of high performance application.
+> >
+> > It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
+> > control and other functionality.
+> >
+> > Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> > Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 > 
-> I can certainly add that information and re-send, but would 
-> certainly have stated any really bad effect if I had observed such.
-
-I have no way to know that and disambiguate it: it could be as you 
-say, or you could have forgotten to include it.
-
-And this is not a theoretical concern, for example here you claimed 
-that a fix "possibly" fixed a boot crash:
-
-   http://lkml.org/lkml/2011/1/6/262
-
-and after repeated prodding you admitted that you have a specific 
-system where it fixes not a possible but a real crash:
-
-   http://lkml.org/lkml/2011/1/7/159
-
-There's a world of a difference between a "possible" boot crash and a 
-truly observed one.
-
-> >  - what practical effect (if any) did you see from this patch?
-> > 
-> >  - what practical effect (if any) do you expect others to see from this 
-> > patch?
+> Hi Ashish and Dajun,
 > 
-> Hmm, I can't really see why this kind of information (especially 
-> the last) would belong into a changeset comment, the more a pretty 
-> obvious one like this.
-
-Such information is a standard part of bugfixes, exactly for the 
-reasons demonstrated with the patch i quoted above. Please fix and 
-resubmit.
-
-> > This kind of information helps us prioritize bugfixes.
+> As we discussed last time, I think it would be important to lay out the
+> drivers in a way that also works with the da9053 chip that has recently
+> been submitted in another thread.
 > 
-> Bug fixes are bug fixes - unless they fix really critical issues 
-> (and here that's unlikely to be the case, as the code had been 
-> wrong for ages), I don't follow why you require more information to 
-> be added than a description of what gets changed (the "why" should 
-> really only matter if it's debatable whether the original code was 
-> wrong).
-
-No, that's not how we construct changelogs. What we do is the exact 
-opposite: we try to err on the side of being overly verbose. A too 
-verbose changelog is never a problem.
-
-But should a commit turn out to cause problems (often months/years 
-down the line) it's absolutely vital to have the motivation, 
-observations and expectations of the patch submitter documented.
-
-You already have that information, you only need to write it down - 
-instead of forcing maintainers to guess and duplicate work ...
-
-> Furthermore, this being not the first time you ask (from my pov) to 
-> be overly verbose when it comes to describing changes and their 
-> effects - is it unreasonable to expect you (not always you 
-> personally, but you as being one of the three x86 maintainers; you 
-> hopefully agree that from my position it doesn't really matter who 
-> answers as long as someone assumes that responsibility) to be a 
-> little less lax in responding to submitted patches? I would roughly 
-> estimate that 50% of the patches I send get dropped on the floor 
-> with no response whatsoever (there are even cases where you 
-> welcomed patches, but never applied them or responded with a 
-> revised opinion on a re- submission). I clearly realize that the 
-> volume you need to deal with must be pretty high, yet I don't think 
-> that ought to be an excuse for other than occasional cases of this 
-> happening.
+> This does not mean that you have to support both from the start, but
+> I would expect you to look at the differences and for each file decide
+> whether they are completely different (e.g. one of them has backlight,
+> the other one doesn't) or similar enough to be handled by one driver
+> with a few conditional functions. My guess is that the da9052-core.c
+> file would be different for each chip, while both the front-end
+> (spi, i2c) and the back-end drivers (hwmon, backlight, regulator, ...)
+> can be shared.
 > 
-> And yes, there are also other times when things get integrated 
-> *very* quickly, and I definitely appreciate that.
+> Please rename the files and the identifiers accordingly, and document
+> in the changelog which hardware they can eventually support.
+> I would expect a lot of the identfiers to become da905x or even
+> da90xx.
+DA9053 chip submission was done by Linaro and now they have agreed that
+we will be only responsible for DA9053 submission too so now we can
+skip the posted DA9053 patch.
 
-You should realize that there's correlation between the proper 
-verbosity of your changelogs and the likelyhood that they get 
-applied.
+Regarding file naming convention da9052 seems to be appropriate since 
+DA9053 chip is update of DA9052 and also DA9052 is the umbrella name
+for the whole family.
 
-Thanks,
+Ashish
 
-	Ingo
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
