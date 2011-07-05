@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab1GEX1L (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 19:27:11 -0400
-Received: from oproxy7-pub.bluehost.com ([67.222.55.9]:40394 "HELO
-	oproxy7-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754173Ab1GEX1J (ORCPT
+	id S1755123Ab1GEXde (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 19:33:34 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:35912 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752036Ab1GEXdd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 19:27:09 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=LWbJ97IgaZOzh5cG0jURbfoSvO5jKWgZj8l97d+crPvSJQSDVDZgoURsihiYK2tPzMAEJQOBmFqLWlTRVAGem0Nl5a10TbjybCoNCzA89dUhOGdo83EJuxLiIiRd5O5p;
-Date: Tue, 5 Jul 2011 16:27:05 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Per Forlin <per.forlin@linaro.org>
-Cc: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Chris Ball <cjb@laptop.org>
-Subject: Re: [PATCH v4] mmc: documentation of mmc non-blocking request usage
- and design.
-Message-Id: <20110705162705.c3081299.rdunlap@xenotime.net>
-In-Reply-To: <1309901732-3735-1-git-send-email-per.forlin@linaro.org>
-References: <1309901732-3735-1-git-send-email-per.forlin@linaro.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Tue, 5 Jul 2011 19:33:33 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Ankita Garg <ankita@in.ibm.com>
+Cc: linux-mm@kvack.org, svaidy@linux.vnet.ibm.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/5] mm,debug: VM framework to capture memory reference pattern
+In-Reply-To: Your message of "Tue, 05 Jul 2011 13:52:34 +0530."
+             <1309854159-8277-1-git-send-email-ankita@in.ibm.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1309854159-8277-1-git-send-email-ankita@in.ibm.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: multipart/signed; boundary="==_Exmh_1309908804_18528P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+Date: Tue, 05 Jul 2011 19:33:24 -0400
+Message-ID: <64797.1309908804@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Info: (0) 
+X-Junkmail-Status: score=10/50, host=steiner.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020204.4E139F47.002E,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  5 Jul 2011 23:35:32 +0200 Per Forlin wrote:
+--==_Exmh_1309908804_18528P
+Content-Type: text/plain; charset=us-ascii
 
-> +MMC block driver
-> +================
-> +
-> +The issue_rw_rq() in the MMC block driver is made non-blocking.
-> +The increase in throughput is proportional to the time it takes to
-> +prepare (major part of preparations are dma_map_sg and dma_unmap_sg)
-> +a request and how fast the memory is. The faster the MMC/SD is
-> +the more significant the prepare request time becomes. Roughly the expected
-> +performance gain is 5% for large writes and 10% on large reads on a L2 cache
-> +platform. In power save mode, when clocks run on a lower frequency, the DMA
-> +preparation may cost even more. As long as these slower preparations are run
-> +in parallel with the transfer performance wont be affected.
+On Tue, 05 Jul 2011 13:52:34 +0530, Ankita Garg said:
 
-                                             won't
+> by default) and scans through all pages of the specified tasks (including
+> children/threads) running in the system. If the hardware reference bit in the
+> page table is set, then the page is marked as accessed over the last sampling
+> interval and the reference bit is cleared.
 
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+Does that cause any issues for other code in the mm subsystem that was
+expecting to use the reference bit for something useful? (Similarly, if other
+code in mm turns that bit *off* for its own reasons, does your code still
+produce useful results?)
 
+--==_Exmh_1309908804_18528P
+Content-Type: application/pgp-signature
 
-thanks.
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOE59EcC3lWbTT17ARAgICAJ0eK8nvfFWBX/my5unboxcW+kwR1wCfe09X
+iuBPwUv3052e06A6+wQsgOk=
+=/A6K
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1309908804_18528P--
+
