@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab1GEQ11 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 12:27:27 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42050 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754542Ab1GEQ10 convert rfc822-to-8bit (ORCPT
+	id S1755697Ab1GEQ2Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 12:28:25 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48196 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755045Ab1GEQ2X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 12:27:26 -0400
+	Tue, 5 Jul 2011 12:28:23 -0400
+Date: Tue, 5 Jul 2011 12:28:22 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Felipe Balbi <balbi@ti.com>
+cc: Partha Basak <p-basak2@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
+        USB list <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Anand Gadiyar <gadiyar@ti.com>, <sameo@linux.intel.com>,
+        <parthab@india.ti.com>, <tony@atomide.com>,
+        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>,
+        <paul@pwsan.com>, <johnstul@us.ibm.com>,
+        Vishwanath Sripathy <vishwanath.bs@ti.com>
+Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
+ of ehci and ohci
+In-Reply-To: <20110705155312.GQ2820@legolas.emea.dhcp.ti.com>
+Message-ID: <Pine.LNX.4.44L0.1107051220220.2060-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <201107051805.00696.arnd@arndb.de>
-References: <20110704170949.11059.92774.stgit@ponder> <201107051721.02079.arnd@arndb.de>
- <20110705155040.GB16682@suse.de> <201107051805.00696.arnd@arndb.de>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 5 Jul 2011 10:27:05 -0600
-X-Google-Sender-Auth: ygF7pk4LfQTeVH9boZe767FKwjE
-Message-ID: <CACxGe6tGF5RBzaHe6TF1dqVs5hY9p809v5r07kWcguyA2Z8Yzw@mail.gmail.com>
-Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg KH <gregkh@suse.de>, Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 5, 2011 at 10:05 AM, Arnd Bergmann <arnd@arndb.de> wrote:
-> On Tuesday 05 July 2011, Greg KH wrote:
->> > * go through all initcalls, record any devices that are not yet ready
->> > * retry all devices on the list as long as at least one of them has
->> >   succeeded.
->> > * when a new device gets matched from a module load, do that loop again
->>
->> You don't know when init calls are finished, or if a module is loaded,
->> the driver core isn't that smart at all.
->
-> We know when most initcalls are finished (at late_initcall time), and
-> after that we don't need to know when a module gets loaded, only
-> when a device gets matched, and that's something we do know and
-> that Grant's patch uses already.
+On Tue, 5 Jul 2011, Felipe Balbi wrote:
 
-Yes, I'm thinking about doing exactly that.
+> > >  Well, of
+> > > course runtime PM will conserve power on runtime, but system suspend
+> > > should be no different other than an "always deepest sleep state"
+> > > decision.
+> > 
+> > No, it is significantly different for several reasons.  Some of the
+> > most important differences are concerned with freezing userspace and
+> > deciding what events should be allowed to wake up the system.  Also, 
+> > there are systems which can achieve greater power savings by system 
+> > sleep than they can by runtime PM + cpuidle.
+> 
+> I remember we've been through this discussion before and it's just
+> nonsensical to make such statement. What does freezing userspace have to
+> do with power consumption ? If you can't reach lower power consumption
+> with runtime PM it only means userspace is waking the system too much.
 
->> > late_initcall(retry_devices);
->>
->> I wonder if doing this all from a workqueue in the first place is going
->> to cause problems as probe isn't normally done this way at all.
+_That's_ what freezing userspace has to do with power consumption.  You 
+have answered your own question.
 
-Problems with drivers or problems with the driver core?  It shouldn't
-be a problem for drivers since only drivers that have explicitly
-requested deferral will end up with the device added to the deferral
-list.
+And don't forget the other points about wakeup events and greater power
+savings.  If you want to discuss this further, you should start a new
+thread on linux-pm.
 
-> True. It will definitely cause problems for any driver that calls
-> flush_work() in its probe function. We would need a private
-> singlethread_workqueue to avoid that.
 
-Ah, good point.  That's easy enough to do.
+> > Furthermore, from what I've gathered so far from this thread, the
+> > _real_ problem is that nobody has written suspend and resume callbacks
+> > for the parent device.  You're relying on runtime PM to do things with
+> > the parent, but instead you should make use of the usual system sleep
+> > mechanism: Parents are always suspended after their children and
+> > awakened before.  Have the parent's suspend routine disable the clocks 
+> > and have the resume routine enable them.  Problem solved, no changes 
+> > needed in the child's driver code.
+> 
+> that's currently hidden on the omap rutime pm support. No driver is to
+> talk to clk API directly anymore. Granted, now that I read what I just
+> wrote it does sound like it's a limitation, although it's really nice
+> not to have to remember all the numerous clocks needed for a particular
+> device to work properly. So, if there would be a way, other than
+> pm_runtime_resume(), to enable all clocks a particular device has
+> without really having to clk_get(); clk_enable() each one of them, fine,
+> this would be solved. But as of today, we only have pm_runtime_resume()
+> to achieve that, unless I'm missing something.
 
-g.
+(Actually, your problem isn't enabling clocks during resume; it is 
+disabling them during suspend.)
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+The OMAP maintainer should be involved in this discussion.  Basically,
+the new PM domain framework is now supposed to handle these issues.
+
+Alan Stern
+
