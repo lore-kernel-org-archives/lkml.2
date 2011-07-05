@@ -1,135 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753960Ab1GEH05 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 03:26:57 -0400
-Received: from smtp.turknetserver.com ([193.192.122.40]:46892 "EHLO
-	smtp.turknetserver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753701Ab1GEH0z (ORCPT
+	id S1753989Ab1GEHhb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 03:37:31 -0400
+Received: from smtp-vbr14.xs4all.nl ([194.109.24.34]:4766 "EHLO
+	smtp-vbr14.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753701Ab1GEHha (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 03:26:55 -0400
-Message-ID: <4E12BC70.5020702@turknetserver.com>
-Date: Tue, 05 Jul 2011 10:25:36 +0300
-From: Tarkan Erimer <tarkan@turknetserver.com>
-User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	Tue, 5 Jul 2011 03:37:30 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: "linux-kernel" <linux-kernel@vger.kernel.org>
+Subject: [RFCv2 PATCH] poll: add poll_requested_events() function
+Date: Tue, 5 Jul 2011 09:37:27 +0200
+User-Agent: KMail/1.13.5 (Linux/3.0.0-rc1-tschai; KDE/4.6.2; x86_64; ; )
+Cc: "linux-media" <linux-media@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
 MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [BUG] Btrfs: Corrupted root filesystem
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201107050937.28047.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the weekend; I updated my Linux Box. After the update, I rebooted my 
-box as usually. When I tried to log in, X or KDM was frozen. I had no 
-choice but hard reset. After the hard reset; when powered on again, I 
-hit the below btrfs bug :
+This is the second version of this patch. The only change I've made is that
+init_poll_funcptr() is now used in fs/eventpoll.c to initialize the poll_table
+instead of initializing it with '= { NULL, ~0 }'.
 
-[   22.588566] udev[1411]: starting version 166
-[   23.343133] device-mapper: uevent: version 1.0.3
-[   23.343327] device-mapper: ioctl: 4.18.0-ioctl (2010-06-29) 
-initialised: dm-devel@redhat.com
-[  183.992833] Btrfs loaded
-[  184.000282] device fsid 6e4eba2e662daff1-956db2b6443294be devid 1 
-transid 156509 /dev/sda1
-[  184.026900] parent transid verify failed on 712880873472 wanted 
-156509 found 156065
-[  184.027365] parent transid verify failed on 712880873472 wanted 
-156509 found 156065
-[  184.033328] parent transid verify failed on 712880873472 wanted 
-156509 found 156065
-[  184.054422] parent transid verify failed on 485440565248 wanted 
-156055 found 156498
-[  184.054895] parent transid verify failed on 485440565248 wanted 
-156055 found 156498
-[  184.055045] parent transid verify failed on 485440565248 wanted 
-156055 found 156498
-[  184.058274] parent transid verify failed on 485440565248 wanted 
-156055 found 156498
-[  184.058281] parent transid verify failed on 485440565248 wanted 
-156055 found 156498
-[  184.058306] ------------[ cut here ]------------
-[  184.058312] kernel BUG at 
-/usr/src/packages/BUILD/kernel-default-2.6.37.1/linux-2.6.37/fs/btrfs/disk-io.c:1004!
-[  184.058320] invalid opcode: 0000 [#1] SMP
-[  184.058326] last sysfs file: /sys/devices/virtual/bdi/btrfs-1/uevent
-[  184.058332] CPU 0
-[  184.058335] Modules linked in: btrfs zlib_deflate dm_mod nls_utf8 
-usb_storage ata_generic parport_pc parport arc4 ecb acpi_cpufreq mperf 
-fan thermal nfs nfs_acl lockd fscache auth_rpcgss sunrpc nls_iso8859_1 
-nls_cp437 af_packet st usbhid uhci_hcd processor sky2 sg sr_mod button 
-cdrom ehci_hcd thermal_sys usbcore edd squashfs loop
-[  184.058384]
-[  184.058388] Pid: 1975, comm: mount Not tainted 2.6.37.1-1.2-default 
-#1 LENOVO INVALID/To be filled by O.E.M.
-[  184.058400] RIP: 0010:[<ffffffffa02ac767>]  [<ffffffffa02ac767>] 
-find_and_setup_root+0xf7/0x100 [btrfs]
-[  184.058427] RSP: 0018:ffff88006b851c48  EFLAGS: 00010282
-[  184.058429] RAX: 00000000fffffffe RBX: ffff88006e318800 RCX: 
-0000000000000001
-[  184.058432] RDX: 00000000fffffffb RSI: ffff880072e0bf40 RDI: 
-ffff8800669f6140
-[  184.058435] RBP: ffff88006e318000 R08: 0000000000000000 R09: 
-0000000000000000
-[  184.058437] R10: 0000000000000001 R11: 0000000000000000 R12: 
-0000000000000002
-[  184.058440] R13: 00000000ffffffea R14: ffff880066850000 R15: 
-ffff88006e318000
-[  184.058443] FS:  00007f15180bd7e0(0000) GS:ffff880075600000(0000) 
-knlGS:0000000000000000
-[  184.058446] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-[  184.058448] CR2: 00007f236f078ca0 CR3: 000000006e4fb000 CR4: 
-00000000000406f0
-[  184.058451] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 
-0000000000000000
-[  184.058453] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 
-0000000000000400
-[  184.058456] Process mount (pid: 1975, threadinfo ffff88006b850000, 
-task ffff88006b474700)
-[  184.058459] Stack:
-[  184.058460]  0000000000000002 ffffffffa02abbf5 ffff88006e76e000 
-ffff880066851d18
-[  184.058465]  ffff88006e554800 ffffffffa02adbd7 0000000000000003 
-ffff88006b851d18
-[  184.058469]  ffff88006b851dd8 ffffffff817a6279 ffff88006e318800 
-ffff88006e76e800
-[  184.058473] Call Trace:
-[  184.058509]  [<ffffffffa02adbd7>] open_ctree+0xfc7/0x16e0 [btrfs]
-[  184.058536]  [<ffffffffa028de71>] btrfs_mount+0x411/0x520 [btrfs]
-[  184.058544]  [<ffffffff8114a529>] vfs_kern_mount+0x89/0x250
-[  184.058550]  [<ffffffff8114a763>] do_kern_mount+0x53/0x130
-[  184.058555]  [<ffffffff81164cc2>] do_mount+0x1e2/0x210
-[  184.058560]  [<ffffffff81164dda>] sys_mount+0x9a/0xf0
-[  184.058566]  [<ffffffff81002e4b>] system_call_fastpath+0x16/0x1b
-[  184.058571]  [<00007f15175abe4a>] 0x7f15175abe4a
-[  184.058573] Code: 45 10 31 c0 eb 93 66 0f 1f 44 00 00 8b 95 a8 02 00 
-00 eb b8 48 8b 7d 00 e8 47 71 02 00 b8 fb ff ff ff e9 72 ff ff ff 31 ff 
-eb ed <0f> 0b 0f 1f 80 00 00 00 00 48 83 ec 58 48 89 6c 24 30 48 8b 2d
-[  184.058597] RIP  [<ffffffffa02ac767>] find_and_setup_root+0xf7/0x100 
-[btrfs]
-[  184.058607]  RSP <ffff88006b851c48>
-[  184.058609] ---[ end trace 4e464313e039d2d9 ]---
-[  208.206581] JFS: nTxBlock = 8192, nTxLock = 65536
+Comments? Or even better: an Acked-by or Reviewed-by?
+
+Regards,
+
+	Hans
 
 
+In some cases the poll() implementation in a driver has to do different
+things depending on the events the caller wants to poll for. An example is
+when a driver needs to start a DMA engine if the caller polls for POLLIN,
+but doesn't want to do that if POLLIN is not requested but instead only
+POLLOUT or POLLPRI is requested. This is something that can happen in the
+video4linux subsystem.
 
+Unfortunately, the current epoll/poll/select implementation doesn't provide
+that information reliably. The poll_table_struct does have it: it has a key
+field with the event mask. But once a poll() call matches one or more bits
+of that mask any following poll() calls are passed a NULL poll_table_struct
+pointer.
 
-So, this bug ate all of my root file system :-\ When mounting or running 
-btrfsck, the same error occurs. I tried with 2.6.37-38 and 3.0-rc5 
-kernels and the result is all the same. It looks like a long time bug 
-that sits in btrfs code. I hope the above error message can help. 
-Because, I had to re-format my disk :-\
+The solution is to set the qproc field to NULL in poll_table_struct once
+poll() matches the events, not the poll_table_struct pointer itself. That
+way drivers can obtain the mask through a new poll_requested_events inline.
 
+The poll_table_struct can still be NULL since some kernel code calls it
+internally (netfs_state_poll() in ./drivers/staging/pohmelfs/netfs.h). In
+that case poll_requested_events() returns ~0 (i.e. all events).
 
-Tarkan
+Since eventpoll always leaves the key field at ~0 instead of using the
+requested events mask, that source was changed as well to properly fill in
+the key field.
 
+Signed-off-by: Hans Verkuil <hans.verkuil@cisco.com>
+---
+ fs/eventpoll.c       |   19 +++++++++++++++----
+ fs/select.c          |   32 ++++++++++++++------------------
+ include/linux/poll.h |    7 ++++++-
+ 3 files changed, 35 insertions(+), 23 deletions(-)
 
-
-
-
-
-
-
-
-
+diff --git a/fs/eventpoll.c b/fs/eventpoll.c
+index f9cfd16..6a54a69 100644
+--- a/fs/eventpoll.c
++++ b/fs/eventpoll.c
+@@ -650,9 +650,12 @@ static int ep_read_events_proc(struct eventpoll *ep, struct list_head *head,
+ 			       void *priv)
+ {
+ 	struct epitem *epi, *tmp;
++	poll_table pt;
+ 
++	init_poll_funcptr(&pt, NULL);
+ 	list_for_each_entry_safe(epi, tmp, head, rdllink) {
+-		if (epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
++		pt.key = epi->event.events;
++		if (epi->ffd.file->f_op->poll(epi->ffd.file, &pt) &
+ 		    epi->event.events)
+ 			return POLLIN | POLLRDNORM;
+ 		else {
+@@ -946,6 +949,7 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
+ 	/* Initialize the poll table using the queue callback */
+ 	epq.epi = epi;
+ 	init_poll_funcptr(&epq.pt, ep_ptable_queue_proc);
++	epq.pt.key = event->events;
+ 
+ 	/*
+ 	 * Attach the item to the poll hooks and get current event bits.
+@@ -1027,20 +1031,23 @@ static int ep_modify(struct eventpoll *ep, struct epitem *epi, struct epoll_even
+ {
+ 	int pwake = 0;
+ 	unsigned int revents;
++	poll_table pt;
++
++	init_poll_funcptr(&pt, NULL);
+ 
+ 	/*
+ 	 * Set the new event interest mask before calling f_op->poll();
+ 	 * otherwise we might miss an event that happens between the
+ 	 * f_op->poll() call and the new event set registering.
+ 	 */
+-	epi->event.events = event->events;
++	epi->event.events = pt.key = event->events;
+ 	epi->event.data = event->data; /* protected by mtx */
+ 
+ 	/*
+ 	 * Get current event bits. We can safely use the file* here because
+ 	 * its usage count has been increased by the caller of this function.
+ 	 */
+-	revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL);
++	revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt);
+ 
+ 	/*
+ 	 * If the item is "hot" and it is not registered inside the ready
+@@ -1075,6 +1082,9 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
+ 	unsigned int revents;
+ 	struct epitem *epi;
+ 	struct epoll_event __user *uevent;
++	poll_table pt;
++
++	init_poll_funcptr(&pt, NULL);
+ 
+ 	/*
+ 	 * We can loop without lock because we are passed a task private list.
+@@ -1087,7 +1097,8 @@ static int ep_send_events_proc(struct eventpoll *ep, struct list_head *head,
+ 
+ 		list_del_init(&epi->rdllink);
+ 
+-		revents = epi->ffd.file->f_op->poll(epi->ffd.file, NULL) &
++		pt.key = epi->event.events;
++		revents = epi->ffd.file->f_op->poll(epi->ffd.file, &pt) &
+ 			epi->event.events;
+ 
+ 		/*
+diff --git a/fs/select.c b/fs/select.c
+index d33418f..2da21b8 100644
+--- a/fs/select.c
++++ b/fs/select.c
+@@ -386,13 +386,11 @@ get_max:
+ static inline void wait_key_set(poll_table *wait, unsigned long in,
+ 				unsigned long out, unsigned long bit)
+ {
+-	if (wait) {
+-		wait->key = POLLEX_SET;
+-		if (in & bit)
+-			wait->key |= POLLIN_SET;
+-		if (out & bit)
+-			wait->key |= POLLOUT_SET;
+-	}
++	wait->key = POLLEX_SET;
++	if (in & bit)
++		wait->key |= POLLIN_SET;
++	if (out & bit)
++		wait->key |= POLLOUT_SET;
+ }
+ 
+ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+@@ -414,7 +412,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 	poll_initwait(&table);
+ 	wait = &table.pt;
+ 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
+-		wait = NULL;
++		wait->qproc = NULL;
+ 		timed_out = 1;
+ 	}
+ 
+@@ -459,17 +457,17 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 					if ((mask & POLLIN_SET) && (in & bit)) {
+ 						res_in |= bit;
+ 						retval++;
+-						wait = NULL;
++						wait->qproc = NULL;
+ 					}
+ 					if ((mask & POLLOUT_SET) && (out & bit)) {
+ 						res_out |= bit;
+ 						retval++;
+-						wait = NULL;
++						wait->qproc = NULL;
+ 					}
+ 					if ((mask & POLLEX_SET) && (ex & bit)) {
+ 						res_ex |= bit;
+ 						retval++;
+-						wait = NULL;
++						wait->qproc = NULL;
+ 					}
+ 				}
+ 			}
+@@ -481,7 +479,7 @@ int do_select(int n, fd_set_bits *fds, struct timespec *end_time)
+ 				*rexp = res_ex;
+ 			cond_resched();
+ 		}
+-		wait = NULL;
++		wait->qproc = NULL;
+ 		if (retval || timed_out || signal_pending(current))
+ 			break;
+ 		if (table.error) {
+@@ -738,9 +736,7 @@ static inline unsigned int do_pollfd(struct pollfd *pollfd, poll_table *pwait)
+ 		if (file != NULL) {
+ 			mask = DEFAULT_POLLMASK;
+ 			if (file->f_op && file->f_op->poll) {
+-				if (pwait)
+-					pwait->key = pollfd->events |
+-							POLLERR | POLLHUP;
++				pwait->key = pollfd->events | POLLERR | POLLHUP;
+ 				mask = file->f_op->poll(file, pwait);
+ 			}
+ 			/* Mask out unneeded events. */
+@@ -763,7 +759,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 
+ 	/* Optimise the no-wait case */
+ 	if (end_time && !end_time->tv_sec && !end_time->tv_nsec) {
+-		pt = NULL;
++		pt->qproc = NULL;
+ 		timed_out = 1;
+ 	}
+ 
+@@ -788,7 +784,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 				 */
+ 				if (do_pollfd(pfd, pt)) {
+ 					count++;
+-					pt = NULL;
++					pt->qproc = NULL;
+ 				}
+ 			}
+ 		}
+@@ -796,7 +792,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+ 		 * All waiters have already been registered, so don't provide
+ 		 * a poll_table to them on the next loop iteration.
+ 		 */
+-		pt = NULL;
++		pt->qproc = NULL;
+ 		if (!count) {
+ 			count = wait->error;
+ 			if (signal_pending(current))
+diff --git a/include/linux/poll.h b/include/linux/poll.h
+index cf40010..fe1e360 100644
+--- a/include/linux/poll.h
++++ b/include/linux/poll.h
+@@ -39,10 +39,15 @@ typedef struct poll_table_struct {
+ 
+ static inline void poll_wait(struct file * filp, wait_queue_head_t * wait_address, poll_table *p)
+ {
+-	if (p && wait_address)
++	if (p && p->qproc && wait_address)
+ 		p->qproc(filp, wait_address, p);
+ }
+ 
++static inline unsigned long poll_requested_events(const poll_table *p)
++{
++	return p ? p->key : ~0UL;
++}
++
+ static inline void init_poll_funcptr(poll_table *pt, poll_queue_proc qproc)
+ {
+ 	pt->qproc = qproc;
+-- 
+1.7.1
 
