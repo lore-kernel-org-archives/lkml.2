@@ -1,101 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754683Ab1GEIXA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 04:23:00 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:52264 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab1GEIW6 (ORCPT
+	id S1754720Ab1GEIXH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 04:23:07 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:58548 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754698Ab1GEIXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 04:22:58 -0400
+	Tue, 5 Jul 2011 04:23:05 -0400
 From: Ankita Garg <ankita@in.ibm.com>
 To: linux-mm@kvack.org
 Cc: ankita@in.ibm.com, svaidy@linux.vnet.ibm.com, linux-kernel@vger.kernel.org
-Subject: [PATCH 0/5] mm,debug: VM framework to capture memory reference pattern
-Date: Tue,  5 Jul 2011 13:52:34 +0530
-Message-Id: <1309854159-8277-1-git-send-email-ankita@in.ibm.com>
+Subject: [PATCH 3/5] Capture kernel memory references
+Date: Tue,  5 Jul 2011 13:52:37 +0530
+Message-Id: <1309854159-8277-4-git-send-email-ankita@in.ibm.com>
 X-Mailer: git-send-email 1.7.4
+In-Reply-To: <1309854159-8277-1-git-send-email-ankita@in.ibm.com>
+References: <1309854159-8277-1-git-send-email-ankita@in.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi,
 
-This patch series is an instrumentation/debug infrastructure that captures
-the memory reference pattern of applications (workloads). This patch is not
-for inclusion yet, but I would like to share it and improve it wherever
-possible. I have successfully used this framework to collect interesting data
-pertaining to memory footprint and memory reference patterns of different
-workloads and benchmarks. The raw access trace data that is generated can be
-further post-processed using simple scripts to generate interesting plots and
-compare different workloads/kernel behavior.
+This patch introduces code to traverse the kernel page tables, starting from
+the highest level pgdir table in init_level4_pgt.
 
-The basic operation of this framework is quite simple, it basically scans
-through various page tables and collects page level reference bit (provided
-by hardware) information for user, kernel and pagecache pages. The code
-overhead to walk all the page tables is quite heavy and the amount of data
-collected is also quite large depending upon the amount of system memory
-present. However, the framework allows various configurable options to trade
-overhead with accuracy. The instrumentation code is implemented as a module
-and the data collection starts when the module is inserted. The module starts
-a kernel thread which wakes-up at every sampling interval (configurable, 100ms
-by default) and scans through all pages of the specified tasks (including
-children/threads) running in the system. If the hardware reference bit in the
-page table is set, then the page is marked as accessed over the last sampling
-interval and the reference bit is cleared. The reference data collected from
-both the user and kernel (page cache) pages are exported to users using the
-trace event framework.
-
-To reduce the volume of the data collected, physical addresses are grouped in
-units called memblocks (set as 64MB by default, but is configurable). If a
-page in a particular memory block is referenced, the entire block is marked
-as being referenced. The data obtained can be post-processed to collect
-useful information about workload memory reference pattern. Further, temporal
-plots (indicate the amount of memory accessed over time) and spatial plots
-(indicate the particular physical regions of memory accessed) can be generated
-by appropriately processing the raw trace data. Rough estimate of the working
-set size of an application could be derived as well.
-
-This framework presently works on the x86_64 systems, but can be easily
-extended to other platforms as well, the constraint being that the platform
-must have support to update the pte reference bit in the hardware. This
-framework can be used by application and kernel developer to mainly study
-application and benchmark behavior and also to look at physical memory access
-pattern if that is interesting.
-
-The framework can be extended to even capture information about whether the
-access was a read or a write one, provided the hardware supports the 'Changed'
-bit in the page table.
-
-Ankita Garg (5):
-  Core kernel backend to capture the memory reference pattern
-  memref module to walk the process page table
-  Capture kernel memory references
-  Capture references to page cache pages
-  Logging the captured reference data
-
+Signed-off-by: Ankita Garg <ankita@in.ibm.com>
+---
  arch/x86/include/asm/pgtable_64.h |    1 +
- arch/x86/mm/pgtable.c             |    2 +
- arch/x86/mm/tlb.c                 |    1 +
- drivers/misc/Kconfig              |    5 +
- drivers/misc/Makefile             |    1 +
- drivers/misc/memref.c             |  195 ++++++++++++++++++++++++++++++++++
- include/linux/memtrace.h          |   30 ++++++
- include/linux/sched.h             |    4 +
- include/trace/events/memtrace.h   |   28 +++++
- kernel/fork.c                     |    6 +
- kernel/pid.c                      |    1 +
- lib/Kconfig.debug                 |    4 +
- lib/Makefile                      |    1 +
- lib/memtrace.c                    |  207 +++++++++++++++++++++++++++++++++++++
- mm/filemap.c                      |    8 ++
- mm/memory.c                       |    1 +
- mm/pagewalk.c                     |    2 +
- 17 files changed, 497 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/memref.c
- create mode 100644 include/linux/memtrace.h
- create mode 100644 include/trace/events/memtrace.h
- create mode 100644 lib/memtrace.c
+ drivers/misc/memref.c             |    1 +
+ include/linux/memtrace.h          |    1 +
+ lib/memtrace.c                    |   95 +++++++++++++++++++++++++++++++++++++
+ 4 files changed, 98 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/include/asm/pgtable_64.h b/arch/x86/include/asm/pgtable_64.h
+index 975f709..09c99e0 100644
+--- a/arch/x86/include/asm/pgtable_64.h
++++ b/arch/x86/include/asm/pgtable_64.h
+@@ -13,6 +13,7 @@
+ #include <asm/processor.h>
+ #include <linux/bitops.h>
+ #include <linux/threads.h>
++#include <linux/module.h>
+ 
+ extern pud_t level3_kernel_pgt[512];
+ extern pud_t level3_ident_pgt[512];
+diff --git a/drivers/misc/memref.c b/drivers/misc/memref.c
+index 4e8785f..abf8b23 100644
+--- a/drivers/misc/memref.c
++++ b/drivers/misc/memref.c
+@@ -152,6 +152,7 @@ static int memref_thread(void *data)
+ 		seq = inc_seq_number();
+ 
+ 		walk_tasks(task);
++		kernel_mapping_ref();
+ 		update_and_log_data();
+ 		msleep(interval);
+ 	}
+diff --git a/include/linux/memtrace.h b/include/linux/memtrace.h
+index 0fa15e0..b1fce57 100644
+--- a/include/linux/memtrace.h
++++ b/include/linux/memtrace.h
+@@ -24,6 +24,7 @@ unsigned int inc_seq_number(void);
+ void set_memtrace_block_sz(int sz);
+ void mark_memtrace_block_accessed(unsigned long paddr);
+ void init_memtrace_blocks(void);
++void kernel_mapping_ref(void);
+ void update_and_log_data(void);
+ 
+ #endif /* _LINUX_MEMTRACE_H */
+diff --git a/lib/memtrace.c b/lib/memtrace.c
+index 5ebd7c8..aec5b65 100644
+--- a/lib/memtrace.c
++++ b/lib/memtrace.c
+@@ -72,6 +72,101 @@ void set_memtrace_block_sz(int sz)
+ }
+ EXPORT_SYMBOL_GPL(set_memtrace_block_sz);
+ 
++#define PTE_LEVEL_MULT (PAGE_SIZE)
++#define PMD_LEVEL_MULT (PTRS_PER_PTE * PTE_LEVEL_MULT)
++#define PUD_LEVEL_MULT (PTRS_PER_PMD * PMD_LEVEL_MULT)
++#define PGD_LEVEL_MULT (PTRS_PER_PUD * PUD_LEVEL_MULT)
++
++static void walk_k_pte_level(pmd_t pmd, unsigned long addr)
++ {
++ 	pte_t *pte;
++ 	int i, ret;
++	unsigned long pfn;
++	struct page *pg;
++
++	pte = (pte_t*) pmd_page_vaddr(pmd);
++
++ 	for (i = 0; i < PTRS_PER_PTE; i++, pte++) {
++ 		if(!pte_present(*pte) && pte_none(*pte) && pte_huge(*pte))
++			continue;
++
++		pfn = pte_pfn(*pte);
++		if(pfn_valid(pfn) && pte_young(*pte)) {
++			ret = test_and_clear_bit(_PAGE_BIT_ACCESSED,
++						(unsigned long *) &pte->pte);
++			if (ret) {
++				pg = pfn_to_page(pfn);
++				ClearPageReferenced(pg);
++				mark_memtrace_block_accessed(pfn << PAGE_SHIFT);
++			}
++		}
++ 	}
++}
++
++#if PTRS_PER_PMD > 1
++
++static void walk_k_pmd_level(pud_t pud, unsigned long addr)
++ {
++ 	pmd_t *pmd;
++ 	int i;
++
++ 	pmd = (pmd_t *) pud_page_vaddr(pud);
++
++ 	for (i = 0; i < PTRS_PER_PMD; i++) {
++
++ 		if(!pmd_none(*pmd) && pmd_present(*pmd) && !pmd_large(*pmd))
++			walk_k_pte_level(*pmd, addr + i * PMD_LEVEL_MULT);
++
++ 		pmd++;
++ 	}
++ }
++
++#else
++#define walk_pmd_level(p,a) walk_pte_level(__pmd(pud_val(p)),a)
++#define pud_none(a)  pmd_none(__pmd(pud_val(a)))
++#define pud_large(a) pmd_large(__pmd(pud_val(a)))
++#endif
++
++#if PTRS_PER_PUD > 1
++
++static void walk_k_pud_level(pgd_t pgd, unsigned long addr)
++ {
++ 	pud_t *pud;
++ 	int i;
++
++ 	pud = (pud_t *) pgd_page_vaddr(pgd);
++
++ 	for (i = 0; i < PTRS_PER_PUD; i++) {
++
++ 		if(!pud_none(*pud) && pud_present(*pud) && !pud_large(*pud))
++ 			walk_k_pmd_level(*pud, addr + i * PUD_LEVEL_MULT);
++ 		pud++;
++ 	}
++ }
++
++#else
++#define walk_pud_level(p,a) walk_pmd_level(__pud(pgd_val(p)),a)
++#define pgd_none(a)  pud_none(__pud(pgd_val(a)))
++#define pgd_large(a) pud_large(__pud(pgd_val(a)))
++#endif
++
++void kernel_mapping_ref(void)
++{
++ 	pgd_t *pgd;
++ 	int i;
++
++        pgd = (pgd_t *) &init_level4_pgt;
++
++ 	for (i=0; i < PTRS_PER_PGD; i++) {
++
++ 		if(!pgd_none(*pgd) && pgd_present(*pgd) && !pgd_large(*pgd)) {
++ 			walk_k_pud_level(*pgd, i * PGD_LEVEL_MULT);
++		}
++ 		pgd++;
++ 	}
++}
++EXPORT_SYMBOL_GPL(kernel_mapping_ref);
++
+ void mark_memtrace_block_accessed(unsigned long paddr)
+  {
+ 	int memtrace_block;
 -- 
 1.7.4
 
