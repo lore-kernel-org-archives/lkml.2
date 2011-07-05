@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756232Ab1GEQmy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 12:42:54 -0400
-Received: from mail.perches.com ([173.55.12.10]:3565 "EHLO mail.perches.com"
+	id S1756096Ab1GEQm1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 12:42:27 -0400
+Received: from mail.perches.com ([173.55.12.10]:3551 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756136Ab1GEQmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 12:42:31 -0400
+	id S1755988Ab1GEQmZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 12:42:25 -0400
 From: Joe Perches <joe@perches.com>
 To: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
 Cc: devel@driverdev.osuosl.org
-Subject: [PATCH 13/14] MAINTAINERS: Add STAGING - XGI Z7,Z9,Z11 PCI DISPLAY DRIVER
-Date: Tue,  5 Jul 2011 09:42:13 -0700
-Message-Id: <0986a61108b6b514017d7d829e51fd5f7c37d4e9.1309883752.git.joe@perches.com>
+Subject: [PATCH 08/14] MAINTAINERS: Add STAGING - PARALLEL LCD/KEYPAD PANEL DRIVER
+Date: Tue,  5 Jul 2011 09:42:08 -0700
+Message-Id: <64c23d1172a82a48d8c7b362224e1d7f9e08dd1e.1309883752.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.131.g99019
 In-Reply-To: <cover.1309883752.git.joe@perches.com>
 References: <20110704153435.GA17475@suse.de> <cover.1309883752.git.joe@perches.com>
@@ -25,17 +25,17 @@ Signed-off-by: Joe Perches <joe@perches.com>
  1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 9ab3703..bd46c4f 100644
+index 9968b10..9cd7ea9 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -6136,6 +6136,11 @@ M:	Pavel Machek <pavel@ucw.cz>
+@@ -6110,6 +6110,11 @@ M:	Jonathan Cameron <jic23@cam.ac.uk>
  S:	Odd Fixes
- F:	drivers/staging/winbond/
+ F:	drivers/staging/iio/
  
-+STAGING - XGI Z7,Z9,Z11 PCI DISPLAY DRIVER
-+M:	Arnaud Patard <apatard@mandriva.com>
++STAGING -  PARALLEL LCD/KEYPAD PANEL DRIVER
++M:	Willy Tarreau <willy@meta-x.org>
 +S:	Odd Fixes
-+F:	drivers/staging/xgifb/
++F:	drivers/staging/panel/
 +
  STARFIRE/DURALAN NETWORK DRIVER
  M:	Ion Badulescu <ionut@badula.org>
