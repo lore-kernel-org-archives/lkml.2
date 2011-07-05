@@ -1,127 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab1GESpo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 14:45:44 -0400
-Received: from smtp.microsoft.com ([131.107.115.215]:38956 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751424Ab1GESpn convert rfc822-to-8bit (ORCPT
+	id S1751889Ab1GESzf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 14:55:35 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:33930 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750854Ab1GESzd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 14:45:43 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <greg@kroah.com>
-CC: Hank Janssen <hjanssen@microsoft.com>, KY Srinivasan <kys@microsoft.com>,
-        "Abhishek Kane (Mindtree Consulting PVT LTD)" 
-	<v-abkane@microsoft.com>,
-        "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        stable <stable@kernel.org>
-Subject: RE: [PATCH 5/5] staging: hv: fix a kernel warning in
- netvsc_linkstatus_callback()
-Thread-Topic: [PATCH 5/5] staging: hv: fix a kernel warning in
- netvsc_linkstatus_callback()
-Thread-Index: AQHMLPzdqi1EZ1AAa0iE5UK5LWgnTJTed2KA//+0e8A=
-Date: Tue, 5 Jul 2011 18:45:41 +0000
-Message-ID: <A1F3067C9B68744AA19F6802BAB8FFDC0964C6AB@TK5EX14MBXC223.redmond.corp.microsoft.com>
-References: <1308322688-9796-1-git-send-email-haiyangz@microsoft.com>
- <1308322688-9796-5-git-send-email-haiyangz@microsoft.com>
- <20110705161007.GA24332@kroah.com>
-In-Reply-To: <20110705161007.GA24332@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.51.34]
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Jul 2011 14:55:33 -0400
 MIME-Version: 1.0
+In-Reply-To: <4E135553.3000408@canonical.com>
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
+	<1309324042-22943-11-git-send-email-djkurtz@chromium.org>
+	<4E135553.3000408@canonical.com>
+Date: Tue, 5 Jul 2011 13:55:32 -0500
+Message-ID: <CAGzDe_Y5bK5GkMgKAffPGvcZEEd0Mg199R_8naKqEOGTo-T60w@mail.gmail.com>
+Subject: Re: [PATCH 10/12] Input: synaptics - decode AGM packet types
+From: Chris Bagwell <chris@cnpbagwell.com>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: djkurtz@chromium.org, dmitry.torokhov@gmail.com, rydberg@euromail.se,
+        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
+        daniel.stone@collabora.co.uk, olofj@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Tuesday, July 05, 2011 12:10 PM
-> To: Haiyang Zhang
-> Cc: Hank Janssen; KY Srinivasan; Abhishek Kane (Mindtree Consulting PVT
-> LTD); gregkh@suse.de; linux-kernel@vger.kernel.org;
-> devel@linuxdriverproject.org; virtualization@lists.osdl.org; stable
-> Subject: Re: [PATCH 5/5] staging: hv: fix a kernel warning in
-> netvsc_linkstatus_callback()
-> 
-> On Fri, Jun 17, 2011 at 07:58:08AM -0700, Haiyang Zhang wrote:
-> > netif_notify_peers() is not allowed in netvsc_linkstatus_callback() on
-> some
-> > distros,
-> 
-> "distros"?  Huh?  You mean kernel versions right?
-> 
-> And this doesn't matter for the current kernel, right?  If not, then it
-> doesn't need to be applied.  If so, then it should.  Which is it?
+On Tue, Jul 5, 2011 at 1:17 PM, Chase Douglas
+<chase.douglas@canonical.com> wrote:
+> On 06/28/2011 10:07 PM, djkurtz@chromium.org wrote:
+>> From: Daniel Kurtz <djkurtz@chromium.org>
+>>
+>> A Synaptics image sensor tracks 5 fingers, but can only report 2.
+>> This behavior is called "T5R2" = Track 5 Report 2
+>>
+>> Algorithm for choosing which 2 fingers to report in which packet:
+>>   Touchpad maintains 5 slots, numbered 0 to 4.
+>>   Initially all slots are empty.
+>>   As new fingers are detected, they are assigned the lowest available
+>>   slot.
+>>   Touchpad always reports:
+>>     SGM: lowest numbered non-empty slot
+>>     AGM: highest numbered non-empty slot, if there is one.
+>>
+>> In addition, T5R2 touchpads have a special AGM packet type which reports
+>> the number of fingers currently being tracked, and which finger is in
+>> each of the two slots.  Unfortunately, these "TYPE=2" packets are only used
+>> when more than 3 fingers are being tracked.  When less than 4 fingers
+>> are present, the 'w' value must be used to track how many fingers are
+>> present, and knowing which fingers are being reported is much more
+>> difficult, if not impossible.
+>>
+>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>> ---
+>>  drivers/input/mouse/synaptics.c |   39 ++++++++++++++++++++++++++++++++++-----
+>>  drivers/input/mouse/synaptics.h |    7 ++++++-
+>>  include/linux/input.h           |    1 +
+>>  3 files changed, 41 insertions(+), 6 deletions(-)
+>>
+>> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+>> index 2d7ac0a..19a9b7f 100644
+>> --- a/drivers/input/mouse/synaptics.c
+>> +++ b/drivers/input/mouse/synaptics.c
+>> @@ -401,6 +401,14 @@ static void synaptics_pt_create(struct psmouse *psmouse)
+>>  /*****************************************************************************
+>>   *   Functions to interpret the absolute mode packets
+>>   ****************************************************************************/
+>> +/* Set AGM-CONTACT finger state */
+>> +static void synaptics_agm_finger_update(struct synaptics_data *priv, int count,
+>> +                                     int sgm, int agm)
+>> +{
+>> +     priv->agm.finger_count = count;
+>> +     priv->agm.finger_sgm = sgm;
+>> +     priv->agm.finger_agm = agm;
+>> +}
+>>
+>>  static int synaptics_parse_hw_state(const unsigned char buf[],
+>>                                   struct synaptics_data *priv,
+>> @@ -438,11 +446,31 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>>               if ((SYN_CAP_ADV_GESTURE(priv->ext_cap_0c)
+>>                               || SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c))
+>>                               && hw->w == 2) {
+>> -                     /* Gesture packet: (x, y, z) at half resolution */
+>> -                     priv->agm.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+>> -                     priv->agm.y = INVERT_Y((((buf[4] & 0xf0) << 4)
+>> -                                           | buf[2]) << 1);
+>> -                     priv->agm.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
+>> +                     int type; /* Packet type */
+>> +
+>> +                     type = (buf[5] & 0x30) >> 4;
+>> +
+>> +                     switch (type) {
+>> +                     case 1:
+>> +                             /* Gesture packet: (x, y, z) half resolution */
+>> +                             priv->agm.w = hw->w;
+>> +                             priv->agm.x = (((buf[4] & 0x0f) << 8)
+>> +                                             | buf[1]) << 1;
+>> +                             priv->agm.y = INVERT_Y((((buf[4] & 0xf0) << 4)
+>> +                                                    | buf[2]) << 1);
+>> +                             priv->agm.z = ((buf[3] & 0x30)
+>> +                                             | (buf[5] & 0x0f)) << 1;
+>> +                             break;
+>> +
+>> +                     case 2:
+>> +                             /* Finger slot update */
+>> +                             synaptics_agm_finger_update(priv, buf[1],
+>> +                                                         buf[2], buf[4]);
+>> +                             break;
+>> +
+>> +                     default:
+>> +                             break;
+>> +                     }
+>>                       return 1;
+>>               } else {
+>>                       hw->x = (((buf[3] & 0x10) << 8) |
+>> @@ -804,6 +832,7 @@ static void set_input_params(struct input_dev *dev, struct synaptics_data *priv)
+>>       input_set_abs_params(dev, ABS_PRESSURE, 0, 255, 0, 0);
+>>
+>>       if (SYN_CAP_IMAGE_SENSOR(priv->ext_cap_0c)) {
+>> +             __set_bit(INPUT_PROP_SYNAPTICS_T5R2, dev->propbit);
+>>               input_mt_init_slots(dev, SYN_TRACK_SLOT_COUNT);
+>>               input_set_abs_params(dev, ABS_MT_POSITION_X, XMIN_NOMINAL,
+>>                                    priv->x_max ?: XMAX_NOMINAL, fuzz, 0);
+>> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+>> index 1de2256..2214af6 100644
+>> --- a/drivers/input/mouse/synaptics.h
+>> +++ b/drivers/input/mouse/synaptics.h
+>> @@ -122,7 +122,7 @@
+>>  #define SYN_SLOT_AGM                 2
+>>
+>>  /* number of tracking slots for Image Sensor firmware */
+>> -#define SYN_TRACK_SLOT_COUNT         2
+>> +#define SYN_TRACK_SLOT_COUNT         5
+>>
+>>  /*
+>>   * A structure to describe the state of the touchpad hardware (buttons and pad)
+>> @@ -140,6 +140,11 @@ struct synaptics_hw_state {
+>>       unsigned int down:1;
+>>       unsigned char ext_buttons;
+>>       signed char scroll;
+>> +
+>> +     /* Reported in AGM-CONTACT packets */
+>> +     unsigned int finger_count;              /* num fingers being tracked */
+>> +     unsigned int finger_sgm;                /* finger described by sgm */
+>> +     unsigned int finger_agm;                /* finger described by agm */
+>>  };
+>>
+>>  struct synaptics_data {
+>> diff --git a/include/linux/input.h b/include/linux/input.h
+>> index 771d6d8..732c14e 100644
+>> --- a/include/linux/input.h
+>> +++ b/include/linux/input.h
+>> @@ -137,6 +137,7 @@ struct input_keymap_entry {
+>>  #define INPUT_PROP_DIRECT            0x01    /* direct input devices */
+>>  #define INPUT_PROP_BUTTONPAD         0x02    /* has button(s) under pad */
+>>  #define INPUT_PROP_SEMI_MT           0x03    /* touch rectangle only */
+>> +#define INPUT_PROP_SYNAPTICS_T5R2    0x04    /* synaptics track 5 report 2 */
+>>
+>>  #define INPUT_PROP_MAX                       0x1f
+>>  #define INPUT_PROP_CNT                       (INPUT_PROP_MAX + 1)
+>
+> I'm trying to understand these later patches for T5R2. There are
+> "hidden" touch slots now. How does userspace tell whether a touch slot
+> is a hidden touch?
+>
 
-It should be applied to both current kernel and stable kernels 2.6.32 and later.
+I'm trying to understand as well.  If I was a consumer of events and I
+knew touchpad supports 2 touch tracking but 5 finger detection, I'd
+assume:
 
-> > because netvsc_linkstatus_callback() is within IRQ context. So we
-> > move the first call to netif_notify_peers() into queued work as well,
-> but with
-> > zero delay.
-> 
-> What happens if you don't have this patch applied?  What breaks?  Is it
-> just a warning?  Something else?
+* ABS_X/Y reports oldest touch and
+BTN_TOOL_DOUBLETAP/TRIPLETAP/QUADTAP reports # of fingers touching
+(ignoring lost of 5 finger for now).
+* ABS_MT_* only contains 2 slots and without SEMI_MT declared.
+BTN_TOOL_* could be used to detect greater than 2 finger touches.
 
-Without the patch, it will have this warning:
+I'm not sure I could guess what to do with 5 slots and how to expect
+touch data to come over them.
 
-[  232.102605] WARNING: at kernel/mutex.c:198 __mutex_lock_slowpath+0x28d/0x2c0(
-)
-[  232.102605] Hardware name: Virtual Machine
-[  232.272436] Modules linked in: hv_netvsc(C) hv_vmbus(C) lockd sunrpc nf_connt
-rack_netbios_ns nf_conntrack_broadcast ipt_REJECT nf_conntrack_ipv4 nf_defrag_ip
-v4 xt_state nf_conntrack iptable_filter ip_tables ip6t_REJECT xt_tcpudp ip6table
-_filter ip6_tables x_tables ipv6 loop dm_mirror dm_multipath scsi_dh video therm
-al sbs sbshc pci_slot hed fan container battery acpi_memhotplug ac power_supply
-parport nvram sg sr_mod cdrom evdev processor button serio_raw floppy tpm_tis tp
-m tpm_bios tulip i2c_piix4 i2c_core dm_region_hash dm_log dm_mod ide_gd_mod piix
- pata_acpi ide_pci_generic ide_core ata_piix ata_generic libata sd_mod scsi_mod
-ext3 jbd mbcache [last unloaded: microcode]
-[  232.935109] Pid: 0, comm: swapper Tainted: G         C  3.0.0-rc2-stable-0019
-6-g06e8684 #4
-[  232.939905] Call Trace:
-[  232.942238]  [<c13008fd>] ? __mutex_lock_slowpath+0x28d/0x2c0
-[  232.974990]  [<c1041a9c>] warn_slowpath_common+0x7c/0xa0
-[  232.977701]  [<c13008fd>] ? __mutex_lock_slowpath+0x28d/0x2c0
-[  232.980431]  [<c1041add>] warn_slowpath_null+0x1d/0x20
-[  232.983403]  [<c13008fd>] __mutex_lock_slowpath+0x28d/0x2c0
-[  232.995597]  [<c130093b>] mutex_lock+0xb/0x20
-[  233.020191]  [<c127347d>] rtnl_lock+0xd/0x10
-[  233.023275]  [<c127cf7b>] netif_notify_peers+0xb/0x20
-[  233.026424]  [<e0e581d2>] netvsc_linkstatus_callback+0x142/0x230 [hv_netvsc]
-[  233.051372]  [<e0e5c0df>] rndis_filter_receive+0x83f/0x8e0 [hv_netvsc]
-[  233.062010]  [<e0e3c82e>] ? hv_ringbuffer_read+0x15e/0x200 [hv_vmbus]
-[  233.065632]  [<e0e5a936>] netvsc_channel_cb+0x8e6/0xb10 [hv_netvsc]
-[  233.069444]  [<e0e38743>] vmbus_onchannel_event+0x33/0x80 [hv_vmbus]
-[  233.092295]  [<e0e37bb8>] vmbus_on_event+0xf8/0x180 [hv_vmbus]
-[  233.104314]  [<c104850f>] tasklet_action+0x4f/0x100
-[  233.106669]  [<c1047876>] __do_softirq+0x86/0x1e0
-[  233.109376]  [<c10477f0>] ? local_bh_enable_ip+0xa0/0xa0
-[  233.112031]  <IRQ>  [<c1047b6c>] ? irq_exit+0x8c/0xa0
-[  233.133300]  [<c10040a5>] ? do_IRQ+0x45/0xb0
-[  233.136307]  [<c1047b4e>] ? irq_exit+0x6e/0xa0
-[  233.138901]  [<c101d149>] ? smp_apic_timer_interrupt+0x59/0x90
-[  233.142796]  [<c1302db0>] ? common_interrupt+0x30/0x38
-[  233.146401]  [<c1024be5>] ? native_safe_halt+0x5/0x10
-[  233.149765]  [<c1009b00>] ? default_idle+0x70/0x130
-[  233.154054]  [<c1001dda>] ? cpu_idle+0x8a/0xd0
-[  233.157170]  [<c12eb4dd>] ? rest_init+0x7d/0x80
-[  233.168628]  [<c14239e5>] ? start_kernel+0x315/0x3d0
-[  233.171518]  [<c1423270>] ? parse_early_options+0x30/0x30
-[  233.180398]  [<c1423078>] ? i386_start_kernel+0x78/0xc0
-[  233.183514] ---[ end trace 3a5b5bc7486ad570 ]---
- 
-> Please resend this with more information.
-Will do (after Ky's patch series are resubmitted and applied).
+Where you saying in the other thread that the 5 slots are to help user
+detect finger transitions and re-act bounces in X/Y accordingly?  I'm
+assuming they could react in same way to BTN_TOOL_* changes if we can
+extend to 5 finger case?
 
-Thanks,
-
-- Haiyang
-
+Chris
