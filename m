@@ -1,62 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753211Ab1GESWq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 14:22:46 -0400
-Received: from hqemgate04.nvidia.com ([216.228.121.35]:2345 "EHLO
-	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab1GESWo convert rfc822-to-8bit (ORCPT
+	id S1753240Ab1GES3d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 14:29:33 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:45712 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab1GES3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 14:22:44 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp06.nvidia.com on Tue, 05 Jul 2011 11:22:37 -0700
-From: Stephen Warren <swarren@nvidia.com>
-To: "Grant Likely (grant.likely@secretlab.ca)" 
-	<grant.likely@secretlab.ca>
-CC: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Tue, 5 Jul 2011 11:22:30 -0700
-Subject: Tegra device name for device tree
-Thread-Topic: Tegra device name for device tree
-Thread-Index: Acw7PqdLt3r4QwwLQT+Qh5CCihv6QA==
-Message-ID: <74CDBE0F657A3D45AFBB94109FB122FF049E21BE97@HQMAIL01.nvidia.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Jul 2011 14:29:32 -0400
+Date: Tue, 5 Jul 2011 19:29:13 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Jan Beulich <JBeulich@novell.com>
+Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
+        rtc-linux@googlegroups.com, dannf@hp.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: enable rtc-efi
+Message-ID: <20110705182913.GA31808@srcf.ucam.org>
+References: <4E12DBAB020000780004C1B2@nat28.tlf.novell.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E12DBAB020000780004C1B2@nat28.tlf.novell.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Grant et. al.,
+On Tue, Jul 05, 2011 at 08:38:51AM +0100, Jan Beulich wrote:
+> Besides a Kconfig change this just requires creating a respective
+> platform device.
 
-It recently dawned on me that all the Tegra DeviceTree support is using a
-marketing name for the SoC ("tegra250"). NVIDIA would prefer that we use
-engineering names for the SoC (e.g. "tegra20" now, "tegra30" for an
-upcoming SoC). The primary motivation for this is that engineering names
-tend to be more stable and map more directly to the HW design.
+Couple of other issues:
 
-Is it still possible to make this change, if I submit the appropriate
-patches to do this? 
+> +static struct platform_device rtc_efi_dev = {
+> +	.name = "rtc-efi",
+> +	.id = -1,
+> +};
 
-So, far, I see devicetree/next only refers to the Tegra serial port,
-whereas devicetree/arm and devicetree/test refer to more Tegra devices in
-this way. I'm not quite sure how the flow of patches works between these 3
-trees. For the serial port, I obviously need to submit a patch against
-devicetree/next, but I'm not so sure about which of devicetree/arm or
-devicetree/test to target for the other devices.
+You haven't removed this from the IA64 code. Isn't that going to result 
+in registering the same device twice?
 
-Sorry for bringing this up so late in the game.
+> +static int __init rtc_init(void)
+> +{
+> +	if (efi_enabled && platform_device_register(&rtc_efi_dev) < 0)
+> +		printk(KERN_ERR "unable to register rtc device...\n");
 
-Thanks!
+Ought to -ENODEV if efi isn't present? The error message should also be 
+more verbose.
 
 -- 
-nvpublic
-
+Matthew Garrett | mjg59@srcf.ucam.org
