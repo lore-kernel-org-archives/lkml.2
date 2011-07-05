@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab1GEMF7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:05:59 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:37501 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755887Ab1GEMF6 (ORCPT
+	id S932265Ab1GEMH1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:07:27 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56347 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756109Ab1GEMH0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:05:58 -0400
-From: Tommy Lin <tommy.lin.1101@gmail.com>
-To: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        Anton Vorontsov <avorontsov@mvista.com>
-Cc: linux-kernel@vger.kernel.org, mac.lin@caviumnetworks.com,
-        Tommy Lin <tommy.lin@caviumnetworks.com>
-Subject: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for CNS3xxx hardware
-Date: Tue,  5 Jul 2011 20:05:48 +0800
-Message-Id: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 5 Jul 2011 08:07:26 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCHv11 0/8] Contiguous Memory Allocator
+Date: Tue, 5 Jul 2011 14:07:17 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107051407.17249.arnd@arndb.de>
+X-Provags-ID: V02:K0:aKisnNNFP5Z9qA9Q+4Vs6DW+TVhtOqI31UOIKfinkN+
+ VZoGwro3rHCSSIZsuiX8pyQb1j7CoU0HgMs9gy2WHTq7+a5ggP
+ a5Yryh2O7W1m038w2XBu4nc/W+VMOFFtjxR4BM4MbZWpSTHest
+ VafrE8gptM7aA67fAPW3M1FfAOgX5WJdwXPwGYMrFrsB6MmVAJ
+ mi4VWBh1QdsIRlx00rEDg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Original MPcore watchdog setting about load register (offset 0x20) is different
-from CNS3xxx data sheet. The CNS3xxx data sheet says watchdog has following
-features:
-1. The Watchdog Counter Register (offset 0x24) is a down counter.
-2. The timer interval is calculated using following equation:
-   (PRESCALER_value+1) X (Load_value+1) X 2 / CPU CLK_frequency
-Thus the watchdog load register control in CNS3xxx way is add to MPcore watchdog
-source. The original control method is also kept if the CPU architecture is not
-CNS3xxx.
+On Tuesday 05 July 2011, Marek Szyprowski wrote:
+> This is yet another round of Contiguous Memory Allocator patches. I hope
+> that I've managed to resolve all the items discussed during the Memory
+> Management summit at Linaro Meeting in Budapest and pointed later on
+> mailing lists. The goal is to integrate it as tight as possible with
+> other kernel subsystems (like memory management and dma-mapping) and
+> finally merge to mainline.
 
-Signed-off-by: Tommy Lin <tommy.lin@caviumnetworks.com>
----
- drivers/watchdog/mpcore_wdt.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+You have certainly addressed all of my concerns, this looks really good now!
 
-diff --git a/drivers/watchdog/mpcore_wdt.c b/drivers/watchdog/mpcore_wdt.c
-index 2b4af22..816e0c5 100644
---- a/drivers/watchdog/mpcore_wdt.c
-+++ b/drivers/watchdog/mpcore_wdt.c
-@@ -42,6 +42,9 @@ struct mpcore_wdt {
- 	int		irq;
- 	unsigned int	perturb;
- 	char		expect_close;
-+#ifdef CONFIG_ARCH_CNS3XXX
-+	unsigned long	reload_unit; /* ticks per second */
-+#endif
- };
- 
- static struct platform_device *mpcore_wdt_dev;
-@@ -98,10 +101,14 @@ static void mpcore_wdt_keepalive(struct mpcore_wdt *wdt)
- 	unsigned long count;
- 
- 	spin_lock(&wdt_lock);
-+#ifdef CONFIG_ARCH_CNS3XXX
-+	count = wdt->reload_unit * mpcore_margin;
-+#else
- 	/* Assume prescale is set to 256 */
- 	count =  __raw_readl(wdt->base + TWD_WDOG_COUNTER);
- 	count = (0xFFFFFFFFU - count) * (HZ / 5);
- 	count = (count / 256) * mpcore_margin;
-+#endif
- 
- 	/* Reload the counter */
- 	writel(count + wdt->perturb, wdt->base + TWD_WDOG_LOAD);
-@@ -375,6 +382,11 @@ static int __devinit mpcore_wdt_probe(struct platform_device *dev)
- 		goto err_irq;
- 	}
- 
-+#ifdef CONFIG_ARCH_CNS3XXX
-+	/* Assume prescale is set to 256 */
-+	wdt->reload_unit = cns3xxx_cpu_clock() * 1000000 / 256 / 2;
-+#endif
-+
- 	mpcore_wdt_stop(wdt);
- 	platform_set_drvdata(dev, wdt);
- 	mpcore_wdt_dev = dev;
--- 
-1.7.6
+Andrew, can you add this to your -mm tree? What's your opinion on the
+current state, do you think this is ready for merging in 3.1 or would
+you want to have more reviews from core memory management people?
 
+My reviews were mostly on the driver and platform API side, and I think
+we're fine there now, but I don't really understand the impacts this has
+in mm.
+
+	Arnd
