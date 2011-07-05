@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab1GEUIB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 16:08:01 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:53806 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753930Ab1GEUH6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 16:07:58 -0400
-From: Stephen Warren <swarren@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>, Greg KH <gregkh@suse.de>
-Cc: linux-serial@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-tegra@vger.kernel.org,
-        devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH] tty/serial: tegra: Use engineering names in DT compatible property
-Date: Tue,  5 Jul 2011 14:07:41 -0600
-Message-Id: <1309896461-21976-1-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755001Ab1GEUKI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 16:10:08 -0400
+Received: from lo.gmane.org ([80.91.229.12]:38430 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754402Ab1GEUKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 16:10:06 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Niels <zorglub_olsen@hotmail.com>
+Subject: Re: Kernel panic with USB device
+Date: Tue, 05 Jul 2011 22:09:51 +0200
+Message-ID: <iuvr27$t97$1@dough.gmane.org>
+References: <iumfu8$jmf$1@dough.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7Bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 0x4dd52733.adsl.cybercity.dk
+User-Agent: KNode/0.10.9
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Engineering names are more stable than marketing names. Hence, use them
-for Device Tree compatible properties instead.
+On Saturday 02 July 2011 09:04, Niels wrote:
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
-Greg, This builds on patches Grant has (or has said he will have) in his
-devicetree/next branch, so I assume this change would be merged through
-the same route.
+> Hi, I've written about this before and it just happened again:
+> 
+> I have an AGK hard disk docking station, like this:
+> 
+> http://www.agknordic.com/index.php?side_id=387
+> 
+> Kernel is 2.6.38-gentoo-r6.
+> 
+> The problem is that on rare occasions, the machine crashes when I power
+> the device on. Like right now, Num lock and Caps lock blinking. There's
+> nothing in the log, other that a couple of lines of ^@. The machine didn't
+> respond to external ssh or pings.
+> 
+> From now on, I'll try turning it on and then connecting its USB.
+> 
 
-Grant, this patch is physically against devicetree/arm. The of-serial.txt
-change should also apply to devicetree/next as is, and you'd previously
-indicated that you'd queue the addition of the Tegra entry to of_serial.c
-in your devicetree/next branch, so this should apply on top of that once
-you have done so. Finally, this should go into devicetree/test too.
+I put "noauto" in fstab, to assure that there's no mounting done. Still, it
+just happened again.
 
- .../devicetree/bindings/tty/serial/of-serial.txt   |    2 +-
- drivers/tty/serial/of_serial.c                     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/Documentation/devicetree/bindings/tty/serial/of-serial.txt b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-index 337a7e5..b8b27b0 100644
---- a/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-+++ b/Documentation/devicetree/bindings/tty/serial/of-serial.txt
-@@ -8,7 +8,7 @@ Required properties:
- 	- "ns16550"
- 	- "ns16750"
- 	- "ns16850"
--	- "nvidia,tegra250-uart"
-+	- "nvidia,tegra20-uart"
- 	- "ibm,qpace-nwp-serial"
- 	- "serial" if the port type is unknown.
- - reg : offset and length of the register set for the device.
-diff --git a/drivers/tty/serial/of_serial.c b/drivers/tty/serial/of_serial.c
-index e65f1e8..e58cece 100644
---- a/drivers/tty/serial/of_serial.c
-+++ b/drivers/tty/serial/of_serial.c
-@@ -181,7 +181,7 @@ static struct of_device_id __devinitdata of_platform_serial_table[] = {
- 	{ .compatible = "ns16550",  .data = (void *)PORT_16550, },
- 	{ .compatible = "ns16750",  .data = (void *)PORT_16750, },
- 	{ .compatible = "ns16850",  .data = (void *)PORT_16850, },
--	{ .compatible = "nvidia,tegra250-uart", .data = (void *)PORT_TEGRA, },
-+	{ .compatible = "nvidia,tegra20-uart", .data = (void *)PORT_TEGRA, },
- #ifdef CONFIG_SERIAL_OF_PLATFORM_NWPSERIAL
- 	{ .compatible = "ibm,qpace-nwp-serial",
- 		.data = (void *)PORT_NWPSERIAL, },
--- 
-1.7.0.4
+Niels
 
