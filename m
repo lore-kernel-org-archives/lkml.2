@@ -1,82 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756001Ab1GELpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:45:10 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:51390 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755919Ab1GELpI convert rfc822-to-8bit (ORCPT
+	id S1756055Ab1GELq0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:46:26 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56450 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755659Ab1GELqY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:45:08 -0400
+	Tue, 5 Jul 2011 07:46:24 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 5/8] mm: MIGRATE_CMA isolation functions added
+Date: Tue, 5 Jul 2011 13:45:14 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-6-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1309851710-3828-6-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-In-Reply-To: <201107051142.39733.richard@nod.at>
-References: <1309821347.4527.6.camel@vitaliy-Vostro-1400>
-	<201107051142.39733.richard@nod.at>
-Date: Tue, 5 Jul 2011 14:45:06 +0300
-Message-ID: <CAGTPOqebcT_Dd5nPSNEkrDvnCgYhqcU=ayjEA8L7Zh0Wr_pj5w@mail.gmail.com>
-Subject: Re: [PATCH 2/4] uml: helper.c warning corrections
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Jeff Dike <jdike@addtoit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107051345.14502.arnd@arndb.de>
+X-Provags-ID: V02:K0:SjIpnqiTcEdwQ3RndFtj1Ny+A+O3JOE83if0ESlT0Qb
+ I3SCxri1gFM9abUGPfBK2bz5rum9DhyRU2qquTl4FYy0lveJcj
+ JzGFZQK5gopZOg0dXPJ7VD1yM3UyrXps+4AcApQ9/YcrsWpQPi
+ ExY5LQQBq2s6uMIUkeoqVqdw6mo0RB0RfZjALHQuvKgX6sx2af
+ Mw5FT4JWP6O3DssdnBRKA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Richard,
+On Tuesday 05 July 2011, Marek Szyprowski wrote:
+> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> 
+> This commit changes various functions that change pages and
+> pageblocks migrate type between MIGRATE_ISOLATE and
+> MIGRATE_MOVABLE in such a way as to allow to work with
+> MIGRATE_CMA migrate type.
+> 
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
 
-On Tue, Jul 5, 2011 at 12:42 PM, Richard Weinberger <richard@nod.at> wrote:
-> Am Dienstag 05 Juli 2011, 01:15:47 schrieb Vitaliy Ivanov:
->> From 7296c5b9770e95cd6ad4e9e71d2d14c972abdfe1 Mon Sep 17 00:00:00 2001
->> From: Vitaliy Ivanov <vitalivanov@gmail.com>
->> Date: Tue, 5 Jul 2011 02:03:06 +0300
->> Subject: [PATCH 2/4] uml: helper.c warning corrections
->> MIME-Version: 1.0
->> Content-Type: text/plain; charset=UTF-8
->> Content-Transfer-Encoding: 8bit
->>
->> arch/um/os-Linux/helper.c: In function ‘helper_child’:
->> arch/um/os-Linux/helper.c:38:7: warning: ignoring return value of ‘write’,
->> declared with attribute warn_unused_result
->
-> Same question as before...
-
-Same answer is here:)
-
->> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
->> ---
->>  arch/um/os-Linux/helper.c |    4 ++--
->>  1 files changed, 2 insertions(+), 2 deletions(-)
->>
->> diff --git a/arch/um/os-Linux/helper.c b/arch/um/os-Linux/helper.c
->> index b6b1096..feff22d 100644
->> --- a/arch/um/os-Linux/helper.c
->> +++ b/arch/um/os-Linux/helper.c
->> @@ -28,14 +28,14 @@ static int helper_child(void *arg)
->>  {
->>       struct helper_data *data = arg;
->>       char **argv = data->argv;
->> -     int err;
->> +     int err, ret;
->>
->>       if (data->pre_exec != NULL)
->>               (*data->pre_exec)(data->pre_data);
->>       err = execvp_noalloc(data->buf, argv[0], argv);
->>
->>       /* If the exec succeeds, we don't get here */
->> -     write(data->fd, &err, sizeof(err));
->> +     CATCH_EINTR(ret = write(data->fd, &err, sizeof(err)));
->
-> Is there really a realistic chance that this write() can be interrupted?
-> helper_child() gets called via clone() in run_helper().
-
-It's always better not to think whether it's possible but simply kill
-all the chances for this to happen.
-In this case that's pretty trivial thing and also it solves issue with warning.
-
-Vitaliy
+Acked-by: Arnd Bergmann <arnd@arndb.de>
