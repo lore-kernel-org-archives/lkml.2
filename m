@@ -1,114 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752766Ab1GEOTS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:19:18 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:55294 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab1GEOTR (ORCPT
+	id S1752745Ab1GEOUb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:20:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39400 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab1GEOUa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:19:17 -0400
-Date: Tue, 5 Jul 2011 18:19:13 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
+	Tue, 5 Jul 2011 10:20:30 -0400
+Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
+ sake of nmi-watchdog on P4
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Don Zickus <dzickus@redhat.com>,
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Don Zickus <dzickus@redhat.com>,
         Stephane Eranian <eranian@google.com>, Lin Ming <ming.m.lin@intel.com>,
         Arnaldo Carvalho de Melo <acme@redhat.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
- sake of nmi-watchdog on P4
-Message-ID: <20110705141913.GD4060@sun>
-References: <20110705105959.GA14435@elte.hu>
- <20110705110550.GQ17941@sun>
- <20110705112002.GA15654@elte.hu>
- <20110705113620.GS17941@sun>
- <20110705114437.GC15654@elte.hu>
- <20110705114944.GT17941@sun>
- <20110705121421.GU17941@sun>
- <20110705131005.GA5843@elte.hu>
- <1309871841.3282.148.camel@twins>
- <20110705133105.GB5843@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <20110705133105.GB5843@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+References: <20110705103403.GN17941@sun> <20110705105959.GA14435@elte.hu>
+	 <20110705110550.GQ17941@sun> <20110705112002.GA15654@elte.hu>
+	 <20110705113620.GS17941@sun> <20110705114437.GC15654@elte.hu>
+	 <20110705114944.GT17941@sun> <20110705121421.GU17941@sun>
+	 <20110705131005.GA5843@elte.hu> <1309871841.3282.148.camel@twins>
+	 <20110705133105.GB5843@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Jul 2011 16:20:17 +0200
+Message-ID: <1309875617.3282.213.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 03:31:05PM +0200, Ingo Molnar wrote:
-> 
-> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> 
-> > > So the question is, why does the NMI watchdog prevent 'perf top' 
-> > > from working on a P4?
-> > 
-> > because the NMI watchdog is a pinned event, you don't want to share 
-> > the counter, that would be very bad, suppose you lock up when the 
-> > NMI watchdog was scheduled out. Unreliably debug tools are worse 
-> > than no tools.
-> 
-> Yeah, indeed that explains the symptom.
-> 
-> Firstly, we should fix/enhance perf top to print out an error message 
-> in this case, not just hang there doing nothing.
-
-It waits for event to be scheduled, so seems first the kernel should
-have top level context-schedule-in functions changed from void to
-int (so I have admit I might be missin something here).
-
-> 
+On Tue, 2011-07-05 at 15:31 +0200, Ingo Molnar wrote:
 > Secondly, the proper solution would be to allow the multiplexing of 
-> like-minded hw events. Here if we have two events:
-> 
->   - pinned NMI watchdog, set to a period of 2 billion cycles
->   - perf top with a default of 1 khz auto-freq cycles
-> 
-> We should first change the NMI watchdog to use auto-freq samples - 
-> the hw_nmi_get_sample_period() looks unnecessary - if we set the NMI 
-> watchdog to 1 Hz by default it should be more than enough.
+> like-minded hw events. 
 
-Should we drop tunability of watchdog period as well? At moment
-there is a way to setup period via /sys.
+Right, that's something that's been mentioned before (wasn't that akpm
+who asked that?). Anyway that's terribly non-trivial, but I guess we can
+minimize impact on the sample fast-path by using a custom overflow
+handler for those.
 
-> 
-> Thus we'd have two events:
-> 
->   - pinned NMI watchdog, set to 1 Hz
->   - perf top, set to 1000 Hz
-> 
-> The 1000 Hz event could serve the 1 Hz event just fine.
-> 
-> Thirdly, even if we mucked the NMI event to be somewhat different 
-> from the real cycles event (so the P4 PMU can co-schedule it with 
-> perf top), the real solution there would *still* be to express this 
-> as a variation of a cycles event: use the same trick to allow up to 
-> two cycles events to be present in the PMU - but hide this from the 
-> generic interfaces, just allow up to two cycles events to be 
-> scheduled at once.
-
-This sounds like event aliases PeterZ was proposed pretty ago, I tried
-it but didn't success, one of problem was that current p4 code structure
-does not care how exactly events came into, it simply checks for registers
-resource being 'free' and schedule event in if possible.
-
-I will try to implement aliases again, probably there is still a way
-and I overlooked it in first place.
-
-> 
-> This will have the advantage of not only fixing the NMI watchdog, but 
-> other users as well.
-> 
-> Now, if there's some real behavioral difference between the two 
-> events (one is halted cycles the other is unhalted cycles), then i'd 
-> suggest to use PERF_COUNT_HW_BUS_CYCLES in the NMI watchdog - that is 
-> the generic 'constant frequency' cycles event.
-
-Should not be much difference here as far as I can tell.
-
-> 
-> So there's lots of options to fix/improve this more intelligently.
-> 
-
-	Cyrill
+/me gets a migraine just thinking about how to implement that ;-)
