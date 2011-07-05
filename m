@@ -1,52 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932409Ab1GEMt0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:49:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:34309 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932294Ab1GEMtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:49:24 -0400
-X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=29GGvLjOf54A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=jbeWiZRsRFcSzwvrLL4A:9 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [patch 05/11] microblaze/irqs: Do not trace
- arch_local_{*,irq_*} functions
-From: Steven Rostedt <rostedt@goodmis.org>
-To: monstr@monstr.eu
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <4E12EAE9.2090305@monstr.eu>
-References: <20110702030435.308336775@goodmis.org>
-	 <20110702033853.617637031@goodmis.org>  <4E12EAE9.2090305@monstr.eu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 05 Jul 2011 08:49:22 -0400
-Message-ID: <1309870162.26417.169.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S932420Ab1GEMte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:49:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49353 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932106Ab1GEMtb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 08:49:31 -0400
+Date: Tue, 5 Jul 2011 12:49:23 GMT
+From: tip-bot for Vaibhav Nagarnaik <vnagarnaik@google.com>
+Message-ID: <tip-7ea5906405a1f3fc1c0033dfd7e02f2cfd1de5e5@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, vnagarnaik@google.com, hpa@zytor.com,
+        mingo@redhat.com, dhsharp@google.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, mrubin@google.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, vnagarnaik@google.com,
+        linux-kernel@vger.kernel.org, dhsharp@google.com, fweisbec@gmail.com,
+        rostedt@goodmis.org, mrubin@google.com, tglx@linutronix.de
+In-Reply-To: <1304470602-20366-1-git-send-email-vnagarnaik@google.com>
+References: <1304470602-20366-1-git-send-email-vnagarnaik@google.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] tracing: Use NUMA allocation for per-cpu ring buffer pages
+Git-Commit-ID: 7ea5906405a1f3fc1c0033dfd7e02f2cfd1de5e5
+X-Mailer: tip-git-log-daemon
+Robot-ID: <tip-bot.git.kernel.org>
+Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Jul 2011 12:49:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-05 at 12:43 +0200, Michal Simek wrote:
-> > From: Steven Rostedt <srostedt@redhat.com>
-> > 
-> > Do not trace arch_local_save_flags(), arch_local_irq_*() and friends.
-> > Although they are marked inline, gcc may still make a function out of
-> > them and add it to the pool of functions that are traced by the function
-> > tracer. This can cause undesirable results (kernel panic, triple faults,
-> > etc).
-> > 
-> > Add the notrace notation to prevent them from ever being traced.
-> > 
-> > Cc: Michal Simek <monstr@monstr.eu>
-> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> Applied.
-> 
+Commit-ID:  7ea5906405a1f3fc1c0033dfd7e02f2cfd1de5e5
+Gitweb:     http://git.kernel.org/tip/7ea5906405a1f3fc1c0033dfd7e02f2cfd1de5e5
+Author:     Vaibhav Nagarnaik <vnagarnaik@google.com>
+AuthorDate: Tue, 3 May 2011 17:56:42 -0700
+Committer:  Steven Rostedt <rostedt@goodmis.org>
+CommitDate: Tue, 14 Jun 2011 22:04:39 -0400
 
-Thanks!
+tracing: Use NUMA allocation for per-cpu ring buffer pages
 
--- Steve
+The tracing ring buffer is a group of per-cpu ring buffers where
+allocation and logging is done on a per-cpu basis. The events that are
+generated on a particular CPU are logged in the corresponding buffer.
+This is to provide wait-free writes between CPUs and good NUMA node
+locality while accessing the ring buffer.
 
+However, the allocation routines consider NUMA locality only for buffer
+page metadata and not for the actual buffer page. This causes the pages
+to be allocated on the NUMA node local to the CPU where the allocation
+routine is running at the time.
 
+This patch fixes the problem by using a NUMA node specific allocation
+routine so that the pages are allocated from a NUMA node local to the
+logging CPU.
+
+I tested with the getuid_microbench from autotest. It is a simple binary
+that calls getuid() in a loop and measures the average time for the
+syscall to complete. The following command was used to test:
+$ getuid_microbench 1000000
+
+Compared the numbers found on kernel with and without this patch and
+found that logging latency decreases by 30-50 ns/call.
+tracing with non-NUMA allocation - 569 ns/call
+tracing with NUMA allocation     - 512 ns/call
+
+Signed-off-by: Vaibhav Nagarnaik <vnagarnaik@google.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Michael Rubin <mrubin@google.com>
+Cc: David Sharp <dhsharp@google.com>
+Link: http://lkml.kernel.org/r/1304470602-20366-1-git-send-email-vnagarnaik@google.com
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/linux/ring_buffer.h          |    2 +-
+ kernel/trace/ring_buffer.c           |   36 +++++++++++++++++----------------
+ kernel/trace/ring_buffer_benchmark.c |    2 +-
+ kernel/trace/trace.c                 |    7 ++---
+ 4 files changed, 24 insertions(+), 23 deletions(-)
+
+diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
+index ab38ac8..b891de9 100644
+--- a/include/linux/ring_buffer.h
++++ b/include/linux/ring_buffer.h
+@@ -169,7 +169,7 @@ void ring_buffer_set_clock(struct ring_buffer *buffer,
+ size_t ring_buffer_page_len(void *page);
+ 
+ 
+-void *ring_buffer_alloc_read_page(struct ring_buffer *buffer);
++void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu);
+ void ring_buffer_free_read_page(struct ring_buffer *buffer, void *data);
+ int ring_buffer_read_page(struct ring_buffer *buffer, void **data_page,
+ 			  size_t len, int cpu, int full);
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index b0c7aa4..725153d 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -997,13 +997,14 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 			     unsigned nr_pages)
+ {
+ 	struct buffer_page *bpage, *tmp;
+-	unsigned long addr;
+ 	LIST_HEAD(pages);
+ 	unsigned i;
+ 
+ 	WARN_ON(!nr_pages);
+ 
+ 	for (i = 0; i < nr_pages; i++) {
++		struct page *page;
++
+ 		bpage = kzalloc_node(ALIGN(sizeof(*bpage), cache_line_size()),
+ 				    GFP_KERNEL, cpu_to_node(cpu_buffer->cpu));
+ 		if (!bpage)
+@@ -1013,10 +1014,11 @@ static int rb_allocate_pages(struct ring_buffer_per_cpu *cpu_buffer,
+ 
+ 		list_add(&bpage->list, &pages);
+ 
+-		addr = __get_free_page(GFP_KERNEL);
+-		if (!addr)
++		page = alloc_pages_node(cpu_to_node(cpu_buffer->cpu),
++					GFP_KERNEL, 0);
++		if (!page)
+ 			goto free_pages;
+-		bpage->page = (void *)addr;
++		bpage->page = page_address(page);
+ 		rb_init_page(bpage->page);
+ 	}
+ 
+@@ -1045,7 +1047,7 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int cpu)
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct buffer_page *bpage;
+-	unsigned long addr;
++	struct page *page;
+ 	int ret;
+ 
+ 	cpu_buffer = kzalloc_node(ALIGN(sizeof(*cpu_buffer), cache_line_size()),
+@@ -1067,10 +1069,10 @@ rb_allocate_cpu_buffer(struct ring_buffer *buffer, int cpu)
+ 	rb_check_bpage(cpu_buffer, bpage);
+ 
+ 	cpu_buffer->reader_page = bpage;
+-	addr = __get_free_page(GFP_KERNEL);
+-	if (!addr)
++	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
++	if (!page)
+ 		goto fail_free_reader;
+-	bpage->page = (void *)addr;
++	bpage->page = page_address(page);
+ 	rb_init_page(bpage->page);
+ 
+ 	INIT_LIST_HEAD(&cpu_buffer->reader_page->list);
+@@ -1314,7 +1316,6 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
+ 	unsigned nr_pages, rm_pages, new_pages;
+ 	struct buffer_page *bpage, *tmp;
+ 	unsigned long buffer_size;
+-	unsigned long addr;
+ 	LIST_HEAD(pages);
+ 	int i, cpu;
+ 
+@@ -1375,16 +1376,17 @@ int ring_buffer_resize(struct ring_buffer *buffer, unsigned long size)
+ 
+ 	for_each_buffer_cpu(buffer, cpu) {
+ 		for (i = 0; i < new_pages; i++) {
++			struct page *page;
+ 			bpage = kzalloc_node(ALIGN(sizeof(*bpage),
+ 						  cache_line_size()),
+ 					    GFP_KERNEL, cpu_to_node(cpu));
+ 			if (!bpage)
+ 				goto free_pages;
+ 			list_add(&bpage->list, &pages);
+-			addr = __get_free_page(GFP_KERNEL);
+-			if (!addr)
++			page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
++			if (!page)
+ 				goto free_pages;
+-			bpage->page = (void *)addr;
++			bpage->page = page_address(page);
+ 			rb_init_page(bpage->page);
+ 		}
+ 	}
+@@ -3730,16 +3732,16 @@ EXPORT_SYMBOL_GPL(ring_buffer_swap_cpu);
+  * Returns:
+  *  The page allocated, or NULL on error.
+  */
+-void *ring_buffer_alloc_read_page(struct ring_buffer *buffer)
++void *ring_buffer_alloc_read_page(struct ring_buffer *buffer, int cpu)
+ {
+ 	struct buffer_data_page *bpage;
+-	unsigned long addr;
++	struct page *page;
+ 
+-	addr = __get_free_page(GFP_KERNEL);
+-	if (!addr)
++	page = alloc_pages_node(cpu_to_node(cpu), GFP_KERNEL, 0);
++	if (!page)
+ 		return NULL;
+ 
+-	bpage = (void *)addr;
++	bpage = page_address(page);
+ 
+ 	rb_init_page(bpage);
+ 
+diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
+index 302f8a6..a5457d5 100644
+--- a/kernel/trace/ring_buffer_benchmark.c
++++ b/kernel/trace/ring_buffer_benchmark.c
+@@ -106,7 +106,7 @@ static enum event_status read_page(int cpu)
+ 	int inc;
+ 	int i;
+ 
+-	bpage = ring_buffer_alloc_read_page(buffer);
++	bpage = ring_buffer_alloc_read_page(buffer, cpu);
+ 	if (!bpage)
+ 		return EVENT_DROPPED;
+ 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 71777c8..61fda6b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -3697,7 +3697,7 @@ tracing_buffers_read(struct file *filp, char __user *ubuf,
+ 		return 0;
+ 
+ 	if (!info->spare)
+-		info->spare = ring_buffer_alloc_read_page(info->tr->buffer);
++		info->spare = ring_buffer_alloc_read_page(info->tr->buffer, info->cpu);
+ 	if (!info->spare)
+ 		return -ENOMEM;
+ 
+@@ -3854,7 +3854,7 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
+ 
+ 		ref->ref = 1;
+ 		ref->buffer = info->tr->buffer;
+-		ref->page = ring_buffer_alloc_read_page(ref->buffer);
++		ref->page = ring_buffer_alloc_read_page(ref->buffer, info->cpu);
+ 		if (!ref->page) {
+ 			kfree(ref);
+ 			break;
+@@ -3863,8 +3863,7 @@ tracing_buffers_splice_read(struct file *file, loff_t *ppos,
+ 		r = ring_buffer_read_page(ref->buffer, &ref->page,
+ 					  len, info->cpu, 1);
+ 		if (r < 0) {
+-			ring_buffer_free_read_page(ref->buffer,
+-						   ref->page);
++			ring_buffer_free_read_page(ref->buffer, ref->page);
+ 			kfree(ref);
+ 			break;
+ 		}
