@@ -1,53 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab1GES3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 14:29:33 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:45712 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab1GES3c (ORCPT
+	id S1753225Ab1GESaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 14:30:18 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:54248 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751252Ab1GESaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 14:29:32 -0400
-Date: Tue, 5 Jul 2011 19:29:13 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        rtc-linux@googlegroups.com, dannf@hp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: enable rtc-efi
-Message-ID: <20110705182913.GA31808@srcf.ucam.org>
-References: <4E12DBAB020000780004C1B2@nat28.tlf.novell.com>
+	Tue, 5 Jul 2011 14:30:17 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E12DBAB020000780004C1B2@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049E21BE97@HQMAIL01.nvidia.com>
+References: <74CDBE0F657A3D45AFBB94109FB122FF049E21BE97@HQMAIL01.nvidia.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 5 Jul 2011 12:29:56 -0600
+X-Google-Sender-Auth: HuGp1zYe9cHciNlF6t27pg-Sc3o
+Message-ID: <CACxGe6tWC2bQ=cRp=odY+suJe5DVym1L6peurk_Ldu-mY_rTzA@mail.gmail.com>
+Subject: Re: Tegra device name for device tree
+To: Stephen Warren <swarren@nvidia.com>
+Cc: "devicetree-discuss@lists.ozlabs.org" 
+	<devicetree-discuss@lists.ozlabs.org>,
+        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 08:38:51AM +0100, Jan Beulich wrote:
-> Besides a Kconfig change this just requires creating a respective
-> platform device.
+On Tue, Jul 5, 2011 at 12:22 PM, Stephen Warren <swarren@nvidia.com> wrote:
+> Grant et. al.,
+>
+> It recently dawned on me that all the Tegra DeviceTree support is using a
+> marketing name for the SoC ("tegra250"). NVIDIA would prefer that we use
+> engineering names for the SoC (e.g. "tegra20" now, "tegra30" for an
+> upcoming SoC). The primary motivation for this is that engineering names
+> tend to be more stable and map more directly to the HW design.
+>
+> Is it still possible to make this change, if I submit the appropriate
+> patches to do this?
 
-Couple of other issues:
+Yes, please do.  I'm completely in support of that.
 
-> +static struct platform_device rtc_efi_dev = {
-> +	.name = "rtc-efi",
-> +	.id = -1,
-> +};
+> So, far, I see devicetree/next only refers to the Tegra serial port,
+> whereas devicetree/arm and devicetree/test refer to more Tegra devices in
+> this way. I'm not quite sure how the flow of patches works between these 3
+> trees. For the serial port, I obviously need to submit a patch against
+> devicetree/next, but I'm not so sure about which of devicetree/arm or
+> devicetree/test to target for the other devices.
 
-You haven't removed this from the IA64 code. Isn't that going to result 
-in registering the same device twice?
+devicetree/next is the stuff I'm actually merging.  devicetree/test is
+stuff being experimented with, and devicetree/arm is stuff I expect to
+get merged, but I'm not actually merging through my tree (or just
+isn't quite ready yet).  You can use devicetree/test as a staging
+ground for getting things ready for upstream.  Let me know if anything
+you see in devicetree/test needs to get upstreamed ASAP because your
+work depends on it, and we'll figure out how/when to get it done.
 
-> +static int __init rtc_init(void)
-> +{
-> +	if (efi_enabled && platform_device_register(&rtc_efi_dev) < 0)
-> +		printk(KERN_ERR "unable to register rtc device...\n");
+g.
 
-Ought to -ENODEV if efi isn't present? The error message should also be 
-more verbose.
+
+>
+> Sorry for bringing this up so late in the game.
+>
+> Thanks!
+>
+> --
+> nvpublic
+>
+>
+
+
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
