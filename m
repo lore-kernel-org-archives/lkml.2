@@ -1,37 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755742Ab1GEQ2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 12:28:30 -0400
-Received: from mail.ac.gov.br ([187.6.85.240]:34388 "EHLO srvgst139.ac.gov.br"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755083Ab1GEQ20 convert rfc822-to-8bit (ORCPT
+	id S1755819Ab1GEQ2s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 12:28:48 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:39667 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755765Ab1GEQ2q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 12:28:26 -0400
-X-Greylist: delayed 494 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jul 2011 12:28:25 EDT
-Date: Tue, 05 Jul 2011 12:20:08 -0400 (AMT)
-From: GOOGLE GIVEAWAYS TEAM <saint.clair@ac.gov.br>
-Reply-To: mrbernardgraham70@live.co.uk
-Subject: C o n g r a t u l a t o n s ( C G P N:7-22-71-00-66-12)
-Message-ID: <e1f0abfe-5b92-493d-9366-b29ee5630722@srvgst139.ac.gov.br>
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 5 Jul 2011 12:28:46 -0400
+Date: Tue, 5 Jul 2011 17:28:43 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: ashishj3 <ashish.jangam@kpitcummins.com>
+Cc: linaro-dev@lists.linaro.org, lrg@slimlogic.co.uk,
+        linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>
+Subject: Re: [Patch 5/11] Regulator: DA9052 regulator support v2
+Message-ID: <20110705162843.GA13707@sirena.org.uk>
+References: <1309353363.4448.10.camel@L-0532.kpit.com>
 MIME-Version: 1.0
-X-Originating-IP: [69.31.50.36]
-X-Mailer: Zimbra 7.1.1_GA_3196 (ZimbraWebClient - FF3.0 (Win)/7.1.1_GA_3196)
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309353363.4448.10.camel@L-0532.kpit.com>
+X-Cookie: No shirt, no shoes, no service.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 29, 2011 at 06:46:03PM +0530, ashishj3 wrote:
 
+> +static int verify_range(struct da9052_regulator_info *info,
+> +			 int min_uV, int max_uV)
+> +{
+> +	if (min_uV < info->min_uV || min_uV > info->max_uV)
+> +		return -EINVAL;
+> +	if (max_uV < info->min_uV || max_uV > info->max_uV)
+> +		return -EINVAL;
 
--- 
-Dear Gmail user
-Your email emerged a w i n n e r of £ 850,000.00GBP. (C G P
-N):7-22-71-00-66-12, T i c k e t n u m b er: 00869575733664, S e r i a l n
-u m b e r s:/BTD/8070447706/06, L u c k y n u m b e r s:
-12-12-23-35-40-41(12). Contact Mr. B e r n a r d  G r a h a m for more
-details: E-mail: grahammrbenarde250@gmail.com
-
-Sincerely,
-Ms. Mary Johnson
+This is broken, think about what it's trying to do - it's trying to
+check that the regulator can deliver a voltage within the requested
+range.  These checks don't help with that.
