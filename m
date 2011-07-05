@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752083Ab1GENxZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 09:53:25 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46756 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751831Ab1GENxY (ORCPT
+	id S1752283Ab1GEN5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 09:57:50 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:48734 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751074Ab1GEN5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 09:53:24 -0400
-From: ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH] Staging: comedi: fix prink warning style issue in ni_daq_700.c
-Date: Tue,  5 Jul 2011 19:22:49 +0530
-Message-Id: <1309873969-4690-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH] Staging: comedi: fix prink warning issues in ni_daq_700.c>
-References: <[PATCH] Staging: comedi: fix prink warning issues in ni_daq_700.c>
+	Tue, 5 Jul 2011 09:57:49 -0400
+Date: Tue, 5 Jul 2011 09:57:48 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Subject: Re: 3.0rc3-rc5: usb stops working after resume from suspend to ram
+In-Reply-To: <201107050910.57432.a.miskiewicz@gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1107050956260.2060-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Tue, 5 Jul 2011, Arkadiusz Miskiewicz wrote:
 
-This is a patch to the ni_daq_700.c file that fixes up a prink  warning found by the checkpatch.pl tool
+> > Ah, very good!  That explains everything.  Someone else reported a
+> > similar problem that was tracked down to this commit, and I submitted a
+> > fix a few days ago:
+> > 
+> > 	http://marc.info/?l=linux-usb&m=130955300211987&w=2
+> > 
+> > I bet this will fix your problem too.
+> 
+> Unfortunately it doesn't fix my problem (rc6 + that patch).
+> 
+> usb still hangs after resume and repluging device causes no effect.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/ni_daq_700.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+When this hang occurs, can you get a stack dump?  Alt-SysRq-W or
+something similar.  I'm particularly curious to see what the khubd
+thread is doing.
 
-diff --git a/drivers/staging/comedi/drivers/ni_daq_700.c b/drivers/staging/comedi/drivers/ni_daq_700.c
-index 2672629..e242012 100644
---- a/drivers/staging/comedi/drivers/ni_daq_700.c
-+++ b/drivers/staging/comedi/drivers/ni_daq_700.c
-@@ -51,7 +51,7 @@ IRQ is assigned but not used.
- #include <pcmcia/cisreg.h>
- #include <pcmcia/ds.h>
- 
--static struct pcmcia_device *pcmcia_cur_dev = NULL;
-+static struct pcmcia_device *pcmcia_cur_dev;
- 
- #define DIO700_SIZE 8		/*  size of io region used by board */
- 
-@@ -381,11 +381,11 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- #endif
- 		break;
- 	default:
--		printk("bug! couldn't determine board type\n");
-+		printk(KERN_ERR "bug! couldn't determine board type\n");
- 		return -EINVAL;
- 		break;
- 	}
--	printk("comedi%d: ni_daq_700: %s, io 0x%lx", dev->minor,
-+	printk(KERN_ERR "comedi%d: ni_daq_700: %s, io 0x%lx", dev->minor,
- 	       thisboard->name, iobase);
- #ifdef incomplete
- 	if (irq)
-@@ -396,7 +396,7 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 	printk("\n");
- 
- 	if (iobase == 0) {
--		printk("io base address is zero!\n");
-+		printk(KERN_ERR "io base address is zero!\n");
- 		return -EINVAL;
- 	}
- 
-@@ -421,7 +421,7 @@ static int dio700_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 
- static int dio700_detach(struct comedi_device *dev)
- {
--	printk("comedi%d: ni_daq_700: cs-remove\n", dev->minor);
-+	printk(KERN_ERR "comedi%d: ni_daq_700: cs-remove\n", dev->minor);
- 
- 	if (dev->subdevices)
- 		subdev_700_cleanup(dev, dev->subdevices + 0);
--- 
-1.7.1.1
+Alan Stern
 
