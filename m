@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751932Ab1GERyN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 13:54:13 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:40299 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750749Ab1GERyM (ORCPT
+	id S1752307Ab1GERzQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 13:55:16 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:44513 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751473Ab1GERzO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 13:54:12 -0400
-Message-ID: <4E134FBF.7050002@canonical.com>
-Date: Tue, 05 Jul 2011 10:54:07 -0700
-From: Chase Douglas <chase.douglas@canonical.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+	Tue, 5 Jul 2011 13:55:14 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 1/2] gma500: Update the TODO list
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Tue, 05 Jul 2011 18:45:28 +0100
+Message-ID: <20110705174527.28250.53338.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: djkurtz@chromium.org
-CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
-        olofj@chromium.org
-Subject: Re: [PATCH 08/12] Input: synaptics - rename set_slot to be more descriptive
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org> <1309324042-22943-9-git-send-email-djkurtz@chromium.org>
-In-Reply-To: <1309324042-22943-9-git-send-email-djkurtz@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/28/2011 10:07 PM, djkurtz@chromium.org wrote:
-> From: Daniel Kurtz <djkurtz@chromium.org>
-> 
-> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+From: Alan Cox <alan@linux.intel.com>
 
-I like the new name much better :).
+This is now horribly out of date
 
-Acked-by: Chase Douglas <chase.douglas@canonical.com>
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-> ---
->  drivers/input/mouse/synaptics.c |   17 ++++++++++-------
->  1 files changed, 10 insertions(+), 7 deletions(-)
-> 
-> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
-> index 4e5e454..0a51b0ba 100644
-> --- a/drivers/input/mouse/synaptics.c
-> +++ b/drivers/input/mouse/synaptics.c
-> @@ -489,7 +489,8 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->  	return 0;
->  }
->  
-> -static void set_slot(struct input_dev *dev, int slot, bool active, int x, int y)
-> +static void synaptics_report_semi_mt_slot(struct input_dev *dev, int slot,
-> +					  bool active, int x, int y)
->  {
->  	input_mt_slot(dev, slot);
->  	input_mt_report_slot_state(dev, MT_TOOL_FINGER, active);
-> @@ -505,14 +506,16 @@ static void synaptics_report_semi_mt_data(struct input_dev *dev,
->  					  int num_fingers)
->  {
->  	if (num_fingers >= 2) {
-> -		set_slot(dev, 0, true, min(a->x, b->x), min(a->y, b->y));
-> -		set_slot(dev, 1, true, max(a->x, b->x), max(a->y, b->y));
-> +		synaptics_report_semi_mt_slot(dev, 0, true, min(a->x, b->x),
-> +					      min(a->y, b->y));
-> +		synaptics_report_semi_mt_slot(dev, 1, true, max(a->x, b->x),
-> +					      max(a->y, b->y));
->  	} else if (num_fingers == 1) {
-> -		set_slot(dev, 0, true, a->x, a->y);
-> -		set_slot(dev, 1, false, 0, 0);
-> +		synaptics_report_semi_mt_slot(dev, 0, true, a->x, a->y);
-> +		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
->  	} else {
-> -		set_slot(dev, 0, false, 0, 0);
-> -		set_slot(dev, 1, false, 0, 0);
-> +		synaptics_report_semi_mt_slot(dev, 0, false, 0, 0);
-> +		synaptics_report_semi_mt_slot(dev, 1, false, 0, 0);
->  	}
->  }
->  
+ drivers/staging/gma500/TODO |   29 +++++++++--------------------
+ 1 files changed, 9 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/staging/gma500/TODO b/drivers/staging/gma500/TODO
+index f692ce1..fc83615 100644
+--- a/drivers/staging/gma500/TODO
++++ b/drivers/staging/gma500/TODO
+@@ -1,26 +1,15 @@
+--	Test on more platforms
+--	Clean up the various chunks of unused code
+ -	Sort out the power management side. Not important for Poulsbo but
+-	matters for Moorestown
+--	Add Moorestown support (single pipe, no BIOS, no stolen memory,
+-				some other differences)
+--	Sort out the bo and ttm code to support userframe buffers and DRM
+-	interfaces rather than just faking it enough for a framebuffer
++	matters for Moorestown/Medfield
++-	Debug Oaktrail/Moorestown support (single pipe, no BIOS on mrst,
++					some other differences)
+ -	Add 2D acceleration via console and DRM
++-	Add scrolling acceleration using the GTT to do remapping on the main
++	framebuffer.
++-	HDMI testing
++-	Oaktrail HDMI and other features
++-	Oaktrail MIPI
++-	Medfield needs a lot of further love
+ 
+ As per kernel policy and the in the interest of the safety of various
+ kittens there is no support or plans to add hooks for the closed user space
+ stuff.
+-
+-
+-Why bother ?
+-- Proper display configuration
+-- Can be made to work on Moorestown where VESA won't
+-- Works on systems where the VESA BIOS is bust or the tables are broken
+-  without hacks
+-- 2D acceleration
+-
+-Currently tested on
+-+	Dell Mini 10 100x600
+-
+-
 
