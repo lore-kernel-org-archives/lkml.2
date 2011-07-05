@@ -1,117 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752389Ab1GEOAa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:00:30 -0400
-Received: from na3sys009aog115.obsmtp.com ([74.125.149.238]:43130 "EHLO
-	na3sys009aog115.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751969Ab1GEOA2 (ORCPT
+	id S1752464Ab1GEOGH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:06:07 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:47193 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751971Ab1GEOGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:00:28 -0400
-From: Partha Basak <p-basak2@ti.com>
-References: <11640ef76f97628579e457b5c6a74cc3@mail.gmail.com> <Pine.LNX.4.44L0.1107041147510.12242-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1107041147510.12242-100000@netrider.rowland.org>
+	Tue, 5 Jul 2011 10:06:05 -0400
+Date: Tue, 5 Jul 2011 18:05:59 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Tommy Lin <tommy.lin.1101@gmail.com>
+Cc: Wim Van Sebroeck <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, mac.lin@caviumnetworks.com,
+        Tommy Lin <tommy.lin@caviumnetworks.com>
+Subject: Re: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for
+ CNS3xxx hardware
+Message-ID: <20110705140559.GA15771@oksana.dev.rtsoft.ru>
+References: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com>
 MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acw6Ykejc7LzsNIGR+SeKE3K8vUwYwAtugWw
-Date: Tue, 5 Jul 2011 19:30:26 +0530
-Message-ID: <41049fa81376d2973fa760cf061ee460@mail.gmail.com>
-Subject: RE: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
- of ehci and ohci
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Felipe Balbi <balbi@ti.com>, Anand Gadiyar <gadiyar@ti.com>,
-        sameo@linux.intel.com, parthab@india.ti.com, tony@atomide.com,
-        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        paul@pwsan.com, johnstul@us.ibm.com,
-        Vishwanath Sripathy <vishwanath.bs@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: linux-omap-owner@vger.kernel.org [mailto:linux-omap-
->owner@vger.kernel.org] On Behalf Of Alan Stern
->Sent: Monday, July 04, 2011 9:21 PM
->To: Partha Basak
->Cc: Keshava Munegowda; linux-usb@vger.kernel.org; linux-
->omap@vger.kernel.org; linux-kernel@vger.kernel.org; Felipe Balbi; Anand
->Gadiyar; sameo@linux.intel.com; parthab@india.ti.com; tony@atomide.com;
->Kevin Hilman; Benoit Cousson; paul@pwsan.com; johnstul@us.ibm.com;
->Vishwanath Sripathy
->Subject: RE: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume
->support of ehci and ohci
->
->On Mon, 4 Jul 2011, Partha Basak wrote:
->
->> >I don't see any point in these routines (and likewise for
->> >omap_ohci_suspend/resume).  When the whole system is going to sleep
->> >anyway, what reason is there for enabling runtime PM on the parent
->> >device?
->>
->> Both for EHCI & OHCI, the clocks are owned by the parent (uhh-tll).
->>
->> Calling pm_runtime_put_sync(dev->parent) within omap_ehci_suspend
->> will turn-off the parent clocks in the Suspend path.
->>
->> Similarly, calling pm_runtime_get_sync(dev->parent) within
->> omap_ehci_resume
->> will turn-on the parent clocks in the resume path.
->>
->> This way, all reference counting are implicit within the Runtime PM
->layer
->> and takes care of all combinations of only EHCI insmoded, OHCI
->insmoded,
->> both insmoded etc.
->>
->> When both EHCI & OHCI are suspended, parent clocks will actually be
->> turned OFF and vice-versa.
->>
->> Note that the parent per-se does not have any .suspend & .resume
->hooked
->> up.
->
->Why not?  That sounds like a big bug.
+Hello,
 
-This was a design decision since the parent needs to be activated only
-when at-least one child is insmoded.
+thanks for the patches.
 
-If the chidren are suspended, automatically the parent is suspended
-via the pm_runtime_putsync calls to the parent.
+On Tue, Jul 05, 2011 at 08:05:48PM +0800, Tommy Lin wrote:
+> Original MPcore watchdog setting about load register (offset 0x20) is different
+> from CNS3xxx data sheet. The CNS3xxx data sheet says watchdog has following
+> features:
+> 1. The Watchdog Counter Register (offset 0x24) is a down counter.
+> 2. The timer interval is calculated using following equation:
+>    (PRESCALER_value+1) X (Load_value+1) X 2 / CPU CLK_frequency
+> Thus the watchdog load register control in CNS3xxx way is add to MPcore watchdog
+> source. The original control method is also kept if the CPU architecture is not
+> CNS3xxx.
+> 
+> Signed-off-by: Tommy Lin <tommy.lin@caviumnetworks.com>
+> ---
+>  drivers/watchdog/mpcore_wdt.c |   12 ++++++++++++
+>  1 files changed, 12 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/watchdog/mpcore_wdt.c b/drivers/watchdog/mpcore_wdt.c
+> index 2b4af22..816e0c5 100644
+> --- a/drivers/watchdog/mpcore_wdt.c
+> +++ b/drivers/watchdog/mpcore_wdt.c
+> @@ -42,6 +42,9 @@ struct mpcore_wdt {
+>  	int		irq;
+>  	unsigned int	perturb;
+>  	char		expect_close;
+> +#ifdef CONFIG_ARCH_CNS3XXX
+> +	unsigned long	reload_unit; /* ticks per second */
+> +#endif
 
-So, effectively, we do not need an explicit suspend for the parent.
->
->> At the end of the _probe of parent, the clocks are turned OFF.
->> Subsequently, enabling
->> the parent clocks are entirely done implicitly by the children
->get_sync()
->> in their _probe.
->>
->> Therefore while .suspend/.resume of children are called they call back
->> into the parent to turn-off the clocks.
->
->You have ignored a few very important points:
->
->Firstly, system suspend is supposed to work even when runtime PM is not
->configured.
->
->Secondly, the user can disable runtime PM via sysfs at any time.  This
->shouldn't mess up system suspend.
->
->Basically, it's a bad idea to mix up system suspend with runtime PM.
+Nope, these #ifdefs are not acceptible. Kernel should support multi-arch
+images soon.
 
-Your observations are correct but this is a generic limitation and Kevin
-is working
-on this problem in parallel.
+[...]
+> +#ifdef CONFIG_ARCH_CNS3XXX
+> +	/* Assume prescale is set to 256 */
+> +	wdt->reload_unit = cns3xxx_cpu_clock() * 1000000 / 256 / 2;
+> +#endif
 
-As of now, all OMAP drivers are mandated to use ONLY runtime pm framework
-for enabling/disabling clocks. I will let Kevin comment further.
+You probably want to pass reload_unit via platform_data, and also
+check (in runtime) that the watchdog is CNS3xxx. Or if reload_unit
+!= 0.
 
->
->Alan Stern
->
->--
->To unsubscribe from this list: send the line "unsubscribe linux-omap" in
->the body of a message to majordomo@vger.kernel.org
->More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Thanks,
+
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
