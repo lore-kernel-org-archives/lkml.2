@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756411Ab1GENAZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 09:00:25 -0400
+	id S1756365Ab1GENAX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 09:00:23 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:37131 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756367Ab1GENAX (ORCPT
+	with ESMTP id S1755945Ab1GENAW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 09:00:23 -0400
+	Tue, 5 Jul 2011 09:00:22 -0400
 X-IronPort-AV: E=Sophos;i="4.65,479,1304308800"; 
-   d="scan'208";a="153527743"
+   d="scan'208";a="153527739"
 From: Ian Campbell <ian.campbell@citrix.com>
 To: Cyrill Gorcunov <gorcunov@gmail.com>
 CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
@@ -17,9 +17,9 @@ CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Ian Campbell <ian.campbell@citrix.com>, x86@kernel.org
-Subject: [PATCH 2/3] x86: make 64 bit ret_from_fork a little more similar to 32 bit
-Date: Tue, 5 Jul 2011 14:00:13 +0100
-Message-ID: <1309870814-14181-2-git-send-email-ian.campbell@citrix.com>
+Subject: [PATCH 1/3] x86: drop unnecessary kernel_eflags variable from 64 bit.
+Date: Tue, 5 Jul 2011 14:00:12 +0100
+Message-ID: <1309870814-14181-1-git-send-email-ian.campbell@citrix.com>
 X-Mailer: git-send-email 1.7.2.5
 In-Reply-To: <20110705111525.GR17941@sun>
 References: <20110705111525.GR17941@sun>
@@ -29,42 +29,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The 64 bit version resets EFLAGS before calling schedule_tail() and
-therefore leaves EFLAGS.IF clear. 32 bit resets EFLAGS after calling
-schedule_tail() and therefore leaves EFLAGS.IF set. I don't think
-there is any practical difference between the two approaches since
-interrupts are actually reenabled within schedule_tail
-(schedule_tail->finish_task_switch->finish_lock_switch->raw_spin_unlock_irq->...->local_irq_enable)
-so arbitrarily pick the 32 bit version and make 64 bit look like that.
+For no reason that I can determine 64 bit x86 saves the current eflags
+in cpu_init purely for use in ret_from_fork. The equivalent 32 bit
+code simply hard codes 0x0202 as the new EFLAGS which seems safer than
+relying on a potentially arbitrary EFLAGS saved during cpu_init.
+
+Original i386 changeset
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=47a5c6fa0e204a2b63309c648bb2fde36836c826
+Original x86_64 changset
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=658fdbef66e5e9be79b457edc2cbbb3add840aa9
+
+The only comment in the later indicates that it is following the
+former, but not why it differs in this way.
+
+This change makes 64 bit use the same mechanism to setup the initial
+EFLAGS on fork. Note that 64 bit resets EFLAGS before calling
+schedule_tail() as opposed to 32 bit which calls schedule_tail()
+first. Therefore the correct value for EFLAGS has opposite IF
+bit. This will be fixed in a subsequent patch.
 
 Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
 Cc: x86@kernel.org
 ---
- arch/x86/kernel/entry_64.S |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+ arch/x86/kernel/cpu/common.c |    4 ----
+ arch/x86/kernel/entry_64.S   |    2 +-
+ 2 files changed, 1 insertions(+), 5 deletions(-)
 
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 22a073d..178c3b4 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -1077,8 +1077,6 @@ void syscall_init(void)
+ 	       X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|X86_EFLAGS_IOPL);
+ }
+ 
+-unsigned long kernel_eflags;
+-
+ /*
+  * Copies of the original ist values from the tss are only accessed during
+  * debugging, no special alignment required.
+@@ -1231,8 +1229,6 @@ void __cpuinit cpu_init(void)
+ 	fpu_init();
+ 	xsave_init();
+ 
+-	raw_local_save_flags(kernel_eflags);
+-
+ 	if (is_uv_system())
+ 		uv_cpu_init();
+ }
 diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-index b50d142..9c28bd5 100644
+index e13329d..b50d142 100644
 --- a/arch/x86/kernel/entry_64.S
 +++ b/arch/x86/kernel/entry_64.S
-@@ -394,13 +394,14 @@ END(save_paranoid)
- ENTRY(ret_from_fork)
- 	DEFAULT_FRAME
+@@ -396,7 +396,7 @@ ENTRY(ret_from_fork)
  
--	LOCK ; btr $TIF_FORK,TI_flags(%r8)
+ 	LOCK ; btr $TIF_FORK,TI_flags(%r8)
  
--	pushq_cfi $0x0002
--	popfq_cfi				# reset kernel eflags
-+	LOCK ; btr $TIF_FORK,TI_flags(%r8)
+-	pushq_cfi kernel_eflags(%rip)
++	pushq_cfi $0x0002
+ 	popfq_cfi				# reset kernel eflags
  
  	call schedule_tail			# rdi: 'prev' task parameter
- 
-+	pushq_cfi $0x0202
-+	popfq_cfi				# reset kernel eflags
-+
- 	GET_THREAD_INFO(%rcx)
- 
- 	RESTORE_REST
 -- 
 1.7.2.5
 
