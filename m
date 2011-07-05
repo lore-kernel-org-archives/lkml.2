@@ -1,48 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755594Ab1GEKoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 06:44:17 -0400
-Received: from 173-166-109-252-newengland.hfc.comcastbusiness.net ([173.166.109.252]:38421
-	"EHLO bombadil.infradead.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755226Ab1GEKoQ (ORCPT
+	id S1755611Ab1GEKrr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 06:47:47 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:41530 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754772Ab1GEKrq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 06:44:16 -0400
-Date: Tue, 5 Jul 2011 06:44:14 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: torvalds@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] hfsplus regression fixes
-Message-ID: <20110705104414.GA17713@infradead.org>
+	Tue, 5 Jul 2011 06:47:46 -0400
+Date: Tue, 5 Jul 2011 14:47:42 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
+        Jan Beulich <JBeulich@novell.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [Q x86-64] on kernel_eflags
+Message-ID: <20110705104742.GO17941@sun>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- Hi Linus,
+While were looking into ret_from_fork code I somehow wondered
+about the global kernel_eflags variable here.
 
-please pull two small fixes for regressions introduced in the last
-big batch of hfsplus updates in 2.6.38.
+arch/x86/cpu/common.c
+---------------------
+unsigned long kernel_eflags;
 
+void __cpuinit cpu_init(void)
+{
+	...
+	raw_local_save_flags(kernel_eflags);
+}
 
-The following changes since commit ca56a95eedcc95f8fea7b49c87565cd961d74fe2:
+arch/x86/kernel/entry_64.S
+--------------------------
+ENTRY(ret_from_fork)
+	DEFAULT_FRAME
+	LOCK ; btr $TIF_FORK,TI_flags(%r8)
+	pushq_cfi kernel_eflags(%rip)
+	popfq_cfi                               # reset kernel eflags
 
-  Merge branch 'drm-fixes' of git://git.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6 (2011-06-29 18:18:48 -0700)
+Every call to cpu_init renew global kernel_eflags
+and every task switching does use this variable in a
+sake of cleaning carry bit of flags register as far as
+I can tell.
 
-are available in the git repository at:
+Should not every cpu has own copy of kernel_eflags? Just
+to be consistent in style? Or this would be space waisting
+and an optimization is done here?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/hch/hfsplus.git for-linus
-
-Alexey Khoroshilov (1):
-      hfsplus: Fix double iput of the same inode in hfsplus_fill_super()
-
-Seth Forshee (1):
-      hfsplus: add missing call to bio_put()
-
- fs/hfsplus/super.c   |    2 +-
- fs/hfsplus/wrapper.c |    7 +++++--
- 2 files changed, 6 insertions(+), 3 deletions(-)
+	Cyrill
