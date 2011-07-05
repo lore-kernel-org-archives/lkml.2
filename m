@@ -1,59 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754312Ab1GEP7k (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 11:59:40 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:50093 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753520Ab1GEP7i (ORCPT
+	id S1754857Ab1GEQBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 12:01:39 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:54759 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab1GEQBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 11:59:38 -0400
-X-Sasl-enc: IIGw1n5fsyBJLlq2JF3JCP+srcyotNKgp9MAX09dvj/Y 1309881578
-Date: Tue, 5 Jul 2011 08:57:45 -0700
-From: Greg KH <greg@kroah.com>
-To: "K. Y. Srinivasan" <kys@microsoft.com>
-Cc: gregkh@suse.de, linux-kernel@vger.kernel.org, devel@linuxdriverproject.org,
-        virtualization@lists.osdl.org, Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 75/77] Staging: hv: mouse: Disable auto-loading of the
- mouse driver
-Message-ID: <20110705155745.GA31998@kroah.com>
-References: <1308255393-3785-1-git-send-email-kys@microsoft.com>
- <1308255470-3826-1-git-send-email-kys@microsoft.com>
- <1308255470-3826-75-git-send-email-kys@microsoft.com>
+	Tue, 5 Jul 2011 12:01:37 -0400
+Message-ID: <cf54fbb6e05ab86a5c6029eda70012e4.squirrel@www.firstfloor.org>
+In-Reply-To: <1309864954.3282.61.camel@twins>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
+    <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
+    <20110630165849.GE23059@one.firstfloor.org>
+    <1309761541.18875.40.camel@minggr.sh.intel.com>
+    <20110704215706.GH15637@one.firstfloor.org>
+    <1309864954.3282.61.camel@twins>
+Date: Tue, 5 Jul 2011 18:01:36 +0200
+Subject: Re: [PATCH 1/4] perf, x86: Add Intel Nehalem/Westmere uncore pmu
+From: "Andi Kleen" <andi@firstfloor.org>
+To: "Peter Zijlstra" <a.p.zijlstra@chello.nl>
+Cc: "Andi Kleen" <andi@firstfloor.org>, "Lin Ming" <ming.m.lin@intel.com>,
+        "Ingo Molnar" <mingo@elte.hu>, "Stephane Eranian" <eranian@google.com>,
+        "Arnaldo Carvalho de Melo" <acme@ghostprotocols.net>,
+        "linux-kernel" <linux-kernel@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.21
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1308255470-3826-75-git-send-email-kys@microsoft.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 16, 2011 at 01:17:48PM -0700, K. Y. Srinivasan wrote:
-> Disable auto-loading of the mouse driver.
-> 
-> Signed-off-by: K. Y. Srinivasan <kys@microsoft.com>
-> Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-> Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
-> ---
->  drivers/staging/hv/hv_mouse.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/hv/hv_mouse.c b/drivers/staging/hv/hv_mouse.c
-> index 1b30f26..ab5f1da 100644
-> --- a/drivers/staging/hv/hv_mouse.c
-> +++ b/drivers/staging/hv/hv_mouse.c
-> @@ -950,7 +950,7 @@ static void __exit mousevsc_exit(void)
->  
->  MODULE_LICENSE("GPL");
->  MODULE_VERSION(HV_DRV_VERSION);
-> -MODULE_ALIAS("vmbus:hv_mouse");
-> +/*MODULE_ALIAS("vmbus:hv_mouse");*/
 
-Why?
+>
+>>   But it's not strictly required I would say,
+>> 44(?) bits are probably enough for near all use cases.
+>
+> 44bits is in the hours range for pure cycle counts, which is so-so. I
+> bet you're going to be very annoyed when you find your counters are
+> wrecked after your 5 hour test run finishes.
 
-{hint, I think I know why, but you need to tell us why in the changelog
-comment}
+For these kinds of long running measurements you usually care about
+ratios, not absolutes. Some infrequent wrapping should not substantially
+change.
+those.
 
-Dropped.
+-Andi
 
