@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752864Ab1GEWjP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 18:39:15 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:41213 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752455Ab1GEWjN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 18:39:13 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
-To: Arnaud Lacombe <lacombar@gmail.com>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Michal Marek <mmarek@suse.cz>
-Subject: Re: [RFC 3/7] kconfig/check.sh: prepare for generic check
-In-Reply-To: Your message of "Fri, 01 Jul 2011 21:47:35 EDT."
-             <1309571259-15241-4-git-send-email-lacombar@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1307387767-9237-1-git-send-email-lacombar@gmail.com> <1309571259-15241-1-git-send-email-lacombar@gmail.com>
-            <1309571259-15241-4-git-send-email-lacombar@gmail.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1309905474_18528P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	id S1753157Ab1GEWjl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 18:39:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60150 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752329Ab1GEWjj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 18:39:39 -0400
+Message-ID: <4E13918B.3040208@zytor.com>
+Date: Tue, 05 Jul 2011 15:34:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Matthew Garrett <mjg@redhat.com>
+CC: Ingo Molnar <mingo@elte.hu>, Petr Tesarik <ptesarik@suse.cz>,
+        Christoph Hellwig <hch@infradead.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Fenghua Yu <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        Russell King <linux@arm.linux.org.uk>,
+        Thomas Gleixner <tglx@linutronix.de>, Tony Luck <tony.luck@intel.com>,
+        x86@kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-ia64@vger.kernel.org, linux-sh@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
+        Dave Jones <davej@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 00/10] Enhance /dev/mem to allow read/write of arbitrary
+ physical addresses
+References: <201106171038.25988.ptesarik@suse.cz> <201107012134.45881.ptesarik@suse.cz> <20110701195629.GA19057@elte.hu> <201107012244.57593.ptesarik@suse.cz> <20110703194618.GB27022@elte.hu> <20110705174901.GA30531@srcf.ucam.org>
+In-Reply-To: <20110705174901.GA30531@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Date: Tue, 05 Jul 2011 18:37:54 -0400
-Message-ID: <62528.1309905474@turing-police.cc.vt.edu>
-X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
-X-Junkmail-Info: (0) 
-X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
-X-Junkmail-Signature-Raw: score=unknown,
-	refid=str=0001.0A020209.4E139251.0078,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2010-07-22 22:03:31,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1309905474_18528P
-Content-Type: text/plain; charset=us-ascii
+On 07/05/2011 10:49 AM, Matthew Garrett wrote:
+> On Sun, Jul 03, 2011 at 09:46:18PM +0200, Ingo Molnar wrote:
+> 
+>> But those tables wont be in regular RAM (they will be in ROM or in 
+>> RAM marked non-RAM in a special way in the e820 tables).
+>>
+>> dmidecode certainly works on Fedora.
+> 
+> I've repeatedly wanted to dump EFI data that's flagged as E820_RESERVED 
+> above the top of RAM and had to hack the kernel every time. I'm entirely 
+> in favour of not having to hack the kernel every time.
+> 
 
-On Fri, 01 Jul 2011 21:47:35 EDT, Arnaud Lacombe said:
+Alright... I must admit I have lost track...
 
-> diff --git a/scripts/kconfig/check.sh b/scripts/kconfig/check.sh
+Where are we at with this patchset, and what path should it go through?
 
-Can this be check_libs.sh or similar, to better indicate the function?
-
---==_Exmh_1309905474_18528P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFOE5JCcC3lWbTT17ARAgF0AJ4yZz+IKItC53NcQQ4mdAQC5wKr2QCfVq/d
-X8ub6EdKnPxmAF9Y5b+0nq8=
-=XmBj
------END PGP SIGNATURE-----
-
---==_Exmh_1309905474_18528P--
-
+	-hpa
