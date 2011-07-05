@@ -1,130 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932316Ab1GEMMZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:12:25 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:48518 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932147Ab1GEMMY (ORCPT
+	id S932330Ab1GEMO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:14:27 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:39589 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932147Ab1GEMOZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:12:24 -0400
-Date: Tue, 5 Jul 2011 15:12:19 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: =?iso-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-Cc: "Balbi, Felipe" <balbi@ti.com>, "Girdwood, Liam" <lrg@ti.com>,
-        Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
-        "Lopez Cruz, Misael" <misael.lopez@ti.com>
-Subject: Re: Re: [PATCH 1/5] MFD: twl6040: Add irq variable for slave devices
-Message-ID: <20110705121218.GD2820@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1309857266-3663-1-git-send-email-peter.ujfalusi@ti.com>
- <1309857266-3663-2-git-send-email-peter.ujfalusi@ti.com>
- <20110705112245.GA2820@legolas.emea.dhcp.ti.com>
- <3328261.Ltcx4CEcHA@barack>
+	Tue, 5 Jul 2011 08:14:25 -0400
+Date: Tue, 5 Jul 2011 16:14:21 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
+ sake of nmi-watchdog on P4
+Message-ID: <20110705121421.GU17941@sun>
+References: <20110705100320.GK17941@sun>
+ <20110705102017.GA12458@elte.hu>
+ <20110705103403.GN17941@sun>
+ <20110705105959.GA14435@elte.hu>
+ <20110705110550.GQ17941@sun>
+ <20110705112002.GA15654@elte.hu>
+ <20110705113620.GS17941@sun>
+ <20110705114437.GC15654@elte.hu>
+ <20110705114944.GT17941@sun>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="ExIO7AL6tcaLjJBF"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <3328261.Ltcx4CEcHA@barack>
+In-Reply-To: <20110705114944.GT17941@sun>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---ExIO7AL6tcaLjJBF
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi,
-
-On Tue, Jul 05, 2011 at 03:09:06PM +0300, P=E9ter Ujfalusi wrote:
-> On Tuesday 05 July 2011 13:22:46 Balbi, Felipe wrote:
-> > Hi,
-> >=20
-> > On Tue, Jul 05, 2011 at 12:14:22PM +0300, Peter Ujfalusi wrote:
-> > > Add new variable to pass the irq number for the slaves
-> > > devices of twl6040.
-> > > The irq number configuration is done in the twl6040-core
-> > > at probe time, so machine drivers do not need to be
-> > > modified.
-> > >=20
-> > > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> > > ---
-> > >=20
-> > >  drivers/mfd/twl6040-core.c |    2 ++
-> > >  include/linux/i2c/twl.h    |    2 ++
-> > >  2 files changed, 4 insertions(+), 0 deletions(-)
-> > >=20
-> > > diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-> > > index cfaedb5..8607793 100644
-> > > --- a/drivers/mfd/twl6040-core.c
-> > > +++ b/drivers/mfd/twl6040-core.c
-> > > @@ -501,6 +501,7 @@ static int __devinit twl6040_probe(struct
-> > > platform_device *pdev)
-> > >=20
-> > >  	if (pdata->codec) {
-> > >  =09
-> > >  		cell =3D &twl6040->cells[children];
-> > >  		cell->name =3D "twl6040-codec";
-> > >=20
-> > > +		pdata->codec->plug_irq =3D twl6040->irq_base + TWL6040_IRQ_PLUG;
-> >=20
-> > are the slave devices platform_devices ?? If so, you could use struct
-> > resource to pass IRQs as that's the "approved" way to do so. Then, on
-> > child driver, you could either rely on a particular order of the
-> > resources or assign them names and use platform_get_irq_byname() to
-> > fetch the correct one (if you have more than one, that is).
->=20
-> You mean something like this:
->=20
-> static struct resource twl6040_codec_rsrc[] =3D {
-> 	{
-> 		.flags =3D IORESOURCE_IRQ,
-> 	},
-> };
->=20
+On Tue, Jul 05, 2011 at 03:49:44PM +0400, Cyrill Gorcunov wrote:
+> On Tue, Jul 05, 2011 at 01:44:37PM +0200, Ingo Molnar wrote:
 > ...
->=20
-> @@ -501,6 +501,7 @@ static int __devinit twl6040_probe(struct platform_de=
-vice=20
-> *pdev)
-> 		if (pdata->codec) {
-> 			cell =3D &twl6040->cells[children];
-> 			cell->name =3D "twl6040-codec";
-> +			twl6040_codec_rsrc[0].start =3D twl6040->irq_base + TWL6040_IRQ_PLUG;
-> +			twl6040_codec_rsrc[0].end =3D twl6040->irq_base + TWL6040_IRQ_PLUG;
-> +			cell->resource =3D twl6040_codec_rsrc;
-> +			cell->num_resources =3D ARRAY_SIZE(twl6040_codec_rsrc);
-> 			cell->platform_data =3D pdata->codec;
-> 			cell->pdata_size =3D sizeof(*pdata->codec);
-> 			children++;
->=20
+> > 
+> > What i am missing is that you have not pointed out the *core problem* 
+> > you are fixing and it's not obvious from the changelog either!
+> 
+> OK, seems I put there some tech details while human readable changelog
+> was needed. Will fix that, thanks!
+> 
+> 	Cyrill
 
-yes, that's what I meant :-)
+Ingo, what about this one?
 
---=20
-balbi
+	Cyrill
+---
+perf, x86: P4 PMU - Add hw_watchdog_set_attr helper to simulate cpu-cycles counting in nmi-watchdog
 
---ExIO7AL6tcaLjJBF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+Because of constraints existed in Netburst PMU counting
+cpu cycles is allowed for one consumer only.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
+If the kernel is booted up with nmi-watchdog enabled
+the watchdog become a consumer of such event and there
+is no more room left for "perf top" and friends (ie any
+attempts to count cpu cycles simultaneously with nmi-watchdog
+doomed to fail).
 
-iQEcBAEBAgAGBQJOEv+iAAoJEAv8Txj19kN1fm4H/3KBklcX0XHcPSxBaJu1jE9r
-lwUX86BlJkcnD+OcbV7IplL7vJMS9m/tbWJCpnX75gyBGQeOgM1RPerfdRk+EkzO
-wWyNO1ZHIr6jxa0p2dHuDmIIR36Lhew6p5Eb/deimD2vVIs0lBEums8nCIlq9kwi
-fLPPn8bc4P9j0EHkThPNTpEI5oLeKRriILUvZD3o2uaLFW8jXk3eJk8DsIjYtxxS
-sIxlIPT18tj7Q5sHtiL72bKeI55xcbLmluZRTvd5qvcW1FXi4qO6DGZgQTGgn/zp
-7ZE+j9rgWbSY/Lwq8eAwl8shmmiazutlnSFptyfC/czEbhJJDxVKJdHO8DKXT5c=
-=TT7L
------END PGP SIGNATURE-----
+The patch tries to improve situation a bit -- an event counting
+non-sleeping cpu clocks is added and assigned to nmi-watchdog only,
+leaving the former PERF_COUNT_HW_CPU_CYCLES event free, so say
+"perf top" now can run simultaneously with nmi-watchdog.
 
---ExIO7AL6tcaLjJBF--
+Note that there is a disadvantage as well -- MSR_P4_CRU_ESCR2
+and MSR_P4_CRU_ESCR3 now always occupied by watchdog so if some
+application needs this ESCRs the nmi-watchdog should be turned
+off first, otherwise access to these registers will be never
+granted.
+
+v2: Add a comment about non-sleeping clockticks spotted by Ingo Molnar.
+v3: Peter Zijlstra and Stephane Eranian pointed out that making new
+    event global visible (up to userspace) will bring problems supporting
+    this ABI in future. So now this event is x86 specific and hidden
+    from userspace.
+v4: Stephane proposed to use __weak arch specific callback instead of
+    new hidden generic event.
+
+Tested-and-reviewed-by: Don Zickus <dzickus@redhat.com>
+Tested-and-reviewed-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Ingo Molnar <mingo@redhat.com>
+CC: Lin Ming <ming.m.lin@intel.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ arch/x86/kernel/cpu/perf_event.c    |    7 +++++++
+ arch/x86/kernel/cpu/perf_event_p4.c |   26 ++++++++++++++++++++++++++
+ kernel/watchdog.c                   |    6 +++++-
+ 3 files changed, 38 insertions(+), 1 deletion(-)
+
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+===================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+@@ -233,6 +233,7 @@ struct x86_pmu {
+ 	void		(*enable_all)(int added);
+ 	void		(*enable)(struct perf_event *);
+ 	void		(*disable)(struct perf_event *);
++	void		(*hw_watchdog_set_attr)(struct perf_event_attr *attr);
+ 	int		(*hw_config)(struct perf_event *event);
+ 	int		(*schedule_events)(struct cpu_hw_events *cpuc, int n, int *assign);
+ 	unsigned	eventsel;
+@@ -315,6 +316,12 @@ static u64 __read_mostly hw_cache_extra_
+ 				[PERF_COUNT_HW_CACHE_OP_MAX]
+ 				[PERF_COUNT_HW_CACHE_RESULT_MAX];
+ 
++void hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr)
++{
++	if (x86_pmu.hw_watchdog_set_attr)
++		x86_pmu.hw_watchdog_set_attr(wd_attr);
++}
++
+ /*
+  * Propagate event elapsed time into the generic event.
+  * Can only be executed on the CPU where the event is active.
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+===================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -705,6 +705,31 @@ static int p4_validate_raw_event(struct 
+ 	return 0;
+ }
+ 
++static void p4_hw_watchdog_set_attr(struct perf_event_attr *wd_attr)
++{
++	/*
++	 * Watchdog ticks are special on Netburst, we use
++	 * that named "non-sleeping" ticks as recommended
++	 * by Intel SDM Vol3b.
++	 */
++	WARN_ON_ONCE(wd_attr->type	!= PERF_TYPE_HARDWARE ||
++		     wd_attr->config	!= PERF_COUNT_HW_CPU_CYCLES);
++
++	wd_attr->type	= PERF_TYPE_RAW;
++	wd_attr->config	=
++		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS2)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS3)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS0)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS1)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS2)		|
++			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS3))		|
++		p4_config_pack_cccr(P4_CCCR_THRESHOLD(15) | P4_CCCR_COMPLEMENT		|
++			P4_CCCR_COMPARE);
++}
++
+ static int p4_hw_config(struct perf_event *event)
+ {
+ 	int cpu = get_cpu();
+@@ -1179,6 +1204,7 @@ static __initconst const struct x86_pmu 
+ 	.cntval_bits		= ARCH_P4_CNTRVAL_BITS,
+ 	.cntval_mask		= ARCH_P4_CNTRVAL_MASK,
+ 	.max_period		= (1ULL << (ARCH_P4_CNTRVAL_BITS - 1)) - 1,
++	.hw_watchdog_set_attr	= p4_hw_watchdog_set_attr,
+ 	.hw_config		= p4_hw_config,
+ 	.schedule_events	= p4_pmu_schedule_events,
+ 	/*
+Index: linux-2.6.git/kernel/watchdog.c
+===================================================================
+--- linux-2.6.git.orig/kernel/watchdog.c
++++ linux-2.6.git/kernel/watchdog.c
+@@ -200,6 +200,8 @@ static int is_softlockup(unsigned long t
+ }
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
++void __weak hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr) { }
++
+ static struct perf_event_attr wd_hw_attr = {
+ 	.type		= PERF_TYPE_HARDWARE,
+ 	.config		= PERF_COUNT_HW_CPU_CYCLES,
+@@ -368,9 +370,11 @@ static int watchdog_nmi_enable(int cpu)
+ 	if (event != NULL)
+ 		goto out_enable;
+ 
+-	/* Try to register using hardware perf events */
+ 	wd_attr = &wd_hw_attr;
+ 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
++	hw_nmi_watchdog_set_attr(wd_attr);
++
++	/* Try to register using hardware perf events */
+ 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
+ 	if (!IS_ERR(event)) {
+ 		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
