@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab1GELbV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:31:21 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:41775 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932213Ab1GELbU convert rfc822-to-8bit (ORCPT
+	id S932249Ab1GELbx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:31:53 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:54202 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176Ab1GELbv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:31:20 -0400
-From: Richard Weinberger <richard@nod.at>
-To: Vitaliy Ivanov <vitalivanov@gmail.com>
-Subject: Re: [PATCH 1/4] uml: cow_user.c warning corrections
-Date: Tue, 5 Jul 2011 13:31:14 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.4; x86_64; ; )
-Cc: Jeff Dike <jdike@addtoit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        user-mode-linux-devel@lists.sourceforge.net,
-        lkml <linux-kernel@vger.kernel.org>
-References: <1309821341.4527.5.camel@vitaliy-Vostro-1400> <201107051128.25262.richard@nod.at> <CAGTPOqcAETWHG3DEOwDZkMG8_qd-opf90psCi=+U+tYcGV=7=A@mail.gmail.com>
-In-Reply-To: <CAGTPOqcAETWHG3DEOwDZkMG8_qd-opf90psCi=+U+tYcGV=7=A@mail.gmail.com>
+	Tue, 5 Jul 2011 07:31:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 3/8] mm: alloc_contig_range() added
+Date: Tue, 5 Jul 2011 13:31:17 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-4-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1309851710-3828-4-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="windows-1252"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107051331.15504.richard@nod.at>
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107051331.17661.arnd@arndb.de>
+X-Provags-ID: V02:K0:XBlSSYITDFfzdSr4g5KcHPHgqFb8Q2AbyWJE/jcPaOF
+ 0PbKou84o5S5IyW3+a/AdEkzyuAzF3e1RZlzvQaBVrXOC1F3RK
+ q3qTn1NWIkt9mxZ3wgcT2rT75lvYEXt2r+i+xOsc0GaIOWdW/r
+ B3qpUi/s9PQUucRGr6RsaNYcbOA0OU8tibSzsNS5qauEIqYEDh
+ CSHRABWz3ubsCHQwDlKag==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 05 Juli 2011, 13:10:34 schrieb Vitaliy Ivanov:
-> On Tue, Jul 5, 2011 at 12:28 PM, Richard Weinberger <richard@nod.at> wrote:
-> > Am Dienstag 05 Juli 2011, 01:15:41 schrieb Vitaliy Ivanov:
-> >> From 6201d3e862fca8670b206338dc90303ea0acc77d Mon Sep 17 00:00:00 2001
-> >> From: Vitaliy Ivanov <vitalivanov@gmail.com>
-> >> Date: Tue, 5 Jul 2011 01:57:51 +0300
-> >> Subject: [PATCH 1/4] uml: cow_user.c warning corrections
-> >> MIME-Version: 1.0
-> >> Content-Type: text/plain; charset=UTF-8
-> >> Content-Transfer-Encoding: 8bit
-> >> 
-> >> arch/um/drivers/cow_user.c: In function ‘absolutize’:
-> >> arch/um/drivers/cow_user.c:189:7: warning: ignoring return value of
-> >> ‘chdir’, declared with attribute warn_unused_result
-> > 
-> > What compiler flags are you using?
-> > Using the default settings this warning does not show up.
-> > Most of the "ignoring return value" are totally useless.
+On Tuesday 05 July 2011, Marek Szyprowski wrote:
+> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
 > 
-> chdir is defined with warn_unused_result attribute and my gcc on
-> Ubuntu 11.04 issues warnings.
-> I don't use any additional flags on compiling UML.
+> This commit adds the alloc_contig_range() function which tries
+> to allecate given range of pages.  It tries to migrate all
+> already allocated pages that fall in the range thus freeing them.
+> Once all pages in the range are freed they are removed from the
+> buddy system thus allocated for the caller to use.
+> 
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> [m.szyprowski: renamed some variables for easier code reading]
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
 
-Ah, because of -D_FORTIFY_SOURCE=2, right?
-Then your patches makes sense.
-
-I'll add it to my queue.
-
-Thanks,
-//richard
+Acked-by: Arnd Bergmann <arnd@arndb.de>
