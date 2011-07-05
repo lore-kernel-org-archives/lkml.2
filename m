@@ -1,56 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab1GELy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:54:27 -0400
-Received: from mga11.intel.com ([192.55.52.93]:62801 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755885Ab1GELy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:54:27 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,478,1304319600"; 
-   d="scan'208";a="23956328"
-Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1309778192.3282.27.camel@twins>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
-	 <1309778192.3282.27.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Jul 2011 19:54:20 +0800
-Message-Id: <1309866860.2381.1.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S932190Ab1GEL5q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:57:46 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:36467 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756109Ab1GEL5o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 07:57:44 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: stable@kernel.org
+Cc: linux-cifs@vger.kernel.org, helge.hafting@hist.no,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cifs: fix wsize negotiation for 2.6.39 stable
+Date: Tue,  5 Jul 2011 07:57:38 -0400
+Message-Id: <1309867058-22983-1-git-send-email-jlayton@redhat.com>
+X-Mailer: git-send-email 1.7.5.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2011-07-04 at 19:16 +0800, Peter Zijlstra wrote:
-> On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
-> > +#define MEM_STORE_DCU_HIT              (1ULL << 0)
-> 
-> I'm pretty sure that's not Dublin City University, but what is it?
-> Data-Cache-Unit? what does that mean, L1/L2 or also L3? 
-> 
-> > +#define MEM_STORE_STLB_HIT             (1ULL << 1)
-> 
-> What's an sTLB? I know iTLB and dTLB's but sTLBs I've not heard of yet.
-> 
-> > +#define MEM_STORE_LOCKED_ACCESS                (1ULL << 2) 
-> 
-> Presumably that's about LOCK'ed ops?
-> 
-> So now you're just tacking bits on the end without even attempting to
-> generalize/unify things, not charmed at all.
+Prior to 2.6.39, when signing was enabled on a socket the client only
+sent single-page writes. This changed with commit ca83ce3d5b, which
+made signed and unsigned connections use the same codepaths for write
+calls.
 
-Any idea on the more useful store bits encoding?
+This caused a regression when working with windows servers. Windows
+machines will reject writes larger than the MaxBufferSize when signing
+is active, but does not clear the CAP_LARGE_WRITE_X flag in the
+negotiation.
 
-Thanks,
-Lin Ming
+This patch backports 2 patches that fix this problem in 3.0 kernels,
+and changes a couple of the constants to values appropriate for the
+writeback code in 2.6.39.
 
+Cc: stable@kernel.org
+Reported-by: Helge Hafting <helge.hafting@hist.no>
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+---
+ fs/cifs/connect.c |   64 ++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 44 insertions(+), 20 deletions(-)
+
+diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
+index 5236582..8e78710 100644
+--- a/fs/cifs/connect.c
++++ b/fs/cifs/connect.c
+@@ -2571,23 +2571,6 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
+ 	else /* default */
+ 		cifs_sb->rsize = CIFSMaxBufSize;
+ 
+-	if (pvolume_info->wsize > PAGEVEC_SIZE * PAGE_CACHE_SIZE) {
+-		cERROR(1, "wsize %d too large, using 4096 instead",
+-			  pvolume_info->wsize);
+-		cifs_sb->wsize = 4096;
+-	} else if (pvolume_info->wsize)
+-		cifs_sb->wsize = pvolume_info->wsize;
+-	else
+-		cifs_sb->wsize = min_t(const int,
+-					PAGEVEC_SIZE * PAGE_CACHE_SIZE,
+-					127*1024);
+-		/* old default of CIFSMaxBufSize was too small now
+-		   that SMB Write2 can send multiple pages in kvec.
+-		   RFC1001 does not describe what happens when frame
+-		   bigger than 128K is sent so use that as max in
+-		   conjunction with 52K kvec constraint on arch with 4K
+-		   page size  */
+-
+ 	if (cifs_sb->rsize < 2048) {
+ 		cifs_sb->rsize = 2048;
+ 		/* Windows ME may prefer this */
+@@ -2665,6 +2648,48 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
+ 			   "mount option supported");
+ }
+ 
++/* Prior to 3.0, cifs couldn't handle writes larger than this */
++#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
++
++/*
++ * When the server doesn't allow large posix writes, only allow a wsize of
++ * 128k minus the size of the WRITE_AND_X header. That allows for a write up
++ * to the maximum size described by RFC1002.
++ */
++#define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
++
++/* Make the default the same as the max */
++#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
++
++static unsigned int
++cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
++{
++	__u64 unix_cap = le64_to_cpu(tcon->fsUnixInfo.Capability);
++	struct TCP_Server_Info *server = tcon->ses->server;
++	unsigned int wsize = pvolume_info->wsize ? pvolume_info->wsize :
++				CIFS_DEFAULT_WSIZE;
++
++	/* can server support 24-bit write sizes? (via UNIX extensions) */
++	if (!tcon->unix_ext || !(unix_cap & CIFS_UNIX_LARGE_WRITE_CAP))
++		wsize = min_t(unsigned int, wsize, CIFS_MAX_RFC1002_WSIZE);
++
++	/*
++	 * no CAP_LARGE_WRITE_X or is signing enabled without CAP_UNIX set?
++	 * Limit it to max buffer offered by the server, minus the size of the
++	 * WRITEX header, not including the 4 byte RFC1001 length.
++	 */
++	if (!(server->capabilities & CAP_LARGE_WRITE_X) ||
++	    (!(server->capabilities & CAP_UNIX) &&
++	     (server->sec_mode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
++		wsize = min_t(unsigned int, wsize,
++				server->maxBuf - sizeof(WRITE_REQ) + 4);
++
++	/* hard limit of CIFS_MAX_WSIZE */
++	wsize = min_t(unsigned int, wsize, CIFS_MAX_WSIZE);
++
++	return wsize;
++}
++
+ static int
+ is_path_accessible(int xid, struct cifsTconInfo *tcon,
+ 		   struct cifs_sb_info *cifs_sb, const char *full_path)
+@@ -2866,13 +2891,12 @@ try_mount_again:
+ 		cifs_sb->rsize = 1024 * 127;
+ 		cFYI(DBG2, "no very large read support, rsize now 127K");
+ 	}
+-	if (!(tcon->ses->capabilities & CAP_LARGE_WRITE_X))
+-		cifs_sb->wsize = min(cifs_sb->wsize,
+-			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
+ 	if (!(tcon->ses->capabilities & CAP_LARGE_READ_X))
+ 		cifs_sb->rsize = min(cifs_sb->rsize,
+ 			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
+ 
++	cifs_sb->wsize = cifs_negotiate_wsize(tcon, volume_info);
++
+ remote_path_check:
+ 	/* check if a whole path (including prepath) is not remote */
+ 	if (!rc && tcon) {
+-- 
+1.7.5.4
 
