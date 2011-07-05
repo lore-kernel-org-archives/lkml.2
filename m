@@ -1,93 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932152Ab1GELQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:16:22 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:44531 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932110Ab1GELQU convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:3:1>);
-	Tue, 5 Jul 2011 07:16:20 -0400
-Message-Id: <4E130EA0020000780004C24A@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Tue, 05 Jul 2011 12:16:16 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Ingo Molnar" <mingo@elte.hu>
-Cc: <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86/EFI: properly pre-initialize table pointers
-References: <4E12DC26020000780004C1C1@nat28.tlf.novell.com>
- <20110705093343.GB5725@elte.hu>
-In-Reply-To: <20110705093343.GB5725@elte.hu>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	id S932168Ab1GELUL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:20:11 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:45280 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932124Ab1GELUJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 07:20:09 -0400
+Date: Tue, 5 Jul 2011 13:20:02 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
+ sake of nmi-watchdog on P4
+Message-ID: <20110705112002.GA15654@elte.hu>
+References: <20110705100320.GK17941@sun>
+ <20110705102017.GA12458@elte.hu>
+ <20110705103403.GN17941@sun>
+ <20110705105959.GA14435@elte.hu>
+ <20110705110550.GQ17941@sun>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <20110705110550.GQ17941@sun>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 05.07.11 at 11:33, Ingo Molnar <mingo@elte.hu> wrote:
 
-> * Jan Beulich <JBeulich@novell.com> wrote:
+* Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+
+> On Tue, Jul 05, 2011 at 12:59:59PM +0200, Ingo Molnar wrote:
+> ...
+> > 
+> > are 'non-sleeping ticks' non-halted cycles - i.e. cycles that 
+> > always count with CPU frequency and can thus be used for periodic 
+> > frequencies?
 > 
->> Consumers of the table pointers in struct efi check for
->> EFI_INVALID_TABLE_ADDR to determine validity, hence these pointers
->> should all be pre-initialized to this value (rather than zero).
->> 
->> Signed-off-by: Jan Beulich <jbeulich@novell.com>
->> 
->> ---
->>  arch/x86/platform/efi/efi.c |   12 +++++++++++-
->>  1 file changed, 11 insertions(+), 1 deletion(-)
-> 
-> This changelog is missing some key information:
-> 
->  - how did you find the bug (by chance via code review or did you see
->    some actual badness?)
+> Yes, I think so (btw, as far as I remember oprofile does the same 
+> 'threshold' gaming for nmi-watchdog).
 
-I can certainly add that information and re-send, but would certainly
-have stated any really bad effect if I had observed such.
+But the NMI watchdog does not need a constant frequency event - it 
+can use unhalted cycles just fine. Why does it need unhalted cycles 
+on P4?
 
->  - what practical effect (if any) did you see from this patch?
-> 
->  - what practical effect (if any) do you expect others to see from this 
-> patch?
+Thanks,
 
-Hmm, I can't really see why this kind of information (especially the
-last) would belong into a changeset comment, the more a pretty
-obvious one like this.
-
-> This kind of information helps us prioritize bugfixes.
-
-Bug fixes are bug fixes - unless they fix really critical issues (and
-here that's unlikely to be the case, as the code had been wrong
-for ages), I don't follow why you require more information to be
-added than a description of what gets changed (the "why" should
-really only matter if it's debatable whether the original code was
-wrong).
-
-Furthermore, this being not the first time you ask (from my pov)
-to be overly verbose when it comes to describing changes and
-their effects - is it unreasonable to expect you (not always you
-personally, but you as being one of the three x86 maintainers;
-you hopefully agree that from my position it doesn't really
-matter who answers as long as someone assumes that
-responsibility) to be a little less lax in responding to submitted
-patches? I would roughly estimate that 50% of the patches I
-send get dropped on the floor with no response whatsoever
-(there are even cases where you welcomed patches, but never
-applied them or responded with a revised opinion on a re-
-submission). I clearly realize that the volume you need to deal
-with must be pretty high, yet I don't think that ought to be an
-excuse for other than occasional cases of this happening.
-
-And yes, there are also other times when things get integrated
-*very* quickly, and I definitely appreciate that.
-
-Jan
-
-> Thanks,
-> 
->     Ingo
-
-
-
+	Ingo
