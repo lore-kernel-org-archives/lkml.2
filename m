@@ -1,240 +1,360 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932517Ab1GEMzn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:55:43 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59443 "EHLO hera.kernel.org"
+	id S1756244Ab1GEM43 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:56:29 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59466 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932414Ab1GEMzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:55:41 -0400
-Date: Tue, 5 Jul 2011 12:55:29 GMT
-From: tip-bot for Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Message-ID: <tip-1fd8df2c3970c9e7e4e262354154ee39e58bdd7c@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        a.p.zijlstra@chello.nl, namhyung@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, namhyung@gmail.com,
-        masami.hiramatsu.pt@hitachi.com, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-In-Reply-To: <20110608070934.17777.17116.stgit@fedora15>
-References: <20110608070934.17777.17116.stgit@fedora15>
+	id S1755887Ab1GEM41 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 08:56:27 -0400
+Date: Tue, 5 Jul 2011 12:56:00 GMT
+From: tip-bot for Anton Blanchard <anton@samba.org>
+Message-ID: <tip-5d67be97f8903d05ce53597fb5f3bc25a45e8026@git.kernel.org>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, anton@samba.org,
+        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, dsahern@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, anton@samba.org, paulus@samba.org,
+        linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+        acme@ghostprotocols.net, dsahern@gmail.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <20110704215750.11647eb9@kryten>
+References: <20110704215750.11647eb9@kryten>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing/kprobes: Fix kprobe-tracer to support stack trace
-Git-Commit-ID: 1fd8df2c3970c9e7e4e262354154ee39e58bdd7c
+Subject: [tip:perf/core] perf report/annotate/script: Add option to specify a CPU range
+Git-Commit-ID: 5d67be97f8903d05ce53597fb5f3bc25a45e8026
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Jul 2011 12:55:30 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Jul 2011 12:56:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1fd8df2c3970c9e7e4e262354154ee39e58bdd7c
-Gitweb:     http://git.kernel.org/tip/1fd8df2c3970c9e7e4e262354154ee39e58bdd7c
-Author:     Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-AuthorDate: Wed, 8 Jun 2011 16:09:34 +0900
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 14 Jun 2011 22:48:53 -0400
+Commit-ID:  5d67be97f8903d05ce53597fb5f3bc25a45e8026
+Gitweb:     http://git.kernel.org/tip/5d67be97f8903d05ce53597fb5f3bc25a45e8026
+Author:     Anton Blanchard <anton@samba.org>
+AuthorDate: Mon, 4 Jul 2011 21:57:50 +1000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 5 Jul 2011 10:44:44 +0200
 
-tracing/kprobes: Fix kprobe-tracer to support stack trace
+perf report/annotate/script: Add option to specify a CPU range
 
-Fix to support kernel stack trace correctly on kprobe-tracer.
-Since the execution path of kprobe-based dynamic events is different
-from other tracepoint-based events, normal ftrace_trace_stack() doesn't
-work correctly. To fix that, this introduces ftrace_trace_stack_regs()
-which traces stack via pt_regs instead of current stack register.
+Add an option to perf report/annotate/script to specify which
+CPUs to operate on. This enables us to take a single system wide
+profile and analyse each CPU (or group of CPUs) in isolation.
 
-e.g.
+This was useful when profiling a multiprocess workload where the
+bottleneck was on one CPU but this was hidden in the overall
+profile. Per process and per thread breakdowns didn't help
+because multiple processes were running on each CPU and no
+single process consumed an entire CPU.
 
- # echo p schedule+4 > /sys/kernel/debug/tracing/kprobe_events
- # echo 1 > /sys/kernel/debug/tracing/options/stacktrace
- # echo 1 > /sys/kernel/debug/tracing/events/kprobes/enable
- # head -n 20 /sys/kernel/debug/tracing/trace
-            bash-2968  [000] 10297.050245: p_schedule_4: (schedule+0x4/0x4ca)
-            bash-2968  [000] 10297.050247: <stack trace>
- => schedule_timeout
- => n_tty_read
- => tty_read
- => vfs_read
- => sys_read
- => system_call_fastpath
-     kworker/0:1-2940  [000] 10297.050265: p_schedule_4: (schedule+0x4/0x4ca)
-     kworker/0:1-2940  [000] 10297.050266: <stack trace>
- => worker_thread
- => kthread
- => kernel_thread_helper
-            sshd-1132  [000] 10297.050365: p_schedule_4: (schedule+0x4/0x4ca)
-            sshd-1132  [000] 10297.050365: <stack trace>
- => sysret_careful
+The patch converts the list of CPUs returned by cpu_map__new
+into a bitmap for fast lookup. I wanted to use -C to be
+consistent with perf top/record/stat, but unfortunately perf
+report already uses -C <comms>.
 
-Note: Even with this fix, the first entry will be skipped
-if the probe is put on the function entry area before
-the frame pointer is set up (usually, that is 4 bytes
- (push %bp; mov %sp %bp) on x86), because stack unwinder
-depends on the frame pointer.
+ v2: Incorporate suggestions from David Ahern:
+	- Added -c to perf script
+	- Check that SAMPLE_CPU is set when -c is used
+	- Update documentation
 
-Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: yrl.pp-manager.tt@hitachi.com
+ v3: Create perf_session__cpu_bitmap()
+
+Signed-off-by: Anton Blanchard <anton@samba.org>
+Acked-by: David Ahern <dsahern@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Namhyung Kim <namhyung@gmail.com>
-Link: http://lkml.kernel.org/r/20110608070934.17777.17116.stgit@fedora15
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Link: http://lkml.kernel.org/r/20110704215750.11647eb9@kryten
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/ftrace_event.h |    4 ++++
- kernel/trace/trace.c         |   34 +++++++++++++++++++++++++++++-----
- kernel/trace/trace.h         |    9 +++++++++
- kernel/trace/trace_kprobe.c  |    6 ++++--
- 4 files changed, 46 insertions(+), 7 deletions(-)
+ tools/perf/Documentation/perf-annotate.txt |    6 ++++
+ tools/perf/Documentation/perf-report.txt   |    6 ++++
+ tools/perf/Documentation/perf-script.txt   |    6 ++++
+ tools/perf/builtin-annotate.c              |   15 +++++++++++
+ tools/perf/builtin-report.c                |   15 +++++++++++
+ tools/perf/builtin-script.c                |   13 +++++++++
+ tools/perf/util/session.c                  |   38 ++++++++++++++++++++++++++++
+ tools/perf/util/session.h                  |    3 ++
+ 8 files changed, 102 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 59d3ef1..b1e69ee 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -129,6 +129,10 @@ void trace_current_buffer_unlock_commit(struct ring_buffer *buffer,
- void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
- 				       struct ring_buffer_event *event,
- 					unsigned long flags, int pc);
-+void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-+					    struct ring_buffer_event *event,
-+					    unsigned long flags, int pc,
-+					    struct pt_regs *regs);
- void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
- 					 struct ring_buffer_event *event);
+diff --git a/tools/perf/Documentation/perf-annotate.txt b/tools/perf/Documentation/perf-annotate.txt
+index 6f5a498..85c5f02 100644
+--- a/tools/perf/Documentation/perf-annotate.txt
++++ b/tools/perf/Documentation/perf-annotate.txt
+@@ -66,6 +66,12 @@ OPTIONS
+ 	used. This interfaces starts by centering on the line with more
+ 	samples, TAB/UNTAB cycles through the lines with more samples.
  
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index c977018..d9c1612 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -1193,6 +1193,18 @@ void trace_nowake_buffer_unlock_commit(struct ring_buffer *buffer,
++-c::
++--cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
++	be provided as a comma-separated list with no space: 0,1. Ranges of
++	CPUs are specified with -: 0-2. Default is to report samples on all
++	CPUs.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-report[1]
+diff --git a/tools/perf/Documentation/perf-report.txt b/tools/perf/Documentation/perf-report.txt
+index cfa8e51..04253c0 100644
+--- a/tools/perf/Documentation/perf-report.txt
++++ b/tools/perf/Documentation/perf-report.txt
+@@ -128,6 +128,12 @@ OPTIONS
+ --symfs=<directory>::
+         Look for files with symbols relative to this directory.
+ 
++-c::
++--cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
++	be provided as a comma-separated list with no space: 0,1. Ranges of
++	CPUs are specified with -: 0-2. Default is to report samples on all
++	CPUs.
++
+ SEE ALSO
+ --------
+ linkperf:perf-stat[1]
+diff --git a/tools/perf/Documentation/perf-script.txt b/tools/perf/Documentation/perf-script.txt
+index c6068cb..db01786 100644
+--- a/tools/perf/Documentation/perf-script.txt
++++ b/tools/perf/Documentation/perf-script.txt
+@@ -182,6 +182,12 @@ OPTIONS
+ --hide-call-graph::
+         When printing symbols do not display call chain.
+ 
++-c::
++--cpu:: Only report samples for the list of CPUs provided. Multiple CPUs can
++	be provided as a comma-separated list with no space: 0,1. Ranges of
++	CPUs are specified with -: 0-2. Default is to report samples on all
++	CPUs.
++
+ SEE ALSO
+ --------
+ linkperf:perf-record[1], linkperf:perf-script-perl[1],
+diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+index 7b139e1..555aefd 100644
+--- a/tools/perf/builtin-annotate.c
++++ b/tools/perf/builtin-annotate.c
+@@ -28,6 +28,8 @@
+ #include "util/hist.h"
+ #include "util/session.h"
+ 
++#include <linux/bitmap.h>
++
+ static char		const *input_name = "perf.data";
+ 
+ static bool		force, use_tui, use_stdio;
+@@ -38,6 +40,9 @@ static bool		print_line;
+ 
+ static const char *sym_hist_filter;
+ 
++static const char	*cpu_list;
++static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
++
+ static int perf_evlist__add_sample(struct perf_evlist *evlist,
+ 				   struct perf_sample *sample,
+ 				   struct perf_evsel *evsel,
+@@ -90,6 +95,9 @@ static int process_sample_event(union perf_event *event,
+ 		return -1;
+ 	}
+ 
++	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
++		return 0;
++
+ 	if (!al.filtered &&
+ 	    perf_evlist__add_sample(session->evlist, sample, evsel, &al)) {
+ 		pr_warning("problem incrementing symbol count, "
+@@ -177,6 +185,12 @@ static int __cmd_annotate(void)
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
++	if (cpu_list) {
++		ret = perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap);
++		if (ret)
++			goto out_delete;
++	}
++
+ 	ret = perf_session__process_events(session, &event_ops);
+ 	if (ret)
+ 		goto out_delete;
+@@ -252,6 +266,7 @@ static const struct option options[] = {
+ 		    "print matching source lines (may be slow)"),
+ 	OPT_BOOLEAN('P', "full-paths", &full_paths,
+ 		    "Don't shorten the displayed pathnames"),
++	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 5d43d01..f854efd 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -33,6 +33,8 @@
+ #include "util/sort.h"
+ #include "util/hist.h"
+ 
++#include <linux/bitmap.h>
++
+ static char		const *input_name = "perf.data";
+ 
+ static bool		force, use_tui, use_stdio;
+@@ -49,6 +51,9 @@ static char		callchain_default_opt[] = "fractal,0.5,callee";
+ static bool		inverted_callchain;
+ static symbol_filter_t	annotate_init;
+ 
++static const char	*cpu_list;
++static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
++
+ static int perf_session__add_hist_entry(struct perf_session *session,
+ 					struct addr_location *al,
+ 					struct perf_sample *sample,
+@@ -117,6 +122,9 @@ static int process_sample_event(union perf_event *event,
+ 	if (al.filtered || (hide_unresolved && al.sym == NULL))
+ 		return 0;
+ 
++	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
++		return 0;
++
+ 	if (al.map != NULL)
+ 		al.map->dso->hit = 1;
+ 
+@@ -263,6 +271,12 @@ static int __cmd_report(void)
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
++	if (cpu_list) {
++		ret = perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap);
++		if (ret)
++			goto out_delete;
++	}
++
+ 	if (show_threads)
+ 		perf_read_values_init(&show_threads_values);
+ 
+@@ -473,6 +487,7 @@ static const struct option options[] = {
+ 		    "Only display entries resolved to a symbol"),
+ 	OPT_STRING(0, "symfs", &symbol_conf.symfs, "directory",
+ 		    "Look for files with symbols relative to this directory"),
++	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/builtin-script.c b/tools/perf/builtin-script.c
+index 3056b45..09024ec 100644
+--- a/tools/perf/builtin-script.c
++++ b/tools/perf/builtin-script.c
+@@ -13,6 +13,7 @@
+ #include "util/util.h"
+ #include "util/evlist.h"
+ #include "util/evsel.h"
++#include <linux/bitmap.h>
+ 
+ static char const		*script_name;
+ static char const		*generate_script_lang;
+@@ -21,6 +22,8 @@ static u64			last_timestamp;
+ static u64			nr_unordered;
+ extern const struct option	record_options[];
+ static bool			no_callchain;
++static const char		*cpu_list;
++static DECLARE_BITMAP(cpu_bitmap, MAX_NR_CPUS);
+ 
+ enum perf_output_field {
+ 	PERF_OUTPUT_COMM            = 1U << 0,
+@@ -453,6 +456,10 @@ static int process_sample_event(union perf_event *event,
+ 		last_timestamp = sample->time;
+ 		return 0;
+ 	}
++
++	if (cpu_list && !test_bit(sample->cpu, cpu_bitmap))
++		return 0;
++
+ 	scripting_ops->process_event(event, sample, evsel, session, thread);
+ 
+ 	session->hists.stats.total_period += sample->period;
+@@ -1075,6 +1082,7 @@ static const struct option options[] = {
+ 	OPT_CALLBACK('f', "fields", NULL, "str",
+ 		     "comma separated output fields prepend with 'type:'. Valid types: hw,sw,trace,raw. Fields: comm,tid,pid,time,cpu,event,trace,ip,sym,dso,addr",
+ 		     parse_output_fields),
++	OPT_STRING('c', "cpu", &cpu_list, "cpu", "list of cpus to profile"),
+ 
+ 	OPT_END()
+ };
+@@ -1255,6 +1263,11 @@ int cmd_script(int argc, const char **argv, const char *prefix __used)
+ 	if (session == NULL)
+ 		return -ENOMEM;
+ 
++	if (cpu_list) {
++		if (perf_session__cpu_bitmap(session, cpu_list, cpu_bitmap))
++			return -1;
++	}
++
+ 	if (!no_callchain)
+ 		symbol_conf.use_callchain = true;
+ 	else
+diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
+index 558bcf9..080e533 100644
+--- a/tools/perf/util/session.c
++++ b/tools/perf/util/session.c
+@@ -12,6 +12,7 @@
+ #include "session.h"
+ #include "sort.h"
+ #include "util.h"
++#include "cpumap.h"
+ 
+ static int perf_session__open(struct perf_session *self, bool force)
+ {
+@@ -1282,3 +1283,40 @@ void perf_session__print_ip(union perf_event *event,
+ 		}
+ 	}
  }
- EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit);
- 
-+void trace_nowake_buffer_unlock_commit_regs(struct ring_buffer *buffer,
-+					    struct ring_buffer_event *event,
-+					    unsigned long flags, int pc,
-+					    struct pt_regs *regs)
++
++int perf_session__cpu_bitmap(struct perf_session *session,
++			     const char *cpu_list, unsigned long *cpu_bitmap)
 +{
-+	ring_buffer_unlock_commit(buffer, event);
++	int i;
++	struct cpu_map *map;
 +
-+	ftrace_trace_stack_regs(buffer, flags, 0, pc, regs);
-+	ftrace_trace_userstack(buffer, flags, pc);
++	for (i = 0; i < PERF_TYPE_MAX; ++i) {
++		struct perf_evsel *evsel;
++
++		evsel = perf_session__find_first_evtype(session, i);
++		if (!evsel)
++			continue;
++
++		if (!(evsel->attr.sample_type & PERF_SAMPLE_CPU)) {
++			pr_err("File does not contain CPU events. "
++			       "Remove -c option to proceed.\n");
++			return -1;
++		}
++	}
++
++	map = cpu_map__new(cpu_list);
++
++	for (i = 0; i < map->nr; i++) {
++		int cpu = map->map[i];
++
++		if (cpu >= MAX_NR_CPUS) {
++			pr_err("Requested CPU %d too large. "
++			       "Consider raising MAX_NR_CPUS\n", cpu);
++			return -1;
++		}
++
++		set_bit(cpu, cpu_bitmap);
++	}
++
++	return 0;
 +}
-+EXPORT_SYMBOL_GPL(trace_nowake_buffer_unlock_commit_regs);
+diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
+index de4178d..5de754f 100644
+--- a/tools/perf/util/session.h
++++ b/tools/perf/util/session.h
+@@ -172,4 +172,7 @@ void perf_session__print_ip(union perf_event *event,
+ 				 struct perf_session *session,
+ 				 int print_sym, int print_dso);
+ 
++int perf_session__cpu_bitmap(struct perf_session *session,
++			     const char *cpu_list, unsigned long *cpu_bitmap);
 +
- void trace_current_buffer_discard_commit(struct ring_buffer *buffer,
- 					 struct ring_buffer_event *event)
- {
-@@ -1238,7 +1250,7 @@ ftrace(struct trace_array *tr, struct trace_array_cpu *data,
- #ifdef CONFIG_STACKTRACE
- static void __ftrace_trace_stack(struct ring_buffer *buffer,
- 				 unsigned long flags,
--				 int skip, int pc)
-+				 int skip, int pc, struct pt_regs *regs)
- {
- 	struct ftrace_event_call *call = &event_kernel_stack;
- 	struct ring_buffer_event *event;
-@@ -1257,24 +1269,36 @@ static void __ftrace_trace_stack(struct ring_buffer *buffer,
- 	trace.skip		= skip;
- 	trace.entries		= entry->caller;
- 
--	save_stack_trace(&trace);
-+	if (regs)
-+		save_stack_trace_regs(regs, &trace);
-+	else
-+		save_stack_trace(&trace);
- 	if (!filter_check_discard(call, entry, buffer, event))
- 		ring_buffer_unlock_commit(buffer, event);
- }
- 
-+void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
-+			     int skip, int pc, struct pt_regs *regs)
-+{
-+	if (!(trace_flags & TRACE_ITER_STACKTRACE))
-+		return;
-+
-+	__ftrace_trace_stack(buffer, flags, skip, pc, regs);
-+}
-+
- void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
- 			int skip, int pc)
- {
- 	if (!(trace_flags & TRACE_ITER_STACKTRACE))
- 		return;
- 
--	__ftrace_trace_stack(buffer, flags, skip, pc);
-+	__ftrace_trace_stack(buffer, flags, skip, pc, NULL);
- }
- 
- void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
- 		   int pc)
- {
--	__ftrace_trace_stack(tr->buffer, flags, skip, pc);
-+	__ftrace_trace_stack(tr->buffer, flags, skip, pc, NULL);
- }
- 
- /**
-@@ -1290,7 +1314,7 @@ void trace_dump_stack(void)
- 	local_save_flags(flags);
- 
- 	/* skipping 3 traces, seems to get us at the caller of this function */
--	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count());
-+	__ftrace_trace_stack(global_trace.buffer, flags, 3, preempt_count(), NULL);
- }
- 
- static DEFINE_PER_CPU(int, user_stack_count);
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 742f545..a3e2db7 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -389,6 +389,9 @@ void update_max_tr_single(struct trace_array *tr,
- void ftrace_trace_stack(struct ring_buffer *buffer, unsigned long flags,
- 			int skip, int pc);
- 
-+void ftrace_trace_stack_regs(struct ring_buffer *buffer, unsigned long flags,
-+			     int skip, int pc, struct pt_regs *regs);
-+
- void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
- 			    int pc);
- 
-@@ -400,6 +403,12 @@ static inline void ftrace_trace_stack(struct ring_buffer *buffer,
- {
- }
- 
-+static inline void ftrace_trace_stack_regs(struct ring_buffer *buffer,
-+					   unsigned long flags, int skip,
-+					   int pc, struct pt_regs *regs)
-+{
-+}
-+
- static inline void ftrace_trace_userstack(struct ring_buffer *buffer,
- 					  unsigned long flags, int pc)
- {
-diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index f925c45..7053ef3 100644
---- a/kernel/trace/trace_kprobe.c
-+++ b/kernel/trace/trace_kprobe.c
-@@ -1397,7 +1397,8 @@ static __kprobes void kprobe_trace_func(struct kprobe *kp, struct pt_regs *regs)
- 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
--		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
-+		trace_nowake_buffer_unlock_commit_regs(buffer, event,
-+						       irq_flags, pc, regs);
- }
- 
- /* Kretprobe handler */
-@@ -1429,7 +1430,8 @@ static __kprobes void kretprobe_trace_func(struct kretprobe_instance *ri,
- 	store_trace_args(sizeof(*entry), tp, regs, (u8 *)&entry[1], dsize);
- 
- 	if (!filter_current_check_discard(buffer, call, entry, event))
--		trace_nowake_buffer_unlock_commit(buffer, event, irq_flags, pc);
-+		trace_nowake_buffer_unlock_commit_regs(buffer, event,
-+						       irq_flags, pc, regs);
- }
- 
- /* Event entry printers */
+ #endif /* __PERF_SESSION_H */
