@@ -1,91 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932196Ab1GELWx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:22:53 -0400
-Received: from na3sys009aog125.obsmtp.com ([74.125.149.153]:51758 "EHLO
-	na3sys009aog125.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932173Ab1GELWw (ORCPT
+	id S932210Ab1GELXA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:23:00 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:60566 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932165Ab1GELW6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:22:52 -0400
-Date: Tue, 5 Jul 2011 14:22:46 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Peter Ujfalusi <peter.ujfalusi@ti.com>
-Cc: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH 1/5] MFD: twl6040: Add irq variable for slave devices
-Message-ID: <20110705112245.GA2820@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1309857266-3663-1-git-send-email-peter.ujfalusi@ti.com>
- <1309857266-3663-2-git-send-email-peter.ujfalusi@ti.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="U58U7wle/RT11wuz"
-Content-Disposition: inline
-In-Reply-To: <1309857266-3663-2-git-send-email-peter.ujfalusi@ti.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Jul 2011 07:22:58 -0400
+Subject: Re: [PATCH 1/4] perf, x86: Add Intel Nehalem/Westmere uncore pmu
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110704215706.GH15637@one.firstfloor.org>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
+	 <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
+	 <20110630165849.GE23059@one.firstfloor.org>
+	 <1309761541.18875.40.camel@minggr.sh.intel.com>
+	 <20110704215706.GH15637@one.firstfloor.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Jul 2011 13:22:34 +0200
+Message-ID: <1309864954.3282.61.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2011-07-04 at 23:57 +0200, Andi Kleen wrote:
+> > > There are no NMIs without sampling, so at least the comment seems bogus.
+> > > Perhaps the code could be a bit simplified now without atomics.
+> > 
+> > I'm not sure if uncore PMU interrupt need to be enabled for counting
+> > only. What do you think?
+> 
+> Only for overflow handling to accumulate into a larger counter, but it doesn't 
+> need to be an NMI for that.
 
---U58U7wle/RT11wuz
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Uncore is hooked into the regular PMI, and since we wire that to the NMI
+the uncore will always be NMI too.
 
-Hi,
+>   But it's not strictly required I would say, 
+> 44(?) bits are probably enough for near all use cases.
 
-On Tue, Jul 05, 2011 at 12:14:22PM +0300, Peter Ujfalusi wrote:
-> Add new variable to pass the irq number for the slaves
-> devices of twl6040.
-> The irq number configuration is done in the twl6040-core
-> at probe time, so machine drivers do not need to be
-> modified.
->=20
-> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
-> ---
->  drivers/mfd/twl6040-core.c |    2 ++
->  include/linux/i2c/twl.h    |    2 ++
->  2 files changed, 4 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-> index cfaedb5..8607793 100644
-> --- a/drivers/mfd/twl6040-core.c
-> +++ b/drivers/mfd/twl6040-core.c
-> @@ -501,6 +501,7 @@ static int __devinit twl6040_probe(struct platform_de=
-vice *pdev)
->  	if (pdata->codec) {
->  		cell =3D &twl6040->cells[children];
->  		cell->name =3D "twl6040-codec";
-> +		pdata->codec->plug_irq =3D twl6040->irq_base + TWL6040_IRQ_PLUG;
-
-are the slave devices platform_devices ?? If so, you could use struct
-resource to pass IRQs as that's the "approved" way to do so. Then, on
-child driver, you could either rely on a particular order of the
-resources or assign them names and use platform_get_irq_byname() to
-fetch the correct one (if you have more than one, that is).
-
---=20
-balbi
-
---U58U7wle/RT11wuz
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOEvQFAAoJEAv8Txj19kN1hQAH/1TxayhLhvN0b21Qd5nkw0/q
-U3dXUCXq3jQ/jbiPFhY3zkdJMbwbiKIQhWGafOxpDwePKLG8AfLeCk70GVoStz8/
-LuAsDUbnsri2j5BeJcUEWMMZOm8W8sIBKfQzuF8GggRjInfKYCN2l8UssKK3/FyA
-DAF/iTETbB3bre2mX4mgG15Dhxq3Tl41rSOaINJFAheKYOudFrPWEmm0vN6XRZ+s
-SJB9iZUQjY6viatt+5qELpYGc5K7WiOcc+1PIZbHb7MpwMEHou5bvRBUt9dQx7Rh
-C5Ukr9FKvQ7e407of1zo/tna3krNjyckMJ75j+AhZn8iVFDEDFEYw6JA3yEr/Mc=
-=3Umx
------END PGP SIGNATURE-----
-
---U58U7wle/RT11wuz--
+44bits is in the hours range for pure cycle counts, which is so-so. I
+bet you're going to be very annoyed when you find your counters are
+wrecked after your 5 hour test run finishes.
