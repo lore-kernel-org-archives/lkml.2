@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab1GEOtH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:49:07 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59130 "EHLO
+	id S1754328Ab1GEOtU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:49:20 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59132 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754262Ab1GEOtE (ORCPT
+	with ESMTP id S1754263Ab1GEOtR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:49:04 -0400
+	Tue, 5 Jul 2011 10:49:17 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 24/49] gma500: enable Medfield CRTC support
+Subject: [PATCH 25/49] commit ee12661199b82934552c7636b10217a9aa42958a
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jul 2011 15:39:19 +0100
-Message-ID: <20110705143916.23872.19683.stgit@localhost.localdomain>
+Date: Tue, 05 Jul 2011 15:39:31 +0100
+Message-ID: <20110705143929.23872.73217.stgit@localhost.localdomain>
 In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
 References: <20110705141038.23872.55303.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -22,144 +22,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+From: Jani Nikula <jani.nikula@intel.com>
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+gma500: fix build without backlight device support
+
+    Fix unmatched curly brackets when CONFIG_BACKLIGHT_CLASS_DEVICE is not
+    defined.
+
+    Signed-off-by: Jani Nikula <jani.nikula@intel.com>
+    Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/mdfld_intel_display.c |   33 ++++++++++++++++++++++++--
- drivers/staging/gma500/mdfld_output.h        |    3 ++
- drivers/staging/gma500/mrst_bios.c           |    4 ++-
- drivers/staging/gma500/psb_intel_display.c   |    9 +++----
- 4 files changed, 39 insertions(+), 10 deletions(-)
+ drivers/staging/gma500/mdfld_dsi_output.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/gma500/mdfld_intel_display.c b/drivers/staging/gma500/mdfld_intel_display.c
-index 26d7f80..0b619b6 100644
---- a/drivers/staging/gma500/mdfld_intel_display.c
-+++ b/drivers/staging/gma500/mdfld_intel_display.c
-@@ -44,7 +44,6 @@
- /* Hardcoded currently */
- static int ksel = KSEL_CRYSTAL_19;
- 
--extern struct drm_device *gpDrmDevice;
- extern void mdfld_save_display(struct drm_device *dev);
- extern bool gbgfxsuspended;
- 
-@@ -561,10 +560,10 @@ static void mdfld_crtc_dpms(struct drm_crtc *crtc, int mode)
- 		return;
- 
- 	 /* Ignore if system is already in DSR and in suspended state. */
--	if(gbgfxsuspended && dev_priv->dispstatus == false && mode == 3){
-+	if(/*gbgfxsuspended */0 && dev_priv->dispstatus == false && mode == 3){
- 	    if(dev_priv->rpm_enabled && pipe == 1){
- 	//          dev_priv->is_mipi_on = false;
--	            pm_request_idle(&gpDrmDevice->pdev->dev);
-+	          pm_request_idle(&dev->pdev->dev);
- 	    }
- 	    return;
- 	}else if(mode == 0) {
-@@ -1386,3 +1385,31 @@ mrst_crtc_mode_set_exit:
- 
- 	return 0;
- }
-+
-+static void mdfld_crtc_prepare(struct drm_crtc *crtc)
-+{
-+	struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
-+	crtc_funcs->dpms(crtc, DRM_MODE_DPMS_OFF);
-+}
-+
-+static void mdfld_crtc_commit(struct drm_crtc *crtc)
-+{
-+	struct drm_crtc_helper_funcs *crtc_funcs = crtc->helper_private;
-+	crtc_funcs->dpms(crtc, DRM_MODE_DPMS_ON);
-+}
-+
-+static bool mdfld_crtc_mode_fixup(struct drm_crtc *crtc,
-+				  struct drm_display_mode *mode,
-+				  struct drm_display_mode *adjusted_mode)
-+{
-+	return true;
-+}
-+
-+const struct drm_crtc_helper_funcs mdfld_helper_funcs = {
-+	.dpms = mdfld_crtc_dpms,
-+	.mode_fixup = mdfld_crtc_mode_fixup,
-+	.mode_set = mdfld_crtc_mode_set,
-+	.mode_set_base = mdfld__intel_pipe_set_base,
-+	.prepare = mdfld_crtc_prepare,
-+	.commit = mdfld_crtc_commit,
-+};
-diff --git a/drivers/staging/gma500/mdfld_output.h b/drivers/staging/gma500/mdfld_output.h
-index 53b57db..70f2302a 100644
---- a/drivers/staging/gma500/mdfld_output.h
-+++ b/drivers/staging/gma500/mdfld_output.h
-@@ -74,4 +74,7 @@ int mdfld_panel_dpi(struct drm_device *dev);
- int mdfld_get_panel_type(struct drm_device *dev, int pipe);
- void mdfld_disable_crtc (struct drm_device *dev, int pipe);
- 
-+extern const struct drm_crtc_helper_funcs mdfld_helper_funcs;
-+extern const struct drm_crtc_funcs mdfld_intel_crtc_funcs;
-+
+diff --git a/drivers/staging/gma500/mdfld_dsi_output.c b/drivers/staging/gma500/mdfld_dsi_output.c
+index b88dfc2..e911ef2 100644
+--- a/drivers/staging/gma500/mdfld_dsi_output.c
++++ b/drivers/staging/gma500/mdfld_dsi_output.c
+@@ -527,8 +527,8 @@ static int mdfld_dsi_connector_set_property(struct drm_connector * connector,
+ 				backlight_update_status(psb_bd);
+ 			}
+ 		}
+-	} 
  #endif
-diff --git a/drivers/staging/gma500/mrst_bios.c b/drivers/staging/gma500/mrst_bios.c
-index 103777b..c3707f4 100644
---- a/drivers/staging/gma500/mrst_bios.c
-+++ b/drivers/staging/gma500/mrst_bios.c
-@@ -30,7 +30,7 @@
- #include "mrst_bios.h"
- #include "mdfld_output.h"
- 
--static int panel_id;
-+static int panel_id = GCT_DETECT;
- module_param_named(panel_id, panel_id, int, 0600);
- MODULE_PARM_DESC(panel_id, "Panel Identifier");
- 
-@@ -237,7 +237,7 @@ void mrst_get_vbt_data(struct drm_psb_private *dev_priv)
- 		dev_err(dev->dev, "Unknown revision of GCT!\n");
- 		vbt->size = 0;
- 	}
--	if (IS_MDFLD(dev_priv->dev)){
-+	if (IS_MFLD(dev_priv->dev)){
- 		if (panel_id == GCT_DETECT) {
- 			if (dev_priv->gct_data.bpi == 2) {
- 				dev_info(dev->dev, "[GFX] PYR Panel Detected\n");
-diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
-index ba10849..0e9758a 100644
---- a/drivers/staging/gma500/psb_intel_display.c
-+++ b/drivers/staging/gma500/psb_intel_display.c
-@@ -29,6 +29,7 @@
- #include "psb_intel_display.h"
- #include "psb_powermgmt.h"
- 
-+#include "mdfld_output.h"
- 
- struct psb_intel_clock_t {
- 	/* given values */
-@@ -1303,12 +1304,10 @@ void psb_intel_crtc_init(struct drm_device *dev, int pipe,
- 		return;
- 	}
- 
--#if 0	/* FIXME */
- 	if (IS_MFLD(dev))
- 		drm_crtc_init(dev, &psb_intel_crtc->base,
--						&mfld_intel_crtc_funcs);
-+						&mdfld_intel_crtc_funcs);
- 	else
--#endif
-         	drm_crtc_init(dev, &psb_intel_crtc->base,
- 						&psb_intel_crtc_funcs);
- 
-@@ -1336,9 +1335,9 @@ void psb_intel_crtc_init(struct drm_device *dev, int pipe,
- 	if (IS_MRST(dev))
- 		drm_crtc_helper_add(&psb_intel_crtc->base,
- 				    &mrst_helper_funcs);
--/*	else if (IS_MDFLD(dev))
-+	else if (IS_MFLD(dev))
- 		drm_crtc_helper_add(&psb_intel_crtc->base,
--				    &mfld_helper_funcs); */
-+				    &mdfld_helper_funcs);
- 	else
- 		drm_crtc_helper_add(&psb_intel_crtc->base,
- 				    &psb_intel_helper_funcs);
++	}
+ set_prop_done:
+     return 0;
+ set_prop_error:
 
