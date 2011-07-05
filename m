@@ -1,108 +1,353 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab1GEOxa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:53:30 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36087 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab1GEOx1 convert rfc822-to-8bit (ORCPT
+	id S1755035Ab1GEOxl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:53:41 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50600 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754982Ab1GEOxj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:53:27 -0400
+	Tue, 5 Jul 2011 10:53:39 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 43/49] gma500: move the power header
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Tue, 05 Jul 2011 15:43:53 +0100
+Message-ID: <20110705144351.23872.64066.stgit@localhost.localdomain>
+In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
+References: <20110705141038.23872.55303.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-In-Reply-To: <20110701.153633.267893668051099806.davem@davemloft.net>
-References: <1308708650-25509-1-git-send-email-loke.chetan@gmail.com>
-	<1308708650-25509-2-git-send-email-loke.chetan@gmail.com>
-	<20110701.153633.267893668051099806.davem@davemloft.net>
-Date: Tue, 5 Jul 2011 10:53:26 -0400
-Message-ID: <CAAsGZS5vvmb_qX+cG507=hU_+kwnowEEojXGNMt5ShEZ9+ZeAA@mail.gmail.com>
-Subject: Re: [PATCH v2 net-next af-packet 1/2] Enhance af-packet to provide
- (near zero)lossless packet capture functionality.
-From: chetan loke <loke.chetan@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, eric.dumazet@gmail.com, joe@perches.com,
-        bhutchings@solarflare.com, shemminger@vyatta.com,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 1, 2011 at 6:36 PM, David Miller <davem@davemloft.net> wrote:
-> From: Chetan Loke <loke.chetan@gmail.com>
-> Date: Tue, 21 Jun 2011 22:10:49 -0400
->
->> +struct bd_v1 {
->  -
->> +     __u32   block_status;
->> +     __u32   num_pkts;
->> +     __u32   offset_to_first_pkt;
->  -
->> +     __u32   blk_len;
->  -
->> +     __u64   seq_num;
->  ...
->> +     union {
->> +             struct {
->> +                     __u32   words[4];
->> +                     __u64   dword;
->> +             } __attribute__ ((__packed__));
->> +             struct bd_v1 bd1;
->  ...
->> +#define BLOCK_STATUS(x)      ((x)->words[0])
->> +#define BLOCK_NUM_PKTS(x)    ((x)->words[1])
->> +#define BLOCK_O2FP(x)                ((x)->words[2])
->> +#define BLOCK_LEN(x)         ((x)->words[3])
->> +#define BLOCK_SNUM(x)                ((x)->dword)
->
+From: Alan Cox <alan@linux.intel.com>
 
-Sorry, I was out on the long weekend. So couldn't get to this sooner.
+At this point we now have the file naming making somewhat more sense
+although the dependancies are not as clean as would be ideal
 
-> This BLOCK_SNUM definition is buggy.  It modifies the
-> first 64-bit word in the block descriptor.
->
-> But the sequence number lives 16 bytes into the descriptor.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-hmm? the words/dword are enveloped within a 'struct'. Can you please
-double check?
+ drivers/staging/gma500/backlight.c         |    2 -
+ drivers/staging/gma500/mdfld_dsi_dbi.c     |    2 -
+ drivers/staging/gma500/mdfld_dsi_dbi.h     |    2 -
+ drivers/staging/gma500/mdfld_dsi_output.h  |    2 -
+ drivers/staging/gma500/mrst_crtc.c         |    2 -
+ drivers/staging/gma500/mrst_lvds.c         |    2 -
+ drivers/staging/gma500/power.c             |    2 -
+ drivers/staging/gma500/power.h             |   67 ++++++++++++++++++++++++++++
+ drivers/staging/gma500/psb_drv.c           |    2 -
+ drivers/staging/gma500/psb_drv.h           |    2 -
+ drivers/staging/gma500/psb_intel_display.c |    2 -
+ drivers/staging/gma500/psb_intel_lvds.c    |    2 -
+ drivers/staging/gma500/psb_irq.c           |    2 -
+ drivers/staging/gma500/psb_powermgmt.h     |   67 ----------------------------
+ 14 files changed, 79 insertions(+), 79 deletions(-)
+ create mode 100644 drivers/staging/gma500/power.h
+ delete mode 100644 drivers/staging/gma500/psb_powermgmt.h
 
->
-> This value is only written to once and never used by anything.
-> I would just remove it entirely.
->
+diff --git a/drivers/staging/gma500/backlight.c b/drivers/staging/gma500/backlight.c
+index 117649b..4027e70 100644
+--- a/drivers/staging/gma500/backlight.c
++++ b/drivers/staging/gma500/backlight.c
+@@ -24,7 +24,7 @@
+ #include "psb_intel_reg.h"
+ #include "psb_intel_drv.h"
+ #include "intel_bios.h"
+-#include "psb_powermgmt.h"
++#include "power.h"
+ 
+ int gma_backlight_init(struct drm_device *dev)
+ {
+diff --git a/drivers/staging/gma500/mdfld_dsi_dbi.c b/drivers/staging/gma500/mdfld_dsi_dbi.c
+index 15055c8..9d2d97d 100644
+--- a/drivers/staging/gma500/mdfld_dsi_dbi.c
++++ b/drivers/staging/gma500/mdfld_dsi_dbi.c
+@@ -29,7 +29,7 @@
+ #include "mdfld_dsi_dbi_dpu.h"
+ #include "mdfld_dsi_pkg_sender.h"
+ 
+-#include "psb_powermgmt.h"
++#include "power.h"
+ #include <linux/pm_runtime.h>
+ 
+ int enable_gfx_rtpm;
+diff --git a/drivers/staging/gma500/mdfld_dsi_dbi.h b/drivers/staging/gma500/mdfld_dsi_dbi.h
+index 5b04951..a76813e 100644
+--- a/drivers/staging/gma500/mdfld_dsi_dbi.h
++++ b/drivers/staging/gma500/mdfld_dsi_dbi.h
+@@ -38,7 +38,7 @@
+ #include "psb_drv.h"
+ #include "psb_intel_drv.h"
+ #include "psb_intel_reg.h"
+-#include "psb_powermgmt.h"
++#include "power.h"
+ 
+ #include "mdfld_dsi_output.h"
+ #include "mdfld_output.h"
+diff --git a/drivers/staging/gma500/mdfld_dsi_output.h b/drivers/staging/gma500/mdfld_dsi_output.h
+index ac25e55..0bf00ea 100644
+--- a/drivers/staging/gma500/mdfld_dsi_output.h
++++ b/drivers/staging/gma500/mdfld_dsi_output.h
+@@ -38,7 +38,7 @@
+ #include "psb_drv.h"
+ #include "psb_intel_drv.h"
+ #include "psb_intel_reg.h"
+-#include "psb_powermgmt.h"
++#include "power.h"
+ #include "mdfld_output.h"
+ 
+ #include <asm/mrst.h>
+diff --git a/drivers/staging/gma500/mrst_crtc.c b/drivers/staging/gma500/mrst_crtc.c
+index d12d1a6..72464dd 100644
+--- a/drivers/staging/gma500/mrst_crtc.c
++++ b/drivers/staging/gma500/mrst_crtc.c
+@@ -24,7 +24,7 @@
+ #include "psb_intel_drv.h"
+ #include "psb_intel_reg.h"
+ #include "psb_intel_display.h"
+-#include "psb_powermgmt.h"
++#include "power.h"
+ 
+ struct psb_intel_range_t {
+ 	int min, max;
+diff --git a/drivers/staging/gma500/mrst_lvds.c b/drivers/staging/gma500/mrst_lvds.c
+index 9ecb99b..127b200 100644
+--- a/drivers/staging/gma500/mrst_lvds.c
++++ b/drivers/staging/gma500/mrst_lvds.c
+@@ -28,7 +28,7 @@
+ #include "psb_drv.h"
+ #include "psb_intel_drv.h"
+ #include "psb_intel_reg.h"
+-#include "psb_powermgmt.h"
++#include "power.h"
+ #include <linux/pm_runtime.h>
+ 
+ /* The max/min PWM frequency in BPCR[31:17] - */
+diff --git a/drivers/staging/gma500/power.c b/drivers/staging/gma500/power.c
+index 0eee7fb..79eb670 100644
+--- a/drivers/staging/gma500/power.c
++++ b/drivers/staging/gma500/power.c
+@@ -28,7 +28,7 @@
+  *    Alan Cox <alan@linux.intel.com>
+  */
+ 
+-#include "psb_powermgmt.h"
++#include "power.h"
+ #include "psb_drv.h"
+ #include "psb_reg.h"
+ #include "psb_intel_reg.h"
+diff --git a/drivers/staging/gma500/power.h b/drivers/staging/gma500/power.h
+new file mode 100644
+index 0000000..333b28d
+--- /dev/null
++++ b/drivers/staging/gma500/power.h
+@@ -0,0 +1,67 @@
++/**************************************************************************
++ * Copyright (c) 2009-2011, Intel Corporation.
++ * All Rights Reserved.
++
++ * Permission is hereby granted, free of charge, to any person obtaining a
++ * copy of this software and associated documentation files (the "Software"),
++ * to deal in the Software without restriction, including without limitation
++ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
++ * and/or sell copies of the Software, and to permit persons to whom the
++ * Software is furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice (including the next
++ * paragraph) shall be included in all copies or substantial portions of the
++ * Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
++ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
++ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
++ * SOFTWARE.
++ *
++ * Authors:
++ *    Benjamin Defnet <benjamin.r.defnet@intel.com>
++ *    Rajesh Poornachandran <rajesh.poornachandran@intel.com>
++ * Massively reworked
++ *    Alan Cox <alan@linux.intel.com>
++ */
++#ifndef _PSB_POWERMGMT_H_
++#define _PSB_POWERMGMT_H_
++
++#include <linux/pci.h>
++#include <drm/drmP.h>
++
++void gma_power_init(struct drm_device *dev);
++void gma_power_uninit(struct drm_device *dev);
++
++/*
++ * The kernel bus power management  will call these functions
++ */
++int gma_power_suspend(struct pci_dev *pdev, pm_message_t state);
++int gma_power_resume(struct pci_dev *pdev);
++
++/*
++ * These are the functions the driver should use to wrap all hw access
++ * (i.e. register reads and writes)
++ */
++bool gma_power_begin(struct drm_device *dev, bool force);
++void gma_power_end(struct drm_device *dev);
++
++/*
++ * Use this function to do an instantaneous check for if the hw is on.
++ * Only use this in cases where you know the mutex is already held such
++ * as in irq install/uninstall and you need to
++ * prevent a deadlock situation.  Otherwise use gma_power_begin().
++ */
++bool gma_power_is_on(struct drm_device *dev);
++
++/*
++ * GFX-Runtime PM callbacks
++ */
++int psb_runtime_suspend(struct device *dev);
++int psb_runtime_resume(struct device *dev);
++int psb_runtime_idle(struct device *dev);
++
++#endif /*_PSB_POWERMGMT_H_*/
+diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
+index a7f3c08..264fdf4 100644
+--- a/drivers/staging/gma500/psb_drv.c
++++ b/drivers/staging/gma500/psb_drv.c
+@@ -30,7 +30,7 @@
+ #include "mid_bios.h"
+ #include "mdfld_dsi_dbi.h"
+ #include <drm/drm_pciids.h>
+-#include "psb_powermgmt.h"
++#include "power.h"
+ #include <linux/cpu.h>
+ #include <linux/notifier.h>
+ #include <linux/spinlock.h>
+diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
+index ee782fa..9e4f361 100644
+--- a/drivers/staging/gma500/psb_drv.h
++++ b/drivers/staging/gma500/psb_drv.h
+@@ -30,7 +30,7 @@
+ #include "psb_reg.h"
+ #include "psb_intel_drv.h"
+ #include "gtt.h"
+-#include "psb_powermgmt.h"
++#include "power.h"
+ #include "mrst.h"
+ 
+ /* Append new drm mode definition here, align with libdrm definition */
+diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
+index 0b650a0..8f503d9 100644
+--- a/drivers/staging/gma500/psb_intel_display.c
++++ b/drivers/staging/gma500/psb_intel_display.c
+@@ -27,7 +27,7 @@
+ #include "psb_intel_drv.h"
+ #include "psb_intel_reg.h"
+ #include "psb_intel_display.h"
+-#include "psb_powermgmt.h"
++#include "power.h"
+ 
+ #include "mdfld_output.h"
+ 
+diff --git a/drivers/staging/gma500/psb_intel_lvds.c b/drivers/staging/gma500/psb_intel_lvds.c
+index c9a13a4..4a0d234 100644
+--- a/drivers/staging/gma500/psb_intel_lvds.c
++++ b/drivers/staging/gma500/psb_intel_lvds.c
+@@ -27,7 +27,7 @@
+ #include "psb_drv.h"
+ #include "psb_intel_drv.h"
+ #include "psb_intel_reg.h"
+-#include "psb_powermgmt.h"
++#include "power.h"
+ #include <linux/pm_runtime.h>
+ 
+ u32 CoreClock;
+diff --git a/drivers/staging/gma500/psb_irq.c b/drivers/staging/gma500/psb_irq.c
+index 8fc7070..4a0fa42 100644
+--- a/drivers/staging/gma500/psb_irq.c
++++ b/drivers/staging/gma500/psb_irq.c
+@@ -26,7 +26,7 @@
+ #include "psb_drv.h"
+ #include "psb_reg.h"
+ #include "psb_intel_reg.h"
+-#include "psb_powermgmt.h"
++#include "power.h"
+ #include "mdfld_output.h"
+ 
+ /*
+diff --git a/drivers/staging/gma500/psb_powermgmt.h b/drivers/staging/gma500/psb_powermgmt.h
+deleted file mode 100644
+index 333b28d..0000000
+--- a/drivers/staging/gma500/psb_powermgmt.h
++++ /dev/null
+@@ -1,67 +0,0 @@
+-/**************************************************************************
+- * Copyright (c) 2009-2011, Intel Corporation.
+- * All Rights Reserved.
+-
+- * Permission is hereby granted, free of charge, to any person obtaining a
+- * copy of this software and associated documentation files (the "Software"),
+- * to deal in the Software without restriction, including without limitation
+- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+- * and/or sell copies of the Software, and to permit persons to whom the
+- * Software is furnished to do so, subject to the following conditions:
+- *
+- * The above copyright notice and this permission notice (including the next
+- * paragraph) shall be included in all copies or substantial portions of the
+- * Software.
+- *
+- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+- * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+- * SOFTWARE.
+- *
+- * Authors:
+- *    Benjamin Defnet <benjamin.r.defnet@intel.com>
+- *    Rajesh Poornachandran <rajesh.poornachandran@intel.com>
+- * Massively reworked
+- *    Alan Cox <alan@linux.intel.com>
+- */
+-#ifndef _PSB_POWERMGMT_H_
+-#define _PSB_POWERMGMT_H_
+-
+-#include <linux/pci.h>
+-#include <drm/drmP.h>
+-
+-void gma_power_init(struct drm_device *dev);
+-void gma_power_uninit(struct drm_device *dev);
+-
+-/*
+- * The kernel bus power management  will call these functions
+- */
+-int gma_power_suspend(struct pci_dev *pdev, pm_message_t state);
+-int gma_power_resume(struct pci_dev *pdev);
+-
+-/*
+- * These are the functions the driver should use to wrap all hw access
+- * (i.e. register reads and writes)
+- */
+-bool gma_power_begin(struct drm_device *dev, bool force);
+-void gma_power_end(struct drm_device *dev);
+-
+-/*
+- * Use this function to do an instantaneous check for if the hw is on.
+- * Only use this in cases where you know the mutex is already held such
+- * as in irq install/uninstall and you need to
+- * prevent a deadlock situation.  Otherwise use gma_power_begin().
+- */
+-bool gma_power_is_on(struct drm_device *dev);
+-
+-/*
+- * GFX-Runtime PM callbacks
+- */
+-int psb_runtime_suspend(struct device *dev);
+-int psb_runtime_resume(struct device *dev);
+-int psb_runtime_idle(struct device *dev);
+-
+-#endif /*_PSB_POWERMGMT_H_*/
 
-It is used by the applications. Look at the code comments:
-	/*
-	 * Quite a few uses of sequence number:
-	 * 1. Make sure cache flush etc worked.
-	 *    Well, one can argue - why not use the increasing ts below?
-	 *    But look at 2. below first.
-	 * 2. When you pass around blocks to other user space decoders,
-	 *    you can see which blk[s] is[are] outstanding etc.
-	 * 3. Validate kernel code.
-	 */
-
-
-> Next, having this overlay thing is entirely pointless.  Just refer to
-
-It is useful.
-Also, future versions of the block-descriptor can append a new field.
-When that happens,
-none of the code needs to worry about the version etc for the unchanged fields.
-Look at setsockopt - I had to add an 'union' and pass that around to
-avoid minimal code churn.
-So the overlay may not be pointless.
-
-> the block descriptor members directly!  You certainly wouldn't have
-> had this sequence number bug if you had done that.
->
-Look at the sample app posted on:
-git://lolpcap.git.sourceforge.net/gitroot/lolpcap/lolpcap
-
-function - void validate_blk_seq_num(struct block_desc *pbd)
-
-This function validates the block_sequence_number (which is
-incremented sequentially).
-The application attempts to validate the entire block layout.
-
-
-Chetan Loke
