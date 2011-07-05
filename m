@@ -1,112 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753732Ab1GEGHX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 02:07:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:22073 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753590Ab1GEGHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 02:07:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,477,1304319600"; 
-   d="scan'208";a="23821804"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org, Thomas Renninger <trenn@novell.com>
-Subject: [RFC 2/2] ACPI, APEI, Use apei_exec_run_optional in APEI EINJ and ERST
-Date: Tue,  5 Jul 2011 14:07:03 +0800
-Message-Id: <1309846023-16459-2-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.5.4
-In-Reply-To: <1309846023-16459-1-git-send-email-ying.huang@intel.com>
-References: <1309846023-16459-1-git-send-email-ying.huang@intel.com>
+	id S1753728Ab1GEGHf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 02:07:35 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:50790 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753694Ab1GEGHW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 02:07:22 -0400
+X-AuditID: cbfee60d-b7b89ae0000007c1-ed-4e12aa1818c1
+Date: Tue, 05 Jul 2011 06:07:20 +0000 (GMT)
+From: JinGoo Han <jg1.han@samsung.com>
+Subject: Re: [PATCH] backlight: Set backlight type and max_brightness before
+ backlights are registered
+To: Axel Lin <axel.lin@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Cc: Matthew Garrett <mjg@redhat.com>, JinGoo Han <jg1.han@samsung.com>,
+        Donghwa Lee <dh09.lee@samsung.com>, In-Ki Dae <inki.dae@samsung.com>,
+        Richard Purdie <rpurdie@rpsys.net>,
+        Andrew Morton <akpm@linux-foundation.org>
+Reply-to: jg1.han@samsung.com
+MIME-version: 1.0
+X-MTR: 20110705060429324@jg1.han
+Msgkey: 20110705060429324@jg1.han
+X-EPLocale: en_US.euc-kr
+X-Priority: 3
+X-EPWebmail-Msg-Type: personal
+X-EPWebmail-Reply-Demand: 0
+X-EPApproval-Locale: 
+X-EPHeader: ML
+X-EPTrCode: 
+X-EPTrName: 
+X-MLAttribute: 
+X-RootMTR: 20110705060429324@jg1.han
+X-ParentMTR: 
+Content-type: text/plain; charset=euc-kr
+MIME-version: 1.0
+Message-id: <11756226.359271309846040127.JavaMail.weblogic@epml17>
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id p6567dbw014362
 
-This patch changes APEI EINJ and ERST to use apei_exec_run for
-mandatory actions, and apei_exec_run_optional for optional actions.
+Acked-by: Jingoo Han <jg1.han@samsung.com>
 
-Cc: Thomas Renninger <trenn@novell.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- drivers/acpi/apei/einj.c |    4 ++--
- drivers/acpi/apei/erst.c |   12 ++++++------
- 2 files changed, 8 insertions(+), 8 deletions(-)
+The ams369fg06 driver is tested.
 
---- a/drivers/acpi/apei/einj.c
-+++ b/drivers/acpi/apei/einj.c
-@@ -307,7 +307,7 @@ static int __einj_error_inject(u32 type,
- 
- 	einj_exec_ctx_init(&ctx);
- 
--	rc = apei_exec_run(&ctx, ACPI_EINJ_BEGIN_OPERATION);
-+	rc = apei_exec_run_optional(&ctx, ACPI_EINJ_BEGIN_OPERATION);
- 	if (rc)
- 		return rc;
- 	apei_exec_ctx_set_input(&ctx, type);
-@@ -345,7 +345,7 @@ static int __einj_error_inject(u32 type,
- 	rc = __einj_error_trigger(trigger_paddr);
- 	if (rc)
- 		return rc;
--	rc = apei_exec_run(&ctx, ACPI_EINJ_END_OPERATION);
-+	rc = apei_exec_run_optional(&ctx, ACPI_EINJ_END_OPERATION);
- 
- 	return rc;
- }
---- a/drivers/acpi/apei/erst.c
-+++ b/drivers/acpi/apei/erst.c
-@@ -642,7 +642,7 @@ static int __erst_write_to_storage(u64 o
- 	int rc;
- 
- 	erst_exec_ctx_init(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_WRITE);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_BEGIN_WRITE);
- 	if (rc)
- 		return rc;
- 	apei_exec_ctx_set_input(&ctx, offset);
-@@ -666,7 +666,7 @@ static int __erst_write_to_storage(u64 o
- 	if (rc)
- 		return rc;
- 	val = apei_exec_ctx_get_output(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_END);
- 	if (rc)
- 		return rc;
- 
-@@ -681,7 +681,7 @@ static int __erst_read_from_storage(u64
- 	int rc;
- 
- 	erst_exec_ctx_init(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_READ);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_BEGIN_READ);
- 	if (rc)
- 		return rc;
- 	apei_exec_ctx_set_input(&ctx, offset);
-@@ -709,7 +709,7 @@ static int __erst_read_from_storage(u64
- 	if (rc)
- 		return rc;
- 	val = apei_exec_ctx_get_output(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_END);
- 	if (rc)
- 		return rc;
- 
-@@ -724,7 +724,7 @@ static int __erst_clear_from_storage(u64
- 	int rc;
- 
- 	erst_exec_ctx_init(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_CLEAR);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_BEGIN_CLEAR);
- 	if (rc)
- 		return rc;
- 	apei_exec_ctx_set_input(&ctx, record_id);
-@@ -748,7 +748,7 @@ static int __erst_clear_from_storage(u64
- 	if (rc)
- 		return rc;
- 	val = apei_exec_ctx_get_output(&ctx);
--	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	rc = apei_exec_run_optional(&ctx, ACPI_ERST_END);
- 	if (rc)
- 		return rc;
- 
+> -----Original Message-----
+> From: Axel Lin [mailto:axel.lin@gmail.com]
+> Sent: Tuesday, July 05, 2011 1:38 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: Matthew Garrett; Jingoo Han; Donghwa Lee; InKi Dae; Richard Purdie;
+> Andrew Morton
+> Subject: [PATCH] backlight: Set backlight type and max_brightness before
+> backlights are registered
+> 
+> Since commit a19a6ee "backlight: Allow properties to be passed at
+> registration"
+> and commit bb7ca74 "backlight: add backlight type",
+> we can set backlight type and max_brightness before backlights are
+> registered.
+> Some newly added drivers did not set it properly, let's fix it.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Jingoo Han <jg1.han@samsung.com>
+> Cc: Donghwa Lee <dh09.lee@samsung.com>
+> Cc: InKi Dae <inki.dae@samsung.com>
+> ---
+>  drivers/video/backlight/ams369fg06.c |    9 ++++++---
+>  drivers/video/backlight/ld9040.c     |    8 ++++++--
+>  drivers/video/backlight/s6e63m0.c    |    9 ++++++---
+>  3 files changed, 18 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/video/backlight/ams369fg06.c
+> b/drivers/video/backlight/ams369fg06.c
+> index 6462d05..201a593 100644
+> --- a/drivers/video/backlight/ams369fg06.c
+> +++ b/drivers/video/backlight/ams369fg06.c
+> @@ -479,6 +479,7 @@ static int __init ams369fg06_probe(struct spi_device
+> *spi)
+>  	struct ams369fg06 *lcd = NULL;
+>  	struct lcd_device *ld = NULL;
+>  	struct backlight_device *bd = NULL;
+> +	struct backlight_properties props;
+> 
+>  	lcd = kzalloc(sizeof(struct ams369fg06), GFP_KERNEL);
+>  	if (!lcd)
+> @@ -511,16 +512,18 @@ static int __init ams369fg06_probe(struct spi_device
+> *spi)
+> 
+>  	lcd->ld = ld;
+> 
+> +	memset(&props, 0, sizeof(struct backlight_properties));
+> +	props.type = BACKLIGHT_RAW;
+> +	props.max_brightness = MAX_BRIGHTNESS;
+> +
+>  	bd = backlight_device_register("ams369fg06-bl", &spi->dev, lcd,
+> -		&ams369fg06_backlight_ops, NULL);
+> +		&ams369fg06_backlight_ops, &props);
+>  	if (IS_ERR(bd)) {
+>  		ret =  PTR_ERR(bd);
+>  		goto out_lcd_unregister;
+>  	}
+> 
+> -	bd->props.max_brightness = MAX_BRIGHTNESS;
+>  	bd->props.brightness = DEFAULT_BRIGHTNESS;
+> -	bd->props.type = BACKLIGHT_RAW;
+>  	lcd->bd = bd;
+> 
+>  	if (!lcd->lcd_pd->lcd_enabled) {
+> diff --git a/drivers/video/backlight/ld9040.c
+> b/drivers/video/backlight/ld9040.c
+> index 62bcde3..5934655 100644
+> --- a/drivers/video/backlight/ld9040.c
+> +++ b/drivers/video/backlight/ld9040.c
+> @@ -668,6 +668,7 @@ static int ld9040_probe(struct spi_device *spi)
+>  	struct ld9040 *lcd = NULL;
+>  	struct lcd_device *ld = NULL;
+>  	struct backlight_device *bd = NULL;
+> +	struct backlight_properties props;
+> 
+>  	lcd = kzalloc(sizeof(struct ld9040), GFP_KERNEL);
+>  	if (!lcd)
+> @@ -699,14 +700,17 @@ static int ld9040_probe(struct spi_device *spi)
+> 
+>  	lcd->ld = ld;
+> 
+> +	memset(&props, 0, sizeof(struct backlight_properties));
+> +	props.type = BACKLIGHT_RAW;
+> +	props.max_brightness = MAX_BRIGHTNESS;
+> +
+>  	bd = backlight_device_register("ld9040-bl", &spi->dev,
+> -		lcd, &ld9040_backlight_ops, NULL);
+> +		lcd, &ld9040_backlight_ops, &props);
+>  	if (IS_ERR(bd)) {
+>  		ret = PTR_ERR(bd);
+>  		goto out_unregister_lcd;
+>  	}
+> 
+> -	bd->props.max_brightness = MAX_BRIGHTNESS;
+>  	bd->props.brightness = MAX_BRIGHTNESS;
+>  	lcd->bd = bd;
+> 
+> diff --git a/drivers/video/backlight/s6e63m0.c
+> b/drivers/video/backlight/s6e63m0.c
+> index e1803ba..694e5aa 100644
+> --- a/drivers/video/backlight/s6e63m0.c
+> +++ b/drivers/video/backlight/s6e63m0.c
+> @@ -738,6 +738,7 @@ static int __devinit s6e63m0_probe(struct spi_device
+> *spi)
+>  	struct s6e63m0 *lcd = NULL;
+>  	struct lcd_device *ld = NULL;
+>  	struct backlight_device *bd = NULL;
+> +	struct backlight_properties props;
+> 
+>  	lcd = kzalloc(sizeof(struct s6e63m0), GFP_KERNEL);
+>  	if (!lcd)
+> @@ -769,16 +770,18 @@ static int __devinit s6e63m0_probe(struct spi_device
+> *spi)
+> 
+>  	lcd->ld = ld;
+> 
+> +	memset(&props, 0, sizeof(struct backlight_properties));
+> +	props.type = BACKLIGHT_RAW;
+> +	props.max_brightness = MAX_BRIGHTNESS;
+> +
+>  	bd = backlight_device_register("s6e63m0bl-bl", &spi->dev, lcd,
+> -		&s6e63m0_backlight_ops, NULL);
+> +		&s6e63m0_backlight_ops, &props);
+>  	if (IS_ERR(bd)) {
+>  		ret =  PTR_ERR(bd);
+>  		goto out_lcd_unregister;
+>  	}
+> 
+> -	bd->props.max_brightness = MAX_BRIGHTNESS;
+>  	bd->props.brightness = MAX_BRIGHTNESS;
+> -	bd->props.type = BACKLIGHT_RAW;
+>  	lcd->bd = bd;
+> 
+>  	/*
+> --
+> 1.7.4.1
+> 
+
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
