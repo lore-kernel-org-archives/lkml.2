@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754675Ab1GEJNJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 05:13:09 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:38646 "EHLO mx2.mail.elte.hu"
+	id S1754517Ab1GEJOk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 05:14:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:55314 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754085Ab1GEJNG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 05:13:06 -0400
-Date: Tue, 5 Jul 2011 11:12:52 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Robert Richter <robert.richter@amd.com>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
-Message-ID: <20110705091252.GA5725@elte.hu>
-References: <20110703150430.GV4590@erda.amd.com>
- <1309716271.3282.6.camel@twins>
- <20110704175927.GZ4590@erda.amd.com>
- <1309855905.3282.42.camel@twins>
+	id S1754187Ab1GEJOj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 05:14:39 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH 0/5] MFD/input/ASoC: twl6040: irq registration changes
+Date: Tue, 5 Jul 2011 12:14:21 +0300
+Message-ID: <1309857266-3663-1-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.6
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309855905.3282.42.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
-* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+As Samuel, and Felipe requested for the twl6040 MFD series:
+http://marc.info/?l=linux-kernel&m=130978512225430&w=2
+http://marc.info/?l=linux-omap&m=130978403224218&w=2
 
-> > Overall, my approach improves the perf design. It adds a better 
-> > and more intuitve access to perf from user space with clear and 
-> > common methods and interfaces. Please let me know the concerns 
-> > you have.
-> 
-> Its redundant, this interface ship has sailed, its not going to 
-> happen.
+This is the update to remove the obfuscation around the threaded irq request
+in the twl6040 driver and it's slaves.
 
-Even if we had the choice, i don't see how a /dev based enumeration 
-of PMUs is in any way better than a topologically attached set of 
-PMUs in /sys.
+With this change the slaves uses directly the threaded irq request, and the
+core driver passes the irq number for the slaves to use (configured runtime, so
+machine drivers do not need to be updated).
 
-This kind of structure is nice in principle:
+Regards,
+Peter
 
- # ls -l /dev/pmu/
- total 0
- crw-rw---- 1 root root 254, 5 Jul  8  2011 breakpoint
- crw-rw---- 1 root root 254, 4 Jul  8  2011 cpu
- crw-rw---- 1 root root 254, 6 Jul  8  2011 proto
- crw-rw---- 1 root root 254, 1 Jul  8  2011 software
- crw-rw---- 1 root root 254, 2 Jul  8  2011 tracepoint
+PS: for the remaining comments from Samuel I have changed the series, since the
+requested change was small.
+I'm not intended to send the series again, unless it is requested (again the
+change from v6 is minimal - few lines has been removed/replaced).
 
-But it should be done in /sys/. That way for example the graphics 
-card:
+---
+Peter Ujfalusi (5):
+  MFD: twl6040: Add irq variable for slave devices
+  input: twl6040-vibra: Do not use wrapper for irq request
+  ASoC: twl6040: Do not use wrapper for irq request
+  MFD: twl6040: Demand valid interrupt configuration
+  MFD: twl6040: Remove wrapper for threaded irq request
 
-  00:02.0 VGA compatible controller
+ drivers/input/misc/twl6040-vibra.c |   17 +++++++++----
+ drivers/mfd/twl6040-core.c         |   46 ++++++++++++++++++-----------------
+ drivers/mfd/twl6040-irq.c          |   16 +-----------
+ include/linux/i2c/twl.h            |    2 +
+ include/linux/mfd/twl6040.h        |   22 -----------------
+ sound/soc/codecs/twl6040.c         |   17 +++++++++----
+ 6 files changed, 51 insertions(+), 69 deletions(-)
 
-should have its events under:
+-- 
+1.7.6
 
-  /sys/devices/pci0000\:00/0000\:00\:02.0/events/
-
-breakpoints could be listed in:
-
-  /sys/devices/system/cpu/cpu0/events/
-
-core kernel software events could be listed in:
-
-  /sys/devices/system/core/events/
-
-tracepoints could be listed in their respective subsystem directories:
-
-  /sys/devices/system/timekeeping/events/    # timer tracepoints
-  /sys/devices/system/machinecheck/events/   # the MCE tracepoint
-
-  /sys/kernel/slab/events/                   # SLAB tracepoints
-
-  /sys/kernel/debug/tracing/events/          # the old, legacy location of
-                                             # tracepoint events
-
-there should also be a /sys/class/events/ populated with symlinks to 
-all their locations.
-
-Then we could transition all events to their respective sysfs 
-locations, where they would be easily discoverable and enumerable.
-
-The events would also automatically move (and with time, be 
-automatically added) when a new device is added to sysfs.
-
-Peter, there was a patch (from you?) that started doing this kind of 
-sysfs enumeration with a class added as well - do you still have it 
-or do you have a link to it?
-
-Thanks,
-
-	Ingo
