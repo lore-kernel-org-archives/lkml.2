@@ -1,148 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753180Ab1GEEiA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 00:38:00 -0400
-Received: from mail-yi0-f46.google.com ([209.85.218.46]:32972 "EHLO
-	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752291Ab1GEEh7 (ORCPT
+	id S1753247Ab1GEEim (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 00:38:42 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:18119 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab1GEEij convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 00:37:59 -0400
-Subject: [PATCH] backlight: Set backlight type and max_brightness before
- backlights are registered
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Matthew Garrett <mjg@redhat.com>, Jingoo Han <jg1.han@samsung.com>,
-        Donghwa Lee <dh09.lee@samsung.com>, InKi Dae <inki.dae@samsung.com>,
-        Richard Purdie <rpurdie@rpsys.net>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Jul 2011 12:37:49 +0800
-Message-ID: <1309840669.6072.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Tue, 5 Jul 2011 00:38:39 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
+	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=ZTNhNKDl/Hnbx3hjLCgQ77V0ZckVpZPa8WsE5VR1aFkQz35H/tKDE8NT7lj/VD0zA
+	flq4eyPoslZXmS0khdrTQ==
+MIME-Version: 1.0
+In-Reply-To: <20110704212404.GC23915@polaris.bitmath.org>
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
+ <1309324042-22943-6-git-send-email-djkurtz@chromium.org> <20110704212404.GC23915@polaris.bitmath.org>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Tue, 5 Jul 2011 12:38:16 +0800
+X-Google-Sender-Auth: kvS6kapsKW-3qE62xZE6iBFwzSE
+Message-ID: <CAGS+omALkYhzS+rvWhsXCwuWMHWpJJJ7j9Z9cBQ1Gem5HnH_fg@mail.gmail.com>
+Subject: Re: [PATCH 05/12] Input: synaptics - process button bits in AGM packets
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: dmitry.torokhov@gmail.com, chase.douglas@canonical.com,
+        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
+        daniel.stone@collabora.co.uk, olofj@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since commit a19a6ee "backlight: Allow properties to be passed at registration"
-and commit bb7ca74 "backlight: add backlight type",
-we can set backlight type and max_brightness before backlights are registered.
-Some newly added drivers did not set it properly, let's fix it.
+Hi Henrik,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Matthew Garrett <mjg@redhat.com>
-Cc: Jingoo Han <jg1.han@samsung.com>
-Cc: Donghwa Lee <dh09.lee@samsung.com>
-Cc: InKi Dae <inki.dae@samsung.com>
----
- drivers/video/backlight/ams369fg06.c |    9 ++++++---
- drivers/video/backlight/ld9040.c     |    8 ++++++--
- drivers/video/backlight/s6e63m0.c    |    9 ++++++---
- 3 files changed, 18 insertions(+), 8 deletions(-)
+On Tue, Jul 5, 2011 at 5:24 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> Hi Daniel,
+>
+>> AGM packets contain valid button bits, too.
+>> This patch refactors packet processing to parse button bits in AGM packets.
+>> However, they aren't actually used or reported.
+>>
+>> The point is to more completely process AGM packets,
+>> and prepare for future patches that may actually use AGM packet button bits.
+>>
+>> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+>> ---
+>>  drivers/input/mouse/synaptics.c |   35 ++++++++++++++++++-----------------
+>>  1 files changed, 18 insertions(+), 17 deletions(-)
+>>
+>> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+>> index 1ce47b7..74b1222 100644
+>> --- a/drivers/input/mouse/synaptics.c
+>> +++ b/drivers/input/mouse/synaptics.c
+>> @@ -408,27 +408,10 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>>       memset(hw, 0, sizeof(struct synaptics_hw_state));
+>>
+>>       if (SYN_MODEL_NEWABS(priv->model_id)) {
+>> -             hw->x = (((buf[3] & 0x10) << 8) |
+>> -                      ((buf[1] & 0x0f) << 8) |
+>> -                      buf[4]);
+>> -             hw->y = INVERT_Y((((buf[3] & 0x20) << 7) |
+>> -                      ((buf[1] & 0xf0) << 4) |
+>> -                      buf[5]));
+>> -
+>> -             hw->z = buf[2];
+>
+> Any particular reason to move these and leave them unassigned for clickpads?
 
-diff --git a/drivers/video/backlight/ams369fg06.c b/drivers/video/backlight/ams369fg06.c
-index 6462d05..201a593 100644
---- a/drivers/video/backlight/ams369fg06.c
-+++ b/drivers/video/backlight/ams369fg06.c
-@@ -479,6 +479,7 @@ static int __init ams369fg06_probe(struct spi_device *spi)
- 	struct ams369fg06 *lcd = NULL;
- 	struct lcd_device *ld = NULL;
- 	struct backlight_device *bd = NULL;
-+	struct backlight_properties props;
- 
- 	lcd = kzalloc(sizeof(struct ams369fg06), GFP_KERNEL);
- 	if (!lcd)
-@@ -511,16 +512,18 @@ static int __init ams369fg06_probe(struct spi_device *spi)
- 
- 	lcd->ld = ld;
- 
-+	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.type = BACKLIGHT_RAW;
-+	props.max_brightness = MAX_BRIGHTNESS;
-+
- 	bd = backlight_device_register("ams369fg06-bl", &spi->dev, lcd,
--		&ams369fg06_backlight_ops, NULL);
-+		&ams369fg06_backlight_ops, &props);
- 	if (IS_ERR(bd)) {
- 		ret =  PTR_ERR(bd);
- 		goto out_lcd_unregister;
- 	}
- 
--	bd->props.max_brightness = MAX_BRIGHTNESS;
- 	bd->props.brightness = DEFAULT_BRIGHTNESS;
--	bd->props.type = BACKLIGHT_RAW;
- 	lcd->bd = bd;
- 
- 	if (!lcd->lcd_pd->lcd_enabled) {
-diff --git a/drivers/video/backlight/ld9040.c b/drivers/video/backlight/ld9040.c
-index 62bcde3..5934655 100644
---- a/drivers/video/backlight/ld9040.c
-+++ b/drivers/video/backlight/ld9040.c
-@@ -668,6 +668,7 @@ static int ld9040_probe(struct spi_device *spi)
- 	struct ld9040 *lcd = NULL;
- 	struct lcd_device *ld = NULL;
- 	struct backlight_device *bd = NULL;
-+	struct backlight_properties props;
- 
- 	lcd = kzalloc(sizeof(struct ld9040), GFP_KERNEL);
- 	if (!lcd)
-@@ -699,14 +700,17 @@ static int ld9040_probe(struct spi_device *spi)
- 
- 	lcd->ld = ld;
- 
-+	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.type = BACKLIGHT_RAW;
-+	props.max_brightness = MAX_BRIGHTNESS;
-+
- 	bd = backlight_device_register("ld9040-bl", &spi->dev,
--		lcd, &ld9040_backlight_ops, NULL);
-+		lcd, &ld9040_backlight_ops, &props);
- 	if (IS_ERR(bd)) {
- 		ret = PTR_ERR(bd);
- 		goto out_unregister_lcd;
- 	}
- 
--	bd->props.max_brightness = MAX_BRIGHTNESS;
- 	bd->props.brightness = MAX_BRIGHTNESS;
- 	lcd->bd = bd;
- 
-diff --git a/drivers/video/backlight/s6e63m0.c b/drivers/video/backlight/s6e63m0.c
-index e1803ba..694e5aa 100644
---- a/drivers/video/backlight/s6e63m0.c
-+++ b/drivers/video/backlight/s6e63m0.c
-@@ -738,6 +738,7 @@ static int __devinit s6e63m0_probe(struct spi_device *spi)
- 	struct s6e63m0 *lcd = NULL;
- 	struct lcd_device *ld = NULL;
- 	struct backlight_device *bd = NULL;
-+	struct backlight_properties props;
- 
- 	lcd = kzalloc(sizeof(struct s6e63m0), GFP_KERNEL);
- 	if (!lcd)
-@@ -769,16 +770,18 @@ static int __devinit s6e63m0_probe(struct spi_device *spi)
- 
- 	lcd->ld = ld;
- 
-+	memset(&props, 0, sizeof(struct backlight_properties));
-+	props.type = BACKLIGHT_RAW;
-+	props.max_brightness = MAX_BRIGHTNESS;
-+
- 	bd = backlight_device_register("s6e63m0bl-bl", &spi->dev, lcd,
--		&s6e63m0_backlight_ops, NULL);
-+		&s6e63m0_backlight_ops, &props);
- 	if (IS_ERR(bd)) {
- 		ret =  PTR_ERR(bd);
- 		goto out_lcd_unregister;
- 	}
- 
--	bd->props.max_brightness = MAX_BRIGHTNESS;
- 	bd->props.brightness = MAX_BRIGHTNESS;
--	bd->props.type = BACKLIGHT_RAW;
- 	lcd->bd = bd;
- 
- 	/*
--- 
-1.7.4.1
+Yes.  The current implementation incorrectly parses the x, y, z of AGM
+packets and assigns junk values to the corresponding fields of the
+temporary hw struct.  Luckily, this struct is then just discarded upon
+return (synaptics_parse_hw_state returns 1 causing
+synaptics_process_packet() to exit immediately).
 
+Instead, this patch parses the w value first to determine the packet
+type, and then use this packet type information to parse the remaining
+position and pressure fields correctly...
 
+Notice that the "else" clause is taken for SGM packets (w != 2), even
+for clickpads.
 
+-Dan
+
+>
+>>               hw->w = (((buf[0] & 0x30) >> 2) |
+>>                        ((buf[0] & 0x04) >> 1) |
+>>                        ((buf[3] & 0x04) >> 2));
+>>
+>> -             if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
+>> -                     /* Gesture packet: (x, y, z) at half resolution */
+>> -                     priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+>> -                     priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
+>> -                                           | buf[2]) << 1);
+>> -                     priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
+>> -                     return 1;
+>> -             }
+>> -
+>>               hw->left  = (buf[0] & 0x01) ? 1 : 0;
+>>               hw->right = (buf[0] & 0x02) ? 1 : 0;
+>>
+>> @@ -451,6 +434,24 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>>                       hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
+>>               }
+>>
+>> +             if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
+>> +                     /* Gesture packet: (x, y, z) at half resolution */
+>> +                     priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+>> +                     priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
+>> +                                           | buf[2]) << 1);
+>> +                     priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
+>> +                     return 1;
+>> +             } else {
+>> +                     hw->x = (((buf[3] & 0x10) << 8) |
+>> +                              ((buf[1] & 0x0f) << 8) |
+>> +                              buf[4]);
+>> +                     hw->y = INVERT_Y((((buf[3] & 0x20) << 7) |
+>> +                                      ((buf[1] & 0xf0) << 4) |
+>> +                                      buf[5]));
+>> +
+>> +                     hw->z = buf[2];
+>> +             }
+>> +
+>>               if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
+>>                   ((buf[0] ^ buf[3]) & 0x02)) {
+>>                       switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
+>> --
+>> 1.7.3.1
+>>
+>
+> Thanks,
+> Henrik
+>
