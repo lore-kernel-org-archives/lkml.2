@@ -1,75 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755109Ab1GEJmo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 05:42:44 -0400
-Received: from a.ns.miles-group.at ([95.130.255.143]:33632 "EHLO radon.swed.at"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755077Ab1GEJmn convert rfc822-to-8bit (ORCPT
+	id S1755145Ab1GEJqE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 05:46:04 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:41432 "EHLO
+	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754763Ab1GEJqC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 05:42:43 -0400
-From: Richard Weinberger <richard@nod.at>
-To: vitalivanov@gmail.com
-Subject: Re: [PATCH 2/4] uml: helper.c warning corrections
-Date: Tue, 5 Jul 2011 11:42:39 +0200
-User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.4; x86_64; ; )
-Cc: Jeff Dike <jdike@addtoit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        lkml <linux-kernel@vger.kernel.org>
-References: <1309821347.4527.6.camel@vitaliy-Vostro-1400>
-In-Reply-To: <1309821347.4527.6.camel@vitaliy-Vostro-1400>
+	Tue, 5 Jul 2011 05:46:02 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.11 with qID p659jsne003885, This message is released by code: ctaloc0852
+From: Hayes Wang <hayeswang@realtek.com>
+To: <romieu@fr.zoreil.com>
+CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+        Hayes Wang <hayeswang@realtek.com>
+Subject: [PATCH net-next 1/6] r8169: adjust some registers
+Date: Tue, 5 Jul 2011 17:44:50 +0800
+X-BOX-Message-Id: p659jsne003885
+Message-ID: <1309859095-32031-1-git-send-email-hayeswang@realtek.com>
+X-Mailer: git-send-email 1.7.3.2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201107051142.39733.richard@nod.at>
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 05 Juli 2011, 01:15:47 schrieb Vitaliy Ivanov:
-> From 7296c5b9770e95cd6ad4e9e71d2d14c972abdfe1 Mon Sep 17 00:00:00 2001
-> From: Vitaliy Ivanov <vitalivanov@gmail.com>
-> Date: Tue, 5 Jul 2011 02:03:06 +0300
-> Subject: [PATCH 2/4] uml: helper.c warning corrections
-> MIME-Version: 1.0
-> Content-Type: text/plain; charset=UTF-8
-> Content-Transfer-Encoding: 8bit
-> 
-> arch/um/os-Linux/helper.c: In function ‘helper_child’:
-> arch/um/os-Linux/helper.c:38:7: warning: ignoring return value of ‘write’,
-> declared with attribute warn_unused_result
+Define new registers and modify some existing ones.
 
-Same question as before...
+Signed-off-by: Hayes Wang <hayeswang@realtek.com>
+---
+ drivers/net/r8169.c |   30 +++++++++++++++++++++++-------
+ 1 files changed, 23 insertions(+), 7 deletions(-)
 
-> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
-> ---
->  arch/um/os-Linux/helper.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/um/os-Linux/helper.c b/arch/um/os-Linux/helper.c
-> index b6b1096..feff22d 100644
-> --- a/arch/um/os-Linux/helper.c
-> +++ b/arch/um/os-Linux/helper.c
-> @@ -28,14 +28,14 @@ static int helper_child(void *arg)
->  {
->  	struct helper_data *data = arg;
->  	char **argv = data->argv;
-> -	int err;
-> +	int err, ret;
-> 
->  	if (data->pre_exec != NULL)
->  		(*data->pre_exec)(data->pre_data);
->  	err = execvp_noalloc(data->buf, argv[0], argv);
-> 
->  	/* If the exec succeeds, we don't get here */
-> -	write(data->fd, &err, sizeof(err));
-> +	CATCH_EINTR(ret = write(data->fd, &err, sizeof(err)));
+diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
+index fbd6838..701ab6b 100644
+--- a/drivers/net/r8169.c
++++ b/drivers/net/r8169.c
+@@ -327,7 +327,7 @@ enum rtl8168_8101_registers {
+ #define	EPHYAR_REG_SHIFT		16
+ #define	EPHYAR_DATA_MASK		0xffff
+ 	DLLPR			= 0xd0,
+-#define	PM_SWITCH			(1 << 6)
++#define	PFM_EN				(1 << 6)
+ 	DBG_REG			= 0xd1,
+ #define	FIX_NAK_1			(1 << 4)
+ #define	FIX_NAK_2			(1 << 3)
+@@ -335,6 +335,7 @@ enum rtl8168_8101_registers {
+ 	MCU			= 0xd3,
+ #define	EN_NDP				(1 << 3)
+ #define	EN_OOB_RESET			(1 << 2)
++#define NOW_IS_OOB			(1 << 7)
+ 	EFUSEAR			= 0xdc,
+ #define	EFUSEAR_FLAG			0x80000000
+ #define	EFUSEAR_WRITE_CMD		0x80000000
+@@ -345,18 +346,31 @@ enum rtl8168_8101_registers {
+ };
+ 
+ enum rtl8168_registers {
++	LED_FREQ		= 0x1a,
++	EEE_LED			= 0x1b,
++
++	/* TxConfig */
++#define AUTO_FIFO			(1 << 7)
++#define TX_EMPTY			(1 << 11)
++
++	/* RxConfig */
++#define RX128_INT_EN			(1 << 15) /* 8111c and later */
++#define RX_MULTI_EN			(1 << 14) /* 8111c only */
++
+ 	ERIDR			= 0x70,
+ 	ERIAR			= 0x74,
+ #define ERIAR_FLAG			0x80000000
+ #define ERIAR_WRITE_CMD			0x80000000
+ #define ERIAR_READ_CMD			0x00000000
+ #define ERIAR_ADDR_BYTE_ALIGN		4
+-#define ERIAR_EXGMAC			0
+-#define ERIAR_MSIX			1
+-#define ERIAR_ASF			2
+ #define ERIAR_TYPE_SHIFT		16
+-#define ERIAR_BYTEEN			0x0f
+-#define ERIAR_BYTEEN_SHIFT		12
++#define ERIAR_EXGMAC			(0x00 << ERIAR_TYPE_SHIFT)
++#define ERIAR_MSIX			(0x01 << ERIAR_TYPE_SHIFT)
++#define ERIAR_ASF			(0x02 << ERIAR_TYPE_SHIFT)
++#define ERIAR_MASK_SHIFT		12
++#define ERIAR_MASK_0001			(0x1 << ERIAR_MASK_SHIFT)
++#define ERIAR_MASK_0011			(0x3 << ERIAR_MASK_SHIFT)
++#define ERIAR_MASK_1111			(0xf << ERIAR_MASK_SHIFT)
+ 	EPHY_RXER_NUM		= 0x7c,
+ 	OCPDR			= 0xb0,	/* OCP GPHY access */
+ #define OCPDR_WRITE_CMD			0x80000000
+@@ -371,6 +385,7 @@ enum rtl8168_registers {
+ 	RDSAR1			= 0xd0,	/* 8168c only. Undocumented on 8168dp */
+ 	MISC			= 0xf0,	/* 8168e only. */
+ #define TXPLA_RST			(1 << 29)
++#define PWM_EN				(1 << 22)
+ };
+ 
+ enum rtl_register_content {
+@@ -395,6 +410,7 @@ enum rtl_register_content {
+ 	RxCRC	= (1 << 19),
+ 
+ 	/* ChipCmdBits */
++	StopReq		= 0x80,
+ 	CmdReset	= 0x10,
+ 	CmdRxEnb	= 0x08,
+ 	CmdTxEnb	= 0x04,
+@@ -4368,7 +4384,7 @@ static void rtl_hw_start_8105e_1(void __iomem *ioaddr, struct pci_dev *pdev)
+ 	RTL_W32(FuncEvent, RTL_R32(FuncEvent) & ~0x010000);
+ 
+ 	RTL_W8(MCU, RTL_R8(MCU) | EN_NDP | EN_OOB_RESET);
+-	RTL_W8(DLLPR, RTL_R8(DLLPR) | PM_SWITCH);
++	RTL_W8(DLLPR, RTL_R8(DLLPR) | PFM_EN);
+ 
+ 	rtl_ephy_init(ioaddr, e_info_8105e_1, ARRAY_SIZE(e_info_8105e_1));
+ }
+-- 
+1.7.3.2
 
-Is there really a realistic chance that this write() can be interrupted?
-helper_child() gets called via clone() in run_helper().
-
-Thanks,
-//richard
