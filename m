@@ -1,101 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752726Ab1GEOSt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:18:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41945 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab1GEOSs convert rfc822-to-8bit (ORCPT
+	id S1752766Ab1GEOTS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:19:18 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:55294 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab1GEOTR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:18:48 -0400
-Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Robert Richter <robert.richter@amd.com>
-In-Reply-To: <1309866860.2381.1.camel@localhost>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
-	 <1309778192.3282.27.camel@twins>  <1309866860.2381.1.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 05 Jul 2011 16:17:48 +0200
-Message-ID: <1309875468.3282.210.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Tue, 5 Jul 2011 10:19:17 -0400
+Date: Tue, 5 Jul 2011 18:19:13 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Don Zickus <dzickus@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
+ sake of nmi-watchdog on P4
+Message-ID: <20110705141913.GD4060@sun>
+References: <20110705105959.GA14435@elte.hu>
+ <20110705110550.GQ17941@sun>
+ <20110705112002.GA15654@elte.hu>
+ <20110705113620.GS17941@sun>
+ <20110705114437.GC15654@elte.hu>
+ <20110705114944.GT17941@sun>
+ <20110705121421.GU17941@sun>
+ <20110705131005.GA5843@elte.hu>
+ <1309871841.3282.148.camel@twins>
+ <20110705133105.GB5843@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110705133105.GB5843@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-05 at 19:54 +0800, Lin Ming wrote:
-> On Mon, 2011-07-04 at 19:16 +0800, Peter Zijlstra wrote:
-> > On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
-> > > +#define MEM_STORE_DCU_HIT              (1ULL << 0)
-> > 
-> > I'm pretty sure that's not Dublin City University, but what is it?
-> > Data-Cache-Unit? what does that mean, L1/L2 or also L3? 
-> > 
-> > > +#define MEM_STORE_STLB_HIT             (1ULL << 1)
-> > 
-> > What's an sTLB? I know iTLB and dTLB's but sTLBs I've not heard of yet.
-> > 
-> > > +#define MEM_STORE_LOCKED_ACCESS                (1ULL << 2) 
-> > 
-> > Presumably that's about LOCK'ed ops?
-> > 
-> > So now you're just tacking bits on the end without even attempting to
-> > generalize/unify things, not charmed at all.
+On Tue, Jul 05, 2011 at 03:31:05PM +0200, Ingo Molnar wrote:
 > 
-> Any idea on the more useful store bits encoding?
+> * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> 
+> > > So the question is, why does the NMI watchdog prevent 'perf top' 
+> > > from working on a P4?
+> > 
+> > because the NMI watchdog is a pinned event, you don't want to share 
+> > the counter, that would be very bad, suppose you lock up when the 
+> > NMI watchdog was scheduled out. Unreliably debug tools are worse 
+> > than no tools.
+> 
+> Yeah, indeed that explains the symptom.
+> 
+> Firstly, we should fix/enhance perf top to print out an error message 
+> in this case, not just hang there doing nothing.
 
-For two of them, sure:
+It waits for event to be scheduled, so seems first the kernel should
+have top level context-schedule-in functions changed from void to
+int (so I have admit I might be missin something here).
 
-{load, store} x {atomic} x
-	{hasSRC} x {l1, l2, l3, ram, unkown, io, uncached, reserved} x
-	{hasLRS} x {local, remote, snoop} x 
-	{hasMESI} x {MESI}
+> 
+> Secondly, the proper solution would be to allow the multiplexing of 
+> like-minded hw events. Here if we have two events:
+> 
+>   - pinned NMI watchdog, set to a period of 2 billion cycles
+>   - perf top with a default of 1 khz auto-freq cycles
+> 
+> We should first change the NMI watchdog to use auto-freq samples - 
+> the hw_nmi_get_sample_period() looks unnecessary - if we set the NMI 
+> watchdog to 1 Hz by default it should be more than enough.
 
-that would make MEM_STORE_DCU_HIT: store-l1 and MEM_STORE_LOCKED:
-store-atomic.
+Should we drop tunability of watchdog period as well? At moment
+there is a way to setup period via /sys.
 
-Now this is needed for load-latency as well, since SNB extended the src
-information with the same STLB/LOCK bits.
+> 
+> Thus we'd have two events:
+> 
+>   - pinned NMI watchdog, set to 1 Hz
+>   - perf top, set to 1000 Hz
+> 
+> The 1000 Hz event could serve the 1 Hz event just fine.
+> 
+> Thirdly, even if we mucked the NMI event to be somewhat different 
+> from the real cycles event (so the P4 PMU can co-schedule it with 
+> perf top), the real solution there would *still* be to express this 
+> as a variation of a cycles event: use the same trick to allow up to 
+> two cycles events to be present in the PMU - but hide this from the 
+> generic interfaces, just allow up to two cycles events to be 
+> scheduled at once.
 
-The SDM is somewhat inconsistent on what an STLB_MISS means:
+This sounds like event aliases PeterZ was proposed pretty ago, I tried
+it but didn't success, one of problem was that current p4 code structure
+does not care how exactly events came into, it simply checks for registers
+resource being 'free' and schedule event in if possible.
 
-Table 30-22 says: 0 - did not miss STLB (hit the DTLB/STLB), 1 - missed
-the STLB. 
+I will try to implement aliases again, probably there is still a way
+and I overlooked it in first place.
 
-Table 30-23 says: "the store missed the STLB if set, otherwise the store
-hit the STLB", which simply cannot be true. 
+> 
+> This will have the advantage of not only fixing the NMI watchdog, but 
+> other users as well.
+> 
+> Now, if there's some real behavioral difference between the two 
+> events (one is halted cycles the other is unhalted cycles), then i'd 
+> suggest to use PERF_COUNT_HW_BUS_CYCLES in the NMI watchdog - that is 
+> the generic 'constant frequency' cycles event.
 
-So I'm sticking with 30-22.
+Should not be much difference here as far as I can tell.
 
-Now the above doesn't yet deal with TLBs nor can it map the IBS data
-source bits because afaict that can report a u-op as both a store and a
-load, but does not mention if a data-cache miss means L1 or L1/L2,
-Robert?
+> 
+> So there's lots of options to fix/improve this more intelligently.
+> 
 
-One way to sort all that is not use enumerated spaces like above but
-simply explode the whole thing like: load x store x atomic x l1 x l2
-x ... that would of course give rise to a load of impossible
-combinations but would do away with the hasFOO bits.
-
-If the AMD data-cache means L1/L2 it can simply set both bits, same with
-the Intel STLB miss, it can set TLB1/TLB2 bits (AMD does split those
-nicely).
-
-With all those bits exploded we can also express the inverse of
-MEM_STORE_DCU_HIT as: store-l2-l3-dram, we simply set ~l1 for the
-appropriate submask (which should arguably include IO/uncached/unknown
-as well).
-
-Now if anybody knows of another arch that has similar features (IA64,
-ppc64?) can we get links to their PMU docs so that we can see if we can
-map them as well?
-
-
-Comments?
-
+	Cyrill
