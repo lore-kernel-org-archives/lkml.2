@@ -1,181 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756037Ab1GELpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:45:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:52715 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755930Ab1GELpI (ORCPT
+	id S1756078Ab1GELpP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:45:15 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:58482 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755766Ab1GELpN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:45:08 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 4/8] mm: MIGRATE_CMA migration type added
-Date: Tue, 5 Jul 2011 13:44:31 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-5-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1309851710-3828-5-git-send-email-m.szyprowski@samsung.com>
+	Tue, 5 Jul 2011 07:45:13 -0400
+Message-ID: <4E12F942.90504@monstr.eu>
+Date: Tue, 05 Jul 2011 13:45:06 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: Mathias Krause <minipli@googlemail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] microblaze, exec: remove redundant set_fs(USER_DS)
+References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com> <1307711399-7929-1-git-send-email-minipli@googlemail.com>
+In-Reply-To: <1307711399-7929-1-git-send-email-minipli@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107051344.31298.arnd@arndb.de>
-X-Provags-ID: V02:K0:n+C2O5IPJHbsbE7tnybXGxNXt5kK8E7MXFDprNFLrnv
- RWopLRDfWhfcbeba1hp33DSBhz2FBOjU3Rw68943wBYchntg7f
- P87L7+kwoL9/m0ubUK1/wePTnCVRpJ3YPFojxtrM9gFWTt1OZJ
- RYefzDCeK3DwuQsOdf/NOtcvM+ClLvBtul5dZGpQQVZGZPc/UL
- 1/QKC+IUs5l1n7gmhNmNw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 July 2011, Marek Szyprowski wrote:
-> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Mathias Krause wrote:
+> The address limit is already set in flush_old_exec() so this
+> set_fs(USER_DS) is redundant.
 > 
-> The MIGRATE_CMA migration type has two main characteristics:
-> (i) only movable pages can be allocated from MIGRATE_CMA
-> pageblocks and (ii) page allocator will never change migration
-> type of MIGRATE_CMA pageblocks.
+> Signed-off-by: Mathias Krause <minipli@googlemail.com>
+> ---
+>  arch/microblaze/kernel/process.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
-> This guarantees that page in a MIGRATE_CMA page block can
-> always be migrated somewhere else (unless there's no memory left
-> in the system).
-> 
-> It is designed to be used with Contiguous Memory Allocator
-> (CMA) for allocating big chunks (eg. 10MiB) of physically
-> contiguous memory. Once driver requests contiguous memory,
-> CMA will migrate pages from MIGRATE_CMA pageblocks.
-> 
-> To minimise number of migrations, MIGRATE_CMA migration type
-> is the last type tried when page allocator falls back to other
-> migration types then requested.
-> 
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> [m.szyprowski: cleaned up Kconfig, renamed some functions]
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
+> diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
+> index 968648a..dbb8124 100644
+> --- a/arch/microblaze/kernel/process.c
+> +++ b/arch/microblaze/kernel/process.c
+> @@ -237,7 +237,6 @@ unsigned long get_wchan(struct task_struct *p)
+>  /* Set up a thread for executing a new program */
+>  void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long usp)
+>  {
+> -	set_fs(USER_DS);
+>  	regs->pc = pc;
+>  	regs->r1 = usp;
+>  	regs->pt_mode = 0;
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>, but I noticed a few things:
+Andrew has added it to his queue. I have tested and applied too.
 
-> cma migrate fixup
+Thanks,
+Michal
 
-This text doesn't belong here.
 
-> +enum {
-> +	MIGRATE_UNMOVABLE,
-> +	MIGRATE_RECLAIMABLE,
-> +	MIGRATE_MOVABLE,
-> +	MIGRATE_PCPTYPES,	/* the number of types on the pcp lists */
-> +	MIGRATE_RESERVE = MIGRATE_PCPTYPES,
-> +#ifdef CONFIG_CMA_MIGRATE_TYPE
-> +	/*
-> +	 * MIGRATE_CMA migration type is designed to mimic the way
-> +	 * ZONE_MOVABLE works.  Only movable pages can be allocated
-> +	 * from MIGRATE_CMA pageblocks and page allocator never
-> +	 * implicitly change migration type of MIGRATE_CMA pageblock.
-> +	 *
-> +	 * The way to use it is to change migratetype of a range of
-> +	 * pageblocks to MIGRATE_CMA which can be done by
-> +	 * __free_pageblock_cma() function.  What is important though
-> +	 * is that a range of pageblocks must be aligned to
-> +	 * MAX_ORDER_NR_PAGES should biggest page be bigger then
-> +	 * a single pageblock.
-> +	 */
-> +	MIGRATE_CMA,
-> +#endif
-> +	MIGRATE_ISOLATE,	/* can't allocate from here */
-> +	MIGRATE_TYPES
-> +};
 
-It's not clear to me why you need this #ifdef. Does it hurt if the
-migration type is defined but not used?
-
-> @@ -198,6 +198,12 @@ config MIGRATION
->  	  pages as migration can relocate pages to satisfy a huge page
->  	  allocation instead of reclaiming.
->  
-> +config CMA_MIGRATE_TYPE
-> +	bool
-> +	help
-> +	  This enables the use the MIGRATE_CMA migrate type, which lets lets CMA
-> +	  work on almost arbitrary memory range and not only inside ZONE_MOVABLE.
-> +
->  config PHYS_ADDR_T_64BIT
->  	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
-
-This is currently only selected on ARM with your patch set. 
-
-> diff --git a/mm/compaction.c b/mm/compaction.c
-> index 6cc604b..9e5cc59 100644
-> --- a/mm/compaction.c
-> +++ b/mm/compaction.c
-> @@ -119,6 +119,16 @@ static bool suitable_migration_target(struct page *page)
->  	if (migratetype == MIGRATE_ISOLATE || migratetype == MIGRATE_RESERVE)
->  		return false;
->  
-> +	/* Keep MIGRATE_CMA alone as well. */
-> +	/*
-> +	 * XXX Revisit.  We currently cannot let compaction touch CMA
-> +	 * pages since compaction insists on changing their migration
-> +	 * type to MIGRATE_MOVABLE (see split_free_page() called from
-> +	 * isolate_freepages_block() above).
-> +	 */
-> +	if (is_migrate_cma(migratetype))
-> +		return false;
-> +
->  	/* If the page is a large free page, then allow migration */
->  	if (PageBuddy(page) && page_order(page) >= pageblock_order)
->  		return true;
-
-Do you plan to fix address this before merging the patch set, or is
-it harmless enough to get in this way?
-
->  /*
->   * The order of subdivision here is critical for the IO subsystem.
-> @@ -827,11 +852,15 @@ struct page *__rmqueue_smallest(struct zone *zone, unsigned int order,
->   * This array describes the order lists are fallen back to when
->   * the free lists for the desirable migrate type are depleted
->   */
-> -static int fallbacks[MIGRATE_TYPES][MIGRATE_TYPES-1] = {
-> +static int fallbacks[MIGRATE_TYPES][4] = {
->  	[MIGRATE_UNMOVABLE]   = { MIGRATE_RECLAIMABLE, MIGRATE_MOVABLE,   MIGRATE_RESERVE },
->  	[MIGRATE_RECLAIMABLE] = { MIGRATE_UNMOVABLE,   MIGRATE_MOVABLE,   MIGRATE_RESERVE },
-> +#ifdef CONFIG_CMA_MIGRATE_TYPE
-> +	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_CMA    , MIGRATE_RESERVE },
-> +#else
->  	[MIGRATE_MOVABLE]     = { MIGRATE_RECLAIMABLE, MIGRATE_UNMOVABLE, MIGRATE_RESERVE },
-> -	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE,     MIGRATE_RESERVE,   MIGRATE_RESERVE }, /* Never used */
-> +#endif
-> +	[MIGRATE_RESERVE]     = { MIGRATE_RESERVE }, /* Never used */
->  };
->  
->  /*
-> @@ -1044,7 +1086,12 @@ static int rmqueue_bulk(struct zone *zone, unsigned int order,
->  			list_add(&page->lru, list);
->  		else
->  			list_add_tail(&page->lru, list);
-> -		set_page_private(page, migratetype);
-> +#ifdef CONFIG_CMA_MIGRATE_TYPE
-> +		if (is_pageblock_cma(page))
-> +			set_page_private(page, MIGRATE_CMA);
-> +		else
-> +#endif
-> +			set_page_private(page, migratetype);
->  		list = &page->lru;
->  	}
-
-I guess if you can get rid of the first #ifdef I mentioned above, these two can be
-removed as well, without causing any run-time overhead.
-
-	Arnd
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
