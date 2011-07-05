@@ -1,39 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755769Ab1GER3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 13:29:46 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:50195 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751476Ab1GER3p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 13:29:45 -0400
-X-Sasl-enc: GCMV1rHLoCAX3vL4cwpEHoH8FFFscf6Q9US42TLzdGsF 1309886984
-Date: Tue, 5 Jul 2011 10:21:50 -0700
-From: Greg KH <greg@kroah.com>
-To: Joseph Salisbury <salisbury.joseph@gmail.com>
-Cc: gregkh@suse.de, devel@driverdev.osuosl.org,
-        Joseph Salisbury <salisbury.joseph@googlemail.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: wlan-ng: fix brace coding style issue in
- prism2fw.c
-Message-ID: <20110705172150.GA19383@kroah.com>
-References: <1307983495-4622-1-git-send-email-salisbury.joseph@gmail.com>
+	id S1755798Ab1GERa2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 13:30:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52908 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751794Ab1GERa1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 13:30:27 -0400
+Date: Tue, 5 Jul 2011 10:29:03 -0700
+From: Greg KH <gregkh@suse.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
+Message-ID: <20110705172903.GB1155@suse.de>
+References: <20110704170949.11059.92774.stgit@ponder>
+ <20110704180159.GA11278@ponder.secretlab.ca>
+ <20110705142149.GA3498@suse.de>
+ <201107051721.02079.arnd@arndb.de>
+ <20110705155040.GB16682@suse.de>
+ <CAPXgP12eg1diui_78rqaVijKbxvRcpZhsC35i9w_Js9vr2OGWA@mail.gmail.com>
+ <CACxGe6sypBwP6aKoaxq1ipoEfqvnqq2RMhi9d0KU=LHjJm9x_g@mail.gmail.com>
+ <20110705163628.GB31984@suse.de>
+ <CACxGe6v_HVWcci2cPDyNALWST0E3_iXWZzrhi49e_cUX1VCt+Q@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1307983495-4622-1-git-send-email-salisbury.joseph@gmail.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CACxGe6v_HVWcci2cPDyNALWST0E3_iXWZzrhi49e_cUX1VCt+Q@mail.gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 13, 2011 at 05:44:55PM +0100, Joseph Salisbury wrote:
-> From: Joseph Salisbury <salisbury.joseph@googlemail.com>
+On Tue, Jul 05, 2011 at 11:17:46AM -0600, Grant Likely wrote:
+> On Tue, Jul 5, 2011 at 10:36 AM, Greg KH <gregkh@suse.de> wrote:
+> > On Tue, Jul 05, 2011 at 10:28:37AM -0600, Grant Likely wrote:
+> >> On Tue, Jul 5, 2011 at 10:11 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> >> > On Tue, Jul 5, 2011 at 17:50, Greg KH <gregkh@suse.de> wrote:
+> >> >
+> >> >> I wonder if doing this all from a workqueue in the first place is going
+> >> >> to cause problems as probe isn't normally done this way at all.
+> >> >
+> >> > Yeah, I would expect unforeseen problems with the async thread too.
+> >> > It's probably all solvable, but it sounds troublesome to find out if
+> >> > things go wrong.
+> >> >
+> >> > We have sync hooks (BUS_NOTIFY_*) where any kind of code can subscribe
+> >> > to when devices get added or get bound to a driver. Can't the code
+> >> > that relies on later hookups to already existing devices/bindings not
+> >> > just plug into that?
+> >>
+> >> I tried that.  It resulted in a lot of complexity that each driver
+> >> needs to implement correctly which is why I started looking for a
+> >> different way to go about it.
+> >
+> > No, the bus that wants this just has to do it, not the drivers
+> > themselves, right?
 > 
-> This is a patch to the prism2fw.c file that fixes up a brace
-> warning found by the checkpatch.pl tool.
-> 
-> Signed-off-by: Joseph Salisbury <salisbury.joseph@gmail.com>
-> ---
+> It's not about the bus_type, and there is nothing that the bus can do
+> to solve this problem because it the dependencies are completely
+> orthogonal to the bus.  ie. what does an i2c bus know about the audio
+> path to a codec?  The problem must be solved at the driver scope.
 
-Sorry, this patch was already submitted by someone else first.
+Ok, let's look at your next implementation and see how it goes.
