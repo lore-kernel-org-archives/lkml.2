@@ -1,38 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753465Ab1GEFfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 01:35:20 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57793 "EHLO comal.ext.ti.com"
+	id S1753498Ab1GEFhr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 01:37:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:55157 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752717Ab1GEFfR convert rfc822-to-8bit (ORCPT
+	id S1753220Ab1GEFhq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 01:35:17 -0400
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: "Grosen, Mark" <mgrosen@ti.com>, Sergei Shtylyov <sshtylyov@mvista.com>
-CC: Ohad Ben-Cohen <ohad@wizery.com>,
-        davinci-linux-open-source 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Arnd Bergmann <arnd@arndb.de>, Brian Swetland <swetland@google.com>,
-        Rusty Russell <rusty@rustcorp.com.au>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Date: Tue, 5 Jul 2011 11:04:59 +0530
-Subject: RE: [RFC 5/8] remoteproc: add davinci implementation
-Thread-Topic: [RFC 5/8] remoteproc: add davinci implementation
-Thread-Index: AQHML+P0Hfr3a08OpEW7Q/TK8TF6jpTLaEUAgAB6tVCAARO0AIAACGCAgASPneCAC7rrwA==
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024D91A2CC@dbde02.ent.ti.com>
-References: <1308640714-17961-1-git-send-email-ohad@wizery.com>
-	<1308640714-17961-6-git-send-email-ohad@wizery.com>
-	<4E035B78.3080200@mvista.com>
-	<FFF198FBBF957F4393BA834040FEFFA202D66E@DFLE35.ent.ti.com>
- <4E04A9AE.3030801@mvista.com>
- <B85A65D85D7EB246BE421B3FB0FBB593024D6C2F29@dbde02.ent.ti.com>
- <FFF198FBBF957F4393BA834040FEFFA202EC99@DFLE35.ent.ti.com>
-In-Reply-To: <FFF198FBBF957F4393BA834040FEFFA202EC99@DFLE35.ent.ti.com>
+	Tue, 5 Jul 2011 01:37:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,477,1304319600"; 
+   d="scan'208";a="21574350"
+From: "R, Durgadoss" <durgadoss.r@intel.com>
+To: "linux-x86_64@vger.kernel.org" <linux-x86_64@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "R, Durgadoss" <durgadoss.r@intel.com>
+Date: Tue, 5 Jul 2011 11:06:42 +0530
+Subject: CPU clock throttled prints..
+Thread-Topic: CPU clock throttled prints..
+Thread-Index: Acw6IWmPLAxAez/AQR+k9kKUqDQSdgAsnE4A
+Message-ID: <D6D887BA8C9DFF48B5233887EF04654109E855E9B4@bgsmsx502.gar.corp.intel.com>
 Accept-Language: en-US
 Content-Language: en-US
 X-MS-Has-Attach: 
@@ -45,32 +31,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mark,
+Hi All,
 
-On Tue, Jun 28, 2011 at 00:01:41, Grosen, Mark wrote:
-> > From: Nori, Sekhar
-> > Sent: Friday, June 24, 2011 8:44 AM
-> > 
-> > Hi Mark,
-> 
-> Sekhar, thanks for your feedback and ideas. Comments below.
-> 
-> Mark
-> 
-> > Since procedure to set the boot address varies across DaVinci
-> > platforms, you could have a callback populated in platform data
-> > which will be implemented differently for original DaVinci and
-> > DA8xx devices.
-> 
-> I looked at DM6467 and it's the same as OMAPL13x, except at a different
-> address. Rather than a callback, it could be just an address in the
-> platform data.
+I am getting these prints in my Atom based device, running 2.6.35 kernel.
 
-Sounds okay as long as _all_ the DaVinci devices have the same
-bit to be set. Plus, I hope there are no other users of the
-register so that there is no race with other platform code using
-the same register.
+[  350.084005] CPU0: Temperature above threshold, cpu clock throttled (total
+events = 26)
+[  350.084029] CPU1: Temperature above threshold, cpu clock throttled (total
+events = 26)
+[  350.085293] CPU0: Temperature/speed normal
+[  350.085311] CPU1: Temperature/speed normal
+
+Seems like these are from therm_throt.c and the flow for this,
+Starts from smp_thermal_interrupt(...) method.
+
+Can somebody tell me when this method gets called ?
+Also, does this actually throttle the CPU ?
 
 Thanks,
-Sekhar
-
+Durga
