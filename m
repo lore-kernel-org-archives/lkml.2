@@ -1,84 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab1GEM5m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:57:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59555 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756377Ab1GEM5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:57:39 -0400
-Date: Tue, 5 Jul 2011 12:57:28 GMT
-From: tip-bot for Jan Beulich <JBeulich@novell.com>
-Message-ID: <tip-d80603c9d876efafd8b07469c891076de470e323@git.kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
-        mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <4E13100A020000780004C256@nat28.tlf.novell.com>
-References: <4E13100A020000780004C256@nat28.tlf.novell.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/efi] x86, efi: Properly pre-initialize table pointers
-Git-Commit-ID: d80603c9d876efafd8b07469c891076de470e323
-X-Mailer: tip-git-log-daemon
-Robot-ID: <tip-bot.git.kernel.org>
-Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
+	id S1756411Ab1GENAZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 09:00:25 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:37131 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756367Ab1GENAX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 09:00:23 -0400
+X-IronPort-AV: E=Sophos;i="4.65,479,1304308800"; 
+   d="scan'208";a="153527743"
+From: Ian Campbell <ian.campbell@citrix.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Brian Gerst <brgerst@gmail.com>, Jan Beulich <JBeulich@novell.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ian Campbell <ian.campbell@citrix.com>, x86@kernel.org
+Subject: [PATCH 2/3] x86: make 64 bit ret_from_fork a little more similar to 32 bit
+Date: Tue, 5 Jul 2011 14:00:13 +0100
+Message-ID: <1309870814-14181-2-git-send-email-ian.campbell@citrix.com>
+X-Mailer: git-send-email 1.7.2.5
+In-Reply-To: <20110705111525.GR17941@sun>
+References: <20110705111525.GR17941@sun>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Jul 2011 12:57:29 +0000 (UTC)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  d80603c9d876efafd8b07469c891076de470e323
-Gitweb:     http://git.kernel.org/tip/d80603c9d876efafd8b07469c891076de470e323
-Author:     Jan Beulich <JBeulich@novell.com>
-AuthorDate: Tue, 5 Jul 2011 12:22:18 +0100
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 5 Jul 2011 13:40:34 +0200
+The 64 bit version resets EFLAGS before calling schedule_tail() and
+therefore leaves EFLAGS.IF clear. 32 bit resets EFLAGS after calling
+schedule_tail() and therefore leaves EFLAGS.IF set. I don't think
+there is any practical difference between the two approaches since
+interrupts are actually reenabled within schedule_tail
+(schedule_tail->finish_task_switch->finish_lock_switch->raw_spin_unlock_irq->...->local_irq_enable)
+so arbitrarily pick the 32 bit version and make 64 bit look like that.
 
-x86, efi: Properly pre-initialize table pointers
-
-Consumers of the table pointers in struct efi check for
-EFI_INVALID_TABLE_ADDR to determine validity, hence these
-pointers should all be pre-initialized to this value (rather
-than zero).
-
-Noticed by the discrepancy between efivars' systab sysfs entry
-showing all tables (and their pointers) despite the code
-intending to only display the valid ones. No other bad effects
-known, but having the various table parsing routines bogusly
-access physical address zero is certainly not very desirable
-(even though they're unlikely to find anything useful there).
-
-Signed-off-by: Jan Beulich <jbeulich@novell.com>
-Link: http://lkml.kernel.org/r/4E13100A020000780004C256@nat28.tlf.novell.com
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+Cc: x86@kernel.org
 ---
- arch/x86/platform/efi/efi.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+ arch/x86/kernel/entry_64.S |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
-index a0e4244..11e766d 100644
---- a/arch/x86/platform/efi/efi.c
-+++ b/arch/x86/platform/efi/efi.c
-@@ -51,7 +51,17 @@
- int efi_enabled;
- EXPORT_SYMBOL(efi_enabled);
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index b50d142..9c28bd5 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -394,13 +394,14 @@ END(save_paranoid)
+ ENTRY(ret_from_fork)
+ 	DEFAULT_FRAME
  
--struct efi efi;
-+struct efi __read_mostly efi = {
-+	.mps        = EFI_INVALID_TABLE_ADDR,
-+	.acpi       = EFI_INVALID_TABLE_ADDR,
-+	.acpi20     = EFI_INVALID_TABLE_ADDR,
-+	.smbios     = EFI_INVALID_TABLE_ADDR,
-+	.sal_systab = EFI_INVALID_TABLE_ADDR,
-+	.boot_info  = EFI_INVALID_TABLE_ADDR,
-+	.hcdp       = EFI_INVALID_TABLE_ADDR,
-+	.uga        = EFI_INVALID_TABLE_ADDR,
-+	.uv_systab  = EFI_INVALID_TABLE_ADDR,
-+};
- EXPORT_SYMBOL(efi);
+-	LOCK ; btr $TIF_FORK,TI_flags(%r8)
  
- struct efi_memory_map memmap;
+-	pushq_cfi $0x0002
+-	popfq_cfi				# reset kernel eflags
++	LOCK ; btr $TIF_FORK,TI_flags(%r8)
+ 
+ 	call schedule_tail			# rdi: 'prev' task parameter
+ 
++	pushq_cfi $0x0202
++	popfq_cfi				# reset kernel eflags
++
+ 	GET_THREAD_INFO(%rcx)
+ 
+ 	RESTORE_REST
+-- 
+1.7.2.5
+
