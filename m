@@ -1,74 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753198Ab1GED7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 23:59:08 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:52176 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753045Ab1GED7G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 23:59:06 -0400
-Date: Mon, 4 Jul 2011 21:59:02 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
-Cc: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
-        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
-        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
-        tglx@linutronix.de
-Subject: Re: [PATCH v4] pch_gpio: Support interrupt function
-Message-ID: <20110705035902.GB13713@ponder.secretlab.ca>
-References: <1309486572-2789-1-git-send-email-tomoya-linux@dsn.okisemi.com>
- <20110704163137.GA28042@ponder.secretlab.ca>
- <4E128A7D.9020508@dsn.okisemi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E128A7D.9020508@dsn.okisemi.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753214Ab1GED7m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 23:59:42 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42638 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753045Ab1GED7i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 23:59:38 -0400
+Date: Tue, 5 Jul 2011 13:59:32 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Greg Ungerer <gerg@uclinux.org>, Jonas Bonn <jonas@southpole.se>,
+        Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: linux-next: manual merge of the rr tree with the  tree
+Message-Id: <20110705135932.de7f0526.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 12:52:29PM +0900, Tomoya MORINAGA wrote:
-> Hi Grant,
-> 
-> (2011/07/05 1:31), Grant Likely wrote:
-> 
-> >>+#define PCH_IRQ_BASE		23
-> >
-> >Yikes!  IRQ ranges should really be dynamically assigned.  Don't hard
-> >code an irq base.
-> 
-> As we discussed before,
-> without specifying PCH_IRQ_BASE,
-> it seemed IRQ number collision issue occurred.
-> Thus, I added PCH_IRQ_BASE.
+Hi Rusty,
 
-Then fix the irq collision.  If the core code hands out an irq range
-that is in-use by some other driver, then the other driver isn't
-reserving it's irqs correctly and it needs to be fixed.  Hacking
-around the problem doesn't help anything in the long run.
+Today's linux-next merge of the rr tree got a conflict in
+arch/m68k/kernel/module_mm.c arch/m68k/kernel/module_no.c between commit
+4528acce2607 ("m68k: merge the non-mmu and mmu versions of module.c")
+from the m68knommu tree and commit 7b935befe6bc ("modules: make arch's
+use default loader hooks") from the rr tree.
 
-> >>@@ -202,8 +345,36 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
-> >>  		goto err_gpiochip_add;
-> >>  	}
-> >>
-> >>+	irq_base = irq_alloc_descs(-1, PCH_IRQ_BASE, GPIO_NUM_PINS, GFP_KERNEL);
-> >>+	if (irq_base<  0) {
-> >>+		dev_err(&pdev->dev, "PCH gpio: Failed to get IRQ base num\n");
-> >>+		goto err_irq_alloc_descs;
-> >>+	}
-> >>+	chip->irq_base = irq_base;
-> >
-> >This looks like it will cause the driver probe to completely fail,
-> >even if the GPIO portion of the chip was setup correctly.  I would
-> >think that if GPIO works the driver should at least enable that bit
-> >even if IRQs are broken.
-> 
-> Do you mean in case of failing irq_alloc_descs,
-> probe() shouldn't return ERROR but SUCCESS. Right ?
+The former removes these files, so I did that.
 
-That's what I'm suggesting.  I'll leave it up to you whether or not it
-is worthwhile though.
+I then added this merge fix up patch (which I can carry as necessary and
+may not be coorrect):
 
-g.
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 5 Jul 2011 13:12:26 +1000
+Subject: [PATCH] modules/m68k: make arch's use default loader hooks
 
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ arch/m68k/kernel/module.c |   27 ---------------------------
+ 1 files changed, 0 insertions(+), 27 deletions(-)
+
+diff --git a/arch/m68k/kernel/module.c b/arch/m68k/kernel/module.c
+index 146d646..34849c4 100644
+--- a/arch/m68k/kernel/module.c
++++ b/arch/m68k/kernel/module.c
+@@ -19,29 +19,6 @@
+ 
+ #ifdef CONFIG_MODULES
+ 
+-void *module_alloc(unsigned long size)
+-{
+-	if (size == 0)
+-		return NULL;
+-	return vmalloc(size);
+-}
+-
+-
+-/* Free memory returned from module_alloc */
+-void module_free(struct module *mod, void *module_region)
+-{
+-	vfree(module_region);
+-}
+-
+-/* We don't need anything special. */
+-int module_frob_arch_sections(Elf_Ehdr *hdr,
+-			      Elf_Shdr *sechdrs,
+-			      char *secstrings,
+-			      struct module *mod)
+-{
+-	return 0;
+-}
+-
+ int apply_relocate(Elf32_Shdr *sechdrs,
+ 		   const char *strtab,
+ 		   unsigned int symindex,
+@@ -130,10 +107,6 @@ int module_finalize(const Elf_Ehdr *hdr,
+ 	return 0;
+ }
+ 
+-void module_arch_cleanup(struct module *mod)
+-{
+-}
+-
+ #endif /* CONFIG_MODULES */
+ 
+ void module_fixup(struct module *mod, struct m68k_fixup_info *start,
+-- 
+1.7.5.4
+
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
