@@ -1,136 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753247Ab1GEEim (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 00:38:42 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:18119 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab1GEEij convert rfc822-to-8bit (ORCPT
+	id S1753272Ab1GEEkE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 00:40:04 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64837 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab1GEEj7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 00:38:39 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=ZTNhNKDl/Hnbx3hjLCgQ77V0ZckVpZPa8WsE5VR1aFkQz35H/tKDE8NT7lj/VD0zA
-	flq4eyPoslZXmS0khdrTQ==
+	Tue, 5 Jul 2011 00:39:59 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110704212404.GC23915@polaris.bitmath.org>
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
- <1309324042-22943-6-git-send-email-djkurtz@chromium.org> <20110704212404.GC23915@polaris.bitmath.org>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Tue, 5 Jul 2011 12:38:16 +0800
-X-Google-Sender-Auth: kvS6kapsKW-3qE62xZE6iBFwzSE
-Message-ID: <CAGS+omALkYhzS+rvWhsXCwuWMHWpJJJ7j9Z9cBQ1Gem5HnH_fg@mail.gmail.com>
-Subject: Re: [PATCH 05/12] Input: synaptics - process button bits in AGM packets
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: dmitry.torokhov@gmail.com, chase.douglas@canonical.com,
-        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
-        daniel.stone@collabora.co.uk, olofj@chromium.org
+In-Reply-To: <4E124D42.8040808@gmail.com>
+References: <4E0D5E42.20702@gmail.com>
+	<BANLkTinBJBnZbHPpdmnYX3EV0SYFd-pRDA@mail.gmail.com>
+	<4E0D6B8D.6000601@gmail.com>
+	<BANLkTimX4=Szn_JT49SLw4BvGxg3Qe0rYw@mail.gmail.com>
+	<4E0ED42E.3020303@gmail.com>
+	<4E113498.7050900@gmail.com>
+	<CAD2nsn0XjoMUMv6e9SuSBUAwq0Lq5QCPMBWTnPZmsndg_XYcvw@mail.gmail.com>
+	<4E124D42.8040808@gmail.com>
+Date: Tue, 5 Jul 2011 10:09:57 +0530
+Message-ID: <CAD2nsn2AhxWCT0XLn46n4GTE7-HOkT2HzKf6=6RsG3PbSB0hsw@mail.gmail.com>
+Subject: Re: WARNING: at kernel/timer.c:1011 del_timer_sync+0xa9/0xc4()
+From: Mohammed Shafi <shafi.wireless@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-wireless@vger.kernel.org, ath5k-devel@venema.h4ckr.net
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Henrik,
-
-On Tue, Jul 5, 2011 at 5:24 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Hi Daniel,
 >
->> AGM packets contain valid button bits, too.
->> This patch refactors packet processing to parse button bits in AGM packets.
->> However, they aren't actually used or reported.
->>
->> The point is to more completely process AGM packets,
->> and prepare for future patches that may actually use AGM packet button bits.
->>
->> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->> ---
->>  drivers/input/mouse/synaptics.c |   35 ++++++++++++++++++-----------------
->>  1 files changed, 18 insertions(+), 17 deletions(-)
->>
->> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
->> index 1ce47b7..74b1222 100644
->> --- a/drivers/input/mouse/synaptics.c
->> +++ b/drivers/input/mouse/synaptics.c
->> @@ -408,27 +408,10 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->>       memset(hw, 0, sizeof(struct synaptics_hw_state));
->>
->>       if (SYN_MODEL_NEWABS(priv->model_id)) {
->> -             hw->x = (((buf[3] & 0x10) << 8) |
->> -                      ((buf[1] & 0x0f) << 8) |
->> -                      buf[4]);
->> -             hw->y = INVERT_Y((((buf[3] & 0x20) << 7) |
->> -                      ((buf[1] & 0xf0) << 4) |
->> -                      buf[5]));
->> -
->> -             hw->z = buf[2];
 >
-> Any particular reason to move these and leave them unassigned for clickpads?
-
-Yes.  The current implementation incorrectly parses the x, y, z of AGM
-packets and assigns junk values to the corresponding fields of the
-temporary hw struct.  Luckily, this struct is then just discarded upon
-return (synaptics_parse_hw_state returns 1 causing
-synaptics_process_packet() to exit immediately).
-
-Instead, this patch parses the w value first to determine the packet
-type, and then use this packet type information to parse the remaining
-position and pressure fields correctly...
-
-Notice that the "else" clause is taken for SGM packets (w != 2), even
-for clickpads.
-
--Dan
-
+> FWIW below is my .config that I am using that seems to be having this
+> warning message show up.
 >
->>               hw->w = (((buf[0] & 0x30) >> 2) |
->>                        ((buf[0] & 0x04) >> 1) |
->>                        ((buf[3] & 0x04) >> 2));
->>
->> -             if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
->> -                     /* Gesture packet: (x, y, z) at half resolution */
->> -                     priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
->> -                     priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
->> -                                           | buf[2]) << 1);
->> -                     priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
->> -                     return 1;
->> -             }
->> -
->>               hw->left  = (buf[0] & 0x01) ? 1 : 0;
->>               hw->right = (buf[0] & 0x02) ? 1 : 0;
->>
->> @@ -451,6 +434,24 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
->>                       hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
->>               }
->>
->> +             if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
->> +                     /* Gesture packet: (x, y, z) at half resolution */
->> +                     priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
->> +                     priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
->> +                                           | buf[2]) << 1);
->> +                     priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
->> +                     return 1;
->> +             } else {
->> +                     hw->x = (((buf[3] & 0x10) << 8) |
->> +                              ((buf[1] & 0x0f) << 8) |
->> +                              buf[4]);
->> +                     hw->y = INVERT_Y((((buf[3] & 0x20) << 7) |
->> +                                      ((buf[1] & 0xf0) << 4) |
->> +                                      buf[5]));
->> +
->> +                     hw->z = buf[2];
->> +             }
->> +
->>               if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
->>                   ((buf[0] ^ buf[3]) & 0x02)) {
->>                       switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
->> --
->> 1.7.3.1
->>
+> latest pull of the Mainline dmesg:
+>  http://fpaste.org/
 >
-> Thanks,
-> Henrik
->
+
+hello Justin,
+
+we doubt whether this patch is there in your linux-kernel tree you are
+using, even though it is there in wireless-testing tree. please try to
+apply this patch and see you can hit the warning
+https://patchwork.kernel.org/patch/915952/
+
+thanks,
+shafi
