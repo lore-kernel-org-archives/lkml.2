@@ -1,65 +1,371 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932446Ab1GENNu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 09:13:50 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37300 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932154Ab1GENNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 09:13:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,479,1304319600"; 
-   d="scan'208";a="26448304"
-Subject: Re: [PATCH 1/4] perf, x86: Add Intel Nehalem/Westmere uncore pmu
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1309870562.3282.113.camel@twins>
-References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
-	 <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
-	 <20110630165849.GE23059@one.firstfloor.org>
-	 <1309761541.18875.40.camel@minggr.sh.intel.com>
-	 <20110704215706.GH15637@one.firstfloor.org>
-	 <1309864954.3282.61.camel@twins>  <1309870119.2381.6.camel@localhost>
-	 <1309870562.3282.113.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Jul 2011 21:13:45 +0800
-Message-Id: <1309871625.2381.9.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S932506Ab1GENQk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 09:16:40 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54346 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932350Ab1GENQi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 09:16:38 -0400
+Date: Tue, 5 Jul 2011 14:16:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vincent Guittot <vincent.guittot@linaro.org>
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linaro-dev@lists.linaro.org, patches@linaro.org
+Subject: Re: [PATCH v5] Add ARM cpu topology definition
+Message-ID: <20110705131623.GF8286@n2100.arm.linux.org.uk>
+References: <1309798185-1984-1-git-send-email-vincent.guittot@linaro.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309798185-1984-1-git-send-email-vincent.guittot@linaro.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-05 at 20:56 +0800, Peter Zijlstra wrote:
-> On Tue, 2011-07-05 at 20:48 +0800, Lin Ming wrote:
-> > On Tue, 2011-07-05 at 19:22 +0800, Peter Zijlstra wrote:
-> > > On Mon, 2011-07-04 at 23:57 +0200, Andi Kleen wrote:
-> > > > > > There are no NMIs without sampling, so at least the comment seems bogus.
-> > > > > > Perhaps the code could be a bit simplified now without atomics.
-> > > > > 
-> > > > > I'm not sure if uncore PMU interrupt need to be enabled for counting
-> > > > > only. What do you think?
-> > > > 
-> > > > Only for overflow handling to accumulate into a larger counter, but it doesn't 
-> > > > need to be an NMI for that.
-> > > 
-> > > Uncore is hooked into the regular PMI, and since we wire that to the NMI
-> > > the uncore will always be NMI too.
-> > > 
-> > > >   But it's not strictly required I would say, 
-> > > > 44(?) bits are probably enough for near all use cases.
-> > > 
-> > > 44bits is in the hours range for pure cycle counts, which is so-so. I
-> > > bet you're going to be very annoyed when you find your counters are
-> > > wrecked after your 5 hour test run finishes.
-> > 
-> > I'll add the interrupt handling code back.
+Looks fine now, and so can go to my patch system.  Many thanks.
+
+On Mon, Jul 04, 2011 at 06:49:45PM +0200, Vincent Guittot wrote:
+> The affinity between ARM processors is defined in the MPIDR register.
+> We can identify which processors are in the same cluster,
+> and which ones have performance interdependency. We can define the
+> cpu topology of ARM platform, that is then used by sched_mc and sched_smt.
 > 
-> Does it work? The problem was with the hardware being iffy.
-
-It may work on SandyBridge.
-
+> The default state of sched_mc and sched_smt config is disable.
+> When enabled, the behavior of the scheduler can be modified with
+> sched_mc_power_savings and sched_smt_power_savings sysfs interfaces.
+> 
+> Changes since v4 :
+> *  Remove unnecessary parentheses and blank lines
+> 
+> Changes since v3 :
+> * Update the format of printk message
+> * Remove blank line
+> 
+> Changes since v2 :
+> * Update the commit message and some comments
+> 
+> Changes since v1 :
+> * Update the commit message
+> * Add read_cpuid_mpidr in arch/arm/include/asm/cputype.h
+> * Modify header of arch/arm/kernel/topology.c
+> * Modify tests and manipulation of MPIDR's bitfields
+> * Modify the place and dependancy of the config
+> * Modify Noop functions
+> 
+> Signed-off-by: Vincent Guittot <vincent.guittot@linaro.org>
+> Reviewed-by: Amit Kucheria <amit.kucheria@linaro.org>
+> ---
+>  arch/arm/Kconfig                |   25 +++++++
+>  arch/arm/include/asm/cputype.h  |    6 ++
+>  arch/arm/include/asm/topology.h |   33 +++++++++
+>  arch/arm/kernel/Makefile        |    1 +
+>  arch/arm/kernel/smp.c           |    5 ++
+>  arch/arm/kernel/topology.c      |  148 +++++++++++++++++++++++++++++++++++++++
+>  6 files changed, 218 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/arm/kernel/topology.c
+> 
+> diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+> index 9adc278..f327e55 100644
+> --- a/arch/arm/Kconfig
+> +++ b/arch/arm/Kconfig
+> @@ -1344,6 +1344,31 @@ config SMP_ON_UP
+>  
+>  	  If you don't know what to do here, say Y.
+>  
+> +config ARM_CPU_TOPOLOGY
+> +	bool "Support cpu topology definition"
+> +	depends on SMP && CPU_V7
+> +	default y
+> +	help
+> +	  Support ARM cpu topology definition. The MPIDR register defines
+> +	  affinity between processors which is then used to describe the cpu
+> +	  topology of an ARM System.
+> +
+> +config SCHED_MC
+> +	bool "Multi-core scheduler support"
+> +	depends on ARM_CPU_TOPOLOGY
+> +	help
+> +	  Multi-core scheduler support improves the CPU scheduler's decision
+> +	  making when dealing with multi-core CPU chips at a cost of slightly
+> +	  increased overhead in some places. If unsure say N here.
+> +
+> +config SCHED_SMT
+> +	bool "SMT scheduler support"
+> +	depends on ARM_CPU_TOPOLOGY
+> +	help
+> +	  Improves the CPU scheduler's decision making when dealing with
+> +	  MultiThreading at a cost of slightly increased overhead in some
+> +	  places. If unsure say N here.
+> +
+>  config HAVE_ARM_SCU
+>  	bool
+>  	depends on SMP
+> diff --git a/arch/arm/include/asm/cputype.h b/arch/arm/include/asm/cputype.h
+> index cd4458f..cb47d28 100644
+> --- a/arch/arm/include/asm/cputype.h
+> +++ b/arch/arm/include/asm/cputype.h
+> @@ -8,6 +8,7 @@
+>  #define CPUID_CACHETYPE	1
+>  #define CPUID_TCM	2
+>  #define CPUID_TLBTYPE	3
+> +#define CPUID_MPIDR	5
+>  
+>  #define CPUID_EXT_PFR0	"c1, 0"
+>  #define CPUID_EXT_PFR1	"c1, 1"
+> @@ -70,6 +71,11 @@ static inline unsigned int __attribute_const__ read_cpuid_tcmstatus(void)
+>  	return read_cpuid(CPUID_TCM);
+>  }
+>  
+> +static inline unsigned int __attribute_const__ read_cpuid_mpidr(void)
+> +{
+> +	return read_cpuid(CPUID_MPIDR);
+> +}
+> +
+>  /*
+>   * Intel's XScale3 core supports some v6 features (supersections, L2)
+>   * but advertises itself as v5 as it does not support the v6 ISA.  For
+> diff --git a/arch/arm/include/asm/topology.h b/arch/arm/include/asm/topology.h
+> index accbd7c..a7e457e 100644
+> --- a/arch/arm/include/asm/topology.h
+> +++ b/arch/arm/include/asm/topology.h
+> @@ -1,6 +1,39 @@
+>  #ifndef _ASM_ARM_TOPOLOGY_H
+>  #define _ASM_ARM_TOPOLOGY_H
+>  
+> +#ifdef CONFIG_ARM_CPU_TOPOLOGY
+> +
+> +#include <linux/cpumask.h>
+> +
+> +struct cputopo_arm {
+> +	int thread_id;
+> +	int core_id;
+> +	int socket_id;
+> +	cpumask_t thread_sibling;
+> +	cpumask_t core_sibling;
+> +};
+> +
+> +extern struct cputopo_arm cpu_topology[NR_CPUS];
+> +
+> +#define topology_physical_package_id(cpu)	(cpu_topology[cpu].socket_id)
+> +#define topology_core_id(cpu)		(cpu_topology[cpu].core_id)
+> +#define topology_core_cpumask(cpu)	(&cpu_topology[cpu].core_sibling)
+> +#define topology_thread_cpumask(cpu)	(&cpu_topology[cpu].thread_sibling)
+> +
+> +#define mc_capable()	(cpu_topology[0].socket_id != -1)
+> +#define smt_capable()	(cpu_topology[0].thread_id != -1)
+> +
+> +void init_cpu_topology(void);
+> +void store_cpu_topology(unsigned int cpuid);
+> +const struct cpumask *cpu_coregroup_mask(unsigned int cpu);
+> +
+> +#else
+> +
+> +static inline void init_cpu_topology(void) { }
+> +static inline void store_cpu_topology(unsigned int cpuid) { }
+> +
+> +#endif
+> +
+>  #include <asm-generic/topology.h>
+>  
+>  #endif /* _ASM_ARM_TOPOLOGY_H */
+> diff --git a/arch/arm/kernel/Makefile b/arch/arm/kernel/Makefile
+> index a5b31af..816a481 100644
+> --- a/arch/arm/kernel/Makefile
+> +++ b/arch/arm/kernel/Makefile
+> @@ -61,6 +61,7 @@ obj-$(CONFIG_IWMMXT)		+= iwmmxt.o
+>  obj-$(CONFIG_CPU_HAS_PMU)	+= pmu.o
+>  obj-$(CONFIG_HW_PERF_EVENTS)	+= perf_event.o
+>  AFLAGS_iwmmxt.o			:= -Wa,-mcpu=iwmmxt
+> +obj-$(CONFIG_ARM_CPU_TOPOLOGY)  += topology.o
+>  
+>  ifneq ($(CONFIG_ARCH_EBSA110),y)
+>    obj-y		+= io.o
+> diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+> index 344e52b..051fd36 100644
+> --- a/arch/arm/kernel/smp.c
+> +++ b/arch/arm/kernel/smp.c
+> @@ -31,6 +31,7 @@
+>  #include <asm/cacheflush.h>
+>  #include <asm/cpu.h>
+>  #include <asm/cputype.h>
+> +#include <asm/topology.h>
+>  #include <asm/mmu_context.h>
+>  #include <asm/pgtable.h>
+>  #include <asm/pgalloc.h>
+> @@ -268,6 +269,8 @@ static void __cpuinit smp_store_cpu_info(unsigned int cpuid)
+>  	struct cpuinfo_arm *cpu_info = &per_cpu(cpu_data, cpuid);
+>  
+>  	cpu_info->loops_per_jiffy = loops_per_jiffy;
+> +
+> +	store_cpu_topology(cpuid);
+>  }
+>  
+>  /*
+> @@ -354,6 +357,8 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+>  {
+>  	unsigned int ncores = num_possible_cpus();
+>  
+> +	init_cpu_topology();
+> +
+>  	smp_store_cpu_info(smp_processor_id());
+>  
+>  	/*
+> diff --git a/arch/arm/kernel/topology.c b/arch/arm/kernel/topology.c
+> new file mode 100644
+> index 0000000..1040c00
+> --- /dev/null
+> +++ b/arch/arm/kernel/topology.c
+> @@ -0,0 +1,148 @@
+> +/*
+> + * arch/arm/kernel/topology.c
+> + *
+> + * Copyright (C) 2011 Linaro Limited.
+> + * Written by: Vincent Guittot
+> + *
+> + * based on arch/sh/kernel/topology.c
+> + *
+> + * This file is subject to the terms and conditions of the GNU General Public
+> + * License.  See the file "COPYING" in the main directory of this archive
+> + * for more details.
+> + */
+> +
+> +#include <linux/cpu.h>
+> +#include <linux/cpumask.h>
+> +#include <linux/init.h>
+> +#include <linux/percpu.h>
+> +#include <linux/node.h>
+> +#include <linux/nodemask.h>
+> +#include <linux/sched.h>
+> +
+> +#include <asm/cputype.h>
+> +#include <asm/topology.h>
+> +
+> +#define MPIDR_SMP_BITMASK (0x3 << 30)
+> +#define MPIDR_SMP_VALUE (0x2 << 30)
+> +
+> +#define MPIDR_MT_BITMASK (0x1 << 24)
+> +
+> +/*
+> + * These masks reflect the current use of the affinity levels.
+> + * The affinity level can be up to 16 bits according to ARM ARM
+> + */
+> +
+> +#define MPIDR_LEVEL0_MASK 0x3
+> +#define MPIDR_LEVEL0_SHIFT 0
+> +
+> +#define MPIDR_LEVEL1_MASK 0xF
+> +#define MPIDR_LEVEL1_SHIFT 8
+> +
+> +#define MPIDR_LEVEL2_MASK 0xFF
+> +#define MPIDR_LEVEL2_SHIFT 16
+> +
+> +struct cputopo_arm cpu_topology[NR_CPUS];
+> +
+> +const struct cpumask *cpu_coregroup_mask(unsigned int cpu)
+> +{
+> +	return &cpu_topology[cpu].core_sibling;
+> +}
+> +
+> +/*
+> + * store_cpu_topology is called at boot when only one cpu is running
+> + * and with the mutex cpu_hotplug.lock locked, when several cpus have booted,
+> + * which prevents simultaneous write access to cpu_topology array
+> + */
+> +void store_cpu_topology(unsigned int cpuid)
+> +{
+> +	struct cputopo_arm *cpuid_topo = &cpu_topology[cpuid];
+> +	unsigned int mpidr;
+> +	unsigned int cpu;
+> +
+> +	/* If the cpu topology has been already set, just return */
+> +	if (cpuid_topo->core_id != -1)
+> +		return;
+> +
+> +	mpidr = read_cpuid_mpidr();
+> +
+> +	/* create cpu topology mapping */
+> +	if ((mpidr & MPIDR_SMP_BITMASK) == MPIDR_SMP_VALUE) {
+> +		/*
+> +		 * This is a multiprocessor system
+> +		 * multiprocessor format & multiprocessor mode field are set
+> +		 */
+> +
+> +		if (mpidr & MPIDR_MT_BITMASK) {
+> +			/* core performance interdependency */
+> +			cpuid_topo->thread_id = (mpidr >> MPIDR_LEVEL0_SHIFT)
+> +				& MPIDR_LEVEL0_MASK;
+> +			cpuid_topo->core_id = (mpidr >> MPIDR_LEVEL1_SHIFT)
+> +				& MPIDR_LEVEL1_MASK;
+> +			cpuid_topo->socket_id = (mpidr >> MPIDR_LEVEL2_SHIFT)
+> +				& MPIDR_LEVEL2_MASK;
+> +		} else {
+> +			/* largely independent cores */
+> +			cpuid_topo->thread_id = -1;
+> +			cpuid_topo->core_id = (mpidr >> MPIDR_LEVEL0_SHIFT)
+> +				& MPIDR_LEVEL0_MASK;
+> +			cpuid_topo->socket_id = (mpidr >> MPIDR_LEVEL1_SHIFT)
+> +				& MPIDR_LEVEL1_MASK;
+> +		}
+> +	} else {
+> +		/*
+> +		 * This is an uniprocessor system
+> +		 * we are in multiprocessor format but uniprocessor system
+> +		 * or in the old uniprocessor format
+> +		 */
+> +		cpuid_topo->thread_id = -1;
+> +		cpuid_topo->core_id = 0;
+> +		cpuid_topo->socket_id = -1;
+> +	}
+> +
+> +	/* update core and thread sibling masks */
+> +	for_each_possible_cpu(cpu) {
+> +		struct cputopo_arm *cpu_topo = &cpu_topology[cpu];
+> +
+> +		if (cpuid_topo->socket_id == cpu_topo->socket_id) {
+> +			cpumask_set_cpu(cpuid, &cpu_topo->core_sibling);
+> +			if (cpu != cpuid)
+> +				cpumask_set_cpu(cpu,
+> +					&cpuid_topo->core_sibling);
+> +
+> +			if (cpuid_topo->core_id == cpu_topo->core_id) {
+> +				cpumask_set_cpu(cpuid,
+> +					&cpu_topo->thread_sibling);
+> +				if (cpu != cpuid)
+> +					cpumask_set_cpu(cpu,
+> +						&cpuid_topo->thread_sibling);
+> +			}
+> +		}
+> +	}
+> +	smp_wmb();
+> +
+> +	printk(KERN_INFO "CPU%u: thread %d, cpu %d, socket %d, mpidr %x\n",
+> +		cpuid, cpu_topology[cpuid].thread_id,
+> +		cpu_topology[cpuid].core_id,
+> +		cpu_topology[cpuid].socket_id, mpidr);
+> +}
+> +
+> +/*
+> + * init_cpu_topology is called at boot when only one cpu is running
+> + * which prevent simultaneous write access to cpu_topology array
+> + */
+> +void init_cpu_topology(void)
+> +{
+> +	unsigned int cpu;
+> +
+> +	/* init core mask */
+> +	for_each_possible_cpu(cpu) {
+> +		struct cputopo_arm *cpu_topo = &(cpu_topology[cpu]);
+> +
+> +		cpu_topo->thread_id = -1;
+> +		cpu_topo->core_id =  -1;
+> +		cpu_topo->socket_id = -1;
+> +		cpumask_clear(&cpu_topo->core_sibling);
+> +		cpumask_clear(&cpu_topo->thread_sibling);
+> +	}
+> +	smp_wmb();
+> +}
+> -- 
+> 1.7.4.1
+> 
