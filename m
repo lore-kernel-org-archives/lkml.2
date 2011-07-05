@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab1GEQmT (ORCPT <rfc822;w@1wt.eu>);
+	id S1756156Ab1GEQpq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 12:45:46 -0400
+Received: from mail.perches.com ([173.55.12.10]:3532 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755914Ab1GEQmT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 5 Jul 2011 12:42:19 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:57468 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755877Ab1GEQmQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 12:42:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Jonas Bonn <jonas@southpole.se>
-Subject: Re: [PATCH v2 06/19] OpenRISC: PTrace
-Date: Tue, 5 Jul 2011 18:42:11 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org
-References: <1309641352-18714-1-git-send-email-jonas@southpole.se> <201107051742.29359.arnd@arndb.de> <1309881907.3393.15.camel@jerome>
-In-Reply-To: <1309881907.3393.15.camel@jerome>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107051842.11666.arnd@arndb.de>
-X-Provags-ID: V02:K0:OU786fxOSSoWU9HAjk5VCoanoHHv591aqsuVNLmwkHa
- IJNa0dIO6LsjYvaK38cHfE9Y37DYP4X4WXprNmaMaPtdFSXaTQ
- RPduUxCB2SX81YkeVUf8+4R2V9nBP4Y+4uVdYwCxrKUKr/Gtvw
- LE8P6imDMoCntPTN74798dcWCqUlA35kqQgpjaSBlxBZtmbpPx
- CpjAK24svYf6Vvsq7+kNg==
+From: Joe Perches <joe@perches.com>
+To: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Cc: devel@driverdev.osuosl.org
+Subject: [PATCH 02/14] MAINTAINERS: Add STAGING - COMEDI
+Date: Tue,  5 Jul 2011 09:42:02 -0700
+Message-Id: <77c6a74ccb9525447a9856b379ad7a3e8495e790.1309883752.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.6.131.g99019
+In-Reply-To: <cover.1309883752.git.joe@perches.com>
+References: <20110704153435.GA17475@suse.de> <cover.1309883752.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 July 2011, Jonas Bonn wrote:
-> I've been looking a bit at the ptrace stuff the last couple of days.
-> One question that occurred to me was:  is it mandatory to export the
-> "struct pt_regs" info in ptrace.h to userspace?
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ MAINTAINERS |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
 
-I don't know, it certainly has been the case traditionally, but as
-far as I can tell, this was mainly used by ancient gdb ports,
-while newer versions just hardcode the offsets for PTRACE_PEEKUSR.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6f0d683..6d8e58b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6074,6 +6074,12 @@ M:	Jakub Schmidtke <sjakub@gmail.com>
+ S:	Odd Fixes
+ F:	drivers/staging/asus_oled/
+ 
++STAGING - COMEDI
++M:	Ian Abbott <abbotti@mev.co.uk>
++M:	Mori Hess <fmhess@users.sourceforge.net>
++S:	Odd Fixes
++F:	drivers/staging/comedi/
++
+ STARFIRE/DURALAN NETWORK DRIVER
+ M:	Ion Badulescu <ionut@badula.org>
+ S:	Odd Fixes
+-- 
+1.7.6.131.g99019
 
-> I'm not sure I like the layout of our struct pt_regs.  It would be
-> better to lay out the registers in a way that mirrors the order that
-> they are saved during exception/syscall entry in order to make better
-> use of the cache.
-> 
-> Since the registers can be exported via a regset to userspace anyway
-> (which doesn't necessarily need to look like pt_regs), I don't see that
-> userspace really needs how we lay out the registers on the stack.  By
-> not exporting pt_regs, I am free to change the layout... if it's
-> exported, it becomes ABI.
-
-Yes. I think you can just change your ptrace code to not export
-pt_regs through PEEKUSR but only through elf_gregset_t, which
-you can define independently.
-
-	Arnd
