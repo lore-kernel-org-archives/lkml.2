@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754637Ab1GEOvB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:51:01 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59149 "EHLO
+	id S1754663Ab1GEOvH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:51:07 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50565 "EHLO
 	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753830Ab1GEOu3 (ORCPT
+	with ESMTP id S1753830Ab1GEOvC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:50:29 -0400
+	Tue, 5 Jul 2011 10:51:02 -0400
 From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 30/49] gma500: the 'mrst' BIOS is actually MID generic
+Subject: [PATCH 32/49] gma500: move framebuffer file
 To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jul 2011 15:40:43 +0100
-Message-ID: <20110705144041.23872.60957.stgit@localhost.localdomain>
+Date: Tue, 05 Jul 2011 15:41:11 +0100
+Message-ID: <20110705144107.23872.52771.stgit@localhost.localdomain>
 In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
 References: <20110705141038.23872.55303.stgit@localhost.localdomain>
 User-Agent: StGIT/0.14.3
@@ -24,63 +24,51 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Alan Cox <alan@linux.intel.com>
 
-Shuffle the naming so this reflects better and we can try and build some
-sort of ordering to the naming scheme.
+The framebuffer code is now clean of device specific code, and passes
+checkpatch. Move it to its new name
 
 Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
 
- drivers/staging/gma500/Makefile       |    2 
- drivers/staging/gma500/mdfld_device.c |    2 
- drivers/staging/gma500/mid_bios.c     |  271 +++++++++++++++++++++++++++++++++
- drivers/staging/gma500/mid_bios.h     |   21 +++
- drivers/staging/gma500/mrst_bios.c    |  271 ---------------------------------
- drivers/staging/gma500/mrst_bios.h    |   21 ---
- drivers/staging/gma500/mrst_device.c  |    2 
- drivers/staging/gma500/psb_drv.c      |    2 
- 8 files changed, 296 insertions(+), 296 deletions(-)
- create mode 100644 drivers/staging/gma500/mid_bios.c
- create mode 100644 drivers/staging/gma500/mid_bios.h
- delete mode 100644 drivers/staging/gma500/mrst_bios.c
- delete mode 100644 drivers/staging/gma500/mrst_bios.h
+ drivers/staging/gma500/Makefile              |    2 
+ drivers/staging/gma500/framebuffer.c         |  803 ++++++++++++++++++++++++++
+ drivers/staging/gma500/framebuffer.h         |   49 ++
+ drivers/staging/gma500/mdfld_intel_display.c |    2 
+ drivers/staging/gma500/mrst_crtc.c           |    2 
+ drivers/staging/gma500/psb_2d.c              |    3 
+ drivers/staging/gma500/psb_drv.c             |    2 
+ drivers/staging/gma500/psb_fb.c              |  803 --------------------------
+ drivers/staging/gma500/psb_fb.h              |   49 --
+ drivers/staging/gma500/psb_intel_display.c   |    2 
+ 10 files changed, 858 insertions(+), 859 deletions(-)
+ create mode 100644 drivers/staging/gma500/framebuffer.c
+ create mode 100644 drivers/staging/gma500/framebuffer.h
+ delete mode 100644 drivers/staging/gma500/psb_fb.c
+ delete mode 100644 drivers/staging/gma500/psb_fb.h
 
 diff --git a/drivers/staging/gma500/Makefile b/drivers/staging/gma500/Makefile
-index 1b525ac..2ad6b1c 100644
+index 2ad6b1c..fb6040f0 100644
 --- a/drivers/staging/gma500/Makefile
 +++ b/drivers/staging/gma500/Makefile
-@@ -23,10 +23,10 @@ psb_gfx-y += gem_glue.o \
- 	  psb_irq.o \
- 	  psb_device.o \
- 	  cdv_device.o \
-+	  mid_bios.o \
- 	  mrst_device.o \
- 	  mrst_crtc.o \
- 	  mrst_lvds.o \
--	  mrst_bios.o \
- 	  mdfld_device.o \
- 	  mdfld_output.o \
- 	  mdfld_pyr_cmd.o \
-diff --git a/drivers/staging/gma500/mdfld_device.c b/drivers/staging/gma500/mdfld_device.c
-index daa9487..f258b06 100644
---- a/drivers/staging/gma500/mdfld_device.c
-+++ b/drivers/staging/gma500/mdfld_device.c
-@@ -26,7 +26,7 @@
- #include "psb_drv.h"
- #include "mdfld_output.h"
- #include "mdfld_dsi_output.h"
--#include "mrst_bios.h"
-+#include "mid_bios.h"
- 
- /*
-  *	Provide the Medfield specific backlight management
-diff --git a/drivers/staging/gma500/mid_bios.c b/drivers/staging/gma500/mid_bios.c
+@@ -6,9 +6,9 @@ ccflags-y += -Iinclude/drm
+ psb_gfx-y += gem_glue.o \
+ 	  backlight.o \
+ 	  power.o \
++	  framebuffer.o \
+ 	  psb_drv.o \
+ 	  psb_gem.o \
+-	  psb_fb.o \
+ 	  psb_2d.o \
+ 	  psb_gtt.o \
+ 	  psb_intel_bios.o \
+diff --git a/drivers/staging/gma500/framebuffer.c b/drivers/staging/gma500/framebuffer.c
 new file mode 100644
-index 0000000..9a7731c
+index 0000000..716a7b9
 --- /dev/null
-+++ b/drivers/staging/gma500/mid_bios.c
-@@ -0,0 +1,271 @@
++++ b/drivers/staging/gma500/framebuffer.c
+@@ -0,0 +1,803 @@
 +/**************************************************************************
-+ * Copyright (c) 2011, Intel Corporation.
++ * Copyright (c) 2007-2011, Intel Corporation.
 + * All Rights Reserved.
 + *
 + * This program is free software; you can redistribute it and/or modify it
@@ -98,268 +86,798 @@ index 0000000..9a7731c
 + *
 + **************************************************************************/
 +
-+/* TODO
-+ * - Split functions by vbt type
-+ * - Make them all take drm_device
-+ * - Check ioremap failures
-+ */
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/string.h>
++#include <linux/mm.h>
++#include <linux/tty.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
++#include <linux/fb.h>
++#include <linux/init.h>
++#include <linux/console.h>
 +
 +#include <drm/drmP.h>
 +#include <drm/drm.h>
-+#include "psb_drm.h"
++#include <drm/drm_crtc.h>
++
 +#include "psb_drv.h"
-+#include "mid_bios.h"
++#include "psb_intel_reg.h"
++#include "psb_intel_drv.h"
++#include "framebuffer.h"
++
 +#include "mdfld_output.h"
 +
-+static int panel_id = GCT_DETECT;
-+module_param_named(panel_id, panel_id, int, 0600);
-+MODULE_PARM_DESC(panel_id, "Panel Identifier");
++static void psb_user_framebuffer_destroy(struct drm_framebuffer *fb);
++static int psb_user_framebuffer_create_handle(struct drm_framebuffer *fb,
++					      struct drm_file *file_priv,
++					      unsigned int *handle);
 +
++static const struct drm_framebuffer_funcs psb_fb_funcs = {
++	.destroy = psb_user_framebuffer_destroy,
++	.create_handle = psb_user_framebuffer_create_handle,
++};
 +
-+static void mid_get_fuse_settings(struct drm_device *dev)
++#define CMAP_TOHW(_val, _width) ((((_val) << (_width)) + 0x7FFF - (_val)) >> 16)
++
++static int psbfb_setcolreg(unsigned regno, unsigned red, unsigned green,
++			   unsigned blue, unsigned transp,
++			   struct fb_info *info)
 +{
-+	struct drm_psb_private *dev_priv = dev->dev_private;
-+	struct pci_dev *pci_root = pci_get_bus_and_slot(0, 0);
-+	uint32_t fuse_value = 0;
-+	uint32_t fuse_value_tmp = 0;
++	struct psb_fbdev *fbdev = info->par;
++	struct drm_framebuffer *fb = fbdev->psb_fb_helper.fb;
++	uint32_t v;
 +
-+#define FB_REG06 0xD0810600
-+#define FB_MIPI_DISABLE  (1 << 11)
-+#define FB_REG09 0xD0810900
-+#define FB_REG09 0xD0810900
-+#define FB_SKU_MASK  0x7000
-+#define FB_SKU_SHIFT 12
-+#define FB_SKU_100 0
-+#define FB_SKU_100L 1
-+#define FB_SKU_83 2
-+	pci_write_config_dword(pci_root, 0xD0, FB_REG06);
-+	pci_read_config_dword(pci_root, 0xD4, &fuse_value);
++	if (!fb)
++		return -ENOMEM;
 +
-+	/* FB_MIPI_DISABLE doesn't mean LVDS on with Medfield */
-+	if (IS_MRST(dev))
-+		dev_priv->iLVDS_enable = fuse_value & FB_MIPI_DISABLE;
++	if (regno > 255)
++		return 1;
 +
-+	DRM_INFO("internal display is %s\n",
-+		 dev_priv->iLVDS_enable ? "LVDS display" : "MIPI display");
++	red = CMAP_TOHW(red, info->var.red.length);
++	blue = CMAP_TOHW(blue, info->var.blue.length);
++	green = CMAP_TOHW(green, info->var.green.length);
++	transp = CMAP_TOHW(transp, info->var.transp.length);
 +
-+	 /* Prevent runtime suspend at start*/
-+	 if (dev_priv->iLVDS_enable) {
-+		dev_priv->is_lvds_on = true;
-+		dev_priv->is_mipi_on = false;
-+	} else {
-+		dev_priv->is_mipi_on = true;
-+		dev_priv->is_lvds_on = false;
-+	}
++	v = (red << info->var.red.offset) |
++	    (green << info->var.green.offset) |
++	    (blue << info->var.blue.offset) |
++	    (transp << info->var.transp.offset);
 +
-+	dev_priv->video_device_fuse = fuse_value;
-+
-+	pci_write_config_dword(pci_root, 0xD0, FB_REG09);
-+	pci_read_config_dword(pci_root, 0xD4, &fuse_value);
-+
-+	dev_dbg(dev->dev, "SKU values is 0x%x.\n", fuse_value);
-+	fuse_value_tmp = (fuse_value & FB_SKU_MASK) >> FB_SKU_SHIFT;
-+
-+	dev_priv->fuse_reg_value = fuse_value;
-+
-+	switch (fuse_value_tmp) {
-+	case FB_SKU_100:
-+		dev_priv->core_freq = 200;
-+		break;
-+	case FB_SKU_100L:
-+		dev_priv->core_freq = 100;
-+		break;
-+	case FB_SKU_83:
-+		dev_priv->core_freq = 166;
-+		break;
-+	default:
-+		dev_warn(dev->dev, "Invalid SKU values, SKU value = 0x%08x\n",
-+								fuse_value_tmp);
-+		dev_priv->core_freq = 0;
-+	}
-+	dev_dbg(dev->dev, "LNC core clk is %dMHz.\n", dev_priv->core_freq);
-+	pci_dev_put(pci_root);
-+}
-+
-+/*
-+ *	Get the revison ID, B0:D2:F0;0x08
-+ */
-+static void mid_get_pci_revID(struct drm_psb_private *dev_priv)
-+{
-+	uint32_t platform_rev_id = 0;
-+	struct pci_dev *pci_gfx_root = pci_get_bus_and_slot(0, PCI_DEVFN(2, 0));
-+
-+	pci_read_config_dword(pci_gfx_root, 0x08, &platform_rev_id);
-+	dev_priv->platform_rev_id = (uint8_t) platform_rev_id;
-+	pci_dev_put(pci_gfx_root);
-+	dev_dbg(dev_priv->dev->dev, "platform_rev_id is %x\n",
-+					dev_priv->platform_rev_id);
-+}
-+
-+static void mid_get_vbt_data(struct drm_psb_private *dev_priv)
-+{
-+	struct drm_device *dev = dev_priv->dev;
-+	struct mrst_vbt *vbt = &dev_priv->vbt_data;
-+	u32 addr;
-+	u16 new_size;
-+	u8 *vbt_virtual;
-+	u8 bpi;
-+	u8 number_desc = 0;
-+	struct mrst_timing_info *dp_ti = &dev_priv->gct_data.DTD;
-+	struct gct_r10_timing_info ti;
-+	void *pGCT;
-+	struct pci_dev *pci_gfx_root = pci_get_bus_and_slot(0, PCI_DEVFN(2, 0));
-+
-+	/* Get the address of the platform config vbt, B0:D2:F0;0xFC */
-+	pci_read_config_dword(pci_gfx_root, 0xFC, &addr);
-+	pci_dev_put(pci_gfx_root);
-+
-+	dev_dbg(dev->dev, "drm platform config address is %x\n", addr);
-+
-+	/* check for platform config address == 0. */
-+	/* this means fw doesn't support vbt */
-+
-+	if (addr == 0) {
-+		vbt->size = 0;
-+		return;
-+	}
-+
-+	/* get the virtual address of the vbt */
-+	vbt_virtual = ioremap(addr, sizeof(*vbt));
-+
-+	memcpy(vbt, vbt_virtual, sizeof(*vbt));
-+	iounmap(vbt_virtual); /* Free virtual address space */
-+
-+	dev_dbg(dev->dev, "GCT revision is %x\n", vbt->revision);
-+
-+	switch (vbt->revision) {
-+	case 0:
-+		vbt->mrst_gct = ioremap(addr + sizeof(*vbt) - 4,
-+					vbt->size - sizeof(*vbt) + 4);
-+		pGCT = vbt->mrst_gct;
-+		bpi = ((struct mrst_gct_v1 *)pGCT)->PD.BootPanelIndex;
-+		dev_priv->gct_data.bpi = bpi;
-+		dev_priv->gct_data.pt =
-+			((struct mrst_gct_v1 *)pGCT)->PD.PanelType;
-+		memcpy(&dev_priv->gct_data.DTD,
-+			&((struct mrst_gct_v1 *)pGCT)->panel[bpi].DTD,
-+				sizeof(struct mrst_timing_info));
-+		dev_priv->gct_data.Panel_Port_Control =
-+		  ((struct mrst_gct_v1 *)pGCT)->panel[bpi].Panel_Port_Control;
-+		dev_priv->gct_data.Panel_MIPI_Display_Descriptor =
-+			((struct mrst_gct_v1 *)pGCT)->panel[bpi].Panel_MIPI_Display_Descriptor;
-+		break;
-+	case 1:
-+		vbt->mrst_gct = ioremap(addr + sizeof(*vbt) - 4,
-+					vbt->size - sizeof(*vbt) + 4);
-+		pGCT = vbt->mrst_gct;
-+		bpi = ((struct mrst_gct_v2 *)pGCT)->PD.BootPanelIndex;
-+		dev_priv->gct_data.bpi = bpi;
-+		dev_priv->gct_data.pt =
-+			((struct mrst_gct_v2 *)pGCT)->PD.PanelType;
-+		memcpy(&dev_priv->gct_data.DTD,
-+			&((struct mrst_gct_v2 *)pGCT)->panel[bpi].DTD,
-+				sizeof(struct mrst_timing_info));
-+		dev_priv->gct_data.Panel_Port_Control =
-+		  ((struct mrst_gct_v2 *)pGCT)->panel[bpi].Panel_Port_Control;
-+		dev_priv->gct_data.Panel_MIPI_Display_Descriptor =
-+			((struct mrst_gct_v2 *)pGCT)->panel[bpi].Panel_MIPI_Display_Descriptor;
-+		break;
-+	case 0x10:
-+		/*header definition changed from rev 01 (v2) to rev 10h. */
-+		/*so, some values have changed location*/
-+		new_size = vbt->checksum; /*checksum contains lo size byte*/
-+		/*LSB of mrst_gct contains hi size byte*/
-+		new_size |= ((0xff & (unsigned int)vbt->mrst_gct)) << 8;
-+
-+		vbt->checksum = vbt->size; /*size contains the checksum*/
-+		if (new_size > 0xff)
-+			vbt->size = 0xff; /*restrict size to 255*/
-+		else
-+			vbt->size = new_size;
-+
-+		/* number of descriptors defined in the GCT */
-+		number_desc = ((0xff00 & (unsigned int)vbt->mrst_gct)) >> 8;
-+		bpi = ((0xff0000 & (unsigned int)vbt->mrst_gct)) >> 16;
-+		vbt->mrst_gct = ioremap(addr + GCT_R10_HEADER_SIZE,
-+				GCT_R10_DISPLAY_DESC_SIZE * number_desc);
-+		pGCT = vbt->mrst_gct;
-+		pGCT = (u8 *)pGCT + (bpi*GCT_R10_DISPLAY_DESC_SIZE);
-+		dev_priv->gct_data.bpi = bpi; /*save boot panel id*/
-+
-+		/*copy the GCT display timings into a temp structure*/
-+		memcpy(&ti, pGCT, sizeof(struct gct_r10_timing_info));
-+
-+		/*now copy the temp struct into the dev_priv->gct_data*/
-+		dp_ti->pixel_clock = ti.pixel_clock;
-+		dp_ti->hactive_hi = ti.hactive_hi;
-+		dp_ti->hactive_lo = ti.hactive_lo;
-+		dp_ti->hblank_hi = ti.hblank_hi;
-+		dp_ti->hblank_lo = ti.hblank_lo;
-+		dp_ti->hsync_offset_hi = ti.hsync_offset_hi;
-+		dp_ti->hsync_offset_lo = ti.hsync_offset_lo;
-+		dp_ti->hsync_pulse_width_hi = ti.hsync_pulse_width_hi;
-+		dp_ti->hsync_pulse_width_lo = ti.hsync_pulse_width_lo;
-+		dp_ti->vactive_hi = ti.vactive_hi;
-+		dp_ti->vactive_lo = ti.vactive_lo;
-+		dp_ti->vblank_hi = ti.vblank_hi;
-+		dp_ti->vblank_lo = ti.vblank_lo;
-+		dp_ti->vsync_offset_hi = ti.vsync_offset_hi;
-+		dp_ti->vsync_offset_lo = ti.vsync_offset_lo;
-+		dp_ti->vsync_pulse_width_hi = ti.vsync_pulse_width_hi;
-+		dp_ti->vsync_pulse_width_lo = ti.vsync_pulse_width_lo;
-+
-+		/* Move the MIPI_Display_Descriptor data from GCT to dev priv */
-+		dev_priv->gct_data.Panel_MIPI_Display_Descriptor =
-+							*((u8 *)pGCT + 0x0d);
-+		dev_priv->gct_data.Panel_MIPI_Display_Descriptor |=
-+						(*((u8 *)pGCT + 0x0e)) << 8;
-+		break;
-+	default:
-+		dev_err(dev->dev, "Unknown revision of GCT!\n");
-+		vbt->size = 0;
-+	}
-+	if (IS_MFLD(dev_priv->dev)){
-+		if (panel_id == GCT_DETECT) {
-+			if (dev_priv->gct_data.bpi == 2) {
-+				dev_info(dev->dev, "[GFX] PYR Panel Detected\n");
-+				dev_priv->panel_id = PYR_CMD;
-+				panel_id = PYR_CMD;
-+			}
-+			else if(dev_priv->gct_data.bpi == 0) {
-+				dev_info(dev->dev, "[GFX] TMD Panel Detected.\n");
-+				dev_priv->panel_id = TMD_VID;
-+				panel_id = TMD_VID;
-+			}
-+			else {
-+				dev_info(dev->dev, "[GFX] Default Panel (TPO)\n");
-+				dev_priv->panel_id = TPO_CMD;
-+				panel_id = TPO_CMD;
-+			}
-+		} else {
-+			dev_info(dev->dev, "[GFX] Panel Parameter Passed in through cmd line\n");
-+			dev_priv->panel_id = panel_id;
++	if (regno < 16) {
++		switch (fb->bits_per_pixel) {
++		case 16:
++			((uint32_t *) info->pseudo_palette)[regno] = v;
++			break;
++		case 24:
++		case 32:
++			((uint32_t *) info->pseudo_palette)[regno] = v;
++			break;
 +		}
 +	}
-+}
 +
-+int mid_chip_setup(struct drm_device *dev)
-+{
-+	struct drm_psb_private *dev_priv = dev->dev_private;
-+	mid_get_fuse_settings(dev);
-+	mid_get_vbt_data(dev_priv);
-+	mid_get_pci_revID(dev_priv);
 +	return 0;
 +}
-\ No newline at end of file
-diff --git a/drivers/staging/gma500/mid_bios.h b/drivers/staging/gma500/mid_bios.h
++
++
++void psbfb_suspend(struct drm_device *dev)
++{
++	struct drm_framebuffer *fb = 0;
++	struct psb_framebuffer *psbfb = to_psb_fb(fb);
++
++	console_lock();
++	mutex_lock(&dev->mode_config.mutex);
++	list_for_each_entry(fb, &dev->mode_config.fb_list, head) {
++		struct fb_info *info = psbfb->fbdev;
++		fb_set_suspend(info, 1);
++		drm_fb_helper_blank(FB_BLANK_POWERDOWN, info);
++	}
++	mutex_unlock(&dev->mode_config.mutex);
++	console_unlock();
++}
++
++void psbfb_resume(struct drm_device *dev)
++{
++	struct drm_framebuffer *fb = 0;
++	struct psb_framebuffer *psbfb = to_psb_fb(fb);
++
++	console_lock();
++	mutex_lock(&dev->mode_config.mutex);
++	list_for_each_entry(fb, &dev->mode_config.fb_list, head) {
++		struct fb_info *info = psbfb->fbdev;
++		fb_set_suspend(info, 0);
++		drm_fb_helper_blank(FB_BLANK_UNBLANK, info);
++	}
++	mutex_unlock(&dev->mode_config.mutex);
++	console_unlock();
++	drm_helper_disable_unused_functions(dev);
++}
++
++static int psbfb_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
++{
++	struct psb_framebuffer *psbfb = vma->vm_private_data;
++	struct drm_device *dev = psbfb->base.dev;
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	int page_num;
++	int i;
++	unsigned long address;
++	int ret;
++	unsigned long pfn;
++	/* FIXME: assumes fb at stolen base which may not be true */
++	unsigned long phys_addr = (unsigned long)dev_priv->stolen_base;
++
++	page_num = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
++	address = (unsigned long)vmf->virtual_address;
++
++	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++
++	for (i = 0; i < page_num; i++) {
++		pfn = (phys_addr >> PAGE_SHIFT);
++
++		ret = vm_insert_mixed(vma, address, pfn);
++		if (unlikely((ret == -EBUSY) || (ret != 0 && i > 0)))
++			break;
++		else if (unlikely(ret != 0)) {
++			ret = (ret == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS;
++			return ret;
++		}
++		address += PAGE_SIZE;
++		phys_addr += PAGE_SIZE;
++	}
++	return VM_FAULT_NOPAGE;
++}
++
++static void psbfb_vm_open(struct vm_area_struct *vma)
++{
++}
++
++static void psbfb_vm_close(struct vm_area_struct *vma)
++{
++}
++
++static struct vm_operations_struct psbfb_vm_ops = {
++	.fault	= psbfb_vm_fault,
++	.open	= psbfb_vm_open,
++	.close	= psbfb_vm_close
++};
++
++static int psbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
++{
++	struct psb_fbdev *fbdev = info->par;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
++
++	if (vma->vm_pgoff != 0)
++		return -EINVAL;
++	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
++		return -EINVAL;
++
++	if (!psbfb->addr_space)
++		psbfb->addr_space = vma->vm_file->f_mapping;
++	/*
++	 * If this is a GEM object then info->screen_base is the virtual
++	 * kernel remapping of the object. FIXME: Review if this is
++	 * suitable for our mmap work
++	 */
++	vma->vm_ops = &psbfb_vm_ops;
++	vma->vm_private_data = (void *)psbfb;
++	vma->vm_flags |= VM_RESERVED | VM_IO |
++					VM_MIXEDMAP | VM_DONTEXPAND;
++	return 0;
++}
++
++static int psbfb_ioctl(struct fb_info *info, unsigned int cmd,
++						unsigned long arg)
++{
++	struct psb_fbdev *fbdev = info->par;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
++	struct drm_device *dev = psbfb->base.dev;
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	u32 __user *p = (u32 __user *)arg;
++	u32 l;
++	u32 buf[32];
++	switch (cmd) {
++	case 0x12345678:
++		if (!capable(CAP_SYS_RAWIO))
++			return -EPERM;
++		if (!dev_priv->ops->accel_2d)
++			return -EOPNOTSUPP;
++		if (get_user(l, p))
++			return -EFAULT;
++		if (l > 32)
++			return -EMSGSIZE;
++		if (copy_from_user(buf, p + 1, l * sizeof(u32)))
++			return -EFAULT;
++		psbfb_2d_submit(dev_priv, buf, l);
++		return 0;
++	default:
++		return -ENOTTY;
++	}
++}
++
++static struct fb_ops psbfb_ops = {
++	.owner = THIS_MODULE,
++	.fb_check_var = drm_fb_helper_check_var,
++	.fb_set_par = drm_fb_helper_set_par,
++	.fb_blank = drm_fb_helper_blank,
++	.fb_setcolreg = psbfb_setcolreg,
++	.fb_fillrect = cfb_fillrect,
++	.fb_copyarea = psbfb_copyarea,
++	.fb_imageblit = cfb_imageblit,
++	.fb_mmap = psbfb_mmap,
++	.fb_sync = psbfb_sync,
++	.fb_ioctl = psbfb_ioctl,
++};
++
++static struct fb_ops psbfb_unaccel_ops = {
++	.owner = THIS_MODULE,
++	.fb_check_var = drm_fb_helper_check_var,
++	.fb_set_par = drm_fb_helper_set_par,
++	.fb_blank = drm_fb_helper_blank,
++	.fb_setcolreg = psbfb_setcolreg,
++	.fb_fillrect = cfb_fillrect,
++	.fb_copyarea = cfb_copyarea,
++	.fb_imageblit = cfb_imageblit,
++	.fb_mmap = psbfb_mmap,
++	.fb_ioctl = psbfb_ioctl,
++};
++
++/**
++ *	psb_framebuffer_init	-	initialize a framebuffer
++ *	@dev: our DRM device
++ *	@fb: framebuffer to set up
++ *	@mode_cmd: mode description
++ *	@gt: backing object
++ *
++ *	Configure and fill in the boilerplate for our frame buffer. Return
++ *	0 on success or an error code if we fail.
++ */
++static int psb_framebuffer_init(struct drm_device *dev,
++					struct psb_framebuffer *fb,
++					struct drm_mode_fb_cmd *mode_cmd,
++					struct gtt_range *gt)
++{
++	int ret;
++
++	if (mode_cmd->pitch & 63)
++		return -EINVAL;
++	switch (mode_cmd->bpp) {
++	case 8:
++	case 16:
++	case 24:
++	case 32:
++		break;
++	default:
++		return -EINVAL;
++	}
++	ret = drm_framebuffer_init(dev, &fb->base, &psb_fb_funcs);
++	if (ret) {
++		dev_err(dev->dev, "framebuffer init failed: %d\n", ret);
++		return ret;
++	}
++	drm_helper_mode_fill_fb_struct(&fb->base, mode_cmd);
++	fb->gtt = gt;
++	return 0;
++}
++
++/**
++ *	psb_framebuffer_create	-	create a framebuffer backed by gt
++ *	@dev: our DRM device
++ *	@mode_cmd: the description of the requested mode
++ *	@gt: the backing object
++ *
++ *	Create a framebuffer object backed by the gt, and fill in the
++ *	boilerplate required
++ *
++ *	TODO: review object references
++ */
++
++static struct drm_framebuffer *psb_framebuffer_create
++			(struct drm_device *dev,
++			 struct drm_mode_fb_cmd *mode_cmd,
++			 struct gtt_range *gt)
++{
++	struct psb_framebuffer *fb;
++	int ret;
++
++	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
++	if (!fb)
++		return ERR_PTR(-ENOMEM);
++
++	ret = psb_framebuffer_init(dev, fb, mode_cmd, gt);
++	if (ret) {
++		kfree(fb);
++		return ERR_PTR(ret);
++	}
++	return &fb->base;
++}
++
++/**
++ *	psbfb_alloc		-	allocate frame buffer memory
++ *	@dev: the DRM device
++ *	@aligned_size: space needed
++ *
++ *	Allocate the frame buffer. In the usual case we get a GTT range that
++ *	is stolen memory backed and life is simple. If there isn't sufficient
++ *	stolen memory or the system has no stolen memory we allocate a range
++ *	and back it with a GEM object.
++ *
++ *	In this case the GEM object has no handle.
++ *
++ *	FIXME: console speed up - allocate twice the space if room and use
++ *	hardware scrolling for acceleration.
++ */
++static struct gtt_range *psbfb_alloc(struct drm_device *dev, int aligned_size)
++{
++	struct gtt_range *backing;
++	/* Begin by trying to use stolen memory backing */
++	backing = psb_gtt_alloc_range(dev, aligned_size, "fb", 1);
++	if (backing) {
++		if (drm_gem_private_object_init(dev,
++					&backing->gem, aligned_size) == 0)
++			return backing;
++		psb_gtt_free_range(dev, backing);
++	}
++	/* Next try using GEM host memory */
++	backing = psb_gtt_alloc_range(dev, aligned_size, "fb(gem)", 0);
++	if (backing == NULL)
++		return NULL;
++
++	/* Now back it with an object */
++	if (drm_gem_object_init(dev, &backing->gem, aligned_size) != 0) {
++		psb_gtt_free_range(dev, backing);
++		return NULL;
++	}
++	return backing;
++}
++
++/**
++ *	psbfb_create		-	create a framebuffer
++ *	@fbdev: the framebuffer device
++ *	@sizes: specification of the layout
++ *
++ *	Create a framebuffer to the specifications provided
++ */
++static int psbfb_create(struct psb_fbdev *fbdev,
++				struct drm_fb_helper_surface_size *sizes)
++{
++	struct drm_device *dev = fbdev->psb_fb_helper.dev;
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	struct fb_info *info;
++	struct drm_framebuffer *fb;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
++	struct drm_mode_fb_cmd mode_cmd;
++	struct device *device = &dev->pdev->dev;
++	int size;
++	int ret;
++	struct gtt_range *backing;
++
++	mode_cmd.width = sizes->surface_width;
++	mode_cmd.height = sizes->surface_height;
++	mode_cmd.bpp = sizes->surface_bpp;
++
++	/* No 24bit packed */
++	if (mode_cmd.bpp == 24)
++		mode_cmd.bpp = 32;
++
++	/* HW requires pitch to be 64 byte aligned */
++	mode_cmd.pitch =  ALIGN(mode_cmd.width * ((mode_cmd.bpp + 7) / 8), 64);
++	mode_cmd.depth = sizes->surface_depth;
++
++	size = mode_cmd.pitch * mode_cmd.height;
++	size = ALIGN(size, PAGE_SIZE);
++
++	/* Allocate the framebuffer in the GTT with stolen page backing */
++	backing = psbfb_alloc(dev, size);
++	if (backing == NULL)
++		return -ENOMEM;
++
++	mutex_lock(&dev->struct_mutex);
++
++	info = framebuffer_alloc(0, device);
++	if (!info) {
++		ret = -ENOMEM;
++		goto out_err1;
++	}
++	info->par = fbdev;
++
++	ret = psb_framebuffer_init(dev, psbfb, &mode_cmd, backing);
++	if (ret)
++		goto out_unref;
++
++	fb = &psbfb->base;
++	psbfb->fbdev = info;
++
++	fbdev->psb_fb_helper.fb = fb;
++	fbdev->psb_fb_helper.fbdev = info;
++
++	strcpy(info->fix.id, "psbfb");
++
++	info->flags = FBINFO_DEFAULT;
++	/* No 2D engine */
++	if (!dev_priv->ops->accel_2d)
++		info->fbops = &psbfb_unaccel_ops;
++	else
++		info->fbops = &psbfb_ops;
++
++	ret = fb_alloc_cmap(&info->cmap, 256, 0);
++	if (ret) {
++		ret = -ENOMEM;
++		goto out_unref;
++	}
++
++	info->fix.smem_start = dev->mode_config.fb_base;
++	info->fix.smem_len = size;
++
++	if (backing->stolen) {
++		/* Accessed stolen memory directly */
++		info->screen_base = (char *)dev_priv->vram_addr +
++							backing->offset;
++	} else {
++		/* Pin the pages into the GTT and create a mapping to them */
++		psb_gtt_pin(backing);
++		info->screen_base = vm_map_ram(backing->pages, backing->npage,
++				-1, PAGE_KERNEL);
++		if (info->screen_base == NULL) {
++			psb_gtt_unpin(backing);
++			ret = -ENOMEM;
++			goto out_unref;
++		}
++		psbfb->vm_map = 1;
++	}
++	info->screen_size = size;
++
++	if (dev_priv->pg->stolen_size) {
++		info->apertures = alloc_apertures(1);
++		if (!info->apertures) {
++			ret = -ENOMEM;
++			goto out_unref;
++		}
++		info->apertures->ranges[0].base = dev->mode_config.fb_base;
++		info->apertures->ranges[0].size = dev_priv->pg->stolen_size;
++	}
++
++	drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
++	drm_fb_helper_fill_var(info, &fbdev->psb_fb_helper,
++				sizes->fb_width, sizes->fb_height);
++
++	info->fix.mmio_start = pci_resource_start(dev->pdev, 0);
++	info->fix.mmio_len = pci_resource_len(dev->pdev, 0);
++
++	info->pixmap.size = 64 * 1024;
++	info->pixmap.buf_align = 8;
++	info->pixmap.access_align = 32;
++	info->pixmap.flags = FB_PIXMAP_SYSTEM;
++	info->pixmap.scan_align = 1;
++
++	dev_info(dev->dev, "allocated %dx%d fb\n",
++					psbfb->base.width, psbfb->base.height);
++
++	mutex_unlock(&dev->struct_mutex);
++	return 0;
++out_unref:
++	if (backing->stolen)
++		psb_gtt_free_range(dev, backing);
++	else {
++		if (psbfb->vm_map)
++			vm_unmap_ram(info->screen_base, backing->npage);
++		drm_gem_object_unreference(&backing->gem);
++	}
++out_err1:
++	mutex_unlock(&dev->struct_mutex);
++	psb_gtt_free_range(dev, backing);
++	return ret;
++}
++
++/**
++ *	psb_user_framebuffer_create	-	create framebuffer
++ *	@dev: our DRM device
++ *	@filp: client file
++ *	@cmd: mode request
++ *
++ *	Create a new framebuffer backed by a userspace GEM object
++ */
++static struct drm_framebuffer *psb_user_framebuffer_create
++			(struct drm_device *dev, struct drm_file *filp,
++			 struct drm_mode_fb_cmd *cmd)
++{
++	struct gtt_range *r;
++	struct drm_gem_object *obj;
++
++	/*
++	 *	Find the GEM object and thus the gtt range object that is
++	 *	to back this space
++	 */
++	obj = drm_gem_object_lookup(dev, filp, cmd->handle);
++	if (obj == NULL)
++		return ERR_PTR(-ENOENT);
++
++	/* Let the core code do all the work */
++	r = container_of(obj, struct gtt_range, gem);
++	return psb_framebuffer_create(dev, cmd, r);
++}
++
++static void psbfb_gamma_set(struct drm_crtc *crtc, u16 red, u16 green,
++							u16 blue, int regno)
++{
++}
++
++static void psbfb_gamma_get(struct drm_crtc *crtc, u16 *red,
++					u16 *green, u16 *blue, int regno)
++{
++}
++
++static int psbfb_probe(struct drm_fb_helper *helper,
++				struct drm_fb_helper_surface_size *sizes)
++{
++	struct psb_fbdev *psb_fbdev = (struct psb_fbdev *)helper;
++	int new_fb = 0;
++	int ret;
++
++	if (!helper->fb) {
++		ret = psbfb_create(psb_fbdev, sizes);
++		if (ret)
++			return ret;
++		new_fb = 1;
++	}
++	return new_fb;
++}
++
++struct drm_fb_helper_funcs psb_fb_helper_funcs = {
++	.gamma_set = psbfb_gamma_set,
++	.gamma_get = psbfb_gamma_get,
++	.fb_probe = psbfb_probe,
++};
++
++int psb_fbdev_destroy(struct drm_device *dev, struct psb_fbdev *fbdev)
++{
++	struct fb_info *info;
++	struct psb_framebuffer *psbfb = &fbdev->pfb;
++
++	if (fbdev->psb_fb_helper.fbdev) {
++		info = fbdev->psb_fb_helper.fbdev;
++
++		/* If this is our base framebuffer then kill any virtual map
++		   for the framebuffer layer and unpin it */
++		if (psbfb->vm_map) {
++			vm_unmap_ram(info->screen_base, psbfb->gtt->npage);
++			psb_gtt_unpin(psbfb->gtt);
++		}
++		unregister_framebuffer(info);
++		if (info->cmap.len)
++			fb_dealloc_cmap(&info->cmap);
++		framebuffer_release(info);
++	}
++	drm_fb_helper_fini(&fbdev->psb_fb_helper);
++	drm_framebuffer_cleanup(&psbfb->base);
++
++	if (psbfb->gtt)
++		drm_gem_object_unreference(&psbfb->gtt->gem);
++	return 0;
++}
++
++int psb_fbdev_init(struct drm_device *dev)
++{
++	struct psb_fbdev *fbdev;
++	struct drm_psb_private *dev_priv = dev->dev_private;
++
++	fbdev = kzalloc(sizeof(struct psb_fbdev), GFP_KERNEL);
++	if (!fbdev) {
++		dev_err(dev->dev, "no memory\n");
++		return -ENOMEM;
++	}
++
++	dev_priv->fbdev = fbdev;
++	fbdev->psb_fb_helper.funcs = &psb_fb_helper_funcs;
++
++	drm_fb_helper_init(dev, &fbdev->psb_fb_helper, 2,
++							INTELFB_CONN_LIMIT);
++
++	drm_fb_helper_single_add_all_connectors(&fbdev->psb_fb_helper);
++	drm_fb_helper_initial_config(&fbdev->psb_fb_helper, 32);
++	return 0;
++}
++
++void psb_fbdev_fini(struct drm_device *dev)
++{
++	struct drm_psb_private *dev_priv = dev->dev_private;
++
++	if (!dev_priv->fbdev)
++		return;
++
++	psb_fbdev_destroy(dev, dev_priv->fbdev);
++	kfree(dev_priv->fbdev);
++	dev_priv->fbdev = NULL;
++}
++
++static void psbfb_output_poll_changed(struct drm_device *dev)
++{
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	struct psb_fbdev *fbdev = (struct psb_fbdev *)dev_priv->fbdev;
++	drm_fb_helper_hotplug_event(&fbdev->psb_fb_helper);
++}
++
++/**
++ *	psb_user_framebuffer_create_handle - add hamdle to a framebuffer
++ *	@fb: framebuffer
++ *	@file_priv: our DRM file
++ *	@handle: returned handle
++ *
++ *	Our framebuffer object is a GTT range which also contains a GEM
++ *	object. We need to turn it into a handle for userspace. GEM will do
++ *	the work for us
++ */
++static int psb_user_framebuffer_create_handle(struct drm_framebuffer *fb,
++					      struct drm_file *file_priv,
++					      unsigned int *handle)
++{
++	struct psb_framebuffer *psbfb = to_psb_fb(fb);
++	struct gtt_range *r = psbfb->gtt;
++	return drm_gem_handle_create(file_priv, &r->gem, handle);
++}
++
++/**
++ *	psb_user_framebuffer_destroy	-	destruct user created fb
++ *	@fb: framebuffer
++ *
++ *	User framebuffers are backed by GEM objects so all we have to do is
++ *	clean up a bit and drop the reference, GEM will handle the fallout
++ */
++static void psb_user_framebuffer_destroy(struct drm_framebuffer *fb)
++{
++	struct psb_framebuffer *psbfb = to_psb_fb(fb);
++	struct gtt_range *r = psbfb->gtt;
++	struct drm_device *dev = fb->dev;
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	struct psb_fbdev *fbdev = dev_priv->fbdev;
++	struct drm_crtc *crtc;
++	int reset = 0;
++
++	/* Should never get stolen memory for a user fb */
++	WARN_ON(r->stolen);
++
++	/* Check if we are erroneously live */
++	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
++		if (crtc->fb == fb)
++			reset = 1;
++
++	if (reset)
++		/*
++		 * Now force a sane response before we permit the DRM CRTC
++		 * layer to do stupid things like blank the display. Instead
++		 * we reset this framebuffer as if the user had forced a reset.
++		 * We must do this before the cleanup so that the DRM layer
++		 * doesn't get a chance to stick its oar in where it isn't
++		 * wanted.
++		 */
++		drm_fb_helper_restore_fbdev_mode(&fbdev->psb_fb_helper);
++
++	/* Let DRM do its clean up */
++	drm_framebuffer_cleanup(fb);
++	/*  We are no longer using the resource in GEM */
++	drm_gem_object_unreference_unlocked(&r->gem);
++	kfree(fb);
++}
++
++static const struct drm_mode_config_funcs psb_mode_funcs = {
++	.fb_create = psb_user_framebuffer_create,
++	.output_poll_changed = psbfb_output_poll_changed,
++};
++
++static int psb_create_backlight_property(struct drm_device *dev)
++{
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	struct drm_property *backlight;
++
++	if (dev_priv->backlight_property)
++		return 0;
++
++	backlight = drm_property_create(dev, DRM_MODE_PROP_RANGE,
++							"backlight", 2);
++	backlight->values[0] = 0;
++	backlight->values[1] = 100;
++
++	dev_priv->backlight_property = backlight;
++
++	return 0;
++}
++
++static void psb_setup_outputs(struct drm_device *dev)
++{
++	struct drm_psb_private *dev_priv = dev->dev_private;
++	struct drm_connector *connector;
++
++	drm_mode_create_scaling_mode_property(dev);
++	psb_create_backlight_property(dev);
++
++	dev_priv->ops->output_init(dev);
++
++	list_for_each_entry(connector, &dev->mode_config.connector_list,
++			    head) {
++		struct psb_intel_output *psb_intel_output =
++		    to_psb_intel_output(connector);
++		struct drm_encoder *encoder = &psb_intel_output->enc;
++		int crtc_mask = 0, clone_mask = 0;
++
++		/* valid crtcs */
++		switch (psb_intel_output->type) {
++		case INTEL_OUTPUT_SDVO:
++			crtc_mask = ((1 << 0) | (1 << 1));
++			clone_mask = (1 << INTEL_OUTPUT_SDVO);
++			break;
++		case INTEL_OUTPUT_LVDS:
++			if (IS_MRST(dev))
++				crtc_mask = (1 << 0);
++			else
++				crtc_mask = (1 << 1);
++			clone_mask = (1 << INTEL_OUTPUT_LVDS);
++			break;
++		case INTEL_OUTPUT_MIPI:
++			crtc_mask = (1 << 0);
++			clone_mask = (1 << INTEL_OUTPUT_MIPI);
++			break;
++		case INTEL_OUTPUT_MIPI2:
++			crtc_mask = (1 << 2);
++			clone_mask = (1 << INTEL_OUTPUT_MIPI2);
++			break;
++		case INTEL_OUTPUT_HDMI:
++			crtc_mask = (1 << 1);
++			clone_mask = (1 << INTEL_OUTPUT_HDMI);
++			break;
++		}
++		encoder->possible_crtcs = crtc_mask;
++		encoder->possible_clones =
++		    psb_intel_connector_clones(dev, clone_mask);
++	}
++}
++
++void psb_modeset_init(struct drm_device *dev)
++{
++	struct drm_psb_private *dev_priv =
++	    (struct drm_psb_private *) dev->dev_private;
++	struct psb_intel_mode_device *mode_dev = &dev_priv->mode_dev;
++	int i;
++
++	drm_mode_config_init(dev);
++
++	dev->mode_config.min_width = 0;
++	dev->mode_config.min_height = 0;
++
++	dev->mode_config.funcs = (void *) &psb_mode_funcs;
++
++	/* set memory base */
++	/* MRST and PSB should use BAR 2*/
++	pci_read_config_dword(dev->pdev, PSB_BSM, (u32 *)
++					&(dev->mode_config.fb_base));
++
++	/* num pipes is 2 for PSB but 1 for Mrst */
++	for (i = 0; i < dev_priv->num_pipe; i++)
++		psb_intel_crtc_init(dev, i, mode_dev);
++
++	dev->mode_config.max_width = 2048;
++	dev->mode_config.max_height = 2048;
++
++	psb_setup_outputs(dev);
++}
++
++void psb_modeset_cleanup(struct drm_device *dev)
++{
++	mutex_lock(&dev->struct_mutex);
++
++	drm_kms_helper_poll_fini(dev);
++	psb_fbdev_fini(dev);
++	drm_mode_config_cleanup(dev);
++
++	mutex_unlock(&dev->struct_mutex);
++}
+diff --git a/drivers/staging/gma500/framebuffer.h b/drivers/staging/gma500/framebuffer.h
 new file mode 100644
-index 0000000..00e7d56
+index 0000000..9416a21
 --- /dev/null
-+++ b/drivers/staging/gma500/mid_bios.h
-@@ -0,0 +1,21 @@
-+/**************************************************************************
-+ * Copyright (c) 2011, Intel Corporation.
-+ * All Rights Reserved.
++++ b/drivers/staging/gma500/framebuffer.h
+@@ -0,0 +1,49 @@
++/*
++ * Copyright (c) 2008-2011, Intel Corporation
 + *
 + * This program is free software; you can redistribute it and/or modify it
 + * under the terms and conditions of the GNU General Public License,
@@ -374,339 +892,967 @@ index 0000000..00e7d56
 + * this program; if not, write to the Free Software Foundation, Inc.,
 + * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
 + *
-+ **************************************************************************/
++ * Authors:
++ *      Eric Anholt <eric@anholt.net>
++ *
++ */
 +
-+extern int mid_chip_setup(struct drm_device *dev);
++#ifndef _FRAMEBUFFER_H_
++#define _FRAMEBUFFER_H_
 +
-diff --git a/drivers/staging/gma500/mrst_bios.c b/drivers/staging/gma500/mrst_bios.c
-deleted file mode 100644
-index cf015df..0000000
---- a/drivers/staging/gma500/mrst_bios.c
-+++ /dev/null
-@@ -1,271 +0,0 @@
--/**************************************************************************
-- * Copyright (c) 2011, Intel Corporation.
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--
--/* TODO
-- * - Split functions by vbt type
-- * - Make them all take drm_device
-- * - Check ioremap failures
-- */
--
--#include <drm/drmP.h>
--#include <drm/drm.h>
--#include "psb_drm.h"
--#include "psb_drv.h"
--#include "mrst_bios.h"
--#include "mdfld_output.h"
--
--static int panel_id = GCT_DETECT;
--module_param_named(panel_id, panel_id, int, 0600);
--MODULE_PARM_DESC(panel_id, "Panel Identifier");
--
--
--static void mid_get_fuse_settings(struct drm_device *dev)
--{
--	struct drm_psb_private *dev_priv = dev->dev_private;
--	struct pci_dev *pci_root = pci_get_bus_and_slot(0, 0);
--	uint32_t fuse_value = 0;
--	uint32_t fuse_value_tmp = 0;
--
--#define FB_REG06 0xD0810600
--#define FB_MIPI_DISABLE  (1 << 11)
--#define FB_REG09 0xD0810900
--#define FB_REG09 0xD0810900
--#define FB_SKU_MASK  0x7000
--#define FB_SKU_SHIFT 12
--#define FB_SKU_100 0
--#define FB_SKU_100L 1
--#define FB_SKU_83 2
--	pci_write_config_dword(pci_root, 0xD0, FB_REG06);
--	pci_read_config_dword(pci_root, 0xD4, &fuse_value);
--
--	/* FB_MIPI_DISABLE doesn't mean LVDS on with Medfield */
--	if (IS_MRST(dev))
--		dev_priv->iLVDS_enable = fuse_value & FB_MIPI_DISABLE;
--
--	DRM_INFO("internal display is %s\n",
--		 dev_priv->iLVDS_enable ? "LVDS display" : "MIPI display");
--
--	 /* Prevent runtime suspend at start*/
--	 if (dev_priv->iLVDS_enable) {
--		dev_priv->is_lvds_on = true;
--		dev_priv->is_mipi_on = false;
--	} else {
--		dev_priv->is_mipi_on = true;
--		dev_priv->is_lvds_on = false;
--	}
--
--	dev_priv->video_device_fuse = fuse_value;
--
--	pci_write_config_dword(pci_root, 0xD0, FB_REG09);
--	pci_read_config_dword(pci_root, 0xD4, &fuse_value);
--
--	dev_dbg(dev->dev, "SKU values is 0x%x.\n", fuse_value);
--	fuse_value_tmp = (fuse_value & FB_SKU_MASK) >> FB_SKU_SHIFT;
--
--	dev_priv->fuse_reg_value = fuse_value;
--
--	switch (fuse_value_tmp) {
--	case FB_SKU_100:
--		dev_priv->core_freq = 200;
--		break;
--	case FB_SKU_100L:
--		dev_priv->core_freq = 100;
--		break;
--	case FB_SKU_83:
--		dev_priv->core_freq = 166;
--		break;
--	default:
--		dev_warn(dev->dev, "Invalid SKU values, SKU value = 0x%08x\n",
--								fuse_value_tmp);
--		dev_priv->core_freq = 0;
--	}
--	dev_dbg(dev->dev, "LNC core clk is %dMHz.\n", dev_priv->core_freq);
--	pci_dev_put(pci_root);
--}
--
--/*
-- *	Get the revison ID, B0:D2:F0;0x08
-- */
--static void mid_get_pci_revID(struct drm_psb_private *dev_priv)
--{
--	uint32_t platform_rev_id = 0;
--	struct pci_dev *pci_gfx_root = pci_get_bus_and_slot(0, PCI_DEVFN(2, 0));
--
--	pci_read_config_dword(pci_gfx_root, 0x08, &platform_rev_id);
--	dev_priv->platform_rev_id = (uint8_t) platform_rev_id;
--	pci_dev_put(pci_gfx_root);
--	dev_dbg(dev_priv->dev->dev, "platform_rev_id is %x\n",
--					dev_priv->platform_rev_id);
--}
--
--static void mid_get_vbt_data(struct drm_psb_private *dev_priv)
--{
--	struct drm_device *dev = dev_priv->dev;
--	struct mrst_vbt *vbt = &dev_priv->vbt_data;
--	u32 addr;
--	u16 new_size;
--	u8 *vbt_virtual;
--	u8 bpi;
--	u8 number_desc = 0;
--	struct mrst_timing_info *dp_ti = &dev_priv->gct_data.DTD;
--	struct gct_r10_timing_info ti;
--	void *pGCT;
--	struct pci_dev *pci_gfx_root = pci_get_bus_and_slot(0, PCI_DEVFN(2, 0));
--
--	/* Get the address of the platform config vbt, B0:D2:F0;0xFC */
--	pci_read_config_dword(pci_gfx_root, 0xFC, &addr);
--	pci_dev_put(pci_gfx_root);
--
--	dev_dbg(dev->dev, "drm platform config address is %x\n", addr);
--
--	/* check for platform config address == 0. */
--	/* this means fw doesn't support vbt */
--
--	if (addr == 0) {
--		vbt->size = 0;
--		return;
--	}
--
--	/* get the virtual address of the vbt */
--	vbt_virtual = ioremap(addr, sizeof(*vbt));
--
--	memcpy(vbt, vbt_virtual, sizeof(*vbt));
--	iounmap(vbt_virtual); /* Free virtual address space */
--
--	dev_dbg(dev->dev, "GCT revision is %x\n", vbt->revision);
--
--	switch (vbt->revision) {
--	case 0:
--		vbt->mrst_gct = ioremap(addr + sizeof(*vbt) - 4,
--					vbt->size - sizeof(*vbt) + 4);
--		pGCT = vbt->mrst_gct;
--		bpi = ((struct mrst_gct_v1 *)pGCT)->PD.BootPanelIndex;
--		dev_priv->gct_data.bpi = bpi;
--		dev_priv->gct_data.pt =
--			((struct mrst_gct_v1 *)pGCT)->PD.PanelType;
--		memcpy(&dev_priv->gct_data.DTD,
--			&((struct mrst_gct_v1 *)pGCT)->panel[bpi].DTD,
--				sizeof(struct mrst_timing_info));
--		dev_priv->gct_data.Panel_Port_Control =
--		  ((struct mrst_gct_v1 *)pGCT)->panel[bpi].Panel_Port_Control;
--		dev_priv->gct_data.Panel_MIPI_Display_Descriptor =
--			((struct mrst_gct_v1 *)pGCT)->panel[bpi].Panel_MIPI_Display_Descriptor;
--		break;
--	case 1:
--		vbt->mrst_gct = ioremap(addr + sizeof(*vbt) - 4,
--					vbt->size - sizeof(*vbt) + 4);
--		pGCT = vbt->mrst_gct;
--		bpi = ((struct mrst_gct_v2 *)pGCT)->PD.BootPanelIndex;
--		dev_priv->gct_data.bpi = bpi;
--		dev_priv->gct_data.pt =
--			((struct mrst_gct_v2 *)pGCT)->PD.PanelType;
--		memcpy(&dev_priv->gct_data.DTD,
--			&((struct mrst_gct_v2 *)pGCT)->panel[bpi].DTD,
--				sizeof(struct mrst_timing_info));
--		dev_priv->gct_data.Panel_Port_Control =
--		  ((struct mrst_gct_v2 *)pGCT)->panel[bpi].Panel_Port_Control;
--		dev_priv->gct_data.Panel_MIPI_Display_Descriptor =
--			((struct mrst_gct_v2 *)pGCT)->panel[bpi].Panel_MIPI_Display_Descriptor;
--		break;
--	case 0x10:
--		/*header definition changed from rev 01 (v2) to rev 10h. */
--		/*so, some values have changed location*/
--		new_size = vbt->checksum; /*checksum contains lo size byte*/
--		/*LSB of mrst_gct contains hi size byte*/
--		new_size |= ((0xff & (unsigned int)vbt->mrst_gct)) << 8;
--
--		vbt->checksum = vbt->size; /*size contains the checksum*/
--		if (new_size > 0xff)
--			vbt->size = 0xff; /*restrict size to 255*/
--		else
--			vbt->size = new_size;
--
--		/* number of descriptors defined in the GCT */
--		number_desc = ((0xff00 & (unsigned int)vbt->mrst_gct)) >> 8;
--		bpi = ((0xff0000 & (unsigned int)vbt->mrst_gct)) >> 16;
--		vbt->mrst_gct = ioremap(addr + GCT_R10_HEADER_SIZE,
--				GCT_R10_DISPLAY_DESC_SIZE * number_desc);
--		pGCT = vbt->mrst_gct;
--		pGCT = (u8 *)pGCT + (bpi*GCT_R10_DISPLAY_DESC_SIZE);
--		dev_priv->gct_data.bpi = bpi; /*save boot panel id*/
--
--		/*copy the GCT display timings into a temp structure*/
--		memcpy(&ti, pGCT, sizeof(struct gct_r10_timing_info));
--
--		/*now copy the temp struct into the dev_priv->gct_data*/
--		dp_ti->pixel_clock = ti.pixel_clock;
--		dp_ti->hactive_hi = ti.hactive_hi;
--		dp_ti->hactive_lo = ti.hactive_lo;
--		dp_ti->hblank_hi = ti.hblank_hi;
--		dp_ti->hblank_lo = ti.hblank_lo;
--		dp_ti->hsync_offset_hi = ti.hsync_offset_hi;
--		dp_ti->hsync_offset_lo = ti.hsync_offset_lo;
--		dp_ti->hsync_pulse_width_hi = ti.hsync_pulse_width_hi;
--		dp_ti->hsync_pulse_width_lo = ti.hsync_pulse_width_lo;
--		dp_ti->vactive_hi = ti.vactive_hi;
--		dp_ti->vactive_lo = ti.vactive_lo;
--		dp_ti->vblank_hi = ti.vblank_hi;
--		dp_ti->vblank_lo = ti.vblank_lo;
--		dp_ti->vsync_offset_hi = ti.vsync_offset_hi;
--		dp_ti->vsync_offset_lo = ti.vsync_offset_lo;
--		dp_ti->vsync_pulse_width_hi = ti.vsync_pulse_width_hi;
--		dp_ti->vsync_pulse_width_lo = ti.vsync_pulse_width_lo;
--
--		/* Move the MIPI_Display_Descriptor data from GCT to dev priv */
--		dev_priv->gct_data.Panel_MIPI_Display_Descriptor =
--							*((u8 *)pGCT + 0x0d);
--		dev_priv->gct_data.Panel_MIPI_Display_Descriptor |=
--						(*((u8 *)pGCT + 0x0e)) << 8;
--		break;
--	default:
--		dev_err(dev->dev, "Unknown revision of GCT!\n");
--		vbt->size = 0;
--	}
--	if (IS_MFLD(dev_priv->dev)){
--		if (panel_id == GCT_DETECT) {
--			if (dev_priv->gct_data.bpi == 2) {
--				dev_info(dev->dev, "[GFX] PYR Panel Detected\n");
--				dev_priv->panel_id = PYR_CMD;
--				panel_id = PYR_CMD;
--			}
--			else if(dev_priv->gct_data.bpi == 0) {
--				dev_info(dev->dev, "[GFX] TMD Panel Detected.\n");
--				dev_priv->panel_id = TMD_VID;
--				panel_id = TMD_VID;
--			}
--			else {
--				dev_info(dev->dev, "[GFX] Default Panel (TPO)\n");
--				dev_priv->panel_id = TPO_CMD;
--				panel_id = TPO_CMD;
--			}
--		} else {
--			dev_info(dev->dev, "[GFX] Panel Parameter Passed in through cmd line\n");
--			dev_priv->panel_id = panel_id;
--		}
--	}
--}
--
--int mid_chip_setup(struct drm_device *dev)
--{
--	struct drm_psb_private *dev_priv = dev->dev_private;
--	mid_get_fuse_settings(dev);
--	mid_get_vbt_data(dev_priv);
--	mid_get_pci_revID(dev_priv);
--	return 0;
--}
-\ No newline at end of file
-diff --git a/drivers/staging/gma500/mrst_bios.h b/drivers/staging/gma500/mrst_bios.h
-deleted file mode 100644
-index 00e7d56..0000000
---- a/drivers/staging/gma500/mrst_bios.h
-+++ /dev/null
-@@ -1,21 +0,0 @@
--/**************************************************************************
-- * Copyright (c) 2011, Intel Corporation.
-- * All Rights Reserved.
-- *
-- * This program is free software; you can redistribute it and/or modify it
-- * under the terms and conditions of the GNU General Public License,
-- * version 2, as published by the Free Software Foundation.
-- *
-- * This program is distributed in the hope it will be useful, but WITHOUT
-- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-- * more details.
-- *
-- * You should have received a copy of the GNU General Public License along with
-- * this program; if not, write to the Free Software Foundation, Inc.,
-- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
-- *
-- **************************************************************************/
--
--extern int mid_chip_setup(struct drm_device *dev);
--
-diff --git a/drivers/staging/gma500/mrst_device.c b/drivers/staging/gma500/mrst_device.c
-index d71e8d3..195a25b 100644
---- a/drivers/staging/gma500/mrst_device.c
-+++ b/drivers/staging/gma500/mrst_device.c
-@@ -25,7 +25,7 @@
- #include "psb_reg.h"
- #include "psb_intel_reg.h"
- #include <asm/intel_scu_ipc.h>
--#include "mrst_bios.h"
-+#include "mid_bios.h"
++#include <linux/version.h>
++#include <drm/drmP.h>
++#include <drm/drm_fb_helper.h>
++
++#include "psb_drv.h"
++
++struct psb_framebuffer {
++	struct drm_framebuffer base;
++	struct address_space *addr_space;
++	struct fb_info *fbdev;
++	struct gtt_range *gtt;
++	bool vm_map;		/* True if we must undo a vm_map_ram */
++};
++
++struct psb_fbdev {
++	struct drm_fb_helper psb_fb_helper;
++	struct psb_framebuffer pfb;
++};
++
++#define to_psb_fb(x) container_of(x, struct psb_framebuffer, base)
++
++extern int psb_intel_connector_clones(struct drm_device *dev, int type_mask);
++
++#endif
++
+diff --git a/drivers/staging/gma500/mdfld_intel_display.c b/drivers/staging/gma500/mdfld_intel_display.c
+index 0b619b6..1447a5b 100644
+--- a/drivers/staging/gma500/mdfld_intel_display.c
++++ b/drivers/staging/gma500/mdfld_intel_display.c
+@@ -24,7 +24,7 @@
+  *	Eric Anholt <eric@anholt.net>
+  */
  
- /* IPC message and command defines used to enable/disable mipi panel voltages */
- #define IPC_MSG_PANEL_ON_OFF    0xE9
+-#include "psb_fb.h"
++#include "framebuffer.h"
+ #include "psb_intel_display.h"
+ #include "mdfld_dsi_dbi.h"
+ #include "mdfld_dsi_dpi.h"
+diff --git a/drivers/staging/gma500/mrst_crtc.c b/drivers/staging/gma500/mrst_crtc.c
+index fb9f2a2..d12d1a6 100644
+--- a/drivers/staging/gma500/mrst_crtc.c
++++ b/drivers/staging/gma500/mrst_crtc.c
+@@ -19,7 +19,7 @@
+ #include <linux/pm_runtime.h>
+ 
+ #include <drm/drmP.h>
+-#include "psb_fb.h"
++#include "framebuffer.h"
+ #include "psb_drv.h"
+ #include "psb_intel_drv.h"
+ #include "psb_intel_reg.h"
+diff --git a/drivers/staging/gma500/psb_2d.c b/drivers/staging/gma500/psb_2d.c
+index df4c519..5ca4c42 100644
+--- a/drivers/staging/gma500/psb_2d.c
++++ b/drivers/staging/gma500/psb_2d.c
+@@ -38,8 +38,7 @@
+ 
+ #include "psb_drv.h"
+ #include "psb_reg.h"
+-#include "psb_drv.h"
+-#include "psb_fb.h"
++#include "framebuffer.h"
+ 
+ /**
+  *	psb_spank		-	reset the 2D engine
 diff --git a/drivers/staging/gma500/psb_drv.c b/drivers/staging/gma500/psb_drv.c
-index cf5fe91..ba47178 100644
+index ba47178..4114ffd 100644
 --- a/drivers/staging/gma500/psb_drv.c
 +++ b/drivers/staging/gma500/psb_drv.c
-@@ -27,7 +27,7 @@
+@@ -23,7 +23,7 @@
+ #include <drm/drm.h>
+ #include "psb_drm.h"
+ #include "psb_drv.h"
+-#include "psb_fb.h"
++#include "framebuffer.h"
  #include "psb_reg.h"
  #include "psb_intel_reg.h"
  #include "psb_intel_bios.h"
--#include "mrst_bios.h"
-+#include "mid_bios.h"
- #include "mdfld_dsi_dbi.h"
- #include <drm/drm_pciids.h>
- #include "psb_powermgmt.h"
+diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
+deleted file mode 100644
+index 17c3cf6..0000000
+--- a/drivers/staging/gma500/psb_fb.c
++++ /dev/null
+@@ -1,803 +0,0 @@
+-/**************************************************************************
+- * Copyright (c) 2007-2011, Intel Corporation.
+- * All Rights Reserved.
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms and conditions of the GNU General Public License,
+- * version 2, as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+- *
+- **************************************************************************/
+-
+-#include <linux/module.h>
+-#include <linux/kernel.h>
+-#include <linux/errno.h>
+-#include <linux/string.h>
+-#include <linux/mm.h>
+-#include <linux/tty.h>
+-#include <linux/slab.h>
+-#include <linux/delay.h>
+-#include <linux/fb.h>
+-#include <linux/init.h>
+-#include <linux/console.h>
+-
+-#include <drm/drmP.h>
+-#include <drm/drm.h>
+-#include <drm/drm_crtc.h>
+-
+-#include "psb_drv.h"
+-#include "psb_intel_reg.h"
+-#include "psb_intel_drv.h"
+-#include "psb_fb.h"
+-
+-#include "mdfld_output.h"
+-
+-static void psb_user_framebuffer_destroy(struct drm_framebuffer *fb);
+-static int psb_user_framebuffer_create_handle(struct drm_framebuffer *fb,
+-					      struct drm_file *file_priv,
+-					      unsigned int *handle);
+-
+-static const struct drm_framebuffer_funcs psb_fb_funcs = {
+-	.destroy = psb_user_framebuffer_destroy,
+-	.create_handle = psb_user_framebuffer_create_handle,
+-};
+-
+-#define CMAP_TOHW(_val, _width) ((((_val) << (_width)) + 0x7FFF - (_val)) >> 16)
+-
+-static int psbfb_setcolreg(unsigned regno, unsigned red, unsigned green,
+-			   unsigned blue, unsigned transp,
+-			   struct fb_info *info)
+-{
+-	struct psb_fbdev *fbdev = info->par;
+-	struct drm_framebuffer *fb = fbdev->psb_fb_helper.fb;
+-	uint32_t v;
+-
+-	if (!fb)
+-		return -ENOMEM;
+-
+-	if (regno > 255)
+-		return 1;
+-
+-	red = CMAP_TOHW(red, info->var.red.length);
+-	blue = CMAP_TOHW(blue, info->var.blue.length);
+-	green = CMAP_TOHW(green, info->var.green.length);
+-	transp = CMAP_TOHW(transp, info->var.transp.length);
+-
+-	v = (red << info->var.red.offset) |
+-	    (green << info->var.green.offset) |
+-	    (blue << info->var.blue.offset) |
+-	    (transp << info->var.transp.offset);
+-
+-	if (regno < 16) {
+-		switch (fb->bits_per_pixel) {
+-		case 16:
+-			((uint32_t *) info->pseudo_palette)[regno] = v;
+-			break;
+-		case 24:
+-		case 32:
+-			((uint32_t *) info->pseudo_palette)[regno] = v;
+-			break;
+-		}
+-	}
+-
+-	return 0;
+-}
+-
+-
+-void psbfb_suspend(struct drm_device *dev)
+-{
+-	struct drm_framebuffer *fb = 0;
+-	struct psb_framebuffer *psbfb = to_psb_fb(fb);
+-
+-	console_lock();
+-	mutex_lock(&dev->mode_config.mutex);
+-	list_for_each_entry(fb, &dev->mode_config.fb_list, head) {
+-		struct fb_info *info = psbfb->fbdev;
+-		fb_set_suspend(info, 1);
+-		drm_fb_helper_blank(FB_BLANK_POWERDOWN, info);
+-	}
+-	mutex_unlock(&dev->mode_config.mutex);
+-	console_unlock();
+-}
+-
+-void psbfb_resume(struct drm_device *dev)
+-{
+-	struct drm_framebuffer *fb = 0;
+-	struct psb_framebuffer *psbfb = to_psb_fb(fb);
+-
+-	console_lock();
+-	mutex_lock(&dev->mode_config.mutex);
+-	list_for_each_entry(fb, &dev->mode_config.fb_list, head) {
+-		struct fb_info *info = psbfb->fbdev;
+-		fb_set_suspend(info, 0);
+-		drm_fb_helper_blank(FB_BLANK_UNBLANK, info);
+-	}
+-	mutex_unlock(&dev->mode_config.mutex);
+-	console_unlock();
+-	drm_helper_disable_unused_functions(dev);
+-}
+-
+-static int psbfb_vm_fault(struct vm_area_struct *vma, struct vm_fault *vmf)
+-{
+-	struct psb_framebuffer *psbfb = vma->vm_private_data;
+-	struct drm_device *dev = psbfb->base.dev;
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-	int page_num;
+-	int i;
+-	unsigned long address;
+-	int ret;
+-	unsigned long pfn;
+-	/* FIXME: assumes fb at stolen base which may not be true */
+-	unsigned long phys_addr = (unsigned long)dev_priv->stolen_base;
+-
+-	page_num = (vma->vm_end - vma->vm_start) >> PAGE_SHIFT;
+-	address = (unsigned long)vmf->virtual_address;
+-
+-	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+-
+-	for (i = 0; i < page_num; i++) {
+-		pfn = (phys_addr >> PAGE_SHIFT);
+-
+-		ret = vm_insert_mixed(vma, address, pfn);
+-		if (unlikely((ret == -EBUSY) || (ret != 0 && i > 0)))
+-			break;
+-		else if (unlikely(ret != 0)) {
+-			ret = (ret == -ENOMEM) ? VM_FAULT_OOM : VM_FAULT_SIGBUS;
+-			return ret;
+-		}
+-		address += PAGE_SIZE;
+-		phys_addr += PAGE_SIZE;
+-	}
+-	return VM_FAULT_NOPAGE;
+-}
+-
+-static void psbfb_vm_open(struct vm_area_struct *vma)
+-{
+-}
+-
+-static void psbfb_vm_close(struct vm_area_struct *vma)
+-{
+-}
+-
+-static struct vm_operations_struct psbfb_vm_ops = {
+-	.fault	= psbfb_vm_fault,
+-	.open	= psbfb_vm_open,
+-	.close	= psbfb_vm_close
+-};
+-
+-static int psbfb_mmap(struct fb_info *info, struct vm_area_struct *vma)
+-{
+-	struct psb_fbdev *fbdev = info->par;
+-	struct psb_framebuffer *psbfb = &fbdev->pfb;
+-
+-	if (vma->vm_pgoff != 0)
+-		return -EINVAL;
+-	if (vma->vm_pgoff > (~0UL >> PAGE_SHIFT))
+-		return -EINVAL;
+-
+-	if (!psbfb->addr_space)
+-		psbfb->addr_space = vma->vm_file->f_mapping;
+-	/*
+-	 * If this is a GEM object then info->screen_base is the virtual
+-	 * kernel remapping of the object. FIXME: Review if this is
+-	 * suitable for our mmap work
+-	 */
+-	vma->vm_ops = &psbfb_vm_ops;
+-	vma->vm_private_data = (void *)psbfb;
+-	vma->vm_flags |= VM_RESERVED | VM_IO |
+-					VM_MIXEDMAP | VM_DONTEXPAND;
+-	return 0;
+-}
+-
+-static int psbfb_ioctl(struct fb_info *info, unsigned int cmd,
+-						unsigned long arg)
+-{
+-	struct psb_fbdev *fbdev = info->par;
+-	struct psb_framebuffer *psbfb = &fbdev->pfb;
+-	struct drm_device *dev = psbfb->base.dev;
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-	u32 __user *p = (u32 __user *)arg;
+-	u32 l;
+-	u32 buf[32];
+-	switch (cmd) {
+-	case 0x12345678:
+-		if (!capable(CAP_SYS_RAWIO))
+-			return -EPERM;
+-		if (!dev_priv->ops->accel_2d)
+-			return -EOPNOTSUPP;
+-		if (get_user(l, p))
+-			return -EFAULT;
+-		if (l > 32)
+-			return -EMSGSIZE;
+-		if (copy_from_user(buf, p + 1, l * sizeof(u32)))
+-			return -EFAULT;
+-		psbfb_2d_submit(dev_priv, buf, l);
+-		return 0;
+-	default:
+-		return -ENOTTY;
+-	}
+-}
+-
+-static struct fb_ops psbfb_ops = {
+-	.owner = THIS_MODULE,
+-	.fb_check_var = drm_fb_helper_check_var,
+-	.fb_set_par = drm_fb_helper_set_par,
+-	.fb_blank = drm_fb_helper_blank,
+-	.fb_setcolreg = psbfb_setcolreg,
+-	.fb_fillrect = cfb_fillrect,
+-	.fb_copyarea = psbfb_copyarea,
+-	.fb_imageblit = cfb_imageblit,
+-	.fb_mmap = psbfb_mmap,
+-	.fb_sync = psbfb_sync,
+-	.fb_ioctl = psbfb_ioctl,
+-};
+-
+-static struct fb_ops psbfb_unaccel_ops = {
+-	.owner = THIS_MODULE,
+-	.fb_check_var = drm_fb_helper_check_var,
+-	.fb_set_par = drm_fb_helper_set_par,
+-	.fb_blank = drm_fb_helper_blank,
+-	.fb_setcolreg = psbfb_setcolreg,
+-	.fb_fillrect = cfb_fillrect,
+-	.fb_copyarea = cfb_copyarea,
+-	.fb_imageblit = cfb_imageblit,
+-	.fb_mmap = psbfb_mmap,
+-	.fb_ioctl = psbfb_ioctl,
+-};
+-
+-/**
+- *	psb_framebuffer_init	-	initialize a framebuffer
+- *	@dev: our DRM device
+- *	@fb: framebuffer to set up
+- *	@mode_cmd: mode description
+- *	@gt: backing object
+- *
+- *	Configure and fill in the boilerplate for our frame buffer. Return
+- *	0 on success or an error code if we fail.
+- */
+-static int psb_framebuffer_init(struct drm_device *dev,
+-					struct psb_framebuffer *fb,
+-					struct drm_mode_fb_cmd *mode_cmd,
+-					struct gtt_range *gt)
+-{
+-	int ret;
+-
+-	if (mode_cmd->pitch & 63)
+-		return -EINVAL;
+-	switch (mode_cmd->bpp) {
+-	case 8:
+-	case 16:
+-	case 24:
+-	case 32:
+-		break;
+-	default:
+-		return -EINVAL;
+-	}
+-	ret = drm_framebuffer_init(dev, &fb->base, &psb_fb_funcs);
+-	if (ret) {
+-		dev_err(dev->dev, "framebuffer init failed: %d\n", ret);
+-		return ret;
+-	}
+-	drm_helper_mode_fill_fb_struct(&fb->base, mode_cmd);
+-	fb->gtt = gt;
+-	return 0;
+-}
+-
+-/**
+- *	psb_framebuffer_create	-	create a framebuffer backed by gt
+- *	@dev: our DRM device
+- *	@mode_cmd: the description of the requested mode
+- *	@gt: the backing object
+- *
+- *	Create a framebuffer object backed by the gt, and fill in the
+- *	boilerplate required
+- *
+- *	TODO: review object references
+- */
+-
+-static struct drm_framebuffer *psb_framebuffer_create
+-			(struct drm_device *dev,
+-			 struct drm_mode_fb_cmd *mode_cmd,
+-			 struct gtt_range *gt)
+-{
+-	struct psb_framebuffer *fb;
+-	int ret;
+-
+-	fb = kzalloc(sizeof(*fb), GFP_KERNEL);
+-	if (!fb)
+-		return ERR_PTR(-ENOMEM);
+-
+-	ret = psb_framebuffer_init(dev, fb, mode_cmd, gt);
+-	if (ret) {
+-		kfree(fb);
+-		return ERR_PTR(ret);
+-	}
+-	return &fb->base;
+-}
+-
+-/**
+- *	psbfb_alloc		-	allocate frame buffer memory
+- *	@dev: the DRM device
+- *	@aligned_size: space needed
+- *
+- *	Allocate the frame buffer. In the usual case we get a GTT range that
+- *	is stolen memory backed and life is simple. If there isn't sufficient
+- *	stolen memory or the system has no stolen memory we allocate a range
+- *	and back it with a GEM object.
+- *
+- *	In this case the GEM object has no handle.
+- *
+- *	FIXME: console speed up - allocate twice the space if room and use
+- *	hardware scrolling for acceleration.
+- */
+-static struct gtt_range *psbfb_alloc(struct drm_device *dev, int aligned_size)
+-{
+-	struct gtt_range *backing;
+-	/* Begin by trying to use stolen memory backing */
+-	backing = psb_gtt_alloc_range(dev, aligned_size, "fb", 1);
+-	if (backing) {
+-		if (drm_gem_private_object_init(dev,
+-					&backing->gem, aligned_size) == 0)
+-			return backing;
+-		psb_gtt_free_range(dev, backing);
+-	}
+-	/* Next try using GEM host memory */
+-	backing = psb_gtt_alloc_range(dev, aligned_size, "fb(gem)", 0);
+-	if (backing == NULL)
+-		return NULL;
+-
+-	/* Now back it with an object */
+-	if (drm_gem_object_init(dev, &backing->gem, aligned_size) != 0) {
+-		psb_gtt_free_range(dev, backing);
+-		return NULL;
+-	}
+-	return backing;
+-}
+-
+-/**
+- *	psbfb_create		-	create a framebuffer
+- *	@fbdev: the framebuffer device
+- *	@sizes: specification of the layout
+- *
+- *	Create a framebuffer to the specifications provided
+- */
+-static int psbfb_create(struct psb_fbdev *fbdev,
+-				struct drm_fb_helper_surface_size *sizes)
+-{
+-	struct drm_device *dev = fbdev->psb_fb_helper.dev;
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-	struct fb_info *info;
+-	struct drm_framebuffer *fb;
+-	struct psb_framebuffer *psbfb = &fbdev->pfb;
+-	struct drm_mode_fb_cmd mode_cmd;
+-	struct device *device = &dev->pdev->dev;
+-	int size;
+-	int ret;
+-	struct gtt_range *backing;
+-
+-	mode_cmd.width = sizes->surface_width;
+-	mode_cmd.height = sizes->surface_height;
+-	mode_cmd.bpp = sizes->surface_bpp;
+-
+-	/* No 24bit packed */
+-	if (mode_cmd.bpp == 24)
+-		mode_cmd.bpp = 32;
+-
+-	/* HW requires pitch to be 64 byte aligned */
+-	mode_cmd.pitch =  ALIGN(mode_cmd.width * ((mode_cmd.bpp + 7) / 8), 64);
+-	mode_cmd.depth = sizes->surface_depth;
+-
+-	size = mode_cmd.pitch * mode_cmd.height;
+-	size = ALIGN(size, PAGE_SIZE);
+-
+-	/* Allocate the framebuffer in the GTT with stolen page backing */
+-	backing = psbfb_alloc(dev, size);
+-	if (backing == NULL)
+-		return -ENOMEM;
+-
+-	mutex_lock(&dev->struct_mutex);
+-
+-	info = framebuffer_alloc(0, device);
+-	if (!info) {
+-		ret = -ENOMEM;
+-		goto out_err1;
+-	}
+-	info->par = fbdev;
+-
+-	ret = psb_framebuffer_init(dev, psbfb, &mode_cmd, backing);
+-	if (ret)
+-		goto out_unref;
+-
+-	fb = &psbfb->base;
+-	psbfb->fbdev = info;
+-
+-	fbdev->psb_fb_helper.fb = fb;
+-	fbdev->psb_fb_helper.fbdev = info;
+-
+-	strcpy(info->fix.id, "psbfb");
+-
+-	info->flags = FBINFO_DEFAULT;
+-	/* No 2D engine */
+-	if (!dev_priv->ops->accel_2d)
+-		info->fbops = &psbfb_unaccel_ops;
+-	else
+-		info->fbops = &psbfb_ops;
+-
+-	ret = fb_alloc_cmap(&info->cmap, 256, 0);
+-	if (ret) {
+-		ret = -ENOMEM;
+-		goto out_unref;
+-	}
+-
+-	info->fix.smem_start = dev->mode_config.fb_base;
+-	info->fix.smem_len = size;
+-
+-	if (backing->stolen) {
+-		/* Accessed stolen memory directly */
+-		info->screen_base = (char *)dev_priv->vram_addr +
+-							backing->offset;
+-	} else {
+-		/* Pin the pages into the GTT and create a mapping to them */
+-		psb_gtt_pin(backing);
+-		info->screen_base = vm_map_ram(backing->pages, backing->npage,
+-				-1, PAGE_KERNEL);
+-		if (info->screen_base == NULL) {
+-			psb_gtt_unpin(backing);
+-			ret = -ENOMEM;
+-			goto out_unref;
+-		}
+-		psbfb->vm_map = 1;
+-	}
+-	info->screen_size = size;
+-
+-	if (dev_priv->pg->stolen_size) {
+-		info->apertures = alloc_apertures(1);
+-		if (!info->apertures) {
+-			ret = -ENOMEM;
+-			goto out_unref;
+-		}
+-		info->apertures->ranges[0].base = dev->mode_config.fb_base;
+-		info->apertures->ranges[0].size = dev_priv->pg->stolen_size;
+-	}
+-
+-	drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
+-	drm_fb_helper_fill_var(info, &fbdev->psb_fb_helper,
+-				sizes->fb_width, sizes->fb_height);
+-
+-	info->fix.mmio_start = pci_resource_start(dev->pdev, 0);
+-	info->fix.mmio_len = pci_resource_len(dev->pdev, 0);
+-
+-	info->pixmap.size = 64 * 1024;
+-	info->pixmap.buf_align = 8;
+-	info->pixmap.access_align = 32;
+-	info->pixmap.flags = FB_PIXMAP_SYSTEM;
+-	info->pixmap.scan_align = 1;
+-
+-	dev_info(dev->dev, "allocated %dx%d fb\n",
+-					psbfb->base.width, psbfb->base.height);
+-
+-	mutex_unlock(&dev->struct_mutex);
+-	return 0;
+-out_unref:
+-	if (backing->stolen)
+-		psb_gtt_free_range(dev, backing);
+-	else {
+-		if (psbfb->vm_map)
+-			vm_unmap_ram(info->screen_base, backing->npage);
+-		drm_gem_object_unreference(&backing->gem);
+-	}
+-out_err1:
+-	mutex_unlock(&dev->struct_mutex);
+-	psb_gtt_free_range(dev, backing);
+-	return ret;
+-}
+-
+-/**
+- *	psb_user_framebuffer_create	-	create framebuffer
+- *	@dev: our DRM device
+- *	@filp: client file
+- *	@cmd: mode request
+- *
+- *	Create a new framebuffer backed by a userspace GEM object
+- */
+-static struct drm_framebuffer *psb_user_framebuffer_create
+-			(struct drm_device *dev, struct drm_file *filp,
+-			 struct drm_mode_fb_cmd *cmd)
+-{
+-	struct gtt_range *r;
+-	struct drm_gem_object *obj;
+-
+-	/*
+-	 *	Find the GEM object and thus the gtt range object that is
+-	 *	to back this space
+-	 */
+-	obj = drm_gem_object_lookup(dev, filp, cmd->handle);
+-	if (obj == NULL)
+-		return ERR_PTR(-ENOENT);
+-
+-	/* Let the core code do all the work */
+-	r = container_of(obj, struct gtt_range, gem);
+-	return psb_framebuffer_create(dev, cmd, r);
+-}
+-
+-static void psbfb_gamma_set(struct drm_crtc *crtc, u16 red, u16 green,
+-							u16 blue, int regno)
+-{
+-}
+-
+-static void psbfb_gamma_get(struct drm_crtc *crtc, u16 *red,
+-					u16 *green, u16 *blue, int regno)
+-{
+-}
+-
+-static int psbfb_probe(struct drm_fb_helper *helper,
+-				struct drm_fb_helper_surface_size *sizes)
+-{
+-	struct psb_fbdev *psb_fbdev = (struct psb_fbdev *)helper;
+-	int new_fb = 0;
+-	int ret;
+-
+-	if (!helper->fb) {
+-		ret = psbfb_create(psb_fbdev, sizes);
+-		if (ret)
+-			return ret;
+-		new_fb = 1;
+-	}
+-	return new_fb;
+-}
+-
+-struct drm_fb_helper_funcs psb_fb_helper_funcs = {
+-	.gamma_set = psbfb_gamma_set,
+-	.gamma_get = psbfb_gamma_get,
+-	.fb_probe = psbfb_probe,
+-};
+-
+-int psb_fbdev_destroy(struct drm_device *dev, struct psb_fbdev *fbdev)
+-{
+-	struct fb_info *info;
+-	struct psb_framebuffer *psbfb = &fbdev->pfb;
+-
+-	if (fbdev->psb_fb_helper.fbdev) {
+-		info = fbdev->psb_fb_helper.fbdev;
+-
+-		/* If this is our base framebuffer then kill any virtual map
+-		   for the framebuffer layer and unpin it */
+-		if (psbfb->vm_map) {
+-			vm_unmap_ram(info->screen_base, psbfb->gtt->npage);
+-			psb_gtt_unpin(psbfb->gtt);
+-		}
+-		unregister_framebuffer(info);
+-		if (info->cmap.len)
+-			fb_dealloc_cmap(&info->cmap);
+-		framebuffer_release(info);
+-	}
+-	drm_fb_helper_fini(&fbdev->psb_fb_helper);
+-	drm_framebuffer_cleanup(&psbfb->base);
+-
+-	if (psbfb->gtt)
+-		drm_gem_object_unreference(&psbfb->gtt->gem);
+-	return 0;
+-}
+-
+-int psb_fbdev_init(struct drm_device *dev)
+-{
+-	struct psb_fbdev *fbdev;
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-
+-	fbdev = kzalloc(sizeof(struct psb_fbdev), GFP_KERNEL);
+-	if (!fbdev) {
+-		dev_err(dev->dev, "no memory\n");
+-		return -ENOMEM;
+-	}
+-
+-	dev_priv->fbdev = fbdev;
+-	fbdev->psb_fb_helper.funcs = &psb_fb_helper_funcs;
+-
+-	drm_fb_helper_init(dev, &fbdev->psb_fb_helper, 2,
+-							INTELFB_CONN_LIMIT);
+-
+-	drm_fb_helper_single_add_all_connectors(&fbdev->psb_fb_helper);
+-	drm_fb_helper_initial_config(&fbdev->psb_fb_helper, 32);
+-	return 0;
+-}
+-
+-void psb_fbdev_fini(struct drm_device *dev)
+-{
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-
+-	if (!dev_priv->fbdev)
+-		return;
+-
+-	psb_fbdev_destroy(dev, dev_priv->fbdev);
+-	kfree(dev_priv->fbdev);
+-	dev_priv->fbdev = NULL;
+-}
+-
+-static void psbfb_output_poll_changed(struct drm_device *dev)
+-{
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-	struct psb_fbdev *fbdev = (struct psb_fbdev *)dev_priv->fbdev;
+-	drm_fb_helper_hotplug_event(&fbdev->psb_fb_helper);
+-}
+-
+-/**
+- *	psb_user_framebuffer_create_handle - add hamdle to a framebuffer
+- *	@fb: framebuffer
+- *	@file_priv: our DRM file
+- *	@handle: returned handle
+- *
+- *	Our framebuffer object is a GTT range which also contains a GEM
+- *	object. We need to turn it into a handle for userspace. GEM will do
+- *	the work for us
+- */
+-static int psb_user_framebuffer_create_handle(struct drm_framebuffer *fb,
+-					      struct drm_file *file_priv,
+-					      unsigned int *handle)
+-{
+-	struct psb_framebuffer *psbfb = to_psb_fb(fb);
+-	struct gtt_range *r = psbfb->gtt;
+-	return drm_gem_handle_create(file_priv, &r->gem, handle);
+-}
+-
+-/**
+- *	psb_user_framebuffer_destroy	-	destruct user created fb
+- *	@fb: framebuffer
+- *
+- *	User framebuffers are backed by GEM objects so all we have to do is
+- *	clean up a bit and drop the reference, GEM will handle the fallout
+- */
+-static void psb_user_framebuffer_destroy(struct drm_framebuffer *fb)
+-{
+-	struct psb_framebuffer *psbfb = to_psb_fb(fb);
+-	struct gtt_range *r = psbfb->gtt;
+-	struct drm_device *dev = fb->dev;
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-	struct psb_fbdev *fbdev = dev_priv->fbdev;
+-	struct drm_crtc *crtc;
+-	int reset = 0;
+-
+-	/* Should never get stolen memory for a user fb */
+-	WARN_ON(r->stolen);
+-
+-	/* Check if we are erroneously live */
+-	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head)
+-		if (crtc->fb == fb)
+-			reset = 1;
+-
+-	if (reset)
+-		/*
+-		 * Now force a sane response before we permit the DRM CRTC
+-		 * layer to do stupid things like blank the display. Instead
+-		 * we reset this framebuffer as if the user had forced a reset.
+-		 * We must do this before the cleanup so that the DRM layer
+-		 * doesn't get a chance to stick its oar in where it isn't
+-		 * wanted.
+-		 */
+-		drm_fb_helper_restore_fbdev_mode(&fbdev->psb_fb_helper);
+-
+-	/* Let DRM do its clean up */
+-	drm_framebuffer_cleanup(fb);
+-	/*  We are no longer using the resource in GEM */
+-	drm_gem_object_unreference_unlocked(&r->gem);
+-	kfree(fb);
+-}
+-
+-static const struct drm_mode_config_funcs psb_mode_funcs = {
+-	.fb_create = psb_user_framebuffer_create,
+-	.output_poll_changed = psbfb_output_poll_changed,
+-};
+-
+-static int psb_create_backlight_property(struct drm_device *dev)
+-{
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-	struct drm_property *backlight;
+-
+-	if (dev_priv->backlight_property)
+-		return 0;
+-
+-	backlight = drm_property_create(dev, DRM_MODE_PROP_RANGE,
+-							"backlight", 2);
+-	backlight->values[0] = 0;
+-	backlight->values[1] = 100;
+-
+-	dev_priv->backlight_property = backlight;
+-
+-	return 0;
+-}
+-
+-static void psb_setup_outputs(struct drm_device *dev)
+-{
+-	struct drm_psb_private *dev_priv = dev->dev_private;
+-	struct drm_connector *connector;
+-
+-	drm_mode_create_scaling_mode_property(dev);
+-	psb_create_backlight_property(dev);
+-
+-	dev_priv->ops->output_init(dev);
+-
+-	list_for_each_entry(connector, &dev->mode_config.connector_list,
+-			    head) {
+-		struct psb_intel_output *psb_intel_output =
+-		    to_psb_intel_output(connector);
+-		struct drm_encoder *encoder = &psb_intel_output->enc;
+-		int crtc_mask = 0, clone_mask = 0;
+-
+-		/* valid crtcs */
+-		switch (psb_intel_output->type) {
+-		case INTEL_OUTPUT_SDVO:
+-			crtc_mask = ((1 << 0) | (1 << 1));
+-			clone_mask = (1 << INTEL_OUTPUT_SDVO);
+-			break;
+-		case INTEL_OUTPUT_LVDS:
+-			if (IS_MRST(dev))
+-				crtc_mask = (1 << 0);
+-			else
+-				crtc_mask = (1 << 1);
+-			clone_mask = (1 << INTEL_OUTPUT_LVDS);
+-			break;
+-		case INTEL_OUTPUT_MIPI:
+-			crtc_mask = (1 << 0);
+-			clone_mask = (1 << INTEL_OUTPUT_MIPI);
+-			break;
+-		case INTEL_OUTPUT_MIPI2:
+-			crtc_mask = (1 << 2);
+-			clone_mask = (1 << INTEL_OUTPUT_MIPI2);
+-			break;
+-		case INTEL_OUTPUT_HDMI:
+-			crtc_mask = (1 << 1);
+-			clone_mask = (1 << INTEL_OUTPUT_HDMI);
+-			break;
+-		}
+-		encoder->possible_crtcs = crtc_mask;
+-		encoder->possible_clones =
+-		    psb_intel_connector_clones(dev, clone_mask);
+-	}
+-}
+-
+-void psb_modeset_init(struct drm_device *dev)
+-{
+-	struct drm_psb_private *dev_priv =
+-	    (struct drm_psb_private *) dev->dev_private;
+-	struct psb_intel_mode_device *mode_dev = &dev_priv->mode_dev;
+-	int i;
+-
+-	drm_mode_config_init(dev);
+-
+-	dev->mode_config.min_width = 0;
+-	dev->mode_config.min_height = 0;
+-
+-	dev->mode_config.funcs = (void *) &psb_mode_funcs;
+-
+-	/* set memory base */
+-	/* MRST and PSB should use BAR 2*/
+-	pci_read_config_dword(dev->pdev, PSB_BSM, (u32 *)
+-					&(dev->mode_config.fb_base));
+-
+-	/* num pipes is 2 for PSB but 1 for Mrst */
+-	for (i = 0; i < dev_priv->num_pipe; i++)
+-		psb_intel_crtc_init(dev, i, mode_dev);
+-
+-	dev->mode_config.max_width = 2048;
+-	dev->mode_config.max_height = 2048;
+-
+-	psb_setup_outputs(dev);
+-}
+-
+-void psb_modeset_cleanup(struct drm_device *dev)
+-{
+-	mutex_lock(&dev->struct_mutex);
+-
+-	drm_kms_helper_poll_fini(dev);
+-	psb_fbdev_fini(dev);
+-	drm_mode_config_cleanup(dev);
+-
+-	mutex_unlock(&dev->struct_mutex);
+-}
+diff --git a/drivers/staging/gma500/psb_fb.h b/drivers/staging/gma500/psb_fb.h
+deleted file mode 100644
+index ed6e856..0000000
+--- a/drivers/staging/gma500/psb_fb.h
++++ /dev/null
+@@ -1,49 +0,0 @@
+-/*
+- * Copyright (c) 2008-2011, Intel Corporation
+- *
+- * This program is free software; you can redistribute it and/or modify it
+- * under the terms and conditions of the GNU General Public License,
+- * version 2, as published by the Free Software Foundation.
+- *
+- * This program is distributed in the hope it will be useful, but WITHOUT
+- * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+- * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+- * more details.
+- *
+- * You should have received a copy of the GNU General Public License along with
+- * this program; if not, write to the Free Software Foundation, Inc.,
+- * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
+- *
+- * Authors:
+- *      Eric Anholt <eric@anholt.net>
+- *
+- */
+-
+-#ifndef _PSB_FB_H_
+-#define _PSB_FB_H_
+-
+-#include <linux/version.h>
+-#include <drm/drmP.h>
+-#include <drm/drm_fb_helper.h>
+-
+-#include "psb_drv.h"
+-
+-struct psb_framebuffer {
+-	struct drm_framebuffer base;
+-	struct address_space *addr_space;
+-	struct fb_info *fbdev;
+-	struct gtt_range *gtt;
+-	bool vm_map;		/* True if we must undo a vm_map_ram */
+-};
+-
+-struct psb_fbdev {
+-	struct drm_fb_helper psb_fb_helper;
+-	struct psb_framebuffer pfb;
+-};
+-
+-#define to_psb_fb(x) container_of(x, struct psb_framebuffer, base)
+-
+-extern int psb_intel_connector_clones(struct drm_device *dev, int type_mask);
+-
+-#endif
+-
+diff --git a/drivers/staging/gma500/psb_intel_display.c b/drivers/staging/gma500/psb_intel_display.c
+index c38e819..0b650a0 100644
+--- a/drivers/staging/gma500/psb_intel_display.c
++++ b/drivers/staging/gma500/psb_intel_display.c
+@@ -22,7 +22,7 @@
+ #include <linux/pm_runtime.h>
+ 
+ #include <drm/drmP.h>
+-#include "psb_fb.h"
++#include "framebuffer.h"
+ #include "psb_drv.h"
+ #include "psb_intel_drv.h"
+ #include "psb_intel_reg.h"
 
