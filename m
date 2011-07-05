@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756132Ab1GEQm3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 12:42:29 -0400
-Received: from mail.perches.com ([173.55.12.10]:3557 "EHLO mail.perches.com"
+	id S1756232Ab1GEQmy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 12:42:54 -0400
+Received: from mail.perches.com ([173.55.12.10]:3565 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755988Ab1GEQm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 12:42:27 -0400
+	id S1756136Ab1GEQmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 12:42:31 -0400
 From: Joe Perches <joe@perches.com>
 To: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
 Cc: devel@driverdev.osuosl.org
-Subject: [PATCH 10/14] MAINTAINERS: Add STAGING - VIA VT665X DRIVERS
-Date: Tue,  5 Jul 2011 09:42:10 -0700
-Message-Id: <c5d540ba15124222434fff0317f0c0d7d8d653bd.1309883752.git.joe@perches.com>
+Subject: [PATCH 13/14] MAINTAINERS: Add STAGING - XGI Z7,Z9,Z11 PCI DISPLAY DRIVER
+Date: Tue,  5 Jul 2011 09:42:13 -0700
+Message-Id: <0986a61108b6b514017d7d829e51fd5f7c37d4e9.1309883752.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.131.g99019
 In-Reply-To: <cover.1309883752.git.joe@perches.com>
 References: <20110704153435.GA17475@suse.de> <cover.1309883752.git.joe@perches.com>
@@ -25,17 +25,17 @@ Signed-off-by: Joe Perches <joe@perches.com>
  1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index b0ce557..ac25e66 100644
+index 9ab3703..bd46c4f 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -6120,6 +6120,11 @@ M:	Teddy Wang <teddy.wang@siliconmotion.com.cn>
+@@ -6136,6 +6136,11 @@ M:	Pavel Machek <pavel@ucw.cz>
  S:	Odd Fixes
- F:	drivers/staging/sm7xx/
+ F:	drivers/staging/winbond/
  
-+STAGING - VIA VT665X DRIVERS
-+M:	Forest Bond <forest@alittletooquiet.net>
++STAGING - XGI Z7,Z9,Z11 PCI DISPLAY DRIVER
++M:	Arnaud Patard <apatard@mandriva.com>
 +S:	Odd Fixes
-+F:	drivers/staging/vt665?/
++F:	drivers/staging/xgifb/
 +
  STARFIRE/DURALAN NETWORK DRIVER
  M:	Ion Badulescu <ionut@badula.org>
