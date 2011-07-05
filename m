@@ -1,60 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab1GEMH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:07:27 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56347 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109Ab1GEMH0 (ORCPT
+	id S932313Ab1GEMJW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:09:22 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:48913 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932108Ab1GEMJV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:07:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCHv11 0/8] Contiguous Memory Allocator
-Date: Tue, 5 Jul 2011 14:07:17 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com>
+	Tue, 5 Jul 2011 08:09:21 -0400
+From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
+To: "Balbi, Felipe" <balbi@ti.com>
+CC: "Girdwood, Liam" <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>,
+        "Lopez Cruz, Misael" <misael.lopez@ti.com>
+Subject: Re: Re: [PATCH 1/5] MFD: twl6040: Add irq variable for slave devices
+Date: Tue, 5 Jul 2011 15:09:06 +0300
+Message-ID: <3328261.Ltcx4CEcHA@barack>
+User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
+In-Reply-To: <20110705112245.GA2820@legolas.emea.dhcp.ti.com>
+References: <1309857266-3663-1-git-send-email-peter.ujfalusi@ti.com> <1309857266-3663-2-git-send-email-peter.ujfalusi@ti.com> <20110705112245.GA2820@legolas.emea.dhcp.ti.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107051407.17249.arnd@arndb.de>
-X-Provags-ID: V02:K0:aKisnNNFP5Z9qA9Q+4Vs6DW+TVhtOqI31UOIKfinkN+
- VZoGwro3rHCSSIZsuiX8pyQb1j7CoU0HgMs9gy2WHTq7+a5ggP
- a5Yryh2O7W1m038w2XBu4nc/W+VMOFFtjxR4BM4MbZWpSTHest
- VafrE8gptM7aA67fAPW3M1FfAOgX5WJdwXPwGYMrFrsB6MmVAJ
- mi4VWBh1QdsIRlx00rEDg==
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="ISO-8859-1"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 July 2011, Marek Szyprowski wrote:
-> This is yet another round of Contiguous Memory Allocator patches. I hope
-> that I've managed to resolve all the items discussed during the Memory
-> Management summit at Linaro Meeting in Budapest and pointed later on
-> mailing lists. The goal is to integrate it as tight as possible with
-> other kernel subsystems (like memory management and dma-mapping) and
-> finally merge to mainline.
+On Tuesday 05 July 2011 13:22:46 Balbi, Felipe wrote:
+> Hi,
+> 
+> On Tue, Jul 05, 2011 at 12:14:22PM +0300, Peter Ujfalusi wrote:
+> > Add new variable to pass the irq number for the slaves
+> > devices of twl6040.
+> > The irq number configuration is done in the twl6040-core
+> > at probe time, so machine drivers do not need to be
+> > modified.
+> > 
+> > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+> > ---
+> > 
+> >  drivers/mfd/twl6040-core.c |    2 ++
+> >  include/linux/i2c/twl.h    |    2 ++
+> >  2 files changed, 4 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+> > index cfaedb5..8607793 100644
+> > --- a/drivers/mfd/twl6040-core.c
+> > +++ b/drivers/mfd/twl6040-core.c
+> > @@ -501,6 +501,7 @@ static int __devinit twl6040_probe(struct
+> > platform_device *pdev)
+> > 
+> >  	if (pdata->codec) {
+> >  	
+> >  		cell = &twl6040->cells[children];
+> >  		cell->name = "twl6040-codec";
+> > 
+> > +		pdata->codec->plug_irq = twl6040->irq_base + TWL6040_IRQ_PLUG;
+> 
+> are the slave devices platform_devices ?? If so, you could use struct
+> resource to pass IRQs as that's the "approved" way to do so. Then, on
+> child driver, you could either rely on a particular order of the
+> resources or assign them names and use platform_get_irq_byname() to
+> fetch the correct one (if you have more than one, that is).
 
-You have certainly addressed all of my concerns, this looks really good now!
+You mean something like this:
 
-Andrew, can you add this to your -mm tree? What's your opinion on the
-current state, do you think this is ready for merging in 3.1 or would
-you want to have more reviews from core memory management people?
+static struct resource twl6040_codec_rsrc[] = {
+	{
+		.flags = IORESOURCE_IRQ,
+	},
+};
 
-My reviews were mostly on the driver and platform API side, and I think
-we're fine there now, but I don't really understand the impacts this has
-in mm.
+...
 
-	Arnd
+@@ -501,6 +501,7 @@ static int __devinit twl6040_probe(struct platform_device 
+*pdev)
+		if (pdata->codec) {
+			cell = &twl6040->cells[children];
+			cell->name = "twl6040-codec";
++			twl6040_codec_rsrc[0].start = twl6040->irq_base + TWL6040_IRQ_PLUG;
++			twl6040_codec_rsrc[0].end = twl6040->irq_base + TWL6040_IRQ_PLUG;
++			cell->resource = twl6040_codec_rsrc;
++			cell->num_resources = ARRAY_SIZE(twl6040_codec_rsrc);
+			cell->platform_data = pdata->codec;
+			cell->pdata_size = sizeof(*pdata->codec);
+			children++;
+
+
+-- 
+Péter
