@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932259Ab1GELeI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:34:08 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46615 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab1GELeG (ORCPT
+	id S932268Ab1GELgZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:36:25 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:42509 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176Ab1GELgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:34:06 -0400
-Date: Tue, 5 Jul 2011 12:33:45 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Daniel Walker <dwalker@codeaurora.org>,
-        Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
-        Mel Gorman <mel@csn.ul.ie>, Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Michal Nazarewicz <mina86@mina86.com>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
-Message-ID: <20110705113345.GA8286@n2100.arm.linux.org.uk>
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com>
+	Tue, 5 Jul 2011 07:36:24 -0400
+Date: Tue, 5 Jul 2011 15:36:20 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
+ sake of nmi-watchdog on P4
+Message-ID: <20110705113620.GS17941@sun>
+References: <20110705100320.GK17941@sun>
+ <20110705102017.GA12458@elte.hu>
+ <20110705103403.GN17941@sun>
+ <20110705105959.GA14435@elte.hu>
+ <20110705110550.GQ17941@sun>
+ <20110705112002.GA15654@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20110705112002.GA15654@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 09:41:48AM +0200, Marek Szyprowski wrote:
-> The Contiguous Memory Allocator is a set of helper functions for DMA
-> mapping framework that improves allocations of contiguous memory chunks.
+On Tue, Jul 05, 2011 at 01:20:02PM +0200, Ingo Molnar wrote:
 > 
-> CMA grabs memory on system boot, marks it with CMA_MIGRATE_TYPE and
-> gives back to the system. Kernel is allowed to allocate movable pages
-> within CMA's managed memory so that it can be used for example for page
-> cache when DMA mapping do not use it. On dma_alloc_from_contiguous()
-> request such pages are migrated out of CMA area to free required
-> contiguous block and fulfill the request. This allows to allocate large
-> contiguous chunks of memory at any time assuming that there is enough
-> free memory available in the system.
+> * Cyrill Gorcunov <gorcunov@gmail.com> wrote:
 > 
-> This code is heavily based on earlier works by Michal Nazarewicz.
+> > On Tue, Jul 05, 2011 at 12:59:59PM +0200, Ingo Molnar wrote:
+> > ...
+> > > 
+> > > are 'non-sleeping ticks' non-halted cycles - i.e. cycles that 
+> > > always count with CPU frequency and can thus be used for periodic 
+> > > frequencies?
+> > 
+> > Yes, I think so (btw, as far as I remember oprofile does the same 
+> > 'threshold' gaming for nmi-watchdog).
+> 
+> But the NMI watchdog does not need a constant frequency event - it 
+> can use unhalted cycles just fine. Why does it need unhalted cycles 
+> on P4?
+> 
 
-And how are you addressing the technical concerns about aliasing of
-cache attributes which I keep bringing up with this and you keep
-ignoring and telling me that I'm standing in your way.
+Ingo, the main problem there is not halted or unhalted events but rather
+inability of p4 architecture to move events between counters, with core
+or nehalem you can (if constraints allow) simply move nmi-watchdog event
+to another free counter and assign cpu cycles to a free slot. With p4 the
+situation is radically different -- every event has a number of contraints
+and once nmi-watchdog armed (it could be halted or unhaled event, whatever)
+ESCR/CCCR/counter registers tuple borrowed forever and we need to find out
+some different non-intersected ESCR/CCCR/counter tuple to count cpu-cycles
+in a sake of perf utility purpose. That is why this assignments done in
+a such weird way -- just to be able to run nmi-watchdog and cpu-cycles
+simultaneously.
+
+Probably I miss something and you mean something completely different?
+
+	Cyrill
