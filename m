@@ -1,87 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab1GEOub (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:50:31 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:62272 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753615Ab1GEOu3 (ORCPT
+	id S1754632Ab1GEOuo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:50:44 -0400
+Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:59153 "EHLO
+	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab1GEOum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:50:29 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: ashish.jangam@kpitcummins.com
-Subject: Re: [PATCH 9/11] Backlight: DA9052 Backlight driver v1
-Date: Tue, 5 Jul 2011 16:50:18 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
-Cc: rpurdie@rpsys.net, tfransosi@gmail.com, linux-kernel@vger.kernel.org,
-        linaro-dev@lists.linaro.org, dchen@diasemi.com
-References: <1309270692.376.227.camel@L-0532.kpit.com>
-In-Reply-To: <1309270692.376.227.camel@L-0532.kpit.com>
+	Tue, 5 Jul 2011 10:50:42 -0400
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 31/49] gma500: tidy the framebuffer fixme and oddments
+To: greg@kroah.com, linux-kernel@vger.kernel.org
+Date: Tue, 05 Jul 2011 15:40:56 +0100
+Message-ID: <20110705144054.23872.45096.stgit@localhost.localdomain>
+In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
+References: <20110705141038.23872.55303.stgit@localhost.localdomain>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="windows-1252"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107051650.19178.arnd@arndb.de>
-X-Provags-ID: V02:K0:h3hEeNJA6CgYQkqli6F8iWk69LWXomI//TyJ3j42X95
- Ld7vaMQvZsSaAiLMJxey7rZpw9zQPNvwTLnOC5fiUQOzF8+8nJ
- 4uRX5IcpKLZtMJ9w+MayjSuc4Ib5wKX90V4uy9tL3EYPsTE3KM
- 0fXmw3YTbqov9Qq1WxkpFz5HgvpnrpGIasr1qL01lkdwPpDIdH
- 9X/Y8ZxYNQMjPRYdrsoXg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 28 June 2011, ashishj3 wrote:
-> +static struct platform_driver da9052_wled1_driver = {
-> +       .probe  = da9052_backlight_probe,
-> +       .remove = da9052_backlight_remove,
-> +       .driver = {
-> +               .name   = "da9052-WLED1",
-> +               .owner  = THIS_MODULE,
-> +       },
-> +};
-> +
-> +static struct platform_driver da9052_wled2_driver = {
-> +       .probe  = da9052_backlight_probe,
-> +       .remove = da9052_backlight_remove,
-> +       .driver = {
-> +               .name   = "da9052-WLED2",
-> +               .owner  = THIS_MODULE,
-> +       },
-> +};
-> +
-> +static struct platform_driver da9052_wled3_driver = {
-> +       .probe  = da9052_backlight_probe,
-> +       .remove = da9052_backlight_remove,
-> +       .driver = {
-> +               .name   = "da9052-WLED3",
-> +               .owner  = THIS_MODULE,
-> +       },
-> +};
-> +
-> +static int __init da9052_backlight_init(void)
-> +{
-> +       int ret;
-> +
-> +       ret = platform_driver_register(&da9052_wled1_driver);
-> +       if (ret)
-> +               return ret;
-> +
-> +       ret = platform_driver_register(&da9052_wled2_driver);
-> +       if (ret)
-> +               return ret;
-> +
-> +       ret = platform_driver_register(&da9052_wled3_driver);
-> +       if (ret)
-> +               return ret;
-> +
-> +       return 0;
-> +}
-> +module_init(da9052_backlight_init);
+From: Alan Cox <alan@linux.intel.com>
 
-As mentioned before, you should only need to register a single driver
-for these three devices: Either you name them all the same and just
-give the individual devices a different platform_device->id, or
-you leave them with different names and add a platform_driver->id_table
-to match them all.
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
 
-	Arnd
+ drivers/staging/gma500/psb_fb.c |    6 +-----
+ 1 files changed, 1 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/staging/gma500/psb_fb.c b/drivers/staging/gma500/psb_fb.c
+index 349fff8..17c3cf6 100644
+--- a/drivers/staging/gma500/psb_fb.c
++++ b/drivers/staging/gma500/psb_fb.c
+@@ -591,7 +591,6 @@ int psb_fbdev_init(struct drm_device *dev)
+ {
+ 	struct psb_fbdev *fbdev;
+ 	struct drm_psb_private *dev_priv = dev->dev_private;
+-	int num_crtc;
+ 
+ 	fbdev = kzalloc(sizeof(struct psb_fbdev), GFP_KERNEL);
+ 	if (!fbdev) {
+@@ -602,10 +601,7 @@ int psb_fbdev_init(struct drm_device *dev)
+ 	dev_priv->fbdev = fbdev;
+ 	fbdev->psb_fb_helper.funcs = &psb_fb_helper_funcs;
+ 
+-	/* FIXME: check Medfield */
+-	num_crtc = 2;
+-
+-	drm_fb_helper_init(dev, &fbdev->psb_fb_helper, num_crtc,
++	drm_fb_helper_init(dev, &fbdev->psb_fb_helper, 2,
+ 							INTELFB_CONN_LIMIT);
+ 
+ 	drm_fb_helper_single_add_all_connectors(&fbdev->psb_fb_helper);
+
