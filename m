@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753225Ab1GESaS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 14:30:18 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:54248 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab1GESaR (ORCPT
+	id S1753258Ab1GESfy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 14:35:54 -0400
+Received: from insvr08.in.whservidor.com ([187.61.61.119]:34089 "EHLO
+	insvr08.insite.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752435Ab1GESfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 14:30:17 -0400
+	Tue, 5 Jul 2011 14:35:53 -0400
+X-Greylist: delayed 824 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jul 2011 14:35:53 EDT
+Reply-To: <financialcons729@aol.com>
+From: "Information Technology" <contato@jdserver.com.br>
+Subject: Update Your E-Mail Details Account
+Date: Tue, 5 Jul 2011 18:48:50 +0200
 MIME-Version: 1.0
-In-Reply-To: <74CDBE0F657A3D45AFBB94109FB122FF049E21BE97@HQMAIL01.nvidia.com>
-References: <74CDBE0F657A3D45AFBB94109FB122FF049E21BE97@HQMAIL01.nvidia.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 5 Jul 2011 12:29:56 -0600
-X-Google-Sender-Auth: HuGp1zYe9cHciNlF6t27pg-Sc3o
-Message-ID: <CACxGe6tWC2bQ=cRp=odY+suJe5DVym1L6peurk_Ldu-mY_rTzA@mail.gmail.com>
-Subject: Re: Tegra device name for device tree
-To: Stephen Warren <swarren@nvidia.com>
-Cc: "devicetree-discuss@lists.ozlabs.org" 
-	<devicetree-discuss@lists.ozlabs.org>,
-        "linux-tegra@vger.kernel.org" <linux-tegra@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;
+	charset="Windows-1251"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110705180956.CB089128CAD@insvr08.insite.com.br>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 5, 2011 at 12:22 PM, Stephen Warren <swarren@nvidia.com> wrote:
-> Grant et. al.,
->
-> It recently dawned on me that all the Tegra DeviceTree support is using a
-> marketing name for the SoC ("tegra250"). NVIDIA would prefer that we use
-> engineering names for the SoC (e.g. "tegra20" now, "tegra30" for an
-> upcoming SoC). The primary motivation for this is that engineering names
-> tend to be more stable and map more directly to the HW design.
->
-> Is it still possible to make this change, if I submit the appropriate
-> patches to do this?
+Confirm Your E-Mail Details
 
-Yes, please do.  I'm completely in support of that.
+Dear Email User
+This message is from Information Technology Services of This EMAIL to all our Staff. We are currently upgrading our database and e-mail center and this is our final notification to you.we have sent several messages to you without response.
+We are deleting all unused Mail account to create space for new accounts. In order not to be suspended, you will have to update your account by providing the information listed below:
 
-> So, far, I see devicetree/next only refers to the Tegra serial port,
-> whereas devicetree/arm and devicetree/test refer to more Tegra devices in
-> this way. I'm not quite sure how the flow of patches works between these 3
-> trees. For the serial port, I obviously need to submit a patch against
-> devicetree/next, but I'm not so sure about which of devicetree/arm or
-> devicetree/test to target for the other devices.
+Confirm Your E-Mail Details..
+Email.......................
+User name: ..................
+Password:..............
+Re Confirm Password:.............
 
-devicetree/next is the stuff I'm actually merging.  devicetree/test is
-stuff being experimented with, and devicetree/arm is stuff I expect to
-get merged, but I'm not actually merging through my tree (or just
-isn't quite ready yet).  You can use devicetree/test as a staging
-ground for getting things ready for upstream.  Let me know if anything
-you see in devicetree/test needs to get upstreamed ASAP because your
-work depends on it, and we'll figure out how/when to get it done.
+If you fail to confirm your continuous usage of our services by confirming your email password now, your account will be disable and you will not be able to access your email.
 
-g.
+You should immediately reply this email:  upgrading2010@mail.md   and enter your password in the above password column.
+Thanks for your understanding.
+Reply this email:      upgrading2010@mail.md   
+Regard,
+IT Services
 
-
->
-> Sorry for bringing this up so late in the game.
->
-> Thanks!
->
-> --
-> nvpublic
->
->
-
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
