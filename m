@@ -1,132 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752691Ab1GERqL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 13:46:11 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:47346 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752057Ab1GERqJ convert rfc822-to-8bit (ORCPT
+	id S1752707Ab1GERr0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 13:47:26 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:40886 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab1GERrZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 13:46:09 -0400
+	Tue, 5 Jul 2011 13:47:25 -0400
+Message-ID: <4E134E27.3000108@canonical.com>
+Date: Tue, 05 Jul 2011 10:47:19 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-In-Reply-To: <1309879166-25788-4-git-send-email-shawn.guo@linaro.org>
-References: <1309879166-25788-1-git-send-email-shawn.guo@linaro.org> <1309879166-25788-4-git-send-email-shawn.guo@linaro.org>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 5 Jul 2011 11:45:49 -0600
-X-Google-Sender-Auth: _62nqLz4awSm7n6hMA29UnxkCFI
-Message-ID: <CACxGe6tRuyW0NjyiB2T+uAZ-NvJxwBVJOB0R3u_k-_DOkqmtdg@mail.gmail.com>
-Subject: Re: [PATCH v2 3/3] gpio/mxc: add device tree probe support
-To: Shawn Guo <shawn.guo@linaro.org>
-Cc: linux-arm-kernel@lists.infradead.org, devicetree-discuss@lists.ozlabs.org,
-        patches@linaro.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+To: djkurtz@chromium.org
+CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
+        olofj@chromium.org
+Subject: Re: [PATCH 05/12] Input: synaptics - process button bits in AGM packets
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org> <1309324042-22943-6-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1309324042-22943-6-git-send-email-djkurtz@chromium.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 5, 2011 at 9:19 AM, Shawn Guo <shawn.guo@linaro.org> wrote:
-> The patch adds device tree probe support for gpio-mxc driver.
->
-> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
-> Cc: Grant Likely <grant.likely@secretlab.ca>
+On 06/28/2011 10:07 PM, djkurtz@chromium.org wrote:
+> From: Daniel Kurtz <djkurtz@chromium.org>
+> 
+> AGM packets contain valid button bits, too.
+> This patch refactors packet processing to parse button bits in AGM packets.
+> However, they aren't actually used or reported.
+> 
+> The point is to more completely process AGM packets,
+> and prepare for future patches that may actually use AGM packet button bits.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
 
-Looks right to me.
+I can't see anything wrong with this :).
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Acked-by: Chase Douglas <chase.douglas@canonical.com>
 
 > ---
->  .../devicetree/bindings/gpio/fsl-imx-gpio.txt      |   22 ++++++++++++++++++++
->  drivers/gpio/gpio-mxc.c                            |   18 +++++++++++++++-
->  2 files changed, 39 insertions(+), 1 deletions(-)
->  create mode 100644 Documentation/devicetree/bindings/gpio/fsl-imx-gpio.txt
->
-> diff --git a/Documentation/devicetree/bindings/gpio/fsl-imx-gpio.txt b/Documentation/devicetree/bindings/gpio/fsl-imx-gpio.txt
-> new file mode 100644
-> index 0000000..4363ae4
-> --- /dev/null
-> +++ b/Documentation/devicetree/bindings/gpio/fsl-imx-gpio.txt
-> @@ -0,0 +1,22 @@
-> +* Freescale i.MX/MXC GPIO controller
+>  drivers/input/mouse/synaptics.c |   35 ++++++++++++++++++-----------------
+>  1 files changed, 18 insertions(+), 17 deletions(-)
+> 
+> diff --git a/drivers/input/mouse/synaptics.c b/drivers/input/mouse/synaptics.c
+> index 1ce47b7..74b1222 100644
+> --- a/drivers/input/mouse/synaptics.c
+> +++ b/drivers/input/mouse/synaptics.c
+> @@ -408,27 +408,10 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>  	memset(hw, 0, sizeof(struct synaptics_hw_state));
+>  
+>  	if (SYN_MODEL_NEWABS(priv->model_id)) {
+> -		hw->x = (((buf[3] & 0x10) << 8) |
+> -			 ((buf[1] & 0x0f) << 8) |
+> -			 buf[4]);
+> -		hw->y = INVERT_Y((((buf[3] & 0x20) << 7) |
+> -			 ((buf[1] & 0xf0) << 4) |
+> -			 buf[5]));
+> -
+> -		hw->z = buf[2];
+>  		hw->w = (((buf[0] & 0x30) >> 2) |
+>  			 ((buf[0] & 0x04) >> 1) |
+>  			 ((buf[3] & 0x04) >> 2));
+>  
+> -		if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
+> -			/* Gesture packet: (x, y, z) at half resolution */
+> -			priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+> -			priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
+> -					      | buf[2]) << 1);
+> -			priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
+> -			return 1;
+> -		}
+> -
+>  		hw->left  = (buf[0] & 0x01) ? 1 : 0;
+>  		hw->right = (buf[0] & 0x02) ? 1 : 0;
+>  
+> @@ -451,6 +434,24 @@ static int synaptics_parse_hw_state(const unsigned char buf[],
+>  			hw->down = ((buf[0] ^ buf[3]) & 0x02) ? 1 : 0;
+>  		}
+>  
+> +		if (SYN_CAP_ADV_GESTURE(priv->ext_cap_0c) && hw->w == 2) {
+> +			/* Gesture packet: (x, y, z) at half resolution */
+> +			priv->mt.x = (((buf[4] & 0x0f) << 8) | buf[1]) << 1;
+> +			priv->mt.y = INVERT_Y((((buf[4] & 0xf0) << 4)
+> +					      | buf[2]) << 1);
+> +			priv->mt.z = ((buf[3] & 0x30) | (buf[5] & 0x0f)) << 1;
+> +			return 1;
+> +		} else {
+> +			hw->x = (((buf[3] & 0x10) << 8) |
+> +				 ((buf[1] & 0x0f) << 8) |
+> +				 buf[4]);
+> +			hw->y = INVERT_Y((((buf[3] & 0x20) << 7) |
+> +					 ((buf[1] & 0xf0) << 4) |
+> +					 buf[5]));
 > +
-> +Required properties:
-> +- compatible : Should be "fsl,<soc>-gpio"
-> +- reg : Address and length of the register set for the device
-> +- interrupts : Should be the port interrupt shared by all 32 pins, if
-> +  one number.  If two numbers, the first one is the interrupt shared
-> +  by low 16 pins and the second one is for high 16 pins.
-> +- gpio-controller : Marks the device node as a gpio controller.
-> +- #gpio-cells : Should be two.  The first cell is the pin number and
-> +  the second cell is used to specify optional parameters (currently
-> +  unused).
+> +			hw->z = buf[2];
+> +		}
 > +
-> +Example:
-> +
-> +gpio0: gpio@73f84000 {
-> +       compatible = "fsl,imx51-gpio", "fsl,imx31-gpio";
-> +       reg = <0x73f84000 0x4000>;
-> +       interrupts = <50 51>;
-> +       gpio-controller;
-> +       #gpio-cells = <2>;
-> +};
-> diff --git a/drivers/gpio/gpio-mxc.c b/drivers/gpio/gpio-mxc.c
-> index 4875690..059d44a 100644
-> --- a/drivers/gpio/gpio-mxc.c
-> +++ b/drivers/gpio/gpio-mxc.c
-> @@ -27,6 +27,8 @@
->  #include <linux/platform_device.h>
->  #include <linux/slab.h>
->  #include <linux/basic_mmio_gpio.h>
-> +#include <linux/of.h>
-> +#include <linux/of_device.h>
->  #include <asm-generic/bug.h>
->
->  enum mxc_gpio_hwtype {
-> @@ -126,6 +128,13 @@ static struct platform_device_id mxc_gpio_devtype[] = {
->        }
->  };
->
-> +static const struct of_device_id mxc_gpio_dt_ids[] = {
-> +       { .compatible = "fsl,imx1-gpio", .data = &mxc_gpio_devtype[IMX1_GPIO], },
-> +       { .compatible = "fsl,imx21-gpio", .data = &mxc_gpio_devtype[IMX2_GPIO], },
-> +       { .compatible = "fsl,imx31-gpio", .data = &mxc_gpio_devtype[IMX_GPIO], },
-> +       { /* sentinel */ }
-> +};
-> +
->  /*
->  * MX2 has one interrupt *for all* gpio ports. The list is used
->  * to save the references to all ports, so that mx2_gpio_irq_handler
-> @@ -308,7 +317,13 @@ static void __init mxc_gpio_init_gc(struct mxc_gpio_port *port)
->
->  static void __devinit mxc_gpio_get_hw(struct platform_device *pdev)
->  {
-> -       enum mxc_gpio_hwtype hwtype = pdev->id_entry->driver_data;
-> +       const struct of_device_id *of_id =
-> +                       of_match_device(mxc_gpio_dt_ids, &pdev->dev);
-> +       enum mxc_gpio_hwtype hwtype;
-> +
-> +       if (of_id)
-> +               pdev->id_entry = of_id->data;
-> +       hwtype = pdev->id_entry->driver_data;
->
->        if (mxc_gpio_hwtype) {
->                /*
-> @@ -426,6 +441,7 @@ static struct platform_driver mxc_gpio_driver = {
->        .driver         = {
->                .name   = "gpio-mxc",
->                .owner  = THIS_MODULE,
-> +               .of_match_table = mxc_gpio_dt_ids,
->        },
->        .probe          = mxc_gpio_probe,
->        .id_table       = mxc_gpio_devtype,
-> --
-> 1.7.4.1
->
->
->
+>  		if (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) &&
+>  		    ((buf[0] ^ buf[3]) & 0x02)) {
+>  			switch (SYN_CAP_MULTI_BUTTON_NO(priv->ext_cap) & ~0x01) {
 
-
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
