@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753760Ab1GEGMA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 02:12:00 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41596 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753590Ab1GEGL6 (ORCPT
+	id S1753794Ab1GEGPw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 02:15:52 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:34702 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753633Ab1GEGPv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 02:11:58 -0400
-Date: Mon, 4 Jul 2011 23:11:54 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
-Message-ID: <20110705061153.GA1625@opensource.wolfsonmicro.com>
-References: <20110704170949.11059.92774.stgit@ponder>
- <20110704204717.GE32624@opensource.wolfsonmicro.com>
- <20110704232509.GA12824@ponder.secretlab.ca>
+	Tue, 5 Jul 2011 02:15:51 -0400
+Message-ID: <4E12AC10.9020206@gmail.com>
+Date: Tue, 05 Jul 2011 16:15:44 +1000
+From: Ryan Mallon <rmallon@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110704232509.GA12824@ponder.secretlab.ca>
-X-Cookie: Long life is in store for you.
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Sekhar Nori <nsekhar@ti.com>
+CC: linux-kernel@vger.kernel.org, Kevin Hilman <khilman@ti.com>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Cyril Chemparathy <cyril@ti.com>, linux-arm-kernel@lists.infradead.org,
+        davinci-linux-open-source@linux.davincidsp.com
+Subject: Re: [RFC/RFT 1/2] gpio/basic_mmio: add support for enable register
+References: <cover.1309840042.git.nsekhar@ti.com> <83915224c24e43224272b1bf570cddb9545279a6.1309840042.git.nsekhar@ti.com>
+In-Reply-To: <83915224c24e43224272b1bf570cddb9545279a6.1309840042.git.nsekhar@ti.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 05:25:09PM -0600, Grant Likely wrote:
-> On Mon, Jul 04, 2011 at 01:47:18PM -0700, Mark Brown wrote:
+On 05/07/11 15:10, Sekhar Nori wrote:
+> Some GPIO controllers have an enable register
+> which needs to be written to before a GPIO
+> can be used.
+>
+> Add support for enabling the GPIO. At this
+> time inverted logic for enabling the GPIO
+> is not supported. This can be done by adding
+> a disable register as and when a controller
+> with this comes along.
+>
+> Signed-off-by: Sekhar Nori<nsekhar@ti.com>
+> ---
+>
+<snip>
 
-> > where we decide that everything is registered and we should run the
-> > actual probe functions so it'll help with that.  Having a clock API we
-> > can actually use off-SoC will help with a lot of the remaining stuff.
+> static int bgpio_setup_io(struct bgpio_chip *bgc,
+>   			  void __iomem *dat,
+> @@ -369,6 +401,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
+>   			 void __iomem *clr,
+>   			 void __iomem *dirout,
+>   			 void __iomem *dirin,
+> +			 void __iomem *en,
+>   			 bool big_endian)
 
-> Is that the bit that snd_soc_instantiate_cards() is doing?  If I made 
-> snd_soc_register_card() attempt to instantiate immediately and return
-> -EAGAIN if resources were not available, it looks like I should be
-> able to remove the card_list entirely.  Would that be the right way to
-> go about it?
+The arguments to this function are getting a bit unwieldy :-). Maybe we 
+need to introduce something like:
 
-That's exactly what I'd expect to do, yes.
+struct bgpio_chip_info {
+     struct device *dev;
+     unsigned long sz;
+     void __iomem *dat;
+     void __iomem *set;
+     void __iomem *clr;
+     void __iomem *dirout;
+     void __iomem *dirin;
+     void __iomem *en;
+     bool big_endian;
+};
 
-> > I *think* we'll still going to need to have the infrastructure to deal
-> > with running all the probes together, at least for a while, as the
-> > current code really assumes that it's got some of the card wide stuff
-> > around when all the devices get instantiated but I think if we were
-> > starting from fresh this would be fairly good.
+and pass that to bgpio_init instead. It would have the added benefits of 
+making the drivers more readable and that bgpio_chip_info structs in the 
+drivers can probably be marked __initdata also.
 
-> I'm not sure what you're getting at here.  Are you talking about the
-> infrastructure to keep track of codecs, DAIs and the like?  Yes, that
-> infrastructure is still needed because the drivers need an api for
-> each of the kinds of resources it needs.
+Since you are already having to touch all of the call sites for 
+bgpio_init this could be done as a separate patch along with this series.
 
-Sort of, but I'm more thinking of the fact that we currently defer all
-the "real" probes until the full card is ready - ideally these could all
-be done as part of the device model probe, but this is something we can
-improve over time rather than a critical thing.  The regmap API will
-help here.
+~Ryan
 
-> > The only thing I can
-> > think might be an issue is n way dependencies, but those mostly shake
-> > out as being a dependency of the overall card on subdevices.  I'd need
-> > to separate out the implementation issues from the assumptions to be
-> > 100% clear if that was the case, though.
-
-> Do you have an example?  I don't see any problems with complex
-> dependencies providing that none of them are circular.  If, say,
-> device A depends on B and C, and B also depends on C, then it may take
-> a couple of cycles before everything gets probed, but it all still
-> works correctly.
-
-It's circular dependencies that worry me.  I don't have any concrete
-examples in mainline now but I'm aware of systems that are more
-complicated than mainline.  Things like clock trees that go out of one
-device, into another, and back into to the first.  Like I say I think
-these all shake out as simple dependencies of component devices on the
-card so it's probably not a problem.
