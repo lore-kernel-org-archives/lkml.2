@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754364Ab1GEIxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 04:53:19 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:42702 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754054Ab1GEIxS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 04:53:18 -0400
-Date: Tue, 5 Jul 2011 10:52:52 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Hu Tao <hutao@cn.fujitsu.com>
-Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
+	id S1754483Ab1GEIxn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 04:53:43 -0400
+Received: from zone0.gcu-squad.org ([212.85.147.21]:31149 "EHLO
+	services.gcu-squad.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754085Ab1GEIxl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 04:53:41 -0400
+Date: Tue, 5 Jul 2011 10:53:30 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
         linux-kernel@vger.kernel.org,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Pavel Emelyanov <xemul@openvz.org>
-Subject: Re: [patch 00/16] CFS Bandwidth Control v7
-Message-ID: <20110705085252.GA5274@elte.hu>
-References: <20110621071649.862846205@google.com>
- <4E01BE6B.2090701@jp.fujitsu.com>
- <1308830816.1022.112.camel@twins>
- <20110623124310.GA15430@elte.hu>
- <4E041C6A.4000701@jp.fujitsu.com>
- <20110626103526.GA11093@elte.hu>
- <20110629040521.GG4186@localhost.localdomain>
- <20110701122824.GE28008@elte.hu>
- <20110705035813.GC4656@localhost.localdomain>
- <20110705085032.GA3169@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705085032.GA3169@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
-	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
-	[score: 0.0000]
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Bonesio <bones@secretlab.ca>, Stephen Warren <SWarren@nvidia.com>
+Subject: Re: [PATCH] i2c: Allow i2c_add_numbered_adapter() to assign a bus
+ id.
+Message-ID: <20110705105330.63c113c8@endymion.delvare>
+In-Reply-To: <BANLkTi=6zxPUwGZ5JHhRGRHHaEgvNgiaHQ@mail.gmail.com>
+References: <20110627185505.19423.64214.stgit@ponder>
+	<BANLkTi=6zxPUwGZ5JHhRGRHHaEgvNgiaHQ@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Grant,
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Sorry for the late answer.
 
+On Mon, 27 Jun 2011 13:02:45 -0600, Grant Likely wrote:
+> On Mon, Jun 27, 2011 at 12:55 PM, Grant Likely
+> <grant.likely@secretlab.ca> wrote:
+> > Currently, if an i2c bus driver supports both static and dynamic bus
+> > ids, it needs to choose between calling i2c_add_numbered_adapter() and
+> > i2c_add_adapter().  This patch makes i2c_add_numbered_adapter()
+> > redirect to i2c_add_adapter() if the requested bus id is -1.
+> >
+> > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 > 
-> * Hu Tao <hutao@cn.fujitsu.com> wrote:
+> Oops, forgot to edit the email before sending the patch.
 > 
-> > perf diff output:
-> > 
-> > # Baseline  Delta          Shared Object                       Symbol
-> > # ........ ..........  .................  ...........................
-> > #
-> >      0.00%    +10.07%  [kernel.kallsyms]  [k] __lock_acquire
-> >      0.00%     +5.90%  [kernel.kallsyms]  [k] lock_release
-> >      0.00%     +4.86%  [kernel.kallsyms]  [k] trace_hardirqs_off_caller
-> >      0.00%     +4.06%  [kernel.kallsyms]  [k] debug_smp_processor_id
-> >      0.00%     +4.00%  [kernel.kallsyms]  [k] lock_acquire
-> >      0.00%     +3.81%  [kernel.kallsyms]  [k] lock_acquired
-> >      0.00%     +3.71%  [kernel.kallsyms]  [k] lock_is_held
-> >      0.00%     +3.04%  [kernel.kallsyms]  [k] validate_chain
-> >      0.00%     +2.68%  [kernel.kallsyms]  [k] check_chain_key
-> >      0.00%     +2.41%  [kernel.kallsyms]  [k] trace_hardirqs_off
-> >      0.00%     +2.01%  [kernel.kallsyms]  [k] trace_hardirqs_on_caller
+> This patch is as-yet untested other than build testing, but I want to
+> get feedback.  With the move to DT on ARM, there are going to be a lot
+> more i2c bus drivers that need to support both static and dynamically
+> allocated busses, and it is very likely that it will be needed in the
+> v3.1 merge window.
 > 
-> Oh, please measure with lockdep (CONFIG_PROVE_LOCKING) turned off. No 
-> production kernel has it enabled and it has quite some overhead (as 
-> visible in the profile), skewing results.
+> Ben/Jean, *IF* this patch tests out okay, and *IF* I get an ack from
+> you, it will probably need to have this commit in my devicetree/next
+> branch.  If so, then I'll either need to commit it myself, or have it
+> put into a separate topic branch that both of us can merge into our
+> trees.  What is your preference.
 > 
-> >      2.04%     -0.09%  pipe-test-100k     [.] main
-> >      0.00%     +1.79%  [kernel.kallsyms]  [k] add_preempt_count
-> 
-> I'd also suggest to turn off CONFIG_PREEMPT_DEBUG.
+> John: this is the patch that I asked you to write earlier today, but I
+> think one of the TI folks will run into the same issue, so I wanted to
+> get it drafted and onto the list ASAP.
 
-The best way to get a good 'reference config' to measure scheduler 
-overhead on do something like:
+If this makes your life easier then I have no objection, you can go
+ahead. I don't expect any conflict with my tree as there is no i2c-core
+work going on on my end at the moment. So you can just take it in your
+tree and merge it yourself as you see fit.
 
-	make defconfig
-	make localyesconfig
+Acked-by: Jean Delvare <khali@linux-fr.org>
 
-The first step will configure a sane default kernel, the second one 
-will enable all drivers that are needed on that box. You should be 
-able to boot the resulting bzImage and all drivers should be built-in 
-and are easily profilable.
-
-Thanks,
-
-	Ingo
+-- 
+Jean Delvare
