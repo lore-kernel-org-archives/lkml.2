@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab1GEQmU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 12:42:20 -0400
-Received: from mail.perches.com ([173.55.12.10]:3527 "EHLO mail.perches.com"
+	id S1756219Ab1GEQpI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 12:45:08 -0400
+Received: from mail.perches.com ([173.55.12.10]:3536 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755873Ab1GEQmR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 12:42:17 -0400
+	id S1755959Ab1GEQmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 12:42:20 -0400
 From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@suse.de>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 00/14] MAINTAINERS: Add staging
-Date: Tue,  5 Jul 2011 09:42:00 -0700
-Message-Id: <cover.1309883752.git.joe@perches.com>
+To: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org
+Cc: devel@driverdev.osuosl.org
+Subject: [PATCH 03/14] MAINTAINERS: Add STAGING - CRYSTAL HD VIDEO DECODER
+Date: Tue,  5 Jul 2011 09:42:03 -0700
+Message-Id: <0c25eef2bdb7e9946611e8e8ea6f7f1f6be993be.1309883752.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.6.131.g99019
-In-Reply-To: <20110704153435.GA17475@suse.de>
-References: <20110704153435.GA17475@suse.de>
+In-Reply-To: <cover.1309883752.git.joe@perches.com>
+References: <20110704153435.GA17475@suse.de> <cover.1309883752.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you've changed your mind, here are the parts that apply
-from the original submission in June, 2010.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ MAINTAINERS |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-Added a removal of one deleted section as well.
-
-Joe Perches (14):
-  MAINTAINERS: Add STAGING - ASUS OLED
-  MAINTAINERS: Add STAGING - COMEDI
-  MAINTAINERS: Add STAGING - CRYSTAL HD VIDEO DECODER
-  MAINTAINERS: Add STAGING - ECHO CANCELLER
-  MAINTAINERS: Add STAGING - FRONTIER TRANZPORT AND ALPHATRACK
-  MAINTAINERS: Add STAGING - HYPER-V (MICROSOFT)
-  MAINTAINERS: Add STAGING - INDUSTRIAL IO
-  MAINTAINERS: Add STAGING - PARALLEL LCD/KEYPAD PANEL DRIVER
-  MAINTAINERS: Add STAGING - SILICON MOTION SM7XX FRAME BUFFER DRIVER
-  MAINTAINERS: Add STAGING - VIA VT665X DRIVERS
-  MAINTAINERS: Add STAGING - WINBOND IS89C35 WLAN USB DRIVER
-  MAINTAINERS: Add STAGING - AGERE HERMES II and II.5 WIRELESS DRIVERS
-  MAINTAINERS: Add STAGING - XGI Z7,Z9,Z11 PCI DISPLAY DRIVER
-  MAINTAINERS: Remove se401 entry
-
- MAINTAINERS |   79 +++++++++++++++++++++++++++++++++++++++++++++++++++++-----
- 1 files changed, 72 insertions(+), 7 deletions(-)
-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 6d8e58b..e42923b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -6080,6 +6080,14 @@ M:	Mori Hess <fmhess@users.sourceforge.net>
+ S:	Odd Fixes
+ F:	drivers/staging/comedi/
+ 
++STAGING - CRYSTAL HD VIDEO DECODER
++M:	Naren Sankar <nsankar@broadcom.com>
++M:	Jarod Wilson <jarod@wilsonet.com>
++M:	Scott Davilla <davilla@4pi.com>
++M:	Manu Abraham <abraham.manu@gmail.com>
++S:	Odd Fixes
++F:	drivers/staging/crystalhd/
++
+ STARFIRE/DURALAN NETWORK DRIVER
+ M:	Ion Badulescu <ionut@badula.org>
+ S:	Odd Fixes
 -- 
 1.7.6.131.g99019
 
