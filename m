@@ -1,94 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753933Ab1GEGtm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 02:49:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:37100 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775Ab1GEGtl convert rfc822-to-8bit (ORCPT
+	id S1754001Ab1GEHLF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 03:11:05 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:45353 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753664Ab1GEHLE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 02:49:41 -0400
+	Tue, 5 Jul 2011 03:11:04 -0400
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: 3.0rc3-rc5: usb stops working after resume from suspend to ram
+Date: Tue, 5 Jul 2011 09:10:57 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc6-dirty; KDE/4.6.5; x86_64; ; )
+Cc: Kernel development list <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>
+References: <Pine.LNX.4.44L0.1107041155080.12242-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1107041155080.12242-100000@netrider.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <20110705061903.GD1625@opensource.wolfsonmicro.com>
-References: <1309397507-24959-1-git-send-email-myungjoo.ham@samsung.com>
-	<1309397507-24959-3-git-send-email-myungjoo.ham@samsung.com>
-	<20110630052808.GA796@opensource.wolfsonmicro.com>
-	<BANLkTikGR-HdVZ-5h3kW64wiFduuuiU6Vw@mail.gmail.com>
-	<20110630055719.GA930@opensource.wolfsonmicro.com>
-	<BANLkTin4sCfX1Ahb_Td6VWH28s7SukYN-g@mail.gmail.com>
-	<20110630155634.GE3249@opensource.wolfsonmicro.com>
-	<BANLkTikPOj6N=TQ=tayx7hTXcLAJd5zf7w@mail.gmail.com>
-	<20110704171634.GD28726@opensource.wolfsonmicro.com>
-	<CAJ0PZbST6Xp82HTxpspiSEbjPmSzUuiKaHsycUKfyBFPQsSA_Q@mail.gmail.com>
-	<20110705061903.GD1625@opensource.wolfsonmicro.com>
-Date: Tue, 5 Jul 2011 15:49:39 +0900
-Message-ID: <CAJ0PZbSrB9Cc-2h0xGot6kYUGR-uu0f7GVq43c_fSEd5oTMEog@mail.gmail.com>
-Subject: Re: [PATCH 3/3] MFD: MAX8997: IRQ definition moved to public header.
-From: MyungJoo Ham <myungjoo.ham@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <sameo@linux.intel.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Donggeun Kim <dg77.kim@samsung.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8BIT
+Message-Id: <201107050910.57432.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 5, 2011 at 3:19 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Jul 05, 2011 at 02:57:54PM +0900, MyungJoo Ham wrote:
->> On Tue, Jul 5, 2011 at 2:16 AM, Mark Brown
->
->> > My understanding was that one of the goals of the power_supply subsystem
->> > was to support this sort of interaction? This (and your subsequent
->> > paragraphs) all sounds entirely sensible but it should be being dealt
->> > with at a higher level with the various charger drivers delivering
->> > events into a subsystem or board driver which coordinates them all. †It
->> > seems like the driver should be doing the work of dealing with the
->> > actual interrupts.
->
->> Yes, I also think that it is supposed to read and update attributes of
->> chargers. However, I don't see any ways to interconnect chargers and
->> related devices with power_supply subsystem.
->
-> Nor do I, but this is just software so we should be able to make it do
-> what's needed here.
->
->> If we let a user process interconnect the chargers and related
->> devices, we need to allow userland to access (both read and write)
->
-> I didn't say anything about userspace, and I wouldn't expect userspace
-> to do anything except policy here.
->
+On Monday 04 of July 2011, Alan Stern wrote:
+> On Mon, 4 Jul 2011, Arkadiusz Miskiewicz wrote:
+> > On Thursday 30 of June 2011, Alan Stern wrote:
+> > > And now you know why, more or less -- we still have to figure out the
+> > > reason for the hang.  Probably something goes wrong when cdc-ether is
+> > > unbound from the wireless device.
+> > 
+> > Reverting patch below fixes hang.
+> > 
+> > commit fccf4e86200b8f5edd9a65da26f150e32ba79808
+> > Author: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+> > Date:   Sun Jun 5 23:22:22 2011 -0700
+> > 
+> >     USB: Free bandwidth when usb_disable_device is called.
+> 
+> Ah, very good!  That explains everything.  Someone else reported a
+> similar problem that was tracked down to this commit, and I submitted a
+> fix a few days ago:
+> 
+> 	http://marc.info/?l=linux-usb&m=130955300211987&w=2
+> 
+> I bet this will fix your problem too.
 
-Ah.. then, I misunderstood "a higher level" in your previous reply was
-userspace. Sorry, my bad.
+Unfortunately it doesn't fix my problem (rc6 + that patch).
 
-I was just trying to say that
-a) as long as we are connecting IRQ events of a device to another
-device, the IRQ information is going to be needed as non-private, and
-b) in the above case, we need to let the IRQ events of a device notify
-other devices' drivers. (defined in a form of platform_data in the
-case, specifying IRQ numbers for the notified devices requiring the
-IRQ definitions to be included)
+usb still hangs after resume and repluging device causes no effect.
 
-Anyway, I've been trying to implement some virtual device driver or
-psuedo framework in kernel to interconnect charger related devices,
-"charger manager". This code mentioned is to support that "charger
-manager". It is sort of at a higher level of charger related devices,
-taking device names of them as a platform data. The platform data
-taking the IRQ numbers is the one for that "charger manager".
+[   60.530119] Restarting tasks ...
+[   60.530179] hub 5-0:1.0: state 7 ports 2 chg 0000 evt 0000
+[   60.530184] hub 6-0:1.0: state 7 ports 2 chg 0000 evt 0000
+[   60.530188] hub 7-0:1.0: state 7 ports 2 chg 0000 evt 0000
+[   60.530192] hub 8-0:1.0: state 7 ports 2 chg 0000 evt 0000
+[   60.530196] hub 2-0:1.0: state 7 ports 6 chg 0010 evt 0000
+[   60.530205] hub 2-0:1.0: port 4, status 0100, change 0000, 12 Mb/s
+[   60.530208] usb 2-4: USB disconnect, device number 2
+[   60.530211] usb 2-4: unregistering device
+[   60.530214] usb 2-4: unregistering interface 2-4:1.0
+[   60.530265] usb 2-4: unregistering interface 2-4:1.1
+[   60.540655] done.
+[   60.540663] video LNXVIDEO:00: Restoring backlight state
+[   60.544420] usb 2-4: unregistering interface 2-4:1.2
+[   60.544478] usb 2-4: unregistering interface 2-4:1.3
+[   60.544727] usb 2-4: unregistering interface 2-4:1.4
+[   60.544834] usb 2-4: unregistering interface 2-4:1.5
+[   60.544861] drivers/usb/core/file.c: removing 0 minor
+[   60.544944] usb 2-4: unregistering interface 2-4:1.6
+[   60.544973] drivers/usb/core/file.c: removing 1 minor
+[   60.545073] usb 2-4: unregistering interface 2-4:1.7
+[   60.545102] cdc_ether 2-4:1.7: wwan0: unregister 'cdc_ether' usb-0000:00:1d.7-4, Mobile Broadband Network Device
 
 
+> Alan Stern
 
-Thank you.
-
-- MyungJoo
 
 -- 
-MyungJoo Ham, Ph.D.
-Mobile Software Platform Lab,
-Digital Media and Communications (DMC) Business
-Samsung Electronics
-cell: 82-10-6714-2858
+Arkadiusz Mi≈õkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
