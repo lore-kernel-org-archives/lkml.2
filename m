@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751643Ab1GEWif (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 18:38:35 -0400
-Received: from swampdragon.chaosbits.net ([90.184.90.115]:35365 "EHLO
-	swampdragon.chaosbits.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751025Ab1GEWie (ORCPT
+	id S1752240Ab1GEWjA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 18:39:00 -0400
+Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:58407 "EHLO
+	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751810Ab1GEWi7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 18:38:34 -0400
-Date: Wed, 6 Jul 2011 00:29:07 +0200 (CEST)
-From: Jesper Juhl <jj@chaosbits.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
-cc: linux-kernel@vger.kernel.org, Graeme Gregory <gg@slimlogic.co.uk>,
-        Jorge Eduardo Candelaria <jedu@slimlogic.co.uk>
-Subject: Re: [PATCH] mfd: Don't leak init_data in tps65910_i2c_probe
-In-Reply-To: <alpine.LNX.2.00.1107050945330.27127@swampdragon.chaosbits.net>
-Message-ID: <alpine.LNX.2.00.1107060027280.9158@swampdragon.chaosbits.net>
-References: <alpine.LNX.2.00.1107022120171.16316@swampdragon.chaosbits.net> <20110704173320.GR3021@sortiz-mobl> <alpine.LNX.2.00.1107050945330.27127@swampdragon.chaosbits.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Tue, 5 Jul 2011 18:38:59 -0400
+Date: Wed, 6 Jul 2011 01:38:53 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Liam Girdwood <lrg@ti.com>,
+        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH v2 3/5] ASoC: twl6040: Do not use wrapper for irq request
+Message-ID: <20110705223851.GA8023@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <1309873775-17927-1-git-send-email-peter.ujfalusi@ti.com>
+ <1309873775-17927-4-git-send-email-peter.ujfalusi@ti.com>
+ <20110705175919.GA6238@opensource.wolfsonmicro.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="VS++wcV0S1rZb1Fb"
+Content-Disposition: inline
+In-Reply-To: <20110705175919.GA6238@opensource.wolfsonmicro.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Jul 2011, Jesper Juhl wrote:
 
-> On Mon, 4 Jul 2011, Samuel Ortiz wrote:
-> 
-[...]
-> > This is not a memory leak fix. And I actually prefer the == NULL check.
-> > Please remove the == NULL check replacement with !* and keep only the memory
-> > leak fixing part.
-> > 
-Here's an updated patch.
+--VS++wcV0S1rZb1Fb
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi,
 
-From: Jesper Juhl <jj@chaosbits.net>
-Subject: [PATCH] mfd: Don't leak init_data in tps65910_i2c_probe
+On Tue, Jul 05, 2011 at 10:59:20AM -0700, Mark Brown wrote:
+> On Tue, Jul 05, 2011 at 04:49:33PM +0300, Peter Ujfalusi wrote:
+> > The twl6040_request_irq/free_irq inline functions are going
+> > to be removed, so replace them with direct calls.
+> > The irq number is provided by the core driver via resource.
+> >=20
+> > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+>=20
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-There are a couple of situations where we leak init_data in
-drivers/mfd/tps65910.c:tps65910_i2c_probe() - this patch should take
-care of them.
+FWIW:
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
----
- drivers/mfd/tps65910.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+Acked-by: Felipe Balbi <balbi@ti.com>
 
-diff --git a/drivers/mfd/tps65910.c b/drivers/mfd/tps65910.c
-index 2229e66..7a3eb2d 100644
---- a/drivers/mfd/tps65910.c
-+++ b/drivers/mfd/tps65910.c
-@@ -151,8 +151,10 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	init_data->irq_base = pmic_plat_data->irq;
- 
- 	tps65910 = kzalloc(sizeof(struct tps65910), GFP_KERNEL);
--	if (tps65910 == NULL)
-+	if (tps65910 == NULL) {
-+		kfree(init_data);
- 		return -ENOMEM;
-+	}
- 
- 	i2c_set_clientdata(i2c, tps65910);
- 	tps65910->dev = &i2c->dev;
-@@ -174,11 +176,13 @@ static int tps65910_i2c_probe(struct i2c_client *i2c,
- 	if (ret < 0)
- 		goto err;
- 
-+	kfree(init_data);
- 	return ret;
- 
- err:
- 	mfd_remove_devices(tps65910->dev);
- 	kfree(tps65910);
-+	kfree(init_data);
- 	return ret;
- }
- 
--- 
-1.7.6
+--=20
+balbi
 
+--VS++wcV0S1rZb1Fb
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
 
--- 
-Jesper Juhl <jj@chaosbits.net>       http://www.chaosbits.net/
-Don't top-post http://www.catb.org/jargon/html/T/top-post.html
-Plain text mails only, please.
+iQEcBAEBAgAGBQJOE5J7AAoJEAv8Txj19kN155kH/1Ip8ZnDMvMVl2WSeZH8dd9O
+6JAKJsK/hm/ZgkSGWBYU7eJEESvbcLiAWnfOVPtfYRIarDMUhZt9fF+Q5gVkLN0N
+kyHqxc682sSW8nK7znz43OF+UV1z4B1tpuStHR07x/K+NtbMvwcxsOJJ+LZUK5bX
+cb725iHAp9eTAobVaVTMuT9Lo6A2dswRssQiB3YbhA0JBMmW/5O0CSX3L5Lj7WR6
+jApuPWrNf64cRHa/ibJ8HG2H+ZcGUhevvUc1X6kYZOdXRAfj95T6Y/eSoU4VgaFh
++eaeUhUimNdt3imNnI76pMZndCbw+bchlDalcUTkslLITfyeknLn2YDEAlxf/rM=
+=nV+y
+-----END PGP SIGNATURE-----
 
+--VS++wcV0S1rZb1Fb--
