@@ -1,194 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932330Ab1GEMO1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:14:27 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:39589 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932147Ab1GEMOZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:14:25 -0400
-Date: Tue, 5 Jul 2011 16:14:21 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
- sake of nmi-watchdog on P4
-Message-ID: <20110705121421.GU17941@sun>
-References: <20110705100320.GK17941@sun>
- <20110705102017.GA12458@elte.hu>
- <20110705103403.GN17941@sun>
- <20110705105959.GA14435@elte.hu>
- <20110705110550.GQ17941@sun>
- <20110705112002.GA15654@elte.hu>
- <20110705113620.GS17941@sun>
- <20110705114437.GC15654@elte.hu>
- <20110705114944.GT17941@sun>
+	id S932345Ab1GEMVH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:21:07 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:44417 "EHLO radon.swed.at"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932333Ab1GEMVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 08:21:06 -0400
+From: Richard Weinberger <richard@nod.at>
+To: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Subject: Re: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
+Date: Tue, 5 Jul 2011 14:21:02 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.4; x86_64; ; )
+Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+References: <1309779003-8668-1-git-send-email-richard@nod.at> <201107051155.18465.richard@nod.at> <201107052102.BHE69234.OLQOVMJFOFFHSt@I-love.SAKURA.ne.jp>
+In-Reply-To: <201107052102.BHE69234.OLQOVMJFOFFHSt@I-love.SAKURA.ne.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705114944.GT17941@sun>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107051421.02658.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 03:49:44PM +0400, Cyrill Gorcunov wrote:
-> On Tue, Jul 05, 2011 at 01:44:37PM +0200, Ingo Molnar wrote:
-> ...
-> > 
-> > What i am missing is that you have not pointed out the *core problem* 
-> > you are fixing and it's not obvious from the changelog either!
+Am Dienstag 05 Juli 2011, 14:02:34 schrieb Tetsuo Handa:
+> Richard Weinberger wrote:
+> > But IMHO adding a new attribute to task_struct is a bit overkill.
+> > Why is your variant better than my strcmp() in fs/exec.c?
 > 
-> OK, seems I put there some tech details while human readable changelog
-> was needed. Will fix that, thanks!
+> Say, there are multiple /sbin/modprobe
 > 
-> 	Cyrill
+> /sbin/modprobe
+> /var/chroot/sbin/modprobe
+> 
+> and only /var/chroot/sbin/modprobe needs request_module() whereas
+> /sbin/modprobe does not need request_module(). Why do we need to make
+> execl("/sbin/modprobe", "--help", NULL) from chroot("/var/chroot/") fail
+> by denying request_module() that does not cause recursion?
 
-Ingo, what about this one?
+*headdesk*, bprm->filename will contain "/sbin/modprobe" and the strcmp()
+will falsely match.
+Thanks for the pointer!
 
-	Cyrill
----
-perf, x86: P4 PMU - Add hw_watchdog_set_attr helper to simulate cpu-cycles counting in nmi-watchdog
-
-Because of constraints existed in Netburst PMU counting
-cpu cycles is allowed for one consumer only.
-
-If the kernel is booted up with nmi-watchdog enabled
-the watchdog become a consumer of such event and there
-is no more room left for "perf top" and friends (ie any
-attempts to count cpu cycles simultaneously with nmi-watchdog
-doomed to fail).
-
-The patch tries to improve situation a bit -- an event counting
-non-sleeping cpu clocks is added and assigned to nmi-watchdog only,
-leaving the former PERF_COUNT_HW_CPU_CYCLES event free, so say
-"perf top" now can run simultaneously with nmi-watchdog.
-
-Note that there is a disadvantage as well -- MSR_P4_CRU_ESCR2
-and MSR_P4_CRU_ESCR3 now always occupied by watchdog so if some
-application needs this ESCRs the nmi-watchdog should be turned
-off first, otherwise access to these registers will be never
-granted.
-
-v2: Add a comment about non-sleeping clockticks spotted by Ingo Molnar.
-v3: Peter Zijlstra and Stephane Eranian pointed out that making new
-    event global visible (up to userspace) will bring problems supporting
-    this ABI in future. So now this event is x86 specific and hidden
-    from userspace.
-v4: Stephane proposed to use __weak arch specific callback instead of
-    new hidden generic event.
-
-Tested-and-reviewed-by: Don Zickus <dzickus@redhat.com>
-Tested-and-reviewed-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Ingo Molnar <mingo@redhat.com>
-CC: Lin Ming <ming.m.lin@intel.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
----
- arch/x86/kernel/cpu/perf_event.c    |    7 +++++++
- arch/x86/kernel/cpu/perf_event_p4.c |   26 ++++++++++++++++++++++++++
- kernel/watchdog.c                   |    6 +++++-
- 3 files changed, 38 insertions(+), 1 deletion(-)
-
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-===================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-@@ -233,6 +233,7 @@ struct x86_pmu {
- 	void		(*enable_all)(int added);
- 	void		(*enable)(struct perf_event *);
- 	void		(*disable)(struct perf_event *);
-+	void		(*hw_watchdog_set_attr)(struct perf_event_attr *attr);
- 	int		(*hw_config)(struct perf_event *event);
- 	int		(*schedule_events)(struct cpu_hw_events *cpuc, int n, int *assign);
- 	unsigned	eventsel;
-@@ -315,6 +316,12 @@ static u64 __read_mostly hw_cache_extra_
- 				[PERF_COUNT_HW_CACHE_OP_MAX]
- 				[PERF_COUNT_HW_CACHE_RESULT_MAX];
- 
-+void hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr)
-+{
-+	if (x86_pmu.hw_watchdog_set_attr)
-+		x86_pmu.hw_watchdog_set_attr(wd_attr);
-+}
-+
- /*
-  * Propagate event elapsed time into the generic event.
-  * Can only be executed on the CPU where the event is active.
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-===================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -705,6 +705,31 @@ static int p4_validate_raw_event(struct 
- 	return 0;
- }
- 
-+static void p4_hw_watchdog_set_attr(struct perf_event_attr *wd_attr)
-+{
-+	/*
-+	 * Watchdog ticks are special on Netburst, we use
-+	 * that named "non-sleeping" ticks as recommended
-+	 * by Intel SDM Vol3b.
-+	 */
-+	WARN_ON_ONCE(wd_attr->type	!= PERF_TYPE_HARDWARE ||
-+		     wd_attr->config	!= PERF_COUNT_HW_CPU_CYCLES);
-+
-+	wd_attr->type	= PERF_TYPE_RAW;
-+	wd_attr->config	=
-+		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS0)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS1)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS2)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, NBOGUS3)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS0)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS1)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS2)		|
-+			P4_ESCR_EMASK_BIT(P4_EVENT_EXECUTION_EVENT, BOGUS3))		|
-+		p4_config_pack_cccr(P4_CCCR_THRESHOLD(15) | P4_CCCR_COMPLEMENT		|
-+			P4_CCCR_COMPARE);
-+}
-+
- static int p4_hw_config(struct perf_event *event)
- {
- 	int cpu = get_cpu();
-@@ -1179,6 +1204,7 @@ static __initconst const struct x86_pmu 
- 	.cntval_bits		= ARCH_P4_CNTRVAL_BITS,
- 	.cntval_mask		= ARCH_P4_CNTRVAL_MASK,
- 	.max_period		= (1ULL << (ARCH_P4_CNTRVAL_BITS - 1)) - 1,
-+	.hw_watchdog_set_attr	= p4_hw_watchdog_set_attr,
- 	.hw_config		= p4_hw_config,
- 	.schedule_events	= p4_pmu_schedule_events,
- 	/*
-Index: linux-2.6.git/kernel/watchdog.c
-===================================================================
---- linux-2.6.git.orig/kernel/watchdog.c
-+++ linux-2.6.git/kernel/watchdog.c
-@@ -200,6 +200,8 @@ static int is_softlockup(unsigned long t
- }
- 
- #ifdef CONFIG_HARDLOCKUP_DETECTOR
-+void __weak hw_nmi_watchdog_set_attr(struct perf_event_attr *wd_attr) { }
-+
- static struct perf_event_attr wd_hw_attr = {
- 	.type		= PERF_TYPE_HARDWARE,
- 	.config		= PERF_COUNT_HW_CPU_CYCLES,
-@@ -368,9 +370,11 @@ static int watchdog_nmi_enable(int cpu)
- 	if (event != NULL)
- 		goto out_enable;
- 
--	/* Try to register using hardware perf events */
- 	wd_attr = &wd_hw_attr;
- 	wd_attr->sample_period = hw_nmi_get_sample_period(watchdog_thresh);
-+	hw_nmi_watchdog_set_attr(wd_attr);
-+
-+	/* Try to register using hardware perf events */
- 	event = perf_event_create_kernel_counter(wd_attr, cpu, NULL, watchdog_overflow_callback);
- 	if (!IS_ERR(event)) {
- 		printk(KERN_INFO "NMI watchdog enabled, takes one hw-pmu counter.\n");
+//richard
