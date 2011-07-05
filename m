@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab1GETtx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 15:49:53 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:46962 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753357Ab1GETtw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 15:49:52 -0400
+	id S1754258Ab1GETt7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 15:49:59 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:33028 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753357Ab1GETtz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 15:49:55 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -14,57 +13,82 @@ To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
 CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
         Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v3 0/5] MFD/input/ASoC: twl6040: irq registration changes
-Date: Tue, 5 Jul 2011 22:49:31 +0300
-Message-ID: <1309895376-17446-1-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v3 1/5] MFD: twl6040: Use resource to provide irq number for slaves
+Date: Tue, 5 Jul 2011 22:49:32 +0300
+Message-ID: <1309895376-17446-2-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1309895376-17446-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1309895376-17446-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
 Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Provide the irq number for slaves via resource on the
+platform device.
+The irq number configuration is done in the twl6040-core
+at probe time, so machine drivers do not need to be
+modified.
 
-Changes since v2:
-- Fix the check in the slaves driver for the validity of the received irq
-- Mark Brown's ack added to patch 3
-
-Intro mail froim v1:
-As Samuel, and Felipe requested for the twl6040 MFD series:
-http://marc.info/?l=linux-kernel&m=130978512225430&w=2
-http://marc.info/?l=linux-omap&m=130978403224218&w=2
-
-This is the update to remove the obfuscation around the threaded irq request
-in the twl6040 driver and it's slaves.
-
-With this change the slaves uses directly the threaded irq request, and the
-core driver passes the irq number for the slaves to use (configured runtime, so
-machine drivers do not need to be updated).
-
-Regards,
-Peter
-
-PS: for the remaining comments from Samuel I have changed the series, since the
-requested change was small.
-I'm not intended to send the series again, unless it is requested (again the
-change from v6 is minimal - few lines has been removed/replaced).
-
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
-Peter Ujfalusi (5):
-  MFD: twl6040: Use resource to provide irq number for slaves
-  input: twl6040-vibra: Do not use wrapper for irq request
-  ASoC: twl6040: Do not use wrapper for irq request
-  MFD: twl6040: Demand valid interrupt configuration
-  MFD: twl6040: Remove wrapper for threaded irq request
+ drivers/mfd/twl6040-core.c |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
 
- drivers/input/misc/twl6040-vibra.c |   17 ++++++---
- drivers/mfd/twl6040-core.c         |   69 ++++++++++++++++++++++++-----------
- drivers/mfd/twl6040-irq.c          |   16 +--------
- include/linux/mfd/twl6040.h        |   22 -----------
- sound/soc/codecs/twl6040.c         |   19 +++++++---
- 5 files changed, 74 insertions(+), 69 deletions(-)
-
+diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+index cfaedb5..471f489 100644
+--- a/drivers/mfd/twl6040-core.c
++++ b/drivers/mfd/twl6040-core.c
+@@ -435,6 +435,18 @@ unsigned int twl6040_get_sysclk(struct twl6040 *twl6040)
+ }
+ EXPORT_SYMBOL(twl6040_get_sysclk);
+ 
++static struct resource twl6040_vibra_rsrc[] = {
++	{
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource twl6040_codec_rsrc[] = {
++	{
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
+ static int __devinit twl6040_probe(struct platform_device *pdev)
+ {
+ 	struct twl4030_audio_data *pdata = pdev->dev.platform_data;
+@@ -499,16 +511,29 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+ 	twl6040_set_bits(twl6040, TWL6040_REG_ACCCTL, TWL6040_I2CSEL);
+ 
+ 	if (pdata->codec) {
++		int irq = twl6040->irq_base + TWL6040_IRQ_PLUG;
++
+ 		cell = &twl6040->cells[children];
+ 		cell->name = "twl6040-codec";
++		twl6040_codec_rsrc[0].start = irq;
++		twl6040_codec_rsrc[0].end = irq;
++		cell->resources = twl6040_codec_rsrc;
++		cell->num_resources = ARRAY_SIZE(twl6040_codec_rsrc);
+ 		cell->platform_data = pdata->codec;
+ 		cell->pdata_size = sizeof(*pdata->codec);
+ 		children++;
+ 	}
+ 
+ 	if (pdata->vibra) {
++		int irq = twl6040->irq_base + TWL6040_IRQ_VIB;
++
+ 		cell = &twl6040->cells[children];
+ 		cell->name = "twl6040-vibra";
++		twl6040_vibra_rsrc[0].start = irq;
++		twl6040_vibra_rsrc[0].end = irq;
++		cell->resources = twl6040_vibra_rsrc;
++		cell->num_resources = ARRAY_SIZE(twl6040_vibra_rsrc);
++
+ 		cell->platform_data = pdata->vibra;
+ 		cell->pdata_size = sizeof(*pdata->vibra);
+ 		children++;
 -- 
 1.7.6
 
