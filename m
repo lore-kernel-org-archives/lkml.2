@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab1GENtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 09:49:51 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54195 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab1GENts (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 09:49:48 -0400
+	id S1752211Ab1GENuF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 09:50:05 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:38518 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752174Ab1GENuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 09:50:02 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -14,9 +13,9 @@ To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
 CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
         Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v2 1/5] MFD: twl6040: Use resource to provide irq number for slaves
-Date: Tue, 5 Jul 2011 16:49:31 +0300
-Message-ID: <1309873775-17927-2-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 5/5] MFD: twl6040: Remove wrapper for threaded irq request
+Date: Tue, 5 Jul 2011 16:49:35 +0300
+Message-ID: <1309873775-17927-6-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1309873775-17927-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1309873775-17927-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,70 +25,84 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide the irq number for slaves via resource on the
-platform device.
-The irq number configuration is done in the twl6040-core
-at probe time, so machine drivers do not need to be
-modified.
+Remove the twl6040_request_irq/free_irq inline functions,
+and use direct calls instead in the core driver to
+register the threaded irq.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl6040-core.c |   25 +++++++++++++++++++++++++
- 1 files changed, 25 insertions(+), 0 deletions(-)
+ drivers/mfd/twl6040-core.c  |   10 +++++-----
+ include/linux/mfd/twl6040.h |   22 ----------------------
+ 2 files changed, 5 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index cfaedb5..471f489 100644
+index f71bb14..6843977 100644
 --- a/drivers/mfd/twl6040-core.c
 +++ b/drivers/mfd/twl6040-core.c
-@@ -435,6 +435,18 @@ unsigned int twl6040_get_sysclk(struct twl6040 *twl6040)
- }
- EXPORT_SYMBOL(twl6040_get_sysclk);
+@@ -502,9 +502,9 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto gpio2_err;
  
-+static struct resource twl6040_vibra_rsrc[] = {
-+	{
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
-+static struct resource twl6040_codec_rsrc[] = {
-+	{
-+		.flags = IORESOURCE_IRQ,
-+	},
-+};
-+
- static int __devinit twl6040_probe(struct platform_device *pdev)
- {
- 	struct twl4030_audio_data *pdata = pdev->dev.platform_data;
-@@ -499,16 +511,29 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
- 	twl6040_set_bits(twl6040, TWL6040_REG_ACCCTL, TWL6040_I2CSEL);
+-	ret = twl6040_request_irq(twl6040, TWL6040_IRQ_READY,
+-					twl6040_naudint_handler, 0,
+-					"twl6040_irq_ready", twl6040);
++	ret = request_threaded_irq(twl6040->irq_base + TWL6040_IRQ_READY,
++				   NULL, twl6040_naudint_handler, 0,
++				   "twl6040_irq_ready", twl6040);
+ 	if (ret) {
+ 		dev_err(twl6040->dev, "READY IRQ request failed: %d\n",
+ 			ret);
+@@ -557,7 +557,7 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+ 	return 0;
  
- 	if (pdata->codec) {
-+		int irq = twl6040->irq_base + TWL6040_IRQ_PLUG;
-+
- 		cell = &twl6040->cells[children];
- 		cell->name = "twl6040-codec";
-+		twl6040_codec_rsrc[0].start = irq;
-+		twl6040_codec_rsrc[0].end = irq;
-+		cell->resources = twl6040_codec_rsrc;
-+		cell->num_resources = ARRAY_SIZE(twl6040_codec_rsrc);
- 		cell->platform_data = pdata->codec;
- 		cell->pdata_size = sizeof(*pdata->codec);
- 		children++;
- 	}
+ mfd_err:
+-	twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
++	free_irq(twl6040->irq_base + TWL6040_IRQ_READY, twl6040);
+ irq_err:
+ 	twl6040_irq_exit(twl6040);
+ gpio2_err:
+@@ -580,7 +580,7 @@ static int __devexit twl6040_remove(struct platform_device *pdev)
+ 	if (gpio_is_valid(twl6040->audpwron))
+ 		gpio_free(twl6040->audpwron);
  
- 	if (pdata->vibra) {
-+		int irq = twl6040->irq_base + TWL6040_IRQ_VIB;
-+
- 		cell = &twl6040->cells[children];
- 		cell->name = "twl6040-vibra";
-+		twl6040_vibra_rsrc[0].start = irq;
-+		twl6040_vibra_rsrc[0].end = irq;
-+		cell->resources = twl6040_vibra_rsrc;
-+		cell->num_resources = ARRAY_SIZE(twl6040_vibra_rsrc);
-+
- 		cell->platform_data = pdata->vibra;
- 		cell->pdata_size = sizeof(*pdata->vibra);
- 		children++;
+-	twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
++	free_irq(twl6040->irq_base + TWL6040_IRQ_READY, twl6040);
+ 	twl6040_irq_exit(twl6040);
+ 
+ 	mfd_remove_devices(&pdev->dev);
+diff --git a/include/linux/mfd/twl6040.h b/include/linux/mfd/twl6040.h
+index c3c1de5..df890a2 100644
+--- a/include/linux/mfd/twl6040.h
++++ b/include/linux/mfd/twl6040.h
+@@ -215,28 +215,6 @@ struct twl6040 {
+ 	u8 irq_masks_cache;
+ };
+ 
+-static inline int twl6040_request_irq(struct twl6040 *twl6040, int irq,
+-				      irq_handler_t handler,
+-				      unsigned long irqflags,
+-				      const char *name,
+-				      void *data)
+-{
+-	if (!twl6040->irq_base)
+-		return -EINVAL;
+-
+-	return request_threaded_irq(twl6040->irq_base + irq, NULL, handler,
+-				    irqflags, name, data);
+-}
+-
+-static inline void twl6040_free_irq(struct twl6040 *twl6040, int irq,
+-				    void *data)
+-{
+-	if (!twl6040->irq_base)
+-		return;
+-
+-	free_irq(twl6040->irq_base + irq, data);
+-}
+-
+ int twl6040_reg_read(struct twl6040 *twl6040, unsigned int reg);
+ int twl6040_reg_write(struct twl6040 *twl6040, unsigned int reg,
+ 		      u8 val);
 -- 
 1.7.6
 
