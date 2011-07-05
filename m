@@ -1,124 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab1GEWa1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 18:30:27 -0400
-Received: from smtp.ispras.ru ([83.149.198.202]:47331 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755204Ab1GEWaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 18:30:18 -0400
-From: Alexey Khoroshilov <khoroshilov@ispras.ru>
-To: Christoph Hellwig <hch@tuxera.com>
-Cc: Alexey Khoroshilov <khoroshilov@ispras.ru>,
-        Anton Salikhmetov <alexo@tuxera.com>,
-        Al Viro <viro@zeniv.linux.org.uk>, roman@ardistech.com,
-        linux-kernel@vger.kernel.org, ldv-project@ispras.ru
-Subject: [PATCH v2 2/2] hfsplus: Add error propagation for hfsplus_ext_write_extent_locked
-Date: Wed,  6 Jul 2011 02:30:00 +0400
-Message-Id: <1309905000-28983-3-git-send-email-khoroshilov@ispras.ru>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1309905000-28983-1-git-send-email-khoroshilov@ispras.ru>
-References: <20110630114242.GA9597@infradead.org>
- <1309905000-28983-1-git-send-email-khoroshilov@ispras.ru>
+	id S1752505Ab1GEWew (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 18:34:52 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:60095 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751373Ab1GEWev (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 18:34:51 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
+In-Reply-To: Your message of "Mon, 04 Jul 2011 15:39:23 +0200."
+             <20110704153923.b929ce5d.taeuber@bbaw.de>
+From: Valdis.Kletnieks@vt.edu
+References: <20110606095127.21d23a70.taeuber@bbaw.de> <201106060559.03131.gene.heskett@gmail.com> <20110606130628.e86f0c67.taeuber@bbaw.de> <201106060920.32257.gene.heskett@gmail.com> <20110606155610.69a0d17a.taeuber@bbaw.de> <20110607124354.06ed074e.taeuber@bbaw.de> <20110701102323.3db579ad.taeuber@bbaw.de> <20110701151313.2afd48e0.taeuber@bbaw.de> <20110701163719.27afc580.taeuber@bbaw.de>
+            <20110704153923.b929ce5d.taeuber@bbaw.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1309905287_18528P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 05 Jul 2011 18:34:47 -0400
+Message-ID: <62378.1309905287@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Info: (0) 
+X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020204.4E139188.00B9,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement error propagation through the callers of
-hfsplus_ext_write_extent_locked().
+--==_Exmh_1309905287_18528P
+Content-Type: text/plain; charset=us-ascii
 
-Signed-off-by: Alexey Khoroshilov <khoroshilov@ispras.ru>
----
- fs/hfsplus/extents.c    |   26 ++++++++++++++++++--------
- fs/hfsplus/hfsplus_fs.h |    2 +-
- fs/hfsplus/super.c      |    6 +++++-
- 3 files changed, 24 insertions(+), 10 deletions(-)
+On Mon, 04 Jul 2011 15:39:23 +0200, Lars =?UTF-8?B?VMOkdWJlcg==?= said:
 
-diff --git a/fs/hfsplus/extents.c b/fs/hfsplus/extents.c
-index 59fa09f..9235c41 100644
---- a/fs/hfsplus/extents.c
-+++ b/fs/hfsplus/extents.c
-@@ -119,23 +119,31 @@ static void __hfsplus_ext_write_extent(struct inode *inode,
- 	set_bit(HFSPLUS_I_EXT_DIRTY, &hip->flags);
- }
- 
--static void hfsplus_ext_write_extent_locked(struct inode *inode)
-+static int hfsplus_ext_write_extent_locked(struct inode *inode)
- {
-+	int res;
-+
- 	if (HFSPLUS_I(inode)->extent_state & HFSPLUS_EXT_DIRTY) {
- 		struct hfs_find_data fd;
- 
--		if (!hfs_find_init(HFSPLUS_SB(inode->i_sb)->ext_tree, &fd)) {
--			__hfsplus_ext_write_extent(inode, &fd);
--			hfs_find_exit(&fd);
--		}
-+		res = hfs_find_init(HFSPLUS_SB(inode->i_sb)->ext_tree, &fd);
-+		if (res)
-+			return res;
-+		__hfsplus_ext_write_extent(inode, &fd);
-+		hfs_find_exit(&fd);
- 	}
-+	return 0;
- }
- 
--void hfsplus_ext_write_extent(struct inode *inode)
-+int hfsplus_ext_write_extent(struct inode *inode)
- {
-+	int res;
-+
- 	mutex_lock(&HFSPLUS_I(inode)->extents_lock);
--	hfsplus_ext_write_extent_locked(inode);
-+	res = hfsplus_ext_write_extent_locked(inode);
- 	mutex_unlock(&HFSPLUS_I(inode)->extents_lock);
-+
-+	return res;
- }
- 
- static inline int __hfsplus_ext_read_extent(struct hfs_find_data *fd,
-@@ -474,7 +482,9 @@ out:
- 
- insert_extent:
- 	dprint(DBG_EXTENT, "insert new extent\n");
--	hfsplus_ext_write_extent_locked(inode);
-+	res = hfsplus_ext_write_extent_locked(inode);
-+	if (res)
-+		goto out;
- 
- 	memset(hip->cached_extents, 0, sizeof(hfsplus_extent_rec));
- 	hip->cached_extents[0].start_block = cpu_to_be32(start);
-diff --git a/fs/hfsplus/hfsplus_fs.h b/fs/hfsplus/hfsplus_fs.h
-index d685752..0bebf74 100644
---- a/fs/hfsplus/hfsplus_fs.h
-+++ b/fs/hfsplus/hfsplus_fs.h
-@@ -374,7 +374,7 @@ extern const struct file_operations hfsplus_dir_operations;
- 
- /* extents.c */
- int hfsplus_ext_cmp_key(const hfsplus_btree_key *, const hfsplus_btree_key *);
--void hfsplus_ext_write_extent(struct inode *);
-+int hfsplus_ext_write_extent(struct inode *);
- int hfsplus_get_block(struct inode *, sector_t, struct buffer_head *, int);
- int hfsplus_free_fork(struct super_block *, u32,
- 		struct hfsplus_fork_raw *, int);
-diff --git a/fs/hfsplus/super.c b/fs/hfsplus/super.c
-index 07a0502..0b41f4c 100644
---- a/fs/hfsplus/super.c
-+++ b/fs/hfsplus/super.c
-@@ -135,9 +135,13 @@ static int hfsplus_system_write_inode(struct inode *inode)
- static int hfsplus_write_inode(struct inode *inode,
- 		struct writeback_control *wbc)
- {
-+	int err;
-+
- 	dprint(DBG_INODE, "hfsplus_write_inode: %lu\n", inode->i_ino);
- 
--	hfsplus_ext_write_extent(inode);
-+	err = hfsplus_ext_write_extent(inode);
-+	if (err)
-+		return err;
- 
- 	if (inode->i_ino >= HFSPLUS_FIRSTUSER_CNID ||
- 	    inode->i_ino == HFSPLUS_ROOT_CNID)
--- 
-1.7.4.1
+> 1.
+> * Ultrastar 7K3000 attached to onboard AMD_AHCI
+> * dd if=/dev/zero of=/dev/sde
+> * dd told write speed of: 15.7MB/s
+> * no error after half an hour
+> 
+> 2.
+> * Ultrastar 7K3000 attached to PCIe to sata_mv controller
+> * dd if=/dev/zero of=/dev/sda
+> * dd told write speed of: 6.5MB/s
+> * no error but strange log: dmesg-PCIe-sata_mv.log.gz
+> 
+> 3.
+> * Ultrastar 7K3000 attached to PCIe areca SAS HBA (mvsas)
+> * dd if=/dev/zero of=/dev/sdg
+> * dd told write speed of: 1.3MB/s
+> * errors: dmesg-PCIe-mvsas.log.gz
+
+Umm.. was this the *same* Ulstrastar disk connected 3 different ways?  And how
+exactly was it connected in each case? (Trying to rule out flaky disks if it
+was 3 different disks, or a hardware/cabling issue specific to the areca
+controller)
+
+
+--==_Exmh_1309905287_18528P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFOE5GHcC3lWbTT17ARAuOLAKDEkF1Q1fyJ4qRSMCpfOiDYatWQUgCfRuQM
+mLAIxwua9yoai+50cwpuk8A=
+=RZz+
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1309905287_18528P--
 
