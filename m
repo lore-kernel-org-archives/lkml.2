@@ -1,48 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab1GELtt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:49:49 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44931 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755559Ab1GELts (ORCPT
+	id S932157Ab1GELuU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:50:20 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58293 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755885Ab1GELuS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:49:48 -0400
-Date: Tue, 5 Jul 2011 15:49:44 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
- sake of nmi-watchdog on P4
-Message-ID: <20110705114944.GT17941@sun>
-References: <20110705100320.GK17941@sun>
- <20110705102017.GA12458@elte.hu>
- <20110705103403.GN17941@sun>
- <20110705105959.GA14435@elte.hu>
- <20110705110550.GQ17941@sun>
- <20110705112002.GA15654@elte.hu>
- <20110705113620.GS17941@sun>
- <20110705114437.GC15654@elte.hu>
+	Tue, 5 Jul 2011 07:50:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 6/8 RESEND] drivers: add Contiguous Memory Allocator
+Date: Tue, 5 Jul 2011 13:50:10 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+References: <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com> <1309863722-6370-1-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1309863722-6370-1-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705114437.GC15654@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107051350.11150.arnd@arndb.de>
+X-Provags-ID: V02:K0:6AFPCHoXFgKYFJ0XXy83i2YcyC7bOmqJUtR1ADVjhOJ
+ D1ki+axHA5IWF12ioSI+S8xta+cuRRHlzdV1Ds+FYlw7AsQ0u5
+ iTdoi8zP8VpVYzak22lkr+V5pYN5WXjbibdEoIfDFQxWOPuVpx
+ fCek+kEbll4AVqoqanwejSGqxsIDqw9+rWiNITLlTF+gXT2MW+
+ T6lEKX3mFCawbDTU6KxEw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 01:44:37PM +0200, Ingo Molnar wrote:
-...
+On Tuesday 05 July 2011, Marek Szyprowski wrote:
+> The Contiguous Memory Allocator is a set of helper functions for DMA
+> mapping framework that improves allocations of contiguous memory chunks.
 > 
-> What i am missing is that you have not pointed out the *core problem* 
-> you are fixing and it's not obvious from the changelog either!
+> CMA grabs memory on system boot, marks it with CMA_MIGRATE_TYPE and
+> gives back to the system. Kernel is allowed to allocate movable pages
+> within CMA's managed memory so that it can be used for example for page
+> cache when DMA mapping do not use it. On dma_alloc_from_contiguous()
+> request such pages are migrated out of CMA area to free required
+> contiguous block and fulfill the request. This allows to allocate large
+> contiguous chunks of memory at any time assuming that there is enough
+> free memory available in the system.
+> 
+> This code is heavily based on earlier works by Michal Nazarewicz.
+> 
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
 
-OK, seems I put there some tech details while human readable changelog
-was needed. Will fix that, thanks!
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>, but I noticed two
+one-character mistakes:
 
-	Cyrill
+> +if CMA
+> +
+> +config CMA_DEBUG
+> +	bool "CMA debug messages (DEVELOPEMENT)"
+
+s/DEVELOPEMENT/DEVELOPMENT/
+
+> diff --git a/drivers/base/Makefile b/drivers/base/Makefile
+> index 4c5701c..be6aab4 100644
+> --- a/drivers/base/Makefile
+> +++ b/drivers/base/Makefile
+> @@ -5,6 +5,7 @@ obj-y			:= core.o sys.o bus.o dd.o syscore.o \
+>  			   cpu.o firmware.o init.o map.o devres.o \
+>  			   attribute_container.o transport_class.o
+>  obj-$(CONFIG_DEVTMPFS)	+= devtmpfs.o
+> +obj-$(CONFIG_CMA) += dma-contiguous.o
+>  obj-y			+= power/
+>  obj-$(CONFIG_HAS_DMA)	+= dma-mapping.o
+
+Please add another tab to indent the line in the same way as the others.
+
+	Arnd
