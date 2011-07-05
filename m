@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932355Ab1GEM00 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:26:26 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:62787 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932333Ab1GEM0Y (ORCPT
+	id S932362Ab1GEM2H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:28:07 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39530 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932339Ab1GEM2F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:26:24 -0400
-Date: Tue, 5 Jul 2011 16:26:20 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
- sake of nmi-watchdog on P4
-Message-ID: <20110705122620.GV17941@sun>
-References: <20110705100320.GK17941@sun>
- <20110705102017.GA12458@elte.hu>
- <20110705103403.GN17941@sun>
- <20110705105959.GA14435@elte.hu>
- <20110705110550.GQ17941@sun>
- <20110705112002.GA15654@elte.hu>
- <20110705113620.GS17941@sun>
- <20110705114437.GC15654@elte.hu>
- <20110705122405.GU3765@redhat.com>
+	Tue, 5 Jul 2011 08:28:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705122405.GU3765@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201107051402.50533.richard@nod.at>
+References: <1309821347.4527.6.camel@vitaliy-Vostro-1400>
+	<201107051142.39733.richard@nod.at>
+	<CAGTPOqebcT_Dd5nPSNEkrDvnCgYhqcU=ayjEA8L7Zh0Wr_pj5w@mail.gmail.com>
+	<201107051402.50533.richard@nod.at>
+Date: Tue, 5 Jul 2011 15:28:03 +0300
+Message-ID: <CAGTPOqfXfSwAvTKrfby_Q4A0xTUq5teD7br0jagoBWwYK+JhRw@mail.gmail.com>
+Subject: Re: [PATCH 2/4] uml: helper.c warning corrections
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Jeff Dike <jdike@addtoit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 08:24:05AM -0400, Don Zickus wrote:
-...
-> 
-> I hope that clears things up Ingo.
-> 
-> Cheers,
-> Don
+On Tue, Jul 5, 2011 at 3:02 PM, Richard Weinberger <richard@nod.at> wrote:
+> Am Dienstag 05 Juli 2011, 13:45:06 schrieb Vitaliy Ivanov:
+>> It's always better not to think whether it's possible but simply kill
+>> all the chances for this to happen.
+>> In this case that's pretty trivial thing and also it solves issue with
+>> warning.
+>
+> Defensive programming is not a solution for everything.
+> CPU time and memory are not for free, especially in kernel land.
+>
+> Anyway, when this patch removes a real warning, it's fine for me.
+> Applied.
 
-Don, I've just sent out updated changelog, please check it out, does it
-look better?
-
-	Cyrill
+Thanks Richard.
