@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751891Ab1GENtc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 09:49:32 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:50714 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab1GENtb (ORCPT
+	id S1752039Ab1GENtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 09:49:51 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:54195 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751889Ab1GENts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 09:49:31 -0400
-Date: Tue, 5 Jul 2011 15:49:25 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Paul Mundt <lethal@linux-sh.org>,
-        linuxppc-dev@lists.ozlabs.org, LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/6] hw_breakpoints: Migrate breakpoint conditional build
- under new config
-Message-ID: <20110705134920.GF5551@somewhere>
-References: <1306273947-8410-1-git-send-email-fweisbec@gmail.com>
- <1306273947-8410-3-git-send-email-fweisbec@gmail.com>
- <20110704132746.GA2963@in.ibm.com>
- <20110704132912.GB5551@somewhere>
- <20110704174416.GA2166@in.ibm.com>
+	Tue, 5 Jul 2011 09:49:48 -0400
+From: Peter Ujfalusi <peter.ujfalusi@ti.com>
+To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: [PATCH v2 1/5] MFD: twl6040: Use resource to provide irq number for slaves
+Date: Tue, 5 Jul 2011 16:49:31 +0300
+Message-ID: <1309873775-17927-2-git-send-email-peter.ujfalusi@ti.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <1309873775-17927-1-git-send-email-peter.ujfalusi@ti.com>
+References: <1309873775-17927-1-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110704174416.GA2166@in.ibm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: text/plain
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 11:14:16PM +0530, K.Prasad wrote:
-> On Mon, Jul 04, 2011 at 03:29:14PM +0200, Frederic Weisbecker wrote:
-> > On Mon, Jul 04, 2011 at 06:57:46PM +0530, K.Prasad wrote:
-> > > On Tue, May 24, 2011 at 11:52:23PM +0200, Frederic Weisbecker wrote:
-> > > > Migrate conditional hw_breakpoint code compilation under
-> > > > the new config to prepare for letting the user chose whether
-> > > > or not to build this feature
-> > > > 
-> > > 
-> > > Making the hardware breakpoint patches modular has always been a goal.
-> > > I've looked at the PowerPC parts of the code and they look harmless.
-> > > 
-> > > Acked-by: K.Prasad <prasad@linux.vnet.ibm.com>
-> > 
-> > Great!
-> > 
-> > I'll push that soon, thanks guys for your acks!
-> 
-> Meanwhile, I was testing hardware breakpoints through perf and found
-> that monitoring a given address fails when using 'perf record' (returns
-> -ENOSPC) while 'perf stat' and watchpoint through gdb works fine (see
-> logs below).
-> 
-> Has this behaviour been reported for other perf counters?
+Provide the irq number for slaves via resource on the
+platform device.
+The irq number configuration is done in the twl6040-core
+at probe time, so machine drivers do not need to be
+modified.
 
-Nope I haven't anything like that. What I reported privately to you a
-few ago was actually due to a mistake of mine. Otherwise I haven't seen
-other problems.
+Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+---
+ drivers/mfd/twl6040-core.c |   25 +++++++++++++++++++++++++
+ 1 files changed, 25 insertions(+), 0 deletions(-)
 
--ENOSPC is likely related to the breakpoint slot reservation, in kernel/events/hw_breakpoint.c
+diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
+index cfaedb5..471f489 100644
+--- a/drivers/mfd/twl6040-core.c
++++ b/drivers/mfd/twl6040-core.c
+@@ -435,6 +435,18 @@ unsigned int twl6040_get_sysclk(struct twl6040 *twl6040)
+ }
+ EXPORT_SYMBOL(twl6040_get_sysclk);
+ 
++static struct resource twl6040_vibra_rsrc[] = {
++	{
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource twl6040_codec_rsrc[] = {
++	{
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
+ static int __devinit twl6040_probe(struct platform_device *pdev)
+ {
+ 	struct twl4030_audio_data *pdata = pdev->dev.platform_data;
+@@ -499,16 +511,29 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+ 	twl6040_set_bits(twl6040, TWL6040_REG_ACCCTL, TWL6040_I2CSEL);
+ 
+ 	if (pdata->codec) {
++		int irq = twl6040->irq_base + TWL6040_IRQ_PLUG;
++
+ 		cell = &twl6040->cells[children];
+ 		cell->name = "twl6040-codec";
++		twl6040_codec_rsrc[0].start = irq;
++		twl6040_codec_rsrc[0].end = irq;
++		cell->resources = twl6040_codec_rsrc;
++		cell->num_resources = ARRAY_SIZE(twl6040_codec_rsrc);
+ 		cell->platform_data = pdata->codec;
+ 		cell->pdata_size = sizeof(*pdata->codec);
+ 		children++;
+ 	}
+ 
+ 	if (pdata->vibra) {
++		int irq = twl6040->irq_base + TWL6040_IRQ_VIB;
++
+ 		cell = &twl6040->cells[children];
+ 		cell->name = "twl6040-vibra";
++		twl6040_vibra_rsrc[0].start = irq;
++		twl6040_vibra_rsrc[0].end = irq;
++		cell->resources = twl6040_vibra_rsrc;
++		cell->num_resources = ARRAY_SIZE(twl6040_vibra_rsrc);
++
+ 		cell->platform_data = pdata->vibra;
+ 		cell->pdata_size = sizeof(*pdata->vibra);
+ 		children++;
+-- 
+1.7.6
+
