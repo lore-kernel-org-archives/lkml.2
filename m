@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755208Ab1GEJqb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 05:46:31 -0400
-Received: from rtits2.realtek.com ([60.250.210.242]:41475 "EHLO
+	id S1755241Ab1GEJqh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 05:46:37 -0400
+Received: from rtits2.realtek.com ([60.250.210.242]:41478 "EHLO
 	rtits2.realtek.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755029Ab1GEJqa (ORCPT
+	with ESMTP id S1755076Ab1GEJqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 05:46:30 -0400
-X-SpamFilter-By: BOX Solutions SpamTrap 5.11 with qID p659kPqM004291, This message is released by code: ctaloc0852
+	Tue, 5 Jul 2011 05:46:36 -0400
+X-SpamFilter-By: BOX Solutions SpamTrap 5.11 with qID p659kV32004315, This message is released by code: ctaloc0852
 From: Hayes Wang <hayeswang@realtek.com>
 To: <romieu@fr.zoreil.com>
 CC: <netdev@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
         Hayes Wang <hayeswang@realtek.com>
-Subject: [PATCH net-next 2/6] r8169: modify the flow hw reset
-Date: Tue, 5 Jul 2011 17:44:51 +0800
-X-BOX-Message-Id: p659kPqM004291
-Message-ID: <1309859095-32031-2-git-send-email-hayeswang@realtek.com>
+Subject: [PATCH net-next 3/6] r8169: adjust the settings about RxConfig
+Date: Tue, 5 Jul 2011 17:44:52 +0800
+X-BOX-Message-Id: p659kV32004315
+Message-ID: <1309859095-32031-3-git-send-email-hayeswang@realtek.com>
 X-Mailer: git-send-email 1.7.3.2
 In-Reply-To: <1309859095-32031-1-git-send-email-hayeswang@realtek.com>
 References: <1309859095-32031-1-git-send-email-hayeswang@realtek.com>
@@ -25,144 +25,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace rtl8169_asic_down with rtl8169_hw_reset. Clear RxConfig
-bit 0 ~ 3 and do some checking before reset. Remove hw reset
-which is before hw_start because reset would be done in close or
-down.
+Set the init value before reset in probe function. And then just
+modify the relative bits and keep the init settings.
 
 Signed-off-by: Hayes Wang <hayeswang@realtek.com>
 ---
- drivers/net/r8169.c |   43 ++++++++++++++++++++++++-------------------
- 1 files changed, 24 insertions(+), 19 deletions(-)
+ drivers/net/r8169.c |   63 +++++++++++++++++++++++++++++++++++++-------------
+ 1 files changed, 46 insertions(+), 17 deletions(-)
 
 diff --git a/drivers/net/r8169.c b/drivers/net/r8169.c
-index 701ab6b..cdbbe47 100644
+index cdbbe47..3aeae68 100644
 --- a/drivers/net/r8169.c
 +++ b/drivers/net/r8169.c
-@@ -731,6 +731,8 @@ static int rtl8169_poll(struct napi_struct *napi, int budget);
- static const unsigned int rtl8169_rx_config =
- 	(RX_FIFO_THRESH << RxCfgFIFOShift) | (RX_DMA_BURST << RxCfgDMAShift);
+@@ -71,7 +71,7 @@ static const int multicast_filter_limit = 32;
  
-+static void rtl8169_init_ring_indexes(struct rtl8169_private *tp);
-+
- static u32 ocp_read(struct rtl8169_private *tp, u8 mask, u16 reg)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -1076,13 +1078,6 @@ static void rtl8169_irq_mask_and_ack(void __iomem *ioaddr)
- 	RTL_W16(IntrStatus, 0xffff);
- }
- 
--static void rtl8169_asic_down(void __iomem *ioaddr)
--{
--	RTL_W8(ChipCmd, 0x00);
--	rtl8169_irq_mask_and_ack(ioaddr);
--	RTL_R16(CPlusCmd);
--}
+ #define MAX_READ_REQUEST_SHIFT	12
+ #define RX_FIFO_THRESH	7	/* 7 means NO threshold, Rx buffer level before first PCI xfer. */
+-#define RX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
++#define RX_DMA_BURST	7	/* Maximum PCI burst, '7' is Unlimited */
+ #define TX_DMA_BURST	6	/* Maximum PCI burst, '6' is 1024 */
+ #define SafeMtu		0x1c20	/* ... actually life sucks beyond ~7k */
+ #define InterFrameGap	0x03	/* 3 means InterFrameGap = the shortest one */
+@@ -272,9 +272,6 @@ enum rtl_registers {
+ 	IntrStatus	= 0x3e,
+ 	TxConfig	= 0x40,
+ 	RxConfig	= 0x44,
 -
- static unsigned int rtl8169_tbi_reset_pending(struct rtl8169_private *tp)
- {
- 	void __iomem *ioaddr = tp->mmio_addr;
-@@ -3352,10 +3347,12 @@ static void rtl_hw_reset(struct rtl8169_private *tp)
+-#define RTL_RX_CONFIG_MASK		0xff7e1880u
+-
+ 	RxMissed	= 0x4c,
+ 	Cfg9346		= 0x50,
+ 	Config0		= 0x51,
+@@ -727,10 +724,6 @@ static int rtl8169_change_mtu(struct net_device *dev, int new_mtu);
+ static void rtl8169_down(struct net_device *dev);
+ static void rtl8169_rx_clear(struct rtl8169_private *tp);
+ static int rtl8169_poll(struct napi_struct *napi, int budget);
+-
+-static const unsigned int rtl8169_rx_config =
+-	(RX_FIFO_THRESH << RxCfgFIFOShift) | (RX_DMA_BURST << RxCfgDMAShift);
+-
+ static void rtl8169_init_ring_indexes(struct rtl8169_private *tp);
  
- 	/* Check that the chip has finished the reset. */
- 	for (i = 0; i < 100; i++) {
-+		udelay(100);
- 		if ((RTL_R8(ChipCmd) & CmdReset) == 0)
- 			break;
--		msleep_interruptible(1);
+ static u32 ocp_read(struct rtl8169_private *tp, u8 mask, u16 reg)
+@@ -3337,6 +3330,45 @@ static void __devinit rtl_init_pll_power_ops(struct rtl8169_private *tp)
  	}
-+
-+	rtl8169_init_ring_indexes(tp);
  }
  
- static int __devinit
-@@ -3737,6 +3734,16 @@ err_pm_runtime_put:
- 	goto out;
- }
- 
-+static void rtl_rx_close(struct rtl8169_private *tp)
++static void rtl_init_rxcfg(struct rtl8169_private *tp)
 +{
 +	void __iomem *ioaddr = tp->mmio_addr;
-+	u32 rxcfg = RTL_R32(RxConfig);
 +
-+	rxcfg &= ~(AcceptBroadcast | AcceptMulticast |
-+		   AcceptMyPhys | AcceptAllPhys);
-+	RTL_W32(RxConfig, rxcfg);
++	switch (tp->mac_version) {
++	case RTL_GIGA_MAC_VER_01:
++	case RTL_GIGA_MAC_VER_02:
++	case RTL_GIGA_MAC_VER_03:
++	case RTL_GIGA_MAC_VER_04:
++	case RTL_GIGA_MAC_VER_05:
++	case RTL_GIGA_MAC_VER_06:
++	case RTL_GIGA_MAC_VER_10:
++	case RTL_GIGA_MAC_VER_11:
++	case RTL_GIGA_MAC_VER_12:
++	case RTL_GIGA_MAC_VER_13:
++	case RTL_GIGA_MAC_VER_14:
++	case RTL_GIGA_MAC_VER_15:
++	case RTL_GIGA_MAC_VER_16:
++	case RTL_GIGA_MAC_VER_17:
++		RTL_W32(RxConfig, (RX_FIFO_THRESH << RxCfgFIFOShift) |
++			(RX_DMA_BURST << RxCfgDMAShift));
++		break;
++	case RTL_GIGA_MAC_VER_18:
++	case RTL_GIGA_MAC_VER_19:
++	case RTL_GIGA_MAC_VER_20:
++	case RTL_GIGA_MAC_VER_21:
++	case RTL_GIGA_MAC_VER_22:
++	case RTL_GIGA_MAC_VER_23:
++	case RTL_GIGA_MAC_VER_24:
++		RTL_W32(RxConfig, RX128_INT_EN | RX_MULTI_EN |
++			(RX_DMA_BURST << RxCfgDMAShift));
++		break;
++	default:
++		RTL_W32(RxConfig, RX128_INT_EN |
++			(RX_DMA_BURST << RxCfgDMAShift));
++		break;
++	}
 +}
 +
- static void rtl8169_hw_reset(struct rtl8169_private *tp)
+ static void rtl_hw_reset(struct rtl8169_private *tp)
  {
  	void __iomem *ioaddr = tp->mmio_addr;
-@@ -3744,19 +3751,20 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
- 	/* Disable interrupts */
- 	rtl8169_irq_mask_and_ack(ioaddr);
+@@ -3459,6 +3491,11 @@ rtl8169_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	if (!pci_is_pcie(pdev))
+ 		netif_info(tp, probe, dev, "not PCI Express\n");
  
-+	rtl_rx_close(tp);
++	/* Identify chip attached to board */
++	rtl8169_get_mac_version(tp, dev, cfg->default_ver);
 +
- 	if (tp->mac_version == RTL_GIGA_MAC_VER_27 ||
- 	    tp->mac_version == RTL_GIGA_MAC_VER_28 ||
- 	    tp->mac_version == RTL_GIGA_MAC_VER_31) {
- 		while (RTL_R8(TxPoll) & NPQ)
- 			udelay(20);
++	rtl_init_rxcfg(tp);
++
+ 	RTL_W16(IntrMask, 0x0000);
  
-+	} else {
-+		RTL_W8(ChipCmd, RTL_R8(ChipCmd) | StopReq);
-+		udelay(100);
- 	}
+ 	rtl_hw_reset(tp);
+@@ -3467,9 +3504,6 @@ rtl8169_init_one(struct pci_dev *pdev, const struct pci_device_id *ent)
  
--	/* Reset the chipset */
--	RTL_W8(ChipCmd, CmdReset);
+ 	pci_set_master(pdev);
+ 
+-	/* Identify chip attached to board */
+-	rtl8169_get_mac_version(tp, dev, cfg->default_ver);
 -
--	/* PCI commit */
--	RTL_R8(ChipCmd);
-+	rtl_hw_reset(tp);
- }
- 
- static void rtl_set_rx_tx_config_registers(struct rtl8169_private *tp)
-@@ -3776,8 +3784,6 @@ static void rtl_hw_start(struct net_device *dev)
- {
- 	struct rtl8169_private *tp = netdev_priv(dev);
- 
--	rtl_hw_reset(tp);
--
- 	tp->hw_start(dev);
- 
- 	netif_start_queue(dev);
-@@ -4718,7 +4724,6 @@ static void rtl8169_reset_task(struct work_struct *work)
- 
- 	rtl8169_tx_clear(tp);
- 
--	rtl8169_init_ring_indexes(tp);
- 	rtl_hw_start(dev);
- 	netif_wake_queue(dev);
- 	rtl8169_check_link_status(dev, tp, tp->mmio_addr);
-@@ -5132,7 +5137,7 @@ static irqreturn_t rtl8169_interrupt(int irq, void *dev_instance)
- 		 * the chip, so just exit the loop.
- 		 */
- 		if (unlikely(!netif_running(dev))) {
--			rtl8169_asic_down(ioaddr);
-+			rtl8169_hw_reset(tp);
- 			break;
- 		}
- 
-@@ -5255,7 +5260,7 @@ static void rtl8169_down(struct net_device *dev)
- 
- 	spin_lock_irq(&tp->lock);
- 
--	rtl8169_asic_down(ioaddr);
-+	rtl8169_hw_reset(tp);
  	/*
- 	 * At this point device interrupts can not be enabled in any function,
- 	 * as netif_running is not true (rtl8169_interrupt, rtl8169_reset_task,
-@@ -5509,7 +5514,7 @@ static void rtl_shutdown(struct pci_dev *pdev)
+ 	 * Pretend we are using VLANs; This bypasses a nasty bug where
+ 	 * Interrupts stop flowing on high load on 8110SCd controllers.
+@@ -3770,10 +3804,6 @@ static void rtl8169_hw_reset(struct rtl8169_private *tp)
+ static void rtl_set_rx_tx_config_registers(struct rtl8169_private *tp)
+ {
+ 	void __iomem *ioaddr = tp->mmio_addr;
+-	u32 cfg = rtl8169_rx_config;
+-
+-	cfg |= (RTL_R32(RxConfig) & RTL_RX_CONFIG_MASK);
+-	RTL_W32(RxConfig, cfg);
  
- 	spin_lock_irq(&tp->lock);
+ 	/* Set DMA burst size and Interframe Gap Time */
+ 	RTL_W32(TxConfig, (TX_DMA_BURST << TxDMAShift) |
+@@ -5343,8 +5373,7 @@ static void rtl_set_rx_mode(struct net_device *dev)
  
--	rtl8169_asic_down(ioaddr);
-+	rtl8169_hw_reset(tp);
+ 	spin_lock_irqsave(&tp->lock, flags);
  
- 	spin_unlock_irq(&tp->lock);
+-	tmp = rtl8169_rx_config | rx_mode |
+-	      (RTL_R32(RxConfig) & RTL_RX_CONFIG_MASK);
++	tmp = RTL_R32(RxConfig) | rx_mode;
  
+ 	if (tp->mac_version > RTL_GIGA_MAC_VER_06) {
+ 		u32 data = mc_filter[0];
 -- 
 1.7.3.2
 
