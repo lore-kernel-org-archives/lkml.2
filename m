@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756067Ab1GERAm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 13:00:42 -0400
-Received: from webmail.unmsm.edu.pe ([200.62.146.200]:59297 "EHLO
-	abancay.unmsm.edu.pe" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755844Ab1GERAl (ORCPT
+	id S1754725Ab1GERSI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 13:18:08 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60982 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752144Ab1GERSG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 13:00:41 -0400
-X-Greylist: delayed 1721 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jul 2011 13:00:41 EDT
-Message-ID: <61296.172.22.22.4.1309884669.squirrel@webmail.unmsm.edu.pe>
-Date: Tue, 5 Jul 2011 11:51:09 -0500 (PET)
-Subject: Attention Webmail Account User
-From: "Webmail and Network Support" <04150306@unmsm.edu.pe>
-Reply-To: webtech.services@one.co.il
-User-Agent: SquirrelMail/1.4.8
+	Tue, 5 Jul 2011 13:18:06 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+In-Reply-To: <20110705163628.GB31984@suse.de>
+References: <20110704170949.11059.92774.stgit@ponder> <20110704180159.GA11278@ponder.secretlab.ca>
+ <20110705142149.GA3498@suse.de> <201107051721.02079.arnd@arndb.de>
+ <20110705155040.GB16682@suse.de> <CAPXgP12eg1diui_78rqaVijKbxvRcpZhsC35i9w_Js9vr2OGWA@mail.gmail.com>
+ <CACxGe6sypBwP6aKoaxq1ipoEfqvnqq2RMhi9d0KU=LHjJm9x_g@mail.gmail.com> <20110705163628.GB31984@suse.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 5 Jul 2011 11:17:46 -0600
+X-Google-Sender-Auth: Zap1-ZnITp3lVZOzWbvcTklflOQ
+Message-ID: <CACxGe6v_HVWcci2cPDyNALWST0E3_iXWZzrhi49e_cUX1VCt+Q@mail.gmail.com>
+Subject: Re: [PATCH] drivercore: Add driver probe deferral mechanism
+To: Greg KH <gregkh@suse.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Arnd Bergmann <arnd@arndb.de>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        "David S. Miller" <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Attention Webmail Account User,
+On Tue, Jul 5, 2011 at 10:36 AM, Greg KH <gregkh@suse.de> wrote:
+> On Tue, Jul 05, 2011 at 10:28:37AM -0600, Grant Likely wrote:
+>> On Tue, Jul 5, 2011 at 10:11 AM, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>> > On Tue, Jul 5, 2011 at 17:50, Greg KH <gregkh@suse.de> wrote:
+>> >
+>> >> I wonder if doing this all from a workqueue in the first place is going
+>> >> to cause problems as probe isn't normally done this way at all.
+>> >
+>> > Yeah, I would expect unforeseen problems with the async thread too.
+>> > It's probably all solvable, but it sounds troublesome to find out if
+>> > things go wrong.
+>> >
+>> > We have sync hooks (BUS_NOTIFY_*) where any kind of code can subscribe
+>> > to when devices get added or get bound to a driver. Can't the code
+>> > that relies on later hookups to already existing devices/bindings not
+>> > just plug into that?
+>>
+>> I tried that.  It resulted in a lot of complexity that each driver
+>> needs to implement correctly which is why I started looking for a
+>> different way to go about it.
+>
+> No, the bus that wants this just has to do it, not the drivers
+> themselves, right?
 
-This message is from the Webmail & Network Account Management Center.
-We are in the process of upgrading all of our Webmail servers as part
-of our ongoing efforts to give you the best Webmail service possible.
-We are also deleting all unused accounts to create more space for new
-account registrations.
+It's not about the bus_type, and there is nothing that the bus can do
+to solve this problem because it the dependencies are completely
+orthogonal to the bus.  ie. what does an i2c bus know about the audio
+path to a codec?  The problem must be solved at the driver scope.
 
-In order to ensure you do not experience service interruptions or possible
-deactivation of your e-mail account, Please you must reply to this mail
-immediately confirming your e-mail account details below for confirmation
-and identification.
-
-Do confirm your account details below.
-_____________________________________
-1. First & Last Name:
-2. Full Login Email:
-3. Username:
-4. Password:
-5. Retype Password:
-_____________________________________
-
-Failure to do this may automatically render your e-mail account
-deactivated from our e-mail database/mail server. To enable us upgrade
-your e-mail account, please do reply to this mail.
-
-Thanks for your understanding, we wish you a pleasant day ahead.
-
-
-Technical Support Team,
-Webmail & Network Account Management Center.
-
+g.
