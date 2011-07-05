@@ -1,101 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752863Ab1GEO1n (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:27:43 -0400
-Received: from wnohang.net ([178.79.154.173]:41944 "EHLO mail.wnohang.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605Ab1GEO1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:27:41 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 0B07DF0009
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 54C56F0003
-Date: Tue, 5 Jul 2011 19:57:31 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
-        jeremy.fitzhardinge@citrix.com, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [TOME] Re: [PATCH] Modpost section mismatch fix
-Message-ID: <20110705142731.GA4463@Xye>
-References: <20110703232508.GB4440@Xye>
- <1309769388.634.51.camel@zakaz.uk.xensource.com>
- <20110704221646.GB4490@Xye>
- <20110705141323.GG2972@dumpdata.com>
+	id S1752976Ab1GEObG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:31:06 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:50452 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752914Ab1GEObF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 10:31:05 -0400
+Date: Tue, 5 Jul 2011 15:30:26 +0100
+From: Will Deacon <will.deacon@arm.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Ingo Molnar <mingo@elte.hu>,
+        "a.p.zijlstra@chello.nl" <a.p.zijlstra@chello.nl>,
+        "acme@ghostprotocols.net" <acme@ghostprotocols.net>,
+        Jason Wessel <jason.wessel@windriver.com>
+Subject: Re: [PATCH 1/3] perf: add context field to perf_event
+Message-ID: <20110705143026.GF6345@e102144-lin.cambridge.arm.com>
+References: <1309362157-6596-1-git-send-email-avi@redhat.com>
+ <1309362157-6596-2-git-send-email-avi@redhat.com>
+ <20110629160841.GA2032@somewhere>
+ <20110629162725.GH15521@e102144-lin.cambridge.arm.com>
+ <20110704135820.GD5551@somewhere>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+HP7ph2BbKc20aGI"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110705141323.GG2972@dumpdata.com>
-X-Operating-System: Arch linux x86_64 3.0.0-rc5-LYM
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-12-30)
+In-Reply-To: <20110704135820.GD5551@somewhere>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Frederic,
 
---+HP7ph2BbKc20aGI
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
+On Mon, Jul 04, 2011 at 02:58:24PM +0100, Frederic Weisbecker wrote:
+> On Wed, Jun 29, 2011 at 05:27:25PM +0100, Will Deacon wrote:
+> > Hi Frederic,
+> > 
+> > Thanks for including me on CC.
+> > 
+> > On Wed, Jun 29, 2011 at 05:08:45PM +0100, Frederic Weisbecker wrote:
+> > > On Wed, Jun 29, 2011 at 06:42:35PM +0300, Avi Kivity wrote:
+> > > > The perf_event overflow handler does not receive any caller-derived
+> > > > argument, so many callers need to resort to looking up the perf_event
+> > > > in their local data structure.  This is ugly and doesn't scale if a
+> > > > single callback services many perf_events.
+> > > >
+> > > > Fix by adding a context parameter to perf_event_create_kernel_counter()
+> > > > (and derived hardware breakpoints APIs) and storing it in the perf_event.
+> > > > The field can be accessed from the callback as event->overflow_handler_context.
+> > > > All callers are updated.
+> > > >
+> > > > Signed-off-by: Avi Kivity <avi@redhat.com>
+> > > 
+> > > I believe it can micro-optimize ptrace through register_user_hw_breakpoint() because
+> > > we could store the index of the breakpoint that way, instead of iterating through 4 slots.
+> > > 
+> > > Perhaps it can help in arm too, adding Will in Cc.
+> > 
+> > Yes, we could store the breakpoint index in there and it would save us
+> > walking over the breakpoints when one fires. Not sure this helps us for
+> > anything else though. My main gripe with the ptrace interface to
+> > hw_breakpoints is that we have to convert all the breakpoint information
+> > from ARM_BREAKPOINT_* to HW_BREAKPOINT_* and then convert it all back again
+> > in the hw_breakpoint code. Yuck!
+> 
+> Agreed, I don't like that either.
+> 
+> Would you like to improve that? We probably need to be able to pass some arch data
+> through the whole call of breakpoint creation, including perf_event_create_kernel_counter().
 
-* On Tue, Jul 05, 2011 at 10:13:23AM -0400, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->On Tue, Jul 05, 2011 at 03:46:46AM +0530, Raghavendra D Prabhu wrote:
->> * On Mon, Jul 04, 2011 at 09:49:48AM +0100, Ian Campbell <ijc@hellion.org.uk> wrote:
->> >On Mon, 2011-07-04 at 04:55 +0530, Raghavendra D Prabhu wrote:
->> >>[Sorry if duplicate, one earlier was corrupt]
+Sure, I'll make some time to look at this and try and get an RFC out in the
+next few weeks.
 
->> >>Hi,
->> >>     I got section mismatches reported by modpost in latest build. It got
->> >>     reported for xen_register_pirq and xen_unplug_emulated_devices
->> >>     functions.
+> There can be a transition step where we can either take generic attr or arch datas, until
+> every archs are converted. So that you can handle the arm part and other arch developers
+> can relay.
 
+Yup.
 
->> >> xen_register_pirq makes reference to
->> >>     acpi_sci_override_gsi in init.data section; marking
->> >>     xen_register_pirq with __init is not feasible since calls are made
->> >>     to it from acpi_register_gsi in non-init contexts. So marking it
->> >>     __refdata based on assumption that when acpi_sci_override_gsi is
->> >>     referenced, it is in  early stages where it is alive.
+> 
+> Another thing I would like to do in the even longer term is to not use perf anymore
+> for ptrace breakpoints, because that involves a heavy dependency and few people are
+> happy with that. Instead we should just have a generic hook into the sched_switch()
+> and handle pure ptrace breakpoints there. The central breakpoint API would still be
+> there to reserve/schedule breakpoint resources between ptrace and perf.
+> 
+> But beeing able to create ptrace breakpoints without converting to generic perf attr
+> is a necessary first step in order to achieve this.
 
->> >I don't think this assumption holds, since xen_register_pirq can be
->> >called at any time and basically unconditionally references
->> >acpi_sci_override_gsi.
+Agreed, but I'll bear that in mind so I don't make it any more difficult
+than it already is!
 
->> Yeah, that has been my guess as well, however I am not privy to the
->> inner workings of Xen, so was not sure.
+Cheers,
 
->> >If we don't want to remove the __init from acpi_sci_override_gsi then
->> >perhaps xen_setup_acpi_sci needs to stash it somewhere?
-
->> >Or maybe xen_register_pirq could take an "int force_irq" which, if not
->> >-1, would force a particular IRQ. The callsite in xen_setup_acpi_sci
->> >(actually via xen_register_gsi so the param would need to be propagated
->> >there) would be the only actual user?
-
->> xen_register_gsi and hence, xen_register_pirq are called from
->> init (with xen_setup_acpi_sci) and non-init (with
->> acpi_register_gsi_xen); since xen_set_acpi_sci calls it with gsi ==
->> acpi_sci_override_gsi and is marked __init, the best way would be to
->> call xen_register_gsi and xen_register_pirq with a boolean argument like
->> sci_override to obviate the need to use acpi_sci_override_gsi in
->> register_pirq. I will send the patch with this change if it looks good.
->
->Hold on, let me rebase #stable/pci.cleanups and see if the issue
->here disappears.
-Thanks, will wait until the rebase and test after that.
-
---+HP7ph2BbKc20aGI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOEx9TAAoJEKYW3KHXK+l3iUwIAJRt8dUJnljuuOhEU6tzGaiB
-fz+ndKL9J64Bj8qPr56+RRLhd8MZOprO/eK+T87mG/9M4p8NrE0Y+uHBsc6qyIhn
-ujETvr92dgtepYXeMhEoGyY8uPwkHLCZSs0e8PPoB1VMBnAlV9X5OhzANFDV4N4m
-sHMtBB7rxlcvG7fC+MOSdiI2gugxbYUmO7C+GdSiSCuRpQgRnpWDYcqcrfreGCh0
-cB7zbk7LK1O/6QLjOoD3sJ1/w+R2KbGb+V/Ah13Iwc4qXdmB8hb132PtwTEmEnI0
-q/ClYhAZIuPbOP/RseZzkjOZuQZD9340Rk1vpx8ICG2fI3QLDVbd3+1RDqh2kOM=
-=hN1Z
------END PGP SIGNATURE-----
-
---+HP7ph2BbKc20aGI--
+Will
