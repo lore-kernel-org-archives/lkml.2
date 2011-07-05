@@ -1,280 +1,240 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755561Ab1GERXx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 13:23:53 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:4942
-	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752246Ab1GERXw (ORCPT
+	id S1755702Ab1GER3V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 13:29:21 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:26973 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752958Ab1GER3T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 13:23:52 -0400
-X-SpamScore: -12
-X-BigFish: VPS-12(zz4015L1432N98dKzz1202hzz8275bhz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNVEX4-02-C6F-02
-X-M-MSG: 
-Date: Tue, 5 Jul 2011 19:22:15 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH] x86: Make copy_from_user_nmi() a library function
-Message-ID: <20110705172215.GE4590@erda.amd.com>
-References: <COL116-W380DF5357514E3CC28BB66A38F0@phx.gbl>
- <4DD5046F.3000807@us.ibm.com>
- <4DD53BC8.2010208@hotmail.com>
- <20110607105259.GE20052@erda.amd.com>
- <4DEE2F09.6090803@hotmail.com>
- <20110607171822.GI20052@erda.amd.com>
- <20110607172413.GJ20052@erda.amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110607172413.GJ20052@erda.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	Tue, 5 Jul 2011 13:29:19 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6398"; a="101903465"
+From: Stephen Boyd <sboyd@codeaurora.org>
+To: Russell King <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        linux-samsung-soc@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-sh@vger.kernel.org, linux-tegra@vger.kernel.org,
+        Paul Mundt <lethal@linux-sh.org>, Kukjin Kim <kgene.kim@samsung.com>,
+        David Brown <davidb@codeaurora.org>, Tony Lindgren <tony@atomide.com>,
+        Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCHv2] arm: platsmp: Allow secondary cpu hotplug with maxcpus=1
+Date: Tue,  5 Jul 2011 10:29:17 -0700
+Message-Id: <1309886957-7548-1-git-send-email-sboyd@codeaurora.org>
+X-Mailer: git-send-email 1.7.6.131.g99019
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07.06.11 19:24:13, Robert Richter wrote:
-> On 07.06.11 19:18:22, Robert Richter wrote:
-> > From c73bebe2e281ae089499d7cbc3b44a0869c8daf8 Mon Sep 17 00:00:00 2001
-> > From: Robert Richter <robert.richter@amd.com>
-> > Date: Fri, 3 Jun 2011 16:37:47 +0200
-> > Subject: [PATCH] oprofile, x86: Fix nmi-unsafe callgraph support
-> 
-> While this patch was a stable fix which introduced duplicate code for
-> perf and oprofile I suggest merging the code, see the patch below.
-> 
-> -Robert
-> 
-> 
-> From 3652d1b07a0cfce5b26ad186594c1bf8f9ca5898 Mon Sep 17 00:00:00 2001
-> From: Robert Richter <robert.richter@amd.com>
-> Date: Tue, 7 Jun 2011 11:49:55 +0200
-> Subject: [PATCH] x86: Make copy_from_user_nmi() a library function
-> 
-> copy_from_user_nmi() is used in oprofile and perf. Moving it to other
-> library functions like copy_from_user(). As this is x86 code for 32
-> and 64 bits, create a new file usercopy.c for unified code.
-> 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  arch/x86/include/asm/uaccess.h   |    3 ++
->  arch/x86/kernel/cpu/perf_event.c |   35 ------------------------------
->  arch/x86/lib/Makefile            |    2 +-
->  arch/x86/lib/usercopy.c          |   43 ++++++++++++++++++++++++++++++++++++++
->  arch/x86/oprofile/backtrace.c    |   39 +---------------------------------
->  5 files changed, 48 insertions(+), 74 deletions(-)
->  create mode 100644 arch/x86/lib/usercopy.c
+If an ARM system has multiple cpus in the same socket and the
+kernel is booted with maxcpus=1, secondary cpus are possible but
+not present due to how platform_smp_prepare_cpus() is called.
+Since most typical ARM processors don't actually support physical
+hotplug, initialize the present map to be equal to the possible
+map in generic ARM SMP code. Also, always call
+platform_smp_prepare_cpus() as long as max_cpus is non-zero (0
+means no SMP) to allow platform code to do any SMP setup.
 
-Ingo, Peter,
+After applying this patch it's possible to boot an ARM system
+with maxcpus=1 on the command line and then hotplug in secondary
+cpus via sysfs. This is more in line with how x86 does things.
 
-what about this patch? Any opinion? This one should be against
-tip/perf/core now.
+Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
+Cc: Paul Mundt <lethal@linux-sh.org>
+Cc: Kukjin Kim <kgene.kim@samsung.com>
+Cc: David Brown <davidb@codeaurora.org>
+Cc: Tony Lindgren <tony@atomide.com>
+Cc: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>
+---
 
-Thanks,
+Changes since V1:
+ * Pulled up init_cpu_present() to arm/kernel/smp.c instead of
+   in each platform_smp_prepare_cpus()
 
--Robert
+ arch/arm/kernel/smp.c             |   11 +++++++++--
+ arch/arm/mach-exynos4/platsmp.c   |    8 --------
+ arch/arm/mach-msm/platsmp.c       |    8 --------
+ arch/arm/mach-omap2/omap-smp.c    |    8 --------
+ arch/arm/mach-realview/platsmp.c  |    8 --------
+ arch/arm/mach-shmobile/platsmp.c  |    5 -----
+ arch/arm/mach-tegra/platsmp.c     |    8 --------
+ arch/arm/mach-ux500/platsmp.c     |    8 --------
+ arch/arm/mach-vexpress/ct-ca9x4.c |    4 ----
+ 9 files changed, 9 insertions(+), 59 deletions(-)
 
-> 
-> diff --git a/arch/x86/include/asm/uaccess.h b/arch/x86/include/asm/uaccess.h
-> index abd3e0e..c0236e9 100644
-> --- a/arch/x86/include/asm/uaccess.h
-> +++ b/arch/x86/include/asm/uaccess.h
-> @@ -556,6 +556,9 @@ struct __large_struct { unsigned long buf[100]; };
->  
->  #endif /* CONFIG_X86_WP_WORKS_OK */
->  
-> +extern unsigned long
-> +copy_from_user_nmi(void *to, const void __user *from, unsigned long n);
-> +
->  /*
->   * movsl can be slow when source and dest are not both 8-byte aligned
->   */
-> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-> index e638689..46bf36d 100644
-> --- a/arch/x86/kernel/cpu/perf_event.c
-> +++ b/arch/x86/kernel/cpu/perf_event.c
-> @@ -22,7 +22,6 @@
->  #include <linux/sched.h>
->  #include <linux/uaccess.h>
->  #include <linux/slab.h>
-> -#include <linux/highmem.h>
->  #include <linux/cpu.h>
->  #include <linux/bitops.h>
->  
-> @@ -43,40 +42,6 @@ do {								\
->  } while (0)
->  #endif
->  
-> -/*
-> - * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
-> - */
-> -static unsigned long
-> -copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
-> -{
-> -	unsigned long offset, addr = (unsigned long)from;
-> -	unsigned long size, len = 0;
-> -	struct page *page;
-> -	void *map;
-> -	int ret;
-> -
-> -	do {
-> -		ret = __get_user_pages_fast(addr, 1, 0, &page);
-> -		if (!ret)
-> -			break;
-> -
-> -		offset = addr & (PAGE_SIZE - 1);
-> -		size = min(PAGE_SIZE - offset, n - len);
-> -
-> -		map = kmap_atomic(page);
-> -		memcpy(to, map+offset, size);
-> -		kunmap_atomic(map);
-> -		put_page(page);
-> -
-> -		len  += size;
-> -		to   += size;
-> -		addr += size;
-> -
-> -	} while (len < n);
-> -
-> -	return len;
-> -}
-> -
->  struct event_constraint {
->  	union {
->  		unsigned long	idxmsk[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
-> diff --git a/arch/x86/lib/Makefile b/arch/x86/lib/Makefile
-> index f2479f1..6ba4773 100644
-> --- a/arch/x86/lib/Makefile
-> +++ b/arch/x86/lib/Makefile
-> @@ -18,7 +18,7 @@ obj-$(CONFIG_SMP) += msr-smp.o cache-smp.o
->  
->  lib-y := delay.o
->  lib-y += thunk_$(BITS).o
-> -lib-y += usercopy_$(BITS).o getuser.o putuser.o
-> +lib-y += usercopy_$(BITS).o usercopy.o getuser.o putuser.o
->  lib-y += memcpy_$(BITS).o
->  lib-$(CONFIG_INSTRUCTION_DECODER) += insn.o inat.o
->  
-> diff --git a/arch/x86/lib/usercopy.c b/arch/x86/lib/usercopy.c
-> new file mode 100644
-> index 0000000..4ef83d3
-> --- /dev/null
-> +++ b/arch/x86/lib/usercopy.c
-> @@ -0,0 +1,43 @@
-> +/*
-> + * User address space access functions.
-> + *
-> + *  For licencing details see kernel-base/COPYING
-> + */
-> +
-> +#include <linux/highmem.h>
-> +#include <linux/module.h>
-> +
-> +/*
-> + * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
-> + */
-> +unsigned long
-> +copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
-> +{
-> +	unsigned long offset, addr = (unsigned long)from;
-> +	unsigned long size, len = 0;
-> +	struct page *page;
-> +	void *map;
-> +	int ret;
-> +
-> +	do {
-> +		ret = __get_user_pages_fast(addr, 1, 0, &page);
-> +		if (!ret)
-> +			break;
-> +
-> +		offset = addr & (PAGE_SIZE - 1);
-> +		size = min(PAGE_SIZE - offset, n - len);
-> +
-> +		map = kmap_atomic(page);
-> +		memcpy(to, map+offset, size);
-> +		kunmap_atomic(map);
-> +		put_page(page);
-> +
-> +		len  += size;
-> +		to   += size;
-> +		addr += size;
-> +
-> +	} while (len < n);
-> +
-> +	return len;
-> +}
-> +EXPORT_SYMBOL(copy_from_user_nmi);
-> diff --git a/arch/x86/oprofile/backtrace.c b/arch/x86/oprofile/backtrace.c
-> index 88e856e..087233f 100644
-> --- a/arch/x86/oprofile/backtrace.c
-> +++ b/arch/x86/oprofile/backtrace.c
-> @@ -12,10 +12,9 @@
->  #include <linux/sched.h>
->  #include <linux/mm.h>
->  #include <linux/compat.h>
-> -#include <linux/highmem.h>
-> +#include <linux/uaccess.h>
->  
->  #include <asm/ptrace.h>
-> -#include <asm/uaccess.h>
->  #include <asm/stacktrace.h>
->  
->  static void backtrace_warning_symbol(void *data, char *msg,
-> @@ -51,42 +50,6 @@ static struct stacktrace_ops backtrace_ops = {
->  	.walk_stack	= print_context_stack,
->  };
->  
-> -/* from arch/x86/kernel/cpu/perf_event.c: */
-> -
-> -/*
-> - * best effort, GUP based copy_from_user() that assumes IRQ or NMI context
-> - */
-> -static unsigned long
-> -copy_from_user_nmi(void *to, const void __user *from, unsigned long n)
-> -{
-> -	unsigned long offset, addr = (unsigned long)from;
-> -	unsigned long size, len = 0;
-> -	struct page *page;
-> -	void *map;
-> -	int ret;
-> -
-> -	do {
-> -		ret = __get_user_pages_fast(addr, 1, 0, &page);
-> -		if (!ret)
-> -			break;
-> -
-> -		offset = addr & (PAGE_SIZE - 1);
-> -		size = min(PAGE_SIZE - offset, n - len);
-> -
-> -		map = kmap_atomic(page);
-> -		memcpy(to, map+offset, size);
-> -		kunmap_atomic(map);
-> -		put_page(page);
-> -
-> -		len  += size;
-> -		to   += size;
-> -		addr += size;
-> -
-> -	} while (len < n);
-> -
-> -	return len;
-> -}
-> -
->  #ifdef CONFIG_COMPAT
->  static struct stack_frame_ia32 *
->  dump_user_backtrace_32(struct stack_frame_ia32 *head)
-> -- 
-> 1.7.5.rc3
-> 
-> 
-> 
-> -- 
-> Advanced Micro Devices, Inc.
-> Operating System Research Center
-
+diff --git a/arch/arm/kernel/smp.c b/arch/arm/kernel/smp.c
+index e7f92a4..167e3cb 100644
+--- a/arch/arm/kernel/smp.c
++++ b/arch/arm/kernel/smp.c
+@@ -365,8 +365,7 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+ 	 */
+ 	if (max_cpus > ncores)
+ 		max_cpus = ncores;
+-
+-	if (max_cpus > 1) {
++	if (ncores > 1 && max_cpus) {
+ 		/*
+ 		 * Enable the local timer or broadcast device for the
+ 		 * boot CPU, but only if we have more than one CPU.
+@@ -374,6 +373,14 @@ void __init smp_prepare_cpus(unsigned int max_cpus)
+ 		percpu_timer_setup();
+ 
+ 		/*
++		 * Initialise the present map, which describes the set of CPUs
++		 * actually populated at the present time. A platform should
++		 * re-initialize the map in platform_smp_prepare_cpus() if
++		 * present != possible (e.g. physical hotplug).
++		 */
++		init_cpu_present(&cpu_possible_map);
++
++		/*
+ 		 * Initialise the SCU if there are more than one CPU
+ 		 * and let them know where to start.
+ 		 */
+diff --git a/arch/arm/mach-exynos4/platsmp.c b/arch/arm/mach-exynos4/platsmp.c
+index c5e65a0..b68d5bd 100644
+--- a/arch/arm/mach-exynos4/platsmp.c
++++ b/arch/arm/mach-exynos4/platsmp.c
+@@ -154,14 +154,6 @@ void __init smp_init_cpus(void)
+ 
+ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	int i;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+ 
+ 	scu_enable(scu_base_addr());
+ 
+diff --git a/arch/arm/mach-msm/platsmp.c b/arch/arm/mach-msm/platsmp.c
+index 2034098..315b9f3 100644
+--- a/arch/arm/mach-msm/platsmp.c
++++ b/arch/arm/mach-msm/platsmp.c
+@@ -157,12 +157,4 @@ void __init smp_init_cpus(void)
+ 
+ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	int i;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+ }
+diff --git a/arch/arm/mach-omap2/omap-smp.c b/arch/arm/mach-omap2/omap-smp.c
+index ecfe93c..ce65e93 100644
+--- a/arch/arm/mach-omap2/omap-smp.c
++++ b/arch/arm/mach-omap2/omap-smp.c
+@@ -125,14 +125,6 @@ void __init smp_init_cpus(void)
+ 
+ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	int i;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+ 
+ 	/*
+ 	 * Initialise the SCU and wake up the secondary core using
+diff --git a/arch/arm/mach-realview/platsmp.c b/arch/arm/mach-realview/platsmp.c
+index 963bf0d..4ae943b 100644
+--- a/arch/arm/mach-realview/platsmp.c
++++ b/arch/arm/mach-realview/platsmp.c
+@@ -68,14 +68,6 @@ void __init smp_init_cpus(void)
+ 
+ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	int i;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+ 
+ 	scu_enable(scu_base_addr());
+ 
+diff --git a/arch/arm/mach-shmobile/platsmp.c b/arch/arm/mach-shmobile/platsmp.c
+index f3888fe..66f9806 100644
+--- a/arch/arm/mach-shmobile/platsmp.c
++++ b/arch/arm/mach-shmobile/platsmp.c
+@@ -64,10 +64,5 @@ void __init smp_init_cpus(void)
+ 
+ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	int i;
+-
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+-
+ 	shmobile_smp_prepare_cpus();
+ }
+diff --git a/arch/arm/mach-tegra/platsmp.c b/arch/arm/mach-tegra/platsmp.c
+index b8ae3c9..1a594dc 100644
+--- a/arch/arm/mach-tegra/platsmp.c
++++ b/arch/arm/mach-tegra/platsmp.c
+@@ -129,14 +129,6 @@ void __init smp_init_cpus(void)
+ 
+ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	int i;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+ 
+ 	scu_enable(scu_base);
+ }
+diff --git a/arch/arm/mach-ux500/platsmp.c b/arch/arm/mach-ux500/platsmp.c
+index 0c527fe..a33df5f 100644
+--- a/arch/arm/mach-ux500/platsmp.c
++++ b/arch/arm/mach-ux500/platsmp.c
+@@ -172,14 +172,6 @@ void __init smp_init_cpus(void)
+ 
+ void __init platform_smp_prepare_cpus(unsigned int max_cpus)
+ {
+-	int i;
+-
+-	/*
+-	 * Initialise the present map, which describes the set of CPUs
+-	 * actually populated at the present time.
+-	 */
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+ 
+ 	scu_enable(scu_base_addr());
+ 	wakeup_secondary();
+diff --git a/arch/arm/mach-vexpress/ct-ca9x4.c b/arch/arm/mach-vexpress/ct-ca9x4.c
+index 765a71f..bfd32f5 100644
+--- a/arch/arm/mach-vexpress/ct-ca9x4.c
++++ b/arch/arm/mach-vexpress/ct-ca9x4.c
+@@ -229,10 +229,6 @@ static void ct_ca9x4_init_cpu_map(void)
+ 
+ static void ct_ca9x4_smp_enable(unsigned int max_cpus)
+ {
+-	int i;
+-	for (i = 0; i < max_cpus; i++)
+-		set_cpu_present(i, true);
+-
+ 	scu_enable(MMIO_P2V(A9_MPCORE_SCU));
+ }
+ #endif
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
