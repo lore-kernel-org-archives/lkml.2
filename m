@@ -1,134 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab1GEH7P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 03:59:15 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:5057 "EHLO sjogate2.atmel.com"
+	id S1754518Ab1GEIEI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 04:04:08 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:49650 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab1GEH7O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 03:59:14 -0400
-Message-ID: <4E12C426.8050501@atmel.com>
-Date: Tue, 05 Jul 2011 09:58:30 +0200
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-Organization: atmel
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>, lrg@ti.com
-CC: alsa-devel@alsa-project.org, linux-arm-kernel@lists.infradead.org,
+	id S1754353Ab1GEIEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 04:04:04 -0400
+Date: Tue, 5 Jul 2011 10:03:58 +0200
+From: Florian Mickler <florian@mickler.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Andrea Righi <andrea@betterlinux.com>, Len Brown <lenb@kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
+        Borislav Petkov <bp@alien8.de>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>, linux-acpi@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ASoC: wm8731: set the ACTIVE bit if bias ON entered
-References: <ccd4b125244271af7978948689cf1dcef37bc06b.1309368631.git.nicolas.ferre@atmel.com> <1309517034-26110-1-git-send-email-nicolas.ferre@atmel.com> <20110701161506.GC23784@opensource.wolfsonmicro.com> <4E118BF6.6010205@atmel.com> <20110704172856.GF28726@opensource.wolfsonmicro.com>
-In-Reply-To: <20110704172856.GF28726@opensource.wolfsonmicro.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [PATCH] ACPI: Fix lockdep false positives in acpi_power_off()
+Message-ID: <20110705100358.6857b235@schatten.dmk.lab>
+In-Reply-To: <201107050132.11996.rjw@sisk.pl>
+References: <1309684450-24549-1-git-send-email-andrea@betterlinux.com>
+	<201107040028.23569.rjw@sisk.pl>
+	<20110704082307.GA1239@thinkpad>
+	<201107050132.11996.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le 04/07/2011 19:29, Mark Brown :
-> On Mon, Jul 04, 2011 at 11:46:30AM +0200, Nicolas Ferre wrote:
+On Tue, 5 Jul 2011 01:32:11 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 > 
->> Ah, ok... but I fear that I do not know the whole system enough for this
->> addition ;-(
->> Do you think you can code this modification, I will be happy to test it,
->> if you want...
+> OK, below is an official version.
 > 
-> It's pretty trivial - try the below (Liam, are you OK with this if it
-> tests OK?):
+> Thanks,
+> Rafael
 > 
->>From 1dd054eb530641dadbf71525ee517c847f19e161 Mon Sep 17 00:00:00 2001
-> From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-> Date: Mon, 4 Jul 2011 10:27:51 -0700
-> Subject: [PATCH] ASoC: Manage WM8731 ACTIVE bit as a supply widget
-> 
-> Now we have supply widgets there's no need to open code the handling of
-> the ACTIVE bit.
-> 
-> Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 > ---
->  sound/soc/codecs/wm8731.c |   29 +++--------------------------
->  1 files changed, 3 insertions(+), 26 deletions(-)
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: ACPI: Fix lockdep false positives in acpi_power_off()
 > 
-> diff --git a/sound/soc/codecs/wm8731.c b/sound/soc/codecs/wm8731.c
-> index 2dc964b..59d9e59 100644
-> --- a/sound/soc/codecs/wm8731.c
-> +++ b/sound/soc/codecs/wm8731.c
-> @@ -175,6 +175,7 @@ static const struct snd_kcontrol_new wm8731_input_mux_controls =
->  SOC_DAPM_ENUM("Input Select", wm8731_insel_enum);
+> All ACPICA locks are allocated and initialized by the same function,
+> acpi_os_create_lock(), with the help of a local variable called
+> "lock".  Thus, when lockdep is enabled, it uses "lock" as the
+> name of all those locks and regards them as instances of the same
+> lock, which causes it to report possible locking problems with them
+> when there aren't any.
+> 
+> To work around this problem, define acpi_os_create_lock() as a macro
+> and make it pass its argument to spin_lock_init(), so that lockdep
+> uses it as the name of the new lock.  Define this macron in a
+> Linux-specific file to minimize the resulting modifications of
+> the OS-independent ACPICA parts.
+> 
+> This change is based on an earlier patch from Andrea Righi and it
+> addresses a regression from 2.6.39 tracked as
+> https://bugzilla.kernel.org/show_bug.cgi?id=38152
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Reported-by: Borislav Petkov <bp@alien8.de>
+> Tested-by: Andrea Righi <andrea@betterlinux.com>
+> ---
+>  drivers/acpi/osl.c              |   17 -----------------
+>  include/acpi/acpiosxf.h         |    3 +++
+>  include/acpi/platform/aclinux.h |   18 ++++++++++++++++++
+>  3 files changed, 21 insertions(+), 17 deletions(-)
+> 
+> Index: linux-2.6/drivers/acpi/osl.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/acpi/osl.c
+> +++ linux-2.6/drivers/acpi/osl.c
+> @@ -1333,23 +1333,6 @@ int acpi_resources_are_enforced(void)
+>  EXPORT_SYMBOL(acpi_resources_are_enforced);
 >  
->  static const struct snd_soc_dapm_widget wm8731_dapm_widgets[] = {
-> +SND_SOC_DAPM_SUPPLY("Active",WM8731_ACTIVE, 0, 0, NULL, 0),
-
-------------------------^^^^^^^
-I have replaced this with ACTIVE to match the route declaration.
-
-*With this modification* it works, so you can add my:
-
-Tested-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-
-
->  SND_SOC_DAPM_SUPPLY("OSC", WM8731_PWR, 5, 1, NULL, 0),
->  SND_SOC_DAPM_MIXER("Output Mixer", WM8731_PWR, 4, 1,
->  	&wm8731_output_mixer_controls[0],
-> @@ -204,6 +205,8 @@ static int wm8731_check_osc(struct snd_soc_dapm_widget *source,
->  static const struct snd_soc_dapm_route wm8731_intercon[] = {
->  	{"DAC", NULL, "OSC", wm8731_check_osc},
->  	{"ADC", NULL, "OSC", wm8731_check_osc},
-> +	{"DAC", NULL, "ACTIVE"},
-> +	{"ADC", NULL, "ACTIVE"},
->  
->  	/* output mixer */
->  	{"Output Mixer", "Line Bypass Switch", "Line Input"},
-> @@ -315,29 +318,6 @@ static int wm8731_hw_params(struct snd_pcm_substream *substream,
->  	return 0;
->  }
->  
-> -static int wm8731_pcm_prepare(struct snd_pcm_substream *substream,
-> -			      struct snd_soc_dai *dai)
+>  /*
+> - * Create and initialize a spinlock.
+> - */
+> -acpi_status
+> -acpi_os_create_lock(acpi_spinlock *out_handle)
 > -{
-> -	struct snd_soc_codec *codec = dai->codec;
+> -	spinlock_t *lock;
 > -
-> -	/* set active */
-> -	snd_soc_write(codec, WM8731_ACTIVE, 0x0001);
+> -	lock = ACPI_ALLOCATE(sizeof(spinlock_t));
+> -	if (!lock)
+> -		return AE_NO_MEMORY;
+> -	spin_lock_init(lock);
+> -	*out_handle = lock;
 > -
-> -	return 0;
+> -	return AE_OK;
 > -}
 > -
-> -static void wm8731_shutdown(struct snd_pcm_substream *substream,
-> -			    struct snd_soc_dai *dai)
-> -{
-> -	struct snd_soc_codec *codec = dai->codec;
-> -
-> -	/* deactivate */
-> -	if (!codec->active) {
-> -		udelay(50);
-> -		snd_soc_write(codec, WM8731_ACTIVE, 0x0);
-> -	}
-> -}
-> -
->  static int wm8731_mute(struct snd_soc_dai *dai, int mute)
->  {
->  	struct snd_soc_codec *codec = dai->codec;
-> @@ -480,7 +460,6 @@ static int wm8731_set_bias_level(struct snd_soc_codec *codec,
->  		snd_soc_write(codec, WM8731_PWR, reg | 0x0040);
->  		break;
->  	case SND_SOC_BIAS_OFF:
-> -		snd_soc_write(codec, WM8731_ACTIVE, 0x0);
->  		snd_soc_write(codec, WM8731_PWR, 0xffff);
->  		regulator_bulk_disable(ARRAY_SIZE(wm8731->supplies),
->  				       wm8731->supplies);
-> @@ -496,9 +475,7 @@ static int wm8731_set_bias_level(struct snd_soc_codec *codec,
->  	SNDRV_PCM_FMTBIT_S24_LE)
+> -/*
+>   * Deallocate the memory for a spinlock.
+>   */
+>  void acpi_os_delete_lock(acpi_spinlock handle)
+> Index: linux-2.6/include/acpi/acpiosxf.h
+> ===================================================================
+> --- linux-2.6.orig/include/acpi/acpiosxf.h
+> +++ linux-2.6/include/acpi/acpiosxf.h
+> @@ -98,8 +98,11 @@ acpi_os_table_override(struct acpi_table
+>  /*
+>   * Spinlock primitives
+>   */
+> +
+> +#ifndef acpi_os_create_lock
+>  acpi_status
+>  acpi_os_create_lock(acpi_spinlock *out_handle);
+> +#endif
 >  
->  static struct snd_soc_dai_ops wm8731_dai_ops = {
-> -	.prepare	= wm8731_pcm_prepare,
->  	.hw_params	= wm8731_hw_params,
-> -	.shutdown	= wm8731_shutdown,
->  	.digital_mute	= wm8731_mute,
->  	.set_sysclk	= wm8731_set_dai_sysclk,
->  	.set_fmt	= wm8731_set_dai_fmt,
+>  void acpi_os_delete_lock(acpi_spinlock handle);
+>  
+> Index: linux-2.6/include/acpi/platform/aclinux.h
+> ===================================================================
+> --- linux-2.6.orig/include/acpi/platform/aclinux.h
+> +++ linux-2.6/include/acpi/platform/aclinux.h
+> @@ -159,6 +159,24 @@ static inline void *acpi_os_acquire_obje
+>  	} while (0)
+>  #endif
+>  
+> +/*
+> + * When lockdep is enabled, the spin_lock_init() macro stringifies it's
+> + * argument and uses that as a name for the lock in debugging.
+> + * By executing spin_lock_init() in a macro the key changes from "lock" for
+> + * all locks to the name of the argument of acpi_os_create_lock(), which
+> + * prevents lockdep from reporting false positives for ACPICA locks.
+> + */
+> +#define acpi_os_create_lock(__handle)				\
+> +({								\
+> +	spinlock_t *lock = ACPI_ALLOCATE(sizeof(*lock));	\
+> +								\
+> +	if (lock) {						\
+> +		*(__handle) = lock;				\
+> +		spin_lock_init(*(__handle));			\
+> +	}							\
+> +	lock ? AE_OK : AE_NO_MEMORY;				\
+> +})
+> +
+>  #endif /* __KERNEL__ */
+>  
+>  #endif /* __ACLINUX_H__ */
 
+Since I made the effort of digging into the lockdep code, you can
+actually add my 
+ Reviewed-by: Florian Mickler <florian@mickler.org>
 
--- 
-Nicolas Ferre
+Regards,
+Flo
 
