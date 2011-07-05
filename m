@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753830Ab1GEGbh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 02:31:37 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53274 "EHLO smtps.tip.net.au"
+	id S1753911Ab1GEGpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 02:45:05 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57280 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753533Ab1GEGbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 02:31:35 -0400
-Date: Tue, 5 Jul 2011 16:31:21 +1000
+	id S1753759Ab1GEGpC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 02:45:02 -0400
+Date: Tue, 5 Jul 2011 16:44:55 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Seth Forshee <seth.forshee@canonical.com>,
-        Christoph Hellwig <hch@lst.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>
-Subject: Re: linux-next: fixes while rebasing the akpm tree
-Message-Id: <20110705163121.608aa8ed.sfr@canb.auug.org.au>
-In-Reply-To: <20110704162816.fef0b1cb.sfr@canb.auug.org.au>
-References: <20110704162816.fef0b1cb.sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Kay Sievers <kay.sievers@vrfy.org>
+Subject: linux-next: build failure after merge of the final tree (rr tree
+ related)
+Message-Id: <20110705164455.0325d2db.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: multipart/signed; protocol="application/pgp-signature";
  micalg="PGP-SHA1";
- boundary="Signature=_Tue__5_Jul_2011_16_31_21_+1000__P2U7Jzj/XosJdZ."
+ boundary="Signature=_Tue__5_Jul_2011_16_44_55_+1000_5XbYYSp9RI1UiaHZ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__5_Jul_2011_16_31_21_+1000__P2U7Jzj/XosJdZ.
+--Signature=_Tue__5_Jul_2011_16_44_55_+1000_5XbYYSp9RI1UiaHZ
 Content-Type: text/plain; charset=US-ASCII
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 Hi all,
 
-On Mon, 4 Jul 2011 16:28:16 +1000 Stephen Rothwell <sfr@canb.auug.org.au> w=
-rote:
->
-> While rebasing the akpm tree onto today's linux-next, I discovered the
-> following:
->=20
-> The patch hfsplus-add-missing-call-to-bio_put.patch appears to be already
-> applied (as commit 50176ddefa4a ("hfsplus: add missing call to bio_put()"
-> from the hfsplus tree).
->=20
-> The patches
-> x86-mtrr-lock-stop-machine-during-mtrr-rendezvous-sequence.patch,
-> stop_machine-reorganize-stop_cpus-implementation.patch and
-> stop_machine-implement-stop_machine_from_inactive_cpu.patch seem to be
-> already applied (as commits 6d3321e8e2b3 ("x86, mtrr: lock stop machine
-> during MTRR rendezvous sequence"), fd7355ba1e93 ("stop_machine:
-> reorganize stop_cpus() implementation") and f740e6cd0cb5 ("stop_machine:
-> implement stop_machine_from_inactive_cpu()") from the tip tree)
+After merging the final tree, today's linux-next build (powerpc
+allnoconfig) failed like this:
 
-I have removed all the above patches from the akpm tree today as well as
-x86-mtrr-use-stop_machine-apis-for-doing-mtrr-rendezvous.patch which is
-also in the tip tree.
+kernel/built-in.o: In function `locate_module_kobject':
+params.c:(.init.text+0x133a): undefined reference to `module_uevent'
+params.c:(.init.text+0x1342): undefined reference to `module_uevent'
 
+Caused by commit 5858ac1e3bff ("module: add /sys/module/<name>/uevent
+files").
+
+I have reverted that commit for today.
 --=20
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 http://www.canb.auug.org.au/~sfr/
 
---Signature=_Tue__5_Jul_2011_16_31_21_+1000__P2U7Jzj/XosJdZ.
+--Signature=_Tue__5_Jul_2011_16_44_55_+1000_5XbYYSp9RI1UiaHZ
 Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOEq+5AAoJEDMEi1NhKgbspasH/36zYep8O37/rQzdQMazCNpp
-f83WfpxKJ1DKATcuKQje9NlKbI0WEfZpd/eNb7X5lWeW+9Sti24vvXKhKtMVYfZB
-4+mY0+x/Ux6kxiqldmdQ8XzuUFYflcP3Ct5zAZQYAdXsJM5T6wmEtP+EW+LY+ZuK
-8armJq3YP8VkvpBlHYoLLeb28ocPAZ/0+UHMvR6pmj18w8qsMrRBTs8hnZrbBkZ0
-vrYQqxkiJwzp50ciftbWxPhu6NttCQ/6Kjxku6OnFzMCjc+En8bYPZM0wWy72SVs
-OSPErey09BSNsQdBqfk8pBNw8GlY41N3ET5ENBIVzIoh/8N3UJNdV6Q09f1wo1I=
-=Ywwr
+iQEcBAEBAgAGBQJOErLnAAoJEDMEi1NhKgbsMG4H/RDs7nJe45ufFwYKwBmGCcLd
+ydBv/ImQq4GgUpIDZ9KSXxWL+b5KSyvzL8TjXXfYMoY4x6BAbQAgw9Mh08Y09JVv
+labFG0BW/dWNLyJGfhNNAa+3sQQREaQEOb181/KVb5TOQQrTp4N03IPlgMwLqlon
+YowhQikH9PS0kSZYAsVBytqz2cvTSfC5YbJi2m8YSpPiiPkvLC8vXk0rgmfNzwZf
+bCXncz3QjEY8BZwIPd9KrKgosrfKw8jF3aVdHDCwAEhRy6Phw+hiSMcAqAmKMoiK
+rbNdyTrnIKGBRanMS9gMA/vi5ULO82zBVeYG/8Q4EtHVhQX1TAq2ByAeKJWCa4M=
+=ygBO
 -----END PGP SIGNATURE-----
 
---Signature=_Tue__5_Jul_2011_16_31_21_+1000__P2U7Jzj/XosJdZ.--
+--Signature=_Tue__5_Jul_2011_16_44_55_+1000_5XbYYSp9RI1UiaHZ--
