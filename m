@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752240Ab1GEWjA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 18:39:00 -0400
-Received: from na3sys009aog101.obsmtp.com ([74.125.149.67]:58407 "EHLO
-	na3sys009aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751810Ab1GEWi7 (ORCPT
+	id S1752864Ab1GEWjP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 18:39:15 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:41213 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752455Ab1GEWjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 18:38:59 -0400
-Date: Wed, 6 Jul 2011 01:38:53 +0300
-From: Felipe Balbi <balbi@ti.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Peter Ujfalusi <peter.ujfalusi@ti.com>, Liam Girdwood <lrg@ti.com>,
-        Tony Lindgren <tony@atomide.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-        Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: Re: [PATCH v2 3/5] ASoC: twl6040: Do not use wrapper for irq request
-Message-ID: <20110705223851.GA8023@legolas.emea.dhcp.ti.com>
-Reply-To: balbi@ti.com
-References: <1309873775-17927-1-git-send-email-peter.ujfalusi@ti.com>
- <1309873775-17927-4-git-send-email-peter.ujfalusi@ti.com>
- <20110705175919.GA6238@opensource.wolfsonmicro.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="VS++wcV0S1rZb1Fb"
-Content-Disposition: inline
-In-Reply-To: <20110705175919.GA6238@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Jul 2011 18:39:13 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.3-dev
+To: Arnaud Lacombe <lacombar@gmail.com>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michal Marek <mmarek@suse.cz>
+Subject: Re: [RFC 3/7] kconfig/check.sh: prepare for generic check
+In-Reply-To: Your message of "Fri, 01 Jul 2011 21:47:35 EDT."
+             <1309571259-15241-4-git-send-email-lacombar@gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1307387767-9237-1-git-send-email-lacombar@gmail.com> <1309571259-15241-1-git-send-email-lacombar@gmail.com>
+            <1309571259-15241-4-git-send-email-lacombar@gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1309905474_18528P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 05 Jul 2011 18:37:54 -0400
+Message-ID: <62528.1309905474@turing-police.cc.vt.edu>
+X-Mirapoint-Received-SPF: 198.82.161.152 auth3.smtp.vt.edu Valdis.Kletnieks@vt.edu 2 pass
+X-Junkmail-Info: (0) 
+X-Junkmail-Status: score=10/50, host=zidane.cc.vt.edu
+X-Junkmail-Signature-Raw: score=unknown,
+	refid=str=0001.0A020209.4E139251.0078,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2010-07-22 22:03:31,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
---VS++wcV0S1rZb1Fb
+--==_Exmh_1309905474_18528P
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi,
+On Fri, 01 Jul 2011 21:47:35 EDT, Arnaud Lacombe said:
 
-On Tue, Jul 05, 2011 at 10:59:20AM -0700, Mark Brown wrote:
-> On Tue, Jul 05, 2011 at 04:49:33PM +0300, Peter Ujfalusi wrote:
-> > The twl6040_request_irq/free_irq inline functions are going
-> > to be removed, so replace them with direct calls.
-> > The irq number is provided by the core driver via resource.
-> >=20
-> > Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
->=20
-> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> diff --git a/scripts/kconfig/check.sh b/scripts/kconfig/check.sh
 
-FWIW:
+Can this be check_libs.sh or similar, to better indicate the function?
 
-Acked-by: Felipe Balbi <balbi@ti.com>
-
---=20
-balbi
-
---VS++wcV0S1rZb1Fb
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
+--==_Exmh_1309905474_18528P
+Content-Type: application/pgp-signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-iQEcBAEBAgAGBQJOE5J7AAoJEAv8Txj19kN155kH/1Ip8ZnDMvMVl2WSeZH8dd9O
-6JAKJsK/hm/ZgkSGWBYU7eJEESvbcLiAWnfOVPtfYRIarDMUhZt9fF+Q5gVkLN0N
-kyHqxc682sSW8nK7znz43OF+UV1z4B1tpuStHR07x/K+NtbMvwcxsOJJ+LZUK5bX
-cb725iHAp9eTAobVaVTMuT9Lo6A2dswRssQiB3YbhA0JBMmW/5O0CSX3L5Lj7WR6
-jApuPWrNf64cRHa/ibJ8HG2H+ZcGUhevvUc1X6kYZOdXRAfj95T6Y/eSoU4VgaFh
-+eaeUhUimNdt3imNnI76pMZndCbw+bchlDalcUTkslLITfyeknLn2YDEAlxf/rM=
-=nV+y
+iD8DBQFOE5JCcC3lWbTT17ARAgF0AJ4yZz+IKItC53NcQQ4mdAQC5wKr2QCfVq/d
+X8ub6EdKnPxmAF9Y5b+0nq8=
+=XmBj
 -----END PGP SIGNATURE-----
 
---VS++wcV0S1rZb1Fb--
+--==_Exmh_1309905474_18528P--
+
