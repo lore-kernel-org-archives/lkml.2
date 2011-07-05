@@ -1,62 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756078Ab1GELpP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:45:15 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58482 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755766Ab1GELpN (ORCPT
+	id S1756001Ab1GELpK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:45:10 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:51390 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755919Ab1GELpI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:45:13 -0400
-Message-ID: <4E12F942.90504@monstr.eu>
-Date: Tue, 05 Jul 2011 13:45:06 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Tue, 5 Jul 2011 07:45:08 -0400
 MIME-Version: 1.0
-To: Mathias Krause <minipli@googlemail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
+In-Reply-To: <201107051142.39733.richard@nod.at>
+References: <1309821347.4527.6.camel@vitaliy-Vostro-1400>
+	<201107051142.39733.richard@nod.at>
+Date: Tue, 5 Jul 2011 14:45:06 +0300
+Message-ID: <CAGTPOqebcT_Dd5nPSNEkrDvnCgYhqcU=ayjEA8L7Zh0Wr_pj5w@mail.gmail.com>
+Subject: Re: [PATCH 2/4] uml: helper.c warning corrections
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Richard Weinberger <richard@nod.at>
+Cc: Jeff Dike <jdike@addtoit.com>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        microblaze-uclinux@itee.uq.edu.au, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] microblaze, exec: remove redundant set_fs(USER_DS)
-References: <BANLkTinv1teZEHMK0qymaVdcxPOErpqSyg@mail.gmail.com> <1307711399-7929-1-git-send-email-minipli@googlemail.com>
-In-Reply-To: <1307711399-7929-1-git-send-email-minipli@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mathias Krause wrote:
-> The address limit is already set in flush_old_exec() so this
-> set_fs(USER_DS) is redundant.
-> 
-> Signed-off-by: Mathias Krause <minipli@googlemail.com>
-> ---
->  arch/microblaze/kernel/process.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/microblaze/kernel/process.c b/arch/microblaze/kernel/process.c
-> index 968648a..dbb8124 100644
-> --- a/arch/microblaze/kernel/process.c
-> +++ b/arch/microblaze/kernel/process.c
-> @@ -237,7 +237,6 @@ unsigned long get_wchan(struct task_struct *p)
->  /* Set up a thread for executing a new program */
->  void start_thread(struct pt_regs *regs, unsigned long pc, unsigned long usp)
->  {
-> -	set_fs(USER_DS);
->  	regs->pc = pc;
->  	regs->r1 = usp;
->  	regs->pt_mode = 0;
+Richard,
 
-Andrew has added it to his queue. I have tested and applied too.
+On Tue, Jul 5, 2011 at 12:42 PM, Richard Weinberger <richard@nod.at> wrote:
+> Am Dienstag 05 Juli 2011, 01:15:47 schrieb Vitaliy Ivanov:
+>> From 7296c5b9770e95cd6ad4e9e71d2d14c972abdfe1 Mon Sep 17 00:00:00 2001
+>> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+>> Date: Tue, 5 Jul 2011 02:03:06 +0300
+>> Subject: [PATCH 2/4] uml: helper.c warning corrections
+>> MIME-Version: 1.0
+>> Content-Type: text/plain; charset=UTF-8
+>> Content-Transfer-Encoding: 8bit
+>>
+>> arch/um/os-Linux/helper.c: In function ‘helper_child’:
+>> arch/um/os-Linux/helper.c:38:7: warning: ignoring return value of ‘write’,
+>> declared with attribute warn_unused_result
+>
+> Same question as before...
 
-Thanks,
-Michal
+Same answer is here:)
 
+>> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+>> ---
+>>  arch/um/os-Linux/helper.c |    4 ++--
+>>  1 files changed, 2 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/arch/um/os-Linux/helper.c b/arch/um/os-Linux/helper.c
+>> index b6b1096..feff22d 100644
+>> --- a/arch/um/os-Linux/helper.c
+>> +++ b/arch/um/os-Linux/helper.c
+>> @@ -28,14 +28,14 @@ static int helper_child(void *arg)
+>>  {
+>>       struct helper_data *data = arg;
+>>       char **argv = data->argv;
+>> -     int err;
+>> +     int err, ret;
+>>
+>>       if (data->pre_exec != NULL)
+>>               (*data->pre_exec)(data->pre_data);
+>>       err = execvp_noalloc(data->buf, argv[0], argv);
+>>
+>>       /* If the exec succeeds, we don't get here */
+>> -     write(data->fd, &err, sizeof(err));
+>> +     CATCH_EINTR(ret = write(data->fd, &err, sizeof(err)));
+>
+> Is there really a realistic chance that this write() can be interrupted?
+> helper_child() gets called via clone() in run_helper().
 
+It's always better not to think whether it's possible but simply kill
+all the chances for this to happen.
+In this case that's pretty trivial thing and also it solves issue with warning.
 
--- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Vitaliy
