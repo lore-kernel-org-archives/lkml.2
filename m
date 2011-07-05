@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab1GENew (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 09:34:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35840 "EHLO mga11.intel.com"
+	id S1751601Ab1GENhs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 09:37:48 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35741 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751377Ab1GENeu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 09:34:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,479,1304319600"; 
-   d="scan'208";a="23993941"
-Subject: Re: [PATCH 2/4] perf, x86: Add Intel Nhm/Wsm/Snb load latency
- support
-From: Lin Ming <ming.m.lin@intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <1309871868.3282.149.camel@twins>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-	 <1309766525-14089-3-git-send-email-ming.m.lin@intel.com>
-	 <1309871868.3282.149.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 05 Jul 2011 21:34:47 +0800
-Message-Id: <1309872887.2381.10.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1750977Ab1GENhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 09:37:47 -0400
+Date: Tue, 5 Jul 2011 06:26:29 -0700
+From: Greg KH <gregkh@suse.de>
+To: Mike Waychison <mikew@google.com>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel@vger.kernel.org,
+        Duncan Laurie <dlaurie@google.com>, Aaron Durbin <adurbin@google.com>
+Subject: Re: [PATCH] firmware: gsmi: remove sysfs entries when unload the
+ module
+Message-ID: <20110705132629.GC8061@suse.de>
+References: <1309334273.6368.1.camel@phoenix>
+ <CAGTjWtCzC=bZue1g885cmkH-EHKFb4Lf=JqoyP5QQz2b=xOdEw@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CAGTjWtCzC=bZue1g885cmkH-EHKFb4Lf=JqoyP5QQz2b=xOdEw@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-05 at 21:17 +0800, Peter Zijlstra wrote:
-> On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
-> > +#define INTEL_EVENT_EXTRA_REG2(event, msr, vm)    \
-> > +       EVENT_EXTRA_REG(event, msr, ARCH_PERFMON_EVENTSEL_EVENT | \
-> > +                       ARCH_PERFMON_EVENTSEL_UMASK, vm) 
+On Mon, Jul 04, 2011 at 11:46:20AM -0700, Mike Waychison wrote:
+> On Wed, Jun 29, 2011 at 12:57 AM, Axel Lin <axel.lin@gmail.com> wrote:
+> >
+> > This patch removes sysfs entries in gsmi_exit() and gsmi_init() error path.
+> >
+> > Also move the driver successfully loaded message to the end of gsmi_init()
+> > and return proper error if register_efivars() fails.
+> >
+> > Signed-off-by: Axel Lin <axel.lin@gmail.com>
 > 
-> That's inconsistent wrt the normal constraints, INTEL_UEVENT_EXTRA_REG
-> would be the consistent name.
+> Acked-by: Mike Waychison <mikew@google.com>
 > 
-> #define INTEL_UEVENT_EXTRA_REG(event, msr, vm)	\
-> 	EVENT_EXTRA_REG(event, msr, INTEL_ARCH_EVENT_MASK, vm)
+> Greg, can you pick this up in drivers-core?
 
-Right, thanks.
-
-
+I already did last week :)
