@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932221Ab1GELZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:25:59 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61471 "EHLO
+	id S932227Ab1GEL2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:28:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:64029 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932177Ab1GELZ6 (ORCPT
+	with ESMTP id S932105Ab1GEL2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:25:58 -0400
+	Tue, 5 Jul 2011 07:28:38 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: "Jean-Christophe PLAGNIOL-VILLARD" <plagnioj@jcrosoft.com>
-Subject: Re: [PATCH] AT91: add AT91SAM9X5 dummy configuration variable
-Date: Tue, 5 Jul 2011 13:25:47 +0200
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: [PATCH 1/8] mm: move some functions from memory_hotplug.c to page_isolation.c
+Date: Tue, 5 Jul 2011 13:27:53 +0200
 User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Nicolas Ferre <nicolas.ferre@atmel.com>, balbi@ti.com,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        avictor.za@gmail.com
-References: <1309260927-11411-1-git-send-email-nicolas.ferre@atmel.com> <4E118679.4090908@atmel.com> <20110705053229.GC27909@game.jcrosoft.org>
-In-Reply-To: <20110705053229.GC27909@game.jcrosoft.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-2-git-send-email-m.szyprowski@samsung.com>
+In-Reply-To: <1309851710-3828-2-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-1"
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107051325.47417.arnd@arndb.de>
-X-Provags-ID: V02:K0:TSjcjYoWdT0Okmej/CAbQz+Vl96yUQiA1gCQz5J9yEc
- inBGwfZ9bvMtd5DbABH0YdltKF7/y4MEx/LKeZFCTazfL1slPO
- ps37k4lVA6tV3k0OQfkmGY9GENLn/9wb7j5R/Szb2giZ5NQYdl
- mrJcx+aZ1/WzGF+wW6rmkJZ2syOugbpnEmSPBfK/5XtGLI2FHX
- mghFWToF9Fx9KafNJaYoQ==
+Message-Id: <201107051327.53430.arnd@arndb.de>
+X-Provags-ID: V02:K0:FeTHkOEp7baEqFos/6TcCIWhT/hI79vewU8gh7R63Hl
+ GfPpiG2Ly3gmjorDYg3G4sg9P5H5uIdVd6llOTFxIDzU4q2Ifl
+ qQm1bFNhvN7awK/XMfXX1Rdsc93TQKh+A2zY1i1ZHk2dORGwAL
+ z+1Jyx/p+rwrAPQBEwSZ7Hsklf072ANMtQnZkUtDnvoRT7R6Ar
+ vArYq5/wjCz7vsodbhugA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 July 2011, Jean-Christophe PLAGNIOL-VILLARD wrote:
-> > You have convinced me.
-> > But I will have to remove the other dependencies that I mentioned before
-> > in the thread.
-> > 
-> > We can drop this patch.
-> I prefer to hide the platform specific driver other wise we will have a huge
-> menu entry in Kconfig with unrelated drivers that can not be used at all on
-> the selected mach
+On Tuesday 05 July 2011, Marek Szyprowski wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Memory hotplug is a logic for making pages unused in the specified
+> range of pfn. So, some of core logics can be used for other purpose
+> as allocating a very large contigous memory block.
+> 
+> This patch moves some functions from mm/memory_hotplug.c to
+> mm/page_isolation.c. This helps adding a function for large-alloc in
+> page_isolation.c with memory-unplug technique.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> [m.nazarewicz: reworded commit message]
+> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+> [m.szyprowski: rebased and updated to Linux v3.0-rc1]
+> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
+> CC: Michal Nazarewicz <mina86@mina86.com>
 
-I fear it's too late for that. You already have to decide on many thousands
-of configuration options, most of which are totally irrelevant for a
-particular system.
-
-IMHO, the two much better ways to deal with SOC-specific device drivers
-are defconfig files and/or specific defaults, like
-
-config ABX500_CORE
-        bool "ST-Ericsson ABX500 Mixed Signal Circuit register functions"
-        default ARCH_U300 || ARCH_U8500
-
-This lets everybody choose whether they would like to build the driver
-or not, which is very useful for allyesconfig/allnoconfig/randconfig
-builds. At the same time, the default gets it right in almost all
-other cases.
-
-	Arnd
+Acked-by: Arnd Bergmann <arnd@arndb.de>
