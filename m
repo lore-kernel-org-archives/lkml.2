@@ -1,69 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754086Ab1GEHka (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 03:40:30 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57293 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753959Ab1GEHk3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 03:40:29 -0400
-Date: Tue, 5 Jul 2011 09:40:22 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Andrea Righi <andrea@betterlinux.com>, Len Brown <lenb@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Florian Mickler <florian@mickler.org>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: Fix lockdep false positives in acpi_power_off()
-Message-ID: <20110705074022.GA28000@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	"Rafael J. Wysocki" <rjw@sisk.pl>,
-	Andrea Righi <andrea@betterlinux.com>, Len Brown <lenb@kernel.org>,
-	Peter Zijlstra <peterz@infradead.org>,
-	Ingo Molnar <mingo@redhat.com>,
-	Maciej Rutecki <maciej.rutecki@gmail.com>,
-	Florian Mickler <florian@mickler.org>, linux-acpi@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1309684450-24549-1-git-send-email-andrea@betterlinux.com>
- <201107040028.23569.rjw@sisk.pl>
- <20110704082307.GA1239@thinkpad>
- <201107050132.11996.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1754117Ab1GEHk6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 03:40:58 -0400
+Received: from nat28.tlf.novell.com ([130.57.49.28]:53957 "EHLO
+	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753959Ab1GEHk5 convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-JBeulich@novell.com:3:1>);
+	Tue, 5 Jul 2011 03:40:57 -0400
+Message-Id: <4E12DC26020000780004C1C1@nat28.tlf.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Tue, 05 Jul 2011 08:40:54 +0100
+From: "Jan Beulich" <JBeulich@novell.com>
+To: <mingo@elte.hu>, <tglx@linutronix.de>, <hpa@zytor.com>
+Cc: <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86/EFI: properly pre-initialize table pointers
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <201107050132.11996.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 01:32:11AM +0200, Rafael J. Wysocki wrote:
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: ACPI: Fix lockdep false positives in acpi_power_off()
-> 
-> All ACPICA locks are allocated and initialized by the same function,
-> acpi_os_create_lock(), with the help of a local variable called
-> "lock".  Thus, when lockdep is enabled, it uses "lock" as the
-> name of all those locks and regards them as instances of the same
-> lock, which causes it to report possible locking problems with them
-> when there aren't any.
-> 
-> To work around this problem, define acpi_os_create_lock() as a macro
-> and make it pass its argument to spin_lock_init(), so that lockdep
-> uses it as the name of the new lock.  Define this macron in a
-> Linux-specific file to minimize the resulting modifications of
-> the OS-independent ACPICA parts.
-> 
-> This change is based on an earlier patch from Andrea Righi and it
-> addresses a regression from 2.6.39 tracked as
-> https://bugzilla.kernel.org/show_bug.cgi?id=38152
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Tested-by: Andrea Righi <andrea@betterlinux.com>
+Consumers of the table pointers in struct efi check for
+EFI_INVALID_TABLE_ADDR to determine validity, hence these pointers
+should all be pre-initialized to this value (rather than zero).
 
-Tested-by: Borislav Petkov <bp@alien8.de>
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
 
--- 
-Regards/Gruss,
-    Boris.
+---
+ arch/x86/platform/efi/efi.c |   12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+--- 3.0-rc6/arch/x86/platform/efi/efi.c
++++ 3.0-rc6-x86-EFI/arch/x86/platform/efi/efi.c
+@@ -51,7 +51,17 @@
+ int efi_enabled;
+ EXPORT_SYMBOL(efi_enabled);
+ 
+-struct efi efi;
++struct efi __read_mostly efi = {
++	.mps        = EFI_INVALID_TABLE_ADDR,
++	.acpi       = EFI_INVALID_TABLE_ADDR,
++	.acpi20     = EFI_INVALID_TABLE_ADDR,
++	.smbios     = EFI_INVALID_TABLE_ADDR,
++	.sal_systab = EFI_INVALID_TABLE_ADDR,
++	.boot_info  = EFI_INVALID_TABLE_ADDR,
++	.hcdp       = EFI_INVALID_TABLE_ADDR,
++	.uga        = EFI_INVALID_TABLE_ADDR,
++	.uv_systab  = EFI_INVALID_TABLE_ADDR,
++};
+ EXPORT_SYMBOL(efi);
+ 
+ struct efi_memory_map memmap;
+
+
+
