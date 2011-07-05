@@ -1,107 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755330Ab1GEPOG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 11:14:06 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:36236 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755295Ab1GEPOE (ORCPT
+	id S1753152Ab1GEPPM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 11:15:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38881 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751124Ab1GEPPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 11:14:04 -0400
-Date: Tue, 5 Jul 2011 10:14:02 -0500
-From: scameron@beardog.cce.hp.com
-To: Joe Jin <joe.jin@oracle.com>
-Cc: mike.miller@hp.com,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "GURUDAS,PAI" <gurudas.pai@oracle.com>,
-        Guru Anbalagane <guru.anbalagane@oracle.com>,
-        scameron@beardog.cce.hp.com
-Subject: Re: "use new doorbell-bit-5 reset method" failed to reset the controller
-Message-ID: <20110705151402.GK31485@beardog.cce.hp.com>
-References: <4E0C3892.2010507@oracle.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E0C3892.2010507@oracle.com>
-User-Agent: Mutt/1.4.2.2i
+	Tue, 5 Jul 2011 11:15:10 -0400
+From: Per Forlin <per.forlin@linaro.org>
+To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
+        Venkatraman S <svenkatr@ti.com>,
+        Linus Walleij <linus.walleij@linaro.org>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
+        Chris Ball <cjb@laptop.org>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Per Forlin <per.forlin@linaro.org>
+Subject: [PATCH] mmc: documentation of mmc non-blocking request usage and design.
+Date: Tue,  5 Jul 2011 17:14:54 +0200
+Message-Id: <1309878894-2700-1-git-send-email-per.forlin@linaro.org>
+X-Mailer: git-send-email 1.7.4.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 04:49:22PM +0800, Joe Jin wrote:
-> Hi Stephen,
-> 
-> With linux the latest kernel, when do kdump test on HP DL585G7
-> we found it failed to reset the controller, driver complained
-> "'Bit 2 doorbell reset' is supported, but not 'bit 5 doorbell 
-> reset', Firmware update is recommended", we have upgraded the
-> firmware to the latest but kdump kernel still failed with
-> the message.
+Documentation about the background and the design of mmc non-blocking.
+Host driver guide lines to minimize request preparation over head.
 
-What firmware revision do you have?
+Signed-off-by: Per Forlin <per.forlin@linaro.org>
+---
+ Documentation/mmc/00-INDEX          |    2 +
+ Documentation/mmc/mmc-async-req.txt |   85 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 87 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/mmc/mmc-async-req.txt
 
-I think you need 5.06, which just came out on June 24.
+diff --git a/Documentation/mmc/00-INDEX b/Documentation/mmc/00-INDEX
+index 93dd7a7..11bc2cf 100644
+--- a/Documentation/mmc/00-INDEX
++++ b/Documentation/mmc/00-INDEX
+@@ -4,3 +4,5 @@ mmc-dev-attrs.txt
+         - info on SD and MMC device attributes
+ mmc-dev-parts.txt
+         - info on SD and MMC device partitions
++mmc-async-req.txt
++        - info on mmc asynchronous request
+diff --git a/Documentation/mmc/mmc-async-req.txt b/Documentation/mmc/mmc-async-req.txt
+new file mode 100644
+index 0000000..d139a51
+--- /dev/null
++++ b/Documentation/mmc/mmc-async-req.txt
+@@ -0,0 +1,85 @@
++Rationale
++=========
++
++How significant is the cache maintenance over head?
++It depends, fast eMMC and multiple cache levels with speculative cache pre-fetch
++makes the cache overhead relatively significant. If the DMA preparations
++for the next request is done in parallel to the current transfer
++the DMA preparation overhead would not affect the MMC performance.
++The intention of non-blocking (asynchronous) mmc requests is to minimize the
++time between a mmc request ends and another mmc request begins.
++Using mmc_wait_for_req() the MMC controller is idle when dma_map_sg and
++dma_unmap_sg is processing. Using non-blocking mmc request makes it
++possible to prepare the caches for next job in parallel to an active
++mmc request.
++
++MMC block driver
++================
++
++The issue_rw_rq() in the mmc block driver is made non-blocking.
++The increase in throughput is proportional to the time it takes to
++prepare (major part of preparations is dma_map_sg and dma_unmap_sg)
++a request and how fast the memory is. The faster the MMC/SD is
++the more significant the prepare request time becomes. Roughly the expected
++performance gain is 5% for large writes and 10% on large reads on a L2 cache
++platform. In power save mode, when clocks run on a lower frequency, the DMA
++preparation may cost even more. As long as these slower preparations are run
++in parallel to the transfer performance wont be affected.
++
++Details on measurements from IOZone and mmc_test
++================================================
++
++https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
++
++MMC core API extension
++======================
++
++There is one new public function mmc_start_req()
++Is starts a new MMC command request for a host. The function isn't
++truely non-blocking. If there is on ongoing async request it waits
++for completion of that request and starts the new one and return. It
++Doesn't wait for the new request to complete. If there is no ongoing
++request it starts the new request and returns immediately.
++
++MMC host extensions
++===================
++
++There are two optional hooks pre_req() and post_req() that the host driver
++may implement in order to move work to before and after the actual mmc_request
++function is called. In the DMA case pre_req() may do dma_map_sg() and prepare
++the dma descriptor, and post_req runs the dma_unmap_sg.
++
++Optimize for the first request
++==============================
++
++The first request in a series of requests can't be prepared in parallel to the
++previous transfer, since there is no previous request.
++The argument is_first_req in pre_req() indicates that there is no previous
++request. The host driver may optimize for this scenario to minimize
++the performance loss. A way to optimize for this is to split the current
++request in two chunks, prepare the first chunk and start the request,
++and finally prepare the second chunk and start the transfer.
++
++Pseudocode to handle is_first_req scenario with minimal prepare over head:
++if (is_first_req && req->size > threshold)
++   /* start MMC transfer for the complete transfer size */
++   mmc_start_command(MMC_CMD_TRANSFER_FULL_SIZE)
++
++   /*
++    * Begin to prepare DMA while cmd is being processed by MMC.
++    * The first chunk of the request should take the same time
++    * to prepare as the "MMC process command time".
++    * If prepare time exceeds MMC cmd time
++    * the transfer is delayed, guesstimate max 4k as first chunk size.
++    */
++    prepare_1st_chunk_for_dma(req)
++    /* flush pending desc to the DMAC (dmaengine.h) */
++    dma_issue_pending(req->dma_desc);
++
++    prepare_2st_chunk_for_dma(req)
++    /*
++     * The second issue_pending should be called before MMC runs out
++     * of the first chunk. If the MMC runs out of the first data chunk before
++     * this call, the transfer is delayed.
++     */
++    dma_issue_pending(req->dma_desc);
+-- 
+1.7.4.1
 
-http://bizsupport1.austin.hp.com/bizsupport/TechSupport/SoftwareIndex.jsp?lang=en&cc=us&prodNameId=3902575&prodTypeId=329290&prodSeriesId=3902574&swLang=8&swEnvOID=2023&printver=true
-
--- steve
-
-
-
-
-> 
-> After revert commit cf0b08d0cd87ada9d284925834d08fb8026da888,
-> kdump work fine. 
-> 
-> Here is the device info:
-> 03:00.0 0104: 103c:323a (rev 01)
->         Subsystem: 103c:3245
->         Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr+ Stepping- SERR- FastB2B- DisINTx+
->         Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
->         Latency: 0, Cache Line Size: 64 bytes
->         Interrupt: pin A routed to IRQ 16
->         Region 0: Memory at e0200000 (64-bit, non-prefetchable) [size=2M]
->         Region 2: Memory at e0002000 (64-bit, non-prefetchable) [size=4K]
->         Region 4: I/O ports at 4000 [size=256]
->         [virtual] Expansion ROM at d0500000 [disabled] [size=512K]
->         Capabilities: [40] Power Management version 3
->                 Flags: PMEClk- DSI- D1+ D2- AuxCurrent=375mA PME(D0+,D1-,D2-,D3hot-,D3cold-)
->                 Status: D0 NoSoftRst+ PME-Enable- DSel=0 DScale=0 PME-
->         Capabilities: [50] MSI: Enable- Count=1/1 Maskable- 64bit+
->                 Address: 0000000000000000  Data: 0000
->         Capabilities: [70] Express (v2) Endpoint, MSI 00
->                 DevCap: MaxPayload 256 bytes, PhantFunc 0, Latency L0s <1us, L1 <8us
->                         ExtTag- AttnBtn- AttnInd- PwrInd- RBE+ FLReset-
->                 DevCtl: Report errors: Correctable- Non-Fatal+ Fatal+ Unsupported-
->                         RlxdOrd+ ExtTag- PhantFunc- AuxPwr- NoSnoop+
->                         MaxPayload 128 bytes, MaxReadReq 4096 bytes
->                 DevSta: CorrErr- UncorrErr- FatalErr- UnsuppReq- AuxPwr- TransPend-
->                 LnkCap: Port #0, Speed 5GT/s, Width x8, ASPM L0s, Latency L0 <512ns, L1 <64us
->                         ClockPM- Surprise- LLActRep- BwNot-
->                 LnkCtl: ASPM Disabled; RCB 64 bytes Disabled- Retrain- CommClk-
->                         ExtSynch- ClockPM- AutWidDis- BWInt- AutBWInt-
->                 LnkSta: Speed 2.5GT/s, Width x4, TrErr- Train- SlotClk+ DLActive- BWMgmt- ABWMgmt-
->                 DevCap2: Completion Timeout: Not Supported, TimeoutDis+
->                 DevCtl2: Completion Timeout: 50us to 50ms, TimeoutDis-
->                 LnkCtl2: Target Link Speed: 5GT/s, EnterCompliance- SpeedDis-, Selectable De-emphasis: -6dB
->                          Transmit Margin: Normal Operating Range, EnterModifiedCompliance- ComplianceSOS-
->                          Compliance De-emphasis: -6dB
->                 LnkSta2: Current De-emphasis Level: -3.5dB
->         Capabilities: [ac] MSI-X: Enable+ Count=16 Masked-
->                 Vector table: BAR=0 offset=001c2000
->                 PBA: BAR=0 offset=001c4000
->         Capabilities: [100 v1] Advanced Error Reporting
->                 UESta:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq- ACSViol-
->                 UEMsk:  DLP- SDES- TLP- FCP- CmpltTO- CmpltAbrt- UnxCmplt- RxOF- MalfTLP- ECRC- UnsupReq+ ACSViol-
->                 UESvrt: DLP+ SDES+ TLP+ FCP+ CmpltTO+ CmpltAbrt+ UnxCmplt+ RxOF+ MalfTLP+ ECRC- UnsupReq+ ACSViol-
->                 CESta:  RxErr- BadTLP- BadDLLP- Rollover- Timeout- NonFatalErr-
->                 CEMsk:  RxErr+ BadTLP+ BadDLLP+ Rollover+ Timeout+ NonFatalErr+
->                 AERCap: First Error Pointer: 00, GenCap+ CGenEn- ChkCap+ ChkEn-
->         Kernel driver in use: hpsa
->         Kernel modules: hpsa
-> 
-> 
-> Seems doorbell-bit-5 reset method did not work properly with the device?
-> Any input will appreciate.
-> 
-> Thanks,
-> Joe
