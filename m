@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab1GEEmB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 00:42:01 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:35986 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753238Ab1GEEl6 (ORCPT
+	id S1753340Ab1GEEnA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 00:43:00 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:59227 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753238Ab1GEEm7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 00:41:58 -0400
-Date: Mon, 04 Jul 2011 21:38:08 -0700 (PDT)
-Message-Id: <20110704.213808.1604572852149444948.davem@davemloft.net>
-To: meissner@novell.com
-Cc: kuznet@ms2.inr.ac.ru, pekkas@netcore.fi, jmorris@namei.org,
-        yoshfuji@linux-ipv6.org, kaber@trash.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, meissner@suse.de, max@suse.de
-Subject: Re: [PATCH] net: bind() fix error return on wrong address family
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1309779029-15403-1-git-send-email-meissner@novell.com>
-References: <1309779029-15403-1-git-send-email-meissner@novell.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Mon, 04 Jul 2011 21:38:11 -0700 (PDT)
+	Tue, 5 Jul 2011 00:42:59 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110704153224.GA17358@suse.de>
+References: <1309702581-16863-1-git-send-email-akinobu.mita@gmail.com>
+	<1309702581-16863-3-git-send-email-akinobu.mita@gmail.com>
+	<20110703162329.GA28131@suse.de>
+	<CAC5umyh_25z9LV=T86807ey8yZRGwmhsPG44OqZdtcR-3wzb4Q@mail.gmail.com>
+	<20110704153224.GA17358@suse.de>
+Date: Tue, 5 Jul 2011 13:42:58 +0900
+Message-ID: <CAC5umygN0Wy35Rb3zvfnSJ-uuBa17BGrhyi0kzSEW=fiLNLq=w@mail.gmail.com>
+Subject: Re: [PATCH 2/7] debugfs: add debugfs_create_int
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Marcus Meissner <meissner@novell.com>
-Date: Mon,  4 Jul 2011 13:30:29 +0200
+2011/7/5 Greg KH <gregkh@suse.de>:
+> On Mon, Jul 04, 2011 at 02:31:25PM +0900, Akinobu Mita wrote:
+>> 2011/7/4 Greg KH <gregkh@suse.de>:
+>> > On Sun, Jul 03, 2011 at 11:16:16PM +0900, Akinobu Mita wrote:
+>> >> Introduce debugfs_create_int() for creating a debugfs file that is used to
+>> >> read and write an int value.
+>> >
+>> > Um, what's wrong with the existing s32 and s64 versions that debugfs
+>> > already provides?
+>>
+>> I couldn't find s32 version in linux/debugfs.h
+>>
+>> > userspace doesn't know what "int" means for the kernel as it might be
+>> > running in 32bit mode with a 64bit kernel.  That is why this isn't a
+>> > good idea, so please convert your other patch to use the existing api
+>> > and change the variable type in your patch.
+>>
+>> Shoud I add debugfs_create_s32() instead of debugfs_create_int() for
+>> this?
+>
+> Does it have to be a signed value?  If not, just use the
+> debugfs_create_u32() function.  Or use that and just cast the result,
+> right?
 
-> Reinhard Max also pointed out that the error should EAFNOSUPPORT according
-> to POSIX.
-> 
-> The Linux manpages have it as EINVAL, some other OSes (Minix, HPUX, perhaps BSD) use
-> EAFNOSUPPORT. Windows uses WSAEFAULT according to MSDN.
-> 
-> Other protocols error values in their af bind() methods in current mainline git as far
-> as a brief look shows:
-> 	EAFNOSUPPORT: atm, appletalk, l2tp, llc, phonet, rxrpc
-> 	EINVAL: ax25, bluetooth, decnet, econet, ieee802154, iucv, netlink, netrom, packet, rds, rose, unix, x25, 
-> 	No check?: can/raw, ipv6/raw, irda, l2tp/l2tp_ip
-> 
-> Signed-off-by: Marcus Meissner <meissner@suse.de>
-> Cc: Reinhard Max <max@suse.de>
+The debugfs file that I want to use needs to contain an error code
+like -ENOMEM.
 
-Applied to net-2.6, thanks.
+Now I realized that I should create a custom simple attribute that
+is only allowed to store a valid errno (-MAX_ERRNO <= errno <= 0).
+
+So I don't add new function like debugfs_create_s32 for now.
