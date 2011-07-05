@@ -1,55 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab1GELq0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:46:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56450 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755659Ab1GELqY (ORCPT
+	id S1755767Ab1GELtt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:49:49 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44931 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755559Ab1GELts (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:46:24 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 5/8] mm: MIGRATE_CMA isolation functions added
-Date: Tue, 5 Jul 2011 13:45:14 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
-        Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-6-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1309851710-3828-6-git-send-email-m.szyprowski@samsung.com>
+	Tue, 5 Jul 2011 07:49:48 -0400
+Date: Tue, 5 Jul 2011 15:49:44 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
+ sake of nmi-watchdog on P4
+Message-ID: <20110705114944.GT17941@sun>
+References: <20110705100320.GK17941@sun>
+ <20110705102017.GA12458@elte.hu>
+ <20110705103403.GN17941@sun>
+ <20110705105959.GA14435@elte.hu>
+ <20110705110550.GQ17941@sun>
+ <20110705112002.GA15654@elte.hu>
+ <20110705113620.GS17941@sun>
+ <20110705114437.GC15654@elte.hu>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107051345.14502.arnd@arndb.de>
-X-Provags-ID: V02:K0:SjIpnqiTcEdwQ3RndFtj1Ny+A+O3JOE83if0ESlT0Qb
- I3SCxri1gFM9abUGPfBK2bz5rum9DhyRU2qquTl4FYy0lveJcj
- JzGFZQK5gopZOg0dXPJ7VD1yM3UyrXps+4AcApQ9/YcrsWpQPi
- ExY5LQQBq2s6uMIUkeoqVqdw6mo0RB0RfZjALHQuvKgX6sx2af
- Mw5FT4JWP6O3DssdnBRKA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110705114437.GC15654@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 July 2011, Marek Szyprowski wrote:
-> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+On Tue, Jul 05, 2011 at 01:44:37PM +0200, Ingo Molnar wrote:
+...
 > 
-> This commit changes various functions that change pages and
-> pageblocks migrate type between MIGRATE_ISOLATE and
-> MIGRATE_MOVABLE in such a way as to allow to work with
-> MIGRATE_CMA migrate type.
-> 
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
+> What i am missing is that you have not pointed out the *core problem* 
+> you are fixing and it's not obvious from the changelog either!
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+OK, seems I put there some tech details while human readable changelog
+was needed. Will fix that, thanks!
+
+	Cyrill
