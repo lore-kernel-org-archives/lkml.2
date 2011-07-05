@@ -1,58 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab1GEKrr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 06:47:47 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:41530 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754772Ab1GEKrq (ORCPT
+	id S1755627Ab1GEKvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 06:51:36 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51960 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753217Ab1GEKvf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 06:47:46 -0400
-Date: Tue, 5 Jul 2011 14:47:42 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
-        Jan Beulich <JBeulich@novell.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [Q x86-64] on kernel_eflags
-Message-ID: <20110705104742.GO17941@sun>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Jul 2011 06:51:35 -0400
+Subject: Re: [PATCH] perf: Extend attr check to allow also dynamically
+ generated
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110705094714.GA4590@erda.amd.com>
+References: <20110703150430.GV4590@erda.amd.com>
+	 <1309716271.3282.6.camel@twins> <20110704175927.GZ4590@erda.amd.com>
+	 <20110705094714.GA4590@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Jul 2011 12:51:00 +0200
+Message-ID: <1309863060.3282.52.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While were looking into ret_from_fork code I somehow wondered
-about the global kernel_eflags variable here.
+On Tue, 2011-07-05 at 11:47 +0200, Robert Richter wrote:
 
-arch/x86/cpu/common.c
----------------------
-unsigned long kernel_eflags;
+> From 63e76c3d827e3d6d24ff4ee24854523c054c7179 Mon Sep 17 00:00:00 2001
+> From: Robert Richter <robert.richter@amd.com>
+> Date: Tue, 5 Jul 2011 11:04:39 +0200
+> Subject: [PATCH] perf: Extend attr check to allow also dynamically generated
+>  types
+> 
+> When attaching events to a pmu with generated type, the initialization
+> fails. Extending the check to allow such types.
+> 
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
+>  kernel/events/core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/kernel/events/core.c b/kernel/events/core.c
+> index cca3588..5900729 100644
+> --- a/kernel/events/core.c
+> +++ b/kernel/events/core.c
+> @@ -5958,7 +5958,7 @@ static int perf_copy_attr(struct perf_event_attr __user *uattr,
+>  	 * If the type exists, the corresponding creation will verify
+>  	 * the attr->config.
+>  	 */
+> -	if (attr->type >= PERF_TYPE_MAX)
+> +	if (attr->type >= PERF_TYPE_MAX && !idr_find(&pmu_idr, attr->type))
+>  		return -EINVAL;
+>  
+>  	if (attr->__reserved_1)
 
-void __cpuinit cpu_init(void)
-{
-	...
-	raw_local_save_flags(kernel_eflags);
-}
+Lin Ming submitted a similar patch:
 
-arch/x86/kernel/entry_64.S
---------------------------
-ENTRY(ret_from_fork)
-	DEFAULT_FRAME
-	LOCK ; btr $TIF_FORK,TI_flags(%r8)
-	pushq_cfi kernel_eflags(%rip)
-	popfq_cfi                               # reset kernel eflags
+ http://marc.info/?l=linux-kernel&m=130942109729864
 
-Every call to cpu_init renew global kernel_eflags
-and every task switching does use this variable in a
-sake of cleaning carry bit of flags register as far as
-I can tell.
-
-Should not every cpu has own copy of kernel_eflags? Just
-to be consistent in style? Or this would be space waisting
-and an optimization is done here?
-
-	Cyrill
+Which I prefer as it removes code. Event creation will fail in
+perf_init_event() in that case when an invalid type is specified.
