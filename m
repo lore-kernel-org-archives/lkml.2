@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab1GENt7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 09:49:59 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:54211 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751889Ab1GENt5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 09:49:57 -0400
+	id S1752195Ab1GENuk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 09:50:40 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:39926 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752109Ab1GENt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 09:49:58 -0400
 From: Peter Ujfalusi <peter.ujfalusi@ti.com>
 To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
@@ -14,9 +13,9 @@ To: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
         Dmitry Torokhov <dmitry.torokhov@gmail.com>
 CC: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
         Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
-Subject: [PATCH v2 4/5] MFD: twl6040: Demand valid interrupt configuration
-Date: Tue, 5 Jul 2011 16:49:34 +0300
-Message-ID: <1309873775-17927-5-git-send-email-peter.ujfalusi@ti.com>
+Subject: [PATCH v2 3/5] ASoC: twl6040: Do not use wrapper for irq request
+Date: Tue, 5 Jul 2011 16:49:33 +0300
+Message-ID: <1309873775-17927-4-git-send-email-peter.ujfalusi@ti.com>
 X-Mailer: git-send-email 1.7.6
 In-Reply-To: <1309873775-17927-1-git-send-email-peter.ujfalusi@ti.com>
 References: <1309873775-17927-1-git-send-email-peter.ujfalusi@ti.com>
@@ -26,126 +25,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In order to operate correctly twl6040 needs correct
-interrupt configuration.
-The slave drivers (vibra, and ASoC codec) will refuse
-to probe, if the interrupt configuration is not correct.
-In this way some checks can be removed from the code.
+The twl6040_request_irq/free_irq inline functions are going
+to be removed, so replace them with direct calls.
+The irq number is provided by the core driver via resource.
 
 Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
 ---
- drivers/mfd/twl6040-core.c |   42 +++++++++++++++++++++---------------------
- drivers/mfd/twl6040-irq.c  |   16 +---------------
- 2 files changed, 22 insertions(+), 36 deletions(-)
+ sound/soc/codecs/twl6040.c |   19 ++++++++++++++-----
+ 1 files changed, 14 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/mfd/twl6040-core.c b/drivers/mfd/twl6040-core.c
-index 471f489..f71bb14 100644
---- a/drivers/mfd/twl6040-core.c
-+++ b/drivers/mfd/twl6040-core.c
-@@ -459,6 +459,12 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
- 		return -EINVAL;
+diff --git a/sound/soc/codecs/twl6040.c b/sound/soc/codecs/twl6040.c
+index 0145041..b627afc 100644
+--- a/sound/soc/codecs/twl6040.c
++++ b/sound/soc/codecs/twl6040.c
+@@ -76,6 +76,7 @@ struct twl6040_jack_data {
+ 
+ /* codec private data */
+ struct twl6040_data {
++	int plug_irq;
+ 	int codec_powered;
+ 	int pll;
+ 	int non_lp;
+@@ -1527,6 +1528,8 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+ {
+ 	struct twl6040_data *priv;
+ 	struct twl4030_codec_data *pdata = dev_get_platdata(codec->dev);
++	struct platform_device *pdev = container_of(codec->dev,
++						   struct platform_device, dev);
+ 	int ret = 0;
+ 
+ 	priv = kzalloc(sizeof(struct twl6040_data), GFP_KERNEL);
+@@ -1553,6 +1556,13 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+ 		priv->hf_right_step = 1;
  	}
  
-+	/* In order to operate correctly we need valid interrupt config */
-+	if (!pdata->naudint_irq || !pdata->irq_base) {
-+		dev_err(&pdev->dev, "Invalid IRQ configuration\n");
-+		return -EINVAL;
++	priv->plug_irq = platform_get_irq(pdev, 0);
++	if (!priv->plug_irq) {
++		dev_err(codec->dev, "invalid irq\n");
++		ret = -EINVAL;
++		goto work_err;
 +	}
 +
- 	twl6040 = kzalloc(sizeof(struct twl6040), GFP_KERNEL);
- 	if (!twl6040)
- 		return -ENOMEM;
-@@ -491,20 +497,18 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
- 	if (twl6040->rev == TWL6040_REV_ES1_0)
- 		twl6040->audpwron = -EINVAL;
+ 	priv->sysclk_constraints = &hp_constraints;
+ 	priv->workqueue = create_singlethread_workqueue("twl6040-codec");
+ 	if (!priv->workqueue) {
+@@ -1581,9 +1591,8 @@ static int twl6040_probe(struct snd_soc_codec *codec)
+ 	INIT_DELAYED_WORK(&priv->hs_delayed_work, twl6040_pga_hs_work);
+ 	INIT_DELAYED_WORK(&priv->hf_delayed_work, twl6040_pga_hf_work);
  
--	if (twl6040->irq) {
--		/* codec interrupt */
--		ret = twl6040_irq_init(twl6040);
--		if (ret)
--			goto gpio2_err;
--
--		ret = twl6040_request_irq(twl6040, TWL6040_IRQ_READY,
--					  twl6040_naudint_handler, 0,
--					  "twl6040_irq_ready", twl6040);
--		if (ret) {
--			dev_err(twl6040->dev, "READY IRQ request failed: %d\n",
--				ret);
--			goto irq_err;
--		}
-+	/* codec interrupt */
-+	ret = twl6040_irq_init(twl6040);
-+	if (ret)
-+		goto gpio2_err;
-+
-+	ret = twl6040_request_irq(twl6040, TWL6040_IRQ_READY,
-+					twl6040_naudint_handler, 0,
-+					"twl6040_irq_ready", twl6040);
-+	if (ret) {
-+		dev_err(twl6040->dev, "READY IRQ request failed: %d\n",
-+			ret);
-+		goto irq_err;
- 	}
- 
- 	/* dual-access registers controlled by I2C only */
-@@ -553,11 +557,9 @@ static int __devinit twl6040_probe(struct platform_device *pdev)
+-	ret = twl6040_request_irq(codec->control_data, TWL6040_IRQ_PLUG,
+-				  twl6040_audio_handler, 0,
+-				  "twl6040_irq_plug", codec);
++	ret = request_threaded_irq(priv->plug_irq, NULL, twl6040_audio_handler,
++				   0, "twl6040_irq_plug", codec);
+ 	if (ret) {
+ 		dev_err(codec->dev, "PLUG IRQ request failed: %d\n", ret);
+ 		goto plugirq_err;
+@@ -1604,7 +1613,7 @@ static int twl6040_probe(struct snd_soc_codec *codec)
  	return 0;
  
- mfd_err:
--	if (twl6040->irq)
--		twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
-+	twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
- irq_err:
--	if (twl6040->irq)
--		twl6040_irq_exit(twl6040);
-+	twl6040_irq_exit(twl6040);
- gpio2_err:
- 	if (gpio_is_valid(twl6040->audpwron))
- 		gpio_free(twl6040->audpwron);
-@@ -579,9 +581,7 @@ static int __devexit twl6040_remove(struct platform_device *pdev)
- 		gpio_free(twl6040->audpwron);
+ bias_err:
+-	twl6040_free_irq(codec->control_data, TWL6040_IRQ_PLUG, codec);
++	free_irq(priv->plug_irq, codec);
+ plugirq_err:
+ 	destroy_workqueue(priv->hs_workqueue);
+ hswq_err:
+@@ -1621,7 +1630,7 @@ static int twl6040_remove(struct snd_soc_codec *codec)
+ 	struct twl6040_data *priv = snd_soc_codec_get_drvdata(codec);
  
- 	twl6040_free_irq(twl6040, TWL6040_IRQ_READY, twl6040);
--
--	if (twl6040->irq)
--		twl6040_irq_exit(twl6040);
-+	twl6040_irq_exit(twl6040);
- 
- 	mfd_remove_devices(&pdev->dev);
- 	platform_set_drvdata(pdev, NULL);
-diff --git a/drivers/mfd/twl6040-irq.c b/drivers/mfd/twl6040-irq.c
-index 9380535..b3f8dda 100644
---- a/drivers/mfd/twl6040-irq.c
-+++ b/drivers/mfd/twl6040-irq.c
-@@ -148,19 +148,6 @@ int twl6040_irq_init(struct twl6040 *twl6040)
- 	twl6040->irq_masks_cache = TWL6040_ALLINT_MSK;
- 	twl6040_reg_write(twl6040, TWL6040_REG_INTMR, TWL6040_ALLINT_MSK);
- 
--	if (!twl6040->irq) {
--		dev_warn(twl6040->dev,
--			 "no interrupt specified, no interrupts\n");
--		twl6040->irq_base = 0;
--		return 0;
--	}
--
--	if (!twl6040->irq_base) {
--		dev_err(twl6040->dev,
--			"no interrupt base specified, no interrupts\n");
--		return 0;
--	}
--
- 	/* Register them with genirq */
- 	for (cur_irq = twl6040->irq_base;
- 	     cur_irq < twl6040->irq_base + ARRAY_SIZE(twl6040_irqs);
-@@ -199,7 +186,6 @@ EXPORT_SYMBOL(twl6040_irq_init);
- 
- void twl6040_irq_exit(struct twl6040 *twl6040)
- {
--	if (twl6040->irq)
--		free_irq(twl6040->irq, twl6040);
-+	free_irq(twl6040->irq, twl6040);
- }
- EXPORT_SYMBOL(twl6040_irq_exit);
+ 	twl6040_set_bias_level(codec, SND_SOC_BIAS_OFF);
+-	twl6040_free_irq(codec->control_data, TWL6040_IRQ_PLUG, codec);
++	free_irq(priv->plug_irq, codec);
+ 	destroy_workqueue(priv->workqueue);
+ 	destroy_workqueue(priv->hf_workqueue);
+ 	destroy_workqueue(priv->hs_workqueue);
 -- 
 1.7.6
 
