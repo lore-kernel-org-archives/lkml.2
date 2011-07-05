@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756282Ab1GEM4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:56:54 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:34866 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756197Ab1GEM4x (ORCPT
+	id S1756350Ab1GEM5D (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:57:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42176 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756314Ab1GEM5A convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:56:53 -0400
-Date: Tue, 5 Jul 2011 16:56:49 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-        Lin Ming <ming.m.lin@intel.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
- sake of nmi-watchdog on P4
-Message-ID: <20110705125649.GX17941@sun>
-References: <20110705102017.GA12458@elte.hu>
- <20110705103403.GN17941@sun>
- <20110705105959.GA14435@elte.hu>
- <20110705110550.GQ17941@sun>
- <20110705112002.GA15654@elte.hu>
- <20110705113620.GS17941@sun>
- <20110705114437.GC15654@elte.hu>
- <20110705122405.GU3765@redhat.com>
- <20110705122620.GV17941@sun>
- <20110705124444.GA22020@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705124444.GA22020@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Tue, 5 Jul 2011 08:57:00 -0400
+Subject: Re: [PATCH 1/4] perf, x86: Add Intel Nehalem/Westmere uncore pmu
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1309870119.2381.6.camel@localhost>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
+	 <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
+	 <20110630165849.GE23059@one.firstfloor.org>
+	 <1309761541.18875.40.camel@minggr.sh.intel.com>
+	 <20110704215706.GH15637@one.firstfloor.org>
+	 <1309864954.3282.61.camel@twins>  <1309870119.2381.6.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Jul 2011 14:56:02 +0200
+Message-ID: <1309870562.3282.113.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 08:44:44AM -0400, Don Zickus wrote:
-> On Tue, Jul 05, 2011 at 04:26:20PM +0400, Cyrill Gorcunov wrote:
-> > On Tue, Jul 05, 2011 at 08:24:05AM -0400, Don Zickus wrote:
-> > ...
+On Tue, 2011-07-05 at 20:48 +0800, Lin Ming wrote:
+> On Tue, 2011-07-05 at 19:22 +0800, Peter Zijlstra wrote:
+> > On Mon, 2011-07-04 at 23:57 +0200, Andi Kleen wrote:
+> > > > > There are no NMIs without sampling, so at least the comment seems bogus.
+> > > > > Perhaps the code could be a bit simplified now without atomics.
+> > > > 
+> > > > I'm not sure if uncore PMU interrupt need to be enabled for counting
+> > > > only. What do you think?
 > > > 
-> > > I hope that clears things up Ingo.
-> > > 
-> > > Cheers,
-> > > Don
+> > > Only for overflow handling to accumulate into a larger counter, but it doesn't 
+> > > need to be an NMI for that.
 > > 
-> > Don, I've just sent out updated changelog, please check it out, does it
-> > look better?
+> > Uncore is hooked into the regular PMI, and since we wire that to the NMI
+> > the uncore will always be NMI too.
+> > 
+> > >   But it's not strictly required I would say, 
+> > > 44(?) bits are probably enough for near all use cases.
+> > 
+> > 44bits is in the hours range for pure cycle counts, which is so-so. I
+> > bet you're going to be very annoyed when you find your counters are
+> > wrecked after your 5 hour test run finishes.
 > 
-> It seems to be, then again I am biased because I know what the patch does
-> (and would like it :-) ).
-> 
-> Cheers,
-> Don
+> I'll add the interrupt handling code back.
 
-OK ;) i'm waiting for Ingo's feedback.
-
-	Cyrill
+Does it work? The problem was with the hardware being iffy.
