@@ -1,96 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755156Ab1GEKZk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 06:25:40 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:64980 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750812Ab1GEKZi (ORCPT
+	id S1755453Ab1GEK3w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 06:29:52 -0400
+Received: from ch1ehsobe002.messaging.microsoft.com ([216.32.181.182]:11708
+	"EHLO CH1EHSOBE017.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755377Ab1GEK3v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 06:25:38 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=us-ascii
-Date: Tue, 05 Jul 2011 12:24:58 +0200
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: RE: [PATCH 6/8] drivers: add Contiguous Memory Allocator
-In-reply-to: <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
-        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org
-Cc: "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, "'Arnd Bergmann'" <arnd@arndb.de>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>
-Message-id: <000101cc3afd$cac46ff0$604d4fd0$%szyprowski@samsung.com>
-Organization: SPRC
-X-Mailer: Microsoft Office Outlook 12.0
-Content-language: pl
-Thread-index: Acw65wJ1jp7zAY37SWW2gb29m2bk+AAFgkUg
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com>
- <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com>
+	Tue, 5 Jul 2011 06:29:51 -0400
+X-SpamScore: -5
+X-BigFish: VPS-5(zz936eK1432N98dKzz1202h10d2nzz8275bhz32i2a8h668h839h93fh61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:203.197.93.240;KIP:(null);UIP:(null);IPVD:NLI;H:Kcinpunhjhc01.kpit.com;RD:Kcinpunhjhc01.kpit.com;EFVD:NLI
+Subject: Re: [PATCH 9/11] Backlight: DA9052 Backlight driver v1
+From: ashishj3 <ashish.jangam@kpitcummins.com>
+Reply-To: <ashish.jangam@kpitcummins.com>
+To: <rpurdie@rpsys.net>
+CC: <tfransosi@gmail.com>, <linux-kernel@vger.kernel.org>,
+        <linaro-dev@lists.linaro.org>, <dchen@diasemi.com>
+In-Reply-To: <1309270692.376.227.camel@L-0532.kpit.com>
+References: <1309270692.376.227.camel@L-0532.kpit.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 5 Jul 2011 15:59:33 +0530
+Message-ID: <1309861773.960.3.camel@L-0532.kpit.com>
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+X-OriginatorOrg: kpitcummins.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+If there are no comments then can you please Ack this patch.
 
-On Tuesday, July 05, 2011 9:42 AM Marek Szyprowski wrote:
-
-> The Contiguous Memory Allocator is a set of helper functions for DMA
-> mapping framework that improves allocations of contiguous memory chunks.
+On Tue, 2011-06-28 at 19:48 +0530, ashishj3 wrote: 
+> DA9052 PMIC has capability to supply power for upto 3 banks of 6 white serial
+> LEDS. It can also control intensity of independent banks. To drive these
+> banks boost converter will provide up to 24V and forward current of max. 50mA.
 > 
-> CMA grabs memory on system boot, marks it with CMA_MIGRATE_TYPE and
-> gives back to the system. Kernel is allowed to allocate movable pages
-> within CMA's managed memory so that it can be used for example for page
-> cache when DMA mapping do not use it. On dma_alloc_from_contiguous()
-> request such pages are migrated out of CMA area to free required
-> contiguous block and fulfill the request. This allows to allocate large
-> contiguous chunks of memory at any time assuming that there is enough
-> free memory available in the system.
+> This patch controls intensity of the individual WLEDs bank through
+> DA9052 PMIC.
 > 
-> This code is heavily based on earlier works by Michal Nazarewicz.
-> 
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 > ---
->  drivers/base/Kconfig           |   77 +++++++++
->  drivers/base/Makefile          |    1 +
->  drivers/base/dma-contiguous.c  |  367
-> ++++++++++++++++++++++++++++++++++++++++
->  include/linux/dma-contiguous.h |  104 +++++++++++
->  4 files changed, 549 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/base/dma-contiguous.c
->  create mode 100644 include/linux/dma-contiguous.h
-> 
-> diff --git a/drivers/base/Kconfig b/drivers/base/Kconfig
-> index d57e8d0..95ae1a7 100644
-> --- a/drivers/base/Kconfig
-> +++ b/drivers/base/Kconfig
-> @@ -168,4 +168,81 @@ config SYS_HYPERVISOR
->  	bool
->  	default n
-> 
-> +config CMA
-> +	bool "Contiguous Memory Allocator"
-> +	depends HAVE_DMA_CONTIGUOUS && HAVE_MEMBLOCK
-
-The above line should be obviously "depends on HAVE_DMA_CONTIGUOUS &&
-HAVE_MEMBLOCK".
-I'm sorry for posting broken version. 
-
-(snipped)
-
-Best regards
--- 
-Marek Szyprowski
-Samsung Poland R&D Center
-
 
 
