@@ -1,103 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754929Ab1GEOzC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:55:02 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:50620 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754146Ab1GEOzA (ORCPT
+	id S1755056Ab1GEOzh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:55:37 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:56863 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754714Ab1GEOzd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:55:00 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH 49/49] gma500: power can be touched in IRQ state
-To: greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Tue, 05 Jul 2011 15:45:13 +0100
-Message-ID: <20110705144510.23872.54882.stgit@localhost.localdomain>
-In-Reply-To: <20110705141038.23872.55303.stgit@localhost.localdomain>
-References: <20110705141038.23872.55303.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Tue, 5 Jul 2011 10:55:33 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: ashish.jangam@kpitcummins.com
+Subject: Re: [PATCH 01/11] MFD: DA9052 MFD core module v2
+Date: Tue, 5 Jul 2011 16:55:27 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.37; KDE/4.5.1; x86_64; ; )
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>, sameo@openedhand.com,
+        linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
+        linaro-dev@lists.linaro.org
+References: <1309876620.960.169.camel@L-0532.kpit.com>
+In-Reply-To: <1309876620.960.169.camel@L-0532.kpit.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201107051655.27990.arnd@arndb.de>
+X-Provags-ID: V02:K0:aMCCkHHjgzt9MvJF6W5rXNQyvnAxKse6k5KihRXld2m
+ Ct6d3e8H1cSE4EWVAPOrKCENKvpEvOHsPomiVbgpFVJUQp9Rkl
+ gXVTmuo91QG3zyv3u8EXuuS4HLZLIRZyiX1AU01PTnMoy5W5vo
+ w47WppgzobLHc14VoO/cGr8YcBcEC4vZ8hIIus0KpHRkshMWQk
+ cTmaw9jlJWnwIHtL7pKCQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Tuesday 05 July 2011, ashishj3 wrote:
+> The DA9052 is a highly integrated PMIC subsystem with supply domain flexibility
+> to support wide range of high performance application.
+> 
+> It provides voltage regulators, GPIO controller, Touch Screen, RTC, Battery
+> control and other functionality.
+> 
+> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
+> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
 
-So we need to use a spinlock here
-
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
-
- drivers/staging/gma500/power.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/staging/gma500/power.c b/drivers/staging/gma500/power.c
-index 79eb670..5cd5023 100644
---- a/drivers/staging/gma500/power.c
-+++ b/drivers/staging/gma500/power.c
-@@ -36,7 +36,7 @@
- #include <linux/pm_runtime.h>
- 
- static struct mutex power_mutex;	/* Serialize power ops */
--static struct mutex power_ctrl_mutex;	/* Serialize power claim */
-+static spinlock_t power_ctrl_lock;	/* Serialize power claim */
- 
- /**
-  *	gma_power_init		-	initialise power manager
-@@ -55,8 +55,8 @@ void gma_power_init(struct drm_device *dev)
- 	dev_priv->display_power = true;	/* We start active */
- 	dev_priv->display_count = 0;	/* Currently no users */
- 	dev_priv->suspended = false;	/* And not suspended */
-+	spin_lock_init(&power_ctrl_lock);
- 	mutex_init(&power_mutex);
--	mutex_init(&power_ctrl_mutex);
- 
- 	dev_priv->ops->init_pm(dev);
- }
-@@ -247,13 +247,14 @@ bool gma_power_begin(struct drm_device *dev, bool force_on)
- {
- 	struct drm_psb_private *dev_priv = dev->dev_private;
- 	int ret;
-+	unsigned long flags;
- 
--	mutex_lock(&power_ctrl_mutex);
-+	spin_lock_irqsave(&power_ctrl_lock, flags);
- 	/* Power already on ? */
- 	if (dev_priv->display_power) {
- 		dev_priv->display_count++;
- 		pm_runtime_get(&dev->pdev->dev);
--		mutex_unlock(&power_ctrl_mutex);
-+		spin_unlock_irqrestore(&power_ctrl_lock, flags);
- 		return true;
- 	}
- 	if (force_on == false)
-@@ -266,11 +267,11 @@ bool gma_power_begin(struct drm_device *dev, bool force_on)
- 		psb_irq_postinstall(dev);
- 		pm_runtime_get(&dev->pdev->dev);
- 		dev_priv->display_count++;
--		mutex_unlock(&power_ctrl_mutex);
-+		spin_unlock_irqrestore(&power_ctrl_lock, flags);
- 		return true;
- 	}
- out_false:
--	mutex_unlock(&power_ctrl_mutex);
-+	spin_unlock_irqrestore(&power_ctrl_lock, flags);
- 	return false;
- }
- 
-@@ -284,10 +285,11 @@ out_false:
- void gma_power_end(struct drm_device *dev)
- {
- 	struct drm_psb_private *dev_priv = dev->dev_private;
--	mutex_lock(&power_ctrl_mutex);
-+	unsigned long flags;
-+	spin_lock_irqsave(&power_ctrl_lock, flags);
- 	dev_priv->display_count--;
- 	WARN_ON(dev_priv->display_count < 0);
--	mutex_unlock(&power_ctrl_mutex);
-+	spin_unlock_irqrestore(&power_ctrl_lock, flags);
- 	pm_runtime_put(&dev->pdev->dev);
- }
- 
-
+Reviewed-by: Arnd Bergmann <arnd@arndb.de>
