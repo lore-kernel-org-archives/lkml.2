@@ -1,113 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752708Ab1GEORR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 10:17:17 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:50674 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752552Ab1GEORP (ORCPT
+	id S1752726Ab1GEOSt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 10:18:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41945 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab1GEOSs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 10:17:15 -0400
-Date: Tue, 5 Jul 2011 10:17:14 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Felipe Balbi <balbi@ti.com>
-cc: Partha Basak <p-basak2@ti.com>, Keshava Munegowda <keshava_mgowda@ti.com>,
-        USB list <linux-usb@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Anand Gadiyar <gadiyar@ti.com>, <sameo@linux.intel.com>,
-        <parthab@india.ti.com>, <tony@atomide.com>,
-        Kevin Hilman <khilman@ti.com>, Benoit Cousson <b-cousson@ti.com>,
-        <paul@pwsan.com>, <johnstul@us.ibm.com>,
-        Vishwanath Sripathy <vishwanath.bs@ti.com>
-Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
- of ehci and ohci
-In-Reply-To: <20110705125227.GI2820@legolas.emea.dhcp.ti.com>
-Message-ID: <Pine.LNX.4.44L0.1107050958090.2060-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 5 Jul 2011 10:18:48 -0400
+Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+In-Reply-To: <1309866860.2381.1.camel@localhost>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
+	 <1309778192.3282.27.camel@twins>  <1309866860.2381.1.camel@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 05 Jul 2011 16:17:48 +0200
+Message-ID: <1309875468.3282.210.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Jul 2011, Felipe Balbi wrote:
-
-> > The real problem here is that you guys are trying to use the runtime PM
-> > framework to carry out activities during system suspend.  That won't
-> > work; it's just a bad idea all round.  Use the proper callbacks to do
-> > what you want.
+On Tue, 2011-07-05 at 19:54 +0800, Lin Ming wrote:
+> On Mon, 2011-07-04 at 19:16 +0800, Peter Zijlstra wrote:
+> > On Mon, 2011-07-04 at 08:02 +0000, Lin Ming wrote:
+> > > +#define MEM_STORE_DCU_HIT              (1ULL << 0)
+> > 
+> > I'm pretty sure that's not Dublin City University, but what is it?
+> > Data-Cache-Unit? what does that mean, L1/L2 or also L3? 
+> > 
+> > > +#define MEM_STORE_STLB_HIT             (1ULL << 1)
+> > 
+> > What's an sTLB? I know iTLB and dTLB's but sTLBs I've not heard of yet.
+> > 
+> > > +#define MEM_STORE_LOCKED_ACCESS                (1ULL << 2) 
+> > 
+> > Presumably that's about LOCK'ed ops?
+> > 
+> > So now you're just tacking bits on the end without even attempting to
+> > generalize/unify things, not charmed at all.
 > 
-> then what's the point in even having runtime PM if we will still have to
-> implement the same functionality on the other callbacks ?
+> Any idea on the more useful store bits encoding?
 
-You don't have to duplicate the functionality.  You can use exactly the
-same functions for both sets of callbacks if you want; just make sure
-the callbacks point to them.
+For two of them, sure:
 
->  Well, of
-> course runtime PM will conserve power on runtime, but system suspend
-> should be no different other than an "always deepest sleep state"
-> decision.
+{load, store} x {atomic} x
+	{hasSRC} x {l1, l2, l3, ram, unkown, io, uncached, reserved} x
+	{hasLRS} x {local, remote, snoop} x 
+	{hasMESI} x {MESI}
 
-No, it is significantly different for several reasons.  Some of the
-most important differences are concerned with freezing userspace and
-deciding what events should be allowed to wake up the system.  Also, 
-there are systems which can achieve greater power savings by system 
-sleep than they can by runtime PM + cpuidle.
+that would make MEM_STORE_DCU_HIT: store-l1 and MEM_STORE_LOCKED:
+store-atomic.
 
-> The thing now is that pm_runtime was done so that drivers would stop
-> caring about clocks, which is a big plus, but if we still have to handle
-> ->suspend()/->resume() differently, we will still need to clk_get();
-> clk_enable(); clk_disable(); Then what was the big deal with runtime PM?
+Now this is needed for load-latency as well, since SNB extended the src
+information with the same STLB/LOCK bits.
 
-I don't know about that.  Clock usage has always been internal to the
-implementation you guys have been working on, and I haven't followed
-it.  If your implementation was designed incorrectly, well, that's a
-shame but it's understandable.  Things like that happen.  It shouldn't
-be too hard to fix.
+The SDM is somewhat inconsistent on what an STLB_MISS means:
 
-But first you do need to understand that system suspend really _is_ 
-different from runtime suspend.  Sure, you may be able to share some 
-code between them, but you should not expect to be able to use one in 
-place of the other.
+Table 30-22 says: 0 - did not miss STLB (hit the DTLB/STLB), 1 - missed
+the STLB. 
 
-> IMHO, we should have only one PM layer. System suspend/resume should be
-> implemented so that core PM "forcefully" calls
-> ->runtime_suspend()/->runtime_resume() of call drivers, all
-> synchronously. Maybe we need an extra
-> RPM_STATIC_SUSPEND_PLEASE_HANDLE_IT_ALL_SYNCHRONOUSLY flag, but that's
-> another detail.
+Table 30-23 says: "the store missed the STLB if set, otherwise the store
+hit the STLB", which simply cannot be true. 
 
-Statements like this should be posted to linux-pm where they can be 
-discussed properly.  It certainly isn't fair to make such claims 
-without even CC-ing the PM maintainer.
+So I'm sticking with 30-22.
 
-Besides, handling runtime PM synchronously won't do you any good if the 
-user has disabled runtime PM via sysfs or not enabled 
-CONFIG_PM_RUNTIME in the first place.  Have you forgotten about those 
-possibilities?
+Now the above doesn't yet deal with TLBs nor can it map the IBS data
+source bits because afaict that can report a u-op as both a store and a
+load, but does not mention if a data-cache miss means L1 or L1/L2,
+Robert?
 
-Furthermore, from what I've gathered so far from this thread, the
-_real_ problem is that nobody has written suspend and resume callbacks
-for the parent device.  You're relying on runtime PM to do things with
-the parent, but instead you should make use of the usual system sleep
-mechanism: Parents are always suspended after their children and
-awakened before.  Have the parent's suspend routine disable the clocks 
-and have the resume routine enable them.  Problem solved, no changes 
-needed in the child's driver code.
+One way to sort all that is not use enumerated spaces like above but
+simply explode the whole thing like: load x store x atomic x l1 x l2
+x ... that would of course give rise to a load of impossible
+combinations but would do away with the hasFOO bits.
 
-> If drivers are really supposed to stop handling clocks directly, then
-> runtime PM is THE framework to do that, but if we still have system
-> suspend/resume the old way, I don't see the benefit for the driver
-> (other than the uAmps saved during runtime, which is great, don't get me
-> wrong ;-) that this will bring. Having two PM layers which, in fact, are
-> doing the same thing - reducing power consumption - is just too much
-> IMO.
+If the AMD data-cache means L1/L2 it can simply set both bits, same with
+the Intel STLB miss, it can set TLB1/TLB2 bits (AMD does split those
+nicely).
 
-They aren't doing the same thing.  If you don't believe me, ask the PM 
-maintainer.
+With all those bits exploded we can also express the inverse of
+MEM_STORE_DCU_HIT as: store-l2-l3-dram, we simply set ~l1 for the
+appropriate submask (which should arguably include IO/uncached/unknown
+as well).
 
-And if you actually do need your callbacks to do the same thing, simply
-use shared subroutines.
+Now if anybody knows of another arch that has similar features (IA64,
+ppc64?) can we get links to their PMU docs so that we can see if we can
+map them as well?
 
-Alan Stern
+
+Comments?
 
