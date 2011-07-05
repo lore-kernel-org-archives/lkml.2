@@ -1,64 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab1GEJgv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 05:36:51 -0400
-Received: from mga11.intel.com ([192.55.52.93]:47317 "EHLO mga11.intel.com"
+	id S1755109Ab1GEJmo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 05:42:44 -0400
+Received: from a.ns.miles-group.at ([95.130.255.143]:33632 "EHLO radon.swed.at"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755013Ab1GEJgt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 05:36:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,478,1304319600"; 
-   d="scan'208";a="26378200"
-Date: Tue, 5 Jul 2011 11:37:17 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, Axel Lin <axel.lin@gmail.com>,
-        Keshava Munegowda <Keshava_mgowda@ti.com>,
-        Kevin Hilman <khilman@ti.com>
-Subject: [GIT PULL] MFD fixes for 3.0
-Message-ID: <20110705093717.GW3021@sortiz-mobl>
+	id S1755077Ab1GEJmn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 05:42:43 -0400
+From: Richard Weinberger <richard@nod.at>
+To: vitalivanov@gmail.com
+Subject: Re: [PATCH 2/4] uml: helper.c warning corrections
+Date: Tue, 5 Jul 2011 11:42:39 +0200
+User-Agent: KMail/1.13.7 (Linux/2.6.37.6-0.5-desktop; KDE/4.6.4; x86_64; ; )
+Cc: Jeff Dike <jdike@addtoit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "user-mode-linux-devel@lists.sourceforge.net" 
+	<user-mode-linux-devel@lists.sourceforge.net>,
+        lkml <linux-kernel@vger.kernel.org>
+References: <1309821347.4527.6.camel@vitaliy-Vostro-1400>
+In-Reply-To: <1309821347.4527.6.camel@vitaliy-Vostro-1400>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201107051142.39733.richard@nod.at>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Am Dienstag 05 Juli 2011, 01:15:47 schrieb Vitaliy Ivanov:
+> From 7296c5b9770e95cd6ad4e9e71d2d14c972abdfe1 Mon Sep 17 00:00:00 2001
+> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+> Date: Tue, 5 Jul 2011 02:03:06 +0300
+> Subject: [PATCH 2/4] uml: helper.c warning corrections
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+> 
+> arch/um/os-Linux/helper.c: In function ‘helper_child’:
+> arch/um/os-Linux/helper.c:38:7: warning: ignoring return value of ‘write’,
+> declared with attribute warn_unused_result
 
-This is a small set of MFD fixes for 3.0. Mostly, we have an OMAP usbhs revert
-because the original commit can potentially lead to an oops.
-Also, a couple of leftover from the mfd_get_data() cleanup and a build fix for
-the tps65911 comparator.
+Same question as before...
 
-Thanks in advance for pulling those in.
+> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+> ---
+>  arch/um/os-Linux/helper.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/um/os-Linux/helper.c b/arch/um/os-Linux/helper.c
+> index b6b1096..feff22d 100644
+> --- a/arch/um/os-Linux/helper.c
+> +++ b/arch/um/os-Linux/helper.c
+> @@ -28,14 +28,14 @@ static int helper_child(void *arg)
+>  {
+>  	struct helper_data *data = arg;
+>  	char **argv = data->argv;
+> -	int err;
+> +	int err, ret;
+> 
+>  	if (data->pre_exec != NULL)
+>  		(*data->pre_exec)(data->pre_data);
+>  	err = execvp_noalloc(data->buf, argv[0], argv);
+> 
+>  	/* If the exec succeeds, we don't get here */
+> -	write(data->fd, &err, sizeof(err));
+> +	CATCH_EINTR(ret = write(data->fd, &err, sizeof(err)));
 
-The following changes since commit fe0d42203cb5616eeff68b14576a0f7e2dd56625:
+Is there really a realistic chance that this write() can be interrupted?
+helper_child() gets called via clone() in run_helper().
 
-  Linux 3.0-rc6 (2011-07-04 15:56:24 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git for-linus
-
-Axel Lin (2):
-      mfd: Fix build error for tps65911-comparator.c
-      mfd: Add Makefile and Kconfig Entries for tps65911 comparator
-
-Keshava Munegowda (1):
-      Revert "mfd: Add omap-usbhs runtime PM support"
-
-Samuel Ortiz (2):
-      input: pmic8xxx-keypad: Do not use mfd_get_data()
-      input: pmic8xxx-pwrkey: Do not use mfd_get_data()
-
- drivers/input/keyboard/pmic8xxx-keypad.c |    3 +-
- drivers/input/misc/pmic8xxx-pwrkey.c     |    3 +-
- drivers/mfd/Kconfig                      |    3 +
- drivers/mfd/Makefile                     |    1 +
- drivers/mfd/omap-usb-host.c              |  131 +++++++++++++++++++++++++++--
- drivers/mfd/tps65911-comparator.c        |    2 +-
- 6 files changed, 131 insertions(+), 12 deletions(-)
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks,
+//richard
