@@ -1,41 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab1GESCp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 14:02:45 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:54067 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab1GESCo (ORCPT
+	id S1752907Ab1GESFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 14:05:22 -0400
+Received: from smtprelay-b12.telenor.se ([62.127.194.21]:54890 "EHLO
+	smtprelay-b12.telenor.se" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab1GESFV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 14:02:44 -0400
-Date: Tue, 5 Jul 2011 19:02:27 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-        rtc-linux@googlegroups.com, dannf@hp.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: enable rtc-efi
-Message-ID: <20110705180227.GD30531@srcf.ucam.org>
-References: <4E12DBAB020000780004C1B2@nat28.tlf.novell.com>
+	Tue, 5 Jul 2011 14:05:21 -0400
+X-SENDER-IP: [85.230.173.76]
+X-LISTENER: [smtp.bredband.net]
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: ArpiAClSE05V5q1MPGdsb2JhbABTiQqefgsBAQEBNzKIegLCNg6GKASXPIsy
+X-IronPort-AV: E=Sophos;i="4.65,481,1304287200"; 
+   d="scan'208";a="205678222"
+From: "Henrik Rydberg" <rydberg@euromail.se>
+Date: Tue, 5 Jul 2011 20:07:13 +0200
+To: Daniel Kurtz <djkurtz@chromium.org>
+Cc: dmitry.torokhov@gmail.com, chase.douglas@canonical.com,
+        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
+        daniel.stone@collabora.co.uk, olofj@chromium.org
+Subject: Re: [PATCH 02/12] Input: synaptics - do not invert y if 0
+Message-ID: <20110705180712.GA29224@polaris.bitmath.org>
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
+ <1309324042-22943-3-git-send-email-djkurtz@chromium.org>
+ <20110704210838.GA23915@polaris.bitmath.org>
+ <CAGS+omDXhiZz2i5eniu_eOCES1Eq_fKs4JVWU-+wz6ot7kyhSA@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E12DBAB020000780004C1B2@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <CAGS+omDXhiZz2i5eniu_eOCES1Eq_fKs4JVWU-+wz6ot7kyhSA@mail.gmail.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 08:38:51AM +0100, Jan Beulich wrote:
-> Besides a Kconfig change this just requires creating a respective
-> platform device.
+> > > In some cases, however, y = 0 is sent by the touchpad.
+> > > In these cases, the kernel driver should not invert, and just report 0.
+> > >
+> > > This patch also refactors the inversion into a macro, and moves it
+> > > into packet processing instead of during position reporting.
+> >
+> > The patch seems to invert the current output?
+> 
+> By 'current' do you mean referenced from the previous implementation?
+> Or referenced from the raw input.
+> It does indeed invert the raw input.
+> This is the same as the previous implementation did.
+> The difference is that it does not also invert the special 'y=0' into
+> an arbitrarily large value.
+> Is this your concern?
 
-"During runtime, if a PC-AT CMOS device is present in the platform the 
-caller must synchronize access to the device before calling GetTime()."
+It would be clearer to just change the argument of the
+input_report_abs() instances, would it not? An explanation why zero,
+outside the value range, should be output also needs a rationale. It
+would seem such packets should be masked somehow.
 
-This shouldn't be enabled on PC hardware without locking to avoid races 
-with direct ahrdware access.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thanks,
+Henrik
