@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab1GEDco (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 23:32:44 -0400
-Received: from ozlabs.org ([203.10.76.45]:35761 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752683Ab1GEDcn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 23:32:43 -0400
-Date: Tue, 5 Jul 2011 13:32:40 +1000
-From: Anton Blanchard <anton@samba.org>
-To: fweisbec@gmail.com, mingo@elte.hu, a.p.zijlstra@chello.nl
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] lockup detector: CONFIG_DETECT_SOFTLOCKUP no longer exists
-Message-ID: <20110705133240.25e81a7a@kryten>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753096Ab1GEDwf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 23:52:35 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:35053 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752674Ab1GEDwe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 23:52:34 -0400
+Message-ID: <4E128A7D.9020508@dsn.okisemi.com>
+Date: Tue, 05 Jul 2011 12:52:29 +0900
+From: Tomoya MORINAGA <tomoya-linux@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.2.17) Gecko/20110414 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Grant Likely <grant.likely@secretlab.ca>
+CC: linux-kernel@vger.kernel.org, alexander.stein@systec-electronic.com,
+        qi.wang@intel.com, yong.y.wang@intel.com, joel.clark@intel.com,
+        kok.howg.ewe@intel.com, toshiharu-linux@dsn.okisemi.com,
+        tglx@linutronix.de
+Subject: Re: [PATCH v4] pch_gpio: Support interrupt function
+References: <1309486572-2789-1-git-send-email-tomoya-linux@dsn.okisemi.com> <20110704163137.GA28042@ponder.secretlab.ca>
+In-Reply-To: <20110704163137.GA28042@ponder.secretlab.ca>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Grant,
 
-Replace CONFIG_DETECT_SOFTLOCKUP with CONFIG_LOCKUP_DETECTOR.
- 
-Signed-off-by: Anton Blanchard <anton@samba.org>
----
+(2011/07/05 1:31), Grant Likely wrote:
 
-Index: linux-2.6-work/lib/Kconfig.debug
-===================================================================
---- linux-2.6-work.orig/lib/Kconfig.debug	2011-07-05 12:47:23.728166985 +1000
-+++ linux-2.6-work/lib/Kconfig.debug	2011-07-05 12:47:40.478462898 +1000
-@@ -227,7 +227,7 @@ config BOOTPARAM_SOFTLOCKUP_PANIC_VALUE
- config DETECT_HUNG_TASK
- 	bool "Detect Hung Tasks"
- 	depends on DEBUG_KERNEL
--	default DETECT_SOFTLOCKUP
-+	default LOCKUP_DETECTOR
- 	help
- 	  Say Y here to enable the kernel to detect "hung tasks",
- 	  which are bugs that cause the task to be stuck in
-@@ -866,7 +866,7 @@ config BOOT_PRINTK_DELAY
- 	  system, and then set "lpj=M" before setting "boot_delay=N".
- 	  NOTE:  Using this option may adversely affect SMP systems.
- 	  I.e., processors other than the first one may not boot up.
--	  BOOT_PRINTK_DELAY also may cause DETECT_SOFTLOCKUP to detect
-+	  BOOT_PRINTK_DELAY also may cause LOCKUP_DETECTOR to detect
- 	  what it believes to be lockup conditions.
- 
- config RCU_TORTURE_TEST
+>> +#define PCH_IRQ_BASE		23
+>
+> Yikes!  IRQ ranges should really be dynamically assigned.  Don't hard
+> code an irq base.
+
+As we discussed before,
+without specifying PCH_IRQ_BASE,
+it seemed IRQ number collision issue occurred.
+Thus, I added PCH_IRQ_BASE.
+
+
+>> @@ -202,8 +345,36 @@ static int __devinit pch_gpio_probe(struct pci_dev *pdev,
+>>   		goto err_gpiochip_add;
+>>   	}
+>>
+>> +	irq_base = irq_alloc_descs(-1, PCH_IRQ_BASE, GPIO_NUM_PINS, GFP_KERNEL);
+>> +	if (irq_base<  0) {
+>> +		dev_err(&pdev->dev, "PCH gpio: Failed to get IRQ base num\n");
+>> +		goto err_irq_alloc_descs;
+>> +	}
+>> +	chip->irq_base = irq_base;
+>
+> This looks like it will cause the driver probe to completely fail,
+> even if the GPIO portion of the chip was setup correctly.  I would
+> think that if GPIO works the driver should at least enable that bit
+> even if IRQs are broken.
+
+Do you mean in case of failing irq_alloc_descs,
+probe() shouldn't return ERROR but SUCCESS. Right ?
+
+-- 
+tomoya
+OKI SEMICONDUCTOR CO., LTD.
