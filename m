@@ -1,150 +1,368 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab1GEIEI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 04:04:08 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:49650 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754353Ab1GEIEE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 04:04:04 -0400
-Date: Tue, 5 Jul 2011 10:03:58 +0200
-From: Florian Mickler <florian@mickler.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Andrea Righi <andrea@betterlinux.com>, Len Brown <lenb@kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@redhat.com>,
-        Borislav Petkov <bp@alien8.de>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] ACPI: Fix lockdep false positives in acpi_power_off()
-Message-ID: <20110705100358.6857b235@schatten.dmk.lab>
-In-Reply-To: <201107050132.11996.rjw@sisk.pl>
-References: <1309684450-24549-1-git-send-email-andrea@betterlinux.com>
-	<201107040028.23569.rjw@sisk.pl>
-	<20110704082307.GA1239@thinkpad>
-	<201107050132.11996.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754615Ab1GEILJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 04:11:09 -0400
+Received: from 81-174-11-161.staticnet.ngi.it ([81.174.11.161]:35872 "EHLO
+	mail.enneenne.com" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754552Ab1GEILH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 04:11:07 -0400
+X-Greylist: delayed 2226 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jul 2011 04:11:06 EDT
+Date: Tue, 5 Jul 2011 09:33:54 +0200
+From: Rodolfo Giometti <giometti@enneenne.it>
+To: James Nuss <jamesnuss@nanometrics.ca>
+Cc: linuxpps@ml.enneenne.com, linux-kernel@vger.kernel.org
+Message-ID: <20110705073354.GA8353@enneenne.com>
+Mail-Followup-To: James Nuss <jamesnuss@nanometrics.ca>,
+	linuxpps@ml.enneenne.com, linux-kernel@vger.kernel.org
+References: <1309796969-31708-3-git-send-email-jamesnuss@nanometrics.ca>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309796969-31708-3-git-send-email-jamesnuss@nanometrics.ca>
+Organization: GNU/Linux Device Drivers, Embedded Systems and Courses
+X-PGP-Key: gpg --keyserver keyserver.linux.it --recv-keys D25A5633
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-SA-Exim-Connect-IP: 192.168.32.38
+X-SA-Exim-Mail-From: giometti@enneenne.com
+Subject: Re: [LinuxPPS] [PATCH v2 2/2] pps: new client driver using GPIO
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on mail.enneenne.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 5 Jul 2011 01:32:11 +0200
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+On Mon, Jul 04, 2011 at 12:29:29PM -0400, James Nuss wrote:
+> This client driver allows you to use a GPIO pin as a source for PPS
+> signals. Platform data [1] are used to specify the GPIO pin number, label,
+> assert event edge type, and whether clear events are captured.
 > 
-> OK, below is an official version.
+> This driver is based on the work by Ricardo Martins <rasm@fe.up.pt> who
+> submitted an initial implementation [2] of a PPS IRQ client driver to
+> the linuxpps mailing-list on Dec 3 2010.
 > 
-> Thanks,
-> Rafael
+> [1] include/linux/pps-gpio.h
+> [2] http://ml.enneenne.com/pipermail/linuxpps/2010-December/004155.html
 > 
+> Signed-off-by: James Nuss <jamesnuss@nanometrics.ca>
+> CC: Ricardo Martins <rasm@fe.up.pt>
 > ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: ACPI: Fix lockdep false positives in acpi_power_off()
+>  drivers/pps/clients/Kconfig    |    9 ++
+>  drivers/pps/clients/Makefile   |    1 +
+>  drivers/pps/clients/pps-gpio.c |  218 ++++++++++++++++++++++++++++++++++++++++
+>  include/linux/pps-gpio.h       |   32 ++++++
+>  4 files changed, 260 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/pps/clients/pps-gpio.c
+>  create mode 100644 include/linux/pps-gpio.h
 > 
-> All ACPICA locks are allocated and initialized by the same function,
-> acpi_os_create_lock(), with the help of a local variable called
-> "lock".  Thus, when lockdep is enabled, it uses "lock" as the
-> name of all those locks and regards them as instances of the same
-> lock, which causes it to report possible locking problems with them
-> when there aren't any.
-> 
-> To work around this problem, define acpi_os_create_lock() as a macro
-> and make it pass its argument to spin_lock_init(), so that lockdep
-> uses it as the name of the new lock.  Define this macron in a
-> Linux-specific file to minimize the resulting modifications of
-> the OS-independent ACPICA parts.
-> 
-> This change is based on an earlier patch from Andrea Righi and it
-> addresses a regression from 2.6.39 tracked as
-> https://bugzilla.kernel.org/show_bug.cgi?id=38152
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Reported-by: Borislav Petkov <bp@alien8.de>
-> Tested-by: Andrea Righi <andrea@betterlinux.com>
-> ---
->  drivers/acpi/osl.c              |   17 -----------------
->  include/acpi/acpiosxf.h         |    3 +++
->  include/acpi/platform/aclinux.h |   18 ++++++++++++++++++
->  3 files changed, 21 insertions(+), 17 deletions(-)
-> 
-> Index: linux-2.6/drivers/acpi/osl.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/acpi/osl.c
-> +++ linux-2.6/drivers/acpi/osl.c
-> @@ -1333,23 +1333,6 @@ int acpi_resources_are_enforced(void)
->  EXPORT_SYMBOL(acpi_resources_are_enforced);
+> diff --git a/drivers/pps/clients/Kconfig b/drivers/pps/clients/Kconfig
+> index 8520a7f..c2e0f1e 100644
+> --- a/drivers/pps/clients/Kconfig
+> +++ b/drivers/pps/clients/Kconfig
+> @@ -29,4 +29,13 @@ config PPS_CLIENT_PARPORT
+>  	  If you say yes here you get support for a PPS source connected
+>  	  with the interrupt pin of your parallel port.
 >  
->  /*
-> - * Create and initialize a spinlock.
-> - */
-> -acpi_status
-> -acpi_os_create_lock(acpi_spinlock *out_handle)
-> -{
-> -	spinlock_t *lock;
-> -
-> -	lock = ACPI_ALLOCATE(sizeof(spinlock_t));
-> -	if (!lock)
-> -		return AE_NO_MEMORY;
-> -	spin_lock_init(lock);
-> -	*out_handle = lock;
-> -
-> -	return AE_OK;
-> -}
-> -
-> -/*
->   * Deallocate the memory for a spinlock.
->   */
->  void acpi_os_delete_lock(acpi_spinlock handle)
-> Index: linux-2.6/include/acpi/acpiosxf.h
-> ===================================================================
-> --- linux-2.6.orig/include/acpi/acpiosxf.h
-> +++ linux-2.6/include/acpi/acpiosxf.h
-> @@ -98,8 +98,11 @@ acpi_os_table_override(struct acpi_table
->  /*
->   * Spinlock primitives
->   */
+> +config PPS_CLIENT_GPIO
+> +	tristate "PPS client using GPIO"
+> +	depends on PPS
+> +	help
+> +	  If you say yes here you get support for a PPS source using
+> +	  GPIO. To be useful you must also register a platform device
+> +	  specifying the GPIO pin and other options, usually in your board
+> +	  setup.
 > +
-> +#ifndef acpi_os_create_lock
->  acpi_status
->  acpi_os_create_lock(acpi_spinlock *out_handle);
-> +#endif
+>  endif
+> diff --git a/drivers/pps/clients/Makefile b/drivers/pps/clients/Makefile
+> index 4feb7e9..a461d15 100644
+> --- a/drivers/pps/clients/Makefile
+> +++ b/drivers/pps/clients/Makefile
+> @@ -5,5 +5,6 @@
+>  obj-$(CONFIG_PPS_CLIENT_KTIMER)	+= pps-ktimer.o
+>  obj-$(CONFIG_PPS_CLIENT_LDISC)	+= pps-ldisc.o
+>  obj-$(CONFIG_PPS_CLIENT_PARPORT) += pps_parport.o
+> +obj-$(CONFIG_PPS_CLIENT_GPIO)	+= pps-gpio.o
 >  
->  void acpi_os_delete_lock(acpi_spinlock handle);
->  
-> Index: linux-2.6/include/acpi/platform/aclinux.h
-> ===================================================================
-> --- linux-2.6.orig/include/acpi/platform/aclinux.h
-> +++ linux-2.6/include/acpi/platform/aclinux.h
-> @@ -159,6 +159,24 @@ static inline void *acpi_os_acquire_obje
->  	} while (0)
->  #endif
->  
+>  ccflags-$(CONFIG_PPS_DEBUG) := -DDEBUG
+> diff --git a/drivers/pps/clients/pps-gpio.c b/drivers/pps/clients/pps-gpio.c
+> new file mode 100644
+> index 0000000..fe9d913
+> --- /dev/null
+> +++ b/drivers/pps/clients/pps-gpio.c
+> @@ -0,0 +1,218 @@
 > +/*
-> + * When lockdep is enabled, the spin_lock_init() macro stringifies it's
-> + * argument and uses that as a name for the lock in debugging.
-> + * By executing spin_lock_init() in a macro the key changes from "lock" for
-> + * all locks to the name of the argument of acpi_os_create_lock(), which
-> + * prevents lockdep from reporting false positives for ACPICA locks.
+> + * pps-gpio.c -- PPS client driver using GPIO
+> + *
+> + *
+> + * Copyright (C) 2010 Ricardo Martins <rasm@fe.up.pt>
+> + * Copyright (C) 2011 James Nuss <jamesnuss@nanometrics.ca>
+> + *
+> + *   This program is free software; you can redistribute it and/or modify
+> + *   it under the terms of the GNU General Public License as published by
+> + *   the Free Software Foundation; either version 2 of the License, or
+> + *   (at your option) any later version.
+> + *
+> + *   This program is distributed in the hope that it will be useful,
+> + *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *   GNU General Public License for more details.
+> + *
+> + *   You should have received a copy of the GNU General Public License
+> + *   along with this program; if not, write to the Free Software
+> + *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 > + */
-> +#define acpi_os_create_lock(__handle)				\
-> +({								\
-> +	spinlock_t *lock = ACPI_ALLOCATE(sizeof(*lock));	\
-> +								\
-> +	if (lock) {						\
-> +		*(__handle) = lock;				\
-> +		spin_lock_init(*(__handle));			\
-> +	}							\
-> +	lock ? AE_OK : AE_NO_MEMORY;				\
-> +})
 > +
->  #endif /* __KERNEL__ */
->  
->  #endif /* __ACLINUX_H__ */
+> +#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> +
+> +#include <linux/init.h>
+> +#include <linux/kernel.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +#include <linux/pps_kernel.h>
+> +#include <linux/pps-gpio.h>
+> +#include <linux/gpio.h>
+> +#include <linux/list.h>
+> +
+> +#define PPS_GPIO_NAME		"pps-gpio"
+> +#define PPS_GPIO_VERSION	"1.0.0"
+> +
+> +/* Info for each registered platform device */
+> +struct pps_gpio_device_data {
+> +	int irq;			/* IRQ used as PPS source */
+> +	struct pps_device *pps;		/* PPS source device */
+> +	struct pps_source_info info;	/* PPS source information */
+> +	const struct pps_gpio_platform_data *pdata;
+> +};
+> +
+> +/*
+> + * Report the PPS event
+> + */
+> +
+> +static irqreturn_t pps_gpio_irq_handler(int irq, void *data)
+> +{
+> +	const struct pps_gpio_device_data *info;
+> +	struct pps_event_time ts;
+> +	int rising_edge;
+> +
+> +	/* Get the time stamp first */
+> +	pps_get_ts(&ts);
+> +
+> +	info = (const struct pps_gpio_device_data *)data;
+> +
+> +	rising_edge = gpio_get_value(info->pdata->gpio_pin);
+> +	if ((rising_edge && !info->pdata->assert_falling_edge) ||
+> +			(!rising_edge && info->pdata->assert_falling_edge))
+> +		pps_event(info->pps, &ts, PPS_CAPTUREASSERT, NULL);
+> +	else if (info->pdata->capture_clear &&
+> +			((rising_edge && info->pdata->assert_falling_edge) ||
+> +			 (!rising_edge && !info->pdata->assert_falling_edge)))
+> +		pps_event(info->pps, &ts, PPS_CAPTURECLEAR, NULL);
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int pps_gpio_setup(struct platform_device *pdev)
+> +{
+> +	int ret;
+> +	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
+> +
+> +	ret = gpio_request(pdata->gpio_pin, pdata->gpio_label);
+> +	if (ret) {
+> +		pr_warning("failed to request GPIO %u\n", pdata->gpio_pin);
+> +		return -1;
+> +	}
+> +
+> +	ret = gpio_direction_input(pdata->gpio_pin);
+> +	if (ret) {
+> +		pr_warning("failed to set pin direction\n");
+> +		return -1;
 
-Since I made the effort of digging into the lockdep code, you can
-actually add my 
- Reviewed-by: Florian Mickler <florian@mickler.org>
+I think you should release the requested GPIO above before
+returning...
 
-Regards,
-Flo
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static unsigned long
+> +get_irqf_trigger_flags(const struct pps_gpio_platform_data *pdata)
+> +{
+> +	unsigned long flags = pdata->assert_falling_edge ?
+> +		IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING;
+> +
+> +	if (pdata->capture_clear) {
+> +		flags |= ((flags & IRQF_TRIGGER_RISING) ?
+> +				IRQF_TRIGGER_FALLING : IRQF_TRIGGER_RISING);
+> +	}
+> +
+> +	return flags;
+> +}
+> +
+> +static int pps_gpio_probe(struct platform_device *pdev)
+> +{
+> +	struct pps_gpio_device_data *data;
+> +	int irq;
+> +	int ret;
+> +	int pps_default_params;
+> +	const struct pps_gpio_platform_data *pdata = pdev->dev.platform_data;
+> +
+> +
+> +	/* GPIO setup */
+> +	ret = pps_gpio_setup(pdev);
+> +	if (ret)
+> +		return -EINVAL;
+> +
+> +	/* IRQ setup */
+> +	irq = gpio_to_irq(pdata->gpio_pin);
+> +	if (irq < 0) {
+> +		pr_err("failed to map GPIO to IRQ: %d\n", irq);
+> +		return -EINVAL;
+> +	}
+> +
+> +	/* allocate space for device info */
+> +	data = kzalloc(sizeof(struct pps_gpio_device_data), GFP_KERNEL);
+> +	if (data == NULL)
+> +		return -ENOMEM;
+> +
+> +	/* initialize PPS specific parts of the bookkeeping data structure. */
+> +	data->info.mode = PPS_CAPTUREASSERT | PPS_OFFSETASSERT |
+> +		PPS_ECHOASSERT | PPS_CANWAIT | PPS_TSFMT_TSPEC;
+> +	if (pdata->capture_clear)
+> +		data->info.mode |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR |
+> +			PPS_ECHOCLEAR;
+> +	data->info.owner = THIS_MODULE;
+> +	snprintf(data->info.name, PPS_MAX_NAME_LEN - 1, "%s.%d",
+> +		 pdev->name, pdev->id);
+> +
+> +	/* register PPS source */
+> +	pps_default_params = PPS_CAPTUREASSERT | PPS_OFFSETASSERT;
+> +	if (pdata->capture_clear)
+> +		pps_default_params |= PPS_CAPTURECLEAR | PPS_OFFSETCLEAR;
+> +	data->pps = pps_register_source(&data->info, pps_default_params);
+> +	if (data->pps == NULL) {
+> +		kfree(data);
+> +		pr_err("failed to register IRQ %d as PPS source\n", irq);
+> +		return -EINVAL;
+> +	}
+> +
+> +	data->irq = irq;
+> +	data->pdata = pdata;
+> +
+> +	/* register IRQ interrupt handler */
+> +	ret = request_irq(irq, pps_gpio_irq_handler,
+> +			get_irqf_trigger_flags(pdata), data->info.name, data);
+> +	if (ret) {
+> +		pps_unregister_source(data->pps);
+> +		kfree(data);
+> +		pr_err("failed to acquire IRQ %d\n", irq);
+> +		return -EINVAL;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, data);
+> +	dev_info(data->pps->dev, "Registered IRQ %d as PPS source\n", irq);
+> +
+> +	return 0;
+> +}
+> +
+> +static int pps_gpio_remove(struct platform_device *pdev)
+> +{
+> +	struct pps_gpio_device_data *data = platform_get_drvdata(pdev);
+> +	const struct pps_gpio_platform_data *pdata = data->pdata;
+> +
+> +	platform_set_drvdata(pdev, NULL);
+> +	free_irq(data->irq, data);
+> +	gpio_free(pdata->gpio_pin);
+> +	pps_unregister_source(data->pps);
+> +	pr_info("removed IRQ %d as PPS source\n", data->irq);
+> +	kfree(data);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver pps_gpio_driver = {
+> +	.probe		= pps_gpio_probe,
+> +	.remove		=  __devexit_p(pps_gpio_remove),
+> +	.driver		= {
+> +		.name	= PPS_GPIO_NAME,
+> +		.owner	= THIS_MODULE
+> +	},
+> +};
+> +
+> +static int __init pps_gpio_init(void)
+> +{
+> +	int ret = platform_driver_register(&pps_gpio_driver);
+> +	if (ret < 0)
+> +		pr_err("failed to register platform driver\n");
+> +	return ret;
+> +}
+> +
+> +static void __exit pps_gpio_exit(void)
+> +{
+> +	platform_driver_unregister(&pps_gpio_driver);
+> +	pr_debug("unregistered platform driver\n");
+> +}
+> +
+> +module_init(pps_gpio_init);
+> +module_exit(pps_gpio_exit);
+> +
+> +MODULE_AUTHOR("Ricardo Martins <rasm@fe.up.pt>");
+> +MODULE_AUTHOR("James Nuss <jamesnuss@nanometrics.ca>");
+> +MODULE_DESCRIPTION("Use GPIO pin as PPS source");
+> +MODULE_LICENSE("GPL");
+> +MODULE_VERSION(PPS_GPIO_VERSION);
+> diff --git a/include/linux/pps-gpio.h b/include/linux/pps-gpio.h
+> new file mode 100644
+> index 0000000..0035abe
+> --- /dev/null
+> +++ b/include/linux/pps-gpio.h
+> @@ -0,0 +1,32 @@
+> +/*
+> + * pps-gpio.h -- PPS client for GPIOs
+> + *
+> + *
+> + * Copyright (C) 2011 James Nuss <jamesnuss@nanometrics.ca>
+> + *
+> + *   This program is free software; you can redistribute it and/or modify
+> + *   it under the terms of the GNU General Public License as published by
+> + *   the Free Software Foundation; either version 2 of the License, or
+> + *   (at your option) any later version.
+> + *
+> + *   This program is distributed in the hope that it will be useful,
+> + *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + *   GNU General Public License for more details.
+> + *
+> + *   You should have received a copy of the GNU General Public License
+> + *   along with this program; if not, write to the Free Software
+> + *   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+> + */
+> +
+> +#ifndef _PPS_GPIO_H
+> +#define _PPS_GPIO_H
+> +
+> +struct pps_gpio_platform_data {
+> +	bool assert_falling_edge;
+> +	bool capture_clear;
+> +	unsigned int gpio_pin;
+> +	const char *gpio_label;
+> +};
+> +
+> +#endif
+> -- 
+> 1.7.1
 
+It's ok for me. Fix the above error and resubmit.
+
+Ciao,
+
+Rodolfo
+
+-- 
+
+GNU/Linux Solutions                  e-mail: giometti@enneenne.com
+Linux Device Driver                          giometti@linux.it
+Embedded Systems                     phone:  +39 349 2432127
+UNIX programming                     skype:  rodolfo.giometti
+Freelance ICT Italia - Consulente ICT Italia - www.consulenti-ict.it
