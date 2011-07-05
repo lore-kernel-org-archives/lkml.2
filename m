@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932249Ab1GELbx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:31:53 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54202 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932176Ab1GELbv (ORCPT
+	id S932259Ab1GELeI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 07:34:08 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:46615 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932176Ab1GELeG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:31:51 -0400
-From: Arnd Bergmann <arnd@arndb.de>
+	Tue, 5 Jul 2011 07:34:06 -0400
+Date: Tue, 5 Jul 2011 12:33:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 3/8] mm: alloc_contig_range() added
-Date: Tue, 5 Jul 2011 13:31:17 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
 Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org, Michal Nazarewicz <mina86@mina86.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        linaro-mm-sig@lists.linaro.org, Daniel Walker <dwalker@codeaurora.org>,
+        Arnd Bergmann <arnd@arndb.de>, Jonathan Corbet <corbet@lwn.net>,
+        Mel Gorman <mel@csn.ul.ie>, Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Michal Nazarewicz <mina86@mina86.com>,
         Jesse Barker <jesse.barker@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-4-git-send-email-m.szyprowski@samsung.com>
-In-Reply-To: <1309851710-3828-4-git-send-email-m.szyprowski@samsung.com>
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
+Message-ID: <20110705113345.GA8286@n2100.arm.linux.org.uk>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107051331.17661.arnd@arndb.de>
-X-Provags-ID: V02:K0:XBlSSYITDFfzdSr4g5KcHPHgqFb8Q2AbyWJE/jcPaOF
- 0PbKou84o5S5IyW3+a/AdEkzyuAzF3e1RZlzvQaBVrXOC1F3RK
- q3qTn1NWIkt9mxZ3wgcT2rT75lvYEXt2r+i+xOsc0GaIOWdW/r
- B3qpUi/s9PQUucRGr6RsaNYcbOA0OU8tibSzsNS5qauEIqYEDh
- CSHRABWz3ubsCHQwDlKag==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 05 July 2011, Marek Szyprowski wrote:
-> From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+On Tue, Jul 05, 2011 at 09:41:48AM +0200, Marek Szyprowski wrote:
+> The Contiguous Memory Allocator is a set of helper functions for DMA
+> mapping framework that improves allocations of contiguous memory chunks.
 > 
-> This commit adds the alloc_contig_range() function which tries
-> to allecate given range of pages.  It tries to migrate all
-> already allocated pages that fall in the range thus freeing them.
-> Once all pages in the range are freed they are removed from the
-> buddy system thus allocated for the caller to use.
+> CMA grabs memory on system boot, marks it with CMA_MIGRATE_TYPE and
+> gives back to the system. Kernel is allowed to allocate movable pages
+> within CMA's managed memory so that it can be used for example for page
+> cache when DMA mapping do not use it. On dma_alloc_from_contiguous()
+> request such pages are migrated out of CMA area to free required
+> contiguous block and fulfill the request. This allows to allocate large
+> contiguous chunks of memory at any time assuming that there is enough
+> free memory available in the system.
 > 
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> [m.szyprowski: renamed some variables for easier code reading]
-> Signed-off-by: Marek Szyprowski <m.szyprowski@samsung.com>
-> CC: Michal Nazarewicz <mina86@mina86.com>
+> This code is heavily based on earlier works by Michal Nazarewicz.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+And how are you addressing the technical concerns about aliasing of
+cache attributes which I keep bringing up with this and you keep
+ignoring and telling me that I'm standing in your way.
