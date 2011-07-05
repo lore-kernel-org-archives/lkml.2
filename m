@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751301Ab1GERdD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 13:33:03 -0400
-Received: from elasmtp-galgo.atl.sa.earthlink.net ([209.86.89.61]:57769 "EHLO
-	elasmtp-galgo.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750884Ab1GERdB (ORCPT
+	id S1751529Ab1GERdo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 13:33:44 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:34705 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750823Ab1GERdn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 13:33:01 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=e3SGrvVXOUvKT53dEdKc2Iwc6pxLBTtBbwUr65Eo/RzRcDVKtftbTIRv38bqwZzx;
-  h=Received:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Message-ID: <4E134ACB.9020002@earthlink.net>
-Date: Tue, 05 Jul 2011 13:32:59 -0400
-From: Stephen Clark <sclark46@earthlink.net>
-Reply-To: sclark46@earthlink.net
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	Tue, 5 Jul 2011 13:33:43 -0400
+Message-ID: <4E134AF0.1090209@canonical.com>
+Date: Tue, 05 Jul 2011 10:33:36 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: kernel -2.6.35.13 longterm
-References: <4E13212D.3020005@earthlink.net> <20110705150557.GA2348@kroah.com>
-In-Reply-To: <20110705150557.GA2348@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: djkurtz@chromium.org
+CC: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
+        olofj@chromium.org
+Subject: Re: [PATCH 01/12] Input: synaptics - cleanup 0x0c query documentation
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org> <1309324042-22943-2-git-send-email-djkurtz@chromium.org>
+In-Reply-To: <1309324042-22943-2-git-send-email-djkurtz@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: a437fbc6971e80f61aa676d7e74259b7b3291a7d08dfec7958d9b72ef969a1b7974924ab00e4ee72350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 69.22.83.66
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/05/2011 11:05 AM, Greg KH wrote:
-> On Tue, Jul 05, 2011 at 10:35:25AM -0400, Stephen Clark wrote:
->
->> Hello,
->>
->> Is it possible to get the following patches included in the longterm kernel
->> 2.6.35.13?
->>
-> Possibly, but you need to email the correct person and email address,
-> none of which you did :)
->
-> Try stable@kernel.org, and the .35-longterm maintainer (hint, it's not
-> me.)
->
->
-Ok - hmmm maintainers in 2.6.35.13 still lists you - but I'll look at a later 
-kernel maintainers file.
->> They let linux behave according to:
->>
->> "Basic Requirements for IPv6 Customer Edge Routers
->>     draft-ietf-v6ops-ipv6-cpe-router-09"
->>
-> That looks like a new feature, not a regression or bugfix, right?
->
-> Did you read Documentation/stable_kernel_rules.txt?
->
->
-Not til just now. Yes it is a new feature, but with IPV6 it is seems that it 
-would be of use.
-I know that my company needs it as we are moving off of FreeBSD to Linux for our
-fw/vpn/router appliance. The alternative is to just keep applying the patch myself.
+On 06/28/2011 10:07 PM, djkurtz@chromium.org wrote:
+> From: Daniel Kurtz <djkurtz@chromium.org>
+> 
+> Convert some spaces to tabs.
+> Reorder defines to match bit ordering.
+> Add defines for all bits.
+> 
+> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
+> ---
+>  drivers/input/mouse/synaptics.h |   16 +++++++++++-----
+>  1 files changed, 11 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
+> index 7453938..34bedde 100644
+> --- a/drivers/input/mouse/synaptics.h
+> +++ b/drivers/input/mouse/synaptics.h
+> @@ -66,18 +66,24 @@
+>   * 1	0x60	multifinger mode	identifies firmware finger counting
+>   *					(not reporting!) algorithm.
+>   *					Not particularly meaningful
+> - * 1	0x80    covered pad		W clipped to 14, 15 == pad mostly covered
+> - * 2	0x01    clickpad bit 1		2-button ClickPad
+> - * 2	0x02    deluxe LED controls	touchpad support LED commands
+> + * 1	0x80	covered pad		W clipped to 14, 15 == pad mostly covered
+> + * 2	0x01	clickpad bit 1		2-button ClickPad
+> + * 2	0x02	deluxe LED controls	touchpad support LED commands
+>   *					ala multimedia control bar
+>   * 2	0x04	reduced filtering	firmware does less filtering on
+>   *					position data, driver should watch
+>   *					for noise.
+>   */
+> -#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
+> -#define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
+> +#define SYN_CAP_ADJ_THRESHOLD(ex0c)	((ex0c) & 0x010000)
+>  #define SYN_CAP_MAX_DIMENSIONS(ex0c)	((ex0c) & 0x020000)
+> +#define SYN_CAP_CLEARPAD(ex0c)		((ex0c) & 0x040000)
+>  #define SYN_CAP_ADV_GESTURE(ex0c)	((ex0c) & 0x080000)
+> +#define SYN_CAP_CLICKPAD(ex0c)		((ex0c) & 0x100000) /* 1-button ClickPad */
+> +#define SYN_CAP_MULTIFINGER_MODE(ex0c)	((ex0c) & 0x600000)
+> +#define SYN_CAP_COVERED_PAD(ex0c)	((ex0c) & 0x800000)
+> +#define SYN_CAP_CLICKPAD2BTN(ex0c)	((ex0c) & 0x000100) /* 2-button ClickPad */
+> +#define SYN_CAP_DELUXE_LED(ex0c)	((ex0c) & 0x000200)
+> +#define SYN_CAP_REDUCED_FILTERING(ex0c)	((ex0c) & 0x000400)
+>  
+>  /* synaptics modes query bits */
+>  #define SYN_MODE_ABSOLUTE(m)		((m) & (1 << 7))
 
->> From: Thomas Graf
->> Subject: [PATCH] ipv6: add special mode accept_ra=2 to accept RA
->> while configured as router
->> Date: Friday, September 3, 2010 - 5:59 am
->>
->>
-> You forgot to mention what the git commit id this is upstream in Linus's
-> branch, and to copy the people involved in the original patch (author,
-> subsystem maintainer, etc.) to see if they agree it should go in.
->
->
-How in the world do you get the commit info?
-> greg k-h
->
->
-Thanks for the response - I'll see if I can get all the info and do a proper 
-submission.
+I may not be the most knowledgeable developer on Synaptics, but I think
+I'm somewhat knowledgeable and I can't figure out what each of the
+bitmasks does now. Since we now have many of them defined, could you add
+documentation about what each means? For example, I don't know if
+SYN_CAP_CLICKPAD is set in conjunction with SYN_CAP_CLICKPAD2BTN, or if
+they are mutually exclusive. I also don't know what SYN_CAP_CLICKPAD2BTN
+means anyways :).
 
-Regards,
-Steve
+I'm curious, are you basing this work on documentation or
+reverse-engineering? Maybe you can't say :). It would be awesome if
+someone at Synaptics would just release the documentation for these
+advanced features already...
 
--- 
+Thanks!
 
-"They that give up essential liberty to obtain temporary safety,
-deserve neither liberty nor safety."  (Ben Franklin)
-
-"The course of history shows that as a government grows, liberty
-decreases."  (Thomas Jefferson)
-
-
-
+-- Chase
