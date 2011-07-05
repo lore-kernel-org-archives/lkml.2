@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab1GEThK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 15:37:10 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:58121 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753857Ab1GEThH (ORCPT
+	id S1754481Ab1GEThV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 15:37:21 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:65238 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753909Ab1GEThT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 15:37:07 -0400
-Date: Tue, 5 Jul 2011 15:37:04 -0400
+	Tue, 5 Jul 2011 15:37:19 -0400
+Date: Tue, 5 Jul 2011 15:37:15 -0400
 From: Eric B Munson <emunson@mgebm.net>
 To: Glauber Costa <glommer@redhat.com>
 Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
@@ -15,38 +15,46 @@ Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
         Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
         Peter Zijlstra <peterz@infradead.org>, Avi Kivity <avi@redhat.com>,
         Anthony Liguori <aliguori@us.ibm.com>
-Subject: Re: [PATCH v5 7/9] KVM-GST: KVM Steal time accounting
-Message-ID: <20110705193704.GG3436@mgebm.net>
+Subject: Re: [PATCH v5 8/9] KVM-GST: adjust scheduler cpu power
+Message-ID: <20110705193715.GH3436@mgebm.net>
 References: <1309793548-16714-1-git-send-email-glommer@redhat.com>
- <1309793548-16714-8-git-send-email-glommer@redhat.com>
+ <1309793548-16714-9-git-send-email-glommer@redhat.com>
 MIME-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="V32M1hWVjliPHW+c"
+	protocol="application/pgp-signature"; boundary="X1xGqyAVbSpAWs5A"
 Content-Disposition: inline
-In-Reply-To: <1309793548-16714-8-git-send-email-glommer@redhat.com>
+In-Reply-To: <1309793548-16714-9-git-send-email-glommer@redhat.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
---V32M1hWVjliPHW+c
+--X1xGqyAVbSpAWs5A
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
 On Mon, 04 Jul 2011, Glauber Costa wrote:
 
-> This patch accounts steal time time in account_process_tick.
-> If one or more tick is considered stolen in the current
-> accounting cycle, user/system accounting is skipped. Idle is fine,
-> since the hypervisor does not report steal time if the guest
-> is halted.
+> This patch makes update_rq_clock() aware of steal time.
+> The mechanism of operation is not different from irq_time,
+> and follows the same principles. This lives in a CONFIG
+> option itself, and can be compiled out independently of
+> the rest of steal time reporting. The effect of disabling it
+> is that the scheduler will still report steal time (that cannot be
+> disabled), but won't use this information for cpu power adjustments.
 >=20
-> Accounting steal time from the core scheduler give us the
-> advantage of direct acess to the runqueue data. In a later
-> opportunity, it can be used to tweak cpu power and make
-> the scheduler aware of the time it lost.
+> Everytime update_rq_clock_task() is invoked, we query information
+> about how much time was stolen since last call, and feed it into
+> sched_rt_avg_update().
+>=20
+> Although steal time reporting in account_process_tick() keeps
+> track of the last time we read the steal clock, in prev_steal_time,
+> this patch do it independently using another field,
+> prev_steal_time_rq. This is because otherwise, information about time
+> accounted in update_process_tick() would never reach us in update_rq_cloc=
+k().
 >=20
 > Signed-off-by: Glauber Costa <glommer@redhat.com>
 > CC: Rik van Riel <riel@redhat.com>
@@ -58,20 +66,20 @@ On Mon, 04 Jul 2011, Glauber Costa wrote:
 
 Tested-by: Eric B Munson <emunson@mgebm.net>
 
---V32M1hWVjliPHW+c
+--X1xGqyAVbSpAWs5A
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.11 (GNU/Linux)
 
-iQEcBAEBAgAGBQJOE2fgAAoJEH65iIruGRnNKpgH/2ByIkD5uhDD0QwxXrffsN4M
-KKt/PqMRylOh8bBWObL/XDfDDP6upey8O67voFJSFlLPQMNlO1SUsAW6c4Wk5FKp
-9bhXAskqHIY0I4OBzpZqoyYss+/QVux5T1dNWT6cWD27REITqJoy6qJT1w8zVQ1Q
-aX+4fJcqXXEzYk5MYIxVsH1GTA7dz0fE5nF8CmfOi6hpbNb+LVl6JTsq+qdk8lQx
-2eA9dCXKjzR8nRAkMmLqVECLRxJMcUrr/0D1VULDYGAR01rOMtyI2nJFDR0UAVPh
-eF/15XPv4isE0A9M07NXfD2nJn+RRbeTKxnBnqO1Z39nLdf5vr9H3SJiAkyIHKE=
-=iUdl
+iQEcBAEBAgAGBQJOE2frAAoJEH65iIruGRnNfwoIAJnbEKqoxNAh9vMDw6DiceQY
+xzkClikp4MBpEVb4e92yx9m7DtdXIWeFhJEtoZxWeDqRXs8fr/xlC0WgtgC2COW+
+9Rg5xbgQPwjbKp6Tfjq5hZNYuvNsUw80eXCnkT1Jaid/ATuDlTBDynAgCwuecaYv
+yxoFB1950TL6Y9w/ExK9PD7x7LFr7cIXh1ZUs5J8BR7ea0BmVgWWhB42yGm+SiCL
+re6U16Tp29fsQMjWRJtS+ZUKqYFxmb4I0Ax6q+he1FZOAxX9YEtSK/yPouEDFcoM
+VhJN2O8f87oJe1Bxk69EJ3oZ1rlemUwxXTrzckbLdv0HpnWGOwLYx6+gRzENfJM=
+=viwk
 -----END PGP SIGNATURE-----
 
---V32M1hWVjliPHW+c--
+--X1xGqyAVbSpAWs5A--
