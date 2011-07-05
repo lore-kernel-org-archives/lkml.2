@@ -1,310 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752209Ab1GEBHK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 4 Jul 2011 21:07:10 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35313 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751624Ab1GEBHH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 4 Jul 2011 21:07:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,476,1304319600"; 
-   d="scan'208";a="26244680"
-From: Huang Ying <ying.huang@intel.com>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-        Tony Luck <tony.luck@intel.com>, ying.huang@intel.com,
-        linux-acpi@vger.kernel.org
-Subject: [RFC] ACPI, APEI, GHES, Error records content based throttle
-Date: Tue,  5 Jul 2011 09:07:03 +0800
-Message-Id: <1309828023-21842-1-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.5.4
+	id S1753013Ab1GECAc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 4 Jul 2011 22:00:32 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:64282 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752926Ab1GECAa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 4 Jul 2011 22:00:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110704101422.GA9308@in.ibm.com>
+References: <CAM2zO=AEHu9+z8ebdyocwiyr2fThbAC6On4dbbVD00x6VJmXEg@mail.gmail.com>
+	<20110704101422.GA9308@in.ibm.com>
+Date: Tue, 5 Jul 2011 10:00:29 +0800
+Message-ID: <CAM2zO=Csp3EvEQKoxZuKJzdWbsCexV-YYjxoaUefYSHawRmEDA@mail.gmail.com>
+Subject: Re: [PATCH] SAMPLES: kprobe_example: make it more easy to use
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: ananth@in.ibm.com
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=20cf30549ff12b416d04a748d9b3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch depends on APEI recoverable error printk support patch.
+--20cf30549ff12b416d04a748d9b3
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
 
-------------------------------------------------------->
-printk is used by GHES to report hardware errors.  Ratelimit is
-enforced on the printk to avoid too many hardware error reports in
-kernel log.  Because there may be thousands or even millions of
-corrected hardware errors during system running.
+On Mon, Jul 4, 2011 at 6:14 PM, Ananth N Mavinakayanahalli
+<ananth@in.ibm.com> wrote:
+> On Mon, Jul 04, 2011 at 03:27:39PM +0800, Yong Zhang wrote:
+>> From: Yong Zhang <yong.zhang0@gmail.com>
+>> Subject: [PATCH] SAMPLES: kprobe_example: make it more easy to use
+>
+> ...
+>
+>> - =C2=A0 =C2=A0 printk(KERN_INFO "post_handler: p->addr =3D 0x%p, flags =
+=3D 0x%lx\n",
+>> - =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 p->addr, regs->flags);
+>> + =C2=A0 =C2=A0 printk(KERN_INFO "post_handler: p->addr =3D 0x%p, ip =3D=
+ %lx,"
+>> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =
+" flags =3D 0x%lx\n",
+>> + =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 =C2=A0 p->addr, regs->ip, regs->fla=
+gs);
+>
+> You are probably better off using the instruction_pointer(regs) helper
+> here and elsewhere..
 
-Currently, a simple scheme is used.  That is, the total number of
-hardware error reporting is ratelimited.  This may cause some issues
-in practice.
+Ah, good to know this wrapper :)
 
-For example, there are two kinds of hardware errors occurred in
-system.  One is corrected memory error, because the fault memory
-address is accessed frequently, there may be hundreds error report
-per-second.  The other is corrected PCIe AER error, it will be
-reported once per-second.  Because they share one ratelimit control
-structure, it is highly possible that only memory error is reported.
-
-To avoid the above issue, an error record content based throttle
-algorithm is implemented in the patch.  Where after the first
-successful reporting, all error records that are same are throttled for
-some time, to let other kinds of error records have the opportunity to
-be reported.
-
-In above example, the memory errors will be throttled for some time,
-after being printked.  Then the PCIe AER error will be printked
-successfully.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
+Updated like below:
 ---
- drivers/acpi/apei/ghes.c |  177 ++++++++++++++++++++++++++++++++++++++++++++---
- 1 file changed, 169 insertions(+), 8 deletions(-)
+From: Yong Zhang <yong.zhang0@gmail.com>
+Subject: [PATCH V2] SAMPLES: kprobe_example: make it more easy to use
 
---- a/drivers/acpi/apei/ghes.c
-+++ b/drivers/acpi/apei/ghes.c
-@@ -60,6 +60,18 @@
- 
- #define GHES_ESTATUS_POOL_MIN_ALLOC_ORDER	3
- 
-+#define GHES_ESTATUS_CACHES_SIZE		4
+Add parameter 'func' and 'offset' to it, thus make it more easy
+to kprobe certain offset/function.
+
+Also print the next PC in post_handler(), thus we can ealily
+tell if there is something is wrong when kprobe fails. This
+is inspirited by a bug which explores an issue on POWERPC-32
+when intruction is emulated: https://lkml.org/lkml/2011/6/24/53
+
+Signed-off-by: Yong Zhang <yong.zhang0@gmail.com>
+---
+Changes from V1:
+  Using wrapper function instruction_pointer() to get next PC.
+
+ samples/kprobes/kprobe_example.c |   37 +++++++++++++++++++++++++---------=
+---
+ 1 files changed, 25 insertions(+), 12 deletions(-)
+
+diff --git a/samples/kprobes/kprobe_example.c b/samples/kprobes/kprobe_exam=
+ple.c
+index ebf5e0c..8394e98 100644
+--- a/samples/kprobes/kprobe_example.c
++++ b/samples/kprobes/kprobe_example.c
+@@ -13,11 +13,18 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/kprobes.h>
++#include <linux/limits.h>
 +
-+#define GHES_ESTATUS_IN_CACHE_MAX_NSEC	(10 * NSEC_PER_SEC)
-+/* Prevent too many caches are allocated because of RCU */
-+#define GHES_ESTATUS_CACHE_ALLOCED_MAX	(GHES_ESTATUS_CACHES_SIZE * 3 / 2)
++static char func_name[NAME_MAX] =3D "do_fork";
++module_param_string(func, func_name, NAME_MAX, S_IRUGO);
++MODULE_PARM_DESC(func, "Function to kprobe");
 +
-+#define GHES_ESTATUS_CACHE_LEN(estatus_len)			\
-+	(sizeof(struct ghes_estatus_cache) + (estatus_len))
-+#define GHES_ESTATUS_FROM_CACHE(estatus_cache)			\
-+	((struct acpi_hest_generic_status *)			\
-+	 ((struct ghes_estatus_cache *)(estatus_cache) + 1))
-+
- #define GHES_ESTATUS_NODE_LEN(estatus_len)			\
- 	(sizeof(struct ghes_estatus_node) + (estatus_len))
- #define GHES_ESTATUS_FROM_NODE(estatus_node)				\
-@@ -94,6 +106,14 @@ struct ghes_estatus_node {
- 	struct acpi_hest_generic *generic;
- };
- 
-+struct ghes_estatus_cache {
-+	u32 estatus_len;
-+	atomic_t count;
-+	struct acpi_hest_generic *generic;
-+	unsigned long long time_in;
-+	struct rcu_head rcu;
-+};
-+
- int ghes_disable;
- module_param_named(disable, ghes_disable, bool, 0);
- 
-@@ -154,6 +174,9 @@ static unsigned long ghes_estatus_pool_s
- static struct llist_head ghes_estatus_llist;
- static struct irq_work ghes_proc_irq_work;
- 
-+struct ghes_estatus_cache *ghes_estatus_caches[GHES_ESTATUS_CACHES_SIZE];
-+static atomic_t ghes_estatus_cache_alloced;
-+
- static int ghes_ioremap_init(void)
- {
- 	ghes_ioremap_area = __get_vm_area(PAGE_SIZE * GHES_IOREMAP_PAGES,
-@@ -458,9 +481,9 @@ static void __ghes_print_estatus(const c
- 	apei_estatus_print(pfx, estatus);
- }
- 
--static void ghes_print_estatus(const char *pfx,
--			       const struct acpi_hest_generic *generic,
--			       const struct acpi_hest_generic_status *estatus)
-+static int ghes_print_estatus(const char *pfx,
-+			      const struct acpi_hest_generic *generic,
-+			      const struct acpi_hest_generic_status *estatus)
- {
- 	/* Not more than 2 messages every 5 seconds */
- 	static DEFINE_RATELIMIT_STATE(ratelimit_corrected, 5*HZ, 2);
-@@ -471,8 +494,137 @@ static void ghes_print_estatus(const cha
- 		ratelimit = &ratelimit_corrected;
- 	else
- 		ratelimit = &ratelimit_uncorrected;
--	if (__ratelimit(ratelimit))
-+	if (__ratelimit(ratelimit)) {
- 		__ghes_print_estatus(pfx, generic, estatus);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+/*
-+ * GHES error status reporting throttle, to report more kinds of
-+ * errors, instead of just most frequently occurred errors.
-+ */
-+static int ghes_estatus_cached(struct acpi_hest_generic_status *estatus)
-+{
-+	u32 len;
-+	int i, cached = 0;
-+	unsigned long long now;
-+	struct ghes_estatus_cache *cache;
-+	struct acpi_hest_generic_status *cache_estatus;
-+
-+	len = apei_estatus_len(estatus);
-+	rcu_read_lock();
-+	for (i = 0; i < GHES_ESTATUS_CACHES_SIZE; i++) {
-+		cache = rcu_dereference(ghes_estatus_caches[i]);
-+		if (cache == NULL)
-+			continue;
-+		if (len != cache->estatus_len)
-+			continue;
-+		cache_estatus = GHES_ESTATUS_FROM_CACHE(cache);
-+		if (memcmp(estatus, cache_estatus, len))
-+			continue;
-+		atomic_inc(&cache->count);
-+		now = sched_clock();
-+		if (now - cache->time_in < GHES_ESTATUS_IN_CACHE_MAX_NSEC)
-+			cached = 1;
-+		break;
-+	}
-+	rcu_read_unlock();
-+	return cached;
-+}
-+
-+static struct ghes_estatus_cache *ghes_estatus_cache_alloc(
-+	struct acpi_hest_generic *generic,
-+	struct acpi_hest_generic_status *estatus)
-+{
-+	int alloced;
-+	u32 len, cache_len;
-+	struct ghes_estatus_cache *cache;
-+	struct acpi_hest_generic_status *cache_estatus;
-+
-+	alloced = atomic_add_return(1, &ghes_estatus_cache_alloced);
-+	if (alloced > GHES_ESTATUS_CACHE_ALLOCED_MAX) {
-+		atomic_dec(&ghes_estatus_cache_alloced);
-+		return NULL;
-+	}
-+	len = apei_estatus_len(estatus);
-+	cache_len = GHES_ESTATUS_CACHE_LEN(len);
-+	cache = (void *)gen_pool_alloc(ghes_estatus_pool, cache_len);
-+	if (!cache) {
-+		atomic_dec(&ghes_estatus_cache_alloced);
-+		return NULL;
-+	}
-+	cache_estatus = GHES_ESTATUS_FROM_CACHE(cache);
-+	memcpy(cache_estatus, estatus, len);
-+	cache->estatus_len = len;
-+	atomic_set(&cache->count, 0);
-+	cache->generic = generic;
-+	cache->time_in = sched_clock();
-+	return cache;
-+}
-+
-+static void ghes_estatus_cache_free(struct ghes_estatus_cache *cache)
-+{
-+	u32 len;
-+
-+	len = apei_estatus_len(GHES_ESTATUS_FROM_CACHE(cache));
-+	len = GHES_ESTATUS_CACHE_LEN(len);
-+	gen_pool_free(ghes_estatus_pool, (unsigned long)cache, len);
-+	atomic_dec(&ghes_estatus_cache_alloced);
-+}
-+
-+static void ghes_estatus_cache_rcu_free(struct rcu_head *head)
-+{
-+	struct ghes_estatus_cache *cache;
-+
-+	cache = container_of(head, struct ghes_estatus_cache, rcu);
-+	ghes_estatus_cache_free(cache);
-+}
-+
-+static void ghes_estatus_cache_add(
-+	struct acpi_hest_generic *generic,
-+	struct acpi_hest_generic_status *estatus)
-+{
-+	int i, slot = -1, count;
-+	unsigned long long now, duration, period, max_period = 0;
-+	struct ghes_estatus_cache *cache, *slot_cache = NULL, *new_cache;
-+
-+	new_cache = ghes_estatus_cache_alloc(generic, estatus);
-+	if (new_cache == NULL)
-+		return;
-+	rcu_read_lock();
-+	now = sched_clock();
-+	for (i = 0; i < GHES_ESTATUS_CACHES_SIZE; i++) {
-+		cache = rcu_dereference(ghes_estatus_caches[i]);
-+		if (cache == NULL) {
-+			slot = i;
-+			slot_cache = NULL;
-+			break;
-+		}
-+		duration = now - cache->time_in;
-+		if (duration >= GHES_ESTATUS_IN_CACHE_MAX_NSEC) {
-+			slot = i;
-+			slot_cache = cache;
-+			break;
-+		}
-+		count = atomic_read(&cache->count);
-+		period = duration / (count + 1);
-+		if (period > max_period) {
-+			max_period = period;
-+			slot = i;
-+			slot_cache = cache;
-+		}
-+	}
-+	/* new_cache must be put into array after its contents are written */
-+	smp_wmb();
-+	if (slot != -1 && cmpxchg(ghes_estatus_caches + slot,
-+				  slot_cache, new_cache) == slot_cache) {
-+		if (slot_cache)
-+			call_rcu(&slot_cache->rcu, ghes_estatus_cache_rcu_free);
-+	} else
-+		ghes_estatus_cache_free(new_cache);
-+	rcu_read_unlock();
- }
- 
- static int ghes_proc(struct ghes *ghes)
-@@ -482,9 +634,11 @@ static int ghes_proc(struct ghes *ghes)
- 	rc = ghes_read_estatus(ghes, 0);
- 	if (rc)
- 		goto out;
--	ghes_print_estatus(NULL, ghes->generic, ghes->estatus);
-+	if (!ghes_estatus_cached(ghes->estatus)) {
-+		if (ghes_print_estatus(NULL, ghes->generic, ghes->estatus))
-+			ghes_estatus_cache_add(ghes->generic, ghes->estatus);
-+	}
- 	ghes_do_proc(ghes->estatus);
--
- out:
- 	ghes_clear_estatus(ghes);
- 	return 0;
-@@ -546,6 +700,7 @@ static void ghes_proc_in_irq(struct irq_
- {
- 	struct llist_node *llnode, *next, *tail = NULL;
- 	struct ghes_estatus_node *estatus_node;
-+	struct acpi_hest_generic *generic;
- 	struct acpi_hest_generic_status *estatus;
- 	u32 len, node_len;
- 
-@@ -569,7 +724,11 @@ static void ghes_proc_in_irq(struct irq_
- 		len = apei_estatus_len(estatus);
- 		node_len = GHES_ESTATUS_NODE_LEN(len);
- 		ghes_do_proc(estatus);
--		ghes_print_estatus(NULL, estatus_node->generic, estatus);
-+		if (!ghes_estatus_cached(estatus)) {
-+			generic = estatus_node->generic;
-+			if (ghes_print_estatus(NULL, generic, estatus))
-+				ghes_estatus_cache_add(generic, estatus);
-+		}
- 		gen_pool_free(ghes_estatus_pool, (unsigned long)estatus_node,
- 			      node_len);
- 		llnode = next;
-@@ -621,7 +780,10 @@ static int ghes_notify_nmi(struct notifi
++static unsigned int offset;
++module_param(offset, uint, S_IRUGO);
++MODULE_PARM_DESC(offset, "Function offset to kprobe");
+
+ /* For each probe you need to allocate a kprobe structure */
+-static struct kprobe kp =3D {
+-	.symbol_name	=3D "do_fork",
+-};
++static struct kprobe kp;
+
+ /* kprobe pre_handler: called just before the probed instruction is execut=
+ed */
+ static int handler_pre(struct kprobe *p, struct pt_regs *regs)
+@@ -25,17 +32,17 @@ static int handler_pre(struct kprobe *p, struct
+pt_regs *regs)
+ #ifdef CONFIG_X86
+ 	printk(KERN_INFO "pre_handler: p->addr =3D 0x%p, ip =3D %lx,"
+ 			" flags =3D 0x%lx\n",
+-		p->addr, regs->ip, regs->flags);
++		p->addr, instruction_pointer(regs), regs->flags);
  #endif
- 		if (!(ghes->flags & GHES_TO_CLEAR))
- 			continue;
-+		ghes_clear_estatus(ghes);
- #ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
-+		if (ghes_estatus_cached(ghes->estatus))
-+			continue;
- 		/* Save estatus for further processing in IRQ context */
- 		len = apei_estatus_len(ghes->estatus);
- 		node_len = GHES_ESTATUS_NODE_LEN(len);
-@@ -634,7 +796,6 @@ static int ghes_notify_nmi(struct notifi
- 			llist_add(&estatus_node->llnode, &ghes_estatus_llist);
- 		}
+ #ifdef CONFIG_PPC
+ 	printk(KERN_INFO "pre_handler: p->addr =3D 0x%p, nip =3D 0x%lx,"
+ 			" msr =3D 0x%lx\n",
+-		p->addr, regs->nip, regs->msr);
++		p->addr, instruction_pointer(regs), regs->msr);
  #endif
--		ghes_clear_estatus(ghes);
- 	}
- #ifdef CONFIG_ARCH_HAVE_NMI_SAFE_CMPXCHG
- 	irq_work_queue(&ghes_proc_irq_work);
+ #ifdef CONFIG_MIPS
+ 	printk(KERN_INFO "pre_handler: p->addr =3D 0x%p, epc =3D 0x%lx,"
+ 			" status =3D 0x%lx\n",
+-		p->addr, regs->cp0_epc, regs->cp0_status);
++		p->addr, instruction_pointer(regs), regs->cp0_status);
+ #endif
+
+ 	/* A dump_stack() here will give a stack backtrace */
+@@ -47,16 +54,20 @@ static void handler_post(struct kprobe *p, struct
+pt_regs *regs,
+ 				unsigned long flags)
+ {
+ #ifdef CONFIG_X86
+-	printk(KERN_INFO "post_handler: p->addr =3D 0x%p, flags =3D 0x%lx\n",
+-		p->addr, regs->flags);
++	printk(KERN_INFO "post_handler: p->addr =3D 0x%p, ip =3D %lx,"
++			" flags =3D 0x%lx\n",
++		p->addr, instruction_pointer(regs), regs->flags);
+ #endif
+ #ifdef CONFIG_PPC
+-	printk(KERN_INFO "post_handler: p->addr =3D 0x%p, msr =3D 0x%lx\n",
+-		p->addr, regs->msr);
++	printk(KERN_INFO "post_handler: p->addr =3D 0x%p, nip =3D 0x%lx,"
++			" msr =3D 0x%lx\n",
++		p->addr, instruction_pointer(regs), regs->msr);
++	dump_stack();
+ #endif
+ #ifdef CONFIG_MIPS
+-	printk(KERN_INFO "post_handler: p->addr =3D 0x%p, status =3D 0x%lx\n",
+-		p->addr, regs->cp0_status);
++	printk(KERN_INFO "post_handler: p->addr =3D 0x%p, epc =3D 0x%lx,"
++			" status =3D 0x%lx\n",
++		p->addr, instruction_pointer(regs), regs->cp0_status);
+ #endif
+ }
+
+@@ -76,6 +87,8 @@ static int handler_fault(struct kprobe *p, struct
+pt_regs *regs, int trapnr)
+ static int __init kprobe_init(void)
+ {
+ 	int ret;
++	kp.symbol_name =3D func_name;
++	kp.offset =3D offset;
+ 	kp.pre_handler =3D handler_pre;
+ 	kp.post_handler =3D handler_post;
+ 	kp.fault_handler =3D handler_fault;
+--=20
+1.7.4.1
+
+--20cf30549ff12b416d04a748d9b3
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-SAMPLES-kprobe_example-make-it-more-easy-to-use.patch"
+Content-Disposition: attachment; 
+	filename="0001-SAMPLES-kprobe_example-make-it-more-easy-to-use.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gpq7oo4c0
+
+RnJvbSAxYzU2MDE4ZTc3YTViM2UxM2MzOTQ4YTc0YTc0NDJkMTAzMmE2ZWM4IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBZb25nIFpoYW5nIDx5b25nLnpoYW5nMEBnbWFpbC5jb20+CkRh
+dGU6IE1vbiwgNCBKdWwgMjAxMSAxNToxMjozNiArMDgwMApTdWJqZWN0OiBbUEFUQ0hdIFNBTVBM
+RVM6IGtwcm9iZV9leGFtcGxlOiBtYWtlIGl0IG1vcmUgZWFzeSB0byB1c2UKCkFkZCBwYXJhbWV0
+ZXIgJ2Z1bmMnIGFuZCAnb2Zmc2V0JyB0byBpdCwgdGh1cyBtYWtlIGl0IG1vcmUgZWFzeQp0byBr
+cHJvYmUgY2VydGFpbiBvZmZzZXQvZnVuY3Rpb24uCgpBbHNvIHByaW50IHRoZSBuZXh0IFBDIGlu
+IHBvc3RfaGFuZGxlcigpLCB0aHVzIHdlIGNhbiBlYWxpbHkKdGVsbCBpZiB0aGVyZSBpcyBzb21l
+dGhpbmcgaXMgd3Jvbmcgd2hlbiBrcHJvYmUgZmFpbHMuIFRoaXMKaXMgaW5zcGlyaXRlZCBieSBh
+IGJ1ZyB3aGljaCBleHBsb3JlcyBhbiBpc3N1ZSBvbiBQT1dFUlBDLTMyCndoZW4gaW50cnVjdGlv
+biBpcyBlbXVsYXRlZDogaHR0cHM6Ly9sa21sLm9yZy9sa21sLzIwMTEvNi8yNC81MwoKU2lnbmVk
+LW9mZi1ieTogWW9uZyBaaGFuZyA8eW9uZy56aGFuZzBAZ21haWwuY29tPgotLS0KIHNhbXBsZXMv
+a3Byb2Jlcy9rcHJvYmVfZXhhbXBsZS5jIHwgICAzNyArKysrKysrKysrKysrKysrKysrKysrKysr
+LS0tLS0tLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDI1IGluc2VydGlvbnMoKyksIDEyIGRlbGV0
+aW9ucygtKQoKZGlmZiAtLWdpdCBhL3NhbXBsZXMva3Byb2Jlcy9rcHJvYmVfZXhhbXBsZS5jIGIv
+c2FtcGxlcy9rcHJvYmVzL2twcm9iZV9leGFtcGxlLmMKaW5kZXggZWJmNWUwYy4uODM5NGU5OCAx
+MDA2NDQKLS0tIGEvc2FtcGxlcy9rcHJvYmVzL2twcm9iZV9leGFtcGxlLmMKKysrIGIvc2FtcGxl
+cy9rcHJvYmVzL2twcm9iZV9leGFtcGxlLmMKQEAgLTEzLDExICsxMywxOCBAQAogI2luY2x1ZGUg
+PGxpbnV4L2tlcm5lbC5oPgogI2luY2x1ZGUgPGxpbnV4L21vZHVsZS5oPgogI2luY2x1ZGUgPGxp
+bnV4L2twcm9iZXMuaD4KKyNpbmNsdWRlIDxsaW51eC9saW1pdHMuaD4KKworc3RhdGljIGNoYXIg
+ZnVuY19uYW1lW05BTUVfTUFYXSA9ICJkb19mb3JrIjsKK21vZHVsZV9wYXJhbV9zdHJpbmcoZnVu
+YywgZnVuY19uYW1lLCBOQU1FX01BWCwgU19JUlVHTyk7CitNT0RVTEVfUEFSTV9ERVNDKGZ1bmMs
+ICJGdW5jdGlvbiB0byBrcHJvYmUiKTsKKworc3RhdGljIHVuc2lnbmVkIGludCBvZmZzZXQ7Citt
+b2R1bGVfcGFyYW0ob2Zmc2V0LCB1aW50LCBTX0lSVUdPKTsKK01PRFVMRV9QQVJNX0RFU0Mob2Zm
+c2V0LCAiRnVuY3Rpb24gb2Zmc2V0IHRvIGtwcm9iZSIpOwogCiAvKiBGb3IgZWFjaCBwcm9iZSB5
+b3UgbmVlZCB0byBhbGxvY2F0ZSBhIGtwcm9iZSBzdHJ1Y3R1cmUgKi8KLXN0YXRpYyBzdHJ1Y3Qg
+a3Byb2JlIGtwID0gewotCS5zeW1ib2xfbmFtZQk9ICJkb19mb3JrIiwKLX07CitzdGF0aWMgc3Ry
+dWN0IGtwcm9iZSBrcDsKIAogLyoga3Byb2JlIHByZV9oYW5kbGVyOiBjYWxsZWQganVzdCBiZWZv
+cmUgdGhlIHByb2JlZCBpbnN0cnVjdGlvbiBpcyBleGVjdXRlZCAqLwogc3RhdGljIGludCBoYW5k
+bGVyX3ByZShzdHJ1Y3Qga3Byb2JlICpwLCBzdHJ1Y3QgcHRfcmVncyAqcmVncykKQEAgLTI1LDE3
+ICszMiwxNyBAQCBzdGF0aWMgaW50IGhhbmRsZXJfcHJlKHN0cnVjdCBrcHJvYmUgKnAsIHN0cnVj
+dCBwdF9yZWdzICpyZWdzKQogI2lmZGVmIENPTkZJR19YODYKIAlwcmludGsoS0VSTl9JTkZPICJw
+cmVfaGFuZGxlcjogcC0+YWRkciA9IDB4JXAsIGlwID0gJWx4LCIKIAkJCSIgZmxhZ3MgPSAweCVs
+eFxuIiwKLQkJcC0+YWRkciwgcmVncy0+aXAsIHJlZ3MtPmZsYWdzKTsKKwkJcC0+YWRkciwgaW5z
+dHJ1Y3Rpb25fcG9pbnRlcihyZWdzKSwgcmVncy0+ZmxhZ3MpOwogI2VuZGlmCiAjaWZkZWYgQ09O
+RklHX1BQQwogCXByaW50ayhLRVJOX0lORk8gInByZV9oYW5kbGVyOiBwLT5hZGRyID0gMHglcCwg
+bmlwID0gMHglbHgsIgogCQkJIiBtc3IgPSAweCVseFxuIiwKLQkJcC0+YWRkciwgcmVncy0+bmlw
+LCByZWdzLT5tc3IpOworCQlwLT5hZGRyLCBpbnN0cnVjdGlvbl9wb2ludGVyKHJlZ3MpLCByZWdz
+LT5tc3IpOwogI2VuZGlmCiAjaWZkZWYgQ09ORklHX01JUFMKIAlwcmludGsoS0VSTl9JTkZPICJw
+cmVfaGFuZGxlcjogcC0+YWRkciA9IDB4JXAsIGVwYyA9IDB4JWx4LCIKIAkJCSIgc3RhdHVzID0g
+MHglbHhcbiIsCi0JCXAtPmFkZHIsIHJlZ3MtPmNwMF9lcGMsIHJlZ3MtPmNwMF9zdGF0dXMpOwor
+CQlwLT5hZGRyLCBpbnN0cnVjdGlvbl9wb2ludGVyKHJlZ3MpLCByZWdzLT5jcDBfc3RhdHVzKTsK
+ICNlbmRpZgogCiAJLyogQSBkdW1wX3N0YWNrKCkgaGVyZSB3aWxsIGdpdmUgYSBzdGFjayBiYWNr
+dHJhY2UgKi8KQEAgLTQ3LDE2ICs1NCwyMCBAQCBzdGF0aWMgdm9pZCBoYW5kbGVyX3Bvc3Qoc3Ry
+dWN0IGtwcm9iZSAqcCwgc3RydWN0IHB0X3JlZ3MgKnJlZ3MsCiAJCQkJdW5zaWduZWQgbG9uZyBm
+bGFncykKIHsKICNpZmRlZiBDT05GSUdfWDg2Ci0JcHJpbnRrKEtFUk5fSU5GTyAicG9zdF9oYW5k
+bGVyOiBwLT5hZGRyID0gMHglcCwgZmxhZ3MgPSAweCVseFxuIiwKLQkJcC0+YWRkciwgcmVncy0+
+ZmxhZ3MpOworCXByaW50ayhLRVJOX0lORk8gInBvc3RfaGFuZGxlcjogcC0+YWRkciA9IDB4JXAs
+IGlwID0gJWx4LCIKKwkJCSIgZmxhZ3MgPSAweCVseFxuIiwKKwkJcC0+YWRkciwgaW5zdHJ1Y3Rp
+b25fcG9pbnRlcihyZWdzKSwgcmVncy0+ZmxhZ3MpOwogI2VuZGlmCiAjaWZkZWYgQ09ORklHX1BQ
+QwotCXByaW50ayhLRVJOX0lORk8gInBvc3RfaGFuZGxlcjogcC0+YWRkciA9IDB4JXAsIG1zciA9
+IDB4JWx4XG4iLAotCQlwLT5hZGRyLCByZWdzLT5tc3IpOworCXByaW50ayhLRVJOX0lORk8gInBv
+c3RfaGFuZGxlcjogcC0+YWRkciA9IDB4JXAsIG5pcCA9IDB4JWx4LCIKKwkJCSIgbXNyID0gMHgl
+bHhcbiIsCisJCXAtPmFkZHIsIGluc3RydWN0aW9uX3BvaW50ZXIocmVncyksIHJlZ3MtPm1zcik7
+CisJZHVtcF9zdGFjaygpOwogI2VuZGlmCiAjaWZkZWYgQ09ORklHX01JUFMKLQlwcmludGsoS0VS
+Tl9JTkZPICJwb3N0X2hhbmRsZXI6IHAtPmFkZHIgPSAweCVwLCBzdGF0dXMgPSAweCVseFxuIiwK
+LQkJcC0+YWRkciwgcmVncy0+Y3AwX3N0YXR1cyk7CisJcHJpbnRrKEtFUk5fSU5GTyAicG9zdF9o
+YW5kbGVyOiBwLT5hZGRyID0gMHglcCwgZXBjID0gMHglbHgsIgorCQkJIiBzdGF0dXMgPSAweCVs
+eFxuIiwKKwkJcC0+YWRkciwgaW5zdHJ1Y3Rpb25fcG9pbnRlcihyZWdzKSwgcmVncy0+Y3AwX3N0
+YXR1cyk7CiAjZW5kaWYKIH0KIApAQCAtNzYsNiArODcsOCBAQCBzdGF0aWMgaW50IGhhbmRsZXJf
+ZmF1bHQoc3RydWN0IGtwcm9iZSAqcCwgc3RydWN0IHB0X3JlZ3MgKnJlZ3MsIGludCB0cmFwbnIp
+CiBzdGF0aWMgaW50IF9faW5pdCBrcHJvYmVfaW5pdCh2b2lkKQogewogCWludCByZXQ7CisJa3Au
+c3ltYm9sX25hbWUgPSBmdW5jX25hbWU7CisJa3Aub2Zmc2V0ID0gb2Zmc2V0OwogCWtwLnByZV9o
+YW5kbGVyID0gaGFuZGxlcl9wcmU7CiAJa3AucG9zdF9oYW5kbGVyID0gaGFuZGxlcl9wb3N0Owog
+CWtwLmZhdWx0X2hhbmRsZXIgPSBoYW5kbGVyX2ZhdWx0OwotLSAKMS43LjQuMQoK
+--20cf30549ff12b416d04a748d9b3--
