@@ -1,111 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752874Ab1GEVIw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 17:08:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33843 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608Ab1GEVIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 17:08:50 -0400
-Date: Tue, 5 Jul 2011 16:04:57 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 04/19] KVM: MMU: cache mmio info on page fault path
-Message-ID: <20110705190457.GA24417@amt.cnet>
-References: <4E0C3178.2080603@cn.fujitsu.com>
- <4E0C31EA.5070403@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E0C31EA.5070403@cn.fujitsu.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753466Ab1GEVN1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 17:13:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56965 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752625Ab1GEVN0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 17:13:26 -0400
+Date: Tue, 5 Jul 2011 14:13:01 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        rientjes@google.com, wilsons@start.ca, security@kernel.org,
+        kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH v2] proc: fix a race in do_io_accounting()
+Message-Id: <20110705141301.0d3594e0.akpm@linux-foundation.org>
+In-Reply-To: <20110704201339.GA5645@albatros>
+References: <20110703103925.GA2283@albatros>
+	<CA+55aFwfr-oAa-2L9O_rd9iZDyVr0b+gFQS=_R5PUxmhh3JEsg@mail.gmail.com>
+	<20110704201339.GA5645@albatros>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 04:20:58PM +0800, Xiao Guangrong wrote:
-> If the page fault is caused by mmio, we can cache the mmio info, later, we do
-> not need to walk guest page table and quickly know it is a mmio fault while we
-> emulate the mmio instruction
-> 
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/include/asm/kvm_host.h |    5 +++++
->  arch/x86/kvm/mmu.c              |   21 +++++++--------------
->  arch/x86/kvm/mmu.h              |   23 +++++++++++++++++++++++
->  arch/x86/kvm/paging_tmpl.h      |   21 ++++++++++++++-------
->  arch/x86/kvm/x86.c              |   11 +++++++++++
->  arch/x86/kvm/x86.h              |   36 ++++++++++++++++++++++++++++++++++++
->  6 files changed, 96 insertions(+), 21 deletions(-)
-> 
+<wakes up>
 
-> index 7086ca8..05310b1 100644
-> --- a/arch/x86/kvm/mmu.h
-> +++ b/arch/x86/kvm/mmu.h
-> @@ -76,4 +76,27 @@ static inline int is_present_gpte(unsigned long pte)
->  	return pte & PT_PRESENT_MASK;
->  }
->  
-> +static inline int is_writable_pte(unsigned long pte)
-> +{
-> +	return pte & PT_WRITABLE_MASK;
-> +}
-> +
-> +static inline bool is_write_protection(struct kvm_vcpu *vcpu)
-> +{
-> +	return kvm_read_cr0_bits(vcpu, X86_CR0_WP);
-> +}
-> +
-> +static inline bool check_write_user_access(struct kvm_vcpu *vcpu,
-> +					   bool write_fault, bool user_fault,
-> +					   unsigned long pte)
-> +{
-> +	if (unlikely(write_fault && !is_writable_pte(pte)
-> +	      && (user_fault || is_write_protection(vcpu))))
-> +		return false;
-> +
-> +	if (unlikely(user_fault && !(pte & PT_USER_MASK)))
-> +		return false;
-> +
-> +	return true;
-> +}
->  #endif
-> diff --git a/arch/x86/kvm/paging_tmpl.h b/arch/x86/kvm/paging_tmpl.h
-> index 1caeb4d..13978dc 100644
-> --- a/arch/x86/kvm/paging_tmpl.h
-> +++ b/arch/x86/kvm/paging_tmpl.h
-> @@ -201,11 +201,8 @@ walk:
->  			break;
->  		}
->  
-> -		if (unlikely(write_fault && !is_writable_pte(pte)
-> -			     && (user_fault || is_write_protection(vcpu))))
-> -			eperm = true;
-> -
-> -		if (unlikely(user_fault && !(pte & PT_USER_MASK)))
-> +		if (!check_write_user_access(vcpu, write_fault, user_fault,
-> +					  pte))
->  			eperm = true;
->  
->  #if PTTYPE == 64
-> @@ -631,8 +628,16 @@ static int FNAME(page_fault)(struct kvm_vcpu *vcpu, gva_t addr, u32 error_code,
->  		return 0;
->  
->  	/* mmio */
-> -	if (is_error_pfn(pfn))
-> -		return kvm_handle_bad_page(vcpu->kvm, walker.gfn, pfn);
-> +	if (is_error_pfn(pfn)) {
-> +		unsigned access = walker.pte_access;
-> +		bool dirty = is_dirty_gpte(walker.ptes[walker.level - 1]);
-> +
-> +		if (dirty)
-> +			access &= ~ACC_WRITE_MASK;
-> +
-> +		return kvm_handle_bad_page(vcpu, mmu_is_nested(vcpu) ? 0 :
-> +					   addr, access, walker.gfn, pfn);
-> +	}
+On Tue, 5 Jul 2011 00:13:39 +0400
+Vasiliy Kulikov <segoon@openwall.com> wrote:
 
-Don't get this... if guest pte is dirty you cache without allowing
-write access? Why?
+> There is a ptrace_may_access() check in do_io_accounting() to prevent
+> gathering information of setuid'ed and similar binaries.  However, there
+> is a race against execve().  Holding task->signal->cred_guard_mutex
+> while gathering the information should protect against the race.
+> 
+> The order of locking is similar to the one inside of
+> ptrace_attach(): first goes cred_guard_mutex, then lock_task_sighand().
+> 
+> v2 - use mutex_lock_killable() instead of mutex_lock().
+> 
+> Signed-off-by: Vasiliy Kulikov <segoon@openwall.com>
+> Cc: stable@kernel.org
+
+If a patch is to be backported into -stable then its changelog had
+better explain why such a thing is needed.  This one doesn't.
+
+Please provide a full description of the conseuqences of the bug.  One
+which will permit the -stable maintainers to understand why they're
+merging the patch, and one which will help distribution maintainers
+decide whether they want to merge it as well.
 
