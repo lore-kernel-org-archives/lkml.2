@@ -1,35 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753776Ab1GETKb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 15:10:31 -0400
-Received: from violet.fr.zoreil.com ([92.243.8.30]:55294 "EHLO
-	violet.fr.zoreil.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753261Ab1GETK3 (ORCPT
+	id S1753574Ab1GETNb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 15:13:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:41467 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab1GETNa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 15:10:29 -0400
-Date: Tue, 5 Jul 2011 20:56:26 +0200
-From: Francois Romieu <romieu@fr.zoreil.com>
-To: Hayes Wang <hayeswang@realtek.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH net-next 6/6] r8169: support RTL8111E-VL
-Message-ID: <20110705185626.GF5105@electric-eye.fr.zoreil.com>
-References: <1309859095-32031-1-git-send-email-hayeswang@realtek.com> <1309859095-32031-6-git-send-email-hayeswang@realtek.com>
+	Tue, 5 Jul 2011 15:13:30 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=PKUarE_T-c8A:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=jkkh50-Kq9s2znETBsMA:9 a=PUjeQqilurYA:10 a=8IxOV9yp280A:10 a=akYS_eu778kA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: [patch 03/11] blackfin/irqs: Do not trace arch_local_{*,irq_*}
+ functions
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <CAMjpGUdFaCEdonJ6s4_gpzSfw+rxzrKcCUwH2xp1zmmAWt8gaw@mail.gmail.com>
+References: <20110702030435.308336775@goodmis.org>
+	 <20110702033853.220897627@goodmis.org>
+	 <CAMjpGUdFaCEdonJ6s4_gpzSfw+rxzrKcCUwH2xp1zmmAWt8gaw@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Tue, 05 Jul 2011 15:13:27 -0400
+Message-ID: <1309893207.26417.179.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309859095-32031-6-git-send-email-hayeswang@realtek.com>
-User-Agent: Mutt/1.4.2.2i
-X-Organisation: Land of Sunshine Inc.
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hayes Wang <hayeswang@realtek.com> :
-[...]
-> +	rtl_writephy(tp, 0x1e, 0x002D);
-                                   ^^ 2d :o)
+On Tue, 2011-07-05 at 15:07 -0400, Mike Frysinger wrote:
+> On Fri, Jul 1, 2011 at 23:04, Steven Rostedt wrote:
+> > From: Steven Rostedt <srostedt@redhat.com>
+> >
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+> for the pedantic/anal, the Author does not match the signed-off-by tag
 
-Some rtl_eri_write probably deserve to be tabulated. It can wait though.
+My patches never do ;)
 
--- 
-Ueimor
+I author patches to give credit to the company that pays me to write
+them. But I rather have people email me to my goodmis.org account,
+because I may not see my redhat.com account for a week. I found that
+people seem to email me more based on my Signed-off-by than my author
+email, so that is the one that I do the goodmis.org account with.
+
+Although, I still get people emailing me to my redhat account every so
+often, but they can wait a week for me to respond ;)
+
+-- Steve
+
+
