@@ -1,138 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab1GEL5q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 07:57:46 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:36467 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756109Ab1GEL5o (ORCPT
+	id S1756132Ab1GEMCx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:02:53 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:62384 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755887Ab1GEMCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 07:57:44 -0400
-From: Jeff Layton <jlayton@redhat.com>
-To: stable@kernel.org
-Cc: linux-cifs@vger.kernel.org, helge.hafting@hist.no,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cifs: fix wsize negotiation for 2.6.39 stable
-Date: Tue,  5 Jul 2011 07:57:38 -0400
-Message-Id: <1309867058-22983-1-git-send-email-jlayton@redhat.com>
-X-Mailer: git-send-email 1.7.5.4
+	Tue, 5 Jul 2011 08:02:51 -0400
+X-Nat-Received: from [202.181.97.72]:65127 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1309867356.7307
+To: richard@nod.at
+Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1309779003-8668-1-git-send-email-richard@nod.at>
+	<201107050017.30365.richard@nod.at>
+	<201107050124.p651OExY025046@www262.sakura.ne.jp>
+	<201107051155.18465.richard@nod.at>
+In-Reply-To: <201107051155.18465.richard@nod.at>
+Message-Id: <201107052102.BHE69234.OLQOVMJFOFFHSt@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Tue, 5 Jul 2011 21:02:34 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 05072011 #5599170, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Prior to 2.6.39, when signing was enabled on a socket the client only
-sent single-page writes. This changed with commit ca83ce3d5b, which
-made signed and unsigned connections use the same codepaths for write
-calls.
+Richard Weinberger wrote:
+> But IMHO adding a new attribute to task_struct is a bit overkill.
+> Why is your variant better than my strcmp() in fs/exec.c?
 
-This caused a regression when working with windows servers. Windows
-machines will reject writes larger than the MaxBufferSize when signing
-is active, but does not clear the CAP_LARGE_WRITE_X flag in the
-negotiation.
+Say, there are multiple /sbin/modprobe
 
-This patch backports 2 patches that fix this problem in 3.0 kernels,
-and changes a couple of the constants to values appropriate for the
-writeback code in 2.6.39.
+/sbin/modprobe
+/var/chroot/sbin/modprobe
 
-Cc: stable@kernel.org
-Reported-by: Helge Hafting <helge.hafting@hist.no>
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
----
- fs/cifs/connect.c |   64 ++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 44 insertions(+), 20 deletions(-)
-
-diff --git a/fs/cifs/connect.c b/fs/cifs/connect.c
-index 5236582..8e78710 100644
---- a/fs/cifs/connect.c
-+++ b/fs/cifs/connect.c
-@@ -2571,23 +2571,6 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
- 	else /* default */
- 		cifs_sb->rsize = CIFSMaxBufSize;
- 
--	if (pvolume_info->wsize > PAGEVEC_SIZE * PAGE_CACHE_SIZE) {
--		cERROR(1, "wsize %d too large, using 4096 instead",
--			  pvolume_info->wsize);
--		cifs_sb->wsize = 4096;
--	} else if (pvolume_info->wsize)
--		cifs_sb->wsize = pvolume_info->wsize;
--	else
--		cifs_sb->wsize = min_t(const int,
--					PAGEVEC_SIZE * PAGE_CACHE_SIZE,
--					127*1024);
--		/* old default of CIFSMaxBufSize was too small now
--		   that SMB Write2 can send multiple pages in kvec.
--		   RFC1001 does not describe what happens when frame
--		   bigger than 128K is sent so use that as max in
--		   conjunction with 52K kvec constraint on arch with 4K
--		   page size  */
--
- 	if (cifs_sb->rsize < 2048) {
- 		cifs_sb->rsize = 2048;
- 		/* Windows ME may prefer this */
-@@ -2665,6 +2648,48 @@ static void setup_cifs_sb(struct smb_vol *pvolume_info,
- 			   "mount option supported");
- }
- 
-+/* Prior to 3.0, cifs couldn't handle writes larger than this */
-+#define CIFS_MAX_WSIZE (PAGEVEC_SIZE * PAGE_CACHE_SIZE)
-+
-+/*
-+ * When the server doesn't allow large posix writes, only allow a wsize of
-+ * 128k minus the size of the WRITE_AND_X header. That allows for a write up
-+ * to the maximum size described by RFC1002.
-+ */
-+#define CIFS_MAX_RFC1002_WSIZE (128 * 1024 - sizeof(WRITE_REQ) + 4)
-+
-+/* Make the default the same as the max */
-+#define CIFS_DEFAULT_WSIZE CIFS_MAX_WSIZE
-+
-+static unsigned int
-+cifs_negotiate_wsize(struct cifsTconInfo *tcon, struct smb_vol *pvolume_info)
-+{
-+	__u64 unix_cap = le64_to_cpu(tcon->fsUnixInfo.Capability);
-+	struct TCP_Server_Info *server = tcon->ses->server;
-+	unsigned int wsize = pvolume_info->wsize ? pvolume_info->wsize :
-+				CIFS_DEFAULT_WSIZE;
-+
-+	/* can server support 24-bit write sizes? (via UNIX extensions) */
-+	if (!tcon->unix_ext || !(unix_cap & CIFS_UNIX_LARGE_WRITE_CAP))
-+		wsize = min_t(unsigned int, wsize, CIFS_MAX_RFC1002_WSIZE);
-+
-+	/*
-+	 * no CAP_LARGE_WRITE_X or is signing enabled without CAP_UNIX set?
-+	 * Limit it to max buffer offered by the server, minus the size of the
-+	 * WRITEX header, not including the 4 byte RFC1001 length.
-+	 */
-+	if (!(server->capabilities & CAP_LARGE_WRITE_X) ||
-+	    (!(server->capabilities & CAP_UNIX) &&
-+	     (server->sec_mode & (SECMODE_SIGN_ENABLED|SECMODE_SIGN_REQUIRED))))
-+		wsize = min_t(unsigned int, wsize,
-+				server->maxBuf - sizeof(WRITE_REQ) + 4);
-+
-+	/* hard limit of CIFS_MAX_WSIZE */
-+	wsize = min_t(unsigned int, wsize, CIFS_MAX_WSIZE);
-+
-+	return wsize;
-+}
-+
- static int
- is_path_accessible(int xid, struct cifsTconInfo *tcon,
- 		   struct cifs_sb_info *cifs_sb, const char *full_path)
-@@ -2866,13 +2891,12 @@ try_mount_again:
- 		cifs_sb->rsize = 1024 * 127;
- 		cFYI(DBG2, "no very large read support, rsize now 127K");
- 	}
--	if (!(tcon->ses->capabilities & CAP_LARGE_WRITE_X))
--		cifs_sb->wsize = min(cifs_sb->wsize,
--			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
- 	if (!(tcon->ses->capabilities & CAP_LARGE_READ_X))
- 		cifs_sb->rsize = min(cifs_sb->rsize,
- 			       (tcon->ses->server->maxBuf - MAX_CIFS_HDR_SIZE));
- 
-+	cifs_sb->wsize = cifs_negotiate_wsize(tcon, volume_info);
-+
- remote_path_check:
- 	/* check if a whole path (including prepath) is not remote */
- 	if (!rc && tcon) {
--- 
-1.7.5.4
-
+and only /var/chroot/sbin/modprobe needs request_module() whereas
+/sbin/modprobe does not need request_module(). Why do we need to make
+execl("/sbin/modprobe", "--help", NULL) from chroot("/var/chroot/") fail
+by denying request_module() that does not cause recursion?
