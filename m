@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932362Ab1GEM2H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:28:07 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:39530 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932339Ab1GEM2F (ORCPT
+	id S932378Ab1GEM2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:28:16 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55139 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932366Ab1GEM2O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:28:05 -0400
+	Tue, 5 Jul 2011 08:28:14 -0400
+Date: Tue, 5 Jul 2011 13:27:21 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Jesse Barker <jesse.barker@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <mina86@mina86.com>, linaro-mm-sig@lists.linaro.org,
+        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH 4/8] mm: MIGRATE_CMA migration type added
+Message-ID: <20110705122721.GB8286@n2100.arm.linux.org.uk>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <1309851710-3828-5-git-send-email-m.szyprowski@samsung.com> <201107051344.31298.arnd@arndb.de>
 MIME-Version: 1.0
-In-Reply-To: <201107051402.50533.richard@nod.at>
-References: <1309821347.4527.6.camel@vitaliy-Vostro-1400>
-	<201107051142.39733.richard@nod.at>
-	<CAGTPOqebcT_Dd5nPSNEkrDvnCgYhqcU=ayjEA8L7Zh0Wr_pj5w@mail.gmail.com>
-	<201107051402.50533.richard@nod.at>
-Date: Tue, 5 Jul 2011 15:28:03 +0300
-Message-ID: <CAGTPOqfXfSwAvTKrfby_Q4A0xTUq5teD7br0jagoBWwYK+JhRw@mail.gmail.com>
-Subject: Re: [PATCH 2/4] uml: helper.c warning corrections
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-To: Richard Weinberger <richard@nod.at>
-Cc: Jeff Dike <jdike@addtoit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-        "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-        lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201107051344.31298.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 5, 2011 at 3:02 PM, Richard Weinberger <richard@nod.at> wrote:
-> Am Dienstag 05 Juli 2011, 13:45:06 schrieb Vitaliy Ivanov:
->> It's always better not to think whether it's possible but simply kill
->> all the chances for this to happen.
->> In this case that's pretty trivial thing and also it solves issue with
->> warning.
->
-> Defensive programming is not a solution for everything.
-> CPU time and memory are not for free, especially in kernel land.
->
-> Anyway, when this patch removes a real warning, it's fine for me.
-> Applied.
+On Tue, Jul 05, 2011 at 01:44:31PM +0200, Arnd Bergmann wrote:
+> > @@ -198,6 +198,12 @@ config MIGRATION
+> >  	  pages as migration can relocate pages to satisfy a huge page
+> >  	  allocation instead of reclaiming.
+> >  
+> > +config CMA_MIGRATE_TYPE
+> > +	bool
+> > +	help
+> > +	  This enables the use the MIGRATE_CMA migrate type, which lets lets CMA
+> > +	  work on almost arbitrary memory range and not only inside ZONE_MOVABLE.
+> > +
+> >  config PHYS_ADDR_T_64BIT
+> >  	def_bool 64BIT || ARCH_PHYS_ADDR_T_64BIT
+> 
+> This is currently only selected on ARM with your patch set. 
 
-Thanks Richard.
+That's because CMA is targeted at solving the "we need massive contiguous
+DMA areas" problem on ARM SoCs.
+
+And it does this without addressing the technical architecture problems
+surrounding multiple aliasing mappings with differing attributes which
+actually make it unsuitable for use on ARM.  This is not the first time
+I've pointed that out, and I'm now at the point of basically ignoring
+this CMA work because I'm tired of constantly pointing this out.
+
+My silence on this subject must not be taken as placid acceptance of the
+approach, but revulsion at seemingly being constantly ignored and having
+these patches pushed time and time again with nothing really changing on
+that issue.
+
+It will be a sad day if these patches make their way into mainline without
+that being addressed, and will show contempt for architecture maintainers
+if it does.
