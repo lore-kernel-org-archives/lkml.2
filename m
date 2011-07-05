@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756491Ab1GEM5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 08:57:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59539 "EHLO hera.kernel.org"
+	id S1756535Ab1GEM5m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 08:57:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:59555 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756321Ab1GEM5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 08:57:22 -0400
-Date: Tue, 5 Jul 2011 12:56:31 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Message-ID: <tip-m4onxn0sxnyn5iz9o88eskc3@git.kernel.org>
+	id S1756377Ab1GEM5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 08:57:39 -0400
+Date: Tue, 5 Jul 2011 12:57:28 GMT
+From: tip-bot for Jan Beulich <JBeulich@novell.com>
+Message-ID: <tip-d80603c9d876efafd8b07469c891076de470e323@git.kernel.org>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        torvalds@linux-foundation.org, ncrao@google.com,
-        a.p.zijlstra@chello.nl, efault@gmx.de, alex.shi@intel.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, tom.leiming@gmail.com,
+        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
         mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        a.p.zijlstra@chello.nl, ncrao@google.com,
-        torvalds@linux-foundation.org, efault@gmx.de, alex.shi@intel.com,
-        akpm@linux-foundation.org, tglx@linutronix.de, tom.leiming@gmail.com,
+        jbeulich@novell.com, JBeulich@novell.com, tglx@linutronix.de,
         mingo@elte.hu
+In-Reply-To: <4E13100A020000780004C256@nat28.tlf.novell.com>
+References: <4E13100A020000780004C256@nat28.tlf.novell.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Disable (revert) SCHED_LOAD_SCALE increase
-Git-Commit-ID: e4c2fb0d5776b58049d2556b456144a4db3fe5a9
+Subject: [tip:x86/efi] x86, efi: Properly pre-initialize table pointers
+Git-Commit-ID: d80603c9d876efafd8b07469c891076de470e323
 X-Mailer: tip-git-log-daemon
 Robot-ID: <tip-bot.git.kernel.org>
 Robot-Unsubscribe: Contact <mailto:hpa@kernel.org> to get blacklisted from these emails
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Jul 2011 12:56:32 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 05 Jul 2011 12:57:29 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e4c2fb0d5776b58049d2556b456144a4db3fe5a9
-Gitweb:     http://git.kernel.org/tip/e4c2fb0d5776b58049d2556b456144a4db3fe5a9
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 5 Jul 2011 10:56:32 +0200
+Commit-ID:  d80603c9d876efafd8b07469c891076de470e323
+Gitweb:     http://git.kernel.org/tip/d80603c9d876efafd8b07469c891076de470e323
+Author:     Jan Beulich <JBeulich@novell.com>
+AuthorDate: Tue, 5 Jul 2011 12:22:18 +0100
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 5 Jul 2011 11:28:18 +0200
+CommitDate: Tue, 5 Jul 2011 13:40:34 +0200
 
-sched: Disable (revert) SCHED_LOAD_SCALE increase
+x86, efi: Properly pre-initialize table pointers
 
-Alex reported that commit c8b281161df ("sched: Increase
-SCHED_LOAD_SCALE resolution") caused a power usage regression
-under light load as it increases the number of load-balance
-operations and keeps idle cpus from staying idle.
+Consumers of the table pointers in struct efi check for
+EFI_INVALID_TABLE_ADDR to determine validity, hence these
+pointers should all be pre-initialized to this value (rather
+than zero).
 
-Time has run out to find the root cause for this release so
-disable the feature for v3.0 until we can figure out what
-causes the problem.
+Noticed by the discrepancy between efivars' systab sysfs entry
+showing all tables (and their pointers) despite the code
+intending to only display the valid ones. No other bad effects
+known, but having the various table parsing routines bogusly
+access physical address zero is certainly not very desirable
+(even though they're unlikely to find anything useful there).
 
-Reported-by: "Alex, Shi" <alex.shi@intel.com>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Nikhil Rao <ncrao@google.com>
-Cc: Ming Lei <tom.leiming@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Link: http://lkml.kernel.org/n/tip-m4onxn0sxnyn5iz9o88eskc3@git.kernel.org
+Signed-off-by: Jan Beulich <jbeulich@novell.com>
+Link: http://lkml.kernel.org/r/4E13100A020000780004C256@nat28.tlf.novell.com
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/sched.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/platform/efi/efi.c |   12 +++++++++++-
+ 1 files changed, 11 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index a837b20..496770a 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -808,7 +808,7 @@ enum cpu_idle_type {
-  * when BITS_PER_LONG <= 32 are pretty high and the returns do not justify the
-  * increased costs.
-  */
--#if BITS_PER_LONG > 32
-+#if 0 /* BITS_PER_LONG > 32 -- currently broken: it increases power usage under light load  */
- # define SCHED_LOAD_RESOLUTION	10
- # define scale_load(w)		((w) << SCHED_LOAD_RESOLUTION)
- # define scale_load_down(w)	((w) >> SCHED_LOAD_RESOLUTION)
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index a0e4244..11e766d 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -51,7 +51,17 @@
+ int efi_enabled;
+ EXPORT_SYMBOL(efi_enabled);
+ 
+-struct efi efi;
++struct efi __read_mostly efi = {
++	.mps        = EFI_INVALID_TABLE_ADDR,
++	.acpi       = EFI_INVALID_TABLE_ADDR,
++	.acpi20     = EFI_INVALID_TABLE_ADDR,
++	.smbios     = EFI_INVALID_TABLE_ADDR,
++	.sal_systab = EFI_INVALID_TABLE_ADDR,
++	.boot_info  = EFI_INVALID_TABLE_ADDR,
++	.hcdp       = EFI_INVALID_TABLE_ADDR,
++	.uga        = EFI_INVALID_TABLE_ADDR,
++	.uv_systab  = EFI_INVALID_TABLE_ADDR,
++};
+ EXPORT_SYMBOL(efi);
+ 
+ struct efi_memory_map memmap;
