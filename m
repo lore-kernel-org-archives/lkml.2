@@ -1,482 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755679Ab1GEU3x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 16:29:53 -0400
-Received: from avon.wwwdotorg.org ([70.85.31.133]:54239 "EHLO
-	avon.wwwdotorg.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab1GEU3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 16:29:34 -0400
-From: Stephen Warren <swarren@nvidia.com>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
-        Stephen Warren <swarren@nvidia.com>
-Subject: [PATCH 2/3] ARM: tegra: Use engineering names in DT compatible property
-Date: Tue,  5 Jul 2011 14:29:21 -0600
-Message-Id: <1309897762-23564-3-git-send-email-swarren@nvidia.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1309897762-23564-1-git-send-email-swarren@nvidia.com>
-References: <1309897762-23564-1-git-send-email-swarren@nvidia.com>
+	id S1752101Ab1GEUkH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 16:40:07 -0400
+Received: from server7.ca ([216.139.250.20]:43477 "EHLO server7.ca"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175Ab1GEUkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 16:40:06 -0400
+Date: Tue, 5 Jul 2011 16:40:02 -0400
+Message-Id: <201107052040.p65Ke2OB004957@server7.ca>
+From: kid@kids321.com
+To: linux-kernel@vger.kernel.org
+Subject: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Engineering names are more stable than marketing names. Hence, use them
-for Device Tree compatible properties instead.
+Hey Friend!
 
-Signed-off-by: Stephen Warren <swarren@nvidia.com>
----
- arch/arm/boot/dts/tegra-harmony.dts  |    4 +-
- arch/arm/boot/dts/tegra-seaboard.dts |    4 +-
- arch/arm/boot/dts/tegra20.dtsi       |  162 ++++++++++++++++++++++++++++++++++
- arch/arm/boot/dts/tegra250.dtsi      |  162 ----------------------------------
- arch/arm/mach-tegra/board-dt.c       |   32 ++++----
- 5 files changed, 182 insertions(+), 182 deletions(-)
- create mode 100644 arch/arm/boot/dts/tegra20.dtsi
- delete mode 100644 arch/arm/boot/dts/tegra250.dtsi
+Karen Jackson has chosen to recommend http://www.kids321.com to you.
 
-diff --git a/arch/arm/boot/dts/tegra-harmony.dts b/arch/arm/boot/dts/tegra-harmony.dts
-index ea8ea92..c2bee7e 100644
---- a/arch/arm/boot/dts/tegra-harmony.dts
-+++ b/arch/arm/boot/dts/tegra-harmony.dts
-@@ -1,11 +1,11 @@
- /dts-v1/;
- 
- /memreserve/ 0x1c000000 0x04000000;
--/include/ "tegra250.dtsi"
-+/include/ "tegra20.dtsi"
- 
- / {
- 	model = "NVIDIA Tegra2 Harmony evaluation board";
--	compatible = "nvidia,harmony", "nvidia,tegra250";
-+	compatible = "nvidia,harmony", "nvidia,tegra20";
- 
- 	chosen {
- 		bootargs = "vmalloc=192M video=tegrafb console=ttyS0,115200n8 root=/dev/mmcblk0p2 rw rootwait";
-diff --git a/arch/arm/boot/dts/tegra-seaboard.dts b/arch/arm/boot/dts/tegra-seaboard.dts
-index 418c7b8..5a99b4c 100644
---- a/arch/arm/boot/dts/tegra-seaboard.dts
-+++ b/arch/arm/boot/dts/tegra-seaboard.dts
-@@ -1,11 +1,11 @@
- /dts-v1/;
- 
- /memreserve/ 0x1c000000 0x04000000;
--/include/ "tegra250.dtsi"
-+/include/ "tegra20.dtsi"
- 
- / {
- 	model = "NVIDIA Seaboard";
--	compatible = "nvidia,seaboard", "nvidia,tegra250";
-+	compatible = "nvidia,seaboard", "nvidia,tegra20";
- 
- 	chosen {
- 		bootargs = "vmalloc=192M video=tegrafb console=ttyS0,115200n8 root=/dev/mmcblk1p3 rw rootwait";
-diff --git a/arch/arm/boot/dts/tegra20.dtsi b/arch/arm/boot/dts/tegra20.dtsi
-new file mode 100644
-index 0000000..1c1a4df
---- /dev/null
-+++ b/arch/arm/boot/dts/tegra20.dtsi
-@@ -0,0 +1,162 @@
-+/include/ "skeleton.dtsi"
-+
-+/ {
-+	model = "NVIDIA Tegra 250";
-+	compatible = "nvidia,tegra20";
-+	interrupt-parent = <&intc>;
-+
-+	amba {
-+		compatible = "simple-bus";
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		ranges;
-+
-+		intc: interrupt-controller@50041000 {
-+			compatible = "nvidia,tegra20-gic", "arm,gic";
-+			interrupt-controller;
-+			#interrupt-cells = <1>;
-+			reg = < 0x50041000 0x1000 >,
-+			      < 0x50040100 0x0100 >;
-+		};
-+	};
-+
-+
-+	i2c@7000c000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "nvidia,tegra20-i2c";
-+		reg = <0x7000C000 0x100>;
-+		interrupts = < 70 >;
-+		status = "disabled";
-+	};
-+
-+	i2c@7000c400 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "nvidia,tegra20-i2c";
-+		reg = <0x7000C400 0x100>;
-+		interrupts = < 116 >;
-+		status = "disabled";
-+	};
-+
-+	i2c@7000c500 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "nvidia,tegra20-i2c";
-+		reg = <0x7000C500 0x100>;
-+		interrupts = < 124 >;
-+		status = "disabled";
-+	};
-+
-+	i2c@7000d000 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "nvidia,tegra20-i2c";
-+		reg = <0x7000D000 0x200>;
-+		interrupts = < 85 >;
-+		status = "disabled";
-+	};
-+
-+	i2s@70002800 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "nvidia,tegra20-i2s";
-+		reg = <0x70002800 0x200>;
-+		interrupts = < 45 >;
-+		status = "disabled";
-+	};
-+
-+	i2s@70002a00 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "nvidia,tegra20-i2s";
-+		reg = <0x70002a00 0x200>;
-+		interrupts = < 35 >;
-+		status = "disabled";
-+	};
-+
-+	das@70000c00 {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+		compatible = "nvidia,tegra20-das";
-+		reg = <0x70000c00 0x80>;
-+		status = "disabled";
-+	};
-+
-+	gpio: gpio@6000d000 {
-+		compatible = "nvidia,tegra20-gpio";
-+		reg = < 0x6000d000 0x1000 >;
-+		interrupts = < 64 65 66 67 87 119 121 >;
-+		#gpio-cells = <2>;
-+		gpio-controller;
-+	};
-+
-+	serial@70006000 {
-+		compatible = "nvidia,tegra20-uart";
-+		reg = <0x70006000 0x40>;
-+		reg-shift = <2>;
-+		interrupts = < 68 >;
-+		status = "disabled";
-+	};
-+
-+	serial@70006040 {
-+		compatible = "nvidia,tegra20-uart";
-+		reg = <0x70006040 0x40>;
-+		reg-shift = <2>;
-+		interrupts = < 69 >;
-+		status = "disabled";
-+	};
-+
-+	serial@70006200 {
-+		compatible = "nvidia,tegra20-uart";
-+		reg = <0x70006200 0x100>;
-+		reg-shift = <2>;
-+		interrupts = < 78 >;
-+		status = "disabled";
-+	};
-+
-+	serial@70006300 {
-+		compatible = "nvidia,tegra20-uart";
-+		reg = <0x70006300 0x100>;
-+		reg-shift = <2>;
-+		interrupts = < 122 >;
-+		status = "disabled";
-+	};
-+
-+	serial@70006400 {
-+		compatible = "nvidia,tegra20-uart";
-+		reg = <0x70006400 0x100>;
-+		reg-shift = <2>;
-+		interrupts = < 123 >;
-+		status = "disabled";
-+	};
-+
-+	sdhci@c8000000 {
-+		compatible = "nvidia,tegra20-sdhci";
-+		reg = <0xc8000000 0x200>;
-+		interrupts = < 46 >;
-+		status = "disabled";
-+	};
-+
-+	sdhci@c8000200 {
-+		compatible = "nvidia,tegra20-sdhci";
-+		reg = <0xc8000200 0x200>;
-+		interrupts = < 47 >;
-+		status = "disabled";
-+	};
-+
-+	sdhci@c8000400 {
-+		compatible = "nvidia,tegra20-sdhci";
-+		reg = <0xc8000400 0x200>;
-+		interrupts = < 51 >;
-+		status = "disabled";
-+	};
-+
-+	sdhci@c8000600 {
-+		compatible = "nvidia,tegra20-sdhci";
-+		reg = <0xc8000600 0x200>;
-+		interrupts = < 63 >;
-+		status = "disabled";
-+	};
-+};
-+
-diff --git a/arch/arm/boot/dts/tegra250.dtsi b/arch/arm/boot/dts/tegra250.dtsi
-deleted file mode 100644
-index ad1bf99..0000000
---- a/arch/arm/boot/dts/tegra250.dtsi
-+++ /dev/null
-@@ -1,162 +0,0 @@
--/include/ "skeleton.dtsi"
--
--/ {
--	model = "NVIDIA Tegra 250";
--	compatible = "nvidia,tegra250";
--	interrupt-parent = <&intc>;
--
--	amba {
--		compatible = "simple-bus";
--		#address-cells = <1>;
--		#size-cells = <1>;
--		ranges;
--
--		intc: interrupt-controller@50041000 {
--			compatible = "nvidia,tegra250-gic", "arm,gic";
--			interrupt-controller;
--			#interrupt-cells = <1>;
--			reg = < 0x50041000 0x1000 >,
--			      < 0x50040100 0x0100 >;
--		};
--	};
--
--
--	i2c@7000c000 {
--		#address-cells = <1>;
--		#size-cells = <0>;
--		compatible = "nvidia,tegra250-i2c";
--		reg = <0x7000C000 0x100>;
--		interrupts = < 70 >;
--		status = "disabled";
--	};
--
--	i2c@7000c400 {
--		#address-cells = <1>;
--		#size-cells = <0>;
--		compatible = "nvidia,tegra250-i2c";
--		reg = <0x7000C400 0x100>;
--		interrupts = < 116 >;
--		status = "disabled";
--	};
--
--	i2c@7000c500 {
--		#address-cells = <1>;
--		#size-cells = <0>;
--		compatible = "nvidia,tegra250-i2c";
--		reg = <0x7000C500 0x100>;
--		interrupts = < 124 >;
--		status = "disabled";
--	};
--
--	i2c@7000d000 {
--		#address-cells = <1>;
--		#size-cells = <0>;
--		compatible = "nvidia,tegra250-i2c";
--		reg = <0x7000D000 0x200>;
--		interrupts = < 85 >;
--		status = "disabled";
--	};
--
--	i2s@70002800 {
--		#address-cells = <1>;
--		#size-cells = <0>;
--		compatible = "nvidia,tegra250-i2s";
--		reg = <0x70002800 0x200>;
--		interrupts = < 45 >;
--		status = "disabled";
--	};
--
--	i2s@70002a00 {
--		#address-cells = <1>;
--		#size-cells = <0>;
--		compatible = "nvidia,tegra250-i2s";
--		reg = <0x70002a00 0x200>;
--		interrupts = < 35 >;
--		status = "disabled";
--	};
--
--	das@70000c00 {
--		#address-cells = <1>;
--		#size-cells = <0>;
--		compatible = "nvidia,tegra250-das";
--		reg = <0x70000c00 0x80>;
--		status = "disabled";
--	};
--
--	gpio: gpio@6000d000 {
--		compatible = "nvidia,tegra250-gpio";
--		reg = < 0x6000d000 0x1000 >;
--		interrupts = < 64 65 66 67 87 119 121 >;
--		#gpio-cells = <2>;
--		gpio-controller;
--	};
--
--	serial@70006000 {
--		compatible = "nvidia,tegra250-uart";
--		reg = <0x70006000 0x40>;
--		reg-shift = <2>;
--		interrupts = < 68 >;
--		status = "disabled";
--	};
--
--	serial@70006040 {
--		compatible = "nvidia,tegra250-uart";
--		reg = <0x70006040 0x40>;
--		reg-shift = <2>;
--		interrupts = < 69 >;
--		status = "disabled";
--	};
--
--	serial@70006200 {
--		compatible = "nvidia,tegra250-uart";
--		reg = <0x70006200 0x100>;
--		reg-shift = <2>;
--		interrupts = < 78 >;
--		status = "disabled";
--	};
--
--	serial@70006300 {
--		compatible = "nvidia,tegra250-uart";
--		reg = <0x70006300 0x100>;
--		reg-shift = <2>;
--		interrupts = < 122 >;
--		status = "disabled";
--	};
--
--	serial@70006400 {
--		compatible = "nvidia,tegra250-uart";
--		reg = <0x70006400 0x100>;
--		reg-shift = <2>;
--		interrupts = < 123 >;
--		status = "disabled";
--	};
--
--	sdhci@c8000000 {
--		compatible = "nvidia,tegra250-sdhci";
--		reg = <0xc8000000 0x200>;
--		interrupts = < 46 >;
--		status = "disabled";
--	};
--
--	sdhci@c8000200 {
--		compatible = "nvidia,tegra250-sdhci";
--		reg = <0xc8000200 0x200>;
--		interrupts = < 47 >;
--		status = "disabled";
--	};
--
--	sdhci@c8000400 {
--		compatible = "nvidia,tegra250-sdhci";
--		reg = <0xc8000400 0x200>;
--		interrupts = < 51 >;
--		status = "disabled";
--	};
--
--	sdhci@c8000600 {
--		compatible = "nvidia,tegra250-sdhci";
--		reg = <0xc8000600 0x200>;
--		interrupts = < 63 >;
--		status = "disabled";
--	};
--};
--
-diff --git a/arch/arm/mach-tegra/board-dt.c b/arch/arm/mach-tegra/board-dt.c
-index 75691d5..cc6776e 100644
---- a/arch/arm/mach-tegra/board-dt.c
-+++ b/arch/arm/mach-tegra/board-dt.c
-@@ -45,26 +45,26 @@
- 
- void harmony_pinmux_init(void);
- 
--static struct platform_device *tegra250_devices[] __initdata = {
-+static struct platform_device *tegra20_devices[] __initdata = {
- 	&tegra_i2s_device1,
- 	&tegra_pcm_device,
- };
- 
--struct of_dev_auxdata tegra250_auxdata_lookup[] __initdata = {
--	OF_DEV_AUXDATA("nvidia,tegra250-sdhci", TEGRA_SDMMC1_BASE, "sdhci-tegra.0", NULL),
--	OF_DEV_AUXDATA("nvidia,tegra250-sdhci", TEGRA_SDMMC2_BASE, "sdhci-tegra.1", NULL),
--	OF_DEV_AUXDATA("nvidia,tegra250-sdhci", TEGRA_SDMMC3_BASE, "sdhci-tegra.2", NULL),
--	OF_DEV_AUXDATA("nvidia,tegra250-sdhci", TEGRA_SDMMC4_BASE, "sdhci-tegra.3", NULL),
-+struct of_dev_auxdata tegra20_auxdata_lookup[] __initdata = {
-+	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC1_BASE, "sdhci-tegra.0", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC2_BASE, "sdhci-tegra.1", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC3_BASE, "sdhci-tegra.2", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-sdhci", TEGRA_SDMMC4_BASE, "sdhci-tegra.3", NULL),
- 
--	OF_DEV_AUXDATA("nvidia,tegra250-i2c", TEGRA_I2C_BASE, "tegra-i2c.0", NULL),
--	OF_DEV_AUXDATA("nvidia,tegra250-i2c", TEGRA_I2C2_BASE, "tegra-i2c.1", NULL),
--	OF_DEV_AUXDATA("nvidia,tegra250-i2c", TEGRA_I2C3_BASE, "tegra-i2c.2", NULL),
--	OF_DEV_AUXDATA("nvidia,tegra250-i2c", TEGRA_DVC_BASE, "tegra-i2c.3", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-i2c", TEGRA_I2C_BASE, "tegra-i2c.0", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-i2c", TEGRA_I2C2_BASE, "tegra-i2c.1", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-i2c", TEGRA_I2C3_BASE, "tegra-i2c.2", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-i2c", TEGRA_DVC_BASE, "tegra-i2c.3", NULL),
- #if 0
--	OF_DEV_AUXDATA("nvidia,tegra250-i2s", TEGRA_I2S1_BASE, "tegra-i2s.0", NULL),
--	OF_DEV_AUXDATA("nvidia,tegra250-i2s", TEGRA_I2S1_BASE, "tegra-i2s.1", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-i2s", TEGRA_I2S1_BASE, "tegra-i2s.0", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-i2s", TEGRA_I2S1_BASE, "tegra-i2s.1", NULL),
- #endif
--	OF_DEV_AUXDATA("nvidia,tegra250-das", TEGRA_APB_MISC_DAS_BASE, "tegra-das", NULL),
-+	OF_DEV_AUXDATA("nvidia,tegra20-das", TEGRA_APB_MISC_DAS_BASE, "tegra-das", NULL),
- 	{}
- };
- 
-@@ -80,7 +80,7 @@ static struct of_device_id tegra_dt_match_table[] __initdata = {
- };
- 
- static struct of_device_id tegra_dt_gic_match[] __initdata = {
--	{ .compatible = "nvidia,tegra250-gic", },
-+	{ .compatible = "nvidia,tegra20-gic", },
- 	{}
- };
- 
-@@ -106,13 +106,13 @@ static void __init tegra_dt_init(void)
- 
- 	harmony_pinmux_init();
- 
--	platform_add_devices(tegra250_devices, ARRAY_SIZE(tegra250_devices));
-+	platform_add_devices(tegra20_devices, ARRAY_SIZE(tegra20_devices));
- 
- 	/*
- 	 * Finished with the static registrations now; fill in the missing
- 	 * devices
- 	 */
--	of_platform_populate(NULL, tegra_dt_match_table, tegra250_auxdata_lookup, NULL);
-+	of_platform_populate(NULL, tegra_dt_match_table, tegra20_auxdata_lookup, NULL);
- }
- 
- static const char * tegra_dt_board_compat[] = {
--- 
-1.7.0.4
+
+"
+Hello Friend,
+
+EMAIL @ HOME BU$INE$$ START EARNING TODAY!!!
+
+Congratulations: Get your $750 Commissions Now!!!
+
+Make 1000s Weekly Online! No Scams, No Hype!How Many Emails Can You Process A Day?
+Can You Process 30 Emails a Day? If You Can.You'll Earn $750.00 Every Day!GUARANTEED!
+
+This Is Different,Powerful And Big.The Fast & Easy Of All Email Processing Programs. 
+Finally Anyone Can Make Money In 2 Hours, Earning $1000's Per Week Guaranteed!!!
+Processing Emails From Home. No Experience Necessary!
+
+Your Earnings Are Unlimited... Below are your potential earnings!!! 
+
+Imagine waking up at 10am in the morning, having a quick look at your PC and      
+finding  the exact information you need to collect a quick $200 by lunchtime. 
+You could take  the afternoon off, play some golf, go shopping or spend some  
+quality time with the family. Then do the same thing again in the evening, 
+What a wonderful concept and you could be doing it today. 
+
+Even during the boom years in any economy it's not possible to find a form 
+of free income, BUT THIS IS EXACTLY THAT! and it will make you free money   
+for the rest of your life.
+
+It's Easy To Make Money Everyday Even If You're Starting From Scratch With
+Zero Knowledge, Experience Or Budget!I'll Show You Exactly How.
+
+We've Start putting New 30 Members in YOUR TEAM for the JULY 2-up-to 8 /2011
+weekly commission cycle...and GROWING everyday earn by $100 up to $200 or more.
+
+IMPORTANT: JULY 8 ,2011 is the Cut-Off day to lock in your
+position then faster you act the higher commission you  will earn!!!
+
+Go Here To Secure not less than $750 commission Now and it still growing as  
+many people joining under you. if you secure your position right away:The 
+$750 usd commission will Arrive Through your Paypal or Credit Card 0n 2 week. 
+of August..And Hurry before others lock, few Remaining Position This Week!!
+
+Once your Membership are set up, you will be able to earn $750 in less than 
+2 hours a day.I will show you how we do that and then I will help you through 
+the process so that YOU SUCCEED!
+
+You will access your $750 in any ATM when you follow the instructions.
+
+Click below!! and order before cut-off
+
+https://www.plimus.com/jsp/redirect.jsp?contractId=2844808&referrer=mark2011
+
+TYPE   DATE & TIME -------- NEW MEMBERS ------------- COUNTRY
+
+P -- JULY.04  @ 2:38  AM-----Jinky Robinson----------- United States
+P -- JULY.04  @ 2:53  AM-----Ailaine Smith ----------- United States
+P -- JULY.04  @ 2:56  AM-----Mandene Jonhson---------- United States
+M -- JULY.04  @ 4:19  AM-----Cristian Gatmaitan------- Singapore
+P -- JULY.04  @ 4:28  AM-----Jhon Carmalon------------ Italy
+M -- JULY.04  @ 6:01  AM-----lalaine Brown------------ Australia
+P -- JULY.04  @ 7:11  AM-----Rebecca Underwood-------- Hungary
+P -- JULY.04  @ 7:39  AM-----Jericho Jackson---------- Canada
+P -- JULY.03  @ 9:42  AM-----Thomas Miller ----------- United States
+M -- JULY.03  @ 9:58  PM-----Grace Taylor------------- United Kingdom
+P -- JULY.03  @ 10:21 PM-----Gina Henry--------------- New Zealand
+P -- JULY.03  @ 11:24 PM-----Mohammed Ahmen ---------- Mexico
+M -- JULY.03  @ 11:33 PM-----Tracey Furlong----------- Puerto Rico
+P -- JULY.03  @ 11:41 PM-----Jane furlong------------- Potugal
+P -- JULY.03  @ 11:47 PM-----Janice Youngtown--------- Taiwan
+P -- JULY.03  @ 11:53 PM-----Shirley Ong-------------- China
+P -- JULY.03  @ 1:45  AM --- Ryann Lambert ----------- United States
+M -- JULY.03  @ 12:34 AM --- Nick Gauci -------------- Calefornia
+M -- JULY.03  @ 10:24 AM --- Don Riley --------------- Netherland
+P -- JULY.02  @ 10:30 AM --- Lorne Whittaker --------- Swetzerland
+P -- JULY.02  @ 02:14 AM --- Ashwani Vohra ----------- Brazil
+M -- JULY.02  @ 2:34  AM --- Kevin Hunt -------------- United States
+P -- JULY.02  @ 1:54  AM --- Charles James Mills ----- South Africa
+P -- JULY.02  @ 12:34 AM --- Delia Lane -------------- New York
+P -- JULY.02  @ 6:45  AM --- Mohamed Salamaikom------- Saudi Arabia
+M -- JULY.02  @ 5:34  AM --- Aleksandar Gjuroski ----- Japan
+P -- JULY.02  @ 12:34 PM --- Andrew Karim ------------ England
+P -- JULY.02  @ 8:23  AM --- Carla Pereira ----------- South Korea
+P -- JULY.02  @ 2:34  PM --- Carl Krause ------------- United States
+M -- JULY.02  @ 9:14  AM --- David Cook -------------- United States
+
+Therefore, you have a GUARANTEED $750-USD CommissionS  every month from now on!.
+
+Earn $25 Per Process!Each $25 x 30 = $750 Commission will be yours...!
+
+Be Sure to Copy the link below & Paste into your browser and press enter:
+To Secure your $750 commission!
+
+You will access your money in any ATM when you follow the instructions you receive.
+
+Click below!! And order Now before cut-off
+
+https://www.plimus.com/jsp/redirect.jsp?contractId=2844808&referrer=mark2011
+
+Start to Earn Now your $15 membership only and automatic back to you,+ Guarantee   
+you can recieve lifetime commissions every 20th of the month. Today its $750 For   
+the start of the month of JULY 2011 if goes up daily until the end of the month.
+
+You must UPGRADE right away or before others do....
+
+Caring for Your Success, Karen Jackson 
+
+9547 colgate way, hamilton, OH 45011, USA 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"
+____________________________________________________
+Kids 321 :: Links to Online Games & Cartoons for Kids & Kids at Heart
 
