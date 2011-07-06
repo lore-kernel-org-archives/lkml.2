@@ -1,54 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753152Ab1GFL0r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 07:26:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60851 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752767Ab1GFL0p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 07:26:45 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
- Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
- Kingdom.
- Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] FDPIC: Fix memory leak
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        uclinux-dev@uclinux.org, Davidlohr Bueso <dave@gnu.org>,
-        David Howells <dhowells@redhat.com>
-Date: Wed, 06 Jul 2011 12:26:05 +0100
-Message-ID: <20110706112604.29112.39546.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1753239Ab1GFL2q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 07:28:46 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:64675 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753137Ab1GFL2o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 07:28:44 -0400
+Date: Wed, 6 Jul 2011 15:28:31 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: tommy.lin@caviumnetworks.com
+Cc: "'Tommy Lin'" <tommy.lin.1101@gmail.com>,
+        "'Wim Van Sebroeck'" <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Lin, Mac" <Mac.Lin@caviumnetworks.com>
+Subject: Re: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for
+ CNS3xxx hardware
+Message-ID: <20110706112830.GA23184@oksana.dev.rtsoft.ru>
+References: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com>
+ <20110705140559.GA15771@oksana.dev.rtsoft.ru>
+ <281B1F8BAB4D4BDABE7568809A0AEC1A@starsemi.com>
+ <20110706111616.GA18967@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20110706111616.GA18967@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@gnu.org>
+On Wed, Jul 06, 2011 at 03:16:16PM +0400, Anton Vorontsov wrote:
+> On Wed, Jul 06, 2011 at 06:05:37PM +0800, Tommy Lin wrote:
+> > Hi, I just found another patch that can solve the watchdog counter reload
+> > issue. Please ignore this patch, since it should not acceptable to use
+> > #ifdefs.
+> 
+> OK, great. Do I understand correctly that without Vitaly's patch,
+> your first patch is somewhat useless, as the watchdog will not work
+> or will work incorrectly? So should I postpone merging patch 1/2
+> until Vitaly's patch hit mainline?
 
-The shdr4extnum variable isn't being freed in the cleanup process of
-elf_fdpic_core_dump().
+Oh, I see that the issue isn't major, so I'll just merge the first
+patch.
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
+Thanks!
 
- fs/binfmt_elf_fdpic.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index 63039ed..2bc5dc6 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -1864,6 +1864,7 @@ cleanup:
- 	kfree(psinfo);
- 	kfree(notes);
- 	kfree(fpu);
-+	kfree(shdr4extnum);
- #ifdef ELF_CORE_COPY_XFPREGS
- 	kfree(xfpu);
- #endif
-
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
