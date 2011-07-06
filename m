@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756058Ab1GFDbG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 23:31:06 -0400
-Received: from imovil.entelpcs.cl ([200.72.211.69]:2590 "EHLO
-	localhost6.localdomain6" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752329Ab1GFDbF convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 23:31:05 -0400
-Subject: [PATCH] FDPIC: fix memory leak
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: David Howells <dhowells@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+	id S1756040Ab1GFDeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 23:34:44 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:39681 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968Ab1GFDen (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 23:34:43 -0400
+Subject: [PATCH 1/2] regulator: aat2870: Fix the logic of checking if no id
+ is matched in aat2870_get_regulator
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Jin Park <jinyoungp@nvidia.com>, Liam Girdwood <lrg@ti.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: GNU
-Date: Tue, 05 Jul 2011 23:30:42 -0400
-Message-ID: <1309923042.3975.4.camel@offbook>
+Date: Wed, 06 Jul 2011 11:34:36 +0800
+Message-ID: <1309923277.26847.5.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@gnu.org>
+In current implementation, the pointer ri is not NULL if no id is matched.
+Fix it by checking i == ARRAY_SIZE(aat2870_regulators) if no id is matched.
 
-The shdr4extnum variable isn't being freed in the cleanup process of elf_fdpic_core_dump().
-
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- fs/binfmt_elf_fdpic.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/regulator/aat2870-regulator.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
-index 63039ed..2bc5dc6 100644
---- a/fs/binfmt_elf_fdpic.c
-+++ b/fs/binfmt_elf_fdpic.c
-@@ -1864,6 +1864,7 @@ cleanup:
- 	kfree(psinfo);
- 	kfree(notes);
- 	kfree(fpu);
-+	kfree(shdr4extnum);
- #ifdef ELF_CORE_COPY_XFPREGS
- 	kfree(xfpu);
- #endif
+diff --git a/drivers/regulator/aat2870-regulator.c b/drivers/regulator/aat2870-regulator.c
+index cd41045..11d1ab4 100644
+--- a/drivers/regulator/aat2870-regulator.c
++++ b/drivers/regulator/aat2870-regulator.c
+@@ -159,7 +159,7 @@ static struct aat2870_regulator *aat2870_get_regulator(int id)
+ 			break;
+ 	}
+ 
+-	if (!ri)
++	if (i == ARRAY_SIZE(aat2870_regulators))
+ 		return NULL;
+ 
+ 	ri->enable_addr = AAT2870_LDO_EN;
 -- 
 1.7.4.1
+
 
 
