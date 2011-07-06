@@ -1,90 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752367Ab1GFIP3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 04:15:29 -0400
-Received: from lucidpixels.com ([72.73.18.11]:37635 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab1GFIP0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 04:15:26 -0400
-Date: Wed, 6 Jul 2011 04:15:25 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: linux-usb@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: 2.6.39.2: usb kernel panic/oops: schedule+ehci_irq+0x266/0x830
-In-Reply-To: <alpine.DEB.2.02.1107051742290.3983@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1107060412440.27258@p34.internal.lan>
-References: <alpine.DEB.2.02.1107051742290.3983@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752555Ab1GFIUP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 04:20:15 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:18555 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1GFIUM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 04:20:12 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp07.nvidia.com on Wed, 06 Jul 2011 01:20:02 -0700
+Message-ID: <4E141AAF.1060405@nvidia.com>
+Date: Wed, 6 Jul 2011 17:19:59 +0900
+From: Jinyoung Park <jinyoungp@nvidia.com>
+Organization: NVIDIA
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ko; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: "axel.lin@gmail.com" <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Richard Purdie <rpurdie@rpsys.net>
+Subject: Re: backlight: aat2870_bl: questions about setting max_current
+References: <1309935342.6088.5.camel@phoenix> <4E1411B1.8020102@nvidia.com> <CAF+7xW=M_PBQhyt3H450Lijo8uXyz+r0PQ0LHLqQ15z=6uBz2Q@mail.gmail.com>
+In-Reply-To: <CAF+7xW=M_PBQhyt3H450Lijo8uXyz+r0PQ0LHLqQ15z=6uBz2Q@mail.gmail.com>
+X-NVConfidentiality: public
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Axel
 
+ > Yet another question:
+ > (Just a quick check at the datasheet.)
+ > Why not just set max_current to AAT2870_CURRENT_27_9?
+ > Why do you want max_current to be configurable by pdata?
+I think that the max backlight current should be configured according to
+required power consumption and it could be different for each platform.
+So the max_current value be controlled.
 
-On Tue, 5 Jul 2011, Justin Piszcz wrote:
-
-> Hi,
->
-> I plan to build a new machine in the future (one with console access) but in 
-> the meantime, after my PSU replacement, the host is still having issues, I've 
-> turned off bluetooth wireless (built into the DP55KG) and will see if it 
-> panics again, link the latest panic/oops/etc:
->
-> http://home.comcast.net/~jpiszcz/20110705/IMG_2875.JPG
->
-> schedule+0x266/0x830
-> common_interrupt+0xe/0x13
-> ehci_irq+0x20f/0x230
->
-> Is this a valid kernel bug?
->
-> I have another box (diff MOBO and all running 2.6.39.x no issues) but it does 
-> not have built-in bluetooth, I am also running a USB (non-winmodem) on this 
-> host as well, can anyone comment on this?
->
-> 16:      70587          0          0          0          0          0 11675 
-> 0   IO-APIC-fasteoi   ehci_hcd:usb1
->
-> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-> Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
-> Bus 001 Device 002: ID 8087:0020 Intel Corp. Integrated Rate Matching Hub
-> Bus 002 Device 002: ID 8087:0020 Intel Corp. Integrated Rate Matching Hub
-> Bus 001 Device 003: ID 2001:f103 D-Link Corp. DUB-H7 7-port USB 2.0 hub
-> Bus 001 Device 004: ID 0baf:0303 U.S. Robotics
-> Bus 001 Device 005: ID 0764:0501 Cyber Power System, Inc. CP1500 AVR UPS
-> Bus 001 Device 006: ID 413c:1002 Dell Computer Corp. Keyboard Hub
-> Bus 001 Device 007: ID 067b:2303 Prolific Technology, Inc. PL2303 Serial Port
-> Bus 001 Device 008: ID 413c:2002 Dell Computer Corp. SK-8125 Keyboard
-> Bus 001 Device 009: ID 0461:4d15 Primax Electronics, Ltd Dell Optical Mouse
->
-> I also use munin to poll the UPS for various information, could this be a bug 
-> in the USB driver for this chipset/motherboard?
->
-> Can polling various USB devices, running a hylafax server, etc, cause a bug 
-> to pop up more easily in the USB subsystem vs. just using a keyboard for 
-> example, I assume so?
->
-> Comments?
->
-> Thanks.
->
-> Justin.
->
-
-Any thoughts on this error?
-
-I've run 3 memtest passes and put the box under severe CPU / disk / I/O 
-load etc and there are no issues, but it appears when USB devices get 
-used, the kernel panics.  Next test will probably be to remove all USB 
-devices and just use PS/2 and see if the problem goes away but I was 
-curious if anyone could comment on the that dump:
-http://home.comcast.net/~jpiszcz/20110705/IMG_2875.JPG
-
-As to what might be causing this otherwise? Thanks!
-
-Memtest86 v4.20(latest): 3 passes, no problems:
-http://home.comcast.net/~jpiszcz/20110706/IMG_2879.JPG
-
-Justin.
+Thanks,
+Jin.
