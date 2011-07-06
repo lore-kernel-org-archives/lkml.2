@@ -1,77 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab1GFRZT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 13:25:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21817 "EHLO mx1.redhat.com"
+	id S1755073Ab1GFRZ1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 13:25:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11225 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754960Ab1GFRZQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 13:25:16 -0400
-Date: Wed, 6 Jul 2011 13:25:07 -0400
+	id S1754510Ab1GFRZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 13:25:22 -0400
+Date: Wed, 6 Jul 2011 13:25:17 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: gregkh@suse.de
 Cc: joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
-Message-Id: <889f3300a96f381aee1239ea775014fff26d93c9.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
+        linux-kernel@vger.kernel.org
+Message-Id: <60d37e464f675b0f67e1dae828f3b0a1718fff5d.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
 In-Reply-To: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
 References: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
-Subject: [PATCH 08/10] dynamic_debug: make netif_dbg() call __netdev_printk()
+Subject: [PATCH 10/10] dynamic_debug: remove num_enabled accounting
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Jason Baron <jbaron@redhat.com>
 
-Previously, netif_dbg() was using dynamic_dev_dbg() to perform
-the underlying printk. Fix it to use __netdev_printk(), instead.
+The num_enabled accouting aren't actually used anywhere - remove them.
 
-Cc: David S. Miller <davem@davemloft.net>
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- include/linux/dynamic_debug.h |   12 ++++++++++++
- include/linux/netdevice.h     |    6 ++----
- 2 files changed, 14 insertions(+), 4 deletions(-)
+ lib/dynamic_debug.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index feaac1e..7048e64 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -84,6 +84,18 @@ extern int __dynamic_netdev_dbg(struct _ddebug *descriptor,
- 		__dynamic_netdev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);\
- 	} while (0)
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index db66a48..fbb4547 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -42,7 +42,6 @@ struct ddebug_table {
+ 	struct list_head link;
+ 	char *mod_name;
+ 	unsigned int num_ddebugs;
+-	unsigned int num_enabled;
+ 	struct _ddebug *ddebugs;
+ };
  
-+#define dynamic_netif_dbg(dev, cond, fmt, ...) do {			\
-+	static struct _ddebug descriptor				\
-+	__used								\
-+	__attribute__((section("__verbose"), aligned(8))) =		\
-+	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
-+		_DPRINTK_FLAGS_DEFAULT };				\
-+	if (unlikely(descriptor.enabled)) {				\
-+		if (cond)						\
-+			__dynamic_netdev_dbg(&descriptor, dev, fmt, ##__VA_ARGS__);\
-+	}								\
-+	} while (0)
-+
- #else
+@@ -152,11 +151,6 @@ static void ddebug_change(const struct ddebug_query *query,
+ 			newflags = (dp->flags & mask) | flags;
+ 			if (newflags == dp->flags)
+ 				continue;
+-
+-			if (!newflags)
+-				dt->num_enabled--;
+-			else if (!dp->flags)
+-				dt->num_enabled++;
+ 			dp->flags = newflags;
+ 			if (newflags)
+ 				dp->enabled = 1;
+@@ -764,7 +758,6 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+ 	}
+ 	dt->mod_name = new_name;
+ 	dt->num_ddebugs = n;
+-	dt->num_enabled = 0;
+ 	dt->ddebugs = tab;
  
- static inline int ddebug_remove_module(const char *mod)
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index 9b132ef..99c358f 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -2731,10 +2731,8 @@ do {								\
- #elif defined(CONFIG_DYNAMIC_DEBUG)
- #define netif_dbg(priv, type, netdev, format, args...)		\
- do {								\
--	if (netif_msg_##type(priv))				\
--		dynamic_dev_dbg((netdev)->dev.parent,		\
--				"%s: " format,			\
--				netdev_name(netdev), ##args);	\
-+	dynamic_netif_dbg(netdev, (netif_msg_##type(priv)),	\
-+				  format, ##args);		\
- } while (0)
- #else
- #define netif_dbg(priv, type, dev, format, args...)			\
+ 	mutex_lock(&ddebug_lock);
 -- 
 1.7.5.4
 
