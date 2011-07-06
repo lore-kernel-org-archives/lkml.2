@@ -1,46 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab1GFObu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 10:31:50 -0400
-Received: from smtp105.prem.mail.ac4.yahoo.com ([76.13.13.44]:39372 "HELO
-	smtp105.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753148Ab1GFObt (ORCPT
+	id S1753368Ab1GFOkM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 10:40:12 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:40895 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753235Ab1GFOkK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 10:31:49 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 2vjRO1sVM1nTBh3.kDTkTTchiF58KyJyx_MC6n86a5dZvWG
- dmlvpIzYnciQFb92b1Sy2YlQYp.FQDfReGDptwQzb8Z2m8z0kV2HsQyNQDbg
- JGV0vGLPfjM3ohYH.FpWeLfj5D5y42why9dQS.Z9JqNyh6G9UVhEJV21Werl
- _5x04c8ywBnelGPNcjesu8mOIZGoOpV71huOxTxDxunEjkg5NWzvqI9tVpLg
- ybNkepxTf0Cg_BIEoVvESKtugY9AIxOEnH35.6fwONk9K5FmZfM4ow_26z5V
- WvBggFjJkFYWCQ60uhhDkvxlMTzeHwAHT8F4sp66aD_r5tD.N6AUo3i3RFhI
- f6z_JI7qQNDKixZnb_3rXmojf
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 6 Jul 2011 09:31:45 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Peter Kruse <pk@q-leap.de>
-cc: Dave Chinner <david@fromorbit.com>, Mel Gorman <mel@csn.ul.ie>,
-        David Rientjes <rientjes@google.com>, eric.dumazet@gmail.com,
-        linux-kernel@vger.kernel.org
-Subject: Re: I have a blaze of 353 page allocation failures, all alike
-In-Reply-To: <4E1405C3.20904@q-leap.de>
-Message-ID: <alpine.DEB.2.00.1107060931190.17202@router.home>
-References: <272bf0cc51439a2ab31ee2f06317dd9f.squirrel@www.q-leap.de> <4D6648B5.1090306@q-leap.com> <4DA4692D.7080207@q-leap.de> <alpine.DEB.2.00.1104121306581.14692@router.home> <alpine.DEB.2.00.1104121830030.14956@chino.kir.corp.google.com>
- <4DA54D2A.3050206@q-leap.de> <alpine.DEB.2.00.1104131116330.19493@router.home> <4E09BEA1.1080501@q-leap.de> <alpine.DEB.2.00.1107051013500.16869@router.home> <20110705172043.GA15147@csn.ul.ie> <20110706041602.GX1026@dastard> <4E1405C3.20904@q-leap.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 6 Jul 2011 10:40:10 -0400
+Date: Wed, 6 Jul 2011 10:40:10 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Justin Piszcz <jpiszcz@lucidpixels.com>
+cc: linux-kernel@vger.kernel.org, <linux-usb@vger.kernel.org>,
+        Alan Piszcz <ap@solarrain.com>
+Subject: Re: 2.6.39.2: usb kernel panic/oops: schedule+ehci_irq+0x266/0x830
+In-Reply-To: <alpine.DEB.2.02.1107051742290.3983@p34.internal.lan>
+Message-ID: <Pine.LNX.4.44L0.1107061036190.1995-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jul 2011, Peter Kruse wrote:
+On Tue, 5 Jul 2011, Justin Piszcz wrote:
 
-> Ok then I think we will schedule a kernel update and if the
-> server then runs for more than 40 days we could say that
-> the problem is fixed.
+> Hi,
+> 
+> I plan to build a new machine in the future (one with console access) but 
+> in the meantime, after my PSU replacement, the host is still having 
+> issues, I've turned off bluetooth wireless (built into the DP55KG) and 
+> will see if it panics again, link the latest panic/oops/etc:
+> 
+> http://home.comcast.net/~jpiszcz/20110705/IMG_2875.JPG
+> 
+> schedule+0x266/0x830
+> common_interrupt+0xe/0x13
+> ehci_irq+0x20f/0x230
 
-Note that this is *not* the original problem you reported. I do not see
-page alloc failures in your latest logs.
+You need to enable CONFIG_FRAME_POINTER; without that it is difficult 
+to interpret the stack dump.  Also you should collect more than a 
+single screen's worth of information, say by using a serial console or 
+netconsole.
+
+> Is this a valid kernel bug?
+
+What's the difference between a "valid" kernel bug and an "invalid" 
+kernel bug?  :-)
+
+Yes, clearly it is a bug in the kernel.
+
+> I have another box (diff MOBO and all running 2.6.39.x no issues) but it 
+> does not have built-in bluetooth, I am also running a USB (non-winmodem) 
+> on this host as well, can anyone comment on this?
+> 
+>   16:      70587          0          0          0          0          0 
+> 11675          0   IO-APIC-fasteoi   ehci_hcd:usb1
+> 
+> Bus 001 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> Bus 002 Device 001: ID 1d6b:0002 Linux Foundation 2.0 root hub
+> Bus 001 Device 002: ID 8087:0020 Intel Corp. Integrated Rate Matching Hub
+> Bus 002 Device 002: ID 8087:0020 Intel Corp. Integrated Rate Matching Hub
+> Bus 001 Device 003: ID 2001:f103 D-Link Corp. DUB-H7 7-port USB 2.0 hub
+> Bus 001 Device 004: ID 0baf:0303 U.S. Robotics
+> Bus 001 Device 005: ID 0764:0501 Cyber Power System, Inc. CP1500 AVR UPS
+> Bus 001 Device 006: ID 413c:1002 Dell Computer Corp. Keyboard Hub
+> Bus 001 Device 007: ID 067b:2303 Prolific Technology, Inc. PL2303 Serial Port
+> Bus 001 Device 008: ID 413c:2002 Dell Computer Corp. SK-8125 Keyboard
+> Bus 001 Device 009: ID 0461:4d15 Primax Electronics, Ltd Dell Optical Mouse
+> 
+> I also use munin to poll the UPS for various information, could this be a 
+> bug in the USB driver for this chipset/motherboard?
+> 
+> Can polling various USB devices, running a hylafax server, etc, cause a 
+> bug to pop up more easily in the USB subsystem vs. just using a keyboard 
+> for example, I assume so?
+
+This could any of a number of things.  More information is needed.
+
+If the problem is easily reproducible, you can use git bisect to pin 
+down the commit responsible for exposing the bug.
+
+Alan Stern
 
