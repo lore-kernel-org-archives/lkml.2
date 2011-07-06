@@ -1,52 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab1GFS2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 14:28:19 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:39275 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754329Ab1GFS2S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 14:28:18 -0400
-Date: Wed, 6 Jul 2011 11:27:17 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] Documentation: update CodingStyle memory allocators
-Message-Id: <20110706112717.cf70425e.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4E14A920.0090:SCFMA922111,ss=1,re=-4.000,fgs=0
+	id S1755305Ab1GFSbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 14:31:19 -0400
+Received: from mga03.intel.com ([143.182.124.21]:5468 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753865Ab1GFSbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 14:31:18 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,488,1304319600"; 
+   d="scan'208";a="23398849"
+Date: Wed, 6 Jul 2011 20:31:26 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>
+Subject: Re: [PATCH 5/6] MFD: twl6040: Remove enum for PLL tracking
+Message-ID: <20110706183126.GJ3021@sortiz-mobl>
+References: <1309773958-14608-1-git-send-email-peter.ujfalusi@ti.com>
+ <1309773958-14608-6-git-send-email-peter.ujfalusi@ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309773958-14608-6-git-send-email-peter.ujfalusi@ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jesper Juhl <jj@chaosbits.net>
+Hi Peter,
 
-The list of available general purpose memory allocators in
-Documentation/CodingStyle chapter 14 is incomplete. This patch adds
-the missing vzalloc() to the list.
+On Mon, Jul 04, 2011 at 01:05:57PM +0300, Peter Ujfalusi wrote:
+> There is no need to have two different types for
+> tracking the selected PLL.
+> Use only the defines, when dealing with the PLLs.
+> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- Documentation/CodingStyle |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+Cheers,
+Samuel.
 
---- lnx-30-rc4.orig/Documentation/CodingStyle
-+++ lnx-30-rc4/Documentation/CodingStyle
-@@ -680,8 +680,8 @@ ones already enabled by DEBUG.
- 		Chapter 14: Allocating memory
- 
- The kernel provides the following general purpose memory allocators:
--kmalloc(), kzalloc(), kcalloc(), and vmalloc().  Please refer to the API
--documentation for further information about them.
-+kmalloc(), kzalloc(), kcalloc(), vmalloc(), and vzalloc().  Please refer to
-+the API documentation for further information about them.
- 
- The preferred form for passing a size of a struct is the following:
- 
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
