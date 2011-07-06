@@ -1,36 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755959Ab1GFDJw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 23:09:52 -0400
-Received: from [193.252.22.128] ([193.252.22.128]:14746 "EHLO
-	smtp5.freeserve.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab1GFDJv (ORCPT
+	id S1756022Ab1GFDOs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 23:14:48 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:38165 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755561Ab1GFDOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 23:09:51 -0400
-X-ME-UUID: 20110706030934287.4623D1C01011@mwinf3408.me.freeserve.com
-Reply-To: <m.lman@aol.com>
-From: "M.L" <mkopm@live.com>
-Subject: Something to consider
-Date: Wed, 6 Jul 2011 04:09:41 +0100
+	Tue, 5 Jul 2011 23:14:47 -0400
+X-Sasl-enc: JmhTWltunTT7tsfjvs8Md9F5IyDXruoGNUSGk95a7psX 1309922086
+Date: Tue, 5 Jul 2011 20:12:52 -0700
+From: Greg KH <greg@kroah.com>
+To: matt mooney <mfm@muteddisk.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 00/22] staging: usbip: misc. userspace changes
+Message-ID: <20110706031252.GA30442@kroah.com>
+References: <cover.1308547654.git.mfm@muteddisk.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-Id: <20110706030934.4623D1C01011@mwinf3408.me.freeserve.com>
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1308547654.git.mfm@muteddisk.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am contacting you regarding a business undertaking from which we both can make a substantial amount 
-of money. I believe with your assistance we can be successful in this endeavour. 
-Indicate your interest and I will give you more information.
+On Sun, Jun 19, 2011 at 10:44:30PM -0700, matt mooney wrote:
+> Hi Greg,
+> 
+> This patch set contains only userspace changes. Next, I will take a look at
+> attach and detach, which should soon lead to the reason why usbip is not
+> currently working.
 
-Kind regards
-M.L.
+Not all of these applied, care to resend the ones that didn't after
+rebasing on the current staging-next tree?
 
+thanks,
 
+greg k-h
