@@ -1,74 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754138Ab1GFPdc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 11:33:32 -0400
-Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:41320 "HELO
-	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753910Ab1GFPdb (ORCPT
+	id S1754076Ab1GFPh2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 11:37:28 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38624 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753245Ab1GFPh1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 11:33:31 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
-	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=BVKybfWPAghZU81U6zt/nsjHjB6NU2vUPNNLSaPfr2iOBF8ElpaHrF76fAA8Toa4lMkwyvBUuRNEbMZIazdBqbw0hBZvvBdCECWq0QdaVMS3rUDhIncPtOsx0zguCxY9;
-Date: Wed, 6 Jul 2011 08:33:29 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Peter Foley <pefoley2@verizon.net>, Michal Marek <mmarek@suse.cz>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kernel: prevent unnecessary rebuilding due to
- config_data.gz
-Message-Id: <20110706083329.9755dc70.rdunlap@xenotime.net>
-In-Reply-To: <alpine.LNX.2.00.1107051741390.20637@linux>
-References: <alpine.LNX.2.00.1107051741390.20637@linux>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
+	Wed, 6 Jul 2011 11:37:27 -0400
+Date: Wed, 6 Jul 2011 16:37:04 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Marek Szyprowski <m.szyprowski@samsung.com>
+Cc: "'Arnd Bergmann'" <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
+Message-ID: <20110706153704.GF8286@n2100.arm.linux.org.uk>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <20110705113345.GA8286@n2100.arm.linux.org.uk> <006301cc3be4$daab1850$900148f0$%szyprowski@samsung.com> <201107061609.29996.arnd@arndb.de> <007101cc3bec$dfbba8c0$9f32fa40$%szyprowski@samsung.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <007101cc3bec$dfbba8c0$9f32fa40$%szyprowski@samsung.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 05 Jul 2011 19:42:18 -0400 (EDT) Peter Foley wrote:
+On Wed, Jul 06, 2011 at 04:56:23PM +0200, Marek Szyprowski wrote:
+> This will not solve our problems. We need CMA also to create at least one
+> device private area that for sure will be in low memory (video codec).
 
-> When IKCONFIG is built-in make oldconfig will cause the kernel to be 
-> relinked even if .config didn't change. This happens because of a 
-> config_data.gz dependency on .config. This patch changes the if_changed to 
-> a filechk so that config_data.h is only rebuilt when the contents 
-> have actually changed.
-> 
-> Signed-off-by: Peter Foley <pefoley2@verizon.net>
-
-Michal,
-If this looks OK to you, please merge it.
-
-Thanks.
-
-> ---
->  kernel/Makefile |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff --git a/kernel/Makefile b/kernel/Makefile
-> index 2d64cfc..d06467f 100644
-> --- a/kernel/Makefile
-> +++ b/kernel/Makefile
-> @@ -125,11 +125,10 @@ targets += config_data.gz
->  $(obj)/config_data.gz: $(KCONFIG_CONFIG) FORCE
->  	$(call if_changed,gzip)
->  
-> -quiet_cmd_ikconfiggz = IKCFG   $@
-> -      cmd_ikconfiggz = (echo "static const char kernel_config_data[] __used = MAGIC_START"; cat $< | scripts/bin2c; echo "MAGIC_END;") > $@
-> +      filechk_ikconfiggz = (echo "static const char kernel_config_data[] __used = MAGIC_START"; cat $< | scripts/bin2c; echo "MAGIC_END;")
->  targets += config_data.h
->  $(obj)/config_data.h: $(obj)/config_data.gz FORCE
-> -	$(call if_changed,ikconfiggz)
-> +	$(call filechk,ikconfiggz)
->  
->  $(obj)/time.o: $(obj)/timeconst.h
->  
-> -- 
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+You make these statements but you don't say why.  Can you please
+explain why the video codec needs low memory - does it have a
+restricted number of memory address bits which it can manipulate?
