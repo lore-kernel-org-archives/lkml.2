@@ -1,47 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab1GFJeP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 05:34:15 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:32731 "EHLO multi.imgtec.com"
+	id S1754658Ab1GFJfR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 05:35:17 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50731 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753964Ab1GFJeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 05:34:14 -0400
-Message-ID: <4E142C10.3050508@imgtec.com>
-Date: Wed, 06 Jul 2011 10:34:08 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
-MIME-Version: 1.0
-To: Chris Ball <cjb@laptop.org>, Will <will.newton@imgtec.com>,
-        James Hogan <james.hogan@imgtec.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
+	id S1754248Ab1GFJfP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 05:35:15 -0400
+Date: Wed, 6 Jul 2011 11:35:01 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Lin Ming <ming.m.lin@intel.com>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 0/4] mmc: dw_mmc: mmc_test related fixes
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jul 2011 09:34:08.0331 (UTC) FILETIME=[DAD869B0:01CC3BBF]
-X-SEF-Processed: 7_3_0_01158__2011_07_06_10_34_09
+Subject: Re: [PATCH 1/4] perf, x86: Add Intel Nehalem/Westmere uncore pmu
+Message-ID: <20110706093501.GA11969@elte.hu>
+References: <1309421396-17438-1-git-send-email-ming.m.lin@intel.com>
+ <1309421396-17438-2-git-send-email-ming.m.lin@intel.com>
+ <20110630165849.GE23059@one.firstfloor.org>
+ <1309761541.18875.40.camel@minggr.sh.intel.com>
+ <20110704215706.GH15637@one.firstfloor.org>
+ <1309864954.3282.61.camel@twins>
+ <cf54fbb6e05ab86a5c6029eda70012e4.squirrel@www.firstfloor.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cf54fbb6e05ab86a5c6029eda70012e4.squirrel@www.firstfloor.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No changes since v1 except acked-by and tested-by
 
-More improvements and fixes for the Synopsys DesignWare MCI driver so
-that it passes the mmc_test suite:
+* Andi Kleen <andi@firstfloor.org> wrote:
 
-[PATCH 1/4] mmc: dw_mmc: fix stop when fallen back to PIO
-	Fixes a hang after an error/timeout in PIO mode.
-[PATCH 2/4] mmc: dw_mmc: remove unnecessary error messages
-	Removes some dev_err's since an errno is sufficient.
-[PATCH 3/4] mmc: dw_mmc: handle "no CRC status" error
-	Fixes "Correct xfer_size at write" tests.
-[PATCH 4/4] mmc: dw_mmc: reset FIFO after an error
-	Fixes modified "Correct xfer_size at write" tests (3 blocks
-	instead of 2).
+> 
+> >
+> >>   But it's not strictly required I would say,
+> >> 44(?) bits are probably enough for near all use cases.
+> >
+> > 44bits is in the hours range for pure cycle counts, which is 
+> > so-so. I bet you're going to be very annoyed when you find your 
+> > counters are wrecked after your 5 hour test run finishes.
+> 
+> For these kinds of long running measurements you usually care about 
+> ratios, not absolutes. Some infrequent wrapping should not 
+> substantially change. those.
 
- drivers/mmc/host/dw_mmc.c  |   41 +++++++++++++++++++++++++++++++----------
- include/linux/mmc/dw_mmc.h |    2 ++
- 2 files changed, 33 insertions(+), 10 deletions(-)
+That's just empty blathering - those who *do* take a look at 
+long-running absolute values obviously care.
 
+There's absolutely no reason to be sloppy here - this needs to be 
+implemented correctly.
+
+Thanks,
+
+	Ingo
