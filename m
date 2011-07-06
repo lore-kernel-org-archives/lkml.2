@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753209Ab1GFHJt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 03:09:49 -0400
-Received: from nat28.tlf.novell.com ([130.57.49.28]:17463 "EHLO
-	nat28.tlf.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752990Ab1GFHJs convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-JBeulich@novell.com:6:1>);
-	Wed, 6 Jul 2011 03:09:48 -0400
-Message-Id: <4E142659020000780004C50D@nat28.tlf.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 06 Jul 2011 08:09:45 +0100
-From: "Jan Beulich" <JBeulich@novell.com>
-To: "Matthew Garrett" <mjg59@srcf.ucam.org>
-Cc: <mingo@elte.hu>, <rtc-linux@googlegroups.com>, <dannf@hp.com>,
-        <tglx@linutronix.de>, <linux-kernel@vger.kernel.org>, <hpa@zytor.com>
-Subject: Re: [PATCH] x86: enable rtc-efi
-References: <4E12DBAB020000780004C1B2@nat28.tlf.novell.com>
- <20110705182913.GA31808@srcf.ucam.org>
-In-Reply-To: <20110705182913.GA31808@srcf.ucam.org>
+	id S1753285Ab1GFHLU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 03:11:20 -0400
+Received: from mail.bbaw.de ([194.95.188.6]:58149 "EHLO mail.bbaw.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753040Ab1GFHLT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 03:11:19 -0400
+Date: Wed, 6 Jul 2011 09:11:17 +0200
+From: Lars =?UTF-8?B?VMOkdWJlcg==?= <taeuber@bbaw.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PROBLEM] reproduceable storage errors on high IO load
+Message-Id: <20110706091117.9caa1d69.taeuber@bbaw.de>
+In-Reply-To: <62378.1309905287@turing-police.cc.vt.edu>
+References: <20110606095127.21d23a70.taeuber@bbaw.de>
+	<201106060559.03131.gene.heskett@gmail.com>
+	<20110606130628.e86f0c67.taeuber@bbaw.de>
+	<201106060920.32257.gene.heskett@gmail.com>
+	<20110606155610.69a0d17a.taeuber@bbaw.de>
+	<20110607124354.06ed074e.taeuber@bbaw.de>
+	<20110701102323.3db579ad.taeuber@bbaw.de>
+	<20110701151313.2afd48e0.taeuber@bbaw.de>
+	<20110701163719.27afc580.taeuber@bbaw.de>
+	<20110704153923.b929ce5d.taeuber@bbaw.de>
+	<62378.1309905287@turing-police.cc.vt.edu>
+X-Mailer: Sylpheed 3.1.0 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+X-AntiVirus: checked by Avira MailGate (version: 2.1.4-7; AVE: 7.9.5.34; VDF: 7.11.10.229; host: mailhub); id=13609-aYagrK
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> On 05.07.11 at 20:29, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Tue, Jul 05, 2011 at 08:38:51AM +0100, Jan Beulich wrote:
->> Besides a Kconfig change this just requires creating a respective
->> platform device.
+Hi Valdis,
+
+Am Tue, 05 Jul 2011 18:34:47 -0400
+Valdis.Kletnieks@vt.edu schrieb:
+> On Mon, 04 Jul 2011 15:39:23 +0200, Lars =?UTF-8?B?VMOkdWJlcg==?= said:
 > 
-> Couple of other issues:
+> > 1.
+> > * Ultrastar 7K3000 attached to onboard AMD_AHCI
+> > * dd if=/dev/zero of=/dev/sde
+> > * dd told write speed of: 15.7MB/s
+> > * no error after half an hour
+> > 
+> > 2.
+> > * Ultrastar 7K3000 attached to PCIe to sata_mv controller
+> > * dd if=/dev/zero of=/dev/sda
+> > * dd told write speed of: 6.5MB/s
+> > * no error but strange log: dmesg-PCIe-sata_mv.log.gz
+> > 
+> > 3.
+> > * Ultrastar 7K3000 attached to PCIe areca SAS HBA (mvsas)
+> > * dd if=/dev/zero of=/dev/sdg
+> > * dd told write speed of: 1.3MB/s
+> > * errors: dmesg-PCIe-mvsas.log.gz
 > 
->> +static struct platform_device rtc_efi_dev = {
->> +	.name = "rtc-efi",
->> +	.id = -1,
->> +};
-> 
-> You haven't removed this from the IA64 code. Isn't that going to result 
-> in registering the same device twice?
+> Umm.. was this the *same* Ulstrastar disk connected 3 different ways?  And
+> how exactly was it connected in each case? (Trying to rule out flaky disks
+> if it was 3 different disks, or a hardware/cabling issue specific to the
+> areca controller)
 
-How would code under arch/ia64/ and code under arch/x86/ ever
-manage to register the same device twice?
+No it wasn't the same disk but drives of identical type and version and with
+same firmware.
+All the problems I came across during my odyssey could be different ones.
+The most recent could be related to the mvsas driver.
 
->> +static int __init rtc_init(void)
->> +{
->> +	if (efi_enabled && platform_device_register(&rtc_efi_dev) < 0)
->> +		printk(KERN_ERR "unable to register rtc device...\n");
-> 
-> Ought to -ENODEV if efi isn't present? The error message should also be 
-> more verbose.
+See https://bugzilla.kernel.org/show_bug.cgi?id=14534#c11 and following.
 
-I would agree on the -ENODEV part, but the error message is what
-the original ia64 code (which I simply copied over and modified
-slightly) has, so if a change is needed it ought to be done there first
-I would think. Additionally I can't really see what meaningful addition
-to the error message you envision.
-
-Jan
-
+Thanks
+Lars
