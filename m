@@ -1,55 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754004Ab1GFF7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 01:59:11 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58733 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751622Ab1GFF7K (ORCPT
+	id S1754236Ab1GFGJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 02:09:05 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:48526 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752741Ab1GFGJD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 01:59:10 -0400
-Subject: [PATCH] backlight: aat2870_bl: fix error checking for
- backlight_device_register
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Richard Purdie <rpurdie@rpsys.net>, Jin Park <jinyoungp@nvidia.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jul 2011 13:59:00 +0800
-Message-ID: <1309931940.6088.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jul 2011 02:09:03 -0400
+MIME-Version: 1.0
+Date: Wed, 6 Jul 2011 15:09:01 +0900
+X-Google-Sender-Auth: AiwNff_5LDreBP-xcoCsqjVI-II
+Message-ID: <CAH9JG2Xp_u-46x8bf2Uq-9FREZyYhcP3E7H+MsSoFVrWpyLrtA@mail.gmail.com>
+Subject: ext4: why init the unused block group at batched discard?
+From: Kyungmin Park <kmpark@infradead.org>
+To: Lukas Czerner <lczerner@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Filesystem Mailing List <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-backlight_device_register() returns ERR_PTR() on error.
+Hi Lukas,
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/video/backlight/aat2870_bl.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+During code review batched discard support at ext4. I wonder why do
+you init the uninitialized block group during batched discard.
+As you know uninitialized block group mean that there's no operation
+at these blocks.
+So no need to trim it at all.
 
-diff --git a/drivers/video/backlight/aat2870_bl.c b/drivers/video/backlight/aat2870_bl.c
-index 4952a61..f13a3f7 100644
---- a/drivers/video/backlight/aat2870_bl.c
-+++ b/drivers/video/backlight/aat2870_bl.c
-@@ -158,10 +158,10 @@ static int aat2870_bl_probe(struct platform_device *pdev)
- 	props.type = BACKLIGHT_RAW;
- 	bd = backlight_device_register("aat2870-backlight", &pdev->dev,
- 				       aat2870_bl, &aat2870_bl_ops, &props);
--	if (!bd) {
-+	if (IS_ERR(bd)) {
- 		dev_err(&pdev->dev,
- 			"Failed allocate memory for backlight device\n");
--		ret = -ENOMEM;
-+		ret = PTR_ERR(bd);
- 		goto out_kfree;
- 	}
- 
--- 
-1.7.4.1
+How do you think?
 
+int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
+{
+        ...
 
+        for (group = first_group; group <= last_group; group++) {
+                grp = ext4_get_group_info(sb, group);
+                /* We only do this if the grp has never been initialized */
+                if (unlikely(EXT4_MB_GRP_NEED_INIT(grp))) {
+                        ret = ext4_mb_init_group(sb, group);
+                        if (ret)
+                                break;
+                }
+        ...
+        }
+        ...
+}
 
+Thank you,
+Kyungmin Park
