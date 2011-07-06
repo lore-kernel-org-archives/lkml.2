@@ -1,89 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab1GFR6O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 13:58:14 -0400
-Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:41750 "HELO
-	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753567Ab1GFR6L (ORCPT
+	id S1754662Ab1GFSBO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 14:01:14 -0400
+Received: from mail-iy0-f174.google.com ([209.85.210.174]:38669 "EHLO
+	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751987Ab1GFSBM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 13:58:11 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: WQkW4QUVM1nEXnHUGwbUqDFSDTYkVRNPV.S_QWvzkBDaMYp
- LkcfE3wTsO132LpEmRoaXYJhEZnaZS2FEwgv_V8h16bGak6TwtQHk.fqjhU6
- H4r5KZK5ULuTxflHFCrOjofWU.uXZpEqm67ehbtBU4NMi0HS8nvoKQm89eba
- gTHPJAzUDpyeSiP42QxEuQ1BGfbLWvDXyV5DqSMb_8HO22OHrYElbZh_4f.Y
- Hbrc.KTHRveCo2dX9P_cZN1UZ_vxCxUE5q7edY8icwNRbTnIqp5K7S73_W3i
- s8riyCFjzTgPqokkkWYo0B8GEOD7Z5CqqHJjSvdYSJX.uj0jOmxlA3CyHFgi
- LywWWnCTnc2bR9A7Up11mO3Qc
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 6 Jul 2011 12:58:08 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Tejun Heo <tj@kernel.org>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: percpu: Fixup __this_cpu_xchg* operations
-In-Reply-To: <alpine.DEB.2.00.1105201027000.5610@router.home>
-Message-ID: <alpine.DEB.2.00.1107061257330.17624@router.home>
-References: <alpine.DEB.2.00.1105201027000.5610@router.home>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 6 Jul 2011 14:01:12 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20110705135348.cb835073.akpm@linux-foundation.org>
+References: <1309468207-24199-1-git-send-email-wad@chromium.org>
+	<20110705135348.cb835073.akpm@linux-foundation.org>
+Date: Wed, 6 Jul 2011 13:01:12 -0500
+Message-ID: <CABqD9hY7xLWLeeFiKGdMT8VveXQAv3PgC-ZGPdd4qO1AfgDZWw@mail.gmail.com>
+Subject: Re: [PATCH v3 1/2] init: add root=PARTUUID=UUID/PARTNROFF=%d support
+From: Will Drewry <wad@chromium.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
+        Jens Axboe <jaxboe@fusionio.com>, Namhyung Kim <namhyung@gmail.com>,
+        Trond Myklebust <Trond.Myklebust@netapp.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Could you pick up this patch? Have not gotten a reply so far.
+On Tue, Jul 5, 2011 at 3:53 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 30 Jun 2011 16:10:06 -0500
+> Will Drewry <wad@chromium.org> wrote:
+>
+>> Expand root=PARTUUID=UUID syntax to support selecting a root partition
+>> by integer offset from a known, unique partition.  This approach
+>> provides similar properties to specifying a device and partition number,
+>> but using the UUID as the unique path prior to evaluating the offset.
+>>
+>> For example,
+>>   root=PARTUUID=99DE9194-FC15-4223-9192-FC243948F88B/PARTNROFF=1
+>> selects the partition with UUID 99DE.. then select the next
+>> partition.
+>>
+>> This change is motivated by a particular usecase in Chromium OS where
+>> the bootloader can easily determine what partition it is on (by UUID)
+>> but doesn't perform general partition table walking.
+>>
+>> That said, support for this model provides a direct mechanism for the
+>> user to modify the root partition to boot without specifically needing
+>> to extract each UUID or update the bootloader explicitly when the root
+>> partition UUID is changed (if it is recreated to be larger, for
+>> instance).  Pinning to a /boot-style partition UUID allows the arbitrary
+>> root partition reconfiguration/modifications with slightly less
+>> ambiguity than just [dev][partition] and less stringency than the
+>> specific root partition UUID.
+>>
+>> ...
+>>
+>>  static dev_t devt_from_partuuid(char *uuid_str)
+>> @@ -98,6 +101,22 @@ static dev_t devt_from_partuuid(char *uuid_str)
+>>       dev_t res = 0;
+>>       struct device *dev = NULL;
+>>       u8 uuid[16];
+>> +     struct gendisk *disk;
+>> +     struct hd_struct *part;
+>> +     int offset = 0;
+>> +
+>> +     if (strlen(uuid_str) < 36)
+>> +             goto done;
+>
+> I think this secretly changes behaviour?  Previously the code would have
+> accepted a less-than-36-byte UUID and would have done <something> with
+> it.  Now, it fails.
+>
+> What was <something>, and what is the reason for this (undocumented!)
+> change?
 
-On Fri, 20 May 2011, Christoph Lameter wrote:
+Nice catch.  Initially and currently, the only caller to
+devt_from_partuuid is name_to_dev_t.  name_to_dev_t() was forking on
+PARTUUID and length == UUID length.  However, if someone had called
+directly into devt_from_partuuid, no bounds checking would've occurred
+and out of bounds reads may have resulted.
 
-> Subject: percpu: Fixup __this_cpu_xchg* operations
+This just moves the check into devt_from_partuuid to unify the length
+checking logic with the functional logic.  Now devt_from_partuuid is
+safer (kinda) for other init-time callers and allows for detecting
+additions.  (E.g., if Kay wants to add more / arguments.)
+
+>> +     /* Check for optional partition number offset attributes. */
+>> +     if (uuid_str[36]) {
+>> +             /* Explicitly fail on poor PARTUUID syntax. */
+>> +             if (sscanf(&uuid_str[36], "/PARTNROFF=%d", &offset) != 1) {
+>> +                     printk(KERN_ERR "VFS: PARTUUID= is invalid.\n"
+>> +                      "Expected PARTUUID=<valid-uuid-id>[/PARTNROFF=%%d]\n");
 >
-> Somehow we got into a situation where the __this_cpu_xchg() operations were
-> not defined in the same way as this_cpu_xchg() and friends. I had some build
-> failures under 32 bit that were addressed by these fixes.
->
-> Signed-off-by: Christoph Lameter <cl@linux.com>
->
->
-> ---
->  arch/x86/include/asm/percpu.h |   12 ++++++------
->  1 file changed, 6 insertions(+), 6 deletions(-)
->
-> Index: linux-2.6/arch/x86/include/asm/percpu.h
-> ===================================================================
-> --- linux-2.6.orig/arch/x86/include/asm/percpu.h	2011-03-30 14:09:28.000000000 -0500
-> +++ linux-2.6/arch/x86/include/asm/percpu.h	2011-03-30 14:10:16.000000000 -0500
-> @@ -388,12 +388,9 @@ do {									\
->  #define __this_cpu_xor_1(pcp, val)	percpu_to_op("xor", (pcp), val)
->  #define __this_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
->  #define __this_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
-> -/*
-> - * Generic fallback operations for __this_cpu_xchg_[1-4] are okay and much
-> - * faster than an xchg with forced lock semantics.
-> - */
-> -#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-> -#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
-> +#define __this_cpu_xchg_1(pcp, val)	percpu_xchg_op(pcp, val)
-> +#define __this_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
-> +#define __this_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
->
->  #define this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
->  #define this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
-> @@ -471,6 +468,7 @@ do {									\
->  #define __this_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)		percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
->  #define this_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)		percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
->  #define irqsafe_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)	percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
-> +
->  #endif /* CONFIG_X86_CMPXCHG64 */
->
->  /*
-> @@ -485,6 +483,8 @@ do {									\
->  #define __this_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
->  #define __this_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
->  #define __this_cpu_add_return_8(pcp, val) percpu_add_return_op(pcp, val)
-> +#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
-> +#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
->
->  #define this_cpu_read_8(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
->  #define this_cpu_write_8(pcp, val)	percpu_to_op("mov", (pcp), val)
->
+> The check isn't complete - afacit input of the form PARTNROFF=42foo
+> will be treated as PARTNROFF=42?
+
+Completely true.  I can post another version that either pulls a
+trailing %c (which should fail) or uses %n.  I have somewhat limited
+internet connectivity right now, but I will follow up with a final
+clean up when I can (>~week)
+
+Thanks for the close review!
+will
