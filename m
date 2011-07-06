@@ -1,71 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab1GFRDh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 13:03:37 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:45486 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754714Ab1GFRDg (ORCPT
+	id S1754875Ab1GFRIJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 13:08:09 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:34226 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754666Ab1GFRII (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 13:03:36 -0400
-Date: Wed, 6 Jul 2011 18:02:29 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Christoph Lameter <cl@linux.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-arm-kernel@lists.infradead.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-media@vger.kernel.org
-Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
-Message-ID: <20110706170229.GI8286@n2100.arm.linux.org.uk>
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <201107061609.29996.arnd@arndb.de> <20110706142345.GC8286@n2100.arm.linux.org.uk> <201107061651.49824.arnd@arndb.de> <20110706154857.GG8286@n2100.arm.linux.org.uk> <alpine.DEB.2.00.1107061100290.17624@router.home>
+	Wed, 6 Jul 2011 13:08:08 -0400
+Message-ID: <4E149670.3040807@canonical.com>
+Date: Wed, 06 Jul 2011 10:08:00 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1107061100290.17624@router.home>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Daniel Kurtz <djkurtz@chromium.org>
+CC: Henrik Rydberg <rydberg@euromail.se>, dmitry.torokhov@gmail.com,
+        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
+        daniel.stone@collabora.co.uk, olofj@chromium.org
+Subject: Re: [PATCH 09/12] Input: synaptics - add image sensor support
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org> <1309324042-22943-10-git-send-email-djkurtz@chromium.org> <20110704214220.GE23915@polaris.bitmath.org> <CAGS+omAzKe5frVYuV2MPXBTugKD1xNZCHsaz53H+tDO7EWw8xQ@mail.gmail.com> <20110705192759.GA29549@polaris.bitmath.org> <CAGS+omDzg-xADYxKQmWy1KRhJ=n9pn9XR_HMc01xqCSDSLa5UA@mail.gmail.com>
+In-Reply-To: <CAGS+omDzg-xADYxKQmWy1KRhJ=n9pn9XR_HMc01xqCSDSLa5UA@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 11:05:00AM -0500, Christoph Lameter wrote:
-> On Wed, 6 Jul 2011, Russell King - ARM Linux wrote:
+On 07/06/2011 09:41 AM, Daniel Kurtz wrote:
+> On Wed, Jul 6, 2011 at 3:27 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>>> ...
+>>> This implementation addresses the following issues:
+>>>
+>>>   (1) Improves handling of the 2-finger case.  Image sensors due allow
+>>> true MT-B for two finger case.  This, for example, allows detecting
+>>> whether the click in a click+drag is happening in bottom right or
+>>> bottom left quadrant of the pad.
+>>
+>> In principle, this could be done within the semi-mt realm by adding a
+>> binary value to the protocol, distinguishing the diagonals of the
+>> bounding box. It would be ugly too, but at least it would be
+>> compatible with the current semi-mt effort in userspace.
 > 
-> > > > they typically don't fall into the highmem zone.  As the dmabounce
-> > > > code allocates from the DMA coherent allocator to provide it with
-> > > > guaranteed DMA-able memory, that would be rather inconvenient.
-> > >
-> > > True. The dmabounce code would consequently have to allocate
-> > > the memory through an internal function that avoids the
-> > > contiguous allocation area and goes straight to ZONE_DMA memory
-> > > as it does today.
-> >
-> > CMA's whole purpose for existing is to provide _dma-able_ contiguous
-> > memory for things like cameras and such like found on crippled non-
-> > scatter-gather hardware.  If that memory is not DMA-able what's the
-> > point?
+> (A) I think the "semi-mt" protocol works like this:
+>   (1) When two or more fingers are on the pad, report two MT-B slots, where:
+>     (a) slot[0] contains (x_min, y_min) of the two fingers
+>     (b) slot[1] contains (x_max, y_max) of the two fingers
+>     (c) Total number of fingers on pad is indicated by EV_KEY/BTN_TOOL_* is set.
+>   (2) If one of the two fingers is removed, then the first slot is
+> used to report
+>       the remaining finger, whichever it is, without changing the
+> slot's tracking_id.
+>   (3) Advertise this behavior with the SEMI_MT device property
 > 
-> ZONE_DMA is a zone for memory of legacy (crippled) devices that cannot DMA
-> into all of memory (and so is ZONE_DMA32). Memory from ZONE_NORMAL can be
-> used for DMA as well and a fully capable device would be expected to
-> handle any memory in the system for DMA transfers.
+> (B) This is what the proposed T5R2 driver does:
+>   (1) When N fingers are on the pad, report N MT-B slots, where:
+>     (a) The lowest indexed active slot (tracking_id != -1) contains
+> valid finger position data.
+>     (b) The highest indexed active slot (tracking_id != -1) contains
+> valid finger position data.
+>     (c) Any active slots (tracking_id != -1) between these does not
+> contain valid finger position data, these 'hidden' slots are just
+> active to indicate that there are that many fingers on the pad.
+>     (d) Total number of fingers on the pad is always the number of active slots.
+>   (2) When fingers are removed from the pad:
+>     (a) keep reporting the fingers that are left in the same slots,
+> with the same tracking_ids, if possible.
+>     (b) If the identities of the fingers that remain is ambiguous,
+> invalidate all slots,then re-assign the fingers that remain to new
+> slots, with new tracking ids.
+>   (3) Advertise this behavior with the T5R2 device property
 > 
-> "guaranteed" dmaable memory? DMA abilities are device specific. Well maybe
-> you can call ZONE_DMA memory to be guaranteed if you guarantee that any
-> device must at mininum be able to perform DMA into ZONE_DMA memory. But
-> there may not be much of that memory around so you would want to limit
-> the use of that scarce resource.
+> (C) A third, compromise implementation might be to do something like this:
+>   (1) When >=2 fingers are on the pad, report 2 MT-B slots, where:
+>     (a) slot[0] reports finger 1
+>     (b) slot[1] reports finger 2
+>     (c) Total number of fingers on pad is indicated by EV_KEY/BTN_TOOL_* is set.
+>   (2) If 1 finger is removed, the tracking_id for its slot is invalidated;
+>       but, the finger that remains stays in its same slot with the
+> same tracking_id.
+>   (3) Whenever the number of fingers changes from/to 3 or more
+> fingers, both slots are always invalidated.
+>       New tracking_ids are assigned to both slots which contain the
+> two fingers now being reported.
+>   (4) No special driver property is required for this, not even "semi-mt".
+>       It should be as pure MT-B as we can get (plus BTN_TOOL_* hack).
 
-Precisely, which is what ZONE_DMA is all about.  I *have* been a Linux
-kernel hacker for the last 18 years and do know these things, especially
-as ARM has had various issues with DMA memory limitations over those
-years - and have successfully had platforms working reliably given that
-and ZONE_DMA.
+This approach seems better, but there's still an ambiguity. When we go
+from two to three or more fingers we get lossy. We can't tell what
+touches cross the transition with their data intact.
+
+I'm racking my brain trying to come up with a solution that would make
+sense, but I don't think there is one that works seamlessly. I think we
+should do what you've written above with two changes:
+
+* Use a new property (T5R2?) to fully denote how screwed up this class
+of devices is.
+* Don't roll the tracking_id on any number of touch transitions. We're
+already telling userspace that the number of touches is changing, so the
+tracking_id change is superfluous. The tracking_id of a slot should only
+change when we know that the touch is beginning or ending.
+
+No matter what we do, userspace will have to rely on complex heuristics
+for this device, which makes me wonder if these devices will really ever
+be handled properly...
+
+> IMHO, (C) is an improvement over (A) for two major reasons:
+>   (1) tracking the individual touches allows distinguishing a clicking
+> finger in bottom right versus bottom left, for example.
+>   (2) It makes it possible to track the touch that remains when one of
+> the two touches is released.
+>       The touch that remains will stay in the same slot, with the same
+> tracking id.
+>       The tracking id of the touch that is removed will be set to -1.
+>         => This eliminates unnecessary gaps in the event stream,
+> without introducing position jumps.
+>       This behavior occurs often when switching between 1-finger
+> motion and 2f-scroll, or when performing 2f-click+drag gestures.
+> 
+> Note: Tracking which fingers are left on the pad gets much more
+> complicated with 3, 4, or 5 fingers.
+> This is addressed more fully by the T5R2 solution, but (C), while
+> slightly less optimal, should at least not do the wrong thing.
+> 
+> Sorry, I find it a bit difficult to explain this clearly in writing.
+> I guess I'll just have to submit a new patchset that shows what I mean.
+
+You're not the first to be tied up trying to document Synaptics behavior :).
+
+Thanks!
+
+-- Chase
