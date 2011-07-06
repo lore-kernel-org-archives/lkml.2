@@ -1,107 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab1GGAgA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 20:36:00 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:46853 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752484Ab1GGAf7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 20:35:59 -0400
-Message-ID: <4E14FF6E.6060601@candelatech.com>
-Date: Wed, 06 Jul 2011 17:35:58 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S1755747Ab1GGAiB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 20:38:01 -0400
+Received: from ozlabs.org ([203.10.76.45]:53649 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753481Ab1GGAiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 20:38:00 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, Greg KH <greg@kroah.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: module: sysfs - add 'uevent' file to allow coldplug
+In-Reply-To: <CAPXgP117WLtEX7ecrr9rs7HP0ZYkh25JmKbRj7YRuvGVw359PA@mail.gmail.com>
+References: <1308434431.1050.5.camel@mop> <8739j59zib.fsf@rustcorp.com.au> <BANLkTink8YTe=-Tr5Ax3epiFoFCfzcex7w@mail.gmail.com> <87boxshrwe.fsf@rustcorp.com.au> <BANLkTinL4r3RfNuA5x6=UK4DCSSJNeZw7w@mail.gmail.com> <87r56m8w2b.fsf@rustcorp.com.au> <BANLkTimNpDdp+JBXt0wUjuc0awypJSvXRg@mail.gmail.com> <87fwn18k9h.fsf@rustcorp.com.au> <BANLkTi=v-axftYKJCJ33+9UnfF9NJDAykQ@mail.gmail.com> <BANLkTimmTpcPefmWz=H7+4R6-7o4dZ+hnQ@mail.gmail.com> <87hb72skik.fsf@rustcorp.com.au> <CAPXgP117WLtEX7ecrr9rs7HP0ZYkh25JmKbRj7YRuvGVw359PA@mail.gmail.com>
+User-Agent: Notmuch/0.5 (http://notmuchmail.org) Emacs/23.2.1 (i686-pc-linux-gnu)
+Date: Wed, 06 Jul 2011 14:57:08 +0930
+Message-ID: <877h7w0yj7.fsf@rustcorp.com.au>
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] sunrpc:  Fix race between work-queue and rpc_killall_tasks.
-References: <1309992581-25199-1-git-send-email-greearb@candelatech.com>	 <1309995932.5447.6.camel@lade.trondhjem.org>	 <4E14F8C4.2010508@candelatech.com> <1309997879.5447.12.camel@lade.trondhjem.org>
-In-Reply-To: <1309997879.5447.12.camel@lade.trondhjem.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2011 05:17 PM, Trond Myklebust wrote:
-> On Wed, 2011-07-06 at 17:07 -0700, Ben Greear wrote:
->> On 07/06/2011 04:45 PM, Trond Myklebust wrote:
->>> On Wed, 2011-07-06 at 15:49 -0700, greearb@candelatech.com wrote:
->>>> From: Ben Greear<greearb@candelatech.com>
->>>>
->>>> The rpc_killall_tasks logic is not locked against
->>>> the work-queue thread, but it still directly modifies
->>>> function pointers and data in the task objects.
->>>>
->>>> This patch changes the killall-tasks logic to set a flag
->>>> that tells the work-queue thread to terminate the task
->>>> instead of directly calling the terminate logic.
->>>>
->>>> Signed-off-by: Ben Greear<greearb@candelatech.com>
->>>> ---
->>>>
->>>> NOTE:  This needs review, as I am still struggling to understand
->>>> the rpc code, and it's quite possible this patch either doesn't
->>>> fully fix the problem or actually causes other issues.  That said,
->>>> my nfs stress test seems to run a bit more stable with this patch applied.
->>>
->>> Yes, but I don't see why you are adding a new flag, nor do I see why we
->>> want to keep checking for that flag in the rpc_execute() loop.
->>> rpc_killall_tasks() is not a frequent operation that we want to optimise
->>> for.
->>
->> I was hoping that if the killall logic never set anything that was also
->> set by the work-queue thread it would be lock-safe without needing
->> explicit locking.
->>
->> I was a bit concerned that my flags |= KILLME logic would potentially
->> over-write flags that were being simultaneously written elsewhere
->> (so maybe I'd have to add a completely new variable for that KILLME flag
->> to really be safe.)
->>
->>>
->>> How about the following instead?
->>
->> I think it still races..more comments below.
->>
->>>
->>> 8<----------------------------------------------------------------------------------
->>>   From ecb7244b661c3f9d2008ef6048733e5cea2f98ab Mon Sep 17 00:00:00 2001
->>> From: Trond Myklebust<Trond.Myklebust@netapp.com>
->>> Date: Wed, 6 Jul 2011 19:44:52 -0400
->>> Subject: [PATCH] SUNRPC: Fix a race between work-queue and rpc_killall_tasks
->>>
->>> Since rpc_killall_tasks may modify the rpc_task's tk_action field
->>> without any locking, we need to be careful when dereferencing it.
->>
->>> +		do_action = task->tk_callback;
->>> +		task->tk_callback = NULL;
->>> +		if (do_action == NULL) {
->>
->> I think the race still exists, though it would be harder to hit.
->> What if the killall logic sets task->tk_callback right after you assign do_action, but before
->> you set tk_callback to NULL?  Or after you set tk_callback to NULL for
->> that matter.
->
-> What if it does? The rpc call will continue to execute until it
-> completes.
->
-> rpc_killall_tasks is really only useful for signalling to tasks that are
-> hanging on a completely unresponsive server that we want them to stop.
-> The only case where we really care is in rpc_shutdown_client(), where we
-> sleep and loop anyway.
->
-> IOW: I really don't care about 'fixing' rpc_killall_tasks to perfection.
-> All I care about is that it doesn't Oops.
+On Mon, 4 Jul 2011 17:56:37 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> On Mon, Jul 4, 2011 at 07:05, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> > On Fri, 1 Jul 2011 05:07:41 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> >> On Thu, Jun 23, 2011 at 13:24, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> >> > On Thu, Jun 23, 2011 at 02:27, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >> >> On Wed, 22 Jun 2011 12:17:49 +0200, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> >> >>> On Wed, Jun 22, 2011 at 04:00, Rusty Russell <rusty@rustcorp.com.au> wrote:
+> >> >> I'd prefer that patch first, I think: it's a sensible cleanup.
+> >> >
+> >> > You want the patch split up in two? You want to remove the mod
+> >> > parameter somehow?
+> >>
+> >> Can we get these 20 lines of code sorted out please? :)
+> >
+> > An odd question, since I was waiting for you to do exactly that!
+> 
+> Oh, I was just waiting for your answer to the earlier question 6 lines
+> above here. :)
 
-That is my concern as well.  I'll try your patch and see if it fixes
-the crashes I'm seeing in this area.
+Yes, but rather than go around again, code seemed simpler.
+
+linux-next says we broke CONFIG_MODULES=n though.
+
+I'll fix that now...
 
 Thanks,
-Ben
-
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
-
+Rusty.
