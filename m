@@ -1,88 +1,233 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab1GFRYx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 13:24:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63945 "EHLO mx1.redhat.com"
+	id S1754684Ab1GFRY5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 13:24:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23304 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754262Ab1GFRYu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 13:24:50 -0400
-Date: Wed, 6 Jul 2011 13:24:44 -0400
+	id S1754475Ab1GFRYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 13:24:55 -0400
+Date: Wed, 6 Jul 2011 13:24:49 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: gregkh@suse.de
 Cc: joe@perches.com, jim.cromie@gmail.com, bvanassche@acm.org,
         linux-kernel@vger.kernel.org
-Message-Id: <fe35f0bd31c166adea772ed6c93bf84e19266b04.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
+Message-Id: <ff73c43029811a16219ca18a6e89e3cf8d076a17.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
 In-Reply-To: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
 References: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
-Subject: [PATCH 03/10] dynamic_debug: Remove uses of KERN_CONT in
- dynamic_emit_prefix
+Subject: [PATCH 04/10] dynamic_debug: Convert printks to pr_<level>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Joe Perches <joe@perches.com>
 
-Multiple printks with KERN_CONT can be interleaved by
-other printks.  Reduce the likelihood of that interleaving
-by consolidating multiple calls to printk.
+Add pr_fmt(fmt) with __func__.
+Converts "ddebug:" prefix to "dynamic_debug:".
+
+Most likely the if (verbose) outputs could
+also be converted from pr_info to pr_debug.
 
 Signed-off-by: Joe Perches <joe@perches.com>
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- lib/dynamic_debug.c |   34 +++++++++++++++++++++++-----------
- 1 files changed, 23 insertions(+), 11 deletions(-)
+ lib/dynamic_debug.c |   59 ++++++++++++++++++++++----------------------------
+ 1 files changed, 26 insertions(+), 33 deletions(-)
 
 diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index 758e922..6669078 100644
+index 6669078..e627874 100644
 --- a/lib/dynamic_debug.c
 +++ b/lib/dynamic_debug.c
-@@ -430,23 +430,35 @@ static int ddebug_exec_query(char *query_string)
+@@ -10,6 +10,8 @@
+  * Copyright (C) 2011 Bart Van Assche.  All Rights Reserved.
+  */
  
- static int dynamic_emit_prefix(const struct _ddebug *descriptor)
- {
--	int res;
-+	char tid[sizeof(int) + sizeof(int)/2 + 4];
-+	char lineno[sizeof(int) + sizeof(int)/2];
- 
--	res = printk(KERN_DEBUG);
- 	if (descriptor->flags & _DPRINTK_FLAGS_INCL_TID) {
- 		if (in_interrupt())
--			res += printk(KERN_CONT "<intr> ");
-+			snprintf(tid, sizeof(tid), "%s", "<intr> ");
- 		else
--			res += printk(KERN_CONT "[%d] ", task_pid_vnr(current));
-+			snprintf(tid, sizeof(tid), "[%d] ",
-+				 task_pid_vnr(current));
-+	} else {
-+		tid[0] = 0;
- 	}
--	if (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME)
--		res += printk(KERN_CONT "%s:", descriptor->modname);
--	if (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME)
--		res += printk(KERN_CONT "%s:", descriptor->function);
--	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
--		res += printk(KERN_CONT "%d ", descriptor->lineno);
- 
--	return res;
-+	if (descriptor->flags & _DPRINTK_FLAGS_INCL_LINENO)
-+		snprintf(lineno, sizeof(lineno), "%d", descriptor->lineno);
-+	else
-+		lineno[0] = 0;
++#define pr_fmt(fmt) KBUILD_MODNAME ":%s: " fmt, __func__
 +
-+	return printk(KERN_DEBUG "%s%s%s%s%s%s",
-+		      tid,
-+		      (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME) ?
-+		      descriptor->modname : "",
-+		      (descriptor->flags & _DPRINTK_FLAGS_INCL_MODNAME) ?
-+		      ":" : "",
-+		      (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME) ?
-+		      descriptor->function : "",
-+		      (descriptor->flags & _DPRINTK_FLAGS_INCL_FUNCNAME) ?
-+		      ":" : "",
-+		      lineno);
+ #include <linux/kernel.h>
+ #include <linux/module.h>
+ #include <linux/moduleparam.h>
+@@ -160,8 +162,7 @@ static void ddebug_change(const struct ddebug_query *query,
+ 			else
+ 				dp->enabled = 0;
+ 			if (verbose)
+-				printk(KERN_INFO
+-					"ddebug: changed %s:%d [%s]%s %s\n",
++				pr_info("changed %s:%d [%s]%s %s\n",
+ 					dp->filename, dp->lineno,
+ 					dt->mod_name, dp->function,
+ 					ddebug_describe_flags(dp, flagbuf,
+@@ -171,7 +172,7 @@ static void ddebug_change(const struct ddebug_query *query,
+ 	mutex_unlock(&ddebug_lock);
+ 
+ 	if (!nfound && verbose)
+-		printk(KERN_INFO "ddebug: no matches for query\n");
++		pr_info("no matches for query\n");
  }
  
- int __dynamic_pr_debug(struct _ddebug *descriptor, const char *fmt, ...)
+ /*
+@@ -216,10 +217,10 @@ static int ddebug_tokenize(char *buf, char *words[], int maxwords)
+ 
+ 	if (verbose) {
+ 		int i;
+-		printk(KERN_INFO "%s: split into words:", __func__);
++		pr_info("split into words:");
+ 		for (i = 0 ; i < nwords ; i++)
+-			printk(" \"%s\"", words[i]);
+-		printk("\n");
++			pr_cont(" \"%s\"", words[i]);
++		pr_cont("\n");
+ 	}
+ 
+ 	return nwords;
+@@ -331,16 +332,15 @@ static int ddebug_parse_query(char *words[], int nwords,
+ 			}
+ 		} else {
+ 			if (verbose)
+-				printk(KERN_ERR "%s: unknown keyword \"%s\"\n",
+-					__func__, words[i]);
++				pr_err("unknown keyword \"%s\"\n", words[i]);
+ 			return -EINVAL;
+ 		}
+ 	}
+ 
+ 	if (verbose)
+-		printk(KERN_INFO "%s: q->function=\"%s\" q->filename=\"%s\" "
+-		       "q->module=\"%s\" q->format=\"%s\" q->lineno=%u-%u\n",
+-			__func__, query->function, query->filename,
++		pr_info("q->function=\"%s\" q->filename=\"%s\" "
++			"q->module=\"%s\" q->format=\"%s\" q->lineno=%u-%u\n",
++			query->function, query->filename,
+ 			query->module, query->format, query->first_lineno,
+ 			query->last_lineno);
+ 
+@@ -369,7 +369,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 		return -EINVAL;
+ 	}
+ 	if (verbose)
+-		printk(KERN_INFO "%s: op='%c'\n", __func__, op);
++		pr_info("op='%c'\n", op);
+ 
+ 	for ( ; *str ; ++str) {
+ 		for (i = ARRAY_SIZE(opt_array) - 1; i >= 0; i--) {
+@@ -384,7 +384,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 	if (flags == 0)
+ 		return -EINVAL;
+ 	if (verbose)
+-		printk(KERN_INFO "%s: flags=0x%x\n", __func__, flags);
++		pr_info("flags=0x%x\n", flags);
+ 
+ 	/* calculate final *flagsp, *maskp according to mask and op */
+ 	switch (op) {
+@@ -402,8 +402,7 @@ static int ddebug_parse_flags(const char *str, unsigned int *flagsp,
+ 		break;
+ 	}
+ 	if (verbose)
+-		printk(KERN_INFO "%s: *flagsp=0x%x *maskp=0x%x\n",
+-			__func__, *flagsp, *maskp);
++		pr_info("*flagsp=0x%x *maskp=0x%x\n", *flagsp, *maskp);
+ 	return 0;
+ }
+ 
+@@ -508,7 +507,7 @@ static __initdata char ddebug_setup_string[1024];
+ static __init int ddebug_setup_query(char *str)
+ {
+ 	if (strlen(str) >= 1024) {
+-		pr_warning("ddebug boot param string too large\n");
++		pr_warn("ddebug boot param string too large\n");
+ 		return 0;
+ 	}
+ 	strcpy(ddebug_setup_string, str);
+@@ -536,8 +535,7 @@ static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
+ 		return -EFAULT;
+ 	tmpbuf[len] = '\0';
+ 	if (verbose)
+-		printk(KERN_INFO "%s: read %d bytes from userspace\n",
+-			__func__, (int)len);
++		pr_info("read %d bytes from userspace\n", (int)len);
+ 
+ 	ret = ddebug_exec_query(tmpbuf);
+ 	if (ret)
+@@ -600,8 +598,7 @@ static void *ddebug_proc_start(struct seq_file *m, loff_t *pos)
+ 	int n = *pos;
+ 
+ 	if (verbose)
+-		printk(KERN_INFO "%s: called m=%p *pos=%lld\n",
+-			__func__, m, (unsigned long long)*pos);
++		pr_info("called m=%p *pos=%lld\n", m, (unsigned long long)*pos);
+ 
+ 	mutex_lock(&ddebug_lock);
+ 
+@@ -626,8 +623,8 @@ static void *ddebug_proc_next(struct seq_file *m, void *p, loff_t *pos)
+ 	struct _ddebug *dp;
+ 
+ 	if (verbose)
+-		printk(KERN_INFO "%s: called m=%p p=%p *pos=%lld\n",
+-			__func__, m, p, (unsigned long long)*pos);
++		pr_info("called m=%p p=%p *pos=%lld\n",
++			m, p, (unsigned long long)*pos);
+ 
+ 	if (p == SEQ_START_TOKEN)
+ 		dp = ddebug_iter_first(iter);
+@@ -650,8 +647,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+ 	char flagsbuf[8];
+ 
+ 	if (verbose)
+-		printk(KERN_INFO "%s: called m=%p p=%p\n",
+-			__func__, m, p);
++		pr_info("called m=%p p=%p\n", m, p);
+ 
+ 	if (p == SEQ_START_TOKEN) {
+ 		seq_puts(m,
+@@ -676,8 +672,7 @@ static int ddebug_proc_show(struct seq_file *m, void *p)
+ static void ddebug_proc_stop(struct seq_file *m, void *p)
+ {
+ 	if (verbose)
+-		printk(KERN_INFO "%s: called m=%p p=%p\n",
+-			__func__, m, p);
++		pr_info("called m=%p p=%p\n", m, p);
+ 	mutex_unlock(&ddebug_lock);
+ }
+ 
+@@ -700,7 +695,7 @@ static int ddebug_proc_open(struct inode *inode, struct file *file)
+ 	int err;
+ 
+ 	if (verbose)
+-		printk(KERN_INFO "%s: called\n", __func__);
++		pr_info("called\n");
+ 
+ 	iter = kzalloc(sizeof(*iter), GFP_KERNEL);
+ 	if (iter == NULL)
+@@ -752,8 +747,7 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+ 	mutex_unlock(&ddebug_lock);
+ 
+ 	if (verbose)
+-		printk(KERN_INFO "%u debug prints in module %s\n",
+-				 n, dt->mod_name);
++		pr_info("%u debug prints in module %s\n", n, dt->mod_name);
+ 	return 0;
+ }
+ EXPORT_SYMBOL_GPL(ddebug_add_module);
+@@ -775,8 +769,7 @@ int ddebug_remove_module(const char *mod_name)
+ 	int ret = -ENOENT;
+ 
+ 	if (verbose)
+-		printk(KERN_INFO "%s: removing module \"%s\"\n",
+-				__func__, mod_name);
++		pr_info("removing module \"%s\"\n", mod_name);
+ 
+ 	mutex_lock(&ddebug_lock);
+ 	list_for_each_entry_safe(dt, nextdt, &ddebug_tables, link) {
+@@ -852,8 +845,8 @@ static int __init dynamic_debug_init(void)
+ 	if (ddebug_setup_string[0] != '\0') {
+ 		ret = ddebug_exec_query(ddebug_setup_string);
+ 		if (ret)
+-			pr_warning("Invalid ddebug boot param %s",
+-				   ddebug_setup_string);
++			pr_warn("Invalid ddebug boot param %s",
++				ddebug_setup_string);
+ 		else
+ 			pr_info("ddebug initialized with string %s",
+ 				ddebug_setup_string);
 -- 
 1.7.5.4
 
