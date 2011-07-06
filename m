@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756042Ab1GFUEh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 16:04:37 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44313 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755435Ab1GFUEf (ORCPT
+	id S1756065Ab1GFUFD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 16:05:03 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:57643 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755800Ab1GFUFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 16:04:35 -0400
-Date: Wed, 6 Jul 2011 13:04:31 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Thomas Renninger <trenn@suse.de>,
-        Anisse Astier <anisse@astier.eu>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] platform-drivers-x86: msi-wmi: add missing
- sparse_keymap_free in msi_wmi_init error path
-Message-ID: <20110706200430.GD6086@core.coreip.homeip.net>
-References: <1309921520.26847.3.camel@phoenix>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309921520.26847.3.camel@phoenix>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Jul 2011 16:05:01 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=xenotime.net;
+	h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:Organization:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Mh2UyrSsQQ9hQ/S8r2fN6ZPcO/kPp6BecPYBxv4isVcUojC21l4MWiK9Wnl9RdFQAilQseb1/2GVn9LKmRp3+d9kXU4nBlYH5+M03h61i1ghkC49ZfxMW1cBoY3JgI6Z;
+Date: Wed, 6 Jul 2011 13:04:58 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Tobias Klauser <tklauser@distanz.ch>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: Fixup kerneldoc for generic_permission()
+Message-Id: <20110706130458.a9d20575.rdunlap@xenotime.net>
+In-Reply-To: <20110706200221.GF8334@distanz.ch>
+References: <1309520691-17741-1-git-send-email-tklauser@distanz.ch>
+	<20110706090014.d46bbbe3.rdunlap@xenotime.net>
+	<20110706200221.GF8334@distanz.ch>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {1807:box742.bluehost.com:xenotime:xenotime.net} {sentby:smtp auth 50.53.38.135 authed with rdunlap@xenotime.net}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 11:05:20AM +0800, Axel Lin wrote:
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Wed, 6 Jul 2011 22:02:21 +0200 Tobias Klauser wrote:
 
-Acked-by: Dmitry Torokhov <dtor@mail.ru>
+> On 2011-07-06 at 18:00:14 +0200, Randy Dunlap <rdunlap@xenotime.net> wrote:
+> > On Fri,  1 Jul 2011 13:44:51 +0200 Tobias Klauser wrote:
+> > 
+> > > The flags parameter went away in
+> > > 5c90c1601f00154f8695951469f25f33579272ed
+> > 
+> > What git tree is that commit ID in?
+> 
+> I made the patch against linux-next as of 1 July. The commit comes from
+> Al Viro's vfs-2.6 tree I guess.
+> 
+> > This patch applies to linux-next, right?
+> 
+> Yup, it should. Sorry, I should have mentioned that in the subject.
+> --
 
-> ---
->  drivers/platform/x86/msi-wmi.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/msi-wmi.c b/drivers/platform/x86/msi-wmi.c
-> index c832e33..6f40bf2 100644
-> --- a/drivers/platform/x86/msi-wmi.c
-> +++ b/drivers/platform/x86/msi-wmi.c
-> @@ -272,6 +272,7 @@ static int __init msi_wmi_init(void)
->  err_free_backlight:
->  	backlight_device_unregister(backlight);
->  err_free_input:
-> +	sparse_keymap_free(msi_wmi_input_dev);
->  	input_unregister_device(msi_wmi_input_dev);
->  err_uninstall_notifier:
->  	wmi_remove_notify_handler(MSIWMI_EVENT_GUID);
-> -- 
-> 1.7.4.1
-> 
-> 
-> 
+Thanks.  Hopefully Al will merge it.  If he misses it, please resend it
+and I can merge it.
 
--- 
-Dmitry
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
