@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab1GFLqg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 07:46:36 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:57698 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab1GFLqf (ORCPT
+	id S1753346Ab1GFL7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 07:59:11 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:51396 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661Ab1GFL7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 07:46:35 -0400
-Date: Wed, 6 Jul 2011 15:46:30 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: tommy.lin@caviumnetworks.com
-Cc: "'Tommy Lin'" <tommy.lin.1101@gmail.com>,
-        "'Wim Van Sebroeck'" <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lin, Mac" <Mac.Lin@caviumnetworks.com>
-Subject: Re: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for
- CNS3xxx hardware
-Message-ID: <20110706114629.GA32659@oksana.dev.rtsoft.ru>
-References: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com>
- <20110705140559.GA15771@oksana.dev.rtsoft.ru>
- <281B1F8BAB4D4BDABE7568809A0AEC1A@starsemi.com>
- <20110706111616.GA18967@oksana.dev.rtsoft.ru>
- <20110706112830.GA23184@oksana.dev.rtsoft.ru>
+	Wed, 6 Jul 2011 07:59:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Vitaly Kuzmichev <vkuzmichev@mvista.com>
+Subject: Re: [PATCH V2 6/6] mpcore_wdt: Move declarations in a separate header
+Date: Wed, 6 Jul 2011 13:58:48 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>,
+        Marc Zyngier <marc.zyngier@arm.com>, Wim Van Sebroeck <wim@iguana.be>,
+        arm@kernel.org, linux-kernel@vger.kernel.org,
+        John Stultz <johnstul@us.ibm.com>, Nicolas Pitre <nico@fluxnic.net>,
+        Thomas Gleixner <tglx@linutronix.de>
+References: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com> <1309892440-3260-7-git-send-email-vkuzmichev@mvista.com>
+In-Reply-To: <1309892440-3260-7-git-send-email-vkuzmichev@mvista.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110706112830.GA23184@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107061358.48496.arnd@arndb.de>
+X-Provags-ID: V02:K0:oVZA2bWIhZK40eA4GPWeeC6Uf4iuTA9MThID/vqgTem
+ BkciHvkJsfxunK87s9zyvJ8KpZBhoOk3WEePP7ttopmFvIIGI/
+ PuneQAjuWTE8w7OZCKunhWvJUZ2+Wp5w4KIxgv3QprsaXV0BKq
+ C0qohXrRAzi4ll8wx4HOE1ML8m7pbz268PUzN9lAgsG4uvy5Hk
+ SI3lBVpMlniNar6eaOMPA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 03:28:30PM +0400, Anton Vorontsov wrote:
-> On Wed, Jul 06, 2011 at 03:16:16PM +0400, Anton Vorontsov wrote:
-> > On Wed, Jul 06, 2011 at 06:05:37PM +0800, Tommy Lin wrote:
-> > > Hi, I just found another patch that can solve the watchdog counter reload
-> > > issue. Please ignore this patch, since it should not acceptable to use
-> > > #ifdefs.
-> > 
-> > OK, great. Do I understand correctly that without Vitaly's patch,
-> > your first patch is somewhat useless, as the watchdog will not work
-> > or will work incorrectly? So should I postpone merging patch 1/2
-> > until Vitaly's patch hit mainline?
-> 
-> Oh, I see that the issue isn't major, so I'll just merge the first
-> patch.
+On Tuesday 05 July 2011, Vitaly Kuzmichev wrote:
+> Signed-off-by: Vitaly Kuzmichev <vkuzmichev@mvista.com>
+> ---
+>  drivers/watchdog/mpcore_wdt.c |   26 +-------------------------
+>  drivers/watchdog/mpcore_wdt.h |   40 ++++++++++++++++++++++++++++++++++++++++
+>  2 files changed, 41 insertions(+), 25 deletions(-)
+>  create mode 100644 drivers/watchdog/mpcore_wdt.h
 
-Heh. Nope. It doesn't work without SMP:
+I don't see the point in this. IMHO it's better to leave the definitions
+in the same file that uses them, because they are not shared across
+multiple files.
 
-warning: (ARCH_CNS3XXX) selects HAVE_ARM_TWD which has unmet direct dependencies (SMP)
+If you intend to share them in the future, you should explain that
+in the changelog.
 
-And SMP support is not in the mainline, yet.
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+	Arnd
