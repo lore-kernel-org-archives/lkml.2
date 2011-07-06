@@ -1,77 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753166Ab1GFJk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 05:40:29 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:65213 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752204Ab1GFJk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 05:40:28 -0400
-Message-ID: <4E142D89.2070704@imgtec.com>
-Date: Wed, 06 Jul 2011 10:40:25 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1751855Ab1GFJlb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 05:41:31 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46181 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab1GFJla (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 05:41:30 -0400
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: Chris Ball <cjb@laptop.org>, Will <will.newton@imgtec.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 4/4] mmc: dw_mmc: reset FIFO after an error
-References: <4E142C10.3050508@imgtec.com>
-In-Reply-To: <4E142C10.3050508@imgtec.com>
+In-Reply-To: <1309870814-14181-2-git-send-email-ian.campbell@citrix.com>
+References: <20110705111525.GR17941@sun>
+	<1309870814-14181-2-git-send-email-ian.campbell@citrix.com>
+Date: Wed, 6 Jul 2011 12:41:29 +0300
+X-Google-Sender-Auth: bak5p-NyC9PkEHEgCde-vX6lZ48
+Message-ID: <CAOJsxLHwvMZaR-09u2iTpu2ksCxypLJXG0Cw6Aeu5zWcLYYxpg@mail.gmail.com>
+Subject: Re: [PATCH 2/3] x86: make 64 bit ret_from_fork a little more similar
+ to 32 bit
+From: Pekka Enberg <penberg@kernel.org>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
+        Jan Beulich <JBeulich@novell.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jul 2011 09:40:25.0378 (UTC) FILETIME=[BB953820:01CC3BC0]
-X-SEF-Processed: 7_3_0_01158__2011_07_06_10_40_26
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If an error occurs mid way through a transaction (such as a missing CRC
-status response after the 2nd block written out of 3), then the FIFO may
-still contain data which will interfere with the next transaction.
-Therefore after an error has been detected, reset the fifo using the
-CTRL register.
+On Tue, Jul 5, 2011 at 4:00 PM, Ian Campbell <ian.campbell@citrix.com> wrote:
+> The 64 bit version resets EFLAGS before calling schedule_tail() and
+> therefore leaves EFLAGS.IF clear. 32 bit resets EFLAGS after calling
+> schedule_tail() and therefore leaves EFLAGS.IF set. I don't think
+> there is any practical difference between the two approaches since
+> interrupts are actually reenabled within schedule_tail
+> (schedule_tail->finish_task_switch->finish_lock_switch->raw_spin_unlock_irq->...->local_irq_enable)
+> so arbitrarily pick the 32 bit version and make 64 bit look like that.
+>
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: x86@kernel.org
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Acked-by: Will Newton <will.newton@imgtec.com>
-Tested-by: Jaehoon Chung <jh80.chung@samsung.com>
----
- drivers/mmc/host/dw_mmc.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index 0dac397..0c839d3 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -849,7 +849,7 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 	struct mmc_command *cmd;
- 	enum dw_mci_state state;
- 	enum dw_mci_state prev_state;
--	u32 status;
-+	u32 status, ctrl;
- 
- 	spin_lock(&host->lock);
- 
-@@ -929,6 +929,16 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 						status);
- 					data->error = -EIO;
- 				}
-+				/*
-+				 * After an error, there may be data lingering
-+				 * in the FIFO, so reset it - doing so
-+				 * generates a block interrupt, hence setting
-+				 * the scatter-gather pointer to NULL.
-+				 */
-+				host->sg = NULL;
-+				ctrl = mci_readl(host, CTRL);
-+				ctrl |= SDMMC_CTRL_FIFO_RESET;
-+				mci_writel(host, CTRL, ctrl);
- 			} else {
- 				data->bytes_xfered = data->blocks * data->blksz;
- 				data->error = 0;
--- 
-1.7.2.3
-
-
+Reviewed-by: Pekka Enberg <penberg@kernel.org>
