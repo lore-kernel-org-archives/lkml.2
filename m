@@ -1,70 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754455Ab1GFRio (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 13:38:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42899 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab1GFRin (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 13:38:43 -0400
-X-Authority-Analysis: v=1.1 cv=5asQ6euaRPJxDdFxwvXsn6JDb7fmFbz8qWDLMfa45gU= c=1 sm=0 a=mIKt6_09prkA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=meVymXHHAAAA:8 a=6rqHouBjAAAA:8 a=ZTJNS6ZiUYxpSe1Ip64A:9 a=R7KnAeaUH18KFrmWJUsA:7 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=TAmEwCHjoHMA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 67.242.120.143
-Subject: Re: [PATCH -tip/perf/core] perf, x86: P4 PMU - Drop redundant
- WARN_ON_ONCE
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Don Zickus <dzickus@redhat.com>, Stephane Eranian <eranian@google.com>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20110706172454.GJ5485@sun>
-References: <20110706172454.GJ5485@sun>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 06 Jul 2011 13:38:41 -0400
-Message-ID: <1309973921.26417.188.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
+	id S1755062Ab1GFRja (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 13:39:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42575 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752955Ab1GFRj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 13:39:26 -0400
+Date: Wed, 6 Jul 2011 13:51:34 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 05/19] KVM: MMU: optimize to handle dirty bit
+Message-ID: <20110706165134.GC24417@amt.cnet>
+References: <4E0C3178.2080603@cn.fujitsu.com>
+ <4E0C320A.8080104@cn.fujitsu.com>
+ <20110705192703.GB24417@amt.cnet>
+ <4E13B8D4.3050704@cn.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E13B8D4.3050704@cn.fujitsu.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-06 at 21:24 +0400, Cyrill Gorcunov wrote:
-> This WARN_ON_ONCE triggers a false alarm on SMP because
-> nmi-watchdog uses a single global 'wd_hw_attr' variable
-> to serve perf event attributes and once p4_hw_watchdog_set_attr
-> has modified it subsequent calls on the rest cpus trigger
-> the warning.
+On Wed, Jul 06, 2011 at 09:22:28AM +0800, Xiao Guangrong wrote:
+> On 07/06/2011 03:27 AM, Marcelo Tosatti wrote:
+> > On Thu, Jun 30, 2011 at 04:21:30PM +0800, Xiao Guangrong wrote:
+> >> If dirty bit is not set, we can make the pte access read-only to avoid handing
+> >> dirty bit everywhere
+> >>
+> >> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> > 
+> >> -static unsigned FNAME(gpte_access)(struct kvm_vcpu *vcpu, pt_element_t gpte)
+> >> +static unsigned FNAME(gpte_access)(struct kvm_vcpu *vcpu, pt_element_t gpte,
+> >> +				   bool last)
+> >>  {
+> >>  	unsigned access;
+> >>  
+> >>  	access = (gpte & (PT_WRITABLE_MASK | PT_USER_MASK)) | ACC_EXEC_MASK;
+> >> +	if (last && !is_dirty_gpte(gpte))
+> >> +		access &= ~ACC_WRITE_MASK;
+> >> +
+> > 
+> > What if the walker marks the dirty bit on the gpte?
+> > 
 > 
-> It is safe to simply drop it since we know the caller may
-> pass already altered type and config.
+> Actually, we get guest pte access after mark the dirty bit:
 > 
-> Repoted-by: Steven Rostedt <rostedt@goodmis.org>
-
-Repoted? Hmm, maybe symbolically I put this code in a different pot.
-
-Reported-and-tested-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
->  arch/x86/kernel/cpu/perf_event_p4.c |    3 ---
->  1 file changed, 3 deletions(-)
+> 	if (write_fault && unlikely(!is_dirty_gpte(pte))) {
+> 		int ret;
 > 
-> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> ===================================================================
-> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-> @@ -726,9 +726,6 @@ static void p4_hw_watchdog_set_attr(stru
->  	 * that named "non-sleeping" ticks as recommended
->  	 * by Intel SDM Vol3b.
->  	 */
-> -	WARN_ON_ONCE(wd_attr->type	!= PERF_TYPE_HARDWARE ||
-> -		     wd_attr->config	!= PERF_COUNT_HW_CPU_CYCLES);
-> -
->  	wd_attr->type	= PERF_TYPE_RAW;
->  	wd_attr->config	=
->  		p4_config_pack_escr(P4_ESCR_EVENT(P4_EVENT_EXECUTION_EVENT)		|
+> 		trace_kvm_mmu_set_dirty_bit(table_gfn, index, sizeof(pte));
+> 		ret = FNAME(cmpxchg_gpte)(vcpu, mmu, ptep_user, index,
+> 					  pte, pte|PT_DIRTY_MASK);
+> 		if (unlikely(ret < 0)) {
+> 			present = false;
+> 			goto error;
+> 		} else if (ret)
+> 			goto walk;
+> 
+> 		mark_page_dirty(vcpu->kvm, table_gfn);
+> 		pte |= PT_DIRTY_MASK;
+> 		walker->ptes[walker->level - 1] = pte;
+> 	}
+> 
+> 	pte_access = pt_access & FNAME(gpte_access)(vcpu, pte, true);
+>  
+> So, i think it works well :-)
 
+I think you meant after marking the accessed bit. The dirty bit is set
+just before returning.
 
