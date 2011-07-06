@@ -1,65 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752931Ab1GFOK0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 10:10:26 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59543 "EHLO
+	id S1753051Ab1GFOTd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 10:19:33 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:64412 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab1GFOKY (ORCPT
+	with ESMTP id S1752581Ab1GFOTb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 10:10:24 -0400
+	Wed, 6 Jul 2011 10:19:31 -0400
 From: Arnd Bergmann <arnd@arndb.de>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
-Date: Wed, 6 Jul 2011 16:09:29 +0200
+To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
+Subject: Re: [PATCH V2 3/6] mpcore_wdt: Fix WDIOC_SETOPTIONS handling
+Date: Wed, 6 Jul 2011 16:19:27 +0200
 User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-media@vger.kernel.org, linux-mm@kvack.org,
-        linaro-mm-sig@lists.linaro.org,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <20110705113345.GA8286@n2100.arm.linux.org.uk> <006301cc3be4$daab1850$900148f0$%szyprowski@samsung.com>
-In-Reply-To: <006301cc3be4$daab1850$900148f0$%szyprowski@samsung.com>
+Cc: Vitaly Kuzmichev <vkuzmichev@mvista.com>, linux-watchdog@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>, Marc Zyngier <marc.zyngier@arm.com>,
+        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Wim Van Sebroeck <wim@iguana.be>, Thomas Gleixner <tglx@linutronix.de>,
+        linux-arm-kernel@lists.infradead.org
+References: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com> <20110706134806.GA8286@n2100.arm.linux.org.uk> <20110706135219.GB8286@n2100.arm.linux.org.uk>
+In-Reply-To: <20110706135219.GB8286@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107061609.29996.arnd@arndb.de>
-X-Provags-ID: V02:K0:gJFwC3otbNwyGIGQYQtk3xVIdIG3QCaKoV2dbRAenYi
- Jc7gJ5mr68SEqErZdidHRTU6T+pQcedMqTTx7fmp+pyfdoKhrV
- SYes+1NzldFCQjFNTHqslQ8Z0O5h5TBEbG11V6R6AiZR/XJEcg
- zzqYLDWch/G/K/e3JkBk3Ded+INece5uMQsL3cDAzTk3wh9CiV
- f48i3s0Z1S6BTB1nZojQg==
+Message-Id: <201107061619.27580.arnd@arndb.de>
+X-Provags-ID: V02:K0:91YQSD79WwP33uk39BZx1Z/2ymjsRDM9CxT8hevSqzl
+ /7h7FIqgTGWQFXYnAEKWvroxDSPldXm93G8zwOviVxJ/00XIAa
+ q24YnnCEJREX4sdwl/hpr/jHxj0UL29U1Z7WpwYqgya3ebhe7x
+ dlC6ElslrEWbBxOube3XglbbIoCpP0TmVX7BiyH0be9SJDGdT7
+ uhG8Blk+PTXUIoGr/7Hmg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 July 2011, Marek Szyprowski wrote:
-> The only problem that might need to be resolved is GFP_ATOMIC allocation
-> (updating page properties probably requires some locking), but it can be
-> served from a special area which is created on boot without low-memory
-> mapping at all. None sane driver will call dma_alloc_coherent(GFP_ATOMIC)
-> for large buffers anyway.
+On Wednesday 06 July 2011, Russell King - ARM Linux wrote:
+> That looks like something which needs fixing in watchdog land.  And it's
+> not too difficult:
+> 
+> 1. Change the existing WDIOC_SETOPTIONS to WDIOC_SETOPTIONS_OLD
+> 2. Add a new, correctly defined WDIOC_SETOPTIONS.
+> 3. Update all drivers to use WDIOC_SETOPTIONS.
+> 4. Provide a helper which deals with WDIOC_SETOPTIONS_OLD and translates
+>    it to the proper WDIOC_SETOPTIONS call (this could be just:
+> 
+>         if (cmd == WDIOC_SETOPTIONS_OLD) {
+>                 static int first = 1;
+>                 if (first)
+>                         pr_warn("%s:%d used old WDIOC_SETOPTIONS call.  Please rebuild\n",
+>                                 current->comm, current->pid);
+>                 first = 0;
+>                 cmd = WDIOC_SETOPTIONS;
+>         }
+> 
+>    before any argument copies.
+> 
+> This means you preserve existing compatibility with userspace, yet gain
+> a path to a non-broken ioctl interface.
+> 
+> As stuff gets rebuilt and replaced, you'll eventually be able to remove
+> the above.  That period used to be two years for such simple changes.
 
-Would it be easier to start with a version that only allocated from memory
-without a low-memory mapping at first?
+Since Wim is currently doing a new core driver to be used by watchdog
+drivers anyway, that sounds like a good idea to fix afterwards.
+Note that the mpcore_wdt is the only driver that checks the direction
+bit, so it's unlikely to cause problems for anything else.
 
-This would be similar to the approach that Russell's fix for the regular
-dma_alloc_coherent has taken, except that you need to also allow the memory
-to be used as highmem user pages.
+> Hopefully, someone can let Wim know his email is broken...
 
-Maybe you can simply adapt the default location of the contiguous memory
-are like this:
-- make CONFIG_CMA depend on CONFIG_HIGHMEM on ARM, at compile time
-- if ZONE_HIGHMEM exist during boot, put the CMA area in there
-- otherwise, put the CMA area at the top end of lowmem, and change
-  the zone sizes so ZONE_HIGHMEM stretches over all of the CMA memory.
+This should get through to him I hope. Wim, see below.
+
+> Also deleted
+> the broken arm@kernel.org address.
+
+Ok, sorry about that. I need to finally ask the kernel.org team to
+set that up, I announced it too early.
 
 	Arnd
+
+> This is the mail system at host ylaen.iguana.be.
+> 
+> I'm sorry to have to inform you that your message could not
+> be delivered to one or more recipients. It's attached below.
+> 
+> For further assistance, please send mail to <postmaster>
+> 
+> If you do so, please include this problem report. You can
+> delete your own text from the attached returned message.
+> 
+>                    The mail system
+> 
+> <wim@infomag.iguana.be> (expanded from <wim@iguana.be>): Host or domain name
+>     not found. Name service error for name=infomag.iguana.be type=AAAA: Host
+>     found but no data record of requested type
+> 
+
