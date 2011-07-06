@@ -1,154 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754414Ab1GFXab (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 19:30:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:50918 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754313Ab1GFXa3 (ORCPT
+	id S1754812Ab1GFXan (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 19:30:43 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36843 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754462Ab1GFXal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 19:30:29 -0400
-From: Sergiu Iordache <sergiu@chromium.org>
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Sergiu Iordache <sergiu@chromium.org>,
-        Marco Stornelli <marco.stornelli@gmail.com>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH v3 2/3] char drivers: ramoops record_size module parameter
-Date: Wed,  6 Jul 2011 16:29:49 -0700
-Message-Id: <1309994990-4729-3-git-send-email-sergiu@chromium.org>
-X-Mailer: git-send-email 1.7.3.1
-In-Reply-To: <1309994990-4729-1-git-send-email-sergiu@chromium.org>
-References: <1309994990-4729-1-git-send-email-sergiu@chromium.org>
-X-System-Of-Record: true
+	Wed, 6 Jul 2011 19:30:41 -0400
+From: reimth@googlemail.com
+To: Dave Airlie <airlied@redhat.com>, Alex Deucher <alexdeucher@gmail.com>,
+        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
+        Jean Delvare <khali@linux-fr.org>,
+        Tyson Whitehead <twhitehead@gmail.com>,
+        Jason Wessel <jason.wessel@windriver.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        stable@kernel.org, Thomas Reim <rdratlos@yahoo.co.uk>
+Subject: [PATCH 2/3] drm/radeon: Fix Asus M2A-VM HDMI EDID error flooding problem
+Date: Thu,  7 Jul 2011 01:30:11 +0200
+Message-Id: <1309995012-5873-3-git-send-email-reimth@gmail.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1309995012-5873-1-git-send-email-reimth@gmail.com>
+References: <1309995012-5873-1-git-send-email-reimth@gmail.com>
+In-Reply-To: <CADnq5_M5NAd2PVbS0FPB_VSmg8+41HUsDL1TcbKK94GK6MF_jA@mail.gmail.com>
+References: <CADnq5_M5NAd2PVbS0FPB_VSmg8+41HUsDL1TcbKK94GK6MF_jA@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The size of the dump is currently set using the RECORD_SIZE macro which
-is set to a page size. This patch makes the record size a module 
-parameter and allows it to be set through platform data as well to allow
-larger dumps if needed.
+From: Thomas Reim <rdratlos@yahoo.co.uk>
 
-Signed-off-by: Sergiu Iordache <sergiu@chromium.org>
+    Fixes bug https://bugs.launchpad.net/ubuntu/+source/linux/+bug/722806:
+    Some integrated ATI Radeon chipset implementations with add-on HDMI card
+    (e. g. Asus M2A-VM HDMI) indicate the availability of a DDC even
+    when the add-on card is not plugged in or HDMI is disabled in BIOS setup.
+    In this case, drm_get_edid() and drm_edid_block_valid() periodically
+    dump data and kernel errors into system log files and onto terminals.
+    For these chipsets DDC probing is extended by a check for a correct
+    EDID header. Only in case a valid EDID header is also found, the
+    (HDMI) connector will be used by the Radeon driver. This prevents the
+    kernel driver from useless flooding of logs and terminal sessions with
+    EDID dumps and error messages.
+    This patch adds a flag 'requires_extended_probe' to the radeon_connector
+    structure. In function radeon_connector_needs_extended_probe() this flag
+    can be set on a chipset family/vendor/connector type specific basis.
+    In addition, function radeon_ddc_probe() has been adapted to perform
+    extended DDC probing if required by the connector's flag.
+    Requires function drm_edid_header_is_valid() in DRM module provided by
+    [PATCH] drm: Separate EDID Header Check from EDID Block Check.
 
-Change-Id: Ie5a53acb50d5881d51354f5d9d13e3d6bedf6a2e
+    Tested for kernel 2.35, 2.38 and 3.0 on Asus M2A-VM HDMI board
+
+Signed-off-by: Thomas Reim <rdratlos@yahoo.co.uk>
 ---
- drivers/char/ramoops.c  |   37 +++++++++++++++++++++++++++----------
- include/linux/ramoops.h |    1 +
- 2 files changed, 28 insertions(+), 10 deletions(-)
+ drivers/gpu/drm/radeon/radeon_connectors.c |   45 ++++++++++++++++++++++++++--
+ drivers/gpu/drm/radeon/radeon_display.c    |    9 +++++
+ drivers/gpu/drm/radeon/radeon_i2c.c        |   32 +++++++++++++++-----
+ drivers/gpu/drm/radeon/radeon_mode.h       |    6 +++-
+ 4 files changed, 80 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
-index 5349d94..bd9b94b 100644
---- a/drivers/char/ramoops.c
-+++ b/drivers/char/ramoops.c
-@@ -32,8 +32,12 @@
- #include <linux/ramoops.h>
+diff --git a/drivers/gpu/drm/radeon/radeon_connectors.c b/drivers/gpu/drm/radeon/radeon_connectors.c
+index cbfca3a..2e70be2 100644
+--- a/drivers/gpu/drm/radeon/radeon_connectors.c
++++ b/drivers/gpu/drm/radeon/radeon_connectors.c
+@@ -424,6 +424,36 @@ int radeon_connector_set_property(struct drm_connector *connector, struct drm_pr
+ 	return 0;
+ }
  
- #define RAMOOPS_KERNMSG_HDR "===="
-+#define MIN_MEM_SIZE 4096UL
- 
--#define RECORD_SIZE 4096UL
-+static ulong record_size = MIN_MEM_SIZE;
-+module_param(record_size, ulong, 0400);
-+MODULE_PARM_DESC(record_size,
-+		"size of each dump done on oops/panic");
- 
- static ulong mem_address;
- module_param(mem_address, ulong, 0400);
-@@ -55,6 +59,7 @@ static struct ramoops_context {
- 	void *virt_addr;
- 	phys_addr_t phys_addr;
- 	unsigned long size;
-+	unsigned long record_size;
- 	int dump_oops;
- 	int count;
- 	int max_count;
-@@ -84,10 +89,10 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
- 	if (reason == KMSG_DUMP_OOPS && !cxt->dump_oops)
- 		return;
- 
--	buf = cxt->virt_addr + (cxt->count * RECORD_SIZE);
-+	buf = cxt->virt_addr + (cxt->count * cxt->record_size);
- 	buf_orig = buf;
- 
--	memset(buf, '\0', RECORD_SIZE);
-+	memset(buf, '\0', cxt->record_size);
- 	res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
- 	buf += res;
- 	do_gettimeofday(&timestamp);
-@@ -95,8 +100,8 @@ static void ramoops_do_dump(struct kmsg_dumper *dumper,
- 	buf += res;
- 
- 	hdr_size = buf - buf_orig;
--	l2_cpy = min(l2, RECORD_SIZE - hdr_size);
--	l1_cpy = min(l1, RECORD_SIZE - hdr_size - l2_cpy);
-+	l2_cpy = min(l2, cxt->record_size - hdr_size);
-+	l1_cpy = min(l1, cxt->record_size - hdr_size - l2_cpy);
- 
- 	s2_start = l2 - l2_cpy;
- 	s1_start = l1 - l1_cpy;
-@@ -113,22 +118,33 @@ static int __init ramoops_probe(struct platform_device *pdev)
- 	struct ramoops_context *cxt = &oops_cxt;
- 	int err = -EINVAL;
- 
--	if (!pdata->mem_size) {
--		pr_err("invalid size specification\n");
-+	if (!pdata->mem_size || !pdata->record_size) {
-+		pr_err("The memory size and the record size must be "
-+			"non-zero\n");
- 		goto fail3;
- 	}
- 
- 	rounddown_pow_of_two(pdata->mem_size);
-+	rounddown_pow_of_two(pdata->record_size);
- 
--	if (pdata->mem_size < RECORD_SIZE) {
--		pr_err("size too small\n");
-+	/* Check for the minimum memory size */
-+	if (pdata->mem_size < MIN_MEM_SIZE &&
-+			pdata->record_size < MIN_MEM_SIZE) {
-+		pr_err("memory size too small, minium is %lu\n", MIN_MEM_SIZE);
- 		goto fail3;
- 	}
- 
--	cxt->max_count = pdata->mem_size / RECORD_SIZE;
-+	if (pdata->mem_size < pdata->record_size) {
-+		pr_err("The memory size must be larger than the "
-+			"records size\n");
-+		goto fail3;
++/*
++ * Some integrated ATI Radeon chipset implementations (e. g.
++ * Asus M2A-VM HDMI) may indicate the availability of a DDC,
++ * even when there's no monitor connected. For these connectors
++ * following DDC probe extension will be applied: check also for the
++ * availability of EDID with at least a correct EDID header. Only then,
++ * DDC is assumed to be available. This prevents drm_get_edid() and
++ * drm_edid_block_valid() from periodically dumping data and kernel
++ * errors into the logs and onto the terminal.
++ */
++static bool radeon_connector_needs_extended_probe(struct radeon_device *dev,
++				     uint32_t supported_device,
++				     int connector_type)
++{
++	/* Asus M2A-VM HDMI board sends data to i2c bus even,
++	 * if HDMI add-on card is not plugged in or HDMI is disabled in
++	 * BIOS. Valid DDC can only be assumed, if also a valid EDID header
++	 * can be retrieved via i2c bus during DDC probe */
++	if ((dev->pdev->device == 0x791e) &&
++	    (dev->pdev->subsystem_vendor == 0x1043) &&
++	    (dev->pdev->subsystem_device == 0x826d)) {
++		if ((connector_type == DRM_MODE_CONNECTOR_HDMIA) &&
++		    (supported_device == ATOM_DEVICE_DFP2_SUPPORT))
++			return true;
 +	}
 +
-+	cxt->max_count = pdata->mem_size / pdata->record_size;
- 	cxt->count = 0;
- 	cxt->size = pdata->mem_size;
- 	cxt->phys_addr = pdata->mem_address;
-+	cxt->record_size = pdata->record_size;
- 	cxt->dump_oops = pdata->dump_oops;
++	/* Default: no EDID header probe required for DDC probing */
++	return false;
++}
++
+ static void radeon_fixup_lvds_native_mode(struct drm_encoder *encoder,
+ 					  struct drm_connector *connector)
+ {
+@@ -655,7 +685,8 @@ radeon_vga_detect(struct drm_connector *connector, bool force)
+ 		ret = connector_status_disconnected;
  
- 	if (!request_mem_region(cxt->phys_addr, cxt->size, "ramoops")) {
-@@ -196,6 +212,7 @@ static int __init ramoops_init(void)
- 			return -ENOMEM;
- 		dummy_data->mem_size = mem_size;
- 		dummy_data->mem_address = mem_address;
-+		dummy_data->record_size = record_size;
- 		dummy_data->dump_oops = dump_oops;
- 		dummy = platform_create_bundle(&ramoops_driver, ramoops_probe,
- 			NULL, 0, dummy_data,
-diff --git a/include/linux/ramoops.h b/include/linux/ramoops.h
-index 7105c4b..484fef8 100644
---- a/include/linux/ramoops.h
-+++ b/include/linux/ramoops.h
-@@ -10,6 +10,7 @@
- struct ramoops_platform_data {
- 	unsigned long	mem_size;
- 	unsigned long	mem_address;
-+	unsigned long	record_size;
- 	int		dump_oops;
- };
+ 	if (radeon_connector->ddc_bus)
+-		dret = radeon_ddc_probe(radeon_connector);
++		dret = radeon_ddc_probe(radeon_connector,
++					radeon_connector->requires_extended_probe);
+ 	if (dret) {
+ 		if (radeon_connector->edid) {
+ 			kfree(radeon_connector->edid);
+@@ -827,7 +858,8 @@ radeon_dvi_detect(struct drm_connector *connector, bool force)
+ 	bool dret = false;
  
+ 	if (radeon_connector->ddc_bus)
+-		dret = radeon_ddc_probe(radeon_connector);
++		dret = radeon_ddc_probe(radeon_connector,
++					radeon_connector->requires_extended_probe);
+ 	if (dret) {
+ 		if (radeon_connector->edid) {
+ 			kfree(radeon_connector->edid);
+@@ -1245,7 +1277,8 @@ radeon_dp_detect(struct drm_connector *connector, bool force)
+ 				if (radeon_dp_getdpcd(radeon_connector))
+ 					ret = connector_status_connected;
+ 			} else {
+-				if (radeon_ddc_probe(radeon_connector))
++				if (radeon_ddc_probe(radeon_connector,
++						     radeon_connector->requires_extended_probe))
+ 					ret = connector_status_connected;
+ 			}
+ 		}
+@@ -1400,6 +1433,9 @@ radeon_add_atom_connector(struct drm_device *dev,
+ 	radeon_connector->shared_ddc = shared_ddc;
+ 	radeon_connector->connector_object_id = connector_object_id;
+ 	radeon_connector->hpd = *hpd;
++	radeon_connector->requires_extended_probe =
++		radeon_connector_needs_extended_probe(rdev, supported_device,
++							connector_type);
+ 	radeon_connector->router = *router;
+ 	if (router->ddc_valid || router->cd_valid) {
+ 		radeon_connector->router_bus = radeon_i2c_lookup(rdev, &router->i2c_info);
+@@ -1746,6 +1782,9 @@ radeon_add_legacy_connector(struct drm_device *dev,
+ 	radeon_connector->devices = supported_device;
+ 	radeon_connector->connector_object_id = connector_object_id;
+ 	radeon_connector->hpd = *hpd;
++	radeon_connector->requires_extended_probe =
++		radeon_connector_needs_extended_probe(rdev, supported_device,
++							connector_type);
+ 	switch (connector_type) {
+ 	case DRM_MODE_CONNECTOR_VGA:
+ 		drm_connector_init(dev, &radeon_connector->base, &radeon_vga_connector_funcs, connector_type);
+diff --git a/drivers/gpu/drm/radeon/radeon_display.c b/drivers/gpu/drm/radeon/radeon_display.c
+index 292f73f..ed085ce 100644
+--- a/drivers/gpu/drm/radeon/radeon_display.c
++++ b/drivers/gpu/drm/radeon/radeon_display.c
+@@ -777,8 +777,17 @@ static int radeon_ddc_dump(struct drm_connector *connector)
+ 	if (!radeon_connector->ddc_bus)
+ 		return -1;
+ 	edid = drm_get_edid(connector, &radeon_connector->ddc_bus->adapter);
++	/* Log EDID retrieval status here. In particular with regard to
++	 * connectors with requires_extended_probe flag set, that will prevent
++	 * function radeon_dvi_detect() to fetch EDID on this connector,
++	 * as long as there is no valid EDID header found */
+ 	if (edid) {
++		DRM_INFO("Radeon display connector %s: Found valid EDID",
++				drm_get_connector_name(connector));
+ 		kfree(edid);
++	} else {
++		DRM_INFO("Radeon display connector %s: No monitor connected or invalid EDID",
++				drm_get_connector_name(connector));
+ 	}
+ 	return ret;
+ }
+diff --git a/drivers/gpu/drm/radeon/radeon_i2c.c b/drivers/gpu/drm/radeon/radeon_i2c.c
+index 781196d..6c111c1 100644
+--- a/drivers/gpu/drm/radeon/radeon_i2c.c
++++ b/drivers/gpu/drm/radeon/radeon_i2c.c
+@@ -32,17 +32,17 @@
+  * radeon_ddc_probe
+  *
+  */
+-bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
++bool radeon_ddc_probe(struct radeon_connector *radeon_connector, bool requires_extended_probe)
+ {
+-	u8 out_buf[] = { 0x0, 0x0};
+-	u8 buf[2];
++	u8 out = 0x0;
++	u8 buf[8];
+ 	int ret;
+ 	struct i2c_msg msgs[] = {
+ 		{
+ 			.addr = 0x50,
+ 			.flags = 0,
+ 			.len = 1,
+-			.buf = out_buf,
++			.buf = &out,
+ 		},
+ 		{
+ 			.addr = 0x50,
+@@ -52,15 +52,31 @@ bool radeon_ddc_probe(struct radeon_connector *radeon_connector)
+ 		}
+ 	};
+ 
++	/* Read 8 bytes from i2c for extended probe of EDID header */
++	if (requires_extended_probe)
++		msgs[1].len = 8;
++
+ 	/* on hw with routers, select right port */
+ 	if (radeon_connector->router.ddc_valid)
+ 		radeon_router_select_ddc_port(radeon_connector);
+ 
+ 	ret = i2c_transfer(&radeon_connector->ddc_bus->adapter, msgs, 2);
+-	if (ret == 2)
+-		return true;
+-
+-	return false;
++	if (ret != 2)
++		/* Couldn't find an accessible DDC on this connector */
++		return false;
++	if (requires_extended_probe) {
++		/* Probe also for valid EDID header
++		 * EDID header starts with:
++		 * 0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00.
++		 * Only the first 6 bytes must be valid as
++		 * drm_edid_block_valid() can fix the last 2 bytes */
++		if (drm_edid_header_is_valid(buf) < 6) {
++			/* Couldn't find an accessible EDID on this
++			 * connector */
++			return false;
++		}
++	}
++	return true;
+ }
+ 
+ /* bit banging i2c */
+diff --git a/drivers/gpu/drm/radeon/radeon_mode.h b/drivers/gpu/drm/radeon/radeon_mode.h
+index 6df4e3c..d09031c 100644
+--- a/drivers/gpu/drm/radeon/radeon_mode.h
++++ b/drivers/gpu/drm/radeon/radeon_mode.h
+@@ -438,6 +438,9 @@ struct radeon_connector {
+ 	struct radeon_i2c_chan *ddc_bus;
+ 	/* some systems have an hdmi and vga port with a shared ddc line */
+ 	bool shared_ddc;
++	/* for some Radeon chip families we apply an additional EDID header
++	   check as part of the DDC probe */
++	bool requires_extended_probe;
+ 	bool use_digital;
+ 	/* we need to mind the EDID between detect
+ 	   and get modes due to analog/digital/tvencoder */
+@@ -514,7 +517,8 @@ extern void radeon_i2c_put_byte(struct radeon_i2c_chan *i2c,
+ 				u8 val);
+ extern void radeon_router_select_ddc_port(struct radeon_connector *radeon_connector);
+ extern void radeon_router_select_cd_port(struct radeon_connector *radeon_connector);
+-extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector);
++extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector,
++			bool requires_extended_probe);
+ extern int radeon_ddc_get_modes(struct radeon_connector *radeon_connector);
+ 
+ extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
 -- 
-1.7.3.1
+1.7.1
 
