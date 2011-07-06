@@ -1,69 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754284Ab1GFPmp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 11:42:45 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:61447 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab1GFPmn convert rfc822-to-8bit (ORCPT
+	id S1754294Ab1GFPrP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 11:47:15 -0400
+Received: from smtp.microsoft.com ([131.107.115.214]:18138 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753942Ab1GFPrO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 11:42:43 -0400
-MIME-Version: 1.0
-In-Reply-To: <CADnq5_M5NAd2PVbS0FPB_VSmg8+41HUsDL1TcbKK94GK6MF_jA@mail.gmail.com>
-References: <1308866743-8066-1-git-send-email-reimth@gmail.com>
-	<1309946963-6409-1-git-send-email-reimth@gmail.com>
-	<CADnq5_M5NAd2PVbS0FPB_VSmg8+41HUsDL1TcbKK94GK6MF_jA@mail.gmail.com>
-Date: Wed, 6 Jul 2011 11:42:42 -0400
-Message-ID: <CADnq5_M2yy2aota_mbvq4jKns-sQBOLfJrOzQuNOREw=FfgfOg@mail.gmail.com>
-Subject: Re: [PATCH] drm/radeon: Fix Asus M2A-VM HDMI EDID error flooding problem
-From: Alex Deucher <alexdeucher@gmail.com>
-To: reimth@googlemail.com
-Cc: Dave Airlie <airlied@redhat.com>,
-        Mario Kleiner <mario.kleiner@tuebingen.mpg.de>,
-        Jean Delvare <khali@linux-fr.org>,
-        Tyson Whitehead <twhitehead@gmail.com>,
-        Jason Wessel <jason.wessel@windriver.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        Thomas Reim <rdratlos@yahoo.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Jul 2011 11:47:14 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH 15/77] Staging: hv: blkvsc: Add the appropriate
+ MODULE_ALIAS() line
+Thread-Topic: [PATCH 15/77] Staging: hv: blkvsc: Add the appropriate
+ MODULE_ALIAS() line
+Thread-Index: AQHMLGBHWoQfmHDGWUWeXfLMRVPeHZTed46AgAAKHVCAALhhAIAAH11ggACegQD//4tIEIAAfFQA//+Ln7A=
+Date: Wed, 6 Jul 2011 15:47:13 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480816D469@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1308255393-3785-1-git-send-email-kys@microsoft.com>
+ <1308255470-3826-1-git-send-email-kys@microsoft.com>
+ <1308255470-3826-15-git-send-email-kys@microsoft.com>
+ <20110705160621.GC7214@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0480816D27E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110706034228.GA4291@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0480816D414@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110706150202.GA3353@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0480816D432@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110706152916.GB30350@kroah.com>
+In-Reply-To: <20110706152916.GB30350@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 6, 2011 at 11:39 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> On Wed, Jul 6, 2011 at 6:09 AM,  <reimth@googlemail.com> wrote:
->> From: Thomas Reim <rdratlos@yahoo.co.uk>
->>
->>    Some integrated ATI Radeon chipset implementations
->>    with add-on HDMI card (e. g. Asus M2A-VM HDMI) indicate the availability
->>    of a DDC even when the add-on card is not plugged in or HDMI is disabled
->>    in BIOS setup. In this case, drm_get_edid() and drm_edid_block_valid()
->>    periodically dump data and kernel errors into system log files and onto
->>    terminals. For these chipsets DDC probing is extended by a check for a
->>    correct EDID header. Only in case a valid EDID header is also found, the
->>    (HDMI) connector will be used by the Radeon driver. This prevents the
->>    kernel driver from useless flooding of logs and terminal sessions with
->>    EDID dumps and error messages.
->>    This patch adds a flag 'requires_extended_probe' to the radeon_connector
->>    structure. In function radeon_connector_needs_extended_probe() this flag
->>    can be set on a chipset family/vendor/connector type specific basis.
->>    In addition, function drm_edid_header_is_valid() has been added for EDID
->>    header check and function radeon_ddc_probe() has been adapted to perform
->>    extended DDC probing if required by the connector's flag.
->>
->>    Tested for kernel 2.35, 2.38 and 3.0 on Asus M2A-VM HDMI board
->>
->
-> Once it's ready, just add:
-> Cc: stable@kernel.org
-> to the commit message and it will go into the stable kernels as well.
-> Might want to mention the bug report in your commit message as well.
-> Just a couple comments below.  With those fixed:
->
-> Reviewed-by: Alex Deucher <alexdeucher@gmail.com>
 
-We also may want to revert 4a9a8b71e12d41abb71c4e741bff524f016cfef4
-once this patch goes in, otherwise we may remove the ddc bus
-unnecessarily on some systems.
 
-Alex
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Wednesday, July 06, 2011 11:29 AM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
+> Janssen
+> Subject: Re: [PATCH 15/77] Staging: hv: blkvsc: Add the appropriate
+> MODULE_ALIAS() line
+> 
+> On Wed, Jul 06, 2011 at 03:17:37PM +0000, KY Srinivasan wrote:
+> > It is certainly easier to deal with a small integer than with 128bit giud and there
+> is
+> > no added benefit dealing with guids since the number of drivers we will support
+> > under vmbus will never exceed a very small number. Having said that, I will go
+> ahead
+> > and embed full guids as you have suggested. So, the aliases for these drivers
+> will be:
+> > vmbus:device guid.
+> 
+> Wait, no, you will never be typing "MODULE_ALIAS()" in your driver at
+> all, it will be created automatically for you by the proper macro fun
+> with the MODULE_DEVICE_TABLE() line.  The same variable you use in that
+> macro will be used to register the driver with the vmbus core.
+
+I was referring to the name that would be generated by the parsing code
+In file2alias.c. I have an id_table field in the struct hv_driver and this will point
+to the table that will setup. This table will be used in the vmbus match function
+as well as to generate hotplug events.
+
+Regards,
+
+K. Y
+
