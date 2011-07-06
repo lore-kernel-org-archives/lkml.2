@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab1GFJjf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 05:39:35 -0400
-Received: from multi.imgtec.com ([194.200.65.239]:1029 "EHLO multi.imgtec.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751286Ab1GFJje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 05:39:34 -0400
-Message-ID: <4E142D53.8010602@imgtec.com>
-Date: Wed, 06 Jul 2011 10:39:31 +0100
-From: James Hogan <james.hogan@imgtec.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
+	id S1753015Ab1GFJj6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 05:39:58 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:62425 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751914Ab1GFJj5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 05:39:57 -0400
 MIME-Version: 1.0
-To: James Hogan <james.hogan@imgtec.com>
-CC: Chris Ball <cjb@laptop.org>, Will <will.newton@imgtec.com>,
-        Jaehoon Chung <jh80.chung@samsung.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-mmc <linux-mmc@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH v2 3/4] mmc: dw_mmc: handle "no CRC status" error
-References: <4E142C10.3050508@imgtec.com>
-In-Reply-To: <4E142C10.3050508@imgtec.com>
+In-Reply-To: <1309870814-14181-1-git-send-email-ian.campbell@citrix.com>
+References: <20110705111525.GR17941@sun>
+	<1309870814-14181-1-git-send-email-ian.campbell@citrix.com>
+Date: Wed, 6 Jul 2011 12:39:56 +0300
+X-Google-Sender-Auth: Rr0fsspgxiukUB5n_Ao8APlIjXs
+Message-ID: <CAOJsxLFjdrrnx4gZjDJQuf3GBHeKvKb91TajYBkMu+PgSWtM5A@mail.gmail.com>
+Subject: Re: [PATCH 1/3] x86: drop unnecessary kernel_eflags variable from 64 bit.
+From: Pekka Enberg <penberg@kernel.org>
+To: Ian Campbell <ian.campbell@citrix.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
+        Jan Beulich <JBeulich@novell.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org,
+        Andi Kleen <ak@linux.intel.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jul 2011 09:39:31.0956 (UTC) FILETIME=[9BBDAB40:01CC3BC0]
-X-SEF-Processed: 7_3_0_01158__2011_07_06_10_39_32
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a data write isn't acknowledged by the card (so no CRC status token
-is detected after the data), the error -EIO is returned instead of the
--ETIMEDOUT expected by mmc_test 15 - "Correct xfer_size at write (start
-failure)" and 17 "Correct xfer_size at write (midway failure)". In PIO
-mode the reported number of bytes transferred is also exaggerated since
-the last block actually failed.
+On Tue, Jul 5, 2011 at 4:00 PM, Ian Campbell <ian.campbell@citrix.com> wrote:
+> For no reason that I can determine 64 bit x86 saves the current eflags
+> in cpu_init purely for use in ret_from_fork. The equivalent 32 bit
+> code simply hard codes 0x0202 as the new EFLAGS which seems safer than
+> relying on a potentially arbitrary EFLAGS saved during cpu_init.
+>
+> Original i386 changeset
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=47a5c6fa0e204a2b63309c648bb2fde36836c826
+> Original x86_64 changset
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=658fdbef66e5e9be79b457edc2cbbb3add840aa9
+>
+> The only comment in the later indicates that it is following the
+> former, but not why it differs in this way.
 
-Handle the "Write no CRC" error specially, setting the error to
--ETIMEDOUT and setting the bytes_xferred to 0.
+Well lets ask Linus and Andi?
 
-Signed-off-by: James Hogan <james.hogan@imgtec.com>
-Acked-by: Will Newton <will.newton@imgtec.com>
-Tested-by: Jaehoon Chung <jh80.chung@samsung.com>
----
- drivers/mmc/host/dw_mmc.c |   19 +++++++++++++++----
- 1 files changed, 15 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
-index bf2157a..0dac397 100644
---- a/drivers/mmc/host/dw_mmc.c
-+++ b/drivers/mmc/host/dw_mmc.c
-@@ -496,15 +496,16 @@ static void dw_mci_submit_data(struct dw_mci *host, struct mmc_data *data)
- 	host->sg = NULL;
- 	host->data = data;
- 
-+	if (data->flags & MMC_DATA_READ)
-+		host->dir_status = DW_MCI_RECV_STATUS;
-+	else
-+		host->dir_status = DW_MCI_SEND_STATUS;
-+
- 	if (dw_mci_submit_data_dma(host, data)) {
- 		host->sg = data->sg;
- 		host->pio_offset = 0;
- 		host->part_buf_start = 0;
- 		host->part_buf_count = 0;
--		if (data->flags & MMC_DATA_READ)
--			host->dir_status = DW_MCI_RECV_STATUS;
--		else
--			host->dir_status = DW_MCI_SEND_STATUS;
- 
- 		mci_writel(host, RINTSTS, SDMMC_INT_TXDR | SDMMC_INT_RXDR);
- 		temp = mci_readl(host, INTMASK);
-@@ -911,6 +912,16 @@ static void dw_mci_tasklet_func(unsigned long priv)
- 					data->error = -ETIMEDOUT;
- 				} else if (status & SDMMC_INT_DCRC) {
- 					data->error = -EILSEQ;
-+				} else if (status & SDMMC_INT_EBE &&
-+					   host->dir_status ==
-+							DW_MCI_SEND_STATUS) {
-+					/*
-+					 * No data CRC status was returned.
-+					 * The number of bytes transferred will
-+					 * be exaggerated in PIO mode.
-+					 */
-+					data->bytes_xfered = 0;
-+					data->error = -ETIMEDOUT;
- 				} else {
- 					dev_err(&host->pdev->dev,
- 						"data FIFO error "
--- 
-1.7.2.3
-
+> This change makes 64 bit use the same mechanism to setup the initial
+> EFLAGS on fork. Note that 64 bit resets EFLAGS before calling
+> schedule_tail() as opposed to 32 bit which calls schedule_tail()
+> first. Therefore the correct value for EFLAGS has opposite IF
+> bit. This will be fixed in a subsequent patch.
+>
+> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
+> Cc: x86@kernel.org
+> ---
+>  arch/x86/kernel/cpu/common.c |    4 ----
+>  arch/x86/kernel/entry_64.S   |    2 +-
+>  2 files changed, 1 insertions(+), 5 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+> index 22a073d..178c3b4 100644
+> --- a/arch/x86/kernel/cpu/common.c
+> +++ b/arch/x86/kernel/cpu/common.c
+> @@ -1077,8 +1077,6 @@ void syscall_init(void)
+>               X86_EFLAGS_TF|X86_EFLAGS_DF|X86_EFLAGS_IF|X86_EFLAGS_IOPL);
+>  }
+>
+> -unsigned long kernel_eflags;
+> -
+>  /*
+>  * Copies of the original ist values from the tss are only accessed during
+>  * debugging, no special alignment required.
+> @@ -1231,8 +1229,6 @@ void __cpuinit cpu_init(void)
+>        fpu_init();
+>        xsave_init();
+>
+> -       raw_local_save_flags(kernel_eflags);
+> -
+>        if (is_uv_system())
+>                uv_cpu_init();
+>  }
+> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+> index e13329d..b50d142 100644
+> --- a/arch/x86/kernel/entry_64.S
+> +++ b/arch/x86/kernel/entry_64.S
+> @@ -396,7 +396,7 @@ ENTRY(ret_from_fork)
+>
+>        LOCK ; btr $TIF_FORK,TI_flags(%r8)
+>
+> -       pushq_cfi kernel_eflags(%rip)
+> +       pushq_cfi $0x0002
+>        popfq_cfi                               # reset kernel eflags
+>
+>        call schedule_tail                      # rdi: 'prev' task parameter
