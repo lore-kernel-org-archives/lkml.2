@@ -1,83 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab1GFWvv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 18:51:51 -0400
-Received: from bar.sig21.net ([80.81.252.164]:50697 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751928Ab1GFWvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 18:51:50 -0400
-Date: Thu, 7 Jul 2011 00:51:40 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-        akpm@linux-foundation.org
-Subject: Re: [PATCH] compat_ioctl: fix make headers_check regression
-Message-ID: <20110706225140.GA21510@sig21.net>
-References: <20110704134842.7ab89126.sfr@canb.auug.org.au>
- <20110704100316.GA15894@sig21.net>
+	id S1753537Ab1GFWxZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 18:53:25 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:11543 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751928Ab1GFWxY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 18:53:24 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6399"; a="102217163"
+From: David Brown <davidb@codeaurora.org>
+To: Greg KH <gregkh@suse.de>
+Cc: Prashant Shah <pshah.mumbai@gmail.com>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        Daniel Walker <dwalker@codeaurora.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: msm: fixed style issues found by checkpatch.pl
+References: <20110706074934.GA935@mail.fossee.in>
+	<20110706155745.GB16625@suse.de>
+	<CAD6i1fK0nH+D3v+A3erC1PgR=S=709H9ZC=T8-q0gqV1ghA0bQ@mail.gmail.com>
+	<20110706192656.GA30532@suse.de> <8yay60bytt5.fsf@huya.qualcomm.com>
+	<20110706214338.GA2109@suse.de>
+Date: Wed, 06 Jul 2011 15:53:24 -0700
+In-Reply-To: <20110706214338.GA2109@suse.de> (Greg KH's message of "Wed, 6 Jul
+	2011 14:43:40 -0700")
+Message-ID: <8ya39ij6mxn.fsf@huya.qualcomm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110704100316.GA15894@sig21.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -3.7 (---)
-X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.720,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 06 2011, Greg KH wrote:
 
-On Mon, Jul 04, 2011 at 12:03:16PM +0200, Johannes Stezenbach wrote:
-> Fix headers_check error introduced by 390192b30057:
-> 
-> include/linux/fd.h:6: included file 'linux/compat.h' is not exported
-> 
-> Signed-off-by: Johannes Stezenbach <js@sig21.net>
-> ---
-> I used the same style as in linux/usbdevice_fs.h, hope
-> that's OK.
+> On Wed, Jul 06, 2011 at 02:37:26PM -0700, David Brown wrote:
+>> On Wed, Jul 06 2011, Greg KH wrote:
+>> 
+>> > On Wed, Jul 06, 2011 at 09:45:08PM +0530, Prashant Shah wrote:
+>> >> Hi,
+>> >> 
+>> >> > So that would be one patch for fixing extra braces, one for extra
+>> >> > spaces, and so on.  That makes it easier to review.
+>> >> 
+>> >> Ok I will redo them.
+>> >> 
+>> >> On Wed, Jul 6, 2011 at 9:27 PM, Greg KH <gregkh@suse.de> wrote:
+>> >> > On Wed, Jul 06, 2011 at 01:19:34PM +0530, Prashant P. Shah wrote:
+>> >> > Also, did you successfully build this code before and after your
+>> >> > changes?
+>> >> 
+>> >> I tried but the code does not build because of #include <mach/board.h>
+>> >> in the msm_fb.c file. I dont know how to fix that.
+>> >
+>> > I say let's just delete this whole directory as if it doesn't build, no
+>> > one is using it, and no one has tried to clean it up since it was
+>> > originally added.
+>> >
+>> > Stepan or David or Abhijeet or Daniel, any objection to just deleting
+>> > drivers/staging/msm/ at this point in time for the 3.1 kernel release?
+>> > You haven't sent any patches to me to clean this code up since the
+>> > original patch, way over a year ago.
+>> 
+>> I have none.  The non-staging driver has been getting updates, and I
+>> asked the author if it was OK to remove the staging one.  I believe the
+>> real driver supports everything the staging one did.
+>> 
+>> Should I generate a (large) patch, or is it easier for you to just
+>> remove the tree?
+>
+> I'll just remove it, it's easier that way.  Can I add your "Acked-by:"
+> to the patch?
 
+Yes.
 
-I just got an "added to -mm tree" mail for the original patch, so I
-wonder what's with this fix?
+Thanks,
+David
 
-
-Johannes
-
-
->  include/linux/fd.h |    6 +++++-
->  1 files changed, 5 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/fd.h b/include/linux/fd.h
-> index c6a68d0..72202b1 100644
-> --- a/include/linux/fd.h
-> +++ b/include/linux/fd.h
-> @@ -3,7 +3,6 @@
->  
->  #include <linux/ioctl.h>
->  #include <linux/compiler.h>
-> -#include <linux/compat.h>
->  
->  /* New file layout: Now the ioctl definitions immediately follow the
->   * definitions of the structures that they use */
-> @@ -378,7 +377,11 @@ struct floppy_raw_cmd {
->  #define FDEJECT _IO(2, 0x5a)
->  /* eject the disk */
->  
-> +
-> +#ifdef __KERNEL__
->  #ifdef CONFIG_COMPAT
-> +#include <linux/compat.h>
-> +
->  struct compat_floppy_struct {
->  	compat_uint_t	size;
->  	compat_uint_t	sect;
-> @@ -394,5 +397,6 @@ struct compat_floppy_struct {
->  
->  #define FDGETPRM32 _IOR(2, 0x04, struct compat_floppy_struct)
->  #endif
-> +#endif
->  
->  #endif
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
