@@ -1,73 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab1GFO6u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 10:58:50 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:7403 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753143Ab1GFO6t convert rfc822-to-8bit (ORCPT
+	id S1753777Ab1GFPAV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 11:00:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52466 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753232Ab1GFPAU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 10:58:49 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Wed, 6 Jul 2011 11:00:20 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [Linaro-mm-sig] [PATCH 6/8] drivers: add Contiguous Memory Allocator
+Date: Wed, 6 Jul 2011 16:59:45 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        linaro-mm-sig@lists.linaro.org,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-media@vger.kernel.org
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <20110706142345.GC8286@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1107061034200.14596@xanadu.home>
+In-Reply-To: <alpine.LFD.2.00.1107061034200.14596@xanadu.home>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="big5"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for CNS3xxx hardware
-Date: Wed, 6 Jul 2011 07:54:49 -0700
-Message-ID: <6D7FCE1DF69D524D850E799960F2705811271D@caexch01.caveonetworks.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for CNS3xxx hardware
-Thread-Index: Acw70lvLpIeQYURhS2afTgUkM/+0NQAGkvct
-References: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com> <20110705140559.GA15771@oksana.dev.rtsoft.ru> <281B1F8BAB4D4BDABE7568809A0AEC1A@starsemi.com> <20110706111616.GA18967@oksana.dev.rtsoft.ru> <20110706112830.GA23184@oksana.dev.rtsoft.ru> <20110706114629.GA32659@oksana.dev.rtsoft.ru>
-From: "Lin, Tommy" <Tommy.Lin@caviumnetworks.com>
-To: "Anton Vorontsov" <cbouatmailru@gmail.com>
-Cc: "Tommy Lin" <tommy.lin.1101@gmail.com>, "Wim Van Sebroeck" <wim@iguana.be>,
-        <linux-watchdog@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        "Lin, Mac" <Mac.Lin@caviumnetworks.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107061659.45253.arnd@arndb.de>
+X-Provags-ID: V02:K0:5UV86gVAQccUTDm1e62xpLJkPnzp/keGWDpFsd63cuO
+ uWw4ddxCVu5a7cpWNp6w4u4VzwitWQz4GqvTePVBjO/s/ZZZZ5
+ 7TbYs5qlH6kx1PGuXP0bzOQllMrqMDLSYXss40ntnVwYD67hSw
+ Ms9Bi7TcMDVyg1aXGxsmA2IzehW7/9U5Lpr0+pYojz5CCBmndQ
+ 6v4VG+YtRMM4iO24Erj8Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I am thinking that mpcore_wdt should work even SMP is not turned on. Did the dependency 
-is neccesarry between mpcore_wdt and SMP? If CPU1 is turned off the mpcore_wdt worked
-well with CPU0 only.
-
-Best regards,
-Tommy
-
-
-
------Original Message-----
-From: Anton Vorontsov [mailto:cbouatmailru@gmail.com]
-Sent: 7/6/2011 [星期三] 7:46 下午
-To: Lin, Tommy
-Cc: 'Tommy Lin'; 'Wim Van Sebroeck'; linux-watchdog@vger.kernel.org; linux-kernel@vger.kernel.org; Lin, Mac
-Subject: Re: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for CNS3xxx hardware
- 
-On Wed, Jul 06, 2011 at 03:28:30PM +0400, Anton Vorontsov wrote:
-> On Wed, Jul 06, 2011 at 03:16:16PM +0400, Anton Vorontsov wrote:
-> > On Wed, Jul 06, 2011 at 06:05:37PM +0800, Tommy Lin wrote:
-> > > Hi, I just found another patch that can solve the watchdog counter reload
-> > > issue. Please ignore this patch, since it should not acceptable to use
-> > > #ifdefs.
-> > 
-> > OK, great. Do I understand correctly that without Vitaly's patch,
-> > your first patch is somewhat useless, as the watchdog will not work
-> > or will work incorrectly? So should I postpone merging patch 1/2
-> > until Vitaly's patch hit mainline?
+On Wednesday 06 July 2011, Nicolas Pitre wrote:
+> On Wed, 6 Jul 2011, Russell King - ARM Linux wrote:
 > 
-> Oh, I see that the issue isn't major, so I'll just merge the first
-> patch.
+> > Another issue is that when a platform has restricted DMA regions,
+> > they typically don't fall into the highmem zone.  As the dmabounce
+> > code allocates from the DMA coherent allocator to provide it with
+> > guaranteed DMA-able memory, that would be rather inconvenient.
+> 
+> Do we encounter this in practice i.e. do those platforms requiring large 
+> contiguous allocations motivating this work have such DMA restrictions?
 
-Heh. Nope. It doesn't work without SMP:
+You can probably find one or two of those, but we don't have to optimize
+for that case. I would at least expect the maximum size of the allocation
+to be smaller than the DMA limit for these, and consequently mandate that
+they define a sufficiently large CONSISTENT_DMA_SIZE for the crazy devices,
+or possibly add a hack to unmap some low memory and call
+dma_declare_coherent_memory() for the device.
 
-warning: (ARCH_CNS3XXX) selects HAVE_ARM_TWD which has unmet direct dependencies (SMP)
-
-And SMP support is not in the mainline, yet.
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
-
+	Arnd
