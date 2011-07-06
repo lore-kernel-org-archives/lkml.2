@@ -1,96 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753051Ab1GFOTd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 10:19:33 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:64412 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752581Ab1GFOTb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 10:19:31 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH V2 3/6] mpcore_wdt: Fix WDIOC_SETOPTIONS handling
-Date: Wed, 6 Jul 2011 16:19:27 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Vitaly Kuzmichev <vkuzmichev@mvista.com>, linux-watchdog@vger.kernel.org,
-        Nicolas Pitre <nico@fluxnic.net>, Marc Zyngier <marc.zyngier@arm.com>,
-        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Wim Van Sebroeck <wim@iguana.be>, Thomas Gleixner <tglx@linutronix.de>,
-        linux-arm-kernel@lists.infradead.org
-References: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com> <20110706134806.GA8286@n2100.arm.linux.org.uk> <20110706135219.GB8286@n2100.arm.linux.org.uk>
-In-Reply-To: <20110706135219.GB8286@n2100.arm.linux.org.uk>
+	id S1753089Ab1GFOX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 10:23:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752862Ab1GFOX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 10:23:28 -0400
+Date: Wed, 6 Jul 2011 10:23:23 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Konstantin Khlebnikov <khlebnikov@parallels.com>
+Cc: Jens Axboe <axboe@kernel.dk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH RFC 1/2] cfq: request-deadline policy
+Message-ID: <20110706142323.GA27302@redhat.com>
+References: <20110704130838.27757.87486.stgit@localhost6>
+ <20110705150420.GD24348@redhat.com>
+ <4E1407A1.5080809@parallels.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107061619.27580.arnd@arndb.de>
-X-Provags-ID: V02:K0:91YQSD79WwP33uk39BZx1Z/2ymjsRDM9CxT8hevSqzl
- /7h7FIqgTGWQFXYnAEKWvroxDSPldXm93G8zwOviVxJ/00XIAa
- q24YnnCEJREX4sdwl/hpr/jHxj0UL29U1Z7WpwYqgya3ebhe7x
- dlC6ElslrEWbBxOube3XglbbIoCpP0TmVX7BiyH0be9SJDGdT7
- uhG8Blk+PTXUIoGr/7Hmg==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E1407A1.5080809@parallels.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 July 2011, Russell King - ARM Linux wrote:
-> That looks like something which needs fixing in watchdog land.  And it's
-> not too difficult:
+On Wed, Jul 06, 2011 at 10:58:41AM +0400, Konstantin Khlebnikov wrote:
+> Vivek Goyal wrote:
+> >On Mon, Jul 04, 2011 at 05:08:38PM +0400, Konstantin Khlebnikov wrote:
+> >>CFQ is designed for sharing disk bandwidth proportionally between queues and groups
+> >>and for reordering requests to reduce disks seek time. Currently it cannot
+> >>gurantee or estimate latency for individual requests, even if latencies are low
+> >>for almost all requests, some of them can stuck inside scheduler for a long time.
+> >>The fair policy is good as long as someone luckless begins to die due to a timeout.
+> >>
+> >>This patch implements fifo requests dispatching with deadline policy: now cfq
+> >>obliged to dispatch request if it stuck in the queue for more than deadline.
+> >>
+> >>This way now cfq can try to ensure the expected latency of requests execution.
+> >>It is like a safety valve, it should not work all time, but it should keep latency
+> >>in sane range when the scheduler is unable to effectively handle flow of requests,
+> >>especially in cases when the "noop" or "deadline" shows better performance.
+> >>
+> >>deadline can be tuned via /sys/block/<device>/queue/iosched/deadline_{sync,async}
+> >>it by default 2000ms for sync and 4000ms for async requests, use 0 to disable it.
+> >
+> >What's the workload where you are running into issues with existing
+> >policy?
 > 
-> 1. Change the existing WDIOC_SETOPTIONS to WDIOC_SETOPTIONS_OLD
-> 2. Add a new, correctly defined WDIOC_SETOPTIONS.
-> 3. Update all drivers to use WDIOC_SETOPTIONS.
-> 4. Provide a helper which deals with WDIOC_SETOPTIONS_OLD and translates
->    it to the proper WDIOC_SETOPTIONS call (this could be just:
+> This is huge internal test workload,
+> there >100 containers with mail/http/ftp and something more.
 > 
->         if (cmd == WDIOC_SETOPTIONS_OLD) {
->                 static int first = 1;
->                 if (first)
->                         pr_warn("%s:%d used old WDIOC_SETOPTIONS call.  Please rebuild\n",
->                                 current->comm, current->pid);
->                 first = 0;
->                 cmd = WDIOC_SETOPTIONS;
->         }
+> >
+> >We have low_latency=1 by default and which tries to schedule every
+> >queue once in 300ms atleast. And with-in queue we already have the
+> >notion of looking at fifo and dispatch the expired request first.
 > 
->    before any argument copies.
-> 
-> This means you preserve existing compatibility with userspace, yet gain
-> a path to a non-broken ioctl interface.
-> 
-> As stuff gets rebuilt and replaced, you'll eventually be able to remove
-> the above.  That period used to be two years for such simple changes.
+> Without this patch some requests stuck in the scheduler for more than 30 seconds,
+> and it looks like it is no limit.
 
-Since Wim is currently doing a new core driver to be used by watchdog
-drivers anyway, that sounds like a good idea to fix afterwards.
-Note that the mpcore_wdt is the only driver that checks the direction
-bit, so it's unlikely to cause problems for anything else.
+Have you done any analysis why requets are stuck for more than 30 seconds.
+May be running blktrace will help.
 
-> Hopefully, someone can let Wim know his email is broken...
+Is it async requests which are stuck or sync requests?
 
-This should get through to him I hope. Wim, see below.
+We have seen that async requests can be stuck for a long time in CFQ
+in an attempt to give sync requests priority. I will be surprised
+if it is sync request stuck for 30 seconds.
 
-> Also deleted
-> the broken arm@kernel.org address.
+I think first we need to run traces and analyze why request is stuck
+for long time. With 300ms soft latency target, we dynamically reduce
+the slice of every queue with 16ms minimum. So without cgroups, one shall
+have to have close to 2 million procesess to create 32second delay in
+servicing a cfq queue. I don't think you have that many processes doing
+IO.
 
-Ok, sorry about that. I need to finally ask the kernel.org team to
-set that up, I announced it too early.
+So running some traces and diving little deeper to figure out what's
+happening will help. If you are quoting these numbers for async request
+or for a sync request which is dependent on some async request, then
+I can belive those.
 
-	Arnd
-
-> This is the mail system at host ylaen.iguana.be.
 > 
-> I'm sorry to have to inform you that your message could not
-> be delivered to one or more recipients. It's attached below.
+> With this patch max-wait-time (from the second patch) shows 7 seconds for this workload,
+> so of course queue is over-congested, but it continues to work predictably.
 > 
-> For further assistance, please send mail to <postmaster>
+> >
+> >So to me sync queue scheduling shold be pretty good. Async queues
+> >can get starved though. With-in sync queue, if some requests have
+> >expired, it is probably because of the fact that disk is slow and
+> >we are throwing too much IO at it. So if we start always dispatching
+> >expired requests first, then the notion of fairness is out of the
+> >window.
+> >
+> >Why not use deadline scheduler for your case?
 > 
-> If you do so, please include this problem report. You can
-> delete your own text from the attached returned message.
-> 
->                    The mail system
-> 
-> <wim@infomag.iguana.be> (expanded from <wim@iguana.be>): Host or domain name
->     not found. Name service error for name=infomag.iguana.be type=AAAA: Host
->     found but no data record of requested type
-> 
+> Because the scheduler must be universal, load can be arbitrary and constantly changing,
+> we also can not modify each machine separately.
 
+That's fine. But every scheduler has some property and one needs to use
+a scheduler which suits their workoload/storage.
+
+Anyway, before we figure out how to fix the problem, we need to figure
+out what's the problem and what is being delayed and where does the
+delay come from.
+
+Thanks
+Vivek
