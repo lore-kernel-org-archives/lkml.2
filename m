@@ -1,52 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab1GFIoO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 04:44:14 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57755 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753263Ab1GFIoN (ORCPT
+	id S1753935Ab1GFIpY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 04:45:24 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:62324 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752024Ab1GFIpW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 04:44:13 -0400
-Date: Wed, 6 Jul 2011 11:43:06 +0300
-From: Dan Carpenter <error27@gmail.com>
-To: Ravishankar <ravishankarkm32@gmail.com>
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>
-Subject: Re: [PATCH 3/3] Staging: comedi: fix warning: line over 80
- characters issue in usbduxfast.c
-Message-ID: <20110706084306.GG18655@shale.localdomain>
-References: <1309940810-2381-1-git-send-email-ravishankarkm32@gmail.com>
+	Wed, 6 Jul 2011 04:45:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309940810-2381-1-git-send-email-ravishankarkm32@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20110706103116.1949d632@destiny.ordissimo>
+References: <1309921520.26847.3.camel@phoenix> <20110706103116.1949d632@destiny.ordissimo>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Wed, 6 Jul 2011 16:45:02 +0800
+Message-ID: <CAF+7xWm2rqp2P=N+C6Qu=c5muV7Y5GbB9u=1+qxKVFc9SiGGHQ@mail.gmail.com>
+Subject: Re: [PATCH] platform-drivers-x86: msi-wmi: add missing
+ sparse_keymap_free in msi_wmi_init error path
+To: Anisse Astier <anisse@astier.eu>
+Cc: linux-kernel@vger.kernel.org, Dmitry Torokhov <dtor@mail.ru>,
+        Thomas Renninger <trenn@suse.de>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 01:56:50PM +0530, Ravishankar wrote:
-> -	ret = request_firmware_nowait(THIS_MODULE,
-> -				      FW_ACTION_HOTPLUG,
-> -				      "usbduxfast_firmware.bin",
-> -				      &udev->dev,
-> -				      GFP_KERNEL,
-> -				      usbduxfastsub + index,
-> -				      usbduxfast_firmware_request_complete_handler);
-> +	ret =
-> +	request_firmware_nowait(THIS_MODULE,
-> +				FW_ACTION_HOTPLUG,
-> +				"usbduxfast_firmware.bin",
-> +				&udev->dev,
-> +				GFP_KERNEL,
-> +				usbduxfastsub + index,
-> +				usbduxfast_firmware_request_complete_handler);
-> +
+>
+> PS: It might already have been asked, but what's your secret Axel ? Do
+> you use static/dynamic analysis tools ? Which ones ?
+>
+Actually, I just read the code.
+I don't use any special analysis tool, maybe just use grep.
 
-No.  Don't do this.  The "usbduxfast_firmware_request_complete_handler"
-variable name is too long.  Rename it something shorter.
-
-regards,
-dan carpenter
-
+Regards,
+Axel
