@@ -1,123 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756465Ab1GFVLP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 17:11:15 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:51693 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756282Ab1GFVLN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 17:11:13 -0400
-Subject: Re: [PATCH 4/4] futex: warning corrections
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-Reply-To: vitalivanov@gmail.com
-To: Darren Hart <dvhart@linux.intel.com>, Jiri Kosina <jkosina@suse.cz>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "trivial@kernel.org" <trivial@kernel.org>
-In-Reply-To: <4E1494A8.7070109@linux.intel.com>
-References: <1309821688.4527.10.camel@vitaliy-Vostro-1400>
-	 <4E1494A8.7070109@linux.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Jul 2011 00:11:09 +0300
-Message-ID: <1309986669.27362.3.camel@vitaliy-Vostro-1400>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+	id S1756474Ab1GFVLm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 17:11:42 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:33708 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756362Ab1GFVLl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 17:11:41 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Greg KH <gregkh@suse.de>
+Subject: Re: [PATCH 0/5 v1] PM / Domains: Generic PM domains improvements
+Date: Wed, 6 Jul 2011 23:12:49 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Linux PM mailing list <linux-pm@lists.linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        MyungJoo Ham <myungjoo.ham@samsung.com>,
+        Chanwoo Choi <cw00.choi@samsung.com>, Paul Walmsley <paul@pwsan.com>,
+        Magnus Damm <magnus.damm@gmail.com>
+References: <201107062248.35586.rjw@sisk.pl> <20110706210856.GA1215@suse.de>
+In-Reply-To: <20110706210856.GA1215@suse.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107062312.49584.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-06 at 10:00 -0700, Darren Hart wrote:
-> On 07/04/2011 04:21 PM, Vitaliy Ivanov wrote:
-> > From 3f7997d71fe2b5cb16e2913928f68023855d786d Mon Sep 17 00:00:00 2001
-> > From: Vitaliy Ivanov <vitalivanov@gmail.com>
-> > Date: Tue, 5 Jul 2011 02:07:42 +0300
-> > Subject: [PATCH 4/4] futex: warning corrections
-> Hi Vitaliy,
+On Wednesday, July 06, 2011, Greg KH wrote:
+> On Wed, Jul 06, 2011 at 10:48:35PM +0200, Rafael J. Wysocki wrote:
+> > Hi,
+> > 
+> > For the last few days I've been working on modifications of the generic
+> > PM domains code allowing .start_device()/.stop_device() and drivers'
+> > .runtime_suspend()/.runtime_resume() callbacks to execute things like
+> > pm_runtime_resume() for other devices in the same PM domain safely
+> > without deadlocking (the original motivation was a console driver on
+> > shmobile that pm_runtime_get_*()/pm_runtime_put_*() are called for from
+> > the other devices' .runtime_suspend()/.runtime_resume() callbacks).
+> > 
+> > I think I solved that problem, but in the process I found a few places
+> > where fixes and/on improvements were necessary.  The patches in this
+> > series address those issues.  They are on top of the branch at:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git pm-domains
+> > 
+> > Patches [1-2/5] are regarded as 3.1 material, the others not necessarily,
+> > but I'd like to push them for 3.1 too if there are no complaints.
 > 
-> Thanks for looking to fix these warnings. Note that the compiler isn't
-> always aware of some of the subtleties involved with things like
-> cmpxchg. In cases where it thinks there may be an uninitialized usage,
-> be sure to confirm it is possible before adding the overhead of an
-> assignment to a hot path.
-> 
-> None of these assignments are necessary. Consider using __maybe_unused
-> instead.
+> No complaints from me, looks nice.
 
-Darren,
+Thanks!
 
-Actually unused and uninitialized are different issues. __maybe_unused won't help in this case but there is another trick used in kernel for this:
-
-#define uninitialized_var(x) x = x
-
-So, here is updated patch.
-
->From 8eeaa5a97697bcc606aea23d32028aea7b271a96 Mon Sep 17 00:00:00 2001
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-Date: Thu, 7 Jul 2011 00:05:05 +0300
-Subject: [PATCH] futex: uninitialized warning corrections
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-kernel/futex.c: In function ‘fixup_pi_state_owner.clone.17’:
-kernel/futex.c:1582:6: warning: ‘curval’ may be used uninitialized in this function
-kernel/futex.c: In function ‘handle_futex_death’:
-kernel/futex.c:2486:6: warning: ‘nval’ may be used uninitialized in this function
-kernel/futex.c: In function ‘do_futex’:
-kernel/futex.c:863:11: warning: ‘curval’ may be used uninitialized in this function
-kernel/futex.c:828:6: note: ‘curval’ was declared here
-kernel/futex.c:898:5: warning: ‘oldval’ may be used uninitialized in this function
-kernel/futex.c:890:6: note: ‘oldval’ was declared here
-
-Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
----
- kernel/futex.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index fe28dc2..efb8e5b 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -825,7 +825,7 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
- {
- 	struct task_struct *new_owner;
- 	struct futex_pi_state *pi_state = this->pi_state;
--	u32 curval, newval;
-+	u32 uninitialized_var(curval), newval;
- 
- 	if (!pi_state)
- 		return -EINVAL;
-@@ -887,7 +887,7 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
- 
- static int unlock_futex_pi(u32 __user *uaddr, u32 uval)
- {
--	u32 oldval;
-+	u32 uninitialized_var(oldval);
- 
- 	/*
- 	 * There is no waiter, so we unlock the futex. The owner died
-@@ -1546,7 +1546,7 @@ static int fixup_pi_state_owner(u32 __user *uaddr, struct futex_q *q,
- 	u32 newtid = task_pid_vnr(newowner) | FUTEX_WAITERS;
- 	struct futex_pi_state *pi_state = q->pi_state;
- 	struct task_struct *oldowner = pi_state->owner;
--	u32 uval, curval, newval;
-+	u32 uval, uninitialized_var(curval), newval;
- 	int ret;
- 
- 	/* Owner died? */
-@@ -2451,7 +2451,7 @@ err_unlock:
-  */
- int handle_futex_death(u32 __user *uaddr, struct task_struct *curr, int pi)
- {
--	u32 uval, nval, mval;
-+	u32 uval, uninitialized_var(nval), mval;
- 
- retry:
- 	if (get_user(uval, uaddr))
--- 
-1.7.4.1
-
-
-
+Rafael
