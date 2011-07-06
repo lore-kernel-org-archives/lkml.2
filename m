@@ -1,66 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab1GFUsI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 16:48:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46214 "EHLO mx2.suse.de"
+	id S1756225Ab1GFUtS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 16:49:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59611 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756173Ab1GFUsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 16:48:06 -0400
-Date: Wed, 6 Jul 2011 13:46:47 -0700
-From: Greg KH <gregkh@suse.de>
-To: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        =?iso-8859-1?Q?=C9ric?= Piel <E.A.B.Piel@tudelft.nl>,
-        Sarah Sharp <sarah.a.sharp@linux.intel.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Regression 3.0-rc6+ : khubd blocked (usbnet_cdc_unbind)
-Message-ID: <20110706204647.GC1460@suse.de>
-References: <Pine.LNX.4.44L0.1107061210070.1995-100000@iolanthe.rowland.org>
- <201107061844.25689.a.miskiewicz@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201107061844.25689.a.miskiewicz@gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755980Ab1GFUtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 16:49:17 -0400
+From: Matthew Garrett <mjg@redhat.com>
+To: x86@kernel.org
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org, tony.luck@intel.com,
+        Matthew Garrett <mjg@redhat.com>
+Subject: [PATCH v2] efi: Fix argument types for SetVariable()
+Date: Wed,  6 Jul 2011 16:48:49 -0400
+Message-Id: <1309985329-15034-1-git-send-email-mjg@redhat.com>
+In-Reply-To: <1307388985-7852-1-git-send-email-mjg@redhat.com>
+References: <1307388985-7852-1-git-send-email-mjg@redhat.com>
+X-SA-Do-Not-Run: Yes
+X-SA-Exim-Connect-IP: 2001:470:1f07:1371:721a:4ff:fed2:9f6c
+X-SA-Exim-Mail-From: mjg@redhat.com
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 06:44:25PM +0200, Arkadiusz Miskiewicz wrote:
-> On Wednesday 06 of July 2011, Alan Stern wrote:
-> > On Wed, 6 Jul 2011, Éric Piel wrote:
-> > > Hello,
-> > > It seems I'm very unlucky this week and I've come across to what looks
-> > > like a second regression in the kernel. I'm running a version few
-> > > commits after 3.0-rc6, which includes commit e534c5b831c8 "fix
-> > > regression occurring during device removal".
-> > > 
-> > > When I plug/unplug/plug a mobile phone, after waiting a few minutes I
-> > > get a "task khubd:621 blocked for more than 120 seconds." Note that it's
-> > > directly connected to my laptop, not via an external hub (although the
-> > > bug also happens with an external hub).
-> > > 
-> > > Below is the whole dmesg log (with usb debug messages on)
-> > > 
-> > > Let me know if you need me to investigate more, or maybe there is
-> > > already a fix for that bug?
-> > 
-> > Ah -- this stack dump points out the reason for the hang.  It looks
-> > like that "fix regression..." commit didn't go far enough; I neglected
-> > the fact that interfaces can be unbound out of order when a driver
-> > claims multiple interfaces.
-> > 
-> > Adding this patch on top of that commit should fix this.  Let me
-> > know what you both get.
-> 
-> This one makes usb working after resume from ram (current Linus git + this 
-> patch).
+The spec says this takes uint32 for attributes, not uintn.
 
-Thanks so much for testing.
+Signed-off-by: Matthew Garrett <mjg@redhat.com>
+---
 
-Alan, care to resend this to me so I can get it to Linus?
+This version fixes ia64 as well. 
 
-greg k-h
+ arch/ia64/kernel/efi.c      |    2 +-
+ arch/x86/platform/efi/efi.c |    2 +-
+ include/linux/efi.h         |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/arch/ia64/kernel/efi.c b/arch/ia64/kernel/efi.c
+index 6fc03af..c38d22e 100644
+--- a/arch/ia64/kernel/efi.c
++++ b/arch/ia64/kernel/efi.c
+@@ -156,7 +156,7 @@ prefix##_get_next_variable (unsigned long *name_size, efi_char16_t *name,      \
+ #define STUB_SET_VARIABLE(prefix, adjust_arg)				       \
+ static efi_status_t							       \
+ prefix##_set_variable (efi_char16_t *name, efi_guid_t *vendor,		       \
+-		       unsigned long attr, unsigned long data_size,	       \
++		       u32 attr, unsigned long data_size,		       \
+ 		       void *data)					       \
+ {									       \
+ 	struct ia64_fpreg fr[6];					       \
+diff --git a/arch/x86/platform/efi/efi.c b/arch/x86/platform/efi/efi.c
+index 474356b..85ed1e9 100644
+--- a/arch/x86/platform/efi/efi.c
++++ b/arch/x86/platform/efi/efi.c
+@@ -122,7 +122,7 @@ static efi_status_t virt_efi_get_next_variable(unsigned long *name_size,
+ 
+ static efi_status_t virt_efi_set_variable(efi_char16_t *name,
+ 					  efi_guid_t *vendor,
+-					  unsigned long attr,
++					  u32 attr,
+ 					  unsigned long data_size,
+ 					  void *data)
+ {
+diff --git a/include/linux/efi.h b/include/linux/efi.h
+index e376270..0758753 100644
+--- a/include/linux/efi.h
++++ b/include/linux/efi.h
+@@ -168,7 +168,7 @@ typedef efi_status_t efi_get_variable_t (efi_char16_t *name, efi_guid_t *vendor,
+ typedef efi_status_t efi_get_next_variable_t (unsigned long *name_size, efi_char16_t *name,
+ 					      efi_guid_t *vendor);
+ typedef efi_status_t efi_set_variable_t (efi_char16_t *name, efi_guid_t *vendor, 
+-					 unsigned long attr, unsigned long data_size, 
++					 u32 attr, unsigned long data_size,
+ 					 void *data);
+ typedef efi_status_t efi_get_next_high_mono_count_t (u32 *count);
+ typedef void efi_reset_system_t (int reset_type, efi_status_t status,
+-- 
+1.7.5.4
+
