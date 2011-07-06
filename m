@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753528Ab1GFMaB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 08:30:01 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:62376 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753175Ab1GFM37 (ORCPT
+	id S1753554Ab1GFMep (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 08:34:45 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:44039 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab1GFMeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 08:29:59 -0400
-Message-ID: <4E1454BD.7050607@mvista.com>
-Date: Wed, 06 Jul 2011 16:27:41 +0400
-From: Vitaly Kuzmichev <vkuzmichev@mvista.com>
-Reply-To: vkuzmichev@mvista.com
-Organization: MontaVista Software, LLC
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Thunderbird/3.1.10
+	Wed, 6 Jul 2011 08:34:44 -0400
+Date: Wed, 6 Jul 2011 13:34:17 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Alexey Charkov <alchark@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org,
+        vt8500-wm8505-linux-kernel@googlegroups.com,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/6 v8] ARM: Add basic architecture support for
+	VIA/WonderMedia 85xx SoC's
+Message-ID: <20110706123417.GA25400@n2100.arm.linux.org.uk>
+References: <1289147348-31969-1-git-send-email-alchark@gmail.com> <20101107165745.GB1759@n2100.arm.linux.org.uk> <AANLkTimFJ=Brx4pDiUqZOKDfABaDg0s_yFC7EkZGi7D8@mail.gmail.com> <20101107171726.GF1759@n2100.arm.linux.org.uk> <20101108171930.GA1471@alchark-u3s.lan> <20101111212322.GA15533@alchark-u3s.lan> <20101111234957.GA28735@n2100.arm.linux.org.uk> <20101219174017.GA31832@alchark-u3s>
 MIME-Version: 1.0
-To: Marc Zyngier <marc.zyngier@arm.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "linux-watchdog@vger.kernel.org" <linux-watchdog@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Wim Van Sebroeck <wim@iguana.be>, "arm@kernel.org" <arm@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Arnd Bergmann <arnd@arndb.de>, John Stultz <johnstul@us.ibm.com>,
-        Nicolas Pitre <nico@fluxnic.net>, Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH V2 0/6] arm_smp_twd: mpcore_wdt: Fix MPCORE watchdog setup
-References: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com> <1309892440-3260-1-git-send-email-vkuzmichev@mvista.com> <4E14337F.1050101@arm.com>
-In-Reply-To: <4E14337F.1050101@arm.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20101219174017.GA31832@alchark-u3s>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Marc,
+On Sun, Dec 19, 2010 at 08:40:17PM +0300, Alexey Charkov wrote:
+> +static struct map_desc vt8500_io_desc[] __initdata = {
+> +	/* SoC MMIO registers, to be filled in later */
+> +	[0] = {
+> +		.type		= MT_DEVICE
+> +	},
+> +	/* PCI I/O space, numbers tied to those in <mach/io.h> */
+> +	[1] = {
+> +		.virtual	= 0xf0000000,
+> +		.pfn		= __phys_to_pfn(0xc0000000),
+> +		.length		= SZ_64K,
+> +		.type		= MT_DEVICE
+> +	},
+> +};
+...
+> diff --git a/arch/arm/mach-vt8500/include/mach/io.h b/arch/arm/mach-vt8500/include/mach/io.h
+> new file mode 100644
+> index 0000000..8dd55c8
+> --- /dev/null
+> +++ b/arch/arm/mach-vt8500/include/mach/io.h
+> +#ifndef __ASM_ARM_ARCH_IO_H
+> +#define __ASM_ARM_ARCH_IO_H
+> +
+> +#define IO_SPACE_LIMIT 0xffff
+> +
+> +#define __io(a)		((void __iomem *)((a) + 0xf0000000))
+> +#define __mem_pci(a)	(a)
 
-On 07/06/2011 02:05 PM, Marc Zyngier wrote:
-[...]
->> The series of patches is based on arm-platforms.git/local_timers_as_devices
->> branch since it looks like that it is going to be merged into the mainline.
-> 
-> Be careful here. This branch is a work in progress, likely to change
-> very quickly, contains code that has not been posted to the ML yet, and
-> will probably eat your pet for breakfast. As far as mainline merging is
-> concerned, there is still a long way to go (see the GIC consolidation
-> patches, on which the local_timers_as_devices branch relies).
+Can you explain why you seem to have PCI IO space, yet don't have CONFIG_PCI
+selected?  Do you have any drivers which use this space without CONFIG_PCI=y?
 
-I understand.
-When do you plan to finish this job?
-Would not it be better to prepare two sets of patches: first one for
-linux-2.6/master with exported function, second for arm-platforms.git
-with removing exported function and replacing use of it by
-clk_get_rate(smp_twd) call?
-Is there a chance in this case, that my patches will be merged much
-earlier than yours?
-If not, I will just rework patch 2/6 to remove exported and use only
-clock interface.
-
-
-Thanks,
-Vitaly.
+Thanks.
