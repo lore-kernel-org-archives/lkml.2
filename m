@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755471Ab1GFSEy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 14:04:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25738 "EHLO mx1.redhat.com"
+	id S1755377Ab1GFSEl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 14:04:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59715 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755441Ab1GFSEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 14:04:50 -0400
-Date: Wed, 6 Jul 2011 15:03:50 -0300
+	id S1755361Ab1GFSEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 14:04:39 -0400
+Date: Wed, 6 Jul 2011 15:04:03 -0300
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFCv3 01/17] [media] DocBook: Add a chapter to describe
- media errors
-Message-ID: <20110706150350.2b8111bb@pedra>
+Subject: [PATCH RFCv3 15/17] [media] DocBook/dvb: Use generic descriptions
+ for the video API
+Message-ID: <20110706150403.52c2279c@pedra>
 In-Reply-To: <cover.1309974026.git.mchehab@redhat.com>
 References: <cover.1309974026.git.mchehab@redhat.com>
 Mime-Version: 1.0
@@ -23,144 +23,532 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are several errors reported by V4L that aren't described.
-They can occur on almost all ioctl's. Instead of adding them
-into each ioctl, create a new chapter.
-
-For V4L, the new chapter will automatically be listed on all
-places, as there's a macro used everywhere there.
+While here, removes the bogus EINTERNAL error codes.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
- create mode 100644 Documentation/DocBook/media/v4l/gen-errors.xml
-
-diff --git a/Documentation/DocBook/.gitignore b/Documentation/DocBook/.gitignore
-index 25214a5..720f245 100644
---- a/Documentation/DocBook/.gitignore
-+++ b/Documentation/DocBook/.gitignore
-@@ -8,5 +8,7 @@
- *.dvi
- *.log
- *.out
-+*.png
-+*.gif
- media-indices.tmpl
- media-entities.tmpl
-diff --git a/Documentation/DocBook/media/Makefile b/Documentation/DocBook/media/Makefile
-index 8cb27f3..6628b4b 100644
---- a/Documentation/DocBook/media/Makefile
-+++ b/Documentation/DocBook/media/Makefile
-@@ -100,23 +100,59 @@ STRUCTS = \
- 	$(shell perl -ne 'print "$$1 " if /^struct\s+([^\s]+)\s+/' $(srctree)/include/linux/v4l2-mediabus.h)
+diff --git a/Documentation/DocBook/media/dvb/video.xml b/Documentation/DocBook/media/dvb/video.xml
+index 0b1b662..25fb823 100644
+--- a/Documentation/DocBook/media/dvb/video.xml
++++ b/Documentation/DocBook/media/dvb/video.xml
+@@ -593,22 +593,6 @@ role="subsection"><title>VIDEO_STOP</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error, possibly in the communication with the
+- DVB subsystem.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
  
- ERRORS = \
-+	E2BIG \
- 	EACCES \
- 	EAGAIN \
- 	EBADF \
-+	EBADFD \
-+	EBADR \
-+	EBADRQC \
- 	EBUSY \
-+	ECHILD \
-+	ECONNRESET \
-+	EDEADLK \
-+	EDOM \
-+	EEXIST \
- 	EFAULT \
--	EIO \
-+	EFBIG \
-+	EILSEQ \
-+	EINIT \
-+	EINPROGRESS \
- 	EINTR \
- 	EINVAL \
-+	EIO \
-+	EMFILE \
- 	ENFILE \
-+	ENOBUFS \
-+	ENODATA \
-+	ENODEV \
-+	ENOENT \
-+	ENOIOCTLCMD \
- 	ENOMEM \
- 	ENOSPC \
-+	ENOSR \
-+	ENOSYS \
-+	ENOTSUP \
-+	ENOTSUPP \
- 	ENOTTY \
- 	ENXIO \
--	EMFILE \
-+	EOPNOTSUPP \
-+	EOVERFLOW \
- 	EPERM \
--	ERANGE \
- 	EPIPE \
-+	EPROTO \
-+	ERANGE \
-+	EREMOTE \
-+	EREMOTEIO \
-+	ERESTART \
-+	ERESTARTSYS \
-+	ESHUTDOWN \
-+	ESPIPE \
-+	ETIME \
-+	ETIMEDOUT \
-+	EUSERS \
-+	EWOULDBLOCK \
-+	EXDEV \
+ </section><section id="VIDEO_PLAY"
+ role="subsection"><title>VIDEO_PLAY</title>
+@@ -645,22 +629,6 @@ role="subsection"><title>VIDEO_PLAY</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error, possibly in the communication with the
+- DVB subsystem.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
  
- ESCAPE = \
- 	-e "s/&/\\&amp;/g" \
-diff --git a/Documentation/DocBook/media/v4l/gen-errors.xml b/Documentation/DocBook/media/v4l/gen-errors.xml
-new file mode 100644
-index 0000000..1efc688
---- /dev/null
-+++ b/Documentation/DocBook/media/v4l/gen-errors.xml
-@@ -0,0 +1,17 @@
-+<title>Generic Error Codes</title>
-+
-+<table frame="none" pgwide="1" id="gen-errors">
-+  <title>Generic error codes</title>
-+  <tgroup cols="2">
-+    &cs-str;
-+    <tbody valign="top">
-+      <row>
-+	<entry>EBUSY</entry>
-+	<entry>The ioctl can't be handled because the device is busy. This is
-+	       typically return while device is streaming, and an ioctl tried to
-+	       change something that would affect the stream, or would require the
-+	       usage of a hardware resource that was already allocated.</entry>
-+      </row>
-+    </tbody>
-+  </tgroup>
-+</table>
-diff --git a/Documentation/DocBook/media_api.tmpl b/Documentation/DocBook/media_api.tmpl
-index 88f2cc6..bdb06bc 100644
---- a/Documentation/DocBook/media_api.tmpl
-+++ b/Documentation/DocBook/media_api.tmpl
-@@ -8,7 +8,7 @@
- <!ENTITY ie                     "i.&nbsp;e.">
- <!ENTITY fd                     "File descriptor returned by <link linkend='func-open'><function>open()</function></link>.">
- <!ENTITY i2c                    "I<superscript>2</superscript>C">
--<!ENTITY return-value		"<title>Return Value</title><para>On success <returnvalue>0</returnvalue> is returned, on error <returnvalue>-1</returnvalue> and the <varname>errno</varname> variable is set appropriately:</para>">
-+<!ENTITY return-value		"<title>Return Value</title><para>On success <returnvalue>0</returnvalue> is returned, on error <returnvalue>-1</returnvalue> and the <varname>errno</varname> variable is set appropriately. The generic error codes are described at the <link linkend='gen-errors'>Generic Error Codes</link> chapter.</para>">
- <!ENTITY manvol                 "<manvolnum>2</manvolnum>">
+ </section><section id="VIDEO_FREEZE"
+ role="subsection"><title>VIDEO_FREEZE</title>
+@@ -701,22 +669,6 @@ role="subsection"><title>VIDEO_FREEZE</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error, possibly in the communication with the
+- DVB subsystem.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
  
- <!-- Table templates: structs, structs w/union, defines. -->
-@@ -110,6 +109,11 @@ Foundation. A copy of the license is included in the chapter entitled
- &sub-media-controller;
- </part>
+ </section><section id="VIDEO_CONTINUE"
+ role="subsection"><title>VIDEO_CONTINUE</title>
+@@ -753,22 +705,6 @@ role="subsection"><title>VIDEO_CONTINUE</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error, possibly in the communication with the
+- DVB subsystem.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
  
-+<chapter id="gen_errors">
-+&sub-gen-errors;
-+</chapter>
-+
-+
- &sub-fdl-appendix;
+ </section><section id="VIDEO_SELECT_SOURCE"
+ role="subsection"><title>VIDEO_SELECT_SOURCE</title>
+@@ -815,22 +751,6 @@ role="subsection"><title>VIDEO_SELECT_SOURCE</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error, possibly in the communication with the
+- DVB subsystem.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
  
- </book>
+ </section><section id="VIDEO_SET_BLANK"
+ role="subsection"><title>VIDEO_SET_BLANK</title>
+@@ -880,29 +800,6 @@ role="subsection"><title>VIDEO_SET_BLANK</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error, possibly in the communication with the
+- DVB subsystem.</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINVAL</para>
+-</entry><entry
+- align="char">
+-<para>Illegal input parameter</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_GET_STATUS"
+ role="subsection"><title>VIDEO_GET_STATUS</title>
+@@ -947,29 +844,6 @@ role="subsection"><title>VIDEO_GET_STATUS</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error, possibly in the communication with the
+- DVB subsystem.</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EFAULT</para>
+-</entry><entry
+- align="char">
+-<para>status points to invalid address</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_GET_EVENT"
+ role="subsection"><title>VIDEO_GET_EVENT</title>
+@@ -1025,20 +899,6 @@ role="subsection"><title>VIDEO_GET_EVENT</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EFAULT</para>
+-</entry><entry
+- align="char">
+-<para>ev points to invalid address</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EWOULDBLOCK</para>
+ </entry><entry
+  align="char">
+@@ -1050,11 +910,6 @@ role="subsection"><title>VIDEO_GET_EVENT</title>
+ <para>EOVERFLOW</para>
+ </entry><entry
+  align="char">
+-</entry>
+- </row><row><entry
+- align="char">
+-</entry><entry
+- align="char">
+ <para>Overflow in event queue - one or more events were lost.</para>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+@@ -1105,28 +960,6 @@ role="subsection"><title>VIDEO_SET_DISPLAY_FORMAT</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error.</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINVAL</para>
+-</entry><entry
+- align="char">
+-<para>Illegal parameter format.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_STILLPICTURE"
+ role="subsection"><title>VIDEO_STILLPICTURE</title>
+@@ -1174,28 +1007,6 @@ role="subsection"><title>VIDEO_STILLPICTURE</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error.</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EFAULT</para>
+-</entry><entry
+- align="char">
+-<para>sp points to an invalid iframe.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_FAST_FORWARD"
+ role="subsection"><title>VIDEO_FAST_FORWARD</title>
+@@ -1242,32 +1053,11 @@ role="subsection"><title>VIDEO_FAST_FORWARD</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error.</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EPERM</para>
+ </entry><entry
+  align="char">
+ <para>Mode VIDEO_SOURCE_MEMORY not selected.</para>
+ </entry>
+- </row><row><entry
+- align="char">
+-<para>EINVAL</para>
+-</entry><entry
+- align="char">
+-<para>Illegal parameter format.</para>
+-</entry>
+  </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_SLOWMOTION"
+@@ -1315,32 +1105,11 @@ role="subsection"><title>VIDEO_SLOWMOTION</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error.</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EPERM</para>
+ </entry><entry
+  align="char">
+ <para>Mode VIDEO_SOURCE_MEMORY not selected.</para>
+ </entry>
+- </row><row><entry
+- align="char">
+-<para>EINVAL</para>
+-</entry><entry
+- align="char">
+-<para>Illegal parameter format.</para>
+-</entry>
+  </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_GET_CAPABILITIES"
+@@ -1388,21 +1157,6 @@ role="subsection"><title>VIDEO_GET_CAPABILITIES</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EFAULT</para>
+-</entry><entry
+- align="char">
+-<para>cap points to an invalid iframe.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_SET_ID"
+ role="subsection"><title>VIDEO_SET_ID</title>
+@@ -1449,20 +1203,6 @@ role="subsection"><title>VIDEO_SET_ID</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor.</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINTERNAL</para>
+-</entry><entry
+- align="char">
+-<para>Internal error.</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EINVAL</para>
+ </entry><entry
+  align="char">
+@@ -1504,14 +1244,6 @@ role="subsection"><title>VIDEO_CLEAR_BUFFER</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_SET_STREAMTYPE"
+ role="subsection"><title>VIDEO_SET_STREAMTYPE</title>
+@@ -1557,21 +1289,6 @@ role="subsection"><title>VIDEO_SET_STREAMTYPE</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINVAL</para>
+-</entry><entry
+- align="char">
+-<para>type is not a valid or supported stream type.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_SET_FORMAT"
+ role="subsection"><title>VIDEO_SET_FORMAT</title>
+@@ -1619,13 +1336,6 @@ role="subsection"><title>VIDEO_SET_FORMAT</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EINVAL</para>
+ </entry><entry
+  align="char">
+@@ -1680,13 +1390,6 @@ role="subsection"><title>VIDEO_SET_SYSTEM</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EINVAL</para>
+ </entry><entry
+  align="char">
+@@ -1737,21 +1440,6 @@ role="subsection"><title>VIDEO_SET_HIGHLIGHT</title>
+ </entry>
+  </row></tbody></tgroup></informaltable>
+ &return-value-dvb;
+-<informaltable><tgroup cols="2"><tbody><row><entry
+- align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor.</para>
+-</entry>
+- </row><row><entry
+- align="char">
+-<para>EINVAL</para>
+-</entry><entry
+- align="char">
+-<para>input is not a valid highlight setting.</para>
+-</entry>
+- </row></tbody></tgroup></informaltable>
+ 
+ </section><section id="VIDEO_SET_SPU"
+ role="subsection"><title>VIDEO_SET_SPU</title>
+@@ -1799,13 +1487,6 @@ role="subsection"><title>VIDEO_SET_SPU</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EINVAL</para>
+ </entry><entry
+  align="char">
+@@ -1859,13 +1540,6 @@ role="subsection"><title>VIDEO_SET_SPU_PALETTE</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EINVAL</para>
+ </entry><entry
+  align="char">
+@@ -1920,13 +1594,6 @@ role="subsection"><title>VIDEO_GET_NAVI</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EFAULT</para>
+ </entry><entry
+  align="char">
+@@ -1981,13 +1648,6 @@ role="subsection"><title>VIDEO_SET_ATTRIBUTES</title>
+ &return-value-dvb;
+ <informaltable><tgroup cols="2"><tbody><row><entry
+  align="char">
+-<para>EBADF</para>
+-</entry><entry
+- align="char">
+-<para>fd is not a valid open file descriptor</para>
+-</entry>
+- </row><row><entry
+- align="char">
+ <para>EINVAL</para>
+ </entry><entry
+  align="char">
 -- 
 1.7.1
 
