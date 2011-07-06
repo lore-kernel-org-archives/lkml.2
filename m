@@ -1,55 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab1GFJbx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 05:31:53 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:49960 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753954Ab1GFJbw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 05:31:52 -0400
-Date: Wed, 6 Jul 2011 15:01:46 +0530
-From: Ankita Garg <ankita@in.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mm@kvack.org, svaidy@linux.vnet.ibm.com,
-        linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>
-Subject: Re: [PATCH 0/5] mm,debug: VM framework to capture memory reference
- pattern
-Message-ID: <20110706093146.GB19518@in.ibm.com>
-Reply-To: Ankita Garg <ankita@in.ibm.com>
-References: <1309854159-8277-1-git-send-email-ankita@in.ibm.com>
- <20110706020103.53ed8706.akpm@linux-foundation.org>
+	id S1754405Ab1GFJeP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 05:34:15 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:32731 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753964Ab1GFJeO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 05:34:14 -0400
+Message-ID: <4E142C10.3050508@imgtec.com>
+Date: Wed, 06 Jul 2011 10:34:08 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110706020103.53ed8706.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Chris Ball <cjb@laptop.org>, Will <will.newton@imgtec.com>,
+        James Hogan <james.hogan@imgtec.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 0/4] mmc: dw_mmc: mmc_test related fixes
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Jul 2011 09:34:08.0331 (UTC) FILETIME=[DAD869B0:01CC3BBF]
+X-SEF-Processed: 7_3_0_01158__2011_07_06_10_34_09
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+No changes since v1 except acked-by and tested-by
 
-On Wed, Jul 06, 2011 at 02:01:03AM -0700, Andrew Morton wrote:
-> On Tue,  5 Jul 2011 13:52:34 +0530 Ankita Garg <ankita@in.ibm.com> wrote:
-> 
-> > 
-> > This patch series is an instrumentation/debug infrastructure that captures
-> > the memory reference pattern of applications (workloads). 
-> 
-> Can't the interfaces described in Documentation/vm/pagemap.txt be used
-> for this?
+More improvements and fixes for the Synopsys DesignWare MCI driver so
+that it passes the mmc_test suite:
 
-The pagemap interface does not closely track the hardware reference bit
-of the pages. The 'REFERENCED' flag maintained in /proc/kpageflags
-only indicates if the page has been referenced since last LRU list
-enqueue/requeue. So estimating the rate at which a particular page of
-memory is referenced cannot be obtained. Further, it does not provide
-information on the amount of kernel memory referenced on behalf of
-the process.
+[PATCH 1/4] mmc: dw_mmc: fix stop when fallen back to PIO
+	Fixes a hang after an error/timeout in PIO mode.
+[PATCH 2/4] mmc: dw_mmc: remove unnecessary error messages
+	Removes some dev_err's since an errno is sufficient.
+[PATCH 3/4] mmc: dw_mmc: handle "no CRC status" error
+	Fixes "Correct xfer_size at write" tests.
+[PATCH 4/4] mmc: dw_mmc: reset FIFO after an error
+	Fixes modified "Correct xfer_size at write" tests (3 blocks
+	instead of 2).
 
--- 
-Regards,
-Ankita Garg (ankita@in.ibm.com)
-Linux Technology Center
-IBM India Systems & Technology Labs,
-Bangalore, India
+ drivers/mmc/host/dw_mmc.c  |   41 +++++++++++++++++++++++++++++++----------
+ include/linux/mmc/dw_mmc.h |    2 ++
+ 2 files changed, 33 insertions(+), 10 deletions(-)
+
