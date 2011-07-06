@@ -1,41 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab1GFWuU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 18:50:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44609 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751928Ab1GFWuS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 18:50:18 -0400
-Date: Wed, 6 Jul 2011 15:50:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Keng-Yu Lin <kengyu@canonical.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gmane@colin.guthr.ie,
-        Alessio Igor Bogani <abogani@texware.it>, stable@kernel.org
-Subject: Re: [PATCH] Revert:
- "dell-laptop: Toggle the unsupported hardware killswitch"
-Message-Id: <20110706155003.17090951.akpm@linux-foundation.org>
-In-Reply-To: <1309169943-3786-1-git-send-email-kengyu@canonical.com>
-References: <1309169943-3786-1-git-send-email-kengyu@canonical.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753494Ab1GFWvv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 18:51:51 -0400
+Received: from bar.sig21.net ([80.81.252.164]:50697 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751928Ab1GFWvu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 18:51:50 -0400
+Date: Thu, 7 Jul 2011 00:51:40 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        akpm@linux-foundation.org
+Subject: Re: [PATCH] compat_ioctl: fix make headers_check regression
+Message-ID: <20110706225140.GA21510@sig21.net>
+References: <20110704134842.7ab89126.sfr@canb.auug.org.au>
+ <20110704100316.GA15894@sig21.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110704100316.GA15894@sig21.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -3.7 (---)
+X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.720,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 27 Jun 2011 11:19:03 +0100
-Keng-Yu Lin <kengyu@canonical.com> wrote:
+Hi,
 
-> This reverts commit a3d77411e8b2ad661958c1fbee65beb476ec6d70,
+On Mon, Jul 04, 2011 at 12:03:16PM +0200, Johannes Stezenbach wrote:
+> Fix headers_check error introduced by 390192b30057:
 > 
-> as it causes a mess in the wireless rfkill status on some models.
-> It is probably a bad idea to toggle the rfkill for all dell models
-> without the respect to the claim that it is hardware-controlled.
+> include/linux/fd.h:6: included file 'linux/compat.h' is not exported
 > 
+> Signed-off-by: Johannes Stezenbach <js@sig21.net>
+> ---
+> I used the same style as in linux/usbdevice_fs.h, hope
+> that's OK.
 
-If we're reverting this from mainline then we should also revert it
-from 2.6.38.x and 2.6.39.x, no?
 
+I just got an "added to -mm tree" mail for the original patch, so I
+wonder what's with this fix?
+
+
+Johannes
+
+
+>  include/linux/fd.h |    6 +++++-
+>  1 files changed, 5 insertions(+), 1 deletions(-)
+> 
+> diff --git a/include/linux/fd.h b/include/linux/fd.h
+> index c6a68d0..72202b1 100644
+> --- a/include/linux/fd.h
+> +++ b/include/linux/fd.h
+> @@ -3,7 +3,6 @@
+>  
+>  #include <linux/ioctl.h>
+>  #include <linux/compiler.h>
+> -#include <linux/compat.h>
+>  
+>  /* New file layout: Now the ioctl definitions immediately follow the
+>   * definitions of the structures that they use */
+> @@ -378,7 +377,11 @@ struct floppy_raw_cmd {
+>  #define FDEJECT _IO(2, 0x5a)
+>  /* eject the disk */
+>  
+> +
+> +#ifdef __KERNEL__
+>  #ifdef CONFIG_COMPAT
+> +#include <linux/compat.h>
+> +
+>  struct compat_floppy_struct {
+>  	compat_uint_t	size;
+>  	compat_uint_t	sect;
+> @@ -394,5 +397,6 @@ struct compat_floppy_struct {
+>  
+>  #define FDGETPRM32 _IOR(2, 0x04, struct compat_floppy_struct)
+>  #endif
+> +#endif
+>  
+>  #endif
