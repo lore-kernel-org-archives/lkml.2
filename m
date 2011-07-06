@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab1GFGuT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 02:50:19 -0400
-Received: from mtagate5.uk.ibm.com ([194.196.100.165]:60106 "EHLO
-	mtagate5.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750930Ab1GFGuR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 02:50:17 -0400
-Date: Wed, 6 Jul 2011 08:50:07 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: axboe@kernel.dk, James Bottomley <James.Bottomley@HansenPartnership.com>,
-        Andi Kleen <andi@firstfloor.org>, Dave Jones <davej@redhat.com>,
-        SCSI development list <linux-scsi@vger.kernel.org>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        USB list <linux-usb@vger.kernel.org>,
-        "Manvanthara B. Puttashankar" <manvanth@linux.vnet.ibm.com>,
-        Roland Dreier <roland@kernel.org>
-Subject: Re: Linux 3.0 oopses when pulling a USB CDROM
-Message-ID: <20110706065007.GB2580@osiris.boeblingen.de.ibm.com>
-References: <20110704112727.GA2557@osiris.boeblingen.de.ibm.com>
- <Pine.LNX.4.44L0.1107041202170.12242-100000@netrider.rowland.org>
+	id S1752610Ab1GFGut (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 02:50:49 -0400
+Received: from ns2.q-leap.de ([88.79.172.217]:39733 "EHLO mail.q-leap.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752409Ab1GFGus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 02:50:48 -0400
+Message-ID: <4E1405C3.20904@q-leap.de>
+Date: Wed, 06 Jul 2011 08:50:43 +0200
+From: Peter Kruse <pk@q-leap.de>
+Organization: Q-Leap Networks GmbH
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1107041202170.12242-100000@netrider.rowland.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Dave Chinner <david@fromorbit.com>
+CC: Mel Gorman <mel@csn.ul.ie>, Christoph Lameter <cl@linux.com>,
+        David Rientjes <rientjes@google.com>, eric.dumazet@gmail.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: I have a blaze of 353 page allocation failures, all alike
+References: <272bf0cc51439a2ab31ee2f06317dd9f.squirrel@www.q-leap.de> <4D6648B5.1090306@q-leap.com> <4DA4692D.7080207@q-leap.de> <alpine.DEB.2.00.1104121306581.14692@router.home> <alpine.DEB.2.00.1104121830030.14956@chino.kir.corp.google.com> <4DA54D2A.3050206@q-leap.de> <alpine.DEB.2.00.1104131116330.19493@router.home> <4E09BEA1.1080501@q-leap.de> <alpine.DEB.2.00.1107051013500.16869@router.home> <20110705172043.GA15147@csn.ul.ie> <20110706041602.GX1026@dastard>
+In-Reply-To: <20110706041602.GX1026@dastard>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 12:04:54PM -0400, Alan Stern wrote:
-> On Mon, 4 Jul 2011, Heiko Carstens wrote:
-> 
-> > On Sat, Jul 02, 2011 at 01:37:59PM -0400, Alan Stern wrote:
-> > > The second bug, which hit me but apparently not any of you, is that the 
-> > > request_queue's elevator gets deallocated while it is still in use.  
-> > > That's because __scsi_remove_device() calls scsi_free_queue(), which 
-> > > does blk_cleanup_queue(), which calls elevator_exit(), even though the 
-> > > device file is still open and more requests will be submitted when the 
-> > > file is closed.
-> > > 
-> > > I'm not sure of the right fix for this.  One possibility is to move the 
-> > > scsi_free_queue() call to scsi_device_dev_release_usercontext().  Or 
-> > > maybe the elevator_exit() call should be moved to blk_release_queue().
-> > > 
-> > > Also, I have no idea why this shows up with USB drives but not other 
-> > > SCSI transports.  A fluke of timing?
-> > 
-> > FWIW, I reported a bug where the request_queue's elevator got deallocated
-> > while it was still in use (fc transport with device hotplug):
-> > 
-> > http://www.spinics.net/lists/linux-scsi/msg52879.html
-> 
-> That does sound like the second bug I encountered.  Can you reproduce 
-> it?  Does the patch here:
-> 
-> 	http://marc.info/?l=linux-kernel&m=130963676907731&w=2
-> 
-> fix the problem?
+Hi there,
 
-I used to be reproducible, however I have to ask Manvathara to try your
-patch and see if it works.
+thanks for looking into this!
 
-Thanks!
+On 07/05/2011 07:20 PM, Mel Gorman wrote:
+> There are also patches that should be in 2.6.32.29 like [e52af507:
+> xfs: Non-blocking inode locking in IO completion] which talks
+> about deadlocks during IO completion but the kernel name is
+> 2.6.32.29-ql-server-20. Does that include this patch or is it some
+> other fork?
+
+it's not really a fork, we basically give the kernel a name.
+
+Ok then I think we will schedule a kernel update and if the
+server then runs for more than 40 days we could say that
+the problem is fixed.
+
+all the best,
+
+  Peter
