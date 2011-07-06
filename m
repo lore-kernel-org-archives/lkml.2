@@ -1,68 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753977Ab1GFR5y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 13:57:54 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42213 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab1GFR5v convert rfc822-to-8bit (ORCPT
+	id S1754739Ab1GFR6O (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 13:58:14 -0400
+Received: from smtp108.prem.mail.ac4.yahoo.com ([76.13.13.47]:41750 "HELO
+	smtp108.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753567Ab1GFR6L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 13:57:51 -0400
+	Wed, 6 Jul 2011 13:58:11 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: WQkW4QUVM1nEXnHUGwbUqDFSDTYkVRNPV.S_QWvzkBDaMYp
+ LkcfE3wTsO132LpEmRoaXYJhEZnaZS2FEwgv_V8h16bGak6TwtQHk.fqjhU6
+ H4r5KZK5ULuTxflHFCrOjofWU.uXZpEqm67ehbtBU4NMi0HS8nvoKQm89eba
+ gTHPJAzUDpyeSiP42QxEuQ1BGfbLWvDXyV5DqSMb_8HO22OHrYElbZh_4f.Y
+ Hbrc.KTHRveCo2dX9P_cZN1UZ_vxCxUE5q7edY8icwNRbTnIqp5K7S73_W3i
+ s8riyCFjzTgPqokkkWYo0B8GEOD7Z5CqqHJjSvdYSJX.uj0jOmxlA3CyHFgi
+ LywWWnCTnc2bR9A7Up11mO3Qc
+X-Yahoo-Newman-Property: ymail-3
+Date: Wed, 6 Jul 2011 12:58:08 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: percpu: Fixup __this_cpu_xchg* operations
+In-Reply-To: <alpine.DEB.2.00.1105201027000.5610@router.home>
+Message-ID: <alpine.DEB.2.00.1107061257330.17624@router.home>
+References: <alpine.DEB.2.00.1105201027000.5610@router.home>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
-References: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
-From: Jim Cromie <jim.cromie@gmail.com>
-Date: Wed, 6 Jul 2011 11:57:21 -0600
-Message-ID: <CAJfuBxyfA=Hjr8HEp47mKyr9fSdRGhppKr_-755vHQqn_RB=8Q@mail.gmail.com>
-Subject: Re: [PATCH 00/10] dynamic_debug: various fixes
-To: Jason Baron <jbaron@redhat.com>
-Cc: gregkh@suse.de, joe@perches.com, bvanassche@acm.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 6, 2011 at 11:24 AM, Jason Baron <jbaron@redhat.com> wrote:
-> Hi,
->
-> Various dynamic debug fixes and cleanups, and a patch to add myself as
-> maintainer. Hopefully, nobody will object too loudly :)
->
+Could you pick up this patch? Have not gotten a reply so far.
 
-do you have this in a git-tree somewhere I can pull ?
+On Fri, 20 May 2011, Christoph Lameter wrote:
 
-> Thanks,
+> Subject: percpu: Fixup __this_cpu_xchg* operations
 >
-> -Jason
+> Somehow we got into a situation where the __this_cpu_xchg() operations were
+> not defined in the same way as this_cpu_xchg() and friends. I had some build
+> failures under 32 bit that were addressed by these fixes.
+>
+> Signed-off-by: Christoph Lameter <cl@linux.com>
 >
 >
-> Joe Perches (4):
->  dynamic_debug: Add __dynamic_dev_dbg
->  dynamic_debug: Consolidate prefix output to single routine
->  dynamic_debug: Remove uses of KERN_CONT in dynamic_emit_prefix
->  dynamic_debug: Convert printks to pr_<level>
+> ---
+>  arch/x86/include/asm/percpu.h |   12 ++++++------
+>  1 file changed, 6 insertions(+), 6 deletions(-)
 >
-> Jason Baron (6):
->  dynamic_debug: remove unused control variables
->  dynamic_debug: add myslef as maintainer
->  dynamic_debug: make netdev_dbg() call __netdev_printk()
->  dynamic_debug: make netif_dbg() call __netdev_printk()
->  dynamic_debug: consolidate repetitive struct _ddebug descriptor
->    definitions
->  dynamic_debug: remove num_enabled accounting
+> Index: linux-2.6/arch/x86/include/asm/percpu.h
+> ===================================================================
+> --- linux-2.6.orig/arch/x86/include/asm/percpu.h	2011-03-30 14:09:28.000000000 -0500
+> +++ linux-2.6/arch/x86/include/asm/percpu.h	2011-03-30 14:10:16.000000000 -0500
+> @@ -388,12 +388,9 @@ do {									\
+>  #define __this_cpu_xor_1(pcp, val)	percpu_to_op("xor", (pcp), val)
+>  #define __this_cpu_xor_2(pcp, val)	percpu_to_op("xor", (pcp), val)
+>  #define __this_cpu_xor_4(pcp, val)	percpu_to_op("xor", (pcp), val)
+> -/*
+> - * Generic fallback operations for __this_cpu_xchg_[1-4] are okay and much
+> - * faster than an xchg with forced lock semantics.
+> - */
+> -#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
+> -#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
+> +#define __this_cpu_xchg_1(pcp, val)	percpu_xchg_op(pcp, val)
+> +#define __this_cpu_xchg_2(pcp, val)	percpu_xchg_op(pcp, val)
+> +#define __this_cpu_xchg_4(pcp, val)	percpu_xchg_op(pcp, val)
 >
->  MAINTAINERS                   |    6 ++
->  drivers/base/core.c           |    5 +-
->  include/linux/device.h        |    5 +
->  include/linux/dynamic_debug.h |   58 ++++++++++-----
->  include/linux/netdevice.h     |   12 ++--
->  lib/dynamic_debug.c           |  165 ++++++++++++++++++++++++++++-------------
->  net/core/dev.c                |    3 +-
->  7 files changed, 172 insertions(+), 82 deletions(-)
+>  #define this_cpu_read_1(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+>  #define this_cpu_read_2(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+> @@ -471,6 +468,7 @@ do {									\
+>  #define __this_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)		percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
+>  #define this_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)		percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
+>  #define irqsafe_cpu_cmpxchg_double_4(pcp1, pcp2, o1, o2, n1, n2)	percpu_cmpxchg8b_double(pcp1, o1, o2, n1, n2)
+> +
+>  #endif /* CONFIG_X86_CMPXCHG64 */
 >
-> --
-> 1.7.5.4
+>  /*
+> @@ -485,6 +483,8 @@ do {									\
+>  #define __this_cpu_or_8(pcp, val)	percpu_to_op("or", (pcp), val)
+>  #define __this_cpu_xor_8(pcp, val)	percpu_to_op("xor", (pcp), val)
+>  #define __this_cpu_add_return_8(pcp, val) percpu_add_return_op(pcp, val)
+> +#define __this_cpu_xchg_8(pcp, nval)	percpu_xchg_op(pcp, nval)
+> +#define __this_cpu_cmpxchg_8(pcp, oval, nval)	percpu_cmpxchg_op(pcp, oval, nval)
 >
+>  #define this_cpu_read_8(pcp)		percpu_from_op("mov", (pcp), "m"(pcp))
+>  #define this_cpu_write_8(pcp, val)	percpu_to_op("mov", (pcp), val)
 >
