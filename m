@@ -1,40 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab1GFDpK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 23:45:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2996 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755958Ab1GFDpJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 23:45:09 -0400
-Message-ID: <4E13DA40.5020000@redhat.com>
-Date: Tue, 05 Jul 2011 23:45:04 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Lightning/1.0b3pre Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Gleb Natapov <gleb@redhat.com>
-Subject: Re: [PATCH v5 1/9] introduce kvm_read_guest_cached
-References: <1309793548-16714-1-git-send-email-glommer@redhat.com> <1309793548-16714-2-git-send-email-glommer@redhat.com>
-In-Reply-To: <1309793548-16714-2-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1756253Ab1GFDpw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 23:45:52 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:35225 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755958Ab1GFDpv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 23:45:51 -0400
+Date: Tue, 05 Jul 2011 20:45:46 -0700 (PDT)
+Message-Id: <20110705.204546.433639330355698050.davem@davemloft.net>
+To: joe@perches.com
+Cc: zambrano@broadcom.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] b44: Use pr_<level>_once and DRV_DESCRIPTION
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <c57bb53427d6b56cf18ef7302033e58ef5eb92fb.1309887804.git.joe@perches.com>
+References: <c57bb53427d6b56cf18ef7302033e58ef5eb92fb.1309887804.git.joe@perches.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Tue, 05 Jul 2011 20:45:48 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/04/2011 11:32 AM, Glauber Costa wrote:
-> From: Gleb Natapov<gleb@redhat.com>
->
-> Introduce kvm_read_guest_cached() function in addition to write one we
-> already have.
->
-> [ by glauber: export function signature in kvm header ]
->
-> Signed-off-by: Gleb Natapov<gleb@redhat.com>
-> Signed-off-by: Glauber Costa<glommer@redhat.com>
+From: Joe Perches <joe@perches.com>
+Date: Tue,  5 Jul 2011 10:43:46 -0700
 
-Acked-by: Rik van Riel <riel@redhat.com>
+> Convert a printk with a static to pr_<level>_once
+> Add and use DRV_DESCRIPTION to reduce string duplication.
+> Remove now unused version.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
--- 
-All rights reversed
+Applied.
