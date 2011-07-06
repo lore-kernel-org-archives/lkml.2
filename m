@@ -1,105 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab1GFWkk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 18:40:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36457 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752574Ab1GFWkj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 18:40:39 -0400
-Message-ID: <4E14E461.9080100@redhat.com>
-Date: Wed, 06 Jul 2011 17:40:33 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.2.18) Gecko/20110616 Thunderbird/3.1.11
+	id S1753402Ab1GFWpF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 18:45:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41386 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752959Ab1GFWpE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 18:45:04 -0400
+Date: Wed, 6 Jul 2011 15:44:42 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: ashishj3 <ashish.jangam@kpitcummins.com>, grant@secretlab.ca,
+        arnd@arndb.de, jic23@cam.ac.uk, linux-kernel@vger.kernel.org,
+        Dajun <dajun.chen@diasemi.com>, linaro-dev@lists.linaro.org
+Subject: Re: [PATCH 02/11] GPIO: DA9052 GPIO module v3
+Message-ID: <20110706224442.GA13144@opensource.wolfsonmicro.com>
+References: <1309948333.4168.8.camel@L-0532.kpit.com>
+ <20110706163656.GF5805@ponder.secretlab.ca>
 MIME-Version: 1.0
-To: Daniel Ehrenberg <dehrenberg@google.com>
-CC: Andreas Dilger <adilger.kernel@dilger.ca>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>
-Subject: Re: [PATCH] ext4: Change the handling of RAID stripe width
-References: <1309985245-14835-1-git-send-email-dehrenberg@google.com>	<4E14D130.6080605@redhat.com> <CAAK6Zt2RW_J7zPJfDWbN8kKBGx+bVCRXUEvbVoGrma_VD9i6Tw@mail.gmail.com>
-In-Reply-To: <CAAK6Zt2RW_J7zPJfDWbN8kKBGx+bVCRXUEvbVoGrma_VD9i6Tw@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110706163656.GF5805@ponder.secretlab.ca>
+X-Cookie: You are standing on my toes.
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/6/11 5:17 PM, Daniel Ehrenberg wrote:
-> On Wed, Jul 6, 2011 at 2:18 PM, Eric Sandeen <sandeen@redhat.com> wrote:
->> On 7/6/11 3:47 PM, Dan Ehrenberg wrote:
->>> Previously, the stripe width was blindly used for determining the size
->>> of allocations. Now, the stripe width is used as a hint for the initial
->>> mb_group_prealloc; if it is greater than 1, then we make sure that
->>> mb_group_prealloc is some multiple of it, and otherwise it is ignored.
->>> mb_group_prealloc is always usable to adjust the preallocation strategy,
->>> not just when the stripe-width is 0 as before.
->>>
->>> Signed-off-by: Dan Ehrenberg <dehrenberg@google.com>
->>> ---
->>>  fs/ext4/mballoc.c |   40 +++++++++++++++++++++++++++++-----------
->>>  1 files changed, 29 insertions(+), 11 deletions(-)
->>>
->>> diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
->>> index 6ed859d..710c27f 100644
->>> --- a/fs/ext4/mballoc.c
->>> +++ b/fs/ext4/mballoc.c
->>> @@ -127,13 +127,14 @@
->>>   * based on file size. This can be found in ext4_mb_normalize_request. If
->>>   * we are doing a group prealloc we try to normalize the request to
->>>   * sbi->s_mb_group_prealloc. Default value of s_mb_group_prealloc is
->>> - * 512 blocks. This can be tuned via
->>> - * /sys/fs/ext4/<partition/mb_group_prealloc. The value is represented in
->>> - * terms of number of blocks. If we have mounted the file system with -O
->>> + * 512 blocks. If we have mounted the file system with -O
->>>   * stripe=<value> option the group prealloc request is normalized to the
->>> - * stripe value (sbi->s_stripe)
->>> + * the smallest multiple of the stripe value (sbi->s_stripe) which is
->>> + * greater than the default mb_group_prealloc. This can be tuned via
->>> + * /sys/fs/ext4/<partition>/mb_group_prealloc. The value is represented in
->>> + * terms of number of blocks.
->>>   *
->>> - * The regular allocator(using the buddy cache) supports few tunables.
->>> + * The regular allocator (using the buddy cache) supports a few tunables.
->>>   *
->>>   * /sys/fs/ext4/<partition>/mb_min_to_scan
->>>   * /sys/fs/ext4/<partition>/mb_max_to_scan
->>> @@ -2471,7 +2472,26 @@ int ext4_mb_init(struct super_block *sb, int needs_recovery)
->>>       sbi->s_mb_stats = MB_DEFAULT_STATS;
->>>       sbi->s_mb_stream_request = MB_DEFAULT_STREAM_THRESHOLD;
->>>       sbi->s_mb_order2_reqs = MB_DEFAULT_ORDER2_REQS;
->>> +     /*
->>> +      * If the stripe width is 1, this makes no sense and
->>> +      * we set it to 0 to turn off stripe handling code.
->>> +      */
->>> +     if (sbi->s_stripe == 1)
->>> +             sbi->s_stripe = 0;
->>
->> This strikes me as a weird band-aid-y place to fix this up.
->>
->> Wouldn't it be better suited for the option-parsing code, and/or
->> in ext4_get_stripe_size()?  Why let a value of 1 get this far
->> only to override it here?
->>
->> -Eric
-> 
-> The mount option parsing code wouldn't be a working place to do it,
-> since it can be specified on-disk what the stripe size is. But
+On Wed, Jul 06, 2011 at 10:36:56AM -0600, Grant Likely wrote:
 
-well I think that the mount option overrides the on disk value, since the
-first thing that ext4_get_stripe_size() does is look for s_stripe
-and return it if it's already set.
+> It looks like this needs to be merged via the MFD tree since it
+> depends on the core da9052 driver patch.
 
-I just think it's good to keep this stuff consolidated, and not
-sprinkle special-cases and error checking around in the code 
-too much... complicated enough already IMHO.
+Actually that's not such an issue for new MFDs - since the function
+drivers all depend on the core driver they can't be enabled in Kconfig
+until the MFD part has been merged so don't do any harm.
 
--Eric
+> > +static int da9052_gpio_to_irq(struct gpio_chip *gc, u32 offset)
+> > +{
+> > +	struct da9052_gpio *gpio = to_da9052_gpio(gc);
+> > +	struct da9052 *da9052 = gpio->da9052;
 
-> ext4_get_stripe_size might be a good place to put it instead. I guess
-> there are two unrelated parts to this patch: handling where the stripe
-> width was set to 1, and handling where it's more than 1 but much less
-> than what it should be.
-> 
-> Dan
-> 
-> Dan
+> > +	return da9052->irq_base + DA9052_IRQ_GPI0 + offset;
 
+> Who allocates the irq_descs for these irqs?
+
+SoP for MFDs is to do this in the core as part of the larger block of
+interrupts, the core driver is doing this.
