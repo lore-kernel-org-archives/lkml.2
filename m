@@ -1,126 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab1GFIYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 04:24:10 -0400
-Received: from newsmtp5.atmel.com ([204.2.163.5]:54549 "EHLO
-	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab1GFIYH (ORCPT
+	id S1752875Ab1GFI1L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 04:27:11 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59134 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751188Ab1GFI1J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 04:24:07 -0400
-From: Nicolas Ferre <nicolas.ferre@atmel.com>
-To: cjb@laptop.org, linux-mmc@vger.kernel.org,
-        hans-christian.egtvedt@atmel.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        kernel@avr32linux.org, balbi@ti.com,
-        Nicolas Ferre <nicolas.ferre@atmel.com>
-Subject: [PATCH V4] MMC: PM: add suspend/resume in atmel-mci
-Date: Wed,  6 Jul 2011 11:31:36 +0200
-Message-Id: <1309944696-6415-1-git-send-email-nicolas.ferre@atmel.com>
-X-Mailer: git-send-email 1.7.3
-In-Reply-To: <4E11B57B.4040000@atmel.com>
-References: <4E11B57B.4040000@atmel.com>
+	Wed, 6 Jul 2011 04:27:09 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 3/3] Staging: comedi: fix warning: line over 80 characters issue in usbduxfast.c
+Date: Wed,  6 Jul 2011 13:56:50 +0530
+Message-Id: <1309940810-2381-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <[PATCH]Staging: comedi: fix warning line over 80 character issues in usbduxfast.c>
+References: <[PATCH]Staging: comedi: fix warning line over 80 character issues in usbduxfast.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Take care of slots while going to suspend state.
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
+This is a patch to the usbduxfast.c file that fixes up a warning found by the checkpatch.pl tool
+
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
 ---
-V4: make CONFIG_PM logic work even if not selected
-V3: take care of each slot SUSPENDED state
-    (adding a status bit in the slot "flags")
-V2: move to pm_ops
+ drivers/staging/comedi/drivers/usbduxfast.c |   25 +++++++++++++++----------
+ 1 files changed, 15 insertions(+), 10 deletions(-)
 
-
- drivers/mmc/host/atmel-mci.c |   63 ++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 63 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/mmc/host/atmel-mci.c b/drivers/mmc/host/atmel-mci.c
-index aa8039f..fa8cae1 100644
---- a/drivers/mmc/host/atmel-mci.c
-+++ b/drivers/mmc/host/atmel-mci.c
-@@ -203,6 +203,7 @@ struct atmel_mci_slot {
- #define ATMCI_CARD_PRESENT	0
- #define ATMCI_CARD_NEED_INIT	1
- #define ATMCI_SHUTDOWN		2
-+#define ATMCI_SUSPENDED		3
+diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
+index 2a8e725..de2e34c 100644
+--- a/drivers/staging/comedi/drivers/usbduxfast.c
++++ b/drivers/staging/comedi/drivers/usbduxfast.c
+@@ -453,7 +453,8 @@ static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
+ 	/* 7f92 to zero */
+ 	local_transfer_buffer[0] = 0;
+ 	/* bRequest, "Firmware" */
+-	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
++	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
++				USBDUXFASTSUB_FIRMWARE,
+ 				VENDOR_DIR_OUT,	/* bmRequestType */
+ 				USBDUXFASTSUB_CPUCS,	/* Value */
+ 				0x0000,	/* Index */
+@@ -477,7 +478,8 @@ static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
+ 	/* 7f92 to one */
+ 	local_transfer_buffer[0] = 1;
+ 	/* bRequest, "Firmware" */
+-	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
++	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
++			      USBDUXFASTSUB_FIRMWARE,
+ 			      VENDOR_DIR_OUT,	/* bmRequestType */
+ 			      USBDUXFASTSUB_CPUCS,	/* Value */
+ 			      0x0000,	/* Index */
+@@ -504,7 +506,8 @@ static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
+ 	       startAddr, local_transfer_buffer[0]);
+ #endif
+ 	/* brequest, firmware */
+-	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
++	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
++				USBDUXFASTSUB_FIRMWARE,
+ 				VENDOR_DIR_OUT,	/* bmRequestType */
+ 				startAddr,	/* value */
+ 				0x0000,	/* index */
+@@ -1571,13 +1574,15 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
+ 	usbduxfastsub[index].probed = 1;
+ 	up(&start_stop_sem);
  
- 	int			detect_pin;
- 	int			wp_pin;
-@@ -1878,10 +1879,72 @@ static int __exit atmci_remove(struct platform_device *pdev)
- 	return 0;
- }
+-	ret = request_firmware_nowait(THIS_MODULE,
+-				      FW_ACTION_HOTPLUG,
+-				      "usbduxfast_firmware.bin",
+-				      &udev->dev,
+-				      GFP_KERNEL,
+-				      usbduxfastsub + index,
+-				      usbduxfast_firmware_request_complete_handler);
++	ret =
++	request_firmware_nowait(THIS_MODULE,
++				FW_ACTION_HOTPLUG,
++				"usbduxfast_firmware.bin",
++				&udev->dev,
++				GFP_KERNEL,
++				usbduxfastsub + index,
++				usbduxfast_firmware_request_complete_handler);
++
  
-+#ifdef CONFIG_PM
-+static int atmci_suspend(struct device *dev)
-+{
-+	struct atmel_mci *host = dev_get_drvdata(dev);
-+	int i;
-+
-+	 for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-+		struct atmel_mci_slot *slot = host->slot[i];
-+		int ret;
-+
-+		if (!slot)
-+			continue;
-+		ret = mmc_suspend_host(slot->mmc);
-+		if (ret < 0) {
-+			while (--i >= 0) {
-+				slot = host->slot[i];
-+				if (slot
-+				&& test_bit(ATMCI_SUSPENDED, &slot->flags)) {
-+					mmc_resume_host(host->slot[i]->mmc);
-+					clear_bit(ATMCI_SUSPENDED, &slot->flags);
-+				}
-+			}
-+			return ret;
-+		} else {
-+			set_bit(ATMCI_SUSPENDED, &slot->flags);
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+static int atmci_resume(struct device *dev)
-+{
-+	struct atmel_mci *host = dev_get_drvdata(dev);
-+	int i;
-+	int ret = 0;
-+
-+	for (i = 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
-+		struct atmel_mci_slot *slot = host->slot[i];
-+		int err;
-+
-+		slot = host->slot[i];
-+		if (!slot)
-+			continue;
-+		if (!test_bit(ATMCI_SUSPENDED, &slot->flags))
-+			continue;
-+		err = mmc_resume_host(slot->mmc);
-+		if (err < 0)
-+			ret = err;
-+		else
-+			clear_bit(ATMCI_SUSPENDED, &slot->flags);
-+	}
-+
-+	return ret;
-+}
-+static SIMPLE_DEV_PM_OPS(atmci_pm, atmci_suspend, atmci_resume);
-+#define ATMCI_PM_OPS	(&atmci_pm)
-+#else
-+#define ATMCI_PM_OPS	NULL
-+#endif
-+
- static struct platform_driver atmci_driver = {
- 	.remove		= __exit_p(atmci_remove),
- 	.driver		= {
- 		.name		= "atmel_mci",
-+		.pm		= ATMCI_PM_OPS,
- 	},
- };
- 
+ 	if (ret) {
+ 		dev_err(&udev->dev, "could not load firmware (err=%d)\n", ret);
 -- 
-1.7.3
+1.7.1.1
 
