@@ -1,39 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756022Ab1GFDOs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 23:14:48 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:38165 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755561Ab1GFDOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 23:14:47 -0400
-X-Sasl-enc: JmhTWltunTT7tsfjvs8Md9F5IyDXruoGNUSGk95a7psX 1309922086
-Date: Tue, 5 Jul 2011 20:12:52 -0700
-From: Greg KH <greg@kroah.com>
-To: matt mooney <mfm@muteddisk.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/22] staging: usbip: misc. userspace changes
-Message-ID: <20110706031252.GA30442@kroah.com>
-References: <cover.1308547654.git.mfm@muteddisk.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1308547654.git.mfm@muteddisk.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1756058Ab1GFDbG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 23:31:06 -0400
+Received: from imovil.entelpcs.cl ([200.72.211.69]:2590 "EHLO
+	localhost6.localdomain6" rhost-flags-OK-FAIL-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752329Ab1GFDbF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 23:31:05 -0400
+Subject: [PATCH] FDPIC: fix memory leak
+From: Davidlohr Bueso <dave@gnu.org>
+Reply-To: dave@gnu.org
+To: David Howells <dhowells@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: GNU
+Date: Tue, 05 Jul 2011 23:30:42 -0400
+Message-ID: <1309923042.3975.4.camel@offbook>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 19, 2011 at 10:44:30PM -0700, matt mooney wrote:
-> Hi Greg,
-> 
-> This patch set contains only userspace changes. Next, I will take a look at
-> attach and detach, which should soon lead to the reason why usbip is not
-> currently working.
+From: Davidlohr Bueso <dave@gnu.org>
 
-Not all of these applied, care to resend the ones that didn't after
-rebasing on the current staging-next tree?
+The shdr4extnum variable isn't being freed in the cleanup process of elf_fdpic_core_dump().
 
-thanks,
+Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+---
+ fs/binfmt_elf_fdpic.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-greg k-h
+diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+index 63039ed..2bc5dc6 100644
+--- a/fs/binfmt_elf_fdpic.c
++++ b/fs/binfmt_elf_fdpic.c
+@@ -1864,6 +1864,7 @@ cleanup:
+ 	kfree(psinfo);
+ 	kfree(notes);
+ 	kfree(fpu);
++	kfree(shdr4extnum);
+ #ifdef ELF_CORE_COPY_XFPREGS
+ 	kfree(xfpu);
+ #endif
+-- 
+1.7.4.1
+
+
