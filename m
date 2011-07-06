@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751978Ab1GFFJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 01:09:26 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54228 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751112Ab1GFFJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 01:09:25 -0400
-Date: Wed, 6 Jul 2011 15:09:16 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: linux-next: build failure after merge of the staging tree
-Message-Id: <20110706150916.13ff2bc5.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__6_Jul_2011_15_09_16_+1000_H6n/iw01Jg1mJIgI"
+	id S1752125Ab1GFFRx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 01:17:53 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:48506 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab1GFFRw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 01:17:52 -0400
+Date: Tue, 5 Jul 2011 23:17:48 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, JorgeEduardoCandelariajedu@slimlogic.co.uk,
+        Graeme Gregory <gg@slimlogic.co.uk>
+Subject: Re: [PATCH] gpio: tps65910: add missing breaks in tps65910_gpio_init
+Message-ID: <20110706051748.GA9978@ponder.secretlab.ca>
+References: <1309918107.26847.1.camel@phoenix>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309918107.26847.1.camel@phoenix>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__6_Jul_2011_15_09_16_+1000_H6n/iw01Jg1mJIgI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, Jul 06, 2011 at 10:08:27AM +0800, Axel Lin wrote:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/gpio/gpio-tps65910.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
 
-Hi Greg,
+Merged for v3.0, thanks.
 
-After merging the staging tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+g.
 
-make[4]: *** No rule to make target `drivers/staging/gma500/cdv_intel_crt.o=
-', needed by `drivers/staging/gma500/psb_gfx.o'.  Stop.
-drivers/staging/gma500/cdv_device.c:28:24: fatal error: cdv_device.h: No su=
-ch file or directory
-
-I see that these have already been reported elsewhere - it would have
-been nice if these patches had not been added to the staging tree
-destined for linux-next until *after* they were build tested (and
-fixed). :-(
-
-I have used the version of the staging tree from next-20110705 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
---Signature=_Wed__6_Jul_2011_15_09_16_+1000_H6n/iw01Jg1mJIgI
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOE+38AAoJEDMEi1NhKgbsSb4H/3lpzN+FDLn4xqr8UPtzo1Hl
-uo9SrnMSAGHiz49h6MveHVm+nWBwLWF7wVqN41XSRKmpb1mCORqeT28UZeleaOuW
-99PXdy/wntYi9yJsx12lysRudcKb8edXTrfpmm3z5jNQ5httWCYbWdxUDgTlYgBy
-XQW8U3ri18mRMLt+XXbBs6Izw+yuAxRYd6dvf4BkaLsxySnKToOoAG302my5oAfj
-jmZSF7JIrudRvbdJ5+jfus/hNEVQ17hSWWSIbUchUJjPaJHzXjeQX/w9iwqPulG0
-OH4qNzSHiICsw/k+zbqZXemFTWzrPDw1h4YbnAymltfnTNa4fWJZtll7Q6VOhtE=
-=0Eq9
------END PGP SIGNATURE-----
-
---Signature=_Wed__6_Jul_2011_15_09_16_+1000_H6n/iw01Jg1mJIgI--
+> 
+> diff --git a/drivers/gpio/gpio-tps65910.c b/drivers/gpio/gpio-tps65910.c
+> index 4171033..b9c1c29 100644
+> --- a/drivers/gpio/gpio-tps65910.c
+> +++ b/drivers/gpio/gpio-tps65910.c
+> @@ -81,8 +81,10 @@ void tps65910_gpio_init(struct tps65910 *tps65910, int gpio_base)
+>  	switch(tps65910_chip_id(tps65910)) {
+>  	case TPS65910:
+>  		tps65910->gpio.ngpio	= 6;
+> +		break;
+>  	case TPS65911:
+>  		tps65910->gpio.ngpio	= 9;
+> +		break;
+>  	default:
+>  		return;
+>  	}
+> -- 
+> 1.7.4.1
+> 
+> 
+> 
