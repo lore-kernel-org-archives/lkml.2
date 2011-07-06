@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753777Ab1GFPAV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 11:00:21 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:52466 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753232Ab1GFPAU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 11:00:20 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [Linaro-mm-sig] [PATCH 6/8] drivers: add Contiguous Memory Allocator
-Date: Wed, 6 Jul 2011 16:59:45 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        linaro-mm-sig@lists.linaro.org,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>, linux-mm@kvack.org,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-media@vger.kernel.org
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <20110706142345.GC8286@n2100.arm.linux.org.uk> <alpine.LFD.2.00.1107061034200.14596@xanadu.home>
-In-Reply-To: <alpine.LFD.2.00.1107061034200.14596@xanadu.home>
+	id S1753839Ab1GFPBr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 11:01:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14767 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753636Ab1GFPBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 11:01:45 -0400
+Date: Wed, 6 Jul 2011 11:01:43 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Shaohua Li <shaohua.li@intel.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Jens Axboe <jaxboe@fusionio.com>
+Subject: Re: [PATCH 2/3]CFQ: add think time check for service tree
+Message-ID: <20110706150143.GC27302@redhat.com>
+References: <1309757794.15392.238.camel@sli10-conroe>
+ <20110705141041.GB24348@redhat.com>
+ <1309917465.15392.245.camel@sli10-conroe>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107061659.45253.arnd@arndb.de>
-X-Provags-ID: V02:K0:5UV86gVAQccUTDm1e62xpLJkPnzp/keGWDpFsd63cuO
- uWw4ddxCVu5a7cpWNp6w4u4VzwitWQz4GqvTePVBjO/s/ZZZZ5
- 7TbYs5qlH6kx1PGuXP0bzOQllMrqMDLSYXss40ntnVwYD67hSw
- Ms9Bi7TcMDVyg1aXGxsmA2IzehW7/9U5Lpr0+pYojz5CCBmndQ
- 6v4VG+YtRMM4iO24Erj8Q==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309917465.15392.245.camel@sli10-conroe>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 July 2011, Nicolas Pitre wrote:
-> On Wed, 6 Jul 2011, Russell King - ARM Linux wrote:
+On Wed, Jul 06, 2011 at 09:57:45AM +0800, Shaohua Li wrote:
+[..]
+> [test1]
+> rw=randread
+> ioengine=libaio
+> size=500m
+> directory=/mnt
+> filename=file1
+> thinktime=9000
 > 
-> > Another issue is that when a platform has restricted DMA regions,
-> > they typically don't fall into the highmem zone.  As the dmabounce
-> > code allocates from the DMA coherent allocator to provide it with
-> > guaranteed DMA-able memory, that would be rather inconvenient.
+> [test2]
+> rw=read
+> ioengine=libaio
+> size=1G
+> directory=/mnt
+> filename=file2
 > 
-> Do we encounter this in practice i.e. do those platforms requiring large 
-> contiguous allocations motivating this work have such DMA restrictions?
+> 	patched		base
+> test1	41k/s		33k/s
+> test2	15868k/s	15789k/s
+> total	15902k/s	15817k/s
 
-You can probably find one or two of those, but we don't have to optimize
-for that case. I would at least expect the maximum size of the allocation
-to be smaller than the DMA limit for these, and consequently mandate that
-they define a sufficiently large CONSISTENT_DMA_SIZE for the crazy devices,
-or possibly add a hack to unmap some low memory and call
-dma_declare_coherent_memory() for the device.
+Because we are not idling, throughput of randread workload has gone down.
+Can you make sure it does not go down in case of launching firefox in
+the presence of buffered writers. I want to make sure we got thinktime
+logic right and we don't end up not idling even when thinktimes are
+low.
 
-	Arnd
+[..]
+>  static void
+> @@ -3570,7 +3587,13 @@ static void cfq_completed_request(struct
+>  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]--;
+>  
+>  	if (sync) {
+> +		struct cfq_rb_root *service_tree;
+> +
+>  		RQ_CIC(rq)->ttime.last_end_request = now;
+> +
+> +		service_tree = service_tree_for(cfqq->cfqg, cfqq_prio(cfqq),
+> +			cfqq_type(cfqq));
+
+I think we could do.
+
+if (cfq_cfqq_on_rr(cfqq)
+	service_tree = cfqq->service_tree;
+else
+	service_tree = service_tree_for();
+
+Thanks
+Vivek
