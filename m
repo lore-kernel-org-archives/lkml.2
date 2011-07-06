@@ -1,107 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab1GFQmO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 12:42:14 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:46294 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754811Ab1GFQmM (ORCPT
+	id S1754825Ab1GFQob (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 12:44:31 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:50895 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754530Ab1GFQoa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 12:42:12 -0400
-Date: Wed, 6 Jul 2011 22:11:46 +0530
-From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-To: Pekka Enberg <penberg@kernel.org>
-Cc: Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, thomas.abraham@linaro.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-Message-ID: <20110706164146.GD4356@dirshya.in.ibm.com>
-Reply-To: svaidy@linux.vnet.ibm.com
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
- <20110629130038.GA7909@in.ibm.com>
- <CAOJsxLHQP=-srK_uYYBsPb7+rUBnPZG7bzwtCd-rRaQa4ikUFg@mail.gmail.com>
+	Wed, 6 Jul 2011 12:44:30 -0400
+From: Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: Regression 3.0-rc6+ : khubd blocked (usbnet_cdc_unbind)
+Date: Wed, 6 Jul 2011 18:44:25 +0200
+User-Agent: KMail/1.13.7 (Linux/3.0.0-rc6-00016-ga2fa83f-dirty; KDE/4.6.5; x86_64; ; )
+Cc: =?utf-8?q?=C3=89ric_Piel?= <E.A.B.Piel@tudelft.nl>,
+        Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <gregkh@suse.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        USB list <linux-usb@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1107061210070.1995-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1107061210070.1995-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAOJsxLHQP=-srK_uYYBsPb7+rUBnPZG7bzwtCd-rRaQa4ikUFg@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201107061844.25689.a.miskiewicz@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Pekka Enberg <penberg@kernel.org> [2011-07-06 11:45:41]:
-
-> Hi Ankita,
+On Wednesday 06 of July 2011, Alan Stern wrote:
+> On Wed, 6 Jul 2011, Éric Piel wrote:
+> > Hello,
+> > It seems I'm very unlucky this week and I've come across to what looks
+> > like a second regression in the kernel. I'm running a version few
+> > commits after 3.0-rc6, which includes commit e534c5b831c8 "fix
+> > regression occurring during device removal".
+> > 
+> > When I plug/unplug/plug a mobile phone, after waiting a few minutes I
+> > get a "task khubd:621 blocked for more than 120 seconds." Note that it's
+> > directly connected to my laptop, not via an external hub (although the
+> > bug also happens with an external hub).
+> > 
+> > Below is the whole dmesg log (with usb debug messages on)
+> > 
+> > Let me know if you need me to investigate more, or maybe there is
+> > already a fix for that bug?
 > 
-> [ I don't really know anything about memory power management but
->   here's my two cents since you asked for it. ]
+> Ah -- this stack dump points out the reason for the hang.  It looks
+> like that "fix regression..." commit didn't go far enough; I neglected
+> the fact that interfaces can be unbound out of order when a driver
+> claims multiple interfaces.
 > 
-> On Wed, Jun 29, 2011 at 4:00 PM, Ankita Garg <ankita@in.ibm.com> wrote:
-> > I) Dynamic Power Transition
-> >
-> > The goal here is to ensure that as much as possible, on an idle system,
-> > the memory references do not get spread across the entire RAM, a problem
-> > similar to memory fragmentation. The proposed approach is as below:
-> >
-> > 1) One of the first things is to ensure that the memory allocations do
-> > not spill over to more number of regions. Thus the allocator needs to
-> > be aware of the address boundary of the different regions.
+> Adding this patch on top of that commit should fix this.  Let me
+> know what you both get.
+
+This one makes usb working after resume from ram (current Linus git + this 
+patch).
+
 > 
-> Why does the allocator need to know about address boundaries? Why
-> isn't it enough to make the page allocator and reclaim policies favor using
-> memory from lower addresses as aggressively as possible? That'd mean
-> we'd favor the first memory banks and could keep the remaining ones
-> powered off as much as possible.
-
-Yes, this will work to a limited extent when we have few regions to
-account for.  However if applications start and stop leaving large
-holes in the address map, it may not worth the effort of migrating
-pages to lower addresses to pack the holes.
-
-> IOW, why do we need to support scenarios such as this:
+> Alan Stern
 > 
->    bank 0     bank 1   bank 2    bank3
->  | online  | offline | online  | offline |
 > 
-> instead of using memory compaction and possibly something like the
-> SLUB defragmentation patches to turn the memory map into this:
 > 
->    bank 0     bank 1   bank 2   bank3
->  | online  | online  | offline | offline |
-
-Yes, this is what we need, but also have a notion of how many pages
-are used in each bank so that we can pack pages from under utilized
-banks into a reasonably used bank and thereby free more banks.
-
-Freeing more banks + clustering all used or free banks gives us more
-power saving benefits.
-
-> > 2) At the time of allocation, before spilling over allocations to the
-> > next logical region, the allocator needs to make a best attempt to
-> > reclaim some memory from within the existing region itself first. The
-> > reclaim here needs to be in LRU order within the region. �However, if
-> > it is ascertained that the reclaim would take a lot of time, like there
-> > are quite a fe write-backs needed, then we can spill over to the next
-> > memory region (just like our NUMA node allocation policy now).
+>  drivers/usb/core/message.c |    9 ++++++++-
+>  1 file changed, 8 insertions(+), 1 deletion(-)
 > 
-> I think a much more important question is what happens _after_ we've
-> allocated and free'd tons of memory few times. AFAICT, memory
-> regions don't help with that kind of fragmentation that will eventually
-> happen anyway.
- 
-Memory regions allow us to have a zone per-region.  This helps in the
-cases were allocations are fragments into multiple regions by
-potentially reclaiming very low utilized regions and packing the pages
-into higher utilized regions.  The requirement is a standard
-de-fragmentation approach, except that the cluster of allocations
-should fall within a region (any region) as much as possible.
+> Index: usb-3.0/drivers/usb/core/message.c
+> ===================================================================
+> --- usb-3.0.orig/drivers/usb/core/message.c
+> +++ usb-3.0/drivers/usb/core/message.c
+> @@ -1147,6 +1147,14 @@ void usb_disable_device(struct usb_devic
+>  	 * any drivers bound to them (a key side effect)
+>  	 */
+>  	if (dev->actconfig) {
+> +		/*
+> +		 * FIXME: In order to avoid self-deadlock involving the
+> +		 * bandwidth_mutex, we have to mark all the interfaces
+> +		 * before unregistering any of them.
+> +		 */
+> +		for (i = 0; i < dev->actconfig->desc.bNumInterfaces; i++)
+> +			dev->actconfig->interface[i]->unregistering = 1;
+> +
+>  		for (i = 0; i < dev->actconfig->desc.bNumInterfaces; i++) {
+>  			struct usb_interface	*interface;
+> 
+> @@ -1156,7 +1164,6 @@ void usb_disable_device(struct usb_devic
+>  				continue;
+>  			dev_dbg(&dev->dev, "unregistering interface %s\n",
+>  				dev_name(&interface->dev));
+> -			interface->unregistering = 1;
+>  			remove_intf_ep_devs(interface);
+>  			device_del(&interface->dev);
+>  		}
 
---Vaidy
 
+-- 
+Arkadiusz Miśkiewicz        PLD/Linux Team
+arekm / maven.pl            http://ftp.pld-linux.org/
