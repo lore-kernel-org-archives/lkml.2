@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751621Ab1GFVnv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 17:43:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48773 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751363Ab1GFVnu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 17:43:50 -0400
-Date: Wed, 6 Jul 2011 14:43:40 -0700
-From: Greg KH <gregkh@suse.de>
-To: David Brown <davidb@codeaurora.org>
-Cc: Prashant Shah <pshah.mumbai@gmail.com>,
-        Stepan Moskovchenko <stepanm@codeaurora.org>,
-        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-        Daniel Walker <dwalker@codeaurora.org>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: msm: fixed style issues found by checkpatch.pl
-Message-ID: <20110706214338.GA2109@suse.de>
-References: <20110706074934.GA935@mail.fossee.in>
- <20110706155745.GB16625@suse.de>
- <CAD6i1fK0nH+D3v+A3erC1PgR=S=709H9ZC=T8-q0gqV1ghA0bQ@mail.gmail.com>
- <20110706192656.GA30532@suse.de>
- <8yay60bytt5.fsf@huya.qualcomm.com>
+	id S1751873Ab1GFVpW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 17:45:22 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65232 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab1GFVpV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 17:45:21 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <8yay60bytt5.fsf@huya.qualcomm.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110705.080123.2174577714045488116.davem@davemloft.net>
+References: <1308708650-25509-2-git-send-email-loke.chetan@gmail.com>
+	<20110701.153633.267893668051099806.davem@davemloft.net>
+	<CAAsGZS5vvmb_qX+cG507=hU_+kwnowEEojXGNMt5ShEZ9+ZeAA@mail.gmail.com>
+	<20110705.080123.2174577714045488116.davem@davemloft.net>
+Date: Wed, 6 Jul 2011 17:45:20 -0400
+Message-ID: <CAAsGZS67G8H5NLBxQTY88+T1cRQ3aiwBXK5qa8SJ_TbQ7xqvhw@mail.gmail.com>
+Subject: Re: [PATCH v2 net-next af-packet 1/2] Enhance af-packet to provide
+ (near zero)lossless packet capture functionality.
+From: chetan loke <loke.chetan@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, eric.dumazet@gmail.com, joe@perches.com,
+        bhutchings@solarflare.com, shemminger@vyatta.com,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 02:37:26PM -0700, David Brown wrote:
-> On Wed, Jul 06 2011, Greg KH wrote:
-> 
-> > On Wed, Jul 06, 2011 at 09:45:08PM +0530, Prashant Shah wrote:
-> >> Hi,
-> >> 
-> >> > So that would be one patch for fixing extra braces, one for extra
-> >> > spaces, and so on.  That makes it easier to review.
-> >> 
-> >> Ok I will redo them.
-> >> 
-> >> On Wed, Jul 6, 2011 at 9:27 PM, Greg KH <gregkh@suse.de> wrote:
-> >> > On Wed, Jul 06, 2011 at 01:19:34PM +0530, Prashant P. Shah wrote:
-> >> > Also, did you successfully build this code before and after your
-> >> > changes?
-> >> 
-> >> I tried but the code does not build because of #include <mach/board.h>
-> >> in the msm_fb.c file. I dont know how to fix that.
-> >
-> > I say let's just delete this whole directory as if it doesn't build, no
-> > one is using it, and no one has tried to clean it up since it was
-> > originally added.
-> >
-> > Stepan or David or Abhijeet or Daniel, any objection to just deleting
-> > drivers/staging/msm/ at this point in time for the 3.1 kernel release?
-> > You haven't sent any patches to me to clean this code up since the
-> > original patch, way over a year ago.
-> 
-> I have none.  The non-staging driver has been getting updates, and I
-> asked the author if it was OK to remove the staging one.  I believe the
-> real driver supports everything the staging one did.
-> 
-> Should I generate a (large) patch, or is it easier for you to just
-> remove the tree?
+On Tue, Jul 5, 2011 at 11:01 AM, David Miller <davem@davemloft.net> wrote:
 
-I'll just remove it, it's easier that way.  Can I add your "Acked-by:"
-to the patch?
+>
+> That issue only exists because you haven't defined a common header
+> struct that the current, and all future, block descriptor variants can
+> include at the start of their definitions.
 
-thanks,
+what's common today may not be common tomorrow. After much thinking I
+decided to not provide a generic header because I wouldn't want to
+enforce anything.
 
-greg k-h
+new format:
+
+union bd_header_u {
+       /* renamed struct bd_v1 to hdr_v1 */
+       struct hdr_v1 h1;
+} __attribute__ ((__packed__));
+
+struct block_desc {
+       __u16 version;
+       __u16 offset_to_priv;
+       union bd_header_u hdr;
+} __attribute__ ((__packed__));
+
+Is this ok with you?
+
+
+>
+> Use real data structures, not opaque "offset+size" poking into the
+> descriptors.
+>
+Used to writing firmware APIs. APIs use words/bytes so that they can
+be interpreted by firmware folks too.
+
+Chetan Loke
