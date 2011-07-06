@@ -1,129 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754015Ab1GFXpf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 19:45:35 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:44102 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753792Ab1GFXpd convert rfc822-to-8bit (ORCPT
+	id S1753982Ab1GFXwa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 19:52:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51263 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752751Ab1GFXw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 19:45:33 -0400
-X-IronPort-AV: E=Sophos;i="4.65,489,1304319600"; 
-   d="scan'208";a="560862970"
-Subject: Re: [RFC] sunrpc:  Fix race between work-queue and
- rpc_killall_tasks.
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: greearb@candelatech.com
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Date: Wed, 06 Jul 2011 19:45:32 -0400
-In-Reply-To: <1309992581-25199-1-git-send-email-greearb@candelatech.com>
-References: <1309992581-25199-1-git-send-email-greearb@candelatech.com>
-Organization: NetApp Inc
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
-Message-ID: <1309995932.5447.6.camel@lade.trondhjem.org>
+	Wed, 6 Jul 2011 19:52:28 -0400
+Date: Wed, 6 Jul 2011 16:51:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Mel Gorman <mgorman@suse.de>
+Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 00/14] Swap-over-NBD without deadlocking v5
+Message-Id: <20110706165146.be7ab61b.akpm@linux-foundation.org>
+In-Reply-To: <1308575540-25219-1-git-send-email-mgorman@suse.de>
+References: <1308575540-25219-1-git-send-email-mgorman@suse.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-OriginalArrivalTime: 06 Jul 2011 23:45:33.0402 (UTC) FILETIME=[CBEBA3A0:01CC3C36]
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-06 at 15:49 -0700, greearb@candelatech.com wrote: 
-> From: Ben Greear <greearb@candelatech.com>
+On Mon, 20 Jun 2011 14:12:06 +0100
+Mel Gorman <mgorman@suse.de> wrote:
+
+> Swapping over NBD is something that is technically possible but not
+> often advised. While there are number of guides on the internet
+> on how to configure it and nbd-client supports a -swap switch to
+> "prevent deadlocks", the fact of the matter is a machine using NBD
+> for swap can be locked up within minutes if swap is used intensively.
 > 
-> The rpc_killall_tasks logic is not locked against
-> the work-queue thread, but it still directly modifies
-> function pointers and data in the task objects.
+> The problem is that network block devices do not use mempools like
+> normal block devices do. As the host cannot control where they receive
+> packets from, they cannot reliably work out in advance how much memory
+> they might need.
 > 
-> This patch changes the killall-tasks logic to set a flag
-> that tells the work-queue thread to terminate the task
-> instead of directly calling the terminate logic.
-> 
-> Signed-off-by: Ben Greear <greearb@candelatech.com>
-> ---
-> 
-> NOTE:  This needs review, as I am still struggling to understand
-> the rpc code, and it's quite possible this patch either doesn't
-> fully fix the problem or actually causes other issues.  That said,
-> my nfs stress test seems to run a bit more stable with this patch applied.
+> Some years ago, Peter Ziljstra developed a series of patches that
+> supported swap over an NFS that some distributions are carrying in
+> their kernels. This patch series borrows very heavily from Peter's work
+> to support swapping over NBD (the relatively straight-forward case)
+> and uses throttling instead of dynamically resized memory reserves
+> so the series is not too unwieldy for review.
 
-Yes, but I don't see why you are adding a new flag, nor do I see why we
-want to keep checking for that flag in the rpc_execute() loop.
-rpc_killall_tasks() is not a frequent operation that we want to optimise
-for.
+I have to say, I look over these patches and my mind wants to turn to
+things like puppies.  And ice cream.
 
-How about the following instead?
+There's quite some complexity added here in areas which are already
+reliably unreliable and afaik swap-over-NBD is not a thing which a lot
+of people want to do.  I can see that swap-over-NFS would be useful to
+some people, and the fact that distros are carrying swap-over-NFS
+patches has weight.
 
-8<---------------------------------------------------------------------------------- 
->From ecb7244b661c3f9d2008ef6048733e5cea2f98ab Mon Sep 17 00:00:00 2001
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date: Wed, 6 Jul 2011 19:44:52 -0400
-Subject: [PATCH] SUNRPC: Fix a race between work-queue and rpc_killall_tasks
-
-Since rpc_killall_tasks may modify the rpc_task's tk_action field
-without any locking, we need to be careful when dereferencing it.
-
-Reported-by: Ben Greear <greearb@candelatech.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
----
- net/sunrpc/sched.c |   27 +++++++++++----------------
- 1 files changed, 11 insertions(+), 16 deletions(-)
-
-diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
-index a27406b..4814e24 100644
---- a/net/sunrpc/sched.c
-+++ b/net/sunrpc/sched.c
-@@ -616,30 +616,25 @@ static void __rpc_execute(struct rpc_task *task)
- 	BUG_ON(RPC_IS_QUEUED(task));
- 
- 	for (;;) {
-+		void (*do_action)(struct rpc_task *);
- 
- 		/*
--		 * Execute any pending callback.
-+		 * Execute any pending callback first.
- 		 */
--		if (task->tk_callback) {
--			void (*save_callback)(struct rpc_task *);
--
--			/*
--			 * We set tk_callback to NULL before calling it,
--			 * in case it sets the tk_callback field itself:
--			 */
--			save_callback = task->tk_callback;
--			task->tk_callback = NULL;
--			save_callback(task);
--		} else {
-+		do_action = task->tk_callback;
-+		task->tk_callback = NULL;
-+		if (do_action == NULL) {
- 			/*
- 			 * Perform the next FSM step.
--			 * tk_action may be NULL when the task has been killed
--			 * by someone else.
-+			 * tk_action may be NULL if the task has been killed.
-+			 * In particular, note that rpc_killall_tasks may
-+			 * do this at any time, so beware when dereferencing.
- 			 */
--			if (task->tk_action == NULL)
-+			do_action = task->tk_action;
-+			if (do_action == NULL)
- 				break;
--			task->tk_action(task);
- 		}
-+		do_action(task);
- 
- 		/*
- 		 * Lockless check for whether task is sleeping or not.
--- 
-1.7.6
-
-
--- 
-Trond Myklebust
-Linux NFS client maintainer
-
-NetApp
-Trond.Myklebust@netapp.com
-www.netapp.com
-
+Do these patches lead on to swap-over-NFS?  If so, how much more
+additional complexity are we buying into for that?
