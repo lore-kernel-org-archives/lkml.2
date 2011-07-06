@@ -1,89 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753910Ab1GFQO6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 12:14:58 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:52321 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1751282Ab1GFQO4 (ORCPT
+	id S1754628Ab1GFQPb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 12:15:31 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63776 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab1GFQP3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 12:14:56 -0400
-Date: Wed, 6 Jul 2011 12:14:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: =?UTF-8?B?w4lyaWMgUGllbA==?= <E.A.B.Piel@tudelft.nl>,
-        Arkadiusz Miskiewicz <a.miskiewicz@gmail.com>
-cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, Greg KH <gregkh@suse.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        USB list <linux-usb@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: Regression 3.0-rc6+ : khubd blocked (usbnet_cdc_unbind)
-In-Reply-To: <4E148212.1060805@tudelft.nl>
-Message-ID: <Pine.LNX.4.44L0.1107061210070.1995-100000@iolanthe.rowland.org>
+	Wed, 6 Jul 2011 12:15:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <20110706155745.GB16625@suse.de>
+References: <20110706074934.GA935@mail.fossee.in> <20110706155745.GB16625@suse.de>
+From: Prashant Shah <pshah.mumbai@gmail.com>
+Date: Wed, 6 Jul 2011 21:45:08 +0530
+Message-ID: <CAD6i1fK0nH+D3v+A3erC1PgR=S=709H9ZC=T8-q0gqV1ghA0bQ@mail.gmail.com>
+Subject: Re: [PATCH] Staging: msm: fixed style issues found by checkpatch.pl
+To: Greg KH <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jul 2011, Éric Piel wrote:
+Hi,
 
-> Hello,
-> It seems I'm very unlucky this week and I've come across to what looks 
-> like a second regression in the kernel. I'm running a version few 
-> commits after 3.0-rc6, which includes commit e534c5b831c8 "fix 
-> regression occurring during device removal".
-> 
-> When I plug/unplug/plug a mobile phone, after waiting a few minutes I 
-> get a "task khubd:621 blocked for more than 120 seconds." Note that it's 
-> directly connected to my laptop, not via an external hub (although the 
-> bug also happens with an external hub).
-> 
-> Below is the whole dmesg log (with usb debug messages on)
-> 
-> Let me know if you need me to investigate more, or maybe there is
-> already a fix for that bug?
+> So that would be one patch for fixing extra braces, one for extra
+> spaces, and so on.  That makes it easier to review.
 
-Ah -- this stack dump points out the reason for the hang.  It looks 
-like that "fix regression..." commit didn't go far enough; I neglected 
-the fact that interfaces can be unbound out of order when a driver 
-claims multiple interfaces.
+Ok I will redo them.
 
-Adding this patch on top of that commit should fix this.  Let me 
-know what you both get.
+On Wed, Jul 6, 2011 at 9:27 PM, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Jul 06, 2011 at 01:19:34PM +0530, Prashant P. Shah wrote:
+> Also, did you successfully build this code before and after your
+> changes?
 
-Alan Stern
-
-
-
- drivers/usb/core/message.c |    9 ++++++++-
- 1 file changed, 8 insertions(+), 1 deletion(-)
-
-Index: usb-3.0/drivers/usb/core/message.c
-===================================================================
---- usb-3.0.orig/drivers/usb/core/message.c
-+++ usb-3.0/drivers/usb/core/message.c
-@@ -1147,6 +1147,14 @@ void usb_disable_device(struct usb_devic
- 	 * any drivers bound to them (a key side effect)
- 	 */
- 	if (dev->actconfig) {
-+		/*
-+		 * FIXME: In order to avoid self-deadlock involving the
-+		 * bandwidth_mutex, we have to mark all the interfaces
-+		 * before unregistering any of them.
-+		 */
-+		for (i = 0; i < dev->actconfig->desc.bNumInterfaces; i++)
-+			dev->actconfig->interface[i]->unregistering = 1;
-+
- 		for (i = 0; i < dev->actconfig->desc.bNumInterfaces; i++) {
- 			struct usb_interface	*interface;
- 
-@@ -1156,7 +1164,6 @@ void usb_disable_device(struct usb_devic
- 				continue;
- 			dev_dbg(&dev->dev, "unregistering interface %s\n",
- 				dev_name(&interface->dev));
--			interface->unregistering = 1;
- 			remove_intf_ep_devs(interface);
- 			device_del(&interface->dev);
- 		}
-
+I tried but the code does not build because of #include <mach/board.h>
+in the msm_fb.c file. I dont know how to fix that.
