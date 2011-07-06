@@ -1,110 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752808Ab1GFNvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 09:51:10 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:45141 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751176Ab1GFNvH convert rfc822-to-8bit (ORCPT
+	id S1752767Ab1GFNwO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 09:52:14 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:57914 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab1GFNwN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 09:51:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=J/+CK8+xN3+1cuLo2396lGNp0EyEbXLRrLDW+6Cp3F2yA0bUd880uCAX/X5Rl53Ve
-	tUlz68KIEJiBLavDvPMnw==
-MIME-Version: 1.0
-In-Reply-To: <4E134AF0.1090209@canonical.com>
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
- <1309324042-22943-2-git-send-email-djkurtz@chromium.org> <4E134AF0.1090209@canonical.com>
-From: Daniel Kurtz <djkurtz@chromium.org>
-Date: Wed, 6 Jul 2011 21:50:34 +0800
-X-Google-Sender-Auth: Kcjn8EfLxSfP4YLSPaRZ1kRIvm0
-Message-ID: <CAGS+omBVKV0EvU2owK4rzxwJ25wEnnnAoJeA5do1V2rPr7wg-Q@mail.gmail.com>
-Subject: Re: [PATCH 01/12] Input: synaptics - cleanup 0x0c query documentation
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: dmitry.torokhov@gmail.com, rydberg@euromail.se, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
-        olofj@chromium.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Jul 2011 09:52:13 -0400
+Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Andi Kleen <andi@firstfloor.org>,
+        Stephane Eranian <eranian@google.com>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+In-Reply-To: <1309931621.18875.130.camel@minggr.sh.intel.com>
+References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
+	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
+	 <1309778192.3282.27.camel@twins>  <1309866860.2381.1.camel@localhost>
+	 <1309875468.3282.210.camel@twins>
+	 <1309931621.18875.130.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Date: Wed, 06 Jul 2011 15:51:42 +0200
+Message-ID: <1309960302.3282.283.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chase,
+On Wed, 2011-07-06 at 13:53 +0800, Lin Ming wrote:
 
-On Wed, Jul 6, 2011 at 1:33 AM, Chase Douglas
-<chase.douglas@canonical.com> wrote:
-> On 06/28/2011 10:07 PM, djkurtz@chromium.org wrote:
->> From: Daniel Kurtz <djkurtz@chromium.org>
->>
->> Convert some spaces to tabs.
->> Reorder defines to match bit ordering.
->> Add defines for all bits.
->>
->> Signed-off-by: Daniel Kurtz <djkurtz@chromium.org>
->> ---
->>  drivers/input/mouse/synaptics.h |   16 +++++++++++-----
->>  1 files changed, 11 insertions(+), 5 deletions(-)
->>
->> diff --git a/drivers/input/mouse/synaptics.h b/drivers/input/mouse/synaptics.h
->> index 7453938..34bedde 100644
->> --- a/drivers/input/mouse/synaptics.h
->> +++ b/drivers/input/mouse/synaptics.h
->> @@ -66,18 +66,24 @@
->>   * 1 0x60    multifinger mode        identifies firmware finger counting
->>   *                                   (not reporting!) algorithm.
->>   *                                   Not particularly meaningful
->> - * 1 0x80    covered pad             W clipped to 14, 15 == pad mostly covered
->> - * 2 0x01    clickpad bit 1          2-button ClickPad
->> - * 2 0x02    deluxe LED controls     touchpad support LED commands
->> + * 1 0x80    covered pad             W clipped to 14, 15 == pad mostly covered
->> + * 2 0x01    clickpad bit 1          2-button ClickPad
->> + * 2 0x02    deluxe LED controls     touchpad support LED commands
->>   *                                   ala multimedia control bar
->>   * 2 0x04    reduced filtering       firmware does less filtering on
->>   *                                   position data, driver should watch
->>   *                                   for noise.
->>   */
->> -#define SYN_CAP_CLICKPAD(ex0c)               ((ex0c) & 0x100000) /* 1-button ClickPad */
->> -#define SYN_CAP_CLICKPAD2BTN(ex0c)   ((ex0c) & 0x000100) /* 2-button ClickPad */
->> +#define SYN_CAP_ADJ_THRESHOLD(ex0c)  ((ex0c) & 0x010000)
->>  #define SYN_CAP_MAX_DIMENSIONS(ex0c) ((ex0c) & 0x020000)
->> +#define SYN_CAP_CLEARPAD(ex0c)               ((ex0c) & 0x040000)
->>  #define SYN_CAP_ADV_GESTURE(ex0c)    ((ex0c) & 0x080000)
->> +#define SYN_CAP_CLICKPAD(ex0c)               ((ex0c) & 0x100000) /* 1-button ClickPad */
->> +#define SYN_CAP_MULTIFINGER_MODE(ex0c)       ((ex0c) & 0x600000)
->> +#define SYN_CAP_COVERED_PAD(ex0c)    ((ex0c) & 0x800000)
->> +#define SYN_CAP_CLICKPAD2BTN(ex0c)   ((ex0c) & 0x000100) /* 2-button ClickPad */
->> +#define SYN_CAP_DELUXE_LED(ex0c)     ((ex0c) & 0x000200)
->> +#define SYN_CAP_REDUCED_FILTERING(ex0c)      ((ex0c) & 0x000400)
->>
->>  /* synaptics modes query bits */
->>  #define SYN_MODE_ABSOLUTE(m)         ((m) & (1 << 7))
->
-> I may not be the most knowledgeable developer on Synaptics, but I think
-> I'm somewhat knowledgeable and I can't figure out what each of the
-> bitmasks does now. Since we now have many of them defined, could you add
-> documentation about what each means? For example, I don't know if
-> SYN_CAP_CLICKPAD is set in conjunction with SYN_CAP_CLICKPAD2BTN, or if
-> they are mutually exclusive. I also don't know what SYN_CAP_CLICKPAD2BTN
-> means anyways :).
+> Do you mean to use the "impossible combinations" to express the inverse?
 
-Me neither.  All this patch does is convert some spaces to tabs, and
-reorder the defines so that their order matches that of the
-descriptions.  The descriptions are what Dmitry added in a previous
-commit.
+Nah, impossible would be things like having neither LOAD nor STORE set.
 
->
-> I'm curious, are you basing this work on documentation or
-> reverse-engineering? Maybe you can't say :). It would be awesome if
-> someone at Synaptics would just release the documentation for these
-> advanced features already...
->
-> Thanks!
->
-> -- Chase
->
+> MEM_STORE_DCU_MISS as: store-l2-l3-dram
+> MEM_STORE_STLB_MISS as: store-itlb-dtlb
+> 
+> How about below code?
+
+Right, something like that. Robert can the IBS data source data be
+mapped onto this as well?
+
+> #define PERF_MEM_LOAD                   (1ULL << 0)
+> #define PERF_MEM_STORE                  (1ULL << 1)
+> #define PERF_MEM_ATOMIC                 (1ULL << 2)
+> #define PERF_MEM_L1                     (1ULL << 3)
+> #define PERF_MEM_L2                     (1ULL << 4)
+> #define PERF_MEM_L3                     (1ULL << 5)
+> #define PERF_MEM_RAM                    (1ULL << 6)
+> #define PERF_MEM_UNKNOWN                (1ULL << 7)
+> #define PERF_MEM_IO                     (1ULL << 8)
+> #define PERF_MEM_UNCACHED               (1ULL << 9)
+> #define PERF_MEM_RESERVED               (1ULL << 10)
+> #define PERF_MEM_LOCAL                  (1ULL << 11)
+> #define PERF_MEM_REMOTE                 (1ULL << 12)
+> #define PERF_MEM_SNOOP                  (1ULL << 13)
+> #define PERF_MEM_MODIFIED               (1ULL << 14)
+> #define PERF_MEM_EXCLUSIVE              (1ULL << 15)
+> #define PERF_MEM_SHARED                 (1ULL << 16)
+> #define PERF_MEM_INVALID                (1ULL << 17)
+
+> #define PERF_MEM_ITLB                   (1ULL << 18)
+> #define PERF_MEM_DTLB                   (1ULL << 19)
+> #define PERF_MEM_STLB                   (1ULL << 20)
+
+Are these TLB hit or miss?
+
+> #define PERF_MEM_STORE_L1D_HIT  \
+>         (PERF_MEM_STORE | PERF_MEM_L1)
+> 
+> #define PERF_MEM_STORE_L1D_MISS \
+>         (PERF_MEM_STORE | PERF_MEM_L2 | PERF_MEM_L3 | PERF_MEM_RAM)
+> 
+> #define PERF_MEM_STORE_STLB_HIT \
+>         (PERF_MEM_STORE | PERF_MEM_STLB)
+>       
+> #define PERF_MEM_STORE_STLB_MISS \
+>         (PERF_MEM_STORE | PERF_MEM_ITLB | PERF_MEM_DTLB)
+
+Going by the definition in table 30-22 neither of these seem correct, a
+STLB_HIT was defined as DTLB|STLB whereas a STLB_MISS was missing both
+(resulting in a full page-table walk I presume).
+
+> #define PERF_MEM_STORE_ATOMIC \
+>         (PERF_MEM_STORE | PERF_MEM_ATOMIC)
+> 
+> #define PERF_MEM_LOAD_STLB_HIT  \
+>         (PERF_MEM_LOAD | PERF_MEM_STLB)
+>    
+> #define PERF_MEM_LOAD_STLB_MISS \
+>         (PERF_MEM_LOAD | PERF_MEM_ITLB | PERF_MEM_DTLB)
+
+idem
+
+> #define PERF_MEM_LOAD_ATOMIC \
+>         (PERF_MEM_LOAD | PERF_MEM_ATOMIC)
+> 
+
