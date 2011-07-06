@@ -1,103 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754662Ab1GFSBO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 14:01:14 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:38669 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751987Ab1GFSBM convert rfc822-to-8bit (ORCPT
+	id S1754755Ab1GFSBT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 14:01:19 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33946 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754683Ab1GFSBS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 14:01:12 -0400
+	Wed, 6 Jul 2011 14:01:18 -0400
+Subject: [PATCH] gpio: Move mpc5200 gpio driver to drivers/gpio
+To: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 06 Jul 2011 12:01:15 -0600
+Message-ID: <20110706175950.1776.79176.stgit@ponder>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-In-Reply-To: <20110705135348.cb835073.akpm@linux-foundation.org>
-References: <1309468207-24199-1-git-send-email-wad@chromium.org>
-	<20110705135348.cb835073.akpm@linux-foundation.org>
-Date: Wed, 6 Jul 2011 13:01:12 -0500
-Message-ID: <CABqD9hY7xLWLeeFiKGdMT8VveXQAv3PgC-ZGPdd4qO1AfgDZWw@mail.gmail.com>
-Subject: Re: [PATCH v3 1/2] init: add root=PARTUUID=UUID/PARTNROFF=%d support
-From: Will Drewry <wad@chromium.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, kay.sievers@vrfy.org,
-        Jens Axboe <jaxboe@fusionio.com>, Namhyung Kim <namhyung@gmail.com>,
-        Trond Myklebust <Trond.Myklebust@netapp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 5, 2011 at 3:53 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Thu, 30 Jun 2011 16:10:06 -0500
-> Will Drewry <wad@chromium.org> wrote:
->
->> Expand root=PARTUUID=UUID syntax to support selecting a root partition
->> by integer offset from a known, unique partition.  This approach
->> provides similar properties to specifying a device and partition number,
->> but using the UUID as the unique path prior to evaluating the offset.
->>
->> For example,
->>   root=PARTUUID=99DE9194-FC15-4223-9192-FC243948F88B/PARTNROFF=1
->> selects the partition with UUID 99DE.. then select the next
->> partition.
->>
->> This change is motivated by a particular usecase in Chromium OS where
->> the bootloader can easily determine what partition it is on (by UUID)
->> but doesn't perform general partition table walking.
->>
->> That said, support for this model provides a direct mechanism for the
->> user to modify the root partition to boot without specifically needing
->> to extract each UUID or update the bootloader explicitly when the root
->> partition UUID is changed (if it is recreated to be larger, for
->> instance).  Pinning to a /boot-style partition UUID allows the arbitrary
->> root partition reconfiguration/modifications with slightly less
->> ambiguity than just [dev][partition] and less stringency than the
->> specific root partition UUID.
->>
->> ...
->>
->>  static dev_t devt_from_partuuid(char *uuid_str)
->> @@ -98,6 +101,22 @@ static dev_t devt_from_partuuid(char *uuid_str)
->>       dev_t res = 0;
->>       struct device *dev = NULL;
->>       u8 uuid[16];
->> +     struct gendisk *disk;
->> +     struct hd_struct *part;
->> +     int offset = 0;
->> +
->> +     if (strlen(uuid_str) < 36)
->> +             goto done;
->
-> I think this secretly changes behaviour?  Previously the code would have
-> accepted a less-than-36-byte UUID and would have done <something> with
-> it.  Now, it fails.
->
-> What was <something>, and what is the reason for this (undocumented!)
-> change?
+GPIO drivers are getting consolidated into drivers/gpio.  While at it,
+change the driver name to mpc5200-gpio* to avoid collisions.
 
-Nice catch.  Initially and currently, the only caller to
-devt_from_partuuid is name_to_dev_t.  name_to_dev_t() was forking on
-PARTUUID and length == UUID length.  However, if someone had called
-directly into devt_from_partuuid, no bounds checking would've occurred
-and out of bounds reads may have resulted.
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+---
 
-This just moves the check into devt_from_partuuid to unify the length
-checking logic with the functional logic.  Now devt_from_partuuid is
-safer (kinda) for other init-time callers and allows for detecting
-additions.  (E.g., if Kay wants to add more / arguments.)
+Ben, I'm going to take this via the gpio/next branch to avoid
+conflicts with the big gpio rename.
 
->> +     /* Check for optional partition number offset attributes. */
->> +     if (uuid_str[36]) {
->> +             /* Explicitly fail on poor PARTUUID syntax. */
->> +             if (sscanf(&uuid_str[36], "/PARTNROFF=%d", &offset) != 1) {
->> +                     printk(KERN_ERR "VFS: PARTUUID= is invalid.\n"
->> +                      "Expected PARTUUID=<valid-uuid-id>[/PARTNROFF=%%d]\n");
->
-> The check isn't complete - afacit input of the form PARTNROFF=42foo
-> will be treated as PARTNROFF=42?
+g.
 
-Completely true.  I can post another version that either pulls a
-trailing %c (which should fail) or uses %n.  I have somewhat limited
-internet connectivity right now, but I will follow up with a final
-clean up when I can (>~week)
+ arch/powerpc/platforms/52xx/Kconfig        |    8 --------
+ arch/powerpc/platforms/52xx/Makefile       |    1 -
+ drivers/gpio/Kconfig                       |    4 ++++
+ drivers/gpio/Makefile                      |    1 +
+ drivers/gpio/gpio-mpc5200.c                |   12 ++++--------
+ 5 files changed, 9 insertions(+), 17 deletions(-)
+ rename arch/powerpc/platforms/52xx/mpc52xx_gpio.c => drivers/gpio/gpio-mpc5200.c (98%)
 
-Thanks for the close review!
-will
+diff --git a/arch/powerpc/platforms/52xx/Kconfig b/arch/powerpc/platforms/52xx/Kconfig
+index 47ea1be..90f4496 100644
+--- a/arch/powerpc/platforms/52xx/Kconfig
++++ b/arch/powerpc/platforms/52xx/Kconfig
+@@ -55,14 +55,6 @@ config PPC_MPC5200_BUGFIX
+ 
+ 	  It is safe to say 'Y' here
+ 
+-config PPC_MPC5200_GPIO
+-	bool "MPC5200 GPIO support"
+-	depends on PPC_MPC52xx
+-	select ARCH_REQUIRE_GPIOLIB
+-	select GENERIC_GPIO
+-	help
+-	  Enable gpiolib support for mpc5200 based boards
+-
+ config PPC_MPC5200_LPBFIFO
+ 	tristate "MPC5200 LocalPlus bus FIFO driver"
+ 	depends on PPC_MPC52xx
+diff --git a/arch/powerpc/platforms/52xx/Makefile b/arch/powerpc/platforms/52xx/Makefile
+index 2bc8cd0..4e62486 100644
+--- a/arch/powerpc/platforms/52xx/Makefile
++++ b/arch/powerpc/platforms/52xx/Makefile
+@@ -14,5 +14,4 @@ ifeq ($(CONFIG_PPC_LITE5200),y)
+ 	obj-$(CONFIG_PM)	+= lite5200_sleep.o lite5200_pm.o
+ endif
+ 
+-obj-$(CONFIG_PPC_MPC5200_GPIO)	+= mpc52xx_gpio.o
+ obj-$(CONFIG_PPC_MPC5200_LPBFIFO)	+= mpc52xx_lpbfifo.o
+diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
+index a4ac78b..47eae6e 100644
+--- a/drivers/gpio/Kconfig
++++ b/drivers/gpio/Kconfig
+@@ -99,6 +99,10 @@ config GPIO_EXYNOS4
+ 	def_bool y
+ 	depends on CPU_EXYNOS4210
+ 
++config GPIO_MPC5200
++	def_bool y
++	depends on PPC_MPC52xx
++
+ config GPIO_MXC
+ 	def_bool y
+ 	depends on ARCH_MXC
+diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
+index b847fb5..7207112 100644
+--- a/drivers/gpio/Makefile
++++ b/drivers/gpio/Makefile
+@@ -26,6 +26,7 @@ obj-$(CONFIG_GPIO_MAX732X)	+= gpio-max732x.o
+ obj-$(CONFIG_GPIO_MC33880)	+= gpio-mc33880.o
+ obj-$(CONFIG_GPIO_MCP23S08)	+= gpio-mcp23s08.o
+ obj-$(CONFIG_GPIO_ML_IOH)	+= gpio-ml-ioh.o
++obj-$(CONFIG_GPIO_MPC5200)	+= gpio-mpc5200.o
+ obj-$(CONFIG_GPIO_MXC)		+= gpio-mxc.o
+ obj-$(CONFIG_GPIO_MXS)		+= gpio-mxs.o
+ obj-$(CONFIG_PLAT_NOMADIK)	+= gpio-nomadik.o
+diff --git a/arch/powerpc/platforms/52xx/mpc52xx_gpio.c b/drivers/gpio/gpio-mpc5200.c
+similarity index 98%
+rename from arch/powerpc/platforms/52xx/mpc52xx_gpio.c
+rename to drivers/gpio/gpio-mpc5200.c
+index 1757d1d..9b325dd 100644
+--- a/arch/powerpc/platforms/52xx/mpc52xx_gpio.c
++++ b/drivers/gpio/gpio-mpc5200.c
+@@ -184,15 +184,13 @@ static int mpc52xx_gpiochip_remove(struct platform_device *ofdev)
+ }
+ 
+ static const struct of_device_id mpc52xx_wkup_gpiochip_match[] = {
+-	{
+-		.compatible = "fsl,mpc5200-gpio-wkup",
+-	},
++	{ .compatible = "fsl,mpc5200-gpio-wkup", },
+ 	{}
+ };
+ 
+ static struct platform_driver mpc52xx_wkup_gpiochip_driver = {
+ 	.driver = {
+-		.name = "gpio_wkup",
++		.name = "mpc5200-gpio-wkup",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = mpc52xx_wkup_gpiochip_match,
+ 	},
+@@ -341,15 +339,13 @@ static int __devinit mpc52xx_simple_gpiochip_probe(struct platform_device *ofdev
+ }
+ 
+ static const struct of_device_id mpc52xx_simple_gpiochip_match[] = {
+-	{
+-		.compatible = "fsl,mpc5200-gpio",
+-	},
++	{ .compatible = "fsl,mpc5200-gpio", },
+ 	{}
+ };
+ 
+ static struct platform_driver mpc52xx_simple_gpiochip_driver = {
+ 	.driver = {
+-		.name = "gpio",
++		.name = "gpio-mpc5200",
+ 		.owner = THIS_MODULE,
+ 		.of_match_table = mpc52xx_simple_gpiochip_match,
+ 	},
+
