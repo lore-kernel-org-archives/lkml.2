@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755346Ab1GFAOg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 20:14:36 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:33414 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab1GFAOf (ORCPT
+	id S1755374Ab1GFAVv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 20:21:51 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:51050 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752691Ab1GFAVu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 20:14:35 -0400
+	Tue, 5 Jul 2011 20:21:50 -0400
+Date: Wed, 6 Jul 2011 02:21:45 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Aditya Kali <adityakali@google.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [RFC PATCH 4/4] cgroups: Add an rlimit subsystem
+Message-ID: <20110706002142.GA10010@somewhere.redhat.com>
+References: <1308527474-20704-1-git-send-email-fweisbec@gmail.com>
+ <1308527474-20704-5-git-send-email-fweisbec@gmail.com>
+ <BANLkTin_MA+Yc7=q=cK5s2CbCfu_xmqTAQ@mail.gmail.com>
+ <20110623134759.GC8058@somewhere.redhat.com>
+ <BANLkTimiQBkDZ=L9UR-yGMATw9o-3JVtMEaMP36zey=_9pxL9Q@mail.gmail.com>
+ <loom.20110628T193035-346@post.gmane.org>
 MIME-Version: 1.0
-From: Roland Dreier <roland@kernel.org>
-Date: Tue, 5 Jul 2011 17:14:15 -0700
-X-Google-Sender-Auth: vivBStJ-7Jg0AkJB9vyWlddR888
-Message-ID: <CAG4TOxP1eTY_R_t57U1Ux=RTFa=3BWWL9yzL-p9sC+YWrpZmYQ@mail.gmail.com>
-Subject: warning because of race between userspace and add_disk()?
-To: Jens Axboe <axboe@kernel.dk>
-Cc: open list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <loom.20110628T193035-346@post.gmane.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens!
+Please keep the Cc list, everybody may has missed your message. I just found
+it while browsing randomly my lkml INBOX.
 
-I'm seeing the warning below (with 3.0-rc5) when I hot-add a disk.
-The system has a JBOD with 4 SAS paths, so we get 4 /dev/sdXX for the
-disk (I don't think this is strictly required to trigger this, but I
-think it makes the race bigger).
+On Tue, Jun 28, 2011 at 05:37:17PM +0000, Aditya Kali wrote:
+> Paul Menage <menage <at> google.com> writes:
+> > What we need is a res_counter_move_charge(A, B, amount) function which will:
+> > 
+> > - locate C, the nearest common ancestor of A and B
+> > - lock up the chain from B up to but not including C, adding the new charge
+> > - unlock up the chain from B to C
+> > - uncharge along the chain from A up to but not including C (not sure
+> > how much locking is needed there since there's no need for roll back).
+> > 
+> > Paul
+> > 
+> 
+> Another alternative is to use the 'attach' callback in struct cgroup_subsys which
+> gets both the old cgroup and the new cgroup as parameters and do
+> rlim_remove_proc(old_cgrp) and res_counter_charge(new_cgrp) in this same
+> function under the protection of a spinlock.
+> It would be good to add a return value to the 'attach' callback too.
 
-What I _think_ is happening is that add_disk() exposes the /dev/sdXX
-device to userspace before it does disk_add_events(), and the
-multipath daemon immediately tries to open the device.  This means
-that blkdev_get() (called from blkdev_open()) races with
-disk_add_events() and so the first call to disk_block_events() returns
-immediately because of
-
-	struct disk_events *ev = disk->ev;
-	if (!ev)
-		return;
-
-but then on the way out, disk_unblock_events() finds that disk->ev has
-been set and so hits the warning.
-
-I guess the fix would be to be more careful about the order we expose
-things when registering disks?
-
-    sdcr: unknown partition table
-   ------------[ cut here ]------------
-   WARNING: at block/genhd.c:1466 __disk_unblock_events+0xf5/0x110()
-   Modules linked in: kvm_intel kvm serio_raw i7core_edac ioatdma dca
-edac_core pci_stub ses enclosure usbhid usb_storage uas hid mpt2sas
-qla2xxx ahci libahci e1000e scsi_transport_fc scsi_transport_sas
-mlx4_core raid_class scsi_tgt
-   Pid: 12870, comm: multipath Not tainted 3.0.0-rc5+ #1
-   Call Trace:
-    [<ffffffff8104bd9f>] warn_slowpath_common+0x7f/0xc0
-    [<ffffffff8104bdfa>] warn_slowpath_null+0x1a/0x20
-    [<ffffffff81241a45>] __disk_unblock_events+0xf5/0x110
-    [<ffffffff8124302a>] disk_unblock_events+0x1a/0x20
-    [<ffffffff81179d10>] __blkdev_get+0x1b0/0x430
-    [<ffffffff8117a2d0>] ? blkdev_get+0x340/0x340
-    [<ffffffff81179fe3>] blkdev_get+0x53/0x340
-    [<ffffffff8117a2d0>] ? blkdev_get+0x340/0x340
-    [<ffffffff8117a335>] blkdev_open+0x65/0x80
-    [<ffffffff81144f4e>] __dentry_open+0x12e/0x300
-    [<ffffffff81152dab>] ? do_lookup+0x4b/0x310
-    [<ffffffff81146321>] nameidata_to_filp+0x71/0x80
-    [<ffffffff81153f06>] do_last.clone.18+0xb6/0x7f0
-    [<ffffffff81155864>] path_openat+0xc4/0x3a0
-    [<ffffffff81154f8b>] ? user_path_at+0x6b/0xb0
-    [<ffffffff81155b82>] do_filp_open+0x42/0xa0
-    [<ffffffff81161a2f>] ? alloc_fd+0x4f/0x150
-    [<ffffffff81146431>] do_sys_open+0x101/0x1e0
-    [<ffffffff81146530>] sys_open+0x20/0x30
-    [<ffffffff814e5942>] system_call_fastpath+0x16/0x1b
-   ---[ end trace c6b59cca96c2a3cb ]---
-   sd 11:0:47:0: [sdcr] Attached SCSI disk
+But the it would require a global lock, or a per hierarchy one, if you want
+to protect against forks and exits. And that wouldn't scale due to these fork/exit
+that would take that big lock.
