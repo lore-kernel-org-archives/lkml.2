@@ -1,108 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab1GFOX3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 10:23:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18052 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752862Ab1GFOX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 10:23:28 -0400
-Date: Wed, 6 Jul 2011 10:23:23 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Konstantin Khlebnikov <khlebnikov@parallels.com>
-Cc: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 1/2] cfq: request-deadline policy
-Message-ID: <20110706142323.GA27302@redhat.com>
-References: <20110704130838.27757.87486.stgit@localhost6>
- <20110705150420.GD24348@redhat.com>
- <4E1407A1.5080809@parallels.com>
+	id S1753036Ab1GFOYN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 10:24:13 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58920 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752925Ab1GFOYM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 10:24:12 -0400
+Date: Wed, 6 Jul 2011 15:23:45 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
+Message-ID: <20110706142345.GC8286@n2100.arm.linux.org.uk>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <20110705113345.GA8286@n2100.arm.linux.org.uk> <006301cc3be4$daab1850$900148f0$%szyprowski@samsung.com> <201107061609.29996.arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4E1407A1.5080809@parallels.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <201107061609.29996.arnd@arndb.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 10:58:41AM +0400, Konstantin Khlebnikov wrote:
-> Vivek Goyal wrote:
-> >On Mon, Jul 04, 2011 at 05:08:38PM +0400, Konstantin Khlebnikov wrote:
-> >>CFQ is designed for sharing disk bandwidth proportionally between queues and groups
-> >>and for reordering requests to reduce disks seek time. Currently it cannot
-> >>gurantee or estimate latency for individual requests, even if latencies are low
-> >>for almost all requests, some of them can stuck inside scheduler for a long time.
-> >>The fair policy is good as long as someone luckless begins to die due to a timeout.
-> >>
-> >>This patch implements fifo requests dispatching with deadline policy: now cfq
-> >>obliged to dispatch request if it stuck in the queue for more than deadline.
-> >>
-> >>This way now cfq can try to ensure the expected latency of requests execution.
-> >>It is like a safety valve, it should not work all time, but it should keep latency
-> >>in sane range when the scheduler is unable to effectively handle flow of requests,
-> >>especially in cases when the "noop" or "deadline" shows better performance.
-> >>
-> >>deadline can be tuned via /sys/block/<device>/queue/iosched/deadline_{sync,async}
-> >>it by default 2000ms for sync and 4000ms for async requests, use 0 to disable it.
-> >
-> >What's the workload where you are running into issues with existing
-> >policy?
-> 
-> This is huge internal test workload,
-> there >100 containers with mail/http/ftp and something more.
-> 
-> >
-> >We have low_latency=1 by default and which tries to schedule every
-> >queue once in 300ms atleast. And with-in queue we already have the
-> >notion of looking at fifo and dispatch the expired request first.
-> 
-> Without this patch some requests stuck in the scheduler for more than 30 seconds,
-> and it looks like it is no limit.
+On Wed, Jul 06, 2011 at 04:09:29PM +0200, Arnd Bergmann wrote:
+> Maybe you can simply adapt the default location of the contiguous memory
+> are like this:
+> - make CONFIG_CMA depend on CONFIG_HIGHMEM on ARM, at compile time
+> - if ZONE_HIGHMEM exist during boot, put the CMA area in there
+> - otherwise, put the CMA area at the top end of lowmem, and change
+>   the zone sizes so ZONE_HIGHMEM stretches over all of the CMA memory.
 
-Have you done any analysis why requets are stuck for more than 30 seconds.
-May be running blktrace will help.
+One of the requirements of the allocator is that the returned memory
+should be zero'd (because it can be exposed to userspace via ALSA
+and frame buffers.)
 
-Is it async requests which are stuck or sync requests?
+Zeroing the memory from all the contexts which dma_alloc_coherent
+is called from is a trivial matter if its in lowmem, but highmem is
+harder.
 
-We have seen that async requests can be stuck for a long time in CFQ
-in an attempt to give sync requests priority. I will be surprised
-if it is sync request stuck for 30 seconds.
-
-I think first we need to run traces and analyze why request is stuck
-for long time. With 300ms soft latency target, we dynamically reduce
-the slice of every queue with 16ms minimum. So without cgroups, one shall
-have to have close to 2 million procesess to create 32second delay in
-servicing a cfq queue. I don't think you have that many processes doing
-IO.
-
-So running some traces and diving little deeper to figure out what's
-happening will help. If you are quoting these numbers for async request
-or for a sync request which is dependent on some async request, then
-I can belive those.
-
-> 
-> With this patch max-wait-time (from the second patch) shows 7 seconds for this workload,
-> so of course queue is over-congested, but it continues to work predictably.
-> 
-> >
-> >So to me sync queue scheduling shold be pretty good. Async queues
-> >can get starved though. With-in sync queue, if some requests have
-> >expired, it is probably because of the fact that disk is slow and
-> >we are throwing too much IO at it. So if we start always dispatching
-> >expired requests first, then the notion of fairness is out of the
-> >window.
-> >
-> >Why not use deadline scheduler for your case?
-> 
-> Because the scheduler must be universal, load can be arbitrary and constantly changing,
-> we also can not modify each machine separately.
-
-That's fine. But every scheduler has some property and one needs to use
-a scheduler which suits their workoload/storage.
-
-Anyway, before we figure out how to fix the problem, we need to figure
-out what's the problem and what is being delayed and where does the
-delay come from.
-
-Thanks
-Vivek
+Another issue is that when a platform has restricted DMA regions,
+they typically don't fall into the highmem zone.  As the dmabounce
+code allocates from the DMA coherent allocator to provide it with
+guaranteed DMA-able memory, that would be rather inconvenient.
