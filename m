@@ -1,48 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab1GFDFa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 23:05:30 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:48251 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755883Ab1GFDF0 (ORCPT
+	id S1755959Ab1GFDJw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 23:09:52 -0400
+Received: from [193.252.22.128] ([193.252.22.128]:14746 "EHLO
+	smtp5.freeserve.com" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab1GFDJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 23:05:26 -0400
-Subject: [PATCH] platform-drivers-x86: msi-wmi: add missing
- sparse_keymap_free in msi_wmi_init error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Dmitry Torokhov <dtor@mail.ru>, Thomas Renninger <trenn@suse.de>,
-        Anisse Astier <anisse@astier.eu>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jul 2011 11:05:20 +0800
-Message-ID: <1309921520.26847.3.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	Tue, 5 Jul 2011 23:09:51 -0400
+X-ME-UUID: 20110706030934287.4623D1C01011@mwinf3408.me.freeserve.com
+Reply-To: <m.lman@aol.com>
+From: "M.L" <mkopm@live.com>
+Subject: Something to consider
+Date: Wed, 6 Jul 2011 04:09:41 +0100
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="Windows-1251"
 Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2600.0000
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
+Message-Id: <20110706030934.4623D1C01011@mwinf3408.me.freeserve.com>
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/msi-wmi.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+I am contacting you regarding a business undertaking from which we both can make a substantial amount 
+of money. I believe with your assistance we can be successful in this endeavour. 
+Indicate your interest and I will give you more information.
 
-diff --git a/drivers/platform/x86/msi-wmi.c b/drivers/platform/x86/msi-wmi.c
-index c832e33..6f40bf2 100644
---- a/drivers/platform/x86/msi-wmi.c
-+++ b/drivers/platform/x86/msi-wmi.c
-@@ -272,6 +272,7 @@ static int __init msi_wmi_init(void)
- err_free_backlight:
- 	backlight_device_unregister(backlight);
- err_free_input:
-+	sparse_keymap_free(msi_wmi_input_dev);
- 	input_unregister_device(msi_wmi_input_dev);
- err_uninstall_notifier:
- 	wmi_remove_notify_handler(MSIWMI_EVENT_GUID);
--- 
-1.7.4.1
-
+Kind regards
+M.L.
 
 
