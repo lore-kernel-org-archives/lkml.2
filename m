@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab1GFCqs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 22:46:48 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:51933 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755120Ab1GFCqr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 22:46:47 -0400
-X-Sasl-enc: HB7OS7I9lUutaGanKCHoojxqnT+4FArsqBVc+cckekPd 1309920406
-Date: Tue, 5 Jul 2011 19:44:06 -0700
-From: Greg KH <greg@kroah.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 00/49] GMA50 series update
-Message-ID: <20110706024406.GA24734@kroah.com>
-References: <20110705141038.23872.55303.stgit@localhost.localdomain>
- <20110705152302.GA30891@kroah.com>
- <20110705190354.5530ffc0@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110705190354.5530ffc0@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1755939Ab1GFCxg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 22:53:36 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39788 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755224Ab1GFCxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 22:53:35 -0400
+Date: Wed, 6 Jul 2011 12:53:29 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Gustavo F. Padovan" <padovan@profusion.mobi>
+Subject: linux-next: manual merge of the net tree with the wireless-current
+ tree
+Message-Id: <20110706125329.6e5bdd1a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.1.1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 07:03:54PM +0100, Alan Cox wrote:
-> 
-> > I've applied this series, but I get the following error when building:
-> > 
-> > make[2]: *** No rule to make target `drivers/staging/gma500/cdv_intel_crt.o', needed by `drivers/staging/gma500/psb_gfx.o'.  Stop.
-> > 
-> > Care to send a follow-on patch fixing this?
-> 
-> Done
-> 
-> > 
-> > Also, should I be able to select all of the different platforms even
-> > though I'm only building for a x86-64 platform?
-> 
-> They should all build. I thought Linus wanted stuff that would build to
-> be buildable where it could so that it got build testing done.
+Hi all,
 
-Ok, that's great, hopefully after your next patches, it will build :)
+Today's linux-next merge of the net tree got a conflict in
+net/bluetooth/l2cap_core.c between commit 9fa7e4f76f36 ("Bluetooth: Fix
+regression with incoming L2CAP connections") from the wireless-current
+tree and commit 89bc500e41fc ("Bluetooth: Add state tracking to struct
+l2cap_chan") from the net tree.
+
+I fixed it up (I think - see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc net/bluetooth/l2cap_core.c
+index ebff14c,9ec9c8c..0000000
+--- a/net/bluetooth/l2cap_core.c
++++ b/net/bluetooth/l2cap_core.c
+@@@ -2323,8 -2530,7 +2530,8 @@@ static inline int l2cap_config_req(stru
+  
+  	sk = chan->sk;
+  
+- 	if ((bt_sk(sk)->defer_setup && sk->sk_state != BT_CONNECT2) ||
+- 		 (!bt_sk(sk)->defer_setup && sk->sk_state != BT_CONFIG)) {
+ -	if (chan->state != BT_CONFIG) {
+++	if ((bt_sk(sk)->defer_setup && chan->state != BT_CONNECT2) ||
+++		 (!bt_sk(sk)->defer_setup && chan->state != BT_CONFIG)) {
+  		struct l2cap_cmd_rej rej;
+  
+  		rej.reason = cpu_to_le16(0x0002);
