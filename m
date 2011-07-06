@@ -1,250 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754202Ab1GFX2K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 19:28:10 -0400
-Received: from threatwall.zlynx.org ([64.81.105.251]:37080 "EHLO zlynx.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754091Ab1GFX2F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 19:28:05 -0400
-X-Greylist: delayed 1378 seconds by postgrey-1.27 at vger.kernel.org; Wed, 06 Jul 2011 19:28:04 EDT
-Message-ID: <4E14E939.5040904@acm.org>
-Date: Wed, 06 Jul 2011 17:01:13 -0600
-From: Zan Lynx <zlynx@acm.org>
-User-Agent: Mozilla/5.0 (Windows NT 6.1; WOW64; rv:5.0) Gecko/20110624 Thunderbird/5.0
+	id S1754255Ab1GFXaV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 19:30:21 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:55665 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753887Ab1GFXaU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 19:30:20 -0400
+Message-ID: <4E14F004.5010408@canonical.com>
+Date: Wed, 06 Jul 2011 16:30:12 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
 MIME-Version: 1.0
-To: Shirley Ma <mashirle@us.ibm.com>
-CC: David Miller <davem@davemloft.net>, mst@redhat.com, netdev@vger.kernel.org,
-        kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V8 2/4 net-next] skbuff: skb supports zero-copy buffers
-References: <1309990932.10209.19.camel@localhost.localdomain>
-In-Reply-To: <1309990932.10209.19.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
+To: Henrik Rydberg <rydberg@euromail.se>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Daniel Kurtz <djkurtz@chromium.org>, rubini@cvml.unipv.it,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
+        olofj@chromium.org
+Subject: Re: [PATCH 09/12] Input: synaptics - add image sensor support
+References: <CAGS+omDzg-xADYxKQmWy1KRhJ=n9pn9XR_HMc01xqCSDSLa5UA@mail.gmail.com> <20110706174503.GA5695@core.coreip.homeip.net> <20110706184759.GA3389@polaris.bitmath.org> <20110706185832.GA6086@core.coreip.homeip.net> <20110706193120.GA3884@polaris.bitmath.org> <20110706200056.GB6086@core.coreip.homeip.net> <20110706202049.GA4077@polaris.bitmath.org> <4E14D22D.8050108@canonical.com> <20110706213658.GA9409@core.coreip.homeip.net> <4E14DEA9.1060908@canonical.com> <20110706223521.GA4335@polaris.bitmath.org>
+In-Reply-To: <20110706223521.GA4335@polaris.bitmath.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Envelope-From: zlynx@acm.org
-X-Spam-Id: 20110706/1Qeb5v-0004QS-0a-linux-kernel@vger.kernel.org:zlynx@acm.org:64.81.105.251
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/6/2011 4:22 PM, Shirley Ma wrote:
-> This patch adds userspace buffers support in skb shared info. A new 
-> struct skb_ubuf_info is needed to maintain the userspace buffers
-> argument and index, a callback is used to notify userspace to release
-> the buffers once lower device has done DMA (Last reference to that skb
-> has gone).
+On 07/06/2011 03:35 PM, Henrik Rydberg wrote:
+>> The evdev protocol is discrete, not continuous, so it's theoretically
+>> possible that one touch could end at the same time that another begins.
+>> IIRC, the time resolution of some MT devices makes this completely
+>> possible, perhaps to the point that it would be trival to make this
+>> happen in a few seconds of trying.
+>>
+>> I think the MT-B protocol has only ever used tracking_id for signalling
+>> touch begin and touch end, where the id goes from -1 to something else
+>> and vice versa. Maybe the protocol could be "extended" by saying that a
+>> transition from one valid id to another means there is inconsistent
+>> touch state, but the old touch hasn't necessarily ended and the new
+>> touch hasn't necessarily started at this point in time.
 > 
-> If there is any userspace apps to reference these userspace buffers,
-> then these userspaces buffers will be copied into kernel. This way we
-> can prevent userspace apps from holding these userspace buffers too long.
-> 
-> Use destructor_arg to point to the userspace buffer info; a new tx flags
-> SKBTX_DEV_ZEROCOPY is added for zero-copy buffer check.
-> 
-> Signed-off-by: Shirley Ma <xma@...ibm.com>
+> The in-flight change of tracking id is actually part of the design; it
+> makes the protocol independent of sample rate. If a particular
+> tracking id is no longer found in any slot, that touch has ended.
 
-I was just reading this patch and noticed that you check if
-uarg->callback is set before calling it in skb_release_data, but you do
-not check before calling it in skb_copy_ubufs.
+Ok. I agree that this is the best way to handle things.
 
-I was only skimming so I have probably missed something...
+It does mean that we can't just change tracking_ids when the number of
+touches changes, so that option is out.
 
-> ---
+>> I'm not sure this is any easier than flagging these as bad devices
+>> because now we need to watch tracking ID changes on top of touch count
+>> changes. From someone who has attempted to implement semi-mt in X
+>> synaptics, adding more complexity here should be avoided at all cost :).
 > 
->  include/linux/skbuff.h |   16 ++++++++++
->  net/core/skbuff.c      |   79 +++++++++++++++++++++++++++++++++++++++++++++++-
->  2 files changed, 94 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-> index 3e54337..08d4507 100644
-> --- a/include/linux/skbuff.h
-> +++ b/include/linux/skbuff.h
-> @@ -187,6 +187,20 @@ enum {
->  
->  	/* ensure the originating sk reference is available on driver level */
->  	SKBTX_DRV_NEEDS_SK_REF = 1 << 3,
-> +
-> +	/* device driver supports TX zero-copy buffers */
-> +	SKBTX_DEV_ZEROCOPY = 1 << 4,
-> +};
-> +
-> +/*
-> + * The callback notifies userspace to release buffers when skb DMA is done in
-> + * lower device, the skb last reference should be 0 when calling this.
-> + * The desc is used to track userspace buffer index.
-> + */
-> +struct ubuf_info {
-> +	void (*callback)(void *);
-> +	void *arg;
-> +	unsigned long desc;
->  };
->  
->  /* This data is invariant across clones and lives at
-> @@ -211,6 +225,7 @@ struct skb_shared_info {
->  	/* Intermediate layers must ensure that destructor_arg
->  	 * remains valid until skb destructor */
->  	void *		destructor_arg;
-> +
->  	/* must be last field, see pskb_expand_head() */
->  	skb_frag_t	frags[MAX_SKB_FRAGS];
->  };
-> @@ -2265,5 +2280,6 @@ static inline void skb_checksum_none_assert(struct sk_buff *skb)
->  }
->  
->  bool skb_partial_csum_set(struct sk_buff *skb, u16 start, u16 off);
-> +
->  #endif	/* __KERNEL__ */
->  #endif	/* _LINUX_SKBUFF_H */
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 46cbd28..42462f5 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -329,6 +329,18 @@ static void skb_release_data(struct sk_buff *skb)
->  				put_page(skb_shinfo(skb)->frags[i].page);
->  		}
->  
-> +		/*
-> +		 * If skb buf is from userspace, we need to notify the caller
-> +		 * the lower device DMA has done;
-> +		 */
-> +		if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
-> +			struct ubuf_info *uarg;
-> +
-> +			uarg = skb_shinfo(skb)->destructor_arg;
-> +			if (uarg->callback)
-> +				uarg->callback(uarg);
-> +		}
-> +
->  		if (skb_has_frag_list(skb))
->  			skb_drop_fraglist(skb);
->  
-> @@ -481,6 +493,9 @@ bool skb_recycle_check(struct sk_buff *skb, int skb_size)
->  	if (irqs_disabled())
->  		return false;
->  
-> +	if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY)
-> +		return false;
-> +
->  	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
->  		return false;
->  
-> @@ -596,6 +611,50 @@ struct sk_buff *skb_morph(struct sk_buff *dst, struct sk_buff *src)
->  }
->  EXPORT_SYMBOL_GPL(skb_morph);
->  
-> +/* skb frags copy userspace buffers to kernel */
-> +static int skb_copy_ubufs(struct sk_buff *skb, gfp_t gfp_mask)
-> +{
-> +	int i;
-> +	int num_frags = skb_shinfo(skb)->nr_frags;
-> +	struct page *page, *head = NULL;
-> +	struct ubuf_info *uarg = skb_shinfo(skb)->destructor_arg;
-> +
-> +	for (i = 0; i < num_frags; i++) {
-> +		u8 *vaddr;
-> +		skb_frag_t *f = &skb_shinfo(skb)->frags[i];
-> +
-> +		page = alloc_page(GFP_ATOMIC);
-> +		if (!page) {
-> +			while (head) {
-> +				put_page(head);
-> +				head = (struct page *)head->private;
-> +			}
-> +			return -ENOMEM;
-> +		}
-> +		vaddr = kmap_skb_frag(&skb_shinfo(skb)->frags[i]);
-> +		memcpy(page_address(page),
-> +		       vaddr + f->page_offset, f->size);
-> +		kunmap_skb_frag(vaddr);
-> +		page->private = (unsigned long)head;
-> +		head = page;
-> +	}
-> +
-> +	/* skb frags release userspace buffers */
-> +	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
-> +		put_page(skb_shinfo(skb)->frags[i].page);
-> +
-> +	uarg->callback(uarg);
-> +
-> +	/* skb frags point to kernel buffers */
-> +	for (i = skb_shinfo(skb)->nr_frags; i > 0; i--) {
-> +		skb_shinfo(skb)->frags[i - 1].page_offset = 0;
-> +		skb_shinfo(skb)->frags[i - 1].page = head;
-> +		head = (struct page *)head->private;
-> +	}
-> +	return 0;
-> +}
-> +
-> +
->  /**
->   *	skb_clone	-	duplicate an sk_buff
->   *	@skb: buffer to clone
-> @@ -614,6 +673,11 @@ struct sk_buff *skb_clone(struct sk_buff *skb, gfp_t gfp_mask)
->  {
->  	struct sk_buff *n;
->  
-> +	if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
-> +		if (skb_copy_ubufs(skb, gfp_mask))
-> +			return NULL;
-> +	}
-> +
->  	n = skb + 1;
->  	if (skb->fclone == SKB_FCLONE_ORIG &&
->  	    n->fclone == SKB_FCLONE_UNAVAILABLE) {
-> @@ -731,6 +795,12 @@ struct sk_buff *pskb_copy(struct sk_buff *skb, gfp_t gfp_mask)
->  	if (skb_shinfo(skb)->nr_frags) {
->  		int i;
->  
-> +		if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
-> +			if (skb_copy_ubufs(skb, gfp_mask)) {
-> +				kfree(n);
-> +				goto out;
-> +			}
-> +		}
->  		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
->  			skb_shinfo(n)->frags[i] = skb_shinfo(skb)->frags[i];
->  			get_page(skb_shinfo(n)->frags[i].page);
-> @@ -788,7 +858,6 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
->  		fastpath = true;
->  	else {
->  		int delta = skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1;
-> -
->  		fastpath = atomic_read(&skb_shinfo(skb)->dataref) == delta;
->  	}
->  
-> @@ -819,6 +888,11 @@ int pskb_expand_head(struct sk_buff *skb, int nhead, int ntail,
->  	if (fastpath) {
->  		kfree(skb->head);
->  	} else {
-> +		/* copy this zero copy skb frags */
-> +		if (skb_shinfo(skb)->tx_flags & SKBTX_DEV_ZEROCOPY) {
-> +			if (skb_copy_ubufs(skb, gfp_mask))
-> +				goto nofrags;
-> +		}
->  		for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
->  			get_page(skb_shinfo(skb)->frags[i].page);
->  
-> @@ -853,6 +927,8 @@ adjust_others:
->  	atomic_set(&skb_shinfo(skb)->dataref, 1);
->  	return 0;
->  
-> +nofrags:
-> +	kfree(data);
->  nodata:
->  	return -ENOMEM;
->  }
-> @@ -1354,6 +1430,7 @@ int skb_copy_bits(const struct sk_buff *skb, int offset, void *to, int len)
->  		}
->  		start = end;
->  	}
-> +
->  	if (!len)
->  		return 0;
->  
-> 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> The information available in the proposition suffices to determine
+> what the device is. Surely the method of transferring that information
+> will not have any impact on the extra code required.
 
+My (unstated) question was: is watching tracking_id transitions
+reasonable for noting inconsistent touch changes when the number of
+touches changes, or should we have a way to tell if a device is broken
+and we must assume touch state inconsistency when the finger count
+changes. Given your reply above that we cannot repurpose valid
+tracking_id -> valid tracking_id transitions as a means of denoting
+touch state inconsistency, that leaves us with the latter option.
+
+You're right that the information available from the axes is enough to
+tell if the device is broken (i.e. if max finger count > max slot count).
+
+Ancillary to this is the question of whether we should depend on the
+userspace side knowing this hidden meaning, or if we should state it up
+front by setting a separate flag in the properties bits. I really don't
+want to leave this up to userspace developers having to figure out or
+dive into kernel code to determine what is going on, so I'm in favor of
+having an explicit (documented!) property flag for these devices. Why
+have property bits if you aren't going to use them :).
+
+>>> I'll ask this - how much realistically do we care about 3+ finger
+>>> transitions in context of these particular devices? This is a touchpad
+>>> so as long as basic 2 finger gestures work (zoom, pinch, 2-finger
+>>> scroll) with Synaptics X driver we should be fine. I do not want to add
+>>> all kinds of custom flags to the protocol to deal with this generation
+>>> of touchpads.
+>>
+>> I've given up on trying to send semi-mt data through the proposed XInput
+>> 2.1 multitouch protocol. I think the best option is to send all this
+>> data as valuators of a single touch (a touch and not a traditional
+>> pointer event due to the multitouch/gesture semantics). Thus, we should
+>> be focusing on what is possible in the gesture realm since we have
+>> thrown full multiouch out the window for these devices.
+>>
+>> With these devices we can support one touch drag, two touch pinch,
+>> rotate, and zoom, and 1-5 touch tap. For these to work, we need to know
+>> the number of touches at any given time, the locations of the two
+>> touches when only two touches are active, and some representative
+>> location for the 1 and 3-5 touch cases.
+> 
+> Right, and we do, so there is no problem there, is there?
+
+Agreed, there is no problem if we go with the assumption that for these
+devices the touch slot data is inconsistent on touch count changes.
+
+I am satisfied with the approach that's been laid out, the only point of
+contention is whether userspace must infer touch state inconsistency on
+touch count changes by looking at max fingers and max slots, or if we
+provide this detail as a device property.
+
+-- Chase
