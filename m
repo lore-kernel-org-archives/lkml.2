@@ -1,124 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753524Ab1GFOqW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 10:46:22 -0400
-Received: from smtp110.prem.mail.ac4.yahoo.com ([76.13.13.93]:20839 "HELO
-	smtp110.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753457Ab1GFOqV (ORCPT
+	id S1753478Ab1GFOs5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 10:48:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:43092 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753304Ab1GFOs4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 10:46:21 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: rGwEr4oVM1nnpLngUTDOevCdMMVG9aJJikduphIaHsYDu1_
- e8D9.CcC_OeSKRFnn97PECXioFVdvD5267OPEfOlr5eqQshR0dxh7Hfm1.5y
- f4gyvE7iKYDo_UiyY7qzchum0_oIhGF_KMkPoCZRvSxwm_S.HjFr_pF7ZObx
- DSu30Sa0cOjr.KEYG0zvthq6mlXjPNnZ.zJslLAfMpHV7_p09yrPW8xLiPxf
- 52336Yf1CO4q4N.7SEwnU8IzcL1oTHuGDe2k0g7DfPRPWgPiNRiHPKZJgbb8
- hqPP05YW2yFCvhWssptS5EGJeobUMa2DsofuOb7A2KFvUy8FQ
-X-Yahoo-Newman-Property: ymail-3
-Date: Wed, 6 Jul 2011 09:46:18 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Jonathan Cameron <jic23@cam.ac.uk>
-cc: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: Build issue with linux next. duplicate member _count in
- mm_types.h
-In-Reply-To: <4E143120.2020501@cam.ac.uk>
-Message-ID: <alpine.DEB.2.00.1107060933460.17202@router.home>
-References: <4E143120.2020501@cam.ac.uk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 6 Jul 2011 10:48:56 -0400
+Date: Wed, 6 Jul 2011 10:37:37 -0400 (EDT)
+From: Nicolas Pitre <nicolas.pitre@linaro.org>
+X-X-Sender: nico@xanadu.home
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+cc: Arnd Bergmann <arnd@arndb.de>, "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org
+Subject: Re: [Linaro-mm-sig] [PATCH 6/8] drivers: add Contiguous Memory
+ Allocator
+In-Reply-To: <20110706142345.GC8286@n2100.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1107061034200.14596@xanadu.home>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <20110705113345.GA8286@n2100.arm.linux.org.uk> <006301cc3be4$daab1850$900148f0$%szyprowski@samsung.com> <201107061609.29996.arnd@arndb.de>
+ <20110706142345.GC8286@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jul 2011, Jonathan Cameron wrote:
+On Wed, 6 Jul 2011, Russell King - ARM Linux wrote:
 
-> Getting:
->
->   CHK     include/linux/version.h
->   CHK     include/generated/utsrelease.h
-> make[1]: `include/generated/mach-types.h' is up to date.
->   CC      arch/arm/kernel/asm-offsets.s
-> In file included from include/linux/sched.h:64:0,
->                  from arch/arm/kernel/asm-offsets.c:13:
-> include/linux/mm_types.h:74:15: error: duplicate member '_count'
-> make[1]: *** [arch/arm/kernel/asm-offsets.s] Error 1
-> make: *** [prepare0] Error 2
->
-> Issue looks to have been introduced by
->
->     mm: Rearrange struct page
->
-> fc9bb8c768abe7ae10861c3510e01a95f98d5933
->
-> Guessing it's a known issue, but just thought I'd flag it up in case
-> it's something very specific about my build.
->
-> gcc-2.6 armv7a
->
-> Reverting that patch works, but given I don't know the history, I'm
-> not proposing doing that in general!
+> Another issue is that when a platform has restricted DMA regions,
+> they typically don't fall into the highmem zone.  As the dmabounce
+> code allocates from the DMA coherent allocator to provide it with
+> guaranteed DMA-able memory, that would be rather inconvenient.
 
-Well _count exists in two unionized structs but always has the same offset
-within the larger struct. Maybe ARM creates different offsets there for
-some reason?
+Do we encounter this in practice i.e. do those platforms requiring large 
+contiguous allocations motivating this work have such DMA restrictions?
 
-The following is a patch to restructure the union / structs combo in such
-a way that only a single definition of _count
 
-Signed-off-by: Christoph Lameter <cl@linux.com>
-
----
- include/linux/mm_types.h |   25 ++++++++++---------------
- 1 file changed, 10 insertions(+), 15 deletions(-)
-
-Index: linux-2.6/include/linux/mm_types.h
-===================================================================
---- linux-2.6.orig/include/linux/mm_types.h	2011-07-06 09:35:10.078120512 -0500
-+++ linux-2.6/include/linux/mm_types.h	2011-07-06 09:44:47.388116815 -0500
-@@ -49,32 +49,27 @@ struct page {
- 					 * see PAGE_MAPPING_ANON below.
- 					 */
- 	/* Second double word */
--	union {
--		struct {
-+	struct {
-+		union {
- 			pgoff_t index;		/* Our offset within mapping. */
-+			void *freelist;		/* slub first free object */
-+		};
-+
-+		union {
- 			atomic_t _mapcount;	/* Count of ptes mapped in mms,
- 							 * to show when page is mapped
- 							 * & limit reverse map searches.
- 							 */
--			atomic_t _count;		/* Usage count, see below. */
--		};
-
--		struct {			/* SLUB cmpxchg_double area */
--			void *freelist;
--			union {
--				unsigned long counters;
--				struct {
-+			/* Used for cmpxchg_double in slub */
-+			unsigned long counters;
-+			struct {
- 					unsigned inuse:16;
- 					unsigned objects:15;
- 					unsigned frozen:1;
--					/*
--					 * Kernel may make use of this field even when slub
--					 * uses the rest of the double word!
--					 */
--					atomic_t _count;
--				};
- 			};
- 		};
-+		atomic_t _count;		/* Usage count, see below. */
- 	};
-
- 	/* Third double word block */
+Nicolas
