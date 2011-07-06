@@ -1,76 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751471Ab1GFGeS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 02:34:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58721 "EHLO
+	id S1751639Ab1GFGhw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 02:37:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59477 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab1GFGeR (ORCPT
+	with ESMTP id S1750798Ab1GFGhu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 02:34:17 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 2/2] Staging: comedi: fix WARNING issue in icp_multi.c
-Date: Wed,  6 Jul 2011 12:03:46 +0530
-Message-Id: <1309934026-2677-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH]Staging: comedi: fix tab space warning issues in icp_multi.c>
-References: <[PATCH]Staging: comedi: fix tab space warning issues in icp_multi.c>
+	Wed, 6 Jul 2011 02:37:50 -0400
+Date: Wed, 6 Jul 2011 00:37:46 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Jean Delvare <khali@linux-fr.org>
+Cc: linux-i2c@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>,
+        linux-kernel@vger.kernel.org,
+        Dirk Brandewie <dirk.brandewie@gmail.com>,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>,
+        John Bonesio <bones@secretlab.ca>, Stephen Warren <SWarren@nvidia.com>
+Subject: Re: [PATCH] i2c: Allow i2c_add_numbered_adapter() to assign a bus id.
+Message-ID: <20110706063746.GA26611@ponder.secretlab.ca>
+References: <20110627185505.19423.64214.stgit@ponder>
+ <BANLkTi=6zxPUwGZ5JHhRGRHHaEgvNgiaHQ@mail.gmail.com>
+ <20110705105330.63c113c8@endymion.delvare>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20110705105330.63c113c8@endymion.delvare>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
+On Tue, Jul 05, 2011 at 10:53:30AM +0200, Jean Delvare wrote:
+> Hi Grant,
+> 
+> Sorry for the late answer.
+> 
+> On Mon, 27 Jun 2011 13:02:45 -0600, Grant Likely wrote:
+> > On Mon, Jun 27, 2011 at 12:55 PM, Grant Likely
+> > <grant.likely@secretlab.ca> wrote:
+> > > Currently, if an i2c bus driver supports both static and dynamic bus
+> > > ids, it needs to choose between calling i2c_add_numbered_adapter() and
+> > > i2c_add_adapter().  This patch makes i2c_add_numbered_adapter()
+> > > redirect to i2c_add_adapter() if the requested bus id is -1.
+> > >
+> > > Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> > 
+> > Oops, forgot to edit the email before sending the patch.
+> > 
+> > This patch is as-yet untested other than build testing, but I want to
+> > get feedback.  With the move to DT on ARM, there are going to be a lot
+> > more i2c bus drivers that need to support both static and dynamically
+> > allocated busses, and it is very likely that it will be needed in the
+> > v3.1 merge window.
+> > 
+> > Ben/Jean, *IF* this patch tests out okay, and *IF* I get an ack from
+> > you, it will probably need to have this commit in my devicetree/next
+> > branch.  If so, then I'll either need to commit it myself, or have it
+> > put into a separate topic branch that both of us can merge into our
+> > trees.  What is your preference.
+> > 
+> > John: this is the patch that I asked you to write earlier today, but I
+> > think one of the TI folks will run into the same issue, so I wanted to
+> > get it drafted and onto the list ASAP.
+> 
+> If this makes your life easier then I have no objection, you can go
+> ahead. I don't expect any conflict with my tree as there is no i2c-core
+> work going on on my end at the moment. So you can just take it in your
+> tree and merge it yourself as you see fit.
+> 
+> Acked-by: Jean Delvare <khali@linux-fr.org>
 
-This is a patch to the icp_multi.c file that fixes up a WARNING found by the checkpatch.pl tool
+Actually, now that I'm looking at things, I don't think there will be
+a conflict.  Go ahead and take it via your tree so that I don't make
+Linus' life harder than it needs to be.
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/icp_multi.c |   13 ++++++-------
- 1 files changed, 6 insertions(+), 7 deletions(-)
-
-diff --git a/drivers/staging/comedi/drivers/icp_multi.c b/drivers/staging/comedi/drivers/icp_multi.c
-index 126550f..78f33e7 100644
---- a/drivers/staging/comedi/drivers/icp_multi.c
-+++ b/drivers/staging/comedi/drivers/icp_multi.c
-@@ -59,13 +59,12 @@ Options:
- #include "icp_multi.h"
- 
- #define DEVICE_ID	0x8000	/* Device ID */
-+#define ICP_MULTI_EXTDEBUG	/*       */
- 
--#define ICP_MULTI_EXTDEBUG
-+/* Hardware types of the cards */
-+#define TYPE_ICP_MULTI 0
- 
--/*  Hardware types of the cards */
--#define TYPE_ICP_MULTI	0
--
--#define IORANGE_ICP_MULTI 	32
-+#define IORANGE_ICP_MULTI 32
- 
- #define ICP_MULTI_ADC_CSR	0	/* R/W: ADC command/status register */
- #define ICP_MULTI_AI		2	/* R:   Analogue input data */
-@@ -572,7 +571,7 @@ static int icp_multi_insn_bits_do(struct comedi_device *dev,
- 		s->state &= ~data[0];
- 		s->state |= (data[0] & data[1]);
- 
--		printk(KERN_DEBUG "Digital outputs = %4x \n", s->state);
-+		printk(KERN_DEBUG "Digital outputs = %4x\n", s->state);
- 
- 		writew(s->state, devpriv->io_addr + ICP_MULTI_DO);
- 	}
-@@ -966,7 +965,7 @@ static int icp_multi_attach(struct comedi_device *dev,
- 	devpriv->phys_iobase = iobase;
- 
- 	printk(KERN_WARNING
--	       ", b:s:f=%d:%d:%d, io=0x%8llx \n", pci_bus, pci_slot, pci_func,
-+	       ", b:s:f=%d:%d:%d, io=0x%8llx\n", pci_bus, pci_slot, pci_func,
- 	       (unsigned long long)iobase);
- 
- 	devpriv->io_addr = ioremap(iobase, ICP_MULTI_SIZE);
--- 
-1.7.1.1
+g.
 
