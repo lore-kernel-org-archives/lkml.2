@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756146Ab1GFDmm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 23:42:42 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:41297 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755987Ab1GFDmk (ORCPT
+	id S1756149Ab1GFDlw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 23:41:52 -0400
+Received: from relay3-d.mail.gandi.net ([217.70.183.195]:34941 "EHLO
+	relay3-d.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968Ab1GFDlv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 23:42:40 -0400
-X-Sasl-enc: cFPhItGqAZj6GKtVRsR5bKfy1VxxXNTFCJvdz5bCF2gb 1309923760
-Date: Tue, 5 Jul 2011 20:42:28 -0700
-From: Greg KH <greg@kroah.com>
-To: KY Srinivasan <kys@microsoft.com>
-Cc: "gregkh@suse.de" <gregkh@suse.de>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
-        Haiyang Zhang <haiyangz@microsoft.com>,
-        Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 15/77] Staging: hv: blkvsc: Add the appropriate
- MODULE_ALIAS() line
-Message-ID: <20110706034228.GA4291@kroah.com>
-References: <1308255393-3785-1-git-send-email-kys@microsoft.com>
- <1308255470-3826-1-git-send-email-kys@microsoft.com>
- <1308255470-3826-15-git-send-email-kys@microsoft.com>
- <20110705160621.GC7214@kroah.com>
- <6E21E5352C11B742B20C142EB499E0480816D27E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+	Tue, 5 Jul 2011 23:41:51 -0400
+X-Originating-IP: 217.70.178.134
+X-Originating-IP: 131.252.246.213
+Date: Tue, 5 Jul 2011 20:41:40 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Samuel Ortiz <sameo@linux.intel.com>, Paul Mundt <lethal@linux-sh.org>,
+        Ben Dooks <ben@simtec.co.uk>
+Cc: linuxppc-dev@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        psas-avionics@lists.psas.pdx.edu
+Subject: [PATCH] sm501: When registering the GPIO, turn on the GPIO unit's
+ power
+Message-ID: <20110706034138.GA8987@leaf>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <6E21E5352C11B742B20C142EB499E0480816D27E@TK5EX14MBXC126.redmond.corp.microsoft.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 12:40:42AM +0000, KY Srinivasan wrote:
-> > > diff --git a/drivers/staging/hv/blkvsc_drv.c b/drivers/staging/hv/blkvsc_drv.c
-> > > index 5842db8..9496abe 100644
-> > > --- a/drivers/staging/hv/blkvsc_drv.c
-> > > +++ b/drivers/staging/hv/blkvsc_drv.c
-> > > @@ -1027,5 +1027,6 @@ static void __exit blkvsc_exit(void)
-> > >  MODULE_LICENSE("GPL");
-> > >  MODULE_VERSION(HV_DRV_VERSION);
-> > >  MODULE_DESCRIPTION("Microsoft Hyper-V virtual block driver");
-> > > +MODULE_ALIAS("vmbus:hv_block");
-> > 
-> > No, these should be automagically generated with the MODULE_DEVICE_ID()
-> > macro that you use in the module with the GUID there, instead of this.
-> 
-> I think you mean MODULE_DEVICE_TABLE()?
+When attempting to use GPIO via the sm501 unit on the TQM5200 board,
+GPIO operations would only function if during the same boot u-boot's
+"fkt led" command had initialized the sm501.  Comparing the sm501's
+registers with and without running the "fkt led" command turned up one
+significant difference: u-boot had enabled the GPIO power gate.
+Changing the Linux sm501 driver to enable the GPIO power gate allows
+GPIO to work without first initializing it with u-boot.
 
-Yes, sorry for the typo.
+Signed-off-by: Josh Triplett <josh@joshtriplett.org>
+---
+ drivers/mfd/sm501.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-> I actually went down that path first
-> adding code  to  file2alias.c for parsing the vmbus ID table. Given that this approach
-> would make it  impossible to support auto-loading of these drivers
-> on many of the released kernels,
+diff --git a/drivers/mfd/sm501.c b/drivers/mfd/sm501.c
+index df3702c..d7a0ab9 100644
+--- a/drivers/mfd/sm501.c
++++ b/drivers/mfd/sm501.c
+@@ -1089,6 +1089,7 @@ static int __devinit sm501_register_gpio(struct sm501_devdata *sm)
+ 		goto err_low_chip;
+ 	}
+ 
++	sm501_unit_power(sm->dev, SM501_GATE_GPIO, 1);
+ 	gpio->registered = 1;
+ 
+ 	return 0;
+@@ -1118,6 +1119,8 @@ static void sm501_gpio_remove(struct sm501_devdata *sm)
+ 	if (!sm->gpio.registered)
+ 		return;
+ 
++	sm501_unit_power(sm->dev, SM501_GATE_GPIO, 0);
++
+ 	ret = gpiochip_remove(&gpio->low.gpio);
+ 	if (ret)
+ 		dev_err(sm->dev, "cannot remove low chip, cannot tidy up\n");
+-- 
+1.7.5.4
 
-Wait, what?  What is a "released kernel"?  We are working on the
-in-kernel patch, we don't care about older distros/releases for this
-work at all.  Also, it doesn't make sense at all, why would the change I
-asked for make any difference on older distros/kernels?
-
-> I chose to go with the MODULE_ALIAS() macro that did not need any
-> changes outside our drivers. In both methods, the formatting of the
-> name is bus specific since I would be writing the code to parse the
-> table in file2alias.c.
-
-Yes, that is what is needed to be done.
-
-> Granted, I have been quite unimaginative in my alias names, but I
-> thought they were reasonably descriptive. If at all possible, for the
-> reasons listed above, I would prefer to use the MODULE_ALIAS() macro
-> (I could embed all or part of the guid in the alias). Let me know.
-
-Please do the correct thing and use MODULE_DEVICE_TABLE().
-
-thanks,
-
-greg k-h
