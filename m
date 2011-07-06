@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753239Ab1GFL2q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 07:28:46 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:64675 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753137Ab1GFL2o (ORCPT
+	id S1753263Ab1GFL3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 07:29:09 -0400
+Received: from www262.sakura.ne.jp ([202.181.97.72]:54434 "EHLO
+	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab1GFL3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 07:28:44 -0400
-Date: Wed, 6 Jul 2011 15:28:31 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: tommy.lin@caviumnetworks.com
-Cc: "'Tommy Lin'" <tommy.lin.1101@gmail.com>,
-        "'Wim Van Sebroeck'" <wim@iguana.be>, linux-watchdog@vger.kernel.org,
-        linux-kernel@vger.kernel.org, "Lin, Mac" <Mac.Lin@caviumnetworks.com>
-Subject: Re: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for
- CNS3xxx hardware
-Message-ID: <20110706112830.GA23184@oksana.dev.rtsoft.ru>
-References: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com>
- <20110705140559.GA15771@oksana.dev.rtsoft.ru>
- <281B1F8BAB4D4BDABE7568809A0AEC1A@starsemi.com>
- <20110706111616.GA18967@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20110706111616.GA18967@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Wed, 6 Jul 2011 07:29:07 -0400
+X-Nat-Received: from [202.181.97.72]:58981 [ident-empty]
+	by smtp-proxy.isp with TPROXY id 1309951701.30024
+To: richard@nod.at
+Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
+From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+References: <1309779003-8668-1-git-send-email-richard@nod.at>
+	<201107051155.18465.richard@nod.at>
+	<201107052102.BHE69234.OLQOVMJFOFFHSt@I-love.SAKURA.ne.jp>
+	<201107051421.02658.richard@nod.at>
+In-Reply-To: <201107051421.02658.richard@nod.at>
+Message-Id: <201107062028.JFH82378.OLQHFFMVJtFOSO@I-love.SAKURA.ne.jp>
+X-Mailer: Winbiff [Version 2.51 PL2]
+X-Accept-Language: ja,en,zh
+Date: Wed, 6 Jul 2011 20:28:18 +0900
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 06072011 #5552308, status: clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 03:16:16PM +0400, Anton Vorontsov wrote:
-> On Wed, Jul 06, 2011 at 06:05:37PM +0800, Tommy Lin wrote:
-> > Hi, I just found another patch that can solve the watchdog counter reload
-> > issue. Please ignore this patch, since it should not acceptable to use
-> > #ifdefs.
-> 
-> OK, great. Do I understand correctly that without Vitaly's patch,
-> your first patch is somewhat useless, as the watchdog will not work
-> or will work incorrectly? So should I postpone merging patch 1/2
-> until Vitaly's patch hit mainline?
+Richard Weinberger wrote:
+> But IMHO adding a new attribute to task_struct is a bit overkill.
+Indeed. I came up with a simpler solution. ;-)
+----------------------------------------
+[PATCH] exec: Do not call request_module() twice from search_binary_handler().
 
-Oh, I see that the issue isn't major, so I'll just merge the first
-patch.
+Currently, search_binary_handler() tries to load binary loader module using
+request_module() if a loader for the requested program is not yet loaded. But
+second attempt of request_module() does not affect the result of
+search_binary_handler().
 
-Thanks!
+If request_module() triggered recursion, calling request_module() twice causes
+2 to the power of MAX_KMOD_CONCURRENT (= 50) repetitions. It is not an infinite
+loop but is sufficient for users to consider as a hang up.
 
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
+Therefore, this patch changes not to call request_module() twice, making
+1 to the power of MAX_KMOD_CONCURRENT repetitions in case of recursion.
+
+Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+---
+diff --git a/fs/exec.c b/fs/exec.c
+index 6075a1e..044c13f 100644
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1411,6 +1411,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
+ 			    printable(bprm->buf[2]) &&
+ 			    printable(bprm->buf[3]))
+ 				break; /* -ENOEXEC */
++			if (try)
++				break; /* -ENOEXEC */
+ 			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
+ #endif
+ 		}
