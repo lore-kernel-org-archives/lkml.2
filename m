@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab1GFUWZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 16:22:25 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43278 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755800Ab1GFUWX (ORCPT
+	id S1756109Ab1GFUXz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 16:23:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:50258 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755978Ab1GFUXy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 16:22:23 -0400
-Date: Wed, 6 Jul 2011 13:21:38 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Cc: richard@nod.at, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
-Message-Id: <20110706132138.7e65a912.akpm@linux-foundation.org>
-In-Reply-To: <201107062028.JFH82378.OLQHFFMVJtFOSO@I-love.SAKURA.ne.jp>
-References: <1309779003-8668-1-git-send-email-richard@nod.at>
-	<201107051155.18465.richard@nod.at>
-	<201107052102.BHE69234.OLQOVMJFOFFHSt@I-love.SAKURA.ne.jp>
-	<201107051421.02658.richard@nod.at>
-	<201107062028.JFH82378.OLQHFFMVJtFOSO@I-love.SAKURA.ne.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Wed, 6 Jul 2011 16:23:54 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: linaro-mm-sig@lists.linaro.org
+Subject: Re: [Linaro-mm-sig] [PATCH 6/8] drivers: add Contiguous Memory Allocator
+Date: Wed, 6 Jul 2011 22:23:01 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
+Cc: Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        linux-media@vger.kernel.org, "'Jonathan Corbet'" <corbet@lwn.net>,
+        "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>, linux-mm@kvack.org,
+        linux-arm-kernel@lists.infradead.org,
+        "'Ankita Garg'" <ankita@in.ibm.com>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <201107061831.59739.arnd@arndb.de> <alpine.LFD.2.00.1107061459520.14596@xanadu.home>
+In-Reply-To: <alpine.LFD.2.00.1107061459520.14596@xanadu.home>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201107062223.01940.arnd@arndb.de>
+X-Provags-ID: V02:K0:TxSWSjR71+AswCqIEjO+r/jLy+Go5ItRLRHdyDuPq5h
+ U17eexrUfwksd9YhAu4FL0rt7QEvtIcP7ZU8oguNFlz7F2iYJV
+ 5ag22DGm0/30BeTBSFXfYu/SYWqO9ytUQcdWtexkc69hLpSvyo
+ UHNAOo6mx+hy8IqbiYw6Lhhe7H63ikJfwd5BJc2Gw2UbJ5H0vC
+ /TNCyYDziMZVLuRrXsM1w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jul 2011 20:28:18 +0900
-Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp> wrote:
+On Wednesday 06 July 2011 21:10:07 Nicolas Pitre wrote:
+> If you get a highmem page, because the cache is VIPT, that page might 
+> still be cached even if it wasn't mapped.  With a VIVT cache we must 
+> flush the cache whenever a highmem page is unmapped.  There is no such 
+> restriction with VIPT i.e. ARMv6 and above.  Therefore to make sure the 
+> highmem page you get doesn't have cache lines associated to it, you must 
+> first map it cacheable, then perform cache invalidation on it, and 
+> eventually remap it as non-cacheable.  This is necessary because there 
+> is no way to perform cache maintenance on L1 cache using physical 
+> addresses unfortunately.  See commit 7e5a69e83b for an example of what 
+> this entails (fortunately commit 3e4d3af501 made things much easier and 
+> therefore commit 39af22a79 greatly simplified things).
 
-> Richard Weinberger wrote:
-> > But IMHO adding a new attribute to task_struct is a bit overkill.
-> Indeed. I came up with a simpler solution. ;-)
-> ----------------------------------------
-> [PATCH] exec: Do not call request_module() twice from search_binary_handler().
-> 
-> Currently, search_binary_handler() tries to load binary loader module using
-> request_module() if a loader for the requested program is not yet loaded. But
-> second attempt of request_module() does not affect the result of
-> search_binary_handler().
-> 
-> If request_module() triggered recursion, calling request_module() twice causes
-> 2 to the power of MAX_KMOD_CONCURRENT (= 50) repetitions. It is not an infinite
-> loop but is sufficient for users to consider as a hang up.
-> 
-> Therefore, this patch changes not to call request_module() twice, making
-> 1 to the power of MAX_KMOD_CONCURRENT repetitions in case of recursion.
-> 
-> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> ---
-> diff --git a/fs/exec.c b/fs/exec.c
-> index 6075a1e..044c13f 100644
-> --- a/fs/exec.c
-> +++ b/fs/exec.c
-> @@ -1411,6 +1411,8 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
->  			    printable(bprm->buf[2]) &&
->  			    printable(bprm->buf[3]))
->  				break; /* -ENOEXEC */
-> +			if (try)
-> +				break; /* -ENOEXEC */
->  			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
->  #endif
->  		}
+Ok, thanks for the explanation. This definitely makes the highmem approach
+much harder to get right, and slower. Let's hope then that Marek's approach
+of using small pages for the contiguous memory region and changing their
+attributes on the fly works out better than this.
 
-What is that "for (try=0; try<2" loop actually there for?  To retry
-after the request_module(), it appears.  Which is pointless if
-!CONFIG_MODULES.
-
-
+	Arnd
