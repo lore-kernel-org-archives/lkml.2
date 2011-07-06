@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754158Ab1GFJBr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 05:01:47 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:62260 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753329Ab1GFJBq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 05:01:46 -0400
+	id S1754209Ab1GFJHn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 05:07:43 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:59429 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753887Ab1GFJHm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 05:07:42 -0400
+Date: Wed, 6 Jul 2011 02:06:38 -0700
+From: Ram Pai <linuxram@us.ibm.com>
+To: jbarnes@virtuousgeek.org, torvalds@linux-foundation.org
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        yinghai@kernel.org
+Subject: Re: [PATCH] PCI: conditional resource-reallocation through kernel
+ parameter pci=realloc
+Message-ID: <20110706090638.GA29266@ram-ThinkPad-T61>
+Reply-To: Ram Pai <linuxram@us.ibm.com>
+References: <1309421379-24995-1-git-send-email-linuxram@us.ibm.com>
 MIME-Version: 1.0
-In-Reply-To: <CAOJsxLHQP=-srK_uYYBsPb7+rUBnPZG7bzwtCd-rRaQa4ikUFg@mail.gmail.com>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
-	<20110629130038.GA7909@in.ibm.com>
-	<CAOJsxLHQP=-srK_uYYBsPb7+rUBnPZG7bzwtCd-rRaQa4ikUFg@mail.gmail.com>
-Date: Wed, 6 Jul 2011 12:01:45 +0300
-X-Google-Sender-Auth: axwCN6Im8t3baxjyDeDMZtvECqM
-Message-ID: <CAOJsxLF0me+=Rk8RnxNS=9=_pmwwAntu1c930F6ySEUD2zZkGw@mail.gmail.com>
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory Power Management
-From: Pekka Enberg <penberg@kernel.org>
-To: Ankita Garg <ankita@in.ibm.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, linux-pm@lists.linux-foundation.org,
-        svaidy@linux.vnet.ibm.com, thomas.abraham@linaro.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Christoph Lameter <cl@linux.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309421379-24995-1-git-send-email-linuxram@us.ibm.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 6, 2011 at 11:45 AM, Pekka Enberg <penberg@kernel.org> wrote:
-> Hi Ankita,
->
-> [ I don't really know anything about memory power management but
->  here's my two cents since you asked for it. ]
->
-> On Wed, Jun 29, 2011 at 4:00 PM, Ankita Garg <ankita@in.ibm.com> wrote:
->> I) Dynamic Power Transition
->>
->> The goal here is to ensure that as much as possible, on an idle system,
->> the memory references do not get spread across the entire RAM, a problem
->> similar to memory fragmentation. The proposed approach is as below:
->>
->> 1) One of the first things is to ensure that the memory allocations do
->> not spill over to more number of regions. Thus the allocator needs to
->> be aware of the address boundary of the different regions.
->
-> Why does the allocator need to know about address boundaries? Why
-> isn't it enough to make the page allocator and reclaim policies favor using
-> memory from lower addresses as aggressively as possible? That'd mean
-> we'd favor the first memory banks and could keep the remaining ones
-> powered off as much as possible.
->
-> IOW, why do we need to support scenarios such as this:
->
->   bank 0     bank 1   bank 2    bank3
->  | online  | offline | online  | offline |
->
-> instead of using memory compaction and possibly something like the
-> SLUB defragmentation patches to turn the memory map into this:
->
->   bank 0     bank 1   bank 2   bank3
->  | online  | online  | offline | offline |
->
->> 2) At the time of allocation, before spilling over allocations to the
->> next logical region, the allocator needs to make a best attempt to
->> reclaim some memory from within the existing region itself first. The
->> reclaim here needs to be in LRU order within the region.  However, if
->> it is ascertained that the reclaim would take a lot of time, like there
->> are quite a fe write-backs needed, then we can spill over to the next
->> memory region (just like our NUMA node allocation policy now).
->
-> I think a much more important question is what happens _after_ we've
-> allocated and free'd tons of memory few times. AFAICT, memory
-> regions don't help with that kind of fragmentation that will eventually
-> happen anyway.
+On Thu, Jun 30, 2011 at 01:09:39AM -0700, Ram Pai wrote:
+> Multiple attempts to dynamically reallocate pci resources have unfortunately
+> lead to regressions. Though we continue to fix the regressions and fine tune the
+> dynamic-reallocation behavior, we have not reached a acceptable state yet.
+> 
+> This patch provides a interim solution. It disables dynamic-reallocation; by
+> default, with the ability to enable it through pci=realloc kernel command line
+> parameter.
 
-Btw, I'd also decouple the 'memory map' required for PASR from
-memory region data structure and use page allocator hooks for letting
-the PASR driver know about allocated and unallocated memory. That
-way the PASR driver could automatically detect if full banks are
-unused and power them off. That'd make memory power management
-transparent to the VM regardless of whether we're using hardware or
-software poweroff.
+> 
+> Signed-off-by: Ram Pai <linuxram@us.ibm.com>
+> ---
+>  Documentation/kernel-parameters.txt |    2 ++
+>  arch/x86/pci/common.c               |    4 ++++
+>  drivers/pci/setup-bus.c             |    7 +++++++
+>  include/linux/pci.h                 |    2 ++
+>  4 files changed, 15 insertions(+), 0 deletions(-)
+> 
+> diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+> index fd248a3..aa47be7 100644
+> --- a/Documentation/kernel-parameters.txt
+> +++ b/Documentation/kernel-parameters.txt
+> @@ -2015,6 +2015,8 @@ bytes respectively. Such letter suffixes can also be entirely omitted.
+>  				the default.
+>  				off: Turn ECRC off
+>  				on: Turn ECRC on.
+> +		realloc		reallocate PCI resources if allocations done by BIOS
+> +				are erroneous.
+> 
+>  	pcie_aspm=	[PCIE] Forcibly enable or disable PCIe Active State Power
+>  			Management.
 
-                        Pekka
+Linus/Jesse,
+
+	Are we merging this patch in 3.0.0 ?
+
+RP
