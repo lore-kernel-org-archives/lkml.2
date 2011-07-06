@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab1GFSEo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 14:04:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12312 "EHLO mx1.redhat.com"
+	id S1755447Ab1GFSEu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 14:04:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59954 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755361Ab1GFSEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 14:04:42 -0400
-Date: Wed, 6 Jul 2011 15:04:03 -0300
+	id S1755361Ab1GFSEs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 14:04:48 -0400
+Date: Wed, 6 Jul 2011 15:03:49 -0300
 From: Mauro Carvalho Chehab <mchehab@redhat.com>
 Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
         Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFCv3 16/17] [media] v4l2 core: return -ENOTTY if an ioctl
- doesn't exist
-Message-ID: <20110706150403.5ddb7a30@pedra>
+Subject: [PATCH RFCv3 17/17] [media] return -ENOTTY for unsupported ioctl's
+ at legacy drivers
+Message-ID: <20110706150349.44795968@pedra>
 In-Reply-To: <cover.1309974026.git.mchehab@redhat.com>
 References: <cover.1309974026.git.mchehab@redhat.com>
 Mime-Version: 1.0
@@ -23,78 +23,94 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, -EINVAL is used to return either when an IOCTL is not
-implemented, or if the ioctl was not implemented.
-
-Note: Drivers that don't use video_ioctl2, will need extra patches.
+Those drivers are not relying at the V4L2 core to handle the ioctl's.
+So, we need to manually patch them every time a change goes to the
+core.
 
 Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
 
-diff --git a/Documentation/DocBook/media/v4l/gen-errors.xml b/Documentation/DocBook/media/v4l/gen-errors.xml
-index dedcc90..8117c60 100644
---- a/Documentation/DocBook/media/v4l/gen-errors.xml
-+++ b/Documentation/DocBook/media/v4l/gen-errors.xml
-@@ -30,13 +30,6 @@
- 	       ioctl requests for specific causes.</entry>
-       </row>
-       <row>
--	<entry>EINVAL or ENOTTY</entry>
--	<entry>The ioctl is not supported by the driver, actually meaning that
--	       the required functionality is not available, or the file
--	       descriptor is not for a media device. The usage of EINVAL is
--	       deprecated and will be fixed on a latter patch.</entry>
--      </row>
--      <row>
-         <entry>ENODEV</entry>
- 	<entry>Device not found or was removed.</entry>
-       </row>
-@@ -45,6 +38,12 @@
- 	<entry>There's not enough memory to handle the desired operation.</entry>
-       </row>
-       <row>
-+	<entry>ENOTTY</entry>
-+	<entry>The ioctl is not supported by the driver, actually meaning that
-+	       the required functionality is not available, or the file
-+	       descriptor is not for a media device.</entry>
-+      </row>
-+      <row>
- 	<entry>ENOSPC</entry>
- 	<entry>On USB devices, the stream ioctl's can return this error, meaning
- 	       that this request would overcommit the usb bandwidth reserved
-diff --git a/Documentation/DocBook/media/v4l/v4l2.xml b/Documentation/DocBook/media/v4l/v4l2.xml
-index c5ee398..43386a6 100644
---- a/Documentation/DocBook/media/v4l/v4l2.xml
-+++ b/Documentation/DocBook/media/v4l/v4l2.xml
-@@ -132,7 +132,9 @@ applications. -->
- 	<date>2011-06-27</date>
- 	<authorinitials>mcc, po</authorinitials>
- 	<revremark>Documented that VIDIOC_QUERYCAP now returns a per-subsystem version instead of a per-driver one.</revremark>
-+	<revremark>Standardize an error code for invalid ioctl.</revremark>
-       </revision>
-+
-       <revision>
- 	<revnumber>2.6.39</revnumber>
- 	<date>2011-03-01</date>
-diff --git a/drivers/media/video/v4l2-ioctl.c b/drivers/media/video/v4l2-ioctl.c
-index f9aebac..4253276 100644
---- a/drivers/media/video/v4l2-ioctl.c
-+++ b/drivers/media/video/v4l2-ioctl.c
-@@ -543,12 +543,12 @@ static long __video_do_ioctl(struct file *file,
- 	struct v4l2_fh *vfh = NULL;
- 	struct v4l2_format f_copy;
- 	int use_fh_prio = 0;
--	long ret = -EINVAL;
-+	long ret = -ENOTTY;
+diff --git a/drivers/media/video/et61x251/et61x251_core.c b/drivers/media/video/et61x251/et61x251_core.c
+index d7efb33..9a1e80a 100644
+--- a/drivers/media/video/et61x251/et61x251_core.c
++++ b/drivers/media/video/et61x251/et61x251_core.c
+@@ -2480,16 +2480,8 @@ static long et61x251_ioctl_v4l2(struct file *filp,
+ 	case VIDIOC_S_PARM:
+ 		return et61x251_vidioc_s_parm(cam, arg);
  
- 	if (ops == NULL) {
- 		printk(KERN_WARNING "videodev: \"%s\" has no ioctl_ops.\n",
- 				vfd->name);
+-	case VIDIOC_G_STD:
+-	case VIDIOC_S_STD:
+-	case VIDIOC_QUERYSTD:
+-	case VIDIOC_ENUMSTD:
+-	case VIDIOC_QUERYMENU:
+-	case VIDIOC_ENUM_FRAMEINTERVALS:
 -		return -EINVAL;
-+		return ret;
+-
+ 	default:
+-		return -EINVAL;
++		return -ENOTTY;
+ 
+ 	}
+ }
+diff --git a/drivers/media/video/pvrusb2/pvrusb2-v4l2.c b/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
+index 573749a..e27f8ab 100644
+--- a/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
++++ b/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
+@@ -369,11 +369,6 @@ static long pvr2_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
+ 		break;
  	}
  
- 	if ((vfd->debug & V4L2_DEBUG_IOCTL) &&
+-	case VIDIOC_S_AUDIO:
+-	{
+-		ret = -EINVAL;
+-		break;
+-	}
+ 	case VIDIOC_G_TUNER:
+ 	{
+ 		struct v4l2_tuner *vt = (struct v4l2_tuner *)arg;
+@@ -850,7 +845,7 @@ static long pvr2_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
+ #endif
+ 
+ 	default :
+-		ret = -EINVAL;
++		ret = -ENOTTY;
+ 		break;
+ 	}
+ 
+diff --git a/drivers/media/video/sn9c102/sn9c102_core.c b/drivers/media/video/sn9c102/sn9c102_core.c
+index d8eece8..16cb07c 100644
+--- a/drivers/media/video/sn9c102/sn9c102_core.c
++++ b/drivers/media/video/sn9c102/sn9c102_core.c
+@@ -3187,16 +3187,8 @@ static long sn9c102_ioctl_v4l2(struct file *filp,
+ 	case VIDIOC_S_AUDIO:
+ 		return sn9c102_vidioc_s_audio(cam, arg);
+ 
+-	case VIDIOC_G_STD:
+-	case VIDIOC_S_STD:
+-	case VIDIOC_QUERYSTD:
+-	case VIDIOC_ENUMSTD:
+-	case VIDIOC_QUERYMENU:
+-	case VIDIOC_ENUM_FRAMEINTERVALS:
+-		return -EINVAL;
+-
+ 	default:
+-		return -EINVAL;
++		return -ENOTTY;
+ 
+ 	}
+ }
+diff --git a/drivers/media/video/uvc/uvc_v4l2.c b/drivers/media/video/uvc/uvc_v4l2.c
+index cdd967b..7afb97b 100644
+--- a/drivers/media/video/uvc/uvc_v4l2.c
++++ b/drivers/media/video/uvc/uvc_v4l2.c
+@@ -83,7 +83,7 @@ static int uvc_ioctl_ctrl_map(struct uvc_video_chain *chain,
+ 	default:
+ 		uvc_trace(UVC_TRACE_CONTROL, "Unsupported V4L2 control type "
+ 			  "%u.\n", xmap->v4l2_type);
+-		ret = -EINVAL;
++		ret = -ENOTTY;
+ 		goto done;
+ 	}
+ 
 -- 
 1.7.1
-
 
