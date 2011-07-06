@@ -1,92 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755656Ab1GFS6l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 14:58:41 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:60254 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755630Ab1GFS6j (ORCPT
+	id S1755603Ab1GFS7i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 14:59:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:43764 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747Ab1GFS7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 14:58:39 -0400
-Date: Wed, 6 Jul 2011 11:58:33 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Daniel Kurtz <djkurtz@chromium.org>, chase.douglas@canonical.com,
-        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
-        daniel.stone@collabora.co.uk, olofj@chromium.org
-Subject: Re: [PATCH 09/12] Input: synaptics - add image sensor support
-Message-ID: <20110706185832.GA6086@core.coreip.homeip.net>
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
- <1309324042-22943-10-git-send-email-djkurtz@chromium.org>
- <20110704214220.GE23915@polaris.bitmath.org>
- <CAGS+omAzKe5frVYuV2MPXBTugKD1xNZCHsaz53H+tDO7EWw8xQ@mail.gmail.com>
- <20110705192759.GA29549@polaris.bitmath.org>
- <CAGS+omDzg-xADYxKQmWy1KRhJ=n9pn9XR_HMc01xqCSDSLa5UA@mail.gmail.com>
- <20110706174503.GA5695@core.coreip.homeip.net>
- <20110706184759.GA3389@polaris.bitmath.org>
+	Wed, 6 Jul 2011 14:59:37 -0400
+Date: Wed, 6 Jul 2011 22:59:32 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>
+Subject: Re: [kernel-hardening] Re: RLIMIT_NPROC check in set_user()
+Message-ID: <20110706185932.GB3299@albatros>
+References: <20110612130953.GA3709@albatros>
+ <20110706173631.GA5431@albatros>
+ <CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110706184759.GA3389@polaris.bitmath.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 08:47:59PM +0200, Henrik Rydberg wrote:
-> > > (C) A third, compromise implementation might be to do something like this:
-> > >   (1) When >=2 fingers are on the pad, report 2 MT-B slots, where:
-> > >     (a) slot[0] reports finger 1
-> > >     (b) slot[1] reports finger 2
-> > >     (c) Total number of fingers on pad is indicated by EV_KEY/BTN_TOOL_* is set.
-> > >   (2) If 1 finger is removed, the tracking_id for its slot is invalidated;
-> > >       but, the finger that remains stays in its same slot with the
-> > > same tracking_id.
-> > >   (3) Whenever the number of fingers changes from/to 3 or more
-> > > fingers, both slots are always invalidated.
-> > >       New tracking_ids are assigned to both slots which contain the
-> > > two fingers now being reported.
-> > >   (4) No special driver property is required for this, not even "semi-mt".
-> > >       It should be as pure MT-B as we can get (plus BTN_TOOL_* hack).
-> 
-> I believe there is a strong userspace assumption that BTN_TOOL_* has
-> no meaning for real MT devices. Rightfully so, IMO. Hence, I think
-> semi-mt needs to be used here as well.
+On Wed, Jul 06, 2011 at 11:01 -0700, Linus Torvalds wrote:
+> My reaction is: "let's just remote the crazy check from set_user()
+> entirely".
 
-I think we need to adjust userspace to pay attention to BTN_TOOL_* for
-MT-B too so that if number of slots advertised does not match
-BTN_TOOL_* capabilities that means that the device does not privide
-tracking data for all contacts.
+Honestly, I didn't expect such a positive reaction from you in the first
+reply :)
 
-Luckily this should be backward-compatible (i.e. older userspace will
-ignore "extended" fingercounts, newer will pay attention to it).
 
-> 
-> > > 
-> > 
-> > This is the best option in my opinion. We will present 2 finger position
-> > data plus extended finger count.
-> 
-> We never did put all the details of the bounding box coordinates in
-> writing, so perhaps this is an opportunity to both fix that and extend
-> usability to the case so described. The only question is whether there
-> are applications out there which now assume min/max instead of contact
-> positions. If anyone knows, please speak up. :-) Otherwise, I am very
-> much for Daniel's case C, with Dmitry's modification.
-> 
-> In short: Use the semi-MT property, and send two suitable fingers
-> along with it.
+> The whole point of RLIMIT_NPROC is to avoid fork-bombs.
 
-Umm... but it is my understanding that 2 fingers will provide real
-tracking data, not bounding box, so why would we set semi-MT?
+It is also used in cases where there is implicit or explicit limit on
+some other resource per process leading to the global limit of
+RLIMIT_NPROC*X.  The most obvious case of X is RLIMIT_AS.
 
-Maybe we have different notions of what semi-MT property conveys? For me
-semi-MT indicates that the device provides 2 coordinates for bounding
-box.  However if semi-MT is not set does not mean that the device
-provides true tracking for all contacts, but only for advertised slots.
-There still may be additional data transmitted.
+Purely pragmatic approach is introducing the check in execve() to
+heuristically limit the number of user processes.  If the program uses
+PAM to register a user session, maxlogins from pam_limits is the Right
+Way.  But many programs simply don't use PAM because of the performance
+issues.  E.g. apache doesn't use PAM.  On a shared web hosting this is a
+real issue.
 
-Thanks.
+In -ow patch execve() checked for the exceeded RLIMIT_NPROC, which
+effectively solved Apache's problem.
+
+...and execve() error handling is hard to miss ;-)
+
+
+> So let's keep it in kernel/fork.c where we actually create a *new*
+> process (and where everybody knows exactly what the limit means, and
+> people who don't check for error cases are just broken). And remove it
+> from everywhere else.
+
+There are checks only in copy_process() and set_user().
+
+Thanks,
 
 -- 
-Dmitry
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
