@@ -1,389 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab1GFQhB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 12:37:01 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:59772 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751150Ab1GFQhA (ORCPT
+	id S1754821Ab1GFQlv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 12:41:51 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:4559 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754805Ab1GFQlt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 12:37:00 -0400
-Date: Wed, 6 Jul 2011 10:36:56 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: ashishj3 <ashish.jangam@kpitcummins.com>
-Cc: grant@secretlab.ca, arnd@arndb.de, jic23@cam.ac.uk,
-        linux-kernel@vger.kernel.org, Dajun <dajun.chen@diasemi.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        linaro-dev@lists.linaro.org
-Subject: Re: [PATCH 02/11] GPIO: DA9052 GPIO module v3
-Message-ID: <20110706163656.GF5805@ponder.secretlab.ca>
-References: <1309948333.4168.8.camel@L-0532.kpit.com>
+	Wed, 6 Jul 2011 12:41:49 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
+	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=BYiSJ2t9Pj2vrQ3b4AHF0vHLugrnqPPcpN6ojXxp9eUlYAYOh0Qnke27XeU2ZOhny
+	Zs79EvR1anM8jEk5HqUlQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309948333.4168.8.camel@L-0532.kpit.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110705192759.GA29549@polaris.bitmath.org>
+References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
+ <1309324042-22943-10-git-send-email-djkurtz@chromium.org> <20110704214220.GE23915@polaris.bitmath.org>
+ <CAGS+omAzKe5frVYuV2MPXBTugKD1xNZCHsaz53H+tDO7EWw8xQ@mail.gmail.com> <20110705192759.GA29549@polaris.bitmath.org>
+From: Daniel Kurtz <djkurtz@chromium.org>
+Date: Thu, 7 Jul 2011 00:41:26 +0800
+X-Google-Sender-Auth: I-kFGnGBrff1ytf8r1BnlEFCqfs
+Message-ID: <CAGS+omDzg-xADYxKQmWy1KRhJ=n9pn9XR_HMc01xqCSDSLa5UA@mail.gmail.com>
+Subject: Re: [PATCH 09/12] Input: synaptics - add image sensor support
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: dmitry.torokhov@gmail.com, chase.douglas@canonical.com,
+        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
+        daniel.stone@collabora.co.uk, olofj@chromium.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 04:02:13PM +0530, ashishj3 wrote:
-> DA9052 PMIC has 16 bit GPIO bus for peripheral control.
-> 
-> This patch add support for the GPIO pins on the DA9052.
-> 
-> Signed-off-by: David Dajun Chen <dchen@diasemi.com>
-> Signed-off-by: Ashish Jangam <ashish.jangam@kpitcummins.com>
-> CC: Arnd Bergmann <arnd@arndb.de>
-> CC: Mark Brown <broonie@opensource.wolfsonmicro.com>
+On Wed, Jul 6, 2011 at 3:27 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> ...
+>> This implementation addresses the following issues:
+>>
+>>   (1) Improves handling of the 2-finger case.  Image sensors due allow
+>> true MT-B for two finger case.  This, for example, allows detecting
+>> whether the click in a click+drag is happening in bottom right or
+>> bottom left quadrant of the pad.
+>
+> In principle, this could be done within the semi-mt realm by adding a
+> binary value to the protocol, distinguishing the diagonals of the
+> bounding box. It would be ugly too, but at least it would be
+> compatible with the current semi-mt effort in userspace.
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+(A) I think the "semi-mt" protocol works like this:
+  (1) When two or more fingers are on the pad, report two MT-B slots, where:
+    (a) slot[0] contains (x_min, y_min) of the two fingers
+    (b) slot[1] contains (x_max, y_max) of the two fingers
+    (c) Total number of fingers on pad is indicated by EV_KEY/BTN_TOOL_* is set.
+  (2) If one of the two fingers is removed, then the first slot is
+used to report
+      the remaining finger, whichever it is, without changing the
+slot's tracking_id.
+  (3) Advertise this behavior with the SEMI_MT device property
 
-It looks like this needs to be merged via the MFD tree since it
-depends on the core da9052 driver patch.
+(B) This is what the proposed T5R2 driver does:
+  (1) When N fingers are on the pad, report N MT-B slots, where:
+    (a) The lowest indexed active slot (tracking_id != -1) contains
+valid finger position data.
+    (b) The highest indexed active slot (tracking_id != -1) contains
+valid finger position data.
+    (c) Any active slots (tracking_id != -1) between these does not
+contain valid finger position data, these 'hidden' slots are just
+active to indicate that there are that many fingers on the pad.
+    (d) Total number of fingers on the pad is always the number of active slots.
+  (2) When fingers are removed from the pad:
+    (a) keep reporting the fingers that are left in the same slots,
+with the same tracking_ids, if possible.
+    (b) If the identities of the fingers that remain is ambiguous,
+invalidate all slots,then re-assign the fingers that remain to new
+slots, with new tracking ids.
+  (3) Advertise this behavior with the T5R2 device property
 
-Also, comments below:
+(C) A third, compromise implementation might be to do something like this:
+  (1) When >=2 fingers are on the pad, report 2 MT-B slots, where:
+    (a) slot[0] reports finger 1
+    (b) slot[1] reports finger 2
+    (c) Total number of fingers on pad is indicated by EV_KEY/BTN_TOOL_* is set.
+  (2) If 1 finger is removed, the tracking_id for its slot is invalidated;
+      but, the finger that remains stays in its same slot with the
+same tracking_id.
+  (3) Whenever the number of fingers changes from/to 3 or more
+fingers, both slots are always invalidated.
+      New tracking_ids are assigned to both slots which contain the
+two fingers now being reported.
+  (4) No special driver property is required for this, not even "semi-mt".
+      It should be as pure MT-B as we can get (plus BTN_TOOL_* hack).
 
-> ---
-> Changes since v3:
-> - Remove da9052 gpio header file
-> 
-> Changes since v2:
-> - change of file name
-> - correct reference to irq_base in function to_irq()
-> - remove pdata dependency 
-> ---
->  drivers/gpio/Kconfig       |    6 +
->  drivers/gpio/Makefile      |    1 +
->  drivers/gpio/gpio-da9052.c |  279 ++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 286 insertions(+), 0 deletions(-)
->  create mode 100755 drivers/gpio/gpio-da9052.c
-> diff --git a/drivers/gpio/Kconfig b/drivers/gpio/Kconfig
-> index d3b2953..df510d4 100644
-> --- a/drivers/gpio/Kconfig
-> +++ b/drivers/gpio/Kconfig
-> @@ -65,6 +65,12 @@ config GPIO_SYSFS
->  
->  # put expanders in the right section, in alphabetical order
->  
-> +config GPIO_DA9052
-> +	tristate "Dialog DA9052 GPIO"
-> +	depends on PMIC_DA9052
-> +	help
-> +	  Say yes here to enable the GPIO driver for the DA9052 chip.
-> +
->  config GPIO_MAX730X
->  	tristate
->  
-> diff --git a/drivers/gpio/Makefile b/drivers/gpio/Makefile
-> index becef59..cbee503 100644
-> --- a/drivers/gpio/Makefile
-> +++ b/drivers/gpio/Makefile
-> @@ -11,6 +11,7 @@ obj-$(CONFIG_GPIOLIB)		+= gpiolib.o
->  obj-$(CONFIG_GPIO_ADP5520)	+= adp5520-gpio.o
->  obj-$(CONFIG_GPIO_ADP5588)	+= adp5588-gpio.o
->  obj-$(CONFIG_GPIO_BASIC_MMIO)	+= basic_mmio_gpio.o
-> +obj-$(CONFIG_GPIO_DA9052)	+= gpio-da9052.o
->  obj-$(CONFIG_GPIO_LANGWELL)	+= langwell_gpio.o
->  obj-$(CONFIG_GPIO_MAX730X)	+= max730x.o
->  obj-$(CONFIG_GPIO_MAX7300)	+= max7300.o
-> diff --git a/drivers/gpio/gpio-da9052.c b/drivers/gpio/gpio-da9052.c
-> new file mode 100755
-> index 0000000..5623369
-> --- /dev/null
-> +++ b/drivers/gpio/gpio-da9052.c
-> @@ -0,0 +1,279 @@
-> +/*
-> + * GPIO Driver for Dialog DA9052 PMICs.
-> + *
-> + * Copyright(c) 2011 Dialog Semiconductor Ltd.
-> + *
-> + * Author: David Dajun Chen <dchen@diasemi.com>
-> + *
-> + *  This program is free software; you can redistribute  it and/or modify it
-> + *  under  the terms of  the GNU General  Public License as published by the
-> + *  Free Software Foundation;  either version 2 of the  License, or (at your
-> + *  option) any later version.
-> + *
-> + */
-> +#include <linux/module.h>
-> +#include <linux/fs.h>
-> +#include <linux/uaccess.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/gpio.h>
-> +#include <linux/syscalls.h>
-> +#include <linux/seq_file.h>
-> +
-> +#include <linux/mfd/da9052/da9052.h>
-> +#include <linux/mfd/da9052/reg.h>
-> +#include <linux/mfd/da9052/pdata.h>
-> +#include <linux/mfd/da9052/gpio.h>
-> +
-> +#define DA9052_INPUT				1
-> +#define DA9052_OUTPUT_OPENDRAIN		2
-> +#define DA9052_OUTPUT_PUSHPULL			3
-> +
-> +#define DA9052_SUPPLY_VDD_IO1			0
-> +
-> +#define DA9052_DEBOUNCING_OFF			0
-> +#define DA9052_DEBOUNCING_ON			1
-> +
-> +#define DA9052_OUTPUT_LOWLEVEL			0
-> +
-> +#define DA9052_ACTIVE_LOW			0
-> +#define DA9052_ACTIVE_HIGH			1
-> +
-> +#define DA9052_GPIO_MAX_PORTS_PER_REGISTER	8
-> +#define DA9052_GPIO_SHIFT_COUNT(no)		(no%8)
-> +#define DA9052_GPIO_MASK_UPPER_NIBBLE		0xF0
-> +#define DA9052_GPIO_MASK_LOWER_NIBBLE		0x0F
-> +#define DA9052_GPIO_NIBBLE_SHIFT		4
-> +
-> +struct da9052_gpio {
-> +	struct da9052 *da9052;
-> +	struct gpio_chip gp;
-> +};
-> +
-> +static inline struct da9052_gpio *to_da9052_gpio(struct gpio_chip *chip)
-> +{
-> +	return container_of(chip, struct da9052_gpio, gp);
-> +}
-> +
-> +static unsigned char da9052_gpio_port_odd(unsigned offset)
-> +{
-> +	return offset % 2;
-> +}
-> +
-> +static int da9052_gpio_get(struct gpio_chip *gc, unsigned offset)
-> +{
-> +	struct da9052_gpio *gpio = to_da9052_gpio(gc);
-> +	int da9052_port_direction = 0;
-> +	int ret;
-> +
-> +	ret = da9052_reg_read(gpio->da9052,
-> +			      DA9052_GPIO_0_1_REG + (offset >> 1));
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	if (da9052_gpio_port_odd(offset)) {
-> +		da9052_port_direction = ret & DA9052_GPIO_ODD_PORT_PIN;
-> +		da9052_port_direction >>= 4;
-> +	} else {
-> +		da9052_port_direction = ret & DA9052_GPIO_EVEN_PORT_PIN;
-> +	}
-> +
-> +	switch (da9052_port_direction) {
-> +	case DA9052_INPUT:
-> +		if (offset < DA9052_GPIO_MAX_PORTS_PER_REGISTER)
-> +			ret = da9052_reg_read(gpio->da9052,
-> +					      DA9052_STATUS_C_REG);
-> +		else
-> +			ret = da9052_reg_read(gpio->da9052,
-> +					      DA9052_STATUS_D_REG);
-> +		if (ret < 0)
-> +			return ret;
-> +		if (ret & (1 << DA9052_GPIO_SHIFT_COUNT(offset)))
-> +			return 1;
-> +		else
-> +			return 0;
-> +	case DA9052_OUTPUT_PUSHPULL:
-> +		if (da9052_gpio_port_odd(offset))
-> +			return ret & DA9052_GPIO_ODD_PORT_MODE;
-> +		else
-> +			return ret & DA9052_GPIO_EVEN_PORT_MODE;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +}
-> +
-> +static void da9052_gpio_set(struct gpio_chip *gc, unsigned offset, int value)
-> +{
-> +	struct da9052_gpio *gpio = to_da9052_gpio(gc);
-> +	unsigned char register_value = 0;
-> +	int ret;
-> +
-> +	if (da9052_gpio_port_odd(offset)) {
-> +		if (value) {
-> +			register_value = DA9052_GPIO_ODD_PORT_MODE;
-> +			ret = da9052_reg_update(gpio->da9052, (offset >> 1) +
-> +						DA9052_GPIO_0_1_REG,
-> +						DA9052_GPIO_ODD_PORT_MODE,
-> +						register_value);
-> +			if (ret != 0)
-> +				dev_err(gpio->da9052->dev,
-> +					"Failed to updated gpio odd reg,%d",
-> +					ret);
-> +		}
-> +	} else {
-> +		if (value) {
-> +			register_value = DA9052_GPIO_EVEN_PORT_MODE;
-> +			ret = da9052_reg_update(gpio->da9052, (offset >> 1) +
-> +						DA9052_GPIO_0_1_REG,
-> +						DA9052_GPIO_EVEN_PORT_MODE,
-> +						register_value);
-> +			if (ret != 0)
-> +				dev_err(gpio->da9052->dev,
-> +					"Failed to updated gpio even reg,%d",
-> +					ret);
-> +		}
-> +	}
-> +}
-> +
-> +static int da9052_gpio_direction_input(struct gpio_chip *gc, unsigned offset)
-> +{
-> +	struct da9052_gpio *gpio = to_da9052_gpio(gc);
-> +	unsigned char register_value;
-> +	int ret;
-> +
-> +	/* Format: function - 2 bits type - 1 bit mode - 1 bit */
-> +	register_value = DA9052_INPUT | DA9052_ACTIVE_LOW << 2 |
-> +			 DA9052_DEBOUNCING_ON << 3;
-> +
-> +	if (da9052_gpio_port_odd(offset))
-> +		ret = da9052_reg_update(gpio->da9052, (offset >> 1) +
-> +					DA9052_GPIO_0_1_REG,
-> +					DA9052_GPIO_MASK_UPPER_NIBBLE,
-> +					(register_value <<
-> +					DA9052_GPIO_NIBBLE_SHIFT));
-> +	else
-> +		ret = da9052_reg_update(gpio->da9052, (offset >> 1) +
-> +					DA9052_GPIO_0_1_REG,
-> +					DA9052_GPIO_MASK_LOWER_NIBBLE,
-> +					register_value);
-> +
-> +	return ret;
-> +}
-> +
-> +static int da9052_gpio_direction_output(struct gpio_chip *gc,
-> +					unsigned offset, int value)
-> +{
-> +	struct da9052_gpio *gpio = to_da9052_gpio(gc);
-> +	unsigned char register_value;
-> +	int ret;
-> +
-> +	/* Format: Function - 2 bits Type - 1 bit Mode - 1 bit */
-> +	register_value = DA9052_OUTPUT_PUSHPULL | DA9052_SUPPLY_VDD_IO1 << 2 |
-> +			 value << 3;
-> +
-> +	if (da9052_gpio_port_odd(offset))
-> +		ret = da9052_reg_update(gpio->da9052, (offset >> 1) +
-> +					DA9052_GPIO_0_1_REG,
-> +					DA9052_GPIO_MASK_UPPER_NIBBLE,
-> +					(register_value <<
-> +					DA9052_GPIO_NIBBLE_SHIFT));
-> +	else
-> +		ret = da9052_reg_update(gpio->da9052, (offset >> 1) +
-> +					DA9052_GPIO_0_1_REG,
-> +					DA9052_GPIO_MASK_LOWER_NIBBLE,
-> +					register_value);
-> +
-> +	return ret;
-> +}
-> +
-> +static int da9052_gpio_to_irq(struct gpio_chip *gc, u32 offset)
-> +{
-> +	struct da9052_gpio *gpio = to_da9052_gpio(gc);
-> +	struct da9052 *da9052 = gpio->da9052;
-> +
-> +	return da9052->irq_base + DA9052_IRQ_GPI0 + offset;
 
-Who allocates the irq_descs for these irqs?
+IMHO, (C) is an improvement over (A) for two major reasons:
+  (1) tracking the individual touches allows distinguishing a clicking
+finger in bottom right versus bottom left, for example.
+  (2) It makes it possible to track the touch that remains when one of
+the two touches is released.
+      The touch that remains will stay in the same slot, with the same
+tracking id.
+      The tracking id of the touch that is removed will be set to -1.
+        => This eliminates unnecessary gaps in the event stream,
+without introducing position jumps.
+      This behavior occurs often when switching between 1-finger
+motion and 2f-scroll, or when performing 2f-click+drag gestures.
 
-> +}
-> +
-> +static struct gpio_chip reference_gp{
+Note: Tracking which fingers are left on the pad gets much more
+complicated with 3, 4, or 5 fingers.
+This is addressed more fully by the T5R2 solution, but (C), while
+slightly less optimal, should at least not do the wrong thing.
 
-static struct gpio_chip reference_gp __devinitdata = {
+Sorry, I find it a bit difficult to explain this clearly in writing.
+I guess I'll just have to submit a new patchset that shows what I mean.
 
-> +	.label			= "da9052-gpio",
-> +	.owner			= THIS_MODULE,
-> +	.get			= da9052_gpio_get,
-> +	.set			= da9052_gpio_set,
-> +	.direction_input	= da9052_gpio_direction_input,
-> +	.direction_output	= da9052_gpio_direction_output,
-> +	.to_irq			= da9052_gpio_to_irq,
-> +	.can_sleep		= 1;
 
-Nitpick: I prefer the form (single space instead of tabs before the '=')
-	.label = "da9052-gpio",
+>> A bare minimum patchset might do:
+>>    (1) Do true MT-B for two fingers
+>>    (2) Improved number-of-finger tracking for just the 2-finger case.
+>> (Keep tracking finger 1 when finger 2 is removed, and vice versa)
+>
+> In what way is this different from 1)?
+>
+>>    (3) Properly parse, but don't use, AGM_CONTACT packets
 
-> +};
-> +
-> +static int __devinit da9052_gpio_probe(struct platform_device *pdev)
-> +{
-> +	struct da9052_gpio *gpio;
-> +	struct da9052_pdata *pdata;
-> +	int ret;
-> +
-> +	gpio = kzalloc(sizeof(*gpio), GFP_KERNEL);
-> +	if (gpio == NULL)
-> +		return -ENOMEM;
-> +
-> +	gpio->da9052 = dev_get_drvdata(pdev->dev.parent);
-> +	pdata = gpio->da9052->dev->platform_data;
-> +
-> +	gpio->da9052		= dev_get_drvdata(pdev->dev.parent);
-> +	gpio->gp		= reference_gp;
-> +	gpio->gp.ngpio		= 16;
-> +	if (pdata && pdata->gpio_base)
-> +		gpio->gp.base	= pdata->gpio_base;
-> +	else
-> +		gpio->gp.base	= -1;
+The image sensor AGM mode acts different than the profile sensor.  For
+the profile sensor, there is always one AGM for every SGM when 2 or
+more fingers are present.  With the image sensor, there may be more 1
+AGM per SGM if the number of fingers is changing - especially when
+there are more than 3 fingers present.  This is what I meant by
+properly parse these packets.  At least it is a form of documentation
+for the next poor guy who comes along and tries to figure out what in
+the world his trackpad is sending him.
 
-Why not put the default values of .ngpio = 16 and .base = -1 into the
-reference_gp?
+Thanks,
+-Daniel
 
-> +
-> +	ret = gpiochip_add(&gpio->gp);
-> +	if (ret < 0) {
-> +		dev_err(&pdev->dev, "Could not register gpiochip, %d\n", ret);
-> +		goto err_mem;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, gpio);
-> +
-> +	return 0;
-> +
-> +err_mem:
-> +	kfree(gpio);
-> +	return ret;
-> +}
-> +
-> +static int __devexit da9052_gpio_remove(struct platform_device *pdev)
-> +{
-> +	struct da9052_gpio *gpio = platform_get_drvdata(pdev);
-> +	int ret;
-> +
-> +	ret = gpiochip_remove(&gpio->gp);
-> +	if (ret == 0)
-> +		kfree(gpio);
-> +
-> +	return ret;
-> +}
-> +
-> +static struct platform_driver da9052_gpio_driver = {
-> +	.probe = da9052_gpio_probe,
-> +	.remove = __devexit_p(da9052_gpio_remove),
-> +	.driver = {
-> +		.name	= "da9052-gpio",
-> +		.owner	= THIS_MODULE,
-> +	},
-> +};
-> +
-> +static int __init da9052_gpio_init(void)
-> +{
-> +	return platform_driver_register(&da9052_gpio_driver);
-> +}
-> +module_init(da9052_gpio_init);
-> +
-> +static void __exit da9052_gpio_exit(void)
-> +{
-> +	return platform_driver_unregister(&da9052_gpio_driver);
-> +}
-> +module_exit(da9052_gpio_exit);
-> +
-> +MODULE_AUTHOR("David Dajun Chen <dchen@diasemi.com>");
-> +MODULE_DESCRIPTION("DA9052 GPIO Device Driver");
-> +MODULE_LICENSE("GPL");
-> +MODULE_ALIAS("platform:da9052-gpio");
-> 
-> 
+>
+> I am tempted to write something about Schrödinger's cat here... ;-)
+>
+> Thanks,
+> Henrik
+>
