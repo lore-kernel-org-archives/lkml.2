@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752195Ab1GFWHu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 18:07:50 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:42751 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751552Ab1GFWHt (ORCPT
+	id S1752512Ab1GFWMW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 18:12:22 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33113 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751568Ab1GFWMV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 18:07:49 -0400
-MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 6 Jul 2011 16:07:28 -0600
-X-Google-Sender-Auth: -LVH7hEfgKcPoRb7QlDd7rGAm1s
-Message-ID: <CACxGe6tuiG29nqZX8qQaD64PY40WsnMdg1kXs8et6-jSnhgw+w@mail.gmail.com>
-Subject: [GIT PULL] gpio bug fix for v3.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Axel Lin <axel.lin@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 6 Jul 2011 18:12:21 -0400
+Date: Wed, 6 Jul 2011 15:11:12 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-media@vger.kernel.org,
+        linux-mm@kvack.org, linaro-mm-sig@lists.linaro.org,
+        Michal Nazarewicz <mina86@mina86.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ankita Garg <ankita@in.ibm.com>,
+        Daniel Walker <dwalker@codeaurora.org>, Mel Gorman <mel@csn.ul.ie>,
+        Jesse Barker <jesse.barker@linaro.org>,
+        Jonathan Corbet <corbet@lwn.net>,
+        Chunsang Jeong <chunsang.jeong@linaro.org>
+Subject: Re: [PATCHv11 0/8] Contiguous Memory Allocator
+Message-Id: <20110706151112.5c619431.akpm@linux-foundation.org>
+In-Reply-To: <201107051407.17249.arnd@arndb.de>
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com>
+	<201107051407.17249.arnd@arndb.de>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit a2fa83faf47b514ab947cea916d3691b66525073:
+On Tue, 5 Jul 2011 14:07:17 +0200
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-  Merge branch 'usb-linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6
-(2011-07-05 20:57:45 -0700)
+> On Tuesday 05 July 2011, Marek Szyprowski wrote:
+> > This is yet another round of Contiguous Memory Allocator patches. I hope
+> > that I've managed to resolve all the items discussed during the Memory
+> > Management summit at Linaro Meeting in Budapest and pointed later on
+> > mailing lists. The goal is to integrate it as tight as possible with
+> > other kernel subsystems (like memory management and dma-mapping) and
+> > finally merge to mainline.
+> 
+> You have certainly addressed all of my concerns, this looks really good now!
+> 
+> Andrew, can you add this to your -mm tree? What's your opinion on the
+> current state, do you think this is ready for merging in 3.1 or would
+> you want to have more reviews from core memory management people?
+> 
+> My reviews were mostly on the driver and platform API side, and I think
+> we're fine there now, but I don't really understand the impacts this has
+> in mm.
 
-are available in the git repository at:
+I could review it and put it in there on a preliminary basis for some
+runtime testing.  But the question in my mind is how different will the
+code be after the problems which rmk has identified have been fixed?
 
-  git://git.secretlab.ca/git/linux-2.6 gpio/merge
+If "not very different" then that effort and testing will have been
+worthwhile.
 
-Axel Lin (1):
-      gpio: tps65910: add missing breaks in tps65910_gpio_init
+If "very different" or "unworkable" then it was all for naught.
 
- drivers/gpio/tps65910-gpio.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+So.  Do we have a feeling for the magnitude of the changes which will
+be needed to fix these things up?
 
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
