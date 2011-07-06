@@ -1,86 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752743Ab1GFN7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 09:59:00 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53494 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751816Ab1GFN67 convert rfc822-to-8bit (ORCPT
+	id S1752982Ab1GFN7R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 09:59:17 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:11338 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842Ab1GFN7G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 09:58:59 -0400
-Subject: Re: [PATCH 1/4] perf: Add memory load/store events generic code
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Mackerras <paulus@samba.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Andi Kleen <andi@firstfloor.org>,
-        Stephane Eranian <eranian@google.com>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Anton Blanchard <anton@samba.org>
-In-Reply-To: <20110705230217.GA9584@bloggs.ozlabs.ibm.com>
-References: <1309766525-14089-1-git-send-email-ming.m.lin@intel.com>
-	 <1309766525-14089-2-git-send-email-ming.m.lin@intel.com>
-	 <1309768420.3282.8.camel@twins> <1309769066.3282.14.camel@twins>
-	 <1309867418.3282.73.camel@twins>
-	 <20110705230217.GA9584@bloggs.ozlabs.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 06 Jul 2011 15:58:38 +0200
-Message-ID: <1309960718.3282.289.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.3 
+	Wed, 6 Jul 2011 09:59:06 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+Date: Wed, 06 Jul 2011 15:58:58 +0200
+From: Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: RE: [PATCH 6/8] drivers: add Contiguous Memory Allocator
+In-reply-to: <20110705113345.GA8286@n2100.arm.linux.org.uk>
+To: "'Russell King - ARM Linux'" <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-media@vger.kernel.org, linux-mm@kvack.org,
+        linaro-mm-sig@lists.linaro.org,
+        "'Daniel Walker'" <dwalker@codeaurora.org>,
+        "'Arnd Bergmann'" <arnd@arndb.de>,
+        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
+        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
+        "'Michal Nazarewicz'" <mina86@mina86.com>,
+        "'Jesse Barker'" <jesse.barker@linaro.org>,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        "'Ankita Garg'" <ankita@in.ibm.com>,
+        "'Andrew Morton'" <akpm@linux-foundation.org>,
+        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>
+Message-id: <006301cc3be4$daab1850$900148f0$%szyprowski@samsung.com>
+Organization: SPRC
+X-Mailer: Microsoft Office Outlook 12.0
+Content-language: pl
+Thread-index: Acw7B3KTm8EO26DZQ42HoxMmsBx61AAqsDGg
+References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com>
+ <1309851710-3828-7-git-send-email-m.szyprowski@samsung.com>
+ <20110705113345.GA8286@n2100.arm.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-06 at 09:02 +1000, Paul Mackerras wrote:
-> On Tue, Jul 05, 2011 at 02:03:38PM +0200, Peter Zijlstra wrote:
-> > On Mon, 2011-07-04 at 10:44 +0200, Peter Zijlstra wrote:
-> > > Anton, Paulus, IIRC PowerPC had some sort of Data-Source indication,
-> > > would you have some docs available on the PowerPC PMU?
-> > 
-> > Going through
-> > http://www.power.org/resources/downloads/PowerISA_V2.06B_V2_PUBLIC.pdf
-> > 
-> > Book III-S, Appendix B
-> > 
-> > I can only find the SDAR thing (which I assume is what PERF_SAMPLE_DATA
-> > uses) but no mention of extra bits describing where the data was sourced
-> > from. For some reason I had the impression PPC64 had the capability to
-> > tell if a load/store was from/to L1/2/3/DRAM etc.
-> > 
-> > Now since the above document is in fact not an exhaustive spec of a
-> > particular chip but more an outline of what a regular ppc64 chip should
-> > have, with lots of room for implementation specific extensions it
-> > doesn't say much at all.
-> > 
-> > So do you know of such a feature for PPC64 and if so, where's the
-> > docs? :-)
+Hello,
+
+On Tuesday, July 05, 2011 1:34 PM Russell King - ARM Linux wrote:
+
+> On Tue, Jul 05, 2011 at 09:41:48AM +0200, Marek Szyprowski wrote:
+> > The Contiguous Memory Allocator is a set of helper functions for DMA
+> > mapping framework that improves allocations of contiguous memory chunks.
+> >
+> > CMA grabs memory on system boot, marks it with CMA_MIGRATE_TYPE and
+> > gives back to the system. Kernel is allowed to allocate movable pages
+> > within CMA's managed memory so that it can be used for example for page
+> > cache when DMA mapping do not use it. On dma_alloc_from_contiguous()
+> > request such pages are migrated out of CMA area to free required
+> > contiguous block and fulfill the request. This allows to allocate large
+> > contiguous chunks of memory at any time assuming that there is enough
+> > free memory available in the system.
+> >
+> > This code is heavily based on earlier works by Michal Nazarewicz.
 > 
-> Unfortunately the P7 PMU documentation is not available publicly yet. :(
+> And how are you addressing the technical concerns about aliasing of
+> cache attributes which I keep bringing up with this and you keep
+> ignoring and telling me that I'm standing in your way.
 
-Are the P6/P6+ PMU docs? That at least would give me something to look
-at.
+I'm perfectly aware of the issues with aliasing of cache attributes.
 
-> There are events that can be used to count how many times data or
-> instructions get loaded from different places in the memory
-> subsystem.  There are 15 separate DATA_FROM_xxx events, for instance,
-> that count things like "number of times data was loaded from L2 or L3
-> cache on another chip and the cache line was in shared state".
-> They're great if you want fine detail on memory traffic but perhaps
-> not so good if you want a broad overview (there are separate events
-> for L1 and L2 accesses and misses though).
-> 
-> I've attached a table of P7 PMU events.  Look for the PM_DATA_FROM_xxx
-> and PM_INST_FROM_xxx events.
+My idea is to change low memory linear mapping for all CMA areas on boot
+time to use 2 level page tables (4KiB mappings instead of super-section
+mappings). This way the page properties for a single page in CMA area can
+be changed/updated at any time to match required coherent/writecombine
+attributes. Linear mapping can be even removed completely if we want to 
+create the it elsewhere in the address space. 
 
-Ok, so those are regular events and perf covers that capability.
+The only problem that might need to be resolved is GFP_ATOMIC allocation
+(updating page properties probably requires some locking), but it can be
+served from a special area which is created on boot without low-memory
+mapping at all. None sane driver will call dma_alloc_coherent(GFP_ATOMIC)
+for large buffers anyway.
 
-The thing we're talking about is Intel PEBS Load Latency/Precise Store
-and AMD IBS where together with a mem op retired event (mem loads
-retired for Load-Latency, mem stores retired for Precise Store) provides
-an additional field describing where the load/store was sourced from.
+CMA limits the memory area from which coherent pages are being taken quite
+well, so the change in the linear mapping method should have no significant
+impact on the system performance.
 
-Such additional data would require the addition of a PERF_SAMPLE_SOURCE
-field or similar, for some reason or other I was under the impression
-some of the PPC chips had something similar. But if not, it saves us
-having to worry about that.
+I didn't implement such solution yet, because it is really hard to handle
+all issues at the same time and creating the allocator was just a first
+step.
+
+Best regards
+-- 
+Marek Szyprowski
+Samsung Poland R&D Center
+
+
+
