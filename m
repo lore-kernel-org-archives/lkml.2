@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587Ab1GFJri (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 05:47:38 -0400
-Received: from ppsw-52.csi.cam.ac.uk ([131.111.8.152]:37716 "EHLO
-	ppsw-52.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab1GFJrh (ORCPT
+	id S1751700Ab1GFJxr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 05:53:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36392 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751290Ab1GFJxq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 05:47:37 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4E143120.2020501@cam.ac.uk>
-Date: Wed, 06 Jul 2011 10:55:44 +0100
-From: Jonathan Cameron <jic23@cam.ac.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
+	Wed, 6 Jul 2011 05:53:46 -0400
+Date: Wed, 6 Jul 2011 12:53:10 +0300
+From: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+To: Alasdair Kergon <agk@redhat.com>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: `pvmove stuck' in RH bugzilla
+Message-ID: <20110706095310.GA3225@swordfish>
 MIME-Version: 1.0
-To: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Lameter <cl@linux.com>,
-        Pekka Enberg <penberg@kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Build issue with linux next. duplicate member _count in mm_types.h
-X-Enigmail-Version: 1.1.2
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="J2SCkAp4GZ/dPZZf"
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Getting:
 
-  CHK     include/linux/version.h
-  CHK     include/generated/utsrelease.h
-make[1]: `include/generated/mach-types.h' is up to date.
-  CC      arch/arm/kernel/asm-offsets.s
-In file included from include/linux/sched.h:64:0,
-                 from arch/arm/kernel/asm-offsets.c:13:
-include/linux/mm_types.h:74:15: error: duplicate member '_count'
-make[1]: *** [arch/arm/kernel/asm-offsets.s] Error 1
-make: *** [prepare0] Error 2
+--J2SCkAp4GZ/dPZZf
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Issue looks to have been introduced by 
+Hello,
 
-    mm: Rearrange struct page
+I think we just trapped into the same trouble with pvmove as described in=
+=20
 
-fc9bb8c768abe7ae10861c3510e01a95f98d5933
+https://bugzilla.redhat.com/show_bug.cgi?id=3D602516
+https://bugzilla.redhat.com/show_bug.cgi?id=3D706036
+etc.
 
-Guessing it's a known issue, but just thought I'd flag it up in case
-it's something very specific about my build.
+Comment says, that
+> I found a series of problems with pvmove which I have fixed in the upstre=
+am
+> repository.  However, I would like to wait some time to see that no unint=
+ended
+> side-effects show up before seeing the change back-ported to RHEL.  An au=
+dit
+> for similar bugs found a problem in lvremove, which I have also fixed.=20
+> lvconvert still needs to be audited.
 
-gcc-2.6 armv7a
 
-Reverting that patch works, but given I don't know the history, I'm
-not proposing doing that in general!
+Alasdair, could you please point are those patches in vanilla kernel=20
+(3.0-rc*) or linux-next, or some RH internal tree?=20
+This is not critical, though I'd like to try out patches.
 
-Jonathan
+
+Thanks,
+	Sergey
+
+--J2SCkAp4GZ/dPZZf
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iJwEAQECAAYFAk4UMIYACgkQfKHnntdSXjSrNQQA1VUekaYX7C1n1u/fEuWFwNIk
+oUxXXvwja8ICVuS7/3Ofy1/ahtDh/YSxj7pN91geIRPgP1fMkxepl52R5Qvwxuky
++dcT+qTfihWEzaho/OH3YgpzJ6/3+LC4EszPnjqfHBCNR831LbnlvqeuOOX4LTlW
+XO7kxlGxwWmtqWslpaM=
+=iwTa
+-----END PGP SIGNATURE-----
+
+--J2SCkAp4GZ/dPZZf--
