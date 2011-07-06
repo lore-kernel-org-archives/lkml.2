@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754537Ab1GFJZx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 05:25:53 -0400
-Received: from aaar.vm.bytemark.co.uk ([80.68.92.230]:41584 "EHLO
-	aaar.vm.bytemark.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754399Ab1GFJZv (ORCPT
+	id S1754457Ab1GFJai (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 05:30:38 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:44810 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754061Ab1GFJah convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 05:25:51 -0400
-From: Ian Campbell <ijc@hellion.org.uk>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Brian Gerst <brgerst@gmail.com>, Jan Beulich <JBeulich@novell.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <4E134E1E.6040304@zytor.com>
-References: <20110705104742.GO17941@sun>  <4E134E1E.6040304@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jul 2011 10:25:38 +0100
-Message-ID: <1309944338.634.162.camel@zakaz.uk.xensource.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.3 
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 62.200.22.2
-X-SA-Exim-Mail-From: ijc@hellion.org.uk
-Subject: Re: [Q x86-64] on kernel_eflags
-X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
-X-SA-Exim-Scanned: Yes (on hopkins.hellion.org.uk)
+	Wed, 6 Jul 2011 05:30:37 -0400
+From: "Nori, Sekhar" <nsekhar@ti.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>
+CC: Thomas Gleixner <tglx@linutronix.de>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Russell King <rmk@arm.linux.org.uk>
+Date: Wed, 6 Jul 2011 15:00:07 +0530
+Subject: RE: Please submit platform trees for inclusion in arm-soc.git v3.1
+Thread-Topic: Please submit platform trees for inclusion in arm-soc.git v3.1
+Thread-Index: Acw4G9aSDDF9Y6j5RKel8gaPsGxp+gDoi/HA
+Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024D91AB83@dbde02.ent.ti.com>
+References: <201107012018.14619.arnd@arndb.de>
+In-Reply-To: <201107012018.14619.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-07-05 at 10:47 -0700, H. Peter Anvin wrote:
-> On 07/05/2011 03:47 AM, Cyrill Gorcunov wrote:
-> > 
-> > Should not every cpu has own copy of kernel_eflags? Just
-> > to be consistent in style? Or this would be space waisting
-> > and an optimization is done here?
-> > 
-> 
-> Not specific to this particular case, but in general: a shared variable
-> that used often but rarely written to will automatically replicate
-> itself in the caches of multiple processors.  This is the purpose of the
-> read_mostly segment (writes are permitted but expected to be rare),
-> which exists to make sure that a frequently written variable doesn't
-> randomly end up in the cache line next to a read-mostly variable.
+Hi Arnd,
 
-FWIW the variable in this particular case isn't actually marked as
-__read_mostly...
+On Fri, Jul 01, 2011 at 23:48:14, Arnd Bergmann wrote:
 
-Ian.
--- 
-Ian Campbell
+> * If you currently merge your patches upstream through RMK's tree,
+>   you can keep doing so.
 
-* Simunye is on a oc3->oc12
- simmy: bite me. :)
- daemon: okay :)
+We currently send DaVinci patches upstream through Russell.
+This makes it look like the change applies only to those
+maintainers who were sending patches to Linus directly.
+
+I want to make sure I read this correctly and should continue
+sending patches upstream through Russell?
+
+Thanks,
+Sekhar
 
