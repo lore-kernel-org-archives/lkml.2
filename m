@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753299Ab1GFLm1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 07:42:27 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42648 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab1GFLmZ (ORCPT
+	id S1753361Ab1GFLqg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 07:46:36 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:57698 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753175Ab1GFLqf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 07:42:25 -0400
-Date: Wed, 6 Jul 2011 12:42:08 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Jan Beulich <JBeulich@novell.com>
-Cc: mingo@elte.hu, rtc-linux@googlegroups.com, dannf@hp.com,
-        tglx@linutronix.de, linux-kernel@vger.kernel.org, hpa@zytor.com
-Subject: Re: [PATCH] x86: enable rtc-efi
-Message-ID: <20110706114208.GA16578@srcf.ucam.org>
-References: <4E12DBAB020000780004C1B2@nat28.tlf.novell.com>
- <20110705182913.GA31808@srcf.ucam.org>
- <4E142659020000780004C50D@nat28.tlf.novell.com>
+	Wed, 6 Jul 2011 07:46:35 -0400
+Date: Wed, 6 Jul 2011 15:46:30 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: tommy.lin@caviumnetworks.com
+Cc: "'Tommy Lin'" <tommy.lin.1101@gmail.com>,
+        "'Wim Van Sebroeck'" <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Lin, Mac" <Mac.Lin@caviumnetworks.com>
+Subject: Re: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for
+ CNS3xxx hardware
+Message-ID: <20110706114629.GA32659@oksana.dev.rtsoft.ru>
+References: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com>
+ <20110705140559.GA15771@oksana.dev.rtsoft.ru>
+ <281B1F8BAB4D4BDABE7568809A0AEC1A@starsemi.com>
+ <20110706111616.GA18967@oksana.dev.rtsoft.ru>
+ <20110706112830.GA23184@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4E142659020000780004C50D@nat28.tlf.novell.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20110706112830.GA23184@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 08:09:45AM +0100, Jan Beulich wrote:
-> >>> On 05.07.11 at 20:29, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > You haven't removed this from the IA64 code. Isn't that going to result 
-> > in registering the same device twice?
-> 
-> How would code under arch/ia64/ and code under arch/x86/ ever
-> manage to register the same device twice?
-
-Gah. Sorry, I misread and thought thsi was in the generic code too.
-
-> >> +static int __init rtc_init(void)
-> >> +{
-> >> +	if (efi_enabled && platform_device_register(&rtc_efi_dev) < 0)
-> >> +		printk(KERN_ERR "unable to register rtc device...\n");
+On Wed, Jul 06, 2011 at 03:28:30PM +0400, Anton Vorontsov wrote:
+> On Wed, Jul 06, 2011 at 03:16:16PM +0400, Anton Vorontsov wrote:
+> > On Wed, Jul 06, 2011 at 06:05:37PM +0800, Tommy Lin wrote:
+> > > Hi, I just found another patch that can solve the watchdog counter reload
+> > > issue. Please ignore this patch, since it should not acceptable to use
+> > > #ifdefs.
 > > 
-> > Ought to -ENODEV if efi isn't present? The error message should also be 
-> > more verbose.
+> > OK, great. Do I understand correctly that without Vitaly's patch,
+> > your first patch is somewhat useless, as the watchdog will not work
+> > or will work incorrectly? So should I postpone merging patch 1/2
+> > until Vitaly's patch hit mainline?
 > 
-> I would agree on the -ENODEV part, but the error message is what
-> the original ia64 code (which I simply copied over and modified
-> slightly) has, so if a change is needed it ought to be done there first
-> I would think. Additionally I can't really see what meaningful addition
-> to the error message you envision.
+> Oh, I see that the issue isn't major, so I'll just merge the first
+> patch.
 
-EFI is the only way to access the rtc on IA64, whereas on x86 you'll 
-almost certainly also have direct hardware access as well. Make it clear 
-which rtc device you're unable to register.
+Heh. Nope. It doesn't work without SMP:
+
+warning: (ARCH_CNS3XXX) selects HAVE_ARM_TWD which has unmet direct dependencies (SMP)
+
+And SMP support is not in the mainline, yet.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
