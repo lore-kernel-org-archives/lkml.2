@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755238Ab1GFSEa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 14:04:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65315 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755111Ab1GFSE2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 14:04:28 -0400
-Date: Wed, 6 Jul 2011 15:03:59 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH RFCv3 13/17] [media] dvb-bt8xx: Don't return -EFAULT when a
- device is not found
-Message-ID: <20110706150359.28924e4a@pedra>
-In-Reply-To: <cover.1309974026.git.mchehab@redhat.com>
-References: <cover.1309974026.git.mchehab@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+	id S1755314Ab1GFSIb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 14:08:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42472 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755235Ab1GFSI3 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 14:08:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <20110706173631.GA5431@albatros>
+References: <20110612130953.GA3709@albatros> <20110706173631.GA5431@albatros>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, 6 Jul 2011 11:01:47 -0700
+Message-ID: <CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com>
+Subject: Re: RLIMIT_NPROC check in set_user()
+To: Vasiliy Kulikov <segoon@openwall.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>,
+        kernel-hardening@lists.openwall.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When a device (or their PCI structs) are not found, the error should
-be -ENODEV. -EFAULT is reserved for errors while copying arguments
-from/to userspace.
+On Wed, Jul 6, 2011 at 10:36 AM, Vasiliy Kulikov <segoon@openwall.com> wrote:
+> On Sun, Jun 12, 2011 at 17:09 +0400, Vasiliy Kulikov wrote:
+>> I'd be happy to hear opinions about improving the fixes above or
+>> alternative fixes.
+>
+> No comments?  Even "Sigh, what a nasty problem.  But we cannot really
+> fix it without significantly breaking the stuff.  Go and drink something." ?
 
-Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
+Thanks for reminding me.
 
-diff --git a/drivers/media/dvb/bt8xx/dvb-bt8xx.c b/drivers/media/dvb/bt8xx/dvb-bt8xx.c
-index 1e1106d..521d691 100644
---- a/drivers/media/dvb/bt8xx/dvb-bt8xx.c
-+++ b/drivers/media/dvb/bt8xx/dvb-bt8xx.c
-@@ -892,7 +892,7 @@ static int __devinit dvb_bt8xx_probe(struct bttv_sub_device *sub)
- 	if (!(bttv_pci_dev = bttv_get_pcidev(card->bttv_nr))) {
- 		printk("dvb_bt8xx: no pci device for card %d\n", card->bttv_nr);
- 		kfree(card);
--		return -EFAULT;
-+		return -ENODEV;
- 	}
- 
- 	if (!(card->bt = dvb_bt8xx_878_match(card->bttv_nr, bttv_pci_dev))) {
-@@ -902,7 +902,7 @@ static int __devinit dvb_bt8xx_probe(struct bttv_sub_device *sub)
- 		       "installed, try removing it.\n");
- 
- 		kfree(card);
--		return -EFAULT;
-+		return -ENODEV;
- 	}
- 
- 	mutex_init(&card->bt->gpio_lock);
--- 
-1.7.1
+My reaction is: "let's just remote the crazy check from set_user()
+entirely". If somebody has credentials to change users, they damn well
+have credentials to override the RLIMIT_NPROC too, and as you say,
+failure is likely a bigger security threat than success.
 
+The whole point of RLIMIT_NPROC is to avoid fork-bombs. If we go over
+the limit for some other reason that is controlled by the super-user,
+who cares?
 
+So let's keep it in kernel/fork.c where we actually create a *new*
+process (and where everybody knows exactly what the limit means, and
+people who don't check for error cases are just broken). And remove it
+from everywhere else.
+
+Hmm?
+
+                     Linus
