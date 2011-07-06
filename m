@@ -1,149 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752520Ab1GFGas (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 02:30:48 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52429 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751093Ab1GFGaq (ORCPT
+	id S1751471Ab1GFGeS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 02:34:18 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58721 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab1GFGeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 02:30:46 -0400
-From: Per Forlin <per.forlin@linaro.org>
-To: linaro-dev@lists.linaro.org, Nicolas Pitre <nicolas.pitre@linaro.org>,
-        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
-        linux-mmc@vger.kernel.org, linux-doc@vger.kernel.org,
-        Venkatraman S <svenkatr@ti.com>,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Arnd Bergmann <arnd@arndb.de>, Sourav Poddar <sourav.poddar@ti.com>,
-        Chris Ball <cjb@laptop.org>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Per Forlin <per.forlin@linaro.org>
-Subject: [PATCH v5] mmc: documentation of mmc non-blocking request usage and design.
-Date: Wed,  6 Jul 2011 08:30:06 +0200
-Message-Id: <1309933806-2346-1-git-send-email-per.forlin@linaro.org>
-X-Mailer: git-send-email 1.7.4.1
+	Wed, 6 Jul 2011 02:34:17 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 2/2] Staging: comedi: fix WARNING issue in icp_multi.c
+Date: Wed,  6 Jul 2011 12:03:46 +0530
+Message-Id: <1309934026-2677-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <[PATCH]Staging: comedi: fix tab space warning issues in icp_multi.c>
+References: <[PATCH]Staging: comedi: fix tab space warning issues in icp_multi.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Documentation about the background and the design of mmc non-blocking.
-Host driver guidelines to minimize request preparation overhead.
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-Signed-off-by: Per Forlin <per.forlin@linaro.org>
-Acked-by: Randy Dunlap <rdunlap@xenotime.net>
+This is a patch to the icp_multi.c file that fixes up a WARNING found by the checkpatch.pl tool
+
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
 ---
-ChangeLog:
- v2: - Minor updates after proofreading comments from Chris
- v3: - Minor updates after more comments from Chris
- v4: - Minor updates after comments from Randy
- v5: - Fixed one more comment and Acked-by from Randy
+ drivers/staging/comedi/drivers/icp_multi.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
 
- Documentation/mmc/00-INDEX          |    2 +
- Documentation/mmc/mmc-async-req.txt |   86 +++++++++++++++++++++++++++++++++++
- 2 files changed, 88 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/mmc/mmc-async-req.txt
-
-diff --git a/Documentation/mmc/00-INDEX b/Documentation/mmc/00-INDEX
-index 93dd7a7..a9ba672 100644
---- a/Documentation/mmc/00-INDEX
-+++ b/Documentation/mmc/00-INDEX
-@@ -4,3 +4,5 @@ mmc-dev-attrs.txt
-         - info on SD and MMC device attributes
- mmc-dev-parts.txt
-         - info on SD and MMC device partitions
-+mmc-async-req.txt
-+        - info on mmc asynchronous requests
-diff --git a/Documentation/mmc/mmc-async-req.txt b/Documentation/mmc/mmc-async-req.txt
-new file mode 100644
-index 0000000..b7a52ea
---- /dev/null
-+++ b/Documentation/mmc/mmc-async-req.txt
-@@ -0,0 +1,86 @@
-+Rationale
-+=========
-+
-+How significant is the cache maintenance overhead?
-+It depends. Fast eMMC and multiple cache levels with speculative cache
-+pre-fetch makes the cache overhead relatively significant. If the DMA
-+preparations for the next request are done in parallel with the current
-+transfer, the DMA preparation overhead would not affect the MMC performance.
-+The intention of non-blocking (asynchronous) MMC requests is to minimize the
-+time between when an MMC request ends and another MMC request begins.
-+Using mmc_wait_for_req(), the MMC controller is idle while dma_map_sg and
-+dma_unmap_sg are processing. Using non-blocking MMC requests makes it
-+possible to prepare the caches for next job in parallel with an active
-+MMC request.
-+
-+MMC block driver
-+================
-+
-+The issue_rw_rq() in the MMC block driver is made non-blocking.
-+The increase in throughput is proportional to the time it takes to
-+prepare (major part of preparations are dma_map_sg and dma_unmap_sg)
-+a request and how fast the memory is. The faster the MMC/SD is
-+the more significant the prepare request time becomes. Roughly the expected
-+performance gain is 5% for large writes and 10% on large reads on a L2 cache
-+platform. In power save mode, when clocks run on a lower frequency, the DMA
-+preparation may cost even more. As long as these slower preparations are run
-+in parallel with the transfer performance won't be affected.
-+
-+Details on measurements from IOZone and mmc_test
-+================================================
-+
-+https://wiki.linaro.org/WorkingGroups/Kernel/Specs/StoragePerfMMC-async-req
-+
-+MMC core API extension
-+======================
-+
-+There is one new public function mmc_start_req().
-+It starts a new MMC command request for a host. The function isn't
-+truly non-blocking. If there is on ongoing async request it waits
-+for completion of that request and starts the new one and returns. It
-+doesn't wait for the new request to complete. If there is no ongoing
-+request it starts the new request and returns immediately.
-+
-+MMC host extensions
-+===================
-+
-+There are two optional hooks -- pre_req() and post_req() -- that the host
-+driver may implement in order to move work to before and after the actual
-+mmc_request function is called. In the DMA case pre_req() may do
-+dma_map_sg() and prepare the DMA descriptor, and post_req runs
-+the dma_unmap_sg.
-+
-+Optimize for the first request
-+==============================
-+
-+The first request in a series of requests can't be prepared in parallel with
-+the previous transfer, since there is no previous request.
-+The argument is_first_req in pre_req() indicates that there is no previous
-+request. The host driver may optimize for this scenario to minimize
-+the performance loss. A way to optimize for this is to split the current
-+request in two chunks, prepare the first chunk and start the request,
-+and finally prepare the second chunk and start the transfer.
-+
-+Pseudocode to handle is_first_req scenario with minimal prepare overhead:
-+if (is_first_req && req->size > threshold)
-+   /* start MMC transfer for the complete transfer size */
-+   mmc_start_command(MMC_CMD_TRANSFER_FULL_SIZE);
-+
-+   /*
-+    * Begin to prepare DMA while cmd is being processed by MMC.
-+    * The first chunk of the request should take the same time
-+    * to prepare as the "MMC process command time".
-+    * If prepare time exceeds MMC cmd time
-+    * the transfer is delayed, guesstimate max 4k as first chunk size.
-+    */
-+    prepare_1st_chunk_for_dma(req);
-+    /* flush pending desc to the DMAC (dmaengine.h) */
-+    dma_issue_pending(req->dma_desc);
-+
-+    prepare_2nd_chunk_for_dma(req);
-+    /*
-+     * The second issue_pending should be called before MMC runs out
-+     * of the first chunk. If the MMC runs out of the first data chunk
-+     * before this call, the transfer is delayed.
-+     */
-+    dma_issue_pending(req->dma_desc);
+diff --git a/drivers/staging/comedi/drivers/icp_multi.c b/drivers/staging/comedi/drivers/icp_multi.c
+index 126550f..78f33e7 100644
+--- a/drivers/staging/comedi/drivers/icp_multi.c
++++ b/drivers/staging/comedi/drivers/icp_multi.c
+@@ -59,13 +59,12 @@ Options:
+ #include "icp_multi.h"
+ 
+ #define DEVICE_ID	0x8000	/* Device ID */
++#define ICP_MULTI_EXTDEBUG	/*       */
+ 
+-#define ICP_MULTI_EXTDEBUG
++/* Hardware types of the cards */
++#define TYPE_ICP_MULTI 0
+ 
+-/*  Hardware types of the cards */
+-#define TYPE_ICP_MULTI	0
+-
+-#define IORANGE_ICP_MULTI 	32
++#define IORANGE_ICP_MULTI 32
+ 
+ #define ICP_MULTI_ADC_CSR	0	/* R/W: ADC command/status register */
+ #define ICP_MULTI_AI		2	/* R:   Analogue input data */
+@@ -572,7 +571,7 @@ static int icp_multi_insn_bits_do(struct comedi_device *dev,
+ 		s->state &= ~data[0];
+ 		s->state |= (data[0] & data[1]);
+ 
+-		printk(KERN_DEBUG "Digital outputs = %4x \n", s->state);
++		printk(KERN_DEBUG "Digital outputs = %4x\n", s->state);
+ 
+ 		writew(s->state, devpriv->io_addr + ICP_MULTI_DO);
+ 	}
+@@ -966,7 +965,7 @@ static int icp_multi_attach(struct comedi_device *dev,
+ 	devpriv->phys_iobase = iobase;
+ 
+ 	printk(KERN_WARNING
+-	       ", b:s:f=%d:%d:%d, io=0x%8llx \n", pci_bus, pci_slot, pci_func,
++	       ", b:s:f=%d:%d:%d, io=0x%8llx\n", pci_bus, pci_slot, pci_func,
+ 	       (unsigned long long)iobase);
+ 
+ 	devpriv->io_addr = ioremap(iobase, ICP_MULTI_SIZE);
 -- 
-1.7.4.1
+1.7.1.1
 
