@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab1GFNqx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 09:46:53 -0400
-Received: from lucidpixels.com ([72.73.18.11]:45465 "EHLO lucidpixels.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751816Ab1GFNqv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 09:46:51 -0400
-Date: Wed, 6 Jul 2011 09:46:50 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: linux-usb@vger.kernel.org, Alan Piszcz <ap@solarrain.com>
-Subject: Re: 2.6.39.2: usb kernel panic/oops: schedule+ehci_irq+0x266/0x830
-In-Reply-To: <alpine.DEB.2.02.1107060412440.27258@p34.internal.lan>
-Message-ID: <alpine.DEB.2.02.1107060945470.8918@p34.internal.lan>
-References: <alpine.DEB.2.02.1107051742290.3983@p34.internal.lan> <alpine.DEB.2.02.1107060412440.27258@p34.internal.lan>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1752651Ab1GFNss (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 09:48:48 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43883 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751981Ab1GFNsr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 09:48:47 -0400
+Date: Wed, 6 Jul 2011 14:48:06 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Vitaly Kuzmichev <vkuzmichev@mvista.com>
+Cc: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+        Marc Zyngier <marc.zyngier@arm.com>, Wim Van Sebroeck <wim@iguana.be>,
+        Arnd Bergmann <arnd@arndb.de>, Nicolas Pitre <nico@fluxnic.net>,
+        John Stultz <johnstul@us.ibm.com>, linux-kernel@vger.kernel.org,
+        arm@kernel.org, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH V2 3/6] mpcore_wdt: Fix WDIOC_SETOPTIONS handling
+Message-ID: <20110706134806.GA8286@n2100.arm.linux.org.uk>
+References: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com> <1309892440-3260-4-git-send-email-vkuzmichev@mvista.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1309892440-3260-4-git-send-email-vkuzmichev@mvista.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 05, 2011 at 11:00:37PM +0400, Vitaly Kuzmichev wrote:
+> According to the include/linux/watchdog.h WDIOC_SETOPTIONS is
+> classified as 'read from device' ioctl call:
+>   #define WDIOC_SETOPTIONS        _IOR(WATCHDOG_IOCTL_BASE, 4, int)
+> 
+> However, the driver 'mpcore_wdt' performs 'copy_from_user' only if
+> _IOC_WRITE is set, thus the local variable 'uarg' which is used in
+> WDIOC_SETOPTIONS handling remains uninitialized.
+> 
+> The proper way to fix this is to bind WDIOC_SETOPTIONS to _IOW,
+> but this will break compatibility.
+> So adding additional condition for performing 'copy_from_user'.
 
+That looks like something which needs fixing in watchdog land.  And it's
+not too difficult:
 
-On Wed, 6 Jul 2011, Justin Piszcz wrote:
+1. Change the existing WDIOC_SETOPTIONS to WDIOC_SETOPTIONS_OLD
+2. Add a new, correctly defined WDIOC_SETOPTIONS.
+3. Update all drivers to use WDIOC_SETOPTIONS.
+4. Provide a helper which deals with WDIOC_SETOPTIONS_OLD and translates
+   it to the proper WDIOC_SETOPTIONS call (this could be just:
 
->
->
-> On Tue, 5 Jul 2011, Justin Piszcz wrote:
->
->> Hi,
->> 
->> I plan to build a new machine in the future (one with console access) but 
->> in the meantime, after my PSU replacement, the host is still having issues, 
->> I've turned off bluetooth wireless (built into the DP55KG) and will see if 
->> it panics again, link the latest panic/oops/etc:
->>
+	if (cmd == WDIOC_SETOPTIONS_OLD) {
+		static int first = 1;
+		if (first)
+			pr_warn("%s:%d used old WDIOC_SETOPTIONS call.  Please rebuild\n",
+				current->comm, current->pid);
+		first = 0;
+		cmd = WDIOC_SETOPTIONS;
+	}
 
-When it recurs, I will disable the 'threadirq' boot option with 2.6.39, as
-that is when all this started happening and report back if it happens without
-this option enabled.
+   before any argument copies.
 
-Is there a reason why threadirq would cause weird issues on one HW type
-chipset vs. another (both Intel)?
+This means you preserve existing compatibility with userspace, yet gain
+a path to a non-broken ioctl interface.
 
-Justin.
-
+As stuff gets rebuilt and replaced, you'll eventually be able to remove
+the above.  That period used to be two years for such simple changes.
