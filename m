@@ -1,43 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756459Ab1GFVMm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 17:12:42 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:33136 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756345Ab1GFVMl (ORCPT
+	id S1756438Ab1GFVPD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 17:15:03 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:45592 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756189Ab1GFVPA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 17:12:41 -0400
-Date: Wed, 6 Jul 2011 15:12:39 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org,
-        stable@kernel.org
-Subject: Re: [PATCH] fs: fix lock initialization
-Message-ID: <20110706211239.GC389@parisc-linux.org>
-References: <87iprf3dgs.fsf@tucsk.pomaz.szeredi.hu> <CA+55aFzeB6qtbpd_A0DaqprAyDLcETgN71eyUCkSTjwC_5Wgyg@mail.gmail.com>
+	Wed, 6 Jul 2011 17:15:00 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CA+55aFzeB6qtbpd_A0DaqprAyDLcETgN71eyUCkSTjwC_5Wgyg@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4E031B97.2010609@jp.fujitsu.com>
+References: <4E031B97.2010609@jp.fujitsu.com>
+Date: Wed, 6 Jul 2011 14:14:58 -0700
+X-Google-Sender-Auth: XBeG-hwDPZEjrDi8_rdXVNLj8mk
+Message-ID: <CA+8MBbLg4jBmaYkVW13WReNm8nyP1p0k3CPN=pQmvwPfRKyeQA@mail.gmail.com>
+Subject: Re: ia64: replace old cpumask functions with new one
+From: Tony Luck <tony.luck@intel.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: fenghua.yu@intel.com, linux-ia64@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 10:40:44AM -0700, Linus Torvalds wrote:
-> Ugh. Code that depends on SLAB initializers is broken.
-> 
-> The reason for those initializers are traditionally "better cache
-> behavior" where you don't need to initialize everything at allocation
-> time, but the whole concept is almost invariably a disaster. This is a
-> prime example of it.
+2011/6/23 KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>:
+> We plan to remove old obsolete cpumask functions and plan to
+> change task->cpus_allowed implementation in future.
+...
+>  arch/ia64/kernel/smpboot.c              |   56 +++++++++++++++---------------
 
-It'd be good to have that documented somewhere.  When I wrote this code
-(a decade ago), that wasn't my understanding.
+I get some new warnings in this file with your patch:
 
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+
+arch/ia64/kernel/smpboot.c:454: warning: passing argument 2 of
+‘cpumask_set_cpu’ discards qualifiers from pointer target type
+arch/ia64/kernel/smpboot.c:581: warning: passing argument 1 of
+‘cpumask_clear’ discards qualifiers from pointer target type
+arch/ia64/kernel/smpboot.c:613: warning: passing argument 2 of
+‘cpumask_set_cpu’ discards qualifiers from pointer target type
+arch/ia64/kernel/smpboot.c:637: warning: passing argument 2 of
+‘cpumask_set_cpu’ discards qualifiers from pointer target type
+arch/ia64/kernel/smpboot.c:745: warning: passing argument 2 of
+‘cpumask_clear_cpu’ discards qualifiers from pointer target type
+
+Four of the five involve "cpu_callin_mask" which is "volatile", the other is for
+"cpu_present_mask" - not sure what the problem is for this one.
+
+-Tony
