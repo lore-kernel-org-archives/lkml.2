@@ -1,127 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752612Ab1GFWPb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 18:15:31 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:43259 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751552Ab1GFWPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 18:15:30 -0400
-Subject: [PATCH V8 0/4 net-next] macvtap/vhost TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>, mst@redhat.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jul 2011 15:15:25 -0700
-Message-ID: <1309990525.10209.12.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
+	id S1752734Ab1GFWQS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 18:16:18 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:50769 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab1GFWQR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 18:16:17 -0400
+Message-ID: <4E14DEA9.1060908@canonical.com>
+Date: Wed, 06 Jul 2011 15:16:09 -0700
+From: Chase Douglas <chase.douglas@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110516 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Henrik Rydberg <rydberg@euromail.se>, Daniel Kurtz <djkurtz@chromium.org>,
+        rubini@cvml.unipv.it, linux-input@vger.kernel.org,
+        linux-kernel@vger.kernel.org, derek.foreman@collabora.co.uk,
+        daniel.stone@collabora.co.uk, olofj@chromium.org
+Subject: Re: [PATCH 09/12] Input: synaptics - add image sensor support
+References: <CAGS+omAzKe5frVYuV2MPXBTugKD1xNZCHsaz53H+tDO7EWw8xQ@mail.gmail.com> <20110705192759.GA29549@polaris.bitmath.org> <CAGS+omDzg-xADYxKQmWy1KRhJ=n9pn9XR_HMc01xqCSDSLa5UA@mail.gmail.com> <20110706174503.GA5695@core.coreip.homeip.net> <20110706184759.GA3389@polaris.bitmath.org> <20110706185832.GA6086@core.coreip.homeip.net> <20110706193120.GA3884@polaris.bitmath.org> <20110706200056.GB6086@core.coreip.homeip.net> <20110706202049.GA4077@polaris.bitmath.org> <4E14D22D.8050108@canonical.com> <20110706213658.GA9409@core.coreip.homeip.net>
+In-Reply-To: <20110706213658.GA9409@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset add supports for TX zero-copy between guest and host
-kernel through vhost. It significantly reduces CPU utilization on the
-local host on which the guest is located (It reduced about 50% CPU usage
-for single stream test on the host, while 4K message size BW has
-increased about 50%). The patchset is based on previous submission and
-comments from the community regarding when/how to handle guest kernel
-buffers to be released. This is the simplest approach I can think of
-after comparing with several other solutions.
+On 07/06/2011 02:36 PM, Dmitry Torokhov wrote:
+> On Wed, Jul 06, 2011 at 02:22:53PM -0700, Chase Douglas wrote:
+>> On 07/06/2011 01:20 PM, Henrik Rydberg wrote:
+>>>>> To me, it seems we do need a little bit of extra information to
+>>>>> determine this new type of device.
+>>>>
+>>>> I think we already have all we need (see above).
+>>>
+>>> I concur. So, to conclude:
+>>>
+>>> a) The improved synaptics behavior can be achieved by simply using
+>>> MT-B plus BTN_TOOL_*.
+>>>
+>>> b) Userspace should check BTN_TOOL_* for any discrepancies between the
+>>> maximum number of available slots (always two in this case) and the
+>>> maximum number of fingers reported (BTN_TOOL_TRIPLETAP etc). Extra
+>>> actions may then be taken to support more fingers than slots.
+>>>
+>>> c) The semi-mt flag is only used to signal that the two points sent
+>>> via MT-B are the corners of a bounding box.
+>>
+>> This isn't quite enough. If we don't set the semi-mt flag or any other
+>> new flag, then we'll have slots that become inconsistent when touches
+>> are added or removed. For example, start with two touches being tracked
+>> correctly. Now, add a touch. The second slot will now get the data of
+>> the third touch, which is in a different location. You haven't changed
+>> the tracking_id though, so it looks like the same touch. This is
+>> incorrect behavior. Or, you could change the tracking_id, but that
+>> implies that a touch was lifted and another was placed. This is also
+>> incorrect behavior.
+> 
+> The tracking ID needs to be changed as we start trackign and reporting
+> new touch. We could see that the old touch was not removed from the fact
+> that total number of finger reported increased.
 
-This patchset has integrated V3 review comments from community: 
+The evdev protocol is discrete, not continuous, so it's theoretically
+possible that one touch could end at the same time that another begins.
+IIRC, the time resolution of some MT devices makes this completely
+possible, perhaps to the point that it would be trival to make this
+happen in a few seconds of trying.
 
-1. Add more comments on how to use device ZEROCOPY flag;
-2. Change device ZEROCOPY to available bit 31
-3. Fix skb header linear allocation when virtio_net GSO is not enabled
+I think the MT-B protocol has only ever used tracking_id for signalling
+touch begin and touch end, where the id goes from -1 to something else
+and vice versa. Maybe the protocol could be "extended" by saying that a
+transition from one valid id to another means there is inconsistent
+touch state, but the old touch hasn't necessarily ended and the new
+touch hasn't necessarily started at this point in time.
 
-It has integrated V4 review comments from MST and Sridhar:
-1. In vhost, using socket poll wake up for outstanding DMAs
-2. Add detailed comments for vhost_zerocopy_signal_used call
-3. Add sleep in vhost shutting down instead of busy-wait for outstanding
-   DMAs.
-4. Copy small packets, don't do zero-copy callback in mavtap, mark it's
-   DMA done in vhost
-5. change zerocopy to bool in macvtap.
+I'm not sure this is any easier than flagging these as bad devices
+because now we need to watch tracking ID changes on top of touch count
+changes. From someone who has attempted to implement semi-mt in X
+synaptics, adding more complexity here should be avoided at all cost :).
 
-It has integrated V5 review comments from MST and 
-MichaÅ. MirosÅ.aw <mirqus@...il.com>
-1. Prevent userspace apps from holding skb userspace buffers by copying
-userspace buffers to kernel in skb_clone, skb_copy, pskb_copy,
-pskb_expand_head.
-2. It is also used HIGHDMA, SG feature bits to enable ZEROCOPY to remove
-the dependency of a new feature bit, we can add it later when new
-feature bit is available.
+>> We need to tell userspace that this is a messed up device that can't
+>> accurately track touch locations across touch up/down boundaries. Once
+>> userspace sees this, it can act appropriately when it sees a transition
+>> from BTN_TOOL_DOUBLETAP to BTN_TOOL_TRIPLETAP, for example. This is how
+>> we handle transitions in the uTouch stack for semi-mt devices.
+>>
+>> Perhaps a clean implementation would be to keep semi-mt as a flag
+>> stating that there will only ever be two slots, the 0th will be the
+>> minimum (x,y) of the bounding box and the 1st will be the maximum. Then,
+>> we add a flag like NO_TOUCH_TRANSITION_TRACKING that would be set on
+>> both semi-mt and these new devices that denote the slot data may
+>> transition from one physical touchpoint to another when the number of
+>> touches changes.
+>>
+>> We could leave this up to userspace and have it detect a
+>> NO_TOUCH_TRANSITION_TRACKING device based on the fact that the max slots
+>> is less than the max fingers, but I would argue here that a more clear
+>> protocol is a better protocol.
+> 
+> I'll ask this - how much realistically do we care about 3+ finger
+> transitions in context of these particular devices? This is a touchpad
+> so as long as basic 2 finger gestures work (zoom, pinch, 2-finger
+> scroll) with Synaptics X driver we should be fine. I do not want to add
+> all kinds of custom flags to the protocol to deal with this generation
+> of touchpads.
 
-It has integrated V6 review comments from Eric Dumazet.
-1. Moving ubuf_info object from skb to caller, just use one pointer in
-skb_share_info to point ubuf_info object.
+I've given up on trying to send semi-mt data through the proposed XInput
+2.1 multitouch protocol. I think the best option is to send all this
+data as valuators of a single touch (a touch and not a traditional
+pointer event due to the multitouch/gesture semantics). Thus, we should
+be focusing on what is possible in the gesture realm since we have
+thrown full multiouch out the window for these devices.
 
-2. Change the zero-copy size from 256 bytes to PAGE_SIZE (4K) because of
-the small message size performance issue.
+With these devices we can support one touch drag, two touch pinch,
+rotate, and zoom, and 1-5 touch tap. For these to work, we need to know
+the number of touches at any given time, the locations of the two
+touches when only two touches are active, and some representative
+location for the 1 and 3-5 touch cases.
 
-3. During vhost shutting down, release outstanding userspace buffers w/o
-waiting for lower device DMAs done if any. Do we really care about the
-possible wrong data being sent on the wire during shutting down?
+I am sitting here writing possible solutions trying to come up with sane
+ways to handle all this, but every 5 minutes I erase what I came up with
+and start over because you only see the problems once you've analysed
+every scenario. I can't see any way to cater for these devices aside
+from: handle them as single touch because they suck, or something
+similar to what has been described in the past few hours.
 
-This patch has integrated Version 7 review from Michael:
-1. Add comment to fix busywait while vhost ring changes and clean up.
+> It sounds to me like latest generation of Synaptocs protocol is a dud
+> and hopefully they will fix it to something more flexible in the next
+> generationof chips...
 
-2. Add a new tx flags for zero copy skbs, use destructor_arg to avoid a new
-point in skb share_info.
+We can only hope. In the meantime, it looks like Google is pushing to
+use these devices on reference designs for Chrome OS, and big vendors
+like Dell are perfectly happy to ship Ubuntu with the 100 times worse
+(because we don't know their protocol) ALPS devices. Waiting for sanity
+to win out seems like a lost cause to me :(.
 
-This patchset includes:
-1/4: Add a new sock zero-copy flag, SOCK_ZEROCOPY;
-
-2/4: Add a new tx flags in skb_share_info SKBTX_DEV_ZEROCOPY to check 
-userspace buffers release callback when lower device DMA has done for that skb,
-which is the last reference count gone; 
-
-And whenever skb_clone, skb_copy, pskb_copy, pskb_expand_head get call 
-from tcpdump, filtering, these userspace buffers will be copied into kernel 
-... we don't want userspace apps to hold userspace buffers too long.
-
-Use skb destructor arg as a pointer to userspace buffer info 
-
-3/4: Add vhost zero-copy callback in vhost when skb last refcnt is gone;
-add vhost_zerocopy_signal_used to notify guest to release TX skb
-buffers.
-
-4/4: Add macvtap zero-copy in lower device when sending packet is
-greater than 256 bytes.
-
-The patchset is built against net next linux-3.0.0-rc5. It has passed
-netperf/netserver multiple streams stress test, tcpdump suspended test, 
-dynamically SG change test.
-
-Single TCP_STREAM 120 secs test results 2.6.39-rc3 over ixgbe 10Gb NIC
-results:
-
-Message BW(Gb/s)qemu-kvm (NumCPU)vhost-net(NumCPU) PerfTop irq/s
-4K      7408.57         92.1%           22.6%           1229
-4K(Orig)4913.17         118.1%          84.1%           2086    
-8K      9129.90         89.3%           23.3%           1141
-8K(Orig)7094.55         115.9%          84.7%           2157
-16K     9178.81         89.1%           23.3%           1139
-16K(Orig)8927.1         118.7%          83.4%           2262
-64K     9171.43         88.4%           24.9%           1253
-64K(Orig)9085.85        115.9%          82.4%           2229
-
-For message size less or equal than 2K, there is a known KVM guest TX
-overrun issue. With this zero-copy patch, the issue becomes more severe,
-guest io_exits has tripled than before, so the performance is not good.
-Once the TX overrun problem has been addressed, I will retest the small
-message size performance.
-
- drivers/net/macvtap.c  |  132 ++++++++++++++++++++++++++++++++++++++++++++----
- drivers/vhost/net.c    |   45 ++++++++++++++++-
- drivers/vhost/vhost.c  |   48 +++++++++++++++++
- drivers/vhost/vhost.h  |   15 ++++++
- include/linux/skbuff.h |   16 ++++++
- include/net/sock.h     |    1 +
- net/core/skbuff.c      |   79 ++++++++++++++++++++++++++++-
- 7 files changed, 324 insertions(+), 14 deletions(-)
-
-Thanks
-Shirley
-
+-- Chase
