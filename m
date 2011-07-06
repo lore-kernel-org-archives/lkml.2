@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755551Ab1GFB2M (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 21:28:12 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:58008 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461Ab1GFB2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 21:28:12 -0400
-Date: Tue, 5 Jul 2011 18:27:39 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 1/2] x86: give names to realmode wakeup flags
-Message-ID: <20110706012739.GA32221@outflux.net>
-References: <1309818953-769-1-git-send-email-kees.cook@canonical.com>
- <1309818953-769-2-git-send-email-kees.cook@canonical.com>
- <4E1392BA.8010708@zytor.com>
+	id S1755740Ab1GFBmP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 21:42:15 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:56663 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753878Ab1GFBmO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 21:42:14 -0400
+Date: Tue, 5 Jul 2011 19:42:13 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: Tony Lindgren <tony@atomide.com>
+cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Aaro Koskinen <aaro.koskinen@nokia.com>,
+        Rajendra Nayak <rnayak@ti.com>,
+        =?ISO-8859-15?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+        Michael Buesch <mb@bu3sch.de>
+Subject: Re: [PATCH] OMAP: hwmod: add kernel cmdline flag to avoid resetting
+ IP blocks during init
+In-Reply-To: <20110704085503.GQ23145@atomide.com>
+Message-ID: <alpine.DEB.2.00.1107051936250.4217@utopia.booyaka.com>
+References: <20110703010204.19046.85186.stgit@dusk> <20110703010206.19046.85293.stgit@dusk> <20110704085503.GQ23145@atomide.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E1392BA.8010708@zytor.com>
-Organization: Canonical
-X-HELO: www.outflux.net
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 03:39:54PM -0700, H. Peter Anvin wrote:
-> On 07/04/2011 03:35 PM, Kees Cook wrote:
-> > Instead of using literals, use a common set of names for the
-> > user-controlled realmode wakeup flags.
-> > 
-> > Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> 
-> I'm sorry, but I really have to complain about this:
-> 
-> This was a very unfriendly thing to do.
+cc'ing Aaro
 
-Obviously I wasn't trying to be unfriendly. :P
+On Mon, 4 Jul 2011, Tony Lindgren wrote:
 
-> You took a patch that is a bug fix to be considered for -stable,
-> and you applied it *on top of a cleanup patch*.
+> Also related is the gptimer12 on secure omaps as reported by Aaro.
 
-It wasn't clear to me if the MISC_ENABLE reload should be considered for
-stable (it does technically "more" than my original patch, and changes
-the resume header structure, etc). If it should be forwarded to -stable,
-that's fine too. I just didn't want to presume.
+This problem is actually worse.  In this case it's not just preventing 
+reset; we must prevent the kernel from using the device at all. My 
+understanding is also that it's the X-Loader or bootloader -- or more 
+broadly, secure mode code -- that actually chooses which devices are 
+protected in this way.  In other words, we can't make any automatic 
+decisions that are based on knowing that a chip is a high-security chip -- 
+it will need to be defined by the board file :-(
 
-> They should not have been part of the same patchset,
-> but *certainly* not in that order.
+For this case, we probably need some board file function to tell the hwmod 
+code to disregard a device completely, to tell the kernel to pretend that 
+the device does not exist.
 
-Since they hit the same .h file in the same location, I wasn't sure what
-order to do it in. It seemed unhelpful to send them separately.
 
-> Please resubmit.
-
-Sure thing -- in the opposite order, or totally separate from each other?
-
--Kees
-
--- 
-Kees Cook
-Ubuntu Security Team
+- Paul
