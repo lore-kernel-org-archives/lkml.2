@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754766Ab1GFJg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 05:36:27 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:40569 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754370Ab1GFJg0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 05:36:26 -0400
+	id S1752439Ab1GFJhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 05:37:23 -0400
+Received: from multi.imgtec.com ([194.200.65.239]:2874 "EHLO multi.imgtec.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750992Ab1GFJhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 05:37:21 -0400
+Message-ID: <4E142CCE.7090109@imgtec.com>
+Date: Wed, 06 Jul 2011 10:37:18 +0100
+From: James Hogan <james.hogan@imgtec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.15) Gecko/20101027 Fedora/3.0.10-1.fc12 Thunderbird/3.0.10
 MIME-Version: 1.0
-In-Reply-To: <1309870814-14181-3-git-send-email-ian.campbell@citrix.com>
-References: <20110705111525.GR17941@sun>
-	<1309870814-14181-3-git-send-email-ian.campbell@citrix.com>
-Date: Wed, 6 Jul 2011 12:36:25 +0300
-X-Google-Sender-Auth: aAJwF6rEgK53QIbSnKABpRtnjVk
-Message-ID: <CAOJsxLH=LMASd9cZJQhJHUuXeArQxWhHt65xg39P5=6KySOV-g@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86: ret_from_fork: use symbolic contants for bits in EFLAGS
-From: Pekka Enberg <penberg@kernel.org>
-To: Ian Campbell <ian.campbell@citrix.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>, linux-kernel@vger.kernel.org,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>, Brian Gerst <brgerst@gmail.com>,
-        Jan Beulich <JBeulich@novell.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Frederic Weisbecker <fweisbec@gmail.com>, x86@kernel.org
+To: James Hogan <james.hogan@imgtec.com>
+CC: Chris Ball <cjb@laptop.org>, Will <will.newton@imgtec.com>,
+        Jaehoon Chung <jh80.chung@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-mmc <linux-mmc@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH v2 1/4] mmc: dw_mmc: fix stop when fallen back to PIO
+References: <4E142C10.3050508@imgtec.com>
+In-Reply-To: <4E142C10.3050508@imgtec.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 06 Jul 2011 09:37:18.0941 (UTC) FILETIME=[4C7530D0:01CC3BC0]
+X-SEF-Processed: 7_3_0_01158__2011_07_06_10_37_19
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 5, 2011 at 4:00 PM, Ian Campbell <ian.campbell@citrix.com> wrote:
-> Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-> Cc: x86@kernel.org
-> ---
->  arch/x86/kernel/entry_32.S |    2 +-
->  arch/x86/kernel/entry_64.S |    2 +-
->  2 files changed, 2 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/x86/kernel/entry_32.S b/arch/x86/kernel/entry_32.S
-> index 5c1a9197..f032530 100644
-> --- a/arch/x86/kernel/entry_32.S
-> +++ b/arch/x86/kernel/entry_32.S
-> @@ -303,7 +303,7 @@ ENTRY(ret_from_fork)
->        call schedule_tail
->        GET_THREAD_INFO(%ebp)
->        popl_cfi %eax
-> -       pushl_cfi $0x0202               # Reset kernel eflags
-> +       pushl_cfi $(X86_EFLAGS_IF|0x2)  # Reset kernel eflags
->        popfl_cfi
->        jmp syscall_exit
->        CFI_ENDPROC
-> diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
-> index 9c28bd5..4c76abf 100644
-> --- a/arch/x86/kernel/entry_64.S
-> +++ b/arch/x86/kernel/entry_64.S
-> @@ -399,7 +399,7 @@ ENTRY(ret_from_fork)
->
->        call schedule_tail                      # rdi: 'prev' task parameter
->
-> -       pushq_cfi $0x0202
-> +       pushq_cfi $(X86_EFLAGS_IF|0x2)
->        popfq_cfi                               # reset kernel eflags
->
->        GET_THREAD_INFO(%rcx)
+There are several situations when dw_mci_submit_data_dma() decides to
+fall back to PIO mode instead of using DMA, due to a short (to avoid
+overhead) or "complex" (e.g. with unaligned buffers) transaction, even
+though host->use_dma is set. However dw_mci_stop_dma() decides whether
+to stop DMA or set the EVENT_XFER_COMPLETE event based on host->use_dma.
+When falling back to PIO mode this results in data timeout errors
+getting missed and the driver locking up.
 
-Reviewed-by: Pekka Enberg <penberg@kernel.org>
+Therefore add host->using_dma to indicate whether the current
+transaction is using dma or not, and adjust dw_mci_stop_dma() to use
+that instead.
+
+Signed-off-by: James Hogan <james.hogan@imgtec.com>
+Acked-by: Will Newton <will.newton@imgtec.com>
+Tested-by: Jaehoon Chung <jh80.chung@samsung.com>
+---
+ drivers/mmc/host/dw_mmc.c  |    6 +++++-
+ include/linux/mmc/dw_mmc.h |    2 ++
+ 2 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mmc/host/dw_mmc.c b/drivers/mmc/host/dw_mmc.c
+index 10b6979..fcff3c0 100644
+--- a/drivers/mmc/host/dw_mmc.c
++++ b/drivers/mmc/host/dw_mmc.c
+@@ -287,7 +287,7 @@ static void send_stop_cmd(struct dw_mci *host, struct mmc_data *data)
+ /* DMA interface functions */
+ static void dw_mci_stop_dma(struct dw_mci *host)
+ {
+-	if (host->use_dma) {
++	if (host->using_dma) {
+ 		host->dma_ops->stop(host);
+ 		host->dma_ops->cleanup(host);
+ 	} else {
+@@ -435,6 +435,8 @@ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
+ 	unsigned int i, direction, sg_len;
+ 	u32 temp;
+ 
++	host->using_dma = 0;
++
+ 	/* If we don't have a channel, we can't do DMA */
+ 	if (!host->use_dma)
+ 		return -ENODEV;
+@@ -454,6 +456,8 @@ static int dw_mci_submit_data_dma(struct dw_mci *host, struct mmc_data *data)
+ 			return -EINVAL;
+ 	}
+ 
++	host->using_dma = 1;
++
+ 	if (data->flags & MMC_DATA_READ)
+ 		direction = DMA_FROM_DEVICE;
+ 	else
+diff --git a/include/linux/mmc/dw_mmc.h b/include/linux/mmc/dw_mmc.h
+index f3f68ee..6b46819 100644
+--- a/include/linux/mmc/dw_mmc.h
++++ b/include/linux/mmc/dw_mmc.h
+@@ -48,6 +48,7 @@ struct mmc_data;
+  * @data: The data currently being transferred, or NULL if no data
+  *	transfer is in progress.
+  * @use_dma: Whether DMA channel is initialized or not.
++ * @using_dma: Whether DMA is in use for the current transfer.
+  * @sg_dma: Bus address of DMA buffer.
+  * @sg_cpu: Virtual address of DMA buffer.
+  * @dma_ops: Pointer to platform-specific DMA callbacks.
+@@ -121,6 +122,7 @@ struct dw_mci {
+ 
+ 	/* DMA interface members*/
+ 	int			use_dma;
++	int			using_dma;
+ 
+ 	dma_addr_t		sg_dma;
+ 	void			*sg_cpu;
+-- 
+1.7.2.3
+
+
