@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab1GFXwa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 19:52:30 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51263 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752751Ab1GFXw2 (ORCPT
+	id S1753916Ab1GFX4W (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 19:56:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37956 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab1GFX4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 19:52:28 -0400
-Date: Wed, 6 Jul 2011 16:51:46 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Mel Gorman <mgorman@suse.de>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 00/14] Swap-over-NBD without deadlocking v5
-Message-Id: <20110706165146.be7ab61b.akpm@linux-foundation.org>
-In-Reply-To: <1308575540-25219-1-git-send-email-mgorman@suse.de>
-References: <1308575540-25219-1-git-send-email-mgorman@suse.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jul 2011 19:56:21 -0400
+Date: Thu, 7 Jul 2011 01:56:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: David Sharp <dhsharp@google.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiaying Zhang <jiayingz@google.com>
+Subject: Re: [PATCH v2] trace: Add x86 irq vector entry/exit tracepoints
+Message-ID: <20110706235613.GA21115@somewhere>
+References: <1304107962-18576-1-git-send-email-vnagarnaik@google.com>
+ <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
+ <20110531235957.GB5256@somewhere.redhat.com>
+ <BANLkTi=YYCXHi5k82Q+sE6+134i97pjjAA@mail.gmail.com>
+ <BANLkTinT6ULRWwHAGYFpQSw-ptQiuzrkPtZuKVZHD8b5mh9hpA@mail.gmail.com>
+ <20110616030200.GC18579@somewhere.redhat.com>
+ <4E14F31B.4080102@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4E14F31B.4080102@zytor.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 20 Jun 2011 14:12:06 +0100
-Mel Gorman <mgorman@suse.de> wrote:
-
-> Swapping over NBD is something that is technically possible but not
-> often advised. While there are number of guides on the internet
-> on how to configure it and nbd-client supports a -swap switch to
-> "prevent deadlocks", the fact of the matter is a machine using NBD
-> for swap can be locked up within minutes if swap is used intensively.
+On Wed, Jul 06, 2011 at 04:43:23PM -0700, H. Peter Anvin wrote:
+> On 06/15/2011 08:02 PM, Frederic Weisbecker wrote:
+> > 
+> > If a generic tracepoint can replace one per arch, we all want that instead.
+> > This is 24 times (24 archs) less maintainance burden.
+> > 
 > 
-> The problem is that network block devices do not use mempools like
-> normal block devices do. As the host cannot control where they receive
-> packets from, they cannot reliably work out in advance how much memory
-> they might need.
-> 
-> Some years ago, Peter Ziljstra developed a series of patches that
-> supported swap over an NFS that some distributions are carrying in
-> their kernels. This patch series borrows very heavily from Peter's work
-> to support swapping over NBD (the relatively straight-forward case)
-> and uses throttling instead of dynamically resized memory reserves
-> so the series is not too unwieldy for review.
+> Are you in effect saying that tracepoints are now a stable ABI?  They
+> sure as hell haven't been architected, reviewed, or accepted for any
+> such purpose.
 
-I have to say, I look over these patches and my mind wants to turn to
-things like puppies.  And ice cream.
+Nope, I'm rather suggesting that it's better to have 1 line of code instead of 24.
 
-There's quite some complexity added here in areas which are already
-reliably unreliable and afaik swap-over-NBD is not a thing which a lot
-of people want to do.  I can see that swap-over-NFS would be useful to
-some people, and the fact that distros are carrying swap-over-NFS
-patches has weight.
-
-Do these patches lead on to swap-over-NFS?  If so, how much more
-additional complexity are we buying into for that?
+And even if tracepoints are not supposed to be stable ABI (I actually believe there
+is no absolute answer to that, it depends on the tracepoint and on the context),
+tools are much happier with a common tracepoint interface amongst archs.
