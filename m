@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755858Ab1GFTYU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 15:24:20 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49787 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755481Ab1GFTYT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 15:24:19 -0400
-Message-ID: <4E14B6D6.4020902@cn.fujitsu.com>
-Date: Thu, 07 Jul 2011 03:26:14 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM <kvm@vger.kernel.org>
-Subject: Re: [PATCH v3 16/19] KVM: MMU: lockless walking shadow page table
-References: <4E0C3178.2080603@cn.fujitsu.com> <4E0C3337.5040304@cn.fujitsu.com> <20110706180859.GB9820@amt.cnet>
-In-Reply-To: <20110706180859.GB9820@amt.cnet>
-X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-07 03:23:39,
-	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
- 2011-07-07 03:23:39,
-	Serialize complete at 2011-07-07 03:23:39
+	id S1755900Ab1GFT21 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 15:28:27 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:39784 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755807Ab1GFT2Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 15:28:25 -0400
+Subject: Re: [PATCH V7 4/4 net-next] vhost: vhost TX zero-copy support
+From: Shirley Ma <mashirle@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: David Miller <davem@davemloft.net>, Eric Dumazet <eric.dumazet@gmail.com>,
+        Avi Kivity <avi@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20110629091300.GC14627@redhat.com>
+References: <1306611267.5180.97.camel@localhost.localdomain>
+	 <20110629091300.GC14627@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 06 Jul 2011 12:28:16 -0700
+Message-ID: <1309980496.10209.2.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/2011 02:08 AM, Marcelo Tosatti wrote:
-
->> +static void free_pages_rcu(struct rcu_head *head)
->> +{
->> +	struct kvm_mmu_page *next, *sp;
->> +
->> +	sp = container_of(head, struct kvm_mmu_page, rcu);
->> +	while (sp) {
->> +		if (!list_empty(&sp->link))
->> +			next = list_first_entry(&sp->link,
->> +				      struct kvm_mmu_page, link);
->> +		else
->> +			next = NULL;
->> +		kvm_mmu_free_page(sp);
->> +		sp = next;
->> +	}
->> +}
+On Wed, 2011-06-29 at 12:13 +0300, Michael S. Tsirkin wrote:
+> On Sat, May 28, 2011 at 12:34:27PM -0700, Shirley Ma wrote:
+> > Hello Michael,
+> > 
+> > In order to use wait for completion in shutting down, seems to me
+> > another work thread is needed to call vhost_zerocopy_add_used,
 > 
-> There is no need for this while loop.
+> Hmm I don't see vhost_zerocopy_add_used here.
+
+I put the call in vhost_set_vring.
+
 > 
+> > it seems
+> > too much work to address a minor issue here. Do we really need it?
+> 
+> Assuming you mean vhost_zerocopy_signal_used, here's how I would do
+> it:
+> add a kref and a completion, signal completion in kref_put
+> callback, when backend is set - kref_get, on cleanup,
+> kref_put and then wait_for_completion_interruptible.
+> Where's the need for another thread coming from?
+> 
+> If you like, post a patch with busywait + a FIXME comment,
+> and I can write up a patch on top.
 
-The while loop is needed, since many shadow pages can be freed together in
-the rcu context, on commit_zap_page path, we only remove the list head, and
-the shadow page is still listed.
+I might not have time  to finish this during my vacation, so I am
+putting busywait + a FIXME comment.
 
- 
+> (BTW, ideally the function that does the signalling should be
+> in core networking bits so that it's still around
+> even if the vhost module gets removed). 
+
+Thanks
+Shirley
 
