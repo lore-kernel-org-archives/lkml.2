@@ -1,81 +1,133 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755838Ab1GFTpx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 15:45:53 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:52457 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753865Ab1GFTpw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 15:45:52 -0400
-From: =?ISO-8859-1?Q?P=E9ter?= Ujfalusi <peter.ujfalusi@ti.com>
-To: <alsa-devel@alsa-project.org>
-CC: "Girdwood, Liam" <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Balbi, Felipe" <balbi@ti.com>,
-        "Lopez Cruz, Misael" <misael.lopez@ti.com>
-Subject: Re: [alsa-devel] [PATCH v3 0/5] MFD/input/ASoC: twl6040: irq registration changes
-Date: Wed, 6 Jul 2011 22:45:37 +0300
-Message-ID: <2691573.u38zO5bac0@barack>
-User-Agent: KMail/4.6.0 (Linux/2.6.39-gentoo; KDE/4.6.4; x86_64; ; )
-In-Reply-To: <1309895376-17446-1-git-send-email-peter.ujfalusi@ti.com>
-References: <1309895376-17446-1-git-send-email-peter.ujfalusi@ti.com>
+	id S1755999Ab1GFT5S (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 15:57:18 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54103 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755704Ab1GFT5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 15:57:17 -0400
+Message-ID: <4E14BE90.8070508@cn.fujitsu.com>
+Date: Thu, 07 Jul 2011 03:59:12 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc15 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="iso-8859-1"
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM <kvm@vger.kernel.org>
+Subject: Re: [PATCH v3 18/19] KVM: MMU: mmio page fault support
+References: <4E0C3178.2080603@cn.fujitsu.com> <4E0C3375.6010500@cn.fujitsu.com> <20110706185252.GC9820@amt.cnet>
+In-Reply-To: <20110706185252.GC9820@amt.cnet>
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-07 03:56:37,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-07 03:56:37,
+	Serialize complete at 2011-07-07 03:56:37
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Samuel, Dmitry,
+On 07/07/2011 02:52 AM, Marcelo Tosatti wrote:
 
-would you be able to take a look at this series?
+>> +/*
+>> + * If it is a real mmio page fault, return 1 and emulat the instruction
+>> + * directly, return 0 to let CPU fault again on the address, -1 is
+>> + * returned if bug is detected.
+>> + */
+>> +int handle_mmio_page_fault_common(struct kvm_vcpu *vcpu, u64 addr, bool direct)
+>> +{
+>> +	u64 spte;
+>> +
+>> +	if (quickly_check_mmio_pf(vcpu, addr, direct))
+>> +		return 1;
+>> +
+>> +	spte = walk_shadow_page_get_mmio_spte(vcpu, addr);
+>> +
+>> +	if (is_mmio_spte(spte)) {
+>> +		gfn_t gfn = get_mmio_spte_gfn(spte);
+>> +		unsigned access = get_mmio_spte_access(spte);
+>> +
+>> +		if (direct)
+>> +			addr = 0;
+>> +		vcpu_cache_mmio_info(vcpu, addr, gfn, access);
+>> +		return 1;
+>> +	}
+>> +
+>> +	/*
+>> +	 * It's ok if the gva is remapped by other cpus on shadow guest,
+>> +	 * it's a BUG if the gfn is not a mmio page.
+>> +	 */
+>> +	if (direct && is_shadow_present_pte(spte))
+>> +		return -1;
+> 
 
-Thank you,
-Péter
+Marcelo,
 
-On Tuesday 05 July 2011 21:49:31 Ujfalusi, Peter wrote:
-> Hello,
+> This is only going to generate an spte dump, for a genuine EPT
+> misconfig, if the present bit is set.
 > 
-> Changes since v2:
-> - Fix the check in the slaves driver for the validity of the received irq
-> - Mark Brown's ack added to patch 3
+> Should be:
 > 
-> Intro mail froim v1:
-> As Samuel, and Felipe requested for the twl6040 MFD series:
-> http://marc.info/?l=linux-kernel&m=130978512225430&w=2
-> http://marc.info/?l=linux-omap&m=130978403224218&w=2
+> /*
+>  * Page table zapped by other cpus, let CPU fault again on
+>  * the address.
+>  */
+> if (*spte == 0ull)
+>     return 0;
+
+Can not use "*spte == 0ull" here, it should use !is_shadow_present_pte(spte)
+instead, since on x86-32 host, we can get the high 32 bit is set, and the present
+bit is cleared.
+
+> /* BUG if gfn is not an mmio page */
+> return -1;
+
+We can not detect bug for soft-mmu, since the shadow page can be changed anytime,
+for example:
+
+VCPU 0                            VCPU1
+mmio page is intercepted
+                              change the guest page table and map the virtual
+                              address to the RAM region
+walk shadow page table, and
+detect the gfn is RAM, spurious
+BUG is reported
+
+In theory, it can be happened.
+
 > 
-> This is the update to remove the obfuscation around the threaded irq request
-> in the twl6040 driver and it's slaves.
+>> +static bool sync_mmio_spte(u64 *sptep, gfn_t gfn, unsigned access,
+>> +			   int *nr_present)
+>> +{
+>> +	if (unlikely(is_mmio_spte(*sptep))) {
+>> +		if (gfn != get_mmio_spte_gfn(*sptep)) {
+>> +			mmu_spte_clear_no_track(sptep);
+>> +			return true;
+>> +		}
+>> +
+>> +		(*nr_present)++;
 > 
-> With this change the slaves uses directly the threaded irq request, and the
-> core driver passes the irq number for the slaves to use (configured runtime,
-> so machine drivers do not need to be updated).
+> Can increase nr_present in the caller.
 > 
-> Regards,
-> Peter
+
+Yes, we should increase it to avoid the unsync shadow page to be freed.
+
+>> @@ -6481,6 +6506,13 @@ void kvm_arch_commit_memory_region(struct kvm *kvm,
+>>  	if (!kvm->arch.n_requested_mmu_pages)
+>>  		nr_mmu_pages = kvm_mmu_calculate_mmu_pages(kvm);
+>>  
+>> +	/*
+>> +	 * If the new memory slot is created, we need to clear all
+>> +	 * mmio sptes.
+>> +	 */
+>> +	if (npages && old.base_gfn != mem->guest_phys_addr >> PAGE_SHIFT)
+>> +		kvm_arch_flush_shadow(kvm);
+>> +
 > 
-> PS: for the remaining comments from Samuel I have changed the series, since
-> the requested change was small.
-> I'm not intended to send the series again, unless it is requested (again the
-> change from v6 is minimal - few lines has been removed/replaced).
+> This should be in __kvm_set_memory_region.
 > 
-> ---
-> Peter Ujfalusi (5):
->   MFD: twl6040: Use resource to provide irq number for slaves
->   input: twl6040-vibra: Do not use wrapper for irq request
->   ASoC: twl6040: Do not use wrapper for irq request
->   MFD: twl6040: Demand valid interrupt configuration
->   MFD: twl6040: Remove wrapper for threaded irq request
-> 
->  drivers/input/misc/twl6040-vibra.c |   17 ++++++---
->  drivers/mfd/twl6040-core.c         |   69
-> ++++++++++++++++++++++++----------- drivers/mfd/twl6040-irq.c          |  
-> 16 +--------
->  include/linux/mfd/twl6040.h        |   22 -----------
->  sound/soc/codecs/twl6040.c         |   19 +++++++---
->  5 files changed, 74 insertions(+), 69 deletions(-)
+
+Um, __kvm_set_memory_region is a common function, and only x86 support mmio spte,
+it seems no need to do this for all architecture?
 
