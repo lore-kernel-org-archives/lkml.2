@@ -1,116 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755301Ab1GFAdl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 20:33:41 -0400
-Received: from mail.lang.hm ([64.81.33.126]:54707 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753272Ab1GFAdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 20:33:40 -0400
-Date: Tue, 5 Jul 2011 17:33:35 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
-cc: linux-kernel-mail <linux-kernel@vger.kernel.org>,
-        linux-newbie@vger.kernel.org
-Subject: Re: Question on syslogd and syslog
-In-Reply-To: <CALyraeO1N3rvtHkRd9YWWV6azg-Y42dM3W9ytwo-nV4Rik3=9g@mail.gmail.com>
-Message-ID: <alpine.DEB.2.02.1107051732170.7310@asgard.lang.hm>
-References: <BANLkTin_Yo+wnwWyMFoG3Nv5SSzJj8J1_w@mail.gmail.com> <alpine.DEB.2.02.1106281238210.7935@asgard.lang.hm> <BANLkTi=tFc2uoGMNFAAFqpeka_otC6CsOQ@mail.gmail.com> <alpine.DEB.2.02.1107021021090.26801@asgard.lang.hm>
- <CALyraeO1N3rvtHkRd9YWWV6azg-Y42dM3W9ytwo-nV4Rik3=9g@mail.gmail.com>
-User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
+	id S1755419Ab1GFAhn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 20:37:43 -0400
+Received: from li9-11.members.linode.com ([67.18.176.11]:35446 "EHLO
+	test.thunk.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753305Ab1GFAhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 20:37:41 -0400
+Date: Tue, 5 Jul 2011 20:37:29 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: James Morris <jmorris@namei.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        linux-security-module@vger.kernel.org,
+        ksummit-2011-discuss@lists.linux-foundation.org,
+        Will Drewry <wad@chromium.org>, linux-doc@vger.kernel.org,
+        fweisbec@gmail.com, Chris Evans <scarybeasts@gmail.com>,
+        djm@mindrot.org, linux-kernel@vger.kernel.org,
+        Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+        kees.cook@canonical.com, tglx@linutronix.de,
+        Ingo Molnar <mingo@elte.hu>,
+        Linus Torvalds <torvalds@linux-foundation.org>, segoon@openwall.com
+Subject: Re: [Ksummit-2011-discuss] [PATCH v9 05/13] seccomp_filter:
+ Document what seccomp_filter is and how it works.
+Message-ID: <20110706003729.GF21216@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	James Morris <jmorris@namei.org>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	linux-security-module@vger.kernel.org,
+	ksummit-2011-discuss@lists.linux-foundation.org,
+	Will Drewry <wad@chromium.org>, linux-doc@vger.kernel.org,
+	fweisbec@gmail.com, Chris Evans <scarybeasts@gmail.com>,
+	djm@mindrot.org, linux-kernel@vger.kernel.org,
+	Eric Paris <eparis@redhat.com>, Randy Dunlap <rdunlap@xenotime.net>,
+	kees.cook@canonical.com, tglx@linutronix.de,
+	Ingo Molnar <mingo@elte.hu>,
+	Linus Torvalds <torvalds@linux-foundation.org>, segoon@openwall.com
+References: <20110701130705.GG12605@elte.hu>
+ <BANLkTimN0nEa2Bog2-vzCv=1XOG5OsJjLA@mail.gmail.com>
+ <20110701161027.GA29035@elte.hu>
+ <BANLkTikCaACO8o9HkAnkuaTuoKqqQWQrtw@mail.gmail.com>
+ <1309543448.26417.156.camel@gandalf.stny.rr.com>
+ <BANLkTin6rpBvbA1OuVHWy9ViZ-WPnwuXNw@mail.gmail.com>
+ <1309546099.26417.159.camel@gandalf.stny.rr.com>
+ <alpine.LRH.2.00.1107041207570.7474@tundra.namei.org>
+ <1309869654.26417.165.camel@gandalf.stny.rr.com>
+ <alpine.LRH.2.00.1107060945410.23585@tundra.namei.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="680960-103187949-1309912415=:7310"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LRH.2.00.1107060945410.23585@tundra.namei.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on test.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Jul 06, 2011 at 09:46:36AM +1000, James Morris wrote:
+> On Tue, 5 Jul 2011, Steven Rostedt wrote:
+> 
+> > I don't know about Linus, but as I was trying to find out who would be
+> > interested in a tracing track a plumber's, Peter Zijlstra, Thomas
+> > Gleixner, and Ingo, all told me that they would not be able to make it.
+> 
+> Damn.  Bring on (or back) the single developer event...
 
---680960-103187949-1309912415=:7310
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8BIT
+I tried telling you that people were complaining about needing to fly
+to different cities for Plumbers and Kernel Summit, and you didn't
+believe me.....  :-)
 
-the mechanism for putting all the logs with a paticular facility in a 
-different logfile if the filtering that I mentioned. if you use anything 
-other than sysklogd, you can filter things into files based on anything in 
-the message, not just the facility.
-David Lang
-
-  On Sun, 3 Jul 2011, Sri Ram Vemulpali 
-wrote:
-
-> Facilities of syslogd are associated to a particular file. So, in my
-> application there are 20 tasks which needs to have a separate log file
-> for every task. So, mapping every task to one facility fills my
-> requirement. So, this is the reason I want to extend the facilities of
-> level LOGLOCAL0-7.
->
-> Coming to previous question, the purpose is to fulfill the above requirement.
->
-> Thanks,
-> Sri.
->
-> On Sat, Jul 2, 2011 at 1:23 PM,  <david@lang.hm> wrote:
->> the problem is that in the syslog spec, the facility and severity get
->> combined into one 8 bit field (one of the two only has 12 values defined
->> instead of 16, but I don't remember off the top of my head which one)
->>
->> so extending this is creating a new protocol.
->>
->> also, the reason I was talking about filtering is that other than filtering,
->> what purpose is there in settng the facility?
->>
->> David Lang
->>
->> On Sat, 2 Jul 2011, Sri Ram Vemulpali wrote:
->>
->>> Thanks for the replies. My question is more on how to extend
->>> facilities, rather on how to filter the messages. It seems there is a
->>> code in the toolchain syslog.h where the array representing the
->>> facilities needs to be extended. Please correct me if I am wrong.
->>>
->>> Sri.
->>>
->>> On Tue, Jun 28, 2011 at 3:41 PM,  <david@lang.hm> wrote:
->>>>
->>>> you would be creating a completely different over-the-wire protocol for
->>>> your
->>>> syslog messages.
->>>>
->>>> however, note that newer syslog daemons (syslog-ng and rsyslog for
->>>> example)
->>>> allow you to do filtering on just about anything in the message, not just
->>>> the facility and severity.
->>>>
->>>> David Lang
->>>>
->>>> On Tue, 28 Jun 2011, Sri Ram Vemulpali wrote:
->>>>
->>>>> Date: Tue, 28 Jun 2011 14:11:59 -0400
->>>>> From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
->>>>> To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
->>>>>    linux-newbie@vger.kernel.org
->>>>> Subject: Question on syslogd and syslog
->>>>>
->>>>> Hello All,
->>>>>
->>>>>   I am looking to modify number of facilities available in syslog so
->>>>> that for my application I can have much more array of them at disposal
->>>>> of my need. So currently only LOG_LOCAL0 - LOG_LOCAL7 are defined for
->>>>> user, what if I want to extend them, is there a way I can extend them.
->>>>> Or should I go ahead and modify the source code of syslog. Can any
->>>>> please point me in right direction and where can I get syslogd and
->>>>> syslog source code. Thanks in advance.
->>>>>
->>>>>
->>>>
->>>
->>>
->>>
->>
->
->
->
->
---680960-103187949-1309912415=:7310--
+					- Ted
