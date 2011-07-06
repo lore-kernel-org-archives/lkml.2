@@ -1,69 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752733Ab1GFLMR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 07:12:17 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:61016 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751576Ab1GFLMQ (ORCPT
+	id S1752873Ab1GFLQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 07:16:23 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:63902 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751576Ab1GFLQW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 07:12:16 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Nori, Sekhar" <nsekhar@ti.com>
-Subject: Re: Please submit platform trees for inclusion in arm-soc.git v3.1
-Date: Wed, 6 Jul 2011 13:12:01 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Russell King <rmk@arm.linux.org.uk>
-References: <201107012018.14619.arnd@arndb.de> <B85A65D85D7EB246BE421B3FB0FBB593024D91AB83@dbde02.ent.ti.com>
-In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024D91AB83@dbde02.ent.ti.com>
+	Wed, 6 Jul 2011 07:16:22 -0400
+Date: Wed, 6 Jul 2011 15:16:16 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: tommy.lin@caviumnetworks.com
+Cc: "'Tommy Lin'" <tommy.lin.1101@gmail.com>,
+        "'Wim Van Sebroeck'" <wim@iguana.be>, linux-watchdog@vger.kernel.org,
+        linux-kernel@vger.kernel.org, "Lin, Mac" <Mac.Lin@caviumnetworks.com>
+Subject: Re: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for
+ CNS3xxx hardware
+Message-ID: <20110706111616.GA18967@oksana.dev.rtsoft.ru>
+References: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com>
+ <20110705140559.GA15771@oksana.dev.rtsoft.ru>
+ <281B1F8BAB4D4BDABE7568809A0AEC1A@starsemi.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107061312.01852.arnd@arndb.de>
-X-Provags-ID: V02:K0:y7OQsVHQABegOHkCI6B1ZxT/dqHzjcuYMQEqV1HFv9C
- v6S40C2BjzNELXwJfD/B25oGVBgXwNEopSfIwK+f2AjuiGUGtn
- MlbqfJn4Gv9nmYWJU0IijxRRnEDQatBerlbPeNX5GBAauvG8RO
- Df1r6R7CTPjzI0CNweEuL5Va+9pna8rddlN6o+RjdDV0X/4DiY
- YYZgNYBUGXwmM4YpTb+Vw==
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <281B1F8BAB4D4BDABE7568809A0AEC1A@starsemi.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 July 2011, Nori, Sekhar wrote:
-> On Fri, Jul 01, 2011 at 23:48:14, Arnd Bergmann wrote:
-> 
-> > * If you currently merge your patches upstream through RMK's tree,
-> >   you can keep doing so.
-> 
-> We currently send DaVinci patches upstream through Russell.
-> This makes it look like the change applies only to those
-> maintainers who were sending patches to Linus directly.
-> 
-> I want to make sure I read this correctly and should continue
-> sending patches upstream through Russell?
+On Wed, Jul 06, 2011 at 06:05:37PM +0800, Tommy Lin wrote:
+> Hi, I just found another patch that can solve the watchdog counter reload
+> issue. Please ignore this patch, since it should not acceptable to use
+> #ifdefs.
 
-You are welcome to submit patches to the arm-soc tree instead of
-Russell's if you prefer to do so, either way is fine with me
-at least.
+OK, great. Do I understand correctly that without Vitaly's patch,
+your first patch is somewhat useless, as the watchdog will not work
+or will work incorrectly? So should I postpone merging patch 1/2
+until Vitaly's patch hit mainline?
 
-The arm-soc tree was introduced mostly to reorganize the upstream
-merge process for those platforms that directly send patches to
-Linus, but we can also do it for everyone else.
+Thanks,
 
-We probably still need to try out a few things and see how it goes.
-Russell also has write access to the arm-soc tree, so one of the
-possible models is that you send the patches to him, but he adds
-them to the arm-soc tree rather than the arm-linux one.
-
-Russell, do you have a preference? If you want to stop merging
-subarch trees into linux-arm.git, we can do that in arm-soc.git.
-The idea behind my suggestion to keep using your tree was to not
-change too many things at once, and we can always revisit this
-question.
-
-	Arnd
+-- 
+Anton Vorontsov
+Email: cbouatmailru@gmail.com
