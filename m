@@ -1,79 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab1GFOwK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 10:52:10 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:54297 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753473Ab1GFOwH (ORCPT
+	id S1753551Ab1GFOzP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 10:55:15 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:44734 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752553Ab1GFOzN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 10:52:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 6/8] drivers: add Contiguous Memory Allocator
-Date: Wed, 6 Jul 2011 16:51:49 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.37; KDE/4.3.2; x86_64; ; )
-Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>,
-        "'Jonathan Corbet'" <corbet@lwn.net>, "'Mel Gorman'" <mel@csn.ul.ie>,
-        "'Chunsang Jeong'" <chunsang.jeong@linaro.org>,
-        "'Jesse Barker'" <jesse.barker@linaro.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org,
-        "'Michal Nazarewicz'" <mina86@mina86.com>,
-        linaro-mm-sig@lists.linaro.org, linux-mm@kvack.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        "'Ankita Garg'" <ankita@in.ibm.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-media@vger.kernel.org
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <201107061609.29996.arnd@arndb.de> <20110706142345.GC8286@n2100.arm.linux.org.uk>
-In-Reply-To: <20110706142345.GC8286@n2100.arm.linux.org.uk>
+	Wed, 6 Jul 2011 10:55:13 -0400
+From: KY Srinivasan <kys@microsoft.com>
+To: Greg KH <greg@kroah.com>
+CC: "gregkh@suse.de" <gregkh@suse.de>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
+        "virtualization@lists.osdl.org" <virtualization@lists.osdl.org>,
+        Haiyang Zhang <haiyangz@microsoft.com>,
+        "Hank Janssen" <hjanssen@microsoft.com>
+Subject: RE: [PATCH 15/77] Staging: hv: blkvsc: Add the appropriate
+ MODULE_ALIAS() line
+Thread-Topic: [PATCH 15/77] Staging: hv: blkvsc: Add the appropriate
+ MODULE_ALIAS() line
+Thread-Index: AQHMLGBHWoQfmHDGWUWeXfLMRVPeHZTed46AgAAKHVCAALhhAIAAH11g
+Date: Wed, 6 Jul 2011 14:55:12 +0000
+Message-ID: <6E21E5352C11B742B20C142EB499E0480816D414@TK5EX14MBXC126.redmond.corp.microsoft.com>
+References: <1308255393-3785-1-git-send-email-kys@microsoft.com>
+ <1308255470-3826-1-git-send-email-kys@microsoft.com>
+ <1308255470-3826-15-git-send-email-kys@microsoft.com>
+ <20110705160621.GC7214@kroah.com>
+ <6E21E5352C11B742B20C142EB499E0480816D27E@TK5EX14MBXC126.redmond.corp.microsoft.com>
+ <20110706034228.GA4291@kroah.com>
+In-Reply-To: <20110706034228.GA4291@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.51.34]
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107061651.49824.arnd@arndb.de>
-X-Provags-ID: V02:K0:9Xb85dGcUOYifW2YZ5D6qFxmwYbRSiVnlOIlYR5v3ZV
- befsy5A8Dlv8if3PoOtHggQyU8VkrRGOdpjf8hJs3v1BZrp5wY
- WTHuGYC5WsF6dZgV6BK5d0fL68/ioAFdEUd2wqHa4P6jWU/PGO
- 0VZKTMkOyrwKMXGJAM+ELDDxHIQrFf1qKTGNvgneQlAjUjvFQM
- QDNMh19p3lLpkcqc77stA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 July 2011, Russell King - ARM Linux wrote:
-> On Wed, Jul 06, 2011 at 04:09:29PM +0200, Arnd Bergmann wrote:
-> > Maybe you can simply adapt the default location of the contiguous memory
-> > are like this:
-> > - make CONFIG_CMA depend on CONFIG_HIGHMEM on ARM, at compile time
-> > - if ZONE_HIGHMEM exist during boot, put the CMA area in there
-> > - otherwise, put the CMA area at the top end of lowmem, and change
-> >   the zone sizes so ZONE_HIGHMEM stretches over all of the CMA memory.
+
+
+> -----Original Message-----
+> From: Greg KH [mailto:greg@kroah.com]
+> Sent: Tuesday, July 05, 2011 11:42 PM
+> To: KY Srinivasan
+> Cc: gregkh@suse.de; linux-kernel@vger.kernel.org;
+> devel@linuxdriverproject.org; virtualization@lists.osdl.org; Haiyang Zhang; Hank
+> Janssen
+> Subject: Re: [PATCH 15/77] Staging: hv: blkvsc: Add the appropriate
+> MODULE_ALIAS() line
 > 
-> One of the requirements of the allocator is that the returned memory
-> should be zero'd (because it can be exposed to userspace via ALSA
-> and frame buffers.)
+> On Wed, Jul 06, 2011 at 12:40:42AM +0000, KY Srinivasan wrote:
+> > > > diff --git a/drivers/staging/hv/blkvsc_drv.c
+> b/drivers/staging/hv/blkvsc_drv.c
+> > > > index 5842db8..9496abe 100644
+> > > > --- a/drivers/staging/hv/blkvsc_drv.c
+> > > > +++ b/drivers/staging/hv/blkvsc_drv.c
+> > > > @@ -1027,5 +1027,6 @@ static void __exit blkvsc_exit(void)
+> > > >  MODULE_LICENSE("GPL");
+> > > >  MODULE_VERSION(HV_DRV_VERSION);
+> > > >  MODULE_DESCRIPTION("Microsoft Hyper-V virtual block driver");
+> > > > +MODULE_ALIAS("vmbus:hv_block");
+> > >
+> > > No, these should be automagically generated with the MODULE_DEVICE_ID()
+> > > macro that you use in the module with the GUID there, instead of this.
+> >
+> > I think you mean MODULE_DEVICE_TABLE()?
 > 
-> Zeroing the memory from all the contexts which dma_alloc_coherent
-> is called from is a trivial matter if its in lowmem, but highmem is
-> harder.
+> Yes, sorry for the typo.
+> 
+> > I actually went down that path first
+> > adding code  to  file2alias.c for parsing the vmbus ID table. Given that this
+> approach
+> > would make it  impossible to support auto-loading of these drivers
+> > on many of the released kernels,
+> 
+> Wait, what?  What is a "released kernel"?  We are working on the
+> in-kernel patch, we don't care about older distros/releases for this
+> work at all.  Also, it doesn't make sense at all, why would the change I
+> asked for make any difference on older distros/kernels?
 
-I don't see how. The pages get allocated from an unmapped area
-or memory, mapped into the kernel address space as uncached or wc
-and then cleared. This should be the same for lowmem or highmem
-pages.
+I understand we don't care here about older kernels and I will do what you
+have suggested. I just wanted to give you the rationale for choices I made:
+We are currently supporting older distros/kernels using these upstream bits.
+With the MODULE_ALIAS() approach, since I did not have to change any code
+outside the hv directory, this was possible. I was mostly concerned about 
+having to make changes to code outside the hv directory and figuring out 
+how to build and propagate these changes (file2alias.c) in older kernels. 
 
-What am I missing?
 
-> Another issue is that when a platform has restricted DMA regions,
-> they typically don't fall into the highmem zone.  As the dmabounce
-> code allocates from the DMA coherent allocator to provide it with
-> guaranteed DMA-able memory, that would be rather inconvenient.
+> 
+> > I chose to go with the MODULE_ALIAS() macro that did not need any
+> > changes outside our drivers. In both methods, the formatting of the
+> > name is bus specific since I would be writing the code to parse the
+> > table in file2alias.c.
+> 
+> Yes, that is what is needed to be done.
+> 
+> > Granted, I have been quite unimaginative in my alias names, but I
+> > thought they were reasonably descriptive. If at all possible, for the
+> > reasons listed above, I would prefer to use the MODULE_ALIAS() macro
+> > (I could embed all or part of the guid in the alias). Let me know.
+> 
+> Please do the correct thing and use MODULE_DEVICE_TABLE().
 
-True. The dmabounce code would consequently have to allocate
-the memory through an internal function that avoids the
-contiguous allocation area and goes straight to ZONE_DMA memory
-as it does today.
+We have four drivers now excluding vmbus and soon we will have only three
+drivers with the merge of block and stor drivers. Would you still recommend I use the
+full guid to name these drivers. Rather than embedding the entire 128bit guid in module
+aliases, I was thinking of setting up a more reasonable namespace for these drivers
+(like what virtio has done for instance). Let me know if this is ok with you if I took that
+route (mapping the guid to small integers and having these integers be used in alias strings).
 
-	Arnd
+Regards,
+
+K. Y  
+
