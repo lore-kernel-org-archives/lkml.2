@@ -1,273 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1GFW2r (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 18:28:47 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:55908 "EHLO e3.ny.us.ibm.com"
+	id S1753273Ab1GFW3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 18:29:33 -0400
+Received: from mga03.intel.com ([143.182.124.21]:42801 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751514Ab1GFW2p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 18:28:45 -0400
-Subject: [PATCH V8 4/4 net-next] vhost: vhost TX zero-copy support
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>, mst@redhat.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 06 Jul 2011 15:28:41 -0700
-Message-ID: <1309991321.10209.26.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1751729Ab1GFW3c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 18:29:32 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,489,1304319600"; 
+   d="scan'208";a="23503160"
+Message-ID: <4E14E1C6.1010202@linux.intel.com>
+Date: Wed, 06 Jul 2011 15:29:26 -0700
+From: Darren Hart <dvhart@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Lightning/1.0b2 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: vitalivanov@gmail.com
+CC: Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "trivial@kernel.org" <trivial@kernel.org>
+Subject: Re: [PATCH 4/4] futex: warning corrections
+References: <1309821688.4527.10.camel@vitaliy-Vostro-1400>	 <4E1494A8.7070109@linux.intel.com> <1309986669.27362.3.camel@vitaliy-Vostro-1400>
+In-Reply-To: <1309986669.27362.3.camel@vitaliy-Vostro-1400>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch maintains the outstanding userspace buffers in the 
-sequence it is delivered to vhost. The outstanding userspace buffers 
-will be marked as done once the lower device buffers DMA has finished. 
-This is monitored through last reference of kfree_skb callback. Two
-buffer index are used for this purpose.
-
-The vhost passes the userspace buffers info to lower device skb 
-through message control. Since there will be some done DMAs when
-entering vhost handle_tx. The worse case is all buffers in the vq are
-in pending/done status, so we need to notify guest to release DMA done 
-buffers first before get any new buffers from the vq.
-
-The busywait is waiting for fix in clean up and ring changes.
-
-Signed-off-by: Shirley <xma@us.ibm.com>
----
-
- drivers/vhost/net.c   |   45 ++++++++++++++++++++++++++++++++++++++++++++-
- drivers/vhost/vhost.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- drivers/vhost/vhost.h |   15 +++++++++++++++
- 3 files changed, 107 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index e224a92..7de0c6e 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -32,6 +32,10 @@
-  * Using this limit prevents one virtqueue from starving others. */
- #define VHOST_NET_WEIGHT 0x80000
- 
-+/* MAX number of TX used buffers for outstanding zerocopy */
-+#define VHOST_MAX_PEND 128
-+#define VHOST_GOODCOPY_LEN 256
-+
- enum {
- 	VHOST_NET_VQ_RX = 0,
- 	VHOST_NET_VQ_TX = 1,
-@@ -151,6 +155,10 @@ static void handle_tx(struct vhost_net *net)
- 	hdr_size = vq->vhost_hlen;
- 
- 	for (;;) {
-+		/* Release DMAs done buffers first */
-+		if (atomic_read(&vq->refcnt) > VHOST_MAX_PEND)
-+			vhost_zerocopy_signal_used(vq);
-+
- 		head = vhost_get_vq_desc(&net->dev, vq, vq->iov,
- 					 ARRAY_SIZE(vq->iov),
- 					 &out, &in,
-@@ -166,6 +174,12 @@ static void handle_tx(struct vhost_net *net)
- 				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
- 				break;
- 			}
-+			/* If more outstanding DMAs, queue the work */
-+			if (atomic_read(&vq->refcnt) > VHOST_MAX_PEND) {
-+				tx_poll_start(net, sock);
-+				set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
-+				break;
-+			}
- 			if (unlikely(vhost_enable_notify(&net->dev, vq))) {
- 				vhost_disable_notify(&net->dev, vq);
- 				continue;
-@@ -188,6 +202,26 @@ static void handle_tx(struct vhost_net *net)
- 			       iov_length(vq->hdr, s), hdr_size);
- 			break;
- 		}
-+		/* use msg_control to pass vhost zerocopy ubuf info to skb */
-+		if (sock_flag(sock->sk, SOCK_ZEROCOPY)) {
-+			vq->heads[vq->upend_idx].id = head;
-+			if (len < VHOST_GOODCOPY_LEN)
-+				/* copy don't need to wait for DMA done */
-+				vq->heads[vq->upend_idx].len =
-+							VHOST_DMA_DONE_LEN;
-+			else {
-+				struct ubuf_info *ubuf = &vq->ubuf_info[head];
-+
-+				vq->heads[vq->upend_idx].len = len;
-+				ubuf->callback = vhost_zerocopy_callback;
-+				ubuf->arg = vq;
-+				ubuf->desc = vq->upend_idx;
-+				msg.msg_control = ubuf;
-+				msg.msg_controllen = sizeof(ubuf);
-+			}
-+			atomic_inc(&vq->refcnt);
-+			vq->upend_idx = (vq->upend_idx + 1) % UIO_MAXIOV;
-+		}
- 		/* TODO: Check specific error and bomb out unless ENOBUFS? */
- 		err = sock->ops->sendmsg(NULL, sock, &msg, len);
- 		if (unlikely(err < 0)) {
-@@ -198,12 +232,21 @@ static void handle_tx(struct vhost_net *net)
- 		if (err != len)
- 			pr_debug("Truncated TX packet: "
- 				 " len %d != %zd\n", err, len);
--		vhost_add_used_and_signal(&net->dev, vq, head, 0);
-+		if (!sock_flag(sock->sk, SOCK_ZEROCOPY))
-+			vhost_add_used_and_signal(&net->dev, vq, head, 0);
- 		total_len += len;
- 		if (unlikely(total_len >= VHOST_NET_WEIGHT)) {
- 			vhost_poll_queue(&vq->poll);
- 			break;
- 		}
-+		/* if upend_idx is full, then wait for free more */
-+/*
-+		if (unlikely(vq->upend_idx == vq->done_idx)) {
-+			tx_poll_start(net, sock);
-+			set_bit(SOCK_ASYNC_NOSPACE, &sock->flags);
-+				break;
-+		}
-+*/
- 	}
- 
- 	mutex_unlock(&vq->mutex);
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index ea966b3..db242b1 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -179,6 +179,9 @@ static void vhost_vq_reset(struct vhost_dev *dev,
- 	vq->call_ctx = NULL;
- 	vq->call = NULL;
- 	vq->log_ctx = NULL;
-+	vq->upend_idx = 0;
-+	vq->done_idx = 0;
-+	atomic_set(&vq->refcnt, 0);
- }
- 
- static int vhost_worker(void *data)
-@@ -237,6 +240,8 @@ static long vhost_dev_alloc_iovecs(struct vhost_dev *dev)
- 					  GFP_KERNEL);
- 		dev->vqs[i].heads = kmalloc(sizeof *dev->vqs[i].heads *
- 					    UIO_MAXIOV, GFP_KERNEL);
-+		dev->vqs[i].ubuf_info = kmalloc(sizeof *dev->vqs[i].ubuf_info *
-+					    UIO_MAXIOV, GFP_KERNEL);
- 
- 		if (!dev->vqs[i].indirect || !dev->vqs[i].log ||
- 			!dev->vqs[i].heads)
-@@ -249,6 +254,7 @@ err_nomem:
- 		kfree(dev->vqs[i].indirect);
- 		kfree(dev->vqs[i].log);
- 		kfree(dev->vqs[i].heads);
-+		kfree(dev->vqs[i].ubuf_info);
- 	}
- 	return -ENOMEM;
- }
-@@ -390,6 +396,30 @@ long vhost_dev_reset_owner(struct vhost_dev *dev)
- 	return 0;
- }
- 
-+/* In case of DMA done not in order in lower device driver for some reason.
-+ * upend_idx is used to track end of used idx, done_idx is used to track head
-+ * of used idx. Once lower device DMA done contiguously, we will signal KVM
-+ * guest used idx.
-+ */
-+void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq)
-+{
-+	int i, j = 0;
-+
-+	for (i = vq->done_idx; i != vq->upend_idx; i = (i + 1) % UIO_MAXIOV) {
-+		if ((vq->heads[i].len == VHOST_DMA_DONE_LEN)) {
-+			vq->heads[i].len = VHOST_DMA_CLEAR_LEN;
-+			vhost_add_used_and_signal(vq->dev, vq,
-+						  vq->heads[i].id, 0);
-+			++j;
-+		} else
-+			break;
-+	}
-+	if (j) {
-+		vq->done_idx = i;
-+		atomic_sub(j, &vq->refcnt);
-+	}
-+}
-+
- /* Caller should have device mutex */
- void vhost_dev_cleanup(struct vhost_dev *dev)
- {
-@@ -400,6 +430,9 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
- 			vhost_poll_stop(&dev->vqs[i].poll);
- 			vhost_poll_flush(&dev->vqs[i].poll);
- 		}
-+		/* Wait for all lower device DMAs done (busywait FIXME) */
-+		while (atomic_read(&dev->vqs[i].refcnt))
-+			vhost_zerocopy_signal_used(&dev->vqs[i]);
- 		if (dev->vqs[i].error_ctx)
- 			eventfd_ctx_put(dev->vqs[i].error_ctx);
- 		if (dev->vqs[i].error)
-@@ -612,6 +645,11 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
- 
- 	mutex_lock(&vq->mutex);
- 
-+	/* clean up lower device outstanding DMAs, before setting ring
-+	   busywait FIXME */
-+	while (atomic_read(&vq->refcnt))
-+		vhost_zerocopy_signal_used(vq);
-+
- 	switch (ioctl) {
- 	case VHOST_SET_VRING_NUM:
- 		/* Resizing ring with an active backend?
-@@ -1486,3 +1524,13 @@ void vhost_disable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- 			       &vq->used->flags, r);
- 	}
- }
-+
-+void vhost_zerocopy_callback(void *arg)
-+{
-+	struct ubuf_info *ubuf = (struct ubuf_info *)arg;
-+	struct vhost_virtqueue *vq;
-+
-+	vq = (struct vhost_virtqueue *)ubuf->arg;
-+	/* set len = 1 to mark this desc buffers done DMA */
-+	vq->heads[ubuf->desc].len = VHOST_DMA_DONE_LEN;
-+}
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 8e03379..883688c 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -13,6 +13,11 @@
- #include <linux/virtio_ring.h>
- #include <asm/atomic.h>
- 
-+/* This is for zerocopy, used buffer len is set to 1 when lower device DMA
-+ * done */
-+#define VHOST_DMA_DONE_LEN	1
-+#define VHOST_DMA_CLEAR_LEN	0
-+
- struct vhost_device;
- 
- struct vhost_work;
-@@ -114,6 +119,14 @@ struct vhost_virtqueue {
- 	/* Log write descriptors */
- 	void __user *log_base;
- 	struct vhost_log *log;
-+	/* vhost zerocopy support */
-+	atomic_t refcnt; /* num of outstanding zerocopy DMAs */
-+	/* last used idx for outstanding DMA zerocopy buffers */
-+	int upend_idx;
-+	/* first used idx for DMA done zerocopy buffers */
-+	int done_idx;
-+	/* an array of userspace buffers info */
-+	struct ubuf_info *ubuf_info;
- };
- 
- struct vhost_dev {
-@@ -160,6 +173,8 @@ bool vhost_enable_notify(struct vhost_dev *, struct vhost_virtqueue *);
- 
- int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
- 		    unsigned int log_num, u64 len);
-+void vhost_zerocopy_callback(void *arg);
-+void vhost_zerocopy_signal_used(struct vhost_virtqueue *vq);
- 
- #define vq_err(vq, fmt, ...) do {                                  \
- 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
 
 
+On 07/06/2011 02:11 PM, Vitaliy Ivanov wrote:
+> On Wed, 2011-07-06 at 10:00 -0700, Darren Hart wrote:
+>> On 07/04/2011 04:21 PM, Vitaliy Ivanov wrote:
+>>> From 3f7997d71fe2b5cb16e2913928f68023855d786d Mon Sep 17 00:00:00 2001
+>>> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+>>> Date: Tue, 5 Jul 2011 02:07:42 +0300
+>>> Subject: [PATCH 4/4] futex: warning corrections
+>> Hi Vitaliy,
+>>
+>> Thanks for looking to fix these warnings. Note that the compiler isn't
+>> always aware of some of the subtleties involved with things like
+>> cmpxchg. In cases where it thinks there may be an uninitialized usage,
+>> be sure to confirm it is possible before adding the overhead of an
+>> assignment to a hot path.
+>>
+>> None of these assignments are necessary. Consider using __maybe_unused
+>> instead.
+> 
+> Darren,
+> 
+> Actually unused and uninitialized are different issues. __maybe_unused won't help in this case but there is another trick used in kernel for this:
+> 
+
+
+Heh, duh. I recently worked with __maybe_unused and uninitialized_var(),
+and got them crossed in my head.
+
+
+> #define uninitialized_var(x) x = x
+
+
+Yes, this is the right approach.
+
+
+> 
+> So, here is updated patch.
+> 
+> From 8eeaa5a97697bcc606aea23d32028aea7b271a96 Mon Sep 17 00:00:00 2001
+> From: Vitaliy Ivanov <vitalivanov@gmail.com>
+> Date: Thu, 7 Jul 2011 00:05:05 +0300
+> Subject: [PATCH] futex: uninitialized warning corrections
+> MIME-Version: 1.0
+> Content-Type: text/plain; charset=UTF-8
+> Content-Transfer-Encoding: 8bit
+> 
+> kernel/futex.c: In function ‘fixup_pi_state_owner.clone.17’:
+> kernel/futex.c:1582:6: warning: ‘curval’ may be used uninitialized in this function
+> kernel/futex.c: In function ‘handle_futex_death’:
+> kernel/futex.c:2486:6: warning: ‘nval’ may be used uninitialized in this function
+> kernel/futex.c: In function ‘do_futex’:
+> kernel/futex.c:863:11: warning: ‘curval’ may be used uninitialized in this function
+> kernel/futex.c:828:6: note: ‘curval’ was declared here
+> kernel/futex.c:898:5: warning: ‘oldval’ may be used uninitialized in this function
+> kernel/futex.c:890:6: note: ‘oldval’ was declared here
+> 
+> Signed-off-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+
+Please include a blurb in the commit message as to why you used
+uninitialized_var() rather than just assigning it. This will save people
+the time of wondering why, and me the time of nacking "it's simpler to
+just initialize to zero" patches :-)
+
+Acked-by: Darren Hart <dvhart@linux.intel.com>
+
+
+> ---
+>  kernel/futex.c |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index fe28dc2..efb8e5b 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -825,7 +825,7 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
+>  {
+>  	struct task_struct *new_owner;
+>  	struct futex_pi_state *pi_state = this->pi_state;
+> -	u32 curval, newval;
+> +	u32 uninitialized_var(curval), newval;
+>  
+>  	if (!pi_state)
+>  		return -EINVAL;
+> @@ -887,7 +887,7 @@ static int wake_futex_pi(u32 __user *uaddr, u32 uval, struct futex_q *this)
+>  
+>  static int unlock_futex_pi(u32 __user *uaddr, u32 uval)
+>  {
+> -	u32 oldval;
+> +	u32 uninitialized_var(oldval);
+>  
+>  	/*
+>  	 * There is no waiter, so we unlock the futex. The owner died
+> @@ -1546,7 +1546,7 @@ static int fixup_pi_state_owner(u32 __user *uaddr, struct futex_q *q,
+>  	u32 newtid = task_pid_vnr(newowner) | FUTEX_WAITERS;
+>  	struct futex_pi_state *pi_state = q->pi_state;
+>  	struct task_struct *oldowner = pi_state->owner;
+> -	u32 uval, curval, newval;
+> +	u32 uval, uninitialized_var(curval), newval;
+>  	int ret;
+>  
+>  	/* Owner died? */
+> @@ -2451,7 +2451,7 @@ err_unlock:
+>   */
+>  int handle_futex_death(u32 __user *uaddr, struct task_struct *curr, int pi)
+>  {
+> -	u32 uval, nval, mval;
+> +	u32 uval, uninitialized_var(nval), mval;
+>  
+>  retry:
+>  	if (get_user(uval, uaddr))
+
+-- 
+Darren Hart
+Intel Open Source Technology Center
+Yocto Project - Linux Kernel
