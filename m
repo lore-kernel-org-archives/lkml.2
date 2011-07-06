@@ -1,93 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752875Ab1GFI1L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 04:27:11 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59134 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751188Ab1GFI1J (ORCPT
+	id S1753195Ab1GFI2V (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 04:28:21 -0400
+Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:58380 "EHLO
+	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751614Ab1GFI2T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 04:27:09 -0400
-From: Ravishankar <ravishankarkm32@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Ravishankar <ravi.shankar@greenturtles.in>,
-        Ravishankar <ravishankarkm32@gmail.com>
-Subject: [PATCH 3/3] Staging: comedi: fix warning: line over 80 characters issue in usbduxfast.c
-Date: Wed,  6 Jul 2011 13:56:50 +0530
-Message-Id: <1309940810-2381-1-git-send-email-ravishankarkm32@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <[PATCH]Staging: comedi: fix warning line over 80 character issues in usbduxfast.c>
-References: <[PATCH]Staging: comedi: fix warning line over 80 character issues in usbduxfast.c>
+	Wed, 6 Jul 2011 04:28:19 -0400
+Date: Wed, 6 Jul 2011 11:28:09 +0300
+From: Felipe Balbi <balbi@ti.com>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: cjb@laptop.org, linux-mmc@vger.kernel.org,
+        hans-christian.egtvedt@atmel.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, kernel@avr32linux.org,
+        balbi@ti.com
+Subject: Re: [PATCH V4] MMC: PM: add suspend/resume in atmel-mci
+Message-ID: <20110706082808.GF10729@legolas.emea.dhcp.ti.com>
+Reply-To: balbi@ti.com
+References: <4E11B57B.4040000@atmel.com>
+ <1309944696-6415-1-git-send-email-nicolas.ferre@atmel.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="AH+kv8CCoFf6qPuz"
+Content-Disposition: inline
+In-Reply-To: <1309944696-6415-1-git-send-email-nicolas.ferre@atmel.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ravishankar <ravi.shankar@greenturtles.in>
 
-This is a patch to the usbduxfast.c file that fixes up a warning found by the checkpatch.pl tool
+--AH+kv8CCoFf6qPuz
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
----
- drivers/staging/comedi/drivers/usbduxfast.c |   25 +++++++++++++++----------
- 1 files changed, 15 insertions(+), 10 deletions(-)
+Hi,
 
-diff --git a/drivers/staging/comedi/drivers/usbduxfast.c b/drivers/staging/comedi/drivers/usbduxfast.c
-index 2a8e725..de2e34c 100644
---- a/drivers/staging/comedi/drivers/usbduxfast.c
-+++ b/drivers/staging/comedi/drivers/usbduxfast.c
-@@ -453,7 +453,8 @@ static int usbduxfastsub_start(struct usbduxfastsub_s *udfs)
- 	/* 7f92 to zero */
- 	local_transfer_buffer[0] = 0;
- 	/* bRequest, "Firmware" */
--	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
-+	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
-+				USBDUXFASTSUB_FIRMWARE,
- 				VENDOR_DIR_OUT,	/* bmRequestType */
- 				USBDUXFASTSUB_CPUCS,	/* Value */
- 				0x0000,	/* Index */
-@@ -477,7 +478,8 @@ static int usbduxfastsub_stop(struct usbduxfastsub_s *udfs)
- 	/* 7f92 to one */
- 	local_transfer_buffer[0] = 1;
- 	/* bRequest, "Firmware" */
--	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
-+	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
-+			      USBDUXFASTSUB_FIRMWARE,
- 			      VENDOR_DIR_OUT,	/* bmRequestType */
- 			      USBDUXFASTSUB_CPUCS,	/* Value */
- 			      0x0000,	/* Index */
-@@ -504,7 +506,8 @@ static int usbduxfastsub_upload(struct usbduxfastsub_s *udfs,
- 	       startAddr, local_transfer_buffer[0]);
- #endif
- 	/* brequest, firmware */
--	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0), USBDUXFASTSUB_FIRMWARE,
-+	ret = usb_control_msg(udfs->usbdev, usb_sndctrlpipe(udfs->usbdev, 0),
-+				USBDUXFASTSUB_FIRMWARE,
- 				VENDOR_DIR_OUT,	/* bmRequestType */
- 				startAddr,	/* value */
- 				0x0000,	/* index */
-@@ -1571,13 +1574,15 @@ static int usbduxfastsub_probe(struct usb_interface *uinterf,
- 	usbduxfastsub[index].probed = 1;
- 	up(&start_stop_sem);
- 
--	ret = request_firmware_nowait(THIS_MODULE,
--				      FW_ACTION_HOTPLUG,
--				      "usbduxfast_firmware.bin",
--				      &udev->dev,
--				      GFP_KERNEL,
--				      usbduxfastsub + index,
--				      usbduxfast_firmware_request_complete_handler);
-+	ret =
-+	request_firmware_nowait(THIS_MODULE,
-+				FW_ACTION_HOTPLUG,
-+				"usbduxfast_firmware.bin",
-+				&udev->dev,
-+				GFP_KERNEL,
-+				usbduxfastsub + index,
-+				usbduxfast_firmware_request_complete_handler);
-+
- 
- 	if (ret) {
- 		dev_err(&udev->dev, "could not load firmware (err=%d)\n", ret);
--- 
-1.7.1.1
+On Wed, Jul 06, 2011 at 11:31:36AM +0200, Nicolas Ferre wrote:
+> Take care of slots while going to suspend state.
+>=20
+> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
+FWIW:
+
+Reviewed-by: Felipe Balbi <balbi@ti.com>
+
+> @@ -1878,10 +1879,72 @@ static int __exit atmci_remove(struct platform_de=
+vice *pdev)
+>  	return 0;
+>  }
+> =20
+> +#ifdef CONFIG_PM
+> +static int atmci_suspend(struct device *dev)
+> +{
+> +	struct atmel_mci *host =3D dev_get_drvdata(dev);
+> +	int i;
+> +
+> +	 for (i =3D 0; i < ATMEL_MCI_MAX_NR_SLOTS; i++) {
+> +		struct atmel_mci_slot *slot =3D host->slot[i];
+> +		int ret;
+> +
+> +		if (!slot)
+> +			continue;
+> +		ret =3D mmc_suspend_host(slot->mmc);
+> +		if (ret < 0) {
+> +			while (--i >=3D 0) {
+> +				slot =3D host->slot[i];
+> +				if (slot
+> +				&& test_bit(ATMCI_SUSPENDED, &slot->flags)) {
+> +					mmc_resume_host(host->slot[i]->mmc);
+> +					clear_bit(ATMCI_SUSPENDED, &slot->flags);
+> +				}
+> +			}
+> +			return ret;
+> +		} else {
+> +			set_bit(ATMCI_SUSPENDED, &slot->flags);
+> +		}
+
+just one small nitpicking which you can ignore if you like, but you
+don't really need the else branch here. If you fall into if (ret < 0)
+you will return early anyway, so you can save two lines and an
+indentation level :-p
+
+--=20
+balbi
+
+--AH+kv8CCoFf6qPuz
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.11 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOFByYAAoJEAv8Txj19kN1ONcH/Rg7um74zY+ZiULxkkv77bLS
+LLBa128mElCtI4PK6KN4tGuttAk9zN2mYT6RIAr+BLXXwLZkL88Fr41vZ2M990Ao
+zI2Rj1L+kzHhSvj0GVPKhAQwvatR2ecsxUntxuTXcNGKwC1UmhTE5tIxLFqBmuSr
+RHPcrrg4N/cNlO7uKPb0Wrh9dnJHUNFGsV0ztLhcqR6GM+XXHgMiWzJXxwffnt/2
+w6U0ccfcbUZIxKUkp6GBQ1paPZKIDNJ9Zb+hqDnJLxjhPZ0vlYJhYEzoi+qlI90j
+LcK32J53HdZa6RTXN6FUkLvp4wyfmu3uJvIlPNqMMk6SlS1nNHXC/vmxiaeT66Y=
+=Ja9w
+-----END PGP SIGNATURE-----
+
+--AH+kv8CCoFf6qPuz--
