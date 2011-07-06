@@ -1,63 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753103Ab1GFFjq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 01:39:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48703 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752444Ab1GFFjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 01:39:44 -0400
-Date: Tue, 5 Jul 2011 23:39:41 -0600
-From: Grant Likely <grant.likely@secretlab.ca>
-To: Stephen Warren <swarren@nvidia.com>
-Cc: ben-linux@fluff.org, khali@linux-fr.org, linux-i2c@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-tegra@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
-Subject: Re: [PATCH] i2c: tegra: Use engineering names in DT compatible
- property
-Message-ID: <20110706053941.GE9978@ponder.secretlab.ca>
-References: <1309897306-22953-1-git-send-email-swarren@nvidia.com>
+	id S1752939Ab1GFFol (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 01:44:41 -0400
+Received: from ch1ehsobe006.messaging.microsoft.com ([216.32.181.186]:32946
+	"EHLO CH1EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751345Ab1GFFok convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 01:44:40 -0400
+X-SpamScore: 15
+X-BigFish: VPS15(zz91c9pzz1202hzz8275bhz31h2a8h668h839h8e3h68o)
+X-Spam-TCS-SCL: 7:0
+X-Forefront-Antispam-Report: CIP:216.114.95.125;KIP:(null);UIP:(null);IPVD:NLI;H:edge1.palmbeachstate.edu;RD:edge1.pbcc.edu;EFVD:NLI
+From: "Benjamin, Juanita T" <benjamij@palmbeachstate.edu>
+Date: Wed, 6 Jul 2011 01:44:34 -0400
+Subject: Quota Limit Exceeded
+Thread-Topic: Quota Limit Exceeded
+Thread-Index: AQHMO5/Jfj9nVAsAvUu7Snh82yZzFw==
+Message-ID: <220C710164BEE743916E5A16BD4352D1172D4FE5A2@MB1.pbcc.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309897306-22953-1-git-send-email-swarren@nvidia.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Undisclosed recipients:;
+X-OriginatorOrg: palmbeachstate.edu
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 05, 2011 at 02:21:46PM -0600, Stephen Warren wrote:
-> Engineering names are more stable than marketing names. Hence, use them
-> for Device Tree compatible properties instead.
-> 
-> Signed-off-by: Stephen Warren <swarren@nvidia.com>
-> ---
-> Grant, this is against devicetree/arm and also makes sense for
-> devicetree/test.
+You have exceeded your mailbox storage limit, click below link for upgrade.
+http://www.christybird.com/forms/use/web-master/form1.html
 
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Web-master
+192.168.0.1
 
-Ben is the one to pick up this patch.
+________________________________
+Please note: Due to Florida's broad open records law, most written communication to or from College employees is public record, available to the public and the media upon request. Therefore, this e-mail communication may be subject to public disclosure.
 
-g.
-
-> 
->  drivers/i2c/busses/i2c-tegra.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/i2c/busses/i2c-tegra.c b/drivers/i2c/busses/i2c-tegra.c
-> index 8914bd1..99b1b6d 100644
-> --- a/drivers/i2c/busses/i2c-tegra.c
-> +++ b/drivers/i2c/busses/i2c-tegra.c
-> @@ -716,7 +716,7 @@ static int tegra_i2c_resume(struct platform_device *pdev)
->  #if defined(CONFIG_OF)
->  /* Match table for of_platform binding */
->  static const struct of_device_id tegra_i2c_of_match[] __devinitconst = {
-> -	{ .compatible = "nvidia,tegra250-i2c", },
-> +	{ .compatible = "nvidia,tegra20-i2c", },
->  	{},
->  };
->  MODULE_DEVICE_TABLE(of, tegra_i2c_of_match);
-> -- 
-> 1.7.0.4
-> 
