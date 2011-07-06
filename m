@@ -1,1771 +1,2884 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab1GFLFH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 07:05:07 -0400
+	id S1752745Ab1GFLFZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 07:05:25 -0400
 Received: from mail-iw0-f174.google.com ([209.85.214.174]:42363 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752553Ab1GFLFE (ORCPT
+	with ESMTP id S1752553Ab1GFLFP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 07:05:04 -0400
+	Wed, 6 Jul 2011 07:05:15 -0400
 From: "Cho, Yu-Chen" <acho@novell.com>
 Cc: acho@novell.com, jlee@novell.com, huajun.li.lee@gmail.com,
         segooon@gmail.com, lucas.demarchi@profusion.mobi,
         randy.dunlap@oracle.com, kkatuev@gmail.com, zac.3.14159@gmail.com,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] Staging: Merge ENE UB6250 MS card codes from keucr to drivers/usb/storage/ene_ub6250.c
-Date: Wed,  6 Jul 2011 19:03:19 +0800
-Message-Id: <d27c3e6f795149722475336fc405e081d67037f8.1309949449.git.acho@novell.com>
+Subject: [PATCH 2/2] Staging: Remove ENE UB6250 MS card codes from keucr
+Date: Wed,  6 Jul 2011 19:03:20 +0800
+Message-Id: <62407930b138a8ad5bd5dd1f4381bae00e062ed9.1309949449.git.acho@novell.com>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <d27c3e6f795149722475336fc405e081d67037f8.1309949449.git.acho@novell.com>
+References: <d27c3e6f795149722475336fc405e081d67037f8.1309949449.git.acho@novell.com>
+In-Reply-To: <d27c3e6f795149722475336fc405e081d67037f8.1309949449.git.acho@novell.com>
+References: <d27c3e6f795149722475336fc405e081d67037f8.1309949449.git.acho@novell.com>
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Merge ENE UB6250 MS card codes from keucr to drivers/usb/storage/ene_ub6250.c.
+Remove ENE UB6250 MS card codes from keucr.
 
 Signed-off-by: Cho, Yu-Chen <acho@novell.com>
 ---
- drivers/usb/storage/Kconfig      |    4 +-
- drivers/usb/storage/ene_ub6250.c | 1639 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 1632 insertions(+), 11 deletions(-)
+ drivers/staging/keucr/Kconfig     |    6 +-
+ drivers/staging/keucr/Makefile    |    2 -
+ drivers/staging/keucr/init.c      |   71 +---
+ drivers/staging/keucr/init.h      |  773 ---------------------------
+ drivers/staging/keucr/ms.c        | 1034 -------------------------------------
+ drivers/staging/keucr/ms.h        |  401 --------------
+ drivers/staging/keucr/msscsi.c    |  344 ------------
+ drivers/staging/keucr/transport.c |    4 +-
+ drivers/staging/keucr/transport.h |   46 --
+ drivers/staging/keucr/usb.c       |    2 -
+ drivers/staging/keucr/usb.h       |    3 +-
+ 11 files changed, 6 insertions(+), 2680 deletions(-)
+ delete mode 100644 drivers/staging/keucr/ms.c
+ delete mode 100644 drivers/staging/keucr/ms.h
+ delete mode 100644 drivers/staging/keucr/msscsi.c
 
-diff --git a/drivers/usb/storage/Kconfig b/drivers/usb/storage/Kconfig
-index 9798725..6975651 100644
---- a/drivers/usb/storage/Kconfig
-+++ b/drivers/usb/storage/Kconfig
-@@ -187,8 +187,8 @@ config USB_STORAGE_ENE_UB6250
- 	depends on USB && SCSI
- 	depends on USB_STORAGE
+diff --git a/drivers/staging/keucr/Kconfig b/drivers/staging/keucr/Kconfig
+index e397fad..ba756bf 100644
+--- a/drivers/staging/keucr/Kconfig
++++ b/drivers/staging/keucr/Kconfig
+@@ -1,9 +1,9 @@
+ config USB_ENESTORAGE
+-	tristate "USB ENE SM/MS card reader support"
++	tristate "USB ENE SM card reader support"
+ 	depends on USB && SCSI && m
  	---help---
--	  Say Y here if you wish to control a ENE SD Card reader.
--	  To use SM/MS card, please build driver/staging/keucr/keucr.ko
-+	  Say Y here if you wish to control a ENE SD/MS Card reader.
-+	  To use SM card, please build driver/staging/keucr/keucr.ko
+-	  Say Y here if you wish to control a ENE SM/MS Card reader.
+-	  To use SD card, please build driver/usb/storage/ums-eneub6250.ko
++	  Say Y here if you wish to control a ENE SM Card reader.
++	  To use SD/MS card, please build driver/usb/storage/ums-eneub6250.ko
  
  	  This option depends on 'SCSI' support being enabled, but you
  	  probably also need 'SCSI device support: SCSI disk support'
-diff --git a/drivers/usb/storage/ene_ub6250.c b/drivers/usb/storage/ene_ub6250.c
-index 31645af..4dca3ef 100644
---- a/drivers/usb/storage/ene_ub6250.c
-+++ b/drivers/usb/storage/ene_ub6250.c
-@@ -100,6 +100,141 @@ static struct us_unusual_dev ene_ub6250_unusual_dev_list[] = {
- #define FDIR_WRITE         0
- #define FDIR_READ          1
- 
-+/* For MS Card */
-+
-+/* Status Register 1 */
-+#define MS_REG_ST1_MB           0x80    /* media busy */
-+#define MS_REG_ST1_FB1          0x40    /* flush busy 1 */
-+#define MS_REG_ST1_DTER         0x20    /* error on data(corrected) */
-+#define MS_REG_ST1_UCDT         0x10    /* unable to correct data */
-+#define MS_REG_ST1_EXER         0x08    /* error on extra(corrected) */
-+#define MS_REG_ST1_UCEX         0x04    /* unable to correct extra */
-+#define MS_REG_ST1_FGER         0x02    /* error on overwrite flag(corrected) */
-+#define MS_REG_ST1_UCFG         0x01    /* unable to correct overwrite flag */
-+#define MS_REG_ST1_DEFAULT	(MS_REG_ST1_MB | MS_REG_ST1_FB1 | MS_REG_ST1_DTER | MS_REG_ST1_UCDT | MS_REG_ST1_EXER | MS_REG_ST1_UCEX | MS_REG_ST1_FGER | MS_REG_ST1_UCFG)
-+
-+/* Overwrite Area */
-+#define MS_REG_OVR_BKST		0x80            /* block status */
-+#define MS_REG_OVR_BKST_OK	MS_REG_OVR_BKST     /* OK */
-+#define MS_REG_OVR_BKST_NG	0x00            /* NG */
-+#define MS_REG_OVR_PGST0	0x40            /* page status */
-+#define MS_REG_OVR_PGST1	0x20
-+#define MS_REG_OVR_PGST_MASK	(MS_REG_OVR_PGST0 | MS_REG_OVR_PGST1)
-+#define MS_REG_OVR_PGST_OK	(MS_REG_OVR_PGST0 | MS_REG_OVR_PGST1) /* OK */
-+#define MS_REG_OVR_PGST_NG	MS_REG_OVR_PGST1                      /* NG */
-+#define MS_REG_OVR_PGST_DATA_ERROR	0x00        /* data error */
-+#define MS_REG_OVR_UDST			0x10        /* update status */
-+#define MS_REG_OVR_UDST_UPDATING	0x00        /* updating */
-+#define MS_REG_OVR_UDST_NO_UPDATE	MS_REG_OVR_UDST
-+#define MS_REG_OVR_RESERVED	0x08
-+#define MS_REG_OVR_DEFAULT	(MS_REG_OVR_BKST_OK | MS_REG_OVR_PGST_OK | MS_REG_OVR_UDST_NO_UPDATE | MS_REG_OVR_RESERVED)
-+
-+/* Management Flag */
-+#define MS_REG_MNG_SCMS0	0x20    /* serial copy management system */
-+#define MS_REG_MNG_SCMS1	0x10
-+#define MS_REG_MNG_SCMS_MASK		(MS_REG_MNG_SCMS0 | MS_REG_MNG_SCMS1)
-+#define MS_REG_MNG_SCMS_COPY_OK		(MS_REG_MNG_SCMS0 | MS_REG_MNG_SCMS1)
-+#define MS_REG_MNG_SCMS_ONE_COPY	MS_REG_MNG_SCMS1
-+#define MS_REG_MNG_SCMS_NO_COPY	0x00
-+#define MS_REG_MNG_ATFLG	0x08    /* address transfer table flag */
-+#define MS_REG_MNG_ATFLG_OTHER	MS_REG_MNG_ATFLG    /* other */
-+#define MS_REG_MNG_ATFLG_ATTBL	0x00	/* address transfer table */
-+#define MS_REG_MNG_SYSFLG	0x04	/* system flag */
-+#define MS_REG_MNG_SYSFLG_USER	MS_REG_MNG_SYSFLG   /* user block */
-+#define MS_REG_MNG_SYSFLG_BOOT	0x00	/* system block */
-+#define MS_REG_MNG_RESERVED	0xc3
-+#define MS_REG_MNG_DEFAULT	(MS_REG_MNG_SCMS_COPY_OK | MS_REG_MNG_ATFLG_OTHER | MS_REG_MNG_SYSFLG_USER | MS_REG_MNG_RESERVED)
-+
-+
-+#define MS_MAX_PAGES_PER_BLOCK		32
-+#define MS_MAX_INITIAL_ERROR_BLOCKS 	10
-+#define MS_LIB_BITS_PER_BYTE		8
-+
-+#define MS_SYSINF_FORMAT_FAT		1
-+#define MS_SYSINF_USAGE_GENERAL		0
-+
-+#define MS_SYSINF_MSCLASS_TYPE_1	1
-+#define MS_SYSINF_PAGE_SIZE		MS_BYTES_PER_PAGE /* fixed */
-+
-+#define MS_SYSINF_CARDTYPE_RDONLY	1
-+#define MS_SYSINF_CARDTYPE_RDWR		2
-+#define MS_SYSINF_CARDTYPE_HYBRID	3
-+#define MS_SYSINF_SECURITY		0x01
-+#define MS_SYSINF_SECURITY_NO_SUPPORT	MS_SYSINF_SECURITY
-+#define MS_SYSINF_SECURITY_SUPPORT	0
-+
-+#define MS_SYSINF_RESERVED1		1
-+#define MS_SYSINF_RESERVED2		1
-+
-+#define MS_SYSENT_TYPE_INVALID_BLOCK	0x01
-+#define MS_SYSENT_TYPE_CIS_IDI		0x0a    /* CIS/IDI */
-+
-+#define SIZE_OF_KIRO		1024
-+#define BYTE_MASK		0xff
-+
-+/* ms error code */
-+#define MS_STATUS_WRITE_PROTECT	0x0106
-+#define MS_STATUS_SUCCESS	0x0000
-+#define MS_ERROR_FLASH_READ	0x8003
-+#define MS_ERROR_FLASH_ERASE	0x8005
-+#define MS_LB_ERROR		0xfff0
-+#define MS_LB_BOOT_BLOCK	0xfff1
-+#define MS_LB_INITIAL_ERROR	0xfff2
-+#define MS_STATUS_SUCCESS_WITH_ECC 0xfff3
-+#define MS_LB_ACQUIRED_ERROR	0xfff4
-+#define MS_LB_NOT_USED_ERASED	0xfff5
-+#define MS_NOCARD_ERROR		0xfff8
-+#define MS_NO_MEMORY_ERROR	0xfff9
-+#define MS_STATUS_INT_ERROR	0xfffa
-+#define MS_STATUS_ERROR		0xfffe
-+#define MS_LB_NOT_USED		0xffff
-+
-+#define MS_REG_MNG_SYSFLG	0x04    /* system flag */
-+#define MS_REG_MNG_SYSFLG_USER	MS_REG_MNG_SYSFLG   /* user block */
-+
-+#define MS_BOOT_BLOCK_ID                        0x0001
-+#define MS_BOOT_BLOCK_FORMAT_VERSION            0x0100
-+#define MS_BOOT_BLOCK_DATA_ENTRIES              2
-+
-+#define MS_NUMBER_OF_SYSTEM_ENTRY       	4
-+#define MS_NUMBER_OF_BOOT_BLOCK			2
-+#define MS_BYTES_PER_PAGE			512
-+#define MS_LOGICAL_BLOCKS_PER_SEGMENT		496
-+#define MS_LOGICAL_BLOCKS_IN_1ST_SEGMENT        494
-+
-+#define MS_PHYSICAL_BLOCKS_PER_SEGMENT		0x200 /* 512 */
-+#define MS_PHYSICAL_BLOCKS_PER_SEGMENT_MASK     0x1ff
-+
-+/* overwrite area */
-+#define MS_REG_OVR_BKST		0x80		/* block status */
-+#define MS_REG_OVR_BKST_OK	MS_REG_OVR_BKST	/* OK */
-+#define MS_REG_OVR_BKST_NG	0x00            /* NG */
-+
-+/* Status Register 1 */
-+#define MS_REG_ST1_DTER		0x20	/* error on data(corrected) */
-+#define MS_REG_ST1_EXER		0x08	/* error on extra(corrected) */
-+#define MS_REG_ST1_FGER		0x02	/* error on overwrite flag(corrected) */
-+
-+/* MemoryStick Register */
-+/* Status Register 0 */
-+#define MS_REG_ST0_WP		0x01	/* write protected */
-+#define MS_REG_ST0_WP_ON	MS_REG_ST0_WP
-+
-+#define MS_LIB_CTRL_RDONLY      0
-+#define MS_LIB_CTRL_WRPROTECT   1
-+
-+/*dphy->log table */
-+#define ms_libconv_to_logical(pdx, PhyBlock) (((PhyBlock) >= (pdx)->MS_Lib.NumberOfPhyBlock) ? MS_STATUS_ERROR : (pdx)->MS_Lib.Phy2LogMap[PhyBlock])
-+#define ms_libconv_to_physical(pdx, LogBlock) (((LogBlock) >= (pdx)->MS_Lib.NumberOfLogBlock) ? MS_STATUS_ERROR : (pdx)->MS_Lib.Log2PhyMap[LogBlock])
-+
-+#define ms_lib_ctrl_set(pdx, Flag)	((pdx)->MS_Lib.flags |= (1 << (Flag)))
-+#define ms_lib_ctrl_reset(pdx, Flag)	((pdx)->MS_Lib.flags &= ~(1 << (Flag)))
-+#define ms_lib_ctrl_check(pdx, Flag)	((pdx)->MS_Lib.flags & (1 << (Flag)))
-+
-+#define ms_lib_iswritable(pdx) ((ms_lib_ctrl_check((pdx), MS_LIB_CTRL_RDONLY) == 0) && (ms_lib_ctrl_check(pdx, MS_LIB_CTRL_WRPROTECT) == 0))
-+#define ms_lib_clear_pagemap(pdx) memset((pdx)->MS_Lib.pagemap, 0, sizeof((pdx)->MS_Lib.pagemap))
-+#define memstick_logaddr(logadr1, logadr0) ((((u16)(logadr1)) << 8) | (logadr0))
-+
- 
- struct SD_STATUS {
- 	u8    Insert:1;
-@@ -132,6 +267,164 @@ struct SM_STATUS {
- 	u8    IsMS:1;
- };
- 
-+struct ms_bootblock_cis {
-+	u8 bCistplDEVICE[6];    /* 0 */
-+	u8 bCistplDEVICE0C[6];  /* 6 */
-+	u8 bCistplJEDECC[4];    /* 12 */
-+	u8 bCistplMANFID[6];    /* 16 */
-+	u8 bCistplVER1[32];     /* 22 */
-+	u8 bCistplFUNCID[4];    /* 54 */
-+	u8 bCistplFUNCE0[4];    /* 58 */
-+	u8 bCistplFUNCE1[5];    /* 62 */
-+	u8 bCistplCONF[7];      /* 67 */
-+	u8 bCistplCFTBLENT0[10];/* 74 */
-+	u8 bCistplCFTBLENT1[8]; /* 84 */
-+	u8 bCistplCFTBLENT2[12];/* 92 */
-+	u8 bCistplCFTBLENT3[8]; /* 104 */
-+	u8 bCistplCFTBLENT4[17];/* 112 */
-+	u8 bCistplCFTBLENT5[8]; /* 129 */
-+	u8 bCistplCFTBLENT6[17];/* 137 */
-+	u8 bCistplCFTBLENT7[8]; /* 154 */
-+	u8 bCistplNOLINK[3];    /* 162 */
-+} ;
-+
-+struct ms_bootblock_idi {
-+#define MS_IDI_GENERAL_CONF 0x848A
-+	u16 wIDIgeneralConfiguration;	/* 0 */
-+	u16 wIDInumberOfCylinder;	/* 1 */
-+	u16 wIDIreserved0;		/* 2 */
-+	u16 wIDInumberOfHead;		/* 3 */
-+	u16 wIDIbytesPerTrack;		/* 4 */
-+	u16 wIDIbytesPerSector;		/* 5 */
-+	u16 wIDIsectorsPerTrack;	/* 6 */
-+	u16 wIDItotalSectors[2];	/* 7-8  high,low */
-+	u16 wIDIreserved1[11];		/* 9-19 */
-+	u16 wIDIbufferType;		/* 20 */
-+	u16 wIDIbufferSize;		/* 21 */
-+	u16 wIDIlongCmdECC;		/* 22 */
-+	u16 wIDIfirmVersion[4];		/* 23-26 */
-+	u16 wIDImodelName[20];		/* 27-46 */
-+	u16 wIDIreserved2;		/* 47 */
-+	u16 wIDIlongWordSupported;	/* 48 */
-+	u16 wIDIdmaSupported;		/* 49 */
-+	u16 wIDIreserved3;		/* 50 */
-+	u16 wIDIpioTiming;		/* 51 */
-+	u16 wIDIdmaTiming;		/* 52 */
-+	u16 wIDItransferParameter;	/* 53 */
-+	u16 wIDIformattedCylinder;	/* 54 */
-+	u16 wIDIformattedHead;		/* 55 */
-+	u16 wIDIformattedSectorsPerTrack;/* 56 */
-+	u16 wIDIformattedTotalSectors[2];/* 57-58 */
-+	u16 wIDImultiSector;		/* 59 */
-+	u16 wIDIlbaSectors[2];		/* 60-61 */
-+	u16 wIDIsingleWordDMA;		/* 62 */
-+	u16 wIDImultiWordDMA;		/* 63 */
-+	u16 wIDIreserved4[192];		/* 64-255 */
-+};
-+
-+struct ms_bootblock_sysent_rec {
-+	u32 dwStart;
-+	u32 dwSize;
-+	u8 bType;
-+	u8 bReserved[3];
-+};
-+
-+struct ms_bootblock_sysent {
-+	struct ms_bootblock_sysent_rec entry[MS_NUMBER_OF_SYSTEM_ENTRY];
-+};
-+
-+struct ms_bootblock_sysinf {
-+	u8 bMsClass;			/* must be 1 */
-+	u8 bCardType;			/* see below */
-+	u16 wBlockSize;			/* n KB */
-+	u16 wBlockNumber;		/* number of physical block */
-+	u16 wTotalBlockNumber;		/* number of logical block */
-+	u16 wPageSize;			/* must be 0x200 */
-+	u8 bExtraSize;			/* 0x10 */
-+	u8 bSecuritySupport;
-+	u8 bAssemblyDate[8];
-+	u8 bFactoryArea[4];
-+	u8 bAssemblyMakerCode;
-+	u8 bAssemblyMachineCode[3];
-+	u16 wMemoryMakerCode;
-+	u16 wMemoryDeviceCode;
-+	u16 wMemorySize;
-+	u8 bReserved1;
-+	u8 bReserved2;
-+	u8 bVCC;
-+	u8 bVPP;
-+	u16 wControllerChipNumber;
-+	u16 wControllerFunction;	/* New MS */
-+	u8 bReserved3[9];		/* New MS */
-+	u8 bParallelSupport;		/* New MS */
-+	u16 wFormatValue;		/* New MS */
-+	u8 bFormatType;
-+	u8 bUsage;
-+	u8 bDeviceType;
-+	u8 bReserved4[22];
-+	u8 bFUValue3;
-+	u8 bFUValue4;
-+	u8 bReserved5[15];
-+};
-+
-+struct ms_bootblock_header {
-+	u16 wBlockID;
-+	u16 wFormatVersion;
-+	u8 bReserved1[184];
-+	u8 bNumberOfDataEntry;
-+	u8 bReserved2[179];
-+};
-+
-+struct ms_bootblock_page0 {
-+	struct ms_bootblock_header header;
-+	struct ms_bootblock_sysent sysent;
-+	struct ms_bootblock_sysinf sysinf;
-+};
-+
-+struct ms_bootblock_cis_idi {
-+	union {
-+		struct ms_bootblock_cis cis;
-+		u8 dmy[256];
-+	} cis;
-+
-+	union {
-+		struct ms_bootblock_idi idi;
-+		u8 dmy[256];
-+	} idi;
-+
-+};
-+
-+/* ENE MS Lib struct */
-+struct ms_lib_type_extdat {
-+	u8 reserved;
-+	u8 intr;
-+	u8 status0;
-+	u8 status1;
-+	u8 ovrflg;
-+	u8 mngflg;
-+	u16 logadr;
-+};
-+
-+struct ms_lib_ctrl {
-+	u32 flags;
-+	u32 BytesPerSector;
-+	u32 NumberOfCylinder;
-+	u32 SectorsPerCylinder;
-+	u16 cardType;			/* R/W, RO, Hybrid */
-+	u16 blockSize;
-+	u16 PagesPerBlock;
-+	u16 NumberOfPhyBlock;
-+	u16 NumberOfLogBlock;
-+	u16 NumberOfSegment;
-+	u16 *Phy2LogMap;		/* phy2log table */
-+	u16 *Log2PhyMap;		/* log2phy table */
-+	u16 wrtblk;
-+	unsigned char *pagemap[(MS_MAX_PAGES_PER_BLOCK + (MS_LIB_BITS_PER_BYTE-1)) / MS_LIB_BITS_PER_BYTE];
-+	unsigned char *blkpag;
-+	struct ms_lib_type_extdat *blkext;
-+	unsigned char copybuf[512];
-+};
-+
- 
- /* SD Block Length */
- /* 2^9 = 512 Bytes, The HW maximum read/write data length */
-@@ -162,7 +455,7 @@ struct ene_ub6250_info {
- 	/*----- MS Control Data ---------------- */
- 	bool		MS_SWWP;
- 	u32		MSP_TotalBlock;
--	/*MS_LibControl       MS_Lib;*/
-+	struct ms_lib_ctrl MS_Lib;
- 	bool		MS_IsRWPage;
- 	u16		MS_Model;
- 
-@@ -180,6 +473,7 @@ struct ene_ub6250_info {
- };
- 
- static int ene_sd_init(struct us_data *us);
-+static int ene_ms_init(struct us_data *us);
- static int ene_load_bincode(struct us_data *us, unsigned char flag);
- 
- static void ene_ub6250_info_destructor(void *extra)
-@@ -431,6 +725,1101 @@ static int sd_scsi_write(struct us_data *us, struct scsi_cmnd *srb)
- 	return result;
- }
- 
-+/*
-+ * ENE MS Card
-+ */
-+
-+static int ms_lib_set_logicalpair(struct us_data *us, u16 logblk, u16 phyblk)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	if ((logblk >= info->MS_Lib.NumberOfLogBlock) || (phyblk >= info->MS_Lib.NumberOfPhyBlock))
-+		return (u32)-1;
-+
-+	info->MS_Lib.Phy2LogMap[phyblk] = logblk;
-+	info->MS_Lib.Log2PhyMap[logblk] = phyblk;
-+
-+	return 0;
-+}
-+
-+static int ms_lib_set_logicalblockmark(struct us_data *us, u16 phyblk, u16 mark)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	if (phyblk >= info->MS_Lib.NumberOfPhyBlock)
-+		return (u32)-1;
-+
-+	info->MS_Lib.Phy2LogMap[phyblk] = mark;
-+
-+	return 0;
-+}
-+
-+static int ms_lib_set_initialerrorblock(struct us_data *us, u16 phyblk)
-+{
-+	return ms_lib_set_logicalblockmark(us, phyblk, MS_LB_INITIAL_ERROR);
-+}
-+
-+static int ms_lib_set_bootblockmark(struct us_data *us, u16 phyblk)
-+{
-+	return ms_lib_set_logicalblockmark(us, phyblk, MS_LB_BOOT_BLOCK);
-+}
-+
-+static int ms_lib_free_logicalmap(struct us_data *us)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	kfree(info->MS_Lib.Phy2LogMap);
-+	info->MS_Lib.Phy2LogMap = NULL;
-+
-+	kfree(info->MS_Lib.Log2PhyMap);
-+	info->MS_Lib.Log2PhyMap = NULL;
-+
-+	return 0;
-+}
-+
-+int ms_lib_alloc_logicalmap(struct us_data *us)
-+{
-+	u32  i;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	info->MS_Lib.Phy2LogMap = kmalloc(info->MS_Lib.NumberOfPhyBlock * sizeof(u16), GFP_KERNEL);
-+	info->MS_Lib.Log2PhyMap = kmalloc(info->MS_Lib.NumberOfLogBlock * sizeof(u16), GFP_KERNEL);
-+
-+	if ((info->MS_Lib.Phy2LogMap == NULL) || (info->MS_Lib.Log2PhyMap == NULL)) {
-+		ms_lib_free_logicalmap(us);
-+		return (u32)-1;
-+	}
-+
-+	for (i = 0; i < info->MS_Lib.NumberOfPhyBlock; i++)
-+		info->MS_Lib.Phy2LogMap[i] = MS_LB_NOT_USED;
-+
-+	for (i = 0; i < info->MS_Lib.NumberOfLogBlock; i++)
-+		info->MS_Lib.Log2PhyMap[i] = MS_LB_NOT_USED;
-+
-+	return 0;
-+}
-+
-+static void ms_lib_clear_writebuf(struct us_data *us)
-+{
-+	int i;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	info->MS_Lib.wrtblk = (u16)-1;
-+	ms_lib_clear_pagemap(info);
-+
-+	if (info->MS_Lib.blkpag)
-+		memset(info->MS_Lib.blkpag, 0xff, info->MS_Lib.PagesPerBlock * info->MS_Lib.BytesPerSector);
-+
-+	if (info->MS_Lib.blkext) {
-+		for (i = 0; i < info->MS_Lib.PagesPerBlock; i++) {
-+			info->MS_Lib.blkext[i].status1 = MS_REG_ST1_DEFAULT;
-+			info->MS_Lib.blkext[i].ovrflg = MS_REG_OVR_DEFAULT;
-+			info->MS_Lib.blkext[i].mngflg = MS_REG_MNG_DEFAULT;
-+			info->MS_Lib.blkext[i].logadr = MS_LB_NOT_USED;
-+		}
-+	}
-+}
-+
-+static int ms_count_freeblock(struct us_data *us, u16 PhyBlock)
-+{
-+	u32 Ende, Count;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	Ende = PhyBlock + MS_PHYSICAL_BLOCKS_PER_SEGMENT;
-+	for (Count = 0; PhyBlock < Ende; PhyBlock++) {
-+		switch (info->MS_Lib.Phy2LogMap[PhyBlock]) {
-+		case MS_LB_NOT_USED:
-+		case MS_LB_NOT_USED_ERASED:
-+			Count++;
-+		default:
-+			break;
-+		}
-+	}
-+
-+	return Count;
-+}
-+
-+static int ms_read_readpage(struct us_data *us, u32 PhyBlockAddr,
-+		u8 PageNum, u32 *PageBuf, struct ms_lib_type_extdat *ExtraDat)
-+{
-+	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-+	int result;
-+	u8 ExtBuf[4];
-+	u32 bn = PhyBlockAddr * 0x20 + PageNum;
-+
-+	/* printk(KERN_INFO "MS --- MS_ReaderReadPage,
-+	PhyBlockAddr = %x, PageNum = %x\n", PhyBlockAddr, PageNum); */
-+
-+	result = ene_load_bincode(us, MS_RW_PATTERN);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	/* Read Page Data */
-+	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+	bcb->DataTransferLength = 0x200;
-+	bcb->Flags      = 0x80;
-+	bcb->CDB[0]     = 0xF1;
-+
-+	bcb->CDB[1]     = 0x02; /* in init.c ENE_MSInit() is 0x01 */
-+
-+	bcb->CDB[5]     = (unsigned char)(bn);
-+	bcb->CDB[4]     = (unsigned char)(bn>>8);
-+	bcb->CDB[3]     = (unsigned char)(bn>>16);
-+	bcb->CDB[2]     = (unsigned char)(bn>>24);
-+
-+	result = ene_send_scsi_cmd(us, FDIR_READ, PageBuf, 0);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+
-+	/* Read Extra Data */
-+	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+	bcb->DataTransferLength = 0x4;
-+	bcb->Flags      = 0x80;
-+	bcb->CDB[0]     = 0xF1;
-+	bcb->CDB[1]     = 0x03;
-+
-+	bcb->CDB[5]     = (unsigned char)(PageNum);
-+	bcb->CDB[4]     = (unsigned char)(PhyBlockAddr);
-+	bcb->CDB[3]     = (unsigned char)(PhyBlockAddr>>8);
-+	bcb->CDB[2]     = (unsigned char)(PhyBlockAddr>>16);
-+	bcb->CDB[6]     = 0x01;
-+
-+	result = ene_send_scsi_cmd(us, FDIR_READ, &ExtBuf, 0);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	ExtraDat->reserved = 0;
-+	ExtraDat->intr     = 0x80;  /* Not yet,fireware support */
-+	ExtraDat->status0  = 0x10;  /* Not yet,fireware support */
-+
-+	ExtraDat->status1  = 0x00;  /* Not yet,fireware support */
-+	ExtraDat->ovrflg   = ExtBuf[0];
-+	ExtraDat->mngflg   = ExtBuf[1];
-+	ExtraDat->logadr   = memstick_logaddr(ExtBuf[2], ExtBuf[3]);
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static int ms_lib_process_bootblock(struct us_data *us, u16 PhyBlock, u8 *PageData)
-+{
-+	struct ms_bootblock_sysent *SysEntry;
-+	struct ms_bootblock_sysinf *SysInfo;
-+	u32 i, result;
-+	u8 PageNumber;
-+	u8 *PageBuffer;
-+	struct ms_lib_type_extdat ExtraData;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	PageBuffer = kmalloc(MS_BYTES_PER_PAGE, GFP_KERNEL);
-+	if (PageBuffer == NULL)
-+		return (u32)-1;
-+
-+	result = (u32)-1;
-+
-+	SysInfo = &(((struct ms_bootblock_page0 *)PageData)->sysinf);
-+
-+	if ((SysInfo->bMsClass != MS_SYSINF_MSCLASS_TYPE_1) ||
-+		(be16_to_cpu(SysInfo->wPageSize) != MS_SYSINF_PAGE_SIZE) ||
-+		((SysInfo->bSecuritySupport & MS_SYSINF_SECURITY) == MS_SYSINF_SECURITY_SUPPORT) ||
-+		(SysInfo->bReserved1 != MS_SYSINF_RESERVED1) ||
-+		(SysInfo->bReserved2 != MS_SYSINF_RESERVED2) ||
-+		(SysInfo->bFormatType != MS_SYSINF_FORMAT_FAT) ||
-+		(SysInfo->bUsage != MS_SYSINF_USAGE_GENERAL))
-+		goto exit;
-+		/* */
-+	switch (info->MS_Lib.cardType = SysInfo->bCardType) {
-+	case MS_SYSINF_CARDTYPE_RDONLY:
-+		ms_lib_ctrl_set(info, MS_LIB_CTRL_RDONLY);
-+		break;
-+	case MS_SYSINF_CARDTYPE_RDWR:
-+		ms_lib_ctrl_reset(info, MS_LIB_CTRL_RDONLY);
-+		break;
-+	case MS_SYSINF_CARDTYPE_HYBRID:
-+	default:
-+		goto exit;
-+	}
-+
-+	info->MS_Lib.blockSize = be16_to_cpu(SysInfo->wBlockSize);
-+	info->MS_Lib.NumberOfPhyBlock = be16_to_cpu(SysInfo->wBlockNumber);
-+	info->MS_Lib.NumberOfLogBlock = be16_to_cpu(SysInfo->wTotalBlockNumber)-2;
-+	info->MS_Lib.PagesPerBlock = info->MS_Lib.blockSize * SIZE_OF_KIRO / MS_BYTES_PER_PAGE;
-+	info->MS_Lib.NumberOfSegment = info->MS_Lib.NumberOfPhyBlock / MS_PHYSICAL_BLOCKS_PER_SEGMENT;
-+	info->MS_Model = be16_to_cpu(SysInfo->wMemorySize);
-+
-+	/*Allocate to all number of logicalblock and physicalblock */
-+	if (ms_lib_alloc_logicalmap(us))
-+		goto exit;
-+
-+	/* Mark the book block */
-+	ms_lib_set_bootblockmark(us, PhyBlock);
-+
-+	SysEntry = &(((struct ms_bootblock_page0 *)PageData)->sysent);
-+
-+	for (i = 0; i < MS_NUMBER_OF_SYSTEM_ENTRY; i++) {
-+		u32  EntryOffset, EntrySize;
-+
-+		EntryOffset = be32_to_cpu(SysEntry->entry[i].dwStart);
-+
-+		if (EntryOffset == 0xffffff)
-+			continue;
-+		EntrySize = be32_to_cpu(SysEntry->entry[i].dwSize);
-+
-+		if (EntrySize == 0)
-+			continue;
-+
-+		if (EntryOffset + MS_BYTES_PER_PAGE + EntrySize > info->MS_Lib.blockSize * (u32)SIZE_OF_KIRO)
-+			continue;
-+
-+		if (i == 0) {
-+			u8 PrevPageNumber = 0;
-+			u16 phyblk;
-+
-+			if (SysEntry->entry[i].bType != MS_SYSENT_TYPE_INVALID_BLOCK)
-+				goto exit;
-+
-+			while (EntrySize > 0) {
-+
-+				PageNumber = (u8)(EntryOffset / MS_BYTES_PER_PAGE + 1);
-+				if (PageNumber != PrevPageNumber) {
-+					switch (ms_read_readpage(us, PhyBlock, PageNumber, (u32 *)PageBuffer, &ExtraData)) {
-+					case MS_STATUS_SUCCESS:
-+						break;
-+					case MS_STATUS_WRITE_PROTECT:
-+					case MS_ERROR_FLASH_READ:
-+					case MS_STATUS_ERROR:
-+					default:
-+						goto exit;
-+					}
-+
-+					PrevPageNumber = PageNumber;
-+				}
-+
-+				phyblk = be16_to_cpu(*(u16 *)(PageBuffer + (EntryOffset % MS_BYTES_PER_PAGE)));
-+				if (phyblk < 0x0fff)
-+					ms_lib_set_initialerrorblock(us, phyblk);
-+
-+				EntryOffset += 2;
-+				EntrySize -= 2;
-+			}
-+		} else if (i == 1) {  /* CIS/IDI */
-+			struct ms_bootblock_idi *idi;
-+
-+			if (SysEntry->entry[i].bType != MS_SYSENT_TYPE_CIS_IDI)
-+				goto exit;
-+
-+			switch (ms_read_readpage(us, PhyBlock, (u8)(EntryOffset / MS_BYTES_PER_PAGE + 1), (u32 *)PageBuffer, &ExtraData)) {
-+			case MS_STATUS_SUCCESS:
-+				break;
-+			case MS_STATUS_WRITE_PROTECT:
-+			case MS_ERROR_FLASH_READ:
-+			case MS_STATUS_ERROR:
-+			default:
-+				goto exit;
-+			}
-+
-+			idi = &((struct ms_bootblock_cis_idi *)(PageBuffer + (EntryOffset % MS_BYTES_PER_PAGE)))->idi.idi;
-+			if (le16_to_cpu(idi->wIDIgeneralConfiguration) != MS_IDI_GENERAL_CONF)
-+				goto exit;
-+
-+			info->MS_Lib.BytesPerSector = le16_to_cpu(idi->wIDIbytesPerSector);
-+			if (info->MS_Lib.BytesPerSector != MS_BYTES_PER_PAGE)
-+				goto exit;
-+		}
-+	} /* End for .. */
-+
-+	result = 0;
-+
-+exit:
-+	if (result)
-+		ms_lib_free_logicalmap(us);
-+
-+	kfree(PageBuffer);
-+
-+	result = 0;
-+	return result;
-+}
-+
-+static void ms_lib_free_writebuf(struct us_data *us)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+	info->MS_Lib.wrtblk = (u16)-1; /* set to -1 */
-+
-+	/* memset((fdoExt)->MS_Lib.pagemap, 0, sizeof((fdoExt)->MS_Lib.pagemap)) */
-+
-+	ms_lib_clear_pagemap(info); /* (pdx)->MS_Lib.pagemap memset 0 in ms.h */
-+
-+	if (info->MS_Lib.blkpag) {
-+		kfree((u8 *)(info->MS_Lib.blkpag));  /* Arnold test ... */
-+		info->MS_Lib.blkpag = NULL;
-+	}
-+
-+	if (info->MS_Lib.blkext) {
-+		kfree((u8 *)(info->MS_Lib.blkext));  /* Arnold test ... */
-+		info->MS_Lib.blkext = NULL;
-+	}
-+}
-+
-+
-+static void ms_lib_free_allocatedarea(struct us_data *us)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	ms_lib_free_writebuf(us); /* Free MS_Lib.pagemap */
-+	ms_lib_free_logicalmap(us); /* kfree MS_Lib.Phy2LogMap and MS_Lib.Log2PhyMap */
-+
-+	/* set struct us point flag to 0 */
-+	info->MS_Lib.flags = 0;
-+	info->MS_Lib.BytesPerSector = 0;
-+	info->MS_Lib.SectorsPerCylinder = 0;
-+
-+	info->MS_Lib.cardType = 0;
-+	info->MS_Lib.blockSize = 0;
-+	info->MS_Lib.PagesPerBlock = 0;
-+
-+	info->MS_Lib.NumberOfPhyBlock = 0;
-+	info->MS_Lib.NumberOfLogBlock = 0;
-+}
-+
-+
-+static int ms_lib_alloc_writebuf(struct us_data *us)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	info->MS_Lib.wrtblk = (u16)-1;
-+
-+	info->MS_Lib.blkpag = kmalloc(info->MS_Lib.PagesPerBlock * info->MS_Lib.BytesPerSector, GFP_KERNEL);
-+	info->MS_Lib.blkext = kmalloc(info->MS_Lib.PagesPerBlock * sizeof(struct ms_lib_type_extdat), GFP_KERNEL);
-+
-+	if ((info->MS_Lib.blkpag == NULL) || (info->MS_Lib.blkext == NULL)) {
-+		ms_lib_free_writebuf(us);
-+		return (u32)-1;
-+	}
-+
-+	ms_lib_clear_writebuf(us);
-+
-+return 0;
-+}
-+
-+static int ms_lib_force_setlogical_pair(struct us_data *us, u16 logblk, u16 phyblk)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	if (logblk == MS_LB_NOT_USED)
-+		return 0;
-+
-+	if ((logblk >= info->MS_Lib.NumberOfLogBlock) ||
-+		(phyblk >= info->MS_Lib.NumberOfPhyBlock))
-+		return (u32)-1;
-+
-+	info->MS_Lib.Phy2LogMap[phyblk] = logblk;
-+	info->MS_Lib.Log2PhyMap[logblk] = phyblk;
-+
-+	return 0;
-+}
-+
-+static int ms_read_copyblock(struct us_data *us, u16 oldphy, u16 newphy,
-+			u16 PhyBlockAddr, u8 PageNum, unsigned char *buf, u16 len)
-+{
-+	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-+	int result;
-+
-+	/* printk(KERN_INFO "MS_ReaderCopyBlock --- PhyBlockAddr = %x,
-+		PageNum = %x\n", PhyBlockAddr, PageNum); */
-+	result = ene_load_bincode(us, MS_RW_PATTERN);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+	bcb->DataTransferLength = 0x200*len;
-+	bcb->Flags = 0x00;
-+	bcb->CDB[0] = 0xF0;
-+	bcb->CDB[1] = 0x08;
-+	bcb->CDB[4] = (unsigned char)(oldphy);
-+	bcb->CDB[3] = (unsigned char)(oldphy>>8);
-+	bcb->CDB[2] = 0; /* (BYTE)(oldphy>>16) */
-+	bcb->CDB[7] = (unsigned char)(newphy);
-+	bcb->CDB[6] = (unsigned char)(newphy>>8);
-+	bcb->CDB[5] = 0; /* (BYTE)(newphy>>16) */
-+	bcb->CDB[9] = (unsigned char)(PhyBlockAddr);
-+	bcb->CDB[8] = (unsigned char)(PhyBlockAddr>>8);
-+	bcb->CDB[10] = PageNum;
-+
-+	result = ene_send_scsi_cmd(us, FDIR_WRITE, buf, 0);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static int ms_read_eraseblock(struct us_data *us, u32 PhyBlockAddr)
-+{
-+	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-+	int result;
-+	u32 bn = PhyBlockAddr;
-+
-+	/* printk(KERN_INFO "MS --- ms_read_eraseblock,
-+			PhyBlockAddr = %x\n", PhyBlockAddr); */
-+	result = ene_load_bincode(us, MS_RW_PATTERN);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+	bcb->DataTransferLength = 0x200;
-+	bcb->Flags = 0x80;
-+	bcb->CDB[0] = 0xF2;
-+	bcb->CDB[1] = 0x06;
-+	bcb->CDB[4] = (unsigned char)(bn);
-+	bcb->CDB[3] = (unsigned char)(bn>>8);
-+	bcb->CDB[2] = (unsigned char)(bn>>16);
-+
-+	result = ene_send_scsi_cmd(us, FDIR_READ, NULL, 0);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static int ms_lib_check_disableblock(struct us_data *us, u16 PhyBlock)
-+{
-+	unsigned char *PageBuf = NULL;
-+	u16 result = MS_STATUS_SUCCESS;
-+	u16 blk, index = 0;
-+	struct ms_lib_type_extdat extdat;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	PageBuf = kmalloc(MS_BYTES_PER_PAGE, GFP_KERNEL);
-+	if (PageBuf == NULL) {
-+		result = MS_NO_MEMORY_ERROR;
-+		goto exit;
-+	}
-+
-+	ms_read_readpage(us, PhyBlock, 1, (u32 *)PageBuf, &extdat);
-+	do {
-+		blk = be16_to_cpu(PageBuf[index]);
-+		if (blk == MS_LB_NOT_USED)
-+			break;
-+		if (blk == info->MS_Lib.Log2PhyMap[0]) {
-+			result = MS_ERROR_FLASH_READ;
-+			break;
-+		}
-+		index++;
-+	} while (1);
-+
-+exit:
-+	kfree(PageBuf);
-+	return result;
-+}
-+
-+static int ms_lib_setacquired_errorblock(struct us_data *us, u16 phyblk)
-+{
-+	u16 log;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	if (phyblk >= info->MS_Lib.NumberOfPhyBlock)
-+		return (u32)-1;
-+
-+	log = info->MS_Lib.Phy2LogMap[phyblk];
-+
-+	if (log < info->MS_Lib.NumberOfLogBlock)
-+		info->MS_Lib.Log2PhyMap[log] = MS_LB_NOT_USED;
-+
-+	if (info->MS_Lib.Phy2LogMap[phyblk] != MS_LB_INITIAL_ERROR)
-+		info->MS_Lib.Phy2LogMap[phyblk] = MS_LB_ACQUIRED_ERROR;
-+
-+	return 0;
-+}
-+
-+static int ms_lib_overwrite_extra(struct us_data *us, u32 PhyBlockAddr,
-+				u8 PageNum, u8 OverwriteFlag)
-+{
-+	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-+	int result;
-+
-+	/* printk("MS --- MS_LibOverwriteExtra,
-+		PhyBlockAddr = %x, PageNum = %x\n", PhyBlockAddr, PageNum); */
-+	result = ene_load_bincode(us, MS_RW_PATTERN);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+	bcb->DataTransferLength = 0x4;
-+	bcb->Flags = 0x80;
-+	bcb->CDB[0] = 0xF2;
-+	bcb->CDB[1] = 0x05;
-+	bcb->CDB[5] = (unsigned char)(PageNum);
-+	bcb->CDB[4] = (unsigned char)(PhyBlockAddr);
-+	bcb->CDB[3] = (unsigned char)(PhyBlockAddr>>8);
-+	bcb->CDB[2] = (unsigned char)(PhyBlockAddr>>16);
-+	bcb->CDB[6] = OverwriteFlag;
-+	bcb->CDB[7] = 0xFF;
-+	bcb->CDB[8] = 0xFF;
-+	bcb->CDB[9] = 0xFF;
-+
-+	result = ene_send_scsi_cmd(us, FDIR_READ, NULL, 0);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static int ms_lib_error_phyblock(struct us_data *us, u16 phyblk)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	if (phyblk >= info->MS_Lib.NumberOfPhyBlock)
-+		return MS_STATUS_ERROR;
-+
-+	ms_lib_setacquired_errorblock(us, phyblk);
-+
-+	if (ms_lib_iswritable(info))
-+		return ms_lib_overwrite_extra(us, phyblk, 0, (u8)(~MS_REG_OVR_BKST & BYTE_MASK));
-+
-+	return MS_STATUS_SUCCESS;
-+}
-+
-+static int ms_lib_erase_phyblock(struct us_data *us, u16 phyblk)
-+{
-+	u16 log;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	if (phyblk >= info->MS_Lib.NumberOfPhyBlock)
-+		return MS_STATUS_ERROR;
-+
-+	log = info->MS_Lib.Phy2LogMap[phyblk];
-+
-+	if (log < info->MS_Lib.NumberOfLogBlock)
-+		info->MS_Lib.Log2PhyMap[log] = MS_LB_NOT_USED;
-+
-+	info->MS_Lib.Phy2LogMap[phyblk] = MS_LB_NOT_USED;
-+
-+	if (ms_lib_iswritable(info)) {
-+		switch (ms_read_eraseblock(us, phyblk)) {
-+		case MS_STATUS_SUCCESS:
-+			info->MS_Lib.Phy2LogMap[phyblk] = MS_LB_NOT_USED_ERASED;
-+			return MS_STATUS_SUCCESS;
-+		case MS_ERROR_FLASH_ERASE:
-+		case MS_STATUS_INT_ERROR:
-+			ms_lib_error_phyblock(us, phyblk);
-+			return MS_ERROR_FLASH_ERASE;
-+		case MS_STATUS_ERROR:
-+		default:
-+			ms_lib_ctrl_set(info, MS_LIB_CTRL_RDONLY); /* MS_LibCtrlSet will used by ENE_MSInit ,need check, and why us to info*/
-+			ms_lib_setacquired_errorblock(us, phyblk);
-+			return MS_STATUS_ERROR;
-+		}
-+	}
-+
-+	ms_lib_setacquired_errorblock(us, phyblk);
-+
-+	return MS_STATUS_SUCCESS;
-+}
-+
-+static int ms_lib_read_extra(struct us_data *us, u32 PhyBlock,
-+				u8 PageNum, struct ms_lib_type_extdat *ExtraDat)
-+{
-+	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-+	int result;
-+	u8 ExtBuf[4];
-+
-+	/* printk("MS_LibReadExtra --- PhyBlock = %x, PageNum = %x\n", PhyBlock, PageNum); */
-+	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+	bcb->DataTransferLength = 0x4;
-+	bcb->Flags      = 0x80;
-+	bcb->CDB[0]     = 0xF1;
-+	bcb->CDB[1]     = 0x03;
-+	bcb->CDB[5]     = (unsigned char)(PageNum);
-+	bcb->CDB[4]     = (unsigned char)(PhyBlock);
-+	bcb->CDB[3]     = (unsigned char)(PhyBlock>>8);
-+	bcb->CDB[2]     = (unsigned char)(PhyBlock>>16);
-+	bcb->CDB[6]     = 0x01;
-+
-+	result = ene_send_scsi_cmd(us, FDIR_READ, &ExtBuf, 0);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	ExtraDat->reserved = 0;
-+	ExtraDat->intr     = 0x80;  /* Not yet, waiting for fireware support */
-+	ExtraDat->status0  = 0x10;  /* Not yet, waiting for fireware support */
-+	ExtraDat->status1  = 0x00;  /* Not yet, waiting for fireware support */
-+	ExtraDat->ovrflg   = ExtBuf[0];
-+	ExtraDat->mngflg   = ExtBuf[1];
-+	ExtraDat->logadr   = memstick_logaddr(ExtBuf[2], ExtBuf[3]);
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static int ms_libsearch_block_from_physical(struct us_data *us, u16 phyblk)
-+{
-+	u16 Newblk;
-+	u16 blk;
-+	struct ms_lib_type_extdat extdat; /* need check */
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+
-+	if (phyblk >= info->MS_Lib.NumberOfPhyBlock)
-+		return MS_LB_ERROR;
-+
-+	for (blk = phyblk + 1; blk != phyblk; blk++) {
-+		if ((blk & MS_PHYSICAL_BLOCKS_PER_SEGMENT_MASK) == 0)
-+			blk -= MS_PHYSICAL_BLOCKS_PER_SEGMENT;
-+
-+		Newblk = info->MS_Lib.Phy2LogMap[blk];
-+		if (info->MS_Lib.Phy2LogMap[blk] == MS_LB_NOT_USED_ERASED) {
-+			return blk;
-+		} else if (info->MS_Lib.Phy2LogMap[blk] == MS_LB_NOT_USED) {
-+			switch (ms_lib_read_extra(us, blk, 0, &extdat)) {
-+			case MS_STATUS_SUCCESS:
-+			case MS_STATUS_SUCCESS_WITH_ECC:
-+				break;
-+			case MS_NOCARD_ERROR:
-+				return MS_NOCARD_ERROR;
-+			case MS_STATUS_INT_ERROR:
-+				return MS_LB_ERROR;
-+			case MS_ERROR_FLASH_READ:
-+			default:
-+				ms_lib_setacquired_errorblock(us, blk);
-+				continue;
-+			} /* End switch */
-+
-+			if ((extdat.ovrflg & MS_REG_OVR_BKST) != MS_REG_OVR_BKST_OK) {
-+				ms_lib_setacquired_errorblock(us, blk);
-+				continue;
-+			}
-+
-+			switch (ms_lib_erase_phyblock(us, blk)) {
-+			case MS_STATUS_SUCCESS:
-+				return blk;
-+			case MS_STATUS_ERROR:
-+				return MS_LB_ERROR;
-+			case MS_ERROR_FLASH_ERASE:
-+			default:
-+				ms_lib_error_phyblock(us, blk);
-+				break;
-+			}
-+		}
-+	} /* End for */
-+
-+	return MS_LB_ERROR;
-+}
-+static int ms_libsearch_block_from_logical(struct us_data *us, u16 logblk)
-+{
-+	u16 phyblk;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	phyblk = ms_libconv_to_physical(info, logblk);
-+	if (phyblk >= MS_LB_ERROR) {
-+		if (logblk >= info->MS_Lib.NumberOfLogBlock)
-+			return MS_LB_ERROR;
-+
-+		phyblk = (logblk + MS_NUMBER_OF_BOOT_BLOCK) / MS_LOGICAL_BLOCKS_PER_SEGMENT;
-+		phyblk *= MS_PHYSICAL_BLOCKS_PER_SEGMENT;
-+		phyblk += MS_PHYSICAL_BLOCKS_PER_SEGMENT - 1;
-+	}
-+
-+	return ms_libsearch_block_from_physical(us, phyblk);
-+}
-+
-+static int ms_scsi_test_unit_ready(struct us_data *us, struct scsi_cmnd *srb)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *)(us->extra);
-+
-+	/* pr_info("MS_SCSI_Test_Unit_Ready\n"); */
-+	if (info->MS_Status.Insert && info->MS_Status.Ready) {
-+		return USB_STOR_TRANSPORT_GOOD;
-+	} else {
-+		ene_ms_init(us);
-+		return USB_STOR_TRANSPORT_GOOD;
-+	}
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static int ms_scsi_inquiry(struct us_data *us, struct scsi_cmnd *srb)
-+{
-+	/* pr_info("MS_SCSI_Inquiry\n"); */
-+	unsigned char data_ptr[36] = {
-+		0x00, 0x80, 0x02, 0x00, 0x1F, 0x00, 0x00, 0x00, 0x55,
-+		0x53, 0x42, 0x32, 0x2E, 0x30, 0x20, 0x20, 0x43, 0x61,
-+		0x72, 0x64, 0x52, 0x65, 0x61, 0x64, 0x65, 0x72, 0x20,
-+		0x20, 0x20, 0x20, 0x20, 0x20, 0x30, 0x31, 0x30, 0x30};
-+
-+	usb_stor_set_xfer_buf(data_ptr, 36, srb);
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static int ms_scsi_mode_sense(struct us_data *us, struct scsi_cmnd *srb)
-+{
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+	unsigned char mediaNoWP[12] = {
-+		0x0b, 0x00, 0x00, 0x08, 0x00, 0x00,
-+		0x71, 0xc0, 0x00, 0x00, 0x02, 0x00 };
-+	unsigned char mediaWP[12]   = {
-+		0x0b, 0x00, 0x80, 0x08, 0x00, 0x00,
-+		0x71, 0xc0, 0x00, 0x00, 0x02, 0x00 };
-+
-+	if (info->MS_Status.WtP)
-+		usb_stor_set_xfer_buf(mediaWP, 12, srb);
-+	else
-+		usb_stor_set_xfer_buf(mediaNoWP, 12, srb);
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static int ms_scsi_read_capacity(struct us_data *us, struct scsi_cmnd *srb)
-+{
-+	u32   bl_num;
-+	u16    bl_len;
-+	unsigned int offset = 0;
-+	unsigned char    buf[8];
-+	struct scatterlist *sg = NULL;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	US_DEBUGP("ms_scsi_read_capacity\n");
-+	bl_len = 0x200;
-+	if (info->MS_Status.IsMSPro)
-+		bl_num = info->MSP_TotalBlock - 1;
-+	else
-+		bl_num = info->MS_Lib.NumberOfLogBlock * info->MS_Lib.blockSize * 2 - 1;
-+
-+	info->bl_num = bl_num;
-+	US_DEBUGP("bl_len = %x\n", bl_len);
-+	US_DEBUGP("bl_num = %x\n", bl_num);
-+
-+	/*srb->request_bufflen = 8; */
-+	buf[0] = (bl_num >> 24) & 0xff;
-+	buf[1] = (bl_num >> 16) & 0xff;
-+	buf[2] = (bl_num >> 8) & 0xff;
-+	buf[3] = (bl_num >> 0) & 0xff;
-+	buf[4] = (bl_len >> 24) & 0xff;
-+	buf[5] = (bl_len >> 16) & 0xff;
-+	buf[6] = (bl_len >> 8) & 0xff;
-+	buf[7] = (bl_len >> 0) & 0xff;
-+
-+	usb_stor_access_xfer_buf(buf, 8, srb, &sg, &offset, TO_XFER_BUF);
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static void ms_lib_phy_to_log_range(u16 PhyBlock, u16 *LogStart, u16 *LogEnde)
-+{
-+	PhyBlock /= MS_PHYSICAL_BLOCKS_PER_SEGMENT;
-+
-+	if (PhyBlock) {
-+		*LogStart = MS_LOGICAL_BLOCKS_IN_1ST_SEGMENT + (PhyBlock - 1) * MS_LOGICAL_BLOCKS_PER_SEGMENT;/*496*/
-+		*LogEnde = *LogStart + MS_LOGICAL_BLOCKS_PER_SEGMENT;/*496*/
-+	} else {
-+		*LogStart = 0;
-+		*LogEnde = MS_LOGICAL_BLOCKS_IN_1ST_SEGMENT;/*494*/
-+	}
-+}
-+
-+static int ms_lib_read_extrablock(struct us_data *us, u32 PhyBlock,
-+	u8 PageNum, u8 blen, void *buf)
-+{
-+	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-+	int     result;
-+
-+	/* printk("MS_LibReadExtraBlock --- PhyBlock = %x,
-+		PageNum = %x, blen = %x\n", PhyBlock, PageNum, blen); */
-+
-+	/* Read Extra Data */
-+	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+	bcb->DataTransferLength = 0x4 * blen;
-+	bcb->Flags      = 0x80;
-+	bcb->CDB[0]     = 0xF1;
-+	bcb->CDB[1]     = 0x03;
-+	bcb->CDB[5]     = (unsigned char)(PageNum);
-+	bcb->CDB[4]     = (unsigned char)(PhyBlock);
-+	bcb->CDB[3]     = (unsigned char)(PhyBlock>>8);
-+	bcb->CDB[2]     = (unsigned char)(PhyBlock>>16);
-+	bcb->CDB[6]     = blen;
-+
-+	result = ene_send_scsi_cmd(us, FDIR_READ, buf, 0);
-+	if (result != USB_STOR_XFER_GOOD)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
-+static int ms_lib_scan_logicalblocknumber(struct us_data *us, u16 btBlk1st)
-+{
-+	u16 PhyBlock, newblk, i;
-+	u16 LogStart, LogEnde;
-+	struct ms_lib_type_extdat extdat;
-+	u8 buf[0x200];
-+	u32 count = 0, index = 0;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	for (PhyBlock = 0; PhyBlock < info->MS_Lib.NumberOfPhyBlock;) {
-+		ms_lib_phy_to_log_range(PhyBlock, &LogStart, &LogEnde);
-+
-+		for (i = 0; i < MS_PHYSICAL_BLOCKS_PER_SEGMENT; i++, PhyBlock++) {
-+			switch (ms_libconv_to_logical(info, PhyBlock)) {
-+			case MS_STATUS_ERROR:
-+				continue;
-+			default:
-+				break;
-+			}
-+
-+			if (count == PhyBlock) {
-+				ms_lib_read_extrablock(us, PhyBlock, 0, 0x80, &buf);
-+				count += 0x80;
-+			}
-+			index = (PhyBlock % 0x80) * 4;
-+
-+			extdat.ovrflg = buf[index];
-+			extdat.mngflg = buf[index+1];
-+			extdat.logadr = memstick_logaddr(buf[index+2], buf[index+3]);
-+
-+			if ((extdat.ovrflg & MS_REG_OVR_BKST) != MS_REG_OVR_BKST_OK) {
-+				ms_lib_setacquired_errorblock(us, PhyBlock);
-+				continue;
-+			}
-+
-+			if ((extdat.mngflg & MS_REG_MNG_ATFLG) == MS_REG_MNG_ATFLG_ATTBL) {
-+				ms_lib_erase_phyblock(us, PhyBlock);
-+				continue;
-+			}
-+
-+			if (extdat.logadr != MS_LB_NOT_USED) {
-+				if ((extdat.logadr < LogStart) || (LogEnde <= extdat.logadr)) {
-+					ms_lib_erase_phyblock(us, PhyBlock);
-+					continue;
-+				}
-+
-+				newblk = ms_libconv_to_physical(info, extdat.logadr);
-+
-+				if (newblk != MS_LB_NOT_USED) {
-+					if (extdat.logadr == 0) {
-+						ms_lib_set_logicalpair(us, extdat.logadr, PhyBlock);
-+						if (ms_lib_check_disableblock(us, btBlk1st)) {
-+							ms_lib_set_logicalpair(us, extdat.logadr, newblk);
-+							continue;
-+						}
-+					}
-+
-+					ms_lib_read_extra(us, newblk, 0, &extdat);
-+					if ((extdat.ovrflg & MS_REG_OVR_UDST) == MS_REG_OVR_UDST_UPDATING) {
-+						ms_lib_erase_phyblock(us, PhyBlock);
-+						continue;
-+					} else {
-+						ms_lib_erase_phyblock(us, newblk);
-+					}
-+				}
-+
-+				ms_lib_set_logicalpair(us, extdat.logadr, PhyBlock);
-+			}
-+		}
-+	} /* End for ... */
-+
-+	return MS_STATUS_SUCCESS;
-+}
-+
-+
-+static int ms_scsi_read(struct us_data *us, struct scsi_cmnd *srb)
-+{
-+	int result;
-+	unsigned char *cdb = srb->cmnd;
-+	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	u32 bn = ((cdb[2] << 24) & 0xff000000) | ((cdb[3] << 16) & 0x00ff0000) |
-+		((cdb[4] << 8) & 0x0000ff00) | ((cdb[5] << 0) & 0x000000ff);
-+	u16 blen = ((cdb[7] << 8) & 0xff00) | ((cdb[8] << 0) & 0x00ff);
-+	u32 blenByte = blen * 0x200;
-+
-+	if (bn > info->bl_num)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	if (info->MS_Status.IsMSPro) {
-+		result = ene_load_bincode(us, MSP_RW_PATTERN);
-+		if (result != USB_STOR_XFER_GOOD) {
-+			US_DEBUGP("Load MPS RW pattern Fail !!\n");
-+			return USB_STOR_TRANSPORT_ERROR;
-+		}
-+
-+		/* set up the command wrapper */
-+		memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+		bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+		bcb->DataTransferLength = blenByte;
-+		bcb->Flags  = 0x80;
-+		bcb->CDB[0] = 0xF1;
-+		bcb->CDB[1] = 0x02;
-+		bcb->CDB[5] = (unsigned char)(bn);
-+		bcb->CDB[4] = (unsigned char)(bn>>8);
-+		bcb->CDB[3] = (unsigned char)(bn>>16);
-+		bcb->CDB[2] = (unsigned char)(bn>>24);
-+
-+		result = ene_send_scsi_cmd(us, FDIR_READ, scsi_sglist(srb), 1);
-+	} else {
-+		void *buf;
-+		int offset = 0;
-+		u16 phyblk, logblk;
-+		u8 PageNum;
-+		u16 len;
-+		u32 blkno;
-+
-+		buf = kmalloc(blenByte, GFP_KERNEL);
-+		if (buf == NULL)
-+			return USB_STOR_TRANSPORT_ERROR;
-+
-+		result = ene_load_bincode(us, MS_RW_PATTERN);
-+		if (result != USB_STOR_XFER_GOOD) {
-+			pr_info("Load MS RW pattern Fail !!\n");
-+			result = USB_STOR_TRANSPORT_ERROR;
-+			goto exit;
-+		}
-+
-+		logblk  = (u16)(bn / info->MS_Lib.PagesPerBlock);
-+		PageNum = (u8)(bn % info->MS_Lib.PagesPerBlock);
-+
-+		while (1) {
-+			if (blen > (info->MS_Lib.PagesPerBlock-PageNum))
-+				len = info->MS_Lib.PagesPerBlock-PageNum;
-+			else
-+				len = blen;
-+
-+			phyblk = ms_libconv_to_physical(info, logblk);
-+			blkno  = phyblk * 0x20 + PageNum;
-+
-+			/* set up the command wrapper */
-+			memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+			bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+			bcb->DataTransferLength = 0x200 * len;
-+			bcb->Flags  = 0x80;
-+			bcb->CDB[0] = 0xF1;
-+			bcb->CDB[1] = 0x02;
-+			bcb->CDB[5] = (unsigned char)(blkno);
-+			bcb->CDB[4] = (unsigned char)(blkno>>8);
-+			bcb->CDB[3] = (unsigned char)(blkno>>16);
-+			bcb->CDB[2] = (unsigned char)(blkno>>24);
-+
-+			result = ene_send_scsi_cmd(us, FDIR_READ, buf+offset, 0);
-+			if (result != USB_STOR_XFER_GOOD) {
-+				pr_info("MS_SCSI_Read --- result = %x\n", result);
-+				result = USB_STOR_TRANSPORT_ERROR;
-+				goto exit;
-+			}
-+
-+			blen -= len;
-+			if (blen <= 0)
-+				break;
-+			logblk++;
-+			PageNum = 0;
-+			offset += MS_BYTES_PER_PAGE*len;
-+		}
-+		usb_stor_set_xfer_buf(buf, blenByte, srb);
-+exit:
-+		kfree(buf);
-+	}
-+	return result;
-+}
-+
-+static int ms_scsi_write(struct us_data *us, struct scsi_cmnd *srb)
-+{
-+	int result;
-+	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-+	unsigned char *cdb = srb->cmnd;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	u32 bn = ((cdb[2] << 24) & 0xff000000) |
-+			((cdb[3] << 16) & 0x00ff0000) |
-+			((cdb[4] << 8) & 0x0000ff00) |
-+			((cdb[5] << 0) & 0x000000ff);
-+	u16 blen = ((cdb[7] << 8) & 0xff00) | ((cdb[8] << 0) & 0x00ff);
-+	u32 blenByte = blen * 0x200;
-+
-+	if (bn > info->bl_num)
-+		return USB_STOR_TRANSPORT_ERROR;
-+
-+	if (info->MS_Status.IsMSPro) {
-+		result = ene_load_bincode(us, MSP_RW_PATTERN);
-+		if (result != USB_STOR_XFER_GOOD) {
-+			pr_info("Load MSP RW pattern Fail !!\n");
-+			return USB_STOR_TRANSPORT_ERROR;
-+		}
-+
-+		/* set up the command wrapper */
-+		memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+		bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+		bcb->DataTransferLength = blenByte;
-+		bcb->Flags  = 0x00;
-+		bcb->CDB[0] = 0xF0;
-+		bcb->CDB[1] = 0x04;
-+		bcb->CDB[5] = (unsigned char)(bn);
-+		bcb->CDB[4] = (unsigned char)(bn>>8);
-+		bcb->CDB[3] = (unsigned char)(bn>>16);
-+		bcb->CDB[2] = (unsigned char)(bn>>24);
-+
-+		result = ene_send_scsi_cmd(us, FDIR_WRITE, scsi_sglist(srb), 1);
-+	} else {
-+		void *buf;
-+		int offset;
-+		u16 PhyBlockAddr;
-+		u8 PageNum;
-+		u32 result;
-+		u16 len, oldphy, newphy;
-+
-+		buf = kmalloc(blenByte, GFP_KERNEL);
-+		if (buf == NULL)
-+			return USB_STOR_TRANSPORT_ERROR;
-+		usb_stor_set_xfer_buf(buf, blenByte, srb);
-+
-+		result = ene_load_bincode(us, MS_RW_PATTERN);
-+		if (result != USB_STOR_XFER_GOOD) {
-+			pr_info("Load MS RW pattern Fail !!\n");
-+			result = USB_STOR_TRANSPORT_ERROR;
-+			goto exit;
-+		}
-+
-+		PhyBlockAddr = (u16)(bn / info->MS_Lib.PagesPerBlock);
-+		PageNum      = (u8)(bn % info->MS_Lib.PagesPerBlock);
-+
-+		while (1) {
-+			if (blen > (info->MS_Lib.PagesPerBlock-PageNum))
-+				len = info->MS_Lib.PagesPerBlock-PageNum;
-+			else
-+				len = blen;
-+
-+			oldphy = ms_libconv_to_physical(info, PhyBlockAddr); /* need check us <-> info */
-+			newphy = ms_libsearch_block_from_logical(us, PhyBlockAddr);
-+
-+			result = ms_read_copyblock(us, oldphy, newphy, PhyBlockAddr, PageNum, buf+offset, len);
-+
-+			if (result != USB_STOR_XFER_GOOD) {
-+				pr_info("MS_SCSI_Write --- result = %x\n", result);
-+				result =  USB_STOR_TRANSPORT_ERROR;
-+				goto exit;
-+			}
-+
-+			info->MS_Lib.Phy2LogMap[oldphy] = MS_LB_NOT_USED_ERASED;
-+			ms_lib_force_setlogical_pair(us, PhyBlockAddr, newphy);
-+
-+			blen -= len;
-+			if (blen <= 0)
-+				break;
-+			PhyBlockAddr++;
-+			PageNum = 0;
-+			offset += MS_BYTES_PER_PAGE*len;
-+		}
-+exit:
-+		kfree(buf);
-+	}
-+	return result;
-+}
-+
-+/*
-+ * ENE MS Card
-+ */
-+
- static int ene_get_card_type(struct us_data *us, u16 index, void *buf)
- {
- 	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-@@ -505,6 +1894,19 @@ static int ene_load_bincode(struct us_data *us, unsigned char flag)
- 		US_DEBUGP("SD_RDWR_PATTERN\n");
- 		fw_name = "ene-ub6250/sd_rdwr.bin";
- 		break;
-+	/* For MS */
-+	case MS_INIT_PATTERN:
-+		US_DEBUGP("MS_INIT_PATTERN\n");
-+		fw_name = "ene-ub6250/ms_init.bin";
-+		break;
-+	case MSP_RW_PATTERN:
-+		US_DEBUGP("MSP_RW_PATTERN\n");
-+		fw_name = "ene-ub6250/msp_rdwr.bin";
-+		break;
-+	case MS_RW_PATTERN:
-+		US_DEBUGP("MS_RW_PATTERN\n");
-+		fw_name = "ene-ub6250/ms_rdwr.bin";
-+		break;
- 	default:
- 		US_DEBUGP("----------- Unknown PATTERN ----------\n");
- 		goto nofw;
-@@ -540,6 +1942,182 @@ nofw:
- 	return result;
- }
- 
-+static int ms_card_init(struct us_data *us)
-+{
-+	u32 result;
-+	u16 TmpBlock;
-+	unsigned char *PageBuffer0 = NULL, *PageBuffer1 = NULL;
-+	struct ms_lib_type_extdat extdat;
-+	u16 btBlk1st, btBlk2nd;
-+	u32 btBlk1stErred;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	printk(KERN_INFO "MS_CardInit start\n");
-+
-+	ms_lib_free_allocatedarea(us); /* Clean buffer and set struct us_data flag to 0 */
-+
-+	/* get two PageBuffer */
-+	PageBuffer0 = kmalloc(MS_BYTES_PER_PAGE, GFP_KERNEL);
-+	PageBuffer1 = kmalloc(MS_BYTES_PER_PAGE, GFP_KERNEL);
-+	if ((PageBuffer0 == NULL) || (PageBuffer1 == NULL)) {
-+		result = MS_NO_MEMORY_ERROR;
-+		goto exit;
-+	}
-+
-+	btBlk1st = btBlk2nd = MS_LB_NOT_USED;
-+	btBlk1stErred = 0;
-+
-+	for (TmpBlock = 0; TmpBlock < MS_MAX_INITIAL_ERROR_BLOCKS+2; TmpBlock++) {
-+
-+		switch (ms_read_readpage(us, TmpBlock, 0, (u32 *)PageBuffer0, &extdat)) {
-+		case MS_STATUS_SUCCESS:
-+			break;
-+		case MS_STATUS_INT_ERROR:
-+			break;
-+		case MS_STATUS_ERROR:
-+		default:
-+			continue;
-+		}
-+
-+		if ((extdat.ovrflg & MS_REG_OVR_BKST) == MS_REG_OVR_BKST_NG)
-+			continue;
-+
-+		if (((extdat.mngflg & MS_REG_MNG_SYSFLG) == MS_REG_MNG_SYSFLG_USER) ||
-+			(be16_to_cpu(((struct ms_bootblock_page0 *)PageBuffer0)->header.wBlockID) != MS_BOOT_BLOCK_ID) ||
-+			(be16_to_cpu(((struct ms_bootblock_page0 *)PageBuffer0)->header.wFormatVersion) != MS_BOOT_BLOCK_FORMAT_VERSION) ||
-+			(((struct ms_bootblock_page0 *)PageBuffer0)->header.bNumberOfDataEntry != MS_BOOT_BLOCK_DATA_ENTRIES))
-+				continue;
-+
-+		if (btBlk1st != MS_LB_NOT_USED) {
-+			btBlk2nd = TmpBlock;
-+			break;
-+		}
-+
-+		btBlk1st = TmpBlock;
-+		memcpy(PageBuffer1, PageBuffer0, MS_BYTES_PER_PAGE);
-+		if (extdat.status1 & (MS_REG_ST1_DTER | MS_REG_ST1_EXER | MS_REG_ST1_FGER))
-+			btBlk1stErred = 1;
-+	}
-+
-+	if (btBlk1st == MS_LB_NOT_USED) {
-+		result = MS_STATUS_ERROR;
-+		goto exit;
-+	}
-+
-+	/* write protect */
-+	if ((extdat.status0 & MS_REG_ST0_WP) == MS_REG_ST0_WP_ON)
-+		ms_lib_ctrl_set(info, MS_LIB_CTRL_WRPROTECT);
-+
-+	result = MS_STATUS_ERROR;
-+	/* 1st Boot Block */
-+	if (btBlk1stErred == 0)
-+		result = ms_lib_process_bootblock(us, btBlk1st, PageBuffer1);
-+		/* 1st */
-+	/* 2nd Boot Block */
-+	if (result && (btBlk2nd != MS_LB_NOT_USED))
-+		result = ms_lib_process_bootblock(us, btBlk2nd, PageBuffer0);
-+
-+	if (result) {
-+		result = MS_STATUS_ERROR;
-+		goto exit;
-+	}
-+
-+	for (TmpBlock = 0; TmpBlock < btBlk1st; TmpBlock++)
-+		info->MS_Lib.Phy2LogMap[TmpBlock] = MS_LB_INITIAL_ERROR;
-+
-+	info->MS_Lib.Phy2LogMap[btBlk1st] = MS_LB_BOOT_BLOCK;
-+
-+	if (btBlk2nd != MS_LB_NOT_USED) {
-+		for (TmpBlock = btBlk1st + 1; TmpBlock < btBlk2nd; TmpBlock++)
-+			info->MS_Lib.Phy2LogMap[TmpBlock] = MS_LB_INITIAL_ERROR;
-+
-+		info->MS_Lib.Phy2LogMap[btBlk2nd] = MS_LB_BOOT_BLOCK;
-+	}
-+
-+	result = ms_lib_scan_logicalblocknumber(us, btBlk1st);
-+	if (result)
-+		goto exit;
-+
-+	for (TmpBlock = MS_PHYSICAL_BLOCKS_PER_SEGMENT;
-+		TmpBlock < info->MS_Lib.NumberOfPhyBlock;
-+		TmpBlock += MS_PHYSICAL_BLOCKS_PER_SEGMENT) {
-+		if (ms_count_freeblock(us, TmpBlock) == 0) {
-+			ms_lib_ctrl_set(info, MS_LIB_CTRL_WRPROTECT);
-+			break;
-+		}
-+	}
-+
-+	/* write */
-+	if (ms_lib_alloc_writebuf(us)) {
-+		result = MS_NO_MEMORY_ERROR;
-+		goto exit;
-+	}
-+
-+	result = MS_STATUS_SUCCESS;
-+
-+exit:
-+	kfree(PageBuffer1);
-+	kfree(PageBuffer0);
-+
-+	printk(KERN_INFO "MS_CardInit end\n");
-+	return result;
-+}
-+
-+static int ene_ms_init(struct us_data *us)
-+{
-+	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
-+	int result;
-+	u8 buf[0x200];
-+	u16 MSP_BlockSize, MSP_UserAreaBlocks;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *) us->extra;
-+
-+	printk(KERN_INFO "transport --- ENE_MSInit\n");
-+
-+	/* the same part to test ENE */
-+
-+	result = ene_load_bincode(us, MS_INIT_PATTERN);
-+	if (result != USB_STOR_XFER_GOOD) {
-+		printk(KERN_ERR "Load MS Init Code Fail !!\n");
-+		return USB_STOR_TRANSPORT_ERROR;
-+	}
-+
-+	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
-+	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
-+	bcb->DataTransferLength = 0x200;
-+	bcb->Flags      = 0x80;
-+	bcb->CDB[0]     = 0xF1;
-+	bcb->CDB[1]     = 0x01;
-+
-+	result = ene_send_scsi_cmd(us, FDIR_READ, &buf, 0);
-+	if (result != USB_STOR_XFER_GOOD) {
-+		printk(KERN_ERR "Execution MS Init Code Fail !!\n");
-+		return USB_STOR_TRANSPORT_ERROR;
-+	}
-+	/* the same part to test ENE */
-+	info->MS_Status = *(struct MS_STATUS *)&buf[0];
-+
-+	if (info->MS_Status.Insert && info->MS_Status.Ready) {
-+		printk(KERN_INFO "Insert     = %x\n", info->MS_Status.Insert);
-+		printk(KERN_INFO "Ready      = %x\n", info->MS_Status.Ready);
-+		printk(KERN_INFO "IsMSPro    = %x\n", info->MS_Status.IsMSPro);
-+		printk(KERN_INFO "IsMSPHG    = %x\n", info->MS_Status.IsMSPHG);
-+		printk(KERN_INFO "WtP= %x\n", info->MS_Status.WtP);
-+		if (info->MS_Status.IsMSPro) {
-+			MSP_BlockSize      = (buf[6] << 8) | buf[7];
-+			MSP_UserAreaBlocks = (buf[10] << 8) | buf[11];
-+			info->MSP_TotalBlock = MSP_BlockSize * MSP_UserAreaBlocks;
-+		} else {
-+			ms_card_init(us); /* Card is MS (to ms.c)*/
-+		}
-+		US_DEBUGP("MS Init Code OK !!\n");
-+	} else {
-+		US_DEBUGP("MS Card Not Ready --- %x\n", buf[0]);
-+		return USB_STOR_TRANSPORT_ERROR;
-+	}
-+
-+	return USB_STOR_TRANSPORT_GOOD;
-+}
-+
- static int ene_sd_init(struct us_data *us)
- {
- 	int result;
-@@ -619,7 +2197,13 @@ static int ene_init(struct us_data *us)
- 				return USB_STOR_TRANSPORT_ERROR;
- 		}
- 	}
--
-+	if (misc_reg03 & 0x02) {
-+		if (!info->MS_Status.Ready) {
-+			result = ene_ms_init(us);
-+			if (result != USB_STOR_XFER_GOOD)
+diff --git a/drivers/staging/keucr/Makefile b/drivers/staging/keucr/Makefile
+index ae928f9..c180bf4 100644
+--- a/drivers/staging/keucr/Makefile
++++ b/drivers/staging/keucr/Makefile
+@@ -7,8 +7,6 @@ keucr-y :=			\
+ 		scsiglue.o	\
+ 		transport.o	\
+ 		init.o		\
+-		msscsi.o	\
+-		ms.o		\
+ 		smscsi.o	\
+ 		smilmain.o	\
+ 		smilsub.o	\
+diff --git a/drivers/staging/keucr/init.c b/drivers/staging/keucr/init.c
+index b5a8937..071bdc2 100644
+--- a/drivers/staging/keucr/init.c
++++ b/drivers/staging/keucr/init.c
+@@ -31,9 +31,7 @@ int ENE_InitMedia(struct us_data *us)
+ 		if (!us->SM_Status.Ready && !us->MS_Status.Ready) {
+ 			result = ENE_SMInit(us);
+ 			if (result != USB_STOR_XFER_GOOD) {
+-				result = ENE_MSInit(us);
+-				if (result != USB_STOR_XFER_GOOD)
+-					return USB_STOR_TRANSPORT_ERROR;
 +				return USB_STOR_TRANSPORT_ERROR;
-+		}
-+	}
- 	return result;
+ 			}
+ 		}
+ 
+@@ -62,60 +60,6 @@ int ENE_Read_BYTE(struct us_data *us, WORD index, void *buf)
  }
  
-@@ -662,6 +2246,41 @@ static int sd_scsi_irp(struct us_data *us, struct scsi_cmnd *srb)
- 	return result;
- }
+ /*
+- * ENE_MSInit():
+- */
+-int ENE_MSInit(struct us_data *us)
+-{
+-	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int	result;
+-	BYTE	buf[0x200];
+-	WORD	MSP_BlockSize, MSP_UserAreaBlocks;
+-
+-	printk(KERN_INFO "transport --- ENE_MSInit\n");
+-	result = ENE_LoadBinCode(us, MS_INIT_PATTERN);
+-	if (result != USB_STOR_XFER_GOOD) {
+-		printk(KERN_ERR "Load MS Init Code Fail !!\n");
+-		return USB_STOR_TRANSPORT_ERROR;
+-	}
+-
+-	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-	bcb->DataTransferLength	= 0x200;
+-	bcb->Flags			= 0x80;
+-	bcb->CDB[0]			= 0xF1;
+-	bcb->CDB[1]			= 0x01;
+-
+-	result = ENE_SendScsiCmd(us, FDIR_READ, &buf, 0);
+-	if (result != USB_STOR_XFER_GOOD) {
+-		printk(KERN_ERR "Execution MS Init Code Fail !!\n");
+-		return USB_STOR_TRANSPORT_ERROR;
+-	}
+-
+-	us->MS_Status = *(PMS_STATUS)&buf[0];
+-
+-	if (us->MS_Status.Insert && us->MS_Status.Ready) {
+-		printk(KERN_INFO "Insert     = %x\n", us->MS_Status.Insert);
+-		printk(KERN_INFO "Ready      = %x\n", us->MS_Status.Ready);
+-		printk(KERN_INFO "IsMSPro    = %x\n", us->MS_Status.IsMSPro);
+-		printk(KERN_INFO "IsMSPHG    = %x\n", us->MS_Status.IsMSPHG);
+-		printk(KERN_INFO "WtP        = %x\n", us->MS_Status.WtP);
+-		if (us->MS_Status.IsMSPro) {
+-			MSP_BlockSize      = (buf[6] << 8) | buf[7];
+-			MSP_UserAreaBlocks = (buf[10] << 8) | buf[11];
+-			us->MSP_TotalBlock = MSP_BlockSize * MSP_UserAreaBlocks;
+-		} else {
+-			MS_CardInit(us);
+-		}
+-		printk(KERN_INFO "MS Init Code OK !!\n");
+-	} else {
+-		printk(KERN_INFO "MS Card Not Ready --- %x\n", buf[0]);
+-		return USB_STOR_TRANSPORT_ERROR;
+-	}
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+  *ENE_SMInit()
+  */
+ int ENE_SMInit(struct us_data *us)
+@@ -185,19 +129,6 @@ int ENE_LoadBinCode(struct us_data *us, BYTE flag)
+ 	if (buf == NULL)
+ 		return USB_STOR_TRANSPORT_ERROR;
+ 	switch (flag) {
+-	/* For MS */
+-	case MS_INIT_PATTERN:
+-		printk(KERN_INFO "MS_INIT_PATTERN\n");
+-		memcpy(buf, MS_Init, 0x800);
+-		break;
+-	case MSP_RW_PATTERN:
+-		printk(KERN_INFO "MSP_RW_PATTERN\n");
+-		memcpy(buf, MSP_Rdwr, 0x800);
+-		break;
+-	case MS_RW_PATTERN:
+-		printk(KERN_INFO "MS_RW_PATTERN\n");
+-		memcpy(buf, MS_Rdwr, 0x800);
+-		break;
+ 	/* For SS */
+ 	case SM_INIT_PATTERN:
+ 		printk(KERN_INFO "SM_INIT_PATTERN\n");
+diff --git a/drivers/staging/keucr/init.h b/drivers/staging/keucr/init.h
+index f709055..c8b2cd6 100644
+--- a/drivers/staging/keucr/init.h
++++ b/drivers/staging/keucr/init.h
+@@ -4,779 +4,6 @@ extern DWORD MediaChange;
+ extern int Check_D_MediaFmt(struct us_data *);
  
-+/*
-+ * ms_scsi_irp()
-+ */
-+int ms_scsi_irp(struct us_data *us, struct scsi_cmnd *srb)
-+{
-+	int result;
-+	struct ene_ub6250_info *info = (struct ene_ub6250_info *)us->extra;
-+	info->SrbStatus = SS_SUCCESS;
-+	switch (srb->cmnd[0]) {
-+	case TEST_UNIT_READY:
-+		result = ms_scsi_test_unit_ready(us, srb);
-+		break; /* 0x00 */
-+	case INQUIRY:
-+		result = ms_scsi_inquiry(us, srb);
-+		break; /* 0x12 */
-+	case MODE_SENSE:
-+		result = ms_scsi_mode_sense(us, srb);
-+		break; /* 0x1A */
-+	case READ_CAPACITY:
-+		result = ms_scsi_read_capacity(us, srb);
-+		break; /* 0x25 */
-+	case READ_10:
-+		result = ms_scsi_read(us, srb);
-+		break; /* 0x28 */
-+	case WRITE_10:
-+		result = ms_scsi_write(us, srb);
-+		break;  /* 0x2A */
-+	default:
-+		info->SrbStatus = SS_ILLEGAL_REQUEST;
-+		result = USB_STOR_TRANSPORT_FAILED;
-+		break;
-+	}
-+	return result;
-+}
-+
- static int ene_transport(struct scsi_cmnd *srb, struct us_data *us)
- {
- 	int result = 0;
-@@ -669,11 +2288,15 @@ static int ene_transport(struct scsi_cmnd *srb, struct us_data *us)
  
- 	/*US_DEBUG(usb_stor_show_command(srb)); */
- 	scsi_set_resid(srb, 0);
--	if (unlikely(!info->SD_Status.Ready))
-+	if (unlikely(!(info->SD_Status.Ready || info->MS_Status.Ready))) {
- 		result = ene_init(us);
+-static BYTE MS_Init[] = {
+-0x90, 0xF0, 0x15, 0xE0, 0xF5, 0x1C, 0x11, 0x2C,
+-0x90, 0xFF, 0x09, 0xE0, 0x30, 0xE1, 0x06, 0x90,
+-0xFF, 0x23, 0x74, 0x80, 0xF0, 0x90, 0xFF, 0x09,
+-0xE0, 0x30, 0xE5, 0xFC, 0x51, 0x59, 0x75, 0x3F,
+-0x00, 0x75, 0x3E, 0x00, 0x75, 0x3D, 0x00, 0x75,
+-0x3C, 0x00, 0xD3, 0x22, 0x90, 0xFF, 0x83, 0xE0,
+-0xA2, 0xE1, 0x92, 0x25, 0x20, 0x25, 0x06, 0xC2,
+-0x1F, 0xD2, 0x19, 0xC3, 0x22, 0x7F, 0x02, 0x12,
+-0x2F, 0xCB, 0x20, 0x19, 0x05, 0x30, 0x1F, 0x02,
+-0xD3, 0x22, 0x90, 0xEA, 0x44, 0x74, 0x80, 0xF0,
+-0x7F, 0x10, 0x12, 0x2F, 0xC5, 0x90, 0xFE, 0x47,
+-0xE0, 0x44, 0x80, 0xF0, 0x78, 0x00, 0xE8, 0xC3,
+-0x94, 0x04, 0x50, 0x0A, 0x7F, 0x88, 0x7E, 0x13,
+-0x12, 0xE4, 0xA6, 0x08, 0x80, 0xF0, 0x90, 0xFE,
+-0x45, 0xE0, 0x54, 0xFB, 0xF0, 0x90, 0xFE, 0x47,
+-0xE0, 0x54, 0xBF, 0xF0, 0x90, 0xFE, 0x45, 0xE0,
+-0x54, 0xFE, 0xF0, 0x90, 0xFE, 0x45, 0xE0, 0x54,
+-0x7F, 0xF0, 0x90, 0xFE, 0x46, 0xE0, 0x44, 0x40,
+-0xF0, 0x90, 0xFE, 0x45, 0xE0, 0x54, 0xC7, 0x44,
+-0x18, 0xF0, 0x90, 0xFE, 0x47, 0xE0, 0x44, 0x08,
+-0xF0, 0x90, 0xFE, 0x45, 0xE0, 0x44, 0x40, 0xF0,
+-0x7F, 0x32, 0x7E, 0x00, 0x12, 0xE4, 0xA6, 0x90,
+-0xFE, 0x51, 0xE0, 0x54, 0x33, 0xF0, 0x90, 0xFE,
+-0x44, 0x74, 0x02, 0xF0, 0x30, 0x25, 0x04, 0xE0,
+-0x20, 0xE1, 0xF9, 0x90, 0xFE, 0x51, 0xE0, 0x54,
+-0x0F, 0xF0, 0x90, 0xFE, 0x44, 0x74, 0x02, 0xF0,
+-0x30, 0x25, 0x04, 0xE0, 0x20, 0xE1, 0xF9, 0x90,
+-0xFE, 0x44, 0x74, 0x04, 0xF0, 0x30, 0x25, 0x04,
+-0xE0, 0x20, 0xE2, 0xF9, 0x90, 0xFE, 0x4C, 0xE0,
+-0xF0, 0x90, 0xFE, 0x4D, 0xE0, 0xF0, 0x90, 0xFE,
+-0x48, 0x74, 0x7F, 0xF0, 0x90, 0xFE, 0x49, 0x74,
+-0x9F, 0xF0, 0x90, 0xFE, 0x51, 0xE0, 0x54, 0x3C,
+-0x44, 0x02, 0xF0, 0x90, 0xFE, 0x44, 0x74, 0x02,
+-0xF0, 0x30, 0x25, 0x04, 0xE0, 0x20, 0xE1, 0xF9,
+-0x90, 0xFE, 0x46, 0xE0, 0x44, 0x20, 0xF0, 0x79,
+-0x02, 0x7A, 0x06, 0x7B, 0x00, 0x7C, 0x00, 0x7D,
+-0x06, 0x7E, 0xEB, 0x7F, 0xC9, 0x12, 0x2F, 0xA7,
+-0x40, 0x03, 0x02, 0xE2, 0x37, 0xC2, 0x45, 0xC2,
+-0x1E, 0x90, 0xEB, 0xCB, 0xE0, 0x64, 0x01, 0x70,
+-0x65, 0x90, 0xEB, 0xCD, 0xE0, 0x70, 0x5F, 0x90,
+-0xEB, 0xCE, 0xE0, 0x60, 0x08, 0x54, 0x03, 0x60,
+-0x55, 0xD2, 0x1E, 0x80, 0x09, 0x90, 0xEB, 0xC9,
+-0xE0, 0x30, 0xE0, 0x02, 0xD2, 0x1E, 0x90, 0xEA,
+-0x45, 0x74, 0x01, 0xF0, 0x75, 0x0B, 0x00, 0xE5,
+-0x0B, 0xC3, 0x94, 0x80, 0x50, 0x31, 0x12, 0x2F,
+-0xB9, 0x40, 0x03, 0x02, 0xE2, 0x37, 0x90, 0xEB,
+-0xC8, 0xE0, 0x54, 0x80, 0x70, 0x0B, 0x7F, 0x38,
+-0x7E, 0x13, 0x12, 0xE4, 0xA6, 0x05, 0x0B, 0x80,
+-0xDE, 0x12, 0x2F, 0xB9, 0x40, 0x03, 0x02, 0xE2,
+-0x37, 0x90, 0xEB, 0xC8, 0xE0, 0xF9, 0x54, 0x40,
+-0x60, 0x0A, 0xE9, 0x54, 0x01, 0x70, 0x03, 0x02,
+-0xE2, 0x37, 0xD2, 0x1E, 0x80, 0x24, 0x90, 0xEB,
+-0xCB, 0xE0, 0x64, 0x00, 0x60, 0x03, 0x02, 0xE2,
+-0x37, 0x90, 0xEA, 0x45, 0x74, 0x00, 0xF0, 0x7F,
+-0x90, 0x12, 0x2F, 0xC5, 0x12, 0xE2, 0xB0, 0x40,
+-0x03, 0x02, 0xE2, 0x37, 0xD2, 0x1F, 0xC2, 0x19,
+-0xD3, 0x22, 0x90, 0xEA, 0x44, 0x74, 0x00, 0xF0,
+-0x75, 0x17, 0x00, 0x79, 0x00, 0x7A, 0x00, 0x7B,
+-0x10, 0x7C, 0x02, 0x7D, 0x02, 0x12, 0x2F, 0xA7,
+-0x40, 0x02, 0x80, 0x5B, 0x7F, 0x80, 0x12, 0x2F,
+-0xC5, 0x90, 0xFE, 0x45, 0xE0, 0x54, 0xFE, 0xF0,
+-0x90, 0xFE, 0x45, 0xE0, 0x44, 0x04, 0xF0, 0x90,
+-0xEB, 0xCC, 0xE0, 0x64, 0x07, 0x70, 0x2D, 0x90,
+-0xEA, 0x44, 0x74, 0x40, 0xF0, 0x75, 0x17, 0x00,
+-0x79, 0x00, 0x7A, 0x00, 0x7B, 0x10, 0x7C, 0x02,
+-0x7D, 0x02, 0x12, 0x2F, 0xA7, 0x40, 0x02, 0x80,
+-0x26, 0x7F, 0x80, 0x12, 0x2F, 0xC5, 0x90, 0xFE,
+-0x45, 0xE0, 0x54, 0xFA, 0xF0, 0x90, 0xFE, 0x45,
+-0xE0, 0x44, 0x01, 0xF0, 0x90, 0xEA, 0x45, 0xE0,
+-0x60, 0x07, 0x12, 0x2F, 0xCE, 0x40, 0x02, 0x80,
+-0x06, 0xD2, 0x1F, 0xC2, 0x19, 0xD3, 0x22, 0xE4,
+-0x90, 0xFE, 0x48, 0xF0, 0x90, 0xFE, 0x49, 0xF0,
+-0x90, 0xFE, 0x4C, 0xE0, 0xF0, 0x90, 0xFE, 0x4D,
+-0xE0, 0xF0, 0x90, 0xFE, 0x47, 0xE0, 0x54, 0x7F,
+-0xF0, 0xC2, 0x25, 0xC2, 0x1F, 0xD2, 0x19, 0xC3,
+-0x22, 0x90, 0xEA, 0x45, 0xE0, 0x64, 0x01, 0x70,
+-0x03, 0xD3, 0x80, 0x01, 0xC3, 0xE4, 0x92, 0xE3,
+-0xC0, 0xE0, 0x90, 0xEB, 0xCC, 0xE0, 0x64, 0x07,
+-0x70, 0x03, 0xD3, 0x80, 0x01, 0xC3, 0xD0, 0xE0,
+-0x92, 0xE4, 0xA2, 0x25, 0x92, 0xE0, 0xA2, 0x1F,
+-0x92, 0xE1, 0xA2, 0x19, 0x92, 0xE2, 0xA2, 0x1E,
+-0x92, 0xE6, 0x90, 0xF4, 0x00, 0xF0, 0x74, 0xFF,
+-0xA3, 0xF0, 0xA3, 0xF0, 0xA3, 0xF0, 0xA3, 0x7B,
+-0x40, 0x7C, 0xEB, 0x7D, 0x6F, 0xAE, 0x83, 0xAF,
+-0x82, 0x12, 0x2F, 0xC8, 0x90, 0xFF, 0x2A, 0x74,
+-0x02, 0xF0, 0xA3, 0x74, 0x00, 0xF0, 0xD3, 0x22,
+-0xC2, 0x1E, 0x74, 0xFF, 0x90, 0xEA, 0x49, 0xF0,
+-0x90, 0xFE, 0x44, 0x74, 0x02, 0xF0, 0x30, 0x25,
+-0x04, 0xE0, 0x20, 0xE1, 0xF9, 0x90, 0xFF, 0x09,
+-0x30, 0x25, 0x07, 0xE0, 0x30, 0xE5, 0xF9, 0xD3,
+-0x80, 0x01, 0xC3, 0x40, 0x01, 0x22, 0xC2, 0x1A,
+-0xC2, 0x22, 0x75, 0x14, 0x00, 0xE5, 0x14, 0x64,
+-0x0C, 0x70, 0x03, 0x02, 0xE4, 0x4B, 0x75, 0x17,
+-0x00, 0x75, 0x18, 0x00, 0x85, 0x14, 0x19, 0x75,
+-0x1B, 0x00, 0x12, 0x2F, 0x8C, 0x40, 0x03, 0x02,
+-0xE4, 0x46, 0x30, 0x41, 0x03, 0x02, 0xE4, 0x46,
+-0x90, 0xEB, 0xDD, 0xE0, 0x20, 0xE7, 0x03, 0x02,
+-0xE4, 0x46, 0x90, 0xEB, 0xDE, 0xE0, 0x20, 0xE2,
+-0x02, 0x80, 0x03, 0x02, 0xE4, 0x46, 0x90, 0xF4,
+-0x00, 0xE0, 0xFE, 0x90, 0xF4, 0x01, 0xE0, 0x64,
+-0x01, 0x4E, 0x60, 0x03, 0x02, 0xE4, 0x46, 0x90,
+-0xEA, 0x49, 0xE0, 0x64, 0xFF, 0x60, 0x03, 0x02,
+-0xE4, 0x4B, 0x90, 0xF5, 0xA0, 0xE0, 0x64, 0x01,
+-0x60, 0x03, 0x02, 0xE4, 0x46, 0x90, 0xF5, 0xD6,
+-0xE0, 0x64, 0x01, 0x60, 0x03, 0x02, 0xE4, 0x46,
+-0x90, 0xF5, 0xD8, 0xE0, 0xFF, 0xC3, 0x74, 0x03,
+-0x9F, 0x50, 0x03, 0x02, 0xE4, 0x46, 0xEF, 0x60,
+-0x04, 0xD2, 0x1E, 0x80, 0x0B, 0xC2, 0x1E, 0x90,
+-0xEB, 0xC9, 0xE0, 0x30, 0xE0, 0x02, 0xD2, 0x1E,
+-0x90, 0xF5, 0xA2, 0xE0, 0xFE, 0x90, 0xF5, 0xA3,
+-0xE0, 0xFF, 0x25, 0xE0, 0x90, 0xEA, 0x47, 0xF0,
+-0xE4, 0x74, 0x10, 0x9F, 0x74, 0x00, 0x9E, 0x50,
+-0x03, 0x02, 0xE4, 0x46, 0x90, 0xF5, 0xA4, 0xE0,
+-0xFE, 0x90, 0xF5, 0xA5, 0xE0, 0xFF, 0xC3, 0x74,
+-0x00, 0x9F, 0x74, 0x20, 0x9E, 0x50, 0x03, 0x02,
+-0xE4, 0x46, 0xEE, 0x4F, 0x70, 0x03, 0x02, 0xE4,
+-0x46, 0x90, 0xF5, 0xA6, 0xE0, 0xFE, 0x90, 0xF5,
+-0xA7, 0xE0, 0xFF, 0xEE, 0x4F, 0x70, 0x03, 0x02,
+-0xE4, 0x46, 0x90, 0xF5, 0x78, 0xE0, 0x64, 0x01,
+-0x60, 0x03, 0x02, 0xE4, 0x46, 0x90, 0xF5, 0x74,
+-0xE0, 0xFC, 0x90, 0xF5, 0x75, 0xE0, 0xFD, 0x90,
+-0xF5, 0x76, 0xE0, 0x90, 0xEA, 0x5B, 0xF0, 0xFE,
+-0x90, 0xF5, 0x77, 0xE0, 0x90, 0xEA, 0x5C, 0xF0,
+-0xFF, 0x4E, 0x4D, 0x4C, 0x70, 0x03, 0x02, 0xE4,
+-0x46, 0x90, 0xF5, 0x70, 0xE0, 0xFC, 0x90, 0xF5,
+-0x71, 0xE0, 0xFD, 0x90, 0xF5, 0x72, 0xE0, 0xFE,
+-0x90, 0xF5, 0x73, 0xE0, 0xFF, 0xEC, 0x90, 0xEA,
+-0x55, 0xF0, 0xED, 0x90, 0xEA, 0x56, 0xF0, 0xEE,
+-0x90, 0xEA, 0x57, 0xF0, 0xEF, 0x90, 0xEA, 0x58,
+-0xF0, 0xEC, 0x64, 0xFF, 0x70, 0x12, 0xED, 0x64,
+-0xFF, 0x70, 0x0D, 0xEE, 0x64, 0xFF, 0x70, 0x08,
+-0xEF, 0x64, 0xFF, 0x70, 0x03, 0x02, 0xE4, 0x46,
+-0xC2, 0x3F, 0x90, 0xF5, 0xD3, 0xE0, 0x64, 0x01,
+-0x70, 0x02, 0xD2, 0x3F, 0x75, 0x17, 0x00, 0x75,
+-0x18, 0x00, 0x85, 0x14, 0x19, 0x75, 0x1B, 0x01,
+-0x12, 0x2F, 0x8C, 0x40, 0x03, 0x02, 0xE4, 0x46,
+-0x90, 0xEA, 0x49, 0xE5, 0x14, 0xF0, 0x05, 0x14,
+-0x02, 0xE2, 0xDD, 0xD2, 0x22, 0x90, 0xEA, 0x49,
+-0xE0, 0x64, 0xFF, 0x70, 0x02, 0x80, 0x02, 0x80,
+-0x12, 0x90, 0xFE, 0x44, 0x74, 0x02, 0xF0, 0x30,
+-0x25, 0x04, 0xE0, 0x20, 0xE1, 0xF9, 0x12, 0x2F,
+-0x9E, 0xC3, 0x22, 0x30, 0x3F, 0x36, 0x74, 0x88,
+-0x90, 0xEA, 0x44, 0xF0, 0x75, 0x17, 0x00, 0x79,
+-0x00, 0x7A, 0x00, 0x7B, 0x10, 0x7C, 0x02, 0x7D,
+-0x02, 0x12, 0x2F, 0xA7, 0x7F, 0x80, 0x12, 0x2F,
+-0xC5, 0x90, 0xFE, 0x45, 0xE0, 0x54, 0xFE, 0xF0,
+-0x90, 0xFE, 0x45, 0xE0, 0x44, 0x04, 0xF0, 0x90,
+-0xFE, 0x44, 0x74, 0x02, 0xF0, 0x30, 0x25, 0x04,
+-0xE0, 0x20, 0xE1, 0xF9, 0xD3, 0x22, 0x75, 0x8A,
+-0x00, 0x75, 0x8C, 0xCE, 0xC2, 0x8D, 0x90, 0xEA,
+-0x65, 0xE4, 0xF0, 0xA3, 0xF0, 0xD2, 0x8C, 0x90,
+-0xEA, 0x65, 0xE0, 0xFC, 0xA3, 0xE0, 0xFD, 0xEC,
+-0xC3, 0x9E, 0x40, 0xF3, 0x70, 0x05, 0xED, 0xC3,
+-0x9F, 0x40, 0xEC, 0xC2, 0x8C, 0x22, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x4D, 0x53, 0x2D, 0x49, 0x6E, 0x69, 0x74, 0x20,
+-0x20, 0x20, 0x20, 0x31, 0x30, 0x30, 0x30, 0x30 };
+-
+-static BYTE MSP_Rdwr[] = {
+-0x90, 0xF0, 0x10, 0xE0, 0x90, 0xEA, 0x46, 0xF0,
+-0xB4, 0x04, 0x03, 0x02, 0xE1, 0x1E, 0x90, 0xFF,
+-0x09, 0xE0, 0x30, 0xE1, 0x06, 0x90, 0xFF, 0x23,
+-0x74, 0x80, 0xF0, 0x90, 0xFF, 0x09, 0xE0, 0x30,
+-0xE5, 0xFC, 0x90, 0xFF, 0x83, 0xE0, 0xA2, 0xE1,
+-0x92, 0x25, 0x40, 0x01, 0x22, 0x20, 0x1F, 0x02,
+-0xC3, 0x22, 0x30, 0x45, 0x02, 0xC3, 0x22, 0xC3,
+-0xE5, 0x3D, 0x13, 0xF5, 0x08, 0xE5, 0x3E, 0x13,
+-0xF5, 0x09, 0x78, 0x96, 0x79, 0x20, 0xAA, 0x08,
+-0xAB, 0x09, 0x12, 0xE2, 0x53, 0x20, 0x1D, 0x10,
+-0x90, 0xFF, 0x83, 0xE0, 0xA2, 0xE1, 0x92, 0x25,
+-0x30, 0x25, 0x03, 0x30, 0x24, 0xEF, 0xD2, 0x24,
+-0x20, 0x23, 0x10, 0x90, 0xFF, 0x83, 0xE0, 0xA2,
+-0xE1, 0x92, 0x25, 0x30, 0x25, 0x03, 0x30, 0x24,
+-0xEF, 0xD2, 0x24, 0x30, 0x24, 0x02, 0xC3, 0x22,
+-0xC2, 0x24, 0xC2, 0x23, 0x90, 0xEA, 0x4B, 0xE0,
+-0x30, 0xE3, 0x0B, 0xC2, 0x25, 0x90, 0xFF, 0x85,
+-0xE0, 0x54, 0xFD, 0xF0, 0xC3, 0x22, 0x30, 0xE2,
+-0x78, 0x90, 0xFF, 0x09, 0x90, 0xFF, 0x83, 0xE0,
+-0xA2, 0xE1, 0x92, 0x25, 0x30, 0x25, 0x0A, 0x90,
+-0xFF, 0x09, 0xE0, 0x30, 0xE5, 0xEE, 0xD3, 0x80,
+-0x01, 0xC3, 0x40, 0x01, 0x22, 0x79, 0x00, 0x90,
+-0xFE, 0x46, 0xE0, 0x54, 0xF0, 0x49, 0xF0, 0x78,
+-0x2D, 0x12, 0x2F, 0xAA, 0x7E, 0xF4, 0x7F, 0x00,
+-0x7D, 0x00, 0x7C, 0x02, 0x12, 0x2F, 0xC2, 0x20,
+-0x1D, 0x10, 0x90, 0xFF, 0x83, 0xE0, 0xA2, 0xE1,
+-0x92, 0x25, 0x30, 0x25, 0x03, 0x30, 0x24, 0xEF,
+-0xD2, 0x24, 0x30, 0x24, 0x13, 0x75, 0x3F, 0x00,
+-0xC3, 0xE5, 0x09, 0x33, 0xF5, 0x3E, 0xE5, 0x08,
+-0x33, 0xF5, 0x3D, 0x75, 0x3C, 0x00, 0xC3, 0x22,
+-0x90, 0xFF, 0x2A, 0x74, 0x02, 0xF0, 0xA3, 0x74,
+-0x00, 0xF0, 0xE5, 0x09, 0x24, 0xFF, 0xF5, 0x09,
+-0xE5, 0x08, 0x34, 0xFF, 0xF5, 0x08, 0x02, 0xE0,
+-0x60, 0x90, 0xEA, 0x4B, 0xE0, 0x20, 0xE0, 0x03,
+-0x02, 0xE0, 0x60, 0xE4, 0xF5, 0x3F, 0xF5, 0x3E,
+-0xF5, 0x3D, 0xF5, 0x3C, 0xD3, 0x22, 0x90, 0xFF,
+-0x09, 0xE0, 0x30, 0xE1, 0x06, 0x90, 0xFF, 0x23,
+-0x74, 0x80, 0xF0, 0x90, 0xFF, 0x09, 0xE0, 0x30,
+-0xE5, 0xFC, 0x90, 0xFF, 0x83, 0xE0, 0xA2, 0xE1,
+-0x92, 0x25, 0x40, 0x01, 0x22, 0x20, 0x1F, 0x02,
+-0xC3, 0x22, 0x30, 0x1E, 0x02, 0xC3, 0x22, 0xC3,
+-0xE5, 0x3D, 0x13, 0xF5, 0x08, 0xE5, 0x3E, 0x13,
+-0xF5, 0x09, 0x78, 0x96, 0x79, 0x21, 0xAA, 0x08,
+-0xAB, 0x09, 0x12, 0xE2, 0x53, 0x20, 0x1D, 0x10,
+-0x90, 0xFF, 0x83, 0xE0, 0xA2, 0xE1, 0x92, 0x25,
+-0x30, 0x25, 0x03, 0x30, 0x24, 0xEF, 0xD2, 0x24,
+-0x30, 0x2D, 0x05, 0x75, 0x0A, 0x01, 0x80, 0x03,
+-0x75, 0x0A, 0x08, 0x20, 0x23, 0x10, 0x90, 0xFF,
+-0x83, 0xE0, 0xA2, 0xE1, 0x92, 0x25, 0x30, 0x25,
+-0x03, 0x30, 0x24, 0xEF, 0xD2, 0x24, 0x30, 0x24,
+-0x02, 0xC3, 0x22, 0xC2, 0x24, 0xC2, 0x23, 0x90,
+-0xEA, 0x4B, 0xE0, 0x30, 0xE1, 0x0B, 0xC2, 0x25,
+-0x90, 0xFF, 0x85, 0xE0, 0x54, 0xFD, 0xF0, 0xC3,
+-0x22, 0x20, 0xE2, 0x03, 0x02, 0xE2, 0x3E, 0x79,
+-0x0F, 0x90, 0xFE, 0x46, 0xE0, 0x54, 0xF0, 0x49,
+-0xF0, 0x75, 0x0B, 0x00, 0xE5, 0x0B, 0xC3, 0x95,
+-0x0A, 0x50, 0x43, 0x90, 0xFF, 0x09, 0x30, 0x25,
+-0x0B, 0xE0, 0x30, 0xE1, 0xF9, 0x90, 0xFF, 0x09,
+-0xF0, 0xD3, 0x80, 0x01, 0xC3, 0x50, 0x0F, 0xAF,
+-0x0B, 0x7C, 0xF0, 0x7D, 0x00, 0xAB, 0x4D, 0xAA,
+-0x4C, 0x12, 0x2F, 0xBF, 0x40, 0x0F, 0x90, 0xFF,
+-0x09, 0xE0, 0x30, 0xE1, 0x06, 0x90, 0xFF, 0x23,
+-0x74, 0x80, 0xF0, 0xC3, 0x22, 0x90, 0xFF, 0x09,
+-0xE0, 0x30, 0xE1, 0x06, 0x90, 0xFF, 0x23, 0x74,
+-0x80, 0xF0, 0x05, 0x0B, 0x80, 0xB6, 0x20, 0x1D,
+-0x10, 0x90, 0xFF, 0x83, 0xE0, 0xA2, 0xE1, 0x92,
+-0x25, 0x30, 0x25, 0x03, 0x30, 0x24, 0xEF, 0xD2,
+-0x24, 0x30, 0x24, 0x13, 0x75, 0x3F, 0x00, 0xC3,
+-0xE5, 0x09, 0x33, 0xF5, 0x3E, 0xE5, 0x08, 0x33,
+-0xF5, 0x3D, 0x75, 0x3C, 0x00, 0xC3, 0x22, 0xE5,
+-0x09, 0x24, 0xFF, 0xF5, 0x09, 0xE5, 0x08, 0x34,
+-0xFF, 0xF5, 0x08, 0x02, 0xE1, 0x7B, 0x90, 0xEA,
+-0x4B, 0xE0, 0x20, 0xE0, 0x03, 0x02, 0xE1, 0x7B,
+-0xE4, 0xF5, 0x3F, 0xF5, 0x3E, 0xF5, 0x3D, 0xF5,
+-0x3C, 0xD3, 0x22, 0x90, 0xFE, 0x4C, 0xE0, 0xF0,
+-0x90, 0xFE, 0x4D, 0xE0, 0xF0, 0xC2, 0x24, 0xC2,
+-0x23, 0xC2, 0x1D, 0x90, 0xFE, 0x50, 0xE8, 0xF0,
+-0x90, 0xFE, 0x40, 0xE9, 0xF0, 0x90, 0xFE, 0x40,
+-0xEA, 0xF0, 0x90, 0xFE, 0x40, 0xEB, 0xF0, 0x90,
+-0xEB, 0x2A, 0xE0, 0x90, 0xFE, 0x40, 0xF0, 0x90,
+-0xEB, 0x2B, 0xE0, 0x90, 0xFE, 0x40, 0xF0, 0x90,
+-0xEB, 0x2C, 0xE0, 0x90, 0xFE, 0x40, 0xF0, 0x90,
+-0xEB, 0x2D, 0xE0, 0x90, 0xFE, 0x40, 0xF0, 0x90,
+-0xFE, 0x44, 0x74, 0x01, 0xF0, 0x22, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x4D, 0x53, 0x50, 0x2D, 0x52, 0x57, 0x20, 0x20,
+-0x20, 0x20, 0x20, 0x31, 0x30, 0x30, 0x30, 0x30 };
+-
+-static BYTE MS_Rdwr[] = {
+-0x90, 0xF0, 0x10, 0xE0, 0x90, 0xEA, 0x46, 0xF0,
+-0xB4, 0x02, 0x02, 0x80, 0x36, 0x90, 0xF0, 0x11,
+-0xE0, 0xF5, 0x17, 0x90, 0xF0, 0x12, 0xE0, 0xF5,
+-0x18, 0x90, 0xF0, 0x13, 0xE0, 0xF5, 0x19, 0x90,
+-0xF0, 0x14, 0xE0, 0xF5, 0x1B, 0x90, 0xF0, 0x15,
+-0xE0, 0xF5, 0x1C, 0x90, 0xF0, 0x16, 0xE0, 0xF5,
+-0x1D, 0x90, 0xF0, 0x17, 0xE0, 0xF5, 0x1E, 0x90,
+-0xF0, 0x18, 0xE0, 0xF5, 0x1F, 0x90, 0xF0, 0x19,
+-0xE0, 0xF5, 0x10, 0x90, 0xFF, 0x09, 0xE0, 0x30,
+-0xE1, 0x06, 0x90, 0xFF, 0x23, 0x74, 0x80, 0xF0,
+-0x90, 0xFF, 0x09, 0xE0, 0x30, 0xE5, 0xFC, 0x90,
+-0xFF, 0x83, 0xE0, 0xA2, 0xE1, 0x92, 0x25, 0x40,
+-0x01, 0x22, 0x90, 0xEA, 0x46, 0xE0, 0xB4, 0x02,
+-0x02, 0x80, 0x2B, 0xB4, 0x03, 0x03, 0x02, 0xE0,
+-0x96, 0xB4, 0x04, 0x05, 0xD2, 0x21, 0x02, 0xE2,
+-0xBC, 0xB4, 0x08, 0x0E, 0x85, 0x1C, 0x11, 0x85,
+-0x1D, 0x12, 0x85, 0x10, 0x1B, 0xC2, 0x21, 0x02,
+-0xE2, 0xBC, 0xB4, 0x06, 0x03, 0x02, 0xE2, 0x2F,
+-0xB4, 0x05, 0x03, 0x02, 0xE2, 0x7A, 0x20, 0x1F,
+-0x02, 0xC3, 0x22, 0x90, 0xEA, 0x46, 0xE0, 0xB4,
+-0x03, 0x03, 0x02, 0xE1, 0x94, 0xC3, 0xE5, 0x3D,
+-0x13, 0xF5, 0x14, 0xE5, 0x3E, 0x13, 0xF5, 0x15,
+-0x90, 0xEB, 0x2A, 0xE0, 0xFC, 0x90, 0xEB, 0x2B,
+-0xE0, 0xFD, 0x90, 0xEB, 0x2C, 0xE0, 0xFE, 0x90,
+-0xEB, 0x2D, 0xE0, 0xFF, 0x90, 0xEA, 0x47, 0xE0,
+-0x14, 0xFB, 0x60, 0x12, 0xC3, 0xEC, 0x13, 0xFC,
+-0xED, 0x13, 0xFD, 0xEE, 0x13, 0xFE, 0xEF, 0x13,
+-0xFF, 0xC3, 0xEB, 0x13, 0x80, 0xEB, 0x8E, 0x1E,
+-0x8F, 0x1F, 0x90, 0xEB, 0x2D, 0xE0, 0xFF, 0x90,
+-0xEA, 0x47, 0xE0, 0x14, 0x5F, 0xF5, 0x1B, 0xD2,
+-0x1A, 0x90, 0xEA, 0x47, 0xE0, 0xC3, 0x95, 0x1B,
+-0xF5, 0x16, 0xE5, 0x14, 0x70, 0x0A, 0xE5, 0x16,
+-0xD3, 0x95, 0x15, 0x40, 0x03, 0x85, 0x15, 0x16,
+-0xE5, 0x1E, 0xF5, 0x18, 0xE5, 0x1F, 0xF5, 0x19,
+-0x75, 0x17, 0x00, 0x90, 0xEA, 0x5C, 0xE0, 0xF8,
+-0x90, 0xEB, 0x6D, 0xE0, 0x65, 0x18, 0x70, 0x08,
+-0xA3, 0xE0, 0x65, 0x19, 0x70, 0x03, 0x80, 0x07,
+-0xA3, 0xA3, 0xD8, 0xEF, 0xC3, 0x80, 0x01, 0xD3,
+-0x40, 0x4F, 0xE5, 0x16, 0x64, 0x01, 0x70, 0x07,
+-0x12, 0x2F, 0x8C, 0x50, 0x41, 0x80, 0x07, 0xAB,
+-0x16, 0x12, 0xE5, 0x60, 0x50, 0x38, 0xC3, 0xE5,
+-0x15, 0x95, 0x16, 0xF5, 0x15, 0xE5, 0x14, 0x94,
+-0x00, 0xF5, 0x14, 0xE5, 0x14, 0x45, 0x15, 0x60,
+-0x17, 0x05, 0x0D, 0xE5, 0x0D, 0x70, 0x02, 0x05,
+-0x0C, 0x05, 0x1F, 0xE5, 0x1F, 0x70, 0x02, 0x05,
+-0x1E, 0x74, 0x00, 0xF5, 0x1B, 0x02, 0xE0, 0xF1,
+-0x75, 0x3F, 0x00, 0x75, 0x3E, 0x00, 0x75, 0x3D,
+-0x00, 0x75, 0x3C, 0x00, 0xD3, 0x22, 0x12, 0x2F,
+-0x9E, 0x75, 0x3F, 0x00, 0xC3, 0xE5, 0x15, 0x33,
+-0xF5, 0x3E, 0xE5, 0x14, 0x33, 0xF5, 0x3D, 0x75,
+-0x3C, 0x00, 0xC3, 0x22, 0xE5, 0x1C, 0x70, 0x03,
+-0x75, 0x1C, 0x01, 0xC3, 0x94, 0x80, 0x40, 0x03,
+-0x75, 0x1C, 0x80, 0xAA, 0x1C, 0xAD, 0x1B, 0x90,
+-0xF4, 0x00, 0xC0, 0x83, 0xC0, 0x82, 0xEA, 0x60,
+-0x5F, 0xAE, 0x18, 0xAF, 0x19, 0xE4, 0x90, 0xFE,
+-0x48, 0xF0, 0x90, 0xFE, 0x49, 0xF0, 0x12, 0x2F,
+-0x8F, 0x90, 0xFE, 0x48, 0x74, 0x7F, 0xF0, 0x90,
+-0xFE, 0x49, 0x74, 0x9F, 0xF0, 0x90, 0xEB, 0xDD,
+-0xE0, 0xD0, 0x82, 0xD0, 0x83, 0xF0, 0xA3, 0xC0,
+-0x83, 0xC0, 0x82, 0x90, 0xEB, 0xDE, 0xE0, 0xD0,
+-0x82, 0xD0, 0x83, 0xF0, 0xA3, 0xC0, 0x83, 0xC0,
+-0x82, 0x90, 0xEB, 0xDF, 0xE0, 0xD0, 0x82, 0xD0,
+-0x83, 0xF0, 0xA3, 0xC0, 0x83, 0xC0, 0x82, 0x90,
+-0xEB, 0xE0, 0xE0, 0xD0, 0x82, 0xD0, 0x83, 0xF0,
+-0xA3, 0xC0, 0x83, 0xC0, 0x82, 0x1A, 0x05, 0x19,
+-0xE5, 0x19, 0x70, 0x02, 0x05, 0x18, 0x80, 0x9E,
+-0xD0, 0x82, 0xD0, 0x83, 0xE5, 0x1C, 0x25, 0xE0,
+-0xFF, 0x74, 0x00, 0x33, 0xFE, 0xEF, 0x25, 0xE0,
+-0xFF, 0xEE, 0x33, 0xFE, 0x90, 0xFF, 0x2A, 0xEE,
+-0xF0, 0xA3, 0xEF, 0xF0, 0x02, 0xE1, 0x70, 0x20,
+-0x1F, 0x02, 0xC3, 0x22, 0x30, 0x1E, 0x02, 0x80,
+-0xF9, 0xD2, 0x1A, 0x75, 0x17, 0x00, 0x75, 0x3F,
+-0x00, 0x75, 0x3E, 0x00, 0x75, 0x3D, 0x00, 0x75,
+-0x3C, 0x00, 0x90, 0xEA, 0x5C, 0xE0, 0xF8, 0x90,
+-0xEB, 0x6D, 0xE0, 0x65, 0x18, 0x70, 0x08, 0xA3,
+-0xE0, 0x65, 0x19, 0x70, 0x03, 0x80, 0x07, 0xA3,
+-0xA3, 0xD8, 0xEF, 0xC3, 0x80, 0x01, 0xD3, 0x40,
+-0x0E, 0x75, 0x1C, 0xF8, 0x75, 0x1D, 0xFF, 0x12,
+-0xE7, 0x77, 0x40, 0x05, 0x12, 0x2F, 0x9E, 0xC3,
+-0x22, 0x22, 0x20, 0x1F, 0x02, 0xC3, 0x22, 0x30,
+-0x1E, 0x02, 0x80, 0xF9, 0xD2, 0x1A, 0x75, 0x3F,
+-0x00, 0x75, 0x3E, 0x00, 0x75, 0x3D, 0x00, 0x75,
+-0x3C, 0x00, 0x90, 0xEA, 0x5C, 0xE0, 0xF8, 0x90,
+-0xEB, 0x6D, 0xE0, 0x65, 0x18, 0x70, 0x08, 0xA3,
+-0xE0, 0x65, 0x19, 0x70, 0x03, 0x80, 0x07, 0xA3,
+-0xA3, 0xD8, 0xEF, 0xC3, 0x80, 0x01, 0xD3, 0x40,
+-0x08, 0x12, 0xE6, 0x6F, 0x40, 0x05, 0x12, 0x2F,
+-0x9E, 0xC3, 0x22, 0x22, 0x20, 0x1F, 0x02, 0xC3,
+-0x22, 0x30, 0x1E, 0x02, 0x80, 0xF9, 0xC3, 0xE5,
+-0x3D, 0x13, 0xF5, 0x14, 0xE5, 0x3E, 0x13, 0xF5,
+-0x15, 0x30, 0x21, 0x39, 0x90, 0xEB, 0x2A, 0xE0,
+-0xFC, 0xA3, 0xE0, 0xFD, 0xA3, 0xE0, 0xFE, 0xA3,
+-0xE0, 0xFF, 0x90, 0xEA, 0x47, 0xE0, 0x14, 0xFB,
+-0x60, 0x12, 0xC3, 0xEC, 0x13, 0xFC, 0xED, 0x13,
+-0xFD, 0xEE, 0x13, 0xFE, 0xEF, 0x13, 0xFF, 0xC3,
+-0xEB, 0x13, 0x80, 0xEB, 0x8E, 0x18, 0x8F, 0x19,
+-0x90, 0xEB, 0x2D, 0xE0, 0xFF, 0x90, 0xEA, 0x47,
+-0xE0, 0x14, 0x5F, 0xF5, 0x1B, 0xD2, 0x1C, 0xC3,
+-0x90, 0xEA, 0x47, 0xE0, 0x95, 0x1B, 0xF5, 0x16,
+-0xE5, 0x14, 0x70, 0x0A, 0xD3, 0xE5, 0x16, 0x95,
+-0x15, 0x40, 0x03, 0x85, 0x15, 0x16, 0x90, 0xEA,
+-0x5C, 0xE0, 0xF8, 0x90, 0xEB, 0x6D, 0xE0, 0x65,
+-0x18, 0x70, 0x08, 0xA3, 0xE0, 0x65, 0x19, 0x70,
+-0x03, 0x80, 0x07, 0xA3, 0xA3, 0xD8, 0xEF, 0xC3,
+-0x80, 0x01, 0xD3, 0x50, 0x03, 0x02, 0xE4, 0x34,
+-0x20, 0x21, 0x2F, 0xC2, 0x42, 0x75, 0x10, 0x00,
+-0xE5, 0x10, 0x65, 0x1B, 0x70, 0x03, 0x02, 0xE3,
+-0x7A, 0x12, 0x2F, 0x89, 0x40, 0x03, 0x02, 0xE4,
+-0x31, 0xE5, 0x10, 0x70, 0x11, 0xC0, 0x1C, 0xC0,
+-0x1B, 0x75, 0x1B, 0x00, 0x75, 0x1C, 0xEF, 0x12,
+-0x2F, 0x95, 0xD0, 0x1B, 0xD0, 0x1C, 0x05, 0x10,
+-0x80, 0xD6, 0x75, 0x17, 0x00, 0x30, 0x21, 0x06,
+-0xC0, 0x18, 0xC0, 0x19, 0x80, 0x10, 0x75, 0x1C,
+-0xF8, 0x75, 0x1D, 0xFF, 0xC0, 0x18, 0xC0, 0x19,
+-0x85, 0x11, 0x18, 0x85, 0x12, 0x19, 0xE5, 0x16,
+-0xB4, 0x01, 0x0C, 0x12, 0xE5, 0x11, 0x40, 0x13,
+-0xD0, 0x19, 0xD0, 0x18, 0x02, 0xE4, 0x31, 0x12,
+-0x2F, 0x92, 0x40, 0x07, 0xD0, 0x19, 0xD0, 0x18,
+-0x02, 0xE4, 0x31, 0xD0, 0x19, 0xD0, 0x18, 0xE5,
+-0x10, 0x25, 0x16, 0xF5, 0x10, 0x20, 0x21, 0x3A,
+-0x90, 0xEA, 0x47, 0xE0, 0x65, 0x10, 0x60, 0x0C,
+-0x12, 0x2F, 0x89, 0x40, 0x03, 0x02, 0xE4, 0x31,
+-0x05, 0x10, 0x80, 0xEC, 0x20, 0x42, 0x05, 0x12,
+-0xE7, 0x77, 0x80, 0x09, 0x75, 0x1B, 0x00, 0x75,
+-0x1C, 0x7F, 0x12, 0x2F, 0x95, 0x75, 0x17, 0x00,
+-0x85, 0x11, 0x18, 0x85, 0x12, 0x19, 0x75, 0x1B,
+-0x00, 0x75, 0x1C, 0xF8, 0x75, 0x1D, 0xFF, 0x12,
+-0xE6, 0x6F, 0xC3, 0xE5, 0x15, 0x95, 0x16, 0xF5,
+-0x15, 0xE5, 0x14, 0x94, 0x00, 0xF5, 0x14, 0xE5,
+-0x15, 0x45, 0x14, 0x60, 0x16, 0x05, 0x19, 0xE5,
+-0x19, 0x70, 0x02, 0x05, 0x18, 0x05, 0x0D, 0xE5,
+-0x0D, 0x70, 0x02, 0x05, 0x0C, 0x75, 0x1B, 0x00,
+-0x02, 0xE3, 0x0F, 0x75, 0x3F, 0x00, 0x75, 0x3E,
+-0x00, 0x75, 0x3D, 0x00, 0x75, 0x3C, 0x00, 0xD3,
+-0x22, 0x12, 0x2F, 0x9E, 0x90, 0xFF, 0x09, 0xE0,
+-0x30, 0xE1, 0x06, 0x90, 0xFF, 0x23, 0x74, 0x80,
+-0xF0, 0x75, 0x3F, 0x00, 0xC3, 0xE5, 0x15, 0x33,
+-0xF5, 0x3E, 0xE5, 0x14, 0x33, 0xF5, 0x3D, 0x75,
+-0x3C, 0x00, 0xC3, 0x22, 0x75, 0x1A, 0x20, 0x12,
+-0x2F, 0xA4, 0x40, 0x03, 0x02, 0xE5, 0x0F, 0x79,
+-0x0F, 0x90, 0xFE, 0x46, 0xE0, 0x54, 0xF0, 0x49,
+-0xF0, 0x78, 0xD2, 0x12, 0x2F, 0xAA, 0x30, 0x1C,
+-0x5A, 0x30, 0x2D, 0x05, 0x75, 0x16, 0x01, 0x80,
+-0x03, 0x75, 0x16, 0x08, 0x75, 0x08, 0x00, 0xE5,
+-0x08, 0x65, 0x16, 0x70, 0x02, 0x80, 0x55, 0x90,
+-0xFF, 0x09, 0x30, 0x25, 0x0B, 0xE0, 0x30, 0xE1,
+-0xF9, 0x90, 0xFF, 0x09, 0xF0, 0xD3, 0x80, 0x01,
+-0xC3, 0x50, 0x0F, 0xAF, 0x08, 0x7C, 0xF0, 0x7D,
+-0x00, 0xAB, 0x4D, 0xAA, 0x4C, 0x12, 0x2F, 0xBF,
+-0x40, 0x10, 0x90, 0xFF, 0x09, 0xE0, 0x30, 0xE1,
+-0x06, 0x90, 0xFF, 0x23, 0x74, 0x80, 0xF0, 0x02,
+-0xE5, 0x0A, 0x90, 0xFF, 0x09, 0xE0, 0x30, 0xE1,
+-0x06, 0x90, 0xFF, 0x23, 0x74, 0x80, 0xF0, 0x05,
+-0x08, 0x80, 0xB4, 0x7C, 0xF0, 0x7D, 0x00, 0x7B,
+-0x00, 0x7A, 0x02, 0x7F, 0x00, 0x12, 0x2F, 0xBF,
+-0x40, 0x02, 0x80, 0x2E, 0x20, 0x1D, 0x08, 0x30,
+-0x25, 0x03, 0x30, 0x24, 0xF7, 0xD2, 0x24, 0x30,
+-0x24, 0x02, 0xC3, 0x22, 0x79, 0x55, 0x7A, 0x01,
+-0x12, 0x2F, 0xAD, 0x40, 0x02, 0x80, 0x18, 0x12,
+-0x2F, 0xB0, 0x30, 0x24, 0x02, 0xC3, 0x22, 0xEF,
+-0x54, 0xC1, 0x64, 0x80, 0x60, 0x02, 0x80, 0x02,
+-0xD3, 0x22, 0x79, 0xC3, 0x12, 0x2F, 0x9B, 0xC3,
+-0x22, 0xC0, 0x16, 0x30, 0x1E, 0x03, 0x02, 0xE5,
+-0x5C, 0x75, 0x09, 0x00, 0x7C, 0x08, 0x30, 0x2D,
+-0x02, 0x7C, 0x20, 0x20, 0x25, 0x03, 0x02, 0xE5,
+-0x5C, 0xC0, 0x04, 0x12, 0xE4, 0x54, 0xD0, 0x04,
+-0x50, 0x04, 0xD0, 0x16, 0xD3, 0x22, 0xA9, 0x09,
+-0xE9, 0x54, 0x07, 0x60, 0x0C, 0x90, 0xFE, 0x4C,
+-0xE0, 0xF0, 0x90, 0xFE, 0x4D, 0xE0, 0xF0, 0x80,
+-0x09, 0x20, 0x25, 0x03, 0x02, 0xE5, 0x5C, 0x12,
+-0x2F, 0xB3, 0x05, 0x09, 0xE5, 0x09, 0x6C, 0x60,
+-0x03, 0x02, 0xE5, 0x23, 0xD0, 0x16, 0xC3, 0x22,
+-0xC0, 0x03, 0x75, 0x1A, 0x00, 0x12, 0x2F, 0xB6,
+-0x40, 0x04, 0xD0, 0x03, 0xC3, 0x22, 0xC2, 0x41,
+-0x79, 0xAA, 0x7A, 0x00, 0x12, 0x2F, 0xAD, 0x50,
+-0xF1, 0xD0, 0x03, 0x1B, 0x8B, 0x08, 0xC2, 0x40,
+-0x20, 0x20, 0x08, 0x30, 0x25, 0x03, 0x30, 0x24,
+-0xF7, 0xD2, 0x24, 0x30, 0x24, 0x02, 0xC3, 0x22,
+-0x12, 0x2F, 0xB0, 0xC2, 0x20, 0xC2, 0x24, 0xEF,
+-0x54, 0xE1, 0xFF, 0x30, 0xE0, 0x03, 0x02, 0xE6,
+-0x6D, 0x20, 0xE6, 0x0F, 0x30, 0xE7, 0x02, 0xD2,
+-0x40, 0x20, 0xE5, 0x19, 0x64, 0x80, 0x70, 0x03,
+-0x02, 0xE6, 0x4B, 0x12, 0x2F, 0xB9, 0x40, 0x03,
+-0x02, 0xE6, 0x68, 0x90, 0xEB, 0xCA, 0xE0, 0x54,
+-0x15, 0x60, 0x02, 0xD2, 0x41, 0xE5, 0x08, 0x70,
+-0x0E, 0x20, 0x40, 0x0B, 0x79, 0x33, 0x7A, 0x01,
+-0x12, 0x2F, 0xAD, 0x40, 0x02, 0xC1, 0x6D, 0x12,
+-0x2F, 0xBC, 0x40, 0x02, 0xC1, 0x6D, 0x90, 0xEB,
+-0xDE, 0xE0, 0x54, 0x30, 0x64, 0x30, 0x60, 0x02,
+-0xC1, 0x6D, 0x79, 0x00, 0x90, 0xFE, 0x46, 0xE0,
+-0x54, 0xF0, 0x49, 0xF0, 0x79, 0x00, 0x78, 0x2D,
+-0x12, 0x2F, 0xAA, 0x90, 0xFF, 0x09, 0x30, 0x25,
+-0x07, 0xE0, 0x30, 0xE5, 0xF9, 0xD3, 0x80, 0x01,
+-0xC3, 0x40, 0x02, 0x80, 0x5B, 0xC0, 0x01, 0x7E,
+-0xF4, 0x7F, 0x00, 0x7D, 0x00, 0x7C, 0x02, 0x12,
+-0x2F, 0xC2, 0xD0, 0x01, 0x40, 0x09, 0x09, 0xE9,
+-0x64, 0x20, 0x70, 0xD2, 0x02, 0xE6, 0x68, 0x90,
+-0xFF, 0x2A, 0x74, 0x02, 0xF0, 0xA3, 0x74, 0x00,
+-0xF0, 0x20, 0x1D, 0x08, 0x30, 0x25, 0x03, 0x30,
+-0x24, 0xF7, 0xD2, 0x24, 0x30, 0x24, 0x02, 0xC3,
+-0x22, 0x30, 0x40, 0x02, 0x80, 0x05, 0x15, 0x08,
+-0x02, 0xE5, 0x80, 0x30, 0x41, 0x16, 0x79, 0xCC,
+-0x12, 0x2F, 0x9B, 0xC2, 0x1A, 0x90, 0xEA, 0x47,
+-0xE0, 0x65, 0x1B, 0x60, 0x07, 0x12, 0x2F, 0x8C,
+-0x05, 0x1B, 0x80, 0xF1, 0xD2, 0x1A, 0xD3, 0x22,
+-0x79, 0xC3, 0x12, 0x2F, 0x9B, 0xC3, 0x22, 0xC0,
+-0x08, 0x30, 0x1E, 0x02, 0x80, 0x33, 0x75, 0x1A,
+-0x40, 0x75, 0x1D, 0xFF, 0x75, 0x08, 0x00, 0x20,
+-0x25, 0x02, 0x80, 0x25, 0x12, 0xE6, 0xAD, 0x50,
+-0x04, 0xD0, 0x08, 0xD3, 0x22, 0xA9, 0x08, 0xE9,
+-0x54, 0x07, 0x60, 0x02, 0x80, 0x08, 0x20, 0x25,
+-0x02, 0x80, 0x0E, 0x12, 0x2F, 0xB3, 0x05, 0x08,
+-0xE5, 0x08, 0x64, 0x20, 0x60, 0x03, 0x02, 0xE6,
+-0x7F, 0xD0, 0x08, 0xC3, 0x22, 0x90, 0xFE, 0x4C,
+-0xE0, 0xF0, 0x90, 0xFE, 0x4D, 0xE0, 0xF0, 0xC2,
+-0x1D, 0xC2, 0x24, 0x90, 0xFE, 0x50, 0x74, 0x87,
+-0xF0, 0x90, 0xFE, 0x40, 0x74, 0x00, 0xF0, 0x90,
+-0xFE, 0x40, 0x74, 0x00, 0xF0, 0x90, 0xFE, 0x40,
+-0x74, 0x10, 0xF0, 0x90, 0xFE, 0x40, 0x74, 0x0F,
+-0xF0, 0x90, 0xFE, 0x57, 0x74, 0x0F, 0xF0, 0x90,
+-0xFE, 0x44, 0x74, 0x01, 0xF0, 0x20, 0x1D, 0x08,
+-0x30, 0x25, 0x03, 0x30, 0x24, 0xF7, 0xD2, 0x24,
+-0x30, 0x24, 0x02, 0xC3, 0x22, 0x79, 0x00, 0x90,
+-0xFE, 0x46, 0xE0, 0x54, 0xF0, 0x49, 0xF0, 0x90,
+-0xFE, 0x4D, 0x30, 0x25, 0x07, 0xE0, 0x30, 0xE5,
+-0xF9, 0xD3, 0x80, 0x01, 0xC3, 0x40, 0x01, 0x22,
+-0x78, 0xB4, 0x12, 0x2F, 0xAA, 0x90, 0xEA, 0x44,
+-0xE0, 0x90, 0xFE, 0x40, 0xF0, 0x78, 0x17, 0x7D,
+-0x09, 0xE6, 0x08, 0x90, 0xFE, 0x40, 0xF0, 0xDD,
+-0xF8, 0x74, 0xFF, 0x90, 0xFE, 0x40, 0xF0, 0xF0,
+-0xF0, 0xF0, 0xC2, 0x1D, 0xC2, 0x24, 0xF0, 0x20,
+-0x1D, 0x08, 0x30, 0x25, 0x03, 0x30, 0x24, 0xF7,
+-0xD2, 0x24, 0x30, 0x24, 0x02, 0xC3, 0x22, 0x90,
+-0xFE, 0x4E, 0x30, 0x25, 0x07, 0xE0, 0x30, 0xE6,
+-0xF9, 0xD3, 0x80, 0x01, 0xC3, 0x79, 0x55, 0x7A,
+-0x01, 0x12, 0x2F, 0xAD, 0x40, 0x02, 0x80, 0x13,
+-0x12, 0x2F, 0xB0, 0x30, 0x24, 0x02, 0xC3, 0x22,
+-0xEF, 0x20, 0xE0, 0x07, 0x54, 0xC0, 0xB4, 0x80,
+-0x02, 0x80, 0x02, 0xC3, 0x22, 0xD3, 0x22, 0x30,
+-0x1E, 0x02, 0x80, 0x0A, 0x12, 0xE7, 0x88, 0x40,
+-0x03, 0x02, 0xE7, 0x86, 0xD3, 0x22, 0xC3, 0x22,
+-0xC0, 0x08, 0x75, 0x08, 0x00, 0x20, 0x25, 0x02,
+-0x80, 0x25, 0x12, 0x2F, 0xA1, 0x50, 0x03, 0xD0,
+-0x08, 0x22, 0xA9, 0x08, 0xE9, 0x54, 0x07, 0x60,
+-0x02, 0x80, 0x09, 0xA2, 0x25, 0x40, 0x02, 0x80,
+-0x0E, 0x12, 0x2F, 0xB3, 0x05, 0x08, 0xE5, 0x08,
+-0x64, 0x20, 0x60, 0x03, 0x02, 0xE7, 0x8D, 0xD0,
+-0x08, 0xC3, 0x22, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+-0x4D, 0x53, 0x2D, 0x52, 0x57, 0x20, 0x20, 0x20,
+-0x20, 0x20, 0x20, 0x31, 0x30, 0x30, 0x30, 0x30 };
+ 
+ static BYTE SM_Init[] = {
+ 0x7B, 0x09, 0x7C, 0xF0, 0x7D, 0x10, 0x7E, 0xE9,
+diff --git a/drivers/staging/keucr/ms.c b/drivers/staging/keucr/ms.c
+deleted file mode 100644
+index 087ad73..0000000
+--- a/drivers/staging/keucr/ms.c
++++ /dev/null
+@@ -1,1034 +0,0 @@
+-#include <linux/slab.h>
+-#include <asm/byteorder.h>
+-
+-#include "usb.h"
+-#include "scsiglue.h"
+-#include "transport.h"
+-#include "ms.h"
+-
+-/*
+- * MS_ReaderCopyBlock()
+- */
+-int MS_ReaderCopyBlock(struct us_data *us, WORD oldphy, WORD newphy,
+-			WORD PhyBlockAddr, BYTE PageNum, PBYTE buf, WORD len)
+-{
+-	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int	result;
+-
+-	/* printk(KERN_INFO "MS_ReaderCopyBlock --- PhyBlockAddr = %x,
+-				PageNum = %x\n", PhyBlockAddr, PageNum); */
+-	result = ENE_LoadBinCode(us, MS_RW_PATTERN);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-	bcb->DataTransferLength = 0x200*len;
+-	bcb->Flags			= 0x00;
+-	bcb->CDB[0]			= 0xF0;
+-	bcb->CDB[1]			= 0x08;
+-	bcb->CDB[4]			= (BYTE)(oldphy);
+-	bcb->CDB[3]			= (BYTE)(oldphy>>8);
+-	bcb->CDB[2]			= 0; /* (BYTE)(oldphy>>16) */
+-	bcb->CDB[7]			= (BYTE)(newphy);
+-	bcb->CDB[6]			= (BYTE)(newphy>>8);
+-	bcb->CDB[5]			= 0; /* (BYTE)(newphy>>16) */
+-	bcb->CDB[9]			= (BYTE)(PhyBlockAddr);
+-	bcb->CDB[8]			= (BYTE)(PhyBlockAddr>>8);
+-	bcb->CDB[10]		= PageNum;
+-
+-	result = ENE_SendScsiCmd(us, FDIR_WRITE, buf, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_ReaderReadPage()
+- */
+-int MS_ReaderReadPage(struct us_data *us, DWORD PhyBlockAddr,
+-		BYTE PageNum, PDWORD PageBuf, MS_LibTypeExtdat *ExtraDat)
+-{
+-	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int	result;
+-	BYTE	ExtBuf[4];
+-	DWORD	bn = PhyBlockAddr * 0x20 + PageNum;
+-
+-	/* printk(KERN_INFO "MS --- MS_ReaderReadPage,
+-		PhyBlockAddr = %x, PageNum = %x\n", PhyBlockAddr, PageNum); */
+-
+-	result = ENE_LoadBinCode(us, MS_RW_PATTERN);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	/* Read Page Data */
+-	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-	bcb->DataTransferLength = 0x200;
+-	bcb->Flags			= 0x80;
+-	bcb->CDB[0]			= 0xF1;
+-	bcb->CDB[1]			= 0x02;
+-	bcb->CDB[5]			= (BYTE)(bn);
+-	bcb->CDB[4]			= (BYTE)(bn>>8);
+-	bcb->CDB[3]			= (BYTE)(bn>>16);
+-	bcb->CDB[2]			= (BYTE)(bn>>24);
+-
+-	result = ENE_SendScsiCmd(us, FDIR_READ, PageBuf, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	/* Read Extra Data */
+-	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-	bcb->DataTransferLength = 0x4;
+-	bcb->Flags			= 0x80;
+-	bcb->CDB[0]			= 0xF1;
+-	bcb->CDB[1]			= 0x03;
+-	bcb->CDB[5]			= (BYTE)(PageNum);
+-	bcb->CDB[4]			= (BYTE)(PhyBlockAddr);
+-	bcb->CDB[3]			= (BYTE)(PhyBlockAddr>>8);
+-	bcb->CDB[2]			= (BYTE)(PhyBlockAddr>>16);
+-	bcb->CDB[6]			= 0x01;
+-
+-	result = ENE_SendScsiCmd(us, FDIR_READ, &ExtBuf, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	ExtraDat->reserved = 0;
+-	ExtraDat->intr     = 0x80;  /* Not yet,fireware support */
+-	ExtraDat->status0  = 0x10;  /* Not yet,fireware support */
+-	ExtraDat->status1  = 0x00;  /* Not yet,fireware support */
+-	ExtraDat->ovrflg   = ExtBuf[0];
+-	ExtraDat->mngflg   = ExtBuf[1];
+-	ExtraDat->logadr   = MemStickLogAddr(ExtBuf[2], ExtBuf[3]);
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_ReaderEraseBlock()
+- */
+-int MS_ReaderEraseBlock(struct us_data *us, DWORD PhyBlockAddr)
+-{
+-	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int	result;
+-	DWORD	bn = PhyBlockAddr;
+-
+-	/* printk(KERN_INFO "MS --- MS_ReaderEraseBlock,
+-		PhyBlockAddr = %x\n", PhyBlockAddr); */
+-	result = ENE_LoadBinCode(us, MS_RW_PATTERN);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-	bcb->DataTransferLength = 0x200;
+-	bcb->Flags			= 0x80;
+-	bcb->CDB[0]			= 0xF2;
+-	bcb->CDB[1]			= 0x06;
+-	bcb->CDB[4]			= (BYTE)(bn);
+-	bcb->CDB[3]			= (BYTE)(bn>>8);
+-	bcb->CDB[2]			= (BYTE)(bn>>16);
+-
+-	result = ENE_SendScsiCmd(us, FDIR_READ, NULL, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_CardInit()
+- */
+-int MS_CardInit(struct us_data *us)
+-{
+-	DWORD			result = 0;
+-	WORD			TmpBlock;
+-	PBYTE			PageBuffer0 = NULL, PageBuffer1 = NULL;
+-	MS_LibTypeExtdat	extdat;
+-	WORD			btBlk1st, btBlk2nd;
+-	DWORD			btBlk1stErred;
+-
+-	printk(KERN_INFO "MS_CardInit start\n");
+-
+-	MS_LibFreeAllocatedArea(us);
+-
+-	PageBuffer0 = kmalloc(MS_BYTES_PER_PAGE, GFP_KERNEL);
+-	PageBuffer1 = kmalloc(MS_BYTES_PER_PAGE, GFP_KERNEL);
+-	if ((PageBuffer0 == NULL) || (PageBuffer1 == NULL)) {
+-		result = MS_NO_MEMORY_ERROR;
+-		goto exit;
+-	}
+-
+-	btBlk1st = btBlk2nd = MS_LB_NOT_USED;
+-	btBlk1stErred = 0;
+-
+-	for (TmpBlock = 0; TmpBlock < MS_MAX_INITIAL_ERROR_BLOCKS+2;
+-		TmpBlock++) {
+-		switch (MS_ReaderReadPage(us, TmpBlock, 0,
+-			(DWORD *)PageBuffer0, &extdat)) {
+-		case MS_STATUS_SUCCESS:
+-			break;
+-		case MS_STATUS_INT_ERROR:
+-			break;
+-		case MS_STATUS_ERROR:
+-		default:
+-			continue;
+-		}
+-
+-		if ((extdat.ovrflg & MS_REG_OVR_BKST) == MS_REG_OVR_BKST_NG)
+-			continue;
+-
+-		if (((extdat.mngflg & MS_REG_MNG_SYSFLG) == MS_REG_MNG_SYSFLG_USER) ||
+-			(be16_to_cpu(((MemStickBootBlockPage0 *)PageBuffer0)->header.wBlockID) != MS_BOOT_BLOCK_ID) ||
+-			(be16_to_cpu(((MemStickBootBlockPage0 *)PageBuffer0)->header.wFormatVersion) != MS_BOOT_BLOCK_FORMAT_VERSION) ||
+-			(((MemStickBootBlockPage0 *)PageBuffer0)->header.bNumberOfDataEntry != MS_BOOT_BLOCK_DATA_ENTRIES))
+-				continue;
+-
+-		if (btBlk1st != MS_LB_NOT_USED) {
+-			btBlk2nd = TmpBlock;
+-			break;
+-		}
+-
+-		btBlk1st = TmpBlock;
+-		memcpy(PageBuffer1, PageBuffer0, MS_BYTES_PER_PAGE);
+-		if (extdat.status1 &
+-			(MS_REG_ST1_DTER | MS_REG_ST1_EXER | MS_REG_ST1_FGER))
+-			btBlk1stErred = 1;
+-	}
+-
+-	if (btBlk1st == MS_LB_NOT_USED) {
+-		result = MS_STATUS_ERROR;
+-		goto exit;
+-	}
+-
+-	/* write protect */
+-	if ((extdat.status0 & MS_REG_ST0_WP) == MS_REG_ST0_WP_ON)
+-		MS_LibCtrlSet(us, MS_LIB_CTRL_WRPROTECT);
+-
+-	result = MS_STATUS_ERROR;
+-	/* 1st Boot Block */
+-	if (btBlk1stErred == 0)
+-		result = MS_LibProcessBootBlock(us, btBlk1st, PageBuffer1);
+-		/* 1st */
+-	/* 2nd Boot Block */
+-	if (result && (btBlk2nd != MS_LB_NOT_USED))
+-		result = MS_LibProcessBootBlock(us, btBlk2nd, PageBuffer0);
+-
+-	if (result) {
+-		result = MS_STATUS_ERROR;
+-		goto exit;
+-	}
+-
+-	for (TmpBlock = 0; TmpBlock < btBlk1st; TmpBlock++)
+-		us->MS_Lib.Phy2LogMap[TmpBlock] = MS_LB_INITIAL_ERROR;
+-
+-	us->MS_Lib.Phy2LogMap[btBlk1st] = MS_LB_BOOT_BLOCK;
+-
+-	if (btBlk2nd != MS_LB_NOT_USED) {
+-		for (TmpBlock = btBlk1st + 1; TmpBlock < btBlk2nd; TmpBlock++)
+-			us->MS_Lib.Phy2LogMap[TmpBlock] = MS_LB_INITIAL_ERROR;
+-		us->MS_Lib.Phy2LogMap[btBlk2nd] = MS_LB_BOOT_BLOCK;
+-	}
+-
+-	result = MS_LibScanLogicalBlockNumber(us, btBlk1st);
+-	if (result)
+-		goto exit;
+-
+-	for (TmpBlock = MS_PHYSICAL_BLOCKS_PER_SEGMENT;
+-		TmpBlock < us->MS_Lib.NumberOfPhyBlock;
+-		TmpBlock += MS_PHYSICAL_BLOCKS_PER_SEGMENT) {
+-		if (MS_CountFreeBlock(us, TmpBlock) == 0) {
+-			MS_LibCtrlSet(us, MS_LIB_CTRL_WRPROTECT);
+-			break;
+-		}
+-	}
+-
+-	/* write */
+-	if (MS_LibAllocWriteBuf(us)) {
+-		result = MS_NO_MEMORY_ERROR;
+-		goto exit;
+-	}
+-
+-	result = MS_STATUS_SUCCESS;
+-
+-exit:
+-	kfree(PageBuffer1);
+-	kfree(PageBuffer0);
+-
+-	printk(KERN_INFO "MS_CardInit end\n");
+-	return result;
+-}
+-
+-/*
+- * MS_LibCheckDisableBlock()
+- */
+-int MS_LibCheckDisableBlock(struct us_data *us, WORD PhyBlock)
+-{
+-	PWORD			PageBuf = NULL;
+-	DWORD			result = MS_STATUS_SUCCESS;
+-	DWORD			blk, index = 0;
+-	MS_LibTypeExtdat	extdat;
+-
+-	PageBuf = kmalloc(MS_BYTES_PER_PAGE, GFP_KERNEL);
+-	if (PageBuf == NULL) {
+-		result = MS_NO_MEMORY_ERROR;
+-		goto exit;
+-	}
+-
+-	MS_ReaderReadPage(us, PhyBlock, 1, (DWORD *)PageBuf, &extdat);
+-	do {
+-		blk = be16_to_cpu(PageBuf[index]);
+-		if (blk == MS_LB_NOT_USED)
+-			break;
+-		if (blk == us->MS_Lib.Log2PhyMap[0]) {
+-			result = MS_ERROR_FLASH_READ;
+-			break;
+-		}
+-		index++;
+-	} while (1);
+-
+-exit:
+-	kfree(PageBuf);
+-	return result;
+-}
+-
+-/*
+- * MS_LibFreeAllocatedArea()
+- */
+-void MS_LibFreeAllocatedArea(struct us_data *us)
+-{
+-	MS_LibFreeWriteBuf(us);
+-	MS_LibFreeLogicalMap(us);
+-
+-	us->MS_Lib.flags			= 0;
+-	us->MS_Lib.BytesPerSector	= 0;
+-	us->MS_Lib.SectorsPerCylinder	= 0;
+-
+-	us->MS_Lib.cardType		= 0;
+-	us->MS_Lib.blockSize		= 0;
+-	us->MS_Lib.PagesPerBlock	= 0;
+-
+-	us->MS_Lib.NumberOfPhyBlock	= 0;
+-	us->MS_Lib.NumberOfLogBlock	= 0;
+-}
+-
+-/*
+- * MS_LibFreeWriteBuf()
+- */
+-void MS_LibFreeWriteBuf(struct us_data *us)
+-{
+-	us->MS_Lib.wrtblk = (WORD)-1; /* set to -1 */
+-
+-	/* memset((fdoExt)->MS_Lib.pagemap, 0,
+-			sizeof((fdoExt)->MS_Lib.pagemap)) */
+-	MS_LibClearPageMap(us);
+-
+-	if (us->MS_Lib.blkpag) {
+-		kfree((BYTE *)(us->MS_Lib.blkpag));  /* Arnold test ... */
+-		us->MS_Lib.blkpag = NULL;
+-	}
+-
+-	if (us->MS_Lib.blkext) {
+-		kfree((BYTE *)(us->MS_Lib.blkext));  /* Arnold test ... */
+-		us->MS_Lib.blkext = NULL;
+-	}
+-}
+-
+-/*
+- * MS_LibFreeLogicalMap()
+- */
+-int MS_LibFreeLogicalMap(struct us_data *us)
+-{
+-	kfree(us->MS_Lib.Phy2LogMap);
+-	us->MS_Lib.Phy2LogMap = NULL;
+-
+-	kfree(us->MS_Lib.Log2PhyMap);
+-	us->MS_Lib.Log2PhyMap = NULL;
+-
+-	return 0;
+-}
+-
+-/*
+- * MS_LibProcessBootBlock()
+- */
+-int MS_LibProcessBootBlock(struct us_data *us, WORD PhyBlock, BYTE *PageData)
+-{
+-	MemStickBootBlockSysEnt  *SysEntry;
+-	MemStickBootBlockSysInf  *SysInfo;
+-	DWORD                    i, result;
+-	BYTE                     PageNumber;
+-	BYTE                     *PageBuffer;
+-	MS_LibTypeExtdat         ExtraData;
+-
+-
+-	PageBuffer = kmalloc(MS_BYTES_PER_PAGE, GFP_KERNEL);
+-	if (PageBuffer == NULL)
+-		return (DWORD)-1;
+-
+-	result = (DWORD)-1;
+-
+-	SysInfo = &(((MemStickBootBlockPage0 *)PageData)->sysinf);
+-
+-	if ((SysInfo->bMsClass != MS_SYSINF_MSCLASS_TYPE_1) ||
+-		(be16_to_cpu(SysInfo->wPageSize) != MS_SYSINF_PAGE_SIZE) ||
+-		((SysInfo->bSecuritySupport & MS_SYSINF_SECURITY) == MS_SYSINF_SECURITY_SUPPORT) ||
+-		(SysInfo->bReserved1 != MS_SYSINF_RESERVED1) ||
+-		(SysInfo->bReserved2 != MS_SYSINF_RESERVED2) ||
+-		(SysInfo->bFormatType != MS_SYSINF_FORMAT_FAT) ||
+-		(SysInfo->bUsage != MS_SYSINF_USAGE_GENERAL))
+-		goto exit;
+-
+-	switch (us->MS_Lib.cardType = SysInfo->bCardType) {
+-	case MS_SYSINF_CARDTYPE_RDONLY:
+-		MS_LibCtrlSet(us, MS_LIB_CTRL_RDONLY);
+-		break;
+-	case MS_SYSINF_CARDTYPE_RDWR:
+-		MS_LibCtrlReset(us, MS_LIB_CTRL_RDONLY);
+-		break;
+-	case MS_SYSINF_CARDTYPE_HYBRID:
+-	default:
+-		goto exit;
+-	}
+-
+-	us->MS_Lib.blockSize        = be16_to_cpu(SysInfo->wBlockSize);
+-	us->MS_Lib.NumberOfPhyBlock = be16_to_cpu(SysInfo->wBlockNumber);
+-	us->MS_Lib.NumberOfLogBlock = be16_to_cpu(SysInfo->wTotalBlockNumber)
+-									-2;
+-	us->MS_Lib.PagesPerBlock    = us->MS_Lib.blockSize * SIZE_OF_KIRO /
+-							MS_BYTES_PER_PAGE;
+-	us->MS_Lib.NumberOfSegment  = us->MS_Lib.NumberOfPhyBlock /
+-					MS_PHYSICAL_BLOCKS_PER_SEGMENT;
+-	us->MS_Model                = be16_to_cpu(SysInfo->wMemorySize);
+-
+-	/*Allocate to all number of logicalblock and physicalblock */
+-	if (MS_LibAllocLogicalMap(us))
+-		goto exit;
+-
+-	/* Mark the book block */
+-	MS_LibSetBootBlockMark(us, PhyBlock);
+-
+-	SysEntry = &(((MemStickBootBlockPage0 *)PageData)->sysent);
+-
+-	for (i = 0; i < MS_NUMBER_OF_SYSTEM_ENTRY; i++) {
+-		DWORD  EntryOffset, EntrySize;
+-
+-		EntryOffset = be32_to_cpu(SysEntry->entry[i].dwStart);
+-
+-		if (EntryOffset == 0xffffff)
+-			continue;
+-		EntrySize = be32_to_cpu(SysEntry->entry[i].dwSize);
+-
+-		if (EntrySize == 0)
+-			continue;
+-
+-		if (EntryOffset + MS_BYTES_PER_PAGE + EntrySize >
+-			us->MS_Lib.blockSize * (DWORD)SIZE_OF_KIRO)
+-			continue;
+-
+-		if (i == 0) {
+-			BYTE  PrevPageNumber = 0;
+-			WORD  phyblk;
+-
+-			if (SysEntry->entry[i].bType !=
+-				MS_SYSENT_TYPE_INVALID_BLOCK)
+-				goto exit;
+-
+-			while (EntrySize > 0) {
+-
+-				PageNumber = (BYTE)(EntryOffset /
+-							MS_BYTES_PER_PAGE + 1);
+-				if (PageNumber != PrevPageNumber) {
+-					switch (MS_ReaderReadPage(us, PhyBlock,
+-						PageNumber, (DWORD *)PageBuffer,
+-						&ExtraData)) {
+-					case MS_STATUS_SUCCESS:
+-						break;
+-					case MS_STATUS_WRITE_PROTECT:
+-					case MS_ERROR_FLASH_READ:
+-					case MS_STATUS_ERROR:
+-					default:
+-						goto exit;
+-					}
+-
+-					PrevPageNumber = PageNumber;
+-				}
+-
+-				phyblk = be16_to_cpu(*(WORD *)(PageBuffer +
+-					(EntryOffset % MS_BYTES_PER_PAGE)));
+-				if (phyblk < 0x0fff)
+-					MS_LibSetInitialErrorBlock(us, phyblk);
+-
+-				EntryOffset += 2;
+-				EntrySize -= 2;
+-			}
+-		} else if (i == 1) {  /* CIS/IDI */
+-			MemStickBootBlockIDI  *idi;
+-
+-			if (SysEntry->entry[i].bType != MS_SYSENT_TYPE_CIS_IDI)
+-				goto exit;
+-
+-			switch (MS_ReaderReadPage(us, PhyBlock,
+-				(BYTE)(EntryOffset / MS_BYTES_PER_PAGE + 1),
+-				(DWORD *)PageBuffer, &ExtraData)) {
+-			case MS_STATUS_SUCCESS:
+-				break;
+-			case MS_STATUS_WRITE_PROTECT:
+-			case MS_ERROR_FLASH_READ:
+-			case MS_STATUS_ERROR:
+-			default:
+-				goto exit;
+-			}
+-
+-			idi = &((MemStickBootBlockCIS_IDI *)(PageBuffer +
+-				(EntryOffset % MS_BYTES_PER_PAGE)))->idi.idi;
+-			if (le16_to_cpu(idi->wIDIgeneralConfiguration) !=
+-							MS_IDI_GENERAL_CONF)
+-				goto exit;
+-
+-			us->MS_Lib.BytesPerSector =
+-				le16_to_cpu(idi->wIDIbytesPerSector);
+-			if (us->MS_Lib.BytesPerSector != MS_BYTES_PER_PAGE)
+-				goto exit;
+-		}
+-	} /* End for .. */
+-
+-	result = 0;
+-
+-exit:
+-	if (result)
+-		MS_LibFreeLogicalMap(us);
+-
+-	kfree(PageBuffer);
+-
+-	result = 0;
+-	return result;
+-}
+-
+-/*
+- * MS_LibAllocLogicalMap()
+- */
+-int MS_LibAllocLogicalMap(struct us_data *us)
+-{
+-	DWORD  i;
+-
+-
+-	us->MS_Lib.Phy2LogMap = kmalloc(us->MS_Lib.NumberOfPhyBlock *
+-						sizeof(WORD), GFP_KERNEL);
+-	us->MS_Lib.Log2PhyMap = kmalloc(us->MS_Lib.NumberOfLogBlock *
+-						sizeof(WORD), GFP_KERNEL);
+-
+-	if ((us->MS_Lib.Phy2LogMap == NULL) ||
+-		(us->MS_Lib.Log2PhyMap == NULL)) {
+-		MS_LibFreeLogicalMap(us);
+-		return (DWORD)-1;
+-	}
+-
+-	for (i = 0; i < us->MS_Lib.NumberOfPhyBlock; i++)
+-		us->MS_Lib.Phy2LogMap[i] = MS_LB_NOT_USED;
+-
+-	for (i = 0; i < us->MS_Lib.NumberOfLogBlock; i++)
+-		us->MS_Lib.Log2PhyMap[i] = MS_LB_NOT_USED;
+-
+-	return 0;
+-}
+-
+-/*
+- * MS_LibSetBootBlockMark()
+- */
+-int MS_LibSetBootBlockMark(struct us_data *us, WORD phyblk)
+-{
+-	return MS_LibSetLogicalBlockMark(us, phyblk, MS_LB_BOOT_BLOCK);
+-}
+-
+-/*
+- * MS_LibSetLogicalBlockMark()
+- */
+-int MS_LibSetLogicalBlockMark(struct us_data *us, WORD phyblk, WORD mark)
+-{
+-	if (phyblk >= us->MS_Lib.NumberOfPhyBlock)
+-		return (DWORD)-1;
+-
+-	us->MS_Lib.Phy2LogMap[phyblk] = mark;
+-
+-	return 0;
+-}
+-
+-/*
+- * MS_LibSetInitialErrorBlock()
+- */
+-int MS_LibSetInitialErrorBlock(struct us_data *us, WORD phyblk)
+-{
+-	return MS_LibSetLogicalBlockMark(us, phyblk, MS_LB_INITIAL_ERROR);
+-}
+-
+-/*
+- * MS_LibScanLogicalBlockNumber()
+- */
+-int MS_LibScanLogicalBlockNumber(struct us_data *us, WORD btBlk1st)
+-{
+-	WORD			PhyBlock, newblk, i;
+-	WORD			LogStart, LogEnde;
+-	MS_LibTypeExtdat	extdat;
+-	BYTE			buf[0x200];
+-	DWORD			count = 0, index = 0;
+-
+-	for (PhyBlock = 0; PhyBlock < us->MS_Lib.NumberOfPhyBlock;) {
+-		MS_LibPhy2LogRange(PhyBlock, &LogStart, &LogEnde);
+-
+-		for (i = 0; i < MS_PHYSICAL_BLOCKS_PER_SEGMENT;
+-			i++, PhyBlock++) {
+-			switch (MS_LibConv2Logical(us, PhyBlock)) {
+-			case MS_STATUS_ERROR:
+-				continue;
+-			default:
+-				break;
+-			}
+-
+-			if (count == PhyBlock) {
+-				MS_LibReadExtraBlock(us, PhyBlock,
+-							0, 0x80, &buf);
+-				count += 0x80;
+-			}
+-			index = (PhyBlock % 0x80) * 4;
+-
+-			extdat.ovrflg = buf[index];
+-			extdat.mngflg = buf[index+1];
+-			extdat.logadr = MemStickLogAddr(buf[index+2],
+-							buf[index+3]);
+-
+-			if ((extdat.ovrflg & MS_REG_OVR_BKST) !=
+-				MS_REG_OVR_BKST_OK) {
+-				MS_LibSetAcquiredErrorBlock(us, PhyBlock);
+-				continue;
+-			}
+-
+-			if ((extdat.mngflg & MS_REG_MNG_ATFLG) ==
+-				MS_REG_MNG_ATFLG_ATTBL) {
+-				MS_LibErasePhyBlock(us, PhyBlock);
+-				continue;
+-			}
+-
+-			if (extdat.logadr != MS_LB_NOT_USED) {
+-				if ((extdat.logadr < LogStart) ||
+-					(LogEnde <= extdat.logadr)) {
+-					MS_LibErasePhyBlock(us, PhyBlock);
+-					continue;
+-				}
+-
+-				newblk = MS_LibConv2Physical(us, extdat.logadr);
+-
+-				if (newblk != MS_LB_NOT_USED) {
+-					if (extdat.logadr == 0) {
+-						MS_LibSetLogicalPair(us,
+-								extdat.logadr,
+-								PhyBlock);
+-						if (MS_LibCheckDisableBlock(us,
+-							btBlk1st)) {
+-							MS_LibSetLogicalPair(us,
+-							extdat.logadr, newblk);
+-							continue;
+-						}
+-					}
+-
+-					MS_LibReadExtra(us, newblk, 0, &extdat);
+-					if ((extdat.ovrflg & MS_REG_OVR_UDST) ==
+-						MS_REG_OVR_UDST_UPDATING) {
+-						MS_LibErasePhyBlock(us,
+-								PhyBlock);
+-						continue;
+-					} else {
+-						MS_LibErasePhyBlock(us, newblk);
+-					}
+-				}
+-
+-				MS_LibSetLogicalPair(us, extdat.logadr,
+-								PhyBlock);
+-			}
+-		}
+-	} /* End for ... */
+-
+-	return MS_STATUS_SUCCESS;
+-}
+-
+-/*
+- * MS_LibAllocWriteBuf()
+- */
+-int MS_LibAllocWriteBuf(struct us_data *us)
+-{
+-	us->MS_Lib.wrtblk = (WORD)-1;
+-
+-	us->MS_Lib.blkpag = kmalloc(us->MS_Lib.PagesPerBlock *
+-					us->MS_Lib.BytesPerSector, GFP_KERNEL);
+-	us->MS_Lib.blkext = kmalloc(us->MS_Lib.PagesPerBlock *
+-					sizeof(MS_LibTypeExtdat), GFP_KERNEL);
+-
+-	if ((us->MS_Lib.blkpag == NULL) || (us->MS_Lib.blkext == NULL)) {
+-		MS_LibFreeWriteBuf(us);
+-		return (DWORD)-1;
+-	}
+-
+-	MS_LibClearWriteBuf(us);
+-
+-	return 0;
+-}
+-
+-/*
+- * MS_LibClearWriteBuf()
+- */
+-void MS_LibClearWriteBuf(struct us_data *us)
+-{
+-	int i;
+-
+-	us->MS_Lib.wrtblk = (WORD)-1;
+-	MS_LibClearPageMap(us);
+-
+-	if (us->MS_Lib.blkpag)
+-		memset(us->MS_Lib.blkpag, 0xff,
+-			us->MS_Lib.PagesPerBlock * us->MS_Lib.BytesPerSector);
+-
+-	if (us->MS_Lib.blkext) {
+-		for (i = 0; i < us->MS_Lib.PagesPerBlock; i++) {
+-			us->MS_Lib.blkext[i].status1 = MS_REG_ST1_DEFAULT;
+-			us->MS_Lib.blkext[i].ovrflg = MS_REG_OVR_DEFAULT;
+-			us->MS_Lib.blkext[i].mngflg = MS_REG_MNG_DEFAULT;
+-			us->MS_Lib.blkext[i].logadr = MS_LB_NOT_USED;
+-		}
+-	}
+-}
+-
+-/*
+- * MS_LibPhy2LogRange()
+- */
+-void MS_LibPhy2LogRange(WORD PhyBlock, WORD *LogStart, WORD *LogEnde)
+-{
+-	PhyBlock /= MS_PHYSICAL_BLOCKS_PER_SEGMENT;
+-
+-	if (PhyBlock) {
+-		*LogStart = MS_LOGICAL_BLOCKS_IN_1ST_SEGMENT +
+-			(PhyBlock - 1) * MS_LOGICAL_BLOCKS_PER_SEGMENT;/*496*/
+-		*LogEnde = *LogStart + MS_LOGICAL_BLOCKS_PER_SEGMENT;/*496*/
+-	} else {
+-		*LogStart = 0;
+-		*LogEnde = MS_LOGICAL_BLOCKS_IN_1ST_SEGMENT;/*494*/
+-	}
+-}
+-
+-/*
+- * MS_LibReadExtraBlock()
+- */
+-int MS_LibReadExtraBlock(struct us_data *us, DWORD PhyBlock,
+-				BYTE PageNum, BYTE blen, void *buf)
+-{
+-	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int	result;
+-
+-	/* printk("MS_LibReadExtraBlock --- PhyBlock = %x,
+-		PageNum = %x, blen = %x\n", PhyBlock, PageNum, blen); */
+-
+-	/* Read Extra Data */
+-	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-	bcb->DataTransferLength = 0x4 * blen;
+-	bcb->Flags			= 0x80;
+-	bcb->CDB[0]			= 0xF1;
+-	bcb->CDB[1]			= 0x03;
+-	bcb->CDB[5]			= (BYTE)(PageNum);
+-	bcb->CDB[4]			= (BYTE)(PhyBlock);
+-	bcb->CDB[3]			= (BYTE)(PhyBlock>>8);
+-	bcb->CDB[2]			= (BYTE)(PhyBlock>>16);
+-	bcb->CDB[6]			= blen;
+-
+-	result = ENE_SendScsiCmd(us, FDIR_READ, buf, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_LibReadExtra()
+- */
+-int MS_LibReadExtra(struct us_data *us, DWORD PhyBlock,
+-		BYTE PageNum, MS_LibTypeExtdat *ExtraDat)
+-{
+-	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int	result;
+-	BYTE	ExtBuf[4];
+-
+-	/* printk("MS_LibReadExtra --- PhyBlock = %x, PageNum = %x\n"
+-						, PhyBlock, PageNum); */
+-	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-	bcb->DataTransferLength = 0x4;
+-	bcb->Flags			= 0x80;
+-	bcb->CDB[0]			= 0xF1;
+-	bcb->CDB[1]			= 0x03;
+-	bcb->CDB[5]			= (BYTE)(PageNum);
+-	bcb->CDB[4]			= (BYTE)(PhyBlock);
+-	bcb->CDB[3]			= (BYTE)(PhyBlock>>8);
+-	bcb->CDB[2]			= (BYTE)(PhyBlock>>16);
+-	bcb->CDB[6]			= 0x01;
+-
+-	result = ENE_SendScsiCmd(us, FDIR_READ, &ExtBuf, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	ExtraDat->reserved = 0;
+-	ExtraDat->intr     = 0x80;  /* Not yet, waiting for fireware support */
+-	ExtraDat->status0  = 0x10;  /* Not yet, waiting for fireware support */
+-	ExtraDat->status1  = 0x00;  /* Not yet, waiting for fireware support */
+-	ExtraDat->ovrflg   = ExtBuf[0];
+-	ExtraDat->mngflg   = ExtBuf[1];
+-	ExtraDat->logadr   = MemStickLogAddr(ExtBuf[2], ExtBuf[3]);
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_LibSetAcquiredErrorBlock()
+- */
+-int MS_LibSetAcquiredErrorBlock(struct us_data *us, WORD phyblk)
+-{
+-	WORD log;
+-
+-	if (phyblk >= us->MS_Lib.NumberOfPhyBlock)
+-		return (DWORD)-1;
+-
+-	log = us->MS_Lib.Phy2LogMap[phyblk];
+-
+-	if (log  < us->MS_Lib.NumberOfLogBlock)
+-		us->MS_Lib.Log2PhyMap[log] = MS_LB_NOT_USED;
+-
+-	if (us->MS_Lib.Phy2LogMap[phyblk] != MS_LB_INITIAL_ERROR)
+-		us->MS_Lib.Phy2LogMap[phyblk] = MS_LB_ACQUIRED_ERROR;
+-
+-	return 0;
+-}
+-
+-/*
+- * MS_LibErasePhyBlock()
+- */
+-int MS_LibErasePhyBlock(struct us_data *us, WORD phyblk)
+-{
+-	WORD  log;
+-
+-	if (phyblk >= us->MS_Lib.NumberOfPhyBlock)
+-		return MS_STATUS_ERROR;
+-
+-	log = us->MS_Lib.Phy2LogMap[phyblk];
+-
+-	if (log < us->MS_Lib.NumberOfLogBlock)
+-		us->MS_Lib.Log2PhyMap[log] = MS_LB_NOT_USED;
+-
+-	us->MS_Lib.Phy2LogMap[phyblk] = MS_LB_NOT_USED;
+-
+-	if (MS_LibIsWritable(us)) {
+-		switch (MS_ReaderEraseBlock(us, phyblk)) {
+-		case MS_STATUS_SUCCESS:
+-			us->MS_Lib.Phy2LogMap[phyblk] = MS_LB_NOT_USED_ERASED;
+-			return MS_STATUS_SUCCESS;
+-		case MS_ERROR_FLASH_ERASE:
+-		case MS_STATUS_INT_ERROR:
+-			MS_LibErrorPhyBlock(us, phyblk);
+-			return MS_ERROR_FLASH_ERASE;
+-		case MS_STATUS_ERROR:
+-		default:
+-			MS_LibCtrlSet(us, MS_LIB_CTRL_RDONLY);
+-			MS_LibSetAcquiredErrorBlock(us, phyblk);
+-			return MS_STATUS_ERROR;
+-		}
+-	}
+-
+-	MS_LibSetAcquiredErrorBlock(us, phyblk);
+-
+-	return MS_STATUS_SUCCESS;
+-}
+-
+-/*
+- * MS_LibErrorPhyBlock()
+- */
+-int MS_LibErrorPhyBlock(struct us_data *us, WORD phyblk)
+-{
+-	if (phyblk >= us->MS_Lib.NumberOfPhyBlock)
+-		return MS_STATUS_ERROR;
+-
+-	MS_LibSetAcquiredErrorBlock(us, phyblk);
+-
+-	if (MS_LibIsWritable(us))
+-		return MS_LibOverwriteExtra(us, phyblk, 0,
+-				(BYTE)(~MS_REG_OVR_BKST & BYTE_MASK));
+-
+-
+-	return MS_STATUS_SUCCESS;
+-}
+-
+-/*
+- * MS_LibOverwriteExtra()
+- */
+-int MS_LibOverwriteExtra(struct us_data *us, DWORD PhyBlockAddr,
+-				BYTE PageNum, BYTE OverwriteFlag)
+-{
+-	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int	result;
+-
+-	/* printk("MS --- MS_LibOverwriteExtra,  \
+-		PhyBlockAddr = %x, PageNum = %x\n", PhyBlockAddr, PageNum); */
+-	result = ENE_LoadBinCode(us, MS_RW_PATTERN);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-	bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-	bcb->DataTransferLength = 0x4;
+-	bcb->Flags			= 0x80;
+-	bcb->CDB[0]			= 0xF2;
+-	bcb->CDB[1]			= 0x05;
+-	bcb->CDB[5]			= (BYTE)(PageNum);
+-	bcb->CDB[4]			= (BYTE)(PhyBlockAddr);
+-	bcb->CDB[3]			= (BYTE)(PhyBlockAddr>>8);
+-	bcb->CDB[2]			= (BYTE)(PhyBlockAddr>>16);
+-	bcb->CDB[6]			= OverwriteFlag;
+-	bcb->CDB[7]			= 0xFF;
+-	bcb->CDB[8]			= 0xFF;
+-	bcb->CDB[9]			= 0xFF;
+-
+-	result = ENE_SendScsiCmd(us, FDIR_READ, NULL, 0);
+-	if (result != USB_STOR_XFER_GOOD)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_LibForceSetLogicalPair()
+- */
+-int MS_LibForceSetLogicalPair(struct us_data *us, WORD logblk, WORD phyblk)
+-{
+-	if (logblk == MS_LB_NOT_USED)
+-		return 0;
+-
+-	if ((logblk >= us->MS_Lib.NumberOfLogBlock) ||
+-		(phyblk >= us->MS_Lib.NumberOfPhyBlock))
+-		return (DWORD)-1;
+-
+-	us->MS_Lib.Phy2LogMap[phyblk] = logblk;
+-	us->MS_Lib.Log2PhyMap[logblk] = phyblk;
+-
+-	return 0;
+-}
+-
+-/*
+- * MS_LibSetLogicalPair()
+- */
+-int MS_LibSetLogicalPair(struct us_data *us, WORD logblk, WORD phyblk)
+-{
+-	if ((logblk >= us->MS_Lib.NumberOfLogBlock) ||
+-		(phyblk >= us->MS_Lib.NumberOfPhyBlock))
+-		return (DWORD)-1;
+-
+-	us->MS_Lib.Phy2LogMap[phyblk] = logblk;
+-	us->MS_Lib.Log2PhyMap[logblk] = phyblk;
+-
+-	return 0;
+-}
+-
+-/*
+- * MS_CountFreeBlock()
+- */
+-int MS_CountFreeBlock(struct us_data *us, WORD PhyBlock)
+-{
+-	DWORD Ende, Count;
+-
+-	Ende = PhyBlock + MS_PHYSICAL_BLOCKS_PER_SEGMENT;
+-	for (Count = 0; PhyBlock < Ende; PhyBlock++) {
+-		switch (us->MS_Lib.Phy2LogMap[PhyBlock]) {
+-		case MS_LB_NOT_USED:
+-		case MS_LB_NOT_USED_ERASED:
+-			Count++;
+-		default:
+-			break;
+-		}
+-	}
+-
+-	return Count;
+-}
+-
+-/*
+- * MS_LibSearchBlockFromPhysical()
+- */
+-int MS_LibSearchBlockFromPhysical(struct us_data *us, WORD phyblk)
+-{
+-	WORD			Newblk;
+-	WORD			blk;
+-	MS_LibTypeExtdat	extdat;
+-
+-	if (phyblk >= us->MS_Lib.NumberOfPhyBlock)
+-		return MS_LB_ERROR;
+-
+-	for (blk = phyblk + 1; blk != phyblk; blk++) {
+-		if ((blk & MS_PHYSICAL_BLOCKS_PER_SEGMENT_MASK) == 0)
+-			blk -= MS_PHYSICAL_BLOCKS_PER_SEGMENT;
+-
+-		Newblk = us->MS_Lib.Phy2LogMap[blk];
+-		if (us->MS_Lib.Phy2LogMap[blk] == MS_LB_NOT_USED_ERASED)
+-			return blk;
+-		else if (us->MS_Lib.Phy2LogMap[blk] == MS_LB_NOT_USED) {
+-			switch (MS_LibReadExtra(us, blk, 0, &extdat)) {
+-			case MS_STATUS_SUCCESS:
+-			case MS_STATUS_SUCCESS_WITH_ECC:
+-				break;
+-			case MS_NOCARD_ERROR:
+-				return MS_NOCARD_ERROR;
+-			case MS_STATUS_INT_ERROR:
+-				return MS_LB_ERROR;
+-			case MS_ERROR_FLASH_READ:
+-			default:
+-				MS_LibSetAcquiredErrorBlock(us, blk);
+-				/* MS_LibErrorPhyBlock(fdoExt, blk); */
+-				continue;
+-			} /* End switch */
+-
+-			if ((extdat.ovrflg & MS_REG_OVR_BKST) !=
+-						MS_REG_OVR_BKST_OK) {
+-				MS_LibSetAcquiredErrorBlock(us, blk);
+-				continue;
+-			}
+-
+-			switch (MS_LibErasePhyBlock(us, blk)) {
+-			case MS_STATUS_SUCCESS:
+-				return blk;
+-			case MS_STATUS_ERROR:
+-				return MS_LB_ERROR;
+-			case MS_ERROR_FLASH_ERASE:
+-			default:
+-				MS_LibErrorPhyBlock(us, blk);
+-				break;
+-			}
+-		}
+-	} /* End for */
+-
+-	return MS_LB_ERROR;
+-}
+-
+-/*
+- * MS_LibSearchBlockFromLogical()
+- */
+-int MS_LibSearchBlockFromLogical(struct us_data *us, WORD logblk)
+-{
+-	WORD phyblk;
+-
+-	phyblk = MS_LibConv2Physical(us, logblk);
+-	if (phyblk >= MS_LB_ERROR) {
+-		if (logblk >= us->MS_Lib.NumberOfLogBlock)
+-			return MS_LB_ERROR;
+-
+-		phyblk = (logblk + MS_NUMBER_OF_BOOT_BLOCK) /
+-					MS_LOGICAL_BLOCKS_PER_SEGMENT;
+-		phyblk *= MS_PHYSICAL_BLOCKS_PER_SEGMENT;
+-		phyblk += MS_PHYSICAL_BLOCKS_PER_SEGMENT - 1;
+-	}
+-
+-	return MS_LibSearchBlockFromPhysical(us, phyblk);
+-}
+diff --git a/drivers/staging/keucr/ms.h b/drivers/staging/keucr/ms.h
+deleted file mode 100644
+index a3da4be..0000000
+--- a/drivers/staging/keucr/ms.h
++++ /dev/null
+@@ -1,401 +0,0 @@
+-#ifndef MS_INCD
+-#define MS_INCD
+-
+-#include <linux/blkdev.h>
+-#include "common.h"
+-
+-/* MemoryStick Register */
+-/* Status Register 0 */
+-#define MS_REG_ST0_MB                           0x80    /* media busy */
+-#define MS_REG_ST0_FB0                          0x40    /* flush busy 0 */
+-#define MS_REG_ST0_BE                           0x20    /* buffer empty */
+-#define MS_REG_ST0_BF                           0x10    /* buffer full */
+-#define MS_REG_ST0_SL                           0x02    /* sleep */
+-#define MS_REG_ST0_WP                           0x01    /* write protected */
+-#define MS_REG_ST0_WP_ON                        MS_REG_ST0_WP
+-#define MS_REG_ST0_WP_OFF                       0x00
+-
+-/* Status Register 1 */
+-#define MS_REG_ST1_MB		0x80    /* media busy */
+-#define MS_REG_ST1_FB1		0x40    /* flush busy 1 */
+-#define MS_REG_ST1_DTER		0x20    /* error on data(corrected) */
+-#define MS_REG_ST1_UCDT		0x10    /* unable to correct data */
+-#define MS_REG_ST1_EXER		0x08    /* error on extra(corrected) */
+-#define MS_REG_ST1_UCEX		0x04    /* unable to correct extra */
+-#define MS_REG_ST1_FGER		0x02    /* error on overwrite flag(corrected) */
+-#define MS_REG_ST1_UCFG		0x01    /* unable to correct overwrite flag */
+-#define MS_REG_ST1_DEFAULT	(MS_REG_ST1_MB   | MS_REG_ST1_FB1  | \
+-				MS_REG_ST1_DTER | MS_REG_ST1_UCDT | \
+-				MS_REG_ST1_EXER | MS_REG_ST1_UCEX | \
+-				MS_REG_ST1_FGER | MS_REG_ST1_UCFG)
+-
+-/* System Parameter */
+-#define MS_REG_SYSPAR_BAMD		0x80	/* block address mode */
+-#define MS_REG_SYSPAR_BAND_LINEAR	MS_REG_SYSPAR_BAMD  /*   linear mode */
+-#define MS_REG_SYSPAR_BAND_CHIP		0x00	/*  chip mode */
+-#define MS_REG_SYSPAR_ATEN		0x40	/* attribute ROM enable */
+-#define MS_REG_SYSPAR_ATEN_ENABLE	MS_REG_SYSPAR_ATEN	/*  enable */
+-#define MS_REG_SYSPAR_ATEN_DISABLE	0x00	/*  disable */
+-#define MS_REG_SYSPAR_RESERVED                  0x2f
+-
+-/* Command Parameter */
+-#define MS_REG_CMDPAR_CP2                       0x80
+-#define MS_REG_CMDPAR_CP1                       0x40
+-#define MS_REG_CMDPAR_CP0                       0x20
+-#define MS_REG_CMDPAR_BLOCK_ACCESS              0
+-#define MS_REG_CMDPAR_PAGE_ACCESS               MS_REG_CMDPAR_CP0
+-#define MS_REG_CMDPAR_EXTRA_DATA                MS_REG_CMDPAR_CP1
+-#define MS_REG_CMDPAR_OVERWRITE                 MS_REG_CMDPAR_CP2
+-#define MS_REG_CMDPAR_RESERVED                  0x1f
+-
+-/* Overwrite Area */
+-#define MS_REG_OVR_BKST		0x80            /* block status */
+-#define MS_REG_OVR_BKST_OK                      MS_REG_OVR_BKST     /* OK */
+-#define MS_REG_OVR_BKST_NG                      0x00            /* NG */
+-#define MS_REG_OVR_PGST0	0x40            /* page status */
+-#define MS_REG_OVR_PGST1                        0x20
+-#define MS_REG_OVR_PGST_MASK	(MS_REG_OVR_PGST0 | MS_REG_OVR_PGST1)
+-#define MS_REG_OVR_PGST_OK	(MS_REG_OVR_PGST0 | MS_REG_OVR_PGST1) /* OK */
+-#define MS_REG_OVR_PGST_NG	MS_REG_OVR_PGST1                      /* NG */
+-#define MS_REG_OVR_PGST_DATA_ERROR              0x00        /* data error */
+-#define MS_REG_OVR_UDST                         0x10        /* update status */
+-#define MS_REG_OVR_UDST_UPDATING                0x00        /* updating */
+-#define MS_REG_OVR_UDST_NO_UPDATE               MS_REG_OVR_UDST
+-#define MS_REG_OVR_RESERVED                     0x08
+-#define MS_REG_OVR_DEFAULT                      (MS_REG_OVR_BKST_OK |      \
+-						MS_REG_OVR_PGST_OK |      \
+-						MS_REG_OVR_UDST_NO_UPDATE |   \
+-						MS_REG_OVR_RESERVED)
+-/* Management Flag */
+-#define MS_REG_MNG_SCMS0	0x20    /* serial copy management system */
+-#define MS_REG_MNG_SCMS1                        0x10
+-#define MS_REG_MNG_SCMS_MASK		(MS_REG_MNG_SCMS0 | MS_REG_MNG_SCMS1)
+-#define MS_REG_MNG_SCMS_COPY_OK		(MS_REG_MNG_SCMS0 | MS_REG_MNG_SCMS1)
+-#define MS_REG_MNG_SCMS_ONE_COPY                MS_REG_MNG_SCMS1
+-#define MS_REG_MNG_SCMS_NO_COPY                 0x00
+-#define MS_REG_MNG_ATFLG	0x08	/* address transfer table flag */
+-#define MS_REG_MNG_ATFLG_OTHER                  MS_REG_MNG_ATFLG    /* other */
+-#define MS_REG_MNG_ATFLG_ATTBL		0x00	/* address transfer table */
+-#define MS_REG_MNG_SYSFLG                       0x04    /* system flag */
+-#define MS_REG_MNG_SYSFLG_USER		MS_REG_MNG_SYSFLG   /* user block */
+-#define MS_REG_MNG_SYSFLG_BOOT                  0x00    /* system block */
+-#define MS_REG_MNG_RESERVED                     0xc3
+-#define MS_REG_MNG_DEFAULT		(MS_REG_MNG_SCMS_COPY_OK |	\
+-					 MS_REG_MNG_ATFLG_OTHER |	\
+-					 MS_REG_MNG_SYSFLG_USER |	\
+-					 MS_REG_MNG_RESERVED)
+-
+-/* Error codes */
+-#define MS_STATUS_SUCCESS                       0x0000
+-#define MS_ERROR_OUT_OF_SPACE                   0x0103
+-#define MS_STATUS_WRITE_PROTECT                 0x0106
+-#define MS_ERROR_READ_DATA                      0x8002
+-#define MS_ERROR_FLASH_READ                     0x8003
+-#define MS_ERROR_FLASH_WRITE                    0x8004
+-#define MS_ERROR_FLASH_ERASE                    0x8005
+-#define MS_ERROR_FLASH_COPY                     0x8006
+-
+-#define MS_STATUS_ERROR                         0xfffe
+-#define MS_FIFO_ERROR                           0xfffd
+-#define MS_UNDEFINED_ERROR                      0xfffc
+-#define MS_KETIMEOUT_ERROR                      0xfffb
+-#define MS_STATUS_INT_ERROR                     0xfffa
+-#define MS_NO_MEMORY_ERROR                      0xfff9
+-#define MS_NOCARD_ERROR                         0xfff8
+-#define MS_LB_NOT_USED                          0xffff
+-#define MS_LB_ERROR                             0xfff0
+-#define MS_LB_BOOT_BLOCK                        0xfff1
+-#define MS_LB_INITIAL_ERROR                     0xfff2
+-#define MS_STATUS_SUCCESS_WITH_ECC              0xfff3
+-#define MS_LB_ACQUIRED_ERROR                    0xfff4
+-#define MS_LB_NOT_USED_ERASED                   0xfff5
+-
+-#define MS_LibConv2Physical(pdx, LogBlock) \
+-	(((LogBlock) >= (pdx)->MS_Lib.NumberOfLogBlock) ? \
+-	MS_STATUS_ERROR : (pdx)->MS_Lib.Log2PhyMap[LogBlock])
+-#define MS_LibConv2Logical(pdx, PhyBlock) \
+-	(((PhyBlock) >= (pdx)->MS_Lib.NumberOfPhyBlock) ? \
+-	MS_STATUS_ERROR : (pdx)->MS_Lib.Phy2LogMap[PhyBlock])
+-	/*dphy->log table */
+-
+-#define MS_LIB_CTRL_RDONLY                      0
+-#define MS_LIB_CTRL_WRPROTECT                   1
+-#define MS_LibCtrlCheck(pdx, Flag)	((pdx)->MS_Lib.flags & (1 << (Flag)))
+-
+-#define MS_LibCtrlSet(pdx, Flag)	((pdx)->MS_Lib.flags |= (1 << (Flag)))
+-#define MS_LibCtrlReset(pdx, Flag)	((pdx)->MS_Lib.flags &= ~(1 << (Flag)))
+-#define MS_LibIsWritable(pdx) \
+-	((MS_LibCtrlCheck((pdx), MS_LIB_CTRL_RDONLY) == 0) && \
+-	(MS_LibCtrlCheck(pdx, MS_LIB_CTRL_WRPROTECT) == 0))
+-
+-#define MS_MAX_PAGES_PER_BLOCK                  32
+-#define MS_LIB_BITS_PER_BYTE                    8
+-
+-#define MS_LibPageMapIdx(n) ((n) / MS_LIB_BITS_PER_BYTE)
+-#define MS_LibPageMapBit(n) (1 << ((n) % MS_LIB_BITS_PER_BYTE))
+-#define MS_LibCheckPageMapBit(pdx, n) \
+-	((pdx)->MS_Lib.pagemap[MS_LibPageMapIdx(n)] & MS_LibPageMapBit(n))
+-#define MS_LibSetPageMapBit(pdx, n) \
+-	((pdx)->MS_Lib.pagemap[MS_LibPageMapIdx(n)] |= MS_LibPageMapBit(n))
+-#define MS_LibResetPageMapBit(pdx, n) \
+-	((pdx)->MS_Lib.pagemap[MS_LibPageMapIdx(n)] &= ~MS_LibPageMapBit(n))
+-#define MS_LibClearPageMap(pdx) \
+-	memset((pdx)->MS_Lib.pagemap, 0, sizeof((pdx)->MS_Lib.pagemap))
+-
+-
+-#define MemStickLogAddr(logadr1, logadr0) \
+-	((((WORD)(logadr1)) << 8) | (logadr0))
+-
+-#define MS_BYTES_PER_PAGE                       512
+-
+-#define MS_MAX_INITIAL_ERROR_BLOCKS             10
+-#define MS_NUMBER_OF_PAGES_FOR_BOOT_BLOCK       3
+-#define MS_NUMBER_OF_PAGES_FOR_LPCTBL           2
+-
+-#define MS_NUMBER_OF_BOOT_BLOCK                 2
+-#define MS_NUMBER_OF_SYSTEM_BLOCK               4
+-#define MS_LOGICAL_BLOCKS_PER_SEGMENT           496
+-#define MS_LOGICAL_BLOCKS_IN_1ST_SEGMENT        494
+-#define MS_PHYSICAL_BLOCKS_PER_SEGMENT          0x200   /* 512 */
+-#define MS_PHYSICAL_BLOCKS_PER_SEGMENT_MASK     0x1ff
+-
+-#define MS_SECTOR_SIZE                          512
+-#define MBR_SIGNATURE                           0xAA55
+-#define PBR_SIGNATURE                           0xAA55
+-
+-#define PARTITION_FAT_12                        1
+-#define PARTITION_FAT_16                        2
+-
+-#define MS_BOOT_BLOCK_ID                        0x0001
+-#define MS_BOOT_BLOCK_FORMAT_VERSION            0x0100
+-#define MS_BOOT_BLOCK_DATA_ENTRIES              2
+-
+-#define MS_SYSINF_MSCLASS_TYPE_1                1
+-#define MS_SYSINF_CARDTYPE_RDONLY               1
+-#define MS_SYSINF_CARDTYPE_RDWR                 2
+-#define MS_SYSINF_CARDTYPE_HYBRID               3
+-#define MS_SYSINF_SECURITY                      0x01
+-#define MS_SYSINF_SECURITY_NO_SUPPORT           MS_SYSINF_SECURITY
+-#define MS_SYSINF_SECURITY_SUPPORT              0
+-#define MS_SYSINF_FORMAT_MAT                    0   /* ? */
+-#define MS_SYSINF_FORMAT_FAT                    1
+-#define MS_SYSINF_USAGE_GENERAL                 0
+-#define MS_SYSINF_PAGE_SIZE                     MS_BYTES_PER_PAGE /* fixed */
+-#define MS_SYSINF_RESERVED1                     1
+-#define MS_SYSINF_RESERVED2                     1
+-
+-#define MS_SYSENT_TYPE_INVALID_BLOCK            0x01
+-#define MS_SYSENT_TYPE_CIS_IDI                  0x0a    /* CIS/IDI */
+-
+-#define SIZE_OF_KIRO                            1024
+-
+-/* BOOT BLOCK */
+-#define MS_NUMBER_OF_SYSTEM_ENTRY               4
+-
+-/*
+- * MemStickRegisters
+- */
+-/* Status registers (16 bytes) */
+-typedef struct {
+-	BYTE Reserved0;		/* 00 */
+-	BYTE INTRegister;	/* 01 */
+-	BYTE StatusRegister0;	/* 02 */
+-	BYTE StatusRegister1;	/* 03 */
+-	BYTE Reserved1[12];	/* 04-0F */
+-} MemStickStatusRegisters;
+-
+-/* Parameter registers (6 bytes) */
+-typedef struct {
+-	BYTE SystemParameter;	/* 10 */
+-	BYTE BlockAddress2;	/* 11 */
+-	BYTE BlockAddress1;	/* 12 */
+-	BYTE BlockAddress0;	/* 13 */
+-	BYTE CMDParameter;	/* 14 */
+-	BYTE PageAddress;	/* 15 */
+-} MemStickParameterRegisters;
+-
+-/* Extra registers (9 bytes) */
+-typedef struct {
+-	BYTE OverwriteFlag;	/* 16 */
+-	BYTE ManagementFlag;	/* 17 */
+-	BYTE LogicalAddress1;	/* 18 */
+-	BYTE LogicalAddress0;	/* 19 */
+-	BYTE ReservedArea[5];	/* 1A-1E */
+-} MemStickExtraDataRegisters;
+-
+-/* All registers in Memory Stick (32 bytes, includes 1 byte padding) */
+-typedef struct {
+-	MemStickStatusRegisters status;
+-	MemStickParameterRegisters param;
+-	MemStickExtraDataRegisters extra;
+-	BYTE padding;
+-} MemStickRegisters, *PMemStickRegisters;
+-
+-/*
+- * MemStickBootBlockPage0
+- */
+-typedef struct {
+-	WORD wBlockID;
+-	WORD wFormatVersion;
+-	BYTE bReserved1[184];
+-	BYTE bNumberOfDataEntry;
+-	BYTE bReserved2[179];
+-} MemStickBootBlockHeader;
+-
+-typedef struct {
+-	DWORD dwStart;
+-	DWORD dwSize;
+-	BYTE bType;
+-	BYTE bReserved[3];
+-} MemStickBootBlockSysEntRec;
+-
+-typedef struct {
+-	MemStickBootBlockSysEntRec entry[MS_NUMBER_OF_SYSTEM_ENTRY];
+-} MemStickBootBlockSysEnt;
+-
+-typedef struct {
+-	BYTE bMsClass;		/* must be 1 */
+-	BYTE bCardType;		/* see below */
+-	WORD wBlockSize;	/* n KB */
+-	WORD wBlockNumber;	/* number of physical block */
+-	WORD wTotalBlockNumber;	/* number of logical block */
+-	WORD wPageSize;		/* must be 0x200 */
+-	BYTE bExtraSize;	/* 0x10 */
+-	BYTE bSecuritySupport;
+-	BYTE bAssemblyDate[8];
+-	BYTE bFactoryArea[4];
+-	BYTE bAssemblyMakerCode;
+-	BYTE bAssemblyMachineCode[3];
+-	WORD wMemoryMakerCode;
+-	WORD wMemoryDeviceCode;
+-	WORD wMemorySize;
+-	BYTE bReserved1;
+-	BYTE bReserved2;
+-	BYTE bVCC;
+-	BYTE bVPP;
+-	WORD wControllerChipNumber;
+-	WORD wControllerFunction;	/* New MS */
+-	BYTE bReserved3[9];		/* New MS */
+-	BYTE bParallelSupport;		/* New MS */
+-	WORD wFormatValue;		/* New MS */
+-	BYTE bFormatType;
+-	BYTE bUsage;
+-	BYTE bDeviceType;
+-	BYTE bReserved4[22];
+-	BYTE bFUValue3;
+-	BYTE bFUValue4;
+-	BYTE bReserved5[15];
+-} MemStickBootBlockSysInf;
+-
+-typedef struct {
+-	MemStickBootBlockHeader header;
+-	MemStickBootBlockSysEnt sysent;
+-	MemStickBootBlockSysInf sysinf;
+-} MemStickBootBlockPage0;
+-
+-/*
+- * MemStickBootBlockCIS_IDI
+- */
+-typedef struct {
+-	BYTE bCistplDEVICE[6];            /* 0 */
+-	BYTE bCistplDEVICE0C[6];          /* 6 */
+-	BYTE bCistplJEDECC[4];            /* 12 */
+-	BYTE bCistplMANFID[6];            /* 16 */
+-	BYTE bCistplVER1[32];             /* 22 */
+-	BYTE bCistplFUNCID[4];            /* 54 */
+-	BYTE bCistplFUNCE0[4];            /* 58 */
+-	BYTE bCistplFUNCE1[5];            /* 62 */
+-	BYTE bCistplCONF[7];              /* 67 */
+-	BYTE bCistplCFTBLENT0[10];        /* 74 */
+-	BYTE bCistplCFTBLENT1[8];         /* 84 */
+-	BYTE bCistplCFTBLENT2[12];        /* 92 */
+-	BYTE bCistplCFTBLENT3[8];         /* 104 */
+-	BYTE bCistplCFTBLENT4[17];        /* 112 */
+-	BYTE bCistplCFTBLENT5[8];         /* 129 */
+-	BYTE bCistplCFTBLENT6[17];        /* 137 */
+-	BYTE bCistplCFTBLENT7[8];         /* 154 */
+-	BYTE bCistplNOLINK[3];            /* 162 */
+-} MemStickBootBlockCIS;
+-
+-typedef struct {
+-#define MS_IDI_GENERAL_CONF         0x848A
+-	WORD wIDIgeneralConfiguration;     /* 0 */
+-	WORD wIDInumberOfCylinder;         /* 1 */
+-	WORD wIDIreserved0;                /* 2 */
+-	WORD wIDInumberOfHead;             /* 3 */
+-	WORD wIDIbytesPerTrack;            /* 4 */
+-	WORD wIDIbytesPerSector;           /* 5 */
+-	WORD wIDIsectorsPerTrack;          /* 6 */
+-	WORD wIDItotalSectors[2];          /* 7-8  high,low */
+-	WORD wIDIreserved1[11];            /* 9-19 */
+-	WORD wIDIbufferType;               /* 20 */
+-	WORD wIDIbufferSize;               /* 21 */
+-	WORD wIDIlongCmdECC;               /* 22 */
+-	WORD wIDIfirmVersion[4];           /* 23-26 */
+-	WORD wIDImodelName[20];            /* 27-46 */
+-	WORD wIDIreserved2;                /* 47 */
+-	WORD wIDIlongWordSupported;        /* 48 */
+-	WORD wIDIdmaSupported;             /* 49 */
+-	WORD wIDIreserved3;                /* 50 */
+-	WORD wIDIpioTiming;                /* 51 */
+-	WORD wIDIdmaTiming;                /* 52 */
+-	WORD wIDItransferParameter;        /* 53 */
+-	WORD wIDIformattedCylinder;        /* 54 */
+-	WORD wIDIformattedHead;            /* 55 */
+-	WORD wIDIformattedSectorsPerTrack; /* 56 */
+-	WORD wIDIformattedTotalSectors[2]; /* 57-58 */
+-	WORD wIDImultiSector;              /* 59 */
+-	WORD wIDIlbaSectors[2];            /* 60-61 */
+-	WORD wIDIsingleWordDMA;            /* 62 */
+-	WORD wIDImultiWordDMA;             /* 63 */
+-	WORD wIDIreserved4[192];           /* 64-255 */
+-} MemStickBootBlockIDI;
+-
+-typedef struct {
+-	union {
+-		MemStickBootBlockCIS cis;
+-		BYTE dmy[256];
+-	} cis;
+-
+-	union {
+-	MemStickBootBlockIDI idi;
+-	BYTE dmy[256];
+-	} idi;
+-
+-} MemStickBootBlockCIS_IDI;
+-
+-/*
+- * MS_LibControl
+- */
+-typedef struct {
+-	BYTE reserved;
+-	BYTE intr;
+-	BYTE status0;
+-	BYTE status1;
+-	BYTE ovrflg;
+-	BYTE mngflg;
+-	WORD logadr;
+-} MS_LibTypeExtdat;
+-
+-typedef struct {
+-	DWORD flags;
+-	DWORD BytesPerSector;
+-	DWORD NumberOfCylinder;
+-	DWORD SectorsPerCylinder;
+-	WORD cardType;			/* R/W, RO, Hybrid */
+-	WORD blockSize;
+-	WORD PagesPerBlock;
+-	WORD NumberOfPhyBlock;
+-	WORD NumberOfLogBlock;
+-	WORD NumberOfSegment;
+-	WORD *Phy2LogMap;		/* phy2log table */
+-	WORD *Log2PhyMap;		/* log2phy table */
+-	WORD wrtblk;
+-	BYTE pagemap[(MS_MAX_PAGES_PER_BLOCK + (MS_LIB_BITS_PER_BYTE-1)) /
+-		     MS_LIB_BITS_PER_BYTE];
+-	BYTE *blkpag;
+-	MS_LibTypeExtdat *blkext;
+-	BYTE copybuf[512];
+-} MS_LibControl;
+-
+-#endif
+diff --git a/drivers/staging/keucr/msscsi.c b/drivers/staging/keucr/msscsi.c
+deleted file mode 100644
+index cb7190e..0000000
+--- a/drivers/staging/keucr/msscsi.c
++++ /dev/null
+@@ -1,344 +0,0 @@
+-#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+-
+-#include <linux/sched.h>
+-#include <linux/errno.h>
+-#include <linux/slab.h>
+-
+-#include <scsi/scsi.h>
+-#include <scsi/scsi_eh.h>
+-#include <scsi/scsi_device.h>
+-
+-#include "usb.h"
+-#include "scsiglue.h"
+-#include "transport.h"
+-
+-/*
+- * MS_SCSI_Test_Unit_Ready()
+- */
+-int MS_SCSI_Test_Unit_Ready(struct us_data *us, struct scsi_cmnd *srb)
+-{
+-	/* pr_info("MS_SCSI_Test_Unit_Ready\n"); */
+-	if (us->MS_Status.Insert && us->MS_Status.Ready)
+-		return USB_STOR_TRANSPORT_GOOD;
+-	else {
+-		ENE_MSInit(us);
+-		return USB_STOR_TRANSPORT_GOOD;
+-	}
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_SCSI_Inquiry()
+- */
+-int MS_SCSI_Inquiry(struct us_data *us, struct scsi_cmnd *srb)
+-{
+-	/* pr_info("MS_SCSI_Inquiry\n"); */
+-	BYTE data_ptr[36] = {0x00, 0x80, 0x02, 0x00, 0x1F, 0x00,
+-				0x00, 0x00, 0x55, 0x53, 0x42, 0x32,
+-				0x2E, 0x30, 0x20, 0x20, 0x43, 0x61,
+-				0x72, 0x64, 0x52, 0x65, 0x61, 0x64,
+-				0x65, 0x72, 0x20, 0x20, 0x20, 0x20,
+-				0x20, 0x20, 0x30, 0x31, 0x30, 0x30};
+-
+-	usb_stor_set_xfer_buf(us, data_ptr, 36, srb, TO_XFER_BUF);
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_SCSI_Mode_Sense()
+- */
+-int MS_SCSI_Mode_Sense(struct us_data *us, struct scsi_cmnd *srb)
+-{
+-	BYTE	mediaNoWP[12] = {0x0b, 0x00, 0x00, 0x08, 0x00, 0x00,
+-					0x71, 0xc0, 0x00, 0x00, 0x02, 0x00};
+-	BYTE	mediaWP[12]   = {0x0b, 0x00, 0x80, 0x08, 0x00, 0x00,
+-					0x71, 0xc0, 0x00, 0x00, 0x02, 0x00};
+-
+-	if (us->MS_Status.WtP)
+-		usb_stor_set_xfer_buf(us, mediaWP, 12, srb, TO_XFER_BUF);
 -	else
--		result = sd_scsi_irp(us, srb);
-+	} else {
-+		if (info->SD_Status.Ready)
-+			result = sd_scsi_irp(us, srb);
+-		usb_stor_set_xfer_buf(us, mediaNoWP, 12, srb, TO_XFER_BUF);
+-
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_SCSI_Read_Capacity()
+- */
+-int MS_SCSI_Read_Capacity(struct us_data *us, struct scsi_cmnd *srb)
+-{
+-	unsigned int offset = 0;
+-	struct scatterlist *sg = NULL;
+-	DWORD   bl_num;
+-	WORD    bl_len;
+-	BYTE    buf[8];
+-
+-	pr_info("MS_SCSI_Read_Capacity\n");
+-
+-	bl_len = 0x200;
+-	if (us->MS_Status.IsMSPro)
+-		bl_num = us->MSP_TotalBlock - 1;
+-	else
+-		bl_num = us->MS_Lib.NumberOfLogBlock *
+-				us->MS_Lib.blockSize * 2 - 1;
+-
+-	us->bl_num = bl_num;
+-	pr_info("bl_len = %x\n", bl_len);
+-	pr_info("bl_num = %x\n", bl_num);
+-
+-	/* srb->request_bufflen = 8; */
+-	buf[0] = (bl_num >> 24) & 0xff;
+-	buf[1] = (bl_num >> 16) & 0xff;
+-	buf[2] = (bl_num >> 8) & 0xff;
+-	buf[3] = (bl_num >> 0) & 0xff;
+-	buf[4] = (bl_len >> 24) & 0xff;
+-	buf[5] = (bl_len >> 16) & 0xff;
+-	buf[6] = (bl_len >> 8) & 0xff;
+-	buf[7] = (bl_len >> 0) & 0xff;
+-
+-	usb_stor_access_xfer_buf(us, buf, 8, srb, &sg, &offset, TO_XFER_BUF);
+-	/* usb_stor_set_xfer_buf(us, buf, srb->request_bufflen,
+-						srb, TO_XFER_BUF); */
+-
+-	return USB_STOR_TRANSPORT_GOOD;
+-}
+-
+-/*
+- * MS_SCSI_Read()
+- */
+-int MS_SCSI_Read(struct us_data *us, struct scsi_cmnd *srb)
+-{
+-	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int result = 0;
+-	PBYTE	Cdb = srb->cmnd;
+-	DWORD bn  =  ((Cdb[2] << 24) & 0xff000000) |
+-			((Cdb[3] << 16) & 0x00ff0000) |
+-			((Cdb[4] << 8) & 0x0000ff00) |
+-			((Cdb[5] << 0) & 0x000000ff);
+-	WORD  blen = ((Cdb[7] << 8) & 0xff00) | ((Cdb[8] << 0) & 0x00ff);
+-	DWORD	blenByte = blen * 0x200;
+-
+-	/* pr_info("SCSIOP_READ --- bn = %X, blen = %X, srb->use_sg = %X\n",
+-						bn, blen, srb->use_sg); */
+-
+-	if (bn > us->bl_num)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	if (us->MS_Status.IsMSPro) {
+-		result = ENE_LoadBinCode(us, MSP_RW_PATTERN);
+-		if (result != USB_STOR_XFER_GOOD) {
+-			pr_info("Load MSP RW pattern Fail !!\n");
+-			return USB_STOR_TRANSPORT_ERROR;
+-		}
+-
+-		/*  set up the command wrapper */
+-		memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-		bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-		bcb->DataTransferLength = blenByte;
+-		bcb->Flags  = 0x80;
+-		bcb->CDB[0] = 0xF1;
+-		bcb->CDB[1] = 0x02;
+-		bcb->CDB[5] = (BYTE)(bn);
+-		bcb->CDB[4] = (BYTE)(bn>>8);
+-		bcb->CDB[3] = (BYTE)(bn>>16);
+-		bcb->CDB[2] = (BYTE)(bn>>24);
+-
+-		result = ENE_SendScsiCmd(us, FDIR_READ, scsi_sglist(srb), 1);
+-	} else {
+-		void	*buf;
+-		int	offset = 0;
+-		WORD	phyblk, logblk;
+-		BYTE	PageNum;
+-		WORD	len;
+-		DWORD	blkno;
+-
+-		buf = kmalloc(blenByte, GFP_KERNEL);
+-		if (buf == NULL)
+-			return USB_STOR_TRANSPORT_ERROR;
+-
+-		result = ENE_LoadBinCode(us, MS_RW_PATTERN);
+-		if (result != USB_STOR_XFER_GOOD) {
+-			pr_info("Load MS RW pattern Fail !!\n");
+-			result = USB_STOR_TRANSPORT_ERROR;
+-			goto exit;
+-		}
+-
+-		logblk  = (WORD)(bn / us->MS_Lib.PagesPerBlock);
+-		PageNum = (BYTE)(bn % us->MS_Lib.PagesPerBlock);
+-
+-		while (1) {
+-			if (blen > (us->MS_Lib.PagesPerBlock-PageNum))
+-				len = us->MS_Lib.PagesPerBlock-PageNum;
+-			else
+-				len = blen;
+-
+-			phyblk = MS_LibConv2Physical(us, logblk);
+-			blkno  = phyblk * 0x20 + PageNum;
+-
+-			/* set up the command wrapper */
+-			memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-			bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-			bcb->DataTransferLength = 0x200 * len;
+-			bcb->Flags  = 0x80;
+-			bcb->CDB[0] = 0xF1;
+-			bcb->CDB[1] = 0x02;
+-			bcb->CDB[5] = (BYTE)(blkno);
+-			bcb->CDB[4] = (BYTE)(blkno>>8);
+-			bcb->CDB[3] = (BYTE)(blkno>>16);
+-			bcb->CDB[2] = (BYTE)(blkno>>24);
+-
+-			result = ENE_SendScsiCmd(us, FDIR_READ, buf+offset, 0);
+-			if (result != USB_STOR_XFER_GOOD) {
+-				pr_info("MS_SCSI_Read --- result = %x\n",
+-								result);
+-				result =  USB_STOR_TRANSPORT_ERROR;
+-				goto exit;
+-			}
+-
+-			blen -= len;
+-			if (blen <= 0)
+-				break;
+-			logblk++;
+-			PageNum = 0;
+-			offset += MS_BYTES_PER_PAGE*len;
+-		}
+-		usb_stor_set_xfer_buf(us, buf, blenByte, srb, TO_XFER_BUF);
+-exit:
+-		kfree(buf);
+-	}
+-	return result;
+-}
+-
+-/*
+- * MS_SCSI_Write()
+- */
+-int MS_SCSI_Write(struct us_data *us, struct scsi_cmnd *srb)
+-{
+-	struct bulk_cb_wrap *bcb = (struct bulk_cb_wrap *) us->iobuf;
+-	int result = 0;
+-	PBYTE	Cdb = srb->cmnd;
+-	DWORD bn  = ((Cdb[2] << 24) & 0xff000000) |
+-			((Cdb[3] << 16) & 0x00ff0000) |
+-			((Cdb[4] << 8) & 0x0000ff00) |
+-			((Cdb[5] << 0) & 0x000000ff);
+-	WORD  blen = ((Cdb[7] << 8) & 0xff00)     | ((Cdb[8] << 0) & 0x00ff);
+-	DWORD	blenByte = blen * 0x200;
+-
+-	if (bn > us->bl_num)
+-		return USB_STOR_TRANSPORT_ERROR;
+-
+-	if (us->MS_Status.IsMSPro) {
+-		result = ENE_LoadBinCode(us, MSP_RW_PATTERN);
+-		if (result != USB_STOR_XFER_GOOD) {
+-			pr_info("Load MSP RW pattern Fail !!\n");
+-			return USB_STOR_TRANSPORT_ERROR;
+-		}
+-
+-		/* set up the command wrapper */
+-		memset(bcb, 0, sizeof(struct bulk_cb_wrap));
+-		bcb->Signature = cpu_to_le32(US_BULK_CB_SIGN);
+-		bcb->DataTransferLength = blenByte;
+-		bcb->Flags  = 0x00;
+-		bcb->CDB[0] = 0xF0;
+-		bcb->CDB[1] = 0x04;
+-		bcb->CDB[5] = (BYTE)(bn);
+-		bcb->CDB[4] = (BYTE)(bn>>8);
+-		bcb->CDB[3] = (BYTE)(bn>>16);
+-		bcb->CDB[2] = (BYTE)(bn>>24);
+-
+-		result = ENE_SendScsiCmd(us, FDIR_WRITE, scsi_sglist(srb), 1);
+-	} else {
+-		void	*buf;
+-		int	offset = 0;
+-		WORD	PhyBlockAddr;
+-		BYTE	PageNum;
+-		DWORD	result;
+-		WORD	len, oldphy, newphy;
+-
+-		buf = kmalloc(blenByte, GFP_KERNEL);
+-		if (buf == NULL)
+-			return USB_STOR_TRANSPORT_ERROR;
+-		usb_stor_set_xfer_buf(us, buf, blenByte, srb, FROM_XFER_BUF);
+-
+-		result = ENE_LoadBinCode(us, MS_RW_PATTERN);
+-		if (result != USB_STOR_XFER_GOOD) {
+-			pr_info("Load MS RW pattern Fail !!\n");
+-			result = USB_STOR_TRANSPORT_ERROR;
+-			goto exit;
+-		}
+-
+-		PhyBlockAddr = (WORD)(bn / us->MS_Lib.PagesPerBlock);
+-		PageNum      = (BYTE)(bn % us->MS_Lib.PagesPerBlock);
+-
+-		while (1) {
+-			if (blen > (us->MS_Lib.PagesPerBlock-PageNum))
+-				len = us->MS_Lib.PagesPerBlock-PageNum;
+-			else
+-				len = blen;
+-
+-			oldphy = MS_LibConv2Physical(us, PhyBlockAddr);
+-			newphy = MS_LibSearchBlockFromLogical(us, PhyBlockAddr);
+-
+-			result = MS_ReaderCopyBlock(us, oldphy, newphy,
+-							PhyBlockAddr, PageNum,
+-							buf+offset, len);
+-			if (result != USB_STOR_XFER_GOOD) {
+-				pr_info("MS_SCSI_Write --- result = %x\n",
+-								result);
+-				result =  USB_STOR_TRANSPORT_ERROR;
+-				goto exit;
+-			}
+-
+-			us->MS_Lib.Phy2LogMap[oldphy] = MS_LB_NOT_USED_ERASED;
+-			MS_LibForceSetLogicalPair(us, PhyBlockAddr, newphy);
+-
+-			blen -= len;
+-			if (blen <= 0)
+-				break;
+-			PhyBlockAddr++;
+-			PageNum = 0;
+-			offset += MS_BYTES_PER_PAGE*len;
+-		}
+-exit:
+-		kfree(buf);
+-	}
+-	return result;
+-}
+-
+-/*
+- * MS_SCSIIrp()
+- */
+-int MS_SCSIIrp(struct us_data *us, struct scsi_cmnd *srb)
+-{
+-	int    result;
+-
+-	us->SrbStatus = SS_SUCCESS;
+-	switch (srb->cmnd[0]) {
+-	case TEST_UNIT_READY:
+-		result = MS_SCSI_Test_Unit_Ready(us, srb);
+-		break; /* 0x00 */
+-	case INQUIRY:
+-		result = MS_SCSI_Inquiry(us, srb);
+-		break; /* 0x12 */
+-	case MODE_SENSE:
+-		result = MS_SCSI_Mode_Sense(us, srb);
+-		break; /* 0x1A */
+-	case READ_CAPACITY:
+-		result = MS_SCSI_Read_Capacity(us, srb);
+-		break; /* 0x25 */
+-	case READ_10:
+-		result = MS_SCSI_Read(us, srb);
+-		break; /* 0x28 */
+-	case WRITE_10:
+-		result = MS_SCSI_Write(us, srb);
+-		break;	/* 0x2A */
+-	default:
+-		us->SrbStatus = SS_ILLEGAL_REQUEST;
+-		result = USB_STOR_TRANSPORT_FAILED;
+-		break;
+-	}
+-	return result;
+-}
+-
+diff --git a/drivers/staging/keucr/transport.c b/drivers/staging/keucr/transport.c
+index 0274cb0..1a8837d 100644
+--- a/drivers/staging/keucr/transport.c
++++ b/drivers/staging/keucr/transport.c
+@@ -432,7 +432,7 @@ void ENE_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
+ 	usb_stor_print_cmd(srb);
+ 	/* send the command to the transport layer */
+ 	scsi_set_resid(srb, 0);
+-	if (!(us->MS_Status.Ready || us->SM_Status.Ready))
++	if (!(us->SM_Status.Ready))
+ 		result = ENE_InitMedia(us);
  
-+		if (info->MS_Status.Ready)
-+			result = ms_scsi_irp(us, srb);
-+	}
+ 	if (us->Power_IsResum == true) {
+@@ -440,8 +440,6 @@ void ENE_stor_invoke_transport(struct scsi_cmnd *srb, struct us_data *us)
+ 		us->Power_IsResum = false;
+ 	}
+ 
+-	if (us->MS_Status.Ready)
+-		result = MS_SCSIIrp(us, srb);
+ 	if (us->SM_Status.Ready)
+ 		result = SM_SCSIIrp(us, srb);
+ 
+diff --git a/drivers/staging/keucr/transport.h b/drivers/staging/keucr/transport.h
+index 7529615..4ae57d0 100644
+--- a/drivers/staging/keucr/transport.h
++++ b/drivers/staging/keucr/transport.h
+@@ -95,7 +95,6 @@ extern void usb_stor_set_xfer_buf(struct us_data*, unsigned char *buffer,
+  */
+ extern void ENE_stor_invoke_transport(struct scsi_cmnd *, struct us_data *);
+ extern int ENE_InitMedia(struct us_data *);
+-extern int ENE_MSInit(struct us_data *);
+ extern int ENE_SMInit(struct us_data *);
+ extern int ENE_SendScsiCmd(struct us_data*, BYTE, void*, int);
+ extern int ENE_LoadBinCode(struct us_data*, BYTE);
+@@ -107,51 +106,6 @@ extern void BuildSenseBuffer(struct scsi_cmnd *, int);
+ /*
+  * ENE scsi function
+  */
+-extern int MS_SCSIIrp(struct us_data *us, struct scsi_cmnd *srb);
+ extern int SM_SCSIIrp(struct us_data *us, struct scsi_cmnd *srb);
+ 
+-/*
+- * ENE MS function
+- */
+-extern int	MS_CardInit(struct us_data *us);
+-extern void	MS_LibFreeAllocatedArea(struct us_data *us);
+-extern void	MS_LibFreeWriteBuf(struct us_data *us);
+-extern int	MS_LibFreeLogicalMap(struct us_data *us);
+-extern int	MS_LibForceSetLogicalPair(struct us_data *us, WORD logblk,
+-								WORD phyblk);
+-extern int	MS_ReaderReadPage(struct us_data *us, DWORD PhyBlockAddr,
+-					BYTE PageNum, DWORD *PageBuf,
+-					MS_LibTypeExtdat *ExtraDat);
+-extern int	MS_ReaderCopyBlock(struct us_data *us, WORD oldphy,
+-					WORD newphy, WORD PhyBlockAddr,
+-					BYTE PageNum, PBYTE buf, WORD len);
+-extern int	MS_ReaderEraseBlock(struct us_data *us, DWORD PhyBlockAddr);
+-extern int	MS_LibProcessBootBlock(struct us_data *us, WORD PhyBlock,
+-							BYTE *PageData);
+-extern int	MS_LibAllocLogicalMap(struct us_data *us);
+-extern int	MS_LibSetBootBlockMark(struct us_data *us, WORD phyblk);
+-extern int	MS_LibSetLogicalBlockMark(struct us_data *us, WORD phyblk,
+-								WORD mark);
+-extern int	MS_LibSetInitialErrorBlock(struct us_data *us, WORD phyblk);
+-extern int	MS_LibScanLogicalBlockNumber(struct us_data *us, WORD phyblk);
+-extern int	MS_LibAllocWriteBuf(struct us_data *us);
+-void		MS_LibClearWriteBuf(struct us_data *us);
+-void		MS_LibPhy2LogRange(WORD PhyBlock, WORD *LogStart,
+-							WORD *LogEnde);
+-extern int	MS_LibReadExtra(struct us_data *us, DWORD PhyBlock,
+-				BYTE PageNum, MS_LibTypeExtdat *ExtraDat);
+-extern int	MS_LibReadExtraBlock(struct us_data *us, DWORD PhyBlock,
+-					BYTE PageNum, BYTE blen, void *buf);
+-extern int	MS_LibSetAcquiredErrorBlock(struct us_data *us, WORD phyblk);
+-extern int	MS_LibErasePhyBlock(struct us_data *us, WORD phyblk);
+-extern int	MS_LibErrorPhyBlock(struct us_data *us, WORD phyblk);
+-extern int	MS_LibOverwriteExtra(struct us_data *us, DWORD PhyBlockAddr,
+-					BYTE PageNum, BYTE OverwriteFlag);
+-extern int	MS_LibSetLogicalPair(struct us_data *us,
+-					WORD logblk, WORD phyblk);
+-extern int	MS_LibCheckDisableBlock(struct us_data *us, WORD PhyBlock);
+-extern int	MS_CountFreeBlock(struct us_data *us, WORD PhyBlock);
+-extern int	MS_LibSearchBlockFromLogical(struct us_data *us, WORD logblk);
+-extern int	MS_LibSearchBlockFromPhysical(struct us_data *us, WORD phyblk);
+-
+ #endif
+diff --git a/drivers/staging/keucr/usb.c b/drivers/staging/keucr/usb.c
+index 65cf2e3..66aad3a 100644
+--- a/drivers/staging/keucr/usb.c
++++ b/drivers/staging/keucr/usb.c
+@@ -75,7 +75,6 @@ static int eucr_resume(struct usb_interface *iface)
+          us->Power_IsResum = true;
+ 	//
+ 	//us->SD_Status.Ready = 0; //??
+-    	us->MS_Status = *(PMS_STATUS)&tmp;
+     	us->SM_Status = *(PSM_STATUS)&tmp;
+     	
+ 	return 0;
+@@ -98,7 +97,6 @@ static int eucr_reset_resume(struct usb_interface *iface)
+  	us->Power_IsResum = true;
+ 	//
+ 	//us->SD_Status.Ready = 0; //??
+-    	us->MS_Status = *(PMS_STATUS)&tmp;
+     	us->SM_Status = *(PSM_STATUS)&tmp;
  	return 0;
  }
+diff --git a/drivers/staging/keucr/usb.h b/drivers/staging/keucr/usb.h
+index bbf578a..a5f7a16 100644
+--- a/drivers/staging/keucr/usb.h
++++ b/drivers/staging/keucr/usb.h
+@@ -10,7 +10,6 @@
+ #include <linux/mutex.h>
+ #include <scsi/scsi_host.h>
+ #include "common.h"
+-#include "ms.h"
  
-@@ -714,10 +2337,8 @@ static int ene_ub6250_probe(struct usb_interface *intf,
- 	}
+ struct us_data;
+ struct scsi_cmnd;
+@@ -201,7 +200,7 @@ struct us_data {
+ 	//----- MS Control Data ----------------
+ 	BOOLEAN             MS_SWWP;
+ 	DWORD               MSP_TotalBlock;
+-	MS_LibControl       MS_Lib;
++	/* MS_LibControl       MS_Lib; */
+ 	BOOLEAN             MS_IsRWPage;
+ 	WORD                MS_Model;
  
- 	if (!(misc_reg03 & 0x01)) {
--		result = -ENODEV;
--		printk(KERN_NOTICE "ums_eneub6250: The driver only supports SD card. "
--		       "To use SM/MS card, please build driver/staging/keucr\n");
--		usb_stor_disconnect(intf);
-+		pr_info("ums_eneub6250: The driver only supports SD/MS card. "
-+			"To use SM card, please build driver/staging/keucr\n");
- 	}
- 
- 	return result;
 -- 
 1.7.1
 
