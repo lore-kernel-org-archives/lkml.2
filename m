@@ -1,48 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753950Ab1GFRgY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 13:36:24 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56764 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752031Ab1GFRgX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 13:36:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,488,1304319600"; 
-   d="scan'208";a="23370323"
-From: Andi Kleen <andi@firstfloor.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Jan Beulich <JBeulich@novell.com>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 3/6] x86,64: Simplify save_regs()
-References: <1309624184-9790-1-git-send-email-fweisbec@gmail.com>
-	<1309624184-9790-4-git-send-email-fweisbec@gmail.com>
-	<4E1185F3020000780004BF21@nat28.tlf.novell.com>
-	<20110704125742.GB1915@somewhere.redhat.com>
-Date: Wed, 06 Jul 2011 10:34:42 -0700
-In-Reply-To: <20110704125742.GB1915@somewhere.redhat.com> (Frederic
-	Weisbecker's message of "Mon, 4 Jul 2011 14:57:45 +0200")
-Message-ID: <m2sjqj71ot.fsf@firstfloor.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1754518Ab1GFRgi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 13:36:38 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34005 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab1GFRgh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 13:36:37 -0400
+Date: Wed, 6 Jul 2011 21:36:31 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>,
+        kernel-hardening@lists.openwall.com
+Subject: Re: RLIMIT_NPROC check in set_user()
+Message-ID: <20110706173631.GA5431@albatros>
+References: <20110612130953.GA3709@albatros>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110612130953.GA3709@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Frederic Weisbecker <fweisbec@gmail.com> writes:
->
-> I really did not think about code duplication, considering
-> it's better to optimize the irq entry path.
->
-> What do you guys think? We can still revert the whole patchset.
+On Sun, Jun 12, 2011 at 17:09 +0400, Vasiliy Kulikov wrote:
+> I'd be happy to hear opinions about improving the fixes above or
+> alternative fixes.
 
-FWIW I think it should be a macro, like it was in the original code.
-
-Optimizing entry*.S for code size doesn't make a lot of sense.
-
--Andi
+No comments?  Even "Sigh, what a nasty problem.  But we cannot really
+fix it without significantly breaking the stuff.  Go and drink something." ?
 
 -- 
-ak@linux.intel.com -- Speaking for myself only
+Vasiliy
