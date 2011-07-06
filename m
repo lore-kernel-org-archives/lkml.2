@@ -1,79 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752775Ab1GFG6o (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 02:58:44 -0400
-Received: from relay.parallels.com ([195.214.232.42]:36383 "EHLO
-	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751345Ab1GFG6n (ORCPT
+	id S1752909Ab1GFHBJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 03:01:09 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:36538 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752585Ab1GFHBH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 02:58:43 -0400
-Message-ID: <4E1407A1.5080809@parallels.com>
-Date: Wed, 6 Jul 2011 10:58:41 +0400
-From: Konstantin Khlebnikov <khlebnikov@parallels.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.18) Gecko/20110416 SeaMonkey/2.0.13
+	Wed, 6 Jul 2011 03:01:07 -0400
+Date: Wed, 6 Jul 2011 11:01:01 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Don Zickus <dzickus@redhat.com>,
+        Stephane Eranian <eranian@google.com>, Lin Ming <ming.m.lin@intel.com>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -tip, final] perf, x86: Add hw_watchdog_set_attr() in a
+ sake of nmi-watchdog on P4
+Message-ID: <20110706070101.GG4060@sun>
+References: <20110705113620.GS17941@sun>
+ <20110705114437.GC15654@elte.hu>
+ <20110705114944.GT17941@sun>
+ <20110705121421.GU17941@sun>
+ <20110705131005.GA5843@elte.hu>
+ <1309871841.3282.148.camel@twins>
+ <20110705133105.GB5843@elte.hu>
+ <1309876851.3282.235.camel@twins>
+ <20110705145656.GA18116@elte.hu>
+ <20110705152515.GE4060@sun>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFC 1/2] cfq: request-deadline policy
-References: <20110704130838.27757.87486.stgit@localhost6> <20110705150420.GD24348@redhat.com>
-In-Reply-To: <20110705150420.GD24348@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110705152515.GE4060@sun>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Mon, Jul 04, 2011 at 05:08:38PM +0400, Konstantin Khlebnikov wrote:
->> CFQ is designed for sharing disk bandwidth proportionally between queues and groups
->> and for reordering requests to reduce disks seek time. Currently it cannot
->> gurantee or estimate latency for individual requests, even if latencies are low
->> for almost all requests, some of them can stuck inside scheduler for a long time.
->> The fair policy is good as long as someone luckless begins to die due to a timeout.
->>
->> This patch implements fifo requests dispatching with deadline policy: now cfq
->> obliged to dispatch request if it stuck in the queue for more than deadline.
->>
->> This way now cfq can try to ensure the expected latency of requests execution.
->> It is like a safety valve, it should not work all time, but it should keep latency
->> in sane range when the scheduler is unable to effectively handle flow of requests,
->> especially in cases when the "noop" or "deadline" shows better performance.
->>
->> deadline can be tuned via /sys/block/<device>/queue/iosched/deadline_{sync,async}
->> it by default 2000ms for sync and 4000ms for async requests, use 0 to disable it.
->
-> What's the workload where you are running into issues with existing
-> policy?
+On Tue, Jul 05, 2011 at 07:25:15PM +0400, Cyrill Gorcunov wrote:
+...
+> 
+> i don't think it changes much, Ingo, if I change it to bus cycles I still
+> will have to setup nmi-watchdog event separately (but simply with bus
+> event).
+> 
+> so an only option is the aliases, i'll try to deal with it but no milestones
+> 
+> 	Cyrill
 
-This is huge internal test workload,
-there >100 containers with mail/http/ftp and something more.
+Seems I recall one of the problem with aliasing. Look, for example one
+cpu-cycles (as native non-halted ticks) is served as nmi-watchdog, then
+say perf top is started and it uses non-sleeping ticks (via execution unit
+events) for counting cycles. Note the end user doesn't know about it since
+this all is transparent. But what if some other user needs execution unit
+events via RAW interface and because this event is already borrowed as alias
+it never be granted, and what is worse is that a user has no idea why. Is it
+acceptable tradeoff?
 
->
-> We have low_latency=1 by default and which tries to schedule every
-> queue once in 300ms atleast. And with-in queue we already have the
-> notion of looking at fifo and dispatch the expired request first.
-
-Without this patch some requests stuck in the scheduler for more than 30 seconds,
-and it looks like it is no limit.
-
-With this patch max-wait-time (from the second patch) shows 7 seconds for this workload,
-so of course queue is over-congested, but it continues to work predictably.
-
->
-> So to me sync queue scheduling shold be pretty good. Async queues
-> can get starved though. With-in sync queue, if some requests have
-> expired, it is probably because of the fact that disk is slow and
-> we are throwing too much IO at it. So if we start always dispatching
-> expired requests first, then the notion of fairness is out of the
-> window.
->
-> Why not use deadline scheduler for your case?
-
-Because the scheduler must be universal, load can be arbitrary and constantly changing,
-we also can not modify each machine separately.
-
->
-> Thanks
-> Vivek
-
+	Cyrill
