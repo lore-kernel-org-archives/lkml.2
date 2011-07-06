@@ -1,71 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754295Ab1GFXpg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 19:45:36 -0400
-Received: from sncsmrelay2.nai.com ([67.97.80.206]:44329 "EHLO
-	sncsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753801Ab1GFXpd (ORCPT
+	id S1754015Ab1GFXpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 19:45:35 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:44102 "EHLO mx2.netapp.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753792Ab1GFXpd convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 6 Jul 2011 19:45:33 -0400
-Message-ID: <4E14F373.1020307@snapgear.com>
-Date: Thu, 7 Jul 2011 09:44:51 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Jonas Bonn <jonas@southpole.se>, Rusty Russell <rusty@rustcorp.com.au>,
-        <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
-        Greg Ungerer <gerg@uclinux.org>,
-        Geert Uytterhoeven <geert@linux-m68k.org>
-Subject: Re: linux-next: manual merge of the rr tree with the  tree
-References: <20110705135932.de7f0526.sfr@canb.auug.org.au> <1309967847.3393.44.camel@jerome>
-In-Reply-To: <1309967847.3393.44.camel@jerome>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+X-IronPort-AV: E=Sophos;i="4.65,489,1304319600"; 
+   d="scan'208";a="560862970"
+Subject: Re: [RFC] sunrpc:  Fix race between work-queue and
+ rpc_killall_tasks.
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: greearb@candelatech.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Wed, 06 Jul 2011 19:45:32 -0400
+In-Reply-To: <1309992581-25199-1-git-send-email-greearb@candelatech.com>
+References: <1309992581-25199-1-git-send-email-greearb@candelatech.com>
+Organization: NetApp Inc
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 3.0.2 (3.0.2-3.fc15) 
+Message-ID: <1309995932.5447.6.camel@lade.trondhjem.org>
+Mime-Version: 1.0
+X-OriginalArrivalTime: 06 Jul 2011 23:45:33.0402 (UTC) FILETIME=[CBEBA3A0:01CC3C36]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/11 01:57, Jonas Bonn wrote:
->
-> On Tue, 2011-07-05 at 13:59 +1000, Stephen Rothwell wrote:
->> Hi Rusty,
->>
->> Today's linux-next merge of the rr tree got a conflict in
->> arch/m68k/kernel/module_mm.c arch/m68k/kernel/module_no.c between commit
->> 4528acce2607 ("m68k: merge the non-mmu and mmu versions of module.c")
->> from the m68knommu tree and commit 7b935befe6bc ("modules: make arch's
->> use default loader hooks") from the rr tree.
->>
->> The former removes these files, so I did that.
->>
->> I then added this merge fix up patch (which I can carry as necessary and
->> may not be coorrect):
->>
->> From: Stephen Rothwell<sfr@canb.auug.org.au>
->> Date: Tue, 5 Jul 2011 13:12:26 +1000
->> Subject: [PATCH] modules/m68k: make arch's use default loader hooks
->>
->> Signed-off-by: Stephen Rothwell<sfr@canb.auug.org.au>
->> ---
->>   arch/m68k/kernel/module.c |   27 ---------------------------
->>   1 files changed, 0 insertions(+), 27 deletions(-)
->>
->
-> That patch looks good to me.
->
-> Acked-by: Jonas Bonn<jonas@southpole.se>
+On Wed, 2011-07-06 at 15:49 -0700, greearb@candelatech.com wrote: 
+> From: Ben Greear <greearb@candelatech.com>
+> 
+> The rpc_killall_tasks logic is not locked against
+> the work-queue thread, but it still directly modifies
+> function pointers and data in the task objects.
+> 
+> This patch changes the killall-tasks logic to set a flag
+> that tells the work-queue thread to terminate the task
+> instead of directly calling the terminate logic.
+> 
+> Signed-off-by: Ben Greear <greearb@candelatech.com>
+> ---
+> 
+> NOTE:  This needs review, as I am still struggling to understand
+> the rpc code, and it's quite possible this patch either doesn't
+> fully fix the problem or actually causes other issues.  That said,
+> my nfs stress test seems to run a bit more stable with this patch applied.
 
-Looks fine to me too:
+Yes, but I don't see why you are adding a new flag, nor do I see why we
+want to keep checking for that flag in the rpc_execute() loop.
+rpc_killall_tasks() is not a frequent operation that we want to optimise
+for.
 
-Acked-by: Greg Ungerer <gerg@uclinux.org>
+How about the following instead?
 
-Thanks
-Greg
+8<---------------------------------------------------------------------------------- 
+>From ecb7244b661c3f9d2008ef6048733e5cea2f98ab Mon Sep 17 00:00:00 2001
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date: Wed, 6 Jul 2011 19:44:52 -0400
+Subject: [PATCH] SUNRPC: Fix a race between work-queue and rpc_killall_tasks
+
+Since rpc_killall_tasks may modify the rpc_task's tk_action field
+without any locking, we need to be careful when dereferencing it.
+
+Reported-by: Ben Greear <greearb@candelatech.com>
+Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+---
+ net/sunrpc/sched.c |   27 +++++++++++----------------
+ 1 files changed, 11 insertions(+), 16 deletions(-)
+
+diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
+index a27406b..4814e24 100644
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -616,30 +616,25 @@ static void __rpc_execute(struct rpc_task *task)
+ 	BUG_ON(RPC_IS_QUEUED(task));
+ 
+ 	for (;;) {
++		void (*do_action)(struct rpc_task *);
+ 
+ 		/*
+-		 * Execute any pending callback.
++		 * Execute any pending callback first.
+ 		 */
+-		if (task->tk_callback) {
+-			void (*save_callback)(struct rpc_task *);
+-
+-			/*
+-			 * We set tk_callback to NULL before calling it,
+-			 * in case it sets the tk_callback field itself:
+-			 */
+-			save_callback = task->tk_callback;
+-			task->tk_callback = NULL;
+-			save_callback(task);
+-		} else {
++		do_action = task->tk_callback;
++		task->tk_callback = NULL;
++		if (do_action == NULL) {
+ 			/*
+ 			 * Perform the next FSM step.
+-			 * tk_action may be NULL when the task has been killed
+-			 * by someone else.
++			 * tk_action may be NULL if the task has been killed.
++			 * In particular, note that rpc_killall_tasks may
++			 * do this at any time, so beware when dereferencing.
+ 			 */
+-			if (task->tk_action == NULL)
++			do_action = task->tk_action;
++			if (do_action == NULL)
+ 				break;
+-			task->tk_action(task);
+ 		}
++		do_action(task);
+ 
+ 		/*
+ 		 * Lockless check for whether task is sleeping or not.
+-- 
+1.7.6
 
 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+-- 
+Trond Myklebust
+Linux NFS client maintainer
+
+NetApp
+Trond.Myklebust@netapp.com
+www.netapp.com
+
