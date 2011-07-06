@@ -1,88 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab1GFA0x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 20:26:53 -0400
-Received: from mga14.intel.com ([143.182.124.37]:28878 "EHLO mga14.intel.com"
+	id S1755301Ab1GFAdl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 20:33:41 -0400
+Received: from mail.lang.hm ([64.81.33.126]:54707 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752329Ab1GFA0w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 20:26:52 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,482,1304319600"; 
-   d="scan'208";a="22988183"
-Message-ID: <4E13ABC9.1090209@intel.com>
-Date: Wed, 06 Jul 2011 08:26:49 +0800
-From: Huang Ying <ying.huang@intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110606 Iceowl/1.0b2 Icedove/3.1.10
+	id S1753272Ab1GFAdk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 20:33:40 -0400
+Date: Tue, 5 Jul 2011 17:33:35 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+cc: linux-kernel-mail <linux-kernel@vger.kernel.org>,
+        linux-newbie@vger.kernel.org
+Subject: Re: Question on syslogd and syslog
+In-Reply-To: <CALyraeO1N3rvtHkRd9YWWV6azg-Y42dM3W9ytwo-nV4Rik3=9g@mail.gmail.com>
+Message-ID: <alpine.DEB.2.02.1107051732170.7310@asgard.lang.hm>
+References: <BANLkTin_Yo+wnwWyMFoG3Nv5SSzJj8J1_w@mail.gmail.com> <alpine.DEB.2.02.1106281238210.7935@asgard.lang.hm> <BANLkTi=tFc2uoGMNFAAFqpeka_otC6CsOQ@mail.gmail.com> <alpine.DEB.2.02.1107021021090.26801@asgard.lang.hm>
+ <CALyraeO1N3rvtHkRd9YWWV6azg-Y42dM3W9ytwo-nV4Rik3=9g@mail.gmail.com>
+User-Agent: Alpine 2.02 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-To: Gong Chen <clumsycg@gmail.com>
-CC: Len Brown <lenb@kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        Thomas Renninger <trenn@novell.com>
-Subject: Re: [RFC 1/2] ACPI, APEI, Add apei_exec_run_optional
-References: <1309846023-16459-1-git-send-email-ying.huang@intel.com> <4E13174B.30403@gmail.com>
-In-Reply-To: <4E13174B.30403@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: MULTIPART/MIXED; BOUNDARY="680960-103187949-1309912415=:7310"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Gong,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Thanks for review.
+--680960-103187949-1309912415=:7310
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 8BIT
 
-On 07/05/2011 09:53 PM, Gong Chen wrote:
-> äºŽ 2011/7/5 14:07, Huang Ying å†™é“:
->> Some actions in APEI ERST and EINJ tables are optional, for example,
->> ACPI_EINJ_BEGIN_OPERATION action is used to do some preparation for
->> error injection, and firmware may choose to do nothing here.  While
->> some other actions are mandatory, for example, firmware must provide
->> ACPI_EINJ_GET_ERROR_TYPE implementation.
->>
->> Original implementation treats all actions as optional (that is, can
->> have no instructions), that may cause issue if firmware does not
->> provide some mandatory actions.  To fix this, this patch adds
->> apei_exec_run_optional, which should be used for optional actions.
->> The original apei_exec_run should be used for mandatory actions.
->>
->> Cc: Thomas Renninger<trenn@novell.com>
->> Signed-off-by: Huang Ying<ying.huang@intel.com>
->> ---
->>   drivers/acpi/apei/apei-base.c     |    9 +++++----
->>   drivers/acpi/apei/apei-internal.h |   13 ++++++++++++-
->>   2 files changed, 17 insertions(+), 5 deletions(-)
->>
->> --- a/drivers/acpi/apei/apei-base.c
->> +++ b/drivers/acpi/apei/apei-base.c
->> @@ -157,9 +157,10 @@ EXPORT_SYMBOL_GPL(apei_exec_noop);
->>    * Interpret the specified action. Go through whole action table,
->>    * execute all instructions belong to the action.
->>    */
->> -int apei_exec_run(struct apei_exec_context *ctx, u8 action)
->> +int __apei_exec_run(struct apei_exec_context *ctx, u8 action,
->> +		    bool optional)
->>   {
->> -	int rc;
->> +	int rc = -ENOENT;
->>   	u32 i, ip;
->>   	struct acpi_whea_header *entry;
->>   	apei_exec_ins_func_t run;
->> @@ -198,9 +199,9 @@ rewind:
->>   			goto rewind;
->>   	}
->>
->> -	return 0;
->> +	return !optional&&  rc<  0 ? rc : 0;
-> 
-> if one operation is optional but running into errors when executing this 
-> kind of command,
-> here just ignoring it. Is it reasonable ?
+the mechanism for putting all the logs with a paticular facility in a 
+different logfile if the filtering that I mentioned. if you use anything 
+other than sysklogd, you can filter things into files based on anything in 
+the message, not just the facility.
+David Lang
 
-If we running into errors except there is no instructions for the
-action, we will return the error code before this.  Please take a look
-at the whole function.
+  On Sun, 3 Jul 2011, Sri Ram Vemulpali 
+wrote:
 
-Best Regards,
-Huang Ying
+> Facilities of syslogd are associated to a particular file. So, in my
+> application there are 20 tasks which needs to have a separate log file
+> for every task. So, mapping every task to one facility fills my
+> requirement. So, this is the reason I want to extend the facilities of
+> level LOGLOCAL0-7.
+>
+> Coming to previous question, the purpose is to fulfill the above requirement.
+>
+> Thanks,
+> Sri.
+>
+> On Sat, Jul 2, 2011 at 1:23 PM,  <david@lang.hm> wrote:
+>> the problem is that in the syslog spec, the facility and severity get
+>> combined into one 8 bit field (one of the two only has 12 values defined
+>> instead of 16, but I don't remember off the top of my head which one)
+>>
+>> so extending this is creating a new protocol.
+>>
+>> also, the reason I was talking about filtering is that other than filtering,
+>> what purpose is there in settng the facility?
+>>
+>> David Lang
+>>
+>> On Sat, 2 Jul 2011, Sri Ram Vemulpali wrote:
+>>
+>>> Thanks for the replies. My question is more on how to extend
+>>> facilities, rather on how to filter the messages. It seems there is a
+>>> code in the toolchain syslog.h where the array representing the
+>>> facilities needs to be extended. Please correct me if I am wrong.
+>>>
+>>> Sri.
+>>>
+>>> On Tue, Jun 28, 2011 at 3:41 PM,  <david@lang.hm> wrote:
+>>>>
+>>>> you would be creating a completely different over-the-wire protocol for
+>>>> your
+>>>> syslog messages.
+>>>>
+>>>> however, note that newer syslog daemons (syslog-ng and rsyslog for
+>>>> example)
+>>>> allow you to do filtering on just about anything in the message, not just
+>>>> the facility and severity.
+>>>>
+>>>> David Lang
+>>>>
+>>>> On Tue, 28 Jun 2011, Sri Ram Vemulpali wrote:
+>>>>
+>>>>> Date: Tue, 28 Jun 2011 14:11:59 -0400
+>>>>> From: Sri Ram Vemulpali <sri.ram.gmu06@gmail.com>
+>>>>> To: linux-kernel-mail <linux-kernel@vger.kernel.org>,
+>>>>>    linux-newbie@vger.kernel.org
+>>>>> Subject: Question on syslogd and syslog
+>>>>>
+>>>>> Hello All,
+>>>>>
+>>>>>   I am looking to modify number of facilities available in syslog so
+>>>>> that for my application I can have much more array of them at disposal
+>>>>> of my need. So currently only LOG_LOCAL0 - LOG_LOCAL7 are defined for
+>>>>> user, what if I want to extend them, is there a way I can extend them.
+>>>>> Or should I go ahead and modify the source code of syslog. Can any
+>>>>> please point me in right direction and where can I get syslogd and
+>>>>> syslog source code. Thanks in advance.
+>>>>>
+>>>>>
+>>>>
+>>>
+>>>
+>>>
+>>
+>
+>
+>
+>
+--680960-103187949-1309912415=:7310--
