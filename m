@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755972Ab1GFDFM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 5 Jul 2011 23:05:12 -0400
-Received: from imovil.entelpcs.cl ([200.72.211.68]:5090 "EHLO
-	localhost6.localdomain6" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755883Ab1GFDFL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 5 Jul 2011 23:05:11 -0400
-X-Greylist: delayed 352 seconds by postgrey-1.27 at vger.kernel.org; Tue, 05 Jul 2011 23:05:08 EDT
-Subject: [PATCH] ibmmca: trivial typo fixes
-From: Davidlohr Bueso <dave@gnu.org>
-Reply-To: dave@gnu.org
-To: trivial <trivial@kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        Michael Lang <langa2@kph.uni-mainz.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>
+	id S1756009Ab1GFDFa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 5 Jul 2011 23:05:30 -0400
+Received: from mail-yw0-f46.google.com ([209.85.213.46]:48251 "EHLO
+	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab1GFDF0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 5 Jul 2011 23:05:26 -0400
+Subject: [PATCH] platform-drivers-x86: msi-wmi: add missing
+ sparse_keymap_free in msi_wmi_init error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Dmitry Torokhov <dtor@mail.ru>, Thomas Renninger <trenn@suse.de>,
+        Anisse Astier <anisse@astier.eu>, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: GNU
-Date: Tue, 05 Jul 2011 22:58:29 -0400
-Message-ID: <1309921109.3975.2.camel@offbook>
+Date: Wed, 06 Jul 2011 11:05:20 +0800
+Message-ID: <1309921520.26847.3.camel@phoenix>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave@gnu.org>
-
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- Documentation/scsi/ibmmca.txt |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/platform/x86/msi-wmi.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/Documentation/scsi/ibmmca.txt b/Documentation/scsi/ibmmca.txt
-index ac41a9f..03f0219 100644
---- a/Documentation/scsi/ibmmca.txt
-+++ b/Documentation/scsi/ibmmca.txt
-@@ -434,7 +434,7 @@
-    Dec 14 1996: More improvements to the ldn mapping.  See check_devices
-    for details.  Did more fiddling with the integrated SCSI detection,
-    but I think it's ultimately hopeless without actually testing the
--   model of the machine.  The 56, 57, 76 and 95 (ultimedia) all have
-+   model of the machine.  The 56, 57, 76 and 95 (multimedia) all have
-    different integrated SCSI register configurations.  However, the 56
-    and 57 are the only ones that have problems with forced detection.
-    - Chris Beauregard
-@@ -487,7 +487,7 @@
-    1) Submitting the extra-array ldn_is_tape[] -> to the local ld[]
-       device-array. 
-    2) CD-ROM Audio-Play seems to work now.
--   3) When using DDS-2 (120M) DAT-Tapes, mtst shows still density-code
-+   3) When using DDS-2 (120M) DAT-Tapes, must show still density-code
-       0x13 for ordinary DDS (61000 BPM) instead 0x24 for DDS-2. This appears 
-       also on Adaptec 2940 adaptor in a PCI-System. Therefore, I assume that 
-       the problem is independent of the low-level-driver/bus-architecture.
-@@ -932,7 +932,7 @@
-    January 3, 2001 (v4.0a)
-    1) A lot of complains after the 2.4.0-prerelease kernel came in about
-       the impossibility to compile the driver as a module. This problem is
--      solved. In combination with that problem, some unprecise declaration
-+      solved. In combination with that problem, some imprecise declaration
-       of the function option_setup() gave some warnings during compilation.
-       This is solved, too by a forward declaration in ibmmca.c.
-    2) #ifdef argument concerning CONFIG_SCSI_IBMMCA is no longer needed and
+diff --git a/drivers/platform/x86/msi-wmi.c b/drivers/platform/x86/msi-wmi.c
+index c832e33..6f40bf2 100644
+--- a/drivers/platform/x86/msi-wmi.c
++++ b/drivers/platform/x86/msi-wmi.c
+@@ -272,6 +272,7 @@ static int __init msi_wmi_init(void)
+ err_free_backlight:
+ 	backlight_device_unregister(backlight);
+ err_free_input:
++	sparse_keymap_free(msi_wmi_input_dev);
+ 	input_unregister_device(msi_wmi_input_dev);
+ err_uninstall_notifier:
+ 	wmi_remove_notify_handler(MSIWMI_EVENT_GUID);
 -- 
 1.7.4.1
+
 
 
