@@ -1,47 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755986Ab1GFTfF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 15:35:05 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:53912 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755906Ab1GFTfC (ORCPT
+	id S1755913Ab1GFThA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 15:37:00 -0400
+Received: from ppsw-51.csi.cam.ac.uk ([131.111.8.151]:48441 "EHLO
+	ppsw-51.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755235Ab1GFTg6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 15:35:02 -0400
-Date: Wed, 6 Jul 2011 23:34:57 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: "Lin, Tommy" <Tommy.Lin@caviumnetworks.com>
-Cc: Tommy Lin <tommy.lin.1101@gmail.com>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-watchdog@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Lin, Mac" <Mac.Lin@caviumnetworks.com>
-Subject: Re: [PATCH 2/2] watchdog: mpcore_wdt Add reload value setting for
- CNS3xxx hardware
-Message-ID: <20110706193457.GA20378@oksana.dev.rtsoft.ru>
-References: <1309867548-7842-1-git-send-email-tommy.lin@caviumnetworks.com>
- <20110705140559.GA15771@oksana.dev.rtsoft.ru>
- <281B1F8BAB4D4BDABE7568809A0AEC1A@starsemi.com>
- <20110706111616.GA18967@oksana.dev.rtsoft.ru>
- <20110706112830.GA23184@oksana.dev.rtsoft.ru>
- <20110706114629.GA32659@oksana.dev.rtsoft.ru>
- <6D7FCE1DF69D524D850E799960F2705811271D@caexch01.caveonetworks.com>
+	Wed, 6 Jul 2011 15:36:58 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4E14BB35.5070800@cam.ac.uk>
+Date: Wed, 06 Jul 2011 20:44:53 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110509 Lightning/1.0b3pre Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <6D7FCE1DF69D524D850E799960F2705811271D@caexch01.caveonetworks.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Bryan Freed <bfreed@chromium.org>
+CC: linux-kernel@vger.kernel.org, gregkh@suse.de, rklein@nvidia.com,
+        linux-iio@vger.kernel.org
+Subject: Re: [PATCH 1/3] staging:iio: Reorder channel type strings to match
+ the iio.h enums.
+References: <1309978586-10092-1-git-send-email-bfreed@chromium.org>
+In-Reply-To: <1309978586-10092-1-git-send-email-bfreed@chromium.org>
+X-Enigmail-Version: 1.1.2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 07:54:49AM -0700, Lin, Tommy wrote:
-> I am thinking that mpcore_wdt should work even SMP is not turned on. Did the dependency 
-> is neccesarry between mpcore_wdt and SMP? If CPU1 is turned off the mpcore_wdt worked
-> well with CPU0 only.
+On 07/06/11 19:56, Bryan Freed wrote:
+> This makes comparison between the iio_chan_type_name_spec_shared strings
+> and the iio_chan_type enums easier.
+> 
+> Signed-off-by: Bryan Freed <bfreed@chromium.org>
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+> ---
+>  drivers/staging/iio/industrialio-core.c |   10 +++++-----
+>  1 files changed, 5 insertions(+), 5 deletions(-)
+> 
+> diff --git a/drivers/staging/iio/industrialio-core.c b/drivers/staging/iio/industrialio-core.c
+> index 94d3bfa..4987bf4 100644
+> --- a/drivers/staging/iio/industrialio-core.c
+> +++ b/drivers/staging/iio/industrialio-core.c
+> @@ -44,20 +44,20 @@ struct bus_type iio_bus_type = {
+>  EXPORT_SYMBOL(iio_bus_type);
+>  
+>  static const char * const iio_chan_type_name_spec_shared[] = {
+> -	[IIO_TIMESTAMP] = "timestamp",
+> -	[IIO_ACCEL] = "accel",
+>  	[IIO_IN] = "in",
+>  	[IIO_CURRENT] = "current",
+>  	[IIO_POWER] = "power",
+> +	[IIO_ACCEL] = "accel",
+>  	[IIO_IN_DIFF] = "in-in",
+>  	[IIO_GYRO] = "gyro",
+> -	[IIO_TEMP] = "temp",
+>  	[IIO_MAGN] = "magn",
+> +	[IIO_LIGHT] = "illuminance",
+> +	[IIO_INTENSITY] = "intensity",
+> +	[IIO_TEMP] = "temp",
+>  	[IIO_INCLI] = "incli",
+>  	[IIO_ROT] = "rot",
+> -	[IIO_INTENSITY] = "intensity",
+> -	[IIO_LIGHT] = "illuminance",
+>  	[IIO_ANGL] = "angl",
+> +	[IIO_TIMESTAMP] = "timestamp",
+>  };
+>  
+>  static const char * const iio_chan_type_name_spec_complex[] = {
 
-No doubt that the watchdog itself works fine. :-) But the point is
-that the patch yields a warning, so it should be fixed before merging.
-
-Thanks,
-
--- 
-Anton Vorontsov
-Email: cbouatmailru@gmail.com
