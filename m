@@ -1,178 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754002Ab1GFRJH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 13:09:07 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:2818 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753173Ab1GFRJF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 13:09:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=s5uyEEhaM1d/5fOYd6xLaIt2QQbFu/xjotrXD2j5RnaPl4bZLXasbs8y+eSQ8l3sA
-	URuKK15ifRYwk3VStiycg==
+	id S1752392Ab1GFRK0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 13:10:26 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:51902 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751203Ab1GFRKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 13:10:25 -0400
+Date: Wed, 6 Jul 2011 19:10:15 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
+Message-ID: <20110706171015.GA13869@elte.hu>
+References: <20110703150430.GV4590@erda.amd.com>
+ <1309716271.3282.6.camel@twins>
+ <20110704175927.GZ4590@erda.amd.com>
+ <1309855905.3282.42.camel@twins>
+ <20110705091252.GA5725@elte.hu>
+ <20110706165357.GG4590@erda.amd.com>
 MIME-Version: 1.0
-In-Reply-To: <4E0ED11A.6030905@gmail.com>
-References: <1309483720-1407-1-git-send-email-sergiu@chromium.org>
- <1309483720-1407-3-git-send-email-sergiu@chromium.org> <4E0E0A76.4080204@gmail.com>
- <BANLkTi=HqKggFkcLgN22qgTr5drz3_5vO+Q9bM+NqsOYVK5uag@mail.gmail.com> <4E0ED11A.6030905@gmail.com>
-From: Sergiu Iordache <sergiu@chromium.org>
-Date: Wed, 6 Jul 2011 10:08:43 -0700
-X-Google-Sender-Auth: gYyBF-6Luj_siaEqJ__0zQmT4fM
-Message-ID: <CAGDaqBTy2FknW6pQS7ggw+ORkLFfhNv1qWpNtvp2eSR=WTDbQA@mail.gmail.com>
-Subject: Re: [PATCH v2 2/3] char drivers: ramoops record_size module parameter
-To: Marco Stornelli <marco.stornelli@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110706165357.GG4590@erda.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 2, 2011 at 1:04 AM, Marco Stornelli
-<marco.stornelli@gmail.com> wrote:
-> Il 01/07/2011 20:41, Sergiu Iordache ha scritto:
->>
->> On Fri, Jul 1, 2011 at 10:57 AM, Marco Stornelli
->> <marco.stornelli@gmail.com>  wrote:
->>>
->>> Hi,
->>>
->>> Il 01/07/2011 03:28, Sergiu Iordache ha scritto:
->>>>
->>>> The size of the dump is currently set using the RECORD_SIZE macro which
->>>> is set to a page size. This patch makes the record size a module
->>>> parameter and allows it to be set through platform data as well to allow
->>>> larger dumps if needed.
->>>>
->>>> Signed-off-by: Sergiu Iordache<sergiu@chromium.org>
->>>> Change-Id: Ie5a53acb50d5881d51354f5d9d13e3d6bedf6a2e
->>>> ---
->>>> The patch was built on the 2.6.38 kernel and is based on the following
->>>> patches which were applied from the mmotm tree:
->>>> ramoops-add-new-line-to-each-print
->>>> ramoops-use-module-parameters-instead-of-platform-data-if-not-available
->>>>
->>>>
->>>> ramoops-use-module-parameters-instead-of-platform-data-if-not-available-checkpatch-fixes
->>>>
->>>>  drivers/char/ramoops.c  |   33 ++++++++++++++++++++++++++-------
->>>>  include/linux/ramoops.h |    1 +
->>>>  2 files changed, 27 insertions(+), 7 deletions(-)
->>>>
->>>> diff --git a/drivers/char/ramoops.c b/drivers/char/ramoops.c
->>>> index 5349d94..f34077e 100644
->>>> --- a/drivers/char/ramoops.c
->>>> +++ b/drivers/char/ramoops.c
->>>> @@ -32,8 +32,12 @@
->>>>  #include<linux/ramoops.h>
->>>>
->>>>  #define RAMOOPS_KERNMSG_HDR "===="
->>>> +#define MIN_MEM_SIZE 4096UL
->>>>
->>>> -#define RECORD_SIZE 4096UL
->>>> +static ulong record_size = 4096UL;
->>>> +module_param(record_size, ulong, 0400);
->>>> +MODULE_PARM_DESC(record_size,
->>>> +               "size of each dump done on oops/panic");
->>>>
->>>>  static ulong mem_address;
->>>>  module_param(mem_address, ulong, 0400);
->>>> @@ -55,6 +59,7 @@ static struct ramoops_context {
->>>>        void *virt_addr;
->>>>        phys_addr_t phys_addr;
->>>>        unsigned long size;
->>>> +       unsigned long record_size;
->>>>        int dump_oops;
->>>>        int count;
->>>>        int max_count;
->>>> @@ -84,10 +89,10 @@ static void ramoops_do_dump(struct kmsg_dumper
->>>> *dumper,
->>>>        if (reason == KMSG_DUMP_OOPS&&    !cxt->dump_oops)
->>>>                return;
->>>>
->>>> -       buf = cxt->virt_addr + (cxt->count * RECORD_SIZE);
->>>> +       buf = cxt->virt_addr + (cxt->count * cxt->record_size);
->>>>        buf_orig = buf;
->>>>
->>>> -       memset(buf, '\0', RECORD_SIZE);
->>>> +       memset(buf, '\0', cxt->record_size);
->>>>        res = sprintf(buf, "%s", RAMOOPS_KERNMSG_HDR);
->>>>        buf += res;
->>>>        do_gettimeofday(&timestamp);
->>>> @@ -95,8 +100,8 @@ static void ramoops_do_dump(struct kmsg_dumper
->>>> *dumper,
->>>>        buf += res;
->>>>
->>>>        hdr_size = buf - buf_orig;
->>>> -       l2_cpy = min(l2, RECORD_SIZE - hdr_size);
->>>> -       l1_cpy = min(l1, RECORD_SIZE - hdr_size - l2_cpy);
->>>> +       l2_cpy = min(l2, cxt->record_size - hdr_size);
->>>> +       l1_cpy = min(l1, cxt->record_size - hdr_size - l2_cpy);
->>>>
->>>>        s2_start = l2 - l2_cpy;
->>>>        s1_start = l1 - l1_cpy;
->>>> @@ -119,16 +124,29 @@ static int __init ramoops_probe(struct
->>>> platform_device *pdev)
->>>>        }
->>>>
->>>>        rounddown_pow_of_two(pdata->mem_size);
->>>> +       rounddown_pow_of_two(pdata->record_size);
->>>>
->>>> -       if (pdata->mem_size<    RECORD_SIZE) {
->>>> +       /* Check for the minimum memory size */
->>>> +       if (pdata->mem_size<    MIN_MEM_SIZE) {
->>>> +               pr_err("memory size too small, min %lu\n",
->>>> MIN_MEM_SIZE);
->>>> +               goto fail3;
->>>> +       }
->>>> +
->>>> +       if (pdata->mem_size<    pdata->record_size) {
->>>>                pr_err("size too small\n");
->>>>                goto fail3;
->>>>        }
->>>>
->>>> -       cxt->max_count = pdata->mem_size / RECORD_SIZE;
->>>> +       if (pdata->record_size<= 0) {
->>>> +               pr_err("record size too small\n");
->>>> +               goto fail3;
->>>> +       }
->>>
->>> There is something wrong here. First of all if record_size is unsigned it
->>> can't negative. In addition, if we are here, we know that:
->>>
->>> record_size>= mem_size>= MIN_MEM_SIZE
->>>
->>> So this check have no sense.
->>
->> The pdata->record size<= 0 check is indeed redundant and should be
->> removed.
->>
->> I didn't completely understand the second comment, the module errors
->> if mem_size<  MIN_MEM_SIZE or mem_size<  record_size, which means that
->> mem_size should be larger than MIN_MEM_SIZE and record_size (which
->> leads to record_size being between 0 and mem_size). Am I missing
->> something?
->>
->> (Resent after not reply-ing to all by mistake)
->>
->> Sergiu
->>
->
-> Yes, my fault. I meant we should check that mem_size *and* record_size are
-> bigger or equals than MIN_MEM_SIZE. After that, we can check that
-> record_size is lesser than mem_size (I guess has no sense to use record_size
-> lesser than MIN_MEM_SIZE).
 
-That sounds fair. A check to see if record_size != 0 would probably be
-needed as well so we don't divide by 0. I'll add those to the next
-patch series and submit them for review.
+* Robert Richter <robert.richter@amd.com> wrote:
 
-Sergiu
+> On 05.07.11 05:12:52, Ingo Molnar wrote:
+> > 
+> > * Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> > 
+> > > > Overall, my approach improves the perf design. It adds a better 
+> > > > and more intuitve access to perf from user space with clear and 
+> > > > common methods and interfaces. Please let me know the concerns 
+> > > > you have.
+> > > 
+> > > Its redundant, this interface ship has sailed, its not going to 
+> > > happen.
+> > 
+> > Even if we had the choice, i don't see how a /dev based enumeration 
+> > of PMUs is in any way better than a topologically attached set of 
+> > PMUs in /sys.
+> > 
+> > This kind of structure is nice in principle:
+> > 
+> >  # ls -l /dev/pmu/
+> >  total 0
+> >  crw-rw---- 1 root root 254, 5 Jul  8  2011 breakpoint
+> >  crw-rw---- 1 root root 254, 4 Jul  8  2011 cpu
+> >  crw-rw---- 1 root root 254, 6 Jul  8  2011 proto
+> >  crw-rw---- 1 root root 254, 1 Jul  8  2011 software
+> >  crw-rw---- 1 root root 254, 2 Jul  8  2011 tracepoint
+> > 
+> > But it should be done in /sys/.
+> 
+> I have to learn yet why /dev is bad and /sys is good...
+
+Because /sys is already there and already carries rather rich 
+classification of various hardware components, devices and kernel 
+subsystems.
+
+/dev/ is mostly a flat registry of classical, unstructured devices.
+
+> The system topology is always in /sys, also for device nodes. But 
+> we can't get a device file descriptor from /sys. I doubt /sys is 
+> capable to handle a device use count (need to be checked). We 
+> actually must grab the pmu while attaching events to it. And, user 
+> space implementation is must easier with /dev (see code in my 
+> previous mail).
+
+I think Peter suggested it that an open() done in /sys should give us 
+a handle to a given event?
+
+> My patch also includes code that creates a device class. It is also 
+> visible in /sys/class/pmu/*.
+
+But PMU is a very limited term: what we want is a higher level 
+organization of 'event sources' and 'events'. Some may come from 
+PMUs, many wont.
+
+Thanks,
+
+	Ingo
