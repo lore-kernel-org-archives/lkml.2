@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753954Ab1GFPTO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 11:19:14 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:55029 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752572Ab1GFPTM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 11:19:12 -0400
-X-Sasl-enc: pfuuqZnn0MfQnKQCEnCiYv66SzloAe4cFhV1xe+nU8ge 1309965552
-Date: Wed, 6 Jul 2011 08:12:17 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: linux-next: build failure after merge of the staging tree
-Message-ID: <20110706151217.GB7465@kroah.com>
-References: <20110706150916.13ff2bc5.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110706150916.13ff2bc5.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	id S1753986Ab1GFP1Z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 11:27:25 -0400
+Received: from lo.gmane.org ([80.91.229.12]:45804 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753238Ab1GFP1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 11:27:24 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Arkadiusz =?ISO-8859-2?Q?Mi=B6kiewicz?= <arekm@maven.pl>
+Subject: Re: Linux 3.0-rc6 ..
+Followup-To: gmane.linux.kernel
+Date: Wed, 06 Jul 2011 17:27:02 +0200
+Message-ID: <iv1us7$gtq$1@dough.gmane.org>
+References: <CA+55aFxQw4T07hxz8JSm12x3FOH_Dcf=G5mvLrxiTuLxjbw+Mg@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 7Bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 87-207-113-141.dynamic.chello.pl
+User-Agent: KNode/4.4.11
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 03:09:16PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the staging tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
-> 
-> make[4]: *** No rule to make target `drivers/staging/gma500/cdv_intel_crt.o', needed by `drivers/staging/gma500/psb_gfx.o'.  Stop.
-> drivers/staging/gma500/cdv_device.c:28:24: fatal error: cdv_device.h: No such file or directory
-> 
-> I see that these have already been reported elsewhere - it would have
-> been nice if these patches had not been added to the staging tree
-> destined for linux-next until *after* they were build tested (and
-> fixed). :-(
+Linus Torvalds wrote:
 
-I had to push out so that Alan could sync up and fix the error.  You
-pulled inbetween his responding to me and hit the problem window.  My
-tree is now building correctly and this will not happen tomorrow.
+> and a happy Independence Day to all the US kernel people out there.
+> 
+> There is not a lot to be said about -rc6. T
 
-Sorry for the inconvenience,
+Somehow uname -r still reports 3.0.0-rc6 instead of 3.0-rc6. So is this 
+going to be 3.0.0 after all?
 
-greg k-h
+arekm
+
