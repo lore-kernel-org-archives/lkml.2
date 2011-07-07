@@ -1,103 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab1GGF1u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 01:27:50 -0400
-Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:35888 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750912Ab1GGF1q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 01:27:46 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+Zv4I+YhB90dAK0wyztVsk
-Date: Thu, 7 Jul 2011 08:27:40 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Paul Walmsley <paul@pwsan.com>
-Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Aaro Koskinen <aaro.koskinen@nokia.com>,
-        Rajendra Nayak <rnayak@ti.com>,
-        =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>,
-        Michael Buesch <mb@bu3sch.de>
-Subject: Re: [PATCH] OMAP: hwmod: add kernel cmdline flag to avoid
- resetting IP blocks during init
-Message-ID: <20110707052735.GB15815@atomide.com>
-References: <20110703010204.19046.85186.stgit@dusk>
- <20110703010206.19046.85293.stgit@dusk>
- <20110704085503.GQ23145@atomide.com>
- <alpine.DEB.2.00.1107051936250.4217@utopia.booyaka.com>
- <20110706064116.GH5783@atomide.com>
- <alpine.DEB.2.00.1107060155250.4217@utopia.booyaka.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1107060155250.4217@utopia.booyaka.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753567Ab1GGF3G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:29:06 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35448 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750912Ab1GGF3E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 01:29:04 -0400
+Date: Thu, 7 Jul 2011 15:28:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jesper Juhl <jj@chaosbits.net>, David Miller <davem@davemloft.net>,
+        <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the staging tree with the net tree
+Message-Id: <20110707152857.83d48e1d1c175f811b255952@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Walmsley <paul@pwsan.com> [110706 23:52]:
-> Hi Tony
-> 
-> On Tue, 5 Jul 2011, Tony Lindgren wrote:
-> 
-> > So basically we want to tell the following from the board file or board
-> > specific .dts file:
-> > 
-> > - Device is being used on the board and can be reset and configured.
-> >   This is the usual case.
-> 
-> By 'used', you mean, have a Linux driver associated with them, right?
+Hi Greg,
 
-Right.
- 
-> > - Device is being used on the board but can't be reset. This is the
-> >   case for booting Linux from other operating systems initially where
-> >   you want to keep the LCD on for debug console.
-> 
-> Or, to use examples that would be needed in a production device, the 
-> 4460/N810 GPIO examples discussed earlier.  
-> 
-> Based on our current experience, there are a very small number of these 
-> cases, and they are board-specific.  So it seems to make sense to 
-> explicitly state these exceptions in the board files, via 
-> omap_hwmod_no_setup_reset() or something similar.
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c between commit
+219eb47e6f35 ("net/staging: add needed interrupt.h and hardirq.h
+includes") from the net tree and commit 41134db17a7d ("Remove unneeded
+version.h includes from drivers/staging/rtl*/") from the staging tree.
 
-Yeah they should be all board specific. One more example comes to mind
-was to keep the bootup logo around from bootloader on the LCD that the
-DSS code was doing earlier.
- 
-> > - Device is not being used on the board but can be reset for decent PM.
-> >   This is often needed in cases where the bootloader just enables all the
-> >   clocks.
-> 
-> Yeah.  And it's not just bootloaders, it's also the previous kernel in the 
-> case of something like kexec.  Since we don't know what devices the 
-> bootloader or previous kernel touched, it seems to make sense to reset all 
-> of these devices by default, once the drivers are converted to use runtime 
-> PM.
-> 
-> The current issue here is that some drivers aren't yet converted, so the 
-> hwmod code might think that some devices are 'unused' when they are 
-> actually in use by a non-runtime-PM-based driver.
->  
-> > - Device is reserved by secure mode or a coprocessor. In this case
-> >   the device can't be reset.
-> 
-> Indeed - or even accessed.
-> 
-> > So I guess that makes the flags noreset, disabled and unavailable?
-> 
-> I think we only need 'no reset' and 'unavailable'?  Once the runtime PM 
-> driver conversion is complete, I don't think there's any reason to keep 
-> the 'hwmod_unused_reset' command line flag around, since it can be the 
-> default.  That's because the hwmod code would then be able to track which 
-> devices were actually used.
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Sounds doable to me.
-
-Regards,
-
-Tony
+diff --cc drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
+index 00ee02f,52a7386..0000000
+--- a/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
++++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c
+@@@ -19,8 -19,6 +19,7 @@@
+  #include <linux/random.h>
+  #include <linux/delay.h>
+  #include <linux/slab.h>
+- #include <linux/version.h>
+ +#include <linux/interrupt.h>
+  #include <asm/uaccess.h>
+  
+  #include "dot11d.h"
