@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752831Ab1GGU73 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 16:59:29 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:19033 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752067Ab1GGU70 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 16:59:26 -0400
-Message-ID: <4E161E1F.5070604@oracle.com>
-Date: Thu, 07 Jul 2011 13:59:11 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1752461Ab1GGVAj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 17:00:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33717 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751607Ab1GGVAh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 17:00:37 -0400
+From: Myron Stowe <myron.stowe@redhat.com>
+Subject: [PATCH] PCI: Assign values to 'pci_obff_signal_type' enumeration
+	constants
+To: jbarnes@virtuousgeek.org
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Date: Thu, 07 Jul 2011 15:00:36 -0600
+Message-ID: <20110707210036.696.13836.stgit@amt.stowe>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: J Freyensee <james_p_freyensee@linux.intel.com>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        sfr@canb.auug.org.au, christophe.guerard@intel.com,
-        pranav.k.sanghadia@intel.com
-Subject: Re: [PATCH] Add PCI config dependency for PTI.
-References: <james_p_freyensee@linux.intel.com> <1310066653-26879-1-git-send-email-james_p_freyensee@linux.intel.com> <20110707123154.d6fb4a99.randy.dunlap@oracle.com> <4E16100F.5030005@linux.intel.com>
-In-Reply-To: <4E16100F.5030005@linux.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4E161E29.011F:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/11 12:59, J Freyensee wrote:
-> On 07/07/2011 12:31 PM, Randy Dunlap wrote:
->> On Thu,  7 Jul 2011 12:24:13 -0700 james_p_freyensee@linux.intel.com
->> wrote:
->>
->>> From: J Freyensee<james_p_freyensee@linux.intel.com>
->>>
->>> Intel-Atom implementation of PTI will not work with PCI
->>> configured off, so the pti driver should not be compiled
->>> in the event someone does not enable PCI in the linux kernel.
->>>
->>> Signed-off-by: J Freyensee<james_p_freyensee@linux.intel.com>
->>> Acked-by: Randy Dunlap<randy.dunlap@oracle.com>
->> now you can say that above. ^^^
-> So you want me to stick the 'Acked-by' and 'Reported-by' above the
-> Signed-off-by line?
+From: Myron Stowe <mstowe@redhat.com>
 
-You had Acked-by: prematurely.
+'pci_obff_signal_type' is passed between drivers and the kernel API.
+This patch explicitly assigns values to the enumeration type's constants
+which aids in detecting any future changes or additions that would break
+the kernel's ABI.
 
-Yes, now you can put both Acked-by: and Reported-by:
-above the S-O-B: line.
+No functional change.
 
->> Also
->> Reported-by: Randy Dunlap<randy.dunlap@oracle.com>
->>
->> Thanks.
->>
->>> Acked-by: Stephen Rothwell<sfr@canb.auug.org.au>
->>> ---
->>>   drivers/misc/Kconfig |    1 +
->>>   1 files changed, 1 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
->>> index 4e349cd..7fd32a6 100644
->>> --- a/drivers/misc/Kconfig
->>> +++ b/drivers/misc/Kconfig
->>> @@ -146,6 +146,7 @@ config PHANTOM
->>>
->>>   config INTEL_MID_PTI
->>>       tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG
->>> standard"
->>> +    depends on PCI
->>>       default n
->>>       help
->>>         The PTI (Parallel Trace Interface) driver directs
->>> -- 
->>
->> ---
->> ~Randy
->> *** Remember to use Documentation/SubmitChecklist when testing your
->> code ***
-> 
+Signed-off-by: Myron Stowe <myron.stowe@redhat.com>
+---
 
+ include/linux/pci.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index c446b5c..6e96015 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -843,8 +843,8 @@ void pci_enable_ido(struct pci_dev *dev, unsigned long type);
+ void pci_disable_ido(struct pci_dev *dev, unsigned long type);
+ 
+ enum pci_obff_signal_type {
+-	PCI_EXP_OBFF_SIGNAL_L0,
+-	PCI_EXP_OBFF_SIGNAL_ALWAYS,
++	PCI_EXP_OBFF_SIGNAL_L0 = 0,
++	PCI_EXP_OBFF_SIGNAL_ALWAYS = 1,
+ };
+ int pci_enable_obff(struct pci_dev *dev, enum pci_obff_signal_type);
+ void pci_disable_obff(struct pci_dev *dev);
+
