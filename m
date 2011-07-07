@@ -1,113 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754906Ab1GGSHi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 14:07:38 -0400
-Received: from mail-bw0-f52.google.com ([209.85.214.52]:40885 "EHLO
-	mail-bw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753461Ab1GGSHf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 14:07:35 -0400
-Date: Thu, 7 Jul 2011 21:07:27 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: Marcin Slusarz <marcin.slusarz@gmail.com>
-cc: Christoph Lameter <cl@linux-foundation.org>,
-        Matt Mackall <mpm@selenic.com>, LKML <linux-kernel@vger.kernel.org>,
-        rientjes@google.com, linux-mm@kvack.org
-Subject: Re: [PATCH] slub: reduce overhead of slub_debug
-In-Reply-To: <20110626193918.GA3339@joi.lan>
-Message-ID: <alpine.DEB.2.00.1107072106560.6693@tiger>
-References: <20110626193918.GA3339@joi.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755024Ab1GGSI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 14:08:58 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:38162 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752850Ab1GGSI5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 14:08:57 -0400
+Date: Thu, 7 Jul 2011 20:08:45 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [GIT PULL] debugobjects fix
+Message-ID: <20110707180845.GA13192@elte.hu>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 26 Jun 2011, Marcin Slusarz wrote:
-> slub checks for poison one byte by one, which is highly inefficient
-> and shows up frequently as a highest cpu-eater in perf top.
->
-> Joining reads gives nice speedup:
->
-> (Compiling some project with different options)
->                                 make -j12    make clean
-> slub_debug disabled:             1m 27s       1.2 s
-> slub_debug enabled:              1m 46s       7.6 s
-> slub_debug enabled + this patch: 1m 33s       3.2 s
->
-> check_bytes still shows up high, but not always at the top.
->
-> Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-> Cc: Christoph Lameter <cl@linux-foundation.org>
-> Cc: Pekka Enberg <penberg@kernel.org>
-> Cc: Matt Mackall <mpm@selenic.com>
-> Cc: linux-mm@kvack.org
-> ---
+Linus,
 
-Looks good to me. Christoph, David, ?
+Please pull the latest core-urgent-for-linus git tree from:
 
-> mm/slub.c |   36 ++++++++++++++++++++++++++++++++++--
-> 1 files changed, 34 insertions(+), 2 deletions(-)
->
-> diff --git a/mm/slub.c b/mm/slub.c
-> index 35f351f..a40ef2d 100644
-> --- a/mm/slub.c
-> +++ b/mm/slub.c
-> @@ -557,10 +557,10 @@ static void init_object(struct kmem_cache *s, void *object, u8 val)
-> 		memset(p + s->objsize, val, s->inuse - s->objsize);
-> }
->
-> -static u8 *check_bytes(u8 *start, unsigned int value, unsigned int bytes)
-> +static u8 *check_bytes8(u8 *start, u8 value, unsigned int bytes)
-> {
-> 	while (bytes) {
-> -		if (*start != (u8)value)
-> +		if (*start != value)
-> 			return start;
-> 		start++;
-> 		bytes--;
-> @@ -568,6 +568,38 @@ static u8 *check_bytes(u8 *start, unsigned int value, unsigned int bytes)
-> 	return NULL;
-> }
->
-> +static u8 *check_bytes(u8 *start, u8 value, unsigned int bytes)
-> +{
-> +	u64 value64;
-> +	unsigned int words, prefix;
-> +
-> +	if (bytes <= 16)
-> +		return check_bytes8(start, value, bytes);
-> +
-> +	value64 = value | value << 8 | value << 16 | value << 24;
-> +	value64 = value64 | value64 << 32;
-> +	prefix = 8 - ((unsigned long)start) % 8;
-> +
-> +	if (prefix) {
-> +		u8 *r = check_bytes8(start, value, prefix);
-> +		if (r)
-> +			return r;
-> +		start += prefix;
-> +		bytes -= prefix;
-> +	}
-> +
-> +	words = bytes / 8;
-> +
-> +	while (words) {
-> +		if (*(u64 *)start != value64)
-> +			return check_bytes8(start, value, 8);
-> +		start += 8;
-> +		words--;
-> +	}
-> +
-> +	return check_bytes8(start, value, bytes % 8);
-> +}
-> +
-> static void restore_bytes(struct kmem_cache *s, char *message, u8 data,
-> 						void *from, void *to)
-> {
-> -- 
-> 1.7.5.3
->
->
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-urgent-for-linus
+
+ Thanks,
+
+	Ingo
+
+------------------>
+Marcin Slusarz (1):
+      debugobjects: Fix boot crash when kmemleak and debugobjects enabled
+
+
+ lib/debugobjects.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/lib/debugobjects.c b/lib/debugobjects.c
+index 9d86e45..a78b7c6 100644
+--- a/lib/debugobjects.c
++++ b/lib/debugobjects.c
+@@ -198,7 +198,7 @@ static void free_object(struct debug_obj *obj)
+ 	 * initialized:
+ 	 */
+ 	if (obj_pool_free > ODEBUG_POOL_SIZE && obj_cache)
+-		sched = !work_pending(&debug_obj_work);
++		sched = keventd_up() && !work_pending(&debug_obj_work);
+ 	hlist_add_head(&obj->node, &obj_pool);
+ 	obj_pool_free++;
+ 	obj_pool_used--;
