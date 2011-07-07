@@ -1,57 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab1GGJ7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 05:59:39 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:11445
-	"EHLO VA3EHSOBE007.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751136Ab1GGJ7i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 05:59:38 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz4015L1432N98dKzz1202hzz15d4Rz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNYJR7-02-0SL-02
-X-M-MSG: 
-Date: Thu, 7 Jul 2011 11:59:30 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: Re: [git pull] IOMMU updates for 3.1
-Message-ID: <20110707095930.GD1956@amd.com>
-References: <20110707085359.GC1956@amd.com>
- <20110707094558.GB15058@elte.hu>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20110707094558.GB15058@elte.hu>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+	id S1752354Ab1GGJ7u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 05:59:50 -0400
+Received: from mga09.intel.com ([134.134.136.24]:32813 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755513Ab1GGJ7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 05:59:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,492,1304319600"; 
+   d="scan'208";a="22566254"
+Date: Thu, 7 Jul 2011 11:00:15 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH 1/2] platform-drivers-x86: intel_rar_register: convert
+ to DEFINE_PCI_DEVICE_TABLE
+Message-ID: <20110707110015.083a17ed@bob.linux.org.uk>
+In-Reply-To: <1310005275.2481.3.camel@phoenix>
+References: <1310005275.2481.3.camel@phoenix>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
+ Registered office Pipers Way, Swindon, SN3 1RJ
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 05:45:58AM -0400, Ingo Molnar wrote:
-> Fails to build with INTR_REMAP=y && CONFIG_DMAR=n:
+On Thu, 07 Jul 2011 10:21:15 +0800
+Axel Lin <axel.lin@gmail.com> wrote:
+
+> And also remove unused variable 'my_id_table'.
 > 
->  arch/x86/built-in.o: In function `lapic_resume':
->  apic.c:(.text+0x16329): undefined reference to `intr_remapping_enabled'
->  apic.c:(.text+0x1651d): undefined reference to `intr_remapping_enabled'
->  apic.c:(.text+0x1652b): undefined reference to `reenable_intr_remapping'
->  [...]
-> 
-> config attached.
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-Thanks, I'll look into it.
+Applied to mid tree looks fine to me
 
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Signed-off-by: Alan Cox <alan@linux.intel.com>
