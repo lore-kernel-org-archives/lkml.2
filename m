@@ -1,41 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753201Ab1GGWG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 18:06:29 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63755 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751601Ab1GGWG2 (ORCPT
+	id S1753224Ab1GGWJf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 18:09:35 -0400
+Received: from rcsinet15.oracle.com ([148.87.113.117]:27570 "EHLO
+	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751601Ab1GGWJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 18:06:28 -0400
-Date: Fri, 8 Jul 2011 00:06:21 +0200
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: alan@lxorguk.ukuu.org.uk
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com
-Subject: gma500: Mask out bits not part of the page table base address
-Message-ID: <20110707220621.GA6922@patrik-macbook>
+	Thu, 7 Jul 2011 18:09:34 -0400
+Message-ID: <4E162E8F.2080702@oracle.com>
+Date: Thu, 07 Jul 2011 15:09:19 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: james_p_freyensee@linux.intel.com
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        sfr@canb.auug.org.au, christophe.guerard@intel.com,
+        pranav.k.sanghadia@intel.com
+Subject: Re: [PATCH] Add PCI config dependency for PTI.
+References: <james_p_freyensee@linux.intel.com> <1310076166-22383-1-git-send-email-james_p_freyensee@linux.intel.com>
+In-Reply-To: <1310076166-22383-1-git-send-email-james_p_freyensee@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4E162E99.009F:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Otherwise we can't ioremap the gtt and the screen gets garbled.
+On 07/07/11 15:02, james_p_freyensee@linux.intel.com wrote:
+> From: J Freyensee <james_p_freyensee@linux.intel.com>
+> 
+> Intel-Atom implementation of PTI will not work with PCI
+> configured off, so the pti driver should not be compiled
+> in the event someone does not enable PCI in the linux kernel.
+> 
+> Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
 
-Signed-off-by: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
----
+That's good.  Thanks.
+Sorry this was so much trouble.
 
-diff --git a/drivers/staging/gma500/gtt.c b/drivers/staging/gma500/gtt.c
-index 28f2261..78dd01b 100644
---- a/drivers/staging/gma500/gtt.c
-+++ b/drivers/staging/gma500/gtt.c
-@@ -397,7 +397,7 @@ int psb_gtt_init(struct drm_device *dev, int resume)
- 	/* The root resource we allocate address space from */
- 	dev_priv->gtt_initialized = 1;
- 
--	pg->gtt_phys_start = dev_priv->pge_ctl;
-+	pg->gtt_phys_start = dev_priv->pge_ctl & PAGE_MASK;
- 	
- 	/*
- 	 *	FIXME: video mmu has hw bug to access 0x0D0000000,
+> ---
+>  drivers/misc/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index 4e349cd..7fd32a6 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -146,6 +146,7 @@ config PHANTOM
+>  
+>  config INTEL_MID_PTI
+>  	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
+> +	depends on PCI
+>  	default n
+>  	help
+>  	  The PTI (Parallel Trace Interface) driver directs
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
