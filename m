@@ -1,17 +1,16 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1752948Ab1GGGwO (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Thu, 7 Jul 2011 02:52:14 -0400
-Received: from 87.9b.79ae.static.theplanet.com ([174.121.155.135]:34580 "EHLO
+        id S1752671Ab1GGHH0 (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Thu, 7 Jul 2011 03:07:26 -0400
+Received: from 87.9b.79ae.static.theplanet.com ([174.121.155.135]:33871 "EHLO
         daw.dawaer.ws" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751553Ab1GGGwN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Thu, 7 Jul 2011 02:52:13 -0400
-X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jul 2011 02:52:13 EDT
+        id S1751025Ab1GGHHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Thu, 7 Jul 2011 03:07:24 -0400
 To: linux-kernel@vger.kernel.org
 Subject: =?win1256?B?IOPM4+baySDF7eHH3SDH4ePKzc/J?=
 X-PHP-Script: dawaer.us/maillist/maillist/admin.php for 213.244.123.66
-Date: Thu, 7 Jul 2011 01:51:54 -0500
+Date: Thu, 7 Jul 2011 02:07:23 -0500
 From: "Dawaer Co." <dawaer.list@yahoo.com>
-Message-ID: <a564b0cb260a81ca47ed65c62941cf94@dawaer.us>
+Message-ID: <384cfd0680e49d4814d827d2dc7e6842@dawaer.us>
 X-Priority: 3
 X-Mailer: PHPMailer [version 1.72]
 MIME-Version: 1.0
