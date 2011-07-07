@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab1GGQm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:42:58 -0400
-Received: from tex.lwn.net ([70.33.254.29]:58714 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751880Ab1GGQm5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:42:57 -0400
-Date: Thu, 7 Jul 2011 10:42:55 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "linux-media" <linux-media@vger.kernel.org>,
-        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: Re: [RFC PATCH] poll: add poll_requested_events() function
-Message-ID: <20110707104255.6771771d@bike.lwn.net>
-In-Reply-To: <201107011537.30829.hverkuil@xs4all.nl>
-References: <201107011537.30829.hverkuil@xs4all.nl>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.24.5; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1753706Ab1GGQnQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:43:16 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:37318 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753445Ab1GGQnO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 12:43:14 -0400
+Message-ID: <4E15E213.3080200@oracle.com>
+Date: Thu, 07 Jul 2011 09:42:59 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: J Freyensee <james_p_freyensee@linux.intel.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+Subject: Re: linux-next: Tree for July 4 (misc/pti)
+References: <20110704170952.1024e89b.sfr@canb.auug.org.au> <20110704134541.9adfd4f1.randy.dunlap@oracle.com> <20110707081441.a4a64e59.randy.dunlap@oracle.com> <4E15DF07.4010507@linux.intel.com> <20110707093202.a831fce8.randy.dunlap@oracle.com> <4E15E02A.2000005@linux.intel.com>
+In-Reply-To: <4E15E02A.2000005@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4E15E21D.021F:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 1 Jul 2011 15:37:30 +0200
-Hans Verkuil <hverkuil@xs4all.nl> wrote:
+On 07/07/11 09:34, J Freyensee wrote:
+> On 07/07/2011 09:32 AM, Randy Dunlap wrote:
+>> On Thu, 07 Jul 2011 09:29:59 -0700 J Freyensee wrote:
+>>
+>>> On 07/07/2011 08:14 AM, Randy Dunlap wrote:
+>>>> On Mon, 4 Jul 2011 13:45:41 -0700 Randy Dunlap wrote:
+>>>>
+>>>>> On Mon, 4 Jul 2011 17:09:52 +1000 Stephen Rothwell wrote:
+>>>>>
+>>>>>> Hi all,
+>>>>>>
+>>>>>> Changes since 20110701:
+>>>>> when CONFIG_PCI is not enabled:
+>>>>>
+>>>>> drivers/misc/pti.c:410: error: implicit declaration of function
+>>>>> 'pci_release_region'
+>>>>> drivers/misc/pti.c:859: error: implicit declaration of function
+>>>>> 'pci_request_region'
+>>>>>
+>>>>>
+>>>>> Stubs for these 2 functions could be added to include/linux/pci.h,
+>>>>> but it would
+>>>>> make more sense to me just to make the driver depend on PCI since
+>>>>> it seems to rely
+>>>>> on so many PCI functions.  or are the PCI pieces optional?
+>>>> ping.  still a problem in linux-next 20110706.
+>>> Thanks for the ping.
+>>>
+>>> Is there something you need me to do or look at?
+>>>
+>>> For Intel-Atom architectures, the MIPI PTI module does sit on the PCI
+>>> bus.  It's very much dependent upon the PCI bus for working
+>>> functionality and it's not optional.  So yes, it makes sense for the
+>>> driver to depend on PCI to be there and if PCI is not enabled on the
+>>> system, don't build the pti driver.
+>>>
+>>> Maybe it's a Kconfig dependency?
+>> Yes, please send/merge a patch that adds
+>>     depends on PCI
+>> to "config INTEL_MID_PCI".
+> 
+> And just for confirmation, you want me to base this patch on the
+> linux-next git tree, correct?
 
-> In some cases the poll() implementation in a driver has to do different
-> things depending on the events the caller wants to poll for. An example is
-> when a driver needs to start a DMA engine if the caller polls for POLLIN,
-> but doesn't want to do that if POLLIN is not requested but instead only
-> POLLOUT or POLLPRI is requested. This is something that can happen in the
-> video4linux subsystem.
+Yes, please.
 
-The change makes sense to me, FWIW.  One bit of trivia I noticed while
-looking at it:
-
-> @@ -796,7 +792,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
->  		 * All waiters have already been registered, so don't provide
->  		 * a poll_table to them on the next loop iteration.
->  		 */
-> -		pt = NULL;
-> +		pt->qproc = NULL;
->  		if (!count) {
->  			count = wait->error;
->  			if (signal_pending(current))
-
-The comment at the beginning of this hunk is no longer accurate since the
-poll_table is, indeed, still being supplied.  The previous comment in the
-same function:
-
-				/*
-				 * Fish for events. If we found one, record it
-				 * and kill the poll_table, so we don't
-				 * needlessly register any other waiters after
-				 * this. They'll get immediately deregistered
-				 * when we break out and return.
-				 */
-
-Could also use tweaking.
-
-jon
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
