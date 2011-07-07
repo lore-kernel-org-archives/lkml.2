@@ -1,70 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab1GGTh4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 15:37:56 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62933 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700Ab1GGThz convert rfc822-to-8bit (ORCPT
+	id S1752109Ab1GGTnu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 15:43:50 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:52076 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751471Ab1GGTnt convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 15:37:55 -0400
-MIME-Version: 1.0
-In-Reply-To: <E0D41E29EB0DAC4E9F3FF173962E9E9403024F5420@dbde02.ent.ti.com>
-References: <E0D41E29EB0DAC4E9F3FF173962E9E940301FE2DED@dbde02.ent.ti.com>
-	<20110609124723.GA24636@n2100.arm.linux.org.uk>
-	<E0D41E29EB0DAC4E9F3FF173962E9E940301FE2EFB@dbde02.ent.ti.com>
-	<1307686140.10976.111.camel@vkoul-udesk3>
-	<E0D41E29EB0DAC4E9F3FF173962E9E940301FE3405@dbde02.ent.ti.com>
-	<1307724439.10976.188.camel@vkoul-udesk3>
-	<E0D41E29EB0DAC4E9F3FF173962E9E9403020B7C2A@dbde02.ent.ti.com>
-	<1308203119.10976.234.camel@vkoul-udesk3>
-	<E0D41E29EB0DAC4E9F3FF173962E9E9403024F5420@dbde02.ent.ti.com>
-Date: Thu, 7 Jul 2011 21:37:53 +0200
-X-Google-Sender-Auth: S6b_IEoW5wlw8mE5EGSVMLWdfPw
-Message-ID: <CAKnu2MorpLQuzwDGBJ7uSt6NOk=9vgeBN4f+Zx=CSU9okqzvGw@mail.gmail.com>
-Subject: Re: [RFC] dmaengine: add new api for preparing simple slave transfer
-From: Linus Walleij <linus.walleij@linaro.org>
-To: "Raju, Sundaram" <sundaram@ti.com>
-Cc: "Koul, Vinod" <vinod.koul@intel.com>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Dan <dan.j.williams@intel.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Jul 2011 15:43:49 -0400
+Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+In-Reply-To: <20110707092102.GI4590@erda.amd.com>
+References: <20110703150430.GV4590@erda.amd.com>
+	 <1309716271.3282.6.camel@twins> <20110704175927.GZ4590@erda.amd.com>
+	 <1309855905.3282.42.camel@twins> <20110705091252.GA5725@elte.hu>
+	 <20110706165357.GG4590@erda.amd.com> <1309972368.3282.317.camel@twins>
+	 <20110707092102.GI4590@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Thu, 07 Jul 2011 21:38:45 +0200
+Message-ID: <1310067525.3282.636.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/7 Raju, Sundaram <sundaram@ti.com>:
+On Thu, 2011-07-07 at 11:21 +0200, Robert Richter wrote:
+> On 06.07.11 13:12:48, Peter Zijlstra wrote:
+> > On Wed, 2011-07-06 at 18:53 +0200, Robert Richter wrote:
+> 
+> > > The system topology is always in /sys, also for device nodes. But we
+> > > can't get a device file descriptor from /sys. I doubt /sys is capable
+> > > to handle a device use count (need to be checked). We actually must
+> > > grab the pmu while attaching events to it. And, user space
+> > > implementation is must easier with /dev (see code in my previous
+> > > mail).
+> > 
+> > Well you must not per-se, from a user's perspective there isn't much of
+> > a difference between if the sys_perf_event_open() fails or if the
+> > initial file open fails, in both cases he's not getting an event.
+> 
+> It is not that I want to create event handles with open. 
 
-> | Just put some enumerator in enum dma_ctrl_cmd in
-> | dmaengine.h such as SDMA_TEXAS_STRIDE_CONFIG and call
-> | like this:
-> |
-> | /* However that config struct needs to look, basically */
-> | static struct sdma_ti_stride_cgf = {
-> |      take = M,
-> |      skip = N,
-> | };
-> |
-> | ret = chan->device->device_control(chan, SDMA_TEXAS_STRIDE_CONFIG,
-> | &sdma_ti_stride_cfg);
-> |
-> | Or something like this.
->
-> I think this is better option than your 2b. This requires just an addition of
-> one more enum in the dma_ctrl_cmd. What do you think about this?
-> If Dan and you are okay with this I will send a small patch for this asap.
+Never said you wanted to do that.
 
-I think this is the best way to solve it atleast. It's clear what is
-being done, and it's easy for a client trying to create such a slave
-transfer to back out if it turns out that the DMAC in use does not
-support this striding.
+> For this
+> there is the syscall. I use open() to create a unique reference to a
+> pmu in userspace. 
 
-Send a patch out and I'll Ack it, FWIW.
+Yeah, and its pointless.
 
-Linus Walleij
+Which ever way around you turn this problem it always ends up looking
+like:
+
+  fd = open("/sys/foo");
+  event = sys_perf_event_open();
+  close(fd);
+    /* do stuff */
+  close(event);
+
+The pmu not going away between the open() and sys_perf_event_open() is
+irrelevant. What is required is the success of both calls, up until that
+happens its a fail.
+
+> > perf stat -e IBS:fetches will always have a fail against rmmod, rmmod
+> > could complete before we try to open the file (assuming IBS is a
+> > module).
+> > 
+> > > 
+> > > My patch also includes code that creates a device class. It is also
+> > > visible in /sys/class/pmu/*.
+> > 
+> > So not only are you providing a duplicate of existing interfaces, you're
+> > actually duplicating information inside sysfs as well.
+> 
+> This is not duplication. /sys provides information about system
+> hierarchy, /dev is for controlling devices. Thus, every device node is
+> visible in /sys as it is part of the system.
+
+It is duplication, we already have a /sys representation of every pmu,
+by adding /sys/class/pmu/ you add another, that's pure duplication.
