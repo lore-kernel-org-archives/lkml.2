@@ -1,246 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab1GGPrA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 11:47:00 -0400
-Received: from wnohang.net ([178.79.154.173]:40547 "EHLO mail.wnohang.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab1GGPq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 11:46:58 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 933B9F0004
-X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 1E965F0003
-Date: Thu, 7 Jul 2011 21:16:48 +0530
-From: Raghavendra D Prabhu <rprabhu@wnohang.net>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: Ian Campbell <ijc@hellion.org.uk>, linux-kernel@vger.kernel.org,
-        jeremy.fitzhardinge@citrix.com, xen-devel@lists.xensource.com,
-        virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] Modpost section mismatch fix
-Message-ID: <20110707154648.GA4394@Xye>
-References: <20110703232508.GB4440@Xye>
- <1309769388.634.51.camel@zakaz.uk.xensource.com>
- <20110704221646.GB4490@Xye>
- <20110705141323.GG2972@dumpdata.com>
- <20110705142731.GA4463@Xye>
- <20110705144846.GA13548@dumpdata.com>
- <20110705213243.GA3647@dumpdata.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
-Content-Disposition: inline
-In-Reply-To: <20110705213243.GA3647@dumpdata.com>
-X-Operating-System: Arch linux x86_64 3.0.0-rc5-LYM
-X-Editor: VIM - Vi IMproved 7.3
-User-Agent: Mutt/1.5.21 (2010-12-30)
+	id S1755687Ab1GGPwW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 11:52:22 -0400
+Received: from oproxy6-pub.bluehost.com ([67.222.54.6]:41994 "HELO
+	oproxy6-pub.bluehost.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751748Ab1GGPwV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 11:52:21 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=a+Rp0vDAXftPzXup41oVA8xVdTBJeRpNQZUCqbxRAfGpcw2He+0XL355Jbb6MdiDiiR8jJsvR0IqtY67asKLRuDlkcWl6ua8QTe1QE5OE6YNf6QHM3cePUf4KqWfSb4k;
+Date: Thu, 7 Jul 2011 08:52:05 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Ram Pai <linuxram@us.ibm.com>
+Subject: Re: linux-next: build failure after merge of the pci-current tree
+Message-ID: <20110707085205.7524a5a7@jbarnes-desktop>
+In-Reply-To: <20110707105823.43343d2f9446f994f97cfd65@canb.auug.org.au>
+References: <20110707105823.43343d2f9446f994f97cfd65@canb.auug.org.au>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.22.0; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 67.161.37.189 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 7 Jul 2011 10:58:23 +1000
+Stephen Rothwell <sfr@canb.auug.org.au> wrote:
 
---IS0zKkzwUGydFO0o
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
+> Hi Jesse,
+> 
+> After merging the pci-current tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> drivers/built-in.o:(.toc1+0xb98): undefined reference to `pci_realloc'
+> 
+> Caused by commit 72007d2b4797 ("PCI: conditional resource-reallocation
+> through kernel parameter pci=realloc").
+> 
+> I have used the pci-current tree from next-20110706 for today.
 
-* On Tue, Jul 05, 2011 at 05:32:43PM -0400, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
->On Tue, Jul 05, 2011 at 10:48:46AM -0400, Konrad Rzeszutek Wilk wrote:
->> > >>xen_register_gsi and hence, xen_register_pirq are called from
->> > >>init (with xen_setup_acpi_sci) and non-init (with
->> > >>acpi_register_gsi_xen); since xen_set_acpi_sci calls it with gsi ==
->> > >>acpi_sci_override_gsi and is marked __init, the best way would be to
->> > >>call xen_register_gsi and xen_register_pirq with a boolean argument like
->> > >>sci_override to obviate the need to use acpi_sci_override_gsi in
->> > >>register_pirq. I will send the patch with this change if it looks good.
+Oops, x86 bits used in common code.  I've pushed a fix that just moves
+the variable into setup-bus.c rather than x86/pci/common.c.
 
->> > >Hold on, let me rebase #stable/pci.cleanups and see if the issue
->> > >here disappears.
->> > Thanks, will wait until the rebase and test after that.
+Ram, did you see the microblaze patch I forwarded you?  It moves some
+re-alloc control flags into common code; for -next it might be cleaner
+to use them in a few places.  Any comments?
 
->> Hm, it actually looks like it wont do the trick. Why don't you send
->> a patch against 3.0-rc6 with the outlined mechanism mentioned above.
->
->Or this patch (against 3.0-rc6) might do the trick:
->
->diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
->index fe00830..f567965 100644
->--- a/arch/x86/pci/xen.c
->+++ b/arch/x86/pci/xen.c
->@@ -327,13 +327,12 @@ int __init pci_xen_hvm_init(void)
-> }
->
-> #ifdef CONFIG_XEN_DOM0
->-static int xen_register_pirq(u32 gsi, int triggering)
->+static int xen_register_pirq(u32 gsi, int gsi_override, int triggering)
-> {
-> 	int rc, pirq, irq = -1;
-> 	struct physdev_map_pirq map_irq;
-> 	int shareable = 0;
-> 	char *name;
->-	bool gsi_override = false;
->
-> 	if (!xen_pv_domain())
-> 		return -1;
->@@ -345,31 +344,12 @@ static int xen_register_pirq(u32 gsi, int triggering)
-> 		shareable = 1;
-> 		name = "ioapic-level";
-> 	}
->-
-> 	pirq = xen_allocate_pirq_gsi(gsi);
-> 	if (pirq < 0)
-> 		goto out;
->
->-	/* Before we bind the GSI to a Linux IRQ, check whether
->-	 * we need to override it with bus_irq (IRQ) value. Usually for
->-	 * IRQs below IRQ_LEGACY_IRQ this holds IRQ == GSI, as so:
->-	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
->-	 * but there are oddballs where the IRQ != GSI:
->-	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 20 low level)
->-	 * which ends up being: gsi_to_irq[9] == 20
->-	 * (which is what acpi_gsi_to_irq ends up calling when starting the
->-	 * the ACPI interpreter and keels over since IRQ 9 has not been
->-	 * setup as we had setup IRQ 20 for it).
->-	 */
->-	if (gsi == acpi_sci_override_gsi) {
->-		/* Check whether the GSI != IRQ */
->-		acpi_gsi_to_irq(gsi, &irq);
->-		if (irq != gsi)
->-			/* Bugger, we MUST have that IRQ. */
->-			gsi_override = true;
->-	}
->-	if (gsi_override)
->-		irq = xen_bind_pirq_gsi_to_irq(irq, pirq, shareable, name);
->+	if (gsi_override >= 0)
->+		irq = xen_bind_pirq_gsi_to_irq(gsi_override, pirq, shareable, name);
-> 	else
-> 		irq = xen_bind_pirq_gsi_to_irq(gsi, pirq, shareable, name);
-> 	if (irq < 0)
->@@ -392,7 +372,7 @@ out:
-> 	return irq;
-> }
->
->-static int xen_register_gsi(u32 gsi, int triggering, int polarity)
->+static int xen_register_gsi(u32 gsi, int gsi_override, int triggering, int polarity)
-> {
-> 	int rc, irq;
-> 	struct physdev_setup_gsi setup_gsi;
->@@ -403,7 +383,7 @@ static int xen_register_gsi(u32 gsi, int triggering, int polarity)
-> 	printk(KERN_DEBUG "xen: registering gsi %u triggering %d polarity %d\n",
-> 			gsi, triggering, polarity);
->
->-	irq = xen_register_pirq(gsi, triggering);
->+	irq = xen_register_pirq(gsi, gsi_override, triggering);
->
-> 	setup_gsi.gsi = gsi;
-> 	setup_gsi.triggering = (triggering == ACPI_EDGE_SENSITIVE ? 0 : 1);
->@@ -425,6 +405,8 @@ static __init void xen_setup_acpi_sci(void)
-> 	int rc;
-> 	int trigger, polarity;
-> 	int gsi = acpi_sci_override_gsi;
->+	int irq = -1;
->+	int gsi_override = -1;
->
-> 	if (!gsi)
-> 		return;
->@@ -441,7 +423,25 @@ static __init void xen_setup_acpi_sci(void)
-> 	printk(KERN_INFO "xen: sci override: global_irq=%d trigger=%d "
-> 			"polarity=%d\n", gsi, trigger, polarity);
->
->-	gsi = xen_register_gsi(gsi, trigger, polarity);
->+	/* Before we bind the GSI to a Linux IRQ, check whether
->+	 * we need to override it with bus_irq (IRQ) value. Usually for
->+	 * IRQs below IRQ_LEGACY_IRQ this holds IRQ == GSI, as so:
->+	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
->+	 * but there are oddballs where the IRQ != GSI:
->+	 *  ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 20 low level)
->+	 * which ends up being: gsi_to_irq[9] == 20
->+	 * (which is what acpi_gsi_to_irq ends up calling when starting the
->+	 * the ACPI interpreter and keels over since IRQ 9 has not been
->+	 * setup as we had setup IRQ 20 for it).
->+	 */
->+	/* Check whether the GSI != IRQ */
->+	if (acpi_gsi_to_irq(gsi, &irq) == 0) {
->+		if (irq >= 0 && irq != gsi)
->+			/* Bugger, we MUST have that IRQ. */
->+			gsi_override = irq;
->+	}
->+
->+	gsi = xen_register_gsi(gsi, gsi_override, trigger, polarity);
-> 	printk(KERN_INFO "xen: acpi sci %d\n", gsi);
->
-> 	return;
->@@ -450,7 +450,7 @@ static __init void xen_setup_acpi_sci(void)
-> static int acpi_register_gsi_xen(struct device *dev, u32 gsi,
-> 				 int trigger, int polarity)
-> {
->-	return xen_register_gsi(gsi, trigger, polarity);
->+	return xen_register_gsi(gsi, -1 /* no GSI override */, trigger, polarity);
-> }
->
-> static int __init pci_xen_initial_domain(void)
->@@ -489,7 +489,7 @@ void __init xen_setup_pirqs(void)
-> 		if (acpi_get_override_irq(irq, &trigger, &polarity) == -1)
-> 			continue;
->
->-		xen_register_pirq(irq,
->+		xen_register_pirq(irq, -1 /* no GSI override */,
-> 			trigger ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE);
-> 	}
-> }
->
-Tested it. Works now.
-Reviewed-by: Raghavendra Prabhu <rprabhu@wnohang.net>
-
-Also,
-The condition for acpi_gsi_to_irq can be removed since it always returns zero.
-============================================
-  diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-  index f567965..3faa55b 100644
-  --- a/arch/x86/pci/xen.c
-  +++ b/arch/x86/pci/xen.c
-  @@ -405,7 +405,7 @@ static __init void xen_setup_acpi_sci(void)
-          int rc;
-          int trigger, polarity;
-          int gsi = acpi_sci_override_gsi;
-  -       int irq = -1;
-  +       unsigned int irq = 0u;
-          int gsi_override = -1;
-
-          if (!gsi)
-  @@ -435,11 +435,10 @@ static __init void xen_setup_acpi_sci(void)
-           * setup as we had setup IRQ 20 for it).
-           */
-          /* Check whether the GSI != IRQ */
-  -       if (acpi_gsi_to_irq(gsi, &irq) == 0) {
-  -               if (irq >= 0 && irq != gsi)
-  -                       /* Bugger, we MUST have that IRQ. */
-  -                       gsi_override = irq;
-  -       }
-  +       acpi_gsi_to_irq(gsi, &irq);
-  +       if (irq != gsi)
-  +               /* Bugger, we MUST have that IRQ. */
-  +               gsi_override = irq;
-
-          gsi = xen_register_gsi(gsi, gsi_override, trigger, polarity);
-          printk(KERN_INFO "xen: acpi sci %d\n", gsi);
-
-
---------------------------
-Raghavendra Prabhu
-GPG Id : 0xD72BE977
-Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
-www: wnohang.net
-
---IS0zKkzwUGydFO0o
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.17 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOFdToAAoJEKYW3KHXK+l3euUIAKHG7U2EYkkcbhTZYIJRTaub
-rHkayWUf9z9zsg3jecePqmeKfjSiAgby2bzV7kSYvarq3oBn1LG7wtY/xYz4jjGU
-Nl3sTRgduDJJuKoldUcbLHLwgwrT5D+iP+G6OYd6IofWNbhCAvdI4rF7f6+9D/Ib
-P98NmcIpvB2S2rZsLl3Vvb+cNCuDFA/kw+O48Ek4s20dXIgoNQL1YNKNvTNntf9M
-+iZC+JuTplyKB/vtqOvySHIje07GJrfj/QoMVtWvlpHdmwj8/u34qshEjxWgQB0+
-p2N8P82l+5YGBP+b9dZh+jzo7n06pP5eZD3o2AoqFBTNWQjvopeePwYg1CdTsII=
-=+Yx9
------END PGP SIGNATURE-----
-
---IS0zKkzwUGydFO0o--
+Thanks,
+-- 
+Jesse Barnes, Intel Open Source Technology Center
