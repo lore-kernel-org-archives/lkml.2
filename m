@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752374Ab1GGX3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 19:29:07 -0400
-Received: from queueout04-winn.ispmail.ntl.com ([81.103.221.58]:52137 "EHLO
-	queueout04-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750932Ab1GGX3F (ORCPT
+	id S1752315Ab1GGXdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 19:33:53 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:44487 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750932Ab1GGXdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 19:29:05 -0400
-Subject: Re: Build issue with linux next. duplicate member _count in
- mm_types.h
-From: Steven Newbury <steve@snewbury.org.uk>
-To: Christoph Lameter <cl@linux.com>
-Cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 07 Jul 2011 23:56:46 +0100
-In-Reply-To: <alpine.DEB.2.00.1107060933460.17202@router.home>
-References: <4E143120.2020501@cam.ac.uk>
-	 <alpine.DEB.2.00.1107060933460.17202@router.home>
-Content-Type: text/plain; charset="UTF-8"
-X-Mailer: Evolution 3.0.2 
-Content-Transfer-Encoding: 7bit
-Message-ID: <1310079408.31261.6.camel@infinity>
-Mime-Version: 1.0
-X-Cloudmark-Analysis: v=1.1 cv=R50lirqlHffDPPkwUlkuVa99MrvKdVWo//yz83qex8g= c=1 sm=0 a=sMO6HKB5UtYA:10 a=IkcTkHD0fZMA:10 a=xqWC_Br6kY4A:10 a=mDV3o1hIAAAA:8 a=NmoMSLsxmmZMzU6CVXcA:9 a=QEXdDO2ut3YA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Thu, 7 Jul 2011 19:33:52 -0400
+X-Sasl-enc: kDsxQYwmcYM6UjuV4+B7uwjqMaiEgWqiG+IkPQttFeZN 1310081631
+Date: Thu, 7 Jul 2011 16:33:35 -0700
+From: Greg KH <greg@kroah.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Sergiu Iordache <sergiu@google.com>,
+        Marco Stornelli <marco.stornelli@gmail.com>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] char drivers: ramoops debugfs entry
+Message-ID: <20110707233335.GA15120@kroah.com>
+References: <1309994990-4729-1-git-send-email-sergiu@chromium.org>
+ <1309994990-4729-4-git-send-email-sergiu@chromium.org>
+ <20110707130130.8dd02f01.akpm@linux-foundation.org>
+ <CAGDaqBQMp0xyBF7Z=P5qBqNcceG3JfWNEUX=T=yMZH74UP5kxA@mail.gmail.com>
+ <20110707155426.fd95445f.akpm@linux-foundation.org>
+ <CAGDaqBT13wsz3AWbLy7_STT2_EY1O6w3h_bc2bFYhrLMQobefw@mail.gmail.com>
+ <20110707162727.f361f053.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110707162727.f361f053.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2011-07-06 at 09:46 -0500, Christoph Lameter wrote:
-> On Wed, 6 Jul 2011, Jonathan Cameron wrote:
+On Thu, Jul 07, 2011 at 04:27:27PM -0700, Andrew Morton wrote:
+> On Thu, 7 Jul 2011 16:16:43 -0700
+> Sergiu Iordache <sergiu@google.com> wrote:
 > 
-> > Getting:
-> >
-> >   CHK     include/linux/version.h
-> >   CHK     include/generated/utsrelease.h
-> > make[1]: `include/generated/mach-types.h' is up to date.
-> >   CC      arch/arm/kernel/asm-offsets.s
-> > In file included from include/linux/sched.h:64:0,
-> >                  from arch/arm/kernel/asm-offsets.c:13:
-> > include/linux/mm_types.h:74:15: error: duplicate member '_count'
-> > make[1]: *** [arch/arm/kernel/asm-offsets.s] Error 1
-> > make: *** [prepare0] Error 2
-> >
-> > Issue looks to have been introduced by
-> >
-> >     mm: Rearrange struct page
-> >
-> > fc9bb8c768abe7ae10861c3510e01a95f98d5933
-> >
-> > Guessing it's a known issue, but just thought I'd flag it up in case
-> > it's something very specific about my build.
-> >
-> > gcc-2.6 armv7a
-> >
-> > Reverting that patch works, but given I don't know the history, I'm
-> > not proposing doing that in general!
+> > Ramoops currently dumps the log of a panic/oops in a memory area which
+> > is known not to be overwritten on restart (for example 1MB starting at
+> > 15MB). The way it works is by dividing the memory area in records of a
+> > set size (fixed at 4K before my patches, configurable after) and by
+> > dumping a record there for each oops/panic. The problem is that right
+> > now you have to access that memory area through other means, such as
+> > /dev/mem, which is not always possible.
+> > 
+> > What my patch did was to add a debugfs entry which returns a valid
+> > record each time (a single dump done by ramoops). The first call
+> > returns the first dump. The first call after the last valid dump
+> > returns an empty buffer. .
 > 
-> Well _count exists in two unionized structs but always has the same offset
-> within the larger struct. Maybe ARM creates different offsets there for
-> some reason?
+> Please fully describe this "record" in the v2 patch changelog.  We'll
+> want to review it for endianness, 32/64-bit compat issues,
+> maintainability, extensibility, etc.
+> 
+> > After it has returned nothing, the next
+> > calls return records from the start again.
+> 
+> That sounds a bit weird.  One would expect it to keep returning zero,
+> requiring userspace to lseek or close/open.
+> 
+> > The validity of a dump is
+> > checked by looking after the header. Any comments on this approach are
+> > welcome.
+> > 
+> > Changing the entry from debugfs to sysfs wouldn't be a problem. If
+> > sysfs is a valid solution I'll come with a patch that updates the
+> > documentation as well along with the sysfs entry.
+> 
+> sysfs sounds OK to me.  Then again, sysfs is supposed to be
+> one-value-per-file, so using it would be naughty.
+> 
+> I dunno, I'd be inclined to abuse the sysfs rule and hope that nobody
+> notices rather than create a fake char device.  But there's certainly
+> plenty of precedent for the fake char driver.
 
-This is due to this fix hitting gcc-4.6:
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=4784
+No, please don't abuse sysfs that way.
 
+Use debugfs or a char device node.
+
+thanks,
+
+greg k-h
