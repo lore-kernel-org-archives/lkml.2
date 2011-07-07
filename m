@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756598Ab1GGO10 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 10:27:26 -0400
-Received: from lxorguk.ukuu.org.uk ([81.2.110.251]:56719 "EHLO
-	lxorguk.ukuu.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab1GGO1X (ORCPT
+	id S1756670Ab1GGO1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 10:27:50 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48931 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756197Ab1GGO1s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 10:27:23 -0400
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: [PATCH] gma500: strip unneeded version headers
-To: jj@chaosbits.net, greg@kroah.com, linux-kernel@vger.kernel.org
-Date: Thu, 07 Jul 2011 15:17:46 +0100
-Message-ID: <20110707141745.2749.99838.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Thu, 7 Jul 2011 10:27:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1310004032.20150.14.camel@psiaudioba-mobl1>
+References: <1309123793-7806-1-git-send-email-per.forlin@linaro.org>
+	<1309123793-7806-3-git-send-email-per.forlin@linaro.org>
+	<1310004032.20150.14.camel@psiaudioba-mobl1>
+Date: Thu, 7 Jul 2011 16:27:47 +0200
+X-Google-Sender-Auth: OribGANYStjt4CuIKTE--UEkOGw
+Message-ID: <CAKnu2MoqGjgvVhSRQz_+bP=ErhaXp5+Rn0N+ui7F7SFmw=Q7vQ@mail.gmail.com>
+Subject: Re: [PATCH 2/2] dmaengine: remove ste_dma40 from issue_pending TODO
+From: Linus Walleij <linus.walleij@linaro.org>
+To: Vinod Koul <vkoul@infradead.org>
+Cc: Per Forlin <per.forlin@linaro.org>, linux-kernel@vger.kernel.org,
+        Rabin Vincent <rabin.vincent@stericsson.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+2011/7/7 Vinod Koul <vkoul@infradead.org>:
+> On Sun, 2011-06-26 at 23:29 +0200, Per Forlin wrote:
+>> ste_dma40 now implements issue_pending according to documentation.
+>> Submit adds descriptos to a pending queue with are flushed down to the DMAC
+>> at issue_pending.
+>>
+>> Signed-off-by: Per Forlin <per.forlin@linaro.org>
+> How about the client driver which are currently using this driver, wont
+> they break as they would be calling submit and not issue_pending...?
 
-Remove unneeded version.h includes from drivers/staging/gma500/
+They all call both, so it works fine. First submit() then issue_pending()
+in sucession.
 
-It was pointed out by 'make versioncheck' that some includes of
-linux/version.h are not needed in drivers/staging/gma500/.
-This patch removes them.
+In-tree drivers:
+drivers/tty/serial/amba-pl011.c
+drivers/mmc/host/mmci.c
+drivers/spi/spi-pl022.c
 
-Signed-off-by: Jesper Juhl <jj@chaosbits.net>
-[updated for all th file cleanup and movement]
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
+So:
+Acked-by: Linus Walleij <linus.walleij@linaro.org>
 
- drivers/staging/gma500/framebuffer.h      |    1 -
- drivers/staging/gma500/mdfld_dsi_dbi.h    |    1 -
- drivers/staging/gma500/mdfld_dsi_output.h |    1 -
- drivers/staging/gma500/psb_drv.h          |    1 -
- 4 files changed, 0 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/staging/gma500/framebuffer.h b/drivers/staging/gma500/framebuffer.h
-index 9416a21..d1b2289 100644
---- a/drivers/staging/gma500/framebuffer.h
-+++ b/drivers/staging/gma500/framebuffer.h
-@@ -22,7 +22,6 @@
- #ifndef _FRAMEBUFFER_H_
- #define _FRAMEBUFFER_H_
- 
--#include <linux/version.h>
- #include <drm/drmP.h>
- #include <drm/drm_fb_helper.h>
- 
-diff --git a/drivers/staging/gma500/mdfld_dsi_dbi.h b/drivers/staging/gma500/mdfld_dsi_dbi.h
-index a76813e..a51e2f8 100644
---- a/drivers/staging/gma500/mdfld_dsi_dbi.h
-+++ b/drivers/staging/gma500/mdfld_dsi_dbi.h
-@@ -29,7 +29,6 @@
- #define __MDFLD_DSI_DBI_H__
- 
- #include <linux/backlight.h>
--#include <linux/version.h>
- #include <drm/drmP.h>
- #include <drm/drm.h>
- #include <drm/drm_crtc.h>
-diff --git a/drivers/staging/gma500/mdfld_dsi_output.h b/drivers/staging/gma500/mdfld_dsi_output.h
-index 0bf00ea..4300f10 100644
---- a/drivers/staging/gma500/mdfld_dsi_output.h
-+++ b/drivers/staging/gma500/mdfld_dsi_output.h
-@@ -29,7 +29,6 @@
- #define __MDFLD_DSI_OUTPUT_H__
- 
- #include <linux/backlight.h>
--#include <linux/version.h>
- #include <drm/drmP.h>
- #include <drm/drm.h>
- #include <drm/drm_crtc.h>
-diff --git a/drivers/staging/gma500/psb_drv.h b/drivers/staging/gma500/psb_drv.h
-index 9e4f361..c19045f 100644
---- a/drivers/staging/gma500/psb_drv.h
-+++ b/drivers/staging/gma500/psb_drv.h
-@@ -20,7 +20,6 @@
- #ifndef _PSB_DRV_H_
- #define _PSB_DRV_H_
- 
--#include <linux/version.h>
- #include <linux/kref.h>
- 
- #include <drm/drmP.h>
-
+Thanks,
+Linus Walleij
