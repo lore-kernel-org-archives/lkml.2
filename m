@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751615Ab1GGEPQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 00:15:16 -0400
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:33969
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750786Ab1GGEPL (ORCPT
+	id S1751869Ab1GGEXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 00:23:54 -0400
+Received: from mailout01.t-online.de ([194.25.134.80]:34657 "EHLO
+	mailout01.t-online.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750753Ab1GGEXx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 00:15:11 -0400
-Date: Wed, 6 Jul 2011 21:14:32 -0700
-From: matt mooney <mfm@muteddisk.com>
-To: Matt Chen <machen@novell.com>
-Cc: N?meth M?rton <nm127@freemail.hu>, David Chang <DChang@novell.com>,
-        Greg KH <greg@kroah.com>, Matthew Wilcox <matthew@wil.cx>,
-        Max Vozeler <max@vozeler.com>, Joe Perches <joe@perches.com>,
-        linux-usb@vger.kernel.org, usbip-devel@lists.sourceforge.net,
-        devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, RFC] USBIP protocol documentation
-Message-ID: <20110707041432.GA62825@haskell.muteddisk.com>
-Mail-Followup-To: Matt Chen <machen@novell.com>,
-	N?meth M?rton <nm127@freemail.hu>, David Chang <DChang@novell.com>,
-	Greg KH <greg@kroah.com>, Matthew Wilcox <matthew@wil.cx>,
-	Max Vozeler <max@vozeler.com>, Joe Perches <joe@perches.com>,
-	linux-usb@vger.kernel.org, usbip-devel@lists.sourceforge.net,
-	devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
-References: <20110524183448.GA18511@kroah.com> <4DDC142E.6070003@freemail.hu> <20110525031222.GB14290@haskell.muteddisk.com> <4DDC93D5.9070607@freemail.hu> <4DDDFDA7.6030900@freemail.hu> <4E097A32.1000504@freemail.hu> <BANLkTimG_kWr_YPVMasUr+7+KRFPnnbjNw@mail.gmail.com> <CAL-cBk1L8dgAtP2hMwkL2B-cU76mKaaWib=QVbVKei2DaoB3Dw@mail.gmail.com> <4E1151BD.5010907@freemail.hu> <CALx5=V-YdXY2UCS5UQUBZmQjMCUO7xZCOE-tf-s2MkD+2TXuxQ@mail.gmail.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CALx5=V-YdXY2UCS5UQUBZmQjMCUO7xZCOE-tf-s2MkD+2TXuxQ@mail.gmail.com>
-User-Agent: Mutt/1.4.2.3i
+	Thu, 7 Jul 2011 00:23:53 -0400
+Message-ID: <4E1534DC.3020306@t-online.de>
+Date: Thu, 07 Jul 2011 06:23:56 +0200
+From: Knut Petersen <Knut_Petersen@t-online.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; de; rv:1.9.2.17) Gecko/20110414 SUSE/3.1.10 Thunderbird/3.1.10
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: axboe@kernel.dk, kay.sievers@vrfy.org,
+        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [BUG 2.6.38.8] Bisected to commit 5fb46ae7b8c51b05a12c6a66108e8d398c20ee09
+References: <4E11BAE0.5020208@t-online.de> <20110707003338.GA25302@suse.de>
+In-Reply-To: <20110707003338.GA25302@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-ID: SUb8AwZXgh5+UYAsbUl71ByixkpJARHflhPQ9P9sA7xbSCL3pg6oJsJrnoC55OqggF
+X-TOI-MSGID: 655d3401-2804-4b5e-82c3-d062f399f902
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16:24 Mon 04 Jul     , Matt Chen wrote:
-> Hi N?meth,
-> 
-> 2011/7/4 N?meth M?rton <nm127@freemail.hu>:
-> > Hi David, Matt Chen and Matt Mooney,
-> >
-> > it looks like we four are actively dealing with the USBIP protocol documentation.
-> >
-> > David, are you working at the same place like Matt Chen? Then you can easily
-> > see what you two has been done and not working parallel on the same thing.
-> Actually, David and me (Matt Chen) are working on 2 different part.
-> 1. Matt Chen : Server side
-> 2. David Chang : Client side.
-> Just didn't figure you submitted the protocol document earlier than we do.
-> We also write a wiki for our code reviewing, protocol, but since all
-> we are working personally, something we don't sync, that's why I tried
-> to ask if which part you are not working on or finished, we can work
-> on it.
+Am 07.07.2011 02:33, schrieb Greg KH:
+> On Mon, Jul 04, 2011 at 03:06:40PM +0200, Knut Petersen wrote:
+>> Hi everybody!
+>>
+>> An openSuse 11.2 system reliably refused to boot properly with kernel 2.6.38.8
+>> although the prior 2.6.38.y kernels worked fine.  After a few seconds booting
+>> stopped. Several <ctrl-c> did help, but a lot of services were not started properly,
+>> only the root partition was available. Nothing unusual could be found in the
+>> kernel messages.
+>>
+>> I bisected the problem to commit 5fb46ae7b8c51b05a12c6a66108e8d398c20ee09.
+>>
+>> That gave me the idea to disconnect the Plextor PX-755A dvd drive  and to
+>> try 2.6.38.8 again. It booted without problem.
+> Does the 2.6.39.2 kernel work properly for you?
+>
+Yes.  Kernel 2.6.38[,1,2,3,4,5,6,7] 2.6.39[1,2] 3.0-git are ok, only 2.6.38.8 is broken in the
+way described above.
 
-Hey guys,
-
-It seems like you guys all have a handle on this, so I will defer. When the
-documentation is at a point where it can be submitted, I will send in grammar
-patches along with possible reorganization suggestions.
-
-Is this a public wiki Matt so that you can post a link to it?
-
-Thanks,
-mfm
-
-> Since you submitted the document, it turned out we follow the format
-> you've done and do some fix for it.
-> > I'm currently not actively modifying the USBIP protocol description.
-> >
-> > Matt Mooney wanted to restructure the USBIP protocol documentation. Matt, do
-> > you have anything already done? If yes, maybe it would be good if you could
-> > send it so David can do the changes on your version. If you haven't worked on
-> > it then please tell and David can add the necessary modifications he suggested.
-> I supposed it is Matt Mooney. ~ :)
-> > Regards,
-> >
-> > ? ? ? ?M?rton N?meth
-> >
-> > David Chang wrote:
-> >> Hi N?meth,
-> >>
-> >> 2011/6/29 David Chang <dchang@novell.com>:
-> >>> Hi,
-> >>>
-> >>> Thanks for your great effort.
-> >>> Just a little comment on UNLINK pdu size.
-> > [...]
-> >> Would you add this field into your path or should I send another patch
-> >> to add it?
-> >
-> >
-> 
-> 
-> 
-> --
-> Thanks ~
-> Matt Chen
-> 
+cu,
+ knut
