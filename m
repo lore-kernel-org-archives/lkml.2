@@ -1,78 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751434Ab1GGEnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 00:43:49 -0400
-Received: from mail.wdtv.com ([66.118.69.84]:52602 "EHLO mail.wdtv.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756Ab1GGEns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 00:43:48 -0400
-From: Gene Heskett <gene.heskett@gmail.com>
-To: Knut Petersen <Knut_Petersen@t-online.de>,
-        Knut Petersen <Knut_Petersen@t-online.de>
-Subject: Re: [BUG 2.6.38.8] Bisected to commit 5fb46ae7b8c51b05a12c6a66108e8d398c20ee09
-Date: Thu, 7 Jul 2011 00:43:45 -0400
-User-Agent: KMail/1.13.7 (Linux/2.6.38.8-pclos1.pae.bfs; KDE/4.6.4; i686; ; )
-Cc: Greg KH <gregkh@suse.de>, axboe@kernel.dk, kay.sievers@vrfy.org,
-        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-References: <4E11BAE0.5020208@t-online.de> <20110707003338.GA25302@suse.de> <4E1534DC.3020306@t-online.de>
-In-Reply-To: <4E1534DC.3020306@t-online.de>
+	id S1752096Ab1GGEyy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 00:54:54 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:39721 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750791Ab1GGEyv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 00:54:51 -0400
+Date: Thu, 7 Jul 2011 10:24:20 +0530
+From: Ankita Garg <ankita@in.ibm.com>
+To: david@lang.hm
+Cc: Pekka Enberg <penberg@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
+        thomas.abraham@linaro.org, Dave Hansen <dave@linux.vnet.ibm.com>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Matthew Garrett <mjg59@srcf.ucam.org>,
+        Arjan van de Ven <arjan@infradead.org>,
+        Christoph Lameter <cl@linux.com>
+Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
+ Power Management
+Message-ID: <20110707045420.GA23595@in.ibm.com>
+Reply-To: Ankita Garg <ankita@in.ibm.com>
+References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com>
+ <20110629130038.GA7909@in.ibm.com>
+ <CAOJsxLHQP=-srK_uYYBsPb7+rUBnPZG7bzwtCd-rRaQa4ikUFg@mail.gmail.com>
+ <alpine.DEB.2.02.1107061318190.2535@asgard.lang.hm>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107070043.45510.gene.heskett@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.02.1107061318190.2535@asgard.lang.hm>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 07, 2011, Knut Petersen wrote:
->Am 07.07.2011 02:33, schrieb Greg KH:
->> On Mon, Jul 04, 2011 at 03:06:40PM +0200, Knut Petersen wrote:
->>> Hi everybody!
->>> 
->>> An openSuse 11.2 system reliably refused to boot properly with kernel
->>> 2.6.38.8 although the prior 2.6.38.y kernels worked fine.  After a
->>> few seconds booting stopped. Several <ctrl-c> did help, but a lot of
->>> services were not started properly, only the root partition was
->>> available. Nothing unusual could be found in the kernel messages.
->>> 
->>> I bisected the problem to commit
->>> 5fb46ae7b8c51b05a12c6a66108e8d398c20ee09.
->>> 
->>> That gave me the idea to disconnect the Plextor PX-755A dvd drive  and
->>> to try 2.6.38.8 again. It booted without problem.
->> 
->> Does the 2.6.39.2 kernel work properly for you?
+On Wed, Jul 06, 2011 at 01:20:55PM -0700, david@lang.hm wrote:
+> On Wed, 6 Jul 2011, Pekka Enberg wrote:
+> 
+> >Why does the allocator need to know about address boundaries? Why
+> >isn't it enough to make the page allocator and reclaim policies favor using
+> >memory from lower addresses as aggressively as possible? That'd mean
+> >we'd favor the first memory banks and could keep the remaining ones
+> >powered off as much as possible.
+> >
+> >IOW, why do we need to support scenarios such as this:
+> >
+> >  bank 0     bank 1   bank 2    bank3
+> >| online  | offline | online  | offline |
+> 
+> I believe that there are memory allocations that cannot be moved
+> after they are made (think about regions allocated to DMA from
+> hardware where the hardware has already been given the address space
+> to DMA into)
 >
->Yes.  Kernel 2.6.38[,1,2,3,4,5,6,7] 2.6.39[1,2] 3.0-git are ok, only
->2.6.38.8 is broken in the way described above.
->
->cu,
-> knut
 
-FWIW guys, running a Texstar built 2.6.38.8-pae-bfs kernel here, but my dvd 
-writer, which works, is (from messages at last boot)
-scsi 4:0:0:0: CD-ROM ATAPI iHAS324 A BL1D PQ: 0 ANSI: 5
+Thats true. These are kernel allocations which are not movable. However,
+the ZONE_MOVABLE would enable us to create complete movable zones and
+the ones that have the kernel allocations could be flagged as kernelcore
+zone.
+ 
+> As a result, you may not be able to take bank 2 offline, so your
+> option is to either leave banks 0-2 all online, or support emptying
+> bank 1 and taking it offline.
+> 
 
-Assigned to /dev/sr0.
-
-And I cannot duplicate this.  My problems are shutdown/reboot related, it 
-"turning off swap"
-"-f" on the next line, and it is hung till I tap the hardware reset button.
-
-In your case I'd suspect something in the Plextor that could be as simple 
-as a dusty led/ir combo that detects the disk.  But dvd writers have become 
-so cheap they are hardly worth pulling the covers off to check.
-
-Cheers, gene
 -- 
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-O give me a home,
-Where the buffalo roam,
-Where the deer and the antelope play,
-Where seldom is heard
-A discouraging word,
-'Cause what can an antelope say?
+Regards,
+Ankita Garg (ankita@in.ibm.com)
+Linux Technology Center
+IBM India Systems & Technology Labs,
+Bangalore, India
