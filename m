@@ -1,111 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751524Ab1GGEGa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 00:06:30 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:59762 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750764Ab1GGEG1 (ORCPT
+	id S1751615Ab1GGEPQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 00:15:16 -0400
+Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:33969
+	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750786Ab1GGEPL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 00:06:27 -0400
-X-Nat-Received: from [202.181.97.72]:56777 [ident-empty]
-	by smtp-proxy.isp with TPROXY id 1310011474.28609
-Message-Id: <201107070404.p6744Ygd029169@www262.sakura.ne.jp>
-Subject: Re: [PATCH][Resend v2] Fix infinite loop in search_binary_handler()
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: akpm@linux-foundation.org
-Cc: richard@nod.at, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Thu, 07 Jul 2011 13:04:34 +0900
-References: <1309779003-8668-1-git-send-email-richard@nod.at> <201107051155.18465.richard@nod.at> <201107052102.BHE69234.OLQOVMJFOFFHSt@I-love.SAKURA.ne.jp> <201107051421.02658.richard@nod.at> <201107062028.JFH82378.OLQHFFMVJtFOSO@I-love.SAKURA.ne.jp> <20110706132138.7e65a912.akpm@linux-foundation.org>
-In-Reply-To: <20110706132138.7e65a912.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: Kaspersky Anti-Virus for Linux Mail Server 5.6.44/RELEASE, bases: 07072011 #5531376, status: clean
+	Thu, 7 Jul 2011 00:15:11 -0400
+Date: Wed, 6 Jul 2011 21:14:32 -0700
+From: matt mooney <mfm@muteddisk.com>
+To: Matt Chen <machen@novell.com>
+Cc: N?meth M?rton <nm127@freemail.hu>, David Chang <DChang@novell.com>,
+        Greg KH <greg@kroah.com>, Matthew Wilcox <matthew@wil.cx>,
+        Max Vozeler <max@vozeler.com>, Joe Perches <joe@perches.com>,
+        linux-usb@vger.kernel.org, usbip-devel@lists.sourceforge.net,
+        devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, RFC] USBIP protocol documentation
+Message-ID: <20110707041432.GA62825@haskell.muteddisk.com>
+Mail-Followup-To: Matt Chen <machen@novell.com>,
+	N?meth M?rton <nm127@freemail.hu>, David Chang <DChang@novell.com>,
+	Greg KH <greg@kroah.com>, Matthew Wilcox <matthew@wil.cx>,
+	Max Vozeler <max@vozeler.com>, Joe Perches <joe@perches.com>,
+	linux-usb@vger.kernel.org, usbip-devel@lists.sourceforge.net,
+	devel@driverdev.osuosl.org, LKML <linux-kernel@vger.kernel.org>
+References: <20110524183448.GA18511@kroah.com> <4DDC142E.6070003@freemail.hu> <20110525031222.GB14290@haskell.muteddisk.com> <4DDC93D5.9070607@freemail.hu> <4DDDFDA7.6030900@freemail.hu> <4E097A32.1000504@freemail.hu> <BANLkTimG_kWr_YPVMasUr+7+KRFPnnbjNw@mail.gmail.com> <CAL-cBk1L8dgAtP2hMwkL2B-cU76mKaaWib=QVbVKei2DaoB3Dw@mail.gmail.com> <4E1151BD.5010907@freemail.hu> <CALx5=V-YdXY2UCS5UQUBZmQjMCUO7xZCOE-tf-s2MkD+2TXuxQ@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <CALx5=V-YdXY2UCS5UQUBZmQjMCUO7xZCOE-tf-s2MkD+2TXuxQ@mail.gmail.com>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> What is that "for (try=0; try<2" loop actually there for?  To retry
-> after the request_module(), it appears.  Which is pointless if
-> !CONFIG_MODULES.
+On 16:24 Mon 04 Jul     , Matt Chen wrote:
+> Hi N?meth,
+> 
+> 2011/7/4 N?meth M?rton <nm127@freemail.hu>:
+> > Hi David, Matt Chen and Matt Mooney,
+> >
+> > it looks like we four are actively dealing with the USBIP protocol documentation.
+> >
+> > David, are you working at the same place like Matt Chen? Then you can easily
+> > see what you two has been done and not working parallel on the same thing.
+> Actually, David and me (Matt Chen) are working on 2 different part.
+> 1. Matt Chen : Server side
+> 2. David Chang : Client side.
+> Just didn't figure you submitted the protocol document earlier than we do.
+> We also write a wiki for our code reviewing, protocol, but since all
+> we are working personally, something we don't sync, that's why I tried
+> to ask if which part you are not working on or finished, we can work
+> on it.
 
-Indeed. This loop was introduced in Linux 1.3.57 (where CONFIG_KERNELD was
-introduced). Comparing between 1.3.56 and 1.3.57, there is no reason to retry
-if !CONFIG_KERNELD, for get_fs_type() in fs/super.c and dev_get() in
-net/core/dev.c do not retry if !CONFIG_KERNELD.
+Hey guys,
 
-struct file_system_type *get_fs_type(const char *name)
-{
-	struct file_system_type * fs = file_systems;
-	
-	if (!name)
-		return fs;
-	for (fs = file_systems; fs && strcmp(fs->name, name); fs = fs->next)
-		;
-#ifdef CONFIG_KERNELD
-	if (!fs && (request_module(name) == 0)) {
-		for (fs = file_systems; fs && strcmp(fs->name, name); fs = fs->next)
-			;
-	}
-#endif
+It seems like you guys all have a handle on this, so I will defer. When the
+documentation is at a point where it can be submitted, I will send in grammar
+patches along with possible reorganization suggestions.
 
-	return fs;
-}
+Is this a public wiki Matt so that you can post a link to it?
 
-struct device *dev_get(const char *name)
-{
-	struct device *dev;
+Thanks,
+mfm
 
-	for (dev = dev_base; dev != NULL; dev = dev->next) 
-	{
-		if (strcmp(dev->name, name) == 0)
-			return(dev);
-	}
-#ifdef CONFIG_KERNELD
-	if (request_module(name) == 0)
-		for (dev = dev_base; dev != NULL; dev = dev->next) {
-			if (strcmp(dev->name, name) == 0)
-				return(dev);
-		}
-#endif
-	return(NULL);
-}
-
-It is likely that we have been doing needless retry if !CONFIG_MODULES.
-----------------------------------------
-[PATCH] exec: Do not retry load_binary method if CONFIG_MODULES=n.
-
-If CONFIG_MODULES=n, it makes no sense to retry the list of binary formats
-handler because the list will not be modified by request_module().
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
----
-diff --git a/fs/exec.c b/fs/exec.c
-index 6075a1e..46c399f 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1401,9 +1401,9 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 			}
- 		}
- 		read_unlock(&binfmt_lock);
-+#ifdef CONFIG_MODULES
- 		if (retval != -ENOEXEC || bprm->mm == NULL) {
- 			break;
--#ifdef CONFIG_MODULES
- 		} else {
- #define printable(c) (((c)=='\t') || ((c)=='\n') || (0x20<=(c) && (c)<=0x7e))
- 			if (printable(bprm->buf[0]) &&
-@@ -1412,8 +1412,10 @@ int search_binary_handler(struct linux_binprm *bprm,struct pt_regs *regs)
- 			    printable(bprm->buf[3]))
- 				break; /* -ENOEXEC */
- 			request_module("binfmt-%04x", *(unsigned short *)(&bprm->buf[2]));
--#endif
- 		}
-+#else
-+		break;
-+#endif
- 	}
- 	return retval;
- }
+> Since you submitted the document, it turned out we follow the format
+> you've done and do some fix for it.
+> > I'm currently not actively modifying the USBIP protocol description.
+> >
+> > Matt Mooney wanted to restructure the USBIP protocol documentation. Matt, do
+> > you have anything already done? If yes, maybe it would be good if you could
+> > send it so David can do the changes on your version. If you haven't worked on
+> > it then please tell and David can add the necessary modifications he suggested.
+> I supposed it is Matt Mooney. ~ :)
+> > Regards,
+> >
+> > ? ? ? ?M?rton N?meth
+> >
+> > David Chang wrote:
+> >> Hi N?meth,
+> >>
+> >> 2011/6/29 David Chang <dchang@novell.com>:
+> >>> Hi,
+> >>>
+> >>> Thanks for your great effort.
+> >>> Just a little comment on UNLINK pdu size.
+> > [...]
+> >> Would you add this field into your path or should I send another patch
+> >> to add it?
+> >
+> >
+> 
+> 
+> 
+> --
+> Thanks ~
+> Matt Chen
+> 
