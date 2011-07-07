@@ -1,43 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754635Ab1GGGaZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 02:30:25 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53370 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753081Ab1GGGaW (ORCPT
+	id S1754586Ab1GGGsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 02:48:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:61215 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752882Ab1GGGst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 02:30:22 -0400
-Date: Wed, 6 Jul 2011 23:30:16 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: djkurtz@chromium.org
-Cc: rydberg@euromail.se, chase.douglas@canonical.com, rubini@cvml.unipv.it,
-        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-        derek.foreman@collabora.co.uk, daniel.stone@collabora.co.uk,
-        olofj@chromium.org
-Subject: Re: [PATCH 01/12] Input: synaptics - cleanup 0x0c query documentation
-Message-ID: <20110707063016.GG7658@core.coreip.homeip.net>
-References: <1309324042-22943-1-git-send-email-djkurtz@chromium.org>
- <1309324042-22943-2-git-send-email-djkurtz@chromium.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1309324042-22943-2-git-send-email-djkurtz@chromium.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+	Thu, 7 Jul 2011 02:48:49 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 5/5] Staging: comedi: fix warning issue in unioxx5.c
+Date: Thu,  7 Jul 2011 12:30:39 +0530
+Message-Id: <1310022039-25599-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH 1/2]Staging: comedi: fix line over 80 character warning issues in unioxx5.c>
+References: <[PATCH 1/2]Staging: comedi: fix line over 80 character warning issues in unioxx5.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 29, 2011 at 01:07:11PM +0800, djkurtz@chromium.org wrote:
-> From: Daniel Kurtz <djkurtz@chromium.org>
-> 
-> Convert some spaces to tabs.
-> Reorder defines to match bit ordering.
-> Add defines for all bits.
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-I'd prefer if we added defines for bits we are actually using, so I am
-going to drop this patch (sans the bits I folded into fuzz patch).
+This is a patch to the unioxx5.c file that fixes up a  warning:line over 80 charcter found by the checkpatch.pl tool
 
-Thanks.
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/unioxx5.c |   25 ++++++++++++++++++-------
+ 1 files changed, 18 insertions(+), 7 deletions(-)
 
+diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
+index 598884e..9b311c7 100644
+--- a/drivers/staging/comedi/drivers/unioxx5.c
++++ b/drivers/staging/comedi/drivers/unioxx5.c
+@@ -75,8 +75,13 @@ Devices: [Fastwel] UNIOxx-5 (unioxx5),
+ /* 'private' structure for each subdevice */
+ struct unioxx5_subd_priv {
+ 	int usp_iobase;
+-	unsigned char usp_module_type[12];	/* 12 modules. each can be 70L or 73L */
+-	unsigned char usp_extra_data[12][4];	/* for saving previous written value for analog modules */
++	unsigned char usp_module_type[12];	/* 12 modules. each can be 70L
++						 * or 73L
++						*/
++	unsigned char usp_extra_data[12][4];	/* for saving previous written
++						 * value for analog modules
++						*/
++
+ 	unsigned char usp_prev_wr_val[3];	/* previous written value */
+ 	unsigned char usp_prev_cn_val[3];	/* previous channel value */
+ };
+@@ -398,7 +402,10 @@ static int __unioxx5_digital_read(struct unioxx5_subd_priv *usp,
+ 	*data &= mask;
+ 
+ 	if (channel_offset > 1)
+-		channel -= 2 << channel_offset;	/* this operation is created for correct readed value to 0 or 1 */
++		channel -= 2 << channel_offset;	/* this operation is created for
++						 * correct readed value to
++						 * 0 or 1
++						*/
+ 
+ 	*data >>= channel;
+ 	return 1;
+@@ -444,7 +451,9 @@ static int __unioxx5_analog_write(struct unioxx5_subd_priv *usp,
+ 	usp->usp_extra_data[module][i] = (unsigned char)((*data & 0xFF00) >> 8);
+ 
+ 	/* while(!((inb(usp->usp_iobase + 0)) & TxBE)); */
+-	outb(module + 1, usp->usp_iobase + 5);	/* sending module number to card(1 .. 12) */
++	outb(module + 1, usp->usp_iobase + 5);	/* sending module number
++						 * to card (1..12)
++						*/
+ 	outb('W', usp->usp_iobase + 6);	/* sends (W)rite command to module */
+ 
+ 	/* sending for bytes to module(one byte per cycle iteration) */
+@@ -475,7 +484,9 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
+ 	}
+ 
+ 	__unioxx5_analog_config(usp, channel);
+-	outb(module_no + 1, usp->usp_iobase + 5);	/* sends module number to card(1 .. 12) */
++	outb(module_no + 1, usp->usp_iobase + 5);	/* sends module number
++							 * to card (1. .12)
++							*/
+ 	outb('V', usp->usp_iobase + 6);	/* sends to module (V)erify command */
+ 	control = inb(usp->usp_iobase);	/* get control register byte */
+ 
 -- 
-Dmitry
+1.6.5.2
+
