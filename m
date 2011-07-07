@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753129Ab1GGU3I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 16:29:08 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42091 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751794Ab1GGU3G (ORCPT
+	id S1751867Ab1GGUc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 16:32:29 -0400
+Received: from www.linutronix.de ([62.245.132.108]:47374 "EHLO
+	Galois.linutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab1GGUc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 16:29:06 -0400
-From: julie Sullivan <kernelmail.jms@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Date: Thu, 7 Jul 2011 21:28:58 +0100
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4-revert+; KDE/4.6.2; x86_64; ; )
-Cc: julie Sullivan <kernelmail.jms@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, torvalds@linux-foundation.org
-References: <CAAVPGONLqy+gn_ggjQxyUoYifs4Hipcd-0t931w04StyrTCzxQ@mail.gmail.com> <201107072047.14429.kernelmail.jms@gmail.com> <20110707195845.GD6014@linux.vnet.ibm.com>
-In-Reply-To: <20110707195845.GD6014@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107072129.00324.kernelmail.jms@gmail.com>
+	Thu, 7 Jul 2011 16:32:28 -0400
+From: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org,
+        Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+Subject: [PATCH] irq: always set IRQF_ONESHOT if no primary handler is specified
+Date: Thu,  7 Jul 2011 22:32:17 +0200
+Message-Id: <1310070737-18514-1-git-send-email-bigeasy@linutronix.de>
+X-Mailer: git-send-email 1.7.4.4
+X-Linutronix-Spam-Score: -1.0
+X-Linutronix-Spam-Level: -
+X-Linutronix-Spam-Status: No , -1.0 points, 5.0 required,  ALL_TRUSTED=-1,SHORTCIRCUIT=-0.0001
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What happens if you revert only these two?
-> 
-> f8b7fc6b514f34a51875dd48dff70d4d17a54f38 rcu: Move RCU_BOOST #ifdefs to header f
-> a46e0899eec7a3069bcadd45dfba7bf67c6ed016 rcu: use softirq instead of kthreads ex
-> 
-> If that works, perhaps we should try to break down a46e0899ee into
-> smaller pieces to see what is causing the trouble.
-> 
-> 								Thanx, Paul
+If no primary handler is specified then a default one is assigned which
+always returns IRQ_WAKE_THREAD. This handler requires the IRQF_ONESHOT
+flag on LEVEL / EIO typed irqs because the source of interrupt is not
+disabled.
+Since it is required for those users and there is no difference for others
+it makes sense to add this flag unconditionally.
 
-I'll let you know as soon as the kernel is finished :-)
-I'll look into the serial console but this is a laptop so I suppose I need to get my hands on
- a EHCI debug port or something that will work with one of the other ports.
+Signed-off-by: Sebastian Andrzej Siewior <bigeasy@linutronix.de>
+---
+A quick grep shows that drivers/staging/iio/adc/ad7816.c is the only
+driver in tree doing it wrong i.e. request_threaded_irq with
+IRQF_TRIGGER_{LOW|HIGH} but without ONEHOST.
 
+There are 59 users in tree which request an edge typed interrupt. 24 of
+them specify the ONEHOST flag the others don't. Both variants are valid
+and identical but a consistent behavior would be nice.
+
+There is a total of 134 users and 87 specify the irq type directly. For
+the remaining 47 the type depends on initial configuration of the irq chip
+or it might be specified via the device tree, dunno. 
+Should that patch be accepted I suggest to remove the ONESHOT flag from
+every request_th.* which uses NULL as the primary handler so we have a
+consistent behavior here.
+
+ kernel/irq/manage.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+index 0a7840ae..3f9cd47 100644
+--- a/kernel/irq/manage.c
++++ b/kernel/irq/manage.c
+@@ -1322,6 +1322,7 @@ int request_threaded_irq(unsigned int irq, irq_handler_t handler,
+ 		if (!thread_fn)
+ 			return -EINVAL;
+ 		handler = irq_default_primary_handler;
++		irqflags |= IRQF_ONESHOT;
+ 	}
+ 
+ 	action = kzalloc(sizeof(struct irqaction), GFP_KERNEL);
+-- 
+1.7.4.4
 
