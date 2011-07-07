@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab1GGNob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:44:31 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:56357 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755170Ab1GGNo2 (ORCPT
+	id S1756692Ab1GGNpz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:45:55 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44565 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756639Ab1GGNpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:44:28 -0400
-X-Sasl-enc: KiAEzvfuF/iZ1SVjhb3UlqjBUeryemylTHbQKXj7TVdK 1310046267
-Date: Thu, 7 Jul 2011 06:42:29 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Axel Lin <axel.lin@gmail.com>
-Subject: Re: linux-next: manual merge of the staging tree with the ux500-core
- tree
-Message-ID: <20110707134229.GA26939@kroah.com>
-References: <20110707154223.d7ecda2a6cc84e033bb0b26a@canb.auug.org.au>
+	Thu, 7 Jul 2011 09:45:53 -0400
+Date: Thu, 7 Jul 2011 16:44:39 +0300
+From: Dan Carpenter <error27@gmail.com>
+To: Ravishankar <ravishankarkm32@gmail.com>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+        Ravishankar <ravishankarm32@gmail.com>, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>
+Subject: Re: [PATCH 7/7] Staging: comedi: fix warning issue in unioxx5.c
+Message-ID: <20110707134439.GM18655@shale.localdomain>
+References: <1310036797-15964-1-git-send-email-ravishankarkm32@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110707154223.d7ecda2a6cc84e033bb0b26a@canb.auug.org.au>
+In-Reply-To: <1310036797-15964-1-git-send-email-ravishankarkm32@gmail.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 03:42:23PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> Today's linux-next merge of the staging tree got a conflict in
-> arch/arm/mach-ux500/board-mop500-u8500uib.c between commit 0df7aaf0f276
-> ("mach-ux500: fix build error due to unknown 'regulator_en' field") from
-> the ux500-core tree and commit 857f727674f4 ("staging: ste_rmi4: remove
-> cross-dependent platform data") from the staging tree.
-> 
-> The second supercedes the first, so I used that.
+On Thu, Jul 07, 2011 at 04:36:37PM +0530, Ravishankar wrote:
+>  struct unioxx5_subd_priv {
+>  	int usp_iobase;
+> -	unsigned char usp_module_type[12];	/* 12 modules. each can be 70L
+> -						 * or 73L
+> -						*/
+> -	unsigned char usp_extra_data[12][4];	/* for saving previous written
+> -						 * value for analog modules
+> -						*/
+> +	/* 12 modules. each can be 70L or 73L */
+> +	unsigned char usp_module_type[12];
+> +
+> +	/*for saving previous written value for analog modules */
+> +	unsigned char usp_extra_data[12][4];
+> +
+> +
+>  
 
-That sounds correct, thanks for doing this.
+I wouldn't comment on this except that it occurs in several places.
 
-greg k-h
+Don't introduce extra blank lines here.  As a general rule we never
+want two blank lines in a row (we have blank lines 3 here).
+
+Also the original patch should have been redone instead of putting
+this patch on top of the other.  To redo a patch use the following
+subject line:
+[PATCH 7/7 v2] Staging: comedi: fix warning issue in unioxx5.c
+Then after the signed off by line but infront of the patch put 
+three dashes and an explanation why it was redone:
+---
+v2:  Dan Carpenter was whining and complaining about v1 like a
+spoiled little tweenager.
+
+regards,
+dan carpenter
+
