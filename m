@@ -1,130 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab1GGNi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:38:58 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:53484 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755971Ab1GGNi5 (ORCPT
+	id S1756642Ab1GGNjq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:39:46 -0400
+Received: from mail-vx0-f174.google.com ([209.85.220.174]:41408 "EHLO
+	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754823Ab1GGNjo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:38:57 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 7 Jul 2011 15:38:49 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: 3.0-rc6: USB khubd deadlock when hub is powered down
-Message-ID: <20110707153849.51691bc4@stein>
-In-Reply-To: <20110707152958.42c88aec@stein>
-References: <20110707100501.68a21fb8@stein>
-	<20110707152958.42c88aec@stein>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jul 2011 09:39:44 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1107071106100.3911@dhcp-27-109.brq.redhat.com>
+References: <CAH9JG2Xp_u-46x8bf2Uq-9FREZyYhcP3E7H+MsSoFVrWpyLrtA@mail.gmail.com>
+	<alpine.LFD.2.00.1107071106100.3911@dhcp-27-109.brq.redhat.com>
+Date: Thu, 7 Jul 2011 22:39:43 +0900
+X-Google-Sender-Auth: Bgy5Ub4vQrdEsLbWtYmKuPH88AQ
+Message-ID: <CAH9JG2WXQc5oxOD+B4xm5NbuvhJLc=mpyoTkXNup5spLSh4sMQ@mail.gmail.com>
+Subject: Re: ext4: why init the unused block group at batched discard?
+From: Kyungmin Park <kmpark@infradead.org>
+To: Lukas Czerner <lczerner@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Filesystem Mailing List <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 07 Stefan Richter wrote:
-> It appears to be a regression from -rc4 to -rc6.  At the second occasion
-> that I switched the monitor off while running 3.0-rc6, the same happened
-> again.  (IOW judging from the mere two tries I did so far, this issue is
-> 100% reproducible.)
-> 
-> khubd locked up; no subsequent device re-attachments were recognized;
-> only an USB mouse that was attached to a motherboard USB port already
-> before the deadlock continued to let me move the pointer.
+On Thu, Jul 7, 2011 at 6:24 PM, Lukas Czerner <lczerner@redhat.com> wrote:
+> On Wed, 6 Jul 2011, Kyungmin Park wrote:
+>
+>> Hi Lukas,
+>>
+>> During code review batched discard support at ext4. I wonder why do
+>> you init the uninitialized block group during batched discard.
+>> As you know uninitialized block group mean that there's no operation
+>> at these blocks.
+>> So no need to trim it at all.
+>
+> What you're describing is another flag, namely EXT4_BG_BLOCK_UNINIT,
+> which tells us that there was no allocation from that block bitmap since
+> the mkfs (as Amir already pointed out). Flag
+> EXT4_GROUP_INFO_NEED_INIT_BIT simply states that there is no buddy
+> initialized for this group.
+>
+> That said the code is perfectly fine, and it should not affect even the
+> e2fsck which uses EXT4_BG_BLOCK_UNINIT to skip not used block groups
+> since we only change it on allocations.
+>
+> It is true that after the commit
+> 78944086663e6c1b03f3d60bf7610128149be5fc ext4: only load buddy bitmap in
+> ext4_trim_fs() when it is needed
+> we do not longer need to initialize the buddy right away, but wait ontil
+> it is really needed. Actually we do not need it at all, because is when
+> we are going to load the buddy the ext4_mb_load_buddy() will check for
+> the EXT4_GROUP_INFO_NEED_INIT_BIT and will initialize the buddy for us.
+>
+> Yongqiang pointed out that we might use EXT4_BG_BLOCK_UNINIT to skip
+> group as well, but I do not think that it is a good idea, since the
+> initial discard at mkfs time might not be done (we just do not know it),
+> so any assumption like this are not right. Moreover there are patches
+> from Tao Ma which adds the code for skipping groups which has not been
+> freed from since the last fitrim call. Search the list for [PATCH 0/4
+> RESEND]  ext4 trim bug fixes and improvement.
 
-Sarah, "gitk v3.0-rc4.. drivers/usb/core/" makes it look like this is from
-commit fccf4e86200b8f5edd9a65da26f150e32ba79808.  When I find spare time I
-will test 3.0-rc6 with that one reverted.
+Thank you for all kind explanations.
 
-> Jul  7 15:08:41 stein kernel: usb 1-3.2: USB disconnect, device number 4
-> Jul  7 15:08:41 stein kernel: generic-usb 0003:1267:0103.0006: can't reset device, 0000:00:12.2-3.3/input1, status -71
-> Jul  7 15:08:41 stein kernel: usb 1-3: clear tt 3 (0050) error -71
-> Jul  7 15:08:41 stein kernel: generic-usb 0003:1267:0103.0005: can't reset device, 0000:00:12.2-3.3/input0, status -71
-> Jul  7 15:08:41 stein kernel: usb 1-3: clear tt 3 (0050) error -71
-> Jul  7 15:08:41 stein kernel: generic-usb 0003:1267:0103.0006: can't reset device, 0000:00:12.2-3.3/input1, status -71
-> Jul  7 15:08:41 stein kernel: hub 1-3:1.0: hub_port_status failed (err = -71)
-> Jul  7 15:08:41 stein kernel: hub 1-3:1.0: connect-debounce failed, port 2 disabled
-> Jul  7 15:08:41 stein kernel: usb 1-3: USB disconnect, device number 2
-> Jul  7 15:08:41 stein kernel: usb 1-3.1: USB disconnect, device number 3
-> Jul  7 15:08:41 stein kernel: usb 1-3.1.1: USB disconnect, device number 6
-> Jul  7 15:08:41 stein kernel: usb 1-3: clear tt 3 (0050) error -71
-> Jul  7 15:08:41 stein kernel: generic-usb 0003:1267:0103.0005: can't reset device, 0000:00:12.2-3.3/input0, status -71
-> Jul  7 15:08:41 stein kernel: usb 1-3: clear tt 3 (0050) error -19
-> Jul  7 15:08:41 stein kernel: generic-usb 0003:1267:0103.0006: can't reset device, 0000:00:12.2-3.3/input1, status -71
-> Jul  7 15:08:41 stein kernel: usb 1-3: clear tt 3 (0050) error -19
-> Jul  7 15:08:41 stein kernel: usb 1-3.3: USB disconnect, device number 5
-> Jul  7 15:08:42 stein kernel: 
-> Jul  7 15:08:42 stein kernel: =============================================
-> Jul  7 15:08:42 stein kernel: [ INFO: possible recursive locking detected ]
-> Jul  7 15:08:42 stein kernel: 3.0.0-rc6 #9
-> Jul  7 15:08:42 stein kernel: ---------------------------------------------
-> Jul  7 15:08:42 stein kernel: khubd/303 is trying to acquire lock:
-> Jul  7 15:08:42 stein kernel: (hcd->bandwidth_mutex){+.+.+.}, at: [<ffffffff8129f588>] usb_set_interface+0x84/0x210
-> Jul  7 15:08:42 stein kernel: 
-> Jul  7 15:08:42 stein kernel: but task is already holding lock:
-> Jul  7 15:08:42 stein kernel: (hcd->bandwidth_mutex){+.+.+.}, at: [<ffffffff81299d7d>] usb_disconnect+0x9a/0x140
-> Jul  7 15:08:42 stein kernel: 
-> Jul  7 15:08:42 stein kernel: other info that might help us debug this:
-> Jul  7 15:08:42 stein kernel: Possible unsafe locking scenario:
-> Jul  7 15:08:42 stein kernel: 
-> Jul  7 15:08:42 stein kernel: CPU0
-> Jul  7 15:08:42 stein kernel: ----
-> Jul  7 15:08:42 stein kernel: lock(hcd->bandwidth_mutex);
-> Jul  7 15:08:42 stein kernel: lock(hcd->bandwidth_mutex);
-> Jul  7 15:08:42 stein kernel: 
-> Jul  7 15:08:42 stein kernel: *** DEADLOCK ***
-> Jul  7 15:08:42 stein kernel: 
-> Jul  7 15:08:42 stein kernel: May be due to missing lock nesting notation
-> Jul  7 15:08:42 stein kernel: 
-> Jul  7 15:08:42 stein kernel: 4 locks held by khubd/303:
-> Jul  7 15:08:42 stein kernel: #0:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff8129a891>] hub_thread+0xdf/0xe5a
-> Jul  7 15:08:42 stein kernel: #1:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff81299d3c>] usb_disconnect+0x59/0x140
-> Jul  7 15:08:42 stein kernel: #2:  (hcd->bandwidth_mutex){+.+.+.}, at: [<ffffffff81299d7d>] usb_disconnect+0x9a/0x140
-> Jul  7 15:08:42 stein kernel: #3:  (&__lockdep_no_validate__){+.+.+.}, at: [<ffffffff812674fe>] device_release_driver+0x18/0x2d
-> Jul  7 15:08:42 stein kernel: 
-> Jul  7 15:08:42 stein kernel: stack backtrace:
-> Jul  7 15:08:42 stein kernel: Pid: 303, comm: khubd Not tainted 3.0.0-rc6 #9
-> Jul  7 15:08:42 stein kernel: Call Trace:
-> Jul  7 15:08:42 stein kernel: [<ffffffff8105cfaf>] __lock_acquire+0x169b/0x1734
-> Jul  7 15:08:42 stein kernel: [<ffffffff8105a1ff>] ? mark_held_locks+0x52/0x70
-> Jul  7 15:08:42 stein kernel: [<ffffffff8102e603>] ? sub_preempt_count+0x92/0xa6
-> Jul  7 15:08:42 stein kernel: [<ffffffff8134fcc1>] ? _raw_spin_unlock_irq+0x36/0x53
-> Jul  7 15:08:42 stein kernel: [<ffffffff810465eb>] ? wait_on_cpu_work+0x6a/0x99
-> Jul  7 15:08:42 stein kernel: [<ffffffff8129f588>] ? usb_set_interface+0x84/0x210
-> Jul  7 15:08:42 stein kernel: [<ffffffff8105d471>] lock_acquire+0x57/0x6d
-> Jul  7 15:08:42 stein kernel: [<ffffffff8129f588>] ? usb_set_interface+0x84/0x210
-> Jul  7 15:08:42 stein kernel: [<ffffffff8102e6c4>] ? add_preempt_count+0xad/0xb2
-> Jul  7 15:08:42 stein kernel: [<ffffffff8134e711>] mutex_lock_nested+0x5e/0x2f9
-> Jul  7 15:08:42 stein kernel: [<ffffffff8129f588>] ? usb_set_interface+0x84/0x210
-> Jul  7 15:08:42 stein kernel: [<ffffffff810466e1>] ? wait_on_work+0xc7/0x115
-> Jul  7 15:08:42 stein kernel: [<ffffffff8104661a>] ? wait_on_cpu_work+0x99/0x99
-> Jul  7 15:08:42 stein kernel: [<ffffffff8129f588>] usb_set_interface+0x84/0x210
-> Jul  7 15:08:42 stein kernel: [<ffffffff81046803>] ? __cancel_work_timer+0xd4/0x11d
-> Jul  7 15:08:42 stein kernel: [<ffffffff812a099b>] usb_unbind_interface+0x93/0xd1
-> Jul  7 15:08:42 stein kernel: [<ffffffff812673e6>] __device_release_driver+0x67/0xb0
-> Jul  7 15:08:42 stein kernel: [<ffffffff81267506>] device_release_driver+0x20/0x2d
-> Jul  7 15:08:42 stein kernel: [<ffffffff81266a24>] bus_remove_device+0xb1/0xc6
-> Jul  7 15:08:42 stein kernel: [<ffffffff812654fa>] device_del+0x11b/0x187
-> Jul  7 15:08:42 stein kernel: [<ffffffff8129e81b>] usb_disable_device+0x55/0x14b
-> Jul  7 15:08:42 stein kernel: [<ffffffff81299d87>] usb_disconnect+0xa4/0x140
-> Jul  7 15:08:42 stein kernel: [<ffffffff8129acef>] hub_thread+0x53d/0xe5a
-> Jul  7 15:08:42 stein kernel: [<ffffffff8134d259>] ? schedule+0x878/0x8b0
-> Jul  7 15:08:42 stein kernel: [<ffffffff8134ccf0>] ? schedule+0x30f/0x8b0
-> Jul  7 15:08:42 stein kernel: [<ffffffff8104b06d>] ? wake_up_bit+0x25/0x25
-> Jul  7 15:08:42 stein kernel: [<ffffffff8134fd24>] ? _raw_spin_unlock_irqrestore+0x46/0x64
-> Jul  7 15:08:42 stein kernel: [<ffffffff8129a7b2>] ? hub_probe+0x7f3/0x7f3
-> Jul  7 15:08:42 stein kernel: [<ffffffff8104acca>] kthread+0x7d/0x85
-> Jul  7 15:08:42 stein kernel: [<ffffffff81351594>] kernel_thread_helper+0x4/0x10
-> Jul  7 15:08:42 stein kernel: [<ffffffff8102e4f5>] ? finish_task_switch+0x42/0xbe
-> Jul  7 15:08:42 stein kernel: [<ffffffff813500c4>] ? retint_restore_args+0xe/0xe
-> Jul  7 15:08:42 stein kernel: [<ffffffff8104ac4d>] ? __init_kthread_worker+0x56/0x56
-> Jul  7 15:08:42 stein kernel: [<ffffffff81351590>] ? gs_change+0xb/0xb
-> 
+Another consideration is that even though batched discard has little
+overhead it's not good idea trim it all unused blocks at one time.
+since disk used blocks doesn't increased in normal case.
+So how about to remember the last allocated block group and trim it
+until this block group?
 
--- 
-Stefan Richter
--=====-==-== -=== --===
-http://arcgraph.de/sr/
+To reduce the trim time. I also consider the divide the block groups
+as several trim area e.g., 1 GiB and trim it sequentially.
+
+These are based on the assumption, eMMC has small resource relatively
+SSD and no need to trim it at one time.
+
+Thank you,
+Kyungmin Park
+
+
+>
+> Thanks for pointing that out. I'll send the patch.
+>
+> -Lukas
+>
+>>
+>> How do you think?
+>>
+>> int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
+>> {
+>>         ...
+>>
+>>         for (group = first_group; group <= last_group; group++) {
+>>                 grp = ext4_get_group_info(sb, group);
+>>                 /* We only do this if the grp has never been initialized */
+>>                 if (unlikely(EXT4_MB_GRP_NEED_INIT(grp))) {
+>>                         ret = ext4_mb_init_group(sb, group);
+>>                         if (ret)
+>>                                 break;
+>>                 }
+>>         ...
+>>         }
+>>         ...
+>> }
+>>
+>> Thank you,
+>> Kyungmin Park
+>>
+>
