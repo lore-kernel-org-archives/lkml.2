@@ -1,113 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab1GGKWk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 06:22:40 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:37167 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751936Ab1GGKWj (ORCPT
+	id S1755524Ab1GGKWw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 06:22:52 -0400
+Received: from am1ehsobe006.messaging.microsoft.com ([213.199.154.209]:28436
+	"EHLO AM1EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755441Ab1GGKWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 06:22:39 -0400
-Date: Thu, 7 Jul 2011 15:52:32 +0530
-From: Mahesh J Salgaonkar <mahesh@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org
-Cc: a.p.zijlstra@chello.nl, mingo@elte.hu, anton@samba.org,
-        benh@kernel.crashing.org, torvalds@linux-foundation.org
-Subject: [regression] 3.0-rc boot failure -- bisected to cd4ea6ae3982
-Message-ID: <20110707102107.GA16666@in.ibm.com>
-Reply-To: mahesh@linux.vnet.ibm.com
+	Thu, 7 Jul 2011 06:22:48 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzz8275bhz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LNYKTT-02-209-02
+X-M-MSG: 
+Date: Thu, 7 Jul 2011 12:22:41 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
+Message-ID: <20110707102241.GK4590@erda.amd.com>
+References: <20110703150430.GV4590@erda.amd.com>
+ <1309716271.3282.6.camel@twins>
+ <20110704175927.GZ4590@erda.amd.com>
+ <1309855905.3282.42.camel@twins>
+ <20110705091252.GA5725@elte.hu>
+ <20110706165357.GG4590@erda.amd.com>
+ <20110706171015.GA13869@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20110706171015.GA13869@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 06.07.11 13:10:15, Ingo Molnar wrote:
+> 
+> * Robert Richter <robert.richter@amd.com> wrote:
 
-linux-3.0-rc fails to boot on a power7 system with 1TB ram and 896 CPUs.
-While the initial boot log shows a soft-lockup [1], the machine is hung after.
-Dropping into xmon shows the cpus are all struck at:
---------------------
-cpu 0xa: Vector: 100 (System Reset) at [c000000fae51fae0]
-    pc: c0000000000596b8: .plpar_hcall_norets+0x80/0xd0
-    lr: c00000000005b9a4: .pseries_dedicated_idle_sleep+0x194/0x210
-    sp: c000000fae51fd60
-   msr: 8000000000089032
-  current = 0xc000000fae49d990
-  paca    = 0xc00000000ebb1900
-    pid   = 0, comm = kworker/0:1
-cpu 0x41: Vector: 100 (System Reset) at [c000000fac01bae0]
-    pc: c0000000000596b8: .plpar_hcall_norets+0x80/0xd0
-    lr: c00000000005b9a4: .pseries_dedicated_idle_sleep+0x194/0x210
-    sp: c000000fac01bd60
-   msr: 8000000000089032
-  current = 0xc000000faefbf210
-  paca    = 0xc00000000ebba280
-    pid   = 0, comm = kworker/0:1
-cpu 0x21: Vector: 100 (System Reset) at [c000000fae9abae0]
-    pc: c0000000000596b8: .plpar_hcall_norets+0x80/0xd0
-    lr: c00000000005b9a4: .pseries_dedicated_idle_sleep+0x194/0x210
-    sp: c000000fae9abd60
-   msr: 8000000000089032
-  current = 0xc000000fae998590
-  paca    = 0xc00000000ebb5280
-    pid   = 0, comm = kworker/0:1
-cpu 0xb8: Vector: 100 (System Reset) at [c000000fab3dbae0]
-    pc: c0000000000596b8: .plpar_hcall_norets+0x80/0xd0
-    lr: c00000000005b9a4: .pseries_dedicated_idle_sleep+0x194/0x210
-    sp: c000000fab3dbd60
-   msr: 8000000000089032
-  current = 0xc000000fab3a2710
-  paca    = 0xc00000000ebccc00
-    pid   = 0, comm = kworker/0:1
-......
-......
-And shows same for all the CPUs.
-a:mon> t
-[link register   ] c00000000005b9a4 .pseries_dedicated_idle_sleep+0x194/0x210
-[c000000fae51fd60] 00000000134d0000 (unreliable)
-[c000000fae51fe20] c000000000018b64 .cpu_idle+0x164/0x210
-[c000000fae51fed0] c0000000005d55b0 .start_secondary+0x348/0x354
-[c000000fae51ff90] c000000000009268 .start_secondary_prolog+0x10/0x14
-a:mon> S
-msr  = 8000000000001032  sprg0= 0000000000000000
-pvr  = 00000000003f0201  sprg1= c00000000ebb1900
-dec  = 0000000030fb5b4f  sprg2= c00000000ebb1900
-sp   = c000000fae51f440  sprg3= 000000000000000a
-toc  = c000000000e21f90  dar  = c000011aee0c20e8
-a:mon>
---------------------
+> > I have to learn yet why /dev is bad and /sys is good...
+> 
+> Because /sys is already there and already carries rather rich 
+> classification of various hardware components, devices and kernel 
+> subsystems.
+> 
+> /dev/ is mostly a flat registry of classical, unstructured devices.
 
-2.6.39 booted fine on the system and a git bisect shows commit cd4ea6ae -
-"sched: Change NODE sched_domain group creation" as the cause.
+As already said, /sys provides system information. Of course it is
+richer then. But I also don't want/need to specify a pmu that deep in
+the system hierarchy. And /dev is flat and easy. What of the following
+would you prefer?
 
-Thanks,
--Mahesh.
+ /sys/devices/pci0000:00/0000:00:03.0/usb2/2-2/2-2:1.1/input/input4/mouse0
+ /dev/input/mouse0
 
-[1]:
-POWER7 performance monitor hardware support registered
-Brought up 896 CPUs
-Enabling Asymmetric SMT scheduling
-BUG: soft lockup - CPU#0 stuck for 22s! [swapper:1]
-Modules linked in:
-NIP: c000000000074b90 LR: c00000000008a1c4 CTR: 0000000000000000
-REGS: c000000fae25f9c0 TRAP: 0901   Not tainted  (3.0.0-rc6)
-MSR: 8000000000009032 <EE,ME,IR,DR>  CR: 24000088  XER: 00000004
-TASK = c000000fae248490[1] 'swapper' THREAD: c000000fae25c000 CPU: 0
-GPR00: 0000e2a55cbeec50 c000000fae25fc40 c000000000e21f90 c000007b2b34cb00
-GPR04: 0000000000000100 0000000000000100 c000011adcf23418 0000000000000000
-GPR08: 0000000000000000 c000008b2b7d4480 c000007b2b35ef80 00000000000024ac
-GPR12: 0000000044000042 c00000000ebb0000
-NIP [c000000000074b90] .update_group_power+0x50/0x190
-LR [c00000000008a1c4] .build_sched_domains+0x434/0x490
-Call Trace:
-[c000000fae25fc40] [c000000fae25fce0] 0xc000000fae25fce0 (unreliable)
-[c000000fae25fce0] [c00000000008a1c4] .build_sched_domains+0x434/0x490
-[c000000fae25fdd0] [c000000000867370] .sched_init_smp+0xa8/0x224
-[c000000fae25fee0] [c000000000850274] .kernel_init+0x10c/0x1fc
-[c000000fae25ff90] [c000000000023884] .kernel_thread+0x54/0x70
-Instruction dump:
-f821ff61 ebc2b1a0 7c7f1b78 7c9c2378 e9230008 eba30010 2fa90000 419e0054
-e9490010 38000000 7d495378 60000000 <8169000c> e9290000 7faa4800 7c005a14
+Beside of this, you can't control devices with /sys.
+
+> > The system topology is always in /sys, also for device nodes. But 
+> > we can't get a device file descriptor from /sys. I doubt /sys is 
+> > capable to handle a device use count (need to be checked). We 
+> > actually must grab the pmu while attaching events to it. And, user 
+> > space implementation is must easier with /dev (see code in my 
+> > previous mail).
+> 
+> I think Peter suggested it that an open() done in /sys should give us 
+> a handle to a given event?
+
+Using /dev solves the problems in a simple way, and simple things
+often work very well. With open() we control the refcount and we then
+get a device reference which is unique and immediately usable without
+parsing strings. This makes user code small and intuitive and also
+avoids complex config checks on the kernel side to catch wrongly
+assigned events.
+
+While we probably can live with such races now on static pmus,
+thinking of future use cases like hotplugable graphic cards with pmus
+in it, we actually want a clean design for this. I don't see how to do
+this with sysfs. As there are no implementations yet for such an
+interface, we now have the chance to design it properly.
+
+> > My patch also includes code that creates a device class. It is also 
+> > visible in /sys/class/pmu/*.
+> 
+> But PMU is a very limited term: what we want is a higher level 
+> organization of 'event sources' and 'events'. Some may come from 
+> PMUs, many wont.
+
+You can see it as 'virtual' pmu, like the virtual file system.
+Whatever the name for this is, 'event sources' is not very handy. But
+don't want to change this.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
