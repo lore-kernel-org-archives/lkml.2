@@ -1,48 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752149Ab1GGTZD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 15:25:03 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:56272 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab1GGTZB (ORCPT
+	id S1751934Ab1GGT0Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 15:26:24 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46338 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751150Ab1GGT0X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 15:25:01 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 7 Jul 2011 21:24:49 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-To: Greg KH <greg@kroah.com>
-Cc: Sarah Sharp <sarah.a.sharp@linux.intel.com>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: 3.0-rc6: USB khubd deadlock when hub is powered down
-Message-ID: <20110707212449.261ffa78@stein>
-In-Reply-To: <20110707141022.GC27648@kroah.com>
-References: <20110707100501.68a21fb8@stein>
-	<20110707152958.42c88aec@stein>
-	<20110707153849.51691bc4@stein>
-	<20110707141022.GC27648@kroah.com>
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.24.4; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jul 2011 15:26:23 -0400
+Date: Thu, 7 Jul 2011 13:26:20 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: Shawn Guo <shawn.guo@freescale.com>
+Cc: Sascha Hauer <s.hauer@pengutronix.de>, Shawn Guo <shawn.guo@linaro.org>,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+        linux-arm-kernel@lists.infradead.org, patches@linaro.org
+Subject: Re: [PATCH v3 2/3] ARM: mxc: use ARCH_NR_GPIOS to define gpio number
+Message-ID: <20110707192620.GK2824@ponder.secretlab.ca>
+References: <1309970263-13239-1-git-send-email-shawn.guo@linaro.org>
+ <1309970263-13239-3-git-send-email-shawn.guo@linaro.org>
+ <20110707074755.GX6069@pengutronix.de>
+ <20110707151331.GB12722@S2100-06.ap.freescale.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110707151331.GB12722@S2100-06.ap.freescale.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul 07 Greg KH wrote:
-> Can you test Linus's tree, along with a patch sent yesterday from Alan
-> Stern to the linux-usb mailing list (attached below)?  That should
-> resolve this issue, if not, please let us know.
+On Thu, Jul 07, 2011 at 11:13:32PM +0800, Shawn Guo wrote:
+> On Thu, Jul 07, 2011 at 09:47:55AM +0200, Sascha Hauer wrote:
+> > On Thu, Jul 07, 2011 at 12:37:42AM +0800, Shawn Guo wrote:
+> > > The patch removes MXC_GPIO_IRQS and instead uses ARCH_NR_GPIOS to
+> > > define gpio number.  This change is need when we change mxc gpio
+> > > driver to be device tree aware.  When migrating the driver to device
+> > > tree, pdev->id becomes unusable.  It requires driver get gpio range
+> > > from gpio core, which will dynamically allocates number from
+> > > ARCH_NR_GPIOS to 0.
+> > > 
+> > > As a bonus point, it removes lines of '#if' and make the code a
+> > > little bit cleaner.  The side effect is the waste of number.  But
+> > > this is not a point when we go single image.
+> > 
+> > I'm not sure whether we really should depend on an externally defined
+> > ARCH_NR_GPIOS. Someone might get the idea to change this to a lower
+> > value. Maybe we should define this ourselves instead.
+> > 
+> Good point.  We should not depend on the externally defined one.  But
+> the reason in my mind is different from yours.  Right now, i.mx50 gets
+> 192 and i.mx6 gets 224 gpios.  I do not see the point to lower the
+> value (no lower than 224), since we will go single image soon.  The
+> thing concerning me is that someday we may have a soc coming out with
+> more than 256 gpios.  Then we have to override ARCH_NR_GPIOS with our
+> own definition.
+> 
+> Please take a look at the updated patch below.  If it looks fine to
+> you, I will resend the patch.
+> 
+> 8<----
+> From b9cc9f9161b6d5ebb57d52200c3673dd78138899 Mon Sep 17 00:00:00 2001
+> From: Shawn Guo <shawn.guo@linaro.org>
+> Date: Wed, 6 Jul 2011 21:11:01 +0800
+> Subject: [PATCH] ARM: mxc: use ARCH_NR_GPIOS to define gpio number
+> 
+> The patch removes MXC_GPIO_IRQS and instead uses ARCH_NR_GPIOS to
+> define gpio number.  This change is need when we change mxc gpio
+> driver to be device tree aware.  When migrating the driver to device
+> tree, pdev->id becomes unusable.  It requires driver get gpio range
+> from gpio core, which will dynamically allocates number from
+> ARCH_NR_GPIOS to 0.
+> 
+> As a bonus point, it removes lines of '#if' and make the code a
+> little bit cleaner.
+> 
+> It also cleans a couple of unnecessary headers in mach/gpio.h.
+> 
+> Signed-off-by: Shawn Guo <shawn.guo@linaro.org>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Cc: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  arch/arm/plat-mxc/include/mach/gpio.h |    9 ++++++---
+>  arch/arm/plat-mxc/include/mach/irqs.h |   21 +++------------------
+>  2 files changed, 9 insertions(+), 21 deletions(-)
+> 
+> diff --git a/arch/arm/plat-mxc/include/mach/gpio.h b/arch/arm/plat-mxc/include/mach/gpio.h
+> index 31c820c..f3b26f7 100644
+> --- a/arch/arm/plat-mxc/include/mach/gpio.h
+> +++ b/arch/arm/plat-mxc/include/mach/gpio.h
+> @@ -19,10 +19,13 @@
+>  #ifndef __ASM_ARCH_MXC_GPIO_H__
+>  #define __ASM_ARCH_MXC_GPIO_H__
+>  
+> -#include <linux/spinlock.h>
+> -#include <mach/hardware.h>
+> -#include <asm-generic/gpio.h>
+> +/*
+> + * Define our own ARCH_NR_GPIOS here to override the one
+> + * externally defined in asm-generic/gpio.h
+> + */
+> +#define ARCH_NR_GPIOS	224
 
-OK.  I am using 3.0-rc6-71-g4dd1b49 plus Alan's "USB: additional
-regression fix for device removal" now.  So far it survived a dozen of
-power toggles of the hub and the attached devices.  Thanks.
+No, don't do this.  It will just make things harder when we go
+multiplatform.  Leave it for now and it can be fixed when it because
+actually broken (instead of theoretically).
 
-Alan Stern wrote:
-> Still, we need to rewrite this stuff.  A possible race remains,
+Your original patch was fine.
 
-On a general level, the last few kernel.org releases have all been rather
-weak.  Dissatisfied,
--- 
-Stefan Richter
--=====-==-== -=== --===
-http://arcgraph.de/sr/
+g.
+
+>  
+> +#include <asm-generic/gpio.h>
+>  
+>  /* There's a off-by-one betweem the gpio bank number and the gpiochip */
+>  /* range e.g. GPIO_1_5 is gpio 5 under linux */
+> diff --git a/arch/arm/plat-mxc/include/mach/irqs.h b/arch/arm/plat-mxc/include/mach/irqs.h
+> index 35c89bc..62228f1 100644
+> --- a/arch/arm/plat-mxc/include/mach/irqs.h
+> +++ b/arch/arm/plat-mxc/include/mach/irqs.h
+> @@ -11,6 +11,8 @@
+>  #ifndef __ASM_ARCH_MXC_IRQS_H__
+>  #define __ASM_ARCH_MXC_IRQS_H__
+>  
+> +#include <mach/gpio.h>
+> +
+>  /*
+>   * SoCs with TZIC interrupt controller have 128 IRQs, those with AVIC have 64
+>   */
+> @@ -22,30 +24,13 @@
+>  
+>  #define MXC_GPIO_IRQ_START	MXC_INTERNAL_IRQS
+>  
+> -/* these are ordered by size to support multi-SoC kernels */
+> -#if defined CONFIG_SOC_IMX53
+> -#define MXC_GPIO_IRQS		(32 * 7)
+> -#elif defined CONFIG_ARCH_MX2
+> -#define MXC_GPIO_IRQS		(32 * 6)
+> -#elif defined CONFIG_SOC_IMX50
+> -#define MXC_GPIO_IRQS		(32 * 6)
+> -#elif defined CONFIG_ARCH_MX1
+> -#define MXC_GPIO_IRQS		(32 * 4)
+> -#elif defined CONFIG_ARCH_MX25
+> -#define MXC_GPIO_IRQS		(32 * 4)
+> -#elif defined CONFIG_SOC_IMX51
+> -#define MXC_GPIO_IRQS		(32 * 4)
+> -#elif defined CONFIG_ARCH_MX3
+> -#define MXC_GPIO_IRQS		(32 * 3)
+> -#endif
+> -
+>  /*
+>   * The next 16 interrupts are for board specific purposes.  Since
+>   * the kernel can only run on one machine at a time, we can re-use
+>   * these.  If you need more, increase MXC_BOARD_IRQS, but keep it
+>   * within sensible limits.
+>   */
+> -#define MXC_BOARD_IRQ_START	(MXC_INTERNAL_IRQS + MXC_GPIO_IRQS)
+> +#define MXC_BOARD_IRQ_START	(MXC_INTERNAL_IRQS + ARCH_NR_GPIOS)
+>  
+>  #ifdef CONFIG_MACH_MX31ADS_WM1133_EV1
+>  #define MXC_BOARD_IRQS  80
+> 
+> -- 
+> Regards,
+> Shawn
+> 
