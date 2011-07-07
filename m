@@ -1,42 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752354Ab1GGJ7u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 05:59:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:32813 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755513Ab1GGJ7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 05:59:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,492,1304319600"; 
-   d="scan'208";a="22566254"
-Date: Thu, 7 Jul 2011 11:00:15 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH 1/2] platform-drivers-x86: intel_rar_register: convert
- to DEFINE_PCI_DEVICE_TABLE
-Message-ID: <20110707110015.083a17ed@bob.linux.org.uk>
-In-Reply-To: <1310005275.2481.3.camel@phoenix>
-References: <1310005275.2481.3.camel@phoenix>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.8 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Organisation: Intel Corporation UK Ltd, registered no. 1134945 (England),
- Registered office Pipers Way, Swindon, SN3 1RJ
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754127Ab1GGKTI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 06:19:08 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36195 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab1GGKTD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 06:19:03 -0400
+From: Miklos Szeredi <miklos@szeredi.hu>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        akpm@linux-foundation.org, torvalds@linux-foundation.org,
+        stable@kernel.org
+Subject: Re: [PATCH] fs: fix lock initialization
+References: <87iprf3dgs.fsf@tucsk.pomaz.szeredi.hu>
+	<20110706182154.GB31214@fieldses.org>
+Date: Thu, 07 Jul 2011 12:19:55 +0200
+In-Reply-To: <20110706182154.GB31214@fieldses.org> (J. Bruce Fields's message
+	of "Wed, 6 Jul 2011 14:21:54 -0400")
+Message-ID: <87k4bu2y0k.fsf@tucsk.pomaz.szeredi.hu>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 07 Jul 2011 10:21:15 +0800
-Axel Lin <axel.lin@gmail.com> wrote:
+"J. Bruce Fields" <bfields@fieldses.org> writes:
 
-> And also remove unused variable 'my_id_table'.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> On Wed, Jul 06, 2011 at 12:33:55PM +0200, Miklos Szeredi wrote:
+>> From: Miklos Szeredi <mszeredi@suse.cz>
+>> 
+>> locks_alloc_lock() assumed that the allocated struct file_lock is
+>> already initialized to zero members.  This is only true for the first
+>> allocation of the structure, after reuse some of the members will have
+>> random values.
+>> 
+>> This will for example result in passing random fl_start values to
+>> userspace in fuse for FL_FLOCK locks, which is an information leak at
+>> best.
+>> 
+>> Fix by reinitializing those members which may be non-zero after freeing.
+>
+> Could you also just get rid of init_once() while you're at it?
 
-Applied to mid tree looks fine to me
+Sure.  Updated patch below.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
+Thanks,
+Miklos
+----
+
+Subject: fs: fix lock initialization
+
+From: Miklos Szeredi <mszeredi@suse.cz>
+
+locks_alloc_lock() assumed that the allocated struct file_lock is
+already initialized to zero members.  This is only true for the first
+allocation of the structure, after reuse some of the members will have
+random values.
+
+This will for example result in passing random fl_start values to
+userspace in fuse for FL_FLOCK locks, which is an information leak at
+best.
+
+Remove SLAB initialization entirely, as suggested by Bruce and Linus.
+Allocate with __GFP_ZERO instead and only initilaize list heads.
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+CC: stable@kernel.org
+---
+ fs/locks.c |   45 +++++++++++++++++----------------------------
+ 1 file changed, 17 insertions(+), 28 deletions(-)
+
+Index: linux-2.6/fs/locks.c
+===================================================================
+--- linux-2.6.orig/fs/locks.c	2011-07-06 12:21:33.000000000 +0200
++++ linux-2.6/fs/locks.c	2011-07-07 12:15:19.000000000 +0200
+@@ -160,10 +160,22 @@ EXPORT_SYMBOL_GPL(unlock_flocks);
+ 
+ static struct kmem_cache *filelock_cache __read_mostly;
+ 
++static void locks_init_lock_heads(struct file_lock *fl)
++{
++	INIT_LIST_HEAD(&fl->fl_link);
++	INIT_LIST_HEAD(&fl->fl_block);
++	init_waitqueue_head(&fl->fl_wait);
++}
++
+ /* Allocate an empty lock structure. */
+ struct file_lock *locks_alloc_lock(void)
+ {
+-	return kmem_cache_alloc(filelock_cache, GFP_KERNEL);
++	struct file_lock *fl = kmem_cache_zalloc(filelock_cache, GFP_KERNEL);
++
++	if (fl)
++		locks_init_lock_heads(fl);
++
++	return fl;
+ }
+ EXPORT_SYMBOL_GPL(locks_alloc_lock);
+ 
+@@ -197,35 +209,12 @@ EXPORT_SYMBOL(locks_free_lock);
+ 
+ void locks_init_lock(struct file_lock *fl)
+ {
+-	INIT_LIST_HEAD(&fl->fl_link);
+-	INIT_LIST_HEAD(&fl->fl_block);
+-	init_waitqueue_head(&fl->fl_wait);
+-	fl->fl_next = NULL;
+-	fl->fl_fasync = NULL;
+-	fl->fl_owner = NULL;
+-	fl->fl_pid = 0;
+-	fl->fl_nspid = NULL;
+-	fl->fl_file = NULL;
+-	fl->fl_flags = 0;
+-	fl->fl_type = 0;
+-	fl->fl_start = fl->fl_end = 0;
+-	fl->fl_ops = NULL;
+-	fl->fl_lmops = NULL;
++	memset(fl, 0, sizeof(struct file_lock));
++	locks_init_lock_heads(fl);
+ }
+ 
+ EXPORT_SYMBOL(locks_init_lock);
+ 
+-/*
+- * Initialises the fields of the file lock which are invariant for
+- * free file_locks.
+- */
+-static void init_once(void *foo)
+-{
+-	struct file_lock *lock = (struct file_lock *) foo;
+-
+-	locks_init_lock(lock);
+-}
+-
+ static void locks_copy_private(struct file_lock *new, struct file_lock *fl)
+ {
+ 	if (fl->fl_ops) {
+@@ -2323,8 +2312,8 @@ EXPORT_SYMBOL(lock_may_write);
+ static int __init filelock_init(void)
+ {
+ 	filelock_cache = kmem_cache_create("file_lock_cache",
+-			sizeof(struct file_lock), 0, SLAB_PANIC,
+-			init_once);
++			sizeof(struct file_lock), 0, SLAB_PANIC, NULL);
++
+ 	return 0;
+ }
+ 
