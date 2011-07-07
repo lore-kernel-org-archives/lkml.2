@@ -1,72 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756599Ab1GGNPY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:15:24 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44758 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756535Ab1GGNPW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:15:22 -0400
-Subject: [PATCH] power_supply: ds2780_battery/z2_battery: add __devexit_p
- at necessary places
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Clifton Barnes <cabarnes@indesign-llc.com>,
-        Peter Edwards <sweetlilmre@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Anton Vorontsov <cbouatmailru@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Jul 2011 21:15:13 +0800
-Message-ID: <1310044513.24314.1.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	id S1756261Ab1GGNT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:19:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58486 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754992Ab1GGNTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 09:19:55 -0400
+Date: Thu, 7 Jul 2011 15:19:54 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Justin P. Mattock" <justinmattock@gmail.com>, Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2]drivers:staging:rtl typo fix encryptiong to
+ encryption.
+In-Reply-To: <1309927897-25404-2-git-send-email-justinmattock@gmail.com>
+Message-ID: <alpine.LNX.2.00.1107071519380.11049@pobox.suse.cz>
+References: <1309927897-25404-1-git-send-email-justinmattock@gmail.com> <1309927897-25404-2-git-send-email-justinmattock@gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-According to the comments in include/linux/init.h:
 
-"Pointers to __devexit functions must use __devexit_p(function_name), the
-wrapper will insert either the function_name or NULL, depending on the config
-options."
+[ staging -- CCing Greg ]
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
-Cc: Clifton Barnes <cabarnes@indesign-llc.com>
-Cc: Peter Edwards <sweetlilmre@gmail.com>
----
- drivers/power/ds2780_battery.c |    2 +-
- drivers/power/z2_battery.c     |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+On Tue, 5 Jul 2011, Justin P. Mattock wrote:
 
-diff --git a/drivers/power/ds2780_battery.c b/drivers/power/ds2780_battery.c
-index 1fefe82..ed25ef5 100644
---- a/drivers/power/ds2780_battery.c
-+++ b/drivers/power/ds2780_battery.c
-@@ -832,7 +832,7 @@ static struct platform_driver ds2780_battery_driver = {
- 		.name = "ds2780-battery",
- 	},
- 	.probe	  = ds2780_battery_probe,
--	.remove   = ds2780_battery_remove,
-+	.remove   = __devexit_p(ds2780_battery_remove),
- };
- 
- static int __init ds2780_battery_init(void)
-diff --git a/drivers/power/z2_battery.c b/drivers/power/z2_battery.c
-index d119c38..ae38c44 100644
---- a/drivers/power/z2_battery.c
-+++ b/drivers/power/z2_battery.c
-@@ -313,7 +313,7 @@ static struct i2c_driver z2_batt_driver = {
- 		.pm	= Z2_BATTERY_PM_OPS
- 	},
- 	.probe		= z2_batt_probe,
--	.remove		= z2_batt_remove,
-+	.remove		= __devexit_p(z2_batt_remove),
- 	.id_table	= z2_batt_id,
- };
- 
+> From: "Justin P. Mattock" <justinmattock@gmail.com>
+> 
+> The beow patch fixes a typo.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c |    2 +-
+>  drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c  |    2 +-
+>  drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c  |    2 +-
+>  3 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
+> index 6cb31e1..552115c 100644
+> --- a/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
+> +++ b/drivers/staging/rtl8187se/ieee80211/ieee80211_tx.c
+> @@ -445,7 +445,7 @@ int ieee80211_rtl_xmit(struct sk_buff *skb,
+>  		(CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
+>  			bytes_per_frag -= IEEE80211_FCS_LEN;
+>  
+> -		/* Each fragment may need to have room for encryptiong pre/postfix */
+> +		/* Each fragment may need to have room for encryption pre/postfix */
+>  		if (encrypt)
+>  			bytes_per_frag -= crypt->ops->extra_prefix_len +
+>  				crypt->ops->extra_postfix_len;
+> diff --git a/drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c
+> index 995346d..d13be4c 100644
+> --- a/drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c
+> +++ b/drivers/staging/rtl8192e/ieee80211/ieee80211_tx.c
+> @@ -762,7 +762,7 @@ int ieee80211_rtl_xmit(struct sk_buff *skb, struct net_device *dev)
+>  		(CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
+>  			bytes_per_frag -= IEEE80211_FCS_LEN;
+>  
+> -		/* Each fragment may need to have room for encryptiong pre/postfix */
+> +		/* Each fragment may need to have room for encryption pre/postfix */
+>  		if (encrypt)
+>  			bytes_per_frag -= crypt->ops->extra_prefix_len +
+>  				crypt->ops->extra_postfix_len;
+> diff --git a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
+> index ec7845e..59c45a5 100644
+> --- a/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
+> +++ b/drivers/staging/rtl8192u/ieee80211/ieee80211_tx.c
+> @@ -723,7 +723,7 @@ int ieee80211_xmit(struct sk_buff *skb, struct net_device *dev)
+>  		(CFG_IEEE80211_COMPUTE_FCS | CFG_IEEE80211_RESERVE_FCS))
+>  			bytes_per_frag -= IEEE80211_FCS_LEN;
+>  
+> -		/* Each fragment may need to have room for encryptiong pre/postfix */
+> +		/* Each fragment may need to have room for encryption pre/postfix */
+>  		if (encrypt)
+>  			bytes_per_frag -= crypt->ops->extra_prefix_len +
+>  				crypt->ops->extra_postfix_len;
+> -- 
+> 1.7.6
+> 
+
 -- 
-1.7.4.1
-
-
-
+Jiri Kosina
+SUSE Labs
