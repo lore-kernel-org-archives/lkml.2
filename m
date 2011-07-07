@@ -1,72 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752685Ab1GGQYi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:24:38 -0400
-Received: from 2.mo1.mail-out.ovh.net ([178.32.119.250]:55979 "EHLO
-	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751550Ab1GGQYh (ORCPT
+	id S1752527Ab1GGQZz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:25:55 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:50232 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab1GGQZy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:24:37 -0400
-X-Greylist: delayed 9338 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jul 2011 12:24:37 EDT
-Message-ID: <4E15AAD8.6080005@example.com>
-Date: Thu, 07 Jul 2011 14:47:20 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
+	Thu, 7 Jul 2011 12:25:54 -0400
+Date: Thu, 7 Jul 2011 12:24:54 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Raghavendra D Prabhu <rprabhu@wnohang.net>
+Cc: xen-devel@lists.xensource.com, jeremy.fitzhardinge@citrix.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Ian Campbell <ijc@hellion.org.uk>
+Subject: Re: [Xen-devel] Re: [PATCH] Modpost section mismatch fix
+Message-ID: <20110707162454.GA8164@dumpdata.com>
+References: <20110703232508.GB4440@Xye>
+ <1309769388.634.51.camel@zakaz.uk.xensource.com>
+ <20110704221646.GB4490@Xye>
+ <20110705141323.GG2972@dumpdata.com>
+ <20110705142731.GA4463@Xye>
+ <20110705144846.GA13548@dumpdata.com>
+ <20110705213243.GA3647@dumpdata.com>
+ <20110707154648.GA4394@Xye>
 MIME-Version: 1.0
-To: linux-next@vger.kernel.org
-CC: LKML <linux-kernel@vger.kernel.org>
-X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
-Subject: Today's Linux Next failed to even start building, I must have done
- something wrong
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 12310871057946931542
-X-Ovh-Remote: 178.36.17.0 (178-36-17-0.adsl.inetia.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-VR-SPAMSTATE: OK
-X-VR-SPAMSCORE: -60
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110707154648.GA4394@Xye>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
+X-CT-RefId: str=0001.0A020205.4E15DDE3.00B4:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+> Tested it. Works now.
 
-I'm not sure - which base source tree should I take to apply the patch? 
-I fail for now with building witch Debian make-kpkg with messages:
+Ok, Stuck Tested-by on the patch. Hopefully Linus hasn't pulled it yet.
 
-# ...
-make    ARCH=x86_64 prepare
-make[2]: Wejście do katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-scripts/kconfig/conf --silentoldconfig Kconfig
-make[2]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-make[2]: Wejście do katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-   CHK     include/linux/version.h
-   UPD     include/linux/version.h
-   CHK     include/generated/utsrelease.h
-   UPD     include/generated/utsrelease.h
-   CC      kernel/bounds.s
-   GEN     include/generated/bounds.h
-   CC      arch/x86/kernel/asm-offsets.s
-In file included from include/linux/sched.h:64:0,
-                  from arch/x86/kernel/asm-offsets.c:9:
-include/linux/mm_types.h:74:15: error: duplicate member ‘_count’
-make[3]: *** [arch/x86/kernel/asm-offsets.s] Błąd 1
-make[2]: *** [prepare0] Błąd 2
-make[2]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-make[1]: *** [debian/stamp/conf/kernel-conf] Błąd 2
-make[1]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
-make: *** [debian/stamp/conf/minimal_debian] Błąd 2
-Failed to create a ./debian directory: Nie ma takiego pliku ani katalogu 
-at /usr/bin/make-kpkg line 984.
+> Reviewed-by: Raghavendra Prabhu <rprabhu@wnohang.net>
+> 
+> Also,
+> The condition for acpi_gsi_to_irq can be removed since it always returns zero.
 
-Please help me.
+The function might in the future return something that is non-zero
+and we should guard for it. Also you make 'irq' be unsigned which is not
+good as the IRQ 0 is a valid value - and with making it unsigned if it is
+set to -1 (the -1 is the invalid IRQ value) the check for 'irq != gsi'
+will be true and and we will pass in -1 casted to unsigned. That is a
+large value and not the right thing we want to pass to xen_register_gsi.
 
--- 
-Familiada:
-- Zwierze w paski?
-- Biedronka!
-NP: Nemo -
-NB: 3.0.0-rc6
+
+> ============================================
+>  diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+>  index f567965..3faa55b 100644
+>  --- a/arch/x86/pci/xen.c
+>  +++ b/arch/x86/pci/xen.c
+>  @@ -405,7 +405,7 @@ static __init void xen_setup_acpi_sci(void)
+>          int rc;
+>          int trigger, polarity;
+>          int gsi = acpi_sci_override_gsi;
+>  -       int irq = -1;
+>  +       unsigned int irq = 0u;
+>          int gsi_override = -1;
+> 
+>          if (!gsi)
+>  @@ -435,11 +435,10 @@ static __init void xen_setup_acpi_sci(void)
+>           * setup as we had setup IRQ 20 for it).
+>           */
+>          /* Check whether the GSI != IRQ */
+>  -       if (acpi_gsi_to_irq(gsi, &irq) == 0) {
+>  -               if (irq >= 0 && irq != gsi)
+>  -                       /* Bugger, we MUST have that IRQ. */
+>  -                       gsi_override = irq;
+>  -       }
+>  +       acpi_gsi_to_irq(gsi, &irq);
+>  +       if (irq != gsi)
+>  +               /* Bugger, we MUST have that IRQ. */
+>  +               gsi_override = irq;
+> 
+>          gsi = xen_register_gsi(gsi, gsi_override, trigger, polarity);
+>          printk(KERN_INFO "xen: acpi sci %d\n", gsi);
+> 
+> 
+> --------------------------
+> Raghavendra Prabhu
+> GPG Id : 0xD72BE977
+> Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
+> www: wnohang.net
+
+
+
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
+
