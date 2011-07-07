@@ -1,91 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755618Ab1GGKwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 06:52:12 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:13314 "EHLO
-	TX2EHSOBE001.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab1GGKwK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 06:52:10 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz4015L1432N98dKzz1202hzz15d4R8275bh8275dhz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.108;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp01.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNYM6V-01-02G-02
-X-M-MSG: 
-Date: Thu, 7 Jul 2011 12:52:04 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>
-Subject: Re: [git pull] IOMMU updates for 3.1
-Message-ID: <20110707105204.GE1956@amd.com>
-References: <20110707085359.GC1956@amd.com>
- <20110707094558.GB15058@elte.hu>
+	id S1755598Ab1GGKxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 06:53:37 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:46265 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751936Ab1GGKxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 06:53:36 -0400
+Date: Thu, 7 Jul 2011 12:53:15 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] x86, intel: Output microcode revision v3
+Message-ID: <20110707105315.GA3412@elte.hu>
+References: <1309996623-23108-1-git-send-email-andi@firstfloor.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110707094558.GB15058@elte.hu>
+In-Reply-To: <1309996623-23108-1-git-send-email-andi@firstfloor.org>
 User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 05:45:58AM -0400, Ingo Molnar wrote:
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git iommu-3.1
-> Fails to build with INTR_REMAP=y && CONFIG_DMAR=n:
+
+* Andi Kleen <andi@firstfloor.org> wrote:
+
+> From: Andi Kleen <ak@linux.intel.com>
 > 
->  arch/x86/built-in.o: In function `lapic_resume':
->  apic.c:(.text+0x16329): undefined reference to `intr_remapping_enabled'
->  apic.c:(.text+0x1651d): undefined reference to `intr_remapping_enabled'
->  apic.c:(.text+0x1652b): undefined reference to `reenable_intr_remapping'
->  [...]
+> I got a request to make it easier to determine the microcode update level
+> on Intel CPUs. This patch adds a new "microcode" field to /proc/cpuinfo.
+> 
+> The microcode level is also outputed on fatal machine checks together
+> with the other CPUID model information.
+> 
+> I removed the respective code from the microcode update driver, it
+> just reads the field from cpu_data. Also when the microcode is updated
+> it fills in the new values too.
+> 
+> I had to add a memory barrier to native_cpuid to prevent it being
+> optimized away when the result is not used.
+> 
+> This turns out to clean up further code which already got this
+> information manually. This is done in followon patches.
+> 
+> v2:  Lots of updates based on feedback.
+> v3:  Rename cpu_update to microcode. Misc changes from feedback.
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> ---
+>  arch/x86/include/asm/processor.h  |    4 +++-
+>  arch/x86/kernel/cpu/intel.c       |   13 +++++++++++++
+>  arch/x86/kernel/cpu/mcheck/mce.c  |    9 +++++++--
+>  arch/x86/kernel/cpu/proc.c        |    3 ++-
+>  arch/x86/kernel/microcode_intel.c |   14 +++++---------
+>  5 files changed, 30 insertions(+), 13 deletions(-)
 
-Fixed with:
+You have *still* ignored some of the review suggestions i gave you in 
+the previous thread, and you know that i won't apply your patches 
+without you addressing all feedback.
 
-commit 6b385b46ee17d7e1a68d3411b8cdb2342e0f0445
-Author: Joerg Roedel <joerg.roedel@amd.com>
-Date:   Thu Jul 7 12:18:48 2011 +0200
-
-    iommu/core: Fix build with INTR_REMAP=y && CONFIG_DMAR=n
-    
-    IOMMU_API is not selected when no DMA remapping driver is
-    selected, but the whole drivers/iommu/ directory is only
-    built with IOMMU_API=y. Fixed with this patch by including
-    the directory with IOMMU_SUPPORT instead.
-    
-    Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
-
-diff --git a/drivers/Makefile b/drivers/Makefile
-index 2f7a71a..2b551e9 100644
---- a/drivers/Makefile
-+++ b/drivers/Makefile
-@@ -122,4 +122,4 @@ obj-y				+= ieee802154/
- obj-y				+= clk/
- 
- obj-$(CONFIG_HWSPINLOCK)	+= hwspinlock/
--obj-$(CONFIG_IOMMU_API)		+= iommu/
-+obj-$(CONFIG_IOMMU_SUPPORT)	+= iommu/
-
-and pushed result to
-
-	git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git iommu-3.1
-
-again. I just pushed so it may take some time until the result appears
-on the mirrors.
+So why did you send this incomplete series?
 
 Thanks,
 
-	Joerg
-
--- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+	Ingo
