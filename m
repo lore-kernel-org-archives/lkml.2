@@ -1,41 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752014Ab1GGHG5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 03:06:57 -0400
-Received: from inx.pm.waw.pl ([195.116.170.130]:59740 "EHLO inx.pm.waw.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751025Ab1GGHG4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 03:06:56 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM: fix regression in IXP4xx clocksource
-References: <m3liwb15t2.fsf@intrepid.localdomain>
-	<20110706211442.GY8286@n2100.arm.linux.org.uk>
-Date: Thu, 07 Jul 2011 09:06:54 +0200
-In-Reply-To: <20110706211442.GY8286@n2100.arm.linux.org.uk> (Russell King's
-	message of "Wed, 6 Jul 2011 22:14:42 +0100")
-Message-ID: <m3k4buh8mp.fsf@intrepid.localdomain>
+	id S1752461Ab1GGHIT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 03:08:19 -0400
+Received: from newsmtp5.atmel.com ([204.2.163.5]:27736 "EHLO
+	sjogate2.atmel.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751025Ab1GGHIR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 03:08:17 -0400
+Message-ID: <4E155B45.7080408@atmel.com>
+Date: Thu, 07 Jul 2011 09:07:49 +0200
+From: Nicolas Ferre <nicolas.ferre@atmel.com>
+Organization: atmel
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; fr; rv:1.9.2.18) Gecko/20110616 Lightning/1.0b2 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Joe Perches <joe@perches.com>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Wan ZongShun <mcuos.com@gmail.com>, Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: Re: [PATCH next 2/2] MAINTAINERS: Update PXA2xx/PXA3xx SUPPORT patterns
+References: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com> <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
+In-Reply-To: <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux <linux@arm.linux.org.uk> writes:
+Le 07/07/2011 02:28, Joe Perches :
+> commit ca632f556697 ("spi: reorganize drivers")
+> renamed the files, update the MAINTAINERS patterns.
+> 
+> cc: Grant Likely <grant.likely@secretlab.ca>
+> cc: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-> Did you see Thomas' reply to your last patch?  Would you mind responding
-> to that please, before asking Linus to merge this?
+Acked-by: Nicolas Ferre <nicolas.ferre@atmel.com>
 
-I like the BE (or endian-neutral value-preserving) accessor idea.
-Nevertheless Linux on IXP4xx doesn't even build at this time and I think
-fixing this before 3.0 is well worth it.
+> cc: Wan ZongShun <mcuos.com@gmail.com>
+> cc: Eric Miao <eric.y.miao@gmail.com>
+> cc: Russell King <linux@arm.linux.org.uk>
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  MAINTAINERS |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 0ad8ff0..4e5cc19 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1123,7 +1123,7 @@ F:	drivers/watchdog/nuc900_wdt.c
+>  F:	drivers/net/arm/w90p910_ether.c
+>  F:	drivers/mtd/nand/nuc900_nand.c
+>  F:	drivers/rtc/rtc-nuc900.c
+> -F:	drivers/spi/spi_nuc900.c
+> +F:	drivers/spi/spi-nuc900.c
+>  F:	drivers/usb/host/ehci-w90x900.c
+>  F:	drivers/video/nuc900fb.c
+>  
+> @@ -1321,7 +1321,7 @@ F:	drivers/net/macb.*
+>  ATMEL SPI DRIVER
+>  M:	Nicolas Ferre <nicolas.ferre@atmel.com>
+>  S:	Supported
+> -F:	drivers/spi/atmel_spi.*
+> +F:	drivers/spi/spi-atmel.c
+>  
+>  ATMEL USBA UDC DRIVER
+>  M:	Nicolas Ferre <nicolas.ferre@atmel.com>
+> @@ -5142,7 +5142,7 @@ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  S:	Maintained
+>  F:	arch/arm/mach-pxa/
+>  F:	drivers/pcmcia/pxa2xx*
+> -F:	drivers/spi/pxa2xx*
+> +F:	drivers/spi/spi-pxa2xx*
+>  F:	drivers/usb/gadget/pxa2*
+>  F:	include/sound/pxa2xx-lib.h
+>  F:	sound/arm/pxa*
 
-I assume changing the common ARM code to use new accessors will happen
-post-3.0.
 
-(BTW that was Richard Cochran's patch)
 -- 
-Krzysztof Halasa
+Nicolas Ferre
+
