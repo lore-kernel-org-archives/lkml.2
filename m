@@ -1,238 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab1GGFgb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 01:36:31 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49089 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab1GGFdM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 01:33:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=R96eZ1L7Q45OKEmS/BqqiyAUW8P++K9vRRkB0boSQeQe/Rr3Eqa0vE4iI8rsoK4HB
-	QPbhtn4fj9rd1dvb+2ifQ==
-Message-Id: <20110707053100.077302412@google.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 06 Jul 2011 22:30:40 -0700
-From: Paul Turner <pjt@google.com>
-To: linux-kernel@vger.kernel.org
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Hu Tao <hutao@cn.fujitsu.com>
-Subject: [patch 04/17] sched: validate CFS quota hierarchies
-References: <20110707053036.173186930@google.com>
-Content-Disposition: inline; filename=sched-bwc-consistent_quota.patch
+	id S1753953Ab1GGFip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:38:45 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:53802 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751826Ab1GGFin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 01:38:43 -0400
+Date: Thu, 7 Jul 2011 15:38:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Vitaliy Ivanov <vitalivanov@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+        Roland Vossen <rvossen@broadcom.com>,
+        Arend van Spriel <arend@broadcom.com>,
+        Franky Lin <frankyl@broadcom.com>
+Subject: linux-next: manual merge of the staging tree with the net and
+ trivial trees
+Message-Id: <20110707153840.c70fde0f5881bbe0c82eb6dc@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add constraints validation for CFS bandwidth hierarchies.
+Hi Greg,
 
-Validate that:
-   max(child bandwidth) <= parent_bandwidth
+Today's linux-next merge of the staging tree got a conflict in
+drivers/staging/bcm/headers.h
+drivers/staging/brcm80211/brcmfmac/dhd_linux.c
+drivers/staging/brcm80211/brcmfmac/dhd_sdio.c
+drivers/staging/brcm80211/brcmfmac/wl_cfg80211.h between commits
+219eb47e6f35 ("net/staging: add needed interrupt.h and hardirq.h
+includes") from the net tree and e44ba033c565 ("treewide: remove
+duplicate includes") from the trivial tree and various commits from the
+staging tree.
 
-In a quota limited hierarchy, an unconstrained entity
-(e.g. bandwidth==RUNTIME_INF) inherits the bandwidth of its parent.
+I fixed thme up (see below) and can carry the fixes as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-This constraint is chosen over sum(child_bandwidth) as notion of over-commit is
-valuable within SCHED_OTHER.  Some basic code from the RT case is re-factored
-for reuse.
-
-Signed-off-by: Paul Turner <pjt@google.com>
-
----
- kernel/sched.c |  109 ++++++++++++++++++++++++++++++++++++++++++++++++++-------
- 1 file changed, 96 insertions(+), 13 deletions(-)
-
-Index: tip/kernel/sched.c
-===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -249,6 +249,7 @@ struct cfs_bandwidth {
- 	raw_spinlock_t lock;
- 	ktime_t period;
- 	u64 quota;
-+	s64 hierarchal_quota;
- #endif
- };
- 
-@@ -8522,12 +8523,7 @@ unsigned long sched_group_shares(struct 
- }
- #endif
- 
--#ifdef CONFIG_RT_GROUP_SCHED
--/*
-- * Ensure that the real time constraints are schedulable.
-- */
--static DEFINE_MUTEX(rt_constraints_mutex);
--
-+#if defined(CONFIG_RT_GROUP_SCHED) || defined(CONFIG_CFS_BANDWIDTH)
- static unsigned long to_ratio(u64 period, u64 runtime)
- {
- 	if (runtime == RUNTIME_INF)
-@@ -8535,6 +8531,13 @@ static unsigned long to_ratio(u64 period
- 
- 	return div64_u64(runtime << 20, period);
- }
-+#endif
-+
-+#ifdef CONFIG_RT_GROUP_SCHED
-+/*
-+ * Ensure that the real time constraints are schedulable.
-+ */
-+static DEFINE_MUTEX(rt_constraints_mutex);
- 
- /* Must be called with tasklist_lock held */
- static inline int tg_has_rt_tasks(struct task_group *tg)
-@@ -8555,7 +8558,7 @@ struct rt_schedulable_data {
- 	u64 rt_runtime;
- };
- 
--static int tg_schedulable(struct task_group *tg, void *data)
-+static int tg_rt_schedulable(struct task_group *tg, void *data)
- {
- 	struct rt_schedulable_data *d = data;
- 	struct task_group *child;
-@@ -8619,7 +8622,7 @@ static int __rt_schedulable(struct task_
- 		.rt_runtime = runtime,
- 	};
- 
--	return walk_tg_tree(tg_schedulable, tg_nop, &data);
-+	return walk_tg_tree(tg_rt_schedulable, tg_nop, &data);
- }
- 
- static int tg_set_rt_bandwidth(struct task_group *tg,
-@@ -8878,14 +8881,17 @@ static u64 cpu_shares_read_u64(struct cg
- }
- 
- #ifdef CONFIG_CFS_BANDWIDTH
-+static DEFINE_MUTEX(cfs_constraints_mutex);
-+
- const u64 max_cfs_quota_period = 1 * NSEC_PER_SEC; /* 1s */
- const u64 min_cfs_quota_period = 1 * NSEC_PER_MSEC; /* 1ms */
- 
-+static int __cfs_schedulable(struct task_group *tg, u64 period, u64 runtime);
-+
- static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
- {
--	int i;
-+	int i, ret = 0;
- 	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
--	static DEFINE_MUTEX(mutex);
- 
- 	if (tg == &root_task_group)
- 		return -EINVAL;
-@@ -8906,7 +8912,11 @@ static int tg_set_cfs_bandwidth(struct t
- 	if (period > max_cfs_quota_period)
- 		return -EINVAL;
- 
--	mutex_lock(&mutex);
-+	mutex_lock(&cfs_constraints_mutex);
-+	ret = __cfs_schedulable(tg, period, quota);
-+	if (ret)
-+		goto out_unlock;
-+
- 	raw_spin_lock_irq(&cfs_b->lock);
- 	cfs_b->period = ns_to_ktime(period);
- 	cfs_b->quota = quota;
-@@ -8921,9 +8931,10 @@ static int tg_set_cfs_bandwidth(struct t
- 		cfs_rq->runtime_remaining = 0;
- 		raw_spin_unlock_irq(&rq->lock);
- 	}
--	mutex_unlock(&mutex);
-+out_unlock:
-+	mutex_unlock(&cfs_constraints_mutex);
- 
--	return 0;
-+	return ret;
- }
- 
- int tg_set_cfs_quota(struct task_group *tg, long cfs_quota_us)
-@@ -8997,6 +9008,78 @@ static int cpu_cfs_period_write_u64(stru
- 	return tg_set_cfs_period(cgroup_tg(cgrp), cfs_period_us);
- }
- 
-+struct cfs_schedulable_data {
-+	struct task_group *tg;
-+	u64 period, quota;
-+};
-+
-+/*
-+ * normalize group quota/period to be quota/max_period
-+ * note: units are usecs
-+ */
-+static u64 normalize_cfs_quota(struct task_group *tg,
-+			       struct cfs_schedulable_data *d)
-+{
-+	u64 quota, period;
-+
-+	if (tg == d->tg) {
-+		period = d->period;
-+		quota = d->quota;
-+	} else {
-+		period = tg_get_cfs_period(tg);
-+		quota = tg_get_cfs_quota(tg);
-+	}
-+
-+	/* note: these should typically be equivalent */
-+	if (quota == RUNTIME_INF || quota == -1)
-+		return RUNTIME_INF;
-+
-+	return to_ratio(period, quota);
-+}
-+
-+static int tg_cfs_schedulable_down(struct task_group *tg, void *data)
-+{
-+	struct cfs_schedulable_data *d = data;
-+	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
-+	s64 quota = 0, parent_quota = -1;
-+
-+	if (!tg->parent) {
-+		quota = RUNTIME_INF;
-+	} else {
-+		struct cfs_bandwidth *parent_b = tg_cfs_bandwidth(tg->parent);
-+
-+		quota = normalize_cfs_quota(tg, d);
-+		parent_quota = parent_b->hierarchal_quota;
-+
-+		/*
-+		 * ensure max(child_quota) <= parent_quota, inherit when no
-+		 * limit is set
-+		 */
-+		if (quota == RUNTIME_INF)
-+			quota = parent_quota;
-+		else if (parent_quota != RUNTIME_INF && quota > parent_quota)
-+			return -EINVAL;
-+	}
-+	cfs_b->hierarchal_quota = quota;
-+
-+	return 0;
-+}
-+
-+static int __cfs_schedulable(struct task_group *tg, u64 period, u64 quota)
-+{
-+	struct cfs_schedulable_data data = {
-+		.tg = tg,
-+		.period = period,
-+		.quota = quota,
-+	};
-+
-+	if (quota != RUNTIME_INF) {
-+		do_div(data.period, NSEC_PER_USEC);
-+		do_div(data.quota, NSEC_PER_USEC);
-+	}
-+
-+	return walk_tg_tree(tg_cfs_schedulable_down, tg_nop, &data);
-+}
- #endif /* CONFIG_CFS_BANDWIDTH */
- #endif /* CONFIG_FAIR_GROUP_SCHED */
- 
-
-
+diff --cc drivers/staging/bcm/headers.h
+index 8fe8d2b,ab0a1db..0000000
+--- a/drivers/staging/bcm/headers.h
++++ b/drivers/staging/bcm/headers.h
+@@@ -23,8 -23,10 +23,7 @@@
+  #include <linux/wait.h>
+  #include <linux/proc_fs.h>
+  #include <linux/interrupt.h>
+- #include <linux/version.h>
+ -
+  #include <linux/stddef.h>
+ -#include <linux/kernel.h>
+  #include <linux/stat.h>
+  #include <linux/fcntl.h>
+  #include <linux/unistd.h>
+diff --cc drivers/staging/brcm80211/brcmfmac/dhd_linux.c
+index 09957bd,380447f..0000000
+--- a/drivers/staging/brcm80211/brcmfmac/dhd_linux.c
++++ b/drivers/staging/brcm80211/brcmfmac/dhd_linux.c
+@@@ -31,140 -28,17 +28,19 @@@
+  #include <linux/fcntl.h>
+  #include <linux/fs.h>
+  #include <linux/uaccess.h>
+ +#include <linux/interrupt.h>
+ +#include <linux/hardirq.h>
+- #include <bcmdefs.h>
+- #include <bcmutils.h>
+- 
+- #include <dngl_stats.h>
+- #include <dhd.h>
+- #include <dhd_bus.h>
+- #include <dhd_proto.h>
+- #include <dhd_dbg.h>
+- 
+- #include <wl_cfg80211.h>
+- 
+- #define EPI_VERSION_STR		"4.218.248.5"
+- #define ETH_P_BRCM			0x886c
+- 
+- #if defined(CUSTOMER_HW2) && defined(CONFIG_WIFI_CONTROL_FUNC)
+- #include <linux/wifi_tiwlan.h>
+- 
+- struct semaphore wifi_control_sem;
+- 
+- struct dhd_bus *g_bus;
+- 
+- static struct wifi_platform_data *wifi_control_data;
+- static struct resource *wifi_irqres;
+- 
+- int wifi_get_irq_number(unsigned long *irq_flags_ptr)
+- {
+- 	if (wifi_irqres) {
+- 		*irq_flags_ptr = wifi_irqres->flags & IRQF_TRIGGER_MASK;
+- 		return (int)wifi_irqres->start;
+- 	}
+- #ifdef CUSTOM_OOB_GPIO_NUM
+- 	return CUSTOM_OOB_GPIO_NUM;
+- #else
+- 	return -1;
+- #endif
+- }
+- 
+- int wifi_set_carddetect(int on)
+- {
+- 	printk(KERN_ERR "%s = %d\n", __func__, on);
+- 	if (wifi_control_data && wifi_control_data->set_carddetect)
+- 		wifi_control_data->set_carddetect(on);
+- 	return 0;
+- }
+- 
+- int wifi_set_power(int on, unsigned long msec)
+- {
+- 	printk(KERN_ERR "%s = %d\n", __func__, on);
+- 	if (wifi_control_data && wifi_control_data->set_power)
+- 		wifi_control_data->set_power(on);
+- 	if (msec)
+- 		mdelay(msec);
+- 	return 0;
+- }
+- 
+- int wifi_set_reset(int on, unsigned long msec)
+- {
+- 	printk(KERN_ERR "%s = %d\n", __func__, on);
+- 	if (wifi_control_data && wifi_control_data->set_reset)
+- 		wifi_control_data->set_reset(on);
+- 	if (msec)
+- 		mdelay(msec);
+- 	return 0;
+- }
+- 
+- static int wifi_probe(struct platform_device *pdev)
+- {
+- 	struct wifi_platform_data *wifi_ctrl =
+- 	    (struct wifi_platform_data *)(pdev->dev.platform_data);
+- 
+- 	printk(KERN_ERR "## %s\n", __func__);
+- 	wifi_irqres =
+- 	    platform_get_resource_byname(pdev, IORESOURCE_IRQ,
+- 					 "bcm4329_wlan_irq");
+- 	wifi_control_data = wifi_ctrl;
+- 
+- 	wifi_set_power(1, 0);	/* Power On */
+- 	wifi_set_carddetect(1);	/* CardDetect (0->1) */
+- 
+- 	up(&wifi_control_sem);
+- 	return 0;
+- }
+- 
+- static int wifi_remove(struct platform_device *pdev)
+- {
+- 	struct wifi_platform_data *wifi_ctrl =
+- 	    (struct wifi_platform_data *)(pdev->dev.platform_data);
+- 
+- 	printk(KERN_ERR "## %s\n", __func__);
+- 	wifi_control_data = wifi_ctrl;
+- 
+- 	wifi_set_carddetect(0);	/* CardDetect (1->0) */
+- 	wifi_set_power(0, 0);	/* Power Off */
+- 
+- 	up(&wifi_control_sem);
+- 	return 0;
+- }
+- 
+- static int wifi_suspend(struct platform_device *pdev, pm_message_t state)
+- {
+- 	DHD_TRACE(("##> %s\n", __func__));
+- 	return 0;
+- }
+- 
+- static int wifi_resume(struct platform_device *pdev)
+- {
+- 	DHD_TRACE(("##> %s\n", __func__));
+- 	return 0;
+- }
+- 
+- static struct platform_driver wifi_device = {
+- 	.probe = wifi_probe,
+- 	.remove = wifi_remove,
+- 	.suspend = wifi_suspend,
+- 	.resume = wifi_resume,
+- 	.driver = {
+- 		   .name = KBUILD_MODNAME,
+- 		   }
+- };
+- 
+- int wifi_add_dev(void)
+- {
+- 	DHD_TRACE(("## Calling platform_driver_register\n"));
+- 	return platform_driver_register(&wifi_device);
+- }
+- 
+- void wifi_del_dev(void)
+- {
+- 	DHD_TRACE(("## Unregister platform_driver_register\n"));
+- 	platform_driver_unregister(&wifi_device);
+- }
+- #endif	/* defined(CUSTOMER_HW2) && defined(CONFIG_WIFI_CONTROL_FUNC) */
++ #include <net/cfg80211.h>
++ #include <defs.h>
++ #include <brcmu_utils.h>
++ #include <brcmu_wifi.h>
++ 
++ #include "dhd.h"
++ #include "dhd_bus.h"
++ #include "dhd_proto.h"
++ #include "dhd_dbg.h"
++ #include "wl_cfg80211.h"
++ #include "bcmchip.h"
+  
+  #if defined(CONFIG_PM_SLEEP)
+  #include <linux/suspend.h>
+diff --cc drivers/staging/brcm80211/brcmfmac/dhd_sdio.c
+index 8cbfeae,7fa95b6..0000000
+--- a/drivers/staging/brcm80211/brcmfmac/dhd_sdio.c
++++ b/drivers/staging/brcm80211/brcmfmac/dhd_sdio.c
+diff --cc drivers/staging/brcm80211/brcmfmac/wl_cfg80211.h
+index d4bcc1e,f26d087..0000000
+--- a/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.h
++++ b/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.h
