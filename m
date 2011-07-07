@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754399Ab1GGHyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 03:54:51 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:65248 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752959Ab1GGHyu (ORCPT
+	id S1754377Ab1GGH4U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 03:56:20 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45967 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753710Ab1GGH4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 03:54:50 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: vt8500-wm8505-linux-kernel@googlegroups.com
-Subject: Re: [PATCH 1/6 v8] ARM: Add basic architecture support for VIA/WonderMedia 85xx SoC's
-Date: Thu, 7 Jul 2011 09:54:00 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Alexey Charkov <alchark@gmail.com>,
-        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org,
-        Eric Miao <eric.y.miao@gmail.com>,
-        "Uwe =?utf-8?q?Kleine-K=C3=B6nig?=" <u.kleine-koenig@pengutronix.de>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-References: <1289147348-31969-1-git-send-email-alchark@gmail.com> <20110706123417.GA25400@n2100.arm.linux.org.uk> <CABjd4Yxc_jRi563CHg+G7ekTHT40sTxgRUoL68bSke7oh8JVpg@mail.gmail.com>
-In-Reply-To: <CABjd4Yxc_jRi563CHg+G7ekTHT40sTxgRUoL68bSke7oh8JVpg@mail.gmail.com>
+	Thu, 7 Jul 2011 03:56:18 -0400
+Date: Thu, 7 Jul 2011 11:56:10 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: kernel-hardening@lists.openwall.com
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
+        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>
+Subject: Re: [kernel-hardening] Re: RLIMIT_NPROC check in set_user()
+Message-ID: <20110707075610.GA3411@albatros>
+References: <20110612130953.GA3709@albatros>
+ <20110706173631.GA5431@albatros>
+ <CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com>
+ <20110706185932.GB3299@albatros>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107070954.00419.arnd@arndb.de>
-X-Provags-ID: V02:K0:IlDUECvVS5OrB+ApyDJeJfK0vFMd9fYMVqBC1fhJXTW
- c7WTV8kldw3Q/a4IZt1vYJaN2GBMNKROzkMMizm9wrf+WQ8CFB
- E+H79S787SkdAytMnkjdwFkAfdIc2GsaezCbROqpCU0GITho6n
- GYk9EDqNS8k+VMgNpHuTypMSldwpygD2RpEg1JEs5H/FDmb/HD
- RlFOulMy7sC12lATTgC5A==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110706185932.GB3299@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 July 2011 09:13:26 Alexey Charkov wrote:
-> >> diff --git a/arch/arm/mach-vt8500/include/mach/io.h b/arch/arm/mach-vt8500/include/mach/io.h
-> >> new file mode 100644
-> >> index 0000000..8dd55c8
-> >> --- /dev/null
-> >> +++ b/arch/arm/mach-vt8500/include/mach/io.h
-> >> +#ifndef __ASM_ARM_ARCH_IO_H
-> >> +#define __ASM_ARM_ARCH_IO_H
-> >> +
-> >> +#define IO_SPACE_LIMIT 0xffff
-> >> +
-> >> +#define __io(a)              ((void __iomem *)((a) + 0xf0000000))
-> >> +#define __mem_pci(a) (a)
-> >
-> > Can you explain why you seem to have PCI IO space, yet don't have CONFIG_PCI
-> > selected?  Do you have any drivers which use this space without CONFIG_PCI=y?
+(Sorry, I've dropped Linus from CC somehow ;-)
+
+On Wed, Jul 06, 2011 at 22:59 +0400, Vasiliy Kulikov wrote:
+> On Wed, Jul 06, 2011 at 11:01 -0700, Linus Torvalds wrote:
+> > My reaction is: "let's just remote the crazy check from set_user()
+> > entirely".
 > 
-> We have not yet created support for the PCI bridge (or even verified
-> its existence on the chip). These numbers are derived bit by bit from
-> vendor-published kernel sources and rather intended as a reference in
-> case somebody wishes to try and implement PCI support.
+> Honestly, I didn't expect such a positive reaction from you in the first
+> reply :)
 > 
-> All the peripherals on these chips that I know of are statically
-> mapped platform devices programmed via MMIO registers. There may be
-> some boards which have support for external PCI devices, but I haven't
-> seen them.
+> 
+> > The whole point of RLIMIT_NPROC is to avoid fork-bombs.
+> 
+> It is also used in cases where there is implicit or explicit limit on
+> some other resource per process leading to the global limit of
+> RLIMIT_NPROC*X.  The most obvious case of X is RLIMIT_AS.
+> 
+> Purely pragmatic approach is introducing the check in execve() to
+> heuristically limit the number of user processes.  If the program uses
+> PAM to register a user session, maxlogins from pam_limits is the Right
+> Way.  But many programs simply don't use PAM because of the performance
+> issues.  E.g. apache doesn't use PAM.  On a shared web hosting this is a
+> real issue.
+> 
+> In -ow patch execve() checked for the exceeded RLIMIT_NPROC, which
+> effectively solved Apache's problem.
+> 
+> ...and execve() error handling is hard to miss ;-)
+> 
+> 
+> > So let's keep it in kernel/fork.c where we actually create a *new*
+> > process (and where everybody knows exactly what the limit means, and
+> > people who don't check for error cases are just broken). And remove it
+> > from everywhere else.
+> 
+> There are checks only in copy_process() and set_user().
+> 
+> Thanks,
 
-Actually, we did discuss this when I first reviewed your patches. FWIW,
-WM8505, WM8510 and VT8500 don't seem to have PCI, but VT8430 has PCI,
-according to the data sheet and the patch provided by VIA.
-
-What made this a little hard to understand is the way that VIA provided
-an emulated PCI bus even on those platforms that didn't have the hardware,
-apparently because it didn't occur to them to add platform device
-support to the network driver (via velocity, iirc). They just faked a
-configuration space for the USB and network devices to make them work
-with the regular PCI drivers.
-
-	Arnd
+-- 
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
