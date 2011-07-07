@@ -1,126 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab1GGIyL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 04:54:11 -0400
-Received: from tx2ehsobe001.messaging.microsoft.com ([65.55.88.11]:5682 "EHLO
-	TX2EHSOBE002.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754556Ab1GGIyG (ORCPT
+	id S1755309Ab1GGI5c (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 04:57:32 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:55968 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896Ab1GGI5a convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 04:54:06 -0400
-X-SpamScore: -16
-X-BigFish: VPS-16(zz936eK4015Lzz1202hzz15d4R8275dhz32i668h839h944h64h)
-X-Spam-TCS-SCL: 3:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNYGQ1-02-8IB-02
-X-M-MSG: 
-Date: Thu, 7 Jul 2011 10:53:59 +0200
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: <linux-kernel@vger.kernel.org>, Ohad Ben-Cohen <ohad@wizery.com>,
-        David Woodhouse <dwmw2@infradead.org>,
-        David Brown <davidb@codeaurora.org>,
-        <iommu@lists.linux-foundation.org>
-Subject: [git pull] IOMMU updates for 3.1
-Message-ID: <20110707085359.GC1956@amd.com>
+	Thu, 7 Jul 2011 04:57:30 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
+References: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com>
+ <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
+From: Wan ZongShun <mcuos.com@gmail.com>
+Date: Thu, 7 Jul 2011 16:57:08 +0800
+Message-ID: <CAKT61h8O1JjGnNBKYBZC6WGNwS9EDq7T4kqSFHbmNjVMj2OWHQ@mail.gmail.com>
+Subject: Re: [PATCH next 2/2] MAINTAINERS: Update PXA2xx/PXA3xx SUPPORT patterns
+To: Joe Perches <joe@perches.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Nicolas Ferre <nicolas.ferre@atmel.com>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+2011/7/7 Joe Perches <joe@perches.com>:
+> commit ca632f556697 ("spi: reorganize drivers")
+> renamed the files, update the MAINTAINERS patterns.
+>
+> cc: Grant Likely <grant.likely@secretlab.ca>
+> cc: Nicolas Ferre <nicolas.ferre@atmel.com>
+> cc: Wan ZongShun <mcuos.com@gmail.com>
+> cc: Eric Miao <eric.y.miao@gmail.com>
+> cc: Russell King <linux@arm.linux.org.uk>
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-The following changes since commit 56299378726d5f2ba8d3c8cbbd13cb280ba45e4f:
+Acked-by: Wan Zongshun <mcuos.com@gmail.com>
+> ---
+>  MAINTAINERS |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 0ad8ff0..4e5cc19 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1123,7 +1123,7 @@ F:        drivers/watchdog/nuc900_wdt.c
+>  F:     drivers/net/arm/w90p910_ether.c
+>  F:     drivers/mtd/nand/nuc900_nand.c
+>  F:     drivers/rtc/rtc-nuc900.c
+> -F:     drivers/spi/spi_nuc900.c
+> +F:     drivers/spi/spi-nuc900.c
+>  F:     drivers/usb/host/ehci-w90x900.c
+>  F:     drivers/video/nuc900fb.c
+>
+> @@ -1321,7 +1321,7 @@ F:        drivers/net/macb.*
+>  ATMEL SPI DRIVER
+>  M:     Nicolas Ferre <nicolas.ferre@atmel.com>
+>  S:     Supported
+> -F:     drivers/spi/atmel_spi.*
+> +F:     drivers/spi/spi-atmel.c
+>
+>  ATMEL USBA UDC DRIVER
+>  M:     Nicolas Ferre <nicolas.ferre@atmel.com>
+> @@ -5142,7 +5142,7 @@ L:        linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>  S:     Maintained
+>  F:     arch/arm/mach-pxa/
+>  F:     drivers/pcmcia/pxa2xx*
+> -F:     drivers/spi/pxa2xx*
+> +F:     drivers/spi/spi-pxa2xx*
+>  F:     drivers/usb/gadget/pxa2*
+>  F:     include/sound/pxa2xx-lib.h
+>  F:     sound/arm/pxa*
+> --
+> 1.7.6.131.g99019
+>
+>
 
-  Linux 3.0-rc4 (2011-06-20 20:25:46 -0700)
 
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/joro/iommu.git iommu-3.1
-
-Joerg Roedel (13):
-      x86/amd-iommu: Remove redundant device_flush_dte() calls
-      x86/amd-iommu: Introduce global dev_data_list
-      x86/amd-iommu: Store devid in dev_data
-      x86/amd-iommu: Store ATS state in dev_data
-      x86/amd-iommu: Use only dev_data for dte and iotlb flushing routines
-      x86/amd-iommu: Use only dev_data in low-level domain attach/detach functions
-      x86/amd-iommu: Allow dev_data->alias to be NULL
-      x86/amd-iommu: Search for existind dev_data before allocting a new one
-      x86/amd-iommu: Store device alias as dev_data pointer
-      iommu: Move iommu Kconfig entries to submenu
-      iommu/amd: Move missing parts to drivers/iommu
-      Merge branches 'amd/transparent-bridge' and 'core'
-      iommu/amd: Don't use MSI address range for DMA addresses
-
-Laura Abbott (1):
-      iommu-api: Add missing header file
-
-Ohad Ben-Cohen (4):
-      drivers: iommu: move to a dedicated folder
-      msm: iommu: move to drivers/iommu/
-      x86: amd_iommu: move to drivers/iommu/
-      x86/ia64: intel-iommu: move to drivers/iommu/
-
- arch/arm/mach-msm/Kconfig                          |   19 --
- arch/arm/mach-msm/Makefile                         |    2 +-
- arch/ia64/Kconfig                                  |   24 --
- arch/x86/Kconfig                                   |   79 -----
- arch/x86/kernel/Makefile                           |    1 -
- drivers/Kconfig                                    |    2 +
- drivers/Makefile                                   |    1 +
- drivers/base/Makefile                              |    1 -
- drivers/iommu/Kconfig                              |  110 +++++++
- drivers/iommu/Makefile                             |    5 +
- {arch/x86/kernel => drivers/iommu}/amd_iommu.c     |  314 ++++++++++++--------
- .../x86/kernel => drivers/iommu}/amd_iommu_init.c  |    8 +-
- .../asm => drivers/iommu}/amd_iommu_proto.h        |    2 +-
- .../asm => drivers/iommu}/amd_iommu_types.h        |    9 +-
- drivers/{pci => iommu}/dmar.c                      |    0
- drivers/{pci => iommu}/intel-iommu.c               |    1 -
- drivers/{pci => iommu}/intr_remapping.c            |    1 -
- drivers/{pci => iommu}/intr_remapping.h            |    0
- drivers/{base => iommu}/iommu.c                    |    0
- drivers/{pci => iommu}/iova.c                      |    0
- .../mach-msm/iommu.c => drivers/iommu/msm_iommu.c  |    0
- .../iommu_dev.c => drivers/iommu/msm_iommu_dev.c   |    0
- drivers/pci/Makefile                               |    5 -
- drivers/pci/pci.h                                  |    2 -
- .../asm/amd_iommu.h => include/linux/amd-iommu.h   |    0
- include/linux/iommu.h                              |    2 +
- include/linux/pci.h                                |   11 +
- 27 files changed, 332 insertions(+), 267 deletions(-)
- create mode 100644 drivers/iommu/Kconfig
- create mode 100644 drivers/iommu/Makefile
- rename {arch/x86/kernel => drivers/iommu}/amd_iommu.c (91%)
- rename {arch/x86/kernel => drivers/iommu}/amd_iommu_init.c (99%)
- rename {arch/x86/include/asm => drivers/iommu}/amd_iommu_proto.h (98%)
- rename {arch/x86/include/asm => drivers/iommu}/amd_iommu_types.h (98%)
- rename drivers/{pci => iommu}/dmar.c (100%)
- rename drivers/{pci => iommu}/intel-iommu.c (99%)
- rename drivers/{pci => iommu}/intr_remapping.c (99%)
- rename drivers/{pci => iommu}/intr_remapping.h (100%)
- rename drivers/{base => iommu}/iommu.c (100%)
- rename drivers/{pci => iommu}/iova.c (100%)
- rename arch/arm/mach-msm/iommu.c => drivers/iommu/msm_iommu.c (100%)
- rename arch/arm/mach-msm/iommu_dev.c => drivers/iommu/msm_iommu_dev.c (100%)
- rename arch/x86/include/asm/amd_iommu.h => include/linux/amd-iommu.h (100%)
-
-These changes move all iommu-api drivers to drivers/iommu/.
-Additionally this tree mades the amd iommu driver able to handle
-device-ids which are not present as a real device in the system.
-Please pull.
-
-Thanks,
-
-	Joerg
 
 -- 
-AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Wan ZongShun.
+www.mcuos.com
