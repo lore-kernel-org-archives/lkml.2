@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756162Ab1GGLxl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 07:53:41 -0400
-Received: from mail-iy0-f174.google.com ([209.85.210.174]:43472 "EHLO
-	mail-iy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755742Ab1GGLxk convert rfc822-to-8bit (ORCPT
+	id S1756203Ab1GGLxu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 07:53:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:50713 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755742Ab1GGLxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 07:53:40 -0400
+	Thu, 7 Jul 2011 07:53:47 -0400
 MIME-Version: 1.0
-In-Reply-To: <20110707085551.GA4718@albatros>
-References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
-	<BANLkTi=dTHGK1QVs+g2tA6WocQ64SPPF3g@mail.gmail.com>
-	<20110629201718.GA11071@albatros>
-	<20110702073625.GA3318@albatros>
-	<CAKTCnzmjaddz-ihxJ_qme28S==BAPGRmC2j3iE5fqm8TPi0knA@mail.gmail.com>
-	<20110704174540.GA3321@albatros>
-	<20110707085551.GA4718@albatros>
-Date: Thu, 7 Jul 2011 17:23:39 +0530
-Message-ID: <CAKTCnzn25jUOmefuTPsLwbGGoj5sgz8-CgiV6XO-dMbNuD8Mzg@mail.gmail.com>
-Subject: Re: [PATCH 2/2] taskstats: restrict access to user
-From: Balbir Singh <bsingharora@gmail.com>
-To: Vasiliy Kulikov <segoon@openwall.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, kernel-hardening@lists.openwall.com
+Date: Thu, 7 Jul 2011 13:53:46 +0200
+Message-ID: <CACTFLANCYMXH=z+NxEF0aqpMGZp21Q16_uB=J3rndM3pW74qeA@mail.gmail.com>
+Subject: Allocating buffers for USB transfers (again)
+From: Daniel Mack <zonque@gmail.com>
+To: linux-usb@vger.kernel.org, alsa-devel@alsa-project.org
+Cc: Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
+        florian@mickler.org, pedrib@gmail.com, William Light <wrl@illest.net>,
+        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 2:25 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> On Mon, Jul 04, 2011 at 21:45 +0400, Vasiliy Kulikov wrote:
->> The already known danger is these io fields.
->
-> Two more things:
->
-> 1) unblocking netlink socket on task exit is a rather useful help to win
-> different races.  E.g. if the vulnerable program has the code -
->
->    wait(NULL);
->    do_smth_racy();
->
-> - then the attacker's task listening for the taskstats event will be
-> effectively woken up just before the racy code.  It might greatly
-> increase the chanses to win the race => to exploit the bug.
-> (The same defect exists in inotify.)
->
+I have to revisit an issue we've discussed in length around a year ago
+and which still remains unsolved. I've been getting feedback from more
+users of my driver snd-usb-caiaq who report the issue found in bug
+#15580 in the kernel bugzilla:
+https://bugzilla.kernel.org/show_bug.cgi?id=15580
 
-I don't see why taskstats is singled out, please look at proc
-notifiers as well. I don't buy this use case, what are we trying to
-save here and why is taskstats responsible, because it notifies?
+Let me quickly summarize the current state of this issue as I see it.
 
->
-> 2) taskstats gives the task information at the precisely specific moment
-> - task death.  So, the attacker shouldn't guess whether some event
-> occured or not.  The formula of gotten information is _exactly_ task
-> activity during the life.  On the contrary, getting the same information
-> from procfs files might result in some inaccuracy because of measuring
-> time inaccuracy (scheduler's variability, different disks' load, etc.).
->
-> Of cource, (2) makes sense only if some sensible information is still
-> available through taskstats.
+The problem seems to be that certain 64bit chipsets can't deal with
+the fact that an URB's transfer_buffer is allocated with
+kmalloc(GFP_KERNEL). The effect is that kmalloc() is very likely to
+hand out memory which is not addressable by devices that are connected
+via 32bit PCI busses, such as EHCI controllers. In theory, DMA bounce
+buffers should be installed in such cases, or the IOMMU would be in
+charge to re-map these buffers to suitable locations, but for at least
+two people who have reported the issue, this obviously fails.
 
-Again this makes no sense to me, at the end we send accumulated data
-and that data can be read from /proc/$pid (mostly). The race is that
-while I go off to read the data the process might disappear taking all
-of its data with it, which is what taskstats tries to solve among
-other things. Your use case has a lot of hand waving, which I frankly
-cannot put to a logical place in my mind.
+So my approach was to force the driver using memory that is DMA
+coherent, which leads to 32bit addressable memory if the device's
+DMA_MASK is set accordingly. Other drivers do the same, and the patch
+for doing this is found here: http://lkml.org/lkml/2010/5/7/61. Users
+that see the bug all report that this patch fixes their problem with
+my driver. However, it was rejected back then as other developers said
+it was fixing the wrong end, and that the driver doesn't necessarily
+need coherent memory.
 
-Balbir Singh
+Takashi recently posted a patch to the bugzilla entry which uses a
+different approach: it introduces a function to determine suitable GFP
+flags for USB devices, and passes __DMA32 to kmalloc() eventually.
+However, using this flags directly with the SLUB allocator is illegal
+and causes a BUG() in mm/slub.c, cache_grow().
+
+The question now is how to proceed. I see three possible ways.
+
+1. Find a way to allocate 32bit-aware memory with kmalloc(), following
+Takashi's idea
+2. Find out exactly why these machines fail to install bounce buffers
+or set up their IOMMU correctly
+3. re-activate the currently disabled functions
+usb_buffer_{map,unmap,sync} functions and let the USB stack do the
+memory mapping
+
+I'm not really deep into all the memory management code and even less
+into how the IOMMU and bounce buffers work, so I need some help here.
+Can anyone elaborate what would be the best option? I really want to
+get this fixed now, and provide a driver that works for everyone.
+
+What really puzzles me is that this doesn't hit a lot more people with
+other drivers.
+
+
+Thanks,
+Daniel
