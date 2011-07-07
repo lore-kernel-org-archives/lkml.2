@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752596Ab1GGTts (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 15:49:48 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55697 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751700Ab1GGTtr convert rfc822-to-8bit (ORCPT
+	id S1752557Ab1GGTvT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 15:51:19 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:52866 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751700Ab1GGTvR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 15:49:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <20110707.122151.314840355798805828.davem@davemloft.net>
-References: <alpine.DEB.2.00.1107071314320.21719@router.home>
-	<1310064771.21902.55.camel@jaguar>
-	<alpine.DEB.2.00.1107071402490.24248@router.home>
-	<20110707.122151.314840355798805828.davem@davemloft.net>
-Date: Thu, 7 Jul 2011 22:49:46 +0300
-X-Google-Sender-Auth: itpFKBPAyYZeyjwV8B0Toy5vbos
-Message-ID: <CAOJsxLFsX3Q84QAeyRt5dZOdRxb3TiABPrP-YrWc91+BmR8ZBg@mail.gmail.com>
-Subject: Re: [PATCH] slub: reduce overhead of slub_debug
+	Thu, 7 Jul 2011 15:51:17 -0400
+Subject: Re: Build issue with linux next. duplicate member _count in
+ mm_types.h
 From: Pekka Enberg <penberg@kernel.org>
-To: David Miller <davem@davemloft.net>
-Cc: cl@linux.com, marcin.slusarz@gmail.com, mpm@selenic.com,
-        linux-kernel@vger.kernel.org, rientjes@google.com, linux-mm@kvack.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Christoph Lameter <cl@linux.com>
+Cc: piotr@hosowicz.com, Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <alpine.DEB.2.00.1107071413290.24437@router.home>
+References: <4E143120.2020501@cam.ac.uk>
+	 <alpine.DEB.2.00.1107060933460.17202@router.home>
+	 <4E15AF1C.7080103@example.com>
+	 <alpine.DEB.2.00.1107070841500.17376@router.home>
+	 <4E15B945.5060805@example.com> <1310065670.21902.62.camel@jaguar>
+	 <alpine.DEB.2.00.1107071413290.24437@router.home>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 07 Jul 2011 22:51:15 +0300
+Message-ID: <1310068275.21902.63.camel@jaguar>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 10:21 PM, David Miller <davem@davemloft.net> wrote:
-> From: Christoph Lameter <cl@linux.com>
-> Date: Thu, 7 Jul 2011 14:12:37 -0500 (CDT)
->
->> On Thu, 7 Jul 2011, Pekka Enberg wrote:
->>
->>> On Thu, 7 Jul 2011, Pekka Enberg wrote:
->>> > > Looks good to me. Christoph, David, ?
->>>
->>> On Thu, 2011-07-07 at 13:17 -0500, Christoph Lameter wrote:
->>> > The reason debug code is there is because it is useless overhead typically
->>> > not needed. There is no point in optimizing the code that is not run in
->>> > production environments unless there are gross performance issues that
->>> > make debugging difficult. A performance patch for debugging would have to
->>> > cause significant performance improvements. This patch does not do that
->>> > nor was there such an issue to be addressed in the first place.
->>>
->>> Is there something technically wrong with the patch? Quoting the patch
->>> email:
->>>
->>>   (Compiling some project with different options)
->>>                                  make -j12    make clean
->>>   slub_debug disabled:             1m 27s       1.2 s
->>>   slub_debug enabled:              1m 46s       7.6 s
->>>   slub_debug enabled + this patch: 1m 33s       3.2 s
->>>
->>>   check_bytes still shows up high, but not always at the top.
->>>
->>> That's significant enough speedup for me!
->>
->> Ok. I had a different set of numbers in mind from earlier posts.
->>
->> The benefit here comes from accessing memory in larger (word) chunks
->> instead of byte wise. This is a form of memscan() with inverse matching.
->>
->> Isnt there an asm optimized version that can do this much better (there is
->> one for memscan())? Optimizing this in core code by codeing something as
->> generic as that is not that good since the arch code can deliver better
->> performance and it seems that this is functionality that could be useful
->> elsewhere.
->
-> You're being so unreasonable, just let the optimization in, refine it
-> with follow-on patches.
+On Thu, 2011-07-07 at 14:14 -0500, Christoph Lameter wrote:
+> On Thu, 7 Jul 2011, Pekka Enberg wrote:
+> 
+> > > I attach it. Your patch seems to had worked, I finish making the package.
+> >
+> > I'm confused. Does Christoph's patch fix the problem for everyone?
+> 
+> Guess so (heard nothing to the contrary) but I still would like to know
+> what caused it. My best guess right now its gccs 4.6s stricter checking.
 
-I applied the patch. I think a follow up patch that moves the function
-to lib/string.c with proper generic name would be in order. Thanks!
+OK, I applied the patch. Hopefully it will fix build breakage in
+linux-next.
+
+
