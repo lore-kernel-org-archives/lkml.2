@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab1GGAd4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 20:33:56 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54710 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753666Ab1GGAdz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 20:33:55 -0400
-Date: Wed, 6 Jul 2011 17:33:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: Knut Petersen <Knut_Petersen@t-online.de>
-Cc: axboe@kernel.dk, kay.sievers@vrfy.org,
-        "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [BUG 2.6.38.8] Bisected to commit
- 5fb46ae7b8c51b05a12c6a66108e8d398c20ee09
-Message-ID: <20110707003338.GA25302@suse.de>
-References: <4E11BAE0.5020208@t-online.de>
+	id S1755533Ab1GGAeb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 20:34:31 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50544 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab1GGAe3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 20:34:29 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4E11BAE0.5020208@t-online.de>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com>
+References: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 6 Jul 2011 18:34:08 -0600
+X-Google-Sender-Auth: m7zNOEzU5lJOKg8LiyNRx8p4fUI
+Message-ID: <CACxGe6uRmgWBN0H6hrYBik_q7B2NxP0kny3cpH9xEA5wPZLEtw@mail.gmail.com>
+Subject: Re: [PATCH next 1/2] MAINTAINERS: Update GPIO sections patterns
+To: Joe Perches <joe@perches.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Michael Buesch <mb@bu3sch.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 04, 2011 at 03:06:40PM +0200, Knut Petersen wrote:
-> Hi everybody!
-> 
-> An openSuse 11.2 system reliably refused to boot properly with kernel 2.6.38.8
-> although the prior 2.6.38.y kernels worked fine.  After a few seconds booting
-> stopped. Several <ctrl-c> did help, but a lot of services were not started properly,
-> only the root partition was available. Nothing unusual could be found in the
-> kernel messages.
-> 
-> I bisected the problem to commit 5fb46ae7b8c51b05a12c6a66108e8d398c20ee09.
-> 
-> That gave me the idea to disconnect the Plextor PX-755A dvd drive  and to
-> try 2.6.38.8 again. It booted without problem.
+On Wed, Jul 6, 2011 at 6:28 PM, Joe Perches <joe@perches.com> wrote:
+> commit c103de24043 ("gpio: reorganize drivers")
+> renamed the files, update the patterns.
+>
+> cc: Grant Likely <grant.likely@secretlab.ca>
+> cc: Michael Hennerich <michael.hennerich@analog.com>
+> cc: Michael Buesch <mb@bu3sch.de>
+>
+> Signed-off-by: Joe Perches <joe@perches.com>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+> ---
+>  MAINTAINERS |    8 ++++----
+>  1 files changed, 4 insertions(+), 4 deletions(-)
+>
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 657fabe..0ad8ff0 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -343,7 +343,7 @@ S:  Supported
+>  F:     drivers/mfd/adp5520.c
+>  F:     drivers/video/backlight/adp5520_bl.c
+>  F:     drivers/leds/leds-adp5520.c
+> -F:     drivers/gpio/adp5520-gpio.c
+> +F:     drivers/gpio/gpio-adp5520.c
+>  F:     drivers/input/keyboard/adp5520-keys.c
+>
+>  ADP5588 QWERTY KEYPAD AND IO EXPANDER DRIVER (ADP5588/ADP5587)
+> @@ -352,7 +352,7 @@ L:  device-drivers-devel@blackfin.uclinux.org
+>  W:     http://wiki.analog.com/ADP5588
+>  S:     Supported
+>  F:     drivers/input/keyboard/adp5588-keys.c
+> -F:     drivers/gpio/adp5588-gpio.c
+> +F:     drivers/gpio/gpio-adp5588.c
+>
+>  ADP8860 BACKLIGHT DRIVER (ADP8860/ADP8861/ADP8863)
+>  M:     Michael Hennerich <michael.hennerich@analog.com>
+> @@ -1587,11 +1587,11 @@ S:      Maintained
+>  F:     Documentation/sound/alsa/Bt87x.txt
+>  F:     sound/pci/bt87x.c
+>
+> -BT8XXGPIO DRIVER
+> +BT8XX GPIO DRIVER
+>  M:     Michael Buesch <mb@bu3sch.de>
+>  W:     http://bu3sch.de/btgpio.php
+>  S:     Maintained
+> -F:     drivers/gpio/bt8xxgpio.c
+> +F:     drivers/gpio/gpio-bt8xx.c
+>
+>  BTRFS FILE SYSTEM
+>  M:     Chris Mason <chris.mason@oracle.com>
+> --
+> 1.7.6.131.g99019
+>
+>
 
-Does the 2.6.39.2 kernel work properly for you?
+
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
