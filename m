@@ -1,51 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754191Ab1GGHvv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 03:51:51 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:43357 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752168Ab1GGHvs (ORCPT
+	id S1754100Ab1GGHvt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 03:51:49 -0400
+Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:33800
+	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752802Ab1GGHvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Jul 2011 03:51:48 -0400
-Date: Thu, 7 Jul 2011 08:53:41 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Mandeep Singh Baines <msb@chromium.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>,
-        Hugh Dickins <hughd@chromium.org>, Olaf Hering <olaf@aepfle.de>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        Dave Airlie <airlied@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] panic, vt: do not force oops output when panic_timeout
- < 0
-Message-ID: <20110707085341.200a3c2b@lxorguk.ukuu.org.uk>
-In-Reply-To: <20110622223039.GA13916@google.com>
-References: <1308612129-12488-1-git-send-email-msb@chromium.org>
-	<1308612129-12488-2-git-send-email-msb@chromium.org>
-	<20110622223039.GA13916@google.com>
-X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+From: matt mooney <mfm@muteddisk.com>
+To: Greg Kroah-Hartman <greg@kroah.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 3/7] staging: usbip: userspace: fix header installation bug
+Date: Thu,  7 Jul 2011 00:31:52 -0700
+Message-Id: <f89e20315322d03c4ebac9a10c9af2f3e11d3e2a.1310023068.git.mfm@muteddisk.com>
+X-Mailer: git-send-email 1.7.6
+In-Reply-To: <cover.1310023068.git.mfm@muteddisk.com>
+References: <cover.1310023068.git.mfm@muteddisk.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> a serial port. When I disabled the serial out, my machine started to
-> get wedged on a panic. I guess screen_unblank was in bust_spinlocks
-> for a reason. It probably bust some spin_locks somewhere.
+A bug that I created due to using simply expanding variables in the
+makefiles. Although only unexpanded paths are at issue here, I decided
+to use recursively expanding variables on all of the parameterized
+values.
 
-No something else is wrong here. The console panic should be reliably
-breaking the locks but a quick test of taking the console lock and BUG()
-on a current kernel shows something has broken this.
+Signed-off-by: matt mooney <mfm@muteddisk.com>
+---
+ drivers/staging/usbip/userspace/Makefile.am        |    2 +-
+ drivers/staging/usbip/userspace/libsrc/Makefile.am |    6 +++---
+ drivers/staging/usbip/userspace/src/Makefile.am    |    6 +++---
+ 3 files changed, 7 insertions(+), 7 deletions(-)
 
-> Below is a replacement for this patch which calls screen_unblank but
-> does not force output when the panic timeout is negative (no wait).
+diff --git a/drivers/staging/usbip/userspace/Makefile.am b/drivers/staging/usbip/userspace/Makefile.am
+index fbdeef3..9ab1949 100644
+--- a/drivers/staging/usbip/userspace/Makefile.am
++++ b/drivers/staging/usbip/userspace/Makefile.am
+@@ -1,5 +1,5 @@
+ SUBDIRS := libsrc src
+-includedir := @includedir@/usbip
++includedir = @includedir@/usbip
+ include_HEADERS := $(addprefix libsrc/, \
+ 		     usbip_common.h vhci_driver.h usbip_host_driver.h)
+ 
+diff --git a/drivers/staging/usbip/userspace/libsrc/Makefile.am b/drivers/staging/usbip/userspace/libsrc/Makefile.am
+index 9b663a4..4921189 100644
+--- a/drivers/staging/usbip/userspace/libsrc/Makefile.am
++++ b/drivers/staging/usbip/userspace/libsrc/Makefile.am
+@@ -1,6 +1,6 @@
+-libusbip_la_CPPFLAGS := -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
+-libusbip_la_CFLAGS   := @EXTRA_CFLAGS@
+-libusbip_la_LDFLAGS  := -version-info @LIBUSBIP_VERSION@
++libusbip_la_CPPFLAGS = -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
++libusbip_la_CFLAGS   = @EXTRA_CFLAGS@
++libusbip_la_LDFLAGS  = -version-info @LIBUSBIP_VERSION@
+ 
+ lib_LTLIBRARIES := libusbip.la
+ libusbip_la_SOURCES := names.c names.h usbip_host_driver.c usbip_host_driver.h \
+diff --git a/drivers/staging/usbip/userspace/src/Makefile.am b/drivers/staging/usbip/userspace/src/Makefile.am
+index 44ff0ca..3f09f6a 100644
+--- a/drivers/staging/usbip/userspace/src/Makefile.am
++++ b/drivers/staging/usbip/userspace/src/Makefile.am
+@@ -1,6 +1,6 @@
+-AM_CPPFLAGS := -I$(top_srcdir)/libsrc -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
+-AM_CFLAGS   := @EXTRA_CFLAGS@ @PACKAGE_CFLAGS@
+-LDADD       := $(top_builddir)/libsrc/libusbip.la @PACKAGE_LIBS@
++AM_CPPFLAGS = -I$(top_srcdir)/libsrc -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
++AM_CFLAGS   = @EXTRA_CFLAGS@ @PACKAGE_CFLAGS@
++LDADD       = $(top_builddir)/libsrc/libusbip.la @PACKAGE_LIBS@
+ 
+ sbin_PROGRAMS := usbip usbipd
+ 
+-- 
+1.7.6
 
-The on screen console is not always just a vt, and some people log remote
-management console output so we really really don't want to do this.
-
-Instead the bug in the lock busting needs fixing. To start with it will
-be hiding a ton of other oopses/bugs as hangs.
-
-Alan
