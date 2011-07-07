@@ -1,75 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754786Ab1GGITj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 04:19:39 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55438 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751384Ab1GGITf (ORCPT
+	id S1754867Ab1GGIYx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 04:24:53 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:44365 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751384Ab1GGIYu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 04:19:35 -0400
-Date: Thu, 7 Jul 2011 12:19:30 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: kernel-hardening@lists.openwall.com,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, Jiri Slaby <jslaby@suse.cz>,
-        James Morris <jmorris@namei.org>, Neil Brown <neilb@suse.de>
-Subject: Re: [kernel-hardening] Re: RLIMIT_NPROC check in set_user()
-Message-ID: <20110707081930.GA4393@albatros>
-References: <20110612130953.GA3709@albatros>
- <20110706173631.GA5431@albatros>
- <CA+55aFyfjG1h2zkkGai_VPM8p5bhWhvNXs1HvuWMgxv4RSywYw@mail.gmail.com>
- <20110706185932.GB3299@albatros>
- <20110707075610.GA3411@albatros>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110707075610.GA3411@albatros>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 7 Jul 2011 04:24:50 -0400
+From: Ravishankar <ravishankarkm32@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Ravishankar <ravi.shankar@greenturtles.in>,
+        Ravishankar <ravishankarkm32@gmail.com>
+Subject: [PATCH 6/6] Staging: comedi: fix warning issue in unioxx5.c
+Date: Thu,  7 Jul 2011 14:06:57 +0530
+Message-Id: <1310027817-2438-1-git-send-email-ravishankarkm32@gmail.com>
+X-Mailer: git-send-email 1.6.5.2
+In-Reply-To: <[PATCH 2/2]Staging: comedi:fix warning issues in unioxx5.c>
+References: <[PATCH 2/2]Staging: comedi:fix warning issues in unioxx5.c>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Sorry, I've dropped Linus from CC somehow ;-)
+From: Ravishankar <ravi.shankar@greenturtles.in>
 
-On Wed, Jul 06, 2011 at 22:59 +0400, Vasiliy Kulikov wrote:
-> On Wed, Jul 06, 2011 at 11:01 -0700, Linus Torvalds wrote:
-> > My reaction is: "let's just remote the crazy check from set_user()
-> > entirely".
-> 
-> Honestly, I didn't expect such a positive reaction from you in the first
-> reply :)
-> 
-> 
-> > The whole point of RLIMIT_NPROC is to avoid fork-bombs.
-> 
-> It is also used in cases where there is implicit or explicit limit on
-> some other resource per process leading to the global limit of
-> RLIMIT_NPROC*X.  The most obvious case of X is RLIMIT_AS.
-> 
-> Purely pragmatic approach is introducing the check in execve() to
-> heuristically limit the number of user processes.  If the program uses
-> PAM to register a user session, maxlogins from pam_limits is the Right
-> Way.  But many programs simply don't use PAM because of the performance
-> issues.  E.g. apache doesn't use PAM.  On a shared web hosting this is a
-> real issue.
-> 
-> In -ow patch execve() checked for the exceeded RLIMIT_NPROC, which
-> effectively solved Apache's problem.
-> 
-> ...and execve() error handling is hard to miss ;-)
-> 
-> 
-> > So let's keep it in kernel/fork.c where we actually create a *new*
-> > process (and where everybody knows exactly what the limit means, and
-> > people who don't check for error cases are just broken). And remove it
-> > from everywhere else.
-> 
-> There are checks only in copy_process() and set_user().
-> 
-> Thanks,
+This is a patch to the unioxx5.c file that fixes up a  warning: line over 80 character by the checkpatch.pl tool
 
+Signed-off-by: Ravishankar <ravishankarkm32@gmail.com>
+---
+ drivers/staging/comedi/drivers/unioxx5.c |   30 +++++++++++++++++++++---------
+ 1 files changed, 21 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
+index 9b311c7..88dafb7 100644
+--- a/drivers/staging/comedi/drivers/unioxx5.c
++++ b/drivers/staging/comedi/drivers/unioxx5.c
+@@ -207,7 +207,9 @@ static int unioxx5_subdev_write(struct comedi_device *dev,
+ 	int channel, type;
+ 
+ 	channel = CR_CHAN(insn->chanspec);
+-	type = usp->usp_module_type[channel / 2];	/* defining module type(analog or digital) */
++	type = usp->usp_module_type[channel / 2];	/* defining module type
++							 * (analog or digital)
++							*/
+ 
+ 	if (type == MODULE_DIGITAL) {
+ 		if (!__unioxx5_digital_write(usp, data, channel, dev->minor))
+@@ -266,9 +268,13 @@ static int unioxx5_insn_config(struct comedi_device *dev,
+ 	 * change channel type on input or output)                *
+ 	 \*                                                        */
+ 	outb(1, usp->usp_iobase + 0);
+-	outb(flags, usp->usp_iobase + channel_offset);	/* changes type of _one_ channel */
++	outb(flags, usp->usp_iobase + channel_offset);	/* changes type of
++							 * _one_ channel
++							*/
+@@ -316,7 +322,9 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
+ 		to = 10000;
+ 
+ 		__unioxx5_analog_config(usp, i * 2);
+-		outb(i + 1, subdev_iobase + 5);	/* sends channel number to card */
++		outb(i + 1, subdev_iobase + 5);	/* sends channel number
++						 * to card
++						*/
+ 		outb('H', subdev_iobase + 6);	/* requests EEPROM world */
+ 		while (!(inb(subdev_iobase + 0) & TxBE))
+ 			;	/* waits while writting will be allowed */
+@@ -372,15 +381,18 @@ static int __unioxx5_digital_write(struct unioxx5_subd_priv *usp,
+ 		return 0;
+ 	}
+ 
+-	val = usp->usp_prev_wr_val[channel_offset - 1];	/* getting previous written value */
+-
++	val = usp->usp_prev_wr_val[channel_offset - 1];	/* getting previous
++							 * written value
++							*/
+ 	if (*data)
+ 		val |= mask;
+ 	else
+ 		val &= ~mask;
+ 
+ 	outb(val, usp->usp_iobase + channel_offset);
+-	usp->usp_prev_wr_val[channel_offset - 1] = val;	/* saving new written value */
++	usp->usp_prev_wr_val[channel_offset - 1] = val;	/* saving new written
++							 * value
++							*/
+ 	return 1;
+ }
+ 
 -- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+1.6.5.2
+
