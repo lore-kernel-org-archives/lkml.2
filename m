@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754100Ab1GGHvt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 03:51:49 -0400
-Received: from qmta13.emeryville.ca.mail.comcast.net ([76.96.27.243]:33800
-	"EHLO qmta13.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752802Ab1GGHvs (ORCPT
+	id S1754291Ab1GGHwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 03:52:24 -0400
+Received: from mailout3.samsung.com ([203.254.224.33]:56633 "EHLO
+	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab1GGHwW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 03:51:48 -0400
-From: matt mooney <mfm@muteddisk.com>
-To: Greg Kroah-Hartman <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/7] staging: usbip: userspace: fix header installation bug
-Date: Thu,  7 Jul 2011 00:31:52 -0700
-Message-Id: <f89e20315322d03c4ebac9a10c9af2f3e11d3e2a.1310023068.git.mfm@muteddisk.com>
-X-Mailer: git-send-email 1.7.6
-In-Reply-To: <cover.1310023068.git.mfm@muteddisk.com>
-References: <cover.1310023068.git.mfm@muteddisk.com>
+	Thu, 7 Jul 2011 03:52:22 -0400
+X-AuditID: cbfee61b-b7bfdae000006d51-c0-4e1565b4f2b6
+Date: Thu, 07 Jul 2011 16:51:56 +0900
+From: Donggeun Kim <dg77.kim@samsung.com>
+Subject: [PATCH] regulator: max8997: Fix setting inappropriate value for
+ ramp_delay variable
+To: linux-kernel@vger.kernel.org
+Cc: lrg@ti.com, broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
+        kyungmin.park@samsung.com, dg77.kim@samsung.com
+Message-id: <1310025116-30787-1-git-send-email-dg77.kim@samsung.com>
+X-Mailer: git-send-email 1.7.4.1
+Content-transfer-encoding: 7BIT
+X-OriginalArrivalTime: 07 Jul 2011 07:52:32.0073 (UTC)
+ FILETIME=[D39B0390:01CC3C7A]
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A bug that I created due to using simply expanding variables in the
-makefiles. Although only unexpanded paths are at issue here, I decided
-to use recursively expanding variables on all of the parameterized
-values.
+The ramp_delay variable can be set lower than the desired value.
+This patch fixes it.
 
-Signed-off-by: matt mooney <mfm@muteddisk.com>
+Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
+Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
 ---
- drivers/staging/usbip/userspace/Makefile.am        |    2 +-
- drivers/staging/usbip/userspace/libsrc/Makefile.am |    6 +++---
- drivers/staging/usbip/userspace/src/Makefile.am    |    6 +++---
- 3 files changed, 7 insertions(+), 7 deletions(-)
+ drivers/regulator/max8997.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/usbip/userspace/Makefile.am b/drivers/staging/usbip/userspace/Makefile.am
-index fbdeef3..9ab1949 100644
---- a/drivers/staging/usbip/userspace/Makefile.am
-+++ b/drivers/staging/usbip/userspace/Makefile.am
-@@ -1,5 +1,5 @@
- SUBDIRS := libsrc src
--includedir := @includedir@/usbip
-+includedir = @includedir@/usbip
- include_HEADERS := $(addprefix libsrc/, \
- 		     usbip_common.h vhci_driver.h usbip_host_driver.h)
+diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
+index 10d5a1d..682bc79 100644
+--- a/drivers/regulator/max8997.c
++++ b/drivers/regulator/max8997.c
+@@ -543,7 +543,8 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
+ 			rid == MAX8997_BUCK4 || rid == MAX8997_BUCK5) {
+ 		/* If the voltage is increasing */
+ 		if (org < i)
+-			udelay(desc->step * (i - org) / max8997->ramp_delay);
++			udelay(DIV_ROUND_UP(desc->step * (i - org),
++						max8997->ramp_delay));
+ 	}
  
-diff --git a/drivers/staging/usbip/userspace/libsrc/Makefile.am b/drivers/staging/usbip/userspace/libsrc/Makefile.am
-index 9b663a4..4921189 100644
---- a/drivers/staging/usbip/userspace/libsrc/Makefile.am
-+++ b/drivers/staging/usbip/userspace/libsrc/Makefile.am
-@@ -1,6 +1,6 @@
--libusbip_la_CPPFLAGS := -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
--libusbip_la_CFLAGS   := @EXTRA_CFLAGS@
--libusbip_la_LDFLAGS  := -version-info @LIBUSBIP_VERSION@
-+libusbip_la_CPPFLAGS = -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
-+libusbip_la_CFLAGS   = @EXTRA_CFLAGS@
-+libusbip_la_LDFLAGS  = -version-info @LIBUSBIP_VERSION@
- 
- lib_LTLIBRARIES := libusbip.la
- libusbip_la_SOURCES := names.c names.h usbip_host_driver.c usbip_host_driver.h \
-diff --git a/drivers/staging/usbip/userspace/src/Makefile.am b/drivers/staging/usbip/userspace/src/Makefile.am
-index 44ff0ca..3f09f6a 100644
---- a/drivers/staging/usbip/userspace/src/Makefile.am
-+++ b/drivers/staging/usbip/userspace/src/Makefile.am
-@@ -1,6 +1,6 @@
--AM_CPPFLAGS := -I$(top_srcdir)/libsrc -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
--AM_CFLAGS   := @EXTRA_CFLAGS@ @PACKAGE_CFLAGS@
--LDADD       := $(top_builddir)/libsrc/libusbip.la @PACKAGE_LIBS@
-+AM_CPPFLAGS = -I$(top_srcdir)/libsrc -DUSBIDS_FILE='"@USBIDS_DIR@/usb.ids"'
-+AM_CFLAGS   = @EXTRA_CFLAGS@ @PACKAGE_CFLAGS@
-+LDADD       = $(top_builddir)/libsrc/libusbip.la @PACKAGE_LIBS@
- 
- sbin_PROGRAMS := usbip usbipd
- 
+ 	return ret;
 -- 
-1.7.6
+1.7.4.1
 
