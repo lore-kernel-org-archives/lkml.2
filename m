@@ -1,64 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab1GGNyX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:54:23 -0400
-Received: from bar.sig21.net ([80.81.252.164]:49511 "EHLO bar.sig21.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751905Ab1GGNyW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:54:22 -0400
-Date: Thu, 7 Jul 2011 15:53:59 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: Daniel Mack <zonque@gmail.com>
-Cc: linux-usb@vger.kernel.org, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
-        florian@mickler.org, pedrib@gmail.com, William Light <wrl@illest.net>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-Subject: Re: Allocating buffers for USB transfers (again)
-Message-ID: <20110707135359.GA4000@sig21.net>
-References: <CACTFLANCYMXH=z+NxEF0aqpMGZp21Q16_uB=J3rndM3pW74qeA@mail.gmail.com>
+	id S1754932Ab1GGNyf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:54:35 -0400
+Received: from 13.mo1.mail-out.ovh.net ([178.33.253.128]:60035 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752477Ab1GGNya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 09:54:30 -0400
+X-Greylist: delayed 2396 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jul 2011 09:54:30 EDT
+Message-ID: <4E15B840.3080701@example.com>
+Date: Thu, 07 Jul 2011 15:44:32 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <CACTFLANCYMXH=z+NxEF0aqpMGZp21Q16_uB=J3rndM3pW74qeA@mail.gmail.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Spam-21-Score: -3.8 (---)
-X-Spam-21-Report: No, score=-3.8 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.631,BAYES_00=-2.599 autolearn=no
+To: LKML <linux-kernel@vger.kernel.org>
+CC: "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Fwd: Re: Today's Linux Next failed to even start building, I must
+ have done something wrong
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 13276893177928708376
+X-Ovh-Remote: 178.36.17.0 (178-36-17-0.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -30
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 01:53:46PM +0200, Daniel Mack wrote:
-> So my approach was to force the driver using memory that is DMA
-> coherent, which leads to 32bit addressable memory if the device's
-> DMA_MASK is set accordingly. Other drivers do the same, and the patch
-> for doing this is found here: http://lkml.org/lkml/2010/5/7/61. Users
-> that see the bug all report that this patch fixes their problem with
-> my driver. However, it was rejected back then as other developers said
-> it was fixing the wrong end, and that the driver doesn't necessarily
-> need coherent memory.
+Sorry, I post once again, my mailer did something wrong.
 
-I think this is a valid approach, and since it avoids
-using bounce buffers it is potentially better wrt performance.
-BTW, usb_alloc_coherent() doc comment says you need to set the
-URB_NO_TRANSFER_DMA_MAP flag, which your patch fails to do.
+-------- Original Message --------
+Subject: Re: Today's Linux Next failed to even start building, I must 
+have done something wrong
+Date: Thu, 07 Jul 2011 15:28:44 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+To: piotr@hosowicz.com
 
-> Takashi recently posted a patch to the bugzilla entry which uses a
-> different approach: it introduces a function to determine suitable GFP
-> flags for USB devices, and passes __DMA32 to kmalloc() eventually.
-> However, using this flags directly with the SLUB allocator is illegal
-> and causes a BUG() in mm/slub.c, cache_grow().
+On 07.07.2011 14:47, Piotr Hosowicz wrote:
+> Hello,
+>
+> I'm not sure - which base source tree should I take to apply the patch?
+> I fail for now with building witch Debian make-kpkg with messages:
+>
+> # ...
+> make ARCH=x86_64 prepare
+> make[2]: Wejście do katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+> scripts/kconfig/conf --silentoldconfig Kconfig
+> make[2]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+> make[2]: Wejście do katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+> CHK include/linux/version.h
+> UPD include/linux/version.h
+> CHK include/generated/utsrelease.h
+> UPD include/generated/utsrelease.h
+> CC kernel/bounds.s
+> GEN include/generated/bounds.h
+> CC arch/x86/kernel/asm-offsets.s
+> In file included from include/linux/sched.h:64:0,
+> from arch/x86/kernel/asm-offsets.c:9:
+> include/linux/mm_types.h:74:15: error: duplicate member ‘_count’
+> make[3]: *** [arch/x86/kernel/asm-offsets.s] Błąd 1
+> make[2]: *** [prepare0] Błąd 2
+> make[2]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+> make[1]: *** [debian/stamp/conf/kernel-conf] Błąd 2
+> make[1]: Opuszczenie katalogu `/usr/src/linux-3.0-rc6-nx-20110707'
+> make: *** [debian/stamp/conf/minimal_debian] Błąd 2
+> Failed to create a ./debian directory: Nie ma takiego pliku ani katalogu
+> at /usr/bin/make-kpkg line 984.
+>
+> Please help me.
 
-from gfp.h:
-  /* Do not use these with a slab allocator */
-  #define GFP_SLAB_BUG_MASK (__GFP_DMA32|__GFP_HIGHMEM|~__GFP_BITS_MASK)
+Solved, thanks to Christoph Lameter in thread "Build issue with linux
+next. duplicate member _count in mm_types.h".
 
-I think it means you can only use __GFP_DMA32 for
-get_free_pages(), not for kmalloc().
+-- 
+"Chcemy waszego dobra!" - powiedział lider
+socjaldemokratów. Zaniepokojeni obywatele
+zaczeli ukrywać swoje dobra w bezpiecznych
+miejscach.
+NP: Nemo -
+NB: 3.0.0-rc6
 
-> 2. Find out exactly why these machines fail to install bounce buffers
-> or set up their IOMMU correctly
-
-I think this needs to be done.
-
-
-Johannes
