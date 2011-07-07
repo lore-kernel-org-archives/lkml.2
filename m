@@ -1,140 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756007Ab1GGMYK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 08:24:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:48733 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755675Ab1GGMYG convert rfc822-to-8bit (ORCPT
+	id S1756145Ab1GGMYz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 08:24:55 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:35246 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755863Ab1GGMYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 08:24:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.65,493,1304319600"; 
-   d="scan'208";a="27397809"
-From: "Winkler, Tomas" <tomas.winkler@intel.com>
-To: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-CC: "devel@linuxdriverproject.org" <devel@linuxdriverproject.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Weil, Oren jer" <oren.jer.weil@intel.com>
-Date: Thu, 7 Jul 2011 15:23:36 +0300
-Subject: RE: [staging] mei: Enable msi when supported
-Thread-Topic: [staging] mei: Enable msi when supported
-Thread-Index: Acw8mY+4GtAHi2TwRD+96wB4yMfUywABXt3Q
-Message-ID: <6F5C1D715B2DA5498A628E6B9C124F0401C711335D@hasmsx504.ger.corp.intel.com>
-References: <4E159945.8050900@gmail.com>
-In-Reply-To: <4E159945.8050900@gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Jul 2011 08:24:53 -0400
+From: Vitaly Kuzmichev <vkuzmichev@mvista.com>
+To: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+        Russell King <linux@arm.linux.org.uk>, Arnd Bergmann <arnd@arndb.de>,
+        Wim Van Sebroeck <wim@iguana.be>, Marc Zyngier <marc.zyngier@arm.com>,
+        Colin Cross <ccross@android.com>
+Cc: linux-kernel@vger.kernel.org, John Stultz <johnstul@us.ibm.com>,
+        Nicolas Pitre <nico@fluxnic.net>, Thomas Gleixner <tglx@linutronix.de>,
+        Vitaly Kuzmichev <vkuzmichev@mvista.com>
+Subject: [PATCH V3 0/4] ARM: smp_twd: mpcore_wdt: Fix MPCORE watchdog setup
+Date: Thu,  7 Jul 2011 16:22:19 +0400
+Message-Id: <1310041339-2348-1-git-send-email-vkuzmichev@mvista.com>
+X-Mailer: git-send-email 1.7.3.4
+In-Reply-To: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com>
+References: <1286185540-19569-1-git-send-email-vkuzmichev@mvista.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The series of patches fixes various bugs in ARM MPCORE watchdog setup.
+They also introduce some changes in common SMP_TWD timer setup code.
+The PATCH V3 2/4 adds an exported function to obtain twd timer rate in
+mpcore_wdt. It was decided that this solution is the best at this time,
+and later it will be removed while conversion smp_twd driver into
+the clocksource/arm_smp_twd as well as calibration loop will be replaced
+by smp_twd clock. The mpcore_wdt will also use clk interface instead.
 
+In comparing with V2 series this (V3) is based on linux-2.6/master branch.
+Also the patches PATCH V2 5/6 and PATCH V2 6/6 were thrown out since they
+are useless with current swp_twd driver.
+Also it was decided to keep PATCH V2 3/6 as is due to upcoming restructuring
+of watchdog drivers, but added parentheses inside 'if' condition.
 
-> -----Original Message-----
-> From: Maarten Lankhorst [mailto:m.b.lankhorst@gmail.com]
-> Sent: Thursday, July 07, 2011 2:32 PM
-> To: Winkler, Tomas
-> Cc: devel@linuxdriverproject.org; Linux Kernel Mailing List
-> Subject: [staging] mei: Enable msi when supported
-> 
-> Signed-off-by: Maarten Lankhorst <m.b.lankhorst@gmail.com>
-> ---
-> Tested suspend/resume, driver (re/un)loading. Comments welcome. :)
+Vitaly Kuzmichev (4):
+  ARM: smp_twd: Fix typo in 'twd_timer_rate' printing
+  ARM: smp_twd: mpcore_wdt: Fix watchdog counter loading
+  ARM: mpcore_wdt: Fix WDIOC_SETOPTIONS handling
+  ARM: mpcore_wdt: Fix timer mode setup
 
-Sounds good, but I believe in case where MSI is enabled we also can kill the quick handler.
-Let me check before I ack this.
+ arch/arm/include/asm/smp_twd.h |    7 +++++++
+ arch/arm/kernel/smp_twd.c      |    9 ++++++++-
+ drivers/watchdog/mpcore_wdt.c  |   22 ++++++++++++++--------
+ 3 files changed, 29 insertions(+), 9 deletions(-)
 
-
-> 
-> diff --git a/drivers/staging/mei/main.c b/drivers/staging/mei/main.c index
-> bfd1b46..58106bf 100644
-> --- a/drivers/staging/mei/main.c
-> +++ b/drivers/staging/mei/main.c
-> @@ -121,6 +121,7 @@ static int __devinit mei_probe(struct pci_dev *pdev,
-> {
->  	struct mei_device *dev;
->  	int err;
-> +	unsigned long flags = 0;
-> 
->  	mutex_lock(&mei_mutex);
->  	if (mei_device) {
-> @@ -154,11 +155,13 @@ static int __devinit mei_probe(struct pci_dev
-> *pdev,
->  		err = -ENOMEM;
->  		goto free_device;
->  	}
-> +	if (pci_enable_msi(pdev) < 0)
-> +		flags |= IRQF_SHARED;
->  	/* request and enable interrupt   */
->  	err = request_threaded_irq(pdev->irq,
->  			mei_interrupt_quick_handler,
->  			mei_interrupt_thread_handler,
-> -			IRQF_SHARED, mei_driver_name, dev);
-> +			flags, mei_driver_name, dev);
->  	if (err) {
->  		printk(KERN_ERR "mei: request_threaded_irq failure. irq =
-> %d\n",
->  		       pdev->irq);
-> @@ -186,6 +189,7 @@ release_irq:
->  	mei_disable_interrupts(dev);
->  	flush_scheduled_work();
->  	free_irq(pdev->irq, dev);
-> +	pci_disable_msi(pdev);
->  unmap_memory:
->  	pci_iounmap(pdev, dev->mem_addr);
->  free_device:
-> @@ -250,6 +254,7 @@ static void __devexit mei_remove(struct pci_dev
-> *pdev)
->  	mei_disable_interrupts(dev);
-> 
->  	free_irq(pdev->irq, dev);
-> +	pci_disable_msi(pdev);
->  	pci_set_drvdata(pdev, NULL);
-> 
->  	if (dev->mem_addr)
-> @@ -1103,7 +1108,7 @@ static int mei_pci_suspend(struct device *device)
->  	mutex_unlock(&dev->device_lock);
-> 
->  	free_irq(pdev->irq, dev);
-> -
-> +	pci_disable_msi(pdev);
-> 
->  	return err;
->  }
-> @@ -1113,16 +1118,19 @@ static int mei_pci_resume(struct device *device)
->  	struct pci_dev *pdev = to_pci_dev(device);
->  	struct mei_device *dev;
->  	int err;
-> +	unsigned long flags = 0;
-> 
->  	dev = pci_get_drvdata(pdev);
->  	if (!dev)
->  		return -ENODEV;
-> 
-> +	if (pci_enable_msi(pdev) < 0)
-> +		flags |= IRQF_SHARED;
->  	/* request and enable interrupt   */
->  	err = request_threaded_irq(pdev->irq,
->  			mei_interrupt_quick_handler,
->  			mei_interrupt_thread_handler,
-> -			IRQF_SHARED, mei_driver_name, dev);
-> +			flags, mei_driver_name, dev);
->  	if (err) {
->  		printk(KERN_ERR "mei: Request_irq failure. irq = %d\n",
->  		       pdev->irq);
-> 
-
----------------------------------------------------------------------
-Intel Israel (74) Limited
-
-This e-mail and any attachments may contain confidential material for
-the sole use of the intended recipient(s). Any review or distribution
-by others is strictly prohibited. If you are not the intended
-recipient, please contact the sender and delete all copies.
+-- 
+1.7.3.4
 
