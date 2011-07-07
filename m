@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756750Ab1GGOyR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 10:54:17 -0400
-Received: from smtp107.prem.mail.ac4.yahoo.com ([76.13.13.46]:34305 "HELO
-	smtp107.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755644Ab1GGOyN (ORCPT
+	id S1756761Ab1GGOzU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 10:55:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36590 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755644Ab1GGOzR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 10:54:13 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: RI4R6VAVM1lkJPtSU2vRBl4WkyypU17HoF0rznIw69gp1zg
- DlK7uWVajLlcyRCXLP4G_ghbUYkPXLohEsR40XxqoiK7f3nn6CUKCKRhMZVc
- mXmn992.8RZbV1qptwdlSqoDeewYr7hbsDC6KjeRWFcN5BtOtx0WbpXh9bHO
- KW9NDwKv6.6NkG.l._jYpJwlomPJWLqF8mR_OUxBlv5ikQ.M..UASELRMBIm
- X9XIYCrJHWyusk5CiwVzu01nuR83oam1rj98OSbuBNyfdiuJuazKfl.LgEOq
- 0hVW3tGYULU5LBiHs2_kYE9_nq0DlJxeHnNS4LqCR9WCzVulwEiFr
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 7 Jul 2011 09:54:10 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Piotr Hosowicz <piotr@hosowicz.com>
-cc: Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: Build issue with linux next. duplicate member _count in
- mm_types.h
-In-Reply-To: <4E15C59E.5000900@example.com>
-Message-ID: <alpine.DEB.2.00.1107070953350.17929@router.home>
-References: <4E143120.2020501@cam.ac.uk> <alpine.DEB.2.00.1107060933460.17202@router.home> <4E15AF1C.7080103@example.com> <alpine.DEB.2.00.1107070841500.17376@router.home> <4E15B945.5060805@example.com> <alpine.DEB.2.00.1107070908320.17929@router.home>
- <4E15C59E.5000900@example.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 7 Jul 2011 10:55:17 -0400
+Subject: Re: [patch 00/17] CFS Bandwidth Control v7.1
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@openvz.org>, Hu Tao <hutao@cn.fujitsu.com>
+In-Reply-To: <20110707145159.GD19193@elte.hu>
+References: <20110707053036.173186930@google.com>
+	 <20110707112302.GB8227@elte.hu> <1310049528.3282.583.camel@twins>
+	 <20110707145159.GD19193@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 07 Jul 2011 16:54:42 +0200
+Message-ID: <1310050482.3282.584.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011, Piotr Hosowicz wrote:
+On Thu, 2011-07-07 at 16:51 +0200, Ingo Molnar wrote:
+> > Going beyond that
+> > would be using static_branch() to track if there is any bandwidth
+> > tracking required at all.
+> 
+> Could jump labels be utilized perhaps? 
 
-> Mine is:
->
-> aapi205:~# gcc --version
-> gcc (Debian 4.6.0-10) 4.6.1 20110526 (prerelease)
-
-Uhh... Guess its strict checks hit me there.
-
+# git grep static_branch include/linux/
+include/linux/jump_label.h:static __always_inline bool static_branch(struct jump_label_key *key)
