@@ -1,108 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab1GGQpq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:45:46 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55897 "EHLO bear.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752715Ab1GGQpp convert rfc822-to-8bit (ORCPT
+	id S1754056Ab1GGQql (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:46:41 -0400
+Received: from smtp-vbr18.xs4all.nl ([194.109.24.38]:2239 "EHLO
+	smtp-vbr18.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753530Ab1GGQqh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:45:45 -0400
-From: "Nori, Sekhar" <nsekhar@ti.com>
-To: Grant Likely <grant.likely@secretlab.ca>, Ryan Mallon <rmallon@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hilman, Kevin" <khilman@ti.com>, "Chemparathy, Cyril" <cyril@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Date: Thu, 7 Jul 2011 22:15:31 +0530
-Subject: RE: [RFC/RFT 1/2] gpio/basic_mmio: add support for enable register
-Thread-Topic: [RFC/RFT 1/2] gpio/basic_mmio: add support for enable register
-Thread-Index: Acw8ITVkJSsQ5yw9SjaPOUkSWFlaBgAoQeng
-Message-ID: <B85A65D85D7EB246BE421B3FB0FBB593024D9B5379@dbde02.ent.ti.com>
-References: <cover.1309840042.git.nsekhar@ti.com>
- <83915224c24e43224272b1bf570cddb9545279a6.1309840042.git.nsekhar@ti.com>
- <4E12AC10.9020206@gmail.com> <20110706211054.GE5371@ponder.secretlab.ca>
-In-Reply-To: <20110706211054.GE5371@ponder.secretlab.ca>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Jul 2011 12:46:37 -0400
+From: Hans Verkuil <hverkuil@xs4all.nl>
+To: Jonathan Corbet <corbet@lwn.net>
+Subject: Re: [RFC PATCH] poll: add poll_requested_events() function
+Date: Thu, 7 Jul 2011 18:46:33 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.37-rc7-durdane; KDE/4.4.5; x86_64; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        "linux-media" <linux-media@vger.kernel.org>,
+        linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
+References: <201107011537.30829.hverkuil@xs4all.nl> <20110707104255.6771771d@bike.lwn.net>
+In-Reply-To: <20110707104255.6771771d@bike.lwn.net>
 MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107071846.33586.hverkuil@xs4all.nl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Grant,
-
-On Thu, Jul 07, 2011 at 02:40:54, Grant Likely wrote:
-> On Tue, Jul 05, 2011 at 04:15:44PM +1000, Ryan Mallon wrote:
-> > On 05/07/11 15:10, Sekhar Nori wrote:
-> > >Some GPIO controllers have an enable register
-> > >which needs to be written to before a GPIO
-> > >can be used.
-> > >
-> > >Add support for enabling the GPIO. At this
-> > >time inverted logic for enabling the GPIO
-> > >is not supported. This can be done by adding
-> > >a disable register as and when a controller
-> > >with this comes along.
-> > >
-> > >Signed-off-by: Sekhar Nori<nsekhar@ti.com>
-> > >---
-> > >
-> > <snip>
-> > 
-> > >static int bgpio_setup_io(struct bgpio_chip *bgc,
-> > >  			  void __iomem *dat,
-> > >@@ -369,6 +401,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
-> > >  			 void __iomem *clr,
-> > >  			 void __iomem *dirout,
-> > >  			 void __iomem *dirin,
-> > >+			 void __iomem *en,
-> > >  			 bool big_endian)
-> > 
-> > The arguments to this function are getting a bit unwieldy :-). Maybe
-> > we need to introduce something like:
-> > 
-> > struct bgpio_chip_info {
-> >     struct device *dev;
-> >     unsigned long sz;
-> >     void __iomem *dat;
-> >     void __iomem *set;
-> >     void __iomem *clr;
-> >     void __iomem *dirout;
-> >     void __iomem *dirin;
-> >     void __iomem *en;
-> >     bool big_endian;
-> > };
-> > 
-> > and pass that to bgpio_init instead. It would have the added
-> > benefits of making the drivers more readable and that
-> > bgpio_chip_info structs in the drivers can probably be marked
-> > __initdata also.
+On Thursday, July 07, 2011 18:42:55 Jonathan Corbet wrote:
+> On Fri, 1 Jul 2011 15:37:30 +0200
+> Hans Verkuil <hverkuil@xs4all.nl> wrote:
 > 
-> Or, what may be better is to make callers directly update the
-> bgpio_chip structure.
+> > In some cases the poll() implementation in a driver has to do different
+> > things depending on the events the caller wants to poll for. An example is
+> > when a driver needs to start a DMA engine if the caller polls for POLLIN,
+> > but doesn't want to do that if POLLIN is not requested but instead only
+> > POLLOUT or POLLPRI is requested. This is something that can happen in the
+> > video4linux subsystem.
+> 
+> The change makes sense to me, FWIW.  One bit of trivia I noticed while
+> looking at it:
+> 
+> > @@ -796,7 +792,7 @@ static int do_poll(unsigned int nfds,  struct poll_list *list,
+> >  		 * All waiters have already been registered, so don't provide
+> >  		 * a poll_table to them on the next loop iteration.
+> >  		 */
+> > -		pt = NULL;
+> > +		pt->qproc = NULL;
+> >  		if (!count) {
+> >  			count = wait->error;
+> >  			if (signal_pending(current))
+> 
+> The comment at the beginning of this hunk is no longer accurate since the
+> poll_table is, indeed, still being supplied.  The previous comment in the
+> same function:
+> 
+> 				/*
+> 				 * Fish for events. If we found one, record it
+> 				 * and kill the poll_table, so we don't
+> 				 * needlessly register any other waiters after
+> 				 * this. They'll get immediately deregistered
+> 				 * when we break out and return.
+> 				 */
+> 
+> Could also use tweaking.
 
-I started implementing it this way, but felt that the bgpio_chip
-structure also has many internal members (like the spinlock) and
-this method will require users to spend quite a bit of time figuring
-out which structure members they should initialize and which to leave
-for bgpio_init() to do for them.
+Indeed! I'll make an RFCv3 tomorrow fixing this.
 
-There is also the case of direction register which is set from
-either dirout or dirin depending upon whether the logic is inverted
-or not. The bgpio_chip however needs to deal with a single direction
-register offset.
+Thanks for looking at this!
 
-Considering these, I am getting inclined towards Ryan's suggestion.
+Regards,
 
-Thoughts?
-
-Thanks,
-Sekhar
-
+	Hans
