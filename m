@@ -1,87 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab1GGI5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 04:57:32 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:55968 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754896Ab1GGI5a convert rfc822-to-8bit (ORCPT
+	id S1755395Ab1GGI5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 04:57:41 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56416 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754896Ab1GGI5g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 04:57:30 -0400
+	Thu, 7 Jul 2011 04:57:36 -0400
+Date: Thu, 7 Jul 2011 12:55:51 +0400
+From: Vasiliy Kulikov <segoon@openwall.com>
+To: Balbir Singh <bsingharora@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        David Rientjes <rientjes@google.com>,
+        Stephen Wilson <wilsons@start.ca>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
+        Eric Paris <eparis@redhat.com>, kernel-hardening@lists.openwall.com
+Subject: Re: [PATCH 2/2] taskstats: restrict access to user
+Message-ID: <20110707085551.GA4718@albatros>
+References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
+ <BANLkTi=dTHGK1QVs+g2tA6WocQ64SPPF3g@mail.gmail.com>
+ <20110629201718.GA11071@albatros>
+ <20110702073625.GA3318@albatros>
+ <CAKTCnzmjaddz-ihxJ_qme28S==BAPGRmC2j3iE5fqm8TPi0knA@mail.gmail.com>
+ <20110704174540.GA3321@albatros>
 MIME-Version: 1.0
-In-Reply-To: <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
-References: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com>
- <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
-From: Wan ZongShun <mcuos.com@gmail.com>
-Date: Thu, 7 Jul 2011 16:57:08 +0800
-Message-ID: <CAKT61h8O1JjGnNBKYBZC6WGNwS9EDq7T4kqSFHbmNjVMj2OWHQ@mail.gmail.com>
-Subject: Re: [PATCH next 2/2] MAINTAINERS: Update PXA2xx/PXA3xx SUPPORT patterns
-To: Joe Perches <joe@perches.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110704174540.GA3321@albatros>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2011/7/7 Joe Perches <joe@perches.com>:
-> commit ca632f556697 ("spi: reorganize drivers")
-> renamed the files, update the MAINTAINERS patterns.
->
-> cc: Grant Likely <grant.likely@secretlab.ca>
-> cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> cc: Wan ZongShun <mcuos.com@gmail.com>
-> cc: Eric Miao <eric.y.miao@gmail.com>
-> cc: Russell King <linux@arm.linux.org.uk>
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Mon, Jul 04, 2011 at 21:45 +0400, Vasiliy Kulikov wrote:
+> The already known danger is these io fields.
 
-Acked-by: Wan Zongshun <mcuos.com@gmail.com>
-> ---
->  MAINTAINERS |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 0ad8ff0..4e5cc19 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1123,7 +1123,7 @@ F:        drivers/watchdog/nuc900_wdt.c
->  F:     drivers/net/arm/w90p910_ether.c
->  F:     drivers/mtd/nand/nuc900_nand.c
->  F:     drivers/rtc/rtc-nuc900.c
-> -F:     drivers/spi/spi_nuc900.c
-> +F:     drivers/spi/spi-nuc900.c
->  F:     drivers/usb/host/ehci-w90x900.c
->  F:     drivers/video/nuc900fb.c
->
-> @@ -1321,7 +1321,7 @@ F:        drivers/net/macb.*
->  ATMEL SPI DRIVER
->  M:     Nicolas Ferre <nicolas.ferre@atmel.com>
->  S:     Supported
-> -F:     drivers/spi/atmel_spi.*
-> +F:     drivers/spi/spi-atmel.c
->
->  ATMEL USBA UDC DRIVER
->  M:     Nicolas Ferre <nicolas.ferre@atmel.com>
-> @@ -5142,7 +5142,7 @@ L:        linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:     Maintained
->  F:     arch/arm/mach-pxa/
->  F:     drivers/pcmcia/pxa2xx*
-> -F:     drivers/spi/pxa2xx*
-> +F:     drivers/spi/spi-pxa2xx*
->  F:     drivers/usb/gadget/pxa2*
->  F:     include/sound/pxa2xx-lib.h
->  F:     sound/arm/pxa*
-> --
-> 1.7.6.131.g99019
->
->
+Two more things:
+
+1) unblocking netlink socket on task exit is a rather useful help to win
+different races.  E.g. if the vulnerable program has the code -
+
+    wait(NULL);
+    do_smth_racy();
+
+- then the attacker's task listening for the taskstats event will be
+effectively woken up just before the racy code.  It might greatly
+increase the chanses to win the race => to exploit the bug.
+(The same defect exists in inotify.)
 
 
+2) taskstats gives the task information at the precisely specific moment
+- task death.  So, the attacker shouldn't guess whether some event
+occured or not.  The formula of gotten information is _exactly_ task
+activity during the life.  On the contrary, getting the same information
+from procfs files might result in some inaccuracy because of measuring
+time inaccuracy (scheduler's variability, different disks' load, etc.).
+
+Of cource, (2) makes sense only if some sensible information is still
+available through taskstats.
+
+
+Thanks,
 
 -- 
-Wan ZongShun.
-www.mcuos.com
+Vasiliy Kulikov
+http://www.openwall.com - bringing security into open computing environments
