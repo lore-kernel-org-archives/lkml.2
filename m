@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753443Ab1GGWey (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 18:34:54 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:1368 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751632Ab1GGWev convert rfc822-to-8bit (ORCPT
+	id S1753039Ab1GGWjj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 18:39:39 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63332 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751829Ab1GGWji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 18:34:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
-	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=NNID6Q1Jnhh9HtdicwWs23uLBUy1nf9wYIarFoyyl+9e8i1oujw4m5szY3PIa70qa
-	1IrD01ovgkIZ6dLc0L2og==
-MIME-Version: 1.0
-In-Reply-To: <20110707130130.8dd02f01.akpm@linux-foundation.org>
-References: <1309994990-4729-1-git-send-email-sergiu@chromium.org>
- <1309994990-4729-4-git-send-email-sergiu@chromium.org> <20110707130130.8dd02f01.akpm@linux-foundation.org>
-From: Sergiu Iordache <sergiu@chromium.org>
-Date: Thu, 7 Jul 2011 15:34:26 -0700
-X-Google-Sender-Auth: VGBorXNuXGizOkU0LZnHcDgewMk
-Message-ID: <CAGDaqBQMp0xyBF7Z=P5qBqNcceG3JfWNEUX=T=yMZH74UP5kxA@mail.gmail.com>
-Subject: Re: [PATCH v3 3/3] char drivers: ramoops debugfs entry
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Marco Stornelli <marco.stornelli@gmail.com>,
-        "Ahmed S. Darwish" <darwish.07@gmail.com>,
-        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 7 Jul 2011 18:39:38 -0400
+From: Mark Einon <mark.einon@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        o.hartmann@telovital.com, Mark Einon <mark.einon@gmail.com>
+Subject: [PATCH 3/4] staging: et131x: Remove spaces between tabs inserted in patch 7b7fb34d3ffa
+Date: Thu,  7 Jul 2011 23:38:57 +0100
+Message-Id: <1310078338-25896-1-git-send-email-mark.einon@gmail.com>
+X-Mailer: git-send-email 1.7.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 1:01 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Wed,  6 Jul 2011 16:29:50 -0700
-> Sergiu Iordache <sergiu@chromium.org> wrote:
->
->> While ramoops writes to ram, accessing the dump requires using /dev/mem
->> and knowing the memory location (or a similar solution). This patch
->> provides a debugfs interface through which the respective memory
->> area can be easily accessed.
->>
->> The entry added is /sys/kernel/debug/ramoops/next
->>
->> The entry returns a dump of size record_size each time, skipping invalid
->> dumps. When it reaches the end of the memory area reserved for dumps it
->> returns an empty record and resets the current record count.
->
-> The patch increases the size of ramoops.o text&data from 1725 bytes to
-> 2282 even when CONFIG_DEBUG_FS=n.  That's quite a lot of bloat!
->
-> Furthermore, I think debugfs is the wrong place to put this.  debugfs
-> is, umm, for debugging.  It's a place in which to put transitory junk
-> which may or may not be there and where interfaces may change without
-> notice and whose presence userspace should not assume.  But in this
-> patch you're proposing a permanent and formal new interface into the
-> ramoops driver.  It should go into a permanent well-known place where
-> it will be maintained with the formality and care of all the other
-> parts of the kernel API.
-How about not using the debugfs entry and adding a char driver? There
-are 2 possibilities here as well: using read operations to return the
-data like the current patch does or using ioctl to return the data(and
-maybe return other info as well such as the records size and the
-memory size). Any suggestions regarding a valid approach?
+I must remember to run checkpatch on 'trivial' patches too...
 
-> Also, you're proposing a new kernel/userspace API but it wasn't
-> documented anywhere.  We don't want to have to reverse-engineer your
-> proposed API from the implementation for review purposes.  That API
-> should have been exhaustively documented in the changelog so others can
-> decide whether they like it.
->
-> Finally, we should provide user documentation for the new interface so
-> others can find out that it exists and can use it correctly.  We seem
-> not to have bothered documenting ramoops so we don't currently have a
-> context in which to do this.
-I'll create some documentation for both the (future) API and the ramoops module.
+Signed-off-by: Mark Einon <mark.einon@gmail.com>
+---
+ drivers/staging/et131x/et1310_address_map.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-Sergiu
+diff --git a/drivers/staging/et131x/et1310_address_map.h b/drivers/staging/et131x/et1310_address_map.h
+index a02335a..410677e 100644
+--- a/drivers/staging/et131x/et1310_address_map.h
++++ b/drivers/staging/et131x/et1310_address_map.h
+@@ -1225,7 +1225,7 @@ struct macstat_regs {			/* Location: */
+ 	u32 txrx_1519_1522_gvln_frames;	/*  0x6098 */
+ 
+ 	/* Rx Byte Counter */
+-	u32 rx_bytes;	 		/*  0x609C */
++	u32 rx_bytes;			/*  0x609C */
+ 
+ 	/* Rx Packet Counter */
+ 	u32 rx_packets;			/*  0x60A0 */
+@@ -1240,7 +1240,7 @@ struct macstat_regs {			/* Location: */
+ 	u32 rx_broadcast_packets;	/*  0x60AC */
+ 
+ 	/* Rx Control Frame Packet Counter */
+-	u32 rx_control_frames; 		/*  0x60B0 */
++	u32 rx_control_frames;		/*  0x60B0 */
+ 
+ 	/* Rx Pause Frame Packet Counter */
+ 	u32 rx_pause_frames;		/*  0x60B4 */
+@@ -1276,7 +1276,7 @@ struct macstat_regs {			/* Location: */
+ 	u32 rx_drops;			/*  0x60DC */
+ 
+ 	/* Tx Byte Counter */
+-	u32 tx_bytes;	 		/*  0x60E0 */
++	u32 tx_bytes;			/*  0x60E0 */
+ 
+ 	/* Tx Packet Counter */
+ 	u32 tx_packets;			/*  0x60E4 */
+@@ -1339,7 +1339,7 @@ struct macstat_regs {			/* Location: */
+ 	u32 carry_reg1;			/*  0x6130 */
+ 
+ 	/* Carry Register Two Register */
+-	u32 carry_reg2;	 		/*  0x6134 */
++	u32 carry_reg2;			/*  0x6134 */
+ 
+ 	/* Carry Register One Mask Register */
+ 	u32 carry_reg1_mask;		/*  0x6138 */
+-- 
+1.7.4.4
+
