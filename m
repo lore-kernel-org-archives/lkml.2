@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab1GGFgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 01:36:10 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:3580 "EHLO
+	id S1755138Ab1GGFgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:36:31 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:49089 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753943Ab1GGFdQ (ORCPT
+	with ESMTP id S1752823Ab1GGFdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 01:33:16 -0400
+	Thu, 7 Jul 2011 01:33:12 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=glgYAUrKeYRMhN+xQKzRh3L9tOXz7glOMkSXdiM6+6KkvnyufhAzrGbEY44hO1/jY
-	UFQMJqVvr6MyLCyfcNkkw==
-Message-Id: <20110707053100.645466428@google.com>
+	b=R96eZ1L7Q45OKEmS/BqqiyAUW8P++K9vRRkB0boSQeQe/Rr3Eqa0vE4iI8rsoK4HB
+	QPbhtn4fj9rd1dvb+2ifQ==
+Message-Id: <20110707053100.077302412@google.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 06 Jul 2011 22:30:46 -0700
+Date: Wed, 06 Jul 2011 22:30:40 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -26,148 +26,213 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
         Hu Tao <hutao@cn.fujitsu.com>
-Subject: [patch 10/17] sched: allow for positional tg_tree walks
+Subject: [patch 04/17] sched: validate CFS quota hierarchies
 References: <20110707053036.173186930@google.com>
-Content-Disposition: inline; filename=sched-bwc-refactor-walk_tg_tree.patch
+Content-Disposition: inline; filename=sched-bwc-consistent_quota.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extend walk_tg_tree to accept a positional argument
+Add constraints validation for CFS bandwidth hierarchies.
 
-static int walk_tg_tree_from(struct task_group *from,
-			     tg_visitor down, tg_visitor up, void *data)
+Validate that:
+   max(child bandwidth) <= parent_bandwidth
 
-Existing semantics are preserved, caller must hold rcu_lock() or sufficient
-analogue.
+In a quota limited hierarchy, an unconstrained entity
+(e.g. bandwidth==RUNTIME_INF) inherits the bandwidth of its parent.
+
+This constraint is chosen over sum(child_bandwidth) as notion of over-commit is
+valuable within SCHED_OTHER.  Some basic code from the RT case is re-factored
+for reuse.
 
 Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
 ---
- kernel/sched.c |   52 +++++++++++++++++++++++++++++++++++++++-------------
- 1 file changed, 39 insertions(+), 13 deletions(-)
+ kernel/sched.c |  109 ++++++++++++++++++++++++++++++++++++++++++++++++++-------
+ 1 file changed, 96 insertions(+), 13 deletions(-)
 
 Index: tip/kernel/sched.c
 ===================================================================
 --- tip.orig/kernel/sched.c
 +++ tip/kernel/sched.c
-@@ -1582,20 +1582,23 @@ static inline void dec_cpu_load(struct r
- typedef int (*tg_visitor)(struct task_group *, void *);
- 
- /*
-- * Iterate the full tree, calling @down when first entering a node and @up when
-- * leaving it for the final time.
-+ * Iterate task_group tree rooted at *from, calling @down when first entering a
-+ * node and @up when leaving it for the final time.
-+ *
-+ * Caller must hold rcu_lock or sufficient equivalent.
-  */
--static int walk_tg_tree(tg_visitor down, tg_visitor up, void *data)
-+static int walk_tg_tree_from(struct task_group *from,
-+			     tg_visitor down, tg_visitor up, void *data)
- {
- 	struct task_group *parent, *child;
- 	int ret;
- 
--	rcu_read_lock();
--	parent = &root_task_group;
-+	parent = from;
-+
- down:
- 	ret = (*down)(parent, data);
- 	if (ret)
--		goto out_unlock;
-+		goto out;
- 	list_for_each_entry_rcu(child, &parent->children, siblings) {
- 		parent = child;
- 		goto down;
-@@ -1604,19 +1607,29 @@ up:
- 		continue;
- 	}
- 	ret = (*up)(parent, data);
--	if (ret)
--		goto out_unlock;
-+	if (ret || parent == from)
-+		goto out;
- 
- 	child = parent;
- 	parent = parent->parent;
- 	if (parent)
- 		goto up;
--out_unlock:
--	rcu_read_unlock();
--
-+out:
- 	return ret;
- }
- 
-+/*
-+ * Iterate the full tree, calling @down when first entering a node and @up when
-+ * leaving it for the final time.
-+ *
-+ * Caller must hold rcu_lock or sufficient equivalent.
-+ */
-+
-+static inline int walk_tg_tree(tg_visitor down, tg_visitor up, void *data)
-+{
-+	return walk_tg_tree_from(&root_task_group, down, up, data);
-+}
-+
- static int tg_nop(struct task_group *tg, void *data)
- {
- 	return 0;
-@@ -1710,7 +1723,9 @@ static int tg_load_down(struct task_grou
- 
- static void update_h_load(long cpu)
- {
-+	rcu_read_lock();
- 	walk_tg_tree(tg_load_down, tg_nop, (void *)cpu);
-+	rcu_read_unlock();
- }
- 
+@@ -249,6 +249,7 @@ struct cfs_bandwidth {
+ 	raw_spinlock_t lock;
+ 	ktime_t period;
+ 	u64 quota;
++	s64 hierarchal_quota;
  #endif
-@@ -8683,13 +8698,19 @@ static int tg_rt_schedulable(struct task
+ };
  
- static int __rt_schedulable(struct task_group *tg, u64 period, u64 runtime)
+@@ -8522,12 +8523,7 @@ unsigned long sched_group_shares(struct 
+ }
+ #endif
+ 
+-#ifdef CONFIG_RT_GROUP_SCHED
+-/*
+- * Ensure that the real time constraints are schedulable.
+- */
+-static DEFINE_MUTEX(rt_constraints_mutex);
+-
++#if defined(CONFIG_RT_GROUP_SCHED) || defined(CONFIG_CFS_BANDWIDTH)
+ static unsigned long to_ratio(u64 period, u64 runtime)
  {
-+	int ret;
+ 	if (runtime == RUNTIME_INF)
+@@ -8535,6 +8531,13 @@ static unsigned long to_ratio(u64 period
+ 
+ 	return div64_u64(runtime << 20, period);
+ }
++#endif
 +
- 	struct rt_schedulable_data data = {
- 		.tg = tg,
- 		.rt_period = period,
++#ifdef CONFIG_RT_GROUP_SCHED
++/*
++ * Ensure that the real time constraints are schedulable.
++ */
++static DEFINE_MUTEX(rt_constraints_mutex);
+ 
+ /* Must be called with tasklist_lock held */
+ static inline int tg_has_rt_tasks(struct task_group *tg)
+@@ -8555,7 +8558,7 @@ struct rt_schedulable_data {
+ 	u64 rt_runtime;
+ };
+ 
+-static int tg_schedulable(struct task_group *tg, void *data)
++static int tg_rt_schedulable(struct task_group *tg, void *data)
+ {
+ 	struct rt_schedulable_data *d = data;
+ 	struct task_group *child;
+@@ -8619,7 +8622,7 @@ static int __rt_schedulable(struct task_
  		.rt_runtime = runtime,
  	};
  
--	return walk_tg_tree(tg_rt_schedulable, tg_nop, &data);
-+	rcu_read_lock();
-+	ret = walk_tg_tree(tg_rt_schedulable, tg_nop, &data);
-+	rcu_read_unlock();
-+
-+	return ret;
+-	return walk_tg_tree(tg_schedulable, tg_nop, &data);
++	return walk_tg_tree(tg_rt_schedulable, tg_nop, &data);
  }
  
  static int tg_set_rt_bandwidth(struct task_group *tg,
-@@ -9146,6 +9167,7 @@ static int tg_cfs_schedulable_down(struc
+@@ -8878,14 +8881,17 @@ static u64 cpu_shares_read_u64(struct cg
+ }
  
- static int __cfs_schedulable(struct task_group *tg, u64 period, u64 quota)
- {
-+	int ret;
- 	struct cfs_schedulable_data data = {
- 		.tg = tg,
- 		.period = period,
-@@ -9157,7 +9179,11 @@ static int __cfs_schedulable(struct task
- 		do_div(data.quota, NSEC_PER_USEC);
- 	}
- 
--	return walk_tg_tree(tg_cfs_schedulable_down, tg_nop, &data);
-+	rcu_read_lock();
-+	ret = walk_tg_tree(tg_cfs_schedulable_down, tg_nop, &data);
-+	rcu_read_unlock();
+ #ifdef CONFIG_CFS_BANDWIDTH
++static DEFINE_MUTEX(cfs_constraints_mutex);
 +
+ const u64 max_cfs_quota_period = 1 * NSEC_PER_SEC; /* 1s */
+ const u64 min_cfs_quota_period = 1 * NSEC_PER_MSEC; /* 1ms */
+ 
++static int __cfs_schedulable(struct task_group *tg, u64 period, u64 runtime);
++
+ static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
+ {
+-	int i;
++	int i, ret = 0;
+ 	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
+-	static DEFINE_MUTEX(mutex);
+ 
+ 	if (tg == &root_task_group)
+ 		return -EINVAL;
+@@ -8906,7 +8912,11 @@ static int tg_set_cfs_bandwidth(struct t
+ 	if (period > max_cfs_quota_period)
+ 		return -EINVAL;
+ 
+-	mutex_lock(&mutex);
++	mutex_lock(&cfs_constraints_mutex);
++	ret = __cfs_schedulable(tg, period, quota);
++	if (ret)
++		goto out_unlock;
++
+ 	raw_spin_lock_irq(&cfs_b->lock);
+ 	cfs_b->period = ns_to_ktime(period);
+ 	cfs_b->quota = quota;
+@@ -8921,9 +8931,10 @@ static int tg_set_cfs_bandwidth(struct t
+ 		cfs_rq->runtime_remaining = 0;
+ 		raw_spin_unlock_irq(&rq->lock);
+ 	}
+-	mutex_unlock(&mutex);
++out_unlock:
++	mutex_unlock(&cfs_constraints_mutex);
+ 
+-	return 0;
 +	return ret;
  }
+ 
+ int tg_set_cfs_quota(struct task_group *tg, long cfs_quota_us)
+@@ -8997,6 +9008,78 @@ static int cpu_cfs_period_write_u64(stru
+ 	return tg_set_cfs_period(cgroup_tg(cgrp), cfs_period_us);
+ }
+ 
++struct cfs_schedulable_data {
++	struct task_group *tg;
++	u64 period, quota;
++};
++
++/*
++ * normalize group quota/period to be quota/max_period
++ * note: units are usecs
++ */
++static u64 normalize_cfs_quota(struct task_group *tg,
++			       struct cfs_schedulable_data *d)
++{
++	u64 quota, period;
++
++	if (tg == d->tg) {
++		period = d->period;
++		quota = d->quota;
++	} else {
++		period = tg_get_cfs_period(tg);
++		quota = tg_get_cfs_quota(tg);
++	}
++
++	/* note: these should typically be equivalent */
++	if (quota == RUNTIME_INF || quota == -1)
++		return RUNTIME_INF;
++
++	return to_ratio(period, quota);
++}
++
++static int tg_cfs_schedulable_down(struct task_group *tg, void *data)
++{
++	struct cfs_schedulable_data *d = data;
++	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
++	s64 quota = 0, parent_quota = -1;
++
++	if (!tg->parent) {
++		quota = RUNTIME_INF;
++	} else {
++		struct cfs_bandwidth *parent_b = tg_cfs_bandwidth(tg->parent);
++
++		quota = normalize_cfs_quota(tg, d);
++		parent_quota = parent_b->hierarchal_quota;
++
++		/*
++		 * ensure max(child_quota) <= parent_quota, inherit when no
++		 * limit is set
++		 */
++		if (quota == RUNTIME_INF)
++			quota = parent_quota;
++		else if (parent_quota != RUNTIME_INF && quota > parent_quota)
++			return -EINVAL;
++	}
++	cfs_b->hierarchal_quota = quota;
++
++	return 0;
++}
++
++static int __cfs_schedulable(struct task_group *tg, u64 period, u64 quota)
++{
++	struct cfs_schedulable_data data = {
++		.tg = tg,
++		.period = period,
++		.quota = quota,
++	};
++
++	if (quota != RUNTIME_INF) {
++		do_div(data.period, NSEC_PER_USEC);
++		do_div(data.quota, NSEC_PER_USEC);
++	}
++
++	return walk_tg_tree(tg_cfs_schedulable_down, tg_nop, &data);
++}
  #endif /* CONFIG_CFS_BANDWIDTH */
  #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
 
 
