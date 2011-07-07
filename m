@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab1GGRg5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 13:36:57 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55966 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755194Ab1GGRg4 (ORCPT
+	id S1753530Ab1GGRiz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 13:38:55 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48963 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751087Ab1GGRiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 13:36:56 -0400
-Date: Thu, 7 Jul 2011 18:36:45 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stephen Boyd <sboyd@codeaurora.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Nicolas Pitre <nico@fluxnic.net>
-Subject: Re: [PATCHv2] arm: mm: Poison freed init memory
-Message-ID: <20110707173645.GD20403@n2100.arm.linux.org.uk>
-References: <20110706210106.GX8286@n2100.arm.linux.org.uk> <1310057247-4933-1-git-send-email-sboyd@codeaurora.org>
+	Thu, 7 Jul 2011 13:38:54 -0400
+Message-ID: <4E15EDC1.7020304@gmail.com>
+Date: Thu, 07 Jul 2011 19:32:49 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.2.18) Gecko/20110616 SUSE/3.1.11 Thunderbird/3.1.11
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310057247-4933-1-git-send-email-sboyd@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Sergiu Iordache <sergiu@chromium.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/3] char drivers: rammops improvements
+References: <1309994990-4729-1-git-send-email-sergiu@chromium.org>
+In-Reply-To: <1309994990-4729-1-git-send-email-sergiu@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 09:47:27AM -0700, Stephen Boyd wrote:
-> Poisoning __init marked memory can be useful when tracking down
-> obscure memory corruption bugs. Therefore, poison init memory
-> with 0xe7fddef0 to catch bugs earlier. The poison value is an
-> undefined instruction in ARM mode and branch to an undefined
-> instruction in Thumb mode.
-> 
-> Signed-off-by: Stephen Boyd <sboyd@codeaurora.org>
-> ---
-> 
-> On 7/6/2011 2:01 PM, Russell King - ARM Linux wrote:
-> > On Wed, Jul 06, 2011 at 01:55:54PM -0700, Stephen Boyd wrote:
-> >> Should it include the initrd too? At least x86 poisons that memory but I
-> >> don't know who would be using that incorrectly.
-> >
-> > It could do - I don't see any harm in not doing so.  The only issue
-> > is that people may want to disable this stuff if they're after
-> > squeezing every last ms out of the boot time.
-> 
-> I haven't done this. I hope a follow up patch will suffice.
-> 
-> >
-> >> How about a free_init_area() function which calls free_area() after
-> >> poisoning the memory?
-> >
-> > I need to go back and look at the Integrator etc situation with regard
-> > to reorganizing the vmlinux layout - it may be that the omission of
-> > freeing .init memory can now be removed (it was there to stop the
-> > memory being used as the first K of memory wasn't DMA-able.)
-> >
-> > Assuming it has to stay though, we still should arrange for the initrd
-> > memory to be poisoned even if it isn't freed.
-> 
-> Is this is patch what you're saying? I would have liked to do a
-> free_init_area() wrapper, but until the Integrator situation can be
-> sorted it doesn't look worthwhile.
+Il 07/07/2011 01:29, Sergiu Iordache ha scritto:
+> Improves the ramoops module by adding a dump_oops to the platform
+> data, adding a record_size parameter and adding a debugfs for memory
+> area access.
+>
+> The patch was built on the 2.6.38 kernel and is based on the following
+> patches which were applied from the mmotm tree:
+> ramoops-add-new-line-to-each-print
+> ramoops-use-module-parameters-instead-of-platform-data-if-not-available
+> ramoops-use-module-parameters-instead-of-platform-data-if-not-available-checkpatch-fixes
+>
+> This series is different from the initial two by being built on the ramoops modifications present in the mmotm tree and by using a different
+> approach regarding the debugfs entry.
+>
+> The changes were tested on a CR-48 machine using the 2.6.38 kernel.
+>
+> Sergiu Iordache (3):
+>    char drivers: ramoops dump_oops platform data
+>    char drivers: ramoops record_size module parameter
+>    char drivers: ramoops debugfs entry
+>
+>   drivers/char/ramoops.c  |  151 +++++++++++++++++++++++++++++++++++++++++++----
+>   include/linux/ramoops.h |    2 +
+>   2 files changed, 142 insertions(+), 11 deletions(-)
+>
 
-Yes, thanks.  This looks fine for the time being.  Have you been able
-to test it?  If yes, then please put it in the patch system and I'll
-see about giving it a test too.
+The patch series is ok for me.
+
+Marco
