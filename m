@@ -1,45 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab1GGRFR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 13:05:17 -0400
-Received: from na3sys009aog114.obsmtp.com ([74.125.149.211]:35085 "EHLO
-	na3sys009aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754444Ab1GGRFP (ORCPT
+	id S1754744Ab1GGRHP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 13:07:15 -0400
+Received: from mail-yi0-f46.google.com ([209.85.218.46]:51814 "EHLO
+	mail-yi0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754593Ab1GGRHM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 13:05:15 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Todd Poynor <toddpoynor@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>
-Subject: Re: [PATCH 0/3] Add generic idle notifiers
-Organization: Texas Instruments, Inc.
-References: <1309229190-25006-1-git-send-email-toddpoynor@google.com>
-Date: Thu, 07 Jul 2011 10:05:10 -0700
-In-Reply-To: <1309229190-25006-1-git-send-email-toddpoynor@google.com> (Todd
-	Poynor's message of "Mon, 27 Jun 2011 19:46:27 -0700")
-Message-ID: <87ei22dnsp.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 7 Jul 2011 13:07:12 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110707.081839.2119597618388053074.davem@davemloft.net>
+References: <20110707172544.867b980a1196db005b577c14@canb.auug.org.au>
+ <20110707081202.6dddcbce.randy.dunlap@oracle.com> <20110707.081839.2119597618388053074.davem@davemloft.net>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Thu, 7 Jul 2011 13:06:51 -0400
+Message-ID: <CAMjpGUfBL8wL_pBKWcfopOWFnZUG=u17LWjtECV6ubOVXn+vBQ@mail.gmail.com>
+Subject: Re: linux-next: Tree for July 7 (net/af_packet)
+To: David Miller <davem@davemloft.net>
+Cc: randy.dunlap@oracle.com, sfr@canb.auug.org.au, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Todd Poynor <toddpoynor@google.com> writes:
-
-> Add notifiers for idle entry and exit, called with IDLE_START when a
-> CPU goes idle and IDLE_END when it goes out of idle, based on the
-> existing idle notifiers for the x86_64 arch.
+On Thu, Jul 7, 2011 at 11:18, David Miller wrote:
+> packet: Fix build with INET disabled.
 >
-> Convert x86_64 to use these notifiers, and call the notifiers on ARM.
->
-> Convert the ARM LEDs events for idle start/end to these notifiers.
+> af_packet.c:(.text+0x3d130): undefined reference to `ip_defrag'
+> or
+> ERROR: "ip_defrag" [net/packet/af_packet.ko] undefined!
 
-Is this intended to replace the more general CPU PM notifiers proposed
-by Colin:
-
-http://lists.infradead.org/pipermail/linux-arm-kernel/2011-June/052827.html
-
-Kevin
+fixes some Blackfin boards too.
+Acked-by: Mike Frysinger <vapier@gentoo.org>
+-mike
