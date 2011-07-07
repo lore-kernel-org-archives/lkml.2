@@ -1,32 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753261Ab1GGWnb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 18:43:31 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:57879 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752612Ab1GGWna (ORCPT
+	id S1753181Ab1GGWu1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 18:50:27 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50681 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750798Ab1GGWu0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 18:43:30 -0400
+	Thu, 7 Jul 2011 18:50:26 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=O1bEswRglT7DGf1vgNOUFpMDVhySNg9l9XO1ziHZzfXPLJ3+We00IAJmGN29FTCga
+	PLSQLVPi/701QM8CH6IKg==
 MIME-Version: 1.0
-In-Reply-To: <20110707231516.66cb90be@lxorguk.ukuu.org.uk>
-References: <20110707220621.GA6922@patrik-macbook>
-	<20110707231516.66cb90be@lxorguk.ukuu.org.uk>
-Date: Fri, 8 Jul 2011 00:43:29 +0200
-Message-ID: <CAMeQTsbA1be=M9bMzq7SsiGXr3nrRJKzOGStob7igz2xTPORgA@mail.gmail.com>
-Subject: Re: gma500: Mask out bits not part of the page table base address
-From: Patrik Jakobsson <patrik.r.jakobsson@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-kernel@vger.kernel.org, greg@kroah.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20110707095716.GA19442@elte.hu>
+References: <1306877298-31713-1-git-send-email-vnagarnaik@google.com>
+ <20110531235957.GB5256@somewhere.redhat.com> <BANLkTi=YYCXHi5k82Q+sE6+134i97pjjAA@mail.gmail.com>
+ <BANLkTinT6ULRWwHAGYFpQSw-ptQiuzrkPtZuKVZHD8b5mh9hpA@mail.gmail.com>
+ <20110616030200.GC18579@somewhere.redhat.com> <4E14F31B.4080102@zytor.com>
+ <20110706235613.GA21115@somewhere> <4E14F797.8070501@zytor.com>
+ <20110707002512.GB21115@somewhere> <4E14FE1A.9000003@zytor.com> <20110707095716.GA19442@elte.hu>
+From: David Sharp <dhsharp@google.com>
+Date: Thu, 7 Jul 2011 15:50:04 -0700
+Message-ID: <CAJL_eksiEq7WiJn0vQeaUz-RJDiGTsXbeq0pGgZr_XQ0WsD0vg@mail.gmail.com>
+Subject: Re: [PATCH v2] trace: Add x86 irq vector entry/exit tracepoints
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        Vaibhav Nagarnaik <vnagarnaik@google.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Michael Rubin <mrubin@google.com>, x86@kernel.org,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Jiaying Zhang <jiayingz@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Umm yes I suppose if its already been enabled that'll be slightly
-> important
+On Thu, Jul 7, 2011 at 2:57 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * H. Peter Anvin <hpa@zytor.com> wrote:
+>
+>> Yes, it was much more of a generic concern.  However, it is very
+>> important that people have a correct idea about what the stability
+>> of something like tracepoint is -- or we'll end up in a situation
+>> where we can never change the kernel because anything is suddenly
+>> "user space visible."
+>
+> We've transitioned even ABI-assuming tracepoints in the past, so it's
+> not a big issue in practice. The reason is that this is an atypical
+> type of ABI: information is read-only exported, for observation
+> purposes.
+>
+> If the kernel changes in a fundamental way that removes a tracepoint
+> altogether, then there's nothing left to observe - so apps don't
+> break per se.
+>
+> So i've yet to see a single example of the kernel 'never being able
+> to change' due to a tracepoint. The worst we've seen in practice is
+> the inability to change a specific tracepoint (not the surrounding
+> kernel code - while preserving the information that is exposed) - so
+> the worst effect was limited to tracing itself - never to the
+> subsystem that it traces.
+>
+> Note that even in that (single known) example we were able to resolve
+> the problem (which was limited to the tracing subsystem) by adding
+> new tracepoints and thus phasing out the old ones.
+>
+> Thanks,
+>
+>        Ingo
+>
 
-Yes :) and I guess that the size (bits 3:1) of the gtt could theoretically be
-something other than 512KB. Is it safe to just look at the pci resource length
-or should one perhaps cross-check it against the control register?
+Thanks all for your thorough review. :) It sounds like there is some
+agreement now. I think this Steve is waiting for an Acked-by from an
+x86 maintainer to apply this patch. Are there any further objections
+or comments on the patch?
 
-Maybe I just worry too much
+d#
