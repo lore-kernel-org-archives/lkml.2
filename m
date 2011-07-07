@@ -1,55 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753412Ab1GGJUX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 05:20:23 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:44496 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751136Ab1GGJUV (ORCPT
+	id S1754162Ab1GGJVN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 05:21:13 -0400
+Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:18762
+	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753355Ab1GGJVJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 05:20:21 -0400
-Message-ID: <4E157A4B.6060407@ti.com>
-Date: Thu, 7 Jul 2011 10:20:11 +0100
-From: Liam Girdwood <lrg@ti.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
+	Thu, 7 Jul 2011 05:21:09 -0400
+X-SpamScore: -11
+X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h944h)
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LNYHZ3-02-A4E-02
+X-M-MSG: 
+Date: Thu, 7 Jul 2011 11:21:02 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
+Message-ID: <20110707092102.GI4590@erda.amd.com>
+References: <20110703150430.GV4590@erda.amd.com>
+ <1309716271.3282.6.camel@twins>
+ <20110704175927.GZ4590@erda.amd.com>
+ <1309855905.3282.42.camel@twins>
+ <20110705091252.GA5725@elte.hu>
+ <20110706165357.GG4590@erda.amd.com>
+ <1309972368.3282.317.camel@twins>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Nicolas Pitre <nicolas.pitre@linaro.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
-Subject: Re: [PATCH] ASoC: pxa2xx-pcm: remove unused variable 'dai'
-References: <1309958442.4613.1.camel@phoenix>
-In-Reply-To: <1309958442.4613.1.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1309972368.3282.317.camel@twins>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/11 14:20, Axel Lin wrote:
-> Remove unused variable 'dai' to eliminate below warning.
-> 
->   CC      sound/soc/pxa/pxa2xx-pcm.o
-> sound/soc/pxa/pxa2xx-pcm.c: In function 'pxa2xx_soc_pcm_new':
-> sound/soc/pxa/pxa2xx-pcm.c:91: warning: unused variable 'dai'
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  sound/soc/pxa/pxa2xx-pcm.c |    1 -
->  1 files changed, 0 insertions(+), 1 deletions(-)
-> 
-> diff --git a/sound/soc/pxa/pxa2xx-pcm.c b/sound/soc/pxa/pxa2xx-pcm.c
-> index da28394..c430600 100644
-> --- a/sound/soc/pxa/pxa2xx-pcm.c
-> +++ b/sound/soc/pxa/pxa2xx-pcm.c
-> @@ -88,7 +88,6 @@ static u64 pxa2xx_pcm_dmamask = DMA_BIT_MASK(32);
->  static int pxa2xx_soc_pcm_new(struct snd_soc_pcm_runtime *rtd)
->  {
->  	struct snd_card *card = rtd->card->snd_card;
-> -	struct snd_soc_dai *dai = rtd->cpu_dai;
->  	struct snd_pcm *pcm = rtd->pcm;
->  	int ret = 0;
->  
+On 06.07.11 13:12:48, Peter Zijlstra wrote:
+> On Wed, 2011-07-06 at 18:53 +0200, Robert Richter wrote:
 
-Acked-by: Liam Girdwood <lrg@ti.com>
+> > The system topology is always in /sys, also for device nodes. But we
+> > can't get a device file descriptor from /sys. I doubt /sys is capable
+> > to handle a device use count (need to be checked). We actually must
+> > grab the pmu while attaching events to it. And, user space
+> > implementation is must easier with /dev (see code in my previous
+> > mail).
+> 
+> Well you must not per-se, from a user's perspective there isn't much of
+> a difference between if the sys_perf_event_open() fails or if the
+> initial file open fails, in both cases he's not getting an event.
+
+It is not that I want to create event handles with open. For this
+there is the syscall. I use open() to create a unique reference to a
+pmu in userspace. No more, and /dev is the right thing to do this.
+
+> perf stat -e IBS:fetches will always have a fail against rmmod, rmmod
+> could complete before we try to open the file (assuming IBS is a
+> module).
+> 
+> > 
+> > My patch also includes code that creates a device class. It is also
+> > visible in /sys/class/pmu/*.
+> 
+> So not only are you providing a duplicate of existing interfaces, you're
+> actually duplicating information inside sysfs as well.
+
+This is not duplication. /sys provides information about system
+hierarchy, /dev is for controlling devices. Thus, every device node is
+visible in /sys as it is part of the system.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+
