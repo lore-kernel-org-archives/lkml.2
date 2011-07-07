@@ -1,42 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756733Ab1GGOuq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 10:50:46 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63983 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756647Ab1GGOuo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 10:50:44 -0400
-Date: Thu, 7 Jul 2011 07:50:36 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Frederick van der Wyck <fvanderwyck@gmail.com>
-Cc: mjg59@srcf.ucam.org, gregkh@suse.de, platform-driver-x86@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3] Platform: Samsung Q10 backlight driver
-Message-ID: <20110707145036.GK7658@core.coreip.homeip.net>
-References: <20110704214357.GA17428@ntl>
+	id S1756725Ab1GGOwc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 10:52:32 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:59430 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753401Ab1GGOwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 10:52:31 -0400
+Date: Thu, 7 Jul 2011 16:51:59 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Paul Turner <pjt@google.com>, linux-kernel@vger.kernel.org,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@openvz.org>, Hu Tao <hutao@cn.fujitsu.com>
+Subject: Re: [patch 00/17] CFS Bandwidth Control v7.1
+Message-ID: <20110707145159.GD19193@elte.hu>
+References: <20110707053036.173186930@google.com>
+ <20110707112302.GB8227@elte.hu>
+ <1310049528.3282.583.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110704214357.GA17428@ntl>
+In-Reply-To: <1310049528.3282.583.camel@twins>
 User-Agent: Mutt/1.5.21 (2010-09-15)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.3.1
+	-2.0 BAYES_00               BODY: Bayes spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Frederick,
 
-On Mon, Jul 04, 2011 at 10:43:57PM +0100, Frederick van der Wyck wrote:
->  
-> +config SAMSUNG_Q10
-> +	tristate "Samsung Q10 Extras"
-> +	select BACKLIGHT_CLASS_DEVICE
+* Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
 
-Since the driver will not function without full i8042 code being present
-I think you should add 'depends on SERIO_I8042' even though it compiles
-without it being enabled.
+> On Thu, 2011-07-07 at 13:23 +0200, Ingo Molnar wrote:
+> > 
+> > The +1.5% increase in vanilla kernel context switching performance is 
+> > unfortunate - where does that overhead come from?
+> 
+> Looking at the asm output, I think its partly because things like:
+> 
+> @@ -602,6 +618,8 @@ static void update_curr(struct cfs_rq *c
+>                 cpuacct_charge(curtask, delta_exec);
+>                 account_group_exec_runtime(curtask, delta_exec);
+>         }
+> +
+> +       account_cfs_rq_runtime(cfs_rq, delta_exec);
+>  }
+> 
+> 
+> +static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+> +               unsigned long delta_exec)
+> +{
+> +       if (!cfs_rq->runtime_enabled)
+> +               return;
+> +
+> +       cfs_rq->runtime_remaining -= delta_exec;
+> +       if (cfs_rq->runtime_remaining > 0)
+> +               return;
+> +
+> +       assign_cfs_rq_runtime(cfs_rq);
+> +}
+> 
+> generate a call, only to then take the first branch out, marking that
+> function __always_inline would cure the call problem. Going beyond that
+> would be using static_branch() to track if there is any bandwidth
+> tracking required at all.
 
-Thanks.
+Could jump labels be utilized perhaps?
 
--- 
-Dmitry
+Thanks,
+
+	Ingo
