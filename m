@@ -1,54 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756803Ab1GGPZW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 11:25:22 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42019 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752477Ab1GGPZT convert rfc822-to-8bit (ORCPT
+	id S1756829Ab1GGPZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 11:25:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56081 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab1GGPZ0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 11:25:19 -0400
-MIME-Version: 1.0
-Date: Thu, 7 Jul 2011 17:25:19 +0200
-Message-ID: <CACna6rxAKMp-2wqwz4k4S3nTkY_3Qz7=hEZk9F2Zig7T5kp_HA@mail.gmail.com>
-Subject: Bug in BCMA: device_unregister causing "NULL pointer dereference at"
-From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
-To: linux-wireless@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 7 Jul 2011 11:25:26 -0400
+Subject: [TRIVIAL][PATCH v2 0/2] uninit warning corrections
+From: Vitaliy Ivanov <vitalivanov@gmail.com>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: "trivial@kernel.org" <trivial@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Darren Hart <dvhart@linux.intel.com>, vitalivanov@gmail.com
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Jul 2011 18:27:03 +0300
+Message-ID: <1310052423.3528.40.camel@vivanov>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've problem with bcma and bus subsystem.
+Jiri,
 
-This works fine:
-modprobe bcma; rmmod bcma
+The following patches are already discussed in lkml.
 
-This:
-modprobe bcma; modprobe b43; rmmod b43; rmmod bcma
-causes:
-BUG: unable to handle kernel NULL pointer dereference at   (null)
+Please apply them to your trivial-next tree.
 
-My BCMA has only 3 fores, out of them only 1 is registered as device:
-bcma: Core 0 found: ChipCommon (manuf 0x4BF, id 0x800, rev 0x22, class 0x0)
-bcma: Core 1 found: IEEE 802.11 (manuf 0x4BF, id 0x812, rev 0x17, class 0x0)
-bcma: Core 2 found: PCIe (manuf 0x4BF, id 0x820, rev 0x0F, class 0x0)
+ kernel/async.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+ kernel/futex.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-The dereference comes out from
-static void bcma_unregister_cores(struct bcma_bus *bus)
+Thanks,
+Vitaliy
 
-There is a simple loop:
-list_for_each_entry(core, &bus->cores, list) {
-	if (core->dev_registered)
-		device_unregister(&core->dev);
-}
-
-
-So when I unload bcma after I got driver (b43) for 0x812 core, I get
-NULL pointer dereference.
-
-Any tip, why does it happen?
-
--- 
-Rafał
