@@ -1,47 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932078Ab1GGMji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 08:39:38 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:49193 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755916Ab1GGMjh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 08:39:37 -0400
-Date: Thu, 7 Jul 2011 13:39:07 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Vitaly Kuzmichev <vkuzmichev@mvista.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Wim Van Sebroeck <wim@iguana.be>,
-        Marc Zyngier <marc.zyngier@arm.com>, Colin Cross <ccross@android.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 1/4] ARM: smp_twd: Fix typo in 'twd_timer_rate'
-	printing
-Message-ID: <20110707123907.GP8286@n2100.arm.linux.org.uk>
-References: <1310041339-2348-1-git-send-email-vkuzmichev@mvista.com> <1310041396-2461-1-git-send-email-vkuzmichev@mvista.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1310041396-2461-1-git-send-email-vkuzmichev@mvista.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756409Ab1GGMnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 08:43:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:25124 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755879Ab1GGMnl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 08:43:41 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,493,1304319600"; 
+   d="scan'208";a="24903964"
+From: Oren Weil <oren.jer.weil@intel.com>
+To: gregkh@suse.de
+Cc: tomas.winkler@intel.com, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Oren Weil <oren.jer.weil@intel.com>
+Subject: [PATCH 1/9] staging: mei: reordering the exit module cleanup
+Date: Thu,  7 Jul 2011 15:43:22 +0300
+Message-Id: <1310042602-12210-1-git-send-email-oren.jer.weil@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 04:23:13PM +0400, Vitaly Kuzmichev wrote:
-> To get hundredths of MHz the rate needs to be divided by 10'000.
-> Here is an example:
->  twd_timer_rate = 123456789
->  Before the patch:
->     twd_timer_rate / 1000000 = 123
->     (twd_timer_rate / 1000000) % 100 = 23
->     Result: 123.23MHz.
->  After being fixed:
->     twd_timer_rate / 1000000 = 123
->     (twd_timer_rate / 10000) % 100 = 45
->     Result: 123.45MHz.
-> 
-> Signed-off-by: Vitaly Kuzmichev <vkuzmichev@mvista.com>
+keeping the exit flow in a reverse order then the init flow.
 
--> patch system please.
+Signed-off-by: Oren Weil <oren.jer.weil@intel.com>
+---
+ drivers/staging/mei/main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Thanks.
+diff --git a/drivers/staging/mei/main.c b/drivers/staging/mei/main.c
+index 8341a78..de8825f 100644
+--- a/drivers/staging/mei/main.c
++++ b/drivers/staging/mei/main.c
+@@ -1326,9 +1326,9 @@ module_init(mei_init_module);
+  */
+ static void __exit mei_exit_module(void)
+ {
+-	pci_unregister_driver(&mei_driver);
+ 	mei_sysfs_device_remove();
+ 	mei_unregister_cdev();
++	pci_unregister_driver(&mei_driver);
+ 
+ 	pr_debug("mei: Driver unloaded successfully.\n");
+ }
+-- 
+1.7.1
+
