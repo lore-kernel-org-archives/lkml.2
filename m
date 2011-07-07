@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756520Ab1GGMum (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 08:50:42 -0400
-Received: from mail.karo-electronics.de ([81.173.242.67]:51713 "EHLO
-	mail.karo-electronics.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756285Ab1GGMuj (ORCPT
+	id S1756540Ab1GGMvD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 08:51:03 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63336 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756285Ab1GGMvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 08:50:39 -0400
-From: =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Sascha Hauer <s.hauer@pengutronix.de>,
-        Grant Likely <grant.likely@secretlab.ca>, linux-kernel@vger.kernel.org,
-        =?utf-8?q?Lothar=20Wa=C3=9Fmann?= <LW@KARO-electronics.de>
-Subject: [PATCH] plat-mxc: add missing initialisation of basic_mmio_gpio shadow variables
-Date: Thu,  7 Jul 2011 14:50:16 +0200
-Message-Id: <1310043016-1121-1-git-send-email-LW@KARO-electronics.de>
-X-Mailer: git-send-email 1.5.6.5
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Thu, 7 Jul 2011 08:51:00 -0400
+X-Authority-Analysis: v=1.1 cv=IOX921YOuPvYFce5aSLzPVIStpiCPR9M8R83dyHW74w= c=1 sm=0 a=d-1ceqRJjQcA:10 a=5SG0PmZfjMsA:10 a=Q9fys5e9bTEA:10 a=OPBmh+XkhLl+Enan7BmTLg==:17 a=iec2oK4FaoorbNHwKEUA:9 a=PUjeQqilurYA:10 a=OPBmh+XkhLl+Enan7BmTLg==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 67.242.120.143
+Subject: Re: 3.0.0-r5: ftrace: BUG & OOPS
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Brian Marete <marete@toshnix.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <CAHVUoiRRGY62BZOMYPYxytG569MD0=8=TEN9pCwYefDBg+J+uQ@mail.gmail.com>
+References: <CAHVUoiRRGY62BZOMYPYxytG569MD0=8=TEN9pCwYefDBg+J+uQ@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 07 Jul 2011 08:50:58 -0400
+Message-ID: <1310043058.26417.203.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The bgpio_init() function does not initialise the shadow register for
-the GPIO direction register. Thus, when configuring the first GPIO with
-gpio_set_direction() all other GPIOs of the same bank will be
-configured as inputs. Since the bgpio layer cannot know whether the
-register is readable, the initialisation should be done by the caller
-of bgpio_init().
+On Thu, 2011-07-07 at 13:23 +0300, Brian Marete wrote:
+> Hello,
+> 
+> Testing 3.0.0-5, trying to echo the string '*:mod:radeon' into
+> /sys/kernel/debug/tracing/set_ftrace_filter , I get the following BUG
+> and Oops:
+> 
 
-Also, the 'data' shadow variable that is used inside basic_mmio_gpio
-to cache the current value of the GPIO_DR register is initialised from
-the GPIO_PSR register within bgpio_init(). Thus when setting the
-output value of a certain GPIO, the other GPIO outputs of the same
-bank will be set or cleared depending on the pin state of the GPIO
-inputs during bgpio_init().
+Crap!
 
+> 
+> I am happy to answer any questions.
 
-Signed-off-by: Lothar Waßmann <LW@KARO-electronics.de>
----
- drivers/gpio/gpio-mxc.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+No, I can trigger it too. I forgot to test the module settings with the
+new ftrace code. This is a nasty regression. I'll fix it ASAP.
 
-diff --git a/drivers/gpio/gpio-mxc.c b/drivers/gpio/gpio-mxc.c
-index b351952..f7944ca 100644
---- a/drivers/gpio/gpio-mxc.c
-+++ b/drivers/gpio/gpio-mxc.c
-@@ -337,6 +337,8 @@ static int __devinit mxc_gpio_probe(struct platform_device *pdev)
- 		goto out_iounmap;
- 
- 	port->bgc.gc.base = pdev->id * 32;
-+	port->bgc.dir = port->bgc.read_reg(port->bgc.reg_dir);
-+	port->bgc.data = port->bgc.read_reg(port->bgc.reg_set);
- 
- 	err = gpiochip_add(&port->bgc.gc);
- 	if (err)
--- 
-1.5.6.5
+Thanks!
+
+-- Steve
+
 
