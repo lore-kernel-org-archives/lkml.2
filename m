@@ -1,47 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab1GGTOT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 15:14:19 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:34675 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751306Ab1GGTOR (ORCPT
+	id S1751688Ab1GGTWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 15:22:12 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:48733 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750977Ab1GGTWK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 15:14:17 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: ca6W61oVM1kg23UpA_BE5xXbAWjxkQD25Ye5M5pNNDRtF3v
- Hl8tsQWQfudoRENJyX8B5L4uOzx4g6vRfEj4hREC8wiXe39haBj65AkO6VkS
- TPh1R8nFGCLo7yrr587eKmi42sivKJjcbuvXHCNzLHK25kLUJVR2zMBq0cX0
- FO28TvD9GLkRSmWQQdiehp_jkZcNGAF22HZpAKocouLXiu0PgBJkqsTZXF32
- B8rJEJOO2wYR6K8mtlVjte...Rf2bfJf0pGzr5zrTBtNt2Rv6FKrBFyoZC78
- 3MK7v6AIExvRf07_e854sj.sCc747UvDx_KuCc1Lzho.ia85CcHrUWZ0YoNd
- TB0Q4FOSTXWT89Z9QWaW5Tt8f
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 7 Jul 2011 14:14:14 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: piotr@hosowicz.com, Jonathan Cameron <jic23@cam.ac.uk>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: Build issue with linux next. duplicate member _count in
- mm_types.h
-In-Reply-To: <1310065670.21902.62.camel@jaguar>
-Message-ID: <alpine.DEB.2.00.1107071413290.24437@router.home>
-References: <4E143120.2020501@cam.ac.uk>  <alpine.DEB.2.00.1107060933460.17202@router.home>  <4E15AF1C.7080103@example.com>  <alpine.DEB.2.00.1107070841500.17376@router.home>  <4E15B945.5060805@example.com> <1310065670.21902.62.camel@jaguar>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 7 Jul 2011 15:22:10 -0400
+Date: Thu, 07 Jul 2011 12:21:51 -0700 (PDT)
+Message-Id: <20110707.122151.314840355798805828.davem@davemloft.net>
+To: cl@linux.com
+Cc: penberg@kernel.org, marcin.slusarz@gmail.com, mpm@selenic.com,
+        linux-kernel@vger.kernel.org, rientjes@google.com, linux-mm@kvack.org
+Subject: Re: [PATCH] slub: reduce overhead of slub_debug
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.DEB.2.00.1107071402490.24248@router.home>
+References: <alpine.DEB.2.00.1107071314320.21719@router.home>
+	<1310064771.21902.55.camel@jaguar>
+	<alpine.DEB.2.00.1107071402490.24248@router.home>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 07 Jul 2011 12:21:59 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011, Pekka Enberg wrote:
+From: Christoph Lameter <cl@linux.com>
+Date: Thu, 7 Jul 2011 14:12:37 -0500 (CDT)
 
-> > I attach it. Your patch seems to had worked, I finish making the package.
->
-> I'm confused. Does Christoph's patch fix the problem for everyone?
+> On Thu, 7 Jul 2011, Pekka Enberg wrote:
+> 
+>> On Thu, 7 Jul 2011, Pekka Enberg wrote:
+>> > > Looks good to me. Christoph, David, ?
+>>
+>> On Thu, 2011-07-07 at 13:17 -0500, Christoph Lameter wrote:
+>> > The reason debug code is there is because it is useless overhead typically
+>> > not needed. There is no point in optimizing the code that is not run in
+>> > production environments unless there are gross performance issues that
+>> > make debugging difficult. A performance patch for debugging would have to
+>> > cause significant performance improvements. This patch does not do that
+>> > nor was there such an issue to be addressed in the first place.
+>>
+>> Is there something technically wrong with the patch? Quoting the patch
+>> email:
+>>
+>>   (Compiling some project with different options)
+>>                                  make -j12    make clean
+>>   slub_debug disabled:             1m 27s       1.2 s
+>>   slub_debug enabled:              1m 46s       7.6 s
+>>   slub_debug enabled + this patch: 1m 33s       3.2 s
+>>
+>>   check_bytes still shows up high, but not always at the top.
+>>
+>> That's significant enough speedup for me!
+> 
+> Ok. I had a different set of numbers in mind from earlier posts.
+> 
+> The benefit here comes from accessing memory in larger (word) chunks
+> instead of byte wise. This is a form of memscan() with inverse matching.
+> 
+> Isnt there an asm optimized version that can do this much better (there is
+> one for memscan())? Optimizing this in core code by codeing something as
+> generic as that is not that good since the arch code can deliver better
+> performance and it seems that this is functionality that could be useful
+> elsewhere.
 
-Guess so (heard nothing to the contrary) but I still would like to know
-what caused it. My best guess right now its gccs 4.6s stricter checking.
-
+You're being so unreasonable, just let the optimization in, refine it
+with follow-on patches.
