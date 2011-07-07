@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754561Ab1GGFdZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 01:33:25 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49159 "EHLO
+	id S1754588Ab1GGFd2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:33:28 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:3625 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754239Ab1GGFdU (ORCPT
+	with ESMTP id S1754141Ab1GGFdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Jul 2011 01:33:20 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=ClKx1nT3MNRQhX90Kn1htEPA2Vxvf149zfNzYjJQUDJMeI6jt7YuJjNGW90oYUJ6r
-	pzHVqOI9ohYBo3JL94RCQ==
-Message-Id: <20110707053100.733366172@google.com>
+	b=PQl9XwLGNBh0yCTiAEaheaYglSq6Kxt0GyThCMGqXtLRQMTe/A3/+1lb5ZE6TSrCh
+	DvHxHBC5j51yIrnJnDX4Q==
+Message-Id: <20110707053059.981950189@google.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 06 Jul 2011 22:30:47 -0700
+Date: Wed, 06 Jul 2011 22:30:39 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -25,228 +25,377 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Hu Tao <hutao@cn.fujitsu.com>
-Subject: [patch 11/17] sched: prevent interactions with throttled entities
+        Hu Tao <hutao@cn.fujitsu.com>, Nikhil Rao <ncrao@google.com>
+Subject: [patch 03/17] sched: introduce primitives to account for CFS bandwidth tracking
 References: <20110707053036.173186930@google.com>
-Content-Disposition: inline; filename=sched-bwc-throttled_shares.patch
+Content-Disposition: inline; filename=sched-bwc-add_cfs_tg_bandwidth.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From the perspective of load-balance and shares distribution, throttled
-entities should be invisible.
+In this patch we introduce the notion of CFS bandwidth, partitioned into 
+globally unassigned bandwidth, and locally claimed bandwidth.
 
-However, both of these operations work on 'active' lists and are not
-inherently aware of what group hierarchies may be present.  In some cases this
-may be side-stepped (e.g. we could sideload via tg_load_down in load balance) 
-while in others (e.g. update_shares()) it is more difficult to compute without
-incurring some O(n^2) costs.
+- The global bandwidth is per task_group, it represents a pool of unclaimed
+  bandwidth that cfs_rqs can allocate from.  
+- The local bandwidth is tracked per-cfs_rq, this represents allotments from
+  the global pool bandwidth assigned to a specific cpu.
 
-Instead, track hierarchicaal throttled state at time of transition.  This
-allows us to easily identify whether an entity belongs to a throttled hierarchy
-and avoid incorrect interactions with it.
-
-Also, when an entity leaves a throttled hierarchy we need to advance its
-time averaging for shares averaging so that the elapsed throttled time is not
-considered as part of the cfs_rq's operation.
-
-We also use this information to prevent buddy interactions in the wakeup and
-yield_to() paths.
+Bandwidth is managed via cgroupfs, adding two new interfaces to the cpu subsystem:
+- cpu.cfs_period_us : the bandwidth period in usecs
+- cpu.cfs_quota_us : the cpu bandwidth (in usecs) that this tg will be allowed
+  to consume over period above.
 
 Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Nikhil Rao <ncrao@google.com>
+Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
 Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
 ---
- kernel/sched.c      |    2 -
- kernel/sched_fair.c |   99 ++++++++++++++++++++++++++++++++++++++++++++++++----
- 2 files changed, 94 insertions(+), 7 deletions(-)
+ init/Kconfig        |   13 +++
+ kernel/sched.c      |  194 ++++++++++++++++++++++++++++++++++++++++++++++++++--
+ kernel/sched_fair.c |   16 ++++
+ 3 files changed, 219 insertions(+), 4 deletions(-)
 
-Index: tip/kernel/sched_fair.c
+Index: tip/init/Kconfig
 ===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -741,13 +741,15 @@ static void update_cfs_rq_load_contribut
- 	}
- }
+--- tip.orig/init/Kconfig
++++ tip/init/Kconfig
+@@ -715,6 +715,19 @@ config FAIR_GROUP_SCHED
+ 	depends on CGROUP_SCHED
+ 	default CGROUP_SCHED
  
-+static inline int throttled_hierarchy(struct cfs_rq *cfs_rq);
++config CFS_BANDWIDTH
++	bool "CPU bandwidth provisioning for FAIR_GROUP_SCHED"
++	depends on EXPERIMENTAL
++	depends on FAIR_GROUP_SCHED
++	depends on SMP
++	default n
++	help
++	  This option allows users to define CPU bandwidth rates (limits) for
++	  tasks running within the fair group scheduler.  Groups with no limit
++	  set are considered to be unconstrained and will run with no
++	  restriction.
++	  See tip/Documentation/scheduler/sched-bwc.txt for more information.
 +
- static void update_cfs_load(struct cfs_rq *cfs_rq, int global_update)
- {
- 	u64 period = sysctl_sched_shares_window;
- 	u64 now, delta;
- 	unsigned long load = cfs_rq->load.weight;
- 
--	if (cfs_rq->tg == &root_task_group)
-+	if (cfs_rq->tg == &root_task_group || throttled_hierarchy(cfs_rq))
- 		return;
- 
- 	now = rq_of(cfs_rq)->clock_task;
-@@ -856,7 +858,7 @@ static void update_cfs_shares(struct cfs
- 
- 	tg = cfs_rq->tg;
- 	se = tg->se[cpu_of(rq_of(cfs_rq))];
--	if (!se)
-+	if (!se || throttled_hierarchy(cfs_rq))
- 		return;
- #ifndef CONFIG_SMP
- 	if (likely(se->load.weight == tg->shares))
-@@ -1419,6 +1421,64 @@ static inline int cfs_rq_throttled(struc
- 	return cfs_rq->throttled;
- }
- 
-+/* check whether cfs_rq, or any parent, is throttled */
-+static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
-+{
-+	return cfs_rq->throttle_count;
-+}
-+
-+/*
-+ * Ensure that neither of the group entities corresponding to src_cpu or
-+ * dest_cpu are members of a throttled hierarchy when performing group
-+ * load-balance operations.
-+ */
-+static inline int throttled_lb_pair(struct task_group *tg,
-+				    int src_cpu, int dest_cpu)
-+{
-+	struct cfs_rq *src_cfs_rq, *dest_cfs_rq;
-+
-+	src_cfs_rq = tg->cfs_rq[src_cpu];
-+	dest_cfs_rq = tg->cfs_rq[dest_cpu];
-+
-+	return throttled_hierarchy(src_cfs_rq) ||
-+	       throttled_hierarchy(dest_cfs_rq);
-+}
-+
-+/* updated child weight may affect parent so we have to do this bottom up */
-+static int tg_unthrottle_up(struct task_group *tg, void *data)
-+{
-+	struct rq *rq = data;
-+	struct cfs_rq *cfs_rq = tg->cfs_rq[rq->cpu];
-+	u64 delta;
-+
-+	cfs_rq->throttle_count--;
-+	if (!cfs_rq->throttle_count) {
-+		/* leaving throttled state, advance shares averaging windows */
-+		delta = rq->clock_task - cfs_rq->load_stamp;
-+
-+		cfs_rq->load_stamp += delta;
-+		cfs_rq->load_last += delta;
-+
-+		/* update entity weight now that we are on_rq again */
-+		update_cfs_shares(cfs_rq);
-+	}
-+
-+	return 0;
-+}
-+
-+static int tg_throttle_down(struct task_group *tg, void *data)
-+{
-+	long cpu = (long)data;
-+	struct cfs_rq *cfs_rq = tg->cfs_rq[cpu];
-+
-+	/* group is entering throttled state, record last load */
-+	if (!cfs_rq->throttle_count)
-+		update_cfs_load(cfs_rq, 0);
-+	cfs_rq->throttle_count++;
-+
-+	return 0;
-+}
-+
- static void throttle_cfs_rq(struct cfs_rq *cfs_rq)
- {
- 	struct rq *rq = rq_of(cfs_rq);
-@@ -1429,7 +1489,10 @@ static void throttle_cfs_rq(struct cfs_r
- 	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
- 
- 	/* account load preceding throttle */
--	update_cfs_load(cfs_rq, 0);
-+	rcu_read_lock();
-+	walk_tg_tree_from(cfs_rq->tg, tg_throttle_down, tg_nop,
-+			  (void *)(long)rq_of(cfs_rq)->cpu);
-+	rcu_read_unlock();
- 
- 	task_delta = cfs_rq->h_nr_running;
- 	for_each_sched_entity(se) {
-@@ -1470,6 +1533,10 @@ static void unthrottle_cfs_rq(struct cfs
- 	list_del_rcu(&cfs_rq->throttled_list);
- 	raw_spin_unlock(&cfs_b->lock);
- 
-+	update_rq_clock(rq);
-+	/* update hierarchical throttle state */
-+	walk_tg_tree_from(cfs_rq->tg, tg_nop, tg_unthrottle_up, (void *)rq);
-+
- 	if (!cfs_rq->load.weight)
- 		return;
- 
-@@ -1614,6 +1681,17 @@ static inline int cfs_rq_throttled(struc
- {
- 	return 0;
- }
-+
-+static inline int throttled_hierarchy(struct cfs_rq *cfs_rq)
-+{
-+	return 0;
-+}
-+
-+static inline int throttled_lb_pair(struct task_group *tg,
-+				    int src_cpu, int dest_cpu)
-+{
-+	return 0;
-+}
- #endif
- 
- /**************************************************
-@@ -2513,6 +2591,9 @@ move_one_task(struct rq *this_rq, int th
- 	int pinned = 0;
- 
- 	for_each_leaf_cfs_rq(busiest, cfs_rq) {
-+		if (throttled_lb_pair(cfs_rq->tg, busiest->cpu, this_cpu))
-+			continue;
-+
- 		list_for_each_entry_safe(p, n, &cfs_rq->tasks, se.group_node) {
- 
- 			if (!can_migrate_task(p, busiest, this_cpu,
-@@ -2625,8 +2706,13 @@ static void update_shares(int cpu)
- 	struct rq *rq = cpu_rq(cpu);
- 
- 	rcu_read_lock();
--	for_each_leaf_cfs_rq(rq, cfs_rq)
-+	for_each_leaf_cfs_rq(rq, cfs_rq) {
-+		/* throttled entities do not contribute to load */
-+		if (throttled_hierarchy(cfs_rq))
-+			continue;
-+
- 		update_shares_cpu(cfs_rq->tg, cpu);
-+	}
- 	rcu_read_unlock();
- }
- 
-@@ -2650,9 +2736,10 @@ load_balance_fair(struct rq *this_rq, in
- 		u64 rem_load, moved_load;
- 
- 		/*
--		 * empty group
-+		 * empty group or part of a throttled hierarchy
- 		 */
--		if (!busiest_cfs_rq->task_weight)
-+		if (!busiest_cfs_rq->task_weight ||
-+		    throttled_lb_pair(tg, busiest_cpu, this_cpu))
- 			continue;
- 
- 		rem_load = (u64)rem_load_move * busiest_weight;
+ config RT_GROUP_SCHED
+ 	bool "Group scheduling for SCHED_RR/FIFO"
+ 	depends on EXPERIMENTAL
 Index: tip/kernel/sched.c
 ===================================================================
 --- tip.orig/kernel/sched.c
 +++ tip/kernel/sched.c
-@@ -399,7 +399,7 @@ struct cfs_rq {
- 	u64 runtime_expires;
- 	s64 runtime_remaining;
+@@ -244,6 +244,14 @@ struct cfs_rq;
  
--	int throttled;
-+	int throttled, throttle_count;
- 	struct list_head throttled_list;
+ static LIST_HEAD(task_groups);
+ 
++struct cfs_bandwidth {
++#ifdef CONFIG_CFS_BANDWIDTH
++	raw_spinlock_t lock;
++	ktime_t period;
++	u64 quota;
++#endif
++};
++
+ /* task group related information */
+ struct task_group {
+ 	struct cgroup_subsys_state css;
+@@ -275,6 +283,8 @@ struct task_group {
+ #ifdef CONFIG_SCHED_AUTOGROUP
+ 	struct autogroup *autogroup;
  #endif
++
++	struct cfs_bandwidth cfs_bandwidth;
+ };
+ 
+ /* task_group_lock serializes the addition/removal of task groups */
+@@ -374,9 +384,46 @@ struct cfs_rq {
+ 
+ 	unsigned long load_contribution;
  #endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	int runtime_enabled;
++	s64 runtime_remaining;
++#endif
+ #endif
+ };
+ 
++#ifdef CONFIG_CFS_BANDWIDTH
++static inline struct cfs_bandwidth *tg_cfs_bandwidth(struct task_group *tg)
++{
++	return &tg->cfs_bandwidth;
++}
++
++static inline u64 default_cfs_period(void);
++
++static void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
++{
++	raw_spin_lock_init(&cfs_b->lock);
++	cfs_b->quota = RUNTIME_INF;
++	cfs_b->period = ns_to_ktime(default_cfs_period());
++}
++
++static void init_cfs_rq_runtime(struct cfs_rq *cfs_rq)
++{
++	cfs_rq->runtime_enabled = 0;
++}
++
++static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b)
++{}
++#else
++static void init_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
++static void init_cfs_bandwidth(struct cfs_bandwidth *cfs_b) {}
++static void destroy_cfs_bandwidth(struct cfs_bandwidth *cfs_b) {}
++
++static inline struct cfs_bandwidth *tg_cfs_bandwidth(struct task_group *tg)
++{
++	return NULL;
++}
++#endif /* CONFIG_CFS_BANDWIDTH */
++
+ /* Real-Time classes' related field in a runqueue: */
+ struct rt_rq {
+ 	struct rt_prio_array active;
+@@ -7795,6 +7842,7 @@ static void init_tg_cfs_entry(struct tas
+ 	tg->cfs_rq[cpu] = cfs_rq;
+ 	init_cfs_rq(cfs_rq, rq);
+ 	cfs_rq->tg = tg;
++	init_cfs_rq_runtime(cfs_rq);
+ 
+ 	tg->se[cpu] = se;
+ 	/* se could be NULL for root_task_group */
+@@ -7930,6 +7978,7 @@ void __init sched_init(void)
+ 		 * We achieve this by letting root_task_group's tasks sit
+ 		 * directly in rq->cfs (i.e root_task_group->se[] = NULL).
+ 		 */
++		init_cfs_bandwidth(&root_task_group.cfs_bandwidth);
+ 		init_tg_cfs_entry(&root_task_group, &rq->cfs, NULL, i, NULL);
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+@@ -8171,6 +8220,8 @@ static void free_fair_sched_group(struct
+ {
+ 	int i;
+ 
++	destroy_cfs_bandwidth(tg_cfs_bandwidth(tg));
++
+ 	for_each_possible_cpu(i) {
+ 		if (tg->cfs_rq)
+ 			kfree(tg->cfs_rq[i]);
+@@ -8198,6 +8249,8 @@ int alloc_fair_sched_group(struct task_g
+ 
+ 	tg->shares = NICE_0_LOAD;
+ 
++	init_cfs_bandwidth(tg_cfs_bandwidth(tg));
++
+ 	for_each_possible_cpu(i) {
+ 		cfs_rq = kzalloc_node(sizeof(struct cfs_rq),
+ 				      GFP_KERNEL, cpu_to_node(i));
+@@ -8569,7 +8622,7 @@ static int __rt_schedulable(struct task_
+ 	return walk_tg_tree(tg_schedulable, tg_nop, &data);
+ }
+ 
+-static int tg_set_bandwidth(struct task_group *tg,
++static int tg_set_rt_bandwidth(struct task_group *tg,
+ 		u64 rt_period, u64 rt_runtime)
+ {
+ 	int i, err = 0;
+@@ -8608,7 +8661,7 @@ int sched_group_set_rt_runtime(struct ta
+ 	if (rt_runtime_us < 0)
+ 		rt_runtime = RUNTIME_INF;
+ 
+-	return tg_set_bandwidth(tg, rt_period, rt_runtime);
++	return tg_set_rt_bandwidth(tg, rt_period, rt_runtime);
+ }
+ 
+ long sched_group_rt_runtime(struct task_group *tg)
+@@ -8633,7 +8686,7 @@ int sched_group_set_rt_period(struct tas
+ 	if (rt_period == 0)
+ 		return -EINVAL;
+ 
+-	return tg_set_bandwidth(tg, rt_period, rt_runtime);
++	return tg_set_rt_bandwidth(tg, rt_period, rt_runtime);
+ }
+ 
+ long sched_group_rt_period(struct task_group *tg)
+@@ -8823,6 +8876,128 @@ static u64 cpu_shares_read_u64(struct cg
+ 
+ 	return (u64) scale_load_down(tg->shares);
+ }
++
++#ifdef CONFIG_CFS_BANDWIDTH
++const u64 max_cfs_quota_period = 1 * NSEC_PER_SEC; /* 1s */
++const u64 min_cfs_quota_period = 1 * NSEC_PER_MSEC; /* 1ms */
++
++static int tg_set_cfs_bandwidth(struct task_group *tg, u64 period, u64 quota)
++{
++	int i;
++	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
++	static DEFINE_MUTEX(mutex);
++
++	if (tg == &root_task_group)
++		return -EINVAL;
++
++	/*
++	 * Ensure we have at some amount of bandwidth every period.  This is
++	 * to prevent reaching a state of large arrears when throttled via
++	 * entity_tick() resulting in prolonged exit starvation.
++	 */
++	if (quota < min_cfs_quota_period || period < min_cfs_quota_period)
++		return -EINVAL;
++
++	/*
++	 * Likewise, bound things on the otherside by preventing insane quota
++	 * periods.  This also allows us to normalize in computing quota
++	 * feasibility.
++	 */
++	if (period > max_cfs_quota_period)
++		return -EINVAL;
++
++	mutex_lock(&mutex);
++	raw_spin_lock_irq(&cfs_b->lock);
++	cfs_b->period = ns_to_ktime(period);
++	cfs_b->quota = quota;
++	raw_spin_unlock_irq(&cfs_b->lock);
++
++	for_each_possible_cpu(i) {
++		struct cfs_rq *cfs_rq = tg->cfs_rq[i];
++		struct rq *rq = rq_of(cfs_rq);
++
++		raw_spin_lock_irq(&rq->lock);
++		cfs_rq->runtime_enabled = quota != RUNTIME_INF;
++		cfs_rq->runtime_remaining = 0;
++		raw_spin_unlock_irq(&rq->lock);
++	}
++	mutex_unlock(&mutex);
++
++	return 0;
++}
++
++int tg_set_cfs_quota(struct task_group *tg, long cfs_quota_us)
++{
++	u64 quota, period;
++
++	period = ktime_to_ns(tg_cfs_bandwidth(tg)->period);
++	if (cfs_quota_us < 0)
++		quota = RUNTIME_INF;
++	else
++		quota = (u64)cfs_quota_us * NSEC_PER_USEC;
++
++	return tg_set_cfs_bandwidth(tg, period, quota);
++}
++
++long tg_get_cfs_quota(struct task_group *tg)
++{
++	u64 quota_us;
++
++	if (tg_cfs_bandwidth(tg)->quota == RUNTIME_INF)
++		return -1;
++
++	quota_us = tg_cfs_bandwidth(tg)->quota;
++	do_div(quota_us, NSEC_PER_USEC);
++
++	return quota_us;
++}
++
++int tg_set_cfs_period(struct task_group *tg, long cfs_period_us)
++{
++	u64 quota, period;
++
++	period = (u64)cfs_period_us * NSEC_PER_USEC;
++	quota = tg_cfs_bandwidth(tg)->quota;
++
++	if (period <= 0)
++		return -EINVAL;
++
++	return tg_set_cfs_bandwidth(tg, period, quota);
++}
++
++long tg_get_cfs_period(struct task_group *tg)
++{
++	u64 cfs_period_us;
++
++	cfs_period_us = ktime_to_ns(tg_cfs_bandwidth(tg)->period);
++	do_div(cfs_period_us, NSEC_PER_USEC);
++
++	return cfs_period_us;
++}
++
++static s64 cpu_cfs_quota_read_s64(struct cgroup *cgrp, struct cftype *cft)
++{
++	return tg_get_cfs_quota(cgroup_tg(cgrp));
++}
++
++static int cpu_cfs_quota_write_s64(struct cgroup *cgrp, struct cftype *cftype,
++				s64 cfs_quota_us)
++{
++	return tg_set_cfs_quota(cgroup_tg(cgrp), cfs_quota_us);
++}
++
++static u64 cpu_cfs_period_read_u64(struct cgroup *cgrp, struct cftype *cft)
++{
++	return tg_get_cfs_period(cgroup_tg(cgrp));
++}
++
++static int cpu_cfs_period_write_u64(struct cgroup *cgrp, struct cftype *cftype,
++				u64 cfs_period_us)
++{
++	return tg_set_cfs_period(cgroup_tg(cgrp), cfs_period_us);
++}
++
++#endif /* CONFIG_CFS_BANDWIDTH */
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+ #ifdef CONFIG_RT_GROUP_SCHED
+@@ -8857,6 +9032,18 @@ static struct cftype cpu_files[] = {
+ 		.write_u64 = cpu_shares_write_u64,
+ 	},
+ #endif
++#ifdef CONFIG_CFS_BANDWIDTH
++	{
++		.name = "cfs_quota_us",
++		.read_s64 = cpu_cfs_quota_read_s64,
++		.write_s64 = cpu_cfs_quota_write_s64,
++	},
++	{
++		.name = "cfs_period_us",
++		.read_u64 = cpu_cfs_period_read_u64,
++		.write_u64 = cpu_cfs_period_write_u64,
++	},
++#endif
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	{
+ 		.name = "rt_runtime_us",
+@@ -9166,4 +9353,3 @@ struct cgroup_subsys cpuacct_subsys = {
+ 	.subsys_id = cpuacct_subsys_id,
+ };
+ #endif	/* CONFIG_CGROUP_CPUACCT */
+-
+Index: tip/kernel/sched_fair.c
+===================================================================
+--- tip.orig/kernel/sched_fair.c
++++ tip/kernel/sched_fair.c
+@@ -1256,6 +1256,22 @@ entity_tick(struct cfs_rq *cfs_rq, struc
+ 		check_preempt_tick(cfs_rq, curr);
+ }
+ 
++
++/**************************************************
++ * CFS bandwidth control machinery
++ */
++
++#ifdef CONFIG_CFS_BANDWIDTH
++/*
++ * default period for cfs group bandwidth.
++ * default: 0.1s, units: nanoseconds
++ */
++static inline u64 default_cfs_period(void)
++{
++	return 100000000ULL;
++}
++#endif
++
+ /**************************************************
+  * CFS operations on tasks:
+  */
 
 
