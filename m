@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab1GGMc6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 08:32:58 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:38344 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755856Ab1GGMcy (ORCPT
+	id S1756194Ab1GGMhw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 08:37:52 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:9057 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754557Ab1GGMhv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 08:32:54 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Daniel Mack <zonque@gmail.com>
-Subject: Re: Allocating buffers for USB transfers (again)
-Date: Thu, 7 Jul 2011 14:33:42 +0200
-User-Agent: KMail/1.13.5 (Linux/3.0.0-rc5-12-desktop+; KDE/4.4.4; x86_64; ; )
-Cc: linux-usb@vger.kernel.org, alsa-devel@alsa-project.org,
-        Takashi Iwai <tiwai@suse.de>, Clemens Ladisch <clemens@ladisch.de>,
-        florian@mickler.org, pedrib@gmail.com, William Light <wrl@illest.net>,
-        Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org
-References: <CACTFLANCYMXH=z+NxEF0aqpMGZp21Q16_uB=J3rndM3pW74qeA@mail.gmail.com>
-In-Reply-To: <CACTFLANCYMXH=z+NxEF0aqpMGZp21Q16_uB=J3rndM3pW74qeA@mail.gmail.com>
+	Thu, 7 Jul 2011 08:37:51 -0400
+Message-ID: <A103B14DCBE64935815497A3464F512F@hacdom.okisemi.com>
+From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
+To: "Takashi Iwai" <tiwai@suse.de>
+Cc: <perex@perex.cz>, <alsa-devel@alsa-project.org>,
+        <linux-kernel@vger.kernel.org>, <qi.wang@intel.com>,
+        <yong.y.wang@intel.com>, <joel.clark@intel.com>,
+        <kok.howg.ewe@intel.com>, <tomoya-linux@dsn.okisemi.com>
+References: <1309948067-9333-1-git-send-email-toshiharu-linux@dsn.okisemi.com><s5hhb6z3byw.wl%tiwai@suse.de><34CF59A8D33E40B6822498A23CD554E8@hacdom.okisemi.com> <s5hvcve1n40.wl%tiwai@suse.de>
+Subject: Re: [PATCH] Add SoundCard driver for OKI SEMICONDUCTOR ML7213 IOH
+Date: Thu, 7 Jul 2011 21:35:17 +0900
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain;
+	charset="UTF-8"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107071433.42081.oliver@neukum.org>
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 7. Juli 2011, 13:53:46 schrieb Daniel Mack:
-> Takashi recently posted a patch to the bugzilla entry which uses a
-> different approach: it introduces a function to determine suitable GFP
-> flags for USB devices, and passes __DMA32 to kmalloc() eventually.
-> However, using this flags directly with the SLUB allocator is illegal
-> and causes a BUG() in mm/slub.c, cache_grow().
-> 
-> The question now is how to proceed. I see three possible ways.
-> 
-> 1. Find a way to allocate 32bit-aware memory with kmalloc(), following
-> Takashi's idea
+Date: Thu, 07 Jul 2011 11:00:47 +0200
+From: Takashi Iwai <tiwai@suse.de>
+>>
+>> Therefore, I am not considering about ASoC.
+>> Do I need to fit this driver to an ASoC framework for an upstream?
+>
+>Yes, I guess this would be a better choice in your case.
 
-That is not really a good idea, because many drivers have to deal with buffers
-another subsystem has allocated.
+Thank you for your comment.
+>From now on, We study about ASoC.
+If there are a document, a website, a driver, etc. which are referred, 
+please tell us.
+Why is choosing ASoS better?
+Is it better to correspond to ASoC, when Audio Codec is unfixed?
 
-> 2. Find out exactly why these machines fail to install bounce buffers
-> or set up their IOMMU correctly
+Best Regards
+Toshiharu Okada 
 
-This is still the correct approach. Given the cause this cannot be a problem
-only for audio. We need the root cause.
-
-> 3. re-activate the currently disabled functions
-> usb_buffer_{map,unmap,sync} functions and let the USB stack do the
-> memory mapping
-
-The USB stack does call the DMA mapping operations.
-
-	Regards
-		Oliver
-
-PS:  Do you still see this if you enable 64bit DMA for EHCI?
