@@ -1,78 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754162Ab1GGJVN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 05:21:13 -0400
-Received: from db3ehsobe004.messaging.microsoft.com ([213.199.154.142]:18762
-	"EHLO DB3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753355Ab1GGJVJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 05:21:09 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz936eK1432N98dKzz1202hzzz32i668h839h944h)
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNYHZ3-02-A4E-02
-X-M-MSG: 
-Date: Thu, 7 Jul 2011 11:21:02 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
-Message-ID: <20110707092102.GI4590@erda.amd.com>
-References: <20110703150430.GV4590@erda.amd.com>
- <1309716271.3282.6.camel@twins>
- <20110704175927.GZ4590@erda.amd.com>
- <1309855905.3282.42.camel@twins>
- <20110705091252.GA5725@elte.hu>
- <20110706165357.GG4590@erda.amd.com>
- <1309972368.3282.317.camel@twins>
+	id S1753656Ab1GGJZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 05:25:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42457 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751025Ab1GGJZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 05:25:02 -0400
+Date: Thu, 7 Jul 2011 11:24:49 +0200 (CEST)
+From: Lukas Czerner <lczerner@redhat.com>
+X-X-Sender: lukas@dhcp-27-109.brq.redhat.com
+To: Kyungmin Park <kmpark@infradead.org>
+cc: Lukas Czerner <lczerner@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Filesystem Mailing List <linux-fsdevel@vger.kernel.org>
+Subject: Re: ext4: why init the unused block group at batched discard?
+In-Reply-To: <CAH9JG2Xp_u-46x8bf2Uq-9FREZyYhcP3E7H+MsSoFVrWpyLrtA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1107071106100.3911@dhcp-27-109.brq.redhat.com>
+References: <CAH9JG2Xp_u-46x8bf2Uq-9FREZyYhcP3E7H+MsSoFVrWpyLrtA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1309972368.3282.317.camel@twins>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06.07.11 13:12:48, Peter Zijlstra wrote:
-> On Wed, 2011-07-06 at 18:53 +0200, Robert Richter wrote:
+On Wed, 6 Jul 2011, Kyungmin Park wrote:
 
-> > The system topology is always in /sys, also for device nodes. But we
-> > can't get a device file descriptor from /sys. I doubt /sys is capable
-> > to handle a device use count (need to be checked). We actually must
-> > grab the pmu while attaching events to it. And, user space
-> > implementation is must easier with /dev (see code in my previous
-> > mail).
+> Hi Lukas,
 > 
-> Well you must not per-se, from a user's perspective there isn't much of
-> a difference between if the sys_perf_event_open() fails or if the
-> initial file open fails, in both cases he's not getting an event.
+> During code review batched discard support at ext4. I wonder why do
+> you init the uninitialized block group during batched discard.
+> As you know uninitialized block group mean that there's no operation
+> at these blocks.
+> So no need to trim it at all.
 
-It is not that I want to create event handles with open. For this
-there is the syscall. I use open() to create a unique reference to a
-pmu in userspace. No more, and /dev is the right thing to do this.
+What you're describing is another flag, namely EXT4_BG_BLOCK_UNINIT,
+which tells us that there was no allocation from that block bitmap since
+the mkfs (as Amir already pointed out). Flag
+EXT4_GROUP_INFO_NEED_INIT_BIT simply states that there is no buddy
+initialized for this group.
 
-> perf stat -e IBS:fetches will always have a fail against rmmod, rmmod
-> could complete before we try to open the file (assuming IBS is a
-> module).
+That said the code is perfectly fine, and it should not affect even the
+e2fsck which uses EXT4_BG_BLOCK_UNINIT to skip not used block groups
+since we only change it on allocations.
+
+It is true that after the commit
+78944086663e6c1b03f3d60bf7610128149be5fc ext4: only load buddy bitmap in
+ext4_trim_fs() when it is needed
+we do not longer need to initialize the buddy right away, but wait ontil
+it is really needed. Actually we do not need it at all, because is when
+we are going to load the buddy the ext4_mb_load_buddy() will check for
+the EXT4_GROUP_INFO_NEED_INIT_BIT and will initialize the buddy for us.
+
+Yongqiang pointed out that we might use EXT4_BG_BLOCK_UNINIT to skip
+group as well, but I do not think that it is a good idea, since the
+initial discard at mkfs time might not be done (we just do not know it),
+so any assumption like this are not right. Moreover there are patches
+from Tao Ma which adds the code for skipping groups which has not been
+freed from since the last fitrim call. Search the list for [PATCH 0/4
+RESEND]  ext4 trim bug fixes and improvement.
+
+Thanks for pointing that out. I'll send the patch.
+
+-Lukas
+
 > 
-> > 
-> > My patch also includes code that creates a device class. It is also
-> > visible in /sys/class/pmu/*.
+> How do you think?
 > 
-> So not only are you providing a duplicate of existing interfaces, you're
-> actually duplicating information inside sysfs as well.
-
-This is not duplication. /sys provides information about system
-hierarchy, /dev is for controlling devices. Thus, every device node is
-visible in /sys as it is part of the system.
-
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+> int ext4_trim_fs(struct super_block *sb, struct fstrim_range *range)
+> {
+>         ...
+> 
+>         for (group = first_group; group <= last_group; group++) {
+>                 grp = ext4_get_group_info(sb, group);
+>                 /* We only do this if the grp has never been initialized */
+>                 if (unlikely(EXT4_MB_GRP_NEED_INIT(grp))) {
+>                         ret = ext4_mb_init_group(sb, group);
+>                         if (ret)
+>                                 break;
+>                 }
+>         ...
+>         }
+>         ...
+> }
+> 
+> Thank you,
+> Kyungmin Park
+> 
