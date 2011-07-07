@@ -1,82 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab1GGI3H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 04:29:07 -0400
-Received: from mail-vx0-f174.google.com ([209.85.220.174]:50358 "EHLO
-	mail-vx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753784Ab1GGI3F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 04:29:05 -0400
+	id S1755012Ab1GGIcl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 04:32:41 -0400
+Received: from bar.sig21.net ([80.81.252.164]:36348 "EHLO bar.sig21.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753306Ab1GGIcj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 04:32:39 -0400
+Date: Thu, 7 Jul 2011 10:32:29 +0200
+From: Johannes Stezenbach <js@sig21.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Jens Axboe <axboe@kernel.dk>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH] compat_ioctl: fix make headers_check regression
+Message-ID: <20110707083229.GA23261@sig21.net>
+References: <20110704134842.7ab89126.sfr@canb.auug.org.au>
+ <20110704100316.GA15894@sig21.net>
+ <20110706225140.GA21510@sig21.net>
+ <20110706161132.c393b685.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
-References: <e9742e1fca57477517fdb6ea110221d6292eed9c.1309997525.git.joe@perches.com>
- <e5bfdcabc4041d24277a2453ecc2690072cfdacf.1309997525.git.joe@perches.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 7 Jul 2011 16:28:44 +0800
-Message-ID: <CAMPhdO_ifW8ivha+_AOo-oNhTMuwGzLrQYP2r-q6iQUp+fb20Q@mail.gmail.com>
-Subject: Re: [PATCH next 2/2] MAINTAINERS: Update PXA2xx/PXA3xx SUPPORT patterns
-To: Joe Perches <joe@perches.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Nicolas Ferre <nicolas.ferre@atmel.com>,
-        Wan ZongShun <mcuos.com@gmail.com>,
-        Russell King <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110706161132.c393b685.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-Spam-21-Score: -3.7 (---)
+X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.718,BAYES_00=-2.599 autolearn=no
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 8:28 AM, Joe Perches <joe@perches.com> wrote:
-> commit ca632f556697 ("spi: reorganize drivers")
-> renamed the files, update the MAINTAINERS patterns.
->
-> cc: Grant Likely <grant.likely@secretlab.ca>
-> cc: Nicolas Ferre <nicolas.ferre@atmel.com>
-> cc: Wan ZongShun <mcuos.com@gmail.com>
-> cc: Eric Miao <eric.y.miao@gmail.com>
-> cc: Russell King <linux@arm.linux.org.uk>
->
-> Signed-off-by: Joe Perches <joe@perches.com>
+On Wed, Jul 06, 2011 at 04:11:32PM -0700, Andrew Morton wrote:
+> On Thu, 7 Jul 2011 00:51:40 +0200
+> Johannes Stezenbach <js@sig21.net> wrote:
+> 
+> > On Mon, Jul 04, 2011 at 12:03:16PM +0200, Johannes Stezenbach wrote:
+> > > Fix headers_check error introduced by 390192b30057:
+> > > 
+> > > include/linux/fd.h:6: included file 'linux/compat.h' is not exported
+> > > 
+> > > Signed-off-by: Johannes Stezenbach <js@sig21.net>
+> > > ---
+> > > I used the same style as in linux/usbdevice_fs.h, hope
+> > > that's OK.
+> > 
+> > 
+> > I just got an "added to -mm tree" mail for the original patch, so I
+> > wonder what's with this fix?
+> 
+> What does the "original patch" refer to.
 
-Acked-by: Eric Miao <eric.y.miao@gmail.com>
+"compat_ioctl: fix warning caused by qemu"
 
-> ---
->  MAINTAINERS |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
->
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 0ad8ff0..4e5cc19 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -1123,7 +1123,7 @@ F:        drivers/watchdog/nuc900_wdt.c
->  F:     drivers/net/arm/w90p910_ether.c
->  F:     drivers/mtd/nand/nuc900_nand.c
->  F:     drivers/rtc/rtc-nuc900.c
-> -F:     drivers/spi/spi_nuc900.c
-> +F:     drivers/spi/spi-nuc900.c
->  F:     drivers/usb/host/ehci-w90x900.c
->  F:     drivers/video/nuc900fb.c
->
-> @@ -1321,7 +1321,7 @@ F:        drivers/net/macb.*
->  ATMEL SPI DRIVER
->  M:     Nicolas Ferre <nicolas.ferre@atmel.com>
->  S:     Supported
-> -F:     drivers/spi/atmel_spi.*
-> +F:     drivers/spi/spi-atmel.c
->
->  ATMEL USBA UDC DRIVER
->  M:     Nicolas Ferre <nicolas.ferre@atmel.com>
-> @@ -5142,7 +5142,7 @@ L:        linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
->  S:     Maintained
->  F:     arch/arm/mach-pxa/
->  F:     drivers/pcmcia/pxa2xx*
-> -F:     drivers/spi/pxa2xx*
-> +F:     drivers/spi/spi-pxa2xx*
->  F:     drivers/usb/gadget/pxa2*
->  F:     include/sound/pxa2xx-lib.h
->  F:     sound/arm/pxa*
-> --
-> 1.7.6.131.g99019
->
->
+> Also, there's no commit 390192b30057.  Commit ID's can change.  This is
+> why we ask people to also include the patch title when describing
+> patches by SHA ID's
+
+I see, will do in the future
+
+> Please let's just start again.  Tell us what is going on here.
+
+Well, I'm confused by the -mm workflow.  The "original" patch
+390192b30057 is in
+git://git.kernel.org/pub/scm/linux/kernel/git/axboe/linux-block.git for-3.1/core
+
+http://git.kernel.org/?p=linux/kernel/git/axboe/linux-block.git;a=commit;h=390192b300570b2bc721d77067ca133f58015ae8
+
+And this fix now, too:
+
+http://git.kernel.org/?p=linux/kernel/git/axboe/linux-block.git;a=commit;h=719c0c590609809365c6f3da2f923cd84dc99113
+
+
+Johannes
