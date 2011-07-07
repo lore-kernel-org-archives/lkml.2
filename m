@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752749Ab1GGUAk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 16:00:40 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36536 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751842Ab1GGUAj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 16:00:39 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linux PM mailing list <linux-pm@lists.linux-foundation.org>
-Subject: [Update][PATCH 5/5] PM / Domains: Do not restore all devices on power off error
-Date: Thu, 7 Jul 2011 22:01:52 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, Kevin Hilman <khilman@ti.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        MyungJoo Ham <myungjoo.ham@samsung.com>,
-        Chanwoo Choi <cw00.choi@samsung.com>, Paul Walmsley <paul@pwsan.com>,
-        Greg KH <gregkh@suse.de>, Magnus Damm <magnus.damm@gmail.com>
-References: <201107062248.35586.rjw@sisk.pl> <201107062301.22277.rjw@sisk.pl>
-In-Reply-To: <201107062301.22277.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1752864Ab1GGUBl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 16:01:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54432 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751842Ab1GGUBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 16:01:40 -0400
+Date: Thu, 7 Jul 2011 13:01:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Sergiu Iordache <sergiu@chromium.org>
+Cc: Marco Stornelli <marco.stornelli@gmail.com>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] char drivers: ramoops debugfs entry
+Message-Id: <20110707130130.8dd02f01.akpm@linux-foundation.org>
+In-Reply-To: <1309994990-4729-4-git-send-email-sergiu@chromium.org>
+References: <1309994990-4729-1-git-send-email-sergiu@chromium.org>
+	<1309994990-4729-4-git-send-email-sergiu@chromium.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201107072201.52278.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Wed,  6 Jul 2011 16:29:50 -0700
+Sergiu Iordache <sergiu@chromium.org> wrote:
 
-Since every device in a PM domain has its own need_restore
-flag, which is set by __pm_genpd_save_device(), there's no need to
-walk the domain's device list and restore all devices on an error
-from one of the drivers' .runtime_suspend() callbacks.
+> While ramoops writes to ram, accessing the dump requires using /dev/mem
+> and knowing the memory location (or a similar solution). This patch
+> provides a debugfs interface through which the respective memory
+> area can be easily accessed.
+> 
+> The entry added is /sys/kernel/debug/ramoops/next
+> 
+> The entry returns a dump of size record_size each time, skipping invalid
+> dumps. When it reaches the end of the memory area reserved for dumps it
+> returns an empty record and resets the current record count.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
+The patch increases the size of ramoops.o text&data from 1725 bytes to
+2282 even when CONFIG_DEBUG_FS=n.  That's quite a lot of bloat!
 
-This update is on top of the [4/5] update I've just sent.  It makes the code
-more straightforward IMHO.
+Furthermore, I think debugfs is the wrong place to put this.  debugfs
+is, umm, for debugging.  It's a place in which to put transitory junk
+which may or may not be there and where interfaces may change without
+notice and whose presence userspace should not assume.  But in this
+patch you're proposing a permanent and formal new interface into the
+ramoops driver.  It should go into a permanent well-known place where
+it will be maintained with the formality and care of all the other
+parts of the kernel API.
 
-Thanks,
-Rafael
+Also, you're proposing a new kernel/userspace API but it wasn't
+documented anywhere.  We don't want to have to reverse-engineer your
+proposed API from the implementation for review purposes.  That API
+should have been exhaustively documented in the changelog so others can
+decide whether they like it.
 
----
- drivers/base/power/domain.c |   13 ++++---------
- 1 file changed, 4 insertions(+), 9 deletions(-)
-
-Index: linux-2.6/drivers/base/power/domain.c
-===================================================================
---- linux-2.6.orig/drivers/base/power/domain.c
-+++ linux-2.6/drivers/base/power/domain.c
-@@ -269,8 +269,10 @@ static int pm_genpd_poweroff(struct gene
- 
- 	list_for_each_entry_reverse(dle, &genpd->dev_list, node) {
- 		ret = __pm_genpd_save_device(dle, genpd);
--		if (ret)
--			goto err_dev;
-+		if (ret) {
-+			genpd_set_active(genpd);
-+			goto out;
-+		}
- 
- 		if (genpd_abort_poweroff(genpd))
- 			goto out;
-@@ -311,13 +313,6 @@ static int pm_genpd_poweroff(struct gene
- 	genpd->poweroff_task = NULL;
- 	wake_up_all(&genpd->status_wait_queue);
- 	return ret;
--
-- err_dev:
--	list_for_each_entry_continue(dle, &genpd->dev_list, node)
--		__pm_genpd_restore_device(dle, genpd);
--
--	genpd_set_active(genpd);
--	goto out;
- }
- 
- /**
-
+Finally, we should provide user documentation for the new interface so
+others can find out that it exists and can use it correctly.  We seem
+not to have bothered documenting ramoops so we don't currently have a
+context in which to do this.
