@@ -1,76 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab1GGWeo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 18:34:44 -0400
-Received: from na3sys009aog124.obsmtp.com ([74.125.149.151]:46901 "EHLO
-	na3sys009aog124.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751632Ab1GGWen (ORCPT
+	id S1753443Ab1GGWey (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 18:34:54 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:1368 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751632Ab1GGWev convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 18:34:43 -0400
-From: Kevin Hilman <khilman@ti.com>
-To: Todd Poynor <toddpoynor@google.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>
-Subject: Re: [PATCH 0/3] Add generic idle notifiers
-Organization: Texas Instruments, Inc.
-References: <1309229190-25006-1-git-send-email-toddpoynor@google.com>
-	<87ei22dnsp.fsf@ti.com> <20110707201748.GB32199@google.com>
-Date: Thu, 07 Jul 2011 15:34:38 -0700
-In-Reply-To: <20110707201748.GB32199@google.com> (Todd Poynor's message of
-	"Thu, 7 Jul 2011 13:17:48 -0700")
-Message-ID: <87tyaxd8jl.fsf@ti.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
+	Thu, 7 Jul 2011 18:34:51 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:sender:in-reply-to:references:from:
+	date:x-google-sender-auth:message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=NNID6Q1Jnhh9HtdicwWs23uLBUy1nf9wYIarFoyyl+9e8i1oujw4m5szY3PIa70qa
+	1IrD01ovgkIZ6dLc0L2og==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20110707130130.8dd02f01.akpm@linux-foundation.org>
+References: <1309994990-4729-1-git-send-email-sergiu@chromium.org>
+ <1309994990-4729-4-git-send-email-sergiu@chromium.org> <20110707130130.8dd02f01.akpm@linux-foundation.org>
+From: Sergiu Iordache <sergiu@chromium.org>
+Date: Thu, 7 Jul 2011 15:34:26 -0700
+X-Google-Sender-Auth: VGBorXNuXGizOkU0LZnHcDgewMk
+Message-ID: <CAGDaqBQMp0xyBF7Z=P5qBqNcceG3JfWNEUX=T=yMZH74UP5kxA@mail.gmail.com>
+Subject: Re: [PATCH v3 3/3] char drivers: ramoops debugfs entry
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Marco Stornelli <marco.stornelli@gmail.com>,
+        "Ahmed S. Darwish" <darwish.07@gmail.com>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Todd Poynor <toddpoynor@google.com> writes:
-
-> On Thu, Jul 07, 2011 at 10:05:10AM -0700, Kevin Hilman wrote:
->> Todd Poynor <toddpoynor@google.com> writes:
->> 
->> > Add notifiers for idle entry and exit, called with IDLE_START when a
->> > CPU goes idle and IDLE_END when it goes out of idle, based on the
->> > existing idle notifiers for the x86_64 arch.
->> >
->> > Convert x86_64 to use these notifiers, and call the notifiers on ARM.
->> >
->> > Convert the ARM LEDs events for idle start/end to these notifiers.
->> 
->> Is this intended to replace the more general CPU PM notifiers proposed
->> by Colin:
->> 
->> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-June/052827.html
+On Thu, Jul 7, 2011 at 1:01 PM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Wed,  6 Jul 2011 16:29:50 -0700
+> Sergiu Iordache <sergiu@chromium.org> wrote:
 >
-> This is intended to coexist with the CPU PM notifiers.  The idle
-> notifiers proposed here are notifying of a change in kernel scheduler
-> state: the scheduler has no task to run and is entering its "idle
-> loop", or now has something to run and is exiting idle state.
-> Things that can use this include power management hints such as the
-> existing drivers/idle/i7300_idle.c usage, the ARM LEDs idle triggers,
-> and there's probably other existing potential uses in other arch'es that
-> I should go track down.
+>> While ramoops writes to ram, accessing the dump requires using /dev/mem
+>> and knowing the memory location (or a similar solution). This patch
+>> provides a debugfs interface through which the respective memory
+>> area can be easily accessed.
+>>
+>> The entry added is /sys/kernel/debug/ramoops/next
+>>
+>> The entry returns a dump of size record_size each time, skipping invalid
+>> dumps. When it reaches the end of the memory area reserved for dumps it
+>> returns an empty record and resets the current record count.
 >
-> The CPU PM notifiers notify of changes in hardware power state that
-> affect the CPU and closely associated IP blocks (such as an OMAP
-> power state transition that causes one or more CPU power domains to
-> hit OFF).  These changes may be due to cpuidle power state management
-> when the system is idle, or may be due to suspending or resuming the
-> system (such as a suspend-to-RAM), or may be due to a CPU hotplug event.
-> In the case of an idle loop entry, if cpuidle decides it is not
-> appropriate to change CPU power state (as when insufficient time
-> remains until next timer expiry to enter such a power state due to
-> entry and exit latency), there may be no CPU PM notification
-> generated.  The callbacks for CPU PM notifiers on ARM do things such
-> as save/restore GIC interrupt controller state and VFP floating-point
-> coprocessor state.
+> The patch increases the size of ramoops.o text&data from 1725 bytes to
+> 2282 even when CONFIG_DEBUG_FS=n.  That's quite a lot of bloat!
 >
-> That's the intent, anyhow, but ideas are welcome, thanks,
+> Furthermore, I think debugfs is the wrong place to put this.  debugfs
+> is, umm, for debugging.  It's a place in which to put transitory junk
+> which may or may not be there and where interfaces may change without
+> notice and whose presence userspace should not assume.  But in this
+> patch you're proposing a permanent and formal new interface into the
+> ramoops driver.  It should go into a permanent well-known place where
+> it will be maintained with the formality and care of all the other
+> parts of the kernel API.
+How about not using the debugfs entry and adding a char driver? There
+are 2 possibilities here as well: using read operations to return the
+data like the current patch does or using ioctl to return the data(and
+maybe return other info as well such as the records size and the
+memory size). Any suggestions regarding a valid approach?
 
-OK, thanks for the clarification.
+> Also, you're proposing a new kernel/userspace API but it wasn't
+> documented anywhere.  We don't want to have to reverse-engineer your
+> proposed API from the implementation for review purposes.  That API
+> should have been exhaustively documented in the changelog so others can
+> decide whether they like it.
+>
+> Finally, we should provide user documentation for the new interface so
+> others can find out that it exists and can use it correctly.  We seem
+> not to have bothered documenting ramoops so we don't currently have a
+> context in which to do this.
+I'll create some documentation for both the (future) API and the ramoops module.
 
-Kevin
+Sergiu
