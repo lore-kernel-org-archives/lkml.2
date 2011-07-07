@@ -1,89 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755472Ab1GGJro (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 05:47:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45707 "EHLO mx2.suse.de"
+	id S1755450Ab1GGJtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 05:49:14 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36697 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754655Ab1GGJrn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 05:47:43 -0400
-Date: Thu, 7 Jul 2011 10:47:37 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 00/14] Swap-over-NBD without deadlocking v5
-Message-ID: <20110707094737.GG15285@suse.de>
-References: <1308575540-25219-1-git-send-email-mgorman@suse.de>
- <20110706165146.be7ab61b.akpm@linux-foundation.org>
+	id S1753802Ab1GGJtN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 05:49:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,492,1304319600"; 
+   d="scan'208";a="27351427"
+Date: Thu, 7 Jul 2011 11:49:36 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Cc: Liam Girdwood <lrg@ti.com>, Tony Lindgren <tony@atomide.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
+        Misael Lopez Cruz <misael.lopez@ti.com>, Felipe Balbi <balbi@ti.com>
+Subject: Re: [PATCH v3 1/5] MFD: twl6040: Use resource to provide irq number
+ for slaves
+Message-ID: <20110707094936.GR3021@sortiz-mobl>
+References: <1309895376-17446-1-git-send-email-peter.ujfalusi@ti.com>
+ <1309895376-17446-2-git-send-email-peter.ujfalusi@ti.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110706165146.be7ab61b.akpm@linux-foundation.org>
+In-Reply-To: <1309895376-17446-2-git-send-email-peter.ujfalusi@ti.com>
 User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 04:51:46PM -0700, Andrew Morton wrote:
-> On Mon, 20 Jun 2011 14:12:06 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
+Hi Peter,
+
+On Tue, Jul 05, 2011 at 10:49:32PM +0300, Peter Ujfalusi wrote:
+> Provide the irq number for slaves via resource on the
+> platform device.
+> The irq number configuration is done in the twl6040-core
+> at probe time, so machine drivers do not need to be
+> modified.
 > 
-> > Swapping over NBD is something that is technically possible but not
-> > often advised. While there are number of guides on the internet
-> > on how to configure it and nbd-client supports a -swap switch to
-> > "prevent deadlocks", the fact of the matter is a machine using NBD
-> > for swap can be locked up within minutes if swap is used intensively.
-> > 
-> > The problem is that network block devices do not use mempools like
-> > normal block devices do. As the host cannot control where they receive
-> > packets from, they cannot reliably work out in advance how much memory
-> > they might need.
-> > 
-> > Some years ago, Peter Ziljstra developed a series of patches that
-> > supported swap over an NFS that some distributions are carrying in
-> > their kernels. This patch series borrows very heavily from Peter's work
-> > to support swapping over NBD (the relatively straight-forward case)
-> > and uses throttling instead of dynamically resized memory reserves
-> > so the series is not too unwieldy for review.
-> 
-> I have to say, I look over these patches and my mind wants to turn to
-> things like puppies.  And ice cream.
-> 
+> Signed-off-by: Peter Ujfalusi <peter.ujfalusi@ti.com>
+Acked-by: Samuel Ortiz <sameo@linux.intel.com>
 
-People do love puppies and ice cream!
-
-> There's quite some complexity added here in areas which are already
-> reliably unreliable and afaik swap-over-NBD is not a thing which a lot
-> of people want to do. I can see that swap-over-NFS would be useful to
-> some people, and the fact that distros are carrying swap-over-NFS
-> patches has weight.
-> 
-> Do these patches lead on to swap-over-NFS?  If so, how much more
-> additional complexity are we buying into for that?
-
-Swap-over-NFS is the primary motivation. As you say, distributions are
-carrying this and have been for some time. Based on my asking about the
-background, the primary user is clusters of blades that are diskless
-or have extremely limited storage with no possibility of expansion (be
-it due to physical dimensions or maintenance overhead). They require
-an amount of infrequently used swap for their workloads. They are
-connected to some sort of SAN that may or may not be running Linux
-but that exports NFS so they want to stick a swapfile on it.
-
-Swap-over-NBD is the simplier case that can be used if the SAN
-is running Linux. Almost all of the compexity required to support
-swap-over-NBD is reused for swap-over-NFS (obviously the NBD-specific
-bits are not reused).
-
-Additional complexity is required for swap-over-NFS but affects the
-core kernel far less than this series. I do not have a series prepared
-but from what's in a distro kernel, supporting NFS requires extending
-address_space_operations for swapfile activation/deactivation with
-some minor helpers and the bulk of the remaining complexity within
-NFS itself.
+Cheers,
+Samuel.
 
 -- 
-Mel Gorman
-SUSE Labs
+Intel Open Source Technology Centre
+http://oss.intel.com/
