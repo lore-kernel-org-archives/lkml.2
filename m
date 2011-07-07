@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756816Ab1GGPUu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 11:20:50 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:45991 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751710Ab1GGPUt (ORCPT
+	id S1756803Ab1GGPZW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 11:25:22 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42019 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752477Ab1GGPZT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 11:20:49 -0400
-Date: Thu, 07 Jul 2011 08:18:39 -0700 (PDT)
-Message-Id: <20110707.081839.2119597618388053074.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: Tree for July 7 (net/af_packet)
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20110707081202.6dddcbce.randy.dunlap@oracle.com>
-References: <20110707172544.867b980a1196db005b577c14@canb.auug.org.au>
-	<20110707081202.6dddcbce.randy.dunlap@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 07 Jul 2011 08:18:42 -0700 (PDT)
+	Thu, 7 Jul 2011 11:25:19 -0400
+MIME-Version: 1.0
+Date: Thu, 7 Jul 2011 17:25:19 +0200
+Message-ID: <CACna6rxAKMp-2wqwz4k4S3nTkY_3Qz7=hEZk9F2Zig7T5kp_HA@mail.gmail.com>
+Subject: Bug in BCMA: device_unregister causing "NULL pointer dereference at"
+From: =?UTF-8?B?UmFmYcWCIE1pxYJlY2tp?= <zajec5@gmail.com>
+To: linux-wireless@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Thu, 7 Jul 2011 08:12:02 -0700
+I've problem with bcma and bus subsystem.
 
-> On Thu, 7 Jul 2011 17:25:44 +1000 Stephen Rothwell wrote:
-> 
->> Hi all,
->> 
->> The next linux-next release will (probably) be next-20110718.
->> 
->> Changes since 20110706:
-> 
-> 
-> When CONFIG_INET is not enabled:
-> 
-> af_packet.c:(.text+0x3d130): undefined reference to `ip_defrag'
-> or
-> ERROR: "ip_defrag" [net/packet/af_packet.ko] undefined!
+This works fine:
+modprobe bcma; rmmod bcma
 
-Sorry about that, fixed thusly:
+This:
+modprobe bcma; modprobe b43; rmmod b43; rmmod bcma
+causes:
+BUG: unable to handle kernel NULL pointer dereference at   (null)
 
---------------------
-packet: Fix build with INET disabled.
+My BCMA has only 3 fores, out of them only 1 is registered as device:
+bcma: Core 0 found: ChipCommon (manuf 0x4BF, id 0x800, rev 0x22, class 0x0)
+bcma: Core 1 found: IEEE 802.11 (manuf 0x4BF, id 0x812, rev 0x17, class 0x0)
+bcma: Core 2 found: PCIe (manuf 0x4BF, id 0x820, rev 0x0F, class 0x0)
 
-af_packet.c:(.text+0x3d130): undefined reference to `ip_defrag'
-or
-ERROR: "ip_defrag" [net/packet/af_packet.ko] undefined!
+The dereference comes out from
+static void bcma_unregister_cores(struct bcma_bus *bus)
 
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- net/packet/af_packet.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+There is a simple loop:
+list_for_each_entry(core, &bus->cores, list) {
+	if (core->dev_registered)
+		device_unregister(&core->dev);
+}
 
-diff --git a/net/packet/af_packet.c b/net/packet/af_packet.c
-index aa4c73a..d2294ad 100644
---- a/net/packet/af_packet.c
-+++ b/net/packet/af_packet.c
-@@ -456,6 +456,7 @@ static struct sock *fanout_demux_cpu(struct packet_fanout *f, struct sk_buff *sk
- 
- static struct sk_buff *fanout_check_defrag(struct sk_buff *skb)
- {
-+#ifdef CONFIG_INET
- 	const struct iphdr *iph;
- 	u32 len;
- 
-@@ -486,6 +487,7 @@ static struct sk_buff *fanout_check_defrag(struct sk_buff *skb)
- 			skb->rxhash = 0;
- 		}
- 	}
-+#endif
- 	return skb;
- }
- 
+
+So when I unload bcma after I got driver (b43) for 0x812 core, I get
+NULL pointer dereference.
+
+Any tip, why does it happen?
+
 -- 
-1.7.6
-
+Rafał
