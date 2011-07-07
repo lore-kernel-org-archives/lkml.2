@@ -1,53 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755879Ab1GGSc7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 14:32:59 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:38149 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755507Ab1GGSc6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 14:32:58 -0400
-Subject: Re: [PATCH V8 2/4 net-next] skbuff: skb supports zero-copy buffers
-From: Shirley Ma <mashirle@us.ibm.com>
-To: David Miller <davem@davemloft.net>
-Cc: mst@redhat.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20110707.040149.441417258943576903.davem@davemloft.net>
-References: <1309990932.10209.19.camel@localhost.localdomain>
-	 <20110707.040149.441417258943576903.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Jul 2011 11:32:25 -0700
-Message-ID: <1310063545.10209.30.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1755958Ab1GGSdg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 14:33:36 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42742 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755644Ab1GGSdf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 14:33:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,494,1304319600"; 
+   d="scan'208";a="22750497"
+Message-ID: <4E15FBFE.4090203@linux.intel.com>
+Date: Thu, 07 Jul 2011 11:33:34 -0700
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.15) Gecko/20110303 Thunderbird/3.1.9
+MIME-Version: 1.0
+To: Michal Hocko <mhocko@suse.cz>
+CC: wzt <wzt.wzt@gmail.com>, mingo@redhat.com, linux-kernel@vger.kernel.org,
+        x86@kernel.org, tglx@linutronix.de, hpa@zytor.com
+Subject: Re: [PATCH] x86: Fix memory leak of init_vdso_vars()
+References: <20110705062148.GA6056@program> <20110707131455.GB4078@tiehlicka.suse.cz>
+In-Reply-To: <20110707131455.GB4078@tiehlicka.suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-07 at 04:01 -0700, David Miller wrote:
-> From: Shirley Ma <mashirle@us.ibm.com>
-> Date: Wed, 06 Jul 2011 15:22:12 -0700
-> 
-> > +                     while (head) {
-> > +                             put_page(head);
-> > +                             head = (struct page *)head->private;
-> > +                     }
-> 
-> Looks like you might be referencing the page after it's
-> release here.  I think you need something like:
-> 
->                         while (head) {
->                                 struct page *next = (struct page
-> *)head->private;
->                                 put_page(head);
->                                 head = next;
->                         }
-> --
+On 7/7/2011 6:14 AM, Michal Hocko wrote:
+> On Tue 05-07-11 14:21:48, wzt wrote:
+>> Fix memory leak of init_vdso_vars().
+>>
+>> Signed-off-by: Zhitong Wang<zhitong.wangzt@alibaba-inc.com>
+> The patch looks correct but it could be cleaned up a bit IMO.
+> See bellow.
 
-You are right, will fix it.
+When you run out of memory at early system boot (this is early
+system boot only) the system is toast anyways. There's no way
+to recover.
 
-Thanks
-Shirley
- 
+I would just add a few GFP_PANICs and then drop the error paths.
+
+-Andi
 
