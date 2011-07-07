@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab1GGJji (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 05:39:38 -0400
-Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:37234
-	"EHLO CH1EHSOBE011.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752104Ab1GGJjg (ORCPT
+	id S1755428Ab1GGJjt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 05:39:49 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:33657 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753997Ab1GGJjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 05:39:36 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h944h61h)
-X-Spam-TCS-SCL: 0:0
-X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
-X-WSS-ID: 0LNYITT-02-AXY-02
-X-M-MSG: 
-Date: Thu, 7 Jul 2011 11:39:26 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
-Message-ID: <20110707093926.GJ4590@erda.amd.com>
-References: <20110703150430.GV4590@erda.amd.com>
- <1309716271.3282.6.camel@twins>
- <20110704175927.GZ4590@erda.amd.com>
- <1309855905.3282.42.camel@twins>
- <20110705091252.GA5725@elte.hu>
- <20110706165357.GG4590@erda.amd.com>
- <1309972368.3282.317.camel@twins>
- <20110707092102.GI4590@erda.amd.com>
+	Thu, 7 Jul 2011 05:39:45 -0400
+Date: Thu, 7 Jul 2011 10:39:28 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Qin Dehua <qindehua@gmail.com>
+Cc: Dan Williams <dan.j.williams@intel.com>, linux-kernel@vger.kernel.org,
+        santosh.shilimkar@ti.com, neilb@suse.de
+Subject: Re: PROBLEM: ARM-dma-mapping-fix-for-speculative-prefetching cause
+	OOPS
+Message-ID: <20110707093928.GA15325@flint.arm.linux.org.uk>
+References: <BANLkTimfF3_R5VS4xOriGp+-3j-r7V0W0w@mail.gmail.com> <20110630074301.GC27959@flint.arm.linux.org.uk> <BANLkTimBTayh_mjOLMZbz3D+wqdtZ10=wA@mail.gmail.com> <20110630112804.GA21481@flint.arm.linux.org.uk> <BANLkTimo18w5yuE4jtATPvbgENCL04LMpA@mail.gmail.com> <BANLkTimupUqpLDdDvMRjB+Js0xW59MTOQA@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110707092102.GI4590@erda.amd.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-OriginatorOrg: amd.com
+In-Reply-To: <BANLkTimupUqpLDdDvMRjB+Js0xW59MTOQA@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One more note:
+On Fri, Jul 01, 2011 at 12:54:09PM +0800, Qin Dehua wrote:
+> The followings are messages of the three tests:
+> ====== RUN 1 ======
+> kernel BUG at drivers/md/raid5.c:3978!
 
-> On 06.07.11 13:12:48, Peter Zijlstra wrote:
+So they are BUG_ON()s after all...
 
-> > perf stat -e IBS:fetches will always have a fail against rmmod, rmmod
-> > could complete before we try to open the file (assuming IBS is a
-> > module).
+Could you try commenting out:
 
-If the module is busy, it wont be unloaded.
++       if (dir != DMA_TO_DEVICE)
++               outer_inv_range(paddr, paddr + size);
 
--Robert
+in ___dma_page_dev_to_cpu and:
+
++       if (dir != DMA_TO_DEVICE) {
++               unsigned long paddr = __pa(kaddr);
++               outer_inv_range(paddr, paddr + size);
++       }
+
+in ___dma_single_dev_to_cpu please - and put a BUG_ON(dir == DMA_BIDIRECTIONAL)
+in their place (because that won't be handled correctly with that change.)
+
+Thanks.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
