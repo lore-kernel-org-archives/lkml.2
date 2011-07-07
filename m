@@ -1,90 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752562Ab1GGE7b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 00:59:31 -0400
-Received: from na3sys009aog105.obsmtp.com ([74.125.149.75]:38429 "EHLO
-	na3sys009aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750756Ab1GGE73 (ORCPT
+	id S1753422Ab1GGF1u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:27:50 -0400
+Received: from mho-03-ewr.mailhop.org ([204.13.248.66]:35888 "EHLO
+	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750912Ab1GGF1q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 00:59:29 -0400
-From: Partha Basak <p-basak2@ti.com>
-References: <Pine.LNX.4.44L0.1107051018580.2060-100000@iolanthe.rowland.org>
- <8762ngtyqj.fsf@ti.com> <20110706175412.GH10729@legolas.emea.dhcp.ti.com>
- <87sjqji5br.fsf@ti.com> <20110706221738.GA823@legolas.emea.dhcp.ti.com>
-In-Reply-To: <20110706221738.GA823@legolas.emea.dhcp.ti.com>
+	Thu, 7 Jul 2011 01:27:46 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX1+Zv4I+YhB90dAK0wyztVsk
+Date: Thu, 7 Jul 2011 08:27:40 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Paul Walmsley <paul@pwsan.com>
+Cc: linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Aaro Koskinen <aaro.koskinen@nokia.com>,
+        Rajendra Nayak <rnayak@ti.com>,
+        =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>,
+        Michael Buesch <mb@bu3sch.de>
+Subject: Re: [PATCH] OMAP: hwmod: add kernel cmdline flag to avoid
+ resetting IP blocks during init
+Message-ID: <20110707052735.GB15815@atomide.com>
+References: <20110703010204.19046.85186.stgit@dusk>
+ <20110703010206.19046.85293.stgit@dusk>
+ <20110704085503.GQ23145@atomide.com>
+ <alpine.DEB.2.00.1107051936250.4217@utopia.booyaka.com>
+ <20110706064116.GH5783@atomide.com>
+ <alpine.DEB.2.00.1107060155250.4217@utopia.booyaka.com>
 MIME-Version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acw8Kox5uyub2+MfQfWzMz5KHKTY3gANqBvQ
-Date: Thu, 7 Jul 2011 10:23:59 +0530
-Message-ID: <94f8609ab03603c27ef2cf3850bb92e6@mail.gmail.com>
-Subject: RE: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume support
- of ehci and ohci
-To: balbi@ti.com, Kevin Hilman <khilman@ti.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-        Keshava Munegowda <keshava_mgowda@ti.com>, linux-usb@vger.kernel.org,
-        linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Anand Gadiyar <gadiyar@ti.com>, sameo@linux.intel.com,
-        parthab@india.ti.com, tony@atomide.com,
-        Benoit Cousson <b-cousson@ti.com>, paul@pwsan.com, johnstul@us.ibm.com,
-        Vishwanath Sripathy <vishwanath.bs@ti.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1107060155250.4217@utopia.booyaka.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: Felipe Balbi [mailto:balbi@ti.com]
->Sent: Thursday, July 07, 2011 3:48 AM
->To: Kevin Hilman
->Cc: balbi@ti.com; Alan Stern; Partha Basak; Keshava Munegowda; linux-
->usb@vger.kernel.org; linux-omap@vger.kernel.org; linux-
->kernel@vger.kernel.org; Anand Gadiyar; sameo@linux.intel.com;
->parthab@india.ti.com; tony@atomide.com; Benoit Cousson; paul@pwsan.com;
->johnstul@us.ibm.com; Vishwanath Sripathy
->Subject: Re: [PATCH 6/6 v2] arm: omap: usb: global Suspend and resume
->support of ehci and ohci
->
->Hi,
->
->On Wed, Jul 06, 2011 at 12:20:40PM -0700, Kevin Hilman wrote:
->> >> +	if ((od->flags & OMAP_DEVICE_SUSPENDED) &&
->> >> +	    (od->_state == OMAP_DEVICE_STATE_IDLE))
->> >> +		omap_device_enable(pdev);
->> >> +
->> >> +	return pm_generic_resume(dev);
->> >> +}
->> >> +
->> >>  static struct dev_power_domain omap_device_power_domain = {
->> >>  	.ops = {
->> >>  		.runtime_suspend = _od_runtime_suspend,
->> >>  		.runtime_idle = _od_runtime_idle,
->> >>  		.runtime_resume = _od_runtime_resume,
->> >>  		USE_PLATFORM_PM_SLEEP_OPS
->> >> +		.suspend = _od_suspend,
->> >> +		.resume = _od_resume,
->> >>  	}
->> >>  };
->> >
->> > it all depends on when are you planning to get this patch upstream.
->> > I'm considering getting some PM working on USB host and remove the
->> > pm_runtime calls from system suspend/resume either during -rc or
->> > next merge window.
->>
->> Well, IMO it's way too late for this kind of change for -rc, so I'm
->> considering it for the upcoming merge window.
->
->yes, that's true. Who should take the hwmod patches btw ? I'm still
->wondering if we should patch hwmod data first and push the _correct_ PM
->part on 3.2.
+* Paul Walmsley <paul@pwsan.com> [110706 23:52]:
+> Hi Tony
+> 
+> On Tue, 5 Jul 2011, Tony Lindgren wrote:
+> 
+> > So basically we want to tell the following from the board file or board
+> > specific .dts file:
+> > 
+> > - Device is being used on the board and can be reset and configured.
+> >   This is the usual case.
+> 
+> By 'used', you mean, have a Linux driver associated with them, right?
 
-Once Kevin pushes this infrastructure enhancement, all drivers have to
-rework
-the Suspend/Resume anyways. Another way would be to go by the current
-approach
-now and then do the rework in 3.2 along with other drivers.
+Right.
+ 
+> > - Device is being used on the board but can't be reset. This is the
+> >   case for booting Linux from other operating systems initially where
+> >   you want to keep the LCD on for debug console.
+> 
+> Or, to use examples that would be needed in a production device, the 
+> 4460/N810 GPIO examples discussed earlier.  
+> 
+> Based on our current experience, there are a very small number of these 
+> cases, and they are board-specific.  So it seems to make sense to 
+> explicitly state these exceptions in the board files, via 
+> omap_hwmod_no_setup_reset() or something similar.
 
-In this way, we can soak the Runtime support of EHCI/OHCI for one merge
-window.
->
->--
->balbi
+Yeah they should be all board specific. One more example comes to mind
+was to keep the bootup logo around from bootloader on the LCD that the
+DSS code was doing earlier.
+ 
+> > - Device is not being used on the board but can be reset for decent PM.
+> >   This is often needed in cases where the bootloader just enables all the
+> >   clocks.
+> 
+> Yeah.  And it's not just bootloaders, it's also the previous kernel in the 
+> case of something like kexec.  Since we don't know what devices the 
+> bootloader or previous kernel touched, it seems to make sense to reset all 
+> of these devices by default, once the drivers are converted to use runtime 
+> PM.
+> 
+> The current issue here is that some drivers aren't yet converted, so the 
+> hwmod code might think that some devices are 'unused' when they are 
+> actually in use by a non-runtime-PM-based driver.
+>  
+> > - Device is reserved by secure mode or a coprocessor. In this case
+> >   the device can't be reset.
+> 
+> Indeed - or even accessed.
+> 
+> > So I guess that makes the flags noreset, disabled and unavailable?
+> 
+> I think we only need 'no reset' and 'unavailable'?  Once the runtime PM 
+> driver conversion is complete, I don't think there's any reason to keep 
+> the 'hwmod_unused_reset' command line flag around, since it can be the 
+> default.  That's because the hwmod code would then be able to track which 
+> devices were actually used.
+
+Sounds doable to me.
+
+Regards,
+
+Tony
