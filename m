@@ -1,77 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752281Ab1GGTrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 15:47:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36090 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751391Ab1GGTrU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 15:47:20 -0400
-From: julie Sullivan <kernelmail.jms@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Subject: Re: PROBLEM: 3.0-rc kernels unbootable since -rc3
-Date: Thu, 7 Jul 2011 20:47:13 +0100
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc4-revert+; KDE/4.6.2; x86_64; ; )
-Cc: julie Sullivan <kernelmail.jms@gmail.com>, linux-kernel@vger.kernel.org,
-        mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-        josh@joshtriplett.org, niv@us.ibm.com, tglx@linutronix.de,
-        peterz@infradead.org, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-        dhowells@redhat.com, eric.dumazet@gmail.com, darren@dvhart.com,
-        patches@linaro.org, torvalds@linux-foundation.org
-References: <CAAVPGONLqy+gn_ggjQxyUoYifs4Hipcd-0t931w04StyrTCzxQ@mail.gmail.com> <20110706212348.GO6014@linux.vnet.ibm.com>
-In-Reply-To: <20110706212348.GO6014@linux.vnet.ibm.com>
+	id S1752509Ab1GGTtB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 15:49:01 -0400
+Received: from wnohang.net ([178.79.154.173]:57195 "EHLO mail.wnohang.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751700Ab1GGTtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 15:49:00 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net 4EFDEF0009
+X-DKIM: Sendmail DKIM Filter v2.8.3 mail.wnohang.net A63C1F0003
+Date: Fri, 8 Jul 2011 01:18:51 +0530
+From: Raghavendra D Prabhu <rprabhu@wnohang.net>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: xen-devel@lists.xensource.com, jeremy.fitzhardinge@citrix.com,
+        virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, Ian Campbell <ijc@hellion.org.uk>
+Subject: Re: [Xen-devel] Re: [PATCH] Modpost section mismatch fix
+Message-ID: <20110707194851.GB4394@Xye>
+References: <20110703232508.GB4440@Xye>
+ <1309769388.634.51.camel@zakaz.uk.xensource.com>
+ <20110704221646.GB4490@Xye>
+ <20110705141323.GG2972@dumpdata.com>
+ <20110705142731.GA4463@Xye>
+ <20110705144846.GA13548@dumpdata.com>
+ <20110705213243.GA3647@dumpdata.com>
+ <20110707154648.GA4394@Xye>
+ <20110707162454.GA8164@dumpdata.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107072047.14429.kernelmail.jms@gmail.com>
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="dTy3Mrz/UPE2dbVg"
+Content-Disposition: inline
+In-Reply-To: <20110707162454.GA8164@dumpdata.com>
+X-Operating-System: Arch linux x86_64 3.0.0-rc5-LYM
+X-Editor: VIM - Vi IMproved 7.3
+User-Agent: Mutt/1.5.21 (2010-12-30)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 06 July 2011 22:23:48 Paul E. McKenney wrote:
-> On Wed, Jul 06, 2011 at 10:10:16PM +0100, julie Sullivan wrote:
-> > None of my kernels after 3.0-rc3 will boot on my Dell XPS-M1730
-> > (x86-64 2-core) test box running
-> > Ubuntu (Kubuntu) 11.04 (i.e. the first unbootable one was -rc4).
-> > The machine freezes immediately after selecting the kernel from the
-> > bootloader menu, leaving
-> > me with a blank blue screen so I can't give you any log messages.
-> > 
-> > It bisects to the following commit:
-> > 
-> > commit a46e0899eec7a3069bcadd45dfba7bf67c6ed016
-> > Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > Date:   Wed Jun 15 15:47:09 2011 -0700
-> > 
-> >     rcu: use softirq instead of kthreads except when RCU_BOOST=y
-> >     
-> >     This patch #ifdefs RCU kthreads out of the kernel unless RCU_BOOST=y,
-> >     thus eliminating context-switch overhead if RCU priority boosting has
-> >     not been configured.
-> >     
-> >     Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 
-> 
-> Hello, Julie,
-> 
-> One approach would be to cherry-pick the following commits:
+--dTy3Mrz/UPE2dbVg
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+
+* On Thu, Jul 07, 2011 at 12:24:54PM -0400, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
+>> Tested it. Works now.
 >
-> f8b7fc6b514f34a51875dd48dff70d4d17a54f38 rcu: Move RCU_BOOST #ifdefs to header f
-> a46e0899eec7a3069bcadd45dfba7bf67c6ed016 rcu: use softirq instead of kthreads ex
-> 09223371deac67d08ca0b70bd18787920284c967 rcu: Use softirq to address performance
-> 9a432736904d386cda28b987b38ba14dae960ecc rcu: Simplify curing of load woes
+>Ok, Stuck Tested-by on the patch. Hopefully Linus hasn't pulled it yet.
+Ok.
+>
+>> Reviewed-by: Raghavendra Prabhu <rprabhu@wnohang.net>
 
-> 
-> Another approach would be to move ahead to v3.0-rc4 or later.
-> 
-> 							Thanx, Paul
+>> Also,
+>> The condition for acpi_gsi_to_irq can be removed since it always returns zero.
+>
+>The function might in the future return something that is non-zero
+>and we should guard for it. Also you make 'irq' be unsigned which is not
+>good as the IRQ 0 is a valid value - and with making it unsigned if it is
+>set to -1 (the -1 is the invalid IRQ value) the check for 'irq != gsi'
+>will be true and and we will pass in -1 casted to unsigned. That is a
+>large value and not the right thing we want to pass to xen_register_gsi.
 
-Hi Paul
-Thanks for your prompt reply, sorry for the delay in mine (real life intervened :-)
-I tried reverting those 4 commits on v3.0-rc4 and can confirm that it _does_ give me a bootable 3.0-rc4 kernel.
-I'll do some more testing. If you would like me to try anything specific just let me know :-)
+My rationale for the unsigned part was that acpi_gsi_to_irq always
+assigns a positive value (>= 0) to the irq passed (as unsigned
+argument). But even otherwise that shouldn't make much of difference I guess.
 
-Cheers
-Julie
+Also,
+I had sent another change (oneline) for the file
+arch/x86/xen/platform-pci-unplug.c for check_platform_magic, looks like that has not gone into
+the pull request for Linus.
+>
+>
+>> ============================================
+>>  diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
+>>  index f567965..3faa55b 100644
+>>  --- a/arch/x86/pci/xen.c
+>>  +++ b/arch/x86/pci/xen.c
+>>  @@ -405,7 +405,7 @@ static __init void xen_setup_acpi_sci(void)
+>>          int rc;
+>>          int trigger, polarity;
+>>          int gsi = acpi_sci_override_gsi;
+>>  -       int irq = -1;
+>>  +       unsigned int irq = 0u;
+>>          int gsi_override = -1;
+
+>>          if (!gsi)
+>>  @@ -435,11 +435,10 @@ static __init void xen_setup_acpi_sci(void)
+>>           * setup as we had setup IRQ 20 for it).
+>>           */
+>>          /* Check whether the GSI != IRQ */
+>>  -       if (acpi_gsi_to_irq(gsi, &irq) == 0) {
+>>  -               if (irq >= 0 && irq != gsi)
+>>  -                       /* Bugger, we MUST have that IRQ. */
+>>  -                       gsi_override = irq;
+>>  -       }
+>>  +       acpi_gsi_to_irq(gsi, &irq);
+>>  +       if (irq != gsi)
+>>  +               /* Bugger, we MUST have that IRQ. */
+>>  +               gsi_override = irq;
+
+>>          gsi = xen_register_gsi(gsi, gsi_override, trigger, polarity);
+>>          printk(KERN_INFO "xen: acpi sci %d\n", gsi);
+
+
+>> --------------------------
+>> Raghavendra Prabhu
+>> GPG Id : 0xD72BE977
+>> Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
+>> www: wnohang.net
+>
+>
+>
+>> _______________________________________________
+>> Xen-devel mailing list
+>> Xen-devel@lists.xensource.com
+>> http://lists.xensource.com/xen-devel
+>
+--------------------------
+Raghavendra Prabhu
+GPG Id : 0xD72BE977
+Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
+www: wnohang.net
+
+--dTy3Mrz/UPE2dbVg
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.17 (GNU/Linux)
+
+iQEcBAEBAgAGBQJOFg2jAAoJEKYW3KHXK+l33tYH/268oryCWI2noF5U5UOYBbJf
+37sCIRz9X8GTF90Ki41M1tDIt/+GKpYh1nmBHhkL774mjEQWURQrNz6MFwB2uTQy
+rlSsOkqWCJe+NFDJLC3NepaMGy0jZbCaytcDYXIqRAXjd+JWBp+AjvoMYjPO57gr
+WecZwc8NWMaiB9WMqozADxF1fqiKQUYwkVv4/7SDVSwfocG2/uAD1/9aaGq1ZfDp
+1ZSY/O1ldKsbu2t/qXR/NX4V/LJ0Z+Y+CQGpYcn32scR8ming8Twy8IPZkJOaN2/
+uOZgcg5jkcM+wNmVYHpyl8VJEi9JXCRfwzX/+4Ni2TwNHgqWAAe86LlmS+MIT1o=
+=RHDq
+-----END PGP SIGNATURE-----
+
+--dTy3Mrz/UPE2dbVg--
