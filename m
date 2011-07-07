@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab1GGPyv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 11:54:51 -0400
-Received: from mail1.slb.deg.dub.stisp.net ([84.203.253.98]:2327 "HELO
-	mail1.slb.deg.dub.stisp.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751882Ab1GGPyt (ORCPT
+	id S1752060Ab1GGPzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 11:55:21 -0400
+Received: from acsinet15.oracle.com ([141.146.126.227]:49586 "EHLO
+	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750939Ab1GGPzS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 11:54:49 -0400
-Message-ID: <4E15D67B.2080405@draigBrady.com>
-Date: Thu, 07 Jul 2011 16:53:31 +0100
-From: =?ISO-8859-1?Q?P=E1draig_Brady?= <P@draigBrady.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: Bjorn Helgaas <bhelgaas@google.com>, Wim Van Sebroeck <wim@iguana.be>,
-        linux-kernel@vger.kernel.org, linux-watchdog@vger.kernel.org
-Subject: Re: [PATCH 1/2] watchdog: iTCO_wdt: optionally leave watchdog enabled
- during restart
-References: <20110706160744.4002.94920.stgit@bhelgaas.mtv.corp.google.com>            <20110706160936.4002.1846.stgit@bhelgaas.mtv.corp.google.com> <12164.1310053141@turing-police.cc.vt.edu>
-In-Reply-To: <12164.1310053141@turing-police.cc.vt.edu>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Jul 2011 11:55:18 -0400
+Date: Thu, 7 Jul 2011 08:55:01 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, Alan Cox <alan@linux.intel.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for July 7 (i915 + gma500)
+Message-Id: <20110707085501.61e86cd8.randy.dunlap@oracle.com>
+In-Reply-To: <20110707172544.867b980a1196db005b577c14@canb.auug.org.au>
+References: <20110707172544.867b980a1196db005b577c14@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsinet21.oracle.com [141.146.126.237]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4E15D6E1.01E5:SCFMA922111,ss=1,re=-4.000,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/07/11 16:39, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 06 Jul 2011 10:09:36 MDT, Bjorn Helgaas said:
-> 
->> If we reboot via BIOS, BIOS should disable the watchdog itself, so this
->> shouldn't cause unintended resets, even if the user interrupts the boot.
-> 
-> Yes, but didn't Linus say something about BIOS code authors being
-> crack-addicted monkeys? :)
+On Thu, 7 Jul 2011 17:25:44 +1000 Stephen Rothwell wrote:
 
-Yes as I said in a round about way in another mail,
-one can't depend on that at all.
-Some reset, some don't, some behave weirdly,
-iTCO is unusual as kernel resets early at boot, ...
+> Hi all,
+> 
+> The next linux-next release will (probably) be next-20110718.
+> 
+> Changes since 20110706:
 
-If using this, one would have to set the timeout large enough,
-to encompass a full reboot
+
+when both CONFIG_DRM_I915=y and CONFIG_DRM_PSB=y:
+
+drivers/staging/built-in.o: In function `intel_opregion_init':
+(.text+0x47943): multiple definition of `intel_opregion_init'
+drivers/gpu/built-in.o:(.text+0x17277a): first defined here
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
