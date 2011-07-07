@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab1GGFek (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 01:34:40 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:3643 "EHLO
+	id S1754604Ab1GGFgF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:36:05 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:3606 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753363Ab1GGFdV (ORCPT
+	with ESMTP id S1754046Ab1GGFdS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 01:33:21 -0400
+	Thu, 7 Jul 2011 01:33:18 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=CtEYjAds/4r0bZZ88NHJhwxK8El6Ot+xOKAW1JhJJ2RFr99CJZd27XklZ9b/GxTyu
-	GIk5hg+RBoMsE55oV7OvQ==
-Message-Id: <20110707053059.895748346@google.com>
+	b=n/s25ZqwNU2nU9MJSKlmCbPN68xLBZoojtii9gMevl/gdVw6mZsQzS9CIhvtRkqEy
+	hwKeAYhGgPyJizo+GlJzg==
+Message-Id: <20110707053101.311634860@google.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 06 Jul 2011 22:30:38 -0700
+Date: Wed, 06 Jul 2011 22:30:53 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -26,170 +26,151 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
         Hu Tao <hutao@cn.fujitsu.com>
-Subject: [patch 02/17] sched: hierarchical task accounting for SCHED_OTHER
+Subject: [patch 17/17] sched: add documentation for bandwidth control
 References: <20110707053036.173186930@google.com>
-Content-Disposition: inline; filename=sched-bwc-account_nr_running.patch
+Content-Disposition: inline; filename=sched-bwc-documentation.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce hierarchical task accounting for the group scheduling case in CFS, as
-well as promoting the responsibility for maintaining rq->nr_running to the
-scheduling classes.
+From: Bharata B Rao <bharata@linux.vnet.ibm.com>
 
-The primary motivation for this is that with scheduling classes supporting
-bandwidth throttling it is possible for entities participating in throttled
-sub-trees to not have root visible changes in rq->nr_running across activate
-and de-activate operations.  This in turn leads to incorrect idle and 
-weight-per-task load balance decisions.
+Basic description of usage and effect for CFS Bandwidth Control.
 
-This also allows us to make a small fixlet to the fastpath in pick_next_task()
-under group scheduling.
-
-Note: this issue also exists with the existing sched_rt throttling mechanism.
-This patch does not address that.
-
+Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
 Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-
 ---
- kernel/sched.c          |    6 ++----
- kernel/sched_fair.c     |   10 ++++++++--
- kernel/sched_rt.c       |    5 ++++-
- kernel/sched_stoptask.c |    2 ++
- 4 files changed, 16 insertions(+), 7 deletions(-)
+ Documentation/scheduler/sched-bwc.txt |   98
+ ++++++++++++++++++++++++++++++++++
+ Documentation/scheduler/sched-bwc.txt |  122 ++++++++++++++++++++++++++++++++++
+ 1 file changed, 122 insertions(+)
 
-Index: tip/kernel/sched.c
+Index: tip/Documentation/scheduler/sched-bwc.txt
 ===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -308,7 +308,7 @@ struct task_group root_task_group;
- /* CFS-related fields in a runqueue */
- struct cfs_rq {
- 	struct load_weight load;
--	unsigned long nr_running;
-+	unsigned long nr_running, h_nr_running;
- 
- 	u64 exec_clock;
- 	u64 min_vruntime;
-@@ -1830,7 +1830,6 @@ static void activate_task(struct rq *rq,
- 		rq->nr_uninterruptible--;
- 
- 	enqueue_task(rq, p, flags);
--	inc_nr_running(rq);
- }
- 
- /*
-@@ -1842,7 +1841,6 @@ static void deactivate_task(struct rq *r
- 		rq->nr_uninterruptible++;
- 
- 	dequeue_task(rq, p, flags);
--	dec_nr_running(rq);
- }
- 
- #ifdef CONFIG_IRQ_TIME_ACCOUNTING
-@@ -4194,7 +4192,7 @@ pick_next_task(struct rq *rq)
- 	 * Optimization: we know that if all tasks are in
- 	 * the fair class we can call that function directly:
- 	 */
--	if (likely(rq->nr_running == rq->cfs.nr_running)) {
-+	if (likely(rq->nr_running == rq->cfs.h_nr_running)) {
- 		p = fair_sched_class.pick_next_task(rq);
- 		if (likely(p))
- 			return p;
-Index: tip/kernel/sched_fair.c
-===================================================================
---- tip.orig/kernel/sched_fair.c
-+++ tip/kernel/sched_fair.c
-@@ -1332,16 +1332,19 @@ enqueue_task_fair(struct rq *rq, struct 
- 			break;
- 		cfs_rq = cfs_rq_of(se);
- 		enqueue_entity(cfs_rq, se, flags);
-+		cfs_rq->h_nr_running++;
- 		flags = ENQUEUE_WAKEUP;
- 	}
- 
- 	for_each_sched_entity(se) {
--		struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+		cfs_rq = cfs_rq_of(se);
-+		cfs_rq->h_nr_running++;
- 
- 		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
-+	inc_nr_running(rq);
- 	hrtick_update(rq);
- }
- 
-@@ -1361,6 +1364,7 @@ static void dequeue_task_fair(struct rq 
- 	for_each_sched_entity(se) {
- 		cfs_rq = cfs_rq_of(se);
- 		dequeue_entity(cfs_rq, se, flags);
-+		cfs_rq->h_nr_running--;
- 
- 		/* Don't dequeue parent if it has other entities besides us */
- 		if (cfs_rq->load.weight) {
-@@ -1379,12 +1383,14 @@ static void dequeue_task_fair(struct rq 
- 	}
- 
- 	for_each_sched_entity(se) {
--		struct cfs_rq *cfs_rq = cfs_rq_of(se);
-+		cfs_rq = cfs_rq_of(se);
-+		cfs_rq->h_nr_running--;
- 
- 		update_cfs_load(cfs_rq, 0);
- 		update_cfs_shares(cfs_rq);
- 	}
- 
-+	dec_nr_running(rq);
- 	hrtick_update(rq);
- }
- 
-Index: tip/kernel/sched_rt.c
-===================================================================
---- tip.orig/kernel/sched_rt.c
-+++ tip/kernel/sched_rt.c
-@@ -961,6 +961,8 @@ enqueue_task_rt(struct rq *rq, struct ta
- 
- 	if (!task_current(rq, p) && p->rt.nr_cpus_allowed > 1)
- 		enqueue_pushable_task(rq, p);
+--- /dev/null
++++ tip/Documentation/scheduler/sched-bwc.txt
+@@ -0,0 +1,122 @@
++CFS Bandwidth Control
++=====================
 +
-+	inc_nr_running(rq);
- }
- 
- static void dequeue_task_rt(struct rq *rq, struct task_struct *p, int flags)
-@@ -971,6 +973,8 @@ static void dequeue_task_rt(struct rq *r
- 	dequeue_rt_entity(rt_se);
- 
- 	dequeue_pushable_task(rq, p);
++[ This document only discusses CPU bandwidth control for SCHED_NORMAL.
++  The SCHED_RT case is covered in Documentation/scheduler/sched-rt-group.txt ]
 +
-+	dec_nr_running(rq);
- }
- 
- /*
-@@ -1863,4 +1867,3 @@ static void print_rt_stats(struct seq_fi
- 	rcu_read_unlock();
- }
- #endif /* CONFIG_SCHED_DEBUG */
--
-Index: tip/kernel/sched_stoptask.c
-===================================================================
---- tip.orig/kernel/sched_stoptask.c
-+++ tip/kernel/sched_stoptask.c
-@@ -34,11 +34,13 @@ static struct task_struct *pick_next_tas
- static void
- enqueue_task_stop(struct rq *rq, struct task_struct *p, int flags)
- {
-+	inc_nr_running(rq);
- }
- 
- static void
- dequeue_task_stop(struct rq *rq, struct task_struct *p, int flags)
- {
-+	dec_nr_running(rq);
- }
- 
- static void yield_task_stop(struct rq *rq)
++CFS bandwidth control is a CONFIG_FAIR_GROUP_SCHED extension which allows the
++specification of the maximum CPU bandwidth available to a group or hierarchy.
++
++The bandwidth allowed for a group is specified using a quota and period. Within
++each given "period" (microseconds), a group is allowed to consume only up to
++"quota" microseconds of CPU time.  When the CPU bandwidth consumption of a
++group exceeds this limit (for that period), the tasks belonging to its
++hierarchy will be throttled and are not allowed to run again until the next
++period.
++
++A group's unused runtime is globally tracked, being refreshed with quota units
++above at each period boundary.  As threads consume this bandwidth it is
++transferred to cpu-local "silos" on a demand basis.  The amount transferred
++within each of these updates is tunable and described as the "slice".
++
++Management
++----------
++Quota and period are managed within the cpu subsystem via cgroupfs.
++
++cpu.cfs_quota_us: the total available run-time within a period (in microseconds)
++cpu.cfs_period_us: the length of a period (in microseconds)
++cpu.stat: exports throttling statistics [explained further below]
++
++The default values are:
++	cpu.cfs_period_us=100ms
++	cpu.cfs_quota=-1
++
++A value of -1 for cpu.cfs_quota_us indicates that the group does not have any
++bandwidth restriction in place, such a group is described as an unconstrained
++bandwidth group.  This represents the traditional work-conserving behavior for
++CFS.
++
++Writing any (valid) positive value(s) will enact the specified bandwidth limit.
++The minimum quota allowed for the quota or period is 1ms.  There is also an
++upper bound on the period length of 1s.  Additional restrictions exist when
++bandwidth limits are used in a hierarchical fashion, these are explained in
++more detail below.
++
++Writing any negative value to cpu.cfs_quota_us will remove the bandwidth limit
++and return the group to an unconstrained state once more.
++
++Any updates to a group's bandwidth specification will result in it becoming
++unthrottled if it is in a constrained state.
++
++System wide settings
++--------------------
++For efficiency run-time is transferred between the global pool and CPU local
++"silos" in a batch fashion.  This greatly reduces global accounting pressure
++on large systems.  The amount transferred each time such an update is required
++is described as the "slice".
++
++This is tunable via procfs:
++	/proc/sys/kernel/sched_cfs_bandwidth_slice_us (default=5ms)
++
++Larger slice values will reduce transfer overheads, while smaller values allow
++for more fine-grained consumption.
++
++Statistics
++----------
++A group's bandwidth statistics are exported via 3 fields in cpu.stat.
++
++cpu.stat:
++- nr_periods: Number of enforcement intervals that have elapsed.
++- nr_throttled: Number of times the group has been throttled/limited.
++- throttled_time: The total time duration (in nanoseconds) for which entities
++  of the group have been throttled.
++
++This interface is read-only.
++
++Hierarchical considerations
++---------------------------
++The interface enforces that an individual entity's bandwidth is always
++attainable, that is: max(c_i) <= C. However, over-subscription in the
++aggregate case is explicitly allowed to enable work-conserving semantics
++within a hierarchy.
++  e.g. \Sum (c_i) may exceed C
++[ Where C is the parent's bandwidth, and c_i its children ]
++
++
++There are two ways in which a group may become throttled:
++	a. it fully consumes its own quota within a period
++	b. a parent's quota is fully consumed within its period
++
++In case b) above, even though the child may have runtime remaining it will not
++be allowed to until the parent's runtime is refreshed.
++
++Examples
++--------
++1. Limit a group to 1 CPU worth of runtime.
++
++	If period is 250ms and quota is also 250ms, the group will get
++	1 CPU worth of runtime every 250ms.
++
++	# echo 250000 > cpu.cfs_quota_us /* quota = 250ms */
++	# echo 250000 > cpu.cfs_period_us /* period = 250ms */
++
++2. Limit a group to 2 CPUs worth of runtime on a multi-CPU machine.
++
++	With 500ms period and 1000ms quota, the group can get 2 CPUs worth of
++	runtime every 500ms.
++
++	# echo 1000000 > cpu.cfs_quota_us /* quota = 1000ms */
++	# echo 500000 > cpu.cfs_period_us /* period = 500ms */
++
++	The larger period here allows for increased burst capacity.
++
++3. Limit a group to 20% of 1 CPU.
++
++	With 50ms period, 10ms quota will be equivalent to 20% of 1 CPU.
++
++	# echo 10000 > cpu.cfs_quota_us /* quota = 10ms */
++	# echo 50000 > cpu.cfs_period_us /* period = 50ms */
++
++	By using a small period here we are ensuring a consistent latency
++	response at the expense of burst capacity.
++
 
 
