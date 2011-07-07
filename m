@@ -1,111 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab1GGVWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 17:22:41 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:39654 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175Ab1GGVWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 17:22:40 -0400
-Message-ID: <4E1623EB.3010203@gmail.com>
-Date: Fri, 08 Jul 2011 07:23:55 +1000
-From: Ryan Mallon <rmallon@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.17) Gecko/20110424 Thunderbird/3.1.10
+	id S1752642Ab1GGVWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 17:22:44 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36715 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752277Ab1GGVWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 17:22:42 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Chanwoo Choi <cw00.choi@samsung.com>
+Subject: Re: [PATCH v2] ARM: EXYNOS4: Support for generic I/O power domains on EXYNOS4210
+Date: Thu, 7 Jul 2011 23:23:43 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: Kukjin Kim <kgene.kim@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Myungjoo Ham <myungjoo.ham@samsung.com>,
+        Sylwester Nawrocki <snjw23@gmail.com>,
+        linux-pm@lists.linux-foundation.org,
+        "linux-samsung-soc" <linux-samsung-soc@vger.kernel.org>,
+        linux-kernel@vger.kernel.org
+References: <4E0824B1.6070501@samsung.com>
+In-Reply-To: <4E0824B1.6070501@samsung.com>
 MIME-Version: 1.0
-To: Grant Likely <grant.likely@secretlab.ca>
-CC: "Nori, Sekhar" <nsekhar@ti.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hilman, Kevin" <khilman@ti.com>, "Chemparathy, Cyril" <cyril@ti.com>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "davinci-linux-open-source@linux.davincidsp.com" 
-	<davinci-linux-open-source@linux.davincidsp.com>
-Subject: Re: [RFC/RFT 1/2] gpio/basic_mmio: add support for enable register
-References: <cover.1309840042.git.nsekhar@ti.com> <83915224c24e43224272b1bf570cddb9545279a6.1309840042.git.nsekhar@ti.com> <4E12AC10.9020206@gmail.com> <20110706211054.GE5371@ponder.secretlab.ca> <B85A65D85D7EB246BE421B3FB0FBB593024D9B5379@dbde02.ent.ti.com> <20110707183734.GE2824@ponder.secretlab.ca>
-In-Reply-To: <20110707183734.GE2824@ponder.secretlab.ca>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201107072323.44155.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 08/07/11 04:37, Grant Likely wrote:
-> On Thu, Jul 07, 2011 at 10:15:31PM +0530, Nori, Sekhar wrote:
->> Hi Grant,
->>
->> On Thu, Jul 07, 2011 at 02:40:54, Grant Likely wrote:
->>> On Tue, Jul 05, 2011 at 04:15:44PM +1000, Ryan Mallon wrote:
->>>> On 05/07/11 15:10, Sekhar Nori wrote:
->>>>> Some GPIO controllers have an enable register
->>>>> which needs to be written to before a GPIO
->>>>> can be used.
->>>>>
->>>>> Add support for enabling the GPIO. At this
->>>>> time inverted logic for enabling the GPIO
->>>>> is not supported. This can be done by adding
->>>>> a disable register as and when a controller
->>>>> with this comes along.
->>>>>
->>>>> Signed-off-by: Sekhar Nori<nsekhar@ti.com>
->>>>> ---
->>>>>
->>>> <snip>
->>>>
->>>>> static int bgpio_setup_io(struct bgpio_chip *bgc,
->>>>>  			  void __iomem *dat,
->>>>> @@ -369,6 +401,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
->>>>>  			 void __iomem *clr,
->>>>>  			 void __iomem *dirout,
->>>>>  			 void __iomem *dirin,
->>>>> +			 void __iomem *en,
->>>>>  			 bool big_endian)
->>>> The arguments to this function are getting a bit unwieldy :-). Maybe
->>>> we need to introduce something like:
->>>>
->>>> struct bgpio_chip_info {
->>>>     struct device *dev;
->>>>     unsigned long sz;
->>>>     void __iomem *dat;
->>>>     void __iomem *set;
->>>>     void __iomem *clr;
->>>>     void __iomem *dirout;
->>>>     void __iomem *dirin;
->>>>     void __iomem *en;
->>>>     bool big_endian;
->>>> };
->>>>
->>>> and pass that to bgpio_init instead. It would have the added
->>>> benefits of making the drivers more readable and that
->>>> bgpio_chip_info structs in the drivers can probably be marked
->>>> __initdata also.
->>> Or, what may be better is to make callers directly update the
->>> bgpio_chip structure.
->> I started implementing it this way, but felt that the bgpio_chip
->> structure also has many internal members (like the spinlock) and
->> this method will require users to spend quite a bit of time figuring
->> out which structure members they should initialize and which to leave
->> for bgpio_init() to do for them.
->>
->> There is also the case of direction register which is set from
->> either dirout or dirin depending upon whether the logic is inverted
->> or not. The bgpio_chip however needs to deal with a single direction
->> register offset.
-> We *absolutely* still need the helper function for the complex
-> settings, but for the non-complex ones, I'd rather just directly
-> access the structure.  The kerneldoc documentation of the structure
-> can and should be explicit about what the caller is allowed to do.
->
-You could pull out all of the user accessible parts the bgpio_chip
-structure in to a structure called bgpio_chip_info (or whatever) that
-the drivers fill in and pass to bgpio_init, which then gets assigned as
-a member of bgpio_chip.
+Hi,
 
-Not sure what you mean about the helper function. If bgpio_init takes a
-structure with all of the information about the particular chip then
-initialisation of either a simple or complex gpio chip is done using the
-same function. Only the number of fields in the bgpio_chip_info
-structure which need to be filled in should change.
+On Monday, June 27, 2011, Chanwoo Choi wrote:
+> Use the generic power domains support to implement support for
+> power domain on EXYNOS4210.
+> 
+> I refer to the following patch to implement what configure
+> the clock-gating control register for block to turn off/on:
+> http://git.infradead.org/users/kmpark/linux-2.6-samsung/commit/39a81876d034dcbdc2a4c4c4b847b3b49e38870c
+> 
+> This patch is based on following "pm-domains" branch.
+> http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=shortlog;h=refs/heads/pm-domains
+> 
+> Signed-off-by: Chanwoo Choi <cw00.choi@samsung.com>
+> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
+> Signed-off-by: Kyungmin.park <kyungmin.park@samsung.com>
+> ---
+>  arch/arm/mach-exynos4/Kconfig                      |    1 +
+>  arch/arm/mach-exynos4/Makefile                     |    1 +
+>  arch/arm/mach-exynos4/include/mach/pm-exynos4210.h |   69 ++++++++
+>  arch/arm/mach-exynos4/include/mach/regs-clock.h    |    8 +
+>  arch/arm/mach-exynos4/mach-nuri.c                  |   20 +++
+>  arch/arm/mach-exynos4/pm-exynos4210.c              |  170 ++++++++++++++++++++
+>  arch/arm/plat-samsung/include/plat/pd.h            |    3 +-
+>  7 files changed, 271 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
+>  create mode 100644 arch/arm/mach-exynos4/pm-exynos4210.c
+> 
+> diff --git a/arch/arm/mach-exynos4/Kconfig b/arch/arm/mach-exynos4/Kconfig
+> index 1435fc3..266e7f6 100644
+> --- a/arch/arm/mach-exynos4/Kconfig
+> +++ b/arch/arm/mach-exynos4/Kconfig
+> @@ -183,6 +183,7 @@ config MACH_NURI
+>  	select EXYNOS4_SETUP_SDHCI
+>  	select EXYNOS4_SETUP_USB_PHY
+>  	select SAMSUNG_DEV_PWM
+> +	select PM_GENERIC_DOMAINS
 
-~Ryan
+That should be "select PM_GENERIC_DOMAINS if PM".  Otherwise it will be
+selected even for CONFIG_PM unset.
 
+>  	help
+>  	  Machine support for Samsung Mobile NURI Board.
+>  
+> diff --git a/arch/arm/mach-exynos4/Makefile b/arch/arm/mach-exynos4/Makefile
+> index 60fe5ec..0e9461f 100644
+> --- a/arch/arm/mach-exynos4/Makefile
+> +++ b/arch/arm/mach-exynos4/Makefile
+> @@ -17,6 +17,7 @@ obj-$(CONFIG_CPU_EXYNOS4210)	+= setup-i2c0.o irq-eint.o dma.o
+>  obj-$(CONFIG_PM)		+= pm.o sleep.o
+>  obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
+>  obj-$(CONFIG_CPU_IDLE)		+= cpuidle.o
+> +obj-$(CONFIG_CPU_EXYNOS4210)	+= pm-exynos4210.o
+>  
+>  obj-$(CONFIG_SMP)		+= platsmp.o headsmp.o
+>  
+> diff --git a/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
+> new file mode 100644
+> index 0000000..ff924a8
+> --- /dev/null
+> +++ b/arch/arm/mach-exynos4/include/mach/pm-exynos4210.h
+> @@ -0,0 +1,69 @@
+> +/* linux/arch/arm/mach-exynos4/include/mach/pm-exynos4.h
+> + *
+> + * Exynos4 Power management support
+> + *
+> + * Copyright (c) 2010-2011 Samsung Electronics Co., Ltd.
+> + *		http://www.samsung.com
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#ifndef __PM_EXYNOS4210_H__
+> +#define __PM_EXYNOS4210_H__
+> +
+> +#include <linux/pm_domain.h>
+> +#include <plat/pd.h>
+> +
+> +struct platform_device;
+> +
+> +struct exynos4210_pm_domain {
+> +	struct generic_pm_domain genpd;
+> +
+> +	const char *name;
+> +	void __iomem *base;
+> +	unsigned long gate_mask;
+> +	int boot_on;
+> +};
+> +
+> +static inline struct exynos4210_pm_domain *to_exynos4210_pd(
+> +		struct generic_pm_domain *pd)
+> +{
+> +	return container_of(pd, struct exynos4210_pm_domain, genpd);
+> +}
+> +
+> +#ifdef CONFIG_PM
+> +extern struct exynos4210_pm_domain exynos4210_pd_list[PD_MAX_NUM];
+> +#define EXYNOS4210_MFC		(&exynos4210_pd_list[PD_MFC])
+> +#define EXYNOS4210_G3D		(&exynos4210_pd_list[PD_G3D])
+> +#define EXYNOS4210_LCD0		(&exynos4210_pd_list[PD_LCD0])
+> +#define EXYNOS4210_LCD1		(&exynos4210_pd_list[PD_LCD1])
+> +#define EXYNOS4210_TV		(&exynos4210_pd_list[PD_TV])
+> +#define EXYNOS4210_CAM		(&exynos4210_pd_list[PD_CAM])
+> +#define EXYNOS4210_GPS		(&exynos4210_pd_list[PD_GPS])
+> +
+> +int exynos4210_pd_init(struct exynos4210_pm_domain *domain);
+> +int exynos4210_add_device_to_domain(struct exynos4210_pm_domain *domain,
+> +				struct platform_device *pdev);
+> +#else
+> +#define EXYNOS4210_MFC		NULL
+> +#define EXYNOS4210_G3D		NULL
+> +#define EXYNOS4210_LCD0		NULL
+> +#define EXYNOS4210_LCD1		NULL
+> +#define EXYNOS4210_TV		NULL
+> +#define EXYNOS4210_CAM		NULL
+> +#define EXYNOS4210_GPS		NULL
+> +
+> +static inline int exynos4210_pd_init(struct exynos4210_pm_domain *domain)
+> +{
+> +	return 0;
+> +}
+> +static inline int exynos4_add_device_to_domain(struct exynos4210_pm_domain *domain,
+> +				struct platform_device *pdev)
+> +{
+> +	return 0;
+> +}
+> +#endif /* CONFIG_PM */
+> +
+> +#endif /* __PM_EXYNOS4210_H__ */
+> diff --git a/arch/arm/mach-exynos4/include/mach/regs-clock.h b/arch/arm/mach-exynos4/include/mach/regs-clock.h
+> index 6e311c1..bc0fda9 100644
+> --- a/arch/arm/mach-exynos4/include/mach/regs-clock.h
+> +++ b/arch/arm/mach-exynos4/include/mach/regs-clock.h
+> @@ -171,6 +171,14 @@
+>  #define S5P_CLKDIV_BUS_GPLR_SHIFT	(4)
+>  #define S5P_CLKDIV_BUS_GPLR_MASK	(0x7 << S5P_CLKDIV_BUS_GPLR_SHIFT)
+>  
+> +#define S5P_CLKGATE_BLOCK_CAM		(1<<0)
+> +#define S5P_CLKGATE_BLOCK_TV		(1<<1)
+> +#define S5P_CLKGATE_BLOCK_MFC		(1<<2)
+> +#define S5P_CLKGATE_BLOCK_G3D		(1<<3)
+> +#define S5P_CLKGATE_BLOCK_LCD0		(1<<4)
+> +#define S5P_CLKGATE_BLOCK_LCD1		(1<<5)
+> +#define S5P_CLKGATE_BLOCK_GPS		(1<<7)
+> +
+>  /* Compatibility defines and inclusion */
+>  
+>  #include <mach/regs-pmu.h>
+> diff --git a/arch/arm/mach-exynos4/mach-nuri.c b/arch/arm/mach-exynos4/mach-nuri.c
+> index 642702b..805c6d5 100644
+> --- a/arch/arm/mach-exynos4/mach-nuri.c
+> +++ b/arch/arm/mach-exynos4/mach-nuri.c
+> @@ -37,6 +37,7 @@
+>  #include <plat/iic.h>
+>  
+>  #include <mach/map.h>
+> +#include <mach/pm-exynos4210.h>
+>  
+>  /* Following are default values for UCON, ULCON and UFCON UART registers */
+>  #define NURI_UCON_DEFAULT	(S3C2410_UCON_TXILEVEL |	\
+> @@ -376,6 +377,23 @@ static struct platform_device *nuri_devices[] __initdata = {
+>  	&nuri_backlight_device,
+>  };
+>  
+> +static void __init nuri_power_domain_init(void)
+> +{
+> +	int i;
+> +
+> +	for (i = 0 ; i < PD_MAX_NUM ; i++)
+> +		exynos4210_pd_init(&exynos4210_pd_list[i]);
+> +
+> +	/* Add device to power-domain */
+> +	exynos4210_add_device_to_domain(EXYNOS4210_MFC, NULL);
+> +	exynos4210_add_device_to_domain(EXYNOS4210_G3D, NULL);
+> +	exynos4210_add_device_to_domain(EXYNOS4210_LCD0, &nuri_lcd_device);
+> +	exynos4210_add_device_to_domain(EXYNOS4210_LCD1, NULL);
+> +	exynos4210_add_device_to_domain(EXYNOS4210_TV, NULL);
+> +	exynos4210_add_device_to_domain(EXYNOS4210_CAM, NULL);
+> +	exynos4210_add_device_to_domain(EXYNOS4210_GPS, NULL);
 
+It seems the calls with the second NULL argument are redundant.
+
+The rest looks OK to me.
+
+Thanks,
+Rafael
