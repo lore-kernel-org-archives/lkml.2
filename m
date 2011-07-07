@@ -1,60 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754815Ab1GGSAx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 14:00:53 -0400
-Received: from mail-bw0-f52.google.com ([209.85.214.52]:49685 "EHLO
-	mail-bw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab1GGSAv (ORCPT
+	id S1755048Ab1GGSA6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 14:00:58 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:48330 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752850Ab1GGSAw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 14:00:51 -0400
-Date: Thu, 7 Jul 2011 21:00:44 +0300 (EEST)
-From: Pekka Enberg <penberg@kernel.org>
-X-X-Sender: penberg@tiger
-To: david@lang.hm
-cc: Ankita Garg <ankita@in.ibm.com>, linux-arm-kernel@lists.infradead.org,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-pm@lists.linux-foundation.org, svaidy@linux.vnet.ibm.com,
-        thomas.abraham@linaro.org, Dave Hansen <dave@linux.vnet.ibm.com>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        Arjan van de Ven <arjan@infradead.org>,
-        Christoph Lameter <cl@linux.com>
-Subject: Re: [PATCH 00/10] mm: Linux VM Infrastructure to support Memory
- Power Management
-In-Reply-To: <alpine.DEB.2.02.1107061318190.2535@asgard.lang.hm>
-Message-ID: <alpine.DEB.2.00.1107072058390.5978@tiger>
-References: <1306499498-14263-1-git-send-email-ankita@in.ibm.com> <20110629130038.GA7909@in.ibm.com> <CAOJsxLHQP=-srK_uYYBsPb7+rUBnPZG7bzwtCd-rRaQa4ikUFg@mail.gmail.com> <alpine.DEB.2.02.1107061318190.2535@asgard.lang.hm>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 7 Jul 2011 14:00:52 -0400
+Message-ID: <4E15F451.5070701@candelatech.com>
+Date: Thu, 07 Jul 2011 11:00:49 -0700
+From: Ben Greear <greearb@candelatech.com>
+Organization: Candela Technologies
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Christoph Lameter <cl@linux.com>
+CC: penberg@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 2/2] slub:  Add method to verify memory is not freed.
+References: <1309308462-20124-1-git-send-email-greearb@candelatech.com> <1309308462-20124-3-git-send-email-greearb@candelatech.com> <alpine.DEB.2.00.1107010909060.2458@router.home>
+In-Reply-To: <alpine.DEB.2.00.1107010909060.2458@router.home>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 6 Jul 2011, Pekka Enberg wrote:
->> Why does the allocator need to know about address boundaries? Why
->> isn't it enough to make the page allocator and reclaim policies favor using
->> memory from lower addresses as aggressively as possible? That'd mean
->> we'd favor the first memory banks and could keep the remaining ones
->> powered off as much as possible.
->> 
->> IOW, why do we need to support scenarios such as this:
->>
->>   bank 0     bank 1   bank 2    bank3
->> | online  | offline | online  | offline |
->
-On Wed, 6 Jul 2011, david@lang.hm wrote:
-> I believe that there are memory allocations that cannot be moved after they 
-> are made (think about regions allocated to DMA from hardware where the 
-> hardware has already been given the address space to DMA into)
->
-> As a result, you may not be able to take bank 2 offline, so your option is to 
-> either leave banks 0-2 all online, or support emptying bank 1 and taking it 
-> offline.
+On 07/01/2011 07:11 AM, Christoph Lameter wrote:
 
-But drivers allocate DMA memory for hardware during module load and stay 
-pinned there until the driver is unloaded, no? So in practice DMA buffers 
-are going to be in banks 0-1?
+>> +#ifdef CONFIG_SLUB_DEBUG
+>> +bool verify_mem_not_deleted(const void *x)
+>> +{
+>> +	struct page *page;
+>> +	void *object = (void *)x;
+>> +	unsigned long flags;
+>> +	bool rv;
+>> +
+>> +	if (unlikely(ZERO_OR_NULL_PTR(x)))
+>> +		return false;
+>> +
+>> +	local_irq_save(flags);
+>> +
+>> +	page = virt_to_head_page(x);
+>> +	if (unlikely(!PageSlab(page))) {
+>> +		/* maybe it was from stack? */
+>> +		rv = true;
+>> +		goto out_unlock;
+>> +	}
+>
+> The above check is problematic for slabs that have SLAB_DESTROY_BY_RCU
+> set. PageSlab(page) may be true to the next rcu interval.
 
- 				Pekka
+I do not see the problem here.  If PageSlab(page) is true, we fall
+through and do the check for on-free-list, under the slab_lock().
+
+We only return error if it is on the free list.  Would these pages
+waiting on the RCU interval show up as in the free list?
+
+Thanks,
+Ben
+
+-- 
+Ben Greear <greearb@candelatech.com>
+Candela Technologies Inc  http://www.candelatech.com
+
