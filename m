@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753914Ab1GGBJo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 21:09:44 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:46496 "EHLO smtp.outflux.net"
+	id S1754205Ab1GGBMv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 21:12:51 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:35378 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751857Ab1GGBJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 21:09:43 -0400
-Date: Wed, 6 Jul 2011 18:09:10 -0700
+	id S1751948Ab1GGBMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 21:12:50 -0400
+Date: Wed, 6 Jul 2011 18:10:34 -0700
 From: Kees Cook <kees.cook@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
         "Rafael J. Wysocki" <rjw@sisk.pl>,
         Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH v2] x86: give names to realmode wakeup flags
-Message-ID: <20110707010910.GA7877@outflux.net>
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Brian Gerst <brgerst@gmail.com>
+Subject: [PATCH v3] x86: restore MISC_ENABLE MSR in realmode wakeup
+Message-ID: <20110707011034.GA8523@outflux.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -24,73 +25,103 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Instead of using literals, use a common set of names for the
-user-controlled realmode wakeup flags.
+Some BIOSes will reset the Intel MISC_ENABLE MSR (specifically the
+XD_DISABLE bit) when resuming from S3, which can interact poorly with
+ebba638ae723d8a8fc2f7abce5ec18b688b791d7. In 32bit PAE mode, this can
+lead to a fault when EFER is restored by the kernel wakeup routines,
+due to it setting the NX bit for a CPU that (thanks to the BIOS reset)
+now incorrectly thinks it lacks the NX feature. (64bit is not affected
+because it uses a common CPU bring-up that specifically handles the
+XD_DISABLE bit.)
+
+The need for MISC_ENABLE being restored so early is specific to the S3
+resume path. Normally, MISC_ENABLE is saved in save_processor_state(),
+but this happens after the resume header is created, so just reproduce
+the logic here. (acpi_suspend_lowlevel() creates the header, calls
+do_suspend_lowlevel, which calls save_processor_state(), so the saved
+processor context isn't available during resume header creation.)
 
 Signed-off-by: Kees Cook <kees.cook@canonical.com>
 ---
-v2: split from the MISC_ENABLE restoration patch
+v3: split from literals patch
+v2: do full MISC_ENABLE restoration instead of just verify_cpu() call
 
- arch/x86/kernel/acpi/realmode/wakemain.c |    6 +++---
- arch/x86/kernel/acpi/realmode/wakeup.h   |    4 ++++
- arch/x86/kernel/acpi/sleep.c             |    6 +++---
- 3 files changed, 10 insertions(+), 6 deletions(-)
+ arch/x86/kernel/acpi/realmode/wakeup.S |   14 ++++++++++++++
+ arch/x86/kernel/acpi/realmode/wakeup.h |    6 ++++++
+ arch/x86/kernel/acpi/sleep.c           |    6 ++++++
+ 3 files changed, 26 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/acpi/realmode/wakemain.c b/arch/x86/kernel/acpi/realmode/wakemain.c
-index 883962d..1749cde 100644
---- a/arch/x86/kernel/acpi/realmode/wakemain.c
-+++ b/arch/x86/kernel/acpi/realmode/wakemain.c
-@@ -67,13 +67,13 @@ void main(void)
- 	if (wakeup_header.real_magic != 0x12345678)
- 		while (1);
+diff --git a/arch/x86/kernel/acpi/realmode/wakeup.S b/arch/x86/kernel/acpi/realmode/wakeup.S
+index ead21b6..b4fd836 100644
+--- a/arch/x86/kernel/acpi/realmode/wakeup.S
++++ b/arch/x86/kernel/acpi/realmode/wakeup.S
+@@ -28,6 +28,8 @@ pmode_cr3:	.long	0	/* Saved %cr3 */
+ pmode_cr4:	.long	0	/* Saved %cr4 */
+ pmode_efer:	.quad	0	/* Saved EFER */
+ pmode_gdt:	.quad	0
++pmode_misc_en:	.quad	0	/* Saved MISC_ENABLE MSR */
++pmode_behavior:	.long	0	/* Wakeup behavior flags */
+ realmode_flags:	.long	0
+ real_magic:	.long	0
+ trampoline_segment:	.word 0
+@@ -91,6 +93,18 @@ wakeup_code:
+ 	/* Call the C code */
+ 	calll	main
  
--	if (wakeup_header.realmode_flags & 4)
-+	if (wakeup_header.realmode_flags & WAKE_FLAG_BEEP)
- 		send_morse("...-");
++	/* Restore MISC_ENABLE before entering protected mode, in case
++	   BIOS decided to clear XD_DISABLE during S3. */
++	movl	pmode_behavior, %eax
++	btl	$WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE, %eax
++	jnc	1f
++
++	movl	pmode_misc_en, %eax
++	movl	pmode_misc_en + 4, %edx
++	movl	$MSR_IA32_MISC_ENABLE, %ecx
++	wrmsr
++1:
++
+ 	/* Do any other stuff... */
  
--	if (wakeup_header.realmode_flags & 1)
-+	if (wakeup_header.realmode_flags & WAKE_FLAG_BIOS)
- 		asm volatile("lcallw   $0xc000,$3");
- 
--	if (wakeup_header.realmode_flags & 2) {
-+	if (wakeup_header.realmode_flags & WAKE_FLAG_MODE) {
- 		/* Need to call BIOS */
- 		probe_cards(0);
- 		set_mode(wakeup_header.video_mode);
+ #ifndef CONFIG_64BIT
 diff --git a/arch/x86/kernel/acpi/realmode/wakeup.h b/arch/x86/kernel/acpi/realmode/wakeup.h
-index 97a29e1..516c885 100644
+index e1828c0..97a29e1 100644
 --- a/arch/x86/kernel/acpi/realmode/wakeup.h
 +++ b/arch/x86/kernel/acpi/realmode/wakeup.h
-@@ -38,6 +38,10 @@ struct wakeup_header {
- extern struct wakeup_header wakeup_header;
- #endif
- 
-+#define WAKEUP_FLAG_BIOS        1
-+#define WAKEUP_FLAG_MODE        2
-+#define WAKEUP_FLAG_BEEP        4
-+
- #define WAKEUP_HEADER_OFFSET	8
+@@ -21,6 +21,9 @@ struct wakeup_header {
+ 	u32 pmode_efer_low;	/* Protected mode EFER */
+ 	u32 pmode_efer_high;
+ 	u64 pmode_gdt;
++	u32 pmode_misc_en_low;	/* Protected mode MISC_ENABLE */
++	u32 pmode_misc_en_high;
++	u32 pmode_behavior;	/* Wakeup routine behavior flags */
+ 	u32 realmode_flags;
+ 	u32 real_magic;
+ 	u16 trampoline_segment;	/* segment with trampoline code, 64-bit only */
+@@ -39,4 +42,7 @@ extern struct wakeup_header wakeup_header;
  #define WAKEUP_HEADER_SIGNATURE 0x51ee1111
  #define WAKEUP_END_SIGNATURE	0x65a22c82
+ 
++/* Wakeup behavior bits */
++#define WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE     0
++
+ #endif /* ARCH_X86_KERNEL_ACPI_RM_WAKEUP_H */
 diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 103b6ab..12115a9 100644
+index 18a857b..103b6ab 100644
 --- a/arch/x86/kernel/acpi/sleep.c
 +++ b/arch/x86/kernel/acpi/sleep.c
-@@ -110,11 +110,11 @@ static int __init acpi_sleep_setup(char *str)
- {
- 	while ((str != NULL) && (*str != '\0')) {
- 		if (strncmp(str, "s3_bios", 7) == 0)
--			acpi_realmode_flags |= 1;
-+			acpi_realmode_flags |= WAKEUP_FLAG_BIOS;
- 		if (strncmp(str, "s3_mode", 7) == 0)
--			acpi_realmode_flags |= 2;
-+			acpi_realmode_flags |= WAKEUP_FLAG_MODE;
- 		if (strncmp(str, "s3_beep", 7) == 0)
--			acpi_realmode_flags |= 4;
-+			acpi_realmode_flags |= WAKEUP_FLAG_BEEP;
- #ifdef CONFIG_HIBERNATION
- 		if (strncmp(str, "s4_nohwsig", 10) == 0)
- 			acpi_no_s4_hw_signature();
+@@ -77,6 +77,12 @@ int acpi_suspend_lowlevel(void)
+ 
+ 	header->pmode_cr0 = read_cr0();
+ 	header->pmode_cr4 = read_cr4_safe();
++	header->pmode_behavior = 0;
++	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
++			&header->pmode_misc_en_low,
++			&header->pmode_misc_en_high))
++		header->pmode_behavior |=
++			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
+ 	header->realmode_flags = acpi_realmode_flags;
+ 	header->real_magic = 0x12345678;
+ 
 -- 
 1.7.4.1
 
