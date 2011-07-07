@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab1GGJRw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 05:17:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43784 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751608Ab1GGJRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 05:17:48 -0400
-Date: Thu, 7 Jul 2011 10:17:44 +0100
-From: Mel Gorman <mgorman@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux-MM <linux-mm@kvack.org>, Linux-Netdev <netdev@vger.kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Miller <davem@davemloft.net>, Neil Brown <neilb@suse.de>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 01/14] mm: Serialize access to min_free_kbytes
-Message-ID: <20110707091744.GF15285@suse.de>
-References: <1308575540-25219-1-git-send-email-mgorman@suse.de>
- <1308575540-25219-2-git-send-email-mgorman@suse.de>
- <20110706164447.d571051a.akpm@linux-foundation.org>
+	id S1753412Ab1GGJUX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 05:20:23 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:44496 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751136Ab1GGJUV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 05:20:21 -0400
+Message-ID: <4E157A4B.6060407@ti.com>
+Date: Thu, 7 Jul 2011 10:20:11 +0100
+From: Liam Girdwood <lrg@ti.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110516 Lightning/1.0b2 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20110706164447.d571051a.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+To: Axel Lin <axel.lin@gmail.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Eric Miao <eric.y.miao@gmail.com>,
+        Nicolas Pitre <nicolas.pitre@linaro.org>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        "alsa-devel@alsa-project.org" <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH] ASoC: pxa2xx-pcm: remove unused variable 'dai'
+References: <1309958442.4613.1.camel@phoenix>
+In-Reply-To: <1309958442.4613.1.camel@phoenix>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 06, 2011 at 04:44:47PM -0700, Andrew Morton wrote:
-> On Mon, 20 Jun 2011 14:12:07 +0100
-> Mel Gorman <mgorman@suse.de> wrote:
+On 06/07/11 14:20, Axel Lin wrote:
+> Remove unused variable 'dai' to eliminate below warning.
 > 
-> > There is a race between the min_free_kbytes sysctl, memory hotplug
-> > and transparent hugepage support enablement.  Memory hotplug uses a
-> > zonelists_mutex to avoid a race when building zonelists. Reuse it to
-> > serialise watermark updates.
+>   CC      sound/soc/pxa/pxa2xx-pcm.o
+> sound/soc/pxa/pxa2xx-pcm.c: In function 'pxa2xx_soc_pcm_new':
+> sound/soc/pxa/pxa2xx-pcm.c:91: warning: unused variable 'dai'
 > 
-> This patch appears to be a standalone fix, unrelated to the overall
-> patch series?
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  sound/soc/pxa/pxa2xx-pcm.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
 > 
+> diff --git a/sound/soc/pxa/pxa2xx-pcm.c b/sound/soc/pxa/pxa2xx-pcm.c
+> index da28394..c430600 100644
+> --- a/sound/soc/pxa/pxa2xx-pcm.c
+> +++ b/sound/soc/pxa/pxa2xx-pcm.c
+> @@ -88,7 +88,6 @@ static u64 pxa2xx_pcm_dmamask = DMA_BIT_MASK(32);
+>  static int pxa2xx_soc_pcm_new(struct snd_soc_pcm_runtime *rtd)
+>  {
+>  	struct snd_card *card = rtd->card->snd_card;
+> -	struct snd_soc_dai *dai = rtd->cpu_dai;
+>  	struct snd_pcm *pcm = rtd->pcm;
+>  	int ret = 0;
+>  
 
-Yes. In the original series this would have been a more serious problem
-as min_free_kbytes was potentially adjusted more frequently.
-
-> How does one trigger the race and what happens when it hits, btw?
-
-One could trigger the trace by having multiple processes on different
-CPUs write to min_free_kbytes. One could add memory hotplug events
-to that for extra fun but it is unnecessary to trigger the race.
-
-The consequences are that the value for min_free_kbytes and the zone
-watermarks get out of sync. Whether the zone watermarks will be too
-high or too low would depend on the timing. For the most part, the
-consequence will simply be that the min free level for some zones will
-be wrong. A more serious consequence is that totalreserve_pages could
-get out of sync and strict no memory overcommit could fail a mmap when
-it should have succeeded for the value of min_free_kbytes or suspend
-fail because it did not preallocate enough pages.
-
-It's not exactly earth shattering.
-
--- 
-Mel Gorman
-SUSE Labs
+Acked-by: Liam Girdwood <lrg@ti.com>
