@@ -1,76 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751969Ab1GGVNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 17:13:44 -0400
-Received: from rcsinet15.oracle.com ([148.87.113.117]:23586 "EHLO
-	rcsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750798Ab1GGVNn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 17:13:43 -0400
-Date: Thu, 7 Jul 2011 14:12:58 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT PULL] scsi fixes for 3.0-rc5
-Message-Id: <20110707141258.786bb7f9.randy.dunlap@oracle.com>
-In-Reply-To: <20110704165535.ce364909.randy.dunlap@oracle.com>
-References: <1309813216.2606.32.camel@mulgrave>
-	<20110704165535.ce364909.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752281Ab1GGVOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 17:14:08 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36679 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751391Ab1GGVOF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 17:14:05 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Akinobu Mita <akinobu.mita@gmail.com>
+Subject: Re: [PATCH 5/7] PM: PM notifier error injection
+Date: Thu, 7 Jul 2011 23:14:58 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+        Pavel Machek <pavel@ucw.cz>, linux-pm@lists.linux-foundation.org
+References: <1309702581-16863-1-git-send-email-akinobu.mita@gmail.com> <1309702581-16863-6-git-send-email-akinobu.mita@gmail.com>
+In-Reply-To: <1309702581-16863-6-git-send-email-akinobu.mita@gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsinet21.oracle.com [141.146.126.237]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4E162164.006B:SCFMA922111,ss=1,re=-4.000,fgs=0
+Message-Id: <201107072314.59052.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 4 Jul 2011 16:55:35 -0700 Randy Dunlap wrote:
+On Sunday, July 03, 2011, Akinobu Mita wrote:
+> This provides the ability to inject artifical errors to PM notifier
+> chain callbacks.  It is controlled through debugfs interface under
+> /sys/kernel/debug/pm-notifier-error-inject/
+> 
+> Each of the files in the directory represents an event which can be
+> failed and contains the error code.  If the notifier call chain should
+> be failed with some events notified, write the error code to the files.
+> 
+> Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+> Cc: Pavel Machek <pavel@ucw.cz>
+> Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
+> Cc: linux-pm@lists.linux-foundation.org
+> ---
+>  kernel/power/main.c |   30 ++++++++++++++++++++++++++++++
+>  lib/Kconfig.debug   |    8 ++++++++
+>  2 files changed, 38 insertions(+), 0 deletions(-)
+> 
+> diff --git a/kernel/power/main.c b/kernel/power/main.c
+> index 6c601f8..04b3774 100644
+> --- a/kernel/power/main.c
+> +++ b/kernel/power/main.c
+> @@ -42,6 +42,36 @@ int pm_notifier_call_chain(unsigned long val)
+>  	return notifier_to_errno(ret);
+>  }
+>  
+> +#ifdef CONFIG_PM_NOTIFIER_ERROR_INJECTION
+> +
+> +static struct err_inject_notifier_block err_inject_pm_notifier = {
+> +	.actions = {
+> +		{ ERR_INJECT_NOTIFIER_ACTION(PM_HIBERNATION_PREPARE) },
+> +		{ ERR_INJECT_NOTIFIER_ACTION(PM_SUSPEND_PREPARE) },
+> +		{ ERR_INJECT_NOTIFIER_ACTION(PM_RESTORE_PREPARE) },
+> +		{}
 
-> On Mon, 04 Jul 2011 16:00:16 -0500 James Bottomley wrote:
-> 
-> > This is a couple of driver fixes and the addition of the isci intel SAS
-> > driver under the new driver merge exception.  The isci tree is cleanly
-> > separated with everything under drivers/scsi/isci (plus the
-> > Makefile/Kconfig plumbing and one firmware file under firmware/isci).
-> > The driver itself weighs in at around 23k lines, which is on the heavy
-> > side, but Christoph Hellwig and I think it's ready enough to accept now
-> > so that we have a working driver by the time the motherboards ship
-> > (estimated to be in the 3.0 release timeframe).
-> > 
-> > The patch is available here:
-> > 
-> > master.kernel.org:/pub/scm/linux/kernel/git/jejb/scsi-rc-fixes-2.6.git
-> > 
-> > The shortlog for just the driver fixes (lest they get lost in the flood) is:
-> > 
-> > Brian King (1):
-> >       ibmvfc: Fix Virtual I/O failover hang
-> > 
-> > Stephen M. Cameron (2):
-> >       hpsa: fix potential overrun while memcpy'ing sense data
-> >       hpsa: fix dma unmap error in hpsa_passthru_ioctl
-> 
-> Hi James,
-> 
-> Did you do anything with these 2 scsi section mismatch patches from June 21?
-> I don't see them in any of your scsi git trees, although I could have
-> missed them.
-> 
-> Subject: [PATCH] scsi: fix NCR_Q720 section mismatch warning
-> http://marc.info/?l=linux-scsi&m=130868730409600&w=2
-> 
-> Subject: [PATCH] scsi: fix sim710 section mismatch warnings
-> http://marc.info/?l=linux-scsi&m=130868736409676&w=2
+Why have you omitted the PM_POST_* actions?
 
-p i n g
+> +	}
+> +};
+> +
+> +static int __init err_inject_pm_notifier_init(void)
+> +{
+> +	int err;
+> +
+> +	err = err_inject_notifier_block_init(&err_inject_pm_notifier,
+> +				"pm-notifier-error-inject", -1);
+> +	if (err)
+> +		return err;
+> +
+> +	err = register_pm_notifier(&err_inject_pm_notifier.nb);
+> +	if (err)
+> +		err_inject_notifier_block_cleanup(&err_inject_pm_notifier);
+> +
+> +	return err;
+> +}
+> +late_initcall(err_inject_pm_notifier_init);
+> +
+> +#endif /* CONFIG_PM_NOTIFIER_ERROR_INJECTION */
+> +
+>  /* If set, devices may be suspended and resumed asynchronously. */
+>  int pm_async_enabled = 1;
+>  
+> diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+> index d944b32..3ffb38b 100644
+> --- a/lib/Kconfig.debug
+> +++ b/lib/Kconfig.debug
+> @@ -1043,6 +1043,14 @@ config CPU_NOTIFIER_ERROR_INJECTION
+>  	  # echo 0 > /sys/devices/system/cpu/cpu1/online
+>  	  bash: echo: write error: Operation not permitted
+>  
+> +config PM_NOTIFIER_ERROR_INJECTION
+> +	bool "PM notifier error injection"
+> +	depends on PM_DEBUG && NOTIFIER_ERROR_INJECTION
+> +	help
+> +	  This option provides the ability to inject artifical errors to
+> +	  PM notifier chain callbacks.  It is controlled through debugfs
+> +	  interface under /sys/kernel/debug/pm-notifier-error-inject/
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I'm not sure the help is necessary.  I think it should be selected
+automatically if both PM_DEBUG and NOTIFIER_ERROR_INJECTION are set.
+
+> +
+>  config CPU_NOTIFIER_ERROR_INJECT
+>  	tristate "CPU notifier error injection module"
+>  	depends on HOTPLUG_CPU && DEBUG_KERNEL
+
+Thanks,
+Rafael
+
