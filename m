@@ -1,118 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab1GGQXS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:23:18 -0400
-Received: from mail-bw0-f52.google.com ([209.85.214.52]:49327 "EHLO
-	mail-bw0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab1GGQXR (ORCPT
+	id S1752378Ab1GGQXY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:23:24 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:45213 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752220Ab1GGQXU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:23:17 -0400
-Date: Thu, 7 Jul 2011 20:23:11 +0400
-From: Vasiliy Kulikov <segoon@openwall.com>
-To: Balbir Singh <bsingharora@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Al Viro <viro@zeniv.linux.org.uk>,
-        David Rientjes <rientjes@google.com>,
-        Stephen Wilson <wilsons@start.ca>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, security@kernel.org,
-        Eric Paris <eparis@redhat.com>, kernel-hardening@lists.openwall.com
-Subject: Re: [PATCH 2/2] taskstats: restrict access to user
-Message-ID: <20110707162311.GA3363@albatros>
-References: <1308917362-4795-1-git-send-email-segoon@openwall.com>
- <BANLkTi=dTHGK1QVs+g2tA6WocQ64SPPF3g@mail.gmail.com>
- <20110629201718.GA11071@albatros>
- <20110702073625.GA3318@albatros>
- <CAKTCnzmjaddz-ihxJ_qme28S==BAPGRmC2j3iE5fqm8TPi0knA@mail.gmail.com>
- <20110704174540.GA3321@albatros>
- <20110707085551.GA4718@albatros>
- <CAKTCnzn25jUOmefuTPsLwbGGoj5sgz8-CgiV6XO-dMbNuD8Mzg@mail.gmail.com>
+	Thu, 7 Jul 2011 12:23:20 -0400
+Message-ID: <4E15DCE1.8010201@mvista.com>
+Date: Thu, 07 Jul 2011 20:20:49 +0400
+From: Vitaly Kuzmichev <vkuzmichev@mvista.com>
+Reply-To: vkuzmichev@mvista.com
+Organization: MontaVista Software, LLC
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Thunderbird/3.1.10
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <CAKTCnzn25jUOmefuTPsLwbGGoj5sgz8-CgiV6XO-dMbNuD8Mzg@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
+        Arnd Bergmann <arnd@arndb.de>, Wim Van Sebroeck <wim@iguana.be>,
+        Marc Zyngier <marc.zyngier@arm.com>, Colin Cross <ccross@android.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH V3 1/4] ARM: smp_twd: Fix typo in 'twd_timer_rate' printing
+References: <1310041339-2348-1-git-send-email-vkuzmichev@mvista.com> <1310041396-2461-1-git-send-email-vkuzmichev@mvista.com> <20110707123907.GP8286@n2100.arm.linux.org.uk>
+In-Reply-To: <20110707123907.GP8286@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 17:23 +0530, Balbir Singh wrote:
-> On Thu, Jul 7, 2011 at 2:25 PM, Vasiliy Kulikov <segoon@openwall.com> wrote:
-> > 1) unblocking netlink socket on task exit is a rather useful help to win
-> > different races.  E.g. if the vulnerable program has the code -
-> >
-> >    wait(NULL);
-> >    do_smth_racy();
-> >
-> > - then the attacker's task listening for the taskstats event will be
-> > effectively woken up just before the racy code.  It might greatly
-> > increase the chanses to win the race => to exploit the bug.
-> > (The same defect exists in inotify.)
-> >
+Hi Russell,
+
+On 07/07/2011 04:39 PM, Russell King - ARM Linux wrote:
+> On Thu, Jul 07, 2011 at 04:23:13PM +0400, Vitaly Kuzmichev wrote:
+>> To get hundredths of MHz the rate needs to be divided by 10'000.
+>> Here is an example:
+>>  twd_timer_rate = 123456789
+>>  Before the patch:
+>>     twd_timer_rate / 1000000 = 123
+>>     (twd_timer_rate / 1000000) % 100 = 23
+>>     Result: 123.23MHz.
+>>  After being fixed:
+>>     twd_timer_rate / 1000000 = 123
+>>     (twd_timer_rate / 10000) % 100 = 45
+>>     Result: 123.45MHz.
+>>
+>> Signed-off-by: Vitaly Kuzmichev <vkuzmichev@mvista.com>
 > 
-> I don't see why taskstats is singled out, please look at proc
-> notifiers as well.
+> -> patch system please.
 
-Do you mean proc connector?  AFAICS, it is available to root only.  And
-no, taskstats is not singled out - I mentioned inotify as another
-example.  The kernel might be vulnerable to many side channel attacks,
-using different interfaces.
-
-
-> I don't buy this use case, what are we trying to
-> save here and why is taskstats responsible, because it notifies?
-
-Because it notifies _asynchronously_ in sense of the subject and
-synchronously in sense of the object's activity.  It gives a hint when
-some probable "chechpoint" occured.
-
-Please compare in the example I've posted above the cases of "poll"
-(like test -e /proc/$pid) and "wait" (taskstats).  In the poll case it's
-very easy to loose the moment of the race because of rescheduling.  In
-the wait case the attacker task wakes up very closely to the race place.
-
-
-> > 2) taskstats gives the task information at the precisely specific moment
-> > - task death.  So, the attacker shouldn't guess whether some event
-> > occured or not.  The formula of gotten information is _exactly_ task
-> > activity during the life.  On the contrary, getting the same information
-> > from procfs files might result in some inaccuracy because of measuring
-> > time inaccuracy (scheduler's variability, different disks' load, etc.).
-> >
-> > Of cource, (2) makes sense only if some sensible information is still
-> > available through taskstats.
-> 
-> Again this makes no sense to me, at the end we send accumulated data
-> and that data can be read from /proc/$pid (mostly).
-
-Umm...  If both taskstats and procfs expose some sensible information,
-both should be fixed, no?
-
-
-> The race is that
-> while I go off to read the data the process might disappear taking all
-> of its data with it, which is what taskstats tries to solve among
-> other things.
-
-Or the last succeeded measurement didn't happen after some sensible
-event.
-
-Introducing this "race" neither fixes some bug or fully prevents some
-exploitation technique.  It might _reduce the chance_ of exploitation.
-
-In my ssh exploit an attacker using procfs would have to poll
-/proc/PID/io while 2 other processes would run - privileged sshd and
-unprivileged sshd.  The scheduler would try to run both sshds
-on different CPUs of 2 CPU system in parallel because sshds actively
-exchange the data via pipes.  So, the poller might not run on any CPU
-while the unpivileged sshd is dying.  By using taskstats I get the
-precise information from the first attempt.
-
+Should I submit other patches into this system too?
 
 Thanks,
-
--- 
-Vasiliy Kulikov
-http://www.openwall.com - bringing security into open computing environments
+Vitaly.
