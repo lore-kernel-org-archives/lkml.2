@@ -1,55 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756532Ab1GGMxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 08:53:17 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:39354 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756285Ab1GGMxP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 08:53:15 -0400
-Message-ID: <4E15ABA6.4000202@mvista.com>
-Date: Thu, 07 Jul 2011 16:50:46 +0400
-From: Vitaly Kuzmichev <vkuzmichev@mvista.com>
-Reply-To: vkuzmichev@mvista.com
-Organization: MontaVista Software, LLC
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.17) Gecko/20110428 Fedora/3.1.10-1.fc13 Thunderbird/3.1.10
+	id S1756552Ab1GGM5P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 08:57:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60528 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755696Ab1GGM5O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 08:57:14 -0400
+Date: Thu, 7 Jul 2011 15:57:30 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jason Wang <jasowang@redhat.com>
+Cc: netdev@vger.kernel.org, virtualization@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH 2/2] vhost: set log when updating used flags or avail
+ event
+Message-ID: <20110707125728.GA2469@redhat.com>
+References: <20110621100426.6777.68855.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+ <20110621100438.6777.20695.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: linux-arm-kernel@lists.infradead.org, linux-watchdog@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Wim Van Sebroeck <wim@iguana.be>,
-        Marc Zyngier <marc.zyngier@arm.com>, Colin Cross <ccross@android.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V3 1/4] ARM: smp_twd: Fix typo in 'twd_timer_rate' printing
-References: <1310041339-2348-1-git-send-email-vkuzmichev@mvista.com> <1310041396-2461-1-git-send-email-vkuzmichev@mvista.com> <20110707123907.GP8286@n2100.arm.linux.org.uk>
-In-Reply-To: <20110707123907.GP8286@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110621100438.6777.20695.stgit@dhcp-91-7.nay.redhat.com.englab.nay.redhat.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Russell,
+Subject: vhost: used ring logging cleanup
 
-On 07/07/2011 04:39 PM, Russell King - ARM Linux wrote:
-> On Thu, Jul 07, 2011 at 04:23:13PM +0400, Vitaly Kuzmichev wrote:
->> To get hundredths of MHz the rate needs to be divided by 10'000.
->> Here is an example:
->>  twd_timer_rate = 123456789
->>  Before the patch:
->>     twd_timer_rate / 1000000 = 123
->>     (twd_timer_rate / 1000000) % 100 = 23
->>     Result: 123.23MHz.
->>  After being fixed:
->>     twd_timer_rate / 1000000 = 123
->>     (twd_timer_rate / 10000) % 100 = 45
->>     Result: 123.45MHz.
->>
->> Signed-off-by: Vitaly Kuzmichev <vkuzmichev@mvista.com>
+remove extra log bit setting for used ring updates: it's no longer
+necessary.  Also, use vhost_avail_event instead of duplicating offset
+math.
+
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+
+> We need set log when updating used flags and avail event. Otherwise guest may
+> see stale values after migration and then do not exit or exit unexpectedly.
 > 
-> -> patch system please.
+> Signed-off-by: Jason Wang <jasowang@redhat.com>
 
-For a such newbie as me it's hard to understand this comment, sorry :)
-Could you explain, please?
+OK but this means we set the log twice now.
+Also, hardcording offset is not as nice as using
+vhost_avail_event. So I think the below is needed
+on top. Comments?
 
-Thanks,
-Vitaly.
+ drivers/vhost/vhost.c |   29 +++++++++--------------------
+ 1 files changed, 9 insertions(+), 20 deletions(-)
+
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 540591b..c5f96ba 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -946,14 +946,16 @@ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+ 
+ static int vhost_update_used_flags(struct vhost_virtqueue *vq)
+ {
++	void __user *used;
+ 	if (put_user(vq->used_flags, &vq->used->flags) < 0)
+ 		return -EFAULT;
+ 	if (unlikely(vq->log_used)) {
+ 		/* Make sure the flag is seen before log. */
+ 		smp_wmb();
+ 		/* Log used flag write. */
+-		log_write(vq->log_base,
+-			  vq->log_addr + offsetof(struct vring_used, flags),
++		used = &vq->used->flags;
++		log_write(vq->log_base, vq->log_addr +
++			  (used - (void __user *)vq->used),
+ 			  sizeof vq->used->flags);
+ 		if (vq->log_ctx)
+ 			eventfd_signal(vq->log_ctx, 1);
+@@ -966,13 +968,14 @@ static int vhost_update_avail_event(struct vhost_virtqueue *vq, u16 avail_event)
+ 	if (put_user(vq->avail_idx, vhost_avail_event(vq)))
+ 		return -EFAULT;
+ 	if (unlikely(vq->log_used)) {
++		void __user *used;
+ 		/* Make sure the event is seen before log. */
+ 		smp_wmb();
+ 		/* Log avail event write */
+-		log_write(vq->log_base,
+-			  vq->log_addr + offsetof(struct vring_used,
+-						  ring[vq->num]),
+-			  sizeof avail_event);
++		used = vhost_avail_event(vq);
++		log_write(vq->log_base, vq->log_addr +
++			  (used - (void __user *)vq->used),
++			  sizeof *vhost_avail_event(vq));
+ 		if (vq->log_ctx)
+ 			eventfd_signal(vq->log_ctx, 1);
+ 	}
+@@ -1474,20 +1477,6 @@ bool vhost_enable_notify(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+ 			return false;
+ 		}
+ 	}
+-	if (unlikely(vq->log_used)) {
+-		void __user *used;
+-		/* Make sure data is seen before log. */
+-		smp_wmb();
+-		used = vhost_has_feature(dev, VIRTIO_RING_F_EVENT_IDX) ?
+-			&vq->used->flags : vhost_avail_event(vq);
+-		/* Log used flags or event index entry write. Both are 16 bit
+-		 * fields. */
+-		log_write(vq->log_base, vq->log_addr +
+-			   (used - (void __user *)vq->used),
+-			  sizeof(u16));
+-		if (vq->log_ctx)
+-			eventfd_signal(vq->log_ctx, 1);
+-	}
+ 	/* They could have slipped one in as we were doing that: make
+ 	 * sure it's written, then check again. */
+ 	smp_mb();
+-- 
+1.7.5.53.gc233e
