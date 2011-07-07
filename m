@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751810Ab1GGXYY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 19:24:24 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:51922 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750932Ab1GGXYX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 19:24:23 -0400
-X-Sasl-enc: V+1IfvXV2ENp/ZrhxqrlEZzXf5fHRfslCA4zP5rifTTK 1310081062
-Date: Thu, 7 Jul 2011 16:11:26 -0700
-From: Greg KH <greg@kroah.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, torvalds@linux-foundation.org,
-        keyrings@linux-nfs.org, linux-security-module@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jeff Layton <jlayton@redhat.com>,
-        stable@kernel.org
-Subject: Re: [PATCH] KEYS: Fix error handling in construct_key_and_link()
-Message-ID: <20110707231126.GA5696@kroah.com>
-References: <20110629153620.e00e9ef2.akpm@linux-foundation.org>
- <20110621133205.32304.82464.stgit@warthog.procyon.org.uk>
- <22918.1309435191@redhat.com>
+	id S1751976Ab1GGXZl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 19:25:41 -0400
+Received: from sous-sol.org ([216.99.217.87]:40177 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750932Ab1GGXZk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 19:25:40 -0400
+Date: Thu, 7 Jul 2011 16:25:32 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Don Dutile <ddutile@redhat.com>
+Subject: [PATCH] pci: ARI is a PCIe v2 feature
+Message-ID: <20110707232532.GA15844@sequoia.sous-sol.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <22918.1309435191@redhat.com>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 30, 2011 at 12:59:51PM +0100, David Howells wrote:
-> Andrew Morton <akpm@linux-foundation.org> wrote:
-> 
-> > So... this was a way to force 2.6.39.x users to upgrade to 3.0.x?
-> 
-> Sorry, I always forget to cc stable.
+The function pci_enable_ari() may mistakenly set the downstream port
+of a v1 PCIe switch in ARI Forwarding mode.  This is a PCIe v2 feature,
+and with an SR-IOV device on that switch port believing the switch above
+is ARI capable it may attempt to use functions 8-255, translating into
+invalid (non-zero) device numbers for that bus.  This has been seen
+to cause Completion Timeouts and general misbehaviour including hangs
+and panics.
 
-I got it now, thanks.
+Cc: stable@kernel.org
+Acked-by: Don Dutile <ddutile@redhat.com>
+Tested-by: Don Dutile <ddutile@redhat.com>
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+---
+
+ drivers/pci/pci.c |    7 ++++++-
+ 1 files changed, 6 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 2c5b9b9..7f83236 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -1905,7 +1905,7 @@ void pci_enable_ari(struct pci_dev *dev)
+ {
+ 	int pos;
+ 	u32 cap;
+-	u16 ctrl;
++	u16 flags, ctrl;
+ 	struct pci_dev *bridge;
+ 
+ 	if (!pci_is_pcie(dev) || dev->devfn)
+@@ -1923,6 +1923,11 @@ void pci_enable_ari(struct pci_dev *dev)
+ 	if (!pos)
+ 		return;
+ 
++	/* ARI is a PCIe v2 feature */
++	pci_read_config_word(bridge, pos + PCI_EXP_FLAGS, &flags);
++	if ((flags & PCI_EXP_FLAGS_VERS) < 2)
++		return;
++
+ 	pci_read_config_dword(bridge, pos + PCI_EXP_DEVCAP2, &cap);
+ 	if (!(cap & PCI_EXP_DEVCAP2_ARI))
+ 		return;
+
