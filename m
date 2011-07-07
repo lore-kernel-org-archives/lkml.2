@@ -1,92 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751601Ab1GGVH1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 17:07:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:36656 "EHLO ogre.sisk.pl"
+	id S1752005Ab1GGVMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 17:12:06 -0400
+Received: from mga11.intel.com ([192.55.52.93]:44187 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756Ab1GGVH0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 17:07:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-Subject: Re: [PATCH v3 2/3] PM / DEVFREQ: add example governors
-Date: Thu, 7 Jul 2011 23:08:38 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Greg Kroah-Hartman" <gregkh@suse.de>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Jiejing Zhang <kzjeef@gmail.com>, Colin Cross <ccross@google.com>,
-        Nishanth Menon <nm@ti.com>, Thomas Gleixner <tglx@linutronix.de>
-References: <1306471995-4048-1-git-send-email-myungjoo.ham@samsung.com> <201107041043.25150.rjw@sisk.pl> <CAJ0PZbQ0ENk-vEebqiD=DGHZVtswHQkPre8wUqM2vwR_r+V=Uw@mail.gmail.com>
-In-Reply-To: <CAJ0PZbQ0ENk-vEebqiD=DGHZVtswHQkPre8wUqM2vwR_r+V=Uw@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107072308.38622.rjw@sisk.pl>
+	id S1750932Ab1GGVME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 17:12:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,495,1304319600"; 
+   d="scan'208";a="25127841"
+From: james_p_freyensee@linux.intel.com
+To: linux-next@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
+        sfr@canb.auug.org.au, christophe.guerard@intel.com,
+        pranav.k.sanghadia@intel.com, james_p_freyensee@linux.intel.com
+Subject: [PATCH] Add PCI config dependency for PTI.
+Date: Thu,  7 Jul 2011 14:12:25 -0700
+Message-Id: <1310073145-18328-1-git-send-email-james_p_freyensee@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <james_p_freyensee@linux.intel.com>
+References: <james_p_freyensee@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 04, 2011, MyungJoo Ham wrote:
-> On Mon, Jul 4, 2011 at 5:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Monday, July 04, 2011, MyungJoo Ham wrote:
-> >> Hello,
-> >>
-> >> 2011/7/3 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> > Hi,
-> >> >
-> >> > On Friday, May 27, 2011, MyungJoo Ham wrote:
-> >> >> Three CPUFREQ-like governors are provided as examples.
-> >> >>
-> >> >> powersave: use the lowest frequency possible. The user (device) should
-> >> >> set the polling_ms as 0 because polling is useless for this governor.
-> >> >>
-> >> >> performance: use the highest freqeuncy possible. The user (device)
-> >> >> should set the polling_ms as 0 because polling is useless for this
-> >> >> governor.
-> >> >>
-> >> >> simple_ondemand: simplified version of CPUFREQ's ONDEMAND governor.
-> >> >>
-> >> >> When a user updates OPP entries (enable/disable/add), OPP framework
-> >> >> automatically notifies DEVFREQ to update operating frequency
-> >> >> accordingly. Thus, DEVFREQ users (device drivers) do not need to update
-> >> >> DEVFREQ manually with OPP entry updates or set polling_ms for powersave
-> >> >> , performance, or any other "static" governors.
-> >> >>
-> >> >> Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-> >> >> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> >> []
-> >> >> +
-> >> >> +     /* Set the desired frequency based on the load */
-> >> >> +     a = (unsigned long long) stat.busy_time * stat.current_frequency;
-> >> >
-> >> > What's the purpose of the conversion?
-> >>
-> >> Assuming that the work speed of a device is proportional to its
-> >> frequency, it measures the amount of work done.
-> >> It's time * work/time. For example, during the last 10 second, if the
-> >> busy_time was 5 sec and frequency was 10MHz,
-> >> it's "50M", which is same as 20MHz and 2.5 sec.
-> >
-> > I understand that, but my question was why you're doing a forced conversion
-> > to (unsigned long long).
-> 
-> Ah.. that was for the 64bit operations.
-> 
-> Both busy_time and current_frequency are 32bit and current_frequency
-> may be a big number.
-> 
-> Thus, in order to get "freq" value without losing bits (e.g., if
-> current_frequency = 1GHz and busy_time = 8000, we get an overflow
-> without 64bit operations), I've inserted 64bit operations with the
-> conversion. For the cosmetic reasons, it appears that "u64" looks
-> better though.
+From: J Freyensee <james_p_freyensee@linux.intel.com>
 
-You wouldn't need the explicit type casting if you did
+Intel-Atom implementation of PTI will not work with PCI
+configured off, so the pti driver should not be compiled
+in the event someone does not enable PCI in the linux kernel.
 
-a = stat.busy_time;
-a *= stat.current_frequency;
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Acked-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Signed-off-by: J Freyensee <james_p_freyensee@linux.intel.com>
+---
+ drivers/misc/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Thanks,
-Rafael
+diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+index 4e349cd..7fd32a6 100644
+--- a/drivers/misc/Kconfig
++++ b/drivers/misc/Kconfig
+@@ -146,6 +146,7 @@ config PHANTOM
+ 
+ config INTEL_MID_PTI
+ 	tristate "Parallel Trace Interface for MIPI P1149.7 cJTAG standard"
++	depends on PCI
+ 	default n
+ 	help
+ 	  The PTI (Parallel Trace Interface) driver directs
+-- 
+1.7.0.4
+
