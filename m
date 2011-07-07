@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753862Ab1GGHhS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 03:37:18 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:51838 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751795Ab1GGHhP (ORCPT
+	id S1753245Ab1GGHis (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 03:38:48 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49988 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751284Ab1GGHir convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 03:37:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCHv11 0/8] Contiguous Memory Allocator
-Date: Thu, 7 Jul 2011 09:36:34 +0200
-User-Agent: KMail/1.13.6 (Linux/3.0.0-rc1nosema+; KDE/4.6.3; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>, Ankita Garg <ankita@in.ibm.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Jesse Barker <jesse.barker@linaro.org>, Mel Gorman <mel@csn.ul.ie>,
-        Chunsang Jeong <chunsang.jeong@linaro.org>,
-        Jonathan Corbet <corbet@lwn.net>, linux-kernel@vger.kernel.org,
-        Michal Nazarewicz <mina86@mina86.com>, linaro-mm-sig@lists.linaro.org,
-        linux-mm@kvack.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-media@vger.kernel.org
-References: <1309851710-3828-1-git-send-email-m.szyprowski@samsung.com> <201107051407.17249.arnd@arndb.de> <20110706151112.5c619431.akpm@linux-foundation.org>
-In-Reply-To: <20110706151112.5c619431.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201107070936.34469.arnd@arndb.de>
-X-Provags-ID: V02:K0:nx1irPue/7dvJmBClXrk9viMKTA4jbWpORa0qve5SE7
- 5mH8wADGPFVksbJg6vkmXMzFG0G04FQeV+BX2PZP4z1igpsHQR
- fDSC+jYa1wIFwNeXuDLs9ZXuP/HAKPKLW6bAyoanGEvYjIMbD9
- eJFD93+yYsnOhMQE1sH34xPokSoe0uvMI2AzlQ3VAkya7kxcYx
- /V4TF1YIqYSGvuLLmIMOg==
+	Thu, 7 Jul 2011 03:38:47 -0400
+Date: Thu, 7 Jul 2011 08:40:26 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Nathan Royer <nroyer@invensense.com>
+Cc: Alan Cox <alan@linux.intel.com>, Jonathan Cameron <jic23@cam.ac.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Jiri Kosina <jkosina@suse.cz>,
+        Jean Delvare <khali@linux-fr.org>, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org, Chris Hudson <chudson@kionix.com>,
+        eric.andersson@unixphere.com
+Subject: Re: [PATCH 01/11] misc: inv_mpu primary header file and README
+ file.
+Message-ID: <20110707084026.4562ab94@lxorguk.ukuu.org.uk>
+In-Reply-To: <592dafb95382604bd514687f7600cebd@mail.gmail.com>
+References: <1309486707-1658-1-git-send-email-nroyer@invensense.com>
+	<4E0D8E94.5030604@cam.ac.uk>
+	<4d61a92a11e5d83a1cb0094441ae5f5e@mail.gmail.com>
+	<4E105284.7030209@cam.ac.uk>
+	<20110704091658.0d4c8e3f@bob.linux.org.uk>
+	<c2189246a279a0e5a1b8599edc94a79a@mail.gmail.com>
+	<20110706115430.3745592c@bob.linux.org.uk>
+	<592dafb95382604bd514687f7600cebd@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.9 (GTK+ 2.22.0; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 07 July 2011 00:11:12 Andrew Morton wrote:
-> I could review it and put it in there on a preliminary basis for some
-> runtime testing.  But the question in my mind is how different will the
-> code be after the problems which rmk has identified have been fixed?
-> 
-> If "not very different" then that effort and testing will have been
-> worthwhile.
-> 
-> If "very different" or "unworkable" then it was all for naught.
-> 
-> So.  Do we have a feeling for the magnitude of the changes which will
-> be needed to fix these things up?
+> If I understand you correctly, you are suggesting that we create two
+> drivers for the mpu3050 part.  An MPU (Motion Processing Unit) driver and
+> a standalone Gyroscope driver.  The MPU if present would turn each sensor
+> (accel, compass, gyro, pressure) into an MPU slave, load and configure the
+> firmware, and provide a user space interface for customization and runtime
+> communication with the Hideously Complicated Algorithms (HCA's).
 
-As far as I can tell, the changes that we still need are mostly in the 
-ARM specific portion of the series. All architectures that have cache
-coherent DMA by default (most of the other interesting ones) can just
-call dma_alloc_from_contiguous() from their dma_alloc_coherent()
-function without having to do extra work.
+Its hard to judge with what has been explained so far but the device
+appears to be very different in the two operating modes so it might make
+sense to have it as two drivers (or one driver with two very distinct
+modes)
 
-It's possible that there will be small changes to simplify to the
-first six patches in order to simplify the ARM port, but I expect
-them to stay basically as they are, unless someone complains about
-them.
+> Each sensor driver would have two operating modes, standalone, and slave
+> to the MPU trying to re-use as much code as possible.  Current drivers
+> that have a standalone interface would need the slave interface added, and
+> those that we've written would need the stand alone interface added.
 
-	Arnd
+Can the slave interface appears to be an i²c bus too or is the interface
+too different (ie could the smart mode create an i²c bus that it uses to
+talk to the drivers to configure them for 'smart' mode)
+
+I'm not entirely sure at this point I understand quite how all the pieces
+fit together.
+
+Alan
