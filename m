@@ -1,188 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752477Ab1GGQ30 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:29:26 -0400
-Received: from mail.perches.com ([173.55.12.10]:3654 "EHLO mail.perches.com"
+	id S1752936Ab1GGQ3k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:29:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:46882 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751515Ab1GGQ3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:29:23 -0400
-Subject: Re: [PATCH 08/10] dynamic_debug: make netif_dbg() call
- __netdev_printk()
-From: Joe Perches <joe@perches.com>
-To: Jason Baron <jbaron@redhat.com>
-Cc: gregkh@suse.de, jim.cromie@gmail.com, bvanassche@acm.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net,
-        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
-In-Reply-To: <20110707141259.GA2536@redhat.com>
-References: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
-	 <889f3300a96f381aee1239ea775014fff26d93c9.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
-	 <1309989543.1710.19.camel@Joe-Laptop>  <20110707141259.GA2536@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Jul 2011 09:29:21 -0700
-Message-ID: <1310056161.27526.47.camel@Joe-Laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
+	id S1751880Ab1GGQ3i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 12:29:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,494,1304319600"; 
+   d="scan'208";a="24542558"
+Message-ID: <4E15DF07.4010507@linux.intel.com>
+Date: Thu, 07 Jul 2011 09:29:59 -0700
+From: J Freyensee <james_p_freyensee@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; Linux x86_64; rv:5.0) Gecko/20110628 Thunderbird/5.0
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: lkml <linux-kernel@vger.kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org
+Subject: Re: linux-next: Tree for July 4 (misc/pti)
+References: <20110704170952.1024e89b.sfr@canb.auug.org.au> <20110704134541.9adfd4f1.randy.dunlap@oracle.com> <20110707081441.a4a64e59.randy.dunlap@oracle.com>
+In-Reply-To: <20110707081441.a4a64e59.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2011-07-07 at 10:13 -0400, Jason Baron wrote:
-> On Wed, Jul 06, 2011 at 02:59:03PM -0700, Joe Perches wrote:
-> > > diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-> > > @@ -2731,10 +2731,8 @@ do {								\
-> > >  #elif defined(CONFIG_DYNAMIC_DEBUG)
-> > >  #define netif_dbg(priv, type, netdev, format, args...)		\
-> > >  do {								\
-> > > -	if (netif_msg_##type(priv))				\
-> > > -		dynamic_dev_dbg((netdev)->dev.parent,		\
-> > > -				"%s: " format,			\
-> > > -				netdev_name(netdev), ##args);	\
-> > > +	dynamic_netif_dbg(netdev, (netif_msg_##type(priv)),	\
-> > > +				  format, ##args);		\
-> > Because you've already added dynamic_netdev_dbg,
-> > maybe this should be:
-> > #define netif_dbg(priv, type, netdev, format, args...)		\
-> > do {								\
-> > 	if (netif_msg_##type(priv))				\
-> > 		dynamic_netdev_dbg(netdev, format, ##args);	\
-> > } while (0)
-> The reason I didn't add it this way is b/c I plan on converting the
-> outer 'ifs' to the jump label infrastructure - which makes the disabled
-> case just a no-op and moves the printk and tests out of line.
+On 07/07/2011 08:14 AM, Randy Dunlap wrote:
+> On Mon, 4 Jul 2011 13:45:41 -0700 Randy Dunlap wrote:
+>
+>> On Mon, 4 Jul 2011 17:09:52 +1000 Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> Changes since 20110701:
+>>
+>> when CONFIG_PCI is not enabled:
+>>
+>> drivers/misc/pti.c:410: error: implicit declaration of function 'pci_release_region'
+>> drivers/misc/pti.c:859: error: implicit declaration of function 'pci_request_region'
+>>
+>>
+>> Stubs for these 2 functions could be added to include/linux/pci.h, but it would
+>> make more sense to me just to make the driver depend on PCI since it seems to rely
+>> on so many PCI functions.  or are the PCI pieces optional?
+>
+> ping.  still a problem in linux-next 20110706.
 
-Perhaps you needn't do that.
+Thanks for the ping.
 
-I think there's little to be gained to move the test
-outwards and not perform the netif_msg##type(priv)
+Is there something you need me to do or look at?
 
-> Until that is done, i could see coding it as you've suggested, but I'd
-> prefer to leave it as is (and leave future churn to within the dynamic
-> debug code as opposed to the netdevice.h header).
+For Intel-Atom architectures, the MIPI PTI module does sit on the PCI 
+bus.  It's very much dependent upon the PCI bus for working 
+functionality and it's not optional.  So yes, it makes sense for the 
+driver to depend on PCI to be there and if PCI is not enabled on the 
+system, don't build the pti driver.
 
-Shrug.  I think that dynamic_debug will have continuing
-impacts on various subsystems unless there's some generic
-__dynamic_dbg() and _prefix() mechanism introduced into
-more generic <foo>_dbg style.
+Maybe it's a Kconfig dependency?
 
-Anything logging message that uses <foo>_dbg or <foo>_vdbg
-is a candidate for dynamic_debug uses, but there's no
-current generic mechanism to avoid subsystem specific needs.
-
-Any of these could need some dynamic_debug consideration:
-
-$ grep -rPoh --include=*.[ch] "[a-z_]+_[v]?dbg\(" * | sort | uniq
-acpi_ut_allocate_object_desc_dbg(
-acpi_ut_create_internal_object_dbg(
-adc_dbg(
-add_dyn_dbg(
-airo_print_dbg(
-ata_dev_dbg(
-ata_link_dbg(
-ata_port_dbg(
-ath_dbg(
-atm_dbg(
-bat_dbg(
-bit_dbg(
-cafe_dev_dbg(
-cam_dbg(
-c_freq_dbg(
-chan_dbg(
-chan_reg_rule_print_dbg(
-cmm_dbg(
-c_pm_dbg(
-ctrl_dbg(
-__dbg(
-desc_dbg(
-dev_dbg(
-dev_vdbg(
-dma_request_channel_dbg(
-__dump_desc_dbg(
-dump_desc_dbg(
-dump_pq_desc_dbg(
-dynamic_dev_dbg(
-e_dbg(
-ehca_dbg(
-ehca_gen_dbg(
-ehci_dbg(
-ehci_vdbg(
-en_dbg(
-ep_dbg(
-ep_vdbg(
-fhci_dbg(
-fhci_vdbg(
-fit_dbg(
-gig_dbg(
-gpio_dbg(
-gru_dbg(
-hgpk_dbg(
-hid_dbg(
-hw_dbg(
-ibmvfc_dbg(
-ipath_dbg(
-ipoib_dbg(
-ipr_dbg(
-iser_dbg(
-isp_isr_dbg(
-itd_dbg(
-ite_dbg(
-l_dbg(
-lg_dbg(
-mce_dbg(
-memblock_dbg(
-mhwmp_dbg(
-mpeg_dbg(
-mpl_dbg(
-msg_dbg(
-mthca_dbg(
-netdev_dbg(
-netdev_vdbg(
-netif_dbg(
-netif_vdbg(
-nfc_dbg(
-nfc_dev_dbg(
-nsp_dbg(
-nvt_dbg(
-ohci_dbg(
-ohci_vdbg(
-oxu_dbg(
-oxu_vdbg(
-pch_dbg(
-pch_pci_dbg(
-pm_dev_dbg(
-pnp_dbg(
-pop_dbg(
-prep_dma_pq_dbg(
-prep_dma_pqzero_sum_dbg(
-prep_dma_xor_dbg(
-_print_dbg(
-print_dbg(
-pwm_dbg(
-rdev_dbg(
-reg_dbg(
-sh_keysc_map_dbg(
-slice_dbg(
-smsc_dbg(
-start_dbg(
-stop_dbg(
-sysrq_handle_dbg(
-tda_dbg(
-tgt_dbg(
-tipc_msg_dbg(
-__tuner_dbg(
-tuner_dbg(
-tveeprom_dbg(
-tx_dbg(
-uea_dbg(
-uea_vdbg(
-ugeth_dbg(
-ugeth_vdbg(
-urb_dbg(
-usb_dbg(
-vpif_dbg(
-wiphy_dbg(
-wiphy_vdbg(
-xhci_dbg(
-x_show_dbg(
-
+Thanks,
+Jay
+> ---
+> ~Randy
+> *** Remember to use Documentation/SubmitChecklist when testing your code ***
 
