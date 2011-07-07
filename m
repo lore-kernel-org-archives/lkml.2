@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab1GGFd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 01:33:29 -0400
-Received: from smtp-out.google.com ([74.125.121.67]:3630 "EHLO
+	id S1754647Ab1GGFdb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:33:31 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:3670 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab1GGFdU (ORCPT
+	with ESMTP id S1754468Ab1GGFdZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 01:33:20 -0400
+	Thu, 7 Jul 2011 01:33:25 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=dFkBQOvmX6SIRmwuQSZ/ZxxwdfiVNPE1fShyt/zy48Pjy5gB7JX5pApJbXi1qEUMP
-	mprob0BcHLoQ84HcWz02w==
-Message-Id: <20110707053100.545442047@google.com>
+	b=p8gDCu+6F6ARIMakOsRQeBwf0sixRD/DO8bsq5zmzvTGpEEoTS1zk6PT4b1T3/jTq
+	8b8wDkFWFylf0y3KWCWsA==
+Message-Id: <20110707053101.110722366@google.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 06 Jul 2011 22:30:45 -0700
+Date: Wed, 06 Jul 2011 22:30:51 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -25,200 +25,130 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Hu Tao <hutao@cn.fujitsu.com>
-Subject: [patch 09/17] sched: add support for unthrottling group entities
+        Hu Tao <hutao@cn.fujitsu.com>, Nikhil Rao <ncrao@google.com>
+Subject: [patch 15/17] sched: add exports tracking cfs bandwidth control statistics
 References: <20110707053036.173186930@google.com>
-Content-Disposition: inline; filename=sched-bwc-unthrottle_entities.patch
+Content-Disposition: inline; filename=sched-bwc-throttle_stats.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At the start of each period we refresh the global bandwidth pool.  At this time
-we must also unthrottle any cfs_rq entities who are now within bandwidth once 
-more (as quota permits).
+From: Nikhil Rao <ncrao@google.com>
 
-Unthrottled entities have their corresponding cfs_rq->throttled flag cleared
-and their entities re-enqueued.
+This change introduces statistics exports for the cpu sub-system, these are
+added through the use of a stat file similar to that exported by other
+subsystems.
+
+The following exports are included:
+
+nr_periods:	number of periods in which execution occurred
+nr_throttled:	the number of periods above in which execution was throttle
+throttled_time:	cumulative wall-time that any cpus have been throttled for
+this group
 
 Signed-off-by: Paul Turner <pjt@google.com>
+Signed-off-by: Nikhil Rao <ncrao@google.com>
+Signed-off-by: Bharata B Rao <bharata@linux.vnet.ibm.com>
 Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
 ---
- kernel/sched.c      |    3 +
- kernel/sched_fair.c |  128 ++++++++++++++++++++++++++++++++++++++++++++++++++--
- 2 files changed, 127 insertions(+), 4 deletions(-)
+ kernel/sched.c      |   21 +++++++++++++++++++++
+ kernel/sched_fair.c |    7 +++++++
+ 2 files changed, 28 insertions(+)
 
 Index: tip/kernel/sched.c
 ===================================================================
 --- tip.orig/kernel/sched.c
 +++ tip/kernel/sched.c
-@@ -9005,6 +9005,9 @@ static int tg_set_cfs_bandwidth(struct t
- 		raw_spin_lock_irq(&rq->lock);
- 		cfs_rq->runtime_enabled = runtime_enabled;
- 		cfs_rq->runtime_remaining = 0;
+@@ -259,6 +259,9 @@ struct cfs_bandwidth {
+ 	struct hrtimer period_timer;
+ 	struct list_head throttled_cfs_rq;
+ 
++	/* statistics */
++	int nr_periods, nr_throttled;
++	u64 throttled_time;
+ #endif
+ };
+ 
+@@ -399,6 +402,7 @@ struct cfs_rq {
+ 	u64 runtime_expires;
+ 	s64 runtime_remaining;
+ 
++	u64 throttled_timestamp;
+ 	int throttled, throttle_count;
+ 	struct list_head throttled_list;
+ #endif
+@@ -9212,6 +9216,19 @@ static int __cfs_schedulable(struct task
+ 
+ 	return ret;
+ }
 +
-+		if (cfs_rq_throttled(cfs_rq))
-+			unthrottle_cfs_rq(cfs_rq);
- 		raw_spin_unlock_irq(&rq->lock);
- 	}
- out_unlock:
++static int cpu_stats_show(struct cgroup *cgrp, struct cftype *cft,
++		struct cgroup_map_cb *cb)
++{
++	struct task_group *tg = cgroup_tg(cgrp);
++	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
++
++	cb->fill(cb, "nr_periods", cfs_b->nr_periods);
++	cb->fill(cb, "nr_throttled", cfs_b->nr_throttled);
++	cb->fill(cb, "throttled_time", cfs_b->throttled_time);
++
++	return 0;
++}
+ #endif /* CONFIG_CFS_BANDWIDTH */
+ #endif /* CONFIG_FAIR_GROUP_SCHED */
+ 
+@@ -9258,6 +9275,10 @@ static struct cftype cpu_files[] = {
+ 		.read_u64 = cpu_cfs_period_read_u64,
+ 		.write_u64 = cpu_cfs_period_write_u64,
+ 	},
++	{
++		.name = "stat",
++		.read_map = cpu_stats_show,
++	},
+ #endif
+ #ifdef CONFIG_RT_GROUP_SCHED
+ 	{
 Index: tip/kernel/sched_fair.c
 ===================================================================
 --- tip.orig/kernel/sched_fair.c
 +++ tip/kernel/sched_fair.c
-@@ -1455,6 +1455,84 @@ static void throttle_cfs_rq(struct cfs_r
- 	raw_spin_unlock(&cfs_b->lock);
- }
+@@ -1522,6 +1522,7 @@ static void throttle_cfs_rq(struct cfs_r
+ 		rq->nr_running -= task_delta;
  
-+static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
-+{
-+	struct rq *rq = rq_of(cfs_rq);
-+	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
-+	struct sched_entity *se;
-+	int enqueue = 1;
-+	long task_delta;
-+
-+	se = cfs_rq->tg->se[cpu_of(rq_of(cfs_rq))];
-+
-+	cfs_rq->throttled = 0;
-+	raw_spin_lock(&cfs_b->lock);
-+	list_del_rcu(&cfs_rq->throttled_list);
-+	raw_spin_unlock(&cfs_b->lock);
-+
-+	if (!cfs_rq->load.weight)
-+		return;
-+
-+	task_delta = cfs_rq->h_nr_running;
-+	for_each_sched_entity(se) {
-+		if (se->on_rq)
-+			enqueue = 0;
-+
-+		cfs_rq = cfs_rq_of(se);
-+		if (enqueue)
-+			enqueue_entity(cfs_rq, se, ENQUEUE_WAKEUP);
-+		cfs_rq->h_nr_running += task_delta;
-+
-+		if (cfs_rq_throttled(cfs_rq))
-+			break;
-+	}
-+
-+	if (!se)
-+		rq->nr_running += task_delta;
-+
-+	/* determine whether we need to wake up potentially idle cpu */
-+	if (rq->curr == rq->idle && rq->cfs.nr_running)
-+		resched_task(rq->curr);
-+}
-+
-+static u64 distribute_cfs_runtime(struct cfs_bandwidth *cfs_b,
-+		u64 remaining, u64 expires)
-+{
-+	struct cfs_rq *cfs_rq;
-+	u64 runtime = remaining;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(cfs_rq, &cfs_b->throttled_cfs_rq,
-+				throttled_list) {
-+		struct rq *rq = rq_of(cfs_rq);
-+
-+		raw_spin_lock(&rq->lock);
-+		if (!cfs_rq_throttled(cfs_rq))
-+			goto next;
-+
-+		runtime = -cfs_rq->runtime_remaining + 1;
-+		if (runtime > remaining)
-+			runtime = remaining;
-+		remaining -= runtime;
-+
-+		cfs_rq->runtime_remaining += runtime;
-+		cfs_rq->runtime_expires = expires;
-+
-+		/* we check whether we're throttled above */
-+		if (cfs_rq->runtime_remaining > 0)
-+			unthrottle_cfs_rq(cfs_rq);
-+
-+next:
-+		raw_spin_unlock(&rq->lock);
-+
-+		if (!remaining)
-+			break;
-+	}
-+	rcu_read_unlock();
-+
-+	return remaining;
-+}
-+
- /*
-  * Responsible for refilling a task_group's bandwidth and unthrottling its
-  * cfs_rqs as appropriate. If there has been no activity within the last
-@@ -1463,22 +1541,64 @@ static void throttle_cfs_rq(struct cfs_r
-  */
- static int do_sched_cfs_period_timer(struct cfs_bandwidth *cfs_b, int overrun)
- {
--	int idle = 1;
-+	u64 runtime, runtime_expires;
-+	int idle = 1, throttled;
- 
+ 	cfs_rq->throttled = 1;
++	cfs_rq->throttled_timestamp = rq->clock;
  	raw_spin_lock(&cfs_b->lock);
- 	/* no need to continue the timer with no bandwidth constraint */
- 	if (cfs_b->quota == RUNTIME_INF)
- 		goto out_unlock;
+ 	list_add_tail_rcu(&cfs_rq->throttled_list, &cfs_b->throttled_cfs_rq);
+ 	raw_spin_unlock(&cfs_b->lock);
+@@ -1576,8 +1577,10 @@ static void unthrottle_cfs_rq(struct cfs
  
--	idle = cfs_b->idle;
-+	throttled = !list_empty(&cfs_b->throttled_cfs_rq);
-+	/* idle depends on !throttled (for the case of a large deficit) */
-+	idle = cfs_b->idle && !throttled;
-+
+ 	cfs_rq->throttled = 0;
+ 	raw_spin_lock(&cfs_b->lock);
++	cfs_b->throttled_time += rq->clock - cfs_rq->throttled_timestamp;
+ 	list_del_rcu(&cfs_rq->throttled_list);
+ 	raw_spin_unlock(&cfs_b->lock);
++	cfs_rq->throttled_timestamp = 0;
+ 
+ 	update_rq_clock(rq);
+ 	/* update hierarchical throttle state */
+@@ -1665,6 +1668,7 @@ static int do_sched_cfs_period_timer(str
+ 	throttled = !list_empty(&cfs_b->throttled_cfs_rq);
+ 	/* idle depends on !throttled (for the case of a large deficit) */
+ 	idle = cfs_b->idle && !throttled;
++	cfs_b->nr_periods += overrun;
+ 
  	/* if we're going inactive then everything else can be deferred */
  	if (idle)
+@@ -1678,6 +1682,9 @@ static int do_sched_cfs_period_timer(str
  		goto out_unlock;
+ 	}
  
- 	__refill_cfs_bandwidth_runtime(cfs_b);
- 
--	/* mark as potentially idle for the upcoming period */
--	cfs_b->idle = 1;
-+	if (!throttled) {
-+		/* mark as potentially idle for the upcoming period */
-+		cfs_b->idle = 1;
-+		goto out_unlock;
-+	}
++	/* account preceding periods in which throttling occurred */
++	cfs_b->nr_throttled += overrun;
 +
-+	/*
-+	 * There are throttled entities so we must first use the new bandwidth
-+	 * to unthrottle them before making it generally available.  This
-+	 * ensures that all existing debts will be paid before a new cfs_rq is
-+	 * allowed to run.
-+	 */
-+	runtime = cfs_b->runtime;
-+	runtime_expires = cfs_b->runtime_expires;
-+	cfs_b->runtime = 0;
-+
-+	/*
-+	 * This check is repeated as we are holding onto the new bandwidth
-+	 * while we unthrottle.  This can potentially race with an unthrottled
-+	 * group trying to acquire new bandwidth from the global pool.
-+	 */
-+	while (throttled && runtime > 0) {
-+		raw_spin_unlock(&cfs_b->lock);
-+		/* we can't nest cfs_b->lock while distributing bandwidth */
-+		runtime = distribute_cfs_runtime(cfs_b, runtime,
-+						 runtime_expires);
-+		raw_spin_lock(&cfs_b->lock);
-+
-+		throttled = !list_empty(&cfs_b->throttled_cfs_rq);
-+	}
-+
-+	/* return (any) remaining runtime */
-+	cfs_b->runtime = runtime;
-+	/*
-+	 * While we are ensured activity in the period following an
-+	 * unthrottle, this also covers the case in which the new bandwidth is
-+	 * insufficient to cover the existing bandwidth deficit.  (Forcing the
-+	 * timer to remain active while there are any throttled entities.)
-+	 */
-+	cfs_b->idle = 0;
- out_unlock:
- 	if (idle)
- 		cfs_b->timer_active = 0;
+ 	/*
+ 	 * There are throttled entities so we must first use the new bandwidth
+ 	 * to unthrottle them before making it generally available.  This
 
 
