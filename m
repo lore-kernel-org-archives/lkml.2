@@ -1,111 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756084Ab1GGShJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 14:37:09 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:38844 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab1GGShC (ORCPT
+	id S1756101Ab1GGShk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 14:37:40 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:59333 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755449Ab1GGShh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 14:37:02 -0400
-From: greearb@candelatech.com
-To: penberg@kernel.org, cl@linux.com, linux-kernel@vger.kernel.org
-Cc: Ben Greear <greearb@candelatech.com>
-Subject: [PATCH v3 2/2] slub:  Add method to verify memory is not freed.
-Date: Thu,  7 Jul 2011 11:36:37 -0700
-Message-Id: <1310063797-14914-2-git-send-email-greearb@candelatech.com>
-X-Mailer: git-send-email 1.7.3.4
-In-Reply-To: <1310063797-14914-1-git-send-email-greearb@candelatech.com>
-References: <1310063797-14914-1-git-send-email-greearb@candelatech.com>
+	Thu, 7 Jul 2011 14:37:37 -0400
+Date: Thu, 7 Jul 2011 12:37:34 -0600
+From: Grant Likely <grant.likely@secretlab.ca>
+To: "Nori, Sekhar" <nsekhar@ti.com>
+Cc: Ryan Mallon <rmallon@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hilman, Kevin" <khilman@ti.com>, "Chemparathy, Cyril" <cyril@ti.com>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "davinci-linux-open-source@linux.davincidsp.com" 
+	<davinci-linux-open-source@linux.davincidsp.com>
+Subject: Re: [RFC/RFT 1/2] gpio/basic_mmio: add support for enable register
+Message-ID: <20110707183734.GE2824@ponder.secretlab.ca>
+References: <cover.1309840042.git.nsekhar@ti.com>
+ <83915224c24e43224272b1bf570cddb9545279a6.1309840042.git.nsekhar@ti.com>
+ <4E12AC10.9020206@gmail.com>
+ <20110706211054.GE5371@ponder.secretlab.ca>
+ <B85A65D85D7EB246BE421B3FB0FBB593024D9B5379@dbde02.ent.ti.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <B85A65D85D7EB246BE421B3FB0FBB593024D9B5379@dbde02.ent.ti.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Greear <greearb@candelatech.com>
+On Thu, Jul 07, 2011 at 10:15:31PM +0530, Nori, Sekhar wrote:
+> Hi Grant,
+> 
+> On Thu, Jul 07, 2011 at 02:40:54, Grant Likely wrote:
+> > On Tue, Jul 05, 2011 at 04:15:44PM +1000, Ryan Mallon wrote:
+> > > On 05/07/11 15:10, Sekhar Nori wrote:
+> > > >Some GPIO controllers have an enable register
+> > > >which needs to be written to before a GPIO
+> > > >can be used.
+> > > >
+> > > >Add support for enabling the GPIO. At this
+> > > >time inverted logic for enabling the GPIO
+> > > >is not supported. This can be done by adding
+> > > >a disable register as and when a controller
+> > > >with this comes along.
+> > > >
+> > > >Signed-off-by: Sekhar Nori<nsekhar@ti.com>
+> > > >---
+> > > >
+> > > <snip>
+> > > 
+> > > >static int bgpio_setup_io(struct bgpio_chip *bgc,
+> > > >  			  void __iomem *dat,
+> > > >@@ -369,6 +401,7 @@ int __devinit bgpio_init(struct bgpio_chip *bgc,
+> > > >  			 void __iomem *clr,
+> > > >  			 void __iomem *dirout,
+> > > >  			 void __iomem *dirin,
+> > > >+			 void __iomem *en,
+> > > >  			 bool big_endian)
+> > > 
+> > > The arguments to this function are getting a bit unwieldy :-). Maybe
+> > > we need to introduce something like:
+> > > 
+> > > struct bgpio_chip_info {
+> > >     struct device *dev;
+> > >     unsigned long sz;
+> > >     void __iomem *dat;
+> > >     void __iomem *set;
+> > >     void __iomem *clr;
+> > >     void __iomem *dirout;
+> > >     void __iomem *dirin;
+> > >     void __iomem *en;
+> > >     bool big_endian;
+> > > };
+> > > 
+> > > and pass that to bgpio_init instead. It would have the added
+> > > benefits of making the drivers more readable and that
+> > > bgpio_chip_info structs in the drivers can probably be marked
+> > > __initdata also.
+> > 
+> > Or, what may be better is to make callers directly update the
+> > bgpio_chip structure.
+> 
+> I started implementing it this way, but felt that the bgpio_chip
+> structure also has many internal members (like the spinlock) and
+> this method will require users to spend quite a bit of time figuring
+> out which structure members they should initialize and which to leave
+> for bgpio_init() to do for them.
+> 
+> There is also the case of direction register which is set from
+> either dirout or dirin depending upon whether the logic is inverted
+> or not. The bgpio_chip however needs to deal with a single direction
+> register offset.
 
-This is for tracking down suspect memory usage.
+We *absolutely* still need the helper function for the complex
+settings, but for the non-complex ones, I'd rather just directly
+access the structure.  The kerneldoc documentation of the structure
+can and should be explicit about what the caller is allowed to do.
 
-Signed-off-by: Ben Greear <greearb@candelatech.com>
----
-
-v3:  Move the verify_mem_not_deleted logic from slab.h to slub_dev.h
-
-:100644 100644 c8668d1... eec67ce... M	include/linux/slub_def.h
-:100644 100644 c52fa60... b2dfc52... M	mm/slub.c
- include/linux/slub_def.h |   13 +++++++++++++
- mm/slub.c                |   36 ++++++++++++++++++++++++++++++++++++
- 2 files changed, 49 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
-index c8668d1..eec67ce 100644
---- a/include/linux/slub_def.h
-+++ b/include/linux/slub_def.h
-@@ -228,6 +228,19 @@ kmalloc_order(size_t size, gfp_t flags, unsigned int order)
- 	return ret;
- }
- 
-+/**
-+ * Calling this on allocated memory will check that the memory
-+ * is expected to be in use, and print warnings if not.
-+ */
-+#ifdef CONFIG_SLUB_DEBUG
-+extern bool verify_mem_not_deleted(const void *x);
-+#else
-+static inline bool verify_mem_not_deleted(const void *x)
-+{
-+	return true;
-+}
-+#endif
-+
- #ifdef CONFIG_TRACING
- extern void *
- kmem_cache_alloc_trace(struct kmem_cache *s, gfp_t gfpflags, size_t size);
-diff --git a/mm/slub.c b/mm/slub.c
-index c52fa60..b2dfc52 100644
---- a/mm/slub.c
-+++ b/mm/slub.c
-@@ -2960,6 +2960,42 @@ size_t ksize(const void *object)
- }
- EXPORT_SYMBOL(ksize);
- 
-+#ifdef CONFIG_SLUB_DEBUG
-+bool verify_mem_not_deleted(const void *x)
-+{
-+	struct page *page;
-+	void *object = (void *)x;
-+	unsigned long flags;
-+	bool rv;
-+
-+	if (unlikely(ZERO_OR_NULL_PTR(x)))
-+		return false;
-+
-+	local_irq_save(flags);
-+
-+	page = virt_to_head_page(x);
-+	if (unlikely(!PageSlab(page))) {
-+		/* maybe it was from stack? */
-+		rv = true;
-+		goto out_unlock;
-+	}
-+
-+	slab_lock(page);
-+	if (on_freelist(page->slab, page, object)) {
-+		object_err(page->slab, page, object, "Object is on free-list");
-+		rv = false;
-+	} else {
-+		rv = true;
-+	}
-+	slab_unlock(page);
-+
-+out_unlock:
-+	local_irq_restore(flags);
-+	return rv;
-+}
-+EXPORT_SYMBOL(verify_mem_not_deleted);
-+#endif
-+
- void kfree(const void *x)
- {
- 	struct page *page;
--- 
-1.7.3.4
-
+g.
