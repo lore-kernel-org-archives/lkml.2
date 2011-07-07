@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755269Ab1GGFew (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 01:34:52 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:49150 "EHLO
+	id S1755358Ab1GGFez (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:34:55 -0400
+Received: from smtp-out.google.com ([74.125.121.67]:3609 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab1GGFdT (ORCPT
+	with ESMTP id S1754049Ab1GGFdT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 7 Jul 2011 01:33:19 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=message-id:user-agent:date:from:to:cc:subject:references:content-disposition;
-	b=vSXIMfCdmbPGcNTB2gVQqS4HEqaxqKhrZGsREWtbP0Q+sMG6+8gryhNkp+na5Owxf
-	k0NxpdriKLwDgE638uT/Q==
-Message-Id: <20110707053100.365393795@google.com>
+	b=hE93jGjKcde138wkJuJrP8BDnyqt16fDC0f6YaSAVeIZuLmA9f1lhC8BKEOc43ubZ
+	AAWKtL7Q+f6Z2S58Ze+Ow==
+Message-Id: <20110707053101.021543562@google.com>
 User-Agent: quilt/0.48-1
-Date: Wed, 06 Jul 2011 22:30:43 -0700
+Date: Wed, 06 Jul 2011 22:30:50 -0700
 From: Paul Turner <pjt@google.com>
 To: linux-kernel@vger.kernel.org
 Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
@@ -26,198 +26,130 @@ Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
         Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
         Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
         Hu Tao <hutao@cn.fujitsu.com>
-Subject: [patch 07/17] sched: expire invalid runtime
+Subject: [patch 14/17] sched: throttle entities exceeding their allowed bandwidth
 References: <20110707053036.173186930@google.com>
-Content-Disposition: inline; filename=sched-bwc-expire_cfs_rq_runtime.patch
+Content-Disposition: inline; filename=sched-bwc-enable-throttling.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since quota is managed using a global state but consumed on a per-cpu basis
-we need to ensure that our per-cpu state is appropriately synchronized.  
-Most importantly, runtime that is state (from a previous period) should not be
-locally consumable.
+With the machinery in place to throttle and unthrottle entities, as well as
+handle their participation (or lack there of) we can now enable throttling.
 
-We take advantage of existing sched_clock synchronization about the jiffy to
-efficiently detect whether we have (globally) crossed a quota boundary above.
+There are 2 points that we must check whether it's time to set throttled state:
+ put_prev_entity() and enqueue_entity().
 
-One catch is that the direction of spread on sched_clock is undefined, 
-specifically, we don't know whether our local clock is behind or ahead
-of the one responsible for the current expiration time.
+- put_prev_entity() is the typical throttle path, we reach it by exceeding our
+  allocated run-time within update_curr()->account_cfs_rq_runtime() and going
+  through a reschedule.
 
-Fortunately we can differentiate these by considering whether the
-global deadline has advanced.  If it has not, then we assume our clock to be 
-"fast" and advance our local expiration; otherwise, we know the deadline has
-truly passed and we expire our local runtime.
+- enqueue_entity() covers the case of a wake-up into an already throttled
+  group.  In this case we know the group cannot be on_rq and can throttle
+  immediately.  Checks are added at time of put_prev_entity() and
+  enqueue_entity()
 
 Signed-off-by: Paul Turner <pjt@google.com>
-Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
 ---
- kernel/sched.c      |    4 +-
- kernel/sched_fair.c |   83 +++++++++++++++++++++++++++++++++++++++++++++++++---
- 2 files changed, 82 insertions(+), 5 deletions(-)
+ kernel/sched_fair.c |   50 +++++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 49 insertions(+), 1 deletion(-)
 
 Index: tip/kernel/sched_fair.c
 ===================================================================
 --- tip.orig/kernel/sched_fair.c
 +++ tip/kernel/sched_fair.c
-@@ -1294,11 +1294,30 @@ static inline u64 sched_cfs_bandwidth_sl
- 	return (u64)sysctl_sched_cfs_bandwidth_slice * NSEC_PER_USEC;
+@@ -989,6 +989,8 @@ place_entity(struct cfs_rq *cfs_rq, stru
+ 	se->vruntime = vruntime;
  }
  
-+/*
-+ * Replenish runtime according to assigned quota and update expiration time.
-+ * We use sched_clock_cpu directly instead of rq->clock to avoid adding
-+ * additional synchronization around rq->lock.
-+ *
-+ * requires cfs_b->lock
-+ */
-+static void __refill_cfs_bandwidth_runtime(struct cfs_bandwidth *cfs_b)
-+{
-+	u64 now;
++static void check_enqueue_throttle(struct cfs_rq *cfs_rq);
 +
-+	if (cfs_b->quota == RUNTIME_INF)
-+		return;
-+
-+	now = sched_clock_cpu(smp_processor_id());
-+	cfs_b->runtime = cfs_b->quota;
-+	cfs_b->runtime_expires = now + ktime_to_ns(cfs_b->period);
-+}
-+
- static void assign_cfs_rq_runtime(struct cfs_rq *cfs_rq)
+ static void
+ enqueue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se, int flags)
  {
- 	struct task_group *tg = cfs_rq->tg;
- 	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(tg);
--	u64 amount = 0, min_amount;
-+	u64 amount = 0, min_amount, expires;
+@@ -1018,8 +1020,10 @@ enqueue_entity(struct cfs_rq *cfs_rq, st
+ 		__enqueue_entity(cfs_rq, se);
+ 	se->on_rq = 1;
  
- 	/* note: this is a positive sum as runtime_remaining <= 0 */
- 	min_amount = sched_cfs_bandwidth_slice() - cfs_rq->runtime_remaining;
-@@ -1307,9 +1326,16 @@ static void assign_cfs_rq_runtime(struct
- 	if (cfs_b->quota == RUNTIME_INF)
- 		amount = min_amount;
- 	else {
--		/* ensure bandwidth timer remains active under consumption */
--		if (!cfs_b->timer_active)
-+		/*
-+		 * If the bandwidth pool has become inactive, then at least one
-+		 * period must have elapsed since the last consumption.
-+		 * Refresh the global state and ensure bandwidth timer becomes
-+		 * active.
-+		 */
-+		if (!cfs_b->timer_active) {
-+			__refill_cfs_bandwidth_runtime(cfs_b);
- 			__start_cfs_bandwidth(cfs_b);
-+		}
- 
- 		if (cfs_b->runtime > 0) {
- 			amount = min(cfs_b->runtime, min_amount);
-@@ -1317,9 +1343,51 @@ static void assign_cfs_rq_runtime(struct
- 			cfs_b->idle = 0;
- 		}
- 	}
-+	expires = cfs_b->runtime_expires;
- 	raw_spin_unlock(&cfs_b->lock);
- 
- 	cfs_rq->runtime_remaining += amount;
-+	/*
-+	 * we may have advanced our local expiration to account for allowed
-+	 * spread between our sched_clock and the one on which runtime was
-+	 * issued.
-+	 */
-+	if ((s64)(expires - cfs_rq->runtime_expires) > 0)
-+		cfs_rq->runtime_expires = expires;
-+}
-+
-+/*
-+ * Note: This depends on the synchronization provided by sched_clock and the
-+ * fact that rq->clock snapshots this value.
-+ */
-+static void expire_cfs_rq_runtime(struct cfs_rq *cfs_rq)
-+{
-+	struct cfs_bandwidth *cfs_b = tg_cfs_bandwidth(cfs_rq->tg);
-+	struct rq *rq = rq_of(cfs_rq);
-+
-+	if (cfs_rq->runtime_remaining < 0)
-+		return;
-+
-+	/* if the deadline is ahead of our clock, nothing to do */
-+	if ((s64)(rq->clock - cfs_rq->runtime_expires) < 0)
-+		return;
-+
-+	/*
-+	 * If the local deadline has passed we have to consider the
-+	 * possibility that our sched_clock is 'fast' and the global deadline
-+	 * has not truly expired.
-+	 *
-+	 * Fortunately we can check determine whether this the case by checking
-+	 * whether the global deadline has advanced.
-+	 */
-+
-+	if ((s64)(cfs_rq->runtime_expires - cfs_b->runtime_expires) >= 0) {
-+		/* extend local deadline, drift is bounded above by 2 ticks */
-+		cfs_rq->runtime_expires += TICK_NSEC;
-+	} else {
-+		/* global deadline is ahead, expiration has passed */
-+		cfs_rq->runtime_remaining = 0;
+-	if (cfs_rq->nr_running == 1)
++	if (cfs_rq->nr_running == 1) {
+ 		list_add_leaf_cfs_rq(cfs_rq);
++		check_enqueue_throttle(cfs_rq);
 +	}
  }
  
+ static void __clear_buddies_last(struct sched_entity *se)
+@@ -1224,6 +1228,8 @@ static struct sched_entity *pick_next_en
+ 	return se;
+ }
+ 
++static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq);
++
+ static void put_prev_entity(struct cfs_rq *cfs_rq, struct sched_entity *prev)
+ {
+ 	/*
+@@ -1233,6 +1239,9 @@ static void put_prev_entity(struct cfs_r
+ 	if (prev->on_rq)
+ 		update_curr(cfs_rq);
+ 
++	/* throttle cfs_rqs exceeding runtime */
++	check_cfs_rq_runtime(cfs_rq);
++
+ 	check_spread(cfs_rq, prev);
+ 	if (prev->on_rq) {
+ 		update_stats_wait_start(cfs_rq, prev);
+@@ -1518,6 +1527,43 @@ static void throttle_cfs_rq(struct cfs_r
+ 	raw_spin_unlock(&cfs_b->lock);
+ }
+ 
++/*
++ * When a group wakes up we want to make sure that its quota is not already
++ * expired/exceeded, otherwise it may be allowed to steal additional ticks of
++ * runtime as update_curr() throttling can not not trigger until it's on-rq.
++ */
++static void check_enqueue_throttle(struct cfs_rq *cfs_rq)
++{
++	/* an active group must be handled by the update_curr()->put() path */
++	if (!cfs_rq->runtime_enabled || cfs_rq->curr)
++		return;
++
++	/* ensure the group is not already throttled */
++	if (cfs_rq_throttled(cfs_rq))
++		return;
++
++	/* update runtime allocation */
++	account_cfs_rq_runtime(cfs_rq, 0);
++	if (cfs_rq->runtime_remaining <= 0)
++		throttle_cfs_rq(cfs_rq);
++}
++
++/* conditionally throttle active cfs_rq's from put_prev_entity() */
++static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq)
++{
++	if (likely(!cfs_rq->runtime_enabled || cfs_rq->runtime_remaining > 0))
++		return;
++
++	/*
++	 * it's possible for a throttled entity to be forced into a running
++	 * state (e.g. set_curr_task), in this case we're finished.
++	 */
++	if (cfs_rq_throttled(cfs_rq))
++		return;
++
++	throttle_cfs_rq(cfs_rq);
++}
++
+ static void unthrottle_cfs_rq(struct cfs_rq *cfs_rq)
+ {
+ 	struct rq *rq = rq_of(cfs_rq);
+@@ -1656,6 +1702,8 @@ static int do_sched_cfs_period_timer(str
+ #else
  static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
-@@ -1328,7 +1396,10 @@ static void account_cfs_rq_runtime(struc
- 	if (!cfs_rq->runtime_enabled)
- 		return;
+ 		unsigned long delta_exec) {}
++static void check_cfs_rq_runtime(struct cfs_rq *cfs_rq) {}
++static void check_enqueue_throttle(struct cfs_rq *cfs_rq) {}
  
-+	/* dock delta_exec before expiring quota (as it could span periods) */
- 	cfs_rq->runtime_remaining -= delta_exec;
-+	expire_cfs_rq_runtime(cfs_rq);
-+
- 	if (cfs_rq->runtime_remaining > 0)
- 		return;
- 
-@@ -1351,7 +1422,11 @@ static int do_sched_cfs_period_timer(str
- 		goto out_unlock;
- 
- 	idle = cfs_b->idle;
--	cfs_b->runtime = cfs_b->quota;
-+	/* if we're going inactive then everything else can be deferred */
-+	if (idle)
-+		goto out_unlock;
-+
-+	__refill_cfs_bandwidth_runtime(cfs_b);
- 
- 	/* mark as potentially idle for the upcoming period */
- 	cfs_b->idle = 1;
-Index: tip/kernel/sched.c
-===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -253,6 +253,7 @@ struct cfs_bandwidth {
- 	ktime_t period;
- 	u64 quota, runtime;
- 	s64 hierarchal_quota;
-+	u64 runtime_expires;
- 
- 	int idle, timer_active;
- 	struct hrtimer period_timer;
-@@ -393,6 +394,7 @@ struct cfs_rq {
- #endif
- #ifdef CONFIG_CFS_BANDWIDTH
- 	int runtime_enabled;
-+	u64 runtime_expires;
- 	s64 runtime_remaining;
- #endif
- #endif
-@@ -8979,8 +8981,8 @@ static int tg_set_cfs_bandwidth(struct t
- 	raw_spin_lock_irq(&cfs_b->lock);
- 	cfs_b->period = ns_to_ktime(period);
- 	cfs_b->quota = quota;
--	cfs_b->runtime = quota;
- 
-+	__refill_cfs_bandwidth_runtime(cfs_b);
- 	/* restart the period timer (if active) to handle new period expiry */
- 	if (runtime_enabled && cfs_b->timer_active) {
- 		/* force a reprogram */
+ static inline int cfs_rq_throttled(struct cfs_rq *cfs_rq)
+ {
 
 
