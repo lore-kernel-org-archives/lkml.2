@@ -1,40 +1,33 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1754926Ab1GGI05 (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Thu, 7 Jul 2011 04:26:57 -0400
-Received: from 87.9b.79ae.static.theplanet.com ([174.121.155.135]:53393 "EHLO
-        daw.dawaer.ws" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1751393Ab1GGI0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Thu, 7 Jul 2011 04:26:55 -0400
-To: linux-kernel@vger.kernel.org
-Subject: Offers for Saudi & UAE Companies
-X-PHP-Script: dawaer.us/maillist/maillist/admin.php for 213.244.123.66
-Date: Thu, 7 Jul 2011 03:26:54 -0500
-From: "Dawaer Co." <dawaer.list@yahoo.com>
-Message-ID: <58df4b2c8e33fdac7c6a647e10266624@dawaer.us>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.72]
+        id S1752899Ab1GGT7F (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Thu, 7 Jul 2011 15:59:05 -0400
+Received: from mxnip01-missouri-out.um.umsystem.edu ([209.106.229.53]:55836
+        "EHLO mxnip01-missouri-out.um.umsystem.edu" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with ESMTP id S1752767Ab1GGT7B convert rfc822-to-8bit
+        (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Thu, 7 Jul 2011 15:59:01 -0400
+X-Greylist: delayed 575 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jul 2011 15:59:00 EDT
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AnJqAIgMFk6Dl3nN/2dsb2JhbABUlntBgWSOFnAHgReHXaM+lhaIeoQwgggEhxsum1w
+From: "Plummer, Pat L.M." <PlummerP@missouri.edu>
+To: "info@loan.org" <info@loan.org>
+Date: Thu, 7 Jul 2011 14:49:19 -0500
+Subject: Loan Offer Apply Now(Reply to brownloanfinancehome@publichot.net
+Thread-Topic: Loan Offer Apply Now(Reply to
+ brownloanfinancehome@publichot.net
+Thread-Index: AQHMPN72ALrfivzmeEuAGBP0ihptyw==
+Message-ID: <616B99DC91A1D64A9BC81BA4326586DF290762FB24@UM-EMAIL05.um.umsystem.edu>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="win1256"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - daw.dawaer.ws
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [502 501] / [47 12]
-X-AntiAbuse: Sender Address Domain - daw.dawaer.ws
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-Dear Sir/ Madam,
-Design or develop your website with special prices.
-for more info. please visit our website http://www.dawaer.ps 
-
-
--	The Offers for Saudi & UAE Companies.
-
-
-Best Regards,
-Marketing Department
-
-
+i offer out reliable loan offer at 3% for the period of 1 to 30yrs only, so for more details if interested kindly reach me at brownloanfinancehome@publichot.net<mailto:brownloanfinancehome@publichot.net>
