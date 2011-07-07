@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756516Ab1GGNIZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 09:08:25 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:45432 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755982Ab1GGNIY convert rfc822-to-8bit (ORCPT
+	id S1756574Ab1GGNMK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 09:12:10 -0400
+Received: from shards.monkeyblade.net ([198.137.202.13]:40277 "EHLO
+	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755577Ab1GGNMG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 09:08:24 -0400
-MIME-Version: 1.0
-In-Reply-To: <1310011371.3309.2.camel@offbook>
-References: <1310011371.3309.2.camel@offbook>
-Date: Thu, 7 Jul 2011 16:08:22 +0300
-Message-ID: <CAGTPOqdm7_PP68mKLQT3gigmUMD6wpoKk3sSWfXk9jeJPX+_6A@mail.gmail.com>
-Subject: Re: [PATCH] uml: free resources
-From: Vitaliy Ivanov <vitalivanov@gmail.com>
-To: dave@gnu.org
-Cc: Jeff Dike <jdike@addtoit.com>, Richard Weinberger <richard@nod.at>,
-        uml <user-mode-linux-devel@lists.sourceforge.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Jim Meyering <meyering@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 7 Jul 2011 09:12:06 -0400
+Date: Thu, 07 Jul 2011 06:11:59 -0700 (PDT)
+Message-Id: <20110707.061159.1960862007945782564.davem@davemloft.net>
+To: loke.chetan@gmail.com
+Cc: netdev@vger.kernel.org, eric.dumazet@gmail.com, joe@perches.com,
+        bhutchings@solarflare.com, shemminger@vyatta.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2 net-next af-packet 1/2] Enhance af-packet to provide
+ (near zero)lossless packet capture functionality.
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <CAAsGZS4Y=-GSmP+2iYtd+V3RcE2+PpaStBzW7R7TDip7U-rdvA@mail.gmail.com>
+References: <CAAsGZS67G8H5NLBxQTY88+T1cRQ3aiwBXK5qa8SJ_TbQ7xqvhw@mail.gmail.com>
+	<20110707.001301.1054777374178479078.davem@davemloft.net>
+	<CAAsGZS4Y=-GSmP+2iYtd+V3RcE2+PpaStBzW7R7TDip7U-rdvA@mail.gmail.com>
+X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
+X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 07 Jul 2011 06:12:02 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 7:02 AM, Davidlohr Bueso <dave@gnu.org> wrote:
-> From: Davidlohr Bueso <dave@gnu.org>
->
-> When creating the temp file there's a memory and file descriptor leak upon error.
->
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-> ---
->  arch/um/os-Linux/mem.c |    6 ++++--
->  1 files changed, 4 insertions(+), 2 deletions(-)
->
-> diff --git a/arch/um/os-Linux/mem.c b/arch/um/os-Linux/mem.c
-> index e696144..62878cf 100644
-> --- a/arch/um/os-Linux/mem.c
-> +++ b/arch/um/os-Linux/mem.c
-> @@ -176,7 +176,7 @@ static int __init make_tempfile(const char *template, char **out_tempname,
->
->        find_tempdir();
->        if ((tempdir == NULL) || (strlen(tempdir) >= MAXPATHLEN))
-> -               return -1;
-> +               goto out;
->
->        if (template[0] != '/')
->                strcpy(tempname, tempdir);
-> @@ -191,13 +191,15 @@ static int __init make_tempfile(const char *template, char **out_tempname,
->        }
->        if (do_unlink && (unlink(tempname) < 0)) {
->                perror("unlink");
-> -               goto out;
-> +               goto close;
->        }
->        if (out_tempname) {
->                *out_tempname = tempname;
->        } else
->                free(tempname);
->        return fd;
-> +close:
-> +       close(fd);
->  out:
->        free(tempname);
->        return -1;
-> --
+From: chetan loke <loke.chetan@gmail.com>
+Date: Thu, 7 Jul 2011 09:04:58 -0400
 
-Reviewed-by: Vitaliy Ivanov <vitalivanov@gmail.com>
+> On Thu, Jul 7, 2011 at 3:13 AM, David Miller <davem@davemloft.net> wrote:
+> 
+>> Get rid of __packed__, it's going to kill performance on RISC
+>> platforms.  If you use __packed__, regardless of the actual alignment,
+> 
+> The performance boost has been achieved by amortizing the cost of
+> static spin-wait/poll and not by shrinking the data-set.
+
+Chetan, if you're implementing something for performance reasons,
+getting rid of packed is non-negotiable.
+
+We pass data structures between userspace and the kernel all the
+time, and without __packed__.  We have mechanisms to ensure the
+size of the individual data types, and we have mechanisms to make
+sure 64-bit datums get aligned even on x86 (see "aligned_u64" and
+friends")
+
+Again, I can't seriously consider your patch if you keep the packed
+attribute crap in there.
