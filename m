@@ -1,61 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab1GGVbV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 17:31:21 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:20205 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750805Ab1GGVbU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 17:31:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=dkim-signature:mime-version:in-reply-to:references:from:date:
-	message-id:subject:to:cc:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=UmVOFghNp1T/mnDZte/d4rC0lk/tlWrAjxuHoM5zt2VVB8iSDM5RhwZZ55Ub3HUMq
-	8IuiMx6OJiph3k5hD+rUA==
+	id S1752125Ab1GGVfk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 17:35:40 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:36746 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751601Ab1GGVfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 17:35:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: Re: [patch 1/1] [PATCH] include storage keys in hibernation image.
+Date: Thu, 7 Jul 2011 23:36:25 +0200
+User-Agent: KMail/1.13.6 (Linux/3.0.0-rc5+; KDE/4.6.0; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-s390@vger.kernel.org, Pavel Machek <pavel@ucw.cz>,
+        Jiri Slaby <jslaby@suse.cz>, Len Brown <lenb@kernel.org>
+References: <20110608074523.211912903@de.ibm.com> <201106142250.15041.rjw@sisk.pl> <20110615093629.07f01779@mschwide>
+In-Reply-To: <20110615093629.07f01779@mschwide>
 MIME-Version: 1.0
-In-Reply-To: <1310046524.3282.570.camel@twins>
-References: <20110707053036.173186930@google.com> <20110707053059.981950189@google.com>
- <1310046524.3282.570.camel@twins>
-From: Paul Turner <pjt@google.com>
-Date: Thu, 7 Jul 2011 14:30:31 -0700
-Message-ID: <CAPM31RJwU-QH0qUiRnT7k0JA5s5D6e=Zqe+W_tq-MBtjww-gxA@mail.gmail.com>
-Subject: Re: [patch 03/17] sched: introduce primitives to account for CFS
- bandwidth tracking
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
-        Dhaval Giani <dhaval.giani@gmail.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
-        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
-        Hu Tao <hutao@cn.fujitsu.com>, Nikhil Rao <ncrao@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201107072336.26151.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 7, 2011 at 6:48 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
-> On Wed, 2011-07-06 at 22:30 -0700, Paul Turner wrote:
->> +config CFS_BANDWIDTH
->> +       bool "CPU bandwidth provisioning for FAIR_GROUP_SCHED"
->> +       depends on EXPERIMENTAL
->> +       depends on FAIR_GROUP_SCHED
->> +       depends on SMP
->
-> I know that UP is quickly becoming extinct, but isn't that a tad
-> radical? :-)
->
+On Wednesday, June 15, 2011, Martin Schwidefsky wrote:
+> On Tue, 14 Jun 2011 22:50:14 +0200
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+...
+> 
+> Well before the preallocation kicked in we don't know which are the relevant
+> storage keys. The only other option would be to store all of them which I
+> consider to be a inferior solution. 
 
-Right, this was because walk_tg_tree (and some friends) were not
-available in the FAIR_GROUP && !SMP case.  The wreckage used to be a
-little more extensive but I just tried it again the last rounds of
-clean-up seem to have fixed most of it, the only other problem was
-updating the SMP group load stuff in the unthrottle path.
+I've been thinking about that recently a bit.
 
-I've rolled the required #ifdef-erry to fix the above up and it's not
-horrifying so... dependency removed!
+Don't we need to restore the keys of the page frames that aren't copied
+into the image too?
+
+Rafael
