@@ -1,52 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756024Ab1GGLgg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 07:36:36 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:42307 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755650Ab1GGLgd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 07:36:33 -0400
-Date: Thu, 07 Jul 2011 04:36:25 -0700 (PDT)
-Message-Id: <20110707.043625.856190521365086318.davem@davemloft.net>
-To: abbotti@mev.co.uk
-Cc: ian.abbott@mev.co.uk, netdev@vger.kernel.org, arnd@arndb.de,
+	id S1756069Ab1GGLg7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 07:36:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60253 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755742Ab1GGLg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 07:36:58 -0400
+Date: Thu, 7 Jul 2011 14:37:15 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: mashirle@us.ibm.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] lib/checksum.c: optimize do_csum a bit
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4E15995D.6040405@mev.co.uk>
-References: <1310037529-30854-1-git-send-email-abbotti@mev.co.uk>
-	<20110707.042925.1609726410655229616.davem@davemloft.net>
-	<4E15995D.6040405@mev.co.uk>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 07 Jul 2011 04:36:26 -0700 (PDT)
+Subject: Re: [PATCH V8 0/4 net-next] macvtap/vhost TX zero-copy support
+Message-ID: <20110707113715.GA32632@redhat.com>
+References: <1309990525.10209.12.camel@localhost.localdomain>
+ <20110707.040840.809661052978541081.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20110707.040840.809661052978541081.davem@davemloft.net>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Abbott <abbotti@mev.co.uk>
-Date: Thu, 7 Jul 2011 12:32:45 +0100
-
-> On 07/07/11 12:29, David Miller wrote:
->> From: Ian Abbott <abbotti@mev.co.uk>
->> Date: Thu, 7 Jul 2011 12:18:49 +0100
->> 
->>> Reduce the number of variables modified by the loop in do_csum() by 1,
->>> which seems like a good idea.  On Nios II (a RISC CPU with 3-operand
->>> instruction set) it reduces the loop from 7 to 6 instructions, including
->>> the conditional branch.
->>>
->>> Signed-off-by: Ian Abbott <abbotti@mev.co.uk>
->> 
->> I think you'll overshoot past the end of the buffer when there are
->> trailing bytes to handle.
->> 
->> The whole reason we need the count variable is to handle those
->> kinds of cases.
+On Thu, Jul 07, 2011 at 04:08:40AM -0700, David Miller wrote:
+> From: Shirley Ma <mashirle@us.ibm.com>
+> Date: Wed, 06 Jul 2011 15:15:25 -0700
 > 
-> I don't think it does.  That's what the & ~3 was for.
+> > This patchset add supports for TX zero-copy between guest and host
+> > kernel through vhost. It significantly reduces CPU utilization on the
+> > local host on which the guest is located (It reduced about 50% CPU usage
+> > for single stream test on the host, while 4K message size BW has
+> > increased about 50%). The patchset is based on previous submission and
+> > comments from the community regarding when/how to handle guest kernel
+> > buffers to be released. This is the simplest approach I can think of
+> > after comparing with several other solutions.
+> > 
+> > This patchset has integrated V3 review comments from community: 
+> 
+> I'm personally fine with this patch set.  Unless there are others
+> who object, please fix the use-after-free bug I reported, respin
+> the patch set, and I'll apply it.
+> 
+> Thanks.
 
-Aha, yes that indeed makes it work.
+There's the FIXME in patch 4 where it spins in vhost waiting for
+the pages to get freed. I'm fixing that up as Shirley's on vacation.
+
+Apply patches 1-3 for now?
+
+-- 
+MST
