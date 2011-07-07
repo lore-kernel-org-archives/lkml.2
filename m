@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab1GGHwY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 03:52:24 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:56633 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab1GGHwW (ORCPT
+	id S1754173Ab1GGHy1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 03:54:27 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:1493 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752924Ab1GGHyZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 03:52:22 -0400
-X-AuditID: cbfee61b-b7bfdae000006d51-c0-4e1565b4f2b6
-Date: Thu, 07 Jul 2011 16:51:56 +0900
-From: Donggeun Kim <dg77.kim@samsung.com>
-Subject: [PATCH] regulator: max8997: Fix setting inappropriate value for
- ramp_delay variable
-To: linux-kernel@vger.kernel.org
-Cc: lrg@ti.com, broonie@opensource.wolfsonmicro.com, myungjoo.ham@samsung.com,
-        kyungmin.park@samsung.com, dg77.kim@samsung.com
-Message-id: <1310025116-30787-1-git-send-email-dg77.kim@samsung.com>
-X-Mailer: git-send-email 1.7.4.1
-Content-transfer-encoding: 7BIT
-X-OriginalArrivalTime: 07 Jul 2011 07:52:32.0073 (UTC)
- FILETIME=[D39B0390:01CC3C7A]
-X-Brightmail-Tracker: AAAAAA==
+	Thu, 7 Jul 2011 03:54:25 -0400
+Message-ID: <34CF59A8D33E40B6822498A23CD554E8@hacdom.okisemi.com>
+From: "Toshiharu Okada" <toshiharu-linux@dsn.okisemi.com>
+To: "Takashi Iwai" <tiwai@suse.de>
+Cc: <tomoya-linux@dsn.okisemi.com>, <kok.howg.ewe@intel.com>,
+        <joel.clark@intel.com>, <yong.y.wang@intel.com>, <qi.wang@intel.com>,
+        <linux-kernel@vger.kernel.org>, <alsa-devel@alsa-project.org>,
+        <perex@perex.cz>
+References: <1309948067-9333-1-git-send-email-toshiharu-linux@dsn.okisemi.com> <s5hhb6z3byw.wl%tiwai@suse.de>
+Subject: Re: [PATCH] Add SoundCard driver for OKI SEMICONDUCTOR ML7213 IOH
+Date: Thu, 7 Jul 2011 16:54:18 +0900
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="UTF-8"
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.5931
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.6109
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The ramp_delay variable can be set lower than the desired value.
-This patch fixes it.
+Date: Wed, 06 Jul 2011 13:06:15 +0200
+From: Takashi Iwai <tiwai@suse.de>
+>
+>I just took a quick glance over the code, and wonder whether this kind
+>of driver would fit better with ASoC framework.
+>Have you considered the implementation on ASoC?
 
-Signed-off-by: Donggeun Kim <dg77.kim@samsung.com>
-Signed-off-by: MyungJoo Ham <myungjoo.ham@samsung.com>
-Signed-off-by: KyungMin Park <kyungmin.park@samsung.com>
----
- drivers/regulator/max8997.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Thank you for your comment.
 
-diff --git a/drivers/regulator/max8997.c b/drivers/regulator/max8997.c
-index 10d5a1d..682bc79 100644
---- a/drivers/regulator/max8997.c
-+++ b/drivers/regulator/max8997.c
-@@ -543,7 +543,8 @@ static int max8997_set_voltage_ldobuck(struct regulator_dev *rdev,
- 			rid == MAX8997_BUCK4 || rid == MAX8997_BUCK5) {
- 		/* If the voltage is increasing */
- 		if (org < i)
--			udelay(desc->step * (i - org) / max8997->ramp_delay);
-+			udelay(DIV_ROUND_UP(desc->step * (i - org),
-+						max8997->ramp_delay));
- 	}
- 
- 	return ret;
--- 
-1.7.4.1
+I referred to the following files and implemented this driver.
+
+http://www.mirrorservice.org/sites/ftp.sourceforge.net/pub/sourceforge/s/project/st/sta2x11/2.6.33/20100910/20100910-alpha-src.zip
+sound/drivers/sta2x11i2s.c
+
+Therefore, I am not considering about ASoC.
+Do I need to fit this driver to an ASoC framework for an upstream?
+
+Best Regards,
+Toshiharu Okada 
 
