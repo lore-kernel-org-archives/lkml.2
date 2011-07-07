@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756069Ab1GGLg7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 07:36:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60253 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755742Ab1GGLg6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 07:36:58 -0400
-Date: Thu, 7 Jul 2011 14:37:15 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: David Miller <davem@davemloft.net>
-Cc: mashirle@us.ibm.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V8 0/4 net-next] macvtap/vhost TX zero-copy support
-Message-ID: <20110707113715.GA32632@redhat.com>
-References: <1309990525.10209.12.camel@localhost.localdomain>
- <20110707.040840.809661052978541081.davem@davemloft.net>
+	id S1756016Ab1GGLjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 07:39:11 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:54588 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755577Ab1GGLjI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 07:39:08 -0400
+Date: Thu, 7 Jul 2011 12:38:45 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: x86@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        tony.luck@intel.com
+Subject: Re: [PATCH v2] efi: Fix argument types for SetVariable()
+Message-ID: <20110707113845.GA10882@srcf.ucam.org>
+References: <1307388985-7852-1-git-send-email-mjg@redhat.com>
+ <1309985329-15034-1-git-send-email-mjg@redhat.com>
+ <20110707093305.GA15058@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20110707.040840.809661052978541081.davem@davemloft.net>
-User-Agent: Mutt/1.5.21 (2010-09-15)
+In-Reply-To: <20110707093305.GA15058@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 07, 2011 at 04:08:40AM -0700, David Miller wrote:
-> From: Shirley Ma <mashirle@us.ibm.com>
-> Date: Wed, 06 Jul 2011 15:15:25 -0700
-> 
-> > This patchset add supports for TX zero-copy between guest and host
-> > kernel through vhost. It significantly reduces CPU utilization on the
-> > local host on which the guest is located (It reduced about 50% CPU usage
-> > for single stream test on the host, while 4K message size BW has
-> > increased about 50%). The patchset is based on previous submission and
-> > comments from the community regarding when/how to handle guest kernel
-> > buffers to be released. This is the simplest approach I can think of
-> > after comparing with several other solutions.
-> > 
-> > This patchset has integrated V3 review comments from community: 
-> 
-> I'm personally fine with this patch set.  Unless there are others
-> who object, please fix the use-after-free bug I reported, respin
-> the patch set, and I'll apply it.
-> 
-> Thanks.
+On Thu, Jul 07, 2011 at 11:33:05AM +0200, Ingo Molnar wrote:
 
-There's the FIXME in patch 4 where it spins in vhost waiting for
-the pages to get freed. I'm fixing that up as Shirley's on vacation.
+> Please send a patch against latest -tip, we've got EFI changes in 
+> tip:x86/efi and your patch conflicts.
 
-Apply patches 1-3 for now?
+The original version introduced a warning, thsi was intended to replace 
+it. Is -tip not rebased?
 
 -- 
-MST
+Matthew Garrett | mjg59@srcf.ucam.org
