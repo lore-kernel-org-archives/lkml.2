@@ -1,168 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753045Ab1GGUM5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 16:12:57 -0400
-Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:26556 "HELO
-	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752818Ab1GGUM4 (ORCPT
+	id S1753165Ab1GGU1q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 16:27:46 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:54122 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753075Ab1GGU1o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 16:12:56 -0400
-X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
-X-YMail-OSG: 94hwKhoVM1lnxwoBDodNaCs9p4byMEcmYRLEH_LK05g0Dy7
- .mhOdc7Pgpw1vFeHEZb74etnfPf62TKH6oLVs4o.S0flfP.OmcuGFq8Uk6h1
- Y4jqodKh__LVT0VZ1.zwAP4vA0swcRR_ZXZZkzxNGxsE__4gWAzAE416yGn8
- SxU35MRlqD0kTMIwCbZ16uYh6DSqSEd2Gvug6SKuzMf9FQYEDcqSGKUO_SQX
- VG.hPM7djelaSukorD7jjYGZcKaTZA4oGjwGGiO8IKbpiARMpC7lyn.e3Edv
- z2jB_Fz9u1VApZ8IS_28J8pOa3e_LYZH4Su4.gDoZxVKW9aTP
-X-Yahoo-Newman-Property: ymail-3
-Date: Thu, 7 Jul 2011 15:12:52 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@kernel.org>
-cc: David Miller <davem@davemloft.net>, marcin.slusarz@gmail.com,
-        mpm@selenic.com, linux-kernel@vger.kernel.org, rientjes@google.com,
-        linux-mm@kvack.org
-Subject: Re: [PATCH] slub: reduce overhead of slub_debug
-In-Reply-To: <CAOJsxLFsX3Q84QAeyRt5dZOdRxb3TiABPrP-YrWc91+BmR8ZBg@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1107071511010.26083@router.home>
-References: <alpine.DEB.2.00.1107071314320.21719@router.home> <1310064771.21902.55.camel@jaguar> <alpine.DEB.2.00.1107071402490.24248@router.home> <20110707.122151.314840355798805828.davem@davemloft.net>
- <CAOJsxLFsX3Q84QAeyRt5dZOdRxb3TiABPrP-YrWc91+BmR8ZBg@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 7 Jul 2011 16:27:44 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:to:cc:subject:message-id:references:
+	mime-version:content-type:content-disposition:in-reply-to:user-agent:x-system-of-record;
+	b=aoF6hLZH4NVPiI+klQZBxDsqXFwIxlk2jf4Nk2PLXlZMCVeIJt7xYCN+Sxk+CZ9Xi
+	YR+3IqD7tG2JA/RRbOGJw==
+Date: Thu, 7 Jul 2011 13:17:48 -0700
+From: Todd Poynor <toddpoynor@google.com>
+To: Kevin Hilman <khilman@ti.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Russell King <linux@arm.linux.org.uk>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, Colin Cross <ccross@android.com>
+Subject: Re: [PATCH 0/3] Add generic idle notifiers
+Message-ID: <20110707201748.GB32199@google.com>
+References: <1309229190-25006-1-git-send-email-toddpoynor@google.com>
+ <87ei22dnsp.fsf@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <87ei22dnsp.fsf@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011, Pekka Enberg wrote:
+On Thu, Jul 07, 2011 at 10:05:10AM -0700, Kevin Hilman wrote:
+> Todd Poynor <toddpoynor@google.com> writes:
+> 
+> > Add notifiers for idle entry and exit, called with IDLE_START when a
+> > CPU goes idle and IDLE_END when it goes out of idle, based on the
+> > existing idle notifiers for the x86_64 arch.
+> >
+> > Convert x86_64 to use these notifiers, and call the notifiers on ARM.
+> >
+> > Convert the ARM LEDs events for idle start/end to these notifiers.
+> 
+> Is this intended to replace the more general CPU PM notifiers proposed
+> by Colin:
+> 
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2011-June/052827.html
 
-> I applied the patch. I think a follow up patch that moves the function
-> to lib/string.c with proper generic name would be in order. Thanks!
+This is intended to coexist with the CPU PM notifiers.  The idle
+notifiers proposed here are notifying of a change in kernel scheduler
+state: the scheduler has no task to run and is entering its "idle
+loop", or now has something to run and is exiting idle state.
+Things that can use this include power management hints such as the
+existing drivers/idle/i7300_idle.c usage, the ARM LEDs idle triggers,
+and there's probably other existing potential uses in other arch'es that
+I should go track down.
 
-Well this is really straightforward. Hasnt seen much testing yet and
-needs refinement but it would be like this:
+The CPU PM notifiers notify of changes in hardware power state that
+affect the CPU and closely associated IP blocks (such as an OMAP
+power state transition that causes one or more CPU power domains to
+hit OFF).  These changes may be due to cpuidle power state management
+when the system is idle, or may be due to suspending or resuming the
+system (such as a suspend-to-RAM), or may be due to a CPU hotplug event.
+In the case of an idle loop entry, if cpuidle decides it is not
+appropriate to change CPU power state (as when insufficient time
+remains until next timer expiry to enter such a power state due to
+entry and exit latency), there may be no CPU PM notification
+generated.  The callbacks for CPU PM notifiers on ARM do things such
+as save/restore GIC interrupt controller state and VFP floating-point
+coprocessor state.
+
+That's the intent, anyhow, but ideas are welcome, thanks,
 
 
----
- arch/x86/include/asm/string_32.h |    2 ++
- arch/x86/lib/string_32.c         |   17 +++++++++++++++++
- include/linux/string.h           |    3 +++
- lib/string.c                     |   25 +++++++++++++++++++++++++
- mm/slub.c                        |   13 ++++++-------
- 5 files changed, 53 insertions(+), 7 deletions(-)
-
-Index: linux-2.6/arch/x86/lib/string_32.c
-===================================================================
---- linux-2.6.orig/arch/x86/lib/string_32.c	2011-07-07 15:03:46.000000000 -0500
-+++ linux-2.6/arch/x86/lib/string_32.c	2011-07-07 15:03:56.000000000 -0500
-@@ -214,6 +214,23 @@ void *memscan(void *addr, int c, size_t
- EXPORT_SYMBOL(memscan);
- #endif
-
-+#ifdef __HAVE_ARCH_INV_MEMSCAN
-+void *inv_memscan(void *addr, int c, size_t size)
-+{
-+	if (!size)
-+		return addr;
-+	asm volatile("repz; scasb\n\t"
-+	    "jz 1f\n\t"
-+	    "dec %%edi\n"
-+	    "1:"
-+	    : "=D" (addr), "=c" (size)
-+	    : "0" (addr), "1" (size), "a" (c)
-+	    : "memory");
-+	return addr;
-+}
-+EXPORT_SYMBOL(memscan);
-+#endif
-+
- #ifdef __HAVE_ARCH_STRNLEN
- size_t strnlen(const char *s, size_t count)
- {
-Index: linux-2.6/include/linux/string.h
-===================================================================
---- linux-2.6.orig/include/linux/string.h	2011-07-07 15:03:46.000000000 -0500
-+++ linux-2.6/include/linux/string.h	2011-07-07 15:03:56.000000000 -0500
-@@ -108,6 +108,9 @@ extern void * memmove(void *,const void
- #ifndef __HAVE_ARCH_MEMSCAN
- extern void * memscan(void *,int,__kernel_size_t);
- #endif
-+#ifndef __HAVE_ARCH_INV_MEMSCAN
-+extern void * inv_memscan(void *,int,__kernel_size_t);
-+#endif
- #ifndef __HAVE_ARCH_MEMCMP
- extern int memcmp(const void *,const void *,__kernel_size_t);
- #endif
-Index: linux-2.6/lib/string.c
-===================================================================
---- linux-2.6.orig/lib/string.c	2011-07-07 15:03:46.000000000 -0500
-+++ linux-2.6/lib/string.c	2011-07-07 15:03:56.000000000 -0500
-@@ -684,6 +684,31 @@ void *memscan(void *addr, int c, size_t
- EXPORT_SYMBOL(memscan);
- #endif
-
-+#ifndef __HAVE_ARCH_INV_MEMSCAN
-+/**
-+ * memscan - Skip characters in an area of memory.
-+ * @addr: The memory area
-+ * @c: The byte to skip
-+ * @size: The size of the area.
-+ *
-+ * returns the address of the first mismatch of @c, or 1 byte past
-+ * the area if @c matches to the end
-+ */
-+void *inv_memscan(void *addr, int c, size_t size)
-+{
-+	unsigned char *p = addr;
-+
-+	while (size) {
-+		if (*p != c)
-+			return (void *)p;
-+		p++;
-+		size--;
-+	}
-+  	return (void *)p;
-+}
-+EXPORT_SYMBOL(inv_memscan);
-+#endif
-+
- #ifndef __HAVE_ARCH_STRSTR
- /**
-  * strstr - Find the first substring in a %NUL terminated string
-Index: linux-2.6/arch/x86/include/asm/string_32.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/string_32.h	2011-07-07 15:05:44.000000000 -0500
-+++ linux-2.6/arch/x86/include/asm/string_32.h	2011-07-07 15:06:16.000000000 -0500
-@@ -336,6 +336,8 @@ void *__constant_c_and_count_memset(void
-  */
- #define __HAVE_ARCH_MEMSCAN
- extern void *memscan(void *addr, int c, size_t size);
-+#define __HAVE_ARCH_INV_MEMSCAN
-+extern void *inv_memscan(void *addr, int c, size_t size);
-
- #endif /* __KERNEL__ */
-
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2011-07-07 15:04:11.000000000 -0500
-+++ linux-2.6/mm/slub.c	2011-07-07 15:10:21.000000000 -0500
-@@ -559,13 +559,12 @@ static void init_object(struct kmem_cach
-
- static u8 *check_bytes(u8 *start, unsigned int value, unsigned int bytes)
- {
--	while (bytes) {
--		if (*start != (u8)value)
--			return start;
--		start++;
--		bytes--;
--	}
--	return NULL;
-+	u8 *p = inv_memscan(start, value, bytes);
-+
-+	if (p == start + bytes)
-+		return NULL;
-+
-+	return p;
- }
-
- static void restore_bytes(struct kmem_cache *s, char *message, u8 data,
+Todd
