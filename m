@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753407Ab1GGFmc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 01:42:32 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42281 "EHLO smtps.tip.net.au"
+	id S1753743Ab1GGFoX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 01:44:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48098 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756Ab1GGFmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 01:42:31 -0400
-Date: Thu, 7 Jul 2011 15:42:23 +1000
+	id S1750756Ab1GGFoV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 01:44:21 -0400
+Date: Thu, 7 Jul 2011 15:44:18 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Linus Walleij <linus.walleij@linaro.org>,
-        Axel Lin <axel.lin@gmail.com>
-Subject: linux-next: manual merge of the staging tree with the ux500-core
- tree
-Message-Id: <20110707154223.d7ecda2a6cc84e033bb0b26a@canb.auug.org.au>
+        Jesper Juhl <jj@chaosbits.net>
+Subject: linux-next: manual merge of the staging tree with the net tree
+Message-Id: <20110707154418.2ef06852c79eb96adcbe8c4e@canb.auug.org.au>
 X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.4; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__7_Jul_2011_15_42_23_+1000_S_rn4UPX4EFpDgMW"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Jul_2011_15_42_23_+1000_S_rn4UPX4EFpDgMW
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
 Hi Greg,
 
 Today's linux-next merge of the staging tree got a conflict in
-arch/arm/mach-ux500/board-mop500-u8500uib.c between commit 0df7aaf0f276
-("mach-ux500: fix build error due to unknown 'regulator_en' field") from
-the ux500-core tree and commit 857f727674f4 ("staging: ste_rmi4: remove
-cross-dependent platform data") from the staging tree.
+drivers/staging/rtl8192e/r8192E.h between commit 219eb47e6f35
+("net/staging: add needed interrupt.h and hardirq.h includes") from the
+net tree and commit 41134db17a7d ("Remove unneeded version.h includes
+from drivers/staging/rtl*/") from the staging tree.
 
-The second supercedes the first, so I used that.
---=20
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__7_Jul_2011_15_42_23_+1000_S_rn4UPX4EFpDgMW
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOFUc/AAoJEDMEi1NhKgbszIsIAICL1QbMwT5auuSfqN5uJD/r
-gTdzQQGsUf90fm1cQev6+QjCkZexWBeWDEJWyDTAMsIM6VSOdhfraii4TM6UeoSm
-GWJzP2eZKwULwH8NO2h4lsZ+bEqS8E8ZxalBktPQAISB1CkIp0/aM7uUV1DUhCIR
-StHIYvgJPoygrV+5wnm4PY9Vp5SpVrcHhV8T4xNWRF56OWulvYBpd9CneoEY5n4C
-7k5BLR/zLFhAXbez39OJG6RGR7aQhpfx8uTvOGgPicke9s1VUIEO6RVQhtPTkvPU
-gflYytf7xZt7xk2mZ4cCLe6SwJ1anzSJpPxtwW12rlqESha+0uekzVNbFNoNt+I=
-=WQ0Q
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Jul_2011_15_42_23_+1000_S_rn4UPX4EFpDgMW--
+diff --cc drivers/staging/rtl8192e/r8192E.h
+index 89fe8fc,0faa637..0000000
+--- a/drivers/staging/rtl8192e/r8192E.h
++++ b/drivers/staging/rtl8192e/r8192E.h
+@@@ -35,8 -35,6 +35,7 @@@
+  #include <linux/proc_fs.h>	// Necessary because we use the proc fs
+  #include <linux/if_arp.h>
+  #include <linux/random.h>
+- #include <linux/version.h>
+ +#include <linux/interrupt.h>
+  #include <asm/io.h>
+  #include "ieee80211/rtl819x_HT.h"
+  #include "ieee80211/ieee80211.h"
