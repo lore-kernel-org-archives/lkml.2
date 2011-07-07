@@ -1,116 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab1GGBAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 21:00:43 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54623 "EHLO smtps.tip.net.au"
+	id S1753914Ab1GGBJo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 21:09:44 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:46496 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751831Ab1GGBAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 21:00:41 -0400
-Date: Thu, 7 Jul 2011 11:00:32 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Ram Pai <linuxram@us.ibm.com>, torvalds@linux-foundation.org,
-        linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org
-Subject: Re: [PATCH] PCI: conditional resource-reallocation through kernel
- parameter pci=realloc
-Message-Id: <20110707110032.226a16c3b553de67125cf70b@canb.auug.org.au>
-In-Reply-To: <20110706090733.1158d959@jbarnes-desktop>
-References: <1309421379-24995-1-git-send-email-linuxram@us.ibm.com>
-	<20110706090638.GA29266@ram-ThinkPad-T61>
-	<20110706090733.1158d959@jbarnes-desktop>
-X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.4; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__7_Jul_2011_11_00_32_+1000_gRZJ.zOU/.3jMb3s"
+	id S1751857Ab1GGBJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 21:09:43 -0400
+Date: Wed, 6 Jul 2011 18:09:10 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: linux-kernel@vger.kernel.org
+Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
+Subject: [PATCH v2] x86: give names to realmode wakeup flags
+Message-ID: <20110707010910.GA7877@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__7_Jul_2011_11_00_32_+1000_gRZJ.zOU/.3jMb3s
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Instead of using literals, use a common set of names for the
+user-controlled realmode wakeup flags.
 
-Hi Jesse,
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+---
+v2: split from the MISC_ENABLE restoration patch
 
-On Wed, 6 Jul 2011 09:07:33 -0700 Jesse Barnes <jbarnes@virtuousgeek.org> w=
-rote:
->
-> On Wed, 6 Jul 2011 02:06:38 -0700
-> Ram Pai <linuxram@us.ibm.com> wrote:
->=20
-> > On Thu, Jun 30, 2011 at 01:09:39AM -0700, Ram Pai wrote:
-> > > Multiple attempts to dynamically reallocate pci resources have unfort=
-unately
-> > > lead to regressions. Though we continue to fix the regressions and fi=
-ne tune the
-> > > dynamic-reallocation behavior, we have not reached a acceptable state=
- yet.
-> > >=20
-> > > This patch provides a interim solution. It disables dynamic-reallocat=
-ion; by
-> > > default, with the ability to enable it through pci=3Drealloc kernel c=
-ommand line
-> > > parameter.
-> >=20
-> > >=20
-> > > Signed-off-by: Ram Pai <linuxram@us.ibm.com>
-> > > ---
-> > >  Documentation/kernel-parameters.txt |    2 ++
-> > >  arch/x86/pci/common.c               |    4 ++++
-> > >  drivers/pci/setup-bus.c             |    7 +++++++
-> > >  include/linux/pci.h                 |    2 ++
-> > >  4 files changed, 15 insertions(+), 0 deletions(-)
-> > >=20
-> > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kern=
-el-parameters.txt
-> > > index fd248a3..aa47be7 100644
-> > > --- a/Documentation/kernel-parameters.txt
-> > > +++ b/Documentation/kernel-parameters.txt
-> > > @@ -2015,6 +2015,8 @@ bytes respectively. Such letter suffixes can al=
-so be entirely omitted.
-> > >  				the default.
-> > >  				off: Turn ECRC off
-> > >  				on: Turn ECRC on.
-> > > +		realloc		reallocate PCI resources if allocations done by BIOS
-> > > +				are erroneous.
-> > >=20
-> > >  	pcie_aspm=3D	[PCIE] Forcibly enable or disable PCIe Active State Po=
-wer
-> > >  			Management.
-> >=20
-> > Linus/Jesse,
-> >=20
-> > 	Are we merging this patch in 3.0.0 ?
->=20
-> Yeah I think we probably should, since the alternative is still pretty
-> large.
->=20
-> I'll queue it up with any other small patches that are needed at this
-> point and send them over to Linus.
+ arch/x86/kernel/acpi/realmode/wakemain.c |    6 +++---
+ arch/x86/kernel/acpi/realmode/wakeup.h   |    4 ++++
+ arch/x86/kernel/acpi/sleep.c             |    6 +++---
+ 3 files changed, 10 insertions(+), 6 deletions(-)
 
-It breaks the powerpc build (see my other message).
+diff --git a/arch/x86/kernel/acpi/realmode/wakemain.c b/arch/x86/kernel/acpi/realmode/wakemain.c
+index 883962d..1749cde 100644
+--- a/arch/x86/kernel/acpi/realmode/wakemain.c
++++ b/arch/x86/kernel/acpi/realmode/wakemain.c
+@@ -67,13 +67,13 @@ void main(void)
+ 	if (wakeup_header.real_magic != 0x12345678)
+ 		while (1);
+ 
+-	if (wakeup_header.realmode_flags & 4)
++	if (wakeup_header.realmode_flags & WAKE_FLAG_BEEP)
+ 		send_morse("...-");
+ 
+-	if (wakeup_header.realmode_flags & 1)
++	if (wakeup_header.realmode_flags & WAKE_FLAG_BIOS)
+ 		asm volatile("lcallw   $0xc000,$3");
+ 
+-	if (wakeup_header.realmode_flags & 2) {
++	if (wakeup_header.realmode_flags & WAKE_FLAG_MODE) {
+ 		/* Need to call BIOS */
+ 		probe_cards(0);
+ 		set_mode(wakeup_header.video_mode);
+diff --git a/arch/x86/kernel/acpi/realmode/wakeup.h b/arch/x86/kernel/acpi/realmode/wakeup.h
+index 97a29e1..516c885 100644
+--- a/arch/x86/kernel/acpi/realmode/wakeup.h
++++ b/arch/x86/kernel/acpi/realmode/wakeup.h
+@@ -38,6 +38,10 @@ struct wakeup_header {
+ extern struct wakeup_header wakeup_header;
+ #endif
+ 
++#define WAKEUP_FLAG_BIOS        1
++#define WAKEUP_FLAG_MODE        2
++#define WAKEUP_FLAG_BEEP        4
++
+ #define WAKEUP_HEADER_OFFSET	8
+ #define WAKEUP_HEADER_SIGNATURE 0x51ee1111
+ #define WAKEUP_END_SIGNATURE	0x65a22c82
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 103b6ab..12115a9 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -110,11 +110,11 @@ static int __init acpi_sleep_setup(char *str)
+ {
+ 	while ((str != NULL) && (*str != '\0')) {
+ 		if (strncmp(str, "s3_bios", 7) == 0)
+-			acpi_realmode_flags |= 1;
++			acpi_realmode_flags |= WAKEUP_FLAG_BIOS;
+ 		if (strncmp(str, "s3_mode", 7) == 0)
+-			acpi_realmode_flags |= 2;
++			acpi_realmode_flags |= WAKEUP_FLAG_MODE;
+ 		if (strncmp(str, "s3_beep", 7) == 0)
+-			acpi_realmode_flags |= 4;
++			acpi_realmode_flags |= WAKEUP_FLAG_BEEP;
+ #ifdef CONFIG_HIBERNATION
+ 		if (strncmp(str, "s4_nohwsig", 10) == 0)
+ 			acpi_no_s4_hw_signature();
+-- 
+1.7.4.1
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__7_Jul_2011_11_00_32_+1000_gRZJ.zOU/.3jMb3s
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.11 (GNU/Linux)
-
-iQEcBAEBAgAGBQJOFQUwAAoJEDMEi1NhKgbsQQIH/ROHg5XtdEyEGlwVWhh5CPDN
-C6nkiZa08LOTlBYE/cHKbNDnVuMvpDD69thaC+KNPVnwiyscLpngVOojjnogPCMm
-xerfSLFNUsaNj0kTjePor9AIjKZzYeSGjsZogYzXgAMBwIG0E2Oxgx9duoDeR6lu
-sTMP5qSPKAc/q2KHxVZQHg04qffWsADHQMg4dZBcQibXOOOj14BS5Uoyvcbuwvmv
-Frn5j6l7iQdUPEerfYEuAtTBXxQTJTUzBYLibFKEVQeX0+Rm9Tt8dWFojpXSuqS5
-9LTGFdW86Yx5m/8DXQev3kZ4OzzICjqxJo853IzYUDegDVuAgtB2fOdRXAnGXOU=
-=kVvh
------END PGP SIGNATURE-----
-
---Signature=_Thu__7_Jul_2011_11_00_32_+1000_gRZJ.zOU/.3jMb3s--
+-- 
+Kees Cook
+Ubuntu Security Team
