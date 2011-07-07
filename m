@@ -1,118 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab1GGXxm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 19:53:42 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53440 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751805Ab1GGXxk (ORCPT
+	id S1752813Ab1GGXz4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 19:55:56 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:48125 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751805Ab1GGXzz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 19:53:40 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 8 Jul 2011 08:46:29 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH][Cleanup] memcg: consolidates memory cgroup lru stat
- functions
-Message-Id: <20110708084629.73c7e543.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20110707142922.c9657ec4.akpm@linux-foundation.org>
-References: <20110707155217.909c429a.kamezawa.hiroyu@jp.fujitsu.com>
-	<20110707142922.c9657ec4.akpm@linux-foundation.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.1.1 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jul 2011 19:55:55 -0400
+X-Sasl-enc: byIRR636FfPgLx2qxQu2ptnCE9ABvJWvzyyqiWfCS2xQ 1310082954
+Date: Thu, 7 Jul 2011 16:55:47 -0700
+From: Greg KH <greg@kroah.com>
+To: Wengang Wang <wen.gang.wang@oracle.com>
+Cc: stable@kernel.org, greg.marsden@oracle.com, joe.jin@oracle.com,
+        linux-kernel@vger.kernel.org
+Subject: Re: [stable] [PATCH] mm: prevent concurrent unmap_mapping_range() on
+ the same inode --to stable
+Message-ID: <20110707235547.GA1119@kroah.com>
+References: <201106240702.p5O72bkH003998@acsmt358.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201106240702.p5O72bkH003998@acsmt358.oracle.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011 14:29:22 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Thu, 7 Jul 2011 15:52:17 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Fri, Jun 24, 2011 at 03:02:08PM +0800, Wengang Wang wrote:
+>         mainline commit 2aa15890f3c191326678f1bd68af61ec6b8753ec
 > 
-> > In mm/memcontrol.c, there are many lru stat functions as..
-> > 
-> > mem_cgroup_zone_nr_lru_pages
-> > mem_cgroup_node_nr_file_lru_pages
-> > mem_cgroup_nr_file_lru_pages
-> > mem_cgroup_node_nr_anon_lru_pages
-> > mem_cgroup_nr_anon_lru_pages
-> > mem_cgroup_node_nr_unevictable_lru_pages
-> > mem_cgroup_nr_unevictable_lru_pages
-> > mem_cgroup_node_nr_lru_pages
-> > mem_cgroup_nr_lru_pages
-> > mem_cgroup_get_local_zonestat
-> > 
-> > Some of them are under #ifdef MAX_NUMNODES >1 and others are not.
-> > This seems bad. This patch consolidates all functions into
-> > 
-> > mem_cgroup_zone_nr_lru_pages()
-> > mem_cgroup_node_nr_lru_pages()
-> > mem_cgroup_nr_lru_pages()
-> > 
-> > For these functions, "which LRU?" information is passed by a mask.
-> > 
-> > example)
-> > mem_cgroup_nr_lru_pages(mem, BIT(LRU_ACTIVE_ANON))
-> > 
-> > And I added some macro as ALL_LRU, ALL_LRU_FILE, ALL_LRU_ANON.
-> > example)
-> > mem_cgroup_nr_lru_pages(mem, ALL_LRU)
-> > 
-> > BTW, considering layout of NUMA memory placement of counters, this patch seems
-> > to be better. 
-> > 
-> > Now, when we gather all LRU information, we scan in following orer
-> >     for_each_lru -> for_each_node -> for_each_zone.
-> > 
-> > This means we'll touch cache lines in different node in turn.
-> > 
-> > After patch, we'll scan 
-> >     for_each_node -> for_each_zone -> for_each_lru(mask)
-> > 
-> > Then, we'll gather information in the same cacheline at once.
+>     mm: prevent concurrent unmap_mapping_range() on the same inode
 > 
-> mm/vmscan.c: In function 'zone_nr_lru_pages':
-> mm/vmscan.c:175: warning: passing argument 2 of 'mem_cgroup_zone_nr_lru_pages' makes pointer from integer without a cast
-> include/linux/memcontrol.h:307: note: expected 'struct zone *' but argument is of type 'int'
-> mm/vmscan.c:175: error: too many arguments to function 'mem_cgroup_zone_nr_lru_pages'
+>     Michael Leun reported that running parallel opens on a fuse filesystem
+>     can trigger a "kernel BUG at mm/truncate.c:475"
 > 
-
-Hmm...quilt reflesh miss, sorry.
-
-> --- a/include/linux/memcontrol.h~memcg-consolidates-memory-cgroup-lru-stat-functions-fix
-> +++ a/include/linux/memcontrol.h
-> @@ -304,8 +304,8 @@ mem_cgroup_inactive_file_is_low(struct m
->  }
->  
->  static inline unsigned long
-> -mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, struct zone *zone,
-> -			     enum lru_list lru)
-> +mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
-> +				unsigned int lru_mask)
->  {
->  	return 0;
->  }
+>     Gurudas Pai reported the same bug on NFS.
 > 
-> > +unsigned long
-> > +mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *mem, int nid, int zid,
-> > +			unsigned int lru_mask)
+>     The reason is, unmap_mapping_range() is not prepared for more than
+>     one concurrent invocation per inode.  For example:
 > 
-> The memcg code sometimes uses "struct mem_cgroup *mem" and sometimes
-> uses "struct mem_cgroup *memcg".  That's irritating.  I think "memcg"
-> is better.
+>       thread1: going through a big range, stops in the middle of a vma and
+>          stores the restart address in vm_truncate_count.
 > 
+>       thread2: comes in with a small (e.g. single page) unmap request on
+>          the same vma, somewhere before restart_address, finds that the
+>          vma was already unmapped up to the restart address and happily
+>          returns without doing anything.
+> 
+>     Another scenario would be two big unmap requests, both having to
+>     restart the unmapping and each one setting vm_truncate_count to its
+>     own value.  This could go on forever without any of them being able to
+>     finish.
+> 
+>     Truncate and hole punching already serialize with i_mutex.  Other
+>     callers of unmap_mapping_range() do not, and it's difficult to get
+>     i_mutex protection for all callers.  In particular ->d_revalidate(),
+>     which calls invalidate_inode_pages2_range() in fuse, may be called
+>     with or without i_mutex.
+> 
+>     This patch adds a new mutex to 'struct address_space' to prevent
+>     running multiple concurrent unmap_mapping_range() on the same mapping.
+> 
+>     [ We'll hopefully get rid of all this with the upcoming mm
+>       preemptibility series by Peter Zijlstra, the "mm: Remove i_mmap_mutex
+>       lockbreak" patch in particular.  But that is for 2.6.39 ]
+> 
+> 
+>     Adding this patch causes Kabi breakage.
+> 
+>     Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
+>     Reported-by: Michael Leun <lkml20101129@newton.leun.net>
+>     Reported-by: Gurudas Pai <gurudas.pai@oracle.com>
+>     Tested-by: Gurudas Pai <gurudas.pai@oracle.com>
+>     Acked-by: Hugh Dickins <hughd@google.com>
+>     Cc: stable@kernel.org
+>     Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+>     Signed-off-by: Wengang Wang <wen.gang.wang@oracle.com>
 
-Sure. I always use "mem" but otheres not ;(
-Ok, I'll use memcg.
+As this patch showed up in 2.6.39, I'm confused as to what you wanted me
+to do with it, so I've dropped it from my queue.
 
-Thanks,
--Kame 
-
+greg k-h
