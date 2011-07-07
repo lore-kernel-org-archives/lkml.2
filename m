@@ -1,102 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab1GGV3f (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 17:29:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51125 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752076Ab1GGV3e (ORCPT
+	id S1751889Ab1GGVbV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 17:31:21 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:20205 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750805Ab1GGVbU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 17:29:34 -0400
-Date: Thu, 7 Jul 2011 14:29:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
-        "bsingharora@gmail.com" <bsingharora@gmail.com>,
-        Michal Hocko <mhocko@suse.cz>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH][Cleanup] memcg: consolidates memory cgroup lru stat
- functions
-Message-Id: <20110707142922.c9657ec4.akpm@linux-foundation.org>
-In-Reply-To: <20110707155217.909c429a.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20110707155217.909c429a.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 7 Jul 2011 17:31:20 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=dkim-signature:mime-version:in-reply-to:references:from:date:
+	message-id:subject:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=UmVOFghNp1T/mnDZte/d4rC0lk/tlWrAjxuHoM5zt2VVB8iSDM5RhwZZ55Ub3HUMq
+	8IuiMx6OJiph3k5hD+rUA==
+MIME-Version: 1.0
+In-Reply-To: <1310046524.3282.570.camel@twins>
+References: <20110707053036.173186930@google.com> <20110707053059.981950189@google.com>
+ <1310046524.3282.570.camel@twins>
+From: Paul Turner <pjt@google.com>
+Date: Thu, 7 Jul 2011 14:30:31 -0700
+Message-ID: <CAPM31RJwU-QH0qUiRnT7k0JA5s5D6e=Zqe+W_tq-MBtjww-gxA@mail.gmail.com>
+Subject: Re: [patch 03/17] sched: introduce primitives to account for CFS
+ bandwidth tracking
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Hu Tao <hutao@cn.fujitsu.com>, Nikhil Rao <ncrao@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 7 Jul 2011 15:52:17 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Thu, Jul 7, 2011 at 6:48 AM, Peter Zijlstra <a.p.zijlstra@chello.nl> wrote:
+> On Wed, 2011-07-06 at 22:30 -0700, Paul Turner wrote:
+>> +config CFS_BANDWIDTH
+>> +       bool "CPU bandwidth provisioning for FAIR_GROUP_SCHED"
+>> +       depends on EXPERIMENTAL
+>> +       depends on FAIR_GROUP_SCHED
+>> +       depends on SMP
+>
+> I know that UP is quickly becoming extinct, but isn't that a tad
+> radical? :-)
+>
 
-> In mm/memcontrol.c, there are many lru stat functions as..
-> 
-> mem_cgroup_zone_nr_lru_pages
-> mem_cgroup_node_nr_file_lru_pages
-> mem_cgroup_nr_file_lru_pages
-> mem_cgroup_node_nr_anon_lru_pages
-> mem_cgroup_nr_anon_lru_pages
-> mem_cgroup_node_nr_unevictable_lru_pages
-> mem_cgroup_nr_unevictable_lru_pages
-> mem_cgroup_node_nr_lru_pages
-> mem_cgroup_nr_lru_pages
-> mem_cgroup_get_local_zonestat
-> 
-> Some of them are under #ifdef MAX_NUMNODES >1 and others are not.
-> This seems bad. This patch consolidates all functions into
-> 
-> mem_cgroup_zone_nr_lru_pages()
-> mem_cgroup_node_nr_lru_pages()
-> mem_cgroup_nr_lru_pages()
-> 
-> For these functions, "which LRU?" information is passed by a mask.
-> 
-> example)
-> mem_cgroup_nr_lru_pages(mem, BIT(LRU_ACTIVE_ANON))
-> 
-> And I added some macro as ALL_LRU, ALL_LRU_FILE, ALL_LRU_ANON.
-> example)
-> mem_cgroup_nr_lru_pages(mem, ALL_LRU)
-> 
-> BTW, considering layout of NUMA memory placement of counters, this patch seems
-> to be better. 
-> 
-> Now, when we gather all LRU information, we scan in following orer
->     for_each_lru -> for_each_node -> for_each_zone.
-> 
-> This means we'll touch cache lines in different node in turn.
-> 
-> After patch, we'll scan 
->     for_each_node -> for_each_zone -> for_each_lru(mask)
-> 
-> Then, we'll gather information in the same cacheline at once.
+Right, this was because walk_tg_tree (and some friends) were not
+available in the FAIR_GROUP && !SMP case.  The wreckage used to be a
+little more extensive but I just tried it again the last rounds of
+clean-up seem to have fixed most of it, the only other problem was
+updating the SMP group load stuff in the unthrottle path.
 
-mm/vmscan.c: In function 'zone_nr_lru_pages':
-mm/vmscan.c:175: warning: passing argument 2 of 'mem_cgroup_zone_nr_lru_pages' makes pointer from integer without a cast
-include/linux/memcontrol.h:307: note: expected 'struct zone *' but argument is of type 'int'
-mm/vmscan.c:175: error: too many arguments to function 'mem_cgroup_zone_nr_lru_pages'
-
---- a/include/linux/memcontrol.h~memcg-consolidates-memory-cgroup-lru-stat-functions-fix
-+++ a/include/linux/memcontrol.h
-@@ -304,8 +304,8 @@ mem_cgroup_inactive_file_is_low(struct m
- }
- 
- static inline unsigned long
--mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, struct zone *zone,
--			     enum lru_list lru)
-+mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *memcg, int nid, int zid,
-+				unsigned int lru_mask)
- {
- 	return 0;
- }
-
-> +unsigned long
-> +mem_cgroup_zone_nr_lru_pages(struct mem_cgroup *mem, int nid, int zid,
-> +			unsigned int lru_mask)
-
-The memcg code sometimes uses "struct mem_cgroup *mem" and sometimes
-uses "struct mem_cgroup *memcg".  That's irritating.  I think "memcg"
-is better.
-
+I've rolled the required #ifdef-erry to fix the above up and it's not
+horrifying so... dependency removed!
