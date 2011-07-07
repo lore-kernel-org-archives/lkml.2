@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756228Ab1GGTIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 15:08:48 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:57821 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754716Ab1GGTIr (ORCPT
+	id S1756117Ab1GGTMl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 15:12:41 -0400
+Received: from smtp106.prem.mail.ac4.yahoo.com ([76.13.13.45]:41419 "HELO
+	smtp106.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753143Ab1GGTMk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 15:08:47 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-        Ian Campbell <Ian.Campbell@citrix.com>
-Cc: xen-devel@lists.xensource.com,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 08/10] xen/pci: Retire unnecessary #ifdef CONFIG_ACPI
-Date: Thu,  7 Jul 2011 15:08:24 -0400
-Message-Id: <1310065706-18797-9-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.7.4.1
-In-Reply-To: <1310065706-18797-1-git-send-email-konrad.wilk@oracle.com>
-References: <1310065706-18797-1-git-send-email-konrad.wilk@oracle.com>
-X-Source-IP: acsinet22.oracle.com [141.146.126.238]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4E160437.014F:SCFMA922111,ss=1,re=-4.000,fgs=0
+	Thu, 7 Jul 2011 15:12:40 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: vs4L0p4VM1kv8qqw12ANnMAM02ZBR9CfCTicQLD9pXc4Lu.
+ 6Uop9hbfuvYekF5U6WHpJoLmqxeOTm8mZqthlYI9iZ7W6vxrZfuMibBgcKgd
+ k6JWhG0o5zJHVZrcxlKpAUo0HOPugii2OwPUIz9ZRHJywQuFfdUi.LAcR4dI
+ xHK2PdcfHLKKSIvNV37TFZqcTu0ZNKp7Z_Ab1ulti_wbgi_LkHEDiaMz.eCp
+ m7msrVJug9Ilp65LWHJpRgef4TIMjw0YxJoJOSYLpKepAyj2wHhwlaRvrs0t
+ Kc74Fva5d_Om7BJBRgrQqyM86PggfIvKI1Du0iYklPKFbETVezWERb28GDjR
+ izzbXCyQjLjEgd3D8kZ1YMr4R
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 7 Jul 2011 14:12:37 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: Marcin Slusarz <marcin.slusarz@gmail.com>, Matt Mackall <mpm@selenic.com>,
+        LKML <linux-kernel@vger.kernel.org>, rientjes@google.com,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] slub: reduce overhead of slub_debug
+In-Reply-To: <1310064771.21902.55.camel@jaguar>
+Message-ID: <alpine.DEB.2.00.1107071402490.24248@router.home>
+References: <20110626193918.GA3339@joi.lan>  <alpine.DEB.2.00.1107072106560.6693@tiger>  <alpine.DEB.2.00.1107071314320.21719@router.home> <1310064771.21902.55.camel@jaguar>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As the code paths that are guarded by CONFIG_XEN_DOM0 already depend
-on CONFIG_ACPI so the extra #ifdef is not required. The earlier
-patch that added them in had done its job.
+On Thu, 7 Jul 2011, Pekka Enberg wrote:
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
----
- arch/x86/pci/xen.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
+> On Thu, 7 Jul 2011, Pekka Enberg wrote:
+> > > Looks good to me. Christoph, David, ?
+>
+> On Thu, 2011-07-07 at 13:17 -0500, Christoph Lameter wrote:
+> > The reason debug code is there is because it is useless overhead typically
+> > not needed. There is no point in optimizing the code that is not run in
+> > production environments unless there are gross performance issues that
+> > make debugging difficult. A performance patch for debugging would have to
+> > cause significant performance improvements. This patch does not do that
+> > nor was there such an issue to be addressed in the first place.
+>
+> Is there something technically wrong with the patch? Quoting the patch
+> email:
+>
+>   (Compiling some project with different options)
+>                                  make -j12    make clean
+>   slub_debug disabled:             1m 27s       1.2 s
+>   slub_debug enabled:              1m 46s       7.6 s
+>   slub_debug enabled + this patch: 1m 33s       3.2 s
+>
+>   check_bytes still shows up high, but not always at the top.
+>
+> That's significant enough speedup for me!
 
-diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
-index e585bf5..6eddc52 100644
---- a/arch/x86/pci/xen.c
-+++ b/arch/x86/pci/xen.c
-@@ -381,7 +381,6 @@ int __init pci_xen_hvm_init(void)
- }
- 
- #ifdef CONFIG_XEN_DOM0
--#ifdef CONFIG_ACPI
- static __init void xen_setup_acpi_sci(void)
- {
- 	int rc;
-@@ -428,7 +427,6 @@ static __init void xen_setup_acpi_sci(void)
- 
- 	return;
- }
--#endif
- 
- int __init pci_xen_initial_domain(void)
- {
-@@ -438,7 +436,6 @@ int __init pci_xen_initial_domain(void)
- 	x86_msi.setup_msi_irqs = xen_initdom_setup_msi_irqs;
- 	x86_msi.teardown_msi_irq = xen_teardown_msi_irq;
- #endif
--#ifdef CONFIG_ACPI
- 	xen_setup_acpi_sci();
- 	__acpi_register_gsi = acpi_register_gsi_xen;
- 	/* Pre-allocate legacy irqs */
-@@ -452,7 +449,6 @@ int __init pci_xen_initial_domain(void)
- 			trigger ? ACPI_LEVEL_SENSITIVE : ACPI_EDGE_SENSITIVE,
- 			true /* allocate IRQ */);
- 	}
--#endif
- 	if (0 == nr_ioapics) {
- 		for (irq = 0; irq < NR_IRQS_LEGACY; irq++) {
- 			pirq = xen_allocate_pirq_gsi(irq);
--- 
-1.7.4.1
+Ok. I had a different set of numbers in mind from earlier posts.
+
+The benefit here comes from accessing memory in larger (word) chunks
+instead of byte wise. This is a form of memscan() with inverse matching.
+
+Isnt there an asm optimized version that can do this much better (there is
+one for memscan())? Optimizing this in core code by codeing something as
+generic as that is not that good since the arch code can deliver better
+performance and it seems that this is functionality that could be useful
+elsewhere.
+
 
