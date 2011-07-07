@@ -1,211 +1,356 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755083Ab1GGClg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 22:41:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57676 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab1GGCle (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 22:41:34 -0400
-Subject: Re: [PATCH 2/3] dmaengine: at_hdmac: improve power management
- routines
-From: Vinod Koul <vkoul@infradead.org>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: dan.j.williams@intel.com, linux-arm-kernel@lists.infradead.org,
+	id S1754979Ab1GGDyX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 23:54:23 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60095 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754119Ab1GGDyV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 23:54:21 -0400
+Date: Thu, 7 Jul 2011 11:53:51 +0800
+From: Hu Tao <hutao@cn.fujitsu.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, Paul Turner <pjt@google.com>,
         linux-kernel@vger.kernel.org,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-In-Reply-To: <e8b0dceb5995556214d03477662f4ff7caf734e1.1309259835.git.nicolas.ferre@atmel.com>
-References: <fb4657207f9eb34784c10333e11c48b5638542ed.1309259835.git.nicolas.ferre@atmel.com>
-	 <e8b0dceb5995556214d03477662f4ff7caf734e1.1309259835.git.nicolas.ferre@atmel.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Intel Corp
-Date: Thu, 07 Jul 2011 07:50:22 +0530
-Message-ID: <1310005222.20150.23.camel@psiaudioba-mobl1>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 8bit
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [patch 00/16] CFS Bandwidth Control v7
+Message-ID: <20110707035351.GE18411@localhost.localdomain>
+References: <4E01BE6B.2090701@jp.fujitsu.com>
+ <1308830816.1022.112.camel@twins>
+ <20110623124310.GA15430@elte.hu>
+ <4E041C6A.4000701@jp.fujitsu.com>
+ <20110626103526.GA11093@elte.hu>
+ <20110629040521.GG4186@localhost.localdomain>
+ <20110701122824.GE28008@elte.hu>
+ <20110705035813.GC4656@localhost.localdomain>
+ <20110705085032.GA3169@elte.hu>
+ <20110705085252.GA5274@elte.hu>
+MIME-Version: 1.0
+In-Reply-To: <20110705085252.GA5274@elte.hu>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-MIMETrack: Itemize by SMTP Server on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-07 11:53:34,
+	Serialize by Router on mailserver/fnst(Release 8.5.1FP4|July 25, 2010) at
+ 2011-07-07 11:53:35,
+	Serialize complete at 2011-07-07 11:53:35
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2011-06-28 at 13:17 +0200, Nicolas Ferre wrote:
-> Save/restore dma controller state across a suspend-resume sequence.
-> The prepare() function will wait for the non-cyclic channels to become idle.
-> It also deals with cyclic operations with the start at next period while
-> resuming.
+> > 
+> > Oh, please measure with lockdep (CONFIG_PROVE_LOCKING) turned off. No 
+> > production kernel has it enabled and it has quite some overhead (as 
+> > visible in the profile), skewing results.
+> > 
+> > >      2.04%     -0.09%  pipe-test-100k     [.] main
+> > >      0.00%     +1.79%  [kernel.kallsyms]  [k] add_preempt_count
+> > 
+> > I'd also suggest to turn off CONFIG_PREEMPT_DEBUG.
 > 
-> Signed-off-by: Nicolas Ferre <nicolas.ferre@atmel.com>
-> Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> ---
->  drivers/dma/at_hdmac.c      |   88 ++++++++++++++++++++++++++++++++++++++++++-
->  drivers/dma/at_hdmac_regs.h |    7 +++
->  2 files changed, 94 insertions(+), 1 deletions(-)
+> The best way to get a good 'reference config' to measure scheduler 
+> overhead on do something like:
 > 
-> diff --git a/drivers/dma/at_hdmac.c b/drivers/dma/at_hdmac.c
-> index fd87b96..7096adb 100644
-> --- a/drivers/dma/at_hdmac.c
-> +++ b/drivers/dma/at_hdmac.c
-> @@ -1385,27 +1385,113 @@ static void at_dma_shutdown(struct platform_device *pdev)
->  	clk_disable(atdma->clk);
->  }
->  
-> +static int at_dma_prepare(struct device *dev)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct at_dma *atdma = platform_get_drvdata(pdev);
-> +	struct dma_chan *chan, *_chan;
-> +
-> +	list_for_each_entry_safe(chan, _chan, &atdma->dma_common.channels,
-> +			device_node) {
-> +		struct at_dma_chan *atchan = to_at_dma_chan(chan);
-> +		/* wait for transaction completion (except in cyclic case) */
-> +		if (atc_chan_is_enabled(atchan) &&
-> +			!test_bit(ATC_IS_CYCLIC, &atchan->status))
-> +			return -EAGAIN;
-pls fix indent here
-> +	}
-> +	return 0;
-> +}
-> +
-> +static void atc_suspend_cyclic(struct at_dma_chan *atchan)
-> +{
-> +	struct dma_chan	*chan = &atchan->chan_common;
-> +
-> +	/* Channel should be paused by user
-> +	 * do it anyway even if it is not done already */
-> +	if (!test_bit(ATC_IS_PAUSED, &atchan->status)) {
-> +		dev_warn(chan2dev(chan),
-> +		"cyclic channel not paused, should be done by channel user\n");
-> +		atc_control(chan, DMA_PAUSE, 0);
-> +	}
-> +
-> +	/* now preserve additional data for cyclic operations */
-> +	/* next descriptor address in the cyclic list */
-> +	atchan->save_dscr = channel_readl(atchan, DSCR);
-> +
-> +	vdbg_dump_regs(atchan);
-> +}
-> +
->  static int at_dma_suspend_noirq(struct device *dev)
->  {
->  	struct platform_device *pdev = to_platform_device(dev);
->  	struct at_dma *atdma = platform_get_drvdata(pdev);
-> +	struct dma_chan *chan, *_chan;
->  
-> -	at_dma_off(platform_get_drvdata(pdev));
-> +	/* preserve data */
-> +	list_for_each_entry_safe(chan, _chan, &atdma->dma_common.channels,
-> +			device_node) {
-> +		struct at_dma_chan *atchan = to_at_dma_chan(chan);
-> +
-> +		if (test_bit(ATC_IS_CYCLIC, &atchan->status))
-> +			atc_suspend_cyclic(atchan);
-> +		atchan->save_cfg = channel_readl(atchan, CFG);
-> +	}
-> +	atdma->save_imr = dma_readl(atdma, EBCIMR);
-> +
-> +	/* disable DMA controller */
-> +	at_dma_off(atdma);
->  	clk_disable(atdma->clk);
->  	return 0;
->  }
->  
-> +static void atc_resume_cyclic(struct at_dma_chan *atchan)
-> +{
-> +	struct at_dma	*atdma = to_at_dma(atchan->chan_common.device);
-> +
-> +	/* restore channel status for cyclic descriptors list:
-> +	 * next descriptor in the cyclic list at the time of suspend */
-> +	channel_writel(atchan, SADDR, 0);
-> +	channel_writel(atchan, DADDR, 0);
-> +	channel_writel(atchan, CTRLA, 0);
-> +	channel_writel(atchan, CTRLB, 0);
-> +	channel_writel(atchan, DSCR, atchan->save_dscr);
-> +	dma_writel(atdma, CHER, atchan->mask);
-> +
-> +	/* channel pause status should be removed by channel user
-> +	 * We cannot take the initiative to do it here */
-> +
-> +	vdbg_dump_regs(atchan);
-> +}
-> +
->  static int at_dma_resume_noirq(struct device *dev)
->  {
->  	struct platform_device *pdev = to_platform_device(dev);
->  	struct at_dma *atdma = platform_get_drvdata(pdev);
-> +	struct dma_chan *chan, *_chan;
->  
-> +	/* bring back DMA controller */
->  	clk_enable(atdma->clk);
->  	dma_writel(atdma, EN, AT_DMA_ENABLE);
-> +
-> +	/* clear any pending interrupt */
-> +	while (dma_readl(atdma, EBCISR))
-> +		cpu_relax();
-> +
-> +	/* restore saved data */
-> +	dma_writel(atdma, EBCIER, atdma->save_imr);
-> +	list_for_each_entry_safe(chan, _chan, &atdma->dma_common.channels,
-> +			device_node) {
-> +		struct at_dma_chan *atchan = to_at_dma_chan(chan);
-> +
-> +		channel_writel(atchan, CFG, atchan->save_cfg);
-> +		if (test_bit(ATC_IS_CYCLIC, &atchan->status))
-> +			atc_resume_cyclic(atchan);
-This testing on bits seems to be reused few times how about wrapping it
-up in a routine?
+> 	make defconfig
+> 	make localyesconfig
+> 
+> The first step will configure a sane default kernel, the second one 
+> will enable all drivers that are needed on that box. You should be 
+> able to boot the resulting bzImage and all drivers should be built-in 
+> and are easily profilable.
 
-> +	}
->  	return 0;
->  }
->  
->  static const struct dev_pm_ops at_dma_dev_pm_ops = {
-> +	.prepare = at_dma_prepare,
->  	.suspend_noirq = at_dma_suspend_noirq,
->  	.resume_noirq = at_dma_resume_noirq,
->  };
-> diff --git a/drivers/dma/at_hdmac_regs.h b/drivers/dma/at_hdmac_regs.h
-> index 087dbf1..6f0c4a3 100644
-> --- a/drivers/dma/at_hdmac_regs.h
-> +++ b/drivers/dma/at_hdmac_regs.h
-> @@ -204,6 +204,9 @@ enum atc_status {
->   * @status: transmit status information from irq/prep* functions
->   *                to tasklet (use atomic operations)
->   * @tasklet: bottom half to finish transaction work
-> + * @save_cfg: configuration register that is saved on suspend/resume cycle
-> + * @save_dscr: for cyclic operations, preserve next descriptor address in
-> + *             the cyclic list on suspend/resume cycle
->   * @lock: serializes enqueue/dequeue operations to descriptors lists
->   * @completed_cookie: identifier for the most recently completed operation
->   * @active_list: list of descriptors dmaengine is being running on
-> @@ -218,6 +221,8 @@ struct at_dma_chan {
->  	u8			mask;
->  	unsigned long		status;
->  	struct tasklet_struct	tasklet;
-> +	u32			save_cfg;
-> +	u32			save_dscr;
->  
->  	spinlock_t		lock;
->  
-> @@ -248,6 +253,7 @@ static inline struct at_dma_chan *to_at_dma_chan(struct dma_chan *dchan)
->   * @chan_common: common dmaengine dma_device object members
->   * @ch_regs: memory mapped register base
->   * @clk: dma controller clock
-> + * @save_imr: interrupt mask register that is saved on suspend/resume cycle
->   * @all_chan_mask: all channels availlable in a mask
->   * @dma_desc_pool: base of DMA descriptor region (DMA address)
->   * @chan: channels table to store at_dma_chan structures
-> @@ -256,6 +262,7 @@ struct at_dma {
->  	struct dma_device	dma_common;
->  	void __iomem		*regs;
->  	struct clk		*clk;
-> +	u32			save_imr;
->  
->  	u8			all_chan_mask;
->  
+Thanks for the information. I've re-tested the patches using the config
+got by the way you gave, these are the results:
 
--- 
-~Vinod Koul
-Intel Corp.
+table 1. shows the differences of cycles, instructions and branches
+         between drop caches and no drop caches. each drop caches case
+         is run as reboot, drop caches, then perf. The patch cases are
+         run with cpu cgroup disabled.
 
+                          cycles                   instructions             branches
+-----------------------------------------------------------------------------------------------
+base                      1,146,384,132            1,151,216,688            212,431,532
+base, drop caches         1,150,931,998 ( 0.39%)   1,150,099,127 (-0.10%)   212,216,507 (-0.10%)
+base, drop caches         1,144,685,532 (-0.15%)   1,151,115,796 (-0.01%)   212,412,336 (-0.01%)
+base, drop caches         1,148,922,524 ( 0.22%)   1,150,636,042 (-0.05%)   212,322,280 (-0.05%)
+-----------------------------------------------------------------------------------------------
+patch                     1,163,717,547            1,165,238,015            215,092,327
+patch, drop caches        1,161,301,415 (-0.21%)   1,165,905,415 (0.06%)    215,220,114 (0.06%)
+patch, drop caches        1,161,388,127 (-0.20%)   1,166,315,396 (0.09%)    215,300,854 (0.10%)
+patch, drop caches        1,167,839,222 ( 0.35%)   1,166,287,755 (0.09%)    215,294,118 (0.09%)
+-----------------------------------------------------------------------------------------------
+
+
+table 2. shows the differences between patch and no-patch. quota is set
+         to a large value to avoid processes being throttled.
+
+        quota/period          cycles                   instructions             branches
+--------------------------------------------------------------------------------------------------
+base                          1,146,384,132           1,151,216,688            212,431,532
+patch   cgroup disabled       1,163,717,547 (1.51%)   1,165,238,015 ( 1.22%)   215,092,327 ( 1.25%)
+patch   10000000000/1000      1,244,889,136 (8.59%)   1,299,128,502 (12.85%)   243,162,542 (14.47%)
+patch   10000000000/10000     1,253,305,706 (9.33%)   1,299,167,897 (12.85%)   243,175,027 (14.47%)
+patch   10000000000/100000    1,252,374,134 (9.25%)   1,299,314,357 (12.86%)   243,203,923 (14.49%)
+patch   10000000000/1000000   1,254,165,824 (9.40%)   1,299,751,347 (12.90%)   243,288,600 (14.53%)
+--------------------------------------------------------------------------------------------------
+
+
+(any questions please let me know.)
+
+
+
+
+outputs from perf:
+
+
+
+base
+--------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+
+        741.615458 task-clock                #    0.432 CPUs utilized            ( +-  0.05% )
+           200,001 context-switches          #    0.270 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 57.62% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,146,384,132 cycles                    #    1.546 GHz                      ( +-  0.06% )
+       528,191,000 stalled-cycles-frontend   #   46.07% frontend cycles idle     ( +-  0.11% )
+       245,053,477 stalled-cycles-backend    #   21.38% backend  cycles idle     ( +-  0.14% )
+     1,151,216,688 instructions              #    1.00  insns per cycle        
+                                             #    0.46  stalled cycles per insn  ( +-  0.04% )
+       212,431,532 branches                  #  286.444 M/sec                    ( +-  0.04% )
+         3,192,969 branch-misses             #    1.50% of all branches          ( +-  0.26% )
+
+       1.717638863 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+base, drop caches
+------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+
+        743.991156 task-clock                #    0.432 CPUs utilized            ( +-  0.05% )
+           200,001 context-switches          #    0.269 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 57.62% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,150,931,998 cycles                    #    1.547 GHz                      ( +-  0.06% )
+       532,150,859 stalled-cycles-frontend   #   46.24% frontend cycles idle     ( +-  0.11% )
+       248,132,791 stalled-cycles-backend    #   21.56% backend  cycles idle     ( +-  0.14% )
+     1,150,099,127 instructions              #    1.00  insns per cycle        
+                                             #    0.46  stalled cycles per insn  ( +-  0.04% )
+       212,216,507 branches                  #  285.241 M/sec                    ( +-  0.05% )
+         3,234,741 branch-misses             #    1.52% of all branches          ( +-  0.24% )
+
+       1.720283100 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+base, drop caches
+------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+
+        741.228159 task-clock                #    0.432 CPUs utilized            ( +-  0.05% )
+           200,001 context-switches          #    0.270 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 49.85% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,144,685,532 cycles                    #    1.544 GHz                      ( +-  0.06% )
+       528,095,499 stalled-cycles-frontend   #   46.13% frontend cycles idle     ( +-  0.10% )
+       245,336,551 stalled-cycles-backend    #   21.43% backend  cycles idle     ( +-  0.14% )
+     1,151,115,796 instructions              #    1.01  insns per cycle        
+                                             #    0.46  stalled cycles per insn  ( +-  0.04% )
+       212,412,336 branches                  #  286.568 M/sec                    ( +-  0.04% )
+         3,128,390 branch-misses             #    1.47% of all branches          ( +-  0.25% )
+
+       1.717165952 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+base, drop caches
+------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+
+        743.564054 task-clock                #    0.433 CPUs utilized            ( +-  0.04% )
+           200,001 context-switches          #    0.269 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 74.48% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,148,922,524 cycles                    #    1.545 GHz                      ( +-  0.07% )
+       532,489,993 stalled-cycles-frontend   #   46.35% frontend cycles idle     ( +-  0.11% )
+       248,064,979 stalled-cycles-backend    #   21.59% backend  cycles idle     ( +-  0.15% )
+     1,150,636,042 instructions              #    1.00  insns per cycle        
+                                             #    0.46  stalled cycles per insn  ( +-  0.04% )
+       212,322,280 branches                  #  285.547 M/sec                    ( +-  0.04% )
+         3,123,001 branch-misses             #    1.47% of all branches          ( +-  0.25% )
+
+       1.718876342 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+
+
+
+
+
+patch, cgroup disabled
+-----------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+
+        739.608960 task-clock                #    0.426 CPUs utilized            ( +-  0.04% )
+           200,001 context-switches          #    0.270 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +-100.00% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,163,717,547 cycles                    #    1.573 GHz                      ( +-  0.06% )
+       541,274,832 stalled-cycles-frontend   #   46.51% frontend cycles idle     ( +-  0.11% )
+       248,207,739 stalled-cycles-backend    #   21.33% backend  cycles idle     ( +-  0.14% )
+     1,165,238,015 instructions              #    1.00  insns per cycle        
+                                             #    0.46  stalled cycles per insn  ( +-  0.04% )
+       215,092,327 branches                  #  290.819 M/sec                    ( +-  0.04% )
+         3,355,695 branch-misses             #    1.56% of all branches          ( +-  0.15% )
+
+       1.734269082 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+patch, cgroup disabled, drop caches
+------------------------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+
+        737.995897 task-clock                #    0.426 CPUs utilized            ( +-  0.04% )
+           200,001 context-switches          #    0.271 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 57.62% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,161,301,415 cycles                    #    1.574 GHz                      ( +-  0.06% )
+       538,706,207 stalled-cycles-frontend   #   46.39% frontend cycles idle     ( +-  0.10% )
+       247,842,667 stalled-cycles-backend    #   21.34% backend  cycles idle     ( +-  0.15% )
+     1,165,905,415 instructions              #    1.00  insns per cycle        
+                                             #    0.46  stalled cycles per insn  ( +-  0.04% )
+       215,220,114 branches                  #  291.628 M/sec                    ( +-  0.04% )
+         3,344,324 branch-misses             #    1.55% of all branches          ( +-  0.15% )
+
+       1.731173126 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+patch, cgroup disabled, drop caches
+------------------------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+
+        737.789383 task-clock                #    0.427 CPUs utilized            ( +-  0.04% )
+           200,001 context-switches          #    0.271 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 70.64% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.05% )
+     1,161,388,127 cycles                    #    1.574 GHz                      ( +-  0.06% )
+       538,324,103 stalled-cycles-frontend   #   46.35% frontend cycles idle     ( +-  0.10% )
+       248,382,647 stalled-cycles-backend    #   21.39% backend  cycles idle     ( +-  0.14% )
+     1,166,315,396 instructions              #    1.00  insns per cycle        
+                                             #    0.46  stalled cycles per insn  ( +-  0.03% )
+       215,300,854 branches                  #  291.819 M/sec                    ( +-  0.04% )
+         3,337,456 branch-misses             #    1.55% of all branches          ( +-  0.15% )
+
+       1.729696593 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+patch, cgroup disabled, drop caches
+------------------------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+
+        740.796454 task-clock                #    0.427 CPUs utilized            ( +-  0.04% )
+           200,001 context-switches          #    0.270 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 52.78% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.05% )
+     1,167,839,222 cycles                    #    1.576 GHz                      ( +-  0.06% )
+       543,240,067 stalled-cycles-frontend   #   46.52% frontend cycles idle     ( +-  0.10% )
+       250,219,423 stalled-cycles-backend    #   21.43% backend  cycles idle     ( +-  0.15% )
+     1,166,287,755 instructions              #    1.00  insns per cycle        
+                                             #    0.47  stalled cycles per insn  ( +-  0.03% )
+       215,294,118 branches                  #  290.625 M/sec                    ( +-  0.03% )
+         3,435,316 branch-misses             #    1.60% of all branches          ( +-  0.15% )
+
+       1.735473959 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+
+
+
+
+
+patch, period/quota 1000/10000000000
+------------------------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+        773.180003 task-clock                #    0.437 CPUs utilized            ( +-  0.04% )
+           200,001 context-switches          #    0.259 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 57.62% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,244,889,136 cycles                    #    1.610 GHz                      ( +-  0.06% )
+       557,331,396 stalled-cycles-frontend   #   44.77% frontend cycles idle     ( +-  0.10% )
+       244,081,415 stalled-cycles-backend    #   19.61% backend  cycles idle     ( +-  0.14% )
+     1,299,128,502 instructions              #    1.04  insns per cycle        
+                                             #    0.43  stalled cycles per insn  ( +-  0.04% )
+       243,162,542 branches                  #  314.497 M/sec                    ( +-  0.04% )
+         3,630,994 branch-misses             #    1.49% of all branches          ( +-  0.16% )
+
+       1.769489922 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+patch, period/quota 10000/10000000000
+------------------------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+        776.884689 task-clock                #    0.438 CPUs utilized            ( +-  0.04% )
+           200,001 context-switches          #    0.257 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 57.62% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,253,305,706 cycles                    #    1.613 GHz                      ( +-  0.06% )
+       566,262,435 stalled-cycles-frontend   #   45.18% frontend cycles idle     ( +-  0.10% )
+       249,193,264 stalled-cycles-backend    #   19.88% backend  cycles idle     ( +-  0.13% )
+     1,299,167,897 instructions              #    1.04  insns per cycle        
+                                             #    0.44  stalled cycles per insn  ( +-  0.04% )
+       243,175,027 branches                  #  313.013 M/sec                    ( +-  0.04% )
+         3,774,613 branch-misses             #    1.55% of all branches          ( +-  0.13% )
+
+       1.773111308 seconds time elapsed                                          ( +-  0.02% )
+
+
+
+patch, period/quota 100000/10000000000
+------------------------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+        776.756709 task-clock                #    0.439 CPUs utilized            ( +-  0.04% )
+           200,001 context-switches          #    0.257 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 52.78% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,252,374,134 cycles                    #    1.612 GHz                      ( +-  0.05% )
+       565,520,222 stalled-cycles-frontend   #   45.16% frontend cycles idle     ( +-  0.09% )
+       249,412,383 stalled-cycles-backend    #   19.92% backend  cycles idle     ( +-  0.12% )
+     1,299,314,357 instructions              #    1.04  insns per cycle        
+                                             #    0.44  stalled cycles per insn  ( +-  0.04% )
+       243,203,923 branches                  #  313.102 M/sec                    ( +-  0.04% )
+         3,793,064 branch-misses             #    1.56% of all branches          ( +-  0.13% )
+
+       1.771283272 seconds time elapsed                                          ( +-  0.01% )
+
+
+
+patch, period/quota 1000000/10000000000
+------------------------------------
+ Performance counter stats for './pipe-test-100k' (500 runs):
+        778.091675 task-clock                #    0.439 CPUs utilized            ( +-  0.04% )
+           200,001 context-switches          #    0.257 M/sec                    ( +-  0.00% )
+                 0 CPU-migrations            #    0.000 M/sec                    ( +- 61.13% )
+               135 page-faults               #    0.000 M/sec                    ( +-  0.06% )
+     1,254,165,824 cycles                    #    1.612 GHz                      ( +-  0.05% )
+       567,280,955 stalled-cycles-frontend   #   45.23% frontend cycles idle     ( +-  0.09% )
+       249,428,011 stalled-cycles-backend    #   19.89% backend  cycles idle     ( +-  0.12% )
+     1,299,751,347 instructions              #    1.04  insns per cycle        
+                                             #    0.44  stalled cycles per insn  ( +-  0.04% )
+       243,288,600 branches                  #  312.673 M/sec                    ( +-  0.04% )
+         3,811,879 branch-misses             #    1.57% of all branches          ( +-  0.13% )
+
+       1.773436668 seconds time elapsed                                          ( +-  0.02% )
