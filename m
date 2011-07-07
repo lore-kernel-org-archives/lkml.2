@@ -1,131 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754320Ab1GGQtS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:49:18 -0400
-Received: from cnc.isely.net ([75.149.91.89]:47969 "EHLO cnc.isely.net"
+	id S1754331Ab1GGQxy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:53:54 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37671 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751087Ab1GGQtR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:49:17 -0400
-X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jul 2011 12:49:17 EDT
-Date: Thu, 7 Jul 2011 11:44:14 -0500 (CDT)
-From: Mike Isely <isely@isely.net>
-To: Mauro Carvalho Chehab <mchehab@redhat.com>
-cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH RFCv3 17/17] [media] return -ENOTTY for unsupported
- ioctl's at legacy drivers
-In-Reply-To: <20110706150349.44795968@pedra>
-Message-ID: <alpine.DEB.1.10.1107071143210.967@cnc.isely.net>
-References: <cover.1309974026.git.mchehab@redhat.com> <20110706150349.44795968@pedra>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-Mime-Version: 1.0
+	id S1754037Ab1GGQxy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 12:53:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.65,494,1304319600"; 
+   d="scan'208";a="27515696"
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Turner <pjt@google.com>,
+        linux-kernel@vger.kernel.org,
+        Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Pavel Emelyanov <xemul@openvz.org>, Hu Tao <hutao@cn.fujitsu.com>
+Subject: Re: [patch 00/17] CFS Bandwidth Control v7.1
+References: <20110707053036.173186930@google.com>
+	<20110707112302.GB8227@elte.hu> <1310049528.3282.583.camel@twins>
+Date: Thu, 07 Jul 2011 09:52:23 -0700
+In-Reply-To: <1310049528.3282.583.camel@twins> (Peter Zijlstra's message of
+	"Thu, 07 Jul 2011 16:38:48 +0200")
+Message-ID: <m2iprexcc8.fsf@firstfloor.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Peter Zijlstra <a.p.zijlstra@chello.nl> writes:
+>
+> +static void account_cfs_rq_runtime(struct cfs_rq *cfs_rq,
+> +               unsigned long delta_exec)
+> +{
+> +       if (!cfs_rq->runtime_enabled)
+> +               return;
+> +
+> +       cfs_rq->runtime_remaining -= delta_exec;
+> +       if (cfs_rq->runtime_remaining > 0)
+> +               return;
+> +
+> +       assign_cfs_rq_runtime(cfs_rq);
+> +}
+>
+> generate a call, only to then take the first branch out, marking that
 
-For the pvrusb2 portion of this patch:
+You would need a *LOT* of calls to make up for 9%.
 
-Acked-By: Mike Isely <isely@pobox.com>
+Maybe it's something else? Some profiling first before optimization
+is probably a good idea.
 
-  -Mike
-
-On Wed, 6 Jul 2011, Mauro Carvalho Chehab wrote:
-
-> Those drivers are not relying at the V4L2 core to handle the ioctl's.
-> So, we need to manually patch them every time a change goes to the
-> core.
-> 
-> Signed-off-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> diff --git a/drivers/media/video/et61x251/et61x251_core.c b/drivers/media/video/et61x251/et61x251_core.c
-> index d7efb33..9a1e80a 100644
-> --- a/drivers/media/video/et61x251/et61x251_core.c
-> +++ b/drivers/media/video/et61x251/et61x251_core.c
-> @@ -2480,16 +2480,8 @@ static long et61x251_ioctl_v4l2(struct file *filp,
->  	case VIDIOC_S_PARM:
->  		return et61x251_vidioc_s_parm(cam, arg);
->  
-> -	case VIDIOC_G_STD:
-> -	case VIDIOC_S_STD:
-> -	case VIDIOC_QUERYSTD:
-> -	case VIDIOC_ENUMSTD:
-> -	case VIDIOC_QUERYMENU:
-> -	case VIDIOC_ENUM_FRAMEINTERVALS:
-> -		return -EINVAL;
-> -
->  	default:
-> -		return -EINVAL;
-> +		return -ENOTTY;
->  
->  	}
->  }
-> diff --git a/drivers/media/video/pvrusb2/pvrusb2-v4l2.c b/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
-> index 573749a..e27f8ab 100644
-> --- a/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
-> +++ b/drivers/media/video/pvrusb2/pvrusb2-v4l2.c
-> @@ -369,11 +369,6 @@ static long pvr2_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
->  		break;
->  	}
->  
-> -	case VIDIOC_S_AUDIO:
-> -	{
-> -		ret = -EINVAL;
-> -		break;
-> -	}
->  	case VIDIOC_G_TUNER:
->  	{
->  		struct v4l2_tuner *vt = (struct v4l2_tuner *)arg;
-> @@ -850,7 +845,7 @@ static long pvr2_v4l2_do_ioctl(struct file *file, unsigned int cmd, void *arg)
->  #endif
->  
->  	default :
-> -		ret = -EINVAL;
-> +		ret = -ENOTTY;
->  		break;
->  	}
->  
-> diff --git a/drivers/media/video/sn9c102/sn9c102_core.c b/drivers/media/video/sn9c102/sn9c102_core.c
-> index d8eece8..16cb07c 100644
-> --- a/drivers/media/video/sn9c102/sn9c102_core.c
-> +++ b/drivers/media/video/sn9c102/sn9c102_core.c
-> @@ -3187,16 +3187,8 @@ static long sn9c102_ioctl_v4l2(struct file *filp,
->  	case VIDIOC_S_AUDIO:
->  		return sn9c102_vidioc_s_audio(cam, arg);
->  
-> -	case VIDIOC_G_STD:
-> -	case VIDIOC_S_STD:
-> -	case VIDIOC_QUERYSTD:
-> -	case VIDIOC_ENUMSTD:
-> -	case VIDIOC_QUERYMENU:
-> -	case VIDIOC_ENUM_FRAMEINTERVALS:
-> -		return -EINVAL;
-> -
->  	default:
-> -		return -EINVAL;
-> +		return -ENOTTY;
->  
->  	}
->  }
-> diff --git a/drivers/media/video/uvc/uvc_v4l2.c b/drivers/media/video/uvc/uvc_v4l2.c
-> index cdd967b..7afb97b 100644
-> --- a/drivers/media/video/uvc/uvc_v4l2.c
-> +++ b/drivers/media/video/uvc/uvc_v4l2.c
-> @@ -83,7 +83,7 @@ static int uvc_ioctl_ctrl_map(struct uvc_video_chain *chain,
->  	default:
->  		uvc_trace(UVC_TRACE_CONTROL, "Unsupported V4L2 control type "
->  			  "%u.\n", xmap->v4l2_type);
-> -		ret = -EINVAL;
-> +		ret = -ENOTTY;
->  		goto done;
->  	}
->  
-> 
-
+-Andi
 -- 
-
-Mike Isely
-isely @ isely (dot) net
-PGP: 03 54 43 4D 75 E5 CC 92 71 16 01 E2 B5 F5 C1 E8
+ak@linux.intel.com -- Speaking for myself only
