@@ -1,130 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab1GGBMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 21:12:51 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:35378 "EHLO smtp.outflux.net"
+	id S1754626Ab1GGBOI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 21:14:08 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33498 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751948Ab1GGBMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 21:12:50 -0400
-Date: Wed, 6 Jul 2011 18:10:34 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Brian Gerst <brgerst@gmail.com>
-Subject: [PATCH v3] x86: restore MISC_ENABLE MSR in realmode wakeup
-Message-ID: <20110707011034.GA8523@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1753559Ab1GGBOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 6 Jul 2011 21:14:06 -0400
+Date: Thu, 7 Jul 2011 11:14:00 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Will Deacon <will.deacon@arm.com>, Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the arm-lpae tree with the arm tree
+Message-Id: <20110707111400.be08512d2dbf60be3022ac50@canb.auug.org.au>
+X-Mailer: Sylpheed 3.2.0beta1 (GTK+ 2.24.4; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some BIOSes will reset the Intel MISC_ENABLE MSR (specifically the
-XD_DISABLE bit) when resuming from S3, which can interact poorly with
-ebba638ae723d8a8fc2f7abce5ec18b688b791d7. In 32bit PAE mode, this can
-lead to a fault when EFER is restored by the kernel wakeup routines,
-due to it setting the NX bit for a CPU that (thanks to the BIOS reset)
-now incorrectly thinks it lacks the NX feature. (64bit is not affected
-because it uses a common CPU bring-up that specifically handles the
-XD_DISABLE bit.)
+Hi Catalin,
 
-The need for MISC_ENABLE being restored so early is specific to the S3
-resume path. Normally, MISC_ENABLE is saved in save_processor_state(),
-but this happens after the resume header is created, so just reproduce
-the logic here. (acpi_suspend_lowlevel() creates the header, calls
-do_suspend_lowlevel, which calls save_processor_state(), so the saved
-processor context isn't available during resume header creation.)
+Today's linux-next merge of the arm-lpae tree got a conflict in
+arch/arm/include/asm/proc-fns.h between commit eca5dc2a0028 ("ARM:
+6988/1: multi-cpu: remove arguments from CPU proc macros") from the arm
+tree and commit 91bcc1122ff9 ("ARM: LPAE: Page table maintenance for the
+3-level format") from the arm-lpae tree.
 
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
-v3: split from literals patch
-v2: do full MISC_ENABLE restoration instead of just verify_cpu() call
-
- arch/x86/kernel/acpi/realmode/wakeup.S |   14 ++++++++++++++
- arch/x86/kernel/acpi/realmode/wakeup.h |    6 ++++++
- arch/x86/kernel/acpi/sleep.c           |    6 ++++++
- 3 files changed, 26 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/acpi/realmode/wakeup.S b/arch/x86/kernel/acpi/realmode/wakeup.S
-index ead21b6..b4fd836 100644
---- a/arch/x86/kernel/acpi/realmode/wakeup.S
-+++ b/arch/x86/kernel/acpi/realmode/wakeup.S
-@@ -28,6 +28,8 @@ pmode_cr3:	.long	0	/* Saved %cr3 */
- pmode_cr4:	.long	0	/* Saved %cr4 */
- pmode_efer:	.quad	0	/* Saved EFER */
- pmode_gdt:	.quad	0
-+pmode_misc_en:	.quad	0	/* Saved MISC_ENABLE MSR */
-+pmode_behavior:	.long	0	/* Wakeup behavior flags */
- realmode_flags:	.long	0
- real_magic:	.long	0
- trampoline_segment:	.word 0
-@@ -91,6 +93,18 @@ wakeup_code:
- 	/* Call the C code */
- 	calll	main
- 
-+	/* Restore MISC_ENABLE before entering protected mode, in case
-+	   BIOS decided to clear XD_DISABLE during S3. */
-+	movl	pmode_behavior, %eax
-+	btl	$WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE, %eax
-+	jnc	1f
-+
-+	movl	pmode_misc_en, %eax
-+	movl	pmode_misc_en + 4, %edx
-+	movl	$MSR_IA32_MISC_ENABLE, %ecx
-+	wrmsr
-+1:
-+
- 	/* Do any other stuff... */
- 
- #ifndef CONFIG_64BIT
-diff --git a/arch/x86/kernel/acpi/realmode/wakeup.h b/arch/x86/kernel/acpi/realmode/wakeup.h
-index e1828c0..97a29e1 100644
---- a/arch/x86/kernel/acpi/realmode/wakeup.h
-+++ b/arch/x86/kernel/acpi/realmode/wakeup.h
-@@ -21,6 +21,9 @@ struct wakeup_header {
- 	u32 pmode_efer_low;	/* Protected mode EFER */
- 	u32 pmode_efer_high;
- 	u64 pmode_gdt;
-+	u32 pmode_misc_en_low;	/* Protected mode MISC_ENABLE */
-+	u32 pmode_misc_en_high;
-+	u32 pmode_behavior;	/* Wakeup routine behavior flags */
- 	u32 realmode_flags;
- 	u32 real_magic;
- 	u16 trampoline_segment;	/* segment with trampoline code, 64-bit only */
-@@ -39,4 +42,7 @@ extern struct wakeup_header wakeup_header;
- #define WAKEUP_HEADER_SIGNATURE 0x51ee1111
- #define WAKEUP_END_SIGNATURE	0x65a22c82
- 
-+/* Wakeup behavior bits */
-+#define WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE     0
-+
- #endif /* ARCH_X86_KERNEL_ACPI_RM_WAKEUP_H */
-diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
-index 18a857b..103b6ab 100644
---- a/arch/x86/kernel/acpi/sleep.c
-+++ b/arch/x86/kernel/acpi/sleep.c
-@@ -77,6 +77,12 @@ int acpi_suspend_lowlevel(void)
- 
- 	header->pmode_cr0 = read_cr0();
- 	header->pmode_cr4 = read_cr4_safe();
-+	header->pmode_behavior = 0;
-+	if (!rdmsr_safe(MSR_IA32_MISC_ENABLE,
-+			&header->pmode_misc_en_low,
-+			&header->pmode_misc_en_high))
-+		header->pmode_behavior |=
-+			(1 << WAKEUP_BEHAVIOR_RESTORE_MISC_ENABLE);
- 	header->realmode_flags = acpi_realmode_flags;
- 	header->real_magic = 0x12345678;
- 
+I fixed it up (see below) and can carry the fix as necessary.
 -- 
-1.7.4.1
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
--- 
-Kees Cook
-Ubuntu Security Team
+diff --cc arch/arm/include/asm/proc-fns.h
+index 633d1cb,b5db4f4..0000000
+--- a/arch/arm/include/asm/proc-fns.h
++++ b/arch/arm/include/asm/proc-fns.h
+@@@ -79,16 -83,24 +83,20 @@@ extern void cpu_proc_fin(void)
+  extern int cpu_do_idle(void);
+  extern void cpu_dcache_clean_area(void *, int);
+  extern void cpu_do_switch_mm(unsigned long pgd_phys, struct mm_struct *mm);
++ #ifdef CONFIG_ARM_LPAE
++ extern void cpu_set_pte_ext(pte_t *ptep, pte_t pte);
++ #else
+  extern void cpu_set_pte_ext(pte_t *ptep, pte_t pte, unsigned int ext);
++ #endif
+  extern void cpu_reset(unsigned long addr) __attribute__((noreturn));
+  #else
+ -#define cpu_proc_init()			processor._proc_init()
+ -#define cpu_proc_fin()			processor._proc_fin()
+ -#define cpu_reset(addr)			processor.reset(addr)
+ -#define cpu_do_idle()			processor._do_idle()
+ -#define cpu_dcache_clean_area(addr,sz)	processor.dcache_clean_area(addr,sz)
+ -#ifdef CONFIG_ARM_LPAE
+ -#define cpu_set_pte_ext(ptep,pte)	processor.set_pte_ext(ptep,pte)
+ -#else
+ -#define cpu_set_pte_ext(ptep,pte,ext)	processor.set_pte_ext(ptep,pte,ext)
+ -#endif
+ -#define cpu_do_switch_mm(pgd,mm)	processor.switch_mm(pgd,mm)
+ +#define cpu_proc_init			processor._proc_init
+ +#define cpu_proc_fin			processor._proc_fin
+ +#define cpu_reset			processor.reset
+ +#define cpu_do_idle			processor._do_idle
+ +#define cpu_dcache_clean_area		processor.dcache_clean_area
+ +#define cpu_set_pte_ext			processor.set_pte_ext
+ +#define cpu_do_switch_mm		processor.switch_mm
+  #endif
+  
+  extern void cpu_resume(void);
