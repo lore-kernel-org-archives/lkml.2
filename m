@@ -1,98 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab1GGQZz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:25:55 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:50232 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab1GGQZy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:25:54 -0400
-Date: Thu, 7 Jul 2011 12:24:54 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Raghavendra D Prabhu <rprabhu@wnohang.net>
-Cc: xen-devel@lists.xensource.com, jeremy.fitzhardinge@citrix.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Ian Campbell <ijc@hellion.org.uk>
-Subject: Re: [Xen-devel] Re: [PATCH] Modpost section mismatch fix
-Message-ID: <20110707162454.GA8164@dumpdata.com>
-References: <20110703232508.GB4440@Xye>
- <1309769388.634.51.camel@zakaz.uk.xensource.com>
- <20110704221646.GB4490@Xye>
- <20110705141323.GG2972@dumpdata.com>
- <20110705142731.GA4463@Xye>
- <20110705144846.GA13548@dumpdata.com>
- <20110705213243.GA3647@dumpdata.com>
- <20110707154648.GA4394@Xye>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110707154648.GA4394@Xye>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A020205.4E15DDE3.00B4:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+	id S1752477Ab1GGQ30 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:29:26 -0400
+Received: from mail.perches.com ([173.55.12.10]:3654 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751515Ab1GGQ3X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 12:29:23 -0400
+Subject: Re: [PATCH 08/10] dynamic_debug: make netif_dbg() call
+ __netdev_printk()
+From: Joe Perches <joe@perches.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: gregkh@suse.de, jim.cromie@gmail.com, bvanassche@acm.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net,
+        aloisio.almeida@openbossa.org, netdev@vger.kernel.org
+In-Reply-To: <20110707141259.GA2536@redhat.com>
+References: <cover.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
+	 <889f3300a96f381aee1239ea775014fff26d93c9.1309967232.git.root@dhcp-100-18-164.bos.redhat.com>
+	 <1309989543.1710.19.camel@Joe-Laptop>  <20110707141259.GA2536@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 07 Jul 2011 09:29:21 -0700
+Message-ID: <1310056161.27526.47.camel@Joe-Laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.32.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Tested it. Works now.
+On Thu, 2011-07-07 at 10:13 -0400, Jason Baron wrote:
+> On Wed, Jul 06, 2011 at 02:59:03PM -0700, Joe Perches wrote:
+> > > diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> > > @@ -2731,10 +2731,8 @@ do {								\
+> > >  #elif defined(CONFIG_DYNAMIC_DEBUG)
+> > >  #define netif_dbg(priv, type, netdev, format, args...)		\
+> > >  do {								\
+> > > -	if (netif_msg_##type(priv))				\
+> > > -		dynamic_dev_dbg((netdev)->dev.parent,		\
+> > > -				"%s: " format,			\
+> > > -				netdev_name(netdev), ##args);	\
+> > > +	dynamic_netif_dbg(netdev, (netif_msg_##type(priv)),	\
+> > > +				  format, ##args);		\
+> > Because you've already added dynamic_netdev_dbg,
+> > maybe this should be:
+> > #define netif_dbg(priv, type, netdev, format, args...)		\
+> > do {								\
+> > 	if (netif_msg_##type(priv))				\
+> > 		dynamic_netdev_dbg(netdev, format, ##args);	\
+> > } while (0)
+> The reason I didn't add it this way is b/c I plan on converting the
+> outer 'ifs' to the jump label infrastructure - which makes the disabled
+> case just a no-op and moves the printk and tests out of line.
 
-Ok, Stuck Tested-by on the patch. Hopefully Linus hasn't pulled it yet.
+Perhaps you needn't do that.
 
-> Reviewed-by: Raghavendra Prabhu <rprabhu@wnohang.net>
-> 
-> Also,
-> The condition for acpi_gsi_to_irq can be removed since it always returns zero.
+I think there's little to be gained to move the test
+outwards and not perform the netif_msg##type(priv)
 
-The function might in the future return something that is non-zero
-and we should guard for it. Also you make 'irq' be unsigned which is not
-good as the IRQ 0 is a valid value - and with making it unsigned if it is
-set to -1 (the -1 is the invalid IRQ value) the check for 'irq != gsi'
-will be true and and we will pass in -1 casted to unsigned. That is a
-large value and not the right thing we want to pass to xen_register_gsi.
+> Until that is done, i could see coding it as you've suggested, but I'd
+> prefer to leave it as is (and leave future churn to within the dynamic
+> debug code as opposed to the netdevice.h header).
 
+Shrug.  I think that dynamic_debug will have continuing
+impacts on various subsystems unless there's some generic
+__dynamic_dbg() and _prefix() mechanism introduced into
+more generic <foo>_dbg style.
 
-> ============================================
->  diff --git a/arch/x86/pci/xen.c b/arch/x86/pci/xen.c
->  index f567965..3faa55b 100644
->  --- a/arch/x86/pci/xen.c
->  +++ b/arch/x86/pci/xen.c
->  @@ -405,7 +405,7 @@ static __init void xen_setup_acpi_sci(void)
->          int rc;
->          int trigger, polarity;
->          int gsi = acpi_sci_override_gsi;
->  -       int irq = -1;
->  +       unsigned int irq = 0u;
->          int gsi_override = -1;
-> 
->          if (!gsi)
->  @@ -435,11 +435,10 @@ static __init void xen_setup_acpi_sci(void)
->           * setup as we had setup IRQ 20 for it).
->           */
->          /* Check whether the GSI != IRQ */
->  -       if (acpi_gsi_to_irq(gsi, &irq) == 0) {
->  -               if (irq >= 0 && irq != gsi)
->  -                       /* Bugger, we MUST have that IRQ. */
->  -                       gsi_override = irq;
->  -       }
->  +       acpi_gsi_to_irq(gsi, &irq);
->  +       if (irq != gsi)
->  +               /* Bugger, we MUST have that IRQ. */
->  +               gsi_override = irq;
-> 
->          gsi = xen_register_gsi(gsi, gsi_override, trigger, polarity);
->          printk(KERN_INFO "xen: acpi sci %d\n", gsi);
-> 
-> 
-> --------------------------
-> Raghavendra Prabhu
-> GPG Id : 0xD72BE977
-> Fingerprint: B93F EBCB 8E05 7039 CD3C A4B8 A616 DCA1 D72B E977
-> www: wnohang.net
+Anything logging message that uses <foo>_dbg or <foo>_vdbg
+is a candidate for dynamic_debug uses, but there's no
+current generic mechanism to avoid subsystem specific needs.
 
+Any of these could need some dynamic_debug consideration:
 
+$ grep -rPoh --include=*.[ch] "[a-z_]+_[v]?dbg\(" * | sort | uniq
+acpi_ut_allocate_object_desc_dbg(
+acpi_ut_create_internal_object_dbg(
+adc_dbg(
+add_dyn_dbg(
+airo_print_dbg(
+ata_dev_dbg(
+ata_link_dbg(
+ata_port_dbg(
+ath_dbg(
+atm_dbg(
+bat_dbg(
+bit_dbg(
+cafe_dev_dbg(
+cam_dbg(
+c_freq_dbg(
+chan_dbg(
+chan_reg_rule_print_dbg(
+cmm_dbg(
+c_pm_dbg(
+ctrl_dbg(
+__dbg(
+desc_dbg(
+dev_dbg(
+dev_vdbg(
+dma_request_channel_dbg(
+__dump_desc_dbg(
+dump_desc_dbg(
+dump_pq_desc_dbg(
+dynamic_dev_dbg(
+e_dbg(
+ehca_dbg(
+ehca_gen_dbg(
+ehci_dbg(
+ehci_vdbg(
+en_dbg(
+ep_dbg(
+ep_vdbg(
+fhci_dbg(
+fhci_vdbg(
+fit_dbg(
+gig_dbg(
+gpio_dbg(
+gru_dbg(
+hgpk_dbg(
+hid_dbg(
+hw_dbg(
+ibmvfc_dbg(
+ipath_dbg(
+ipoib_dbg(
+ipr_dbg(
+iser_dbg(
+isp_isr_dbg(
+itd_dbg(
+ite_dbg(
+l_dbg(
+lg_dbg(
+mce_dbg(
+memblock_dbg(
+mhwmp_dbg(
+mpeg_dbg(
+mpl_dbg(
+msg_dbg(
+mthca_dbg(
+netdev_dbg(
+netdev_vdbg(
+netif_dbg(
+netif_vdbg(
+nfc_dbg(
+nfc_dev_dbg(
+nsp_dbg(
+nvt_dbg(
+ohci_dbg(
+ohci_vdbg(
+oxu_dbg(
+oxu_vdbg(
+pch_dbg(
+pch_pci_dbg(
+pm_dev_dbg(
+pnp_dbg(
+pop_dbg(
+prep_dma_pq_dbg(
+prep_dma_pqzero_sum_dbg(
+prep_dma_xor_dbg(
+_print_dbg(
+print_dbg(
+pwm_dbg(
+rdev_dbg(
+reg_dbg(
+sh_keysc_map_dbg(
+slice_dbg(
+smsc_dbg(
+start_dbg(
+stop_dbg(
+sysrq_handle_dbg(
+tda_dbg(
+tgt_dbg(
+tipc_msg_dbg(
+__tuner_dbg(
+tuner_dbg(
+tveeprom_dbg(
+tx_dbg(
+uea_dbg(
+uea_vdbg(
+ugeth_dbg(
+ugeth_vdbg(
+urb_dbg(
+usb_dbg(
+vpif_dbg(
+wiphy_dbg(
+wiphy_vdbg(
+xhci_dbg(
+x_show_dbg(
 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
 
