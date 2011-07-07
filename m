@@ -1,1355 +1,5516 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751896Ab1GGQAM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 12:00:12 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:36599 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab1GGQAI (ORCPT
+	id S1751648Ab1GGQOf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 12:14:35 -0400
+Received: from 3.mo1.mail-out.ovh.net ([46.105.60.232]:60385 "EHLO
+	mo1.mail-out.ovh.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750827Ab1GGQOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 12:00:08 -0400
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: linux-kernel@vger.kernel.org
-Subject: Build regressions/improvements in v3.0-rc6
-Date: Thu,  7 Jul 2011 17:59:55 +0200
-Message-Id: <1310054395-17113-1-git-send-email-geert@linux-m68k.org>
-X-Mailer: git-send-email 1.7.0.4
-To: linux-kernel@vger.kernel.org
+	Thu, 7 Jul 2011 12:14:33 -0400
+X-Greylist: delayed 8995 seconds by postgrey-1.27 at vger.kernel.org; Thu, 07 Jul 2011 12:14:32 EDT
+Message-ID: <4E15B945.5060805@example.com>
+Date: Thu, 07 Jul 2011 15:48:53 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.16) Gecko/20110303 Icedove/3.0.11
+MIME-Version: 1.0
+To: Christoph Lameter <cl@linux.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Pekka Enberg <penberg@kernel.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+X-Ovh-Mailout: 178.32.228.1 (mo1.mail-out.ovh.net)
+Subject: Re: Build issue with linux next. duplicate member _count in mm_types.h
+References: <4E143120.2020501@cam.ac.uk> <alpine.DEB.2.00.1107060933460.17202@router.home> <4E15AF1C.7080103@example.com> <alpine.DEB.2.00.1107070841500.17376@router.home>
+In-Reply-To: <alpine.DEB.2.00.1107070841500.17376@router.home>
+Content-Type: multipart/mixed;
+ boundary="------------080503060103010605020403"
+X-Ovh-Tracer-Id: 13350358147476713773
+X-Ovh-Remote: 178.36.17.0 (178-36-17-0.adsl.inetia.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
+X-VR-SPAMSTATE: OK
+X-VR-SPAMSCORE: -260
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below is the list of build error/warning regressions/improvements in
-v3.0-rc6[1] compared to v2.6.39[2].
+This is a multi-part message in MIME format.
+--------------080503060103010605020403
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
 
-Summarized:
-  - build errors: +557/-13
-  - build warnings: +326/-387
+On 07.07.2011 15:42, Christoph Lameter wrote:
+> On Thu, 7 Jul 2011, Piotr Hosowicz wrote:
+>
+>> On 06.07.2011 16:46, Christoph Lameter wrote:
+>>> On Wed, 6 Jul 2011, Jonathan Cameron wrote:
+>>>
+>>>> Getting:
+>>>>
+>>>>     CHK     include/linux/version.h
+>>>>     CHK     include/generated/utsrelease.h
+>>>> make[1]: `include/generated/mach-types.h' is up to date.
+>>>>     CC      arch/arm/kernel/asm-offsets.s
+>>>> In file included from include/linux/sched.h:64:0,
+>>>>                    from arch/arm/kernel/asm-offsets.c:13:
+>>>> include/linux/mm_types.h:74:15: error: duplicate member '_count'
+>>>> make[1]: *** [arch/arm/kernel/asm-offsets.s] Error 1
+>>>> make: *** [prepare0] Error 2
+>>
+>> I have the same error on x86_64. I'll try again withj your patch.
+>
+> Could you post a config file?
 
-The figures seem to look worse than before, but there's is no reason to panic.
-The linux-next build service started using "make -k", to continue building
-after the first error, which detects more build problems.
+I attach it. Your patch seems to had worked, I finish making the package.
 
-JFYI, when comparing v3.0-rc6 to v3.0-rc5[3], the summaries are:
-  - build errors: +20/-163
-  - build warnings: +61/-95
+-- 
+Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
+- W którym kraju znajduje siê Mount Everest?
+- Hm, to nie Szkocja, prawda?
+NP: Nemo -
+NB: 3.0.0-rc6
 
-In addition, I put the verbose summary at
-http://www.kernel.org/pub/linux/kernel/people/geert/linux-log/v3.0-rc6.summary.gz
-so you can easily find out for which configs and architectures the
-errors/warnings you're interested in are happening.
+--------------080503060103010605020403
+Content-Type: text/plain;
+ name="config"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="config"
 
-Happy fixing! ;-)
+#
+# Automatically generated file; DO NOT EDIT.
+# Linux/x86_64 3.0.0-rc6 Kernel Configuration
+#
+CONFIG_64BIT=y
+# CONFIG_X86_32 is not set
+CONFIG_X86_64=y
+CONFIG_X86=y
+CONFIG_INSTRUCTION_DECODER=y
+CONFIG_OUTPUT_FORMAT="elf64-x86-64"
+CONFIG_ARCH_DEFCONFIG="arch/x86/configs/x86_64_defconfig"
+CONFIG_GENERIC_CMOS_UPDATE=y
+CONFIG_CLOCKSOURCE_WATCHDOG=y
+CONFIG_GENERIC_CLOCKEVENTS=y
+CONFIG_GENERIC_CLOCKEVENTS_BROADCAST=y
+CONFIG_LOCKDEP_SUPPORT=y
+CONFIG_STACKTRACE_SUPPORT=y
+CONFIG_HAVE_LATENCYTOP_SUPPORT=y
+CONFIG_MMU=y
+CONFIG_ZONE_DMA=y
+CONFIG_NEED_DMA_MAP_STATE=y
+CONFIG_NEED_SG_DMA_LENGTH=y
+CONFIG_GENERIC_ISA_DMA=y
+CONFIG_GENERIC_IOMAP=y
+CONFIG_GENERIC_BUG=y
+CONFIG_GENERIC_BUG_RELATIVE_POINTERS=y
+CONFIG_GENERIC_HWEIGHT=y
+CONFIG_GENERIC_GPIO=y
+CONFIG_ARCH_MAY_HAVE_PC_FDC=y
+# CONFIG_RWSEM_GENERIC_SPINLOCK is not set
+CONFIG_RWSEM_XCHGADD_ALGORITHM=y
+CONFIG_ARCH_HAS_CPU_IDLE_WAIT=y
+CONFIG_GENERIC_CALIBRATE_DELAY=y
+CONFIG_GENERIC_TIME_VSYSCALL=y
+CONFIG_ARCH_HAS_CPU_RELAX=y
+CONFIG_ARCH_HAS_DEFAULT_IDLE=y
+CONFIG_ARCH_HAS_CACHE_LINE_SIZE=y
+CONFIG_HAVE_SETUP_PER_CPU_AREA=y
+CONFIG_NEED_PER_CPU_EMBED_FIRST_CHUNK=y
+CONFIG_NEED_PER_CPU_PAGE_FIRST_CHUNK=y
+CONFIG_HAVE_CPUMASK_OF_CPU_MAP=y
+CONFIG_ARCH_HIBERNATION_POSSIBLE=y
+CONFIG_ARCH_SUSPEND_POSSIBLE=y
+CONFIG_ZONE_DMA32=y
+CONFIG_ARCH_POPULATES_NODE_MAP=y
+CONFIG_AUDIT_ARCH=y
+CONFIG_ARCH_SUPPORTS_OPTIMIZED_INLINING=y
+CONFIG_ARCH_SUPPORTS_DEBUG_PAGEALLOC=y
+CONFIG_HAVE_INTEL_TXT=y
+CONFIG_X86_64_SMP=y
+CONFIG_X86_HT=y
+CONFIG_ARCH_HWEIGHT_CFLAGS="-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11"
+# CONFIG_KTIME_SCALAR is not set
+CONFIG_ARCH_CPU_PROBE_RELEASE=y
+CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
+CONFIG_HAVE_IRQ_WORK=y
+CONFIG_IRQ_WORK=y
 
-Thanks to the linux-next team for providing the build service.
+#
+# General setup
+#
+CONFIG_EXPERIMENTAL=y
+CONFIG_INIT_ENV_ARG_LIMIT=32
+CONFIG_CROSS_COMPILE=""
+CONFIG_LOCALVERSION=""
+# CONFIG_LOCALVERSION_AUTO is not set
+CONFIG_HAVE_KERNEL_GZIP=y
+CONFIG_HAVE_KERNEL_BZIP2=y
+CONFIG_HAVE_KERNEL_LZMA=y
+CONFIG_HAVE_KERNEL_XZ=y
+CONFIG_HAVE_KERNEL_LZO=y
+# CONFIG_KERNEL_GZIP is not set
+CONFIG_KERNEL_BZIP2=y
+# CONFIG_KERNEL_LZMA is not set
+# CONFIG_KERNEL_XZ is not set
+# CONFIG_KERNEL_LZO is not set
+CONFIG_DEFAULT_HOSTNAME="sirach"
+CONFIG_SWAP=y
+CONFIG_SYSVIPC=y
+CONFIG_SYSVIPC_SYSCTL=y
+CONFIG_POSIX_MQUEUE=y
+CONFIG_POSIX_MQUEUE_SYSCTL=y
+CONFIG_BSD_PROCESS_ACCT=y
+CONFIG_BSD_PROCESS_ACCT_V3=y
+# CONFIG_FHANDLE is not set
+CONFIG_TASKSTATS=y
+CONFIG_TASK_DELAY_ACCT=y
+CONFIG_TASK_XACCT=y
+CONFIG_TASK_IO_ACCOUNTING=y
+CONFIG_AUDIT=y
+CONFIG_AUDITSYSCALL=y
+CONFIG_AUDIT_WATCH=y
+CONFIG_AUDIT_TREE=y
+CONFIG_HAVE_GENERIC_HARDIRQS=y
 
-[1] http://kisskb.ellerman.id.au/kisskb/head/4167/ (107 out of 108 configs)
-[2] http://kisskb.ellerman.id.au/kisskb/head/4019/ (all 108 configs)
-[3] http://kisskb.ellerman.id.au/kisskb/head/4148/ (107 out of 108 configs)
+#
+# IRQ subsystem
+#
+CONFIG_GENERIC_HARDIRQS=y
+CONFIG_HAVE_SPARSE_IRQ=y
+CONFIG_GENERIC_IRQ_PROBE=y
+CONFIG_GENERIC_IRQ_SHOW=y
+CONFIG_GENERIC_PENDING_IRQ=y
+CONFIG_IRQ_FORCED_THREADING=y
+CONFIG_SPARSE_IRQ=y
 
+#
+# RCU Subsystem
+#
+CONFIG_TREE_PREEMPT_RCU=y
+CONFIG_PREEMPT_RCU=y
+# CONFIG_RCU_TRACE is not set
+CONFIG_RCU_FANOUT=64
+# CONFIG_RCU_FANOUT_EXACT is not set
+# CONFIG_TREE_RCU_TRACE is not set
+# CONFIG_RCU_BOOST is not set
+CONFIG_IKCONFIG=y
+CONFIG_IKCONFIG_PROC=y
+CONFIG_LOG_BUF_SHIFT=17
+CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+CONFIG_CGROUPS=y
+# CONFIG_CGROUP_DEBUG is not set
+# CONFIG_CGROUP_FREEZER is not set
+CONFIG_CGROUP_DEVICE=y
+CONFIG_CPUSETS=y
+CONFIG_PROC_PID_CPUSET=y
+CONFIG_CGROUP_CPUACCT=y
+# CONFIG_RESOURCE_COUNTERS is not set
+# CONFIG_CGROUP_PERF is not set
+CONFIG_CGROUP_SCHED=y
+CONFIG_FAIR_GROUP_SCHED=y
+# CONFIG_RT_GROUP_SCHED is not set
+CONFIG_BLK_CGROUP=y
+# CONFIG_DEBUG_BLK_CGROUP is not set
+CONFIG_NAMESPACES=y
+CONFIG_UTS_NS=y
+CONFIG_IPC_NS=y
+CONFIG_USER_NS=y
+CONFIG_PID_NS=y
+# CONFIG_NET_NS is not set
+# CONFIG_SCHED_AUTOGROUP is not set
+# CONFIG_SYSFS_DEPRECATED is not set
+CONFIG_RELAY=y
+CONFIG_BLK_DEV_INITRD=y
+CONFIG_INITRAMFS_SOURCE=""
+CONFIG_RD_GZIP=y
+CONFIG_RD_BZIP2=y
+CONFIG_RD_LZMA=y
+CONFIG_RD_XZ=y
+CONFIG_RD_LZO=y
+CONFIG_CC_OPTIMIZE_FOR_SIZE=y
+CONFIG_SYSCTL=y
+CONFIG_ANON_INODES=y
+CONFIG_EXPERT=y
+CONFIG_UID16=y
+CONFIG_SYSCTL_SYSCALL=y
+CONFIG_KALLSYMS=y
+CONFIG_KALLSYMS_ALL=y
+CONFIG_HOTPLUG=y
+CONFIG_PRINTK=y
+CONFIG_BUG=y
+CONFIG_ELF_CORE=y
+CONFIG_PCSPKR_PLATFORM=y
+CONFIG_HAVE_PCSPKR_PLATFORM=y
+CONFIG_BASE_FULL=y
+CONFIG_FUTEX=y
+CONFIG_EPOLL=y
+CONFIG_SIGNALFD=y
+CONFIG_TIMERFD=y
+CONFIG_EVENTFD=y
+CONFIG_SHMEM=y
+CONFIG_AIO=y
+# CONFIG_EMBEDDED is not set
+CONFIG_HAVE_PERF_EVENTS=y
 
-*** ERRORS ***
+#
+# Kernel Performance Events And Counters
+#
+CONFIG_PERF_EVENTS=y
+CONFIG_PERF_COUNTERS=y
+# CONFIG_DEBUG_PERF_USE_VMALLOC is not set
+CONFIG_VM_EVENT_COUNTERS=y
+CONFIG_PCI_QUIRKS=y
+# CONFIG_COMPAT_BRK is not set
+CONFIG_SLAB=y
+# CONFIG_SLUB is not set
+# CONFIG_SLOB is not set
+CONFIG_PROFILING=y
+CONFIG_TRACEPOINTS=y
+CONFIG_OPROFILE=m
+# CONFIG_OPROFILE_EVENT_MULTIPLEX is not set
+CONFIG_HAVE_OPROFILE=y
+# CONFIG_KPROBES is not set
+# CONFIG_JUMP_LABEL is not set
+CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS=y
+CONFIG_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_IOREMAP_PROT=y
+CONFIG_HAVE_KPROBES=y
+CONFIG_HAVE_KRETPROBES=y
+CONFIG_HAVE_OPTPROBES=y
+CONFIG_HAVE_ARCH_TRACEHOOK=y
+CONFIG_HAVE_DMA_ATTRS=y
+CONFIG_USE_GENERIC_SMP_HELPERS=y
+CONFIG_HAVE_REGS_AND_STACK_ACCESS_API=y
+CONFIG_HAVE_DMA_API_DEBUG=y
+CONFIG_HAVE_HW_BREAKPOINT=y
+CONFIG_HAVE_MIXED_BREAKPOINTS_REGS=y
+CONFIG_HAVE_USER_RETURN_NOTIFIER=y
+CONFIG_HAVE_PERF_EVENTS_NMI=y
+CONFIG_HAVE_ARCH_JUMP_LABEL=y
 
-557 regressions:
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/hidraw.h: error: expected specifier-qualifier-list before '__u32':  => 27, 22
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/input.h: error: expected specifier-qualifier-list before '__s16':  => 956, 967
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/input.h: error: expected specifier-qualifier-list before '__s32':  => 65
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/input.h: error: expected specifier-qualifier-list before '__u16':  => 39, 1012, 917, 944, 927, 23, 983, 1061, 1033
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/input.h: error: expected specifier-qualifier-list before '__u8':  => 90
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__be16':  => 28
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__be32':  => 30
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__be64':  => 32
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__le16':  => 27
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__le32':  => 29
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__le64':  => 31
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__sum16':  => 34
-  + build/linus_sparc64-allmodconfig_sparc64/usr/include/linux/types.h: error: expected '=', ',', ';', 'asm' or '__attribute__' before '__wsum':  => 35
-  + error: drivers/built-in.o: undefined reference to `vmstat_text':  => .toc1+0xf90)
-  + src/arch/mips/kernel/i8259.c: error: unknown field 'resume' specified in initializer:  => 240
-  + src/arch/mips/kernel/i8259.c: error: unknown field 'shutdown' specified in initializer:  => 241
-  + src/arch/xtensa/include/asm/uaccess.h: error: implicit declaration of function 'prefetch':  => 403
-  + src/arch/xtensa/include/asm/uaccess.h: error: implicit declaration of function 'prefetchw':  => 412
-  + src/drivers/block/paride/comm.c: error: implicit declaration of function 'inb':  => 54
-  + src/drivers/block/paride/comm.c: error: implicit declaration of function 'inl':  => 140
-  + src/drivers/block/paride/comm.c: error: implicit declaration of function 'inw':  => 135
-  + src/drivers/block/paride/comm.c: error: implicit declaration of function 'outb':  => 53
-  + src/drivers/block/paride/comm.c: error: implicit declaration of function 'outl':  => 172
-  + src/drivers/block/paride/comm.c: error: implicit declaration of function 'outw':  => 168
-  + src/drivers/block/paride/dstr.c: error: implicit declaration of function 'inb':  => 59
-  + src/drivers/block/paride/dstr.c: error: implicit declaration of function 'inl':  => 150
-  + src/drivers/block/paride/dstr.c: error: implicit declaration of function 'inw':  => 145
-  + src/drivers/block/paride/dstr.c: error: implicit declaration of function 'outb':  => 53
-  + src/drivers/block/paride/dstr.c: error: implicit declaration of function 'outl':  => 185
-  + src/drivers/block/paride/dstr.c: error: implicit declaration of function 'outw':  => 180
-  + src/drivers/block/paride/epat.c: error: implicit declaration of function 'inb':  => 77
-  + src/drivers/block/paride/epat.c: error: implicit declaration of function 'inl':  => 153
-  + src/drivers/block/paride/epat.c: error: implicit declaration of function 'inw':  => 146
-  + src/drivers/block/paride/epat.c: error: implicit declaration of function 'outb':  => 57
-  + src/drivers/block/paride/epat.c: error: implicit declaration of function 'outl':  => 191
-  + src/drivers/block/paride/epat.c: error: implicit declaration of function 'outw':  => 186
-  + src/drivers/block/paride/epia.c: error: implicit declaration of function 'inb':  => 59
-  + src/drivers/block/paride/epia.c: error: implicit declaration of function 'inl':  => 189
-  + src/drivers/block/paride/epia.c: error: implicit declaration of function 'inw':  => 183
-  + src/drivers/block/paride/epia.c: error: implicit declaration of function 'outb':  => 58
-  + src/drivers/block/paride/epia.c: error: implicit declaration of function 'outl':  => 229
-  + src/drivers/block/paride/epia.c: error: implicit declaration of function 'outw':  => 223
-  + src/drivers/block/paride/epia.c: error: invalid operands to binary & (have 'void *' and 'int'):  => 63
-  + src/drivers/block/paride/epia.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 64
-  + src/drivers/block/paride/fit2.c: error: implicit declaration of function 'inb':  => 56
-  + src/drivers/block/paride/fit2.c: error: implicit declaration of function 'outb':  => 43
-  + src/drivers/block/paride/fit3.c: error: implicit declaration of function 'inb':  => 74
-  + src/drivers/block/paride/fit3.c: error: implicit declaration of function 'outb':  => 49
-  + src/drivers/block/paride/friq.c: error: implicit declaration of function 'inb':  => 58
-  + src/drivers/block/paride/friq.c: error: implicit declaration of function 'inl':  => 120
-  + src/drivers/block/paride/friq.c: error: implicit declaration of function 'inw':  => 112
-  + src/drivers/block/paride/friq.c: error: implicit declaration of function 'outb':  => 57
-  + src/drivers/block/paride/friq.c: error: implicit declaration of function 'outl':  => 163
-  + src/drivers/block/paride/friq.c: error: implicit declaration of function 'outw':  => 158
-  + src/drivers/block/paride/frpw.c: error: implicit declaration of function 'inb':  => 55
-  + src/drivers/block/paride/frpw.c: error: implicit declaration of function 'inl':  => 123
-  + src/drivers/block/paride/frpw.c: error: implicit declaration of function 'inw':  => 115
-  + src/drivers/block/paride/frpw.c: error: implicit declaration of function 'outb':  => 53
-  + src/drivers/block/paride/frpw.c: error: implicit declaration of function 'outl':  => 167
-  + src/drivers/block/paride/frpw.c: error: implicit declaration of function 'outw':  => 162
-  + src/drivers/block/paride/kbic.c: error: implicit declaration of function 'inb':  => 54
-  + src/drivers/block/paride/kbic.c: error: implicit declaration of function 'inl':  => 184
-  + src/drivers/block/paride/kbic.c: error: implicit declaration of function 'inw':  => 58
-  + src/drivers/block/paride/kbic.c: error: implicit declaration of function 'outb':  => 53
-  + src/drivers/block/paride/kbic.c: error: implicit declaration of function 'outl':  => 221
-  + src/drivers/block/paride/kbic.c: error: implicit declaration of function 'outw':  => 216
-  + src/drivers/block/paride/kbic.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 67, 85, 53, 57, 61, 91
-  + src/drivers/block/paride/ktti.c: error: implicit declaration of function 'inb':  => 49
-  + src/drivers/block/paride/ktti.c: error: implicit declaration of function 'outb':  => 38
-  + src/drivers/block/paride/on20.c: error: implicit declaration of function 'inb':  => 46
-  + src/drivers/block/paride/on20.c: error: implicit declaration of function 'outb':  => 42
-  + src/drivers/block/paride/on26.c: error: implicit declaration of function 'inb':  => 56
-  + src/drivers/block/paride/on26.c: error: implicit declaration of function 'inl':  => 228
-  + src/drivers/block/paride/on26.c: error: implicit declaration of function 'inw':  => 221
-  + src/drivers/block/paride/on26.c: error: implicit declaration of function 'outb':  => 55
-  + src/drivers/block/paride/on26.c: error: implicit declaration of function 'outl':  => 270
-  + src/drivers/block/paride/on26.c: error: implicit declaration of function 'outw':  => 263
-  + src/drivers/block/paride/ppc6lnx.c: error: implicit declaration of function 'inb':  => 126
-  + src/drivers/block/paride/ppc6lnx.c: error: implicit declaration of function 'inl':  => 494
-  + src/drivers/block/paride/ppc6lnx.c: error: implicit declaration of function 'inw':  => 470
-  + src/drivers/block/paride/ppc6lnx.c: error: implicit declaration of function 'outb':  => 129
-  + src/drivers/block/paride/ppc6lnx.c: error: implicit declaration of function 'outl':  => 627
-  + src/drivers/block/paride/ppc6lnx.c: error: implicit declaration of function 'outw':  => 607
-  + src/drivers/bluetooth/bluecard_cs.c: error: implicit declaration of function 'inb':  => 348
-  + src/drivers/bluetooth/bluecard_cs.c: error: implicit declaration of function 'outb':  => 168
-  + src/drivers/bluetooth/bluecard_cs.c: error: implicit declaration of function 'outb_p':  => 209
-  + src/drivers/bluetooth/btuart_cs.c: error: implicit declaration of function 'inb':  => 117
-  + src/drivers/bluetooth/btuart_cs.c: error: implicit declaration of function 'outb':  => 123
-  + src/drivers/char/pcmcia/cm4000_cs.c: error: implicit declaration of function 'inb':  => 312
-  + src/drivers/char/pcmcia/cm4000_cs.c: error: implicit declaration of function 'outb':  => 429
-  + src/drivers/char/pcmcia/cm4040_cs.c: error: implicit declaration of function 'inb':  => 110
-  + src/drivers/char/pcmcia/cm4040_cs.c: error: implicit declaration of function 'outb':  => 178
-  + src/drivers/char/tpm/tpm_atmel.c: error: implicit declaration of function 'ioread8':  => 50
-  + src/drivers/char/tpm/tpm_atmel.c: error: implicit declaration of function 'iowrite8':  => 103
-  + src/drivers/char/tpm/tpm_atmel.h: error: implicit declaration of function 'ioport_map':  => 129
-  + src/drivers/hwmon/dme1737.c: error: implicit declaration of function 'inb':  => 556
-  + src/drivers/hwmon/dme1737.c: error: implicit declaration of function 'outb':  => 555
-  + src/drivers/hwmon/f71805f.c: error: implicit declaration of function 'inb':  => 78
-  + src/drivers/hwmon/f71805f.c: error: implicit declaration of function 'outb':  => 77
-  + src/drivers/hwmon/f71882fg.c: error: implicit declaration of function 'inb':  => 1060
-  + src/drivers/hwmon/f71882fg.c: error: implicit declaration of function 'outb':  => 1059
-  + src/drivers/hwmon/it87.c: error: implicit declaration of function 'inb':  => 83
-  + src/drivers/hwmon/it87.c: error: implicit declaration of function 'inb_p':  => 1910
-  + src/drivers/hwmon/it87.c: error: implicit declaration of function 'outb':  => 82
-  + src/drivers/hwmon/it87.c: error: implicit declaration of function 'outb_p':  => 1909
-  + src/drivers/hwmon/lm78.c: error: implicit declaration of function 'inb_p':  => 750
-  + src/drivers/hwmon/lm78.c: error: implicit declaration of function 'outb_p':  => 749
-  + src/drivers/hwmon/pc87427.c: error: implicit declaration of function 'inb':  => 116
-  + src/drivers/hwmon/pc87427.c: error: implicit declaration of function 'inw':  => 185
-  + src/drivers/hwmon/pc87427.c: error: implicit declaration of function 'outb':  => 109
-  + src/drivers/hwmon/pc87427.c: error: implicit declaration of function 'outw':  => 431
-  + src/drivers/hwmon/smsc47b397.c: error: implicit declaration of function 'inb':  => 66
-  + src/drivers/hwmon/smsc47b397.c: error: implicit declaration of function 'inb_p':  => 122
-  + src/drivers/hwmon/smsc47b397.c: error: implicit declaration of function 'outb':  => 59
-  + src/drivers/hwmon/smsc47m1.c: error: implicit declaration of function 'inb':  => 70
-  + src/drivers/hwmon/smsc47m1.c: error: implicit declaration of function 'inb_p':  => 151
-  + src/drivers/hwmon/smsc47m1.c: error: implicit declaration of function 'outb':  => 62
-  + src/drivers/hwmon/smsc47m1.c: error: implicit declaration of function 'outb_p':  => 157
-  + src/drivers/hwmon/vt1211.c: error: implicit declaration of function 'inb':  => 214
-  + src/drivers/hwmon/vt1211.c: error: implicit declaration of function 'outb':  => 207
-  + src/drivers/hwmon/w83627ehf.c: error: implicit declaration of function 'inb':  => 124
-  + src/drivers/hwmon/w83627ehf.c: error: implicit declaration of function 'inb_p':  => 528
-  + src/drivers/hwmon/w83627ehf.c: error: implicit declaration of function 'outb':  => 116
-  + src/drivers/hwmon/w83627ehf.c: error: implicit declaration of function 'outb_p':  => 514
-  + src/drivers/hwmon/w83627hf.c: error: implicit declaration of function 'inb':  => 123
-  + src/drivers/hwmon/w83627hf.c: error: implicit declaration of function 'inb_p':  => 1486
-  + src/drivers/hwmon/w83627hf.c: error: implicit declaration of function 'outb':  => 115
-  + src/drivers/hwmon/w83627hf.c: error: implicit declaration of function 'outb_p':  => 1460
-  + src/drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'ioread8':  => 109
-  + src/drivers/i2c/busses/i2c-ocores.c: error: implicit declaration of function 'iowrite8':  => 104
-  + src/drivers/i2c/busses/i2c-parport-light.c: error: implicit declaration of function 'inb':  => 61
-  + src/drivers/i2c/busses/i2c-parport-light.c: error: implicit declaration of function 'outb':  => 56
-  + src/drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'ioread8':  => 46
-  + src/drivers/i2c/busses/i2c-pca-platform.c: error: implicit declaration of function 'iowrite8':  => 64
-  + src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'ioread32':  => 198
-  + src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'ioread8':  => 183
-  + src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'iowrite16':  => 188
-  + src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'iowrite32':  => 193
-  + src/drivers/i2c/busses/i2c-xiic.c: error: implicit declaration of function 'iowrite8':  => 178
-  + src/drivers/input/gameport/lightning.c: error: invalid operands to binary & (have 'void *' and 'int'):  => 177, 141, 86
-  + src/drivers/input/gameport/ns558.c: error: invalid operands to binary & (have 'void *' and 'int'):  => 84
-  + src/drivers/input/touchscreen/mk712.c: error: implicit declaration of function 'inb':  => 91
-  + src/drivers/input/touchscreen/mk712.c: error: implicit declaration of function 'inw':  => 114
-  + src/drivers/input/touchscreen/mk712.c: error: implicit declaration of function 'outb':  => 127
-  + src/drivers/input/touchscreen/mk712.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 129
-  + src/drivers/isdn/hardware/avm/avmcard.h: error: implicit declaration of function 'inb':  => 224
-  + src/drivers/isdn/hardware/avm/avmcard.h: error: implicit declaration of function 'insb':  => 426
-  + src/drivers/isdn/hardware/avm/avmcard.h: error: implicit declaration of function 'outb':  => 223
-  + src/drivers/isdn/hardware/avm/avmcard.h: error: implicit declaration of function 'outsb':  => 474
-  + src/drivers/isdn/hisax/avm_a1p.c: error: implicit declaration of function 'inb':  => 68
-  + src/drivers/isdn/hisax/avm_a1p.c: error: implicit declaration of function 'insb':  => 84
-  + src/drivers/isdn/hisax/avm_a1p.c: error: implicit declaration of function 'outb':  => 67
-  + src/drivers/isdn/hisax/avm_a1p.c: error: implicit declaration of function 'outsb':  => 91
-  + src/drivers/isdn/hisax/avm_pci.c: error: implicit declaration of function 'inb':  => 84
-  + src/drivers/isdn/hisax/avm_pci.c: error: implicit declaration of function 'inl':  => 118
-  + src/drivers/isdn/hisax/avm_pci.c: error: implicit declaration of function 'insb':  => 101
-  + src/drivers/isdn/hisax/avm_pci.c: error: implicit declaration of function 'outb':  => 83
-  + src/drivers/isdn/hisax/avm_pci.c: error: implicit declaration of function 'outl':  => 117
-  + src/drivers/isdn/hisax/avm_pci.c: error: implicit declaration of function 'outsb':  => 108
-  + src/drivers/isdn/hisax/diva.c: error: implicit declaration of function 'inb':  => 87
-  + src/drivers/isdn/hisax/diva.c: error: implicit declaration of function 'insb':  => 95
-  + src/drivers/isdn/hisax/diva.c: error: implicit declaration of function 'outb':  => 86
-  + src/drivers/isdn/hisax/diva.c: error: implicit declaration of function 'outsb':  => 110
-  + src/drivers/isdn/hisax/elsa.c: error: implicit declaration of function 'insb':  => 155
-  + src/drivers/isdn/hisax/elsa.c: error: implicit declaration of function 'outsb':  => 170
-  + src/drivers/isdn/hisax/elsa_ser.c: error: implicit declaration of function 'inb':  => 55
-  + src/drivers/isdn/hisax/elsa_ser.c: error: implicit declaration of function 'inb_p':  => 74
-  + src/drivers/isdn/hisax/elsa_ser.c: error: implicit declaration of function 'outb':  => 84
-  + src/drivers/isdn/hisax/elsa_ser.c: error: implicit declaration of function 'outb_p':  => 100
-  + src/drivers/isdn/hisax/gazel.c: error: implicit declaration of function 'inb':  => 47
-  + src/drivers/isdn/hisax/gazel.c: error: implicit declaration of function 'inl':  => 360
-  + src/drivers/isdn/hisax/gazel.c: error: implicit declaration of function 'insb':  => 60
-  + src/drivers/isdn/hisax/gazel.c: error: implicit declaration of function 'outb':  => 53
-  + src/drivers/isdn/hisax/gazel.c: error: implicit declaration of function 'outl':  => 362
-  + src/drivers/isdn/hisax/gazel.c: error: implicit declaration of function 'outsb':  => 66
-  + src/drivers/isdn/hisax/hfc4s8s_l1.c: error: implicit declaration of function 'inb':  => 229
-  + src/drivers/isdn/hisax/hfc4s8s_l1.c: error: implicit declaration of function 'inl':  => 291
-  + src/drivers/isdn/hisax/hfc4s8s_l1.c: error: implicit declaration of function 'inw':  => 284
-  + src/drivers/isdn/hisax/hfc4s8s_l1.c: error: implicit declaration of function 'outb':  => 223
-  + src/drivers/isdn/hisax/hfc4s8s_l1.c: error: implicit declaration of function 'outl':  => 257
-  + src/drivers/isdn/hisax/hfc4s8s_l1.c: error: implicit declaration of function 'outw':  => 250
-  + src/drivers/isdn/hisax/hfc_sx.c: error: implicit declaration of function 'inb':  => 74
-  + src/drivers/isdn/hisax/hfc_sx.c: error: implicit declaration of function 'outb':  => 64
-  + src/drivers/isdn/hisax/niccy.c: error: implicit declaration of function 'inb':  => 51
-  + src/drivers/isdn/hisax/niccy.c: error: implicit declaration of function 'inl':  => 133
-  + src/drivers/isdn/hisax/niccy.c: error: implicit declaration of function 'insb':  => 59
-  + src/drivers/isdn/hisax/niccy.c: error: implicit declaration of function 'outb':  => 50
-  + src/drivers/isdn/hisax/niccy.c: error: implicit declaration of function 'outl':  => 138
-  + src/drivers/isdn/hisax/niccy.c: error: implicit declaration of function 'outsb':  => 73
-  + src/drivers/isdn/hisax/s0box.c: error: implicit declaration of function 'inb_p':  => 46
-  + src/drivers/isdn/hisax/s0box.c: error: implicit declaration of function 'outb_p':  => 23
-  + src/drivers/isdn/hisax/sedlbauer.c: error: implicit declaration of function 'inb':  => 125
-  + src/drivers/isdn/hisax/sedlbauer.c: error: implicit declaration of function 'insb':  => 133
-  + src/drivers/isdn/hisax/sedlbauer.c: error: implicit declaration of function 'outb':  => 124
-  + src/drivers/isdn/hisax/sedlbauer.c: error: implicit declaration of function 'outsb':  => 148
-  + src/drivers/isdn/hisax/teles3.c: error: implicit declaration of function 'inb':  => 31
-  + src/drivers/isdn/hisax/teles3.c: error: implicit declaration of function 'insb':  => 44
-  + src/drivers/isdn/hisax/teles3.c: error: implicit declaration of function 'outb':  => 37
-  + src/drivers/isdn/hisax/teles3.c: error: implicit declaration of function 'outsb':  => 50
-  + src/drivers/net/can/sja1000/sja1000_platform.c: error: implicit declaration of function 'ioread8':  => 41
-  + src/drivers/net/can/sja1000/sja1000_platform.c: error: implicit declaration of function 'iowrite8':  => 46
-  + src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'ioread16':  => 51
-  + src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'ioread32':  => 367
-  + src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'ioread8':  => 45
-  + src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'iowrite16':  => 36
-  + src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'iowrite32':  => 293
-  + src/drivers/net/can/softing/softing_fw.c: error: implicit declaration of function 'iowrite8':  => 37
-  + src/drivers/net/can/softing/softing_main.c: error: implicit declaration of function 'ioread8':  => 47
-  + src/drivers/net/can/softing/softing_main.c: error: implicit declaration of function 'iowrite8':  => 47
-  + src/drivers/net/cris/eth_v10.c: error: too many arguments to function 'e100rxtx_interrupt':  => 1717
-  + src/drivers/net/de600.c: error: implicit declaration of function 'inb':  => 90
-  + src/drivers/net/de600.c: error: implicit declaration of function 'outb_p':  => 89
-  + src/drivers/net/de620.c: error: implicit declaration of function 'inb':  => 249
-  + src/drivers/net/de620.c: error: implicit declaration of function 'outb':  => 263
-  + src/drivers/net/de620.c: error: invalid operands to binary ^ (have 'void *' and 'int'):  => 372, 267, 396
-  + src/drivers/net/ethoc.c: error: implicit declaration of function 'ioread32':  => 231
-  + src/drivers/net/ethoc.c: error: implicit declaration of function 'iowrite32':  => 236
-  + src/drivers/net/hamradio/baycom_ser_fdx.c: error: implicit declaration of function 'inb':  => 296
-  + src/drivers/net/hamradio/baycom_ser_fdx.c: error: implicit declaration of function 'outb':  => 186
-  + src/drivers/net/hamradio/baycom_ser_fdx.c: error: invalid operands to binary >> (have 'void *' and 'int'):  => 188
-  + src/drivers/net/hamradio/baycom_ser_fdx.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 387, 328
-  + src/drivers/net/hamradio/baycom_ser_hdx.c: error: implicit declaration of function 'inb':  => 224
-  + src/drivers/net/hamradio/baycom_ser_hdx.c: error: implicit declaration of function 'outb':  => 173
-  + src/drivers/net/hamradio/baycom_ser_hdx.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 446, 208
-  + src/drivers/net/hamradio/yam.c: error: implicit declaration of function 'inb':  => 315
-  + src/drivers/net/hamradio/yam.c: error: implicit declaration of function 'outb':  => 309
-  + src/drivers/net/hamradio/yam.c: error: invalid operands to binary ^ (have 'void *' and 'int'):  => 715
-  + src/drivers/net/hamradio/yam.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 519, 483, 337, 310, 321, 318
-  + src/drivers/net/ks8851_mll.c: error: implicit declaration of function 'ioread16':  => 490
-  + src/drivers/net/ks8851_mll.c: error: implicit declaration of function 'ioread8':  => 759
-  + src/drivers/net/ks8851_mll.c: error: implicit declaration of function 'iowrite16':  => 489
-  + src/drivers/net/lib8390.c: error: implicit declaration of function 'inb':  => 266
-  + src/drivers/net/lib8390.c: error: implicit declaration of function 'outb':  => 325
-  + src/drivers/net/pcmcia/3c574_cs.c: error: implicit declaration of function 'inb':  => 374
-  + src/drivers/net/pcmcia/3c574_cs.c: error: implicit declaration of function 'inl':  => 378
-  + src/drivers/net/pcmcia/3c574_cs.c: error: implicit declaration of function 'insl':  => 1021
-  + src/drivers/net/pcmcia/3c574_cs.c: error: implicit declaration of function 'inw':  => 480
-  + src/drivers/net/pcmcia/3c574_cs.c: error: implicit declaration of function 'outb':  => 610
-  + src/drivers/net/pcmcia/3c574_cs.c: error: implicit declaration of function 'outl':  => 617
-  + src/drivers/net/pcmcia/3c574_cs.c: error: implicit declaration of function 'outsl':  => 754
-  + src/drivers/net/pcmcia/3c574_cs.c: error: implicit declaration of function 'outw':  => 357
-  + src/drivers/net/pcmcia/3c589_cs.c: error: implicit declaration of function 'inb':  => 419
-  + src/drivers/net/pcmcia/3c589_cs.c: error: implicit declaration of function 'inl':  => 301
-  + src/drivers/net/pcmcia/3c589_cs.c: error: implicit declaration of function 'insl':  => 827
-  + src/drivers/net/pcmcia/3c589_cs.c: error: implicit declaration of function 'inw':  => 366
-  + src/drivers/net/pcmcia/3c589_cs.c: error: implicit declaration of function 'outb':  => 440
-  + src/drivers/net/pcmcia/3c589_cs.c: error: implicit declaration of function 'outsl':  => 570
-  + src/drivers/net/pcmcia/3c589_cs.c: error: implicit declaration of function 'outw':  => 278
-  + src/drivers/net/pcmcia/axnet_cs.c: error: implicit declaration of function 'inb':  => 318
-  + src/drivers/net/pcmcia/axnet_cs.c: error: implicit declaration of function 'inb_p':  => 442
-  + src/drivers/net/pcmcia/axnet_cs.c: error: implicit declaration of function 'insw':  => 641
-  + src/drivers/net/pcmcia/axnet_cs.c: error: implicit declaration of function 'inw':  => 225
-  + src/drivers/net/pcmcia/axnet_cs.c: error: implicit declaration of function 'outb':  => 324
-  + src/drivers/net/pcmcia/axnet_cs.c: error: implicit declaration of function 'outb_p':  => 222
-  + src/drivers/net/pcmcia/axnet_cs.c: error: implicit declaration of function 'outsw':  => 687
-  + src/drivers/net/pcmcia/fmvj18x_cs.c: error: implicit declaration of function 'inb':  => 496
-  + src/drivers/net/pcmcia/fmvj18x_cs.c: error: implicit declaration of function 'insw':  => 1015
-  + src/drivers/net/pcmcia/fmvj18x_cs.c: error: implicit declaration of function 'inw':  => 793
-  + src/drivers/net/pcmcia/fmvj18x_cs.c: error: implicit declaration of function 'outb':  => 447
-  + src/drivers/net/pcmcia/fmvj18x_cs.c: error: implicit declaration of function 'outsw':  => 852
-  + src/drivers/net/pcmcia/fmvj18x_cs.c: error: implicit declaration of function 'outw':  => 735
-  + src/drivers/net/pcmcia/nmclan_cs.c: error: implicit declaration of function 'inb':  => 497
-  + src/drivers/net/pcmcia/nmclan_cs.c: error: implicit declaration of function 'insw':  => 1112
-  + src/drivers/net/pcmcia/nmclan_cs.c: error: implicit declaration of function 'inw':  => 1076
-  + src/drivers/net/pcmcia/nmclan_cs.c: error: implicit declaration of function 'outb':  => 501
-  + src/drivers/net/pcmcia/nmclan_cs.c: error: implicit declaration of function 'outsw':  => 893
-  + src/drivers/net/pcmcia/nmclan_cs.c: error: implicit declaration of function 'outw':  => 891
-  + src/drivers/net/pcmcia/pcnet_cs.c: error: implicit declaration of function 'inb':  => 355
-  + src/drivers/net/pcmcia/pcnet_cs.c: error: implicit declaration of function 'inb_p':  => 383
-  + src/drivers/net/pcmcia/pcnet_cs.c: error: implicit declaration of function 'insw':  => 1146
-  + src/drivers/net/pcmcia/pcnet_cs.c: error: implicit declaration of function 'inw':  => 414
-  + src/drivers/net/pcmcia/pcnet_cs.c: error: implicit declaration of function 'outb':  => 700
-  + src/drivers/net/pcmcia/pcnet_cs.c: error: implicit declaration of function 'outb_p':  => 352
-  + src/drivers/net/pcmcia/pcnet_cs.c: error: implicit declaration of function 'outsw':  => 1253
-  + src/drivers/net/pcmcia/smc91c92_cs.c: error: implicit declaration of function 'inb':  => 780
-  + src/drivers/net/pcmcia/smc91c92_cs.c: error: implicit declaration of function 'insw':  => 1514
-  + src/drivers/net/pcmcia/smc91c92_cs.c: error: implicit declaration of function 'inw':  => 556
-  + src/drivers/net/pcmcia/smc91c92_cs.c: error: implicit declaration of function 'outb':  => 659
-  + src/drivers/net/pcmcia/smc91c92_cs.c: error: implicit declaration of function 'outsw':  => 1164
-  + src/drivers/net/pcmcia/smc91c92_cs.c: error: implicit declaration of function 'outw':  => 549
-  + src/drivers/net/pcmcia/xirc2ps_cs.c: error: implicit declaration of function 'inb':  => 407
-  + src/drivers/net/pcmcia/xirc2ps_cs.c: error: implicit declaration of function 'insw':  => 1068
-  + src/drivers/net/pcmcia/xirc2ps_cs.c: error: implicit declaration of function 'inw':  => 1037
-  + src/drivers/net/pcmcia/xirc2ps_cs.c: error: implicit declaration of function 'outb':  => 358
-  + src/drivers/net/pcmcia/xirc2ps_cs.c: error: implicit declaration of function 'outsw':  => 1259
-  + src/drivers/net/pcmcia/xirc2ps_cs.c: error: implicit declaration of function 'outw':  => 1123
-  + src/drivers/net/wireless/airo.c: error: implicit declaration of function 'inb':  => 3559
-  + src/drivers/net/wireless/airo.c: error: implicit declaration of function 'insb':  => 4057
-  + src/drivers/net/wireless/airo.c: error: implicit declaration of function 'insw':  => 4054
-  + src/drivers/net/wireless/airo.c: error: implicit declaration of function 'inw':  => 3557
-  + src/drivers/net/wireless/airo.c: error: implicit declaration of function 'outb':  => 3546
-  + src/drivers/net/wireless/airo.c: error: implicit declaration of function 'outsb':  => 4090
-  + src/drivers/net/wireless/airo.c: error: implicit declaration of function 'outsw':  => 4087
-  + src/drivers/net/wireless/airo.c: error: implicit declaration of function 'outw':  => 3544
-  + src/drivers/net/wireless/ath/ath9k/init.c: error: implicit declaration of function 'ioread32':  => 192
-  + src/drivers/net/wireless/ath/ath9k/init.c: error: implicit declaration of function 'iowrite32':  => 176
-  + src/drivers/net/wireless/atmel.c: error: implicit declaration of function 'inb':  => 639
-  + src/drivers/net/wireless/atmel.c: error: implicit declaration of function 'inw':  => 649
-  + src/drivers/net/wireless/atmel.c: error: implicit declaration of function 'outb':  => 644
-  + src/drivers/net/wireless/atmel.c: error: implicit declaration of function 'outw':  => 654
-  + src/drivers/net/wireless/hostap/hostap_cs.c: error: implicit declaration of function 'inb':  => 170
-  + src/drivers/net/wireless/hostap/hostap_cs.c: error: implicit declaration of function 'insw':  => 166
-  + src/drivers/net/wireless/hostap/hostap_cs.c: error: implicit declaration of function 'outb':  => 189
-  + src/drivers/net/wireless/hostap/hostap_cs.c: error: implicit declaration of function 'outsw':  => 185
-  + src/drivers/net/wireless/hostap/hostap_hw.c: error: implicit declaration of function 'inw':  => 157
-  + src/drivers/net/wireless/hostap/hostap_hw.c: error: implicit declaration of function 'outw':  => 299
-  + src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h: error: implicit declaration of function 'inb':  => 300
-  + src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h: error: implicit declaration of function 'inl':  => 310
-  + src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h: error: implicit declaration of function 'inw':  => 305
-  + src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h: error: implicit declaration of function 'outb':  => 295
-  + src/drivers/net/wireless/rtlwifi/rtl8192c/../pci.h: error: implicit declaration of function 'outl':  => 290
-  + src/drivers/net/wireless/rtlwifi/rtl8192cu/../pci.h: error: implicit declaration of function 'inb':  => 300
-  + src/drivers/net/wireless/rtlwifi/rtl8192cu/../pci.h: error: implicit declaration of function 'inl':  => 310
-  + src/drivers/net/wireless/rtlwifi/rtl8192cu/../pci.h: error: implicit declaration of function 'inw':  => 305
-  + src/drivers/net/wireless/rtlwifi/rtl8192cu/../pci.h: error: implicit declaration of function 'outb':  => 295
-  + src/drivers/net/wireless/rtlwifi/rtl8192cu/../pci.h: error: implicit declaration of function 'outl':  => 290
-  + src/drivers/net/wireless/rtlwifi/rtl8192se/../pci.h: error: implicit declaration of function 'inb':  => 300
-  + src/drivers/net/wireless/rtlwifi/rtl8192se/../pci.h: error: implicit declaration of function 'inl':  => 310
-  + src/drivers/net/wireless/rtlwifi/rtl8192se/../pci.h: error: implicit declaration of function 'inw':  => 305
-  + src/drivers/net/wireless/rtlwifi/rtl8192se/../pci.h: error: implicit declaration of function 'outb':  => 295
-  + src/drivers/net/wireless/rtlwifi/rtl8192se/../pci.h: error: implicit declaration of function 'outl':  => 290
-  + src/drivers/net/wireless/wl3501_cs.c: error: implicit declaration of function 'inb':  => 211
-  + src/drivers/net/wireless/wl3501_cs.c: error: implicit declaration of function 'insb':  => 280
-  + src/drivers/net/wireless/wl3501_cs.c: error: implicit declaration of function 'outb':  => 191
-  + src/drivers/net/wireless/wl3501_cs.c: error: implicit declaration of function 'outb_p':  => 1136
-  + src/drivers/net/wireless/wl3501_cs.c: error: implicit declaration of function 'outsb':  => 258
-  + src/drivers/parisc/iommu-helpers.h: error: implicit declaration of function 'prefetchw':  => 62
-  + src/drivers/parport/parport_pc.c: error: asm/parport.h: No such file or directory:  => 67:25
-  + src/drivers/parport/parport_pc.c: error: implicit declaration of function 'insb':  => 334
-  + src/drivers/parport/parport_pc.c: error: implicit declaration of function 'insl':  => 332
-  + src/drivers/parport/parport_pc.c: error: implicit declaration of function 'outsb':  => 388
-  + src/drivers/parport/parport_pc.c: error: implicit declaration of function 'outsl':  => 386
-  + src/drivers/parport/parport_pc.c: error: implicit declaration of function 'parport_pc_find_nonpci_ports':  => 3375
-  + src/drivers/parport/parport_pc.c: error: invalid operands to binary & (have 'void *' and 'int'):  => 266
-  + src/drivers/parport/parport_pc.c: error: invalid operands to binary ^ (have 'void *' and 'int'):  => 1778, 123
-  + src/drivers/parport/parport_pc.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 1643, 265
-  + src/drivers/rtc/rtc-bq4802.c: error: implicit declaration of function 'inb':  => 31
-  + src/drivers/rtc/rtc-bq4802.c: error: implicit declaration of function 'outb':  => 36
-  + src/drivers/scsi/aha152x.c: error: implicit declaration of function 'inb':  => 838
-  + src/drivers/scsi/aha152x.c: error: implicit declaration of function 'insw':  => 2221
-  + src/drivers/scsi/aha152x.c: error: implicit declaration of function 'outb':  => 768
-  + src/drivers/scsi/aha152x.c: error: implicit declaration of function 'outsw':  => 2333
-  + src/drivers/scsi/fdomain.c: error: implicit declaration of function 'inb':  => 608
-  + src/drivers/scsi/fdomain.c: error: implicit declaration of function 'insw':  => 1351
-  + src/drivers/scsi/fdomain.c: error: implicit declaration of function 'inw':  => 1303
-  + src/drivers/scsi/fdomain.c: error: implicit declaration of function 'outb':  => 587
-  + src/drivers/scsi/fdomain.c: error: implicit declaration of function 'outsw':  => 1318
-  + src/drivers/scsi/imm.c: error: implicit declaration of function 'inb':  => 199
-  + src/drivers/scsi/imm.c: error: implicit declaration of function 'insb':  => 453
-  + src/drivers/scsi/imm.c: error: implicit declaration of function 'insw':  => 447
-  + src/drivers/scsi/imm.c: error: implicit declaration of function 'outb':  => 264
-  + src/drivers/scsi/imm.c: error: implicit declaration of function 'outb_p':  => 195
-  + src/drivers/scsi/imm.c: error: implicit declaration of function 'outsb':  => 393
-  + src/drivers/scsi/imm.c: error: implicit declaration of function 'outsw':  => 387
-  + src/drivers/scsi/pcmcia/nsp_io.h: error: implicit declaration of function 'inb':  => 40
-  + src/drivers/scsi/pcmcia/nsp_io.h: error: implicit declaration of function 'insb':  => 72
-  + src/drivers/scsi/pcmcia/nsp_io.h: error: implicit declaration of function 'insl':  => 110
-  + src/drivers/scsi/pcmcia/nsp_io.h: error: implicit declaration of function 'insw':  => 91
-  + src/drivers/scsi/pcmcia/nsp_io.h: error: implicit declaration of function 'outb':  => 34
-  + src/drivers/scsi/pcmcia/nsp_io.h: error: implicit declaration of function 'outsb':  => 129
-  + src/drivers/scsi/pcmcia/nsp_io.h: error: implicit declaration of function 'outsl':  => 165
-  + src/drivers/scsi/pcmcia/nsp_io.h: error: implicit declaration of function 'outsw':  => 147
-  + src/drivers/scsi/pcmcia/qlogic_stub.c: error: implicit declaration of function 'outb':  => 210
-  + src/drivers/scsi/pcmcia/sym53c500_cs.c: error: implicit declaration of function 'inb':  => 252
-  + src/drivers/scsi/pcmcia/sym53c500_cs.c: error: implicit declaration of function 'insl':  => 285
-  + src/drivers/scsi/pcmcia/sym53c500_cs.c: error: implicit declaration of function 'outb':  => 219
-  + src/drivers/scsi/pcmcia/sym53c500_cs.c: error: implicit declaration of function 'outsl':  => 336
-  + src/drivers/scsi/ppa.c: error: implicit declaration of function 'inb':  => 203
-  + src/drivers/scsi/ppa.c: error: implicit declaration of function 'insb':  => 377
-  + src/drivers/scsi/ppa.c: error: implicit declaration of function 'insw':  => 371
-  + src/drivers/scsi/ppa.c: error: implicit declaration of function 'outb':  => 232
-  + src/drivers/scsi/ppa.c: error: implicit declaration of function 'outb_p':  => 262
-  + src/drivers/scsi/ppa.c: error: implicit declaration of function 'outsb':  => 324
-  + src/drivers/scsi/ppa.c: error: implicit declaration of function 'outsw':  => 318
-  + src/drivers/scsi/qlogicfas408.c: error: implicit declaration of function 'inb':  => 84
-  + src/drivers/scsi/qlogicfas408.c: error: implicit declaration of function 'insl':  => 106
-  + src/drivers/scsi/qlogicfas408.c: error: implicit declaration of function 'outb':  => 85
-  + src/drivers/scsi/qlogicfas408.c: error: implicit declaration of function 'outsl':  => 143
-  + src/drivers/staging/altera-stapl/altera-lpt.c: error: implicit declaration of function 'inb':  => 40
-  + src/drivers/staging/altera-stapl/altera-lpt.c: error: implicit declaration of function 'outb':  => 34
-  + src/drivers/staging/comedi/drivers/8253.h: error: implicit declaration of function 'inb':  => 307
-  + src/drivers/staging/comedi/drivers/8253.h: error: implicit declaration of function 'outb':  => 256
-  + src/drivers/staging/comedi/drivers/8255.c: error: implicit declaration of function 'inb':  => 158
-  + src/drivers/staging/comedi/drivers/8255.c: error: implicit declaration of function 'outb':  => 155
-  + src/drivers/staging/comedi/drivers/cb_das16_cs.c: error: implicit declaration of function 'inw':  => 177
-  + src/drivers/staging/comedi/drivers/cb_das16_cs.c: error: implicit declaration of function 'outw':  => 296
-  + src/drivers/staging/comedi/drivers/comedi_parport.c: error: implicit declaration of function 'inb':  => 134
-  + src/drivers/staging/comedi/drivers/comedi_parport.c: error: implicit declaration of function 'outb':  => 131
-  + src/drivers/staging/comedi/drivers/das08.c: error: implicit declaration of function 'inb':  => 535
-  + src/drivers/staging/comedi/drivers/das08.c: error: implicit declaration of function 'outb':  => 543
-  + src/drivers/staging/comedi/drivers/das08.c: error: implicit declaration of function 'outb_p':  => 560
-  + src/drivers/staging/comedi/drivers/ni_daq_700.c: error: implicit declaration of function 'inb':  => 157
-  + src/drivers/staging/comedi/drivers/ni_daq_700.c: error: implicit declaration of function 'outb':  => 154
-  + src/drivers/staging/comedi/drivers/quatech_daqp_cs.c: error: implicit declaration of function 'inb':  => 295
-  + src/drivers/staging/comedi/drivers/quatech_daqp_cs.c: error: implicit declaration of function 'outb':  => 228
-  + src/drivers/staging/comedi/drivers/quatech_daqp_cs.c: error: implicit declaration of function 'outw':  => 800
-  + src/drivers/staging/dt3155v4l/dt3155v4l.c: error: implicit declaration of function 'kzalloc':  => 434
-  + src/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dev.h: error: implicit declaration of function 'inw':  => 44
-  + src/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dev.h: error: implicit declaration of function 'outw':  => 62
-  + src/drivers/staging/ft1000/ft1000-pcmcia/ft1000_dnld.c: error: implicit declaration of function 'outl':  => 169
-  + src/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c: error: implicit declaration of function 'inl':  => 284
-  + src/drivers/staging/ft1000/ft1000-pcmcia/ft1000_hw.c: error: implicit declaration of function 'outl':  => 311
-  + src/drivers/staging/lirc/lirc_serial.c: error: implicit declaration of function 'inb':  => 296
-  + src/drivers/staging/lirc/lirc_serial.c: error: implicit declaration of function 'outb':  => 306
-  + src/drivers/staging/lirc/lirc_sir.c: error: implicit declaration of function 'inb':  => 219
-  + src/drivers/staging/lirc/lirc_sir.c: error: implicit declaration of function 'outb':  => 224
-  + src/drivers/staging/sm7xx/smtcfb.c: error: implicit declaration of function 'outb_p':  => 811
-  + src/drivers/staging/solo6x10/core.c: error: implicit declaration of function 'kzalloc':  => 140
-  + src/drivers/staging/solo6x10/enc.c: error: implicit declaration of function 'kzalloc':  => 101
-  + src/drivers/staging/solo6x10/g723.c: error: implicit declaration of function 'kzalloc':  => 139
-  + src/drivers/staging/solo6x10/p2m.c: error: implicit declaration of function 'kzalloc':  => 52
-  + src/drivers/staging/speakup/serialio.c: error: implicit declaration of function 'inb':  => 62
-  + src/drivers/staging/speakup/serialio.c: error: implicit declaration of function 'inb_p':  => 84
-  + src/drivers/staging/speakup/serialio.c: error: implicit declaration of function 'outb':  => 52
-  + src/drivers/staging/speakup/serialio.c: error: implicit declaration of function 'outb_p':  => 200
-  + src/drivers/staging/speakup/serialio.c: error: invalid operands to binary & (have 'void *' and 'int'):  => 53
-  + src/drivers/staging/speakup/serialio.c: error: invalid operands to binary >> (have 'void *' and 'int'):  => 54
-  + src/drivers/staging/speakup/serialio.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 59, 52, 111, 108
-  + src/drivers/staging/speakup/serialio.h: error: asm/serial.h: No such file or directory:  => 9:24
-  + src/drivers/staging/speakup/speakup_acntpc.c: error: implicit declaration of function 'inb_p':  => 144
-  + src/drivers/staging/speakup/speakup_acntpc.c: error: implicit declaration of function 'inw':  => 270
-  + src/drivers/staging/speakup/speakup_acntpc.c: error: implicit declaration of function 'outb_p':  => 166
-  + src/drivers/staging/speakup/speakup_apollo.c: error: implicit declaration of function 'outb':  => 176
-  + src/drivers/staging/speakup/speakup_apollo.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 177
-  + src/drivers/staging/speakup/speakup_audptr.c: error: implicit declaration of function 'inb':  => 135
-  + src/drivers/staging/speakup/speakup_audptr.c: error: implicit declaration of function 'outb':  => 140
-  + src/drivers/staging/speakup/speakup_decext.c: error: implicit declaration of function 'inb_p':  => 41
-  + src/drivers/staging/speakup/speakup_decpc.c: error: implicit declaration of function 'inb_p':  => 249
-  + src/drivers/staging/speakup/speakup_decpc.c: error: implicit declaration of function 'outb_p':  => 256
-  + src/drivers/staging/speakup/speakup_dtlk.c: error: implicit declaration of function 'inb_p':  => 158
-  + src/drivers/staging/speakup/speakup_dtlk.c: error: implicit declaration of function 'inw':  => 339
-  + src/drivers/staging/speakup/speakup_dtlk.c: error: implicit declaration of function 'inw_p':  => 362
-  + src/drivers/staging/speakup/speakup_dtlk.c: error: implicit declaration of function 'outb_p':  => 182
-  + src/drivers/staging/speakup/speakup_keypc.c: error: implicit declaration of function 'inb':  => 276
-  + src/drivers/staging/speakup/speakup_keypc.c: error: implicit declaration of function 'inb_p':  => 135
-  + src/drivers/staging/speakup/speakup_keypc.c: error: implicit declaration of function 'outb_p':  => 167
-  + src/drivers/staging/speakup/speakup_spkout.c: error: implicit declaration of function 'inb':  => 134
-  + src/drivers/staging/speakup/speakup_spkout.c: error: implicit declaration of function 'outb':  => 139
-  + src/drivers/staging/speakup/synth.c: error: implicit declaration of function 'outb':  => 143
-  + src/drivers/staging/speakup/synth.c: error: implicit declaration of function 'outb_p':  => 45
-  + src/drivers/staging/tty/riscom8.c: error: implicit declaration of function 'inb':  => 165
-  + src/drivers/staging/tty/riscom8.c: error: implicit declaration of function 'outb':  => 172
-  + src/drivers/staging/tty/specialix.c: error: implicit declaration of function 'inb':  => 228
-  + src/drivers/staging/tty/specialix.c: error: implicit declaration of function 'outb':  => 227
-  + src/drivers/staging/tty/specialix.c: error: invalid operands to binary | (have 'void *' and 'int'):  => 237, 227
-  + src/drivers/staging/wlags49_h2/hcf.c: error: implicit declaration of function 'insw':  => 4036
-  + src/drivers/staging/wlags49_h2/hcf.c: error: implicit declaration of function 'inw':  => 731
-  + src/drivers/staging/wlags49_h2/hcf.c: error: implicit declaration of function 'outsw':  => 3830
-  + src/drivers/staging/wlags49_h2/hcf.c: error: implicit declaration of function 'outw':  => 728
-  + src/drivers/staging/wlags49_h25/../wlags49_h2/hcf.c: error: implicit declaration of function 'insw':  => 4036
-  + src/drivers/staging/wlags49_h25/../wlags49_h2/hcf.c: error: implicit declaration of function 'inw':  => 731
-  + src/drivers/staging/wlags49_h25/../wlags49_h2/hcf.c: error: implicit declaration of function 'outsw':  => 3830
-  + src/drivers/staging/wlags49_h25/../wlags49_h2/hcf.c: error: implicit declaration of function 'outw':  => 728
-  + src/drivers/tty/ipwireless/hardware.c: error: implicit declaration of function 'inw':  => 862
-  + src/drivers/tty/ipwireless/hardware.c: error: implicit declaration of function 'outw':  => 421
-  + src/drivers/tty/serial/8250.c: error: asm/serial.h: No such file or directory:  => 109:24
-  + src/drivers/tty/serial/8250_early.c: error: 'BASE_BAUD' undeclared (first use in this function):  => 160
-  + src/drivers/tty/serial/8250_early.c: error: (Each undeclared identifier is reported only once:  => 160
-  + src/drivers/tty/serial/8250_early.c: error: asm/serial.h: No such file or directory:  => 37:24
-  + src/drivers/tty/serial/8250_early.c: error: for each function it appears in.):  => 160
-  + src/drivers/tty/serial/crisv10.c: error: 'if_ser0' undeclared (first use in this function):  => 4453
-  + src/drivers/tty/serial/crisv10.c: error: (Each undeclared identifier is reported only once:  => 4453
-  + src/drivers/tty/serial/crisv10.c: error: for each function it appears in.):  => 4453
-  + src/drivers/tty/serial/serial_cs.c: error: implicit declaration of function 'outb':  => 149
-  + src/drivers/tty/serial/timbuart.c: error: implicit declaration of function 'ioread32':  => 51
-  + src/drivers/tty/serial/timbuart.c: error: implicit declaration of function 'ioread8':  => 81
-  + src/drivers/tty/serial/timbuart.c: error: implicit declaration of function 'iowrite32':  => 52
-  + src/drivers/tty/serial/timbuart.c: error: implicit declaration of function 'iowrite8':  => 84
-  + src/drivers/tty/serial/xilinx_uartps.c: error: implicit declaration of function 'ioread32':  => 161
-  + src/drivers/tty/serial/xilinx_uartps.c: error: implicit declaration of function 'iowrite32':  => 201
-  + src/drivers/usb/gadget/fusb300_udc.c: error: implicit declaration of function 'ioread32':  => 51
-  + src/drivers/usb/gadget/fusb300_udc.c: error: implicit declaration of function 'iowrite32':  => 54
-  + src/drivers/usb/host/isp1362.h: error: implicit declaration of function 'insw':  => 729
-  + src/drivers/usb/host/isp1362.h: error: implicit declaration of function 'outsw':  => 776
-  + src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'ioread16':  => 173
-  + src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'ioread16_rep':  => 194
-  + src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'ioread32':  => 188
-  + src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'ioread32_rep':  => 185
-  + src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'iowrite16':  => 201
-  + src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'iowrite16_rep':  => 230
-  + src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'iowrite32_rep':  => 215
-  + src/drivers/usb/host/r8a66597.h: error: implicit declaration of function 'iowrite8':  => 221
-  + src/fs/xfs/xfs_log.c: error: 'head' undeclared (first use in this function):  => 104, 130, 837
-  + src/fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_grant_reserve_head':  => 1204
-  + src/fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_grant_write_head':  => 3436
-  + src/fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_iclog_bak':  => 3410, 3409
-  + src/fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_last_sync_lsn':  => 806, 1232
-  + src/fs/xfs/xfs_log.c: error: 'struct log' has no member named 'l_tail_lsn':  => 808, 3437, 1218, 838
-  + src/fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_grant_reserve_head':  => 2591, 2564, 2761, 1019, 2748, 717, 1338, 2807
-  + src/fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_grant_reserve_lock':  => 2551, 2578, 2601, 1023, 2566, 716, 2536, 3709, 2587, 2585, 3706, 730, 2598, 2533
-  + src/fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_grant_write_head':  => 2750, 1020, 697, 2808, 2708, 2592, 1339, 2682, 2653
-  + src/fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_grant_write_lock':  => 2704, 2652, 1024, 2684, 3711, 3714, 696, 2672, 2695, 708, 2718, 2715, 2702, 2675
-  + src/fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_iclog_bak':  => 1100
-  + src/fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_last_sync_lsn':  => 2223, 685, 2221, 1017
-  + src/fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_reserveq':  => 718, 3707, 2535, 711, 2568, 2539, 2532, 1021
-  + src/fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_tail_lsn':  => 689, 1016
-  + src/fs/xfs/xfs_log.c: error: 'xlog_t' has no member named 'l_writeq':  => 2666, 2649, 2654, 1022, 2663, 2686, 691, 3712, 698
-  + src/fs/xfs/xfs_log.c: error: (Each undeclared identifier is reported only once:  => 104
-  + src/fs/xfs/xfs_log.c: error: expected declaration specifiers or '...' before 'atomic64_t':  => 127, 50, 101, 829
-  + src/fs/xfs/xfs_log.c: error: for each function it appears in.):  => 104
-  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'atomic64_cmpxchg':  => 120
-  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'atomic64_read':  => 104
-  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'atomic64_set':  => 689
-  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_assign_atomic_lsn':  => 1016
-  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_assign_grant_head':  => 1019
-  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_crack_atomic_lsn':  => 838
-  + src/fs/xfs/xfs_log.c: error: implicit declaration of function 'xlog_crack_grant_head':  => 837
-  + src/fs/xfs/xfs_log.c: error: too many arguments to function 'xlog_grant_add_space':  => 2591, 2708, 2762, 1339, 2592, 1338
-  + src/fs/xfs/xfs_log.c: error: too many arguments to function 'xlog_grant_sub_space':  => 2808, 2751, 2749, 2807
-  + src/fs/xfs/xfs_log.c: error: too many arguments to function 'xlog_space_left':  => 697, 2564, 1204, 2682, 717, 2653
-  + src/fs/xfs/xfs_log_recover.c: error: 'xlog_t' has no member named 'l_grant_reserve_head':  => 970
-  + src/fs/xfs/xfs_log_recover.c: error: 'xlog_t' has no member named 'l_grant_write_head':  => 972
-  + src/fs/xfs/xfs_log_recover.c: error: 'xlog_t' has no member named 'l_last_sync_lsn':  => 1020, 969
-  + src/fs/xfs/xfs_log_recover.c: error: 'xlog_t' has no member named 'l_tail_lsn':  => 968, 1003, 1018
-  + src/fs/xfs/xfs_log_recover.c: error: implicit declaration of function 'atomic64_read':  => 1003
-  + src/fs/xfs/xfs_log_recover.c: error: implicit declaration of function 'atomic64_set':  => 968
-  + src/fs/xfs/xfs_log_recover.c: error: implicit declaration of function 'xlog_assign_atomic_lsn':  => 1018
-  + src/fs/xfs/xfs_log_recover.c: error: implicit declaration of function 'xlog_assign_grant_head':  => 970
-  + src/include/linux/parport_pc.h: error: implicit declaration of function 'inb':  => 72
-  + src/include/linux/parport_pc.h: error: implicit declaration of function 'outb':  => 67
-  + src/lib/radix-tree.c: error: insn does not satisfy its constraints::  => 747
-  + src/net/mac80211/led.c: error: 'struct led_classdev' has no member named 'trig_list':  => 213, 277
-  + src/net/mac80211/led.c: error: dereferencing pointer to incomplete type:  => 73, 91, 100, 82
-  + src/net/mac80211/led.c: error: implicit declaration of function 'led_trigger_register':  => 74
-  + src/net/mac80211/led.c: error: implicit declaration of function 'led_trigger_unregister':  => 118
-  + src/net/mac80211/led.c: error: invalid application of 'sizeof' to incomplete type 'struct led_trigger' :  => 98, 71, 89, 80
-  + src/samples/hidraw/hid-example.c: error: 'struct hidraw_devinfo' has no member named 'bustype':  => 104
-  + src/samples/hidraw/hid-example.c: error: 'struct hidraw_devinfo' has no member named 'product':  => 106
-  + src/samples/hidraw/hid-example.c: error: 'struct hidraw_devinfo' has no member named 'vendor':  => 105
-  + src/samples/hidraw/hid-example.c: error: 'struct hidraw_report_descriptor' has no member named 'size':  => 72, 78
-  + src/samples/hidraw/hid-example.c: error: 'struct hidraw_report_descriptor' has no member named 'value':  => 79
-  + src/sound/drivers/mpu401/mpu401_uart.c: error: implicit declaration of function 'inb':  => 67
-  + src/sound/drivers/mpu401/mpu401_uart.c: error: implicit declaration of function 'outb':  => 61
-  + src/sound/drivers/serial-u16550.c: error: implicit declaration of function 'inb':  => 218
-  + src/sound/drivers/serial-u16550.c: error: implicit declaration of function 'outb':  => 196
-  + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 544
-  + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 302
-  + src/sound/isa/ad1816a/ad1816a_lib.c: error: implicit declaration of function 'snd_dma_program':  => 244
-  + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 509
-  + src/sound/isa/es1688/es1688_lib.c: error: implicit declaration of function 'snd_dma_program':  => 417
-  + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_disable':  => 177
-  + src/sound/isa/gus/gus_dma.c: error: implicit declaration of function 'snd_dma_program':  => 79
-  + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_pointer':  => 619
-  + src/sound/isa/gus/gus_pcm.c: error: implicit declaration of function 'snd_dma_program':  => 591
-  + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 456
-  + src/sound/isa/sb/sb16_main.c: error: implicit declaration of function 'snd_dma_program':  => 276
-  + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_pointer':  => 425
-  + src/sound/isa/sb/sb8_main.c: error: implicit declaration of function 'snd_dma_program':  => 172
-  + src/sound/isa/sscape.c: error: implicit declaration of function 'snd_dma_program':  => 481
-  + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_disable':  => 1695
-  + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_pointer':  => 1160
-  + src/sound/isa/wss/wss_lib.c: error: implicit declaration of function 'snd_dma_program':  => 1025
-  + src/sound/pcmcia/pdaudiocf/pdaudiocf.h: error: implicit declaration of function 'outw'  CC      crypto/des_generic.o:  => 122
-  + src/sound/pcmcia/vx/vxp_ops.c: error: implicit declaration of function 'inb':  => 63
-  + src/sound/pcmcia/vx/vxp_ops.c: error: implicit declaration of function 'inw':  => 420
-  + src/sound/pcmcia/vx/vxp_ops.c: error: implicit declaration of function 'outb':  => 73
-  + src/sound/pcmcia/vx/vxp_ops.c: error: implicit declaration of function 'outw':  => 378
+#
+# GCOV-based kernel profiling
+#
+# CONFIG_GCOV_KERNEL is not set
+# CONFIG_HAVE_GENERIC_DMA_COHERENT is not set
+CONFIG_SLABINFO=y
+CONFIG_RT_MUTEXES=y
+CONFIG_BASE_SMALL=0
+CONFIG_MODULES=y
+CONFIG_MODULE_FORCE_LOAD=y
+CONFIG_MODULE_UNLOAD=y
+CONFIG_MODULE_FORCE_UNLOAD=y
+CONFIG_MODVERSIONS=y
+# CONFIG_MODULE_SRCVERSION_ALL is not set
+CONFIG_STOP_MACHINE=y
+CONFIG_BLOCK=y
+CONFIG_BLK_DEV_BSG=y
+CONFIG_BLK_DEV_INTEGRITY=y
+# CONFIG_BLK_DEV_THROTTLING is not set
+CONFIG_BLOCK_COMPAT=y
 
-13 improvements:
-  - error: hung_task.c: undefined reference to `ack_bad_irq': .text+0x1fec8) => 
-  - src/arch/powerpc/sysdev/mv64x60_dev.c: error: implicit declaration of function 'of_get_mac_address': 253 => 
-  - src/arch/sh/boards/board-shmin.c: error: implicit declaration of function '__set_io_port_base': 27 => 
-  - src/drivers/tty/serial/pch_uart.c: error: implicit declaration of function 'kfree': 670 => 
-  - src/drivers/tty/serial/pch_uart.c: error: implicit declaration of function 'kzalloc': 869 => 
-  - src/drivers/usb/host/ohci-hcd.c: error: #error "missing bus glue for ohci-hcd": 1118:2 => 
-  - src/drivers/usb/host/xhci-pci.c: error: implicit declaration of function 'kfree': 157 => 
-  - src/drivers/usb/host/xhci-pci.c: error: implicit declaration of function 'kzalloc': 61 => 
-  - src/sound/isa/sb/sb16_csp.c: error: case label does not reduce to an integer constant: 228 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: error: (near initialization for 'mpc5200_hpcd_of_driver.shutdown'): 524, 523, 522 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: error: dereferencing pointer to incomplete type: 384, 389, 491, 401, 427, 495, 413, 474, 382, 383, 507, 477, 493 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: error: field name not in record or union initializer: 524, 523, 522 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: error: unknown field 'dev' specified in initializer: 521 => 
+#
+# IO Schedulers
+#
+CONFIG_IOSCHED_NOOP=y
+CONFIG_IOSCHED_DEADLINE=y
+CONFIG_IOSCHED_CFQ=y
+CONFIG_CFQ_GROUP_IOSCHED=y
+# CONFIG_DEFAULT_DEADLINE is not set
+CONFIG_DEFAULT_CFQ=y
+# CONFIG_DEFAULT_NOOP is not set
+CONFIG_DEFAULT_IOSCHED="cfq"
+CONFIG_PREEMPT_NOTIFIERS=y
+CONFIG_PADATA=y
+# CONFIG_INLINE_SPIN_TRYLOCK is not set
+# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK is not set
+# CONFIG_INLINE_SPIN_LOCK_BH is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
+# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_SPIN_UNLOCK is not set
+# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
+# CONFIG_INLINE_SPIN_UNLOCK_IRQ is not set
+# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_READ_TRYLOCK is not set
+# CONFIG_INLINE_READ_LOCK is not set
+# CONFIG_INLINE_READ_LOCK_BH is not set
+# CONFIG_INLINE_READ_LOCK_IRQ is not set
+# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_READ_UNLOCK is not set
+# CONFIG_INLINE_READ_UNLOCK_BH is not set
+# CONFIG_INLINE_READ_UNLOCK_IRQ is not set
+# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
+# CONFIG_INLINE_WRITE_TRYLOCK is not set
+# CONFIG_INLINE_WRITE_LOCK is not set
+# CONFIG_INLINE_WRITE_LOCK_BH is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
+# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
+# CONFIG_INLINE_WRITE_UNLOCK is not set
+# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
+# CONFIG_INLINE_WRITE_UNLOCK_IRQ is not set
+# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
+CONFIG_MUTEX_SPIN_ON_OWNER=y
+CONFIG_FREEZER=y
 
+#
+# Processor type and features
+#
+CONFIG_TICK_ONESHOT=y
+CONFIG_NO_HZ=y
+CONFIG_HIGH_RES_TIMERS=y
+CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
+CONFIG_SMP=y
+# CONFIG_X86_X2APIC is not set
+CONFIG_X86_MPPARSE=y
+CONFIG_X86_EXTENDED_PLATFORM=y
+CONFIG_X86_VSMP=y
+CONFIG_X86_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_SCHED_OMIT_FRAME_POINTER=y
+CONFIG_PARAVIRT_GUEST=y
+# CONFIG_XEN is not set
+# CONFIG_XEN_PRIVILEGED_GUEST is not set
+CONFIG_KVM_CLOCK=y
+CONFIG_KVM_GUEST=y
+CONFIG_PARAVIRT=y
+# CONFIG_PARAVIRT_SPINLOCKS is not set
+CONFIG_PARAVIRT_CLOCK=y
+# CONFIG_PARAVIRT_DEBUG is not set
+CONFIG_NO_BOOTMEM=y
+# CONFIG_MEMTEST is not set
+# CONFIG_MK8 is not set
+# CONFIG_MPSC is not set
+CONFIG_MCORE2=y
+# CONFIG_MATOM is not set
+# CONFIG_GENERIC_CPU is not set
+CONFIG_X86_INTERNODE_CACHE_SHIFT=12
+CONFIG_X86_CMPXCHG=y
+CONFIG_CMPXCHG_LOCAL=y
+CONFIG_CMPXCHG_DOUBLE=y
+CONFIG_X86_L1_CACHE_SHIFT=6
+CONFIG_X86_XADD=y
+CONFIG_X86_WP_WORKS_OK=y
+CONFIG_X86_INTEL_USERCOPY=y
+CONFIG_X86_USE_PPRO_CHECKSUM=y
+CONFIG_X86_P6_NOP=y
+CONFIG_X86_TSC=y
+CONFIG_X86_CMPXCHG64=y
+CONFIG_X86_CMOV=y
+CONFIG_X86_MINIMUM_CPU_FAMILY=64
+CONFIG_X86_DEBUGCTLMSR=y
+CONFIG_PROCESSOR_SELECT=y
+CONFIG_CPU_SUP_INTEL=y
+CONFIG_CPU_SUP_AMD=y
+CONFIG_CPU_SUP_CENTAUR=y
+CONFIG_HPET_TIMER=y
+CONFIG_HPET_EMULATE_RTC=y
+CONFIG_DMI=y
+CONFIG_GART_IOMMU=y
+CONFIG_CALGARY_IOMMU=y
+CONFIG_CALGARY_IOMMU_ENABLED_BY_DEFAULT=y
+# CONFIG_AMD_IOMMU is not set
+CONFIG_SWIOTLB=y
+CONFIG_IOMMU_HELPER=y
+CONFIG_IOMMU_API=y
+# CONFIG_MAXSMP is not set
+CONFIG_NR_CPUS=32
+CONFIG_SCHED_SMT=y
+CONFIG_SCHED_MC=y
+# CONFIG_IRQ_TIME_ACCOUNTING is not set
+# CONFIG_PREEMPT_NONE is not set
+# CONFIG_PREEMPT_VOLUNTARY is not set
+CONFIG_PREEMPT=y
+CONFIG_PREEMPT_COUNT=y
+CONFIG_X86_LOCAL_APIC=y
+CONFIG_X86_IO_APIC=y
+CONFIG_X86_REROUTE_FOR_BROKEN_BOOT_IRQS=y
+CONFIG_X86_MCE=y
+CONFIG_X86_MCE_INTEL=y
+CONFIG_X86_MCE_AMD=y
+CONFIG_X86_MCE_THRESHOLD=y
+CONFIG_X86_MCE_INJECT=m
+CONFIG_X86_THERMAL_VECTOR=y
+CONFIG_I8K=m
+CONFIG_MICROCODE=m
+CONFIG_MICROCODE_INTEL=y
+CONFIG_MICROCODE_AMD=y
+CONFIG_MICROCODE_OLD_INTERFACE=y
+CONFIG_X86_MSR=m
+CONFIG_X86_CPUID=m
+CONFIG_ARCH_PHYS_ADDR_T_64BIT=y
+CONFIG_ARCH_DMA_ADDR_T_64BIT=y
+CONFIG_DIRECT_GBPAGES=y
+CONFIG_NUMA=y
+CONFIG_AMD_NUMA=y
+CONFIG_X86_64_ACPI_NUMA=y
+CONFIG_NODES_SPAN_OTHER_NODES=y
+# CONFIG_NUMA_EMU is not set
+CONFIG_NODES_SHIFT=6
+CONFIG_ARCH_SPARSEMEM_ENABLE=y
+CONFIG_ARCH_SPARSEMEM_DEFAULT=y
+CONFIG_ARCH_SELECT_MEMORY_MODEL=y
+CONFIG_ARCH_MEMORY_PROBE=y
+CONFIG_ARCH_PROC_KCORE_TEXT=y
+CONFIG_ILLEGAL_POINTER_VALUE=0xdead000000000000
+CONFIG_SELECT_MEMORY_MODEL=y
+CONFIG_SPARSEMEM_MANUAL=y
+CONFIG_SPARSEMEM=y
+CONFIG_NEED_MULTIPLE_NODES=y
+CONFIG_HAVE_MEMORY_PRESENT=y
+CONFIG_SPARSEMEM_EXTREME=y
+CONFIG_SPARSEMEM_VMEMMAP_ENABLE=y
+CONFIG_SPARSEMEM_ALLOC_MEM_MAP_TOGETHER=y
+CONFIG_SPARSEMEM_VMEMMAP=y
+CONFIG_HAVE_MEMBLOCK=y
+CONFIG_MEMORY_HOTPLUG=y
+CONFIG_MEMORY_HOTPLUG_SPARSE=y
+CONFIG_MEMORY_HOTREMOVE=y
+CONFIG_PAGEFLAGS_EXTENDED=y
+CONFIG_SPLIT_PTLOCK_CPUS=4
+CONFIG_COMPACTION=y
+CONFIG_MIGRATION=y
+CONFIG_PHYS_ADDR_T_64BIT=y
+CONFIG_ZONE_DMA_FLAG=1
+CONFIG_BOUNCE=y
+CONFIG_VIRT_TO_BUS=y
+CONFIG_MMU_NOTIFIER=y
+CONFIG_KSM=y
+CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
+CONFIG_ARCH_SUPPORTS_MEMORY_FAILURE=y
+CONFIG_MEMORY_FAILURE=y
+CONFIG_HWPOISON_INJECT=m
+# CONFIG_TRANSPARENT_HUGEPAGE is not set
+# CONFIG_CLEANCACHE is not set
+# CONFIG_FRONTSWAP is not set
+CONFIG_X86_CHECK_BIOS_CORRUPTION=y
+CONFIG_X86_BOOTPARAM_MEMORY_CORRUPTION_CHECK=y
+CONFIG_X86_RESERVE_LOW=64
+CONFIG_MTRR=y
+CONFIG_MTRR_SANITIZER=y
+CONFIG_MTRR_SANITIZER_ENABLE_DEFAULT=0
+CONFIG_MTRR_SANITIZER_SPARE_REG_NR_DEFAULT=1
+CONFIG_X86_PAT=y
+CONFIG_ARCH_USES_PG_UNCACHED=y
+CONFIG_EFI=y
+CONFIG_SECCOMP=y
+CONFIG_CC_STACKPROTECTOR=y
+# CONFIG_HZ_100 is not set
+CONFIG_HZ_250=y
+# CONFIG_HZ_300 is not set
+# CONFIG_HZ_1000 is not set
+CONFIG_HZ=250
+CONFIG_SCHED_HRTICK=y
+CONFIG_KEXEC=y
+# CONFIG_CRASH_DUMP is not set
+# CONFIG_KEXEC_JUMP is not set
+CONFIG_PHYSICAL_START=0x1000000
+CONFIG_RELOCATABLE=y
+CONFIG_PHYSICAL_ALIGN=0x1000000
+CONFIG_HOTPLUG_CPU=y
+# CONFIG_COMPAT_VDSO is not set
+# CONFIG_CMDLINE_BOOL is not set
+CONFIG_ARCH_ENABLE_MEMORY_HOTPLUG=y
+CONFIG_ARCH_ENABLE_MEMORY_HOTREMOVE=y
+CONFIG_USE_PERCPU_NUMA_NODE_ID=y
 
-*** WARNINGS ***
+#
+# Power management and ACPI options
+#
+CONFIG_ARCH_HIBERNATION_HEADER=y
+CONFIG_SUSPEND=y
+CONFIG_SUSPEND_FREEZER=y
+CONFIG_HIBERNATE_CALLBACKS=y
+CONFIG_HIBERNATION=y
+CONFIG_PM_STD_PARTITION="/dev/sda3"
+CONFIG_PM_SLEEP=y
+CONFIG_PM_SLEEP_SMP=y
+CONFIG_PM_RUNTIME=y
+CONFIG_PM=y
+# CONFIG_PM_DEBUG is not set
+CONFIG_ACPI=y
+CONFIG_ACPI_SLEEP=y
+CONFIG_ACPI_PROCFS=y
+CONFIG_ACPI_PROCFS_POWER=y
+CONFIG_ACPI_EC_DEBUGFS=m
+CONFIG_ACPI_PROC_EVENT=y
+CONFIG_ACPI_AC=m
+CONFIG_ACPI_BATTERY=m
+CONFIG_ACPI_BUTTON=m
+CONFIG_ACPI_VIDEO=m
+CONFIG_ACPI_FAN=m
+CONFIG_ACPI_DOCK=y
+CONFIG_ACPI_PROCESSOR=m
+CONFIG_ACPI_IPMI=m
+CONFIG_ACPI_HOTPLUG_CPU=y
+CONFIG_ACPI_PROCESSOR_AGGREGATOR=m
+CONFIG_ACPI_THERMAL=m
+CONFIG_ACPI_NUMA=y
+# CONFIG_ACPI_CUSTOM_DSDT is not set
+CONFIG_ACPI_BLACKLIST_YEAR=0
+# CONFIG_ACPI_DEBUG is not set
+CONFIG_ACPI_PCI_SLOT=m
+CONFIG_X86_PM_TIMER=y
+CONFIG_ACPI_CONTAINER=m
+CONFIG_ACPI_HOTPLUG_MEMORY=m
+CONFIG_ACPI_SBS=m
+CONFIG_ACPI_HED=m
+CONFIG_ACPI_CUSTOM_METHOD=m
+CONFIG_ACPI_APEI=y
+CONFIG_ACPI_APEI_GHES=m
+CONFIG_ACPI_APEI_PCIEAER=y
+CONFIG_ACPI_APEI_EINJ=m
+CONFIG_ACPI_APEI_ERST_DEBUG=m
+# CONFIG_SFI is not set
 
-326 regressions:
-  + ./include/generated/autoconf.h: warning: this is the location of the previous definition:  => 1874:1, 2155:1, 1163:1, 1517:1, 1482:1, 1865:1, 2004:1, 1585:1, 2048:1
-  + /tmp/ccsslTIa.s: Warning: source register same as write-back base:  => 104
-  + <stdin>: warning: #warning syscall sendmmsg not implemented:  => 1554:2
-  + modpost: WARNING: modpost: Found 16 section mismatch(es).:  => N/A
-  + modpost: WARNING: modpost: Found 17 section mismatch(es).:  => N/A
-  + modpost: WARNING: modpost: Found 3 section mismatch(es).:  => N/A
-  + modpost: WARNING: modpost: Found 8 section mismatch(es).:  => N/A
-  + src/arch/ia64/kernel/perfmon.c: warning: 'task' may be used uninitialized in this function:  => 4201
-  + src/arch/ia64/kernel/traps.c: warning: 'rv.arg1' is used uninitialized in this function:  => 399
-  + src/arch/ia64/kernel/traps.c: warning: 'rv.arg2' is used uninitialized in this function:  => 399
-  + src/arch/ia64/kernel/traps.c: warning: 'rv.arg3' is used uninitialized in this function:  => 399
-  + src/arch/m68k/include/asm/atarihw.h: warning: this is the location of the previous definition:  => 403:1, 402:1
-  + src/arch/mips/kernel/i8259.c: warning: (near initialization for 'i8259_sysdev_class.drivers'):  => 240
-  + src/arch/mips/kernel/i8259.c: warning: initialization from incompatible pointer type:  => 240, 241
-  + src/arch/mips/kernel/i8259.c: warning: missing braces around initializer:  => 240
-  + src/arch/parisc/include/asm/pdc.h: warning: this is the location of the previous definition:  => 680:1
-  + src/arch/s390/mm/pgtable.c: warning: 'page' may be used uninitialized in this function:  => 180
-  + src/arch/s390/mm/pgtable.c: warning: 'table' may be used uninitialized in this function:  => 181
-  + src/arch/sh/include/asm/ptrace_32.h: warning: this is the location of the previous definition:  => 25:1
-  + src/arch/x86/kernel/apic/io_apic.c: warning: 'reg_02' is used uninitialized in this function:  => 1489
-  + src/arch/x86/kernel/apic/io_apic.c: warning: 'reg_03' is used uninitialized in this function:  => 1490
-  + src/arch/x86/kernel/cpu/intel_cacheinfo.c: warning: 'this_leaf.size' may be used uninitialized in this function:  => 624
-  + src/arch/x86/kernel/cpu/perf_event.c: warning: 'x86_get_event_constraints' defined but not used:  => 1430
-  + src/arch/x86/platform/scx200/scx200_32.c: warning: 'base' may be used uninitialized in this function:  => 82
-  + src/drivers/block/paride/ppc6lnx.c: warning: statement with no effect:  => 522
-  + src/drivers/char/tpm/tpm_atmel.h: warning: return makes pointer from integer without a cast:  => 129
-  + src/drivers/gpio/wm831x-gpio.c: warning: 'powerdomain' may be used uninitialized in this function:  => 152
-  + src/drivers/gpu/drm/drm_pci.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast:  => 109, 84
-  + src/drivers/gpu/drm/drm_vm.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast:  => 308
-  + src/drivers/gpu/drm/nouveau/nv50_display.c: warning: 'mc' may be used uninitialized in this function:  => 627
-  + src/drivers/gpu/drm/nouveau/nv50_display.c: warning: 'or' may be used uninitialized in this function:  => 628, 751
-  + src/drivers/ide/ide-floppy.c: warning: 'pc' may be used uninitialized in this function:  => 234
-  + src/drivers/ide/ide-io-std.c: warning: statement with no effect:  => 200, 185
-  + src/drivers/input/keyboard/lm8323.c: warning: 'lm8323_resume' defined but not used:  => 827
-  + src/drivers/input/keyboard/lm8323.c: warning: 'lm8323_suspend' defined but not used:  => 807
-  + src/drivers/input/keyboard/max7359_keypad.c: warning: 'max7359_resume' defined but not used:  => 288
-  + src/drivers/input/keyboard/max7359_keypad.c: warning: 'max7359_suspend' defined but not used:  => 276
-  + src/drivers/input/keyboard/sh_keysc.c: warning: "CONFIG_PM_SLEEP" is not defined:  => 294:5
-  + src/drivers/input/misc/ad714x-i2c.c: warning: 'ad714x_i2c_resume' defined but not used:  => 23
-  + src/drivers/input/misc/ad714x-i2c.c: warning: 'ad714x_i2c_suspend' defined but not used:  => 18
-  + src/drivers/input/misc/ad714x-spi.c: warning: 'ad714x_spi_resume' defined but not used:  => 26
-  + src/drivers/input/misc/ad714x-spi.c: warning: 'ad714x_spi_suspend' defined but not used:  => 21
-  + src/drivers/input/misc/adxl34x-spi.c: warning: 'adxl34x_spi_resume' defined but not used:  => 109
-  + src/drivers/input/misc/adxl34x-spi.c: warning: 'adxl34x_spi_suspend' defined but not used:  => 99
-  + src/drivers/input/misc/twl4030-vibra.c: warning: 'twl4030_vibra_resume' defined but not used:  => 188
-  + src/drivers/input/misc/twl4030-vibra.c: warning: 'twl4030_vibra_suspend' defined but not used:  => 177
-  + src/drivers/input/mouse/synaptics_i2c.c: warning: 'synaptics_i2c_resume' defined but not used:  => 637
-  + src/drivers/input/mouse/synaptics_i2c.c: warning: 'synaptics_i2c_suspend' defined but not used:  => 624
-  + src/drivers/input/touchscreen/ad7879-i2c.c: warning: 'ad7879_i2c_resume' defined but not used:  => 31
-  + src/drivers/input/touchscreen/ad7879-i2c.c: warning: 'ad7879_i2c_suspend' defined but not used:  => 21
-  + src/drivers/input/touchscreen/eeti_ts.c: warning: 'eeti_ts_resume' defined but not used:  => 284
-  + src/drivers/input/touchscreen/eeti_ts.c: warning: 'eeti_ts_suspend' defined but not used:  => 265
-  + src/drivers/leds/leds-alix2.c: warning: 'divil_pci' defined but not used:  => 25
-  + src/drivers/leds/leds-bd2802.c: warning: 'bd2802_resume' defined but not used:  => 777
-  + src/drivers/leds/leds-bd2802.c: warning: 'bd2802_suspend' defined but not used:  => 767
-  + src/drivers/leds/leds-lp5521.c: warning: 'engine_state' may be used uninitialized in this function:  => 168
-  + src/drivers/leds/leds-lp5521.c: warning: 'mode' may be used uninitialized in this function:  => 194
-  + src/drivers/leds/leds-lp5523.c: warning: 'adc' may be used uninitialized in this function:  => 443
-  + src/drivers/leds/leds-lp5523.c: warning: 'status' may be used uninitialized in this function:  => 196
-  + src/drivers/leds/leds-lp5523.c: warning: 'vdd' may be used uninitialized in this function:  => 443
-  + src/drivers/md/raid5.c: warning: 'target' may be used uninitialized in this function:  => 810
-  + src/drivers/media/radio/radio-wl1273.c: warning: 'wl1273_fm_radio_remove' defined but not used:  => 1971
-  + src/drivers/media/radio/si470x/radio-si470x-i2c.c: warning: 'si470x_i2c_resume' defined but not used:  => 511
-  + src/drivers/media/radio/si470x/radio-si470x-i2c.c: warning: 'si470x_i2c_suspend' defined but not used:  => 494
-  + src/drivers/media/video/m5mols/m5mols_capture.c: warning: 'timeout' may be used uninitialized in this function:  => 126
-  + src/drivers/media/video/uvc/uvc_queue.c: warning: 'buffer' may be used uninitialized in this function:  => 502
-  + src/drivers/media/video/uvc/uvc_queue.c: warning: unused variable 'page':  => 411
-  + src/drivers/media/video/vino.c: warning: 'data_norm' may be used uninitialized in this function:  => 2566, 2656
-  + src/drivers/memstick/core/mspro_block.c: warning: control reaches end of non-void function:  => 664
-  + src/drivers/mfd/ab8500-core.c: warning: 'ab8500_debug_resources' defined but not used:  => 537
-  + src/drivers/mfd/adp5520.c: warning: 'adp5520_resume' defined but not used:  => 334
-  + src/drivers/mfd/adp5520.c: warning: 'adp5520_suspend' defined but not used:  => 325
-  + src/drivers/mfd/tc3589x.c: warning: 'tc3589x_resume' defined but not used:  => 375
-  + src/drivers/mfd/tc3589x.c: warning: 'tc3589x_suspend' defined but not used:  => 361
-  + src/drivers/mfd/wl1273-core.c: warning: 'wl1273_core_remove' defined but not used:  => 172
-  + src/drivers/misc/apds990x.c: warning: 'apds990x_resume' defined but not used:  => 1218
-  + src/drivers/misc/apds990x.c: warning: 'apds990x_suspend' defined but not used:  => 1209
-  + src/drivers/misc/bh1770glc.c: warning: 'bh1770_resume' defined but not used:  => 1325
-  + src/drivers/misc/bh1770glc.c: warning: 'bh1770_suspend' defined but not used:  => 1315
-  + src/drivers/misc/bh1780gli.c: warning: 'bh1780_resume' defined but not used:  => 222
-  + src/drivers/misc/bh1780gli.c: warning: 'bh1780_suspend' defined but not used:  => 200
-  + src/drivers/misc/ics932s401.c: warning: 'reg' may be used uninitialized in this function:  => 392
-  + src/drivers/misc/ics932s401.c: warning: 'x' may be used uninitialized in this function:  => 375
-  + src/drivers/mmc/card/block.c: warning: 'err' may be used uninitialized in this function:  => 286
-  + src/drivers/mmc/host/tmio_mmc_dma.c: warning: 'cookie' may be used uninitialized in this function:  => 116, 39
-  + src/drivers/mtd/chips/cfi_cmdset_0020.c: warning: the frame size of 2176 bytes is larger than 2048 bytes:  => 659
-  + src/drivers/mtd/ftl.c: warning: passing argument 4 of 'part->mbd.mtd->read' from incompatible pointer type:  => 527, 294, 228, 490
-  + src/drivers/mtd/ftl.c: warning: passing argument 4 of 'part->mbd.mtd->write' from incompatible pointer type:  => 564, 535, 426, 507, 442, 555
-  + src/drivers/mtd/maps/latch-addr-flash.c: warning: 'latch_addr_flash_remove' defined but not used: 102 => 103, 102
-  + src/drivers/mtd/maps/physmap.c: warning: assignment from incompatible pointer type:  => 255
-  + src/drivers/mtd/maps/solutionengine.c: warning: format '%08lx' expects type 'long unsigned int', but argument 2 has type 'resource_size_t':  => 86
-  + src/drivers/mtd/maps/solutionengine.c: warning: format '%08lx' expects type 'long unsigned int', but argument 3 has type 'resource_size_t':  => 86
-  + src/drivers/net/ax88796.c: warning: unused variable 'ei_local':  => 796
-  + src/drivers/net/can/sja1000/sja1000.h: warning: "REG_SR" redefined:  => 60:1
-  + src/drivers/net/cnic.c: warning: large integer implicitly truncated to unsigned type:  => 1380, 1368, 1395, 1410
-  + src/drivers/net/hamradio/baycom_ser_fdx.c: warning: statement with no effect:  => 395, 307, 311, 396
-  + src/drivers/net/hamradio/baycom_ser_fdx.c: warning: suggest explicit braces to avoid ambiguous 'else':  => 327
-  + src/drivers/net/hamradio/baycom_ser_hdx.c: warning: statement with no effect:  => 413, 392, 455, 454, 396
-  + src/drivers/net/hamradio/yam.c: warning: statement with no effect:  => 315, 527, 528, 492, 909, 493, 316
-  + src/drivers/net/pcmcia/smc91c92_cs.c: warning: unused variable 'smc':  => 960
-  + src/drivers/net/phy/dp83640_reg.h: warning: "PAGE0" redefined:  => 7:1
-  + src/drivers/net/sh_eth.c: warning: unused variable 'mdp':  => 1903
-  + src/drivers/net/smc911x.c: warning: unused variable 'lp':  => 2127
-  + src/drivers/net/smc911x.h: warning: control reaches end of non-void function:  => 135
-  + src/drivers/net/tlan.c: warning: label 'err_out' defined but not used:  => 616
-  + src/drivers/net/wimax/i2400m/control.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t':  => 237, 132
-  + src/drivers/net/wimax/i2400m/control.c: warning: format '%zu' expects type 'size_t', but argument 5 has type 'ssize_t':  => 237
-  + src/drivers/net/wimax/i2400m/usb-fw.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t':  => 210
-  + src/drivers/net/wimax/i2400m/usb-fw.c: warning: format '%zd' expects type 'signed size_t', but argument 8 has type 'ssize_t':  => 222
-  + src/drivers/net/wimax/i2400m/usb-fw.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t':  => 215
-  + src/drivers/net/wireless/ath/ath9k/ahb.c: warning: unused variable 'mem':  => 162
-  + src/drivers/net/wireless/ath/carl9170/fwcmd.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[]':  => 121
-  + src/drivers/net/wireless/ath/carl9170/phy.c: warning: 'ctph' may be used uninitialized in this function:  => 1434
-  + src/drivers/net/wireless/ath/carl9170/phy.c: warning: 'ctpl' may be used uninitialized in this function:  => 1433
-  + src/drivers/net/wireless/ath/carl9170/phy.c: warning: 'ctpres' may be used uninitialized in this function:  => 1435
-  + src/drivers/net/wireless/ath/carl9170/phy.c: warning: 'ntargets' may be used uninitialized in this function:  => 1436
-  + src/drivers/net/wireless/ath/carl9170/phy.c: warning: control reaches end of non-void function:  => 1593
-  + src/drivers/net/wireless/ath/carl9170/rx.c: warning: 'head' may be used uninitialized in this function:  => 626
-  + src/drivers/net/wireless/iwlwifi/iwl-tx.c: warning: passing argument 2 of 'pci_map_single' discards qualifiers from pointer target type:  => 702
-  + src/drivers/net/wireless/mwifiex/cmdevt.c: warning: format '%lu' expects type 'long unsigned int', but argument 5 has type '__kernel_suseconds_t':  => 830, 742, 169, 396
-  + src/drivers/net/wireless/mwifiex/sta_event.c: warning: comparison of distinct pointer types lacks a cast:  => 382
-  + src/drivers/net/wireless/p54/lmac.h: warning: 'packed' attribute ignored for field of type 'struct <anonymous>[3]':  => 377
-  + src/drivers/net/wireless/rtlwifi/core.c: warning: passing argument 3 of 'get_sta' discards qualifiers from pointer target type:  => 688, 653
-  + src/drivers/net/wireless/rtlwifi/rtl8192c/../rtl8192ce/reg.h: warning: "GPIO_IN" redefined:  => 369:1
-  + src/drivers/net/wireless/rtlwifi/rtl8192c/../rtl8192ce/reg.h: warning: "GPIO_OUT" redefined:  => 370:1
-  + src/drivers/net/wireless/rtlwifi/rtl8192se/reg.h: warning: "GPIO_IN" redefined:  => 252:1
-  + src/drivers/net/wireless/rtlwifi/rtl8192se/reg.h: warning: "GPIO_OUT" redefined:  => 253:1
-  + src/drivers/nfc/pn544.c: warning: 'pn544_resume' defined but not used:  => 677
-  + src/drivers/nfc/pn544.c: warning: 'pn544_suspend' defined but not used:  => 641
-  + src/drivers/parport/parport_pc.c: warning: passing argument 2 of 'dma_map_single_attrs' discards qualifiers from pointer target type:  => 635
-  + src/drivers/parport/parport_pc.c: warning: statement with no effect:  => 1890, 413, 359, 334, 357, 332
-  + src/drivers/parport/parport_pc.c: warning: suggest explicit braces to avoid ambiguous 'else':  => 385
-  + src/drivers/regulator/lp3972.c: warning: 'tmp' may be used uninitialized in this function:  => 227
-  + src/drivers/scsi/advansys.c: warning: 'ret' may be used uninitialized in this function:  => 11893
-  + src/drivers/scsi/advansys.c: warning: 'share_irq' may be used uninitialized in this function:  => 11893
-  + src/drivers/scsi/aic7xxx_old.c: warning: 'aic7xxx_chip_reset' defined but not used: 8341 => 8342, 8341
-  + src/drivers/scsi/aic7xxx_old.c: warning: 'aic7xxx_configure_bugs' defined but not used: 8895 => 8895, 8896
-  + src/drivers/scsi/aic7xxx_old.c: warning: 'aic7xxx_load_seeprom' defined but not used: 8496 => 8497, 8496
-  + src/drivers/scsi/bnx2i/bnx2i_iscsi.c: warning: large integer implicitly truncated to unsigned type:  => 550
-  + src/drivers/scsi/lpfc/lpfc_bsg.c: warning: 'mbxstatus' may be used uninitialized in this function:  => 1744, 1570
-  + src/drivers/scsi/lpfc/lpfc_debugfs.c: warning: 'reg_val' may be used uninitialized in this function:  => 2259
-  + src/drivers/scsi/scsi_debug.c: warning: 'csum' may be used uninitialized in this function:  => 1723
-  + src/drivers/ssb/driver_mipscore.c: warning: unused variable 'irq_name':  => 158
-  + src/drivers/staging/ath6kl/os/linux/ar6000_drv.c: warning: "CONFIG_AR600x_BT_RESET_PIN" redefined:  => 1331:1
-  + src/drivers/staging/ath6kl/os/linux/cfg80211.c: warning: comparison is always false due to limited range of data type:  => 365, 915, 1083, 1003, 1042
-  + src/drivers/staging/bcm/Bcmchar.c: warning: format '%zd' expects type 'signed size_t', but argument 2 has type 'ssize_t':  => 146
-  + src/drivers/staging/bcm/Bcmchar.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 146
-  + src/drivers/staging/bcm/CmHost.c: warning: cast to pointer from integer of different size:  => 1716, 1752, 1763
-  + src/drivers/staging/brcm80211/brcmfmac/bcmsdh_sdmmc.c: warning: cast from pointer to integer of different size:  => 966, 1061
-  + src/drivers/staging/brcm80211/brcmfmac/dhd_sdio.c: warning: cast from pointer to integer of different size:  => 6014
-  + src/drivers/staging/brcm80211/brcmfmac/dhd_sdio.c: warning: cast to pointer from integer of different size:  => 5282
-  + src/drivers/staging/brcm80211/brcmfmac/wl_cfg80211.c: warning: initialization from incompatible pointer type:  => 2306
-  + src/drivers/staging/brcm80211/brcmsmac/wl_mac80211.c: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result:  => 1301, 1290
-  + src/drivers/staging/cxt1e1/functions.c: warning: cast from pointer to integer of different size:  => 275
-  + src/drivers/staging/dt3155v4l/dt3155v4l.c: warning: assignment makes pointer from integer without a cast:  => 1027, 1020, 434, 1077
-  + src/drivers/staging/easycap/easycap_main.c: warning: comparison of distinct pointer types lacks a cast:  => 1651, 1644
-  + src/drivers/staging/ft1000/ft1000-usb/ft1000_debug.c: warning: 'msgsz' may be used uninitialized in this function:  => 523
-  + src/drivers/staging/gma500/psb_bl.c: warning: 'device_backlight_init' defined but not used:  => 127
-  + src/drivers/staging/gma500/psb_drv.c: warning: cast from pointer to integer of different size:  => 324, 323, 314
-  + src/drivers/staging/gma500/psb_drv.c: warning: cast to pointer from integer of different size:  => 943
-  + src/drivers/staging/gma500/psb_drv.c: warning: unused variable 'bd':  => 787, 772
-  + src/drivers/staging/gma500/psb_gtt.c: warning: 'ret' may be used uninitialized in this function:  => 218
-  + src/drivers/staging/gma500/psb_gtt.c: warning: format '%s' expects type 'char *', but argument 5 has type 'void *':  => 493
-  + src/drivers/staging/gma500/psb_gtt.c: warning: too few arguments for format:  => 493
-  + src/drivers/staging/gma500/psb_gtt.c: warning: unused variable 'dev_priv':  => 81
-  + src/drivers/staging/iio/accel/lis3l02dq_core.c: warning: initialization from incompatible pointer type:  => 661
-  + src/drivers/staging/iio/accel/sca3000_ring.c: warning: 'sca3000_show_ring_bpse' defined but not used:  => 239, 236
-  + src/drivers/staging/iio/accel/sca3000_ring.c: warning: 'sca3000_store_ring_bpse' defined but not used:  => 266, 270
-  + src/drivers/staging/iio/adc/ad7150.c: warning: 'iio_dev_attr_available_conversion_modes' defined but not used:  => 180
-  + src/drivers/staging/iio/adc/ad7150.c: warning: 'iio_dev_attr_conversion_mode' defined but not used:  => 221, 219
-  + src/drivers/staging/iio/adc/ad7291.c: warning: 'size' may be used uninitialized in this function:  => 366
-  + src/drivers/staging/iio/adc/max1363_core.c: warning: 'st' may be used uninitialized in this function:  => 1253
-  + src/drivers/staging/iio/industrialio-core.c: warning: 'mask' may be used uninitialized in this function:  => 891
-  + src/drivers/staging/iio/light/isl29018.c: warning: 'new_adc_bit' may be used uninitialized in this function:  => 327
-  + src/drivers/staging/iio/light/isl29018.c: warning: 'new_range' may be used uninitialized in this function:  => 285
-  + src/drivers/staging/iio/light/tsl2563.c: warning: initialization from incompatible pointer type:  => 701
-  + src/drivers/staging/lirc/lirc_serial.c: warning: format '%lx' expects type 'long unsigned int', but argument 6 has type '__kernel_suseconds_t':  => 720, 731, 705
-  + src/drivers/staging/lirc/lirc_serial.c: warning: format '%lx' expects type 'long unsigned int', but argument 7 has type '__kernel_suseconds_t':  => 720, 731, 705
-  + src/drivers/staging/mei/interrupt.c: warning: 'buffer' may be used uninitialized in this function:  => 198
-  + src/drivers/staging/rtl8187se/ieee80211/ieee80211_softmac.c: warning: value computed is not used:  => 824
-  + src/drivers/staging/rtl8192e/ieee80211/ieee80211_module.c: warning: comparison of distinct pointer types lacks a cast:  => 254
-  + src/drivers/staging/rtl8192e/ieee80211/ieee80211_softmac.c: warning: value computed is not used:  => 781
-  + src/drivers/staging/rtl8192u/ieee80211/ieee80211_softmac.c: warning: value computed is not used:  => 780
-  + src/drivers/staging/rtl8712/rtl8712_recv.c: warning: 'rx_pwr_all' may be used uninitialized in this function:  => 750
-  + src/drivers/staging/rtl8712/rtl871x_ioctl_linux.c: warning: 'addr' may be used uninitialized in this function:  => 1775, 1758
-  + src/drivers/staging/sm7xx/smtcfb.c: warning: 'sm712vga_setup' defined but not used:  => 830, 829
-  + src/drivers/staging/solo6x10/core.c: warning: assignment makes pointer from integer without a cast:  => 140
-  + src/drivers/staging/solo6x10/enc.c: warning: assignment makes pointer from integer without a cast:  => 132, 101
-  + src/drivers/staging/solo6x10/g723.c: warning: assignment makes pointer from integer without a cast:  => 139
-  + src/drivers/staging/solo6x10/p2m.c: warning: initialization makes pointer from integer without a cast:  => 52
-  + src/drivers/staging/speakup/serialio.c: warning: statement with no effect:  => 116, 114, 115, 113
-  + src/drivers/staging/speakup/synth.c: warning: suggest explicit braces to avoid ambiguous 'else':  => 142
-  + src/drivers/staging/usbip/stub_tx.c: warning: format '%lu' expects type 'long unsigned int', but argument 4 has type 'size_t':  => 237
-  + src/drivers/staging/usbip/usbip_common.c: warning: 'ret' is used uninitialized in this function:  => 796
-  + src/drivers/staging/usbip/usbip_common.c: warning: 'ret' may be used uninitialized in this function:  => 796
-  + src/drivers/staging/vme/bridges/vme_ca91cx42.c: warning: cast from pointer to integer of different size:  => 926, 920, 980, 872, 866
-  + src/drivers/staging/wlags49_h2/wl_main.c: warning: comparison is always true due to limited range of data type:  => 544
-  + src/drivers/staging/wlags49_h25/../wlags49_h2/wl_main.c: warning: comparison is always true due to limited range of data type:  => 544
-  + src/drivers/staging/wlan-ng/prism2fw.c: warning: the frame size of 4224 bytes is larger than 2048 bytes:  => 1115
-  + src/drivers/staging/wlan-ng/prism2fw.c: warning: the frame size of 4256 bytes is larger than 2048 bytes:  => 1115
-  + src/drivers/staging/wlan-ng/prism2fw.c: warning: the frame size of 4272 bytes is larger than 2048 bytes:  => 1115
-  + src/drivers/staging/xgifb/XGI_main_26.c: warning: unused variable 'sr_data':  => 1213
-  + src/drivers/target/tcm_fc/tfc_cmd.c: warning: 'data_dir' may be used uninitialized in this function:  => 567
-  + src/drivers/target/tcm_fc/tfc_conf.c: warning: 'ft_init' defined but not used:  => 641, 642
-  + src/drivers/target/tcm_fc/tfc_io.c: warning: comparison of distinct pointer types lacks a cast:  => 160
-  + src/drivers/tty/cyclades.c: warning: 'cyz_interrupt' defined but not used: 1200 => 1198, 1199
-  + src/drivers/tty/rocket.c: warning: 'rmSpeakerReset' defined but not used: 3166 => 3119, 3120
-  + src/drivers/tty/rocket.c: warning: 'sPCIInitController' defined but not used: 2625 => 2578, 2583
-  + src/drivers/tty/serial/8250.c: warning: statement with no effect:  => 2270
-  + src/drivers/usb/gadget/f_fs.c: warning: 'rem_type1' may be used uninitialized in this function:  => 1976
-  + src/drivers/usb/gadget/f_hid.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 244
-  + src/drivers/usb/gadget/f_ncm.c: warning: 'tmp' may be used uninitialized in this function:  => 434
-  + src/drivers/usb/gadget/inode.c: warning: format '%Zd' expects type 'signed size_t', but argument 4 has type 'ssize_t':  => 1933
-  + src/drivers/usb/host/isp1362.h: warning: statement with no effect:  => 729
-  + src/drivers/usb/host/oxu210hp-hcd.c: warning: unused variable 'base':  => 3901
-  + src/drivers/usb/otg/twl6030-usb.c: warning: 'twl6030_set_phy_clk' defined but not used: 135 => 137, 138
-  + src/drivers/usb/wusbcore/devconnect.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 806
-  + src/drivers/usb/wusbcore/devconnect.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t':  => 826, 820
-  + src/drivers/usb/wusbcore/wa-rpipe.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t':  => 129, 91
-  + src/drivers/usb/wusbcore/wa-xfer.c: warning: format '%zu' expects type 'size_t', but argument 6 has type 'ssize_t':  => 251, 267
-  + src/drivers/usb/wusbcore/wa-xfer.c: warning: format '%zu' expects type 'size_t', but argument 7 has type 'ssize_t':  => 260
-  + src/drivers/uwb/i1480/dfu/dfu.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t':  => 122
-  + src/drivers/uwb/i1480/dfu/dfu.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t':  => 141
-  + src/drivers/uwb/i1480/dfu/mac.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 180
-  + src/drivers/uwb/i1480/dfu/mac.c: warning: format '%zd' expects type 'signed size_t', but argument 7 has type 'ssize_t':  => 243, 234
-  + src/drivers/uwb/i1480/dfu/mac.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t':  => 488
-  + src/drivers/uwb/i1480/dfu/usb.c: warning: format '%zd' expects type 'signed size_t', but argument 4 has type 'ssize_t':  => 174
-  + src/drivers/uwb/i1480/dfu/usb.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t':  => 181
-  + src/drivers/uwb/ie.c: warning: format '%zu' expects type 'size_t', but argument 3 has type 'ssize_t':  => 134, 139
-  + src/drivers/uwb/neh.c: warning: format '%zd' expects type 'signed size_t', but argument 6 has type 'ssize_t':  => 516
-  + src/drivers/uwb/neh.c: warning: format '%zu' expects type 'size_t', but argument 3 has type 'ssize_t':  => 386
-  + src/drivers/uwb/reset.c: warning: format '%zu' expects type 'size_t', but argument 4 has type 'ssize_t':  => 239
-  + src/drivers/vhost/vhost.c: warning: unused variable 'a':  => 460
-  + src/drivers/vhost/vhost.c: warning: unused variable 's':  => 502
-  + src/drivers/video/via/viafbdev.c: warning: unused variable 'r':  => 2019
-  + src/drivers/virtio/virtio_balloon.c: warning: 'events[11]' is used uninitialized in this function:  => 185
-  + src/drivers/virtio/virtio_balloon.c: warning: 'events[12]' is used uninitialized in this function:  => 184
-  + src/drivers/virtio/virtio_balloon.c: warning: 'events[2]' is used uninitialized in this function:  => 180
-  + src/drivers/virtio/virtio_balloon.c: warning: 'events[3]' is used uninitialized in this function:  => 182
-  + src/drivers/virtio/virtio_ring.c: warning: cast to pointer from integer of different size:  => 278
-  + src/fs/btrfs/delayed-inode.c: warning: 'root' may be used uninitialized in this function:  => 439
-  + src/fs/btrfs/volumes.c: warning: 'max_chunk_size' may be used uninitialized in this function:  => 2310
-  + src/fs/btrfs/volumes.c: warning: 'max_stripe_size' may be used uninitialized in this function:  => 2309
-  + src/fs/cifs/connect.c: warning: 'pSesInfo' may be used uninitialized in this function:  => 2993
-  + src/fs/cifs/connect.c: warning: 'tcon' may be used uninitialized in this function:  => 2994
-  + src/fs/cifs/connect.c: warning: 'xid' may be used uninitialized in this function:  => 2992
-  + src/fs/read_write.c: warning: unused variable 'buf':  => 625
-  + src/include/linux/jhash.h: warning: array subscript is above array bounds:  => 90, 95, 97, 94, 91, 92, 93, 96
-  + src/kernel/sched.c: warning: initialization from incompatible pointer type:  => 7206
-  + src/kernel/trace/ring_buffer.c: warning: unused variable 'local_clock_stable':  => 2175
-  + src/kernel/trace/trace_printk.c: warning: 'fmt' may be used uninitialized in this function:  => 52
-  + src/net/mac80211/led.c: warning: type defaults to 'int' in declaration of '__mptr':  => 213, 277
-  + src/net/mac80211/util.c: warning: label 'wake_up' defined but not used:  => 1279
-  + src/net/sunrpc/auth_gss/auth_gss.c: warning: format '%Zd' expects type 'signed size_t', but argument 2 has type 'ssize_t':  => 708
-  + src/net/sunrpc/auth_gss/auth_gss.c: warning: format '%zd' expects type 'signed size_t', but argument 3 has type 'ssize_t':  => 690
-  + src/sound/isa/sb/sb16.c: warning: 'err' may be used uninitialized in this function:  => 526
-  + src/sound/oss/dmabuf.c: warning: passing argument 1 of 'virt_to_phys' makes pointer from integer without a cast:  => 139
-  + src/sound/oss/pss.c: warning: 'check_region' is deprecated (declared at /scratch/kisskb/src/include/linux/ioport.h:172):  => 676
-  + src/sound/pci/ctxfi/ctvmem.c: warning: 'entry' may be used uninitialized in this function:  => 34, 79
-  + src/sound/soc/codecs/wm8915.c: warning: 'i' may be used uninitialized in this function:  => 703
-  + src/sound/soc/soc-cache.c: warning: 'ret' may be used uninitialized in this function:  => 299
-  + warning: (BATTERY_DS2780) selects W1 which has unmet direct dependencies (HAS_IOMEM):  => N/A
-  + warning: (CAVIUM_OCTEON_REFERENCE_BOARD && SOC_AR71XX && SOC_AR724X && BCM63XX_CPU_6338) selects USB_ARCH_HAS_OHCI which has unmet direct dependencies (USB_SUPPORT):  => N/A
-  + warning: (CAVIUM_OCTEON_REFERENCE_BOARD && SOC_AR71XX && SOC_AR724X && SOC_AR913X) selects USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT):  => N/A
-  + warning: (LOCKDEP && FAULT_INJECTION_STACKTRACE_FILTER && LATENCYTOP && DWARF_UNWINDER && FUNCTION_TRACER && KMEMCHECK) selects FRAME_POINTER which has unmet direct dependencies (DEBUG_KERNEL && (CRIS || M68K || FRV || UML || AVR32 || SUPERH || BLACKFIN || MN10300) || ARCH_WANT_FRAME_POINTERS):  => N/A
-  + warning: (MTD_DOC2000 && MTD_DOC2001 && MTD_DOC2001PLUS) selects MTD_NAND_IDS which has unmet direct dependencies (MTD && MTD_NAND):  => N/A
-  + warning: (RADIO_WL128X) selects TI_ST which has unmet direct dependencies (MISC_DEVICES && NET && GPIOLIB):  => N/A
-  + warning: 3 bad relocations:  => N/A
-  + warning: You need at binutils >= 2.19 to build a CONFIG_RELCOATABLE kernel:  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x5bccc): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x5bce8): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x5bd04): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x5d834): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x5d850): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
-  + warning: arch/powerpc/kernel/built-in.o(.text+0x5d86c): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
-  + warning: arch/powerpc/mm/built-in.o(.text+0xb3a4): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region():  => N/A
-  + warning: arch/powerpc/mm/built-in.o(.text+0xb488): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region():  => N/A
-  + warning: arch/powerpc/sysdev/built-in.o(.text+0x101cc): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
-  + warning: arch/powerpc/sysdev/built-in.o(.text+0x1027c): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
-  + warning: arch/powerpc/sysdev/built-in.o(.text+0x10c7c): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: arch/powerpc/sysdev/built-in.o(.text+0xe734): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
-  + warning: arch/powerpc/sysdev/built-in.o(.text+0xe7e4): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
-  + warning: arch/powerpc/sysdev/built-in.o(.text+0xf1e4): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: arch/powerpc/sysdev/xics/built-in.o(.text+0x16d0): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
-  + warning: arch/powerpc/sysdev/xics/built-in.o(.text+0x1780): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
-  + warning: arch/powerpc/sysdev/xics/built-in.o(.text+0x2180): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: drivers/built-in.o(.text+0x278d804): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware():  => N/A
-  + warning: drivers/built-in.o(.text+0x653638): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
-  + warning: drivers/gpu/built-in.o(.text+0x1388a8): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
-  + warning: drivers/gpu/drm/built-in.o(.text+0x1388a8): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
-  + warning: drivers/gpu/drm/radeon/built-in.o(.text+0xd480c): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
-  + warning: drivers/gpu/drm/radeon/radeon.o(.text+0x49748): Section mismatch in reference from the function radeon_get_clock_info() to the function .devinit.text:radeon_read_clocks_OF():  => N/A
-  + warning: drivers/gpu/drm/radeon/radeon.o(.text+0xd480c): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
-  + warning: drivers/gpu/drm/radeon/radeon.o(.text+0xd4810): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF():  => N/A
-  + warning: drivers/input/built-in.o(.text+0x27a64): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware():  => N/A
-  + warning: drivers/input/keyboard/built-in.o(.text+0x10860): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware():  => N/A
-  + warning: drivers/input/keyboard/built-in.o(.text+0xc3ec): Section mismatch in reference from the function tc3589x_keypad_open() to the function .devinit.text:adp5520_keys_probe():  => N/A
-  + warning: drivers/mfd/built-in.o(.data+0x61c0): Section mismatch in reference from the variable ab3550_driver to the function .init.text:pm860x_i2c_init():  => N/A
-  + warning: drivers/net/irda/smsc-ircc2.o(.devinit.text+0x1a7): Section mismatch in reference from the function smsc_ircc_pnp_probe() to the function .init.text:smsc_ircc_open():  => N/A
-  + warning: drivers/sbus/char/bbc.o(.devinit.text+0x8): Section mismatch in reference from the function bbc_i2c_probe() to the function .init.text:T.356():  => N/A
-  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2efe): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
-  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f08): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
-  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f0f): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
-  + warning: drivers/staging/comedi/drivers/s626.o(.text+0x2f2f): Section mismatch in reference from the function s626_attach() to the variable .devinit.rodata:s626_pci_table:  => N/A
-  + warning: drivers/usb/gadget/g_multi.o(.text+0x7d38): Section mismatch in reference from the function cdc_config_register() to the function .init.text:cdc_do_config():  => N/A
-  + warning: drivers/usb/gadget/g_multi.o(.text+0x7da0): Section mismatch in reference from the function rndis_config_register() to the function .init.text:rndis_do_config():  => N/A
-  + warning: vmlinux.o(.devinit.text+0x9269): Section mismatch in reference from the function cnb20le_res() to the function .init.text:acpi_os_get_root_pointer():  => N/A
-  + warning: vmlinux.o(.text+0x3545c): Section mismatch in reference from the function .early_setup_secondary() to the function .cpuinit.text:.early_init_mmu_secondary():  => N/A
-  + warning: vmlinux.o(.text+0x44e150): Section mismatch in reference from the function xen_register_pirq() to the variable .init.data:acpi_sci_override_gsi:  => N/A
-  + warning: vmlinux.o(.text+0x5d600): Section mismatch in reference from the function .wake_offline_cpus() to the function .cpuinit.text:.cpu_up():  => N/A
-  + warning: vmlinux.o(.text+0x671ec): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
-  + warning: vmlinux.o(.text+0x67208): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
-  + warning: vmlinux.o(.text+0x67224): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier():  => N/A
-  + warning: vmlinux.o(.text+0x79a3c): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region():  => N/A
-  + warning: vmlinux.o(.text+0x79aec): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.reserve_bootmem_node():  => N/A
-  + warning: vmlinux.o(.text+0x79b20): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region():  => N/A
-  + warning: vmlinux.o(.text+0x9082): Section mismatch in reference from the variable generic_secondary_common_init to the variable .init.data:boot_cpu_count:  => N/A
-  + warning: vmlinux.o(.text+0x90a70): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
-  + warning: vmlinux.o(.text+0x90b20): Section mismatch in reference from the function .icp_native_init() to the function .init.text:.icp_native_init_one_node():  => N/A
-  + warning: vmlinux.o(.text+0x91520): Section mismatch in reference from the function .ics_rtas_init() to the function .init.text:.xics_register_ics():  => N/A
-  + warning: vmlinux.o(.text+0xab690): Section mismatch in reference from the function .pci_dn_reconfig_notifier() to the function .devinit.text:.update_dn_pci_info():  => N/A
-  + warning: vmlinux.o(.text+0xb1534): Section mismatch in reference from the function .dlpar_online_cpu() to the function .cpuinit.text:.cpu_up():  => N/A
-  + warning: vmlinux.o(.text+0xb9f38): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.of_rescan_bus():  => N/A
-  + warning: vmlinux.o(.text+0xb9fc8): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pcibios_setup_bus_devices():  => N/A
-  + warning: vmlinux.o(.text+0xba020): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pci_scan_bridge():  => N/A
-  + warning: vmlinux.o(.text+0xbf8e6): Section mismatch in reference from the variable system_reset_iSeries to the variable .init.data:boot_paca:  => N/A
+#
+# CPU Frequency scaling
+#
+CONFIG_CPU_FREQ=y
+CONFIG_CPU_FREQ_TABLE=m
+CONFIG_CPU_FREQ_STAT=m
+CONFIG_CPU_FREQ_STAT_DETAILS=y
+CONFIG_CPU_FREQ_DEFAULT_GOV_PERFORMANCE=y
+# CONFIG_CPU_FREQ_DEFAULT_GOV_POWERSAVE is not set
+# CONFIG_CPU_FREQ_DEFAULT_GOV_USERSPACE is not set
+# CONFIG_CPU_FREQ_DEFAULT_GOV_ONDEMAND is not set
+# CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE is not set
+CONFIG_CPU_FREQ_GOV_PERFORMANCE=y
+CONFIG_CPU_FREQ_GOV_POWERSAVE=m
+CONFIG_CPU_FREQ_GOV_USERSPACE=m
+CONFIG_CPU_FREQ_GOV_ONDEMAND=m
+CONFIG_CPU_FREQ_GOV_CONSERVATIVE=m
 
-387 improvements:
-  - .config: warning: override: HIGHMEM4G changes choice state: 337 => 
-  - .config: warning: override: SLOB changes choice state: 152 => 
-  - /tmp/cckVNE3Z.s: Warning: source register same as write-back base: 104 => 
-  - <stdin>: warning: #warning syscall sync_file_range not implemented: 1430:2 => 
-  - <stdin>: warning: #warning syscall umount2 not implemented: 394:2 => 
-  - arch/mips/configs/malta_defconfig: warning: symbol value 'm' invalid for LEDS_CLASS: 377 => 
-  - arch/powerpc/configs/pmac32_defconfig: warning: symbol value 'm' invalid for BT_L2CAP: 115 => 
-  - arch/powerpc/configs/pmac32_defconfig: warning: symbol value 'm' invalid for BT_SCO: 116 => 
-  - arch/powerpc/configs/ppc6xx_defconfig: warning: symbol value 'm' invalid for BT_L2CAP: 354 => 
-  - arch/powerpc/configs/ppc6xx_defconfig: warning: symbol value 'm' invalid for BT_SCO: 355 => 
-  - arch/powerpc/configs/ps3_defconfig: warning: symbol value 'm' invalid for BT_L2CAP: 55 => 
-  - arch/powerpc/configs/ps3_defconfig: warning: symbol value 'm' invalid for BT_SCO: 56 => 
-  - modpost: WARNING: modpost: Found 12 section mismatch(es).: N/A => 
-  - modpost: WARNING: modpost: Found 13 section mismatch(es).: N/A => 
-  - modpost: WARNING: modpost: Found 14 section mismatch(es).: N/A => 
-  - modpost: WARNING: modpost: Found 15 section mismatch(es).: N/A => 
-  - src/arch/parisc/kernel/cache.c: warning: format '%s' expects type 'char *', but argument 4 has type 'void * const': 310 => 
-  - src/arch/parisc/kernel/cache.c: warning: pointer type mismatch in conditional expression: 310 => 
-  - src/arch/powerpc/sysdev/mv64x60_dev.c: warning: assignment makes pointer from integer without a cast: 253 => 
-  - src/arch/s390/mm/extmem.c: warning: 'end_addr' may be used uninitialized in this function: 411, 573 => 
-  - src/arch/s390/mm/extmem.c: warning: 'start_addr' may be used uninitialized in this function: 411, 573 => 
-  - src/arch/xtensa/include/asm/regs.h: warning: this is the location of the previous definition: 59:1 => 
-  - src/arch/xtensa/kernel/entry.S: Warning: value 0xffffffff30000000 truncated to 0x30000000: 1545 => 
-  - src/arch/xtensa/kernel/irq.c: warning: passing argument 1 of 'xtensa_irq_mask' makes pointer from integer without a cast: 92 => 
-  - src/arch/xtensa/kernel/irq.c: warning: passing argument 1 of 'xtensa_irq_unmask' makes pointer from integer without a cast: 87 => 
-  - src/arch/xtensa/kernel/process.c: warning: unused variable 'ti': 180 => 
-  - src/arch/xtensa/kernel/time.c: warning: initialization from incompatible pointer type: 42 => 
-  - src/arch/xtensa/mm/tlb.c: warning: comparison of distinct pointer types lacks a cast: 71, 68 => 
-  - src/block/elevator.c: warning: 'elevator_get' uses dynamic stack allocation: 175 => 
-  - src/drivers/base/memory.c: warning: 'ret' may be used uninitialized in this function: 404 => 
-  - src/drivers/base/power/sysfs.c: warning: 'dev_attr_wakeup' defined but not used: 249 => 
-  - src/drivers/block/xd.c: warning: 'address' may be used uninitialized in this function: 159 => 
-  - src/drivers/block/xd.c: warning: 'controller' may be used uninitialized in this function: 158 => 
-  - src/drivers/dma/ioat/dma_v2.c: warning: unused variable 'chanerr': 556 => 
-  - src/drivers/dma/pch_dma.c: warning: 'i' may be used uninitialized in this function: 406 => 
-  - src/drivers/gpio/bt8xxgpio.c: warning: ignoring return value of 'gpiochip_remove', declared with attribute warn_unused_result: 247 => 
-  - src/drivers/gpio/ml_ioh_gpio.c: warning: 'ioh_gpio_restore_reg_conf' defined but not used: 153 => 
-  - src/drivers/gpio/ml_ioh_gpio.c: warning: 'ioh_gpio_save_reg_conf' defined but not used: 144 => 
-  - src/drivers/infiniband/hw/nes/nes.c: warning: ignoring return value of 'kstrtoul', declared with attribute warn_unused_result: 1141 => 
-  - src/drivers/infiniband/ulp/srp/ib_srp.c: warning: cast to pointer from integer of different size: 1150, 1234 => 
-  - src/drivers/input/keyboard/matrix_keypad.c: warning: 'matrix_keypad_resume' defined but not used: 284 => 
-  - src/drivers/input/keyboard/matrix_keypad.c: warning: 'matrix_keypad_suspend' defined but not used: 271 => 
-  - src/drivers/input/touchscreen/htcpen.c: warning: 'pnp_ids' defined but not used: 50 => 
-  - src/drivers/media/video/gspca/sonixj.c: warning: comparison is always false due to limited range of data type: 2905 => 
-  - src/drivers/message/fusion/mptsas.c: warning: unused variable 'log_info': 5015 => 
-  - src/drivers/mfd/wl1273-core.c: warning: unused variable 'val': 156 => 
-  - src/drivers/misc/apds990x.c: warning: 'apds990x_chip_on' defined but not used: 613, 612 => 
-  - src/drivers/misc/hpilo.c: warning: 'ilo_remove' defined but not used: 722 => 
-  - src/drivers/mtd/chips/cfi_cmdset_0001.c: warning: the frame size of 1044 bytes is larger than 1024 bytes: 861 => 
-  - src/drivers/net/atl1c/atl1c_main.c: warning: 'atl1c_resume' defined but not used: 2539, 2540 => 
-  - src/drivers/net/atlx/atl1.c: warning: 'atl1_resume' defined but not used: 2823 => 
-  - src/drivers/net/jme.c: warning: 'jme_resume' defined but not used: 3216 => 
-  - src/drivers/net/jme.c: warning: 'jme_suspend' defined but not used: 3177 => 
-  - src/drivers/net/rionet.c: warning: cast from pointer to integer of different size: 166 => 
-  - src/drivers/net/skge.c: warning: 'skge_resume' defined but not used: 4067 => 
-  - src/drivers/net/skge.c: warning: 'skge_suspend' defined but not used: 4042 => 
-  - src/drivers/net/wireless/ath/ath5k/reset.c: warning: 'txf2txs' may be used uninitialized in this function: 100 => 
-  - src/drivers/net/wireless/b43/phy_n.c: warning: 'last' may be used uninitialized in this function: 3093 => 
-  - src/drivers/net/wireless/b43/phy_n.c: warning: 'save_regs_phy$7' may be used uninitialized in this function: 2270 => 
-  - src/drivers/net/wireless/b43/phy_n.c: warning: 'save_regs_phy$8' may be used uninitialized in this function: 2270 => 
-  - src/drivers/net/wireless/b43/phy_n.c: warning: 'save_regs_phy[7]' may be used uninitialized in this function: 2270 => 
-  - src/drivers/net/wireless/b43/phy_n.c: warning: 'save_regs_phy[8]' may be used uninitialized in this function: 2270 => 
-  - src/drivers/net/wireless/b43/phy_n.c: warning: 'tabent_r2' may be used uninitialized in this function: 3848 => 
-  - src/drivers/net/wireless/b43/phy_n.c: warning: 'tabent_r3' may be used uninitialized in this function: 3849 => 
-  - src/drivers/net/wireless/mwl8k.c: warning: 'ap_legacy_rates' may be used uninitialized in this function: 3990 => 
-  - src/drivers/net/wireless/p54/eeprom.c: warning: 'freq' may be used uninitialized in this function: 494 => 
-  - src/drivers/net/wireless/rt2x00/rt2800lib.c: warning: 'comp_value' may be used uninitialized in this function: 1822 => 
-  - src/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c: warning: 'cck_index' may be used uninitialized in this function: 637 => 
-  - src/drivers/net/wireless/rtlwifi/rtl8192c/dm_common.c: warning: 'cck_index_old' may be used uninitialized in this function: 637 => 
-  - src/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c: warning: 'box_extreg' may be used uninitialized in this function: 303 => 
-  - src/drivers/net/wireless/rtlwifi/rtl8192c/fw_common.c: warning: 'box_reg' may be used uninitialized in this function: 303 => 
-  - src/drivers/net/wireless/rtlwifi/rtl8192ce/rf.c: warning: 'chnlgroup' may be used uninitialized in this function: 205 => 
-  - src/drivers/net/wireless/rtlwifi/rtl8192ce/rf.c: warning: 'u4_regvalue' may be used uninitialized in this function: 450 => 
-  - src/drivers/net/wireless/rtlwifi/rtl8192cu/hw.c: warning: 'hq_sele' may be used uninitialized in this function: 924 => 
-  - src/drivers/pci/intel-iommu.c: warning: no return statement in function returning non-void: 3231 => 
-  - src/drivers/pci/pcie/aer/aer_inject.c: warning: 'cor_mask_orig' may be used uninitialized in this function: 329 => 
-  - src/drivers/pci/pcie/aer/aer_inject.c: warning: 'uncor_mask_orig' may be used uninitialized in this function: 329 => 
-  - src/drivers/pci/probe.c: warning: large integer implicitly truncated to unsigned type: 207 => 
-  - src/drivers/platform/x86/ibm_rtl.c: warning: cast from pointer to integer of different size: 278, 290 => 
-  - src/drivers/platform/x86/sony-laptop.c: warning: unused variable 'handle': 976, 964 => 
-  - src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_init' defined but not used: 520 => 
-  - src/drivers/power/bq27x00_battery.c: warning: 'bq27x00_powersupply_unregister' defined but not used: 546 => 
-  - src/drivers/regulator/wm831x-dcdc.c: warning: unused variable 'wm831x': 779, 603 => 
-  - src/drivers/scsi/fcoe/fcoe.c: warning: label 'out_nodev' defined but not used: 1855, 1812 => 
-  - src/drivers/staging/iio/magnetometer/ak8975.c: warning: 'ak8975_remove' defined but not used: 513 => 
-  - src/drivers/tty/n_gsm.c: warning: zero-length gnu_printf format string: 535 => 
-  - src/drivers/tty/n_gsm.c: warning: zero-length printf format string: 535 => 
-  - src/drivers/tty/serial/mfd.c: warning: 'serial_hsu_remove' defined but not used: 1406 => 
-  - src/drivers/tty/serial/pch_uart.c: warning: 'pch_uart_pci_remove' defined but not used: 1476 => 
-  - src/drivers/tty/serial/pch_uart.c: warning: assignment makes pointer from integer without a cast: 1399, 869 => 
-  - src/drivers/usb/host/xhci-pci.c: warning: assignment makes pointer from integer without a cast: 61 => 
-  - src/drivers/usb/misc/usbtest.c: warning: cast from pointer to integer of different size: 273 => 
-  - src/drivers/usb/otg/twl6030-usb.c: warning: ISO C90 forbids mixed declarations and code: 183 => 
-  - src/drivers/video/aty/atyfb_base.c: warning: 'aty_bl_exit' defined but not used: 2271 => 
-  - src/drivers/video/aty/atyfb_base.c: warning: 'store_video_par' defined but not used: 2793 => 
-  - src/drivers/video/efifb.c: warning: cast to pointer from integer of different size: 247 => 
-  - src/drivers/video/mb862xx/mb862xxfb.c: warning: 'dev_attr_dispregs' defined but not used: 464 => 
-  - src/drivers/video/mb862xx/mb862xxfb.c: warning: 'mb862xxfb_init_fbinfo' defined but not used: 326 => 
-  - src/drivers/video/udlfb.c: warning: ignoring return value of 'device_create_bin_file', declared with attribute warn_unused_result: 1592 => 
-  - src/drivers/video/udlfb.c: warning: ignoring return value of 'device_create_file', declared with attribute warn_unused_result: 1590 => 
-  - src/fs/ext4/balloc.c: warning: passing argument 2 of 'test_and_clear_bit' from incompatible pointer type: 443 => 
-  - src/fs/ncpfs/dir.c: warning: unused variable 'sb': 128 => 
-  - src/include/trace/events/btrfs.h: warning: large integer implicitly truncated to unsigned type: 365, 197, 332, 273, 626, 68, 420, 47, 591, 144, 459, 541 => 
-  - src/kernel/irq/debug.h: warning: "PS" redefined: 8:1 => 
-  - src/lib/debugobjects.c: warning: 'obj_states' defined but not used: 73 => 
-  - src/lib/debugobjects.c: warning: unused variable 'hint': 256 => 
-  - src/net/bridge/netfilter/ebtables.c: warning: 'off' may be used uninitialized in this function: 1885 => 
-  - src/net/bridge/netfilter/ebtables.c: warning: 'size_kern' may be used uninitialized in this function: 1886 => 
-  - src/net/sched/sch_generic.c: warning: unused variable 'drivername': 254 => 
-  - src/security/selinux/hooks.c: warning: 'prefix' may be used uninitialized in this function: 964 => 
-  - src/security/selinux/hooks.c: warning: 'sclass' may be used uninitialized in this function: 1426 => 
-  - src/security/selinux/netnode.c: warning: 'idx' may be used uninitialized in this function: 173, 132 => 174
-  - src/security/selinux/selinuxfs.c: warning: passing argument 2 of 'security_read_policy' from incompatible pointer type: 400 => 
-  - src/sound/pci/cs5535audio/cs5535audio_pcm.c: warning: large integer implicitly truncated to unsigned type: 152, 160 => 
-  - src/sound/soc/codecs/alc5623.c: warning: 'alc5623_i2c_remove' defined but not used: 1067 => 
-  - src/sound/soc/codecs/wl1273.c: warning: initialization discards qualifiers from pointer target type: 212, 250 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: warning: 'struct of_device' declared inside parameter list: 371, 489 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: warning: (near initialization for 'mpc5200_hpcd_of_driver.shutdown'): 521, 524, 523 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: warning: braces around scalar initializer: 521 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: warning: excess elements in scalar initializer: 524, 523 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: warning: initialization from incompatible pointer type: 519, 522, 520 => 
-  - src/sound/soc/fsl/mpc5200_dma.c: warning: its scope is only this definition or declaration, which is probably not what you want: 371 => 
-  - warning: (CAVIUM_OCTEON_REFERENCE_BOARD && BCM63XX_CPU_6338) selects USB_ARCH_HAS_OHCI which has unmet direct dependencies (USB_SUPPORT): N/A => 
-  - warning: (CAVIUM_OCTEON_REFERENCE_BOARD) selects USB_ARCH_HAS_EHCI which has unmet direct dependencies (USB_SUPPORT): N/A => 
-  - warning: (GFS2_FS) selects DLM which has unmet direct dependencies (EXPERIMENTAL && INET && SYSFS && CONFIGFS_FS && (IPV6 || IPV6=n)): N/A => 
-  - warning: (I2C_ISCH && GPIO_SCH && GPIO_RDC321X && RADIO_WL1273) selects MFD_CORE which has unmet direct dependencies (MFD_SUPPORT): N/A => 
-  - warning: (I2C_ISCH && GPIO_SCH) selects LPC_SCH which has unmet direct dependencies (MFD_SUPPORT && PCI): N/A => 
-  - warning: (MEDIA_TUNER) selects MEDIA_TUNER_TEA5761 which has unmet direct dependencies (MEDIA_SUPPORT && VIDEO_MEDIA && I2C && EXPERIMENTAL): N/A => 
-  - warning: 1 bad relocations: N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x567ac): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x567c8): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x567e4): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x5830c): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x58328): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
-  - warning: arch/powerpc/kernel/built-in.o(.text+0x58344): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
-  - warning: arch/powerpc/mm/built-in.o(.text+0xb1d0): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region(): N/A => 
-  - warning: arch/powerpc/mm/built-in.o(.text+0xb2b4): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region(): N/A => 
-  - warning: drivers/built-in.o(.text+0x25dae54): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/built-in.o(.text+0x25e13f8): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/built-in.o(.text+0x25e1444): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/built-in.o(.text+0x25e1478): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/built-in.o(.text+0x25e1bec): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/built-in.o(.text+0x25e1c38): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/built-in.o(.text+0x25e1c6c): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/built-in.o(.text+0x25e3b08): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/built-in.o(.text+0x261ff38): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware(): N/A => 
-  - warning: drivers/built-in.o(.text+0x3252268): Section mismatch in reference from the function .lp5521_probe() to the function .init.text:.lp5521_init_led(): N/A => 
-  - warning: drivers/built-in.o(.text+0x3254ff8): Section mismatch in reference from the function .lp5523_probe() to the function .init.text:.lp5523_init_led(): N/A => 
-  - warning: drivers/built-in.o(.text+0x63e09c): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
-  - warning: drivers/gpu/built-in.o(.text+0x1377b4): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
-  - warning: drivers/gpu/drm/built-in.o(.text+0x1377b4): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
-  - warning: drivers/gpu/drm/radeon/built-in.o(.text+0xd27b4): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
-  - warning: drivers/gpu/drm/radeon/radeon.o(.text+0x48270): Section mismatch in reference from the function radeon_get_clock_info() to the function .devinit.text:radeon_read_clocks_OF(): N/A => 
-  - warning: drivers/gpu/drm/radeon/radeon.o(.text+0xd27b4): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
-  - warning: drivers/gpu/drm/radeon/radeon.o(.text+0xd27b8): Section mismatch in reference from the function .radeon_get_clock_info() to the function .devinit.text:.radeon_read_clocks_OF(): N/A => 
-  - warning: drivers/input/built-in.o(.text+0x27028): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware(): N/A => 
-  - warning: drivers/input/keyboard/built-in.o(.text+0xf8c4): Section mismatch in reference from the function .tc3589x_keypad_open() to the function .devinit.text:.tc3589x_keypad_init_key_hardware(): N/A => 
-  - warning: drivers/leds/built-in.o(.text+0xb2dc): Section mismatch in reference from the function .lp5521_probe() to the function .init.text:.lp5521_init_led(): N/A => 
-  - warning: drivers/leds/built-in.o(.text+0xe06c): Section mismatch in reference from the function .lp5523_probe() to the function .init.text:.lp5523_init_led(): N/A => 
-  - warning: drivers/leds/leds-lp5521.o(.text+0x1093): Section mismatch in reference from the function lp5521_probe() to the function .init.text:lp5521_init_led(): N/A => 
-  - warning: drivers/leds/leds-lp5521.o(.text+0x1dd8): Section mismatch in reference from the function .lp5521_probe() to the function .init.text:.lp5521_init_led(): N/A => 
-  - warning: drivers/leds/leds-lp5521.o(.text+0xa6a): Section mismatch in reference from the function lp5521_probe() to the function .init.text:lp5521_init_led(): N/A => 
-  - warning: drivers/leds/leds-lp5521.o(.text+0xc50): Section mismatch in reference from the function lp5521_probe() to the function .init.text:lp5521_init_led(): N/A => 
-  - warning: drivers/leds/leds-lp5523.o(.text+0x12f8): Section mismatch in reference from the function lp5523_probe() to the function .init.text:lp5523_init_led(): N/A => 
-  - warning: drivers/leds/leds-lp5523.o(.text+0x17bb): Section mismatch in reference from the function lp5523_probe() to the function .init.text:lp5523_init_led(): N/A => 
-  - warning: drivers/leds/leds-lp5523.o(.text+0x29fc): Section mismatch in reference from the function .lp5523_probe() to the function .init.text:.lp5523_init_led(): N/A => 
-  - warning: drivers/leds/leds-lp5523.o(.text+0xfd2): Section mismatch in reference from the function lp5523_probe() to the function .init.text:lp5523_init_led(): N/A => 
-  - warning: drivers/misc/cs5535-mfgpt.o(.data+0x0): Section mismatch in reference from the variable cs5535_mfgpt_drv to the function .devinit.text:cs5535_mfgpt_probe(): N/A => 
-  - warning: drivers/misc/ioc4.o(.data+0x18): Section mismatch in reference from the variable ioc4_load_modules_work to the function .devinit.text:ioc4_load_modules(): N/A => 
-  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xaa): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
-  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xac): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
-  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xb0): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
-  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xb8): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
-  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xbc): Section mismatch in reference from the function sst25l_match_device() to the (unknown reference) .init.data:(unknown): N/A => 
-  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xbc): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
-  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xc4): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
-  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xc6): Section mismatch in reference from the function sst25l_match_device() to the variable .init.data:sst25l_flash_info: N/A => 
-  - warning: drivers/mtd/devices/sst25l.o(.devinit.text+0xe9): Section mismatch in reference from the function sst25l_match_device() to the (unknown reference) .init.data:(unknown): N/A => 
-  - warning: drivers/net/irda/smsc-ircc2.o(.devinit.text+0x1ac): Section mismatch in reference from the function smsc_ircc_pnp_probe() to the function .init.text:smsc_ircc_open(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x154): Section mismatch in reference from the variable lba_driver to the function .init.text:lba_driver_probe(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x1f0): Section mismatch in reference from the variable ccio_driver to the function .init.text:ccio_probe(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x334): Section mismatch in reference from the variable dino_driver to the function .init.text:dino_probe(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x428): Section mismatch in reference from the variable lasi_driver to the function .init.text:lasi_init_chip(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x484): Section mismatch in reference from the variable asp_driver to the function .init.text:asp_init_chip(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x4e0): Section mismatch in reference from the variable wax_driver to the function .init.text:wax_init_chip(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x54c): Section mismatch in reference from the variable eisa_driver to the function .init.text:eisa_probe(): N/A => 
-  - warning: drivers/parisc/built-in.o(.data+0x694): Section mismatch in reference from the variable superio_driver to the function .init.text:superio_probe(): N/A => 
-  - warning: drivers/platform/x86/asus-wmi.o(.text+0x235e): Section mismatch in reference from the function asus_wmi_add() to the function .init.text:asus_wmi_platform_init(): N/A => 
-  - warning: drivers/platform/x86/msi-laptop.o(.text+0xf11): Section mismatch in reference from the function load_scm_model_init() to the function .init.text:msi_laptop_input_setup(): N/A => 
-  - warning: drivers/sbus/char/bbc.o(.devinit.text+0xc): Section mismatch in reference from the function bbc_i2c_probe() to the function .init.text:T.326(): N/A => 
-  - warning: drivers/tty/serial/apbuart.o(.data+0x90): Section mismatch in reference from the variable grlib_apbuart_of_driver to the variable .init.data:apbuart_match: N/A => 
-  - warning: drivers/tty/serial/apbuart.o(.text+0x7a0): Section mismatch in reference from the function grlib_apbuart_configure() to the variable .init.data:apbuart_match: N/A => 
-  - warning: drivers/tty/serial/apbuart.o(.text+0x7a8): Section mismatch in reference from the function grlib_apbuart_configure() to the variable .init.data:apbuart_match: N/A => 
-  - warning: drivers/tty/serial/apbuart.o(.text+0x7e8): Section mismatch in reference from the function grlib_apbuart_configure() to the variable .init.data:apbuart_match: N/A => 
-  - warning: drivers/usb/gadget/built-in.o(.text+0x10a10): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/built-in.o(.text+0x7d5c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/built-in.o(.text+0xe300): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/built-in.o(.text+0xe34c): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/built-in.o(.text+0xe380): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/built-in.o(.text+0xeaf4): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/built-in.o(.text+0xeb40): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/built-in.o(.text+0xeb74): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_audio.o(.text+0x2b8c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_audio.o(.text+0x5c98): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x311c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3442): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3b28): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3b48): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3b68): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3d10): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3f84): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3fa4): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x3fc4): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4a17): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4a56): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4a87): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4f7f): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4fbe): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x4fef): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x82b4): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x8300): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x8334): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x89f4): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x8a3c): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0x8a70): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_cdc.o(.text+0xb2e8): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x3d6c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x3e28): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x41a6): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x515c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x517c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x519c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x562c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x564c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x566c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x58fc): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x593b): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x596c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x5ebf): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x5efe): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0x5f2f): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0xa310): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0xa35c): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0xa390): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0xab04): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0xab50): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0xab84): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0xca1c): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_ether.o(.text+0xca20): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x1263c): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x53a0): Section mismatch in reference from the function __ffs_func_bind_do_descs() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x546c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x57ea): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x6ba0): Section mismatch in reference from the function __ffs_func_bind_do_descs() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x6c9c): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x6cbc): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x6cdc): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x716c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x718c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x71ac): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x74d6): Section mismatch in reference from the function __ffs_func_bind_do_descs() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x75f9): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7638): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7669): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7bba): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7bf9): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x7c2a): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0x9978): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0xe0ec): Section mismatch in reference from the function .__ffs_func_bind_do_descs() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0xe2cc): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0xe318): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0xe34c): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0xeac0): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0xeb0c): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_ffs.o(.text+0xeb40): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_hid.o(.text+0x3e64): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_hid.o(.text+0x5aa4): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x42de): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x5874): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x5898): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x6855): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0x68a6): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0xab18): Section mismatch in reference from the function .fsg_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0xab74): Section mismatch in reference from the function .fsg_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0xb48c): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_mass_storage.o(.text+0xbc7c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x15bb8): Section mismatch in reference from the function .fsg_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x15c14): Section mismatch in reference from the function .fsg_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x15e28): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x15e74): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x15ea8): Section mismatch in reference from the function .rndis_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x1661c): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x16668): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x1669c): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x16d5c): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x16da4): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x16dd8): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x87b8): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x88d2): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x8c52): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0x8f78): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xae5c): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xae80): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xafac): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xafcc): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xafec): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xb47c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xb49c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xb4bc): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xb8d8): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xb8f8): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xb918): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xc896): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xc8e7): Section mismatch in reference from the function fsg_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xca5f): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xca9e): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xcacf): Section mismatch in reference from the function rndis_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xd020): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xd05f): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xd090): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xd586): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xd5c5): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xd5f6): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xe1c0): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_multi.o(.text+0xf37c): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_ncm.o(.text+0x30ec): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_ncm.o(.text+0x82a8): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x38b2): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x3bd8): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x4020): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x439c): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x43bc): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x43dc): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x47f8): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x4818): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x4838): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x546b): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x54aa): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x54db): Section mismatch in reference from the function ecm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x59d1): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x5a10): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x5a41): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x97a0): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x97ec): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x9820): Section mismatch in reference from the function .ecm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x9ee0): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x9f28): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0x9f5c): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_nokia.o(.text+0xc7d4): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x2436): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x24e0): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x251f): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x2550): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x2970): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x2990): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x29b0): Section mismatch in reference from the function acm_bind() to the function .devinit.text:usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x4d10): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x6278): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x62c0): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x62f4): Section mismatch in reference from the function .acm_bind() to the function .devinit.text:.usb_ep_autoconfig(): N/A => 
-  - warning: drivers/usb/gadget/g_serial.o(.text+0x8b6c): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_webcam.o(.text+0x68f4): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_webcam.o(.text+0x83e4): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_zero.o(.text+0x5c08): Section mismatch in reference from the function .composite_bind() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/usb/gadget/g_zero.o(.text+0x62a8): Section mismatch in reference from the function .usb_add_config() to the function .devinit.text:.usb_ep_autoconfig_reset(): N/A => 
-  - warning: drivers/video/geode/gx1fb.o(.data+0x70): Section mismatch in reference from the variable gx1fb_driver to the function .init.text:gx1fb_probe(): N/A => 
-  - warning: drivers/video/sm501fb.o(.text+0x1714): Section mismatch in reference from the function sm501fb_init_fb() to the variable .devinit.data:sm501_default_mode: N/A => 
-  - warning: drivers/video/sm501fb.o(.text+0x1720): Section mismatch in reference from the function sm501fb_init_fb() to the variable .devinit.data:sm501_default_mode: N/A => 
-  - warning: drivers/video/sm501fb.o(.text+0x180c): Section mismatch in reference from the function sm501fb_init_fb() to the variable .devinit.data:sm501_default_mode: N/A => 
-  - warning: drivers/video/sm501fb.o(.text+0x21bc): Section mismatch in reference from the function sm501fb_init_fb() to the variable .devinit.data:sm501_default_mode: N/A => 
-  - warning: vmlinux.o (.xt.lit): unexpected non-allocatable section.: N/A => 
-  - warning: vmlinux.o (.xt.prop): unexpected non-allocatable section.: N/A => 
-  - warning: vmlinux.o(.devinit.text+0x9358): Section mismatch in reference from the function cnb20le_res() to the function .init.text:acpi_os_get_root_pointer(): N/A => 
-  - warning: vmlinux.o(.text+0x33d94): Section mismatch in reference from the function .early_setup_secondary() to the function .cpuinit.text:.early_init_mmu_secondary(): N/A => 
-  - warning: vmlinux.o(.text+0x5b8e8): Section mismatch in reference from the function .wake_offline_cpus() to the function .cpuinit.text:.cpu_up(): N/A => 
-  - warning: vmlinux.o(.text+0x61c4c): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
-  - warning: vmlinux.o(.text+0x61c68): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
-  - warning: vmlinux.o(.text+0x61c84): Section mismatch in reference from the function .register_power_pmu() to the function .cpuinit.text:.power_pmu_notifier(): N/A => 
-  - warning: vmlinux.o(.text+0x742c0): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region(): N/A => 
-  - warning: vmlinux.o(.text+0x74370): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.reserve_bootmem_node(): N/A => 
-  - warning: vmlinux.o(.text+0x743a4): Section mismatch in reference from the function .mark_reserved_regions_for_nid() to the function .init.text:.get_node_active_region(): N/A => 
-  - warning: vmlinux.o(.text+0xa2af8): Section mismatch in reference from the function .pci_dn_reconfig_notifier() to the function .devinit.text:.update_dn_pci_info(): N/A => 
-  - warning: vmlinux.o(.text+0xa88b8): Section mismatch in reference from the function .dlpar_online_cpu() to the function .cpuinit.text:.cpu_up(): N/A => 
-  - warning: vmlinux.o(.text+0xb3340): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.of_rescan_bus(): N/A => 
-  - warning: vmlinux.o(.text+0xb33d0): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pcibios_setup_bus_devices(): N/A => 
-  - warning: vmlinux.o(.text+0xb3428): Section mismatch in reference from the function .pcibios_add_pci_devices() to the function .devinit.text:.pci_scan_bridge(): N/A => 
-  - warning: vmlinux.o(.text+0xb8aee): Section mismatch in reference from the variable system_reset_iSeries to the variable .init.data:boot_paca: N/A => 
+#
+# x86 CPU frequency scaling drivers
+#
+CONFIG_X86_PCC_CPUFREQ=m
+CONFIG_X86_ACPI_CPUFREQ=m
+CONFIG_X86_POWERNOW_K8=m
+CONFIG_X86_SPEEDSTEP_CENTRINO=m
+CONFIG_X86_P4_CLOCKMOD=m
 
-Gr{oetje,eeting}s,
+#
+# shared options
+#
+CONFIG_X86_SPEEDSTEP_LIB=m
+CONFIG_CPU_IDLE=y
+CONFIG_CPU_IDLE_GOV_LADDER=y
+CONFIG_CPU_IDLE_GOV_MENU=y
+CONFIG_INTEL_IDLE=y
 
-						Geert
+#
+# Memory power savings
+#
+CONFIG_I7300_IDLE_IOAT_CHANNEL=y
+CONFIG_I7300_IDLE=m
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+#
+# Bus options (PCI etc.)
+#
+CONFIG_PCI=y
+CONFIG_PCI_DIRECT=y
+CONFIG_PCI_MMCONFIG=y
+CONFIG_PCI_DOMAINS=y
+# CONFIG_PCI_CNB20LE_QUIRK is not set
+CONFIG_DMAR=y
+CONFIG_DMAR_DEFAULT_ON=y
+CONFIG_DMAR_FLOPPY_WA=y
+CONFIG_INTR_REMAP=y
+CONFIG_PCIEPORTBUS=y
+CONFIG_HOTPLUG_PCI_PCIE=m
+CONFIG_PCIEAER=y
+CONFIG_PCIE_ECRC=y
+CONFIG_PCIEAER_INJECT=m
+CONFIG_PCIEASPM=y
+# CONFIG_PCIEASPM_DEBUG is not set
+CONFIG_PCIE_PME=y
+CONFIG_ARCH_SUPPORTS_MSI=y
+CONFIG_PCI_MSI=y
+CONFIG_PCI_DEBUG=y
+CONFIG_PCI_STUB=m
+CONFIG_HT_IRQ=y
+CONFIG_PCI_IOV=y
+CONFIG_PCI_IOAPIC=y
+CONFIG_PCI_LABEL=y
+CONFIG_ISA_DMA_API=y
+CONFIG_AMD_NB=y
+CONFIG_PCCARD=m
+CONFIG_PCMCIA=m
+CONFIG_PCMCIA_LOAD_CIS=y
+CONFIG_CARDBUS=y
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+#
+# PC-card bridges
+#
+CONFIG_YENTA=m
+CONFIG_YENTA_O2=y
+CONFIG_YENTA_RICOH=y
+CONFIG_YENTA_TI=y
+CONFIG_YENTA_ENE_TUNE=y
+CONFIG_YENTA_TOSHIBA=y
+CONFIG_PD6729=m
+CONFIG_I82092=m
+CONFIG_PCCARD_NONSTATIC=y
+CONFIG_HOTPLUG_PCI=m
+CONFIG_HOTPLUG_PCI_FAKE=m
+CONFIG_HOTPLUG_PCI_ACPI=m
+CONFIG_HOTPLUG_PCI_ACPI_IBM=m
+CONFIG_HOTPLUG_PCI_CPCI=y
+CONFIG_HOTPLUG_PCI_CPCI_ZT5550=m
+CONFIG_HOTPLUG_PCI_CPCI_GENERIC=m
+CONFIG_HOTPLUG_PCI_SHPC=m
+# CONFIG_RAPIDIO is not set
+
+#
+# Executable file formats / Emulations
+#
+CONFIG_BINFMT_ELF=y
+CONFIG_COMPAT_BINFMT_ELF=y
+# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
+# CONFIG_HAVE_AOUT is not set
+CONFIG_BINFMT_MISC=m
+CONFIG_IA32_EMULATION=y
+CONFIG_IA32_AOUT=y
+CONFIG_COMPAT=y
+CONFIG_COMPAT_FOR_U64_ALIGNMENT=y
+CONFIG_SYSVIPC_COMPAT=y
+CONFIG_KEYS_COMPAT=y
+CONFIG_HAVE_TEXT_POKE_SMP=y
+CONFIG_NET=y
+CONFIG_COMPAT_NETLINK_MESSAGES=y
+
+#
+# Networking options
+#
+CONFIG_PACKET=y
+CONFIG_UNIX=y
+CONFIG_XFRM=y
+CONFIG_XFRM_USER=m
+# CONFIG_XFRM_SUB_POLICY is not set
+# CONFIG_XFRM_MIGRATE is not set
+# CONFIG_XFRM_STATISTICS is not set
+CONFIG_XFRM_IPCOMP=m
+CONFIG_NET_KEY=m
+# CONFIG_NET_KEY_MIGRATE is not set
+CONFIG_INET=y
+CONFIG_IP_MULTICAST=y
+CONFIG_IP_ADVANCED_ROUTER=y
+CONFIG_IP_FIB_TRIE_STATS=y
+CONFIG_IP_MULTIPLE_TABLES=y
+CONFIG_IP_ROUTE_MULTIPATH=y
+CONFIG_IP_ROUTE_VERBOSE=y
+CONFIG_IP_ROUTE_CLASSID=y
+# CONFIG_IP_PNP is not set
+CONFIG_NET_IPIP=m
+CONFIG_NET_IPGRE_DEMUX=m
+CONFIG_NET_IPGRE=m
+CONFIG_NET_IPGRE_BROADCAST=y
+CONFIG_IP_MROUTE=y
+CONFIG_IP_MROUTE_MULTIPLE_TABLES=y
+CONFIG_IP_PIMSM_V1=y
+CONFIG_IP_PIMSM_V2=y
+# CONFIG_ARPD is not set
+CONFIG_SYN_COOKIES=y
+CONFIG_INET_AH=m
+CONFIG_INET_ESP=m
+CONFIG_INET_IPCOMP=m
+CONFIG_INET_XFRM_TUNNEL=m
+CONFIG_INET_TUNNEL=m
+CONFIG_INET_XFRM_MODE_TRANSPORT=m
+CONFIG_INET_XFRM_MODE_TUNNEL=m
+CONFIG_INET_XFRM_MODE_BEET=m
+CONFIG_INET_LRO=y
+CONFIG_INET_DIAG=m
+CONFIG_INET_TCP_DIAG=m
+CONFIG_TCP_CONG_ADVANCED=y
+CONFIG_TCP_CONG_BIC=m
+CONFIG_TCP_CONG_CUBIC=y
+CONFIG_TCP_CONG_WESTWOOD=m
+CONFIG_TCP_CONG_HTCP=m
+CONFIG_TCP_CONG_HSTCP=m
+CONFIG_TCP_CONG_HYBLA=m
+CONFIG_TCP_CONG_VEGAS=m
+CONFIG_TCP_CONG_SCALABLE=m
+CONFIG_TCP_CONG_LP=m
+CONFIG_TCP_CONG_VENO=m
+CONFIG_TCP_CONG_YEAH=m
+CONFIG_TCP_CONG_ILLINOIS=m
+CONFIG_DEFAULT_CUBIC=y
+# CONFIG_DEFAULT_RENO is not set
+CONFIG_DEFAULT_TCP_CONG="cubic"
+CONFIG_TCP_MD5SIG=y
+CONFIG_IPV6=m
+CONFIG_IPV6_PRIVACY=y
+CONFIG_IPV6_ROUTER_PREF=y
+CONFIG_IPV6_ROUTE_INFO=y
+CONFIG_IPV6_OPTIMISTIC_DAD=y
+CONFIG_INET6_AH=m
+CONFIG_INET6_ESP=m
+CONFIG_INET6_IPCOMP=m
+CONFIG_IPV6_MIP6=m
+CONFIG_INET6_XFRM_TUNNEL=m
+CONFIG_INET6_TUNNEL=m
+CONFIG_INET6_XFRM_MODE_TRANSPORT=m
+CONFIG_INET6_XFRM_MODE_TUNNEL=m
+CONFIG_INET6_XFRM_MODE_BEET=m
+CONFIG_INET6_XFRM_MODE_ROUTEOPTIMIZATION=m
+CONFIG_IPV6_SIT=m
+# CONFIG_IPV6_SIT_6RD is not set
+CONFIG_IPV6_NDISC_NODETYPE=y
+CONFIG_IPV6_TUNNEL=m
+CONFIG_IPV6_MULTIPLE_TABLES=y
+CONFIG_IPV6_SUBTREES=y
+CONFIG_IPV6_MROUTE=y
+CONFIG_IPV6_MROUTE_MULTIPLE_TABLES=y
+CONFIG_IPV6_PIMSM_V2=y
+# CONFIG_NETLABEL is not set
+CONFIG_NETWORK_SECMARK=y
+# CONFIG_NETWORK_PHY_TIMESTAMPING is not set
+CONFIG_NETFILTER=y
+# CONFIG_NETFILTER_DEBUG is not set
+CONFIG_NETFILTER_ADVANCED=y
+CONFIG_BRIDGE_NETFILTER=y
+
+#
+# Core Netfilter Configuration
+#
+CONFIG_NETFILTER_NETLINK=m
+CONFIG_NETFILTER_NETLINK_QUEUE=m
+CONFIG_NETFILTER_NETLINK_LOG=m
+CONFIG_NF_CONNTRACK=m
+CONFIG_NF_CONNTRACK_MARK=y
+CONFIG_NF_CONNTRACK_SECMARK=y
+# CONFIG_NF_CONNTRACK_ZONES is not set
+CONFIG_NF_CONNTRACK_EVENTS=y
+CONFIG_NF_CONNTRACK_TIMESTAMP=y
+CONFIG_NF_CT_PROTO_DCCP=m
+CONFIG_NF_CT_PROTO_GRE=m
+CONFIG_NF_CT_PROTO_SCTP=m
+CONFIG_NF_CT_PROTO_UDPLITE=m
+CONFIG_NF_CONNTRACK_AMANDA=m
+CONFIG_NF_CONNTRACK_FTP=m
+CONFIG_NF_CONNTRACK_H323=m
+CONFIG_NF_CONNTRACK_IRC=m
+CONFIG_NF_CONNTRACK_BROADCAST=m
+CONFIG_NF_CONNTRACK_NETBIOS_NS=m
+CONFIG_NF_CONNTRACK_SNMP=m
+CONFIG_NF_CONNTRACK_PPTP=m
+CONFIG_NF_CONNTRACK_SANE=m
+CONFIG_NF_CONNTRACK_SIP=m
+CONFIG_NF_CONNTRACK_TFTP=m
+CONFIG_NF_CT_NETLINK=m
+# CONFIG_NETFILTER_TPROXY is not set
+CONFIG_NETFILTER_XTABLES=m
+
+#
+# Xtables combined modules
+#
+CONFIG_NETFILTER_XT_MARK=m
+CONFIG_NETFILTER_XT_CONNMARK=m
+CONFIG_NETFILTER_XT_SET=m
+
+#
+# Xtables targets
+#
+CONFIG_NETFILTER_XT_TARGET_AUDIT=m
+CONFIG_NETFILTER_XT_TARGET_CHECKSUM=m
+CONFIG_NETFILTER_XT_TARGET_CLASSIFY=m
+CONFIG_NETFILTER_XT_TARGET_CONNMARK=m
+CONFIG_NETFILTER_XT_TARGET_CONNSECMARK=m
+CONFIG_NETFILTER_XT_TARGET_CT=m
+CONFIG_NETFILTER_XT_TARGET_DSCP=m
+CONFIG_NETFILTER_XT_TARGET_HL=m
+CONFIG_NETFILTER_XT_TARGET_IDLETIMER=m
+# CONFIG_NETFILTER_XT_TARGET_LED is not set
+CONFIG_NETFILTER_XT_TARGET_MARK=m
+CONFIG_NETFILTER_XT_TARGET_NFLOG=m
+CONFIG_NETFILTER_XT_TARGET_NFQUEUE=m
+CONFIG_NETFILTER_XT_TARGET_NOTRACK=m
+CONFIG_NETFILTER_XT_TARGET_RATEEST=m
+CONFIG_NETFILTER_XT_TARGET_TEE=m
+CONFIG_NETFILTER_XT_TARGET_TRACE=m
+CONFIG_NETFILTER_XT_TARGET_SECMARK=m
+CONFIG_NETFILTER_XT_TARGET_TCPMSS=m
+CONFIG_NETFILTER_XT_TARGET_TCPOPTSTRIP=m
+
+#
+# Xtables matches
+#
+CONFIG_NETFILTER_XT_MATCH_ADDRTYPE=m
+# CONFIG_NETFILTER_XT_MATCH_CLUSTER is not set
+CONFIG_NETFILTER_XT_MATCH_COMMENT=m
+CONFIG_NETFILTER_XT_MATCH_CONNBYTES=m
+CONFIG_NETFILTER_XT_MATCH_CONNLIMIT=m
+CONFIG_NETFILTER_XT_MATCH_CONNMARK=m
+CONFIG_NETFILTER_XT_MATCH_CONNTRACK=m
+CONFIG_NETFILTER_XT_MATCH_CPU=m
+CONFIG_NETFILTER_XT_MATCH_DCCP=m
+CONFIG_NETFILTER_XT_MATCH_DEVGROUP=m
+CONFIG_NETFILTER_XT_MATCH_DSCP=m
+CONFIG_NETFILTER_XT_MATCH_ESP=m
+CONFIG_NETFILTER_XT_MATCH_HASHLIMIT=m
+CONFIG_NETFILTER_XT_MATCH_HELPER=m
+CONFIG_NETFILTER_XT_MATCH_HL=m
+CONFIG_NETFILTER_XT_MATCH_IPRANGE=m
+CONFIG_NETFILTER_XT_MATCH_IPVS=m
+CONFIG_NETFILTER_XT_MATCH_LENGTH=m
+CONFIG_NETFILTER_XT_MATCH_LIMIT=m
+CONFIG_NETFILTER_XT_MATCH_MAC=m
+CONFIG_NETFILTER_XT_MATCH_MARK=m
+CONFIG_NETFILTER_XT_MATCH_MULTIPORT=m
+CONFIG_NETFILTER_XT_MATCH_OSF=m
+CONFIG_NETFILTER_XT_MATCH_OWNER=m
+CONFIG_NETFILTER_XT_MATCH_POLICY=m
+CONFIG_NETFILTER_XT_MATCH_PHYSDEV=m
+CONFIG_NETFILTER_XT_MATCH_PKTTYPE=m
+CONFIG_NETFILTER_XT_MATCH_QUOTA=m
+CONFIG_NETFILTER_XT_MATCH_RATEEST=m
+CONFIG_NETFILTER_XT_MATCH_REALM=m
+CONFIG_NETFILTER_XT_MATCH_RECENT=m
+CONFIG_NETFILTER_XT_MATCH_SCTP=m
+CONFIG_NETFILTER_XT_MATCH_STATE=m
+CONFIG_NETFILTER_XT_MATCH_STATISTIC=m
+CONFIG_NETFILTER_XT_MATCH_STRING=m
+CONFIG_NETFILTER_XT_MATCH_TCPMSS=m
+CONFIG_NETFILTER_XT_MATCH_TIME=m
+CONFIG_NETFILTER_XT_MATCH_U32=m
+CONFIG_IP_SET=m
+CONFIG_IP_SET_MAX=256
+CONFIG_IP_SET_BITMAP_IP=m
+CONFIG_IP_SET_BITMAP_IPMAC=m
+CONFIG_IP_SET_BITMAP_PORT=m
+CONFIG_IP_SET_HASH_IP=m
+CONFIG_IP_SET_HASH_IPPORT=m
+CONFIG_IP_SET_HASH_IPPORTIP=m
+CONFIG_IP_SET_HASH_IPPORTNET=m
+CONFIG_IP_SET_HASH_NET=m
+CONFIG_IP_SET_HASH_NETPORT=m
+CONFIG_IP_SET_HASH_NETIFACE=m
+CONFIG_IP_SET_LIST_SET=m
+CONFIG_IP_VS=m
+# CONFIG_IP_VS_IPV6 is not set
+# CONFIG_IP_VS_DEBUG is not set
+CONFIG_IP_VS_TAB_BITS=12
+
+#
+# IPVS transport protocol load balancing support
+#
+CONFIG_IP_VS_PROTO_TCP=y
+CONFIG_IP_VS_PROTO_UDP=y
+CONFIG_IP_VS_PROTO_AH_ESP=y
+CONFIG_IP_VS_PROTO_ESP=y
+CONFIG_IP_VS_PROTO_AH=y
+# CONFIG_IP_VS_PROTO_SCTP is not set
+
+#
+# IPVS scheduler
+#
+CONFIG_IP_VS_RR=m
+CONFIG_IP_VS_WRR=m
+CONFIG_IP_VS_LC=m
+CONFIG_IP_VS_WLC=m
+CONFIG_IP_VS_LBLC=m
+CONFIG_IP_VS_LBLCR=m
+CONFIG_IP_VS_DH=m
+CONFIG_IP_VS_SH=m
+CONFIG_IP_VS_SED=m
+CONFIG_IP_VS_NQ=m
+
+#
+# IPVS application helper
+#
+CONFIG_IP_VS_FTP=m
+CONFIG_IP_VS_NFCT=y
+CONFIG_IP_VS_PE_SIP=m
+
+#
+# IP: Netfilter Configuration
+#
+CONFIG_NF_DEFRAG_IPV4=m
+CONFIG_NF_CONNTRACK_IPV4=m
+CONFIG_NF_CONNTRACK_PROC_COMPAT=y
+CONFIG_IP_NF_QUEUE=m
+CONFIG_IP_NF_IPTABLES=m
+CONFIG_IP_NF_MATCH_AH=m
+CONFIG_IP_NF_MATCH_ECN=m
+CONFIG_IP_NF_MATCH_TTL=m
+CONFIG_IP_NF_FILTER=m
+CONFIG_IP_NF_TARGET_REJECT=m
+CONFIG_IP_NF_TARGET_LOG=m
+CONFIG_IP_NF_TARGET_ULOG=m
+CONFIG_NF_NAT=m
+CONFIG_NF_NAT_NEEDED=y
+CONFIG_IP_NF_TARGET_MASQUERADE=m
+CONFIG_IP_NF_TARGET_NETMAP=m
+CONFIG_IP_NF_TARGET_REDIRECT=m
+CONFIG_NF_NAT_SNMP_BASIC=m
+CONFIG_NF_NAT_PROTO_DCCP=m
+CONFIG_NF_NAT_PROTO_GRE=m
+CONFIG_NF_NAT_PROTO_UDPLITE=m
+CONFIG_NF_NAT_PROTO_SCTP=m
+CONFIG_NF_NAT_FTP=m
+CONFIG_NF_NAT_IRC=m
+CONFIG_NF_NAT_TFTP=m
+CONFIG_NF_NAT_AMANDA=m
+CONFIG_NF_NAT_PPTP=m
+CONFIG_NF_NAT_H323=m
+CONFIG_NF_NAT_SIP=m
+CONFIG_IP_NF_MANGLE=m
+CONFIG_IP_NF_TARGET_CLUSTERIP=m
+CONFIG_IP_NF_TARGET_ECN=m
+CONFIG_IP_NF_TARGET_TTL=m
+CONFIG_IP_NF_RAW=m
+CONFIG_IP_NF_SECURITY=m
+CONFIG_IP_NF_ARPTABLES=m
+CONFIG_IP_NF_ARPFILTER=m
+CONFIG_IP_NF_ARP_MANGLE=m
+
+#
+# IPv6: Netfilter Configuration
+#
+CONFIG_NF_DEFRAG_IPV6=m
+CONFIG_NF_CONNTRACK_IPV6=m
+CONFIG_IP6_NF_QUEUE=m
+CONFIG_IP6_NF_IPTABLES=m
+CONFIG_IP6_NF_MATCH_AH=m
+CONFIG_IP6_NF_MATCH_EUI64=m
+CONFIG_IP6_NF_MATCH_FRAG=m
+CONFIG_IP6_NF_MATCH_OPTS=m
+CONFIG_IP6_NF_MATCH_HL=m
+CONFIG_IP6_NF_MATCH_IPV6HEADER=m
+CONFIG_IP6_NF_MATCH_MH=m
+CONFIG_IP6_NF_MATCH_RT=m
+CONFIG_IP6_NF_TARGET_HL=m
+CONFIG_IP6_NF_TARGET_LOG=m
+CONFIG_IP6_NF_FILTER=m
+CONFIG_IP6_NF_TARGET_REJECT=m
+CONFIG_IP6_NF_MANGLE=m
+CONFIG_IP6_NF_RAW=m
+CONFIG_IP6_NF_SECURITY=m
+
+#
+# DECnet: Netfilter Configuration
+#
+CONFIG_DECNET_NF_GRABULATOR=m
+CONFIG_BRIDGE_NF_EBTABLES=m
+CONFIG_BRIDGE_EBT_BROUTE=m
+CONFIG_BRIDGE_EBT_T_FILTER=m
+CONFIG_BRIDGE_EBT_T_NAT=m
+CONFIG_BRIDGE_EBT_802_3=m
+CONFIG_BRIDGE_EBT_AMONG=m
+CONFIG_BRIDGE_EBT_ARP=m
+CONFIG_BRIDGE_EBT_IP=m
+CONFIG_BRIDGE_EBT_IP6=m
+CONFIG_BRIDGE_EBT_LIMIT=m
+CONFIG_BRIDGE_EBT_MARK=m
+CONFIG_BRIDGE_EBT_PKTTYPE=m
+CONFIG_BRIDGE_EBT_STP=m
+CONFIG_BRIDGE_EBT_VLAN=m
+CONFIG_BRIDGE_EBT_ARPREPLY=m
+CONFIG_BRIDGE_EBT_DNAT=m
+CONFIG_BRIDGE_EBT_MARK_T=m
+CONFIG_BRIDGE_EBT_REDIRECT=m
+CONFIG_BRIDGE_EBT_SNAT=m
+CONFIG_BRIDGE_EBT_LOG=m
+CONFIG_BRIDGE_EBT_ULOG=m
+CONFIG_BRIDGE_EBT_NFLOG=m
+CONFIG_IP_DCCP=m
+CONFIG_INET_DCCP_DIAG=m
+
+#
+# DCCP CCIDs Configuration (EXPERIMENTAL)
+#
+# CONFIG_IP_DCCP_CCID2_DEBUG is not set
+CONFIG_IP_DCCP_CCID3=y
+# CONFIG_IP_DCCP_CCID3_DEBUG is not set
+CONFIG_IP_DCCP_TFRC_LIB=y
+
+#
+# DCCP Kernel Hacking
+#
+# CONFIG_IP_DCCP_DEBUG is not set
+CONFIG_IP_SCTP=m
+# CONFIG_SCTP_DBG_MSG is not set
+# CONFIG_SCTP_DBG_OBJCNT is not set
+# CONFIG_SCTP_HMAC_NONE is not set
+# CONFIG_SCTP_HMAC_SHA1 is not set
+CONFIG_SCTP_HMAC_MD5=y
+CONFIG_RDS=m
+# CONFIG_RDS_RDMA is not set
+# CONFIG_RDS_TCP is not set
+# CONFIG_RDS_DEBUG is not set
+CONFIG_TIPC=m
+CONFIG_TIPC_ADVANCED=y
+CONFIG_TIPC_PORTS=8191
+CONFIG_TIPC_LOG=0
+# CONFIG_TIPC_DEBUG is not set
+CONFIG_ATM=m
+CONFIG_ATM_CLIP=m
+# CONFIG_ATM_CLIP_NO_ICMP is not set
+CONFIG_ATM_LANE=m
+CONFIG_ATM_MPOA=m
+CONFIG_ATM_BR2684=m
+# CONFIG_ATM_BR2684_IPFILTER is not set
+CONFIG_L2TP=m
+CONFIG_L2TP_DEBUGFS=m
+CONFIG_L2TP_V3=y
+CONFIG_L2TP_IP=m
+CONFIG_L2TP_ETH=m
+CONFIG_STP=m
+CONFIG_BRIDGE=m
+CONFIG_BRIDGE_IGMP_SNOOPING=y
+# CONFIG_NET_DSA is not set
+CONFIG_VLAN_8021Q=m
+# CONFIG_VLAN_8021Q_GVRP is not set
+CONFIG_DECNET=m
+# CONFIG_DECNET_ROUTER is not set
+CONFIG_LLC=y
+CONFIG_LLC2=m
+CONFIG_IPX=m
+# CONFIG_IPX_INTERN is not set
+CONFIG_ATALK=m
+CONFIG_DEV_APPLETALK=m
+CONFIG_IPDDP=m
+# CONFIG_IPDDP_ENCAP is not set
+# CONFIG_IPDDP_DECAP is not set
+CONFIG_X25=m
+CONFIG_LAPB=m
+CONFIG_ECONET=m
+CONFIG_ECONET_AUNUDP=y
+CONFIG_ECONET_NATIVE=y
+CONFIG_WAN_ROUTER=m
+CONFIG_PHONET=m
+# CONFIG_IEEE802154 is not set
+CONFIG_NET_SCHED=y
+
+#
+# Queueing/Scheduling
+#
+CONFIG_NET_SCH_CBQ=m
+CONFIG_NET_SCH_HTB=m
+CONFIG_NET_SCH_HFSC=m
+CONFIG_NET_SCH_ATM=m
+CONFIG_NET_SCH_PRIO=m
+CONFIG_NET_SCH_MULTIQ=m
+CONFIG_NET_SCH_RED=m
+CONFIG_NET_SCH_SFB=m
+CONFIG_NET_SCH_SFQ=m
+CONFIG_NET_SCH_TEQL=m
+CONFIG_NET_SCH_TBF=m
+CONFIG_NET_SCH_GRED=m
+CONFIG_NET_SCH_DSMARK=m
+CONFIG_NET_SCH_NETEM=m
+# CONFIG_NET_SCH_DRR is not set
+CONFIG_NET_SCH_MQPRIO=m
+CONFIG_NET_SCH_CHOKE=m
+CONFIG_NET_SCH_QFQ=m
+CONFIG_NET_SCH_INGRESS=m
+
+#
+# Classification
+#
+CONFIG_NET_CLS=y
+CONFIG_NET_CLS_BASIC=m
+CONFIG_NET_CLS_TCINDEX=m
+CONFIG_NET_CLS_ROUTE4=m
+CONFIG_NET_CLS_FW=m
+CONFIG_NET_CLS_U32=m
+CONFIG_CLS_U32_PERF=y
+CONFIG_CLS_U32_MARK=y
+CONFIG_NET_CLS_RSVP=m
+CONFIG_NET_CLS_RSVP6=m
+CONFIG_NET_CLS_FLOW=m
+# CONFIG_NET_CLS_CGROUP is not set
+CONFIG_NET_EMATCH=y
+CONFIG_NET_EMATCH_STACK=32
+CONFIG_NET_EMATCH_CMP=m
+CONFIG_NET_EMATCH_NBYTE=m
+CONFIG_NET_EMATCH_U32=m
+CONFIG_NET_EMATCH_META=m
+CONFIG_NET_EMATCH_TEXT=m
+CONFIG_NET_CLS_ACT=y
+CONFIG_NET_ACT_POLICE=m
+CONFIG_NET_ACT_GACT=m
+CONFIG_GACT_PROB=y
+CONFIG_NET_ACT_MIRRED=m
+CONFIG_NET_ACT_IPT=m
+CONFIG_NET_ACT_NAT=m
+CONFIG_NET_ACT_PEDIT=m
+CONFIG_NET_ACT_SIMP=m
+CONFIG_NET_ACT_SKBEDIT=m
+CONFIG_NET_ACT_CSUM=m
+CONFIG_NET_CLS_IND=y
+CONFIG_NET_SCH_FIFO=y
+# CONFIG_DCB is not set
+CONFIG_DNS_RESOLVER=y
+CONFIG_BATMAN_ADV=m
+# CONFIG_BATMAN_ADV_DEBUG is not set
+CONFIG_RPS=y
+CONFIG_RFS_ACCEL=y
+CONFIG_XPS=y
+CONFIG_HAVE_BPF_JIT=y
+# CONFIG_BPF_JIT is not set
+
+#
+# Network testing
+#
+CONFIG_NET_PKTGEN=m
+# CONFIG_NET_DROP_MONITOR is not set
+CONFIG_HAMRADIO=y
+
+#
+# Packet Radio protocols
+#
+CONFIG_AX25=m
+# CONFIG_AX25_DAMA_SLAVE is not set
+CONFIG_NETROM=m
+CONFIG_ROSE=m
+
+#
+# AX.25 network device drivers
+#
+CONFIG_MKISS=m
+CONFIG_6PACK=m
+CONFIG_BPQETHER=m
+CONFIG_BAYCOM_SER_FDX=m
+CONFIG_BAYCOM_SER_HDX=m
+CONFIG_BAYCOM_PAR=m
+CONFIG_YAM=m
+CONFIG_CAN=m
+CONFIG_CAN_RAW=m
+CONFIG_CAN_BCM=m
+
+#
+# CAN Device Drivers
+#
+CONFIG_CAN_VCAN=m
+CONFIG_CAN_SLCAN=m
+CONFIG_CAN_DEV=m
+CONFIG_CAN_CALC_BITTIMING=y
+CONFIG_CAN_MCP251X=m
+CONFIG_CAN_JANZ_ICAN3=m
+CONFIG_PCH_CAN=m
+CONFIG_CAN_SJA1000=m
+# CONFIG_CAN_SJA1000_PLATFORM is not set
+# CONFIG_CAN_EMS_PCI is not set
+# CONFIG_CAN_KVASER_PCI is not set
+# CONFIG_CAN_PLX_PCI is not set
+CONFIG_CAN_C_CAN=m
+CONFIG_CAN_C_CAN_PLATFORM=m
+
+#
+# CAN USB interfaces
+#
+CONFIG_CAN_EMS_USB=m
+CONFIG_CAN_ESD_USB2=m
+# CONFIG_CAN_SOFTING is not set
+CONFIG_CAN_DEBUG_DEVICES=y
+CONFIG_IRDA=m
+
+#
+# IrDA protocols
+#
+CONFIG_IRLAN=m
+CONFIG_IRNET=m
+CONFIG_IRCOMM=m
+# CONFIG_IRDA_ULTRA is not set
+
+#
+# IrDA options
+#
+CONFIG_IRDA_CACHE_LAST_LSAP=y
+CONFIG_IRDA_FAST_RR=y
+# CONFIG_IRDA_DEBUG is not set
+
+#
+# Infrared-port device drivers
+#
+
+#
+# SIR device drivers
+#
+CONFIG_IRTTY_SIR=m
+
+#
+# Dongle support
+#
+CONFIG_DONGLE=y
+CONFIG_ESI_DONGLE=m
+CONFIG_ACTISYS_DONGLE=m
+CONFIG_TEKRAM_DONGLE=m
+CONFIG_TOIM3232_DONGLE=m
+CONFIG_LITELINK_DONGLE=m
+CONFIG_MA600_DONGLE=m
+CONFIG_GIRBIL_DONGLE=m
+CONFIG_MCP2120_DONGLE=m
+CONFIG_OLD_BELKIN_DONGLE=m
+CONFIG_ACT200L_DONGLE=m
+CONFIG_KINGSUN_DONGLE=m
+CONFIG_KSDAZZLE_DONGLE=m
+CONFIG_KS959_DONGLE=m
+
+#
+# FIR device drivers
+#
+CONFIG_USB_IRDA=m
+CONFIG_SIGMATEL_FIR=m
+CONFIG_NSC_FIR=m
+CONFIG_WINBOND_FIR=m
+CONFIG_SMC_IRCC_FIR=m
+CONFIG_ALI_FIR=m
+CONFIG_VLSI_FIR=m
+CONFIG_VIA_FIR=m
+CONFIG_MCS_FIR=m
+CONFIG_BT=m
+CONFIG_BT_L2CAP=y
+CONFIG_BT_SCO=y
+CONFIG_BT_RFCOMM=m
+CONFIG_BT_RFCOMM_TTY=y
+CONFIG_BT_BNEP=m
+CONFIG_BT_BNEP_MC_FILTER=y
+CONFIG_BT_BNEP_PROTO_FILTER=y
+CONFIG_BT_HIDP=m
+
+#
+# Bluetooth device drivers
+#
+CONFIG_BT_HCIBTUSB=m
+CONFIG_BT_HCIBTSDIO=m
+CONFIG_BT_HCIUART=m
+CONFIG_BT_HCIUART_H4=y
+CONFIG_BT_HCIUART_BCSP=y
+# CONFIG_BT_HCIUART_ATH3K is not set
+CONFIG_BT_HCIUART_LL=y
+CONFIG_BT_HCIBCM203X=m
+CONFIG_BT_HCIBPA10X=m
+CONFIG_BT_HCIBFUSB=m
+CONFIG_BT_HCIDTL1=m
+CONFIG_BT_HCIBT3C=m
+CONFIG_BT_HCIBLUECARD=m
+CONFIG_BT_HCIBTUART=m
+CONFIG_BT_HCIVHCI=m
+CONFIG_BT_MRVL=m
+CONFIG_BT_MRVL_SDIO=m
+CONFIG_BT_ATH3K=m
+CONFIG_BT_WILINK=m
+CONFIG_AF_RXRPC=m
+# CONFIG_AF_RXRPC_DEBUG is not set
+CONFIG_RXKAD=m
+CONFIG_FIB_RULES=y
+CONFIG_WIRELESS=y
+CONFIG_WIRELESS_EXT=y
+CONFIG_WEXT_CORE=y
+CONFIG_WEXT_PROC=y
+CONFIG_WEXT_SPY=y
+CONFIG_WEXT_PRIV=y
+CONFIG_CFG80211=m
+CONFIG_NL80211_TESTMODE=y
+CONFIG_CFG80211_DEVELOPER_WARNINGS=y
+CONFIG_CFG80211_REG_DEBUG=y
+CONFIG_CFG80211_DEFAULT_PS=y
+CONFIG_CFG80211_DEBUGFS=y
+# CONFIG_CFG80211_INTERNAL_REGDB is not set
+CONFIG_CFG80211_WEXT=y
+CONFIG_WIRELESS_EXT_SYSFS=y
+CONFIG_LIB80211=m
+CONFIG_LIB80211_CRYPT_WEP=m
+CONFIG_LIB80211_CRYPT_CCMP=m
+CONFIG_LIB80211_CRYPT_TKIP=m
+CONFIG_LIB80211_DEBUG=y
+CONFIG_MAC80211=m
+CONFIG_MAC80211_HAS_RC=y
+CONFIG_MAC80211_RC_PID=y
+CONFIG_MAC80211_RC_MINSTREL=y
+CONFIG_MAC80211_RC_MINSTREL_HT=y
+# CONFIG_MAC80211_RC_DEFAULT_PID is not set
+CONFIG_MAC80211_RC_DEFAULT_MINSTREL=y
+CONFIG_MAC80211_RC_DEFAULT="minstrel_ht"
+CONFIG_MAC80211_MESH=y
+CONFIG_MAC80211_LEDS=y
+CONFIG_MAC80211_DEBUGFS=y
+CONFIG_MAC80211_DEBUG_MENU=y
+# CONFIG_MAC80211_NOINLINE is not set
+# CONFIG_MAC80211_VERBOSE_DEBUG is not set
+# CONFIG_MAC80211_HT_DEBUG is not set
+# CONFIG_MAC80211_TKIP_DEBUG is not set
+# CONFIG_MAC80211_IBSS_DEBUG is not set
+# CONFIG_MAC80211_VERBOSE_PS_DEBUG is not set
+# CONFIG_MAC80211_VERBOSE_MPL_DEBUG is not set
+# CONFIG_MAC80211_VERBOSE_MHWMP_DEBUG is not set
+# CONFIG_MAC80211_DEBUG_COUNTERS is not set
+# CONFIG_MAC80211_DRIVER_API_TRACER is not set
+CONFIG_WIMAX=m
+CONFIG_WIMAX_DEBUG_LEVEL=8
+CONFIG_RFKILL=m
+CONFIG_RFKILL_LEDS=y
+CONFIG_RFKILL_INPUT=y
+CONFIG_RFKILL_REGULATOR=m
+CONFIG_NET_9P=m
+CONFIG_NET_9P_VIRTIO=m
+CONFIG_NET_9P_RDMA=m
+# CONFIG_NET_9P_DEBUG is not set
+CONFIG_CAIF=m
+CONFIG_CAIF_DEBUG=y
+CONFIG_CAIF_NETDEV=m
+CONFIG_CEPH_LIB=m
+# CONFIG_CEPH_LIB_PRETTYDEBUG is not set
+CONFIG_NFC=m
+
+#
+# Near Field Communication (NFC) devices
+#
+CONFIG_PN544_NFC=m
+CONFIG_NFC_PN533=m
+
+#
+# Device Drivers
+#
+
+#
+# Generic Driver Options
+#
+CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+CONFIG_DEVTMPFS=y
+CONFIG_DEVTMPFS_MOUNT=y
+CONFIG_STANDALONE=y
+CONFIG_PREVENT_FIRMWARE_BUILD=y
+CONFIG_FW_LOADER=y
+CONFIG_FIRMWARE_IN_KERNEL=y
+CONFIG_EXTRA_FIRMWARE=""
+# CONFIG_DEBUG_DRIVER is not set
+# CONFIG_DEBUG_DEVRES is not set
+# CONFIG_SYS_HYPERVISOR is not set
+CONFIG_CONNECTOR=m
+CONFIG_MTD=m
+# CONFIG_MTD_DEBUG is not set
+# CONFIG_MTD_TESTS is not set
+CONFIG_MTD_REDBOOT_PARTS=m
+CONFIG_MTD_REDBOOT_DIRECTORY_BLOCK=-1
+# CONFIG_MTD_REDBOOT_PARTS_UNALLOCATED is not set
+# CONFIG_MTD_REDBOOT_PARTS_READONLY is not set
+CONFIG_MTD_AR7_PARTS=m
+
+#
+# User Modules And Translation Layers
+#
+CONFIG_MTD_CHAR=m
+CONFIG_MTD_BLKDEVS=m
+CONFIG_MTD_BLOCK=m
+CONFIG_MTD_BLOCK_RO=m
+CONFIG_FTL=m
+CONFIG_NFTL=m
+CONFIG_NFTL_RW=y
+CONFIG_INFTL=m
+CONFIG_RFD_FTL=m
+CONFIG_SSFDC=m
+CONFIG_SM_FTL=m
+CONFIG_MTD_OOPS=m
+CONFIG_MTD_SWAP=m
+
+#
+# RAM/ROM/Flash chip drivers
+#
+CONFIG_MTD_CFI=m
+CONFIG_MTD_JEDECPROBE=m
+CONFIG_MTD_GEN_PROBE=m
+# CONFIG_MTD_CFI_ADV_OPTIONS is not set
+CONFIG_MTD_MAP_BANK_WIDTH_1=y
+CONFIG_MTD_MAP_BANK_WIDTH_2=y
+CONFIG_MTD_MAP_BANK_WIDTH_4=y
+# CONFIG_MTD_MAP_BANK_WIDTH_8 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_16 is not set
+# CONFIG_MTD_MAP_BANK_WIDTH_32 is not set
+CONFIG_MTD_CFI_I1=y
+CONFIG_MTD_CFI_I2=y
+# CONFIG_MTD_CFI_I4 is not set
+# CONFIG_MTD_CFI_I8 is not set
+CONFIG_MTD_CFI_INTELEXT=m
+CONFIG_MTD_CFI_AMDSTD=m
+CONFIG_MTD_CFI_STAA=m
+CONFIG_MTD_CFI_UTIL=m
+CONFIG_MTD_RAM=m
+CONFIG_MTD_ROM=m
+CONFIG_MTD_ABSENT=m
+
+#
+# Mapping drivers for chip access
+#
+CONFIG_MTD_COMPLEX_MAPPINGS=y
+CONFIG_MTD_PHYSMAP=m
+# CONFIG_MTD_PHYSMAP_COMPAT is not set
+CONFIG_MTD_SC520CDP=m
+CONFIG_MTD_NETSC520=m
+CONFIG_MTD_TS5500=m
+CONFIG_MTD_SBC_GXX=m
+# CONFIG_MTD_AMD76XROM is not set
+# CONFIG_MTD_ICHXROM is not set
+# CONFIG_MTD_ESB2ROM is not set
+# CONFIG_MTD_CK804XROM is not set
+# CONFIG_MTD_SCB2_FLASH is not set
+CONFIG_MTD_NETtel=m
+# CONFIG_MTD_L440GX is not set
+CONFIG_MTD_PCI=m
+CONFIG_MTD_PCMCIA=m
+# CONFIG_MTD_PCMCIA_ANONYMOUS is not set
+# CONFIG_MTD_GPIO_ADDR is not set
+CONFIG_MTD_INTEL_VR_NOR=m
+CONFIG_MTD_PLATRAM=m
+CONFIG_MTD_LATCH_ADDR=m
+
+#
+# Self-contained MTD device drivers
+#
+CONFIG_MTD_PMC551=m
+# CONFIG_MTD_PMC551_BUGFIX is not set
+# CONFIG_MTD_PMC551_DEBUG is not set
+CONFIG_MTD_DATAFLASH=m
+# CONFIG_MTD_DATAFLASH_WRITE_VERIFY is not set
+# CONFIG_MTD_DATAFLASH_OTP is not set
+CONFIG_MTD_M25P80=m
+CONFIG_M25PXX_USE_FAST_READ=y
+CONFIG_MTD_SST25L=m
+CONFIG_MTD_SLRAM=m
+CONFIG_MTD_PHRAM=m
+CONFIG_MTD_MTDRAM=m
+CONFIG_MTDRAM_TOTAL_SIZE=4096
+CONFIG_MTDRAM_ERASE_SIZE=128
+CONFIG_MTD_BLOCK2MTD=m
+
+#
+# Disk-On-Chip Device Drivers
+#
+CONFIG_MTD_DOC2000=m
+CONFIG_MTD_DOC2001=m
+CONFIG_MTD_DOC2001PLUS=m
+CONFIG_MTD_DOCPROBE=m
+CONFIG_MTD_DOCECC=m
+# CONFIG_MTD_DOCPROBE_ADVANCED is not set
+CONFIG_MTD_DOCPROBE_ADDRESS=0
+CONFIG_MTD_NAND_ECC=m
+CONFIG_MTD_NAND_ECC_SMC=y
+CONFIG_MTD_NAND=m
+# CONFIG_MTD_NAND_VERIFY_WRITE is not set
+# CONFIG_MTD_NAND_ECC_BCH is not set
+CONFIG_MTD_SM_COMMON=m
+# CONFIG_MTD_NAND_MUSEUM_IDS is not set
+CONFIG_MTD_NAND_DENALI=m
+CONFIG_MTD_NAND_DENALI_SCRATCH_REG_ADDR=0xFF108018
+CONFIG_MTD_NAND_IDS=m
+CONFIG_MTD_NAND_RICOH=m
+CONFIG_MTD_NAND_DISKONCHIP=m
+# CONFIG_MTD_NAND_DISKONCHIP_PROBE_ADVANCED is not set
+CONFIG_MTD_NAND_DISKONCHIP_PROBE_ADDRESS=0
+# CONFIG_MTD_NAND_DISKONCHIP_BBTWRITE is not set
+CONFIG_MTD_NAND_CAFE=m
+# CONFIG_MTD_NAND_NANDSIM is not set
+CONFIG_MTD_NAND_PLATFORM=m
+CONFIG_MTD_ALAUDA=m
+CONFIG_MTD_ONENAND=m
+CONFIG_MTD_ONENAND_VERIFY_WRITE=y
+CONFIG_MTD_ONENAND_GENERIC=m
+# CONFIG_MTD_ONENAND_OTP is not set
+CONFIG_MTD_ONENAND_2X_PROGRAM=y
+CONFIG_MTD_ONENAND_SIM=m
+
+#
+# LPDDR flash memory drivers
+#
+# CONFIG_MTD_LPDDR is not set
+CONFIG_MTD_UBI=m
+CONFIG_MTD_UBI_WL_THRESHOLD=4096
+CONFIG_MTD_UBI_BEB_RESERVE=1
+# CONFIG_MTD_UBI_GLUEBI is not set
+# CONFIG_MTD_UBI_DEBUG is not set
+CONFIG_PARPORT=m
+CONFIG_PARPORT_PC=m
+CONFIG_PARPORT_SERIAL=m
+# CONFIG_PARPORT_PC_FIFO is not set
+# CONFIG_PARPORT_PC_SUPERIO is not set
+CONFIG_PARPORT_PC_PCMCIA=m
+# CONFIG_PARPORT_GSC is not set
+CONFIG_PARPORT_AX88796=m
+CONFIG_PARPORT_1284=y
+CONFIG_PARPORT_NOT_PC=y
+CONFIG_PNP=y
+CONFIG_PNP_DEBUG_MESSAGES=y
+
+#
+# Protocols
+#
+CONFIG_PNPACPI=y
+CONFIG_BLK_DEV=y
+CONFIG_BLK_DEV_FD=m
+CONFIG_PARIDE=m
+
+#
+# Parallel IDE high-level drivers
+#
+CONFIG_PARIDE_PD=m
+CONFIG_PARIDE_PCD=m
+CONFIG_PARIDE_PF=m
+CONFIG_PARIDE_PT=m
+CONFIG_PARIDE_PG=m
+
+#
+# Parallel IDE protocol modules
+#
+CONFIG_PARIDE_ATEN=m
+CONFIG_PARIDE_BPCK=m
+CONFIG_PARIDE_COMM=m
+CONFIG_PARIDE_DSTR=m
+CONFIG_PARIDE_FIT2=m
+CONFIG_PARIDE_FIT3=m
+CONFIG_PARIDE_EPAT=m
+# CONFIG_PARIDE_EPATC8 is not set
+CONFIG_PARIDE_EPIA=m
+CONFIG_PARIDE_FRIQ=m
+CONFIG_PARIDE_FRPW=m
+CONFIG_PARIDE_KBIC=m
+CONFIG_PARIDE_KTTI=m
+CONFIG_PARIDE_ON20=m
+CONFIG_PARIDE_ON26=m
+CONFIG_BLK_CPQ_DA=m
+CONFIG_BLK_CPQ_CISS_DA=m
+CONFIG_CISS_SCSI_TAPE=y
+CONFIG_BLK_DEV_DAC960=m
+CONFIG_BLK_DEV_UMEM=m
+# CONFIG_BLK_DEV_COW_COMMON is not set
+CONFIG_BLK_DEV_LOOP=m
+CONFIG_BLK_DEV_CRYPTOLOOP=m
+# CONFIG_BLK_DEV_DRBD is not set
+CONFIG_BLK_DEV_NBD=m
+# CONFIG_BLK_DEV_OSD is not set
+CONFIG_BLK_DEV_SX8=m
+# CONFIG_BLK_DEV_UB is not set
+CONFIG_BLK_DEV_RAM=y
+CONFIG_BLK_DEV_RAM_COUNT=16
+CONFIG_BLK_DEV_RAM_SIZE=65536
+# CONFIG_BLK_DEV_XIP is not set
+CONFIG_CDROM_PKTCDVD=m
+CONFIG_CDROM_PKTCDVD_BUFFERS=8
+# CONFIG_CDROM_PKTCDVD_WCACHE is not set
+CONFIG_ATA_OVER_ETH=m
+CONFIG_VIRTIO_BLK=m
+# CONFIG_BLK_DEV_HD is not set
+CONFIG_BLK_DEV_RBD=m
+CONFIG_SENSORS_LIS3LV02D=m
+CONFIG_MISC_DEVICES=y
+CONFIG_AD525X_DPOT=m
+CONFIG_AD525X_DPOT_I2C=m
+CONFIG_AD525X_DPOT_SPI=m
+CONFIG_IBM_ASM=m
+CONFIG_PHANTOM=m
+CONFIG_INTEL_MID_PTI=m
+CONFIG_SGI_IOC4=m
+CONFIG_TIFM_CORE=m
+CONFIG_TIFM_7XX1=m
+CONFIG_ICS932S401=m
+CONFIG_ENCLOSURE_SERVICES=m
+CONFIG_CS5535_MFGPT=m
+CONFIG_CS5535_MFGPT_DEFAULT_IRQ=7
+CONFIG_CS5535_CLOCK_EVENT_SRC=m
+CONFIG_HP_ILO=m
+CONFIG_APDS9802ALS=m
+# CONFIG_ISL29003 is not set
+CONFIG_ISL29020=m
+# CONFIG_SENSORS_TSL2550 is not set
+CONFIG_SENSORS_BH1780=m
+CONFIG_SENSORS_BH1770=m
+CONFIG_SENSORS_APDS990X=m
+CONFIG_HMC6352=m
+CONFIG_DS1682=m
+CONFIG_TI_DAC7512=m
+CONFIG_VMWARE_BALLOON=m
+CONFIG_BMP085=m
+CONFIG_PCH_PHUB=m
+# CONFIG_C2PORT is not set
+
+#
+# EEPROM support
+#
+# CONFIG_EEPROM_AT24 is not set
+# CONFIG_EEPROM_AT25 is not set
+# CONFIG_EEPROM_LEGACY is not set
+# CONFIG_EEPROM_MAX6875 is not set
+CONFIG_EEPROM_93CX6=m
+CONFIG_CB710_CORE=m
+# CONFIG_CB710_DEBUG is not set
+CONFIG_CB710_DEBUG_ASSUMPTIONS=y
+CONFIG_IWMC3200TOP=m
+# CONFIG_IWMC3200TOP_DEBUG is not set
+# CONFIG_IWMC3200TOP_DEBUGFS is not set
+
+#
+# Texas Instruments shared transport line discipline
+#
+CONFIG_TI_ST=m
+CONFIG_SENSORS_LIS3_I2C=m
+CONFIG_HAVE_IDE=y
+CONFIG_IDE=m
+
+#
+# Please see Documentation/ide/ide.txt for help/info on IDE drives
+#
+CONFIG_IDE_XFER_MODE=y
+CONFIG_IDE_TIMINGS=y
+CONFIG_IDE_ATAPI=y
+# CONFIG_BLK_DEV_IDE_SATA is not set
+CONFIG_IDE_GD=m
+CONFIG_IDE_GD_ATA=y
+CONFIG_IDE_GD_ATAPI=y
+CONFIG_BLK_DEV_IDECS=m
+CONFIG_BLK_DEV_DELKIN=m
+CONFIG_BLK_DEV_IDECD=m
+CONFIG_BLK_DEV_IDECD_VERBOSE_ERRORS=y
+CONFIG_BLK_DEV_IDETAPE=m
+CONFIG_BLK_DEV_IDEACPI=y
+# CONFIG_IDE_TASK_IOCTL is not set
+CONFIG_IDE_PROC_FS=y
+
+#
+# IDE chipset support/bugfixes
+#
+CONFIG_IDE_GENERIC=m
+# CONFIG_BLK_DEV_PLATFORM is not set
+CONFIG_BLK_DEV_CMD640=m
+# CONFIG_BLK_DEV_CMD640_ENHANCED is not set
+CONFIG_BLK_DEV_IDEPNP=m
+CONFIG_BLK_DEV_IDEDMA_SFF=y
+
+#
+# PCI IDE chipsets support
+#
+CONFIG_BLK_DEV_IDEPCI=y
+# CONFIG_BLK_DEV_OFFBOARD is not set
+CONFIG_BLK_DEV_GENERIC=m
+CONFIG_BLK_DEV_OPTI621=m
+CONFIG_BLK_DEV_RZ1000=m
+CONFIG_BLK_DEV_IDEDMA_PCI=y
+CONFIG_BLK_DEV_AEC62XX=m
+CONFIG_BLK_DEV_ALI15X3=m
+CONFIG_BLK_DEV_AMD74XX=m
+CONFIG_BLK_DEV_ATIIXP=m
+CONFIG_BLK_DEV_CMD64X=m
+CONFIG_BLK_DEV_TRIFLEX=m
+CONFIG_BLK_DEV_CS5520=m
+CONFIG_BLK_DEV_CS5530=m
+CONFIG_BLK_DEV_HPT366=m
+CONFIG_BLK_DEV_JMICRON=m
+CONFIG_BLK_DEV_SC1200=m
+CONFIG_BLK_DEV_PIIX=m
+# CONFIG_BLK_DEV_IT8172 is not set
+CONFIG_BLK_DEV_IT8213=m
+CONFIG_BLK_DEV_IT821X=m
+CONFIG_BLK_DEV_NS87415=m
+CONFIG_BLK_DEV_PDC202XX_OLD=m
+CONFIG_BLK_DEV_PDC202XX_NEW=m
+CONFIG_BLK_DEV_SVWKS=m
+CONFIG_BLK_DEV_SIIMAGE=m
+CONFIG_BLK_DEV_SIS5513=m
+CONFIG_BLK_DEV_SLC90E66=m
+CONFIG_BLK_DEV_TRM290=m
+CONFIG_BLK_DEV_VIA82CXXX=m
+CONFIG_BLK_DEV_TC86C001=m
+CONFIG_BLK_DEV_IDEDMA=y
+
+#
+# SCSI device support
+#
+CONFIG_SCSI_MOD=m
+CONFIG_RAID_ATTRS=m
+CONFIG_SCSI=m
+CONFIG_SCSI_DMA=y
+CONFIG_SCSI_TGT=m
+CONFIG_SCSI_NETLINK=y
+CONFIG_SCSI_PROC_FS=y
+
+#
+# SCSI support type (disk, tape, CD-ROM)
+#
+CONFIG_BLK_DEV_SD=m
+CONFIG_CHR_DEV_ST=m
+CONFIG_CHR_DEV_OSST=m
+CONFIG_BLK_DEV_SR=m
+CONFIG_BLK_DEV_SR_VENDOR=y
+CONFIG_CHR_DEV_SG=m
+CONFIG_CHR_DEV_SCH=m
+CONFIG_SCSI_ENCLOSURE=m
+CONFIG_SCSI_MULTI_LUN=y
+CONFIG_SCSI_CONSTANTS=y
+CONFIG_SCSI_LOGGING=y
+CONFIG_SCSI_SCAN_ASYNC=y
+CONFIG_SCSI_WAIT_SCAN=m
+
+#
+# SCSI Transports
+#
+CONFIG_SCSI_SPI_ATTRS=m
+CONFIG_SCSI_FC_ATTRS=m
+CONFIG_SCSI_FC_TGT_ATTRS=y
+CONFIG_SCSI_ISCSI_ATTRS=m
+CONFIG_SCSI_SAS_ATTRS=m
+CONFIG_SCSI_SAS_LIBSAS=m
+CONFIG_SCSI_SAS_ATA=y
+CONFIG_SCSI_SAS_HOST_SMP=y
+CONFIG_SCSI_SRP_ATTRS=m
+CONFIG_SCSI_SRP_TGT_ATTRS=y
+CONFIG_SCSI_LOWLEVEL=y
+CONFIG_ISCSI_TCP=m
+CONFIG_ISCSI_BOOT_SYSFS=m
+# CONFIG_SCSI_CXGB3_ISCSI is not set
+CONFIG_SCSI_CXGB4_ISCSI=m
+CONFIG_SCSI_BNX2_ISCSI=m
+CONFIG_SCSI_BNX2X_FCOE=m
+CONFIG_BE2ISCSI=m
+CONFIG_BLK_DEV_3W_XXXX_RAID=m
+CONFIG_SCSI_HPSA=m
+CONFIG_SCSI_3W_9XXX=m
+CONFIG_SCSI_3W_SAS=m
+CONFIG_SCSI_ACARD=m
+CONFIG_SCSI_AACRAID=m
+CONFIG_SCSI_AIC7XXX=m
+CONFIG_AIC7XXX_CMDS_PER_DEVICE=8
+CONFIG_AIC7XXX_RESET_DELAY_MS=15000
+CONFIG_AIC7XXX_DEBUG_ENABLE=y
+CONFIG_AIC7XXX_DEBUG_MASK=0
+CONFIG_AIC7XXX_REG_PRETTY_PRINT=y
+CONFIG_SCSI_AIC7XXX_OLD=m
+CONFIG_SCSI_AIC79XX=m
+CONFIG_AIC79XX_CMDS_PER_DEVICE=32
+CONFIG_AIC79XX_RESET_DELAY_MS=15000
+CONFIG_AIC79XX_DEBUG_ENABLE=y
+CONFIG_AIC79XX_DEBUG_MASK=0
+CONFIG_AIC79XX_REG_PRETTY_PRINT=y
+CONFIG_SCSI_AIC94XX=m
+# CONFIG_AIC94XX_DEBUG is not set
+CONFIG_SCSI_MVSAS=m
+CONFIG_SCSI_MVSAS_DEBUG=y
+CONFIG_SCSI_DPT_I2O=m
+CONFIG_SCSI_ADVANSYS=m
+CONFIG_SCSI_ARCMSR=m
+# CONFIG_SCSI_ARCMSR_AER is not set
+CONFIG_MEGARAID_NEWGEN=y
+CONFIG_MEGARAID_MM=m
+CONFIG_MEGARAID_MAILBOX=m
+CONFIG_MEGARAID_LEGACY=m
+CONFIG_MEGARAID_SAS=m
+CONFIG_SCSI_MPT2SAS=m
+CONFIG_SCSI_MPT2SAS_MAX_SGE=128
+# CONFIG_SCSI_MPT2SAS_LOGGING is not set
+CONFIG_SCSI_HPTIOP=m
+CONFIG_SCSI_BUSLOGIC=m
+CONFIG_VMWARE_PVSCSI=m
+CONFIG_LIBFC=m
+CONFIG_LIBFCOE=m
+# CONFIG_FCOE is not set
+CONFIG_FCOE_FNIC=m
+CONFIG_SCSI_DMX3191D=m
+CONFIG_SCSI_EATA=m
+CONFIG_SCSI_EATA_TAGGED_QUEUE=y
+CONFIG_SCSI_EATA_LINKED_COMMANDS=y
+CONFIG_SCSI_EATA_MAX_TAGS=16
+CONFIG_SCSI_FUTURE_DOMAIN=m
+CONFIG_SCSI_GDTH=m
+CONFIG_SCSI_ISCI=m
+CONFIG_SCSI_IPS=m
+CONFIG_SCSI_INITIO=m
+CONFIG_SCSI_INIA100=m
+CONFIG_SCSI_PPA=m
+CONFIG_SCSI_IMM=m
+# CONFIG_SCSI_IZIP_EPP16 is not set
+# CONFIG_SCSI_IZIP_SLOW_CTR is not set
+CONFIG_SCSI_STEX=m
+CONFIG_SCSI_SYM53C8XX_2=m
+CONFIG_SCSI_SYM53C8XX_DMA_ADDRESSING_MODE=1
+CONFIG_SCSI_SYM53C8XX_DEFAULT_TAGS=16
+CONFIG_SCSI_SYM53C8XX_MAX_TAGS=64
+CONFIG_SCSI_SYM53C8XX_MMIO=y
+CONFIG_SCSI_IPR=m
+# CONFIG_SCSI_IPR_TRACE is not set
+# CONFIG_SCSI_IPR_DUMP is not set
+CONFIG_SCSI_QLOGIC_1280=m
+CONFIG_SCSI_QLA_FC=m
+CONFIG_SCSI_QLA_ISCSI=m
+CONFIG_SCSI_LPFC=m
+# CONFIG_SCSI_LPFC_DEBUG_FS is not set
+CONFIG_SCSI_DC395x=m
+CONFIG_SCSI_DC390T=m
+CONFIG_SCSI_DEBUG=m
+CONFIG_SCSI_PMCRAID=m
+CONFIG_SCSI_PM8001=m
+CONFIG_SCSI_SRP=m
+CONFIG_SCSI_BFA_FC=m
+CONFIG_SCSI_LOWLEVEL_PCMCIA=y
+CONFIG_PCMCIA_AHA152X=m
+CONFIG_PCMCIA_FDOMAIN=m
+CONFIG_PCMCIA_QLOGIC=m
+CONFIG_PCMCIA_SYM53C500=m
+CONFIG_SCSI_DH=m
+CONFIG_SCSI_DH_RDAC=m
+CONFIG_SCSI_DH_HP_SW=m
+CONFIG_SCSI_DH_EMC=m
+CONFIG_SCSI_DH_ALUA=m
+CONFIG_SCSI_OSD_INITIATOR=m
+CONFIG_SCSI_OSD_ULD=m
+CONFIG_SCSI_OSD_DPRINT_SENSE=1
+# CONFIG_SCSI_OSD_DEBUG is not set
+CONFIG_ATA=m
+# CONFIG_ATA_NONSTANDARD is not set
+CONFIG_ATA_VERBOSE_ERROR=y
+CONFIG_ATA_ACPI=y
+CONFIG_SATA_PMP=y
+
+#
+# Controllers with non-SFF native interface
+#
+CONFIG_SATA_AHCI=m
+CONFIG_SATA_AHCI_PLATFORM=m
+CONFIG_SATA_INIC162X=m
+CONFIG_SATA_ACARD_AHCI=m
+CONFIG_SATA_SIL24=m
+CONFIG_ATA_SFF=y
+
+#
+# SFF controllers with custom DMA interface
+#
+CONFIG_PDC_ADMA=m
+CONFIG_SATA_QSTOR=m
+CONFIG_SATA_SX4=m
+CONFIG_ATA_BMDMA=y
+
+#
+# SATA SFF controllers with BMDMA
+#
+CONFIG_ATA_PIIX=m
+CONFIG_SATA_MV=m
+CONFIG_SATA_NV=m
+CONFIG_SATA_PROMISE=m
+CONFIG_SATA_SIL=m
+CONFIG_SATA_SIS=m
+CONFIG_SATA_SVW=m
+CONFIG_SATA_ULI=m
+CONFIG_SATA_VIA=m
+CONFIG_SATA_VITESSE=m
+
+#
+# PATA SFF controllers with BMDMA
+#
+# CONFIG_PATA_ALI is not set
+# CONFIG_PATA_AMD is not set
+CONFIG_PATA_ARASAN_CF=m
+CONFIG_PATA_ARTOP=m
+# CONFIG_PATA_ATIIXP is not set
+CONFIG_PATA_ATP867X=m
+# CONFIG_PATA_CMD64X is not set
+# CONFIG_PATA_CS5520 is not set
+# CONFIG_PATA_CS5530 is not set
+CONFIG_PATA_CS5536=m
+# CONFIG_PATA_CYPRESS is not set
+# CONFIG_PATA_EFAR is not set
+# CONFIG_PATA_HPT366 is not set
+# CONFIG_PATA_HPT37X is not set
+# CONFIG_PATA_HPT3X2N is not set
+# CONFIG_PATA_HPT3X3 is not set
+# CONFIG_PATA_IT8213 is not set
+# CONFIG_PATA_IT821X is not set
+# CONFIG_PATA_JMICRON is not set
+CONFIG_PATA_MARVELL=m
+# CONFIG_PATA_NETCELL is not set
+# CONFIG_PATA_NINJA32 is not set
+# CONFIG_PATA_NS87415 is not set
+# CONFIG_PATA_OLDPIIX is not set
+# CONFIG_PATA_OPTIDMA is not set
+# CONFIG_PATA_PDC2027X is not set
+# CONFIG_PATA_PDC_OLD is not set
+# CONFIG_PATA_RADISYS is not set
+CONFIG_PATA_RDC=m
+# CONFIG_PATA_SC1200 is not set
+CONFIG_PATA_SCH=m
+# CONFIG_PATA_SERVERWORKS is not set
+# CONFIG_PATA_SIL680 is not set
+CONFIG_PATA_SIS=m
+CONFIG_PATA_TOSHIBA=m
+# CONFIG_PATA_TRIFLEX is not set
+# CONFIG_PATA_VIA is not set
+# CONFIG_PATA_WINBOND is not set
+
+#
+# PIO-only SFF controllers
+#
+# CONFIG_PATA_CMD640_PCI is not set
+# CONFIG_PATA_MPIIX is not set
+# CONFIG_PATA_NS87410 is not set
+# CONFIG_PATA_OPTI is not set
+# CONFIG_PATA_PCMCIA is not set
+CONFIG_PATA_PLATFORM=m
+# CONFIG_PATA_RZ1000 is not set
+
+#
+# Generic fallback / legacy drivers
+#
+# CONFIG_PATA_ACPI is not set
+CONFIG_ATA_GENERIC=m
+CONFIG_PATA_LEGACY=m
+CONFIG_MD=y
+CONFIG_BLK_DEV_MD=m
+CONFIG_MD_LINEAR=m
+CONFIG_MD_RAID0=m
+CONFIG_MD_RAID1=m
+CONFIG_MD_RAID10=m
+CONFIG_MD_RAID456=m
+# CONFIG_MULTICORE_RAID456 is not set
+CONFIG_MD_MULTIPATH=m
+CONFIG_MD_FAULTY=m
+CONFIG_BLK_DEV_DM=m
+# CONFIG_DM_DEBUG is not set
+CONFIG_DM_CRYPT=m
+CONFIG_DM_SNAPSHOT=m
+CONFIG_DM_MIRROR=m
+CONFIG_DM_RAID=m
+CONFIG_DM_LOG_USERSPACE=m
+CONFIG_DM_ZERO=m
+CONFIG_DM_MULTIPATH=m
+CONFIG_DM_MULTIPATH_QL=m
+CONFIG_DM_MULTIPATH_ST=m
+CONFIG_DM_DELAY=m
+CONFIG_DM_UEVENT=y
+CONFIG_DM_FLAKEY=m
+CONFIG_TARGET_CORE=m
+# CONFIG_TCM_IBLOCK is not set
+CONFIG_TCM_FILEIO=m
+CONFIG_TCM_PSCSI=m
+CONFIG_LOOPBACK_TARGET=m
+# CONFIG_LOOPBACK_TARGET_CDB_DEBUG is not set
+CONFIG_TCM_FC=m
+CONFIG_FUSION=y
+CONFIG_FUSION_SPI=m
+CONFIG_FUSION_FC=m
+CONFIG_FUSION_SAS=m
+CONFIG_FUSION_MAX_SGE=40
+CONFIG_FUSION_CTL=m
+CONFIG_FUSION_LAN=m
+# CONFIG_FUSION_LOGGING is not set
+
+#
+# IEEE 1394 (FireWire) support
+#
+# CONFIG_FIREWIRE is not set
+CONFIG_FIREWIRE_NOSY=m
+CONFIG_I2O=m
+CONFIG_I2O_LCT_NOTIFY_ON_CHANGES=y
+CONFIG_I2O_EXT_ADAPTEC=y
+CONFIG_I2O_EXT_ADAPTEC_DMA64=y
+CONFIG_I2O_CONFIG=m
+CONFIG_I2O_CONFIG_OLD_IOCTL=y
+CONFIG_I2O_BUS=m
+CONFIG_I2O_BLOCK=m
+CONFIG_I2O_SCSI=m
+CONFIG_I2O_PROC=m
+CONFIG_MACINTOSH_DRIVERS=y
+CONFIG_MAC_EMUMOUSEBTN=y
+CONFIG_NETDEVICES=y
+CONFIG_IFB=m
+CONFIG_DUMMY=m
+CONFIG_BONDING=m
+CONFIG_MACVLAN=m
+CONFIG_MACVTAP=m
+CONFIG_EQUALIZER=m
+CONFIG_TUN=m
+CONFIG_VETH=m
+CONFIG_NET_SB1000=m
+CONFIG_ARCNET=m
+CONFIG_ARCNET_1201=m
+CONFIG_ARCNET_1051=m
+CONFIG_ARCNET_RAW=m
+CONFIG_ARCNET_CAP=m
+CONFIG_ARCNET_COM90xx=m
+CONFIG_ARCNET_COM90xxIO=m
+CONFIG_ARCNET_RIM_I=m
+CONFIG_ARCNET_COM20020=m
+CONFIG_ARCNET_COM20020_PCI=m
+CONFIG_MII=m
+CONFIG_PHYLIB=m
+
+#
+# MII PHY device drivers
+#
+CONFIG_MARVELL_PHY=m
+CONFIG_DAVICOM_PHY=m
+CONFIG_QSEMI_PHY=m
+CONFIG_LXT_PHY=m
+CONFIG_CICADA_PHY=m
+CONFIG_VITESSE_PHY=m
+CONFIG_SMSC_PHY=m
+CONFIG_BROADCOM_PHY=m
+CONFIG_ICPLUS_PHY=m
+CONFIG_REALTEK_PHY=m
+# CONFIG_NATIONAL_PHY is not set
+# CONFIG_STE10XP is not set
+# CONFIG_LSI_ET1011C_PHY is not set
+CONFIG_MICREL_PHY=m
+CONFIG_MDIO_BITBANG=m
+# CONFIG_MDIO_GPIO is not set
+CONFIG_NET_ETHERNET=y
+CONFIG_HAPPYMEAL=m
+CONFIG_SUNGEM=m
+CONFIG_CASSINI=m
+CONFIG_NET_VENDOR_3COM=y
+CONFIG_VORTEX=m
+CONFIG_TYPHOON=m
+CONFIG_ENC28J60=m
+# CONFIG_ENC28J60_WRITEVERIFY is not set
+CONFIG_ETHOC=m
+# CONFIG_DNET is not set
+CONFIG_NET_TULIP=y
+CONFIG_DE2104X=m
+CONFIG_DE2104X_DSL=0
+CONFIG_TULIP=m
+# CONFIG_TULIP_MWI is not set
+# CONFIG_TULIP_MMIO is not set
+CONFIG_TULIP_NAPI=y
+CONFIG_TULIP_NAPI_HW_MITIGATION=y
+CONFIG_DE4X5=m
+CONFIG_WINBOND_840=m
+CONFIG_DM9102=m
+CONFIG_ULI526X=m
+CONFIG_PCMCIA_XIRCOM=m
+CONFIG_HP100=m
+# CONFIG_IBM_NEW_EMAC_ZMII is not set
+# CONFIG_IBM_NEW_EMAC_RGMII is not set
+# CONFIG_IBM_NEW_EMAC_TAH is not set
+# CONFIG_IBM_NEW_EMAC_EMAC4 is not set
+# CONFIG_IBM_NEW_EMAC_NO_FLOW_CTRL is not set
+# CONFIG_IBM_NEW_EMAC_MAL_CLR_ICINTSTAT is not set
+# CONFIG_IBM_NEW_EMAC_MAL_COMMON_ERR is not set
+CONFIG_NET_PCI=y
+CONFIG_PCNET32=m
+CONFIG_AMD8111_ETH=m
+CONFIG_ADAPTEC_STARFIRE=m
+CONFIG_KSZ884X_PCI=m
+CONFIG_B44=m
+CONFIG_B44_PCI_AUTOSELECT=y
+CONFIG_B44_PCICORE_AUTOSELECT=y
+CONFIG_B44_PCI=y
+CONFIG_FORCEDETH=m
+CONFIG_E100=m
+CONFIG_FEALNX=m
+CONFIG_NATSEMI=m
+CONFIG_NE2K_PCI=m
+CONFIG_8139CP=m
+CONFIG_8139TOO=m
+# CONFIG_8139TOO_PIO is not set
+CONFIG_8139TOO_TUNE_TWISTER=y
+CONFIG_8139TOO_8129=y
+# CONFIG_8139_OLD_RX_RESET is not set
+CONFIG_R6040=m
+CONFIG_SIS900=m
+CONFIG_EPIC100=m
+# CONFIG_SMSC9420 is not set
+CONFIG_SUNDANCE=m
+# CONFIG_SUNDANCE_MMIO is not set
+CONFIG_TLAN=m
+CONFIG_KS8842=m
+CONFIG_KS8851=m
+CONFIG_KS8851_MLL=m
+CONFIG_VIA_RHINE=m
+# CONFIG_VIA_RHINE_MMIO is not set
+CONFIG_SC92031=m
+# CONFIG_NET_POCKET is not set
+CONFIG_ATL2=m
+CONFIG_NETDEV_1000=y
+CONFIG_ACENIC=m
+# CONFIG_ACENIC_OMIT_TIGON_I is not set
+CONFIG_DL2K=m
+CONFIG_E1000=m
+CONFIG_E1000E=m
+CONFIG_IP1000=m
+CONFIG_IGB=m
+CONFIG_IGB_DCA=y
+CONFIG_IGBVF=m
+CONFIG_NS83820=m
+CONFIG_HAMACHI=m
+CONFIG_YELLOWFIN=m
+CONFIG_R8169=m
+CONFIG_SIS190=m
+CONFIG_SKGE=m
+# CONFIG_SKGE_DEBUG is not set
+CONFIG_SKY2=m
+# CONFIG_SKY2_DEBUG is not set
+CONFIG_VIA_VELOCITY=m
+CONFIG_TIGON3=m
+CONFIG_BNX2=m
+CONFIG_CNIC=m
+CONFIG_QLA3XXX=m
+CONFIG_ATL1=m
+CONFIG_ATL1E=m
+# CONFIG_ATL1C is not set
+CONFIG_JME=m
+CONFIG_STMMAC_ETH=m
+# CONFIG_STMMAC_DA is not set
+# CONFIG_STMMAC_DUAL_MAC is not set
+CONFIG_PCH_GBE=m
+CONFIG_NETDEV_10000=y
+CONFIG_MDIO=m
+CONFIG_CHELSIO_T1=m
+CONFIG_CHELSIO_T1_1G=y
+CONFIG_CHELSIO_T3=m
+CONFIG_CHELSIO_T4=m
+CONFIG_CHELSIO_T4VF=m
+CONFIG_ENIC=m
+CONFIG_IXGBE=m
+CONFIG_IXGBE_DCA=y
+CONFIG_IXGBEVF=m
+CONFIG_IXGB=m
+CONFIG_S2IO=m
+CONFIG_VXGE=m
+# CONFIG_VXGE_DEBUG_TRACE_ALL is not set
+CONFIG_MYRI10GE=m
+CONFIG_MYRI10GE_DCA=y
+CONFIG_NETXEN_NIC=m
+CONFIG_NIU=m
+CONFIG_MLX4_EN=m
+CONFIG_MLX4_CORE=m
+CONFIG_MLX4_DEBUG=y
+CONFIG_TEHUTI=m
+CONFIG_BNX2X=m
+CONFIG_QLCNIC=m
+CONFIG_QLGE=m
+CONFIG_BNA=m
+CONFIG_SFC=m
+CONFIG_SFC_MTD=y
+# CONFIG_BE2NET is not set
+CONFIG_TR=y
+CONFIG_IBMOL=m
+# CONFIG_3C359 is not set
+CONFIG_TMS380TR=m
+CONFIG_TMSPCI=m
+CONFIG_ABYSS=m
+CONFIG_WLAN=y
+CONFIG_PCMCIA_RAYCS=m
+CONFIG_LIBERTAS_THINFIRM=m
+# CONFIG_LIBERTAS_THINFIRM_DEBUG is not set
+CONFIG_LIBERTAS_THINFIRM_USB=m
+CONFIG_AIRO=m
+CONFIG_ATMEL=m
+CONFIG_PCI_ATMEL=m
+CONFIG_PCMCIA_ATMEL=m
+CONFIG_AT76C50X_USB=m
+CONFIG_AIRO_CS=m
+CONFIG_PCMCIA_WL3501=m
+CONFIG_PRISM54=m
+CONFIG_USB_ZD1201=m
+CONFIG_USB_NET_RNDIS_WLAN=m
+CONFIG_RTL8180=m
+CONFIG_RTL8187=m
+CONFIG_RTL8187_LEDS=y
+CONFIG_ADM8211=m
+CONFIG_MAC80211_HWSIM=m
+CONFIG_MWL8K=m
+CONFIG_ATH_COMMON=m
+# CONFIG_ATH_DEBUG is not set
+CONFIG_ATH5K=m
+# CONFIG_ATH5K_DEBUG is not set
+CONFIG_ATH5K_TRACER=y
+CONFIG_ATH5K_PCI=y
+CONFIG_ATH9K_HW=m
+CONFIG_ATH9K_COMMON=m
+CONFIG_ATH9K=m
+CONFIG_ATH9K_PCI=y
+# CONFIG_ATH9K_AHB is not set
+# CONFIG_ATH9K_DEBUGFS is not set
+CONFIG_ATH9K_RATE_CONTROL=y
+CONFIG_ATH9K_HTC=m
+# CONFIG_ATH9K_HTC_DEBUGFS is not set
+CONFIG_CARL9170=m
+CONFIG_CARL9170_LEDS=y
+# CONFIG_CARL9170_DEBUGFS is not set
+CONFIG_CARL9170_WPC=y
+CONFIG_B43=m
+CONFIG_B43_SSB=y
+CONFIG_B43_PCI_AUTOSELECT=y
+CONFIG_B43_PCICORE_AUTOSELECT=y
+CONFIG_B43_PCMCIA=y
+CONFIG_B43_SDIO=y
+CONFIG_B43_PIO=y
+# CONFIG_B43_PHY_N is not set
+CONFIG_B43_PHY_LP=y
+CONFIG_B43_LEDS=y
+CONFIG_B43_HWRNG=y
+CONFIG_B43_DEBUG=y
+CONFIG_B43_FORCE_PIO=y
+CONFIG_B43LEGACY=m
+CONFIG_B43LEGACY_PCI_AUTOSELECT=y
+CONFIG_B43LEGACY_PCICORE_AUTOSELECT=y
+CONFIG_B43LEGACY_LEDS=y
+CONFIG_B43LEGACY_HWRNG=y
+CONFIG_B43LEGACY_DEBUG=y
+CONFIG_B43LEGACY_DMA=y
+CONFIG_B43LEGACY_PIO=y
+CONFIG_B43LEGACY_DMA_AND_PIO_MODE=y
+# CONFIG_B43LEGACY_DMA_MODE is not set
+# CONFIG_B43LEGACY_PIO_MODE is not set
+CONFIG_HOSTAP=m
+CONFIG_HOSTAP_FIRMWARE=y
+CONFIG_HOSTAP_FIRMWARE_NVRAM=y
+CONFIG_HOSTAP_PLX=m
+CONFIG_HOSTAP_PCI=m
+CONFIG_HOSTAP_CS=m
+CONFIG_IPW2100=m
+CONFIG_IPW2100_MONITOR=y
+CONFIG_IPW2100_DEBUG=y
+CONFIG_IPW2200=m
+CONFIG_IPW2200_MONITOR=y
+CONFIG_IPW2200_RADIOTAP=y
+CONFIG_IPW2200_PROMISCUOUS=y
+CONFIG_IPW2200_QOS=y
+CONFIG_IPW2200_DEBUG=y
+CONFIG_LIBIPW=m
+CONFIG_LIBIPW_DEBUG=y
+CONFIG_IWLAGN=m
+
+#
+# Debugging Options
+#
+# CONFIG_IWLWIFI_DEBUG is not set
+# CONFIG_IWLWIFI_DEBUGFS is not set
+# CONFIG_IWLWIFI_DEVICE_TRACING is not set
+# CONFIG_IWLWIFI_DEVICE_SVTOOL is not set
+CONFIG_IWL_P2P=y
+CONFIG_IWLWIFI_LEGACY=m
+
+#
+# Debugging Options
+#
+CONFIG_IWLWIFI_LEGACY_DEBUG=y
+CONFIG_IWLWIFI_LEGACY_DEBUGFS=y
+CONFIG_IWLWIFI_LEGACY_DEVICE_TRACING=y
+CONFIG_IWL4965=m
+CONFIG_IWL3945=m
+CONFIG_IWM=m
+CONFIG_IWM_DEBUG=y
+# CONFIG_IWM_TRACING is not set
+CONFIG_LIBERTAS=m
+CONFIG_LIBERTAS_USB=m
+CONFIG_LIBERTAS_CS=m
+CONFIG_LIBERTAS_SDIO=m
+CONFIG_LIBERTAS_SPI=m
+CONFIG_LIBERTAS_DEBUG=y
+CONFIG_LIBERTAS_MESH=y
+CONFIG_HERMES=m
+# CONFIG_HERMES_PRISM is not set
+CONFIG_HERMES_CACHE_FW_ON_INIT=y
+CONFIG_PLX_HERMES=m
+CONFIG_TMD_HERMES=m
+CONFIG_NORTEL_HERMES=m
+CONFIG_PCMCIA_HERMES=m
+CONFIG_PCMCIA_SPECTRUM=m
+CONFIG_ORINOCO_USB=m
+CONFIG_P54_COMMON=m
+CONFIG_P54_USB=m
+CONFIG_P54_PCI=m
+CONFIG_P54_SPI=m
+# CONFIG_P54_SPI_DEFAULT_EEPROM is not set
+CONFIG_P54_LEDS=y
+CONFIG_RT2X00=m
+# CONFIG_RT2400PCI is not set
+# CONFIG_RT2500PCI is not set
+# CONFIG_RT61PCI is not set
+# CONFIG_RT2800PCI is not set
+# CONFIG_RT2500USB is not set
+# CONFIG_RT73USB is not set
+# CONFIG_RT2800USB is not set
+CONFIG_RTL8192CE=m
+CONFIG_RTL8192SE=m
+CONFIG_RTL8192DE=m
+CONFIG_RTL8192CU=m
+CONFIG_RTLWIFI=m
+CONFIG_RTL8192C_COMMON=m
+# CONFIG_WL1251 is not set
+CONFIG_WL12XX_MENU=m
+CONFIG_WL12XX=m
+# CONFIG_WL12XX_HT is not set
+CONFIG_WL12XX_SPI=m
+CONFIG_WL12XX_SDIO=m
+CONFIG_WL12XX_SDIO_TEST=m
+CONFIG_WL12XX_PLATFORM_DATA=y
+CONFIG_ZD1211RW=m
+# CONFIG_ZD1211RW_DEBUG is not set
+CONFIG_MWIFIEX=m
+CONFIG_MWIFIEX_SDIO=m
+
+#
+# WiMAX Wireless Broadband devices
+#
+# CONFIG_WIMAX_I2400M_USB is not set
+# CONFIG_WIMAX_I2400M_SDIO is not set
+
+#
+# USB Network Adapters
+#
+CONFIG_USB_CATC=m
+CONFIG_USB_KAWETH=m
+CONFIG_USB_PEGASUS=m
+CONFIG_USB_RTL8150=m
+CONFIG_USB_USBNET=m
+CONFIG_USB_NET_AX8817X=m
+CONFIG_USB_NET_CDCETHER=m
+CONFIG_USB_NET_CDC_EEM=m
+CONFIG_USB_NET_CDC_NCM=m
+CONFIG_USB_NET_DM9601=m
+CONFIG_USB_NET_SMSC75XX=m
+CONFIG_USB_NET_SMSC95XX=m
+CONFIG_USB_NET_GL620A=m
+CONFIG_USB_NET_NET1080=m
+CONFIG_USB_NET_PLUSB=m
+CONFIG_USB_NET_MCS7830=m
+CONFIG_USB_NET_RNDIS_HOST=m
+CONFIG_USB_NET_CDC_SUBSET=m
+CONFIG_USB_ALI_M5632=y
+CONFIG_USB_AN2720=y
+CONFIG_USB_BELKIN=y
+CONFIG_USB_ARMLINUX=y
+CONFIG_USB_EPSON2888=y
+CONFIG_USB_KC2190=y
+CONFIG_USB_NET_ZAURUS=m
+CONFIG_USB_NET_CX82310_ETH=m
+CONFIG_USB_NET_KALMIA=m
+CONFIG_USB_HSO=m
+CONFIG_USB_NET_INT51X1=m
+CONFIG_USB_CDC_PHONET=m
+CONFIG_USB_IPHETH=m
+CONFIG_USB_SIERRA_NET=m
+CONFIG_USB_VL600=m
+CONFIG_NET_PCMCIA=y
+CONFIG_PCMCIA_3C589=m
+CONFIG_PCMCIA_3C574=m
+CONFIG_PCMCIA_FMVJ18X=m
+CONFIG_PCMCIA_PCNET=m
+CONFIG_PCMCIA_NMCLAN=m
+CONFIG_PCMCIA_SMC91C92=m
+CONFIG_PCMCIA_XIRC2PS=m
+CONFIG_PCMCIA_AXNET=m
+CONFIG_ARCNET_COM20020_CS=m
+# CONFIG_PCMCIA_IBMTR is not set
+CONFIG_WAN=y
+CONFIG_LANMEDIA=m
+CONFIG_HDLC=m
+CONFIG_HDLC_RAW=m
+CONFIG_HDLC_RAW_ETH=m
+CONFIG_HDLC_CISCO=m
+CONFIG_HDLC_FR=m
+CONFIG_HDLC_PPP=m
+CONFIG_HDLC_X25=m
+CONFIG_PCI200SYN=m
+CONFIG_WANXL=m
+# CONFIG_PC300TOO is not set
+CONFIG_FARSYNC=m
+CONFIG_DSCC4=m
+CONFIG_DSCC4_PCISYNC=y
+CONFIG_DSCC4_PCI_RST=y
+CONFIG_DLCI=m
+CONFIG_DLCI_MAX=8
+CONFIG_WAN_ROUTER_DRIVERS=m
+CONFIG_CYCLADES_SYNC=m
+CONFIG_CYCLOMX_X25=y
+CONFIG_LAPBETHER=m
+CONFIG_X25_ASY=m
+CONFIG_SBNI=m
+# CONFIG_SBNI_MULTILINE is not set
+CONFIG_ATM_DRIVERS=y
+CONFIG_ATM_DUMMY=m
+CONFIG_ATM_TCP=m
+CONFIG_ATM_LANAI=m
+CONFIG_ATM_ENI=m
+# CONFIG_ATM_ENI_DEBUG is not set
+# CONFIG_ATM_ENI_TUNE_BURST is not set
+CONFIG_ATM_FIRESTREAM=m
+CONFIG_ATM_ZATM=m
+# CONFIG_ATM_ZATM_DEBUG is not set
+CONFIG_ATM_NICSTAR=m
+# CONFIG_ATM_NICSTAR_USE_SUNI is not set
+# CONFIG_ATM_NICSTAR_USE_IDT77105 is not set
+CONFIG_ATM_IDT77252=m
+# CONFIG_ATM_IDT77252_DEBUG is not set
+# CONFIG_ATM_IDT77252_RCV_ALL is not set
+CONFIG_ATM_IDT77252_USE_SUNI=y
+CONFIG_ATM_AMBASSADOR=m
+# CONFIG_ATM_AMBASSADOR_DEBUG is not set
+CONFIG_ATM_HORIZON=m
+# CONFIG_ATM_HORIZON_DEBUG is not set
+CONFIG_ATM_IA=m
+# CONFIG_ATM_IA_DEBUG is not set
+CONFIG_ATM_FORE200E=m
+# CONFIG_ATM_FORE200E_USE_TASKLET is not set
+CONFIG_ATM_FORE200E_TX_RETRY=16
+CONFIG_ATM_FORE200E_DEBUG=0
+CONFIG_ATM_HE=m
+CONFIG_ATM_HE_USE_SUNI=y
+# CONFIG_ATM_SOLOS is not set
+
+#
+# CAIF transport drivers
+#
+CONFIG_CAIF_TTY=m
+CONFIG_CAIF_SPI_SLAVE=m
+# CONFIG_CAIF_SPI_SYNC is not set
+CONFIG_CAIF_HSI=m
+CONFIG_FDDI=y
+CONFIG_DEFXX=m
+CONFIG_DEFXX_MMIO=y
+CONFIG_SKFP=m
+CONFIG_HIPPI=y
+CONFIG_ROADRUNNER=m
+CONFIG_ROADRUNNER_LARGE_RINGS=y
+CONFIG_PLIP=m
+CONFIG_PPP=m
+CONFIG_PPP_MULTILINK=y
+CONFIG_PPP_FILTER=y
+CONFIG_PPP_ASYNC=m
+CONFIG_PPP_SYNC_TTY=m
+CONFIG_PPP_DEFLATE=m
+CONFIG_PPP_BSDCOMP=m
+CONFIG_PPP_MPPE=m
+CONFIG_PPPOE=m
+CONFIG_PPTP=m
+CONFIG_PPPOATM=m
+CONFIG_PPPOL2TP=m
+CONFIG_SLIP=m
+CONFIG_SLIP_COMPRESSED=y
+CONFIG_SLHC=m
+CONFIG_SLIP_SMART=y
+CONFIG_SLIP_MODE_SLIP6=y
+CONFIG_NET_FC=y
+CONFIG_NETCONSOLE=m
+CONFIG_NETCONSOLE_DYNAMIC=y
+CONFIG_NETPOLL=y
+CONFIG_NETPOLL_TRAP=y
+CONFIG_NET_POLL_CONTROLLER=y
+CONFIG_VIRTIO_NET=m
+CONFIG_VMXNET3=m
+CONFIG_ISDN=y
+# CONFIG_ISDN_I4L is not set
+# CONFIG_ISDN_CAPI is not set
+# CONFIG_ISDN_DRV_GIGASET is not set
+# CONFIG_HYSDN is not set
+# CONFIG_MISDN is not set
+CONFIG_PHONE=m
+CONFIG_PHONE_IXJ=m
+CONFIG_PHONE_IXJ_PCMCIA=m
+
+#
+# Input device support
+#
+CONFIG_INPUT=y
+CONFIG_INPUT_FF_MEMLESS=m
+CONFIG_INPUT_POLLDEV=m
+CONFIG_INPUT_SPARSEKMAP=m
+
+#
+# Userland interfaces
+#
+CONFIG_INPUT_MOUSEDEV=y
+CONFIG_INPUT_MOUSEDEV_PSAUX=y
+CONFIG_INPUT_MOUSEDEV_SCREEN_X=1024
+CONFIG_INPUT_MOUSEDEV_SCREEN_Y=768
+CONFIG_INPUT_JOYDEV=m
+CONFIG_INPUT_EVDEV=m
+CONFIG_INPUT_EVBUG=m
+
+#
+# Input Device Drivers
+#
+CONFIG_INPUT_KEYBOARD=y
+CONFIG_KEYBOARD_ADP5588=m
+CONFIG_KEYBOARD_ADP5589=m
+CONFIG_KEYBOARD_ATKBD=y
+CONFIG_KEYBOARD_QT1070=m
+CONFIG_KEYBOARD_QT2160=m
+CONFIG_KEYBOARD_LKKBD=m
+# CONFIG_KEYBOARD_GPIO is not set
+CONFIG_KEYBOARD_GPIO_POLLED=m
+CONFIG_KEYBOARD_TCA6416=m
+# CONFIG_KEYBOARD_MATRIX is not set
+CONFIG_KEYBOARD_LM8323=m
+CONFIG_KEYBOARD_MAX7359=m
+CONFIG_KEYBOARD_MCS=m
+CONFIG_KEYBOARD_MPR121=m
+CONFIG_KEYBOARD_NEWTON=m
+CONFIG_KEYBOARD_OPENCORES=m
+CONFIG_KEYBOARD_STOWAWAY=m
+CONFIG_KEYBOARD_SUNKBD=m
+CONFIG_KEYBOARD_XTKBD=m
+CONFIG_INPUT_MOUSE=y
+CONFIG_MOUSE_PS2=m
+CONFIG_MOUSE_PS2_ALPS=y
+CONFIG_MOUSE_PS2_LOGIPS2PP=y
+CONFIG_MOUSE_PS2_SYNAPTICS=y
+CONFIG_MOUSE_PS2_LIFEBOOK=y
+CONFIG_MOUSE_PS2_TRACKPOINT=y
+CONFIG_MOUSE_PS2_ELANTECH=y
+# CONFIG_MOUSE_PS2_SENTELIC is not set
+# CONFIG_MOUSE_PS2_TOUCHKIT is not set
+CONFIG_MOUSE_SERIAL=m
+CONFIG_MOUSE_APPLETOUCH=m
+CONFIG_MOUSE_BCM5974=m
+CONFIG_MOUSE_VSXXXAA=m
+# CONFIG_MOUSE_GPIO is not set
+CONFIG_MOUSE_SYNAPTICS_I2C=m
+CONFIG_INPUT_JOYSTICK=y
+CONFIG_JOYSTICK_ANALOG=m
+CONFIG_JOYSTICK_A3D=m
+CONFIG_JOYSTICK_ADI=m
+CONFIG_JOYSTICK_COBRA=m
+CONFIG_JOYSTICK_GF2K=m
+CONFIG_JOYSTICK_GRIP=m
+CONFIG_JOYSTICK_GRIP_MP=m
+CONFIG_JOYSTICK_GUILLEMOT=m
+CONFIG_JOYSTICK_INTERACT=m
+CONFIG_JOYSTICK_SIDEWINDER=m
+CONFIG_JOYSTICK_TMDC=m
+CONFIG_JOYSTICK_IFORCE=m
+CONFIG_JOYSTICK_IFORCE_USB=y
+CONFIG_JOYSTICK_IFORCE_232=y
+CONFIG_JOYSTICK_WARRIOR=m
+CONFIG_JOYSTICK_MAGELLAN=m
+CONFIG_JOYSTICK_SPACEORB=m
+CONFIG_JOYSTICK_SPACEBALL=m
+CONFIG_JOYSTICK_STINGER=m
+CONFIG_JOYSTICK_TWIDJOY=m
+CONFIG_JOYSTICK_ZHENHUA=m
+CONFIG_JOYSTICK_DB9=m
+CONFIG_JOYSTICK_GAMECON=m
+CONFIG_JOYSTICK_TURBOGRAFX=m
+CONFIG_JOYSTICK_AS5011=m
+CONFIG_JOYSTICK_JOYDUMP=m
+CONFIG_JOYSTICK_XPAD=m
+CONFIG_JOYSTICK_XPAD_FF=y
+CONFIG_JOYSTICK_XPAD_LEDS=y
+CONFIG_JOYSTICK_WALKERA0701=m
+CONFIG_INPUT_TABLET=y
+CONFIG_TABLET_USB_ACECAD=m
+CONFIG_TABLET_USB_AIPTEK=m
+CONFIG_TABLET_USB_GTCO=m
+CONFIG_TABLET_USB_HANWANG=m
+CONFIG_TABLET_USB_KBTAB=m
+CONFIG_TABLET_USB_WACOM=m
+CONFIG_INPUT_TOUCHSCREEN=y
+CONFIG_TOUCHSCREEN_ADS7846=m
+CONFIG_TOUCHSCREEN_AD7877=m
+CONFIG_TOUCHSCREEN_AD7879=m
+CONFIG_TOUCHSCREEN_AD7879_I2C=m
+CONFIG_TOUCHSCREEN_AD7879_SPI=m
+CONFIG_TOUCHSCREEN_ATMEL_MXT=m
+CONFIG_TOUCHSCREEN_BU21013=m
+CONFIG_TOUCHSCREEN_CY8CTMG110=m
+CONFIG_TOUCHSCREEN_DYNAPRO=m
+CONFIG_TOUCHSCREEN_HAMPSHIRE=m
+CONFIG_TOUCHSCREEN_EETI=m
+CONFIG_TOUCHSCREEN_FUJITSU=m
+CONFIG_TOUCHSCREEN_GUNZE=m
+CONFIG_TOUCHSCREEN_ELO=m
+CONFIG_TOUCHSCREEN_WACOM_W8001=m
+CONFIG_TOUCHSCREEN_MAX11801=m
+CONFIG_TOUCHSCREEN_MCS5000=m
+CONFIG_TOUCHSCREEN_MTOUCH=m
+CONFIG_TOUCHSCREEN_INEXIO=m
+CONFIG_TOUCHSCREEN_MK712=m
+CONFIG_TOUCHSCREEN_PENMOUNT=m
+CONFIG_TOUCHSCREEN_TOUCHRIGHT=m
+CONFIG_TOUCHSCREEN_TOUCHWIN=m
+# CONFIG_TOUCHSCREEN_UCB1400 is not set
+CONFIG_TOUCHSCREEN_WM97XX=m
+CONFIG_TOUCHSCREEN_WM9705=y
+CONFIG_TOUCHSCREEN_WM9712=y
+CONFIG_TOUCHSCREEN_WM9713=y
+CONFIG_TOUCHSCREEN_USB_COMPOSITE=m
+CONFIG_TOUCHSCREEN_MC13783=m
+CONFIG_TOUCHSCREEN_USB_EGALAX=y
+CONFIG_TOUCHSCREEN_USB_PANJIT=y
+CONFIG_TOUCHSCREEN_USB_3M=y
+CONFIG_TOUCHSCREEN_USB_ITM=y
+CONFIG_TOUCHSCREEN_USB_ETURBO=y
+CONFIG_TOUCHSCREEN_USB_GUNZE=y
+CONFIG_TOUCHSCREEN_USB_DMC_TSC10=y
+CONFIG_TOUCHSCREEN_USB_IRTOUCH=y
+CONFIG_TOUCHSCREEN_USB_IDEALTEK=y
+CONFIG_TOUCHSCREEN_USB_GENERAL_TOUCH=y
+CONFIG_TOUCHSCREEN_USB_GOTOP=y
+CONFIG_TOUCHSCREEN_USB_JASTEC=y
+CONFIG_TOUCHSCREEN_USB_E2I=y
+CONFIG_TOUCHSCREEN_USB_ZYTRONIC=y
+CONFIG_TOUCHSCREEN_USB_ETT_TC45USB=y
+CONFIG_TOUCHSCREEN_USB_NEXIO=y
+CONFIG_TOUCHSCREEN_TOUCHIT213=m
+CONFIG_TOUCHSCREEN_TSC2005=m
+CONFIG_TOUCHSCREEN_TSC2007=m
+# CONFIG_TOUCHSCREEN_PCAP is not set
+CONFIG_TOUCHSCREEN_ST1232=m
+CONFIG_TOUCHSCREEN_TPS6507X=m
+CONFIG_INPUT_MISC=y
+CONFIG_INPUT_AD714X=m
+CONFIG_INPUT_AD714X_I2C=m
+CONFIG_INPUT_AD714X_SPI=m
+CONFIG_INPUT_PCSPKR=m
+CONFIG_INPUT_MMA8450=m
+CONFIG_INPUT_MPU3050=m
+CONFIG_INPUT_APANEL=m
+CONFIG_INPUT_ATLAS_BTNS=m
+CONFIG_INPUT_ATI_REMOTE=m
+CONFIG_INPUT_ATI_REMOTE2=m
+CONFIG_INPUT_KEYSPAN_REMOTE=m
+CONFIG_INPUT_POWERMATE=m
+CONFIG_INPUT_YEALINK=m
+CONFIG_INPUT_CM109=m
+CONFIG_INPUT_UINPUT=m
+# CONFIG_INPUT_PCF50633_PMU is not set
+CONFIG_INPUT_PCF8574=m
+# CONFIG_INPUT_GPIO_ROTARY_ENCODER is not set
+# CONFIG_INPUT_PCAP is not set
+CONFIG_INPUT_ADXL34X=m
+CONFIG_INPUT_ADXL34X_I2C=m
+CONFIG_INPUT_ADXL34X_SPI=m
+CONFIG_INPUT_CMA3000=m
+CONFIG_INPUT_CMA3000_I2C=m
+
+#
+# Hardware I/O ports
+#
+CONFIG_SERIO=y
+CONFIG_SERIO_I8042=y
+CONFIG_SERIO_SERPORT=m
+CONFIG_SERIO_CT82C710=m
+CONFIG_SERIO_PARKBD=m
+CONFIG_SERIO_PCIPS2=m
+CONFIG_SERIO_LIBPS2=y
+CONFIG_SERIO_RAW=m
+CONFIG_SERIO_ALTERA_PS2=m
+CONFIG_SERIO_PS2MULT=m
+CONFIG_GAMEPORT=m
+CONFIG_GAMEPORT_NS558=m
+CONFIG_GAMEPORT_L4=m
+CONFIG_GAMEPORT_EMU10K1=m
+CONFIG_GAMEPORT_FM801=m
+
+#
+# Character devices
+#
+CONFIG_VT=y
+CONFIG_CONSOLE_TRANSLATIONS=y
+CONFIG_VT_CONSOLE=y
+CONFIG_HW_CONSOLE=y
+CONFIG_VT_HW_CONSOLE_BINDING=y
+CONFIG_UNIX98_PTYS=y
+CONFIG_DEVPTS_MULTIPLE_INSTANCES=y
+CONFIG_LEGACY_PTYS=y
+CONFIG_LEGACY_PTY_COUNT=256
+CONFIG_SERIAL_NONSTANDARD=y
+CONFIG_ROCKETPORT=m
+CONFIG_CYCLADES=m
+CONFIG_CYZ_INTR=y
+CONFIG_MOXA_INTELLIO=m
+CONFIG_MOXA_SMARTIO=m
+CONFIG_SYNCLINK=m
+CONFIG_SYNCLINKMP=m
+CONFIG_SYNCLINK_GT=m
+CONFIG_NOZOMI=m
+CONFIG_ISI=m
+CONFIG_N_HDLC=m
+CONFIG_N_GSM=m
+CONFIG_TRACE_ROUTER=m
+CONFIG_TRACE_SINK=m
+CONFIG_DEVKMEM=y
+CONFIG_STALDRV=y
+
+#
+# Serial drivers
+#
+CONFIG_SERIAL_8250=y
+CONFIG_SERIAL_8250_CONSOLE=y
+CONFIG_FIX_EARLYCON_MEM=y
+CONFIG_SERIAL_8250_PCI=y
+CONFIG_SERIAL_8250_PNP=y
+CONFIG_SERIAL_8250_CS=m
+CONFIG_SERIAL_8250_NR_UARTS=32
+CONFIG_SERIAL_8250_RUNTIME_UARTS=4
+CONFIG_SERIAL_8250_EXTENDED=y
+CONFIG_SERIAL_8250_MANY_PORTS=y
+CONFIG_SERIAL_8250_SHARE_IRQ=y
+# CONFIG_SERIAL_8250_DETECT_IRQ is not set
+CONFIG_SERIAL_8250_RSA=y
+
+#
+# Non-8250 serial port support
+#
+CONFIG_SERIAL_MAX3100=m
+CONFIG_SERIAL_MAX3107=m
+CONFIG_SERIAL_MRST_MAX3110=m
+CONFIG_SERIAL_MFD_HSU=m
+# CONFIG_SERIAL_UARTLITE is not set
+CONFIG_SERIAL_CORE=y
+CONFIG_SERIAL_CORE_CONSOLE=y
+CONFIG_SERIAL_JSM=m
+CONFIG_SERIAL_TIMBERDALE=m
+CONFIG_SERIAL_ALTERA_JTAGUART=m
+CONFIG_SERIAL_ALTERA_UART=m
+CONFIG_SERIAL_ALTERA_UART_MAXPORTS=4
+CONFIG_SERIAL_ALTERA_UART_BAUDRATE=115200
+CONFIG_SERIAL_IFX6X60=m
+CONFIG_SERIAL_PCH_UART=m
+CONFIG_SERIAL_XILINX_PS_UART=m
+CONFIG_TTY_PRINTK=y
+CONFIG_PRINTER=m
+CONFIG_LP_CONSOLE=y
+CONFIG_PPDEV=m
+CONFIG_HVC_DRIVER=y
+CONFIG_VIRTIO_CONSOLE=m
+CONFIG_IPMI_HANDLER=m
+CONFIG_IPMI_PANIC_EVENT=y
+CONFIG_IPMI_PANIC_STRING=y
+CONFIG_IPMI_DEVICE_INTERFACE=m
+CONFIG_IPMI_SI=m
+CONFIG_IPMI_WATCHDOG=m
+CONFIG_IPMI_POWEROFF=m
+CONFIG_HW_RANDOM=m
+CONFIG_HW_RANDOM_TIMERIOMEM=m
+CONFIG_HW_RANDOM_INTEL=m
+CONFIG_HW_RANDOM_AMD=m
+CONFIG_HW_RANDOM_VIA=m
+CONFIG_HW_RANDOM_VIRTIO=m
+CONFIG_NVRAM=m
+CONFIG_R3964=m
+CONFIG_APPLICOM=m
+
+#
+# PCMCIA character devices
+#
+CONFIG_SYNCLINK_CS=m
+CONFIG_CARDMAN_4000=m
+CONFIG_CARDMAN_4040=m
+CONFIG_IPWIRELESS=m
+CONFIG_MWAVE=m
+CONFIG_RAW_DRIVER=m
+CONFIG_MAX_RAW_DEVS=256
+CONFIG_HPET=y
+CONFIG_HPET_MMAP=y
+CONFIG_HANGCHECK_TIMER=m
+CONFIG_TCG_TPM=y
+CONFIG_TCG_TIS=y
+CONFIG_TCG_NSC=m
+CONFIG_TCG_ATMEL=m
+CONFIG_TCG_INFINEON=m
+CONFIG_TELCLOCK=m
+CONFIG_DEVPORT=y
+CONFIG_RAMOOPS=m
+CONFIG_I2C=m
+CONFIG_I2C_BOARDINFO=y
+CONFIG_I2C_COMPAT=y
+CONFIG_I2C_CHARDEV=m
+CONFIG_I2C_MUX=m
+
+#
+# Multiplexer I2C Chip support
+#
+CONFIG_I2C_MUX_GPIO=m
+CONFIG_I2C_MUX_PCA9541=m
+CONFIG_I2C_MUX_PCA954x=m
+CONFIG_I2C_HELPER_AUTO=y
+CONFIG_I2C_SMBUS=m
+CONFIG_I2C_ALGOBIT=m
+CONFIG_I2C_ALGOPCA=m
+
+#
+# I2C Hardware Bus support
+#
+
+#
+# PC SMBus host controller drivers
+#
+CONFIG_I2C_ALI1535=m
+CONFIG_I2C_ALI1563=m
+CONFIG_I2C_ALI15X3=m
+CONFIG_I2C_AMD756=m
+CONFIG_I2C_AMD756_S4882=m
+CONFIG_I2C_AMD8111=m
+CONFIG_I2C_I801=m
+CONFIG_I2C_ISCH=m
+CONFIG_I2C_PIIX4=m
+CONFIG_I2C_NFORCE2=m
+CONFIG_I2C_NFORCE2_S4985=m
+CONFIG_I2C_SIS5595=m
+CONFIG_I2C_SIS630=m
+CONFIG_I2C_SIS96X=m
+CONFIG_I2C_VIA=m
+CONFIG_I2C_VIAPRO=m
+
+#
+# ACPI drivers
+#
+CONFIG_I2C_SCMI=m
+
+#
+# I2C system bus drivers (mostly embedded / system-on-chip)
+#
+# CONFIG_I2C_GPIO is not set
+CONFIG_I2C_INTEL_MID=m
+CONFIG_I2C_OCORES=m
+CONFIG_I2C_PCA_PLATFORM=m
+# CONFIG_I2C_PXA_PCI is not set
+CONFIG_I2C_SIMTEC=m
+# CONFIG_I2C_XILINX is not set
+CONFIG_I2C_EG20T=m
+
+#
+# External I2C/SMBus adapter drivers
+#
+CONFIG_I2C_DIOLAN_U2C=m
+CONFIG_I2C_PARPORT=m
+CONFIG_I2C_PARPORT_LIGHT=m
+CONFIG_I2C_TAOS_EVM=m
+CONFIG_I2C_TINY_USB=m
+
+#
+# Other I2C/SMBus bus drivers
+#
+CONFIG_I2C_STUB=m
+CONFIG_I2C_DEBUG_CORE=y
+CONFIG_I2C_DEBUG_ALGO=y
+CONFIG_I2C_DEBUG_BUS=y
+CONFIG_SPI=y
+CONFIG_SPI_DEBUG=y
+CONFIG_SPI_MASTER=y
+
+#
+# SPI Master Controller Drivers
+#
+CONFIG_SPI_ALTERA=m
+CONFIG_SPI_BITBANG=m
+CONFIG_SPI_BUTTERFLY=m
+# CONFIG_SPI_GPIO is not set
+CONFIG_SPI_LM70_LLP=m
+CONFIG_SPI_OC_TINY=m
+# CONFIG_SPI_PXA2XX_PCI is not set
+CONFIG_SPI_TOPCLIFF_PCH=m
+CONFIG_SPI_XILINX=m
+CONFIG_SPI_DESIGNWARE=m
+CONFIG_SPI_DW_PCI=m
+# CONFIG_SPI_DW_MID_DMA is not set
+
+#
+# SPI Protocol Masters
+#
+CONFIG_SPI_SPIDEV=m
+CONFIG_SPI_TLE62X0=m
+
+#
+# PPS support
+#
+CONFIG_PPS=m
+CONFIG_PPS_DEBUG=y
+
+#
+# PPS clients support
+#
+CONFIG_PPS_CLIENT_KTIMER=m
+CONFIG_PPS_CLIENT_LDISC=m
+CONFIG_PPS_CLIENT_PARPORT=m
+
+#
+# PPS generators support
+#
+
+#
+# PTP clock support
+#
+CONFIG_PTP_1588_CLOCK=m
+
+#
+# Enable PHYLIB and NETWORK_PHY_TIMESTAMPING to see the additional clocks.
+#
+CONFIG_ARCH_WANT_OPTIONAL_GPIOLIB=y
+CONFIG_GPIOLIB=y
+CONFIG_DEBUG_GPIO=y
+CONFIG_GPIO_SYSFS=y
+CONFIG_GPIO_GENERIC=m
+CONFIG_GPIO_MAX730X=m
+
+#
+# Memory mapped GPIO drivers:
+#
+CONFIG_GPIO_GENERIC_PLATFORM=m
+CONFIG_GPIO_IT8761E=m
+CONFIG_GPIO_SCH=m
+CONFIG_GPIO_VX855=m
+
+#
+# I2C GPIO expanders:
+#
+CONFIG_GPIO_MAX7300=m
+CONFIG_GPIO_MAX732X=m
+CONFIG_GPIO_PCA953X=m
+CONFIG_GPIO_PCF857X=m
+CONFIG_GPIO_ADP5588=m
+
+#
+# PCI GPIO expanders:
+#
+CONFIG_GPIO_CS5535=m
+CONFIG_GPIO_LANGWELL=y
+CONFIG_GPIO_PCH=m
+CONFIG_GPIO_ML_IOH=m
+# CONFIG_GPIO_TIMBERDALE is not set
+CONFIG_GPIO_RDC321X=m
+
+#
+# SPI GPIO expanders:
+#
+CONFIG_GPIO_MAX7301=m
+CONFIG_GPIO_MCP23S08=m
+CONFIG_GPIO_MC33880=m
+CONFIG_GPIO_74X164=m
+
+#
+# AC97 GPIO expanders:
+#
+# CONFIG_GPIO_UCB1400 is not set
+
+#
+# MODULbus GPIO expanders:
+#
+CONFIG_GPIO_JANZ_TTL=m
+CONFIG_W1=m
+CONFIG_W1_CON=y
+
+#
+# 1-wire Bus Masters
+#
+CONFIG_W1_MASTER_MATROX=m
+CONFIG_W1_MASTER_DS2490=m
+CONFIG_W1_MASTER_DS2482=m
+CONFIG_W1_MASTER_DS1WM=m
+CONFIG_W1_MASTER_GPIO=m
+
+#
+# 1-wire Slaves
+#
+CONFIG_W1_SLAVE_THERM=m
+CONFIG_W1_SLAVE_SMEM=m
+CONFIG_W1_SLAVE_DS2408=m
+CONFIG_W1_SLAVE_DS2423=m
+CONFIG_W1_SLAVE_DS2431=m
+CONFIG_W1_SLAVE_DS2433=m
+CONFIG_W1_SLAVE_DS2433_CRC=y
+CONFIG_W1_SLAVE_DS2760=m
+CONFIG_W1_SLAVE_DS2780=m
+CONFIG_W1_SLAVE_BQ27000=m
+CONFIG_POWER_SUPPLY=y
+CONFIG_POWER_SUPPLY_DEBUG=y
+CONFIG_PDA_POWER=m
+# CONFIG_TEST_POWER is not set
+CONFIG_BATTERY_DS2760=m
+CONFIG_BATTERY_DS2780=m
+CONFIG_BATTERY_DS2782=m
+CONFIG_BATTERY_BQ20Z75=m
+CONFIG_BATTERY_BQ27x00=m
+CONFIG_BATTERY_BQ27X00_I2C=y
+CONFIG_BATTERY_BQ27X00_PLATFORM=y
+CONFIG_BATTERY_MAX17040=m
+CONFIG_BATTERY_MAX17042=m
+# CONFIG_CHARGER_PCF50633 is not set
+CONFIG_CHARGER_ISP1704=m
+CONFIG_CHARGER_MAX8903=m
+CONFIG_CHARGER_GPIO=m
+CONFIG_HWMON=y
+CONFIG_HWMON_VID=m
+CONFIG_HWMON_DEBUG_CHIP=y
+
+#
+# Native drivers
+#
+CONFIG_SENSORS_ABITUGURU=m
+CONFIG_SENSORS_ABITUGURU3=m
+CONFIG_SENSORS_AD7414=m
+CONFIG_SENSORS_AD7418=m
+CONFIG_SENSORS_ADCXX=m
+CONFIG_SENSORS_ADM1021=m
+CONFIG_SENSORS_ADM1025=m
+CONFIG_SENSORS_ADM1026=m
+CONFIG_SENSORS_ADM1029=m
+CONFIG_SENSORS_ADM1031=m
+CONFIG_SENSORS_ADM9240=m
+CONFIG_SENSORS_ADT7411=m
+CONFIG_SENSORS_ADT7462=m
+CONFIG_SENSORS_ADT7470=m
+CONFIG_SENSORS_ADT7475=m
+CONFIG_SENSORS_ASC7621=m
+CONFIG_SENSORS_K8TEMP=m
+CONFIG_SENSORS_K10TEMP=m
+CONFIG_SENSORS_FAM15H_POWER=m
+CONFIG_SENSORS_ASB100=m
+CONFIG_SENSORS_ATXP1=m
+CONFIG_SENSORS_DS620=m
+CONFIG_SENSORS_DS1621=m
+CONFIG_SENSORS_I5K_AMB=m
+CONFIG_SENSORS_F71805F=m
+CONFIG_SENSORS_F71882FG=m
+CONFIG_SENSORS_F75375S=m
+CONFIG_SENSORS_FSCHMD=m
+CONFIG_SENSORS_G760A=m
+CONFIG_SENSORS_GL518SM=m
+CONFIG_SENSORS_GL520SM=m
+CONFIG_SENSORS_GPIO_FAN=m
+CONFIG_SENSORS_CORETEMP=m
+CONFIG_SENSORS_IBMAEM=m
+CONFIG_SENSORS_IBMPEX=m
+CONFIG_SENSORS_IT87=m
+CONFIG_SENSORS_JC42=m
+CONFIG_SENSORS_LINEAGE=m
+CONFIG_SENSORS_LM63=m
+CONFIG_SENSORS_LM70=m
+CONFIG_SENSORS_LM73=m
+CONFIG_SENSORS_LM75=m
+CONFIG_SENSORS_LM77=m
+CONFIG_SENSORS_LM78=m
+CONFIG_SENSORS_LM80=m
+CONFIG_SENSORS_LM83=m
+CONFIG_SENSORS_LM85=m
+CONFIG_SENSORS_LM87=m
+CONFIG_SENSORS_LM90=m
+CONFIG_SENSORS_LM92=m
+CONFIG_SENSORS_LM93=m
+CONFIG_SENSORS_LTC4151=m
+CONFIG_SENSORS_LTC4215=m
+CONFIG_SENSORS_LTC4245=m
+CONFIG_SENSORS_LTC4261=m
+CONFIG_SENSORS_LM95241=m
+CONFIG_SENSORS_LM95245=m
+CONFIG_SENSORS_MAX1111=m
+CONFIG_SENSORS_MAX16065=m
+CONFIG_SENSORS_MAX1619=m
+CONFIG_SENSORS_MAX1668=m
+CONFIG_SENSORS_MAX6639=m
+CONFIG_SENSORS_MAX6642=m
+CONFIG_SENSORS_MAX6650=m
+CONFIG_SENSORS_NTC_THERMISTOR=m
+CONFIG_SENSORS_PC87360=m
+CONFIG_SENSORS_PC87427=m
+CONFIG_SENSORS_PCF8591=m
+CONFIG_PMBUS=m
+CONFIG_SENSORS_PMBUS=m
+CONFIG_SENSORS_ADM1275=m
+CONFIG_SENSORS_MAX16064=m
+CONFIG_SENSORS_MAX34440=m
+CONFIG_SENSORS_MAX8688=m
+CONFIG_SENSORS_UCD9000=m
+CONFIG_SENSORS_UCD9200=m
+CONFIG_SENSORS_SHT15=m
+CONFIG_SENSORS_SHT21=m
+CONFIG_SENSORS_SIS5595=m
+CONFIG_SENSORS_SMM665=m
+CONFIG_SENSORS_DME1737=m
+CONFIG_SENSORS_EMC1403=m
+CONFIG_SENSORS_EMC2103=m
+CONFIG_SENSORS_EMC6W201=m
+CONFIG_SENSORS_SMSC47M1=m
+CONFIG_SENSORS_SMSC47M192=m
+CONFIG_SENSORS_SMSC47B397=m
+CONFIG_SENSORS_SCH56XX_COMMON=m
+CONFIG_SENSORS_SCH5627=m
+CONFIG_SENSORS_SCH5636=m
+CONFIG_SENSORS_ADS1015=m
+CONFIG_SENSORS_ADS7828=m
+CONFIG_SENSORS_ADS7871=m
+CONFIG_SENSORS_AMC6821=m
+CONFIG_SENSORS_THMC50=m
+CONFIG_SENSORS_TMP102=m
+CONFIG_SENSORS_TMP401=m
+CONFIG_SENSORS_TMP421=m
+CONFIG_SENSORS_VIA_CPUTEMP=m
+CONFIG_SENSORS_VIA686A=m
+CONFIG_SENSORS_VT1211=m
+CONFIG_SENSORS_VT8231=m
+CONFIG_SENSORS_W83781D=m
+CONFIG_SENSORS_W83791D=m
+CONFIG_SENSORS_W83792D=m
+CONFIG_SENSORS_W83793=m
+CONFIG_SENSORS_W83795=m
+# CONFIG_SENSORS_W83795_FANCTRL is not set
+CONFIG_SENSORS_W83L785TS=m
+CONFIG_SENSORS_W83L786NG=m
+CONFIG_SENSORS_W83627HF=m
+CONFIG_SENSORS_W83627EHF=m
+CONFIG_SENSORS_APPLESMC=m
+CONFIG_SENSORS_MC13783_ADC=m
+
+#
+# ACPI drivers
+#
+CONFIG_SENSORS_ACPI_POWER=m
+CONFIG_SENSORS_ATK0110=m
+CONFIG_THERMAL=m
+CONFIG_THERMAL_HWMON=y
+CONFIG_WATCHDOG=y
+CONFIG_WATCHDOG_NOWAYOUT=y
+
+#
+# Watchdog Device Drivers
+#
+CONFIG_SOFT_WATCHDOG=m
+CONFIG_ACQUIRE_WDT=m
+CONFIG_ADVANTECH_WDT=m
+CONFIG_ALIM1535_WDT=m
+CONFIG_ALIM7101_WDT=m
+CONFIG_F71808E_WDT=m
+CONFIG_SP5100_TCO=m
+CONFIG_GEODE_WDT=m
+CONFIG_SC520_WDT=m
+CONFIG_SBC_FITPC2_WATCHDOG=m
+CONFIG_EUROTECH_WDT=m
+CONFIG_IB700_WDT=m
+CONFIG_IBMASR=m
+CONFIG_WAFER_WDT=m
+CONFIG_I6300ESB_WDT=m
+CONFIG_ITCO_WDT=m
+CONFIG_ITCO_VENDOR_SUPPORT=y
+CONFIG_IT8712F_WDT=m
+CONFIG_IT87_WDT=m
+CONFIG_HP_WATCHDOG=m
+# CONFIG_HPWDT_NMI_DECODING is not set
+CONFIG_SC1200_WDT=m
+CONFIG_PC87413_WDT=m
+CONFIG_NV_TCO=m
+CONFIG_60XX_WDT=m
+CONFIG_SBC8360_WDT=m
+CONFIG_CPU5_WDT=m
+CONFIG_SMSC_SCH311X_WDT=m
+CONFIG_SMSC37B787_WDT=m
+CONFIG_W83627HF_WDT=m
+CONFIG_W83697HF_WDT=m
+CONFIG_W83697UG_WDT=m
+CONFIG_W83877F_WDT=m
+CONFIG_W83977F_WDT=m
+CONFIG_MACHZ_WDT=m
+CONFIG_SBC_EPX_C3_WATCHDOG=m
+
+#
+# PCI-based Watchdog Cards
+#
+CONFIG_PCIPCWATCHDOG=m
+CONFIG_WDTPCI=m
+
+#
+# USB-based Watchdog Cards
+#
+CONFIG_USBPCWATCHDOG=m
+CONFIG_SSB_POSSIBLE=y
+
+#
+# Sonics Silicon Backplane
+#
+CONFIG_SSB=m
+CONFIG_SSB_SPROM=y
+CONFIG_SSB_BLOCKIO=y
+CONFIG_SSB_PCIHOST_POSSIBLE=y
+CONFIG_SSB_PCIHOST=y
+CONFIG_SSB_B43_PCI_BRIDGE=y
+CONFIG_SSB_PCMCIAHOST_POSSIBLE=y
+CONFIG_SSB_PCMCIAHOST=y
+CONFIG_SSB_SDIOHOST_POSSIBLE=y
+CONFIG_SSB_SDIOHOST=y
+# CONFIG_SSB_SILENT is not set
+CONFIG_SSB_DEBUG=y
+CONFIG_SSB_DRIVER_PCICORE_POSSIBLE=y
+CONFIG_SSB_DRIVER_PCICORE=y
+CONFIG_BCMA_POSSIBLE=y
+
+#
+# Broadcom specific AMBA
+#
+CONFIG_BCMA=m
+CONFIG_BCMA_HOST_PCI_POSSIBLE=y
+# CONFIG_BCMA_HOST_PCI is not set
+# CONFIG_BCMA_DEBUG is not set
+CONFIG_MFD_SUPPORT=y
+CONFIG_MFD_CORE=m
+CONFIG_MFD_SM501=m
+CONFIG_MFD_SM501_GPIO=y
+CONFIG_HTC_PASIC3=m
+CONFIG_UCB1400_CORE=m
+CONFIG_TPS6105X=m
+CONFIG_TPS65010=m
+CONFIG_TPS6507X=m
+# CONFIG_MFD_TPS65912_SPI is not set
+# CONFIG_MFD_TMIO is not set
+CONFIG_MFD_WM8400=m
+# CONFIG_MFD_WM831X_SPI is not set
+CONFIG_MFD_PCF50633=m
+CONFIG_PCF50633_ADC=m
+CONFIG_PCF50633_GPIO=m
+CONFIG_MFD_MC13783=m
+CONFIG_MFD_MC13XXX=m
+CONFIG_ABX500_CORE=y
+CONFIG_EZX_PCAP=y
+# CONFIG_AB8500_CORE is not set
+CONFIG_MFD_CS5535=m
+CONFIG_MFD_TIMBERDALE=m
+CONFIG_LPC_SCH=m
+CONFIG_MFD_RDC321X=m
+CONFIG_MFD_JANZ_CMODIO=m
+CONFIG_MFD_VX855=m
+CONFIG_MFD_WL1273_CORE=m
+CONFIG_REGULATOR=y
+CONFIG_REGULATOR_DEBUG=y
+CONFIG_REGULATOR_DUMMY=y
+CONFIG_REGULATOR_FIXED_VOLTAGE=m
+CONFIG_REGULATOR_VIRTUAL_CONSUMER=m
+CONFIG_REGULATOR_USERSPACE_CONSUMER=m
+CONFIG_REGULATOR_BQ24022=m
+CONFIG_REGULATOR_MAX1586=m
+CONFIG_REGULATOR_MAX8649=m
+CONFIG_REGULATOR_MAX8660=m
+CONFIG_REGULATOR_MAX8952=m
+CONFIG_REGULATOR_WM8400=m
+CONFIG_REGULATOR_PCF50633=m
+CONFIG_REGULATOR_LP3971=m
+CONFIG_REGULATOR_LP3972=m
+CONFIG_REGULATOR_PCAP=m
+CONFIG_REGULATOR_MC13XXX_CORE=m
+CONFIG_REGULATOR_MC13783=m
+CONFIG_REGULATOR_MC13892=m
+CONFIG_REGULATOR_TPS6105X=m
+CONFIG_REGULATOR_TPS65023=m
+CONFIG_REGULATOR_TPS6507X=m
+CONFIG_REGULATOR_ISL6271A=m
+CONFIG_REGULATOR_AD5398=m
+CONFIG_REGULATOR_TPS6524X=m
+CONFIG_MEDIA_SUPPORT=m
+
+#
+# Multimedia core support
+#
+# CONFIG_MEDIA_CONTROLLER is not set
+CONFIG_VIDEO_DEV=m
+CONFIG_VIDEO_V4L2_COMMON=m
+CONFIG_DVB_CORE=m
+CONFIG_DVB_NET=y
+CONFIG_VIDEO_MEDIA=m
+
+#
+# Multimedia drivers
+#
+CONFIG_VIDEO_SAA7146=m
+CONFIG_VIDEO_SAA7146_VV=m
+CONFIG_RC_CORE=m
+CONFIG_LIRC=m
+CONFIG_RC_MAP=m
+CONFIG_IR_NEC_DECODER=m
+CONFIG_IR_RC5_DECODER=m
+CONFIG_IR_RC6_DECODER=m
+CONFIG_IR_JVC_DECODER=m
+CONFIG_IR_SONY_DECODER=m
+CONFIG_IR_RC5_SZ_DECODER=m
+CONFIG_IR_LIRC_CODEC=m
+CONFIG_IR_ENE=m
+CONFIG_IR_IMON=m
+CONFIG_IR_MCEUSB=m
+CONFIG_IR_ITE_CIR=m
+CONFIG_IR_FINTEK=m
+CONFIG_IR_NUVOTON=m
+CONFIG_IR_REDRAT3=m
+CONFIG_IR_STREAMZAP=m
+CONFIG_IR_WINBOND_CIR=m
+CONFIG_RC_LOOPBACK=m
+CONFIG_MEDIA_ATTACH=y
+CONFIG_MEDIA_TUNER=m
+CONFIG_MEDIA_TUNER_CUSTOMISE=y
+
+#
+# Customize TV tuners
+#
+CONFIG_MEDIA_TUNER_SIMPLE=m
+CONFIG_MEDIA_TUNER_TDA8290=m
+CONFIG_MEDIA_TUNER_TDA827X=m
+CONFIG_MEDIA_TUNER_TDA18271=m
+CONFIG_MEDIA_TUNER_TDA9887=m
+CONFIG_MEDIA_TUNER_TEA5761=m
+CONFIG_MEDIA_TUNER_TEA5767=m
+CONFIG_MEDIA_TUNER_MT20XX=m
+CONFIG_MEDIA_TUNER_MT2060=m
+CONFIG_MEDIA_TUNER_MT2266=m
+CONFIG_MEDIA_TUNER_MT2131=m
+CONFIG_MEDIA_TUNER_QT1010=m
+CONFIG_MEDIA_TUNER_XC2028=m
+CONFIG_MEDIA_TUNER_XC5000=m
+CONFIG_MEDIA_TUNER_XC4000=m
+CONFIG_MEDIA_TUNER_MXL5005S=m
+CONFIG_MEDIA_TUNER_MXL5007T=m
+CONFIG_MEDIA_TUNER_MC44S803=m
+CONFIG_MEDIA_TUNER_MAX2165=m
+CONFIG_MEDIA_TUNER_TDA18218=m
+CONFIG_MEDIA_TUNER_TDA18212=m
+CONFIG_VIDEO_V4L2=m
+CONFIG_VIDEOBUF_GEN=m
+CONFIG_VIDEOBUF_DMA_SG=m
+CONFIG_VIDEOBUF_VMALLOC=m
+CONFIG_VIDEOBUF_DMA_CONTIG=m
+CONFIG_VIDEOBUF_DVB=m
+CONFIG_VIDEO_BTCX=m
+CONFIG_VIDEO_TVEEPROM=m
+CONFIG_VIDEO_TUNER=m
+CONFIG_VIDEOBUF2_CORE=m
+CONFIG_VIDEOBUF2_MEMOPS=m
+CONFIG_VIDEOBUF2_DMA_CONTIG=m
+CONFIG_VIDEOBUF2_VMALLOC=m
+CONFIG_VIDEOBUF2_DMA_SG=m
+CONFIG_VIDEO_CAPTURE_DRIVERS=y
+# CONFIG_VIDEO_ADV_DEBUG is not set
+# CONFIG_VIDEO_FIXED_MINOR_RANGES is not set
+CONFIG_VIDEO_HELPER_CHIPS_AUTO=y
+CONFIG_VIDEO_IR_I2C=m
+
+#
+# Audio decoders, processors and mixers
+#
+CONFIG_VIDEO_TVAUDIO=m
+CONFIG_VIDEO_TDA7432=m
+CONFIG_VIDEO_TDA9840=m
+CONFIG_VIDEO_TEA6415C=m
+CONFIG_VIDEO_TEA6420=m
+CONFIG_VIDEO_MSP3400=m
+CONFIG_VIDEO_CS5345=m
+CONFIG_VIDEO_CS53L32A=m
+CONFIG_VIDEO_WM8775=m
+CONFIG_VIDEO_WM8739=m
+CONFIG_VIDEO_VP27SMPX=m
+
+#
+# RDS decoders
+#
+CONFIG_VIDEO_SAA6588=m
+
+#
+# Video decoders
+#
+CONFIG_VIDEO_ADV7180=m
+CONFIG_VIDEO_BT819=m
+CONFIG_VIDEO_BT856=m
+CONFIG_VIDEO_BT866=m
+CONFIG_VIDEO_KS0127=m
+CONFIG_VIDEO_SAA7110=m
+CONFIG_VIDEO_SAA711X=m
+CONFIG_VIDEO_TVP5150=m
+CONFIG_VIDEO_VPX3220=m
+
+#
+# Video and audio decoders
+#
+CONFIG_VIDEO_SAA717X=m
+CONFIG_VIDEO_CX25840=m
+
+#
+# MPEG video encoders
+#
+CONFIG_VIDEO_CX2341X=m
+
+#
+# Video encoders
+#
+CONFIG_VIDEO_SAA7127=m
+CONFIG_VIDEO_SAA7185=m
+CONFIG_VIDEO_ADV7170=m
+CONFIG_VIDEO_ADV7175=m
+
+#
+# Camera sensor devices
+#
+CONFIG_VIDEO_OV7670=m
+CONFIG_VIDEO_MT9V011=m
+
+#
+# Video improvement chips
+#
+CONFIG_VIDEO_UPD64031A=m
+CONFIG_VIDEO_UPD64083=m
+
+#
+# Miscelaneous helper chips
+#
+CONFIG_VIDEO_M52790=m
+CONFIG_VIDEO_VIVI=m
+CONFIG_VIDEO_BT848=m
+CONFIG_VIDEO_BT848_DVB=y
+CONFIG_VIDEO_BWQCAM=m
+CONFIG_VIDEO_CQCAM=m
+CONFIG_VIDEO_W9966=m
+CONFIG_VIDEO_CPIA2=m
+CONFIG_VIDEO_ZORAN=m
+CONFIG_VIDEO_ZORAN_DC30=m
+CONFIG_VIDEO_ZORAN_ZR36060=m
+CONFIG_VIDEO_ZORAN_BUZ=m
+CONFIG_VIDEO_ZORAN_DC10=m
+CONFIG_VIDEO_ZORAN_LML33=m
+CONFIG_VIDEO_ZORAN_LML33R10=m
+CONFIG_VIDEO_ZORAN_AVS6EYES=m
+CONFIG_VIDEO_MEYE=m
+CONFIG_VIDEO_SAA7134=m
+CONFIG_VIDEO_SAA7134_ALSA=m
+CONFIG_VIDEO_SAA7134_RC=y
+CONFIG_VIDEO_SAA7134_DVB=m
+CONFIG_VIDEO_MXB=m
+CONFIG_VIDEO_HEXIUM_ORION=m
+CONFIG_VIDEO_HEXIUM_GEMINI=m
+CONFIG_VIDEO_TIMBERDALE=m
+CONFIG_VIDEO_CX88=m
+CONFIG_VIDEO_CX88_ALSA=m
+CONFIG_VIDEO_CX88_BLACKBIRD=m
+CONFIG_VIDEO_CX88_DVB=m
+CONFIG_VIDEO_CX88_MPEG=m
+CONFIG_VIDEO_CX88_VP3054=m
+CONFIG_VIDEO_CX23885=m
+CONFIG_MEDIA_ALTERA_CI=m
+CONFIG_VIDEO_AU0828=m
+CONFIG_VIDEO_IVTV=m
+CONFIG_VIDEO_FB_IVTV=m
+CONFIG_VIDEO_CX18=m
+# CONFIG_VIDEO_CX18_ALSA is not set
+CONFIG_VIDEO_SAA7164=m
+CONFIG_VIDEO_CAFE_CCIC=m
+CONFIG_VIDEO_SR030PC30=m
+CONFIG_VIDEO_VIA_CAMERA=m
+CONFIG_VIDEO_NOON010PC30=m
+CONFIG_SOC_CAMERA=m
+CONFIG_SOC_CAMERA_IMX074=m
+CONFIG_SOC_CAMERA_MT9M001=m
+CONFIG_SOC_CAMERA_MT9M111=m
+# CONFIG_SOC_CAMERA_MT9T031 is not set
+CONFIG_SOC_CAMERA_MT9T112=m
+CONFIG_SOC_CAMERA_MT9V022=m
+CONFIG_SOC_CAMERA_RJ54N1=m
+# CONFIG_SOC_CAMERA_TW9910 is not set
+CONFIG_SOC_CAMERA_PLATFORM=m
+CONFIG_SOC_CAMERA_OV2640=m
+CONFIG_SOC_CAMERA_OV6650=m
+# CONFIG_SOC_CAMERA_OV772X is not set
+CONFIG_SOC_CAMERA_OV9640=m
+CONFIG_SOC_CAMERA_OV9740=m
+CONFIG_V4L_USB_DRIVERS=y
+CONFIG_USB_VIDEO_CLASS=m
+CONFIG_USB_VIDEO_CLASS_INPUT_EVDEV=y
+CONFIG_USB_GSPCA=m
+CONFIG_USB_M5602=m
+# CONFIG_USB_STV06XX is not set
+CONFIG_USB_GL860=m
+# CONFIG_USB_GSPCA_BENQ is not set
+CONFIG_USB_GSPCA_CONEX=m
+# CONFIG_USB_GSPCA_CPIA1 is not set
+CONFIG_USB_GSPCA_ETOMS=m
+CONFIG_USB_GSPCA_FINEPIX=m
+CONFIG_USB_GSPCA_JEILINJ=m
+CONFIG_USB_GSPCA_KINECT=m
+CONFIG_USB_GSPCA_KONICA=m
+CONFIG_USB_GSPCA_MARS=m
+# CONFIG_USB_GSPCA_MR97310A is not set
+CONFIG_USB_GSPCA_NW80X=m
+CONFIG_USB_GSPCA_OV519=m
+# CONFIG_USB_GSPCA_OV534 is not set
+# CONFIG_USB_GSPCA_OV534_9 is not set
+CONFIG_USB_GSPCA_PAC207=m
+CONFIG_USB_GSPCA_PAC7302=m
+CONFIG_USB_GSPCA_PAC7311=m
+# CONFIG_USB_GSPCA_SN9C2028 is not set
+CONFIG_USB_GSPCA_SN9C20X=m
+CONFIG_USB_GSPCA_SONIXB=m
+CONFIG_USB_GSPCA_SONIXJ=m
+CONFIG_USB_GSPCA_SPCA500=m
+CONFIG_USB_GSPCA_SPCA501=m
+CONFIG_USB_GSPCA_SPCA505=m
+CONFIG_USB_GSPCA_SPCA506=m
+CONFIG_USB_GSPCA_SPCA508=m
+CONFIG_USB_GSPCA_SPCA561=m
+CONFIG_USB_GSPCA_SPCA1528=m
+# CONFIG_USB_GSPCA_SQ905 is not set
+# CONFIG_USB_GSPCA_SQ905C is not set
+CONFIG_USB_GSPCA_SQ930X=m
+CONFIG_USB_GSPCA_STK014=m
+CONFIG_USB_GSPCA_STV0680=m
+CONFIG_USB_GSPCA_SUNPLUS=m
+CONFIG_USB_GSPCA_T613=m
+CONFIG_USB_GSPCA_TV8532=m
+CONFIG_USB_GSPCA_VC032X=m
+CONFIG_USB_GSPCA_VICAM=m
+CONFIG_USB_GSPCA_XIRLINK_CIT=m
+CONFIG_USB_GSPCA_ZC3XX=m
+CONFIG_VIDEO_PVRUSB2=m
+CONFIG_VIDEO_PVRUSB2_SYSFS=y
+CONFIG_VIDEO_PVRUSB2_DVB=y
+# CONFIG_VIDEO_PVRUSB2_DEBUGIFC is not set
+# CONFIG_VIDEO_HDPVR is not set
+CONFIG_VIDEO_EM28XX=m
+CONFIG_VIDEO_EM28XX_ALSA=m
+CONFIG_VIDEO_EM28XX_DVB=m
+CONFIG_VIDEO_EM28XX_RC=y
+# CONFIG_VIDEO_TLG2300 is not set
+# CONFIG_VIDEO_CX231XX is not set
+CONFIG_VIDEO_USBVISION=m
+CONFIG_USB_ET61X251=m
+CONFIG_USB_SN9C102=m
+CONFIG_USB_PWC=m
+# CONFIG_USB_PWC_DEBUG is not set
+CONFIG_USB_PWC_INPUT_EVDEV=y
+CONFIG_USB_ZR364XX=m
+CONFIG_USB_STKWEBCAM=m
+CONFIG_USB_S2255=m
+# CONFIG_V4L_MEM2MEM_DRIVERS is not set
+CONFIG_RADIO_ADAPTERS=y
+CONFIG_RADIO_MAXIRADIO=m
+CONFIG_I2C_SI4713=m
+CONFIG_RADIO_SI4713=m
+CONFIG_USB_DSBR=m
+# CONFIG_RADIO_SI470X is not set
+CONFIG_USB_MR800=m
+# CONFIG_RADIO_TEA5764 is not set
+# CONFIG_RADIO_SAA7706H is not set
+CONFIG_RADIO_TEF6862=m
+# CONFIG_RADIO_TIMBERDALE is not set
+CONFIG_RADIO_WL1273=m
+
+#
+# Texas Instruments WL128x FM driver (ST based)
+#
+CONFIG_RADIO_WL128X=m
+CONFIG_DVB_MAX_ADAPTERS=8
+CONFIG_DVB_DYNAMIC_MINORS=y
+CONFIG_DVB_CAPTURE_DRIVERS=y
+
+#
+# Supported SAA7146 based PCI Adapters
+#
+CONFIG_TTPCI_EEPROM=m
+CONFIG_DVB_AV7110=m
+CONFIG_DVB_AV7110_OSD=y
+CONFIG_DVB_BUDGET_CORE=m
+CONFIG_DVB_BUDGET=m
+CONFIG_DVB_BUDGET_CI=m
+CONFIG_DVB_BUDGET_AV=m
+CONFIG_DVB_BUDGET_PATCH=m
+
+#
+# Supported USB Adapters
+#
+CONFIG_DVB_USB=m
+# CONFIG_DVB_USB_DEBUG is not set
+CONFIG_DVB_USB_A800=m
+CONFIG_DVB_USB_DIBUSB_MB=m
+CONFIG_DVB_USB_DIBUSB_MB_FAULTY=y
+CONFIG_DVB_USB_DIBUSB_MC=m
+CONFIG_DVB_USB_DIB0700=m
+CONFIG_DVB_USB_UMT_010=m
+CONFIG_DVB_USB_CXUSB=m
+CONFIG_DVB_USB_M920X=m
+CONFIG_DVB_USB_GL861=m
+CONFIG_DVB_USB_AU6610=m
+CONFIG_DVB_USB_DIGITV=m
+CONFIG_DVB_USB_VP7045=m
+CONFIG_DVB_USB_VP702X=m
+CONFIG_DVB_USB_GP8PSK=m
+CONFIG_DVB_USB_NOVA_T_USB2=m
+CONFIG_DVB_USB_TTUSB2=m
+CONFIG_DVB_USB_DTT200U=m
+CONFIG_DVB_USB_OPERA1=m
+CONFIG_DVB_USB_AF9005=m
+CONFIG_DVB_USB_AF9005_REMOTE=m
+CONFIG_DVB_USB_DW2102=m
+CONFIG_DVB_USB_CINERGY_T2=m
+CONFIG_DVB_USB_ANYSEE=m
+CONFIG_DVB_USB_DTV5100=m
+CONFIG_DVB_USB_AF9015=m
+# CONFIG_DVB_USB_CE6230 is not set
+CONFIG_DVB_USB_FRIIO=m
+CONFIG_DVB_USB_EC168=m
+# CONFIG_DVB_USB_AZ6027 is not set
+CONFIG_DVB_USB_LME2510=m
+CONFIG_DVB_USB_TECHNISAT_USB2=m
+CONFIG_DVB_TTUSB_BUDGET=m
+CONFIG_DVB_TTUSB_DEC=m
+# CONFIG_SMS_SIANO_MDTV is not set
+
+#
+# Supported FlexCopII (B2C2) Adapters
+#
+CONFIG_DVB_B2C2_FLEXCOP=m
+CONFIG_DVB_B2C2_FLEXCOP_PCI=m
+CONFIG_DVB_B2C2_FLEXCOP_USB=m
+# CONFIG_DVB_B2C2_FLEXCOP_DEBUG is not set
+
+#
+# Supported BT878 Adapters
+#
+CONFIG_DVB_BT8XX=m
+
+#
+# Supported Pluto2 Adapters
+#
+CONFIG_DVB_PLUTO2=m
+
+#
+# Supported SDMC DM1105 Adapters
+#
+CONFIG_DVB_DM1105=m
+
+#
+# Supported Earthsoft PT1 Adapters
+#
+CONFIG_DVB_PT1=m
+
+#
+# Supported Mantis Adapters
+#
+CONFIG_MANTIS_CORE=m
+CONFIG_DVB_MANTIS=m
+CONFIG_DVB_HOPPER=m
+
+#
+# Supported nGene Adapters
+#
+# CONFIG_DVB_NGENE is not set
+
+#
+# Supported DVB Frontends
+#
+# CONFIG_DVB_FE_CUSTOMISE is not set
+
+#
+# Multistandard (satellite) frontends
+#
+CONFIG_DVB_STB0899=m
+CONFIG_DVB_STB6100=m
+CONFIG_DVB_STV090x=m
+CONFIG_DVB_STV6110x=m
+
+#
+# DVB-S (satellite) frontends
+#
+CONFIG_DVB_CX24110=m
+CONFIG_DVB_CX24123=m
+CONFIG_DVB_MT312=m
+CONFIG_DVB_ZL10036=m
+CONFIG_DVB_ZL10039=m
+CONFIG_DVB_S5H1420=m
+CONFIG_DVB_STV0288=m
+CONFIG_DVB_STB6000=m
+CONFIG_DVB_STV0299=m
+CONFIG_DVB_STV6110=m
+CONFIG_DVB_STV0900=m
+CONFIG_DVB_TDA8083=m
+CONFIG_DVB_TDA10086=m
+CONFIG_DVB_TDA8261=m
+CONFIG_DVB_VES1X93=m
+CONFIG_DVB_TUNER_ITD1000=m
+CONFIG_DVB_TUNER_CX24113=m
+CONFIG_DVB_TDA826X=m
+CONFIG_DVB_TUA6100=m
+CONFIG_DVB_CX24116=m
+CONFIG_DVB_SI21XX=m
+CONFIG_DVB_DS3000=m
+CONFIG_DVB_MB86A16=m
+
+#
+# DVB-T (terrestrial) frontends
+#
+CONFIG_DVB_SP8870=m
+CONFIG_DVB_SP887X=m
+CONFIG_DVB_CX22700=m
+CONFIG_DVB_CX22702=m
+CONFIG_DVB_DRXD=m
+CONFIG_DVB_L64781=m
+CONFIG_DVB_TDA1004X=m
+CONFIG_DVB_NXT6000=m
+CONFIG_DVB_MT352=m
+CONFIG_DVB_ZL10353=m
+CONFIG_DVB_DIB3000MB=m
+CONFIG_DVB_DIB3000MC=m
+CONFIG_DVB_DIB7000M=m
+CONFIG_DVB_DIB7000P=m
+CONFIG_DVB_TDA10048=m
+CONFIG_DVB_AF9013=m
+CONFIG_DVB_EC100=m
+CONFIG_DVB_STV0367=m
+CONFIG_DVB_CXD2820R=m
+
+#
+# DVB-C (cable) frontends
+#
+CONFIG_DVB_VES1820=m
+CONFIG_DVB_TDA10021=m
+CONFIG_DVB_TDA10023=m
+CONFIG_DVB_STV0297=m
+
+#
+# ATSC (North American/Korean Terrestrial/Cable DTV) frontends
+#
+CONFIG_DVB_NXT200X=m
+CONFIG_DVB_OR51211=m
+CONFIG_DVB_OR51132=m
+CONFIG_DVB_BCM3510=m
+CONFIG_DVB_LGDT330X=m
+CONFIG_DVB_LGDT3305=m
+CONFIG_DVB_S5H1409=m
+CONFIG_DVB_AU8522=m
+CONFIG_DVB_S5H1411=m
+
+#
+# ISDB-T (terrestrial) frontends
+#
+CONFIG_DVB_S921=m
+CONFIG_DVB_DIB8000=m
+
+#
+# Digital terrestrial only tuners/PLL
+#
+CONFIG_DVB_PLL=m
+CONFIG_DVB_TUNER_DIB0070=m
+CONFIG_DVB_TUNER_DIB0090=m
+
+#
+# SEC control devices for DVB-S
+#
+CONFIG_DVB_LNBP21=m
+CONFIG_DVB_ISL6405=m
+CONFIG_DVB_ISL6421=m
+CONFIG_DVB_ISL6423=m
+CONFIG_DVB_LGS8GXX=m
+CONFIG_DVB_ATBM8830=m
+CONFIG_DVB_TDA665x=m
+CONFIG_DVB_IX2505V=m
+
+#
+# Tools to develop new frontends
+#
+# CONFIG_DVB_DUMMY_FE is not set
+
+#
+# Graphics support
+#
+CONFIG_AGP=y
+CONFIG_AGP_AMD64=y
+CONFIG_AGP_INTEL=m
+CONFIG_AGP_SIS=m
+CONFIG_AGP_VIA=m
+CONFIG_VGA_ARB=y
+CONFIG_VGA_ARB_MAX_GPUS=16
+# CONFIG_VGA_SWITCHEROO is not set
+CONFIG_DRM=m
+CONFIG_DRM_KMS_HELPER=m
+CONFIG_DRM_TTM=m
+CONFIG_DRM_TDFX=m
+CONFIG_DRM_R128=m
+CONFIG_DRM_RADEON=m
+# CONFIG_DRM_RADEON_KMS is not set
+CONFIG_DRM_I915=m
+# CONFIG_DRM_I915_KMS is not set
+CONFIG_DRM_MGA=m
+CONFIG_DRM_SIS=m
+CONFIG_DRM_VIA=m
+CONFIG_DRM_SAVAGE=m
+CONFIG_STUB_POULSBO=m
+CONFIG_VGASTATE=m
+CONFIG_VIDEO_OUTPUT_CONTROL=m
+CONFIG_FB=y
+CONFIG_FIRMWARE_EDID=y
+CONFIG_FB_DDC=m
+CONFIG_FB_BOOT_VESA_SUPPORT=y
+CONFIG_FB_CFB_FILLRECT=y
+CONFIG_FB_CFB_COPYAREA=y
+CONFIG_FB_CFB_IMAGEBLIT=y
+# CONFIG_FB_CFB_REV_PIXELS_IN_BYTE is not set
+CONFIG_FB_SYS_FILLRECT=m
+CONFIG_FB_SYS_COPYAREA=m
+CONFIG_FB_SYS_IMAGEBLIT=m
+# CONFIG_FB_FOREIGN_ENDIAN is not set
+CONFIG_FB_SYS_FOPS=m
+# CONFIG_FB_WMT_GE_ROPS is not set
+CONFIG_FB_DEFERRED_IO=y
+CONFIG_FB_HECUBA=m
+CONFIG_FB_SVGALIB=m
+# CONFIG_FB_MACMODES is not set
+CONFIG_FB_BACKLIGHT=y
+CONFIG_FB_MODE_HELPERS=y
+CONFIG_FB_TILEBLITTING=y
+
+#
+# Frame buffer hardware drivers
+#
+CONFIG_FB_CIRRUS=m
+CONFIG_FB_PM2=m
+CONFIG_FB_PM2_FIFO_DISCONNECT=y
+CONFIG_FB_CYBER2000=m
+CONFIG_FB_CYBER2000_DDC=y
+CONFIG_FB_ARC=m
+CONFIG_FB_ASILIANT=y
+CONFIG_FB_IMSTT=y
+CONFIG_FB_VGA16=m
+CONFIG_FB_UVESA=m
+CONFIG_FB_VESA=y
+CONFIG_FB_EFI=y
+CONFIG_FB_N411=m
+CONFIG_FB_HGA=m
+CONFIG_FB_S1D13XXX=m
+CONFIG_FB_NVIDIA=m
+CONFIG_FB_NVIDIA_I2C=y
+CONFIG_FB_NVIDIA_DEBUG=y
+CONFIG_FB_NVIDIA_BACKLIGHT=y
+CONFIG_FB_RIVA=m
+CONFIG_FB_RIVA_I2C=y
+CONFIG_FB_RIVA_DEBUG=y
+CONFIG_FB_RIVA_BACKLIGHT=y
+CONFIG_FB_LE80578=m
+CONFIG_FB_CARILLO_RANCH=m
+CONFIG_FB_INTEL=m
+CONFIG_FB_INTEL_DEBUG=y
+CONFIG_FB_INTEL_I2C=y
+CONFIG_FB_MATROX=m
+CONFIG_FB_MATROX_MILLENIUM=y
+CONFIG_FB_MATROX_MYSTIQUE=y
+CONFIG_FB_MATROX_G=y
+CONFIG_FB_MATROX_I2C=m
+CONFIG_FB_MATROX_MAVEN=m
+CONFIG_FB_RADEON=m
+CONFIG_FB_RADEON_I2C=y
+CONFIG_FB_RADEON_BACKLIGHT=y
+CONFIG_FB_RADEON_DEBUG=y
+CONFIG_FB_ATY128=m
+CONFIG_FB_ATY128_BACKLIGHT=y
+CONFIG_FB_ATY=m
+CONFIG_FB_ATY_CT=y
+CONFIG_FB_ATY_GENERIC_LCD=y
+CONFIG_FB_ATY_GX=y
+CONFIG_FB_ATY_BACKLIGHT=y
+CONFIG_FB_S3=m
+CONFIG_FB_S3_DDC=y
+CONFIG_FB_SAVAGE=m
+CONFIG_FB_SAVAGE_I2C=y
+CONFIG_FB_SAVAGE_ACCEL=y
+CONFIG_FB_SIS=m
+CONFIG_FB_SIS_300=y
+CONFIG_FB_SIS_315=y
+CONFIG_FB_VIA=m
+# CONFIG_FB_VIA_DIRECT_PROCFS is not set
+# CONFIG_FB_VIA_X_COMPATIBILITY is not set
+CONFIG_FB_NEOMAGIC=m
+CONFIG_FB_KYRO=m
+CONFIG_FB_3DFX=m
+CONFIG_FB_3DFX_ACCEL=y
+CONFIG_FB_3DFX_I2C=y
+CONFIG_FB_VOODOO1=m
+CONFIG_FB_VT8623=m
+CONFIG_FB_TRIDENT=m
+CONFIG_FB_ARK=m
+CONFIG_FB_PM3=m
+CONFIG_FB_CARMINE=m
+CONFIG_FB_CARMINE_DRAM_EVAL=y
+# CONFIG_CARMINE_DRAM_CUSTOM is not set
+CONFIG_FB_GEODE=y
+CONFIG_FB_GEODE_LX=m
+CONFIG_FB_GEODE_GX=m
+CONFIG_FB_GEODE_GX1=m
+CONFIG_FB_TMIO=m
+CONFIG_FB_TMIO_ACCELL=y
+CONFIG_FB_SM501=m
+CONFIG_FB_UDL=m
+CONFIG_FB_VIRTUAL=m
+CONFIG_FB_METRONOME=m
+CONFIG_FB_MB862XX=m
+CONFIG_FB_MB862XX_PCI_GDC=y
+CONFIG_FB_MB862XX_I2C=y
+CONFIG_FB_BROADSHEET=m
+CONFIG_BACKLIGHT_LCD_SUPPORT=y
+CONFIG_LCD_CLASS_DEVICE=m
+CONFIG_LCD_L4F00242T03=m
+CONFIG_LCD_LMS283GF05=m
+CONFIG_LCD_LTV350QV=m
+CONFIG_LCD_ILI9320=m
+CONFIG_LCD_TDO24M=m
+CONFIG_LCD_VGG2432A4=m
+CONFIG_LCD_PLATFORM=m
+CONFIG_LCD_S6E63M0=m
+CONFIG_LCD_LD9040=m
+CONFIG_LCD_AMS369FG06=m
+CONFIG_BACKLIGHT_CLASS_DEVICE=y
+CONFIG_BACKLIGHT_GENERIC=y
+CONFIG_BACKLIGHT_PROGEAR=m
+CONFIG_BACKLIGHT_CARILLO_RANCH=m
+CONFIG_BACKLIGHT_APPLE=m
+CONFIG_BACKLIGHT_SAHARA=m
+CONFIG_BACKLIGHT_ADP8860=m
+CONFIG_BACKLIGHT_ADP8870=m
+CONFIG_BACKLIGHT_PCF50633=m
+
+#
+# Display device support
+#
+CONFIG_DISPLAY_SUPPORT=m
+
+#
+# Display hardware drivers
+#
+
+#
+# Console display driver support
+#
+CONFIG_VGA_CONSOLE=y
+CONFIG_VGACON_SOFT_SCROLLBACK=y
+CONFIG_VGACON_SOFT_SCROLLBACK_SIZE=512
+CONFIG_DUMMY_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE=y
+CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY=y
+CONFIG_FRAMEBUFFER_CONSOLE_ROTATION=y
+# CONFIG_FONTS is not set
+CONFIG_FONT_8x8=y
+CONFIG_FONT_8x16=y
+CONFIG_LOGO=y
+CONFIG_LOGO_LINUX_MONO=y
+CONFIG_LOGO_LINUX_VGA16=y
+CONFIG_LOGO_LINUX_CLUT224=y
+CONFIG_SOUND=m
+CONFIG_SOUND_OSS_CORE=y
+CONFIG_SOUND_OSS_CORE_PRECLAIM=y
+CONFIG_SND=m
+CONFIG_SND_TIMER=m
+CONFIG_SND_PCM=m
+CONFIG_SND_HWDEP=m
+CONFIG_SND_RAWMIDI=m
+CONFIG_SND_JACK=y
+CONFIG_SND_SEQUENCER=m
+CONFIG_SND_SEQ_DUMMY=m
+CONFIG_SND_OSSEMUL=y
+CONFIG_SND_MIXER_OSS=m
+CONFIG_SND_PCM_OSS=m
+CONFIG_SND_PCM_OSS_PLUGINS=y
+CONFIG_SND_SEQUENCER_OSS=y
+CONFIG_SND_HRTIMER=m
+CONFIG_SND_SEQ_HRTIMER_DEFAULT=y
+CONFIG_SND_DYNAMIC_MINORS=y
+CONFIG_SND_SUPPORT_OLD_API=y
+CONFIG_SND_VERBOSE_PROCFS=y
+CONFIG_SND_VERBOSE_PRINTK=y
+CONFIG_SND_DEBUG=y
+CONFIG_SND_DEBUG_VERBOSE=y
+CONFIG_SND_PCM_XRUN_DEBUG=y
+CONFIG_SND_VMASTER=y
+CONFIG_SND_DMA_SGBUF=y
+CONFIG_SND_RAWMIDI_SEQ=m
+CONFIG_SND_OPL3_LIB_SEQ=m
+# CONFIG_SND_OPL4_LIB_SEQ is not set
+# CONFIG_SND_SBAWE_SEQ is not set
+CONFIG_SND_EMU10K1_SEQ=m
+CONFIG_SND_MPU401_UART=m
+CONFIG_SND_OPL3_LIB=m
+CONFIG_SND_VX_LIB=m
+CONFIG_SND_AC97_CODEC=m
+CONFIG_SND_DRIVERS=y
+CONFIG_SND_PCSP=m
+CONFIG_SND_DUMMY=m
+CONFIG_SND_ALOOP=m
+CONFIG_SND_VIRMIDI=m
+CONFIG_SND_MTPAV=m
+CONFIG_SND_MTS64=m
+CONFIG_SND_SERIAL_U16550=m
+CONFIG_SND_MPU401=m
+CONFIG_SND_PORTMAN2X4=m
+CONFIG_SND_AC97_POWER_SAVE=y
+CONFIG_SND_AC97_POWER_SAVE_DEFAULT=0
+CONFIG_SND_SB_COMMON=m
+CONFIG_SND_SB16_DSP=m
+CONFIG_SND_PCI=y
+CONFIG_SND_AD1889=m
+CONFIG_SND_ALS300=m
+CONFIG_SND_ALS4000=m
+CONFIG_SND_ALI5451=m
+CONFIG_SND_ASIHPI=m
+CONFIG_SND_ATIIXP=m
+CONFIG_SND_ATIIXP_MODEM=m
+CONFIG_SND_AU8810=m
+CONFIG_SND_AU8820=m
+CONFIG_SND_AU8830=m
+CONFIG_SND_AW2=m
+CONFIG_SND_AZT3328=m
+CONFIG_SND_BT87X=m
+# CONFIG_SND_BT87X_OVERCLOCK is not set
+CONFIG_SND_CA0106=m
+CONFIG_SND_CMIPCI=m
+CONFIG_SND_OXYGEN_LIB=m
+CONFIG_SND_OXYGEN=m
+CONFIG_SND_CS4281=m
+CONFIG_SND_CS46XX=m
+CONFIG_SND_CS46XX_NEW_DSP=y
+CONFIG_SND_CS5530=m
+CONFIG_SND_CS5535AUDIO=m
+CONFIG_SND_CTXFI=m
+CONFIG_SND_DARLA20=m
+CONFIG_SND_GINA20=m
+CONFIG_SND_LAYLA20=m
+CONFIG_SND_DARLA24=m
+CONFIG_SND_GINA24=m
+CONFIG_SND_LAYLA24=m
+CONFIG_SND_MONA=m
+CONFIG_SND_MIA=m
+CONFIG_SND_ECHO3G=m
+CONFIG_SND_INDIGO=m
+CONFIG_SND_INDIGOIO=m
+CONFIG_SND_INDIGODJ=m
+CONFIG_SND_INDIGOIOX=m
+CONFIG_SND_INDIGODJX=m
+CONFIG_SND_EMU10K1=m
+CONFIG_SND_EMU10K1X=m
+CONFIG_SND_ENS1370=m
+CONFIG_SND_ENS1371=m
+CONFIG_SND_ES1938=m
+CONFIG_SND_ES1968=m
+# CONFIG_SND_ES1968_INPUT is not set
+# CONFIG_SND_ES1968_RADIO is not set
+CONFIG_SND_FM801=m
+CONFIG_SND_FM801_TEA575X_BOOL=y
+CONFIG_SND_TEA575X=m
+CONFIG_SND_HDA_INTEL=m
+# CONFIG_SND_HDA_HWDEP is not set
+CONFIG_SND_HDA_INPUT_BEEP=y
+CONFIG_SND_HDA_INPUT_BEEP_MODE=1
+# CONFIG_SND_HDA_INPUT_JACK is not set
+# CONFIG_SND_HDA_PATCH_LOADER is not set
+CONFIG_SND_HDA_CODEC_REALTEK=y
+CONFIG_SND_HDA_CODEC_ANALOG=y
+CONFIG_SND_HDA_CODEC_SIGMATEL=y
+CONFIG_SND_HDA_CODEC_VIA=y
+CONFIG_SND_HDA_CODEC_HDMI=y
+CONFIG_SND_HDA_CODEC_CIRRUS=y
+CONFIG_SND_HDA_CODEC_CONEXANT=y
+CONFIG_SND_HDA_CODEC_CA0110=y
+CONFIG_SND_HDA_CODEC_CA0132=y
+CONFIG_SND_HDA_CODEC_CMEDIA=y
+CONFIG_SND_HDA_CODEC_SI3054=y
+CONFIG_SND_HDA_GENERIC=y
+CONFIG_SND_HDA_POWER_SAVE=y
+CONFIG_SND_HDA_POWER_SAVE_DEFAULT=0
+CONFIG_SND_HDSP=m
+CONFIG_SND_HDSPM=m
+CONFIG_SND_ICE1712=m
+CONFIG_SND_ICE1724=m
+CONFIG_SND_INTEL8X0=m
+CONFIG_SND_INTEL8X0M=m
+CONFIG_SND_KORG1212=m
+CONFIG_SND_LOLA=m
+CONFIG_SND_LX6464ES=m
+CONFIG_SND_MAESTRO3=m
+# CONFIG_SND_MAESTRO3_INPUT is not set
+CONFIG_SND_MIXART=m
+CONFIG_SND_NM256=m
+CONFIG_SND_PCXHR=m
+CONFIG_SND_RIPTIDE=m
+CONFIG_SND_RME32=m
+CONFIG_SND_RME96=m
+CONFIG_SND_RME9652=m
+CONFIG_SND_SONICVIBES=m
+CONFIG_SND_TRIDENT=m
+CONFIG_SND_VIA82XX=m
+CONFIG_SND_VIA82XX_MODEM=m
+CONFIG_SND_VIRTUOSO=m
+CONFIG_SND_VX222=m
+CONFIG_SND_YMFPCI=m
+CONFIG_SND_SPI=y
+CONFIG_SND_USB=y
+CONFIG_SND_USB_AUDIO=m
+CONFIG_SND_USB_UA101=m
+CONFIG_SND_USB_USX2Y=m
+CONFIG_SND_USB_CAIAQ=m
+CONFIG_SND_USB_CAIAQ_INPUT=y
+CONFIG_SND_USB_US122L=m
+CONFIG_SND_USB_6FIRE=m
+CONFIG_SND_PCMCIA=y
+CONFIG_SND_VXPOCKET=m
+CONFIG_SND_PDAUDIOCF=m
+CONFIG_SND_SOC=m
+CONFIG_SND_SOC_CACHE_LZO=y
+CONFIG_SND_SOC_I2C_AND_SPI=m
+CONFIG_SND_SOC_ALL_CODECS=m
+CONFIG_SND_SOC_WM_HUBS=m
+CONFIG_SND_SOC_AD1836=m
+CONFIG_SND_SOC_AD193X=m
+CONFIG_SND_SOC_AD73311=m
+CONFIG_SND_SOC_ADAV80X=m
+CONFIG_SND_SOC_ADS117X=m
+CONFIG_SND_SOC_AK4104=m
+CONFIG_SND_SOC_AK4535=m
+CONFIG_SND_SOC_AK4641=m
+CONFIG_SND_SOC_AK4642=m
+CONFIG_SND_SOC_AK4671=m
+CONFIG_SND_SOC_ALC5623=m
+CONFIG_SND_SOC_CS42L51=m
+CONFIG_SND_SOC_CS4270=m
+CONFIG_SND_SOC_CS4271=m
+CONFIG_SND_SOC_CX20442=m
+CONFIG_SND_SOC_L3=m
+CONFIG_SND_SOC_DA7210=m
+CONFIG_SND_SOC_DFBMCS320=m
+CONFIG_SND_SOC_MAX98088=m
+CONFIG_SND_SOC_MAX98095=m
+CONFIG_SND_SOC_MAX9850=m
+CONFIG_SND_SOC_PCM3008=m
+CONFIG_SND_SOC_SGTL5000=m
+CONFIG_SND_SOC_SPDIF=m
+CONFIG_SND_SOC_SSM2602=m
+CONFIG_SND_SOC_STA32X=m
+CONFIG_SND_SOC_TLV320AIC23=m
+CONFIG_SND_SOC_TLV320AIC26=m
+CONFIG_SND_SOC_TVL320AIC32X4=m
+CONFIG_SND_SOC_TLV320AIC3X=m
+CONFIG_SND_SOC_TLV320DAC33=m
+CONFIG_SND_SOC_UDA134X=m
+CONFIG_SND_SOC_UDA1380=m
+CONFIG_SND_SOC_WL1273=m
+CONFIG_SND_SOC_WM1250_EV1=m
+CONFIG_SND_SOC_WM8400=m
+CONFIG_SND_SOC_WM8510=m
+CONFIG_SND_SOC_WM8523=m
+CONFIG_SND_SOC_WM8580=m
+CONFIG_SND_SOC_WM8711=m
+CONFIG_SND_SOC_WM8727=m
+CONFIG_SND_SOC_WM8728=m
+CONFIG_SND_SOC_WM8731=m
+CONFIG_SND_SOC_WM8737=m
+CONFIG_SND_SOC_WM8741=m
+CONFIG_SND_SOC_WM8750=m
+CONFIG_SND_SOC_WM8753=m
+CONFIG_SND_SOC_WM8770=m
+CONFIG_SND_SOC_WM8776=m
+CONFIG_SND_SOC_WM8782=m
+CONFIG_SND_SOC_WM8804=m
+CONFIG_SND_SOC_WM8900=m
+CONFIG_SND_SOC_WM8903=m
+CONFIG_SND_SOC_WM8904=m
+CONFIG_SND_SOC_WM8915=m
+CONFIG_SND_SOC_WM8940=m
+CONFIG_SND_SOC_WM8955=m
+CONFIG_SND_SOC_WM8960=m
+CONFIG_SND_SOC_WM8961=m
+CONFIG_SND_SOC_WM8962=m
+CONFIG_SND_SOC_WM8971=m
+CONFIG_SND_SOC_WM8974=m
+CONFIG_SND_SOC_WM8978=m
+CONFIG_SND_SOC_WM8985=m
+CONFIG_SND_SOC_WM8988=m
+CONFIG_SND_SOC_WM8990=m
+CONFIG_SND_SOC_WM8991=m
+CONFIG_SND_SOC_WM8993=m
+CONFIG_SND_SOC_WM8995=m
+CONFIG_SND_SOC_WM9081=m
+CONFIG_SND_SOC_LM4857=m
+CONFIG_SND_SOC_MAX9877=m
+CONFIG_SND_SOC_TPA6130A2=m
+CONFIG_SND_SOC_WM2000=m
+CONFIG_SND_SOC_WM9090=m
+CONFIG_SOUND_PRIME=m
+# CONFIG_SOUND_OSS is not set
+CONFIG_AC97_BUS=m
+CONFIG_HID_SUPPORT=y
+CONFIG_HID=m
+CONFIG_HIDRAW=y
+
+#
+# USB Input Devices
+#
+CONFIG_USB_HID=m
+CONFIG_HID_PID=y
+CONFIG_USB_HIDDEV=y
+
+#
+# USB HID Boot Protocol drivers
+#
+CONFIG_USB_KBD=m
+CONFIG_USB_MOUSE=m
+
+#
+# Special HID drivers
+#
+CONFIG_HID_A4TECH=m
+CONFIG_HID_ACRUX=m
+CONFIG_HID_ACRUX_FF=m
+CONFIG_HID_APPLE=m
+CONFIG_HID_BELKIN=m
+CONFIG_HID_CHERRY=m
+CONFIG_HID_CHICONY=m
+CONFIG_HID_PRODIKEYS=m
+CONFIG_HID_CYPRESS=m
+CONFIG_HID_DRAGONRISE=m
+CONFIG_DRAGONRISE_FF=y
+CONFIG_HID_EMS_FF=m
+CONFIG_HID_ELECOM=m
+CONFIG_HID_EZKEY=m
+CONFIG_HID_HOLTEK=m
+# CONFIG_HOLTEK_FF is not set
+CONFIG_HID_KEYTOUCH=m
+CONFIG_HID_KYE=m
+CONFIG_HID_UCLOGIC=m
+CONFIG_HID_WALTOP=m
+CONFIG_HID_GYRATION=m
+CONFIG_HID_TWINHAN=m
+CONFIG_HID_KENSINGTON=m
+CONFIG_HID_LCPOWER=m
+CONFIG_HID_LOGITECH=m
+CONFIG_LOGITECH_FF=y
+CONFIG_LOGIRUMBLEPAD2_FF=y
+CONFIG_LOGIG940_FF=y
+# CONFIG_LOGIWII_FF is not set
+CONFIG_HID_MAGICMOUSE=m
+CONFIG_HID_MICROSOFT=m
+CONFIG_HID_MONTEREY=m
+CONFIG_HID_MULTITOUCH=m
+CONFIG_HID_NTRIG=m
+CONFIG_HID_ORTEK=m
+CONFIG_HID_PANTHERLORD=m
+CONFIG_PANTHERLORD_FF=y
+CONFIG_HID_PETALYNX=m
+CONFIG_HID_PICOLCD=m
+CONFIG_HID_PICOLCD_FB=y
+CONFIG_HID_PICOLCD_BACKLIGHT=y
+CONFIG_HID_PICOLCD_LCD=y
+CONFIG_HID_PICOLCD_LEDS=y
+CONFIG_HID_QUANTA=m
+CONFIG_HID_ROCCAT=m
+CONFIG_HID_ROCCAT_COMMON=m
+CONFIG_HID_ROCCAT_ARVO=m
+CONFIG_HID_ROCCAT_KONE=m
+CONFIG_HID_ROCCAT_KONEPLUS=m
+CONFIG_HID_ROCCAT_KOVAPLUS=m
+CONFIG_HID_ROCCAT_PYRA=m
+CONFIG_HID_SAMSUNG=m
+CONFIG_HID_SONY=m
+CONFIG_HID_SPEEDLINK=m
+CONFIG_HID_SUNPLUS=m
+CONFIG_HID_GREENASIA=m
+CONFIG_GREENASIA_FF=y
+CONFIG_HID_SMARTJOYPLUS=m
+CONFIG_SMARTJOYPLUS_FF=y
+CONFIG_HID_TOPSEED=m
+CONFIG_HID_THRUSTMASTER=m
+CONFIG_THRUSTMASTER_FF=y
+CONFIG_HID_WACOM=m
+CONFIG_HID_WACOM_POWER_SUPPLY=y
+CONFIG_HID_ZEROPLUS=m
+CONFIG_ZEROPLUS_FF=y
+CONFIG_HID_ZYDACRON=m
+CONFIG_USB_SUPPORT=y
+CONFIG_USB_ARCH_HAS_HCD=y
+CONFIG_USB_ARCH_HAS_OHCI=y
+CONFIG_USB_ARCH_HAS_EHCI=y
+CONFIG_USB=y
+CONFIG_USB_DEBUG=y
+CONFIG_USB_ANNOUNCE_NEW_DEVICES=y
+
+#
+# Miscellaneous USB options
+#
+CONFIG_USB_DEVICEFS=y
+CONFIG_USB_DEVICE_CLASS=y
+CONFIG_USB_DYNAMIC_MINORS=y
+CONFIG_USB_SUSPEND=y
+# CONFIG_USB_OTG is not set
+CONFIG_USB_OTG_WHITELIST=y
+# CONFIG_USB_OTG_BLACKLIST_HUB is not set
+CONFIG_USB_MON=y
+CONFIG_USB_WUSB=m
+CONFIG_USB_WUSB_CBAF=m
+CONFIG_USB_WUSB_CBAF_DEBUG=y
+
+#
+# USB Host Controller Drivers
+#
+CONFIG_USB_C67X00_HCD=m
+CONFIG_USB_XHCI_HCD=m
+# CONFIG_USB_XHCI_HCD_DEBUGGING is not set
+CONFIG_USB_EHCI_HCD=m
+CONFIG_USB_EHCI_ROOT_HUB_TT=y
+CONFIG_USB_EHCI_TT_NEWSCHED=y
+CONFIG_USB_OXU210HP_HCD=m
+CONFIG_USB_ISP116X_HCD=m
+CONFIG_USB_ISP1760_HCD=m
+CONFIG_USB_ISP1362_HCD=m
+CONFIG_USB_OHCI_HCD=m
+CONFIG_USB_OHCI_HCD_SSB=y
+# CONFIG_USB_OHCI_BIG_ENDIAN_DESC is not set
+# CONFIG_USB_OHCI_BIG_ENDIAN_MMIO is not set
+CONFIG_USB_OHCI_LITTLE_ENDIAN=y
+CONFIG_USB_UHCI_HCD=m
+CONFIG_USB_U132_HCD=m
+CONFIG_USB_SL811_HCD=m
+# CONFIG_USB_SL811_HCD_ISO is not set
+CONFIG_USB_SL811_CS=m
+CONFIG_USB_R8A66597_HCD=m
+CONFIG_USB_WHCI_HCD=m
+CONFIG_USB_HWA_HCD=m
+
+#
+# USB Device Class drivers
+#
+CONFIG_USB_ACM=m
+CONFIG_USB_PRINTER=m
+CONFIG_USB_WDM=m
+CONFIG_USB_TMC=m
+
+#
+# NOTE: USB_STORAGE depends on SCSI but BLK_DEV_SD may
+#
+
+#
+# also be needed; see USB_STORAGE Help for more info
+#
+CONFIG_USB_STORAGE=m
+CONFIG_USB_STORAGE_DEBUG=y
+CONFIG_USB_STORAGE_REALTEK=m
+CONFIG_USB_STORAGE_DATAFAB=m
+CONFIG_USB_STORAGE_FREECOM=m
+CONFIG_USB_STORAGE_ISD200=m
+CONFIG_USB_STORAGE_USBAT=m
+CONFIG_USB_STORAGE_SDDR09=m
+CONFIG_USB_STORAGE_SDDR55=m
+CONFIG_USB_STORAGE_JUMPSHOT=m
+CONFIG_USB_STORAGE_ALAUDA=m
+CONFIG_USB_STORAGE_ONETOUCH=m
+CONFIG_USB_STORAGE_KARMA=m
+CONFIG_USB_STORAGE_CYPRESS_ATACB=m
+CONFIG_USB_STORAGE_ENE_UB6250=m
+CONFIG_USB_UAS=m
+# CONFIG_USB_LIBUSUAL is not set
+
+#
+# USB Imaging devices
+#
+CONFIG_USB_MDC800=m
+CONFIG_USB_MICROTEK=m
+
+#
+# USB port drivers
+#
+CONFIG_USB_USS720=m
+CONFIG_USB_SERIAL=m
+CONFIG_USB_EZUSB=y
+CONFIG_USB_SERIAL_GENERIC=y
+CONFIG_USB_SERIAL_AIRCABLE=m
+CONFIG_USB_SERIAL_ARK3116=m
+CONFIG_USB_SERIAL_BELKIN=m
+CONFIG_USB_SERIAL_CH341=m
+# CONFIG_USB_SERIAL_WHITEHEAT is not set
+CONFIG_USB_SERIAL_DIGI_ACCELEPORT=m
+CONFIG_USB_SERIAL_CP210X=m
+CONFIG_USB_SERIAL_CYPRESS_M8=m
+CONFIG_USB_SERIAL_EMPEG=m
+CONFIG_USB_SERIAL_FTDI_SIO=m
+CONFIG_USB_SERIAL_FUNSOFT=m
+CONFIG_USB_SERIAL_VISOR=m
+CONFIG_USB_SERIAL_IPAQ=m
+CONFIG_USB_SERIAL_IR=m
+CONFIG_USB_SERIAL_EDGEPORT=m
+CONFIG_USB_SERIAL_EDGEPORT_TI=m
+CONFIG_USB_SERIAL_GARMIN=m
+CONFIG_USB_SERIAL_IPW=m
+CONFIG_USB_SERIAL_IUU=m
+CONFIG_USB_SERIAL_KEYSPAN_PDA=m
+CONFIG_USB_SERIAL_KEYSPAN=m
+# CONFIG_USB_SERIAL_KEYSPAN_MPR is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA28 is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA28X is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA28XA is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA28XB is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA19 is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA18X is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA19W is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA19QW is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA19QI is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA49W is not set
+# CONFIG_USB_SERIAL_KEYSPAN_USA49WLC is not set
+CONFIG_USB_SERIAL_KLSI=m
+CONFIG_USB_SERIAL_KOBIL_SCT=m
+CONFIG_USB_SERIAL_MCT_U232=m
+CONFIG_USB_SERIAL_MOS7720=m
+# CONFIG_USB_SERIAL_MOS7715_PARPORT is not set
+CONFIG_USB_SERIAL_MOS7840=m
+CONFIG_USB_SERIAL_MOTOROLA=m
+CONFIG_USB_SERIAL_NAVMAN=m
+CONFIG_USB_SERIAL_PL2303=m
+CONFIG_USB_SERIAL_OTI6858=m
+CONFIG_USB_SERIAL_QCAUX=m
+CONFIG_USB_SERIAL_QUALCOMM=m
+CONFIG_USB_SERIAL_SPCP8X5=m
+CONFIG_USB_SERIAL_HP4X=m
+CONFIG_USB_SERIAL_SAFE=m
+# CONFIG_USB_SERIAL_SAFE_PADDED is not set
+# CONFIG_USB_SERIAL_SIEMENS_MPI is not set
+CONFIG_USB_SERIAL_SIERRAWIRELESS=m
+# CONFIG_USB_SERIAL_SYMBOL is not set
+# CONFIG_USB_SERIAL_TI is not set
+CONFIG_USB_SERIAL_CYBERJACK=m
+CONFIG_USB_SERIAL_XIRCOM=m
+CONFIG_USB_SERIAL_WWAN=m
+CONFIG_USB_SERIAL_OPTION=m
+CONFIG_USB_SERIAL_OMNINET=m
+# CONFIG_USB_SERIAL_OPTICON is not set
+CONFIG_USB_SERIAL_VIVOPAY_SERIAL=m
+CONFIG_USB_SERIAL_ZIO=m
+CONFIG_USB_SERIAL_SSU100=m
+CONFIG_USB_SERIAL_DEBUG=m
+
+#
+# USB Miscellaneous drivers
+#
+CONFIG_USB_EMI62=m
+CONFIG_USB_EMI26=m
+CONFIG_USB_ADUTUX=m
+CONFIG_USB_SEVSEG=m
+CONFIG_USB_RIO500=m
+CONFIG_USB_LEGOTOWER=m
+CONFIG_USB_LCD=m
+CONFIG_USB_LED=m
+CONFIG_USB_CYPRESS_CY7C63=m
+CONFIG_USB_CYTHERM=m
+CONFIG_USB_IDMOUSE=m
+CONFIG_USB_FTDI_ELAN=m
+CONFIG_USB_APPLEDISPLAY=m
+CONFIG_USB_SISUSBVGA=m
+CONFIG_USB_SISUSBVGA_CON=y
+CONFIG_USB_LD=m
+CONFIG_USB_TRANCEVIBRATOR=m
+CONFIG_USB_IOWARRIOR=m
+CONFIG_USB_TEST=m
+CONFIG_USB_ISIGHTFW=m
+CONFIG_USB_YUREX=m
+CONFIG_USB_ATM=m
+CONFIG_USB_SPEEDTOUCH=m
+CONFIG_USB_CXACRU=m
+CONFIG_USB_UEAGLEATM=m
+CONFIG_USB_XUSBATM=m
+CONFIG_USB_GADGET=m
+# CONFIG_USB_GADGET_DEBUG is not set
+# CONFIG_USB_GADGET_DEBUG_FILES is not set
+# CONFIG_USB_GADGET_DEBUG_FS is not set
+CONFIG_USB_GADGET_VBUS_DRAW=2
+CONFIG_USB_FUSB300=m
+CONFIG_USB_R8A66597=m
+CONFIG_USB_M66592=m
+CONFIG_USB_AMD5536UDC=m
+CONFIG_USB_CI13XXX_PCI=m
+CONFIG_USB_NET2272=m
+# CONFIG_USB_NET2272_DMA is not set
+CONFIG_USB_NET2280=m
+CONFIG_USB_GOKU=m
+CONFIG_USB_LANGWELL=m
+CONFIG_USB_EG20T=m
+CONFIG_USB_DUMMY_HCD=m
+CONFIG_USB_GADGET_DUALSPEED=y
+CONFIG_USB_GADGET_SUPERSPEED=y
+# CONFIG_USB_ZERO is not set
+# CONFIG_USB_AUDIO is not set
+# CONFIG_USB_ETH is not set
+CONFIG_USB_G_NCM=m
+# CONFIG_USB_GADGETFS is not set
+CONFIG_USB_FUNCTIONFS=m
+CONFIG_USB_FUNCTIONFS_ETH=y
+CONFIG_USB_FUNCTIONFS_RNDIS=y
+CONFIG_USB_FUNCTIONFS_GENERIC=y
+# CONFIG_USB_FILE_STORAGE is not set
+# CONFIG_USB_MASS_STORAGE is not set
+# CONFIG_USB_G_SERIAL is not set
+# CONFIG_USB_MIDI_GADGET is not set
+# CONFIG_USB_G_PRINTER is not set
+# CONFIG_USB_CDC_COMPOSITE is not set
+# CONFIG_USB_G_NOKIA is not set
+# CONFIG_USB_G_MULTI is not set
+CONFIG_USB_G_HID=m
+CONFIG_USB_G_DBGP=m
+# CONFIG_USB_G_DBGP_PRINTK is not set
+CONFIG_USB_G_DBGP_SERIAL=y
+CONFIG_USB_G_WEBCAM=m
+
+#
+# OTG and related infrastructure
+#
+CONFIG_USB_OTG_UTILS=y
+CONFIG_USB_GPIO_VBUS=m
+CONFIG_NOP_USB_XCEIV=m
+CONFIG_UWB=m
+CONFIG_UWB_HWA=m
+CONFIG_UWB_WHCI=m
+CONFIG_UWB_I1480U=m
+CONFIG_MMC=m
+CONFIG_MMC_DEBUG=y
+# CONFIG_MMC_UNSAFE_RESUME is not set
+# CONFIG_MMC_CLKGATE is not set
+
+#
+# MMC/SD/SDIO Card Drivers
+#
+CONFIG_MMC_BLOCK=m
+CONFIG_MMC_BLOCK_MINORS=8
+CONFIG_MMC_BLOCK_BOUNCE=y
+CONFIG_SDIO_UART=m
+CONFIG_MMC_TEST=m
+
+#
+# MMC/SD/SDIO Host Controller Drivers
+#
+CONFIG_MMC_SDHCI=m
+CONFIG_MMC_SDHCI_PCI=m
+# CONFIG_MMC_RICOH_MMC is not set
+CONFIG_MMC_SDHCI_PLTFM=m
+CONFIG_MMC_WBSD=m
+CONFIG_MMC_TIFM_SD=m
+CONFIG_MMC_SPI=m
+CONFIG_MMC_SDRICOH_CS=m
+CONFIG_MMC_CB710=m
+CONFIG_MMC_VIA_SDMMC=m
+CONFIG_MMC_VUB300=m
+CONFIG_MMC_USHC=m
+CONFIG_MEMSTICK=m
+CONFIG_MEMSTICK_DEBUG=y
+
+#
+# MemoryStick drivers
+#
+# CONFIG_MEMSTICK_UNSAFE_RESUME is not set
+CONFIG_MSPRO_BLOCK=m
+
+#
+# MemoryStick Host Controller Drivers
+#
+CONFIG_MEMSTICK_TIFM_MS=m
+CONFIG_MEMSTICK_JMICRON_38X=m
+CONFIG_MEMSTICK_R592=m
+CONFIG_NEW_LEDS=y
+CONFIG_LEDS_CLASS=y
+
+#
+# LED drivers
+#
+CONFIG_LEDS_LM3530=m
+CONFIG_LEDS_NET5501=m
+CONFIG_LEDS_PCA9532=m
+# CONFIG_LEDS_PCA9532_GPIO is not set
+# CONFIG_LEDS_GPIO is not set
+CONFIG_LEDS_LP3944=m
+CONFIG_LEDS_LP5521=m
+CONFIG_LEDS_LP5523=m
+CONFIG_LEDS_CLEVO_MAIL=m
+CONFIG_LEDS_PCA955X=m
+CONFIG_LEDS_DAC124S085=m
+CONFIG_LEDS_REGULATOR=m
+CONFIG_LEDS_BD2802=m
+CONFIG_LEDS_INTEL_SS4200=m
+CONFIG_LEDS_LT3593=m
+CONFIG_LEDS_DELL_NETBOOKS=m
+CONFIG_LEDS_MC13783=m
+CONFIG_LEDS_TRIGGERS=y
+
+#
+# LED Triggers
+#
+CONFIG_LEDS_TRIGGER_TIMER=m
+CONFIG_LEDS_TRIGGER_IDE_DISK=y
+CONFIG_LEDS_TRIGGER_HEARTBEAT=m
+CONFIG_LEDS_TRIGGER_BACKLIGHT=m
+CONFIG_LEDS_TRIGGER_GPIO=m
+CONFIG_LEDS_TRIGGER_DEFAULT_ON=m
+
+#
+# iptables trigger is under Netfilter config (LED target)
+#
+CONFIG_ACCESSIBILITY=y
+CONFIG_A11Y_BRAILLE_CONSOLE=y
+CONFIG_INFINIBAND=m
+CONFIG_INFINIBAND_USER_MAD=m
+CONFIG_INFINIBAND_USER_ACCESS=m
+CONFIG_INFINIBAND_USER_MEM=y
+CONFIG_INFINIBAND_ADDR_TRANS=y
+CONFIG_INFINIBAND_MTHCA=m
+CONFIG_INFINIBAND_MTHCA_DEBUG=y
+CONFIG_INFINIBAND_IPATH=m
+CONFIG_INFINIBAND_QIB=m
+CONFIG_INFINIBAND_AMSO1100=m
+CONFIG_INFINIBAND_AMSO1100_DEBUG=y
+CONFIG_INFINIBAND_CXGB3=m
+CONFIG_INFINIBAND_CXGB3_DEBUG=y
+CONFIG_INFINIBAND_CXGB4=m
+CONFIG_MLX4_INFINIBAND=m
+CONFIG_INFINIBAND_NES=m
+CONFIG_INFINIBAND_NES_DEBUG=y
+CONFIG_INFINIBAND_IPOIB=m
+CONFIG_INFINIBAND_IPOIB_CM=y
+CONFIG_INFINIBAND_IPOIB_DEBUG=y
+CONFIG_INFINIBAND_IPOIB_DEBUG_DATA=y
+CONFIG_INFINIBAND_SRP=m
+CONFIG_INFINIBAND_ISER=m
+CONFIG_EDAC=y
+
+#
+# Reporting subsystems
+#
+CONFIG_EDAC_DEBUG=y
+CONFIG_EDAC_DECODE_MCE=m
+CONFIG_EDAC_MCE_INJ=m
+CONFIG_EDAC_MM_EDAC=m
+CONFIG_EDAC_MCE=y
+CONFIG_EDAC_AMD64=m
+CONFIG_EDAC_AMD64_ERROR_INJECTION=y
+CONFIG_EDAC_E752X=m
+CONFIG_EDAC_I82975X=m
+CONFIG_EDAC_I3000=m
+CONFIG_EDAC_I3200=m
+CONFIG_EDAC_X38=m
+CONFIG_EDAC_I5400=m
+CONFIG_EDAC_I7CORE=m
+CONFIG_EDAC_I5000=m
+CONFIG_EDAC_I5100=m
+CONFIG_EDAC_I7300=m
+CONFIG_RTC_LIB=y
+CONFIG_RTC_CLASS=y
+CONFIG_RTC_HCTOSYS=y
+CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
+CONFIG_RTC_DEBUG=y
+
+#
+# RTC interfaces
+#
+CONFIG_RTC_INTF_SYSFS=y
+CONFIG_RTC_INTF_PROC=y
+CONFIG_RTC_INTF_DEV=y
+CONFIG_RTC_INTF_DEV_UIE_EMUL=y
+CONFIG_RTC_DRV_TEST=m
+
+#
+# I2C RTC drivers
+#
+CONFIG_RTC_DRV_DS1307=m
+CONFIG_RTC_DRV_DS1374=m
+CONFIG_RTC_DRV_DS1672=m
+CONFIG_RTC_DRV_DS3232=m
+CONFIG_RTC_DRV_MAX6900=m
+CONFIG_RTC_DRV_RS5C372=m
+CONFIG_RTC_DRV_ISL1208=m
+CONFIG_RTC_DRV_ISL12022=m
+CONFIG_RTC_DRV_X1205=m
+CONFIG_RTC_DRV_PCF8563=m
+CONFIG_RTC_DRV_PCF8583=m
+CONFIG_RTC_DRV_M41T80=m
+CONFIG_RTC_DRV_M41T80_WDT=y
+CONFIG_RTC_DRV_BQ32K=m
+CONFIG_RTC_DRV_S35390A=m
+CONFIG_RTC_DRV_FM3130=m
+CONFIG_RTC_DRV_RX8581=m
+CONFIG_RTC_DRV_RX8025=m
+CONFIG_RTC_DRV_EM3027=m
+CONFIG_RTC_DRV_RV3029C2=m
+
+#
+# SPI RTC drivers
+#
+CONFIG_RTC_DRV_M41T93=m
+CONFIG_RTC_DRV_M41T94=m
+CONFIG_RTC_DRV_DS1305=m
+CONFIG_RTC_DRV_DS1390=m
+CONFIG_RTC_DRV_MAX6902=m
+CONFIG_RTC_DRV_R9701=m
+CONFIG_RTC_DRV_RS5C348=m
+CONFIG_RTC_DRV_DS3234=m
+CONFIG_RTC_DRV_PCF2123=m
+
+#
+# Platform RTC drivers
+#
+CONFIG_RTC_DRV_CMOS=y
+CONFIG_RTC_DRV_DS1286=m
+CONFIG_RTC_DRV_DS1511=m
+CONFIG_RTC_DRV_DS1553=m
+CONFIG_RTC_DRV_DS1742=m
+CONFIG_RTC_DRV_STK17TA8=m
+CONFIG_RTC_DRV_M48T86=m
+CONFIG_RTC_DRV_M48T35=m
+CONFIG_RTC_DRV_M48T59=m
+CONFIG_RTC_DRV_MSM6242=m
+CONFIG_RTC_DRV_BQ4802=m
+CONFIG_RTC_DRV_RP5C01=m
+CONFIG_RTC_DRV_V3020=m
+CONFIG_RTC_DRV_PCF50633=m
+
+#
+# on-CPU RTC drivers
+#
+CONFIG_RTC_DRV_PCAP=m
+CONFIG_RTC_DRV_MC13XXX=m
+CONFIG_DMADEVICES=y
+# CONFIG_DMADEVICES_DEBUG is not set
+
+#
+# DMA Devices
+#
+CONFIG_INTEL_MID_DMAC=m
+CONFIG_INTEL_IOATDMA=m
+CONFIG_TIMB_DMA=m
+CONFIG_PCH_DMA=m
+CONFIG_DMA_ENGINE=y
+
+#
+# DMA Clients
+#
+CONFIG_NET_DMA=y
+# CONFIG_ASYNC_TX_DMA is not set
+CONFIG_DMATEST=m
+CONFIG_DCA=m
+CONFIG_AUXDISPLAY=y
+CONFIG_KS0108=m
+CONFIG_KS0108_PORT=0x378
+CONFIG_KS0108_DELAY=2
+CONFIG_CFAG12864B=m
+CONFIG_CFAG12864B_RATE=20
+CONFIG_UIO=m
+CONFIG_UIO_CIF=m
+CONFIG_UIO_PDRV=m
+CONFIG_UIO_PDRV_GENIRQ=m
+CONFIG_UIO_AEC=m
+CONFIG_UIO_SERCOS3=m
+CONFIG_UIO_PCI_GENERIC=m
+CONFIG_UIO_NETX=m
+# CONFIG_STAGING is not set
+CONFIG_X86_PLATFORM_DEVICES=y
+CONFIG_ACER_WMI=m
+CONFIG_ACERHDF=m
+CONFIG_ASUS_LAPTOP=m
+CONFIG_DELL_LAPTOP=m
+CONFIG_DELL_WMI=m
+CONFIG_DELL_WMI_AIO=m
+CONFIG_FUJITSU_LAPTOP=m
+CONFIG_FUJITSU_LAPTOP_DEBUG=y
+CONFIG_HP_ACCEL=m
+CONFIG_HP_WMI=m
+CONFIG_MSI_LAPTOP=m
+CONFIG_PANASONIC_LAPTOP=m
+CONFIG_COMPAL_LAPTOP=m
+CONFIG_SONY_LAPTOP=m
+CONFIG_SONYPI_COMPAT=y
+CONFIG_IDEAPAD_LAPTOP=m
+CONFIG_THINKPAD_ACPI=m
+CONFIG_THINKPAD_ACPI_ALSA_SUPPORT=y
+CONFIG_THINKPAD_ACPI_DEBUGFACILITIES=y
+CONFIG_THINKPAD_ACPI_DEBUG=y
+# CONFIG_THINKPAD_ACPI_UNSAFE_LEDS is not set
+CONFIG_THINKPAD_ACPI_VIDEO=y
+CONFIG_THINKPAD_ACPI_HOTKEY_POLL=y
+CONFIG_SENSORS_HDAPS=m
+CONFIG_INTEL_MENLOW=m
+CONFIG_EEEPC_LAPTOP=m
+CONFIG_ASUS_WMI=m
+CONFIG_ASUS_NB_WMI=m
+CONFIG_EEEPC_WMI=m
+CONFIG_ACPI_WMI=m
+CONFIG_MSI_WMI=m
+CONFIG_ACPI_ASUS=m
+CONFIG_TOPSTAR_LAPTOP=m
+CONFIG_ACPI_TOSHIBA=m
+CONFIG_TOSHIBA_BT_RFKILL=m
+CONFIG_ACPI_CMPC=m
+CONFIG_INTEL_IPS=m
+CONFIG_IBM_RTL=m
+CONFIG_XO15_EBOOK=m
+CONFIG_SAMSUNG_LAPTOP=m
+CONFIG_MXM_WMI=m
+CONFIG_INTEL_OAKTRAIL=m
+CONFIG_CLKEVT_I8253=y
+CONFIG_I8253_LOCK=y
+CONFIG_CLKBLD_I8253=y
+
+#
+# Firmware Drivers
+#
+CONFIG_EDD=m
+# CONFIG_EDD_OFF is not set
+CONFIG_FIRMWARE_MEMMAP=y
+CONFIG_EFI_VARS=m
+CONFIG_DELL_RBU=m
+CONFIG_DCDBAS=m
+CONFIG_DMIID=y
+CONFIG_DMI_SYSFS=m
+CONFIG_ISCSI_IBFT_FIND=y
+CONFIG_ISCSI_IBFT=m
+CONFIG_SIGMA=m
+# CONFIG_GOOGLE_FIRMWARE is not set
+
+#
+# File systems
+#
+CONFIG_EXT2_FS=m
+CONFIG_EXT2_FS_XATTR=y
+CONFIG_EXT2_FS_POSIX_ACL=y
+CONFIG_EXT2_FS_SECURITY=y
+# CONFIG_EXT2_FS_XIP is not set
+CONFIG_EXT3_FS=m
+# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+CONFIG_EXT3_FS_XATTR=y
+CONFIG_EXT3_FS_POSIX_ACL=y
+CONFIG_EXT3_FS_SECURITY=y
+CONFIG_EXT4_FS=m
+CONFIG_EXT4_FS_XATTR=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+CONFIG_EXT4_DEBUG=y
+CONFIG_JBD=m
+CONFIG_JBD_DEBUG=y
+CONFIG_JBD2=m
+CONFIG_JBD2_DEBUG=y
+CONFIG_FS_MBCACHE=m
+CONFIG_REISERFS_FS=m
+CONFIG_REISERFS_CHECK=y
+CONFIG_REISERFS_PROC_INFO=y
+CONFIG_REISERFS_FS_XATTR=y
+CONFIG_REISERFS_FS_POSIX_ACL=y
+CONFIG_REISERFS_FS_SECURITY=y
+CONFIG_JFS_FS=m
+CONFIG_JFS_POSIX_ACL=y
+CONFIG_JFS_SECURITY=y
+CONFIG_JFS_DEBUG=y
+CONFIG_JFS_STATISTICS=y
+CONFIG_XFS_FS=m
+CONFIG_XFS_QUOTA=y
+CONFIG_XFS_POSIX_ACL=y
+CONFIG_XFS_RT=y
+CONFIG_XFS_DEBUG=y
+CONFIG_GFS2_FS=m
+CONFIG_GFS2_FS_LOCKING_DLM=y
+CONFIG_OCFS2_FS=m
+CONFIG_OCFS2_FS_O2CB=m
+CONFIG_OCFS2_FS_USERSPACE_CLUSTER=m
+CONFIG_OCFS2_FS_STATS=y
+CONFIG_OCFS2_DEBUG_MASKLOG=y
+# CONFIG_OCFS2_DEBUG_FS is not set
+CONFIG_BTRFS_FS=m
+CONFIG_BTRFS_FS_POSIX_ACL=y
+CONFIG_NILFS2_FS=m
+CONFIG_FS_POSIX_ACL=y
+CONFIG_EXPORTFS=m
+CONFIG_FILE_LOCKING=y
+CONFIG_FSNOTIFY=y
+CONFIG_DNOTIFY=y
+CONFIG_INOTIFY_USER=y
+# CONFIG_FANOTIFY is not set
+CONFIG_QUOTA=y
+CONFIG_QUOTA_NETLINK_INTERFACE=y
+CONFIG_PRINT_QUOTA_WARNING=y
+# CONFIG_QUOTA_DEBUG is not set
+CONFIG_QUOTA_TREE=m
+CONFIG_QFMT_V1=m
+CONFIG_QFMT_V2=m
+CONFIG_QUOTACTL=y
+CONFIG_QUOTACTL_COMPAT=y
+CONFIG_AUTOFS4_FS=m
+CONFIG_FUSE_FS=m
+CONFIG_CUSE=m
+CONFIG_GENERIC_ACL=y
+
+#
+# Caches
+#
+CONFIG_FSCACHE=m
+CONFIG_FSCACHE_STATS=y
+CONFIG_FSCACHE_HISTOGRAM=y
+CONFIG_FSCACHE_DEBUG=y
+CONFIG_FSCACHE_OBJECT_LIST=y
+CONFIG_CACHEFILES=m
+CONFIG_CACHEFILES_DEBUG=y
+CONFIG_CACHEFILES_HISTOGRAM=y
+
+#
+# CD-ROM/DVD Filesystems
+#
+CONFIG_ISO9660_FS=m
+CONFIG_JOLIET=y
+CONFIG_ZISOFS=y
+CONFIG_UDF_FS=m
+CONFIG_UDF_NLS=y
+
+#
+# DOS/FAT/NT Filesystems
+#
+CONFIG_FAT_FS=m
+CONFIG_MSDOS_FS=m
+CONFIG_VFAT_FS=m
+CONFIG_FAT_DEFAULT_CODEPAGE=437
+CONFIG_FAT_DEFAULT_IOCHARSET="utf8"
+CONFIG_NTFS_FS=m
+# CONFIG_NTFS_DEBUG is not set
+CONFIG_NTFS_RW=y
+
+#
+# Pseudo filesystems
+#
+CONFIG_PROC_FS=y
+CONFIG_PROC_KCORE=y
+CONFIG_PROC_SYSCTL=y
+CONFIG_PROC_PAGE_MONITOR=y
+CONFIG_SYSFS=y
+CONFIG_TMPFS=y
+CONFIG_TMPFS_POSIX_ACL=y
+CONFIG_TMPFS_XATTR=y
+CONFIG_HUGETLBFS=y
+CONFIG_HUGETLB_PAGE=y
+CONFIG_CONFIGFS_FS=m
+CONFIG_MISC_FILESYSTEMS=y
+CONFIG_ADFS_FS=m
+# CONFIG_ADFS_FS_RW is not set
+CONFIG_AFFS_FS=m
+CONFIG_ECRYPT_FS=m
+CONFIG_HFS_FS=m
+CONFIG_HFSPLUS_FS=m
+CONFIG_BEFS_FS=m
+# CONFIG_BEFS_DEBUG is not set
+CONFIG_BFS_FS=m
+CONFIG_EFS_FS=m
+CONFIG_JFFS2_FS=m
+CONFIG_JFFS2_FS_DEBUG=0
+CONFIG_JFFS2_FS_WRITEBUFFER=y
+CONFIG_JFFS2_FS_WBUF_VERIFY=y
+CONFIG_JFFS2_SUMMARY=y
+CONFIG_JFFS2_FS_XATTR=y
+CONFIG_JFFS2_FS_POSIX_ACL=y
+CONFIG_JFFS2_FS_SECURITY=y
+CONFIG_JFFS2_COMPRESSION_OPTIONS=y
+CONFIG_JFFS2_ZLIB=y
+CONFIG_JFFS2_LZO=y
+CONFIG_JFFS2_RTIME=y
+CONFIG_JFFS2_RUBIN=y
+# CONFIG_JFFS2_CMODE_NONE is not set
+CONFIG_JFFS2_CMODE_PRIORITY=y
+# CONFIG_JFFS2_CMODE_SIZE is not set
+# CONFIG_JFFS2_CMODE_FAVOURLZO is not set
+CONFIG_UBIFS_FS=m
+CONFIG_UBIFS_FS_XATTR=y
+CONFIG_UBIFS_FS_ADVANCED_COMPR=y
+CONFIG_UBIFS_FS_LZO=y
+CONFIG_UBIFS_FS_ZLIB=y
+CONFIG_UBIFS_FS_DEBUG=y
+CONFIG_LOGFS=m
+CONFIG_CRAMFS=m
+CONFIG_SQUASHFS=m
+# CONFIG_SQUASHFS_XATTR is not set
+# CONFIG_SQUASHFS_LZO is not set
+CONFIG_SQUASHFS_XZ=y
+CONFIG_SQUASHFS_EMBEDDED=y
+CONFIG_SQUASHFS_FRAGMENT_CACHE_SIZE=3
+CONFIG_VXFS_FS=m
+CONFIG_MINIX_FS=m
+CONFIG_OMFS_FS=m
+CONFIG_HPFS_FS=m
+CONFIG_QNX4FS_FS=m
+CONFIG_ROMFS_FS=m
+CONFIG_ROMFS_BACKED_BY_BLOCK=y
+# CONFIG_ROMFS_BACKED_BY_MTD is not set
+# CONFIG_ROMFS_BACKED_BY_BOTH is not set
+CONFIG_ROMFS_ON_BLOCK=y
+CONFIG_PSTORE=y
+CONFIG_SYSV_FS=m
+CONFIG_UFS_FS=m
+# CONFIG_UFS_FS_WRITE is not set
+# CONFIG_UFS_DEBUG is not set
+CONFIG_EXOFS_FS=m
+CONFIG_EXOFS_DEBUG=y
+CONFIG_NETWORK_FILESYSTEMS=y
+CONFIG_NFS_FS=m
+CONFIG_NFS_V3=y
+CONFIG_NFS_V3_ACL=y
+CONFIG_NFS_V4=y
+CONFIG_NFS_V4_1=y
+CONFIG_PNFS_FILE_LAYOUT=m
+CONFIG_PNFS_OBJLAYOUT=m
+CONFIG_NFS_FSCACHE=y
+# CONFIG_NFS_USE_LEGACY_DNS is not set
+CONFIG_NFS_USE_KERNEL_DNS=y
+# CONFIG_NFS_USE_NEW_IDMAPPER is not set
+CONFIG_NFSD=m
+CONFIG_NFSD_DEPRECATED=y
+CONFIG_NFSD_V2_ACL=y
+CONFIG_NFSD_V3=y
+CONFIG_NFSD_V3_ACL=y
+CONFIG_NFSD_V4=y
+CONFIG_LOCKD=m
+CONFIG_LOCKD_V4=y
+CONFIG_NFS_ACL_SUPPORT=m
+CONFIG_NFS_COMMON=y
+CONFIG_SUNRPC=m
+CONFIG_SUNRPC_GSS=m
+CONFIG_SUNRPC_XPRT_RDMA=m
+CONFIG_RPCSEC_GSS_KRB5=m
+CONFIG_CEPH_FS=m
+CONFIG_CIFS=m
+CONFIG_CIFS_STATS=y
+CONFIG_CIFS_STATS2=y
+CONFIG_CIFS_WEAK_PW_HASH=y
+CONFIG_CIFS_UPCALL=y
+CONFIG_CIFS_XATTR=y
+CONFIG_CIFS_POSIX=y
+CONFIG_CIFS_DEBUG2=y
+CONFIG_CIFS_DFS_UPCALL=y
+# CONFIG_CIFS_FSCACHE is not set
+# CONFIG_CIFS_ACL is not set
+CONFIG_NCP_FS=m
+CONFIG_NCPFS_PACKET_SIGNING=y
+CONFIG_NCPFS_IOCTL_LOCKING=y
+CONFIG_NCPFS_STRONG=y
+CONFIG_NCPFS_NFS_NS=y
+CONFIG_NCPFS_OS2_NS=y
+CONFIG_NCPFS_SMALLDOS=y
+CONFIG_NCPFS_NLS=y
+CONFIG_NCPFS_EXTRAS=y
+CONFIG_CODA_FS=m
+CONFIG_AFS_FS=m
+CONFIG_AFS_DEBUG=y
+CONFIG_AFS_FSCACHE=y
+CONFIG_9P_FS=m
+CONFIG_9P_FSCACHE=y
+# CONFIG_9P_FS_POSIX_ACL is not set
+
+#
+# Partition Types
+#
+CONFIG_PARTITION_ADVANCED=y
+CONFIG_ACORN_PARTITION=y
+# CONFIG_ACORN_PARTITION_CUMANA is not set
+# CONFIG_ACORN_PARTITION_EESOX is not set
+CONFIG_ACORN_PARTITION_ICS=y
+# CONFIG_ACORN_PARTITION_ADFS is not set
+# CONFIG_ACORN_PARTITION_POWERTEC is not set
+CONFIG_ACORN_PARTITION_RISCIX=y
+CONFIG_OSF_PARTITION=y
+CONFIG_AMIGA_PARTITION=y
+CONFIG_ATARI_PARTITION=y
+CONFIG_MAC_PARTITION=y
+CONFIG_MSDOS_PARTITION=y
+CONFIG_BSD_DISKLABEL=y
+CONFIG_MINIX_SUBPARTITION=y
+CONFIG_SOLARIS_X86_PARTITION=y
+CONFIG_UNIXWARE_DISKLABEL=y
+CONFIG_LDM_PARTITION=y
+# CONFIG_LDM_DEBUG is not set
+CONFIG_SGI_PARTITION=y
+CONFIG_ULTRIX_PARTITION=y
+CONFIG_SUN_PARTITION=y
+CONFIG_KARMA_PARTITION=y
+CONFIG_EFI_PARTITION=y
+# CONFIG_SYSV68_PARTITION is not set
+CONFIG_NLS=y
+CONFIG_NLS_DEFAULT="utf8"
+CONFIG_NLS_CODEPAGE_437=m
+CONFIG_NLS_CODEPAGE_737=m
+CONFIG_NLS_CODEPAGE_775=m
+CONFIG_NLS_CODEPAGE_850=m
+CONFIG_NLS_CODEPAGE_852=m
+CONFIG_NLS_CODEPAGE_855=m
+CONFIG_NLS_CODEPAGE_857=m
+CONFIG_NLS_CODEPAGE_860=m
+CONFIG_NLS_CODEPAGE_861=m
+CONFIG_NLS_CODEPAGE_862=m
+CONFIG_NLS_CODEPAGE_863=m
+CONFIG_NLS_CODEPAGE_864=m
+CONFIG_NLS_CODEPAGE_865=m
+CONFIG_NLS_CODEPAGE_866=m
+CONFIG_NLS_CODEPAGE_869=m
+CONFIG_NLS_CODEPAGE_936=m
+CONFIG_NLS_CODEPAGE_950=m
+CONFIG_NLS_CODEPAGE_932=m
+CONFIG_NLS_CODEPAGE_949=m
+CONFIG_NLS_CODEPAGE_874=m
+CONFIG_NLS_ISO8859_8=m
+CONFIG_NLS_CODEPAGE_1250=m
+CONFIG_NLS_CODEPAGE_1251=m
+CONFIG_NLS_ASCII=m
+CONFIG_NLS_ISO8859_1=m
+CONFIG_NLS_ISO8859_2=m
+CONFIG_NLS_ISO8859_3=m
+CONFIG_NLS_ISO8859_4=m
+CONFIG_NLS_ISO8859_5=m
+CONFIG_NLS_ISO8859_6=m
+CONFIG_NLS_ISO8859_7=m
+CONFIG_NLS_ISO8859_9=m
+CONFIG_NLS_ISO8859_13=m
+CONFIG_NLS_ISO8859_14=m
+CONFIG_NLS_ISO8859_15=m
+CONFIG_NLS_KOI8_R=m
+CONFIG_NLS_KOI8_U=m
+CONFIG_NLS_UTF8=m
+CONFIG_DLM=m
+CONFIG_DLM_DEBUG=y
+
+#
+# Kernel hacking
+#
+CONFIG_TRACE_IRQFLAGS_SUPPORT=y
+CONFIG_PRINTK_TIME=y
+CONFIG_DEFAULT_MESSAGE_LOGLEVEL=4
+CONFIG_ENABLE_WARN_DEPRECATED=y
+CONFIG_ENABLE_MUST_CHECK=y
+CONFIG_FRAME_WARN=2048
+CONFIG_MAGIC_SYSRQ=y
+# CONFIG_STRIP_ASM_SYMS is not set
+CONFIG_UNUSED_SYMBOLS=y
+CONFIG_DEBUG_FS=y
+# CONFIG_HEADERS_CHECK is not set
+# CONFIG_DEBUG_SECTION_MISMATCH is not set
+CONFIG_DEBUG_KERNEL=y
+# CONFIG_DEBUG_SHIRQ is not set
+# CONFIG_LOCKUP_DETECTOR is not set
+# CONFIG_HARDLOCKUP_DETECTOR is not set
+CONFIG_DETECT_HUNG_TASK=y
+CONFIG_DEFAULT_HUNG_TASK_TIMEOUT=120
+# CONFIG_BOOTPARAM_HUNG_TASK_PANIC is not set
+CONFIG_BOOTPARAM_HUNG_TASK_PANIC_VALUE=0
+CONFIG_SCHED_DEBUG=y
+# CONFIG_SCHEDSTATS is not set
+CONFIG_TIMER_STATS=y
+# CONFIG_DEBUG_OBJECTS is not set
+# CONFIG_DEBUG_SLAB is not set
+CONFIG_DEBUG_PREEMPT=y
+# CONFIG_DEBUG_RT_MUTEXES is not set
+# CONFIG_RT_MUTEX_TESTER is not set
+# CONFIG_DEBUG_SPINLOCK is not set
+# CONFIG_DEBUG_MUTEXES is not set
+# CONFIG_DEBUG_LOCK_ALLOC is not set
+# CONFIG_PROVE_LOCKING is not set
+# CONFIG_SPARSE_RCU_POINTER is not set
+# CONFIG_LOCK_STAT is not set
+# CONFIG_DEBUG_ATOMIC_SLEEP is not set
+# CONFIG_DEBUG_LOCKING_API_SELFTESTS is not set
+CONFIG_STACKTRACE=y
+# CONFIG_DEBUG_STACK_USAGE is not set
+# CONFIG_DEBUG_KOBJECT is not set
+CONFIG_DEBUG_BUGVERBOSE=y
+CONFIG_DEBUG_INFO=y
+# CONFIG_DEBUG_INFO_REDUCED is not set
+# CONFIG_DEBUG_VM is not set
+# CONFIG_DEBUG_VIRTUAL is not set
+# CONFIG_DEBUG_WRITECOUNT is not set
+CONFIG_DEBUG_MEMORY_INIT=y
+# CONFIG_DEBUG_LIST is not set
+# CONFIG_TEST_LIST_SORT is not set
+# CONFIG_DEBUG_SG is not set
+# CONFIG_DEBUG_NOTIFIERS is not set
+# CONFIG_DEBUG_CREDENTIALS is not set
+CONFIG_ARCH_WANT_FRAME_POINTERS=y
+CONFIG_FRAME_POINTER=y
+# CONFIG_BOOT_PRINTK_DELAY is not set
+CONFIG_RCU_TORTURE_TEST=m
+CONFIG_RCU_CPU_STALL_TIMEOUT=60
+CONFIG_RCU_CPU_STALL_VERBOSE=y
+CONFIG_BACKTRACE_SELF_TEST=m
+# CONFIG_DEBUG_BLOCK_EXT_DEVT is not set
+# CONFIG_DEBUG_FORCE_WEAK_PER_CPU is not set
+# CONFIG_DEBUG_PER_CPU_MAPS is not set
+CONFIG_LKDTM=m
+CONFIG_CPU_NOTIFIER_ERROR_INJECT=m
+# CONFIG_FAULT_INJECTION is not set
+# CONFIG_LATENCYTOP is not set
+CONFIG_SYSCTL_SYSCALL_CHECK=y
+# CONFIG_DEBUG_PAGEALLOC is not set
+CONFIG_USER_STACKTRACE_SUPPORT=y
+CONFIG_NOP_TRACER=y
+CONFIG_HAVE_FUNCTION_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
+CONFIG_HAVE_FUNCTION_GRAPH_FP_TEST=y
+CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
+CONFIG_HAVE_DYNAMIC_FTRACE=y
+CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
+CONFIG_HAVE_SYSCALL_TRACEPOINTS=y
+CONFIG_HAVE_C_RECORDMCOUNT=y
+CONFIG_RING_BUFFER=y
+CONFIG_EVENT_TRACING=y
+CONFIG_EVENT_POWER_TRACING_DEPRECATED=y
+CONFIG_CONTEXT_SWITCH_TRACER=y
+CONFIG_RING_BUFFER_ALLOW_SWAP=y
+CONFIG_TRACING=y
+CONFIG_GENERIC_TRACER=y
+CONFIG_TRACING_SUPPORT=y
+CONFIG_FTRACE=y
+# CONFIG_FUNCTION_TRACER is not set
+# CONFIG_IRQSOFF_TRACER is not set
+# CONFIG_PREEMPT_TRACER is not set
+# CONFIG_SCHED_TRACER is not set
+CONFIG_FTRACE_SYSCALLS=y
+CONFIG_BRANCH_PROFILE_NONE=y
+# CONFIG_PROFILE_ANNOTATED_BRANCHES is not set
+# CONFIG_PROFILE_ALL_BRANCHES is not set
+# CONFIG_STACK_TRACER is not set
+CONFIG_BLK_DEV_IO_TRACE=y
+# CONFIG_FTRACE_STARTUP_TEST is not set
+# CONFIG_MMIOTRACE is not set
+CONFIG_RING_BUFFER_BENCHMARK=m
+# CONFIG_PROVIDE_OHCI1394_DMA_INIT is not set
+CONFIG_DYNAMIC_DEBUG=y
+CONFIG_DMA_API_DEBUG=y
+# CONFIG_ATOMIC64_SELFTEST is not set
+CONFIG_ASYNC_RAID6_TEST=m
+# CONFIG_SAMPLES is not set
+CONFIG_HAVE_ARCH_KGDB=y
+# CONFIG_KGDB is not set
+CONFIG_HAVE_ARCH_KMEMCHECK=y
+CONFIG_TEST_KSTRTOX=m
+# CONFIG_STRICT_DEVMEM is not set
+CONFIG_X86_VERBOSE_BOOTUP=y
+CONFIG_EARLY_PRINTK=y
+# CONFIG_EARLY_PRINTK_DBGP is not set
+# CONFIG_DEBUG_STACKOVERFLOW is not set
+# CONFIG_X86_PTDUMP is not set
+CONFIG_DEBUG_RODATA=y
+CONFIG_DEBUG_RODATA_TEST=y
+# CONFIG_DEBUG_SET_MODULE_RONX is not set
+CONFIG_DEBUG_NX_TEST=m
+# CONFIG_IOMMU_DEBUG is not set
+# CONFIG_IOMMU_STRESS is not set
+CONFIG_HAVE_MMIOTRACE_SUPPORT=y
+CONFIG_IO_DELAY_TYPE_0X80=0
+CONFIG_IO_DELAY_TYPE_0XED=1
+CONFIG_IO_DELAY_TYPE_UDELAY=2
+CONFIG_IO_DELAY_TYPE_NONE=3
+CONFIG_IO_DELAY_0X80=y
+# CONFIG_IO_DELAY_0XED is not set
+# CONFIG_IO_DELAY_UDELAY is not set
+# CONFIG_IO_DELAY_NONE is not set
+CONFIG_DEFAULT_IO_DELAY_TYPE=0
+# CONFIG_DEBUG_BOOT_PARAMS is not set
+# CONFIG_CPA_DEBUG is not set
+CONFIG_OPTIMIZE_INLINING=y
+# CONFIG_DEBUG_STRICT_USER_COPY_CHECKS is not set
+
+#
+# Security options
+#
+CONFIG_KEYS=y
+CONFIG_TRUSTED_KEYS=m
+CONFIG_ENCRYPTED_KEYS=m
+CONFIG_KEYS_DEBUG_PROC_KEYS=y
+# CONFIG_SECURITY_DMESG_RESTRICT is not set
+CONFIG_SECURITY=y
+CONFIG_SECURITYFS=y
+CONFIG_SECURITY_NETWORK=y
+CONFIG_SECURITY_NETWORK_XFRM=y
+CONFIG_SECURITY_PATH=y
+CONFIG_INTEL_TXT=y
+CONFIG_LSM_MMAP_MIN_ADDR=65536
+CONFIG_SECURITY_SELINUX=y
+CONFIG_SECURITY_SELINUX_BOOTPARAM=y
+CONFIG_SECURITY_SELINUX_BOOTPARAM_VALUE=0
+CONFIG_SECURITY_SELINUX_DISABLE=y
+CONFIG_SECURITY_SELINUX_DEVELOP=y
+CONFIG_SECURITY_SELINUX_AVC_STATS=y
+CONFIG_SECURITY_SELINUX_CHECKREQPROT_VALUE=1
+# CONFIG_SECURITY_SELINUX_POLICYDB_VERSION_MAX is not set
+CONFIG_SECURITY_TOMOYO=y
+CONFIG_SECURITY_TOMOYO_MAX_ACCEPT_ENTRY=2048
+CONFIG_SECURITY_TOMOYO_MAX_AUDIT_LOG=1024
+# CONFIG_SECURITY_TOMOYO_OMIT_USERSPACE_LOADER is not set
+CONFIG_SECURITY_TOMOYO_POLICY_LOADER="/sbin/tomoyo-init"
+CONFIG_SECURITY_TOMOYO_ACTIVATION_TRIGGER="/sbin/init"
+# CONFIG_SECURITY_APPARMOR is not set
+CONFIG_IMA=y
+CONFIG_IMA_MEASURE_PCR_IDX=10
+CONFIG_IMA_AUDIT=y
+CONFIG_IMA_LSM_RULES=y
+CONFIG_DEFAULT_SECURITY_SELINUX=y
+# CONFIG_DEFAULT_SECURITY_TOMOYO is not set
+# CONFIG_DEFAULT_SECURITY_DAC is not set
+CONFIG_DEFAULT_SECURITY="selinux"
+CONFIG_XOR_BLOCKS=m
+CONFIG_ASYNC_CORE=m
+CONFIG_ASYNC_MEMCPY=m
+CONFIG_ASYNC_XOR=m
+CONFIG_ASYNC_PQ=m
+CONFIG_ASYNC_RAID6_RECOV=m
+CONFIG_ASYNC_TX_DISABLE_PQ_VAL_DMA=y
+CONFIG_ASYNC_TX_DISABLE_XOR_VAL_DMA=y
+CONFIG_CRYPTO=y
+
+#
+# Crypto core or helper
+#
+CONFIG_CRYPTO_ALGAPI=y
+CONFIG_CRYPTO_ALGAPI2=y
+CONFIG_CRYPTO_AEAD=m
+CONFIG_CRYPTO_AEAD2=y
+CONFIG_CRYPTO_BLKCIPHER=m
+CONFIG_CRYPTO_BLKCIPHER2=y
+CONFIG_CRYPTO_HASH=y
+CONFIG_CRYPTO_HASH2=y
+CONFIG_CRYPTO_RNG=m
+CONFIG_CRYPTO_RNG2=y
+CONFIG_CRYPTO_PCOMP=y
+CONFIG_CRYPTO_PCOMP2=y
+CONFIG_CRYPTO_MANAGER=y
+CONFIG_CRYPTO_MANAGER2=y
+CONFIG_CRYPTO_MANAGER_DISABLE_TESTS=y
+CONFIG_CRYPTO_GF128MUL=m
+CONFIG_CRYPTO_NULL=m
+CONFIG_CRYPTO_PCRYPT=m
+CONFIG_CRYPTO_WORKQUEUE=y
+CONFIG_CRYPTO_CRYPTD=m
+CONFIG_CRYPTO_AUTHENC=m
+CONFIG_CRYPTO_TEST=m
+
+#
+# Authenticated Encryption with Associated Data
+#
+CONFIG_CRYPTO_CCM=m
+CONFIG_CRYPTO_GCM=m
+CONFIG_CRYPTO_SEQIV=m
+
+#
+# Block modes
+#
+CONFIG_CRYPTO_CBC=m
+CONFIG_CRYPTO_CTR=m
+CONFIG_CRYPTO_CTS=m
+CONFIG_CRYPTO_ECB=m
+CONFIG_CRYPTO_LRW=m
+CONFIG_CRYPTO_PCBC=m
+CONFIG_CRYPTO_XTS=m
+
+#
+# Hash modes
+#
+CONFIG_CRYPTO_HMAC=y
+CONFIG_CRYPTO_XCBC=m
+CONFIG_CRYPTO_VMAC=m
+
+#
+# Digest
+#
+CONFIG_CRYPTO_CRC32C=m
+CONFIG_CRYPTO_CRC32C_INTEL=m
+CONFIG_CRYPTO_GHASH=m
+CONFIG_CRYPTO_MD4=m
+CONFIG_CRYPTO_MD5=y
+CONFIG_CRYPTO_MICHAEL_MIC=m
+CONFIG_CRYPTO_RMD128=m
+CONFIG_CRYPTO_RMD160=m
+CONFIG_CRYPTO_RMD256=m
+CONFIG_CRYPTO_RMD320=m
+CONFIG_CRYPTO_SHA1=y
+CONFIG_CRYPTO_SHA256=m
+CONFIG_CRYPTO_SHA512=m
+CONFIG_CRYPTO_TGR192=m
+CONFIG_CRYPTO_WP512=m
+CONFIG_CRYPTO_GHASH_CLMUL_NI_INTEL=m
+
+#
+# Ciphers
+#
+CONFIG_CRYPTO_AES=m
+CONFIG_CRYPTO_AES_X86_64=m
+CONFIG_CRYPTO_AES_NI_INTEL=m
+CONFIG_CRYPTO_ANUBIS=m
+CONFIG_CRYPTO_ARC4=m
+CONFIG_CRYPTO_BLOWFISH=m
+CONFIG_CRYPTO_CAMELLIA=m
+CONFIG_CRYPTO_CAST5=m
+CONFIG_CRYPTO_CAST6=m
+CONFIG_CRYPTO_DES=m
+CONFIG_CRYPTO_FCRYPT=m
+CONFIG_CRYPTO_KHAZAD=m
+CONFIG_CRYPTO_SALSA20=m
+CONFIG_CRYPTO_SALSA20_X86_64=m
+CONFIG_CRYPTO_SEED=m
+CONFIG_CRYPTO_SERPENT=m
+CONFIG_CRYPTO_TEA=m
+CONFIG_CRYPTO_TWOFISH=m
+CONFIG_CRYPTO_TWOFISH_COMMON=m
+CONFIG_CRYPTO_TWOFISH_X86_64=m
+
+#
+# Compression
+#
+CONFIG_CRYPTO_DEFLATE=m
+CONFIG_CRYPTO_ZLIB=y
+CONFIG_CRYPTO_LZO=m
+
+#
+# Random Number Generation
+#
+CONFIG_CRYPTO_ANSI_CPRNG=m
+CONFIG_CRYPTO_USER_API=m
+CONFIG_CRYPTO_USER_API_HASH=m
+CONFIG_CRYPTO_USER_API_SKCIPHER=m
+CONFIG_CRYPTO_HW=y
+CONFIG_CRYPTO_DEV_PADLOCK=m
+CONFIG_CRYPTO_DEV_PADLOCK_AES=m
+CONFIG_CRYPTO_DEV_PADLOCK_SHA=m
+CONFIG_CRYPTO_DEV_HIFN_795X=m
+CONFIG_CRYPTO_DEV_HIFN_795X_RNG=y
+CONFIG_HAVE_KVM=y
+CONFIG_HAVE_KVM_IRQCHIP=y
+CONFIG_HAVE_KVM_EVENTFD=y
+CONFIG_KVM_APIC_ARCHITECTURE=y
+CONFIG_KVM_MMIO=y
+CONFIG_KVM_ASYNC_PF=y
+CONFIG_VIRTUALIZATION=y
+CONFIG_KVM=m
+CONFIG_KVM_INTEL=m
+CONFIG_KVM_AMD=m
+# CONFIG_KVM_MMU_AUDIT is not set
+CONFIG_VHOST_NET=m
+CONFIG_VIRTIO=m
+CONFIG_VIRTIO_RING=m
+CONFIG_VIRTIO_PCI=m
+CONFIG_VIRTIO_BALLOON=m
+CONFIG_BINARY_PRINTF=y
+
+#
+# Library routines
+#
+CONFIG_RAID6_PQ=m
+CONFIG_BITREVERSE=y
+CONFIG_GENERIC_FIND_FIRST_BIT=y
+CONFIG_CRC_CCITT=m
+CONFIG_CRC16=m
+CONFIG_CRC_T10DIF=y
+CONFIG_CRC_ITU_T=m
+CONFIG_CRC32=y
+CONFIG_CRC7=m
+CONFIG_LIBCRC32C=m
+CONFIG_CRC8=m
+CONFIG_ZLIB_INFLATE=y
+CONFIG_ZLIB_DEFLATE=y
+CONFIG_LZO_COMPRESS=y
+CONFIG_LZO_DECOMPRESS=y
+CONFIG_XZ_DEC=y
+CONFIG_XZ_DEC_X86=y
+CONFIG_XZ_DEC_POWERPC=y
+CONFIG_XZ_DEC_IA64=y
+CONFIG_XZ_DEC_ARM=y
+CONFIG_XZ_DEC_ARMTHUMB=y
+CONFIG_XZ_DEC_SPARC=y
+CONFIG_XZ_DEC_BCJ=y
+CONFIG_XZ_DEC_TEST=m
+CONFIG_DECOMPRESS_GZIP=y
+CONFIG_DECOMPRESS_BZIP2=y
+CONFIG_DECOMPRESS_LZMA=y
+CONFIG_DECOMPRESS_XZ=y
+CONFIG_DECOMPRESS_LZO=y
+CONFIG_GENERIC_ALLOCATOR=y
+CONFIG_REED_SOLOMON=m
+CONFIG_REED_SOLOMON_DEC16=y
+CONFIG_TEXTSEARCH=y
+CONFIG_TEXTSEARCH_KMP=m
+CONFIG_TEXTSEARCH_BM=m
+CONFIG_TEXTSEARCH_FSM=m
+CONFIG_BTREE=y
+CONFIG_HAS_IOMEM=y
+CONFIG_HAS_IOPORT=y
+CONFIG_HAS_DMA=y
+CONFIG_CHECK_SIGNATURE=y
+CONFIG_CPU_RMAP=y
+CONFIG_NLATTR=y
+CONFIG_AVERAGE=y
+CONFIG_CORDIC=m
+
+--------------080503060103010605020403--
