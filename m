@@ -1,75 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755008Ab1GGJiI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 05:38:08 -0400
-Received: from mx1.fusionio.com ([66.114.96.30]:41936 "EHLO mx1.fusionio.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753300Ab1GGJiE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 05:38:04 -0400
-X-ASG-Debug-ID: 1310031483-03d6a510a8122650001-xx1T2L
-X-Barracuda-Envelope-From: JAxboe@fusionio.com
-Message-ID: <4E157E77.6070906@fusionio.com>
-Date: Thu, 7 Jul 2011 11:37:59 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
+	id S1755207Ab1GGJji (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 05:39:38 -0400
+Received: from ch1ehsobe003.messaging.microsoft.com ([216.32.181.183]:37234
+	"EHLO CH1EHSOBE011.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752104Ab1GGJjg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 7 Jul 2011 05:39:36 -0400
+X-SpamScore: -8
+X-BigFish: VPS-8(zz1432N98dKzz1202hzzz32i668h839h944h61h)
+X-Spam-TCS-SCL: 0:0
+X-Forefront-Antispam-Report: CIP:163.181.249.109;KIP:(null);UIP:(null);IPVD:NLI;H:ausb3twp02.amd.com;RD:none;EFVD:NLI
+X-WSS-ID: 0LNYITT-02-AXY-02
+X-M-MSG: 
+Date: Thu, 7 Jul 2011 11:39:26 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+        Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH] perf: Attaching an event to a specific PMU
+Message-ID: <20110707093926.GJ4590@erda.amd.com>
+References: <20110703150430.GV4590@erda.amd.com>
+ <1309716271.3282.6.camel@twins>
+ <20110704175927.GZ4590@erda.amd.com>
+ <1309855905.3282.42.camel@twins>
+ <20110705091252.GA5725@elte.hu>
+ <20110706165357.GG4590@erda.amd.com>
+ <1309972368.3282.317.camel@twins>
+ <20110707092102.GI4590@erda.amd.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] Important block fixes for 3.0-rc
-Content-Type: text/plain; charset="ISO-8859-1"
-X-ASG-Orig-Subj: [GIT PULL] Important block fixes for 3.0-rc
-Content-Transfer-Encoding: 7bit
-X-Barracuda-Connect: mail1.int.fusionio.com[10.101.1.21]
-X-Barracuda-Start-Time: 1310031483
-X-Barracuda-URL: http://10.101.1.180:8000/cgi-mod/mark.cgi
-X-Barracuda-Spam-Score: 0.00
-X-Barracuda-Spam-Status: No, SCORE=0.00 using per-user scores of TAG_LEVEL=1000.0 QUARANTINE_LEVEL=1000.0 KILL_LEVEL=9.0 tests=
-X-Barracuda-Spam-Report: Code version 3.2, rules version 3.2.2.68215
-	Rule breakdown below
-	 pts rule name              description
-	---- ---------------------- --------------------------------------------------
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20110707092102.GI4590@erda.amd.com>
+User-Agent: Mutt/1.5.21 (2010-09-15)
+X-OriginatorOrg: amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+One more note:
 
-Two parts to this:
+> On 06.07.11 13:12:48, Peter Zijlstra wrote:
 
-- Silencing an RCU warning introduced with the commit fixing
-  the long standing CFQ crash.
+> > perf stat -e IBS:fetches will always have a fail against rmmod, rmmod
+> > could complete before we try to open the file (assuming IBS is a
+> > module).
 
-- A handful of bug fixes for drbd.
+If the module is busy, it wont be unloaded.
 
-Please pull.
-
-  git://git.kernel.dk/linux-block.git for-linus
-
-Jens Axboe (1):
-      Merge branch 'for-3.0-important' of git://git.drbd.org/linux-2.6-drbd into for-linus
-
-Lars Ellenberg (6):
-      drbd: add missing spinlock to bitmap receive
-      drbd: don't cond_resched_lock with IRQs disabled
-      drbd: account bitmap IO during resync as resync-(related-)-io
-      drbd: when receive times out on meta socket, also check last receive time on data socket
-      drbd: fix limit define, we support 1 PiByte now
-      drbd: we should write meta data updates with FLUSH FUA
-
-Philipp Reisner (1):
-      drbd: Use the correct max_bio_size when creating resync requests
-
-Shaohua Li (2):
-      cfq-iosched: fix a rcu warning
-      cfq-iosched: make code consistent
-
- block/cfq-iosched.c                |    8 +++++-
- drivers/block/drbd/drbd_actlog.c   |    2 +-
- drivers/block/drbd/drbd_bitmap.c   |   37 ++++++++++++++++++++++-------------
- drivers/block/drbd/drbd_receiver.c |    6 +++++
- drivers/block/drbd/drbd_worker.c   |    7 +-----
- include/linux/drbd_limits.h        |    4 +-
- 6 files changed, 39 insertions(+), 25 deletions(-)
+-Robert
 
 -- 
-Jens Axboe
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
