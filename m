@@ -1,67 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab1GGUKv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 16:10:51 -0400
-Received: from acsinet15.oracle.com ([141.146.126.227]:32070 "EHLO
-	acsinet15.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753022Ab1GGUKt (ORCPT
+	id S1753045Ab1GGUM5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 16:12:57 -0400
+Received: from smtp101.prem.mail.ac4.yahoo.com ([76.13.13.40]:26556 "HELO
+	smtp101.prem.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752818Ab1GGUM4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 16:10:49 -0400
-Date: Thu, 7 Jul 2011 16:09:49 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Raghavendra D Prabhu <rprabhu@wnohang.net>
-Cc: xen-devel@lists.xensource.com, jeremy.fitzhardinge@citrix.com,
-        virtualization@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, Ian Campbell <ijc@hellion.org.uk>
-Subject: Re: [Xen-devel] Re: [PATCH] Modpost section mismatch fix
-Message-ID: <20110707200949.GA25216@dumpdata.com>
-References: <20110703232508.GB4440@Xye>
- <1309769388.634.51.camel@zakaz.uk.xensource.com>
- <20110704221646.GB4490@Xye>
- <20110705141323.GG2972@dumpdata.com>
- <20110705142731.GA4463@Xye>
- <20110705144846.GA13548@dumpdata.com>
- <20110705213243.GA3647@dumpdata.com>
- <20110707154648.GA4394@Xye>
- <20110707162454.GA8164@dumpdata.com>
- <20110707194851.GB4394@Xye>
+	Thu, 7 Jul 2011 16:12:56 -0400
+X-Yahoo-SMTP: _Dag8S.swBC1p4FJKLCXbs8NQzyse1SYSgnAbY0-
+X-YMail-OSG: 94hwKhoVM1lnxwoBDodNaCs9p4byMEcmYRLEH_LK05g0Dy7
+ .mhOdc7Pgpw1vFeHEZb74etnfPf62TKH6oLVs4o.S0flfP.OmcuGFq8Uk6h1
+ Y4jqodKh__LVT0VZ1.zwAP4vA0swcRR_ZXZZkzxNGxsE__4gWAzAE416yGn8
+ SxU35MRlqD0kTMIwCbZ16uYh6DSqSEd2Gvug6SKuzMf9FQYEDcqSGKUO_SQX
+ VG.hPM7djelaSukorD7jjYGZcKaTZA4oGjwGGiO8IKbpiARMpC7lyn.e3Edv
+ z2jB_Fz9u1VApZ8IS_28J8pOa3e_LYZH4Su4.gDoZxVKW9aTP
+X-Yahoo-Newman-Property: ymail-3
+Date: Thu, 7 Jul 2011 15:12:52 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Pekka Enberg <penberg@kernel.org>
+cc: David Miller <davem@davemloft.net>, marcin.slusarz@gmail.com,
+        mpm@selenic.com, linux-kernel@vger.kernel.org, rientjes@google.com,
+        linux-mm@kvack.org
+Subject: Re: [PATCH] slub: reduce overhead of slub_debug
+In-Reply-To: <CAOJsxLFsX3Q84QAeyRt5dZOdRxb3TiABPrP-YrWc91+BmR8ZBg@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1107071511010.26083@router.home>
+References: <alpine.DEB.2.00.1107071314320.21719@router.home> <1310064771.21902.55.camel@jaguar> <alpine.DEB.2.00.1107071402490.24248@router.home> <20110707.122151.314840355798805828.davem@davemloft.net>
+ <CAOJsxLFsX3Q84QAeyRt5dZOdRxb3TiABPrP-YrWc91+BmR8ZBg@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20110707194851.GB4394@Xye>
-User-Agent: Mutt/1.5.21 (2010-09-15)
-X-Source-IP: rtcsinet21.oracle.com [66.248.204.29]
-X-CT-RefId: str=0001.0A090203.4E161299.0091:SCFSTAT5015188,ss=1,re=-4.000,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 08, 2011 at 01:18:51AM +0530, Raghavendra D Prabhu wrote:
-> * On Thu, Jul 07, 2011 at 12:24:54PM -0400, Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> >>Tested it. Works now.
-> >
-> >Ok, Stuck Tested-by on the patch. Hopefully Linus hasn't pulled it yet.
-> Ok.
-> >
-> >>Reviewed-by: Raghavendra Prabhu <rprabhu@wnohang.net>
-> 
-> >>Also,
-> >>The condition for acpi_gsi_to_irq can be removed since it always returns zero.
-> >
-> >The function might in the future return something that is non-zero
-> >and we should guard for it. Also you make 'irq' be unsigned which is not
-> >good as the IRQ 0 is a valid value - and with making it unsigned if it is
-> >set to -1 (the -1 is the invalid IRQ value) the check for 'irq != gsi'
-> >will be true and and we will pass in -1 casted to unsigned. That is a
-> >large value and not the right thing we want to pass to xen_register_gsi.
-> 
-> My rationale for the unsigned part was that acpi_gsi_to_irq always
-> assigns a positive value (>= 0) to the irq passed (as unsigned
-> argument). But even otherwise that shouldn't make much of difference I guess.
-> 
-> Also,
-> I had sent another change (oneline) for the file
-> arch/x86/xen/platform-pci-unplug.c for check_platform_magic, looks like that has not gone into
-> the pull request for Linus.
+On Thu, 7 Jul 2011, Pekka Enberg wrote:
 
-Oh, I didn't see it. Did you CC me on it? Can you bounce it to me please?
+> I applied the patch. I think a follow up patch that moves the function
+> to lib/string.c with proper generic name would be in order. Thanks!
+
+Well this is really straightforward. Hasnt seen much testing yet and
+needs refinement but it would be like this:
+
+
+---
+ arch/x86/include/asm/string_32.h |    2 ++
+ arch/x86/lib/string_32.c         |   17 +++++++++++++++++
+ include/linux/string.h           |    3 +++
+ lib/string.c                     |   25 +++++++++++++++++++++++++
+ mm/slub.c                        |   13 ++++++-------
+ 5 files changed, 53 insertions(+), 7 deletions(-)
+
+Index: linux-2.6/arch/x86/lib/string_32.c
+===================================================================
+--- linux-2.6.orig/arch/x86/lib/string_32.c	2011-07-07 15:03:46.000000000 -0500
++++ linux-2.6/arch/x86/lib/string_32.c	2011-07-07 15:03:56.000000000 -0500
+@@ -214,6 +214,23 @@ void *memscan(void *addr, int c, size_t
+ EXPORT_SYMBOL(memscan);
+ #endif
+
++#ifdef __HAVE_ARCH_INV_MEMSCAN
++void *inv_memscan(void *addr, int c, size_t size)
++{
++	if (!size)
++		return addr;
++	asm volatile("repz; scasb\n\t"
++	    "jz 1f\n\t"
++	    "dec %%edi\n"
++	    "1:"
++	    : "=D" (addr), "=c" (size)
++	    : "0" (addr), "1" (size), "a" (c)
++	    : "memory");
++	return addr;
++}
++EXPORT_SYMBOL(memscan);
++#endif
++
+ #ifdef __HAVE_ARCH_STRNLEN
+ size_t strnlen(const char *s, size_t count)
+ {
+Index: linux-2.6/include/linux/string.h
+===================================================================
+--- linux-2.6.orig/include/linux/string.h	2011-07-07 15:03:46.000000000 -0500
++++ linux-2.6/include/linux/string.h	2011-07-07 15:03:56.000000000 -0500
+@@ -108,6 +108,9 @@ extern void * memmove(void *,const void
+ #ifndef __HAVE_ARCH_MEMSCAN
+ extern void * memscan(void *,int,__kernel_size_t);
+ #endif
++#ifndef __HAVE_ARCH_INV_MEMSCAN
++extern void * inv_memscan(void *,int,__kernel_size_t);
++#endif
+ #ifndef __HAVE_ARCH_MEMCMP
+ extern int memcmp(const void *,const void *,__kernel_size_t);
+ #endif
+Index: linux-2.6/lib/string.c
+===================================================================
+--- linux-2.6.orig/lib/string.c	2011-07-07 15:03:46.000000000 -0500
++++ linux-2.6/lib/string.c	2011-07-07 15:03:56.000000000 -0500
+@@ -684,6 +684,31 @@ void *memscan(void *addr, int c, size_t
+ EXPORT_SYMBOL(memscan);
+ #endif
+
++#ifndef __HAVE_ARCH_INV_MEMSCAN
++/**
++ * memscan - Skip characters in an area of memory.
++ * @addr: The memory area
++ * @c: The byte to skip
++ * @size: The size of the area.
++ *
++ * returns the address of the first mismatch of @c, or 1 byte past
++ * the area if @c matches to the end
++ */
++void *inv_memscan(void *addr, int c, size_t size)
++{
++	unsigned char *p = addr;
++
++	while (size) {
++		if (*p != c)
++			return (void *)p;
++		p++;
++		size--;
++	}
++  	return (void *)p;
++}
++EXPORT_SYMBOL(inv_memscan);
++#endif
++
+ #ifndef __HAVE_ARCH_STRSTR
+ /**
+  * strstr - Find the first substring in a %NUL terminated string
+Index: linux-2.6/arch/x86/include/asm/string_32.h
+===================================================================
+--- linux-2.6.orig/arch/x86/include/asm/string_32.h	2011-07-07 15:05:44.000000000 -0500
++++ linux-2.6/arch/x86/include/asm/string_32.h	2011-07-07 15:06:16.000000000 -0500
+@@ -336,6 +336,8 @@ void *__constant_c_and_count_memset(void
+  */
+ #define __HAVE_ARCH_MEMSCAN
+ extern void *memscan(void *addr, int c, size_t size);
++#define __HAVE_ARCH_INV_MEMSCAN
++extern void *inv_memscan(void *addr, int c, size_t size);
+
+ #endif /* __KERNEL__ */
+
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2011-07-07 15:04:11.000000000 -0500
++++ linux-2.6/mm/slub.c	2011-07-07 15:10:21.000000000 -0500
+@@ -559,13 +559,12 @@ static void init_object(struct kmem_cach
+
+ static u8 *check_bytes(u8 *start, unsigned int value, unsigned int bytes)
+ {
+-	while (bytes) {
+-		if (*start != (u8)value)
+-			return start;
+-		start++;
+-		bytes--;
+-	}
+-	return NULL;
++	u8 *p = inv_memscan(start, value, bytes);
++
++	if (p == start + bytes)
++		return NULL;
++
++	return p;
+ }
+
+ static void restore_bytes(struct kmem_cache *s, char *message, u8 data,
