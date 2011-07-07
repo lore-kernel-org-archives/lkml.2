@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755871Ab1GGLIv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 7 Jul 2011 07:08:51 -0400
-Received: from shards.monkeyblade.net ([198.137.202.13]:41514 "EHLO
-	shards.monkeyblade.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755664Ab1GGLIt (ORCPT
+	id S1755615Ab1GGLOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 7 Jul 2011 07:14:12 -0400
+Received: from merlin.infradead.org ([205.233.59.134]:34640 "EHLO
+	merlin.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755339Ab1GGLOK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 7 Jul 2011 07:08:49 -0400
-Date: Thu, 07 Jul 2011 04:08:40 -0700 (PDT)
-Message-Id: <20110707.040840.809661052978541081.davem@davemloft.net>
-To: mashirle@us.ibm.com
-Cc: mst@redhat.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH V8 0/4 net-next] macvtap/vhost TX zero-copy support
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1309990525.10209.12.camel@localhost.localdomain>
-References: <1309990525.10209.12.camel@localhost.localdomain>
-X-Mailer: Mew version 6.3 on Emacs 23.2 / Mule 6.0 (HANACHIRUSATO)
+	Thu, 7 Jul 2011 07:14:10 -0400
+Subject: Re: [patch 00/17] CFS Bandwidth Control v7.1
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Paul Turner <pjt@google.com>
+Cc: linux-kernel@vger.kernel.org, Bharata B Rao <bharata@linux.vnet.ibm.com>,
+        Dhaval Giani <dhaval.giani@gmail.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>,
+        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+        Ingo Molnar <mingo@elte.hu>, Pavel Emelyanov <xemul@openvz.org>,
+        Hu Tao <hutao@cn.fujitsu.com>
+In-Reply-To: <20110707053036.173186930@google.com>
+References: <20110707053036.173186930@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 07 Jul 2011 13:13:45 +0200
+Message-ID: <1310037225.3282.538.camel@twins>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender succeeded SMTP AUTH, not delayed by milter-greylist-4.2.6 (shards.monkeyblade.net [198.137.202.13]); Thu, 07 Jul 2011 04:08:41 -0700 (PDT)
+X-Mailer: Evolution 2.30.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shirley Ma <mashirle@us.ibm.com>
-Date: Wed, 06 Jul 2011 15:15:25 -0700
+On Wed, 2011-07-06 at 22:30 -0700, Paul Turner wrote:
+> base                                        7,526,317,497           8,666,579,347            1,771,078,445
+> +patch, cgroup not enabled                  7,610,354,447 (1.12%)   8,569,448,982 (-1.12%)   1,751,675,193 (-0.11%) 
 
-> This patchset add supports for TX zero-copy between guest and host
-> kernel through vhost. It significantly reduces CPU utilization on the
-> local host on which the guest is located (It reduced about 50% CPU usage
-> for single stream test on the host, while 4K message size BW has
-> increased about 50%). The patchset is based on previous submission and
-> comments from the community regarding when/how to handle guest kernel
-> buffers to be released. This is the simplest approach I can think of
-> after comparing with several other solutions.
-> 
-> This patchset has integrated V3 review comments from community: 
-
-I'm personally fine with this patch set.  Unless there are others
-who object, please fix the use-after-free bug I reported, respin
-the patch set, and I'll apply it.
-
-Thanks.
+"cgroup not enabled" means compiled in but not used at runtime, right?
