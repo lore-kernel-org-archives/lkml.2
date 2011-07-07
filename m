@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754140Ab1GGCWx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 6 Jul 2011 22:22:53 -0400
-Received: from mail-yw0-f46.google.com ([209.85.213.46]:41247 "EHLO
-	mail-yw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751971Ab1GGCWv (ORCPT
+	id S1754754Ab1GGC1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 6 Jul 2011 22:27:19 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:51446 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753081Ab1GGC1S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 6 Jul 2011 22:22:51 -0400
-Subject: [PATCH 2/2] platform-drivers-x86: intel_scu_ipc: convert to
- DEFINE_PCI_DEVICE_TABLE
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Sreedhara DS <sreedhara.ds@intel.com>, Matthew Garrett <mjg@redhat.com>,
-        platform-driver-x86@vger.kernel.org
-In-Reply-To: <1310005275.2481.3.camel@phoenix>
-References: <1310005275.2481.3.camel@phoenix>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 07 Jul 2011 10:22:46 +0800
-Message-ID: <1310005366.2481.5.camel@phoenix>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.32.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 6 Jul 2011 22:27:18 -0400
+MIME-Version: 1.0
+Date: Wed, 6 Jul 2011 19:19:59 -0700
+X-Google-Sender-Auth: uB6JG_mUUzl6wcWE6XIKqegTilg
+Message-ID: <CAN_5kQDTweB2GLvwgjN+BQuqnhFUp+MOcQr=ZW=8C6XSsC8XtA@mail.gmail.com>
+Subject: [PATCH] remove unnecessary cache flush on v6 copypage
+From: heechul Yun <heechul@illinois.edu>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Cc: "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/intel_scu_ipc.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ARM: mm: remove unnecessary cache flush on v6 copypage
 
-diff --git a/drivers/platform/x86/intel_scu_ipc.c b/drivers/platform/x86/intel_scu_ipc.c
-index 940accb..c866653 100644
---- a/drivers/platform/x86/intel_scu_ipc.c
-+++ b/drivers/platform/x86/intel_scu_ipc.c
-@@ -725,7 +725,7 @@ static void ipc_remove(struct pci_dev *pdev)
- 	intel_scu_devices_destroy();
+Signed-off-by: Heechul Yun <heechul@illinois.edu>
+--
+arch/arm/mm/copypage-v6.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/arm/mm/copypage-v6.c b/arch/arm/mm/copypage-v6.c
+index bdba6c6..63cca00 100644
+--- a/arch/arm/mm/copypage-v6.c
++++ b/arch/arm/mm/copypage-v6.c
+@@ -41,7 +41,6 @@ static void v6_copy_user_highpage_nonaliasing(struct page *to,
+       kfrom = kmap_atomic(from, KM_USER0);
+       kto = kmap_atomic(to, KM_USER1);
+       copy_page(kto, kfrom);
+-       __cpuc_flush_dcache_area(kto, PAGE_SIZE);
+       kunmap_atomic(kto, KM_USER1);
+       kunmap_atomic(kfrom, KM_USER0);
  }
- 
--static const struct pci_device_id pci_ids[] = {
-+static DEFINE_PCI_DEVICE_TABLE(pci_ids) = {
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080e)},
- 	{PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x082a)},
- 	{ 0,}
--- 
-1.7.4.1
 
+--
 
-
+Heechul
